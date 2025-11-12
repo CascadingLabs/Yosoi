@@ -1,0 +1,51 @@
+[
+  {
+    "url": "https://virginiabusiness.com/new-documents-reveal-scope-of-googles-chesterfield-data-center-campus/?utm_campaign=TickerTick&utm_medium=website&utm_source=tickertick.com",
+    "domain": "virginiabusiness.com",
+    "selectors": {
+      "headline": "h1",
+      "author": "a[href*=\"/author/\"]",
+      "date": "time",
+      "body_text": "article p",
+      "related_content": "h3 a"
+    },
+    "timestamp": "2025-11-11T19:41:58.744614",
+    "status": "success",
+    "attempts": 3,
+    "elapsed_time_seconds": 69.72
+  },
+  {
+    "url": "https://www.wsj.com/tech/apple-2025-tim-cook-36af914a",
+    "domain": "wsj.com",
+    "selectors": {
+      "content": {
+        "headline": "",
+        "author": "",
+        "date": "",
+        "body_text": "",
+        "related_content": ""
+      }
+    },
+    "timestamp": "2025-11-11T19:42:53.397766",
+    "status": "success",
+    "attempts": 3,
+    "elapsed_time_seconds": 54.65
+  },
+  {
+    "url": "https://finance.yahoo.com/video/three-big-questions-left-musk-125600891.html",
+    "domain": "finance.yahoo.com",
+    "selectors": {
+      "content": {
+        "headline": "h1",
+        "author": "h1 + p",
+        "date": "time",
+        "body_text": "article p",
+        "related_content": "h2:contains(\"Recommended Stories\") + a"
+      }
+    },
+    "timestamp": "2025-11-11T19:44:04.693812",
+    "status": "success",
+    "attempts": 3,
+    "elapsed_time_seconds": 71.3
+  }
+]

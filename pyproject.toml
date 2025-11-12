@@ -1,0 +1,14 @@
+[project]
+name = "testing-scrape-graphai"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = [
+    "dspy>=3.0.4",
+    "toonify",
+    "langchain<1.0",
+    "langchain-community>=0.3.0",
+    "langchain-core>=0.3.0",
+    "langchain-google-genai>=2.0.0",
+    "python-dotenv>=1.2.1",
+    "scrapegraphai>=1.64.0",
+]
