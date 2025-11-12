@@ -1,0 +1,50 @@
+{
+  "domain": "virginiabusiness.com",
+  "last_updated": "2025-11-11T20:13:13.475430",
+  "version": "1.0",
+  "headline": {
+    "primary": null,
+    "fallback": null,
+    "tertiary": "h1",
+    "primary_success_rate": 0.0,
+    "fallback_success_rate": 0.0,
+    "tertiary_success_rate": 1.0,
+    "last_updated": "2025-11-11T20:04:12.472451"
+  },
+  "author": {
+    "primary": null,
+    "fallback": null,
+    "tertiary": "a[href*='/author/']",
+    "primary_success_rate": 0.0,
+    "fallback_success_rate": 0.0,
+    "tertiary_success_rate": 1.0,
+    "last_updated": "2025-11-11T20:04:12.472462"
+  },
+  "date": {
+    "primary": null,
+    "fallback": null,
+    "tertiary": "time[datetime]",
+    "primary_success_rate": 0.0,
+    "fallback_success_rate": 0.0,
+    "tertiary_success_rate": 1.0,
+    "last_updated": "2025-11-11T20:04:12.472467"
+  },
+  "body_text": {
+    "primary": null,
+    "fallback": null,
+    "tertiary": "p",
+    "primary_success_rate": 0.0,
+    "fallback_success_rate": 0.0,
+    "tertiary_success_rate": 1.0,
+    "last_updated": "2025-11-11T20:04:12.472469"
+  },
+  "related_content": {
+    "primary": null,
+    "fallback": null,
+    "tertiary": "h3 a",
+    "primary_success_rate": 0.0,
+    "fallback_success_rate": 0.0,
+    "tertiary_success_rate": 1.0,
+    "last_updated": "2025-11-11T20:04:12.472472"
+  }
+}

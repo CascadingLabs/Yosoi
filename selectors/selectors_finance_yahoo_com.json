@@ -1,0 +1,50 @@
+{
+  "domain": "finance.yahoo.com",
+  "last_updated": "2025-11-11T20:04:53.730187",
+  "version": "1.0",
+  "headline": {
+    "primary": null,
+    "fallback": null,
+    "tertiary": null,
+    "primary_success_rate": 0.0,
+    "fallback_success_rate": 0.0,
+    "tertiary_success_rate": 0.0,
+    "last_updated": "2025-11-11T20:04:53.730167"
+  },
+  "author": {
+    "primary": null,
+    "fallback": null,
+    "tertiary": null,
+    "primary_success_rate": 0.0,
+    "fallback_success_rate": 0.0,
+    "tertiary_success_rate": 0.0,
+    "last_updated": "2025-11-11T20:04:53.730179"
+  },
+  "date": {
+    "primary": null,
+    "fallback": null,
+    "tertiary": null,
+    "primary_success_rate": 0.0,
+    "fallback_success_rate": 0.0,
+    "tertiary_success_rate": 0.0,
+    "last_updated": "2025-11-11T20:04:53.730181"
+  },
+  "body_text": {
+    "primary": null,
+    "fallback": null,
+    "tertiary": null,
+    "primary_success_rate": 0.0,
+    "fallback_success_rate": 0.0,
+    "tertiary_success_rate": 0.0,
+    "last_updated": "2025-11-11T20:04:53.730183"
+  },
+  "related_content": {
+    "primary": null,
+    "fallback": null,
+    "tertiary": null,
+    "primary_success_rate": 0.0,
+    "fallback_success_rate": 0.0,
+    "tertiary_success_rate": 0.0,
+    "last_updated": "2025-11-11T20:04:53.730185"
+  }
+}
