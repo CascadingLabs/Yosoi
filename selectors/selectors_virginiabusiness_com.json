@@ -1,50 +1,36 @@
 {
   "domain": "virginiabusiness.com",
-  "last_updated": "2025-11-11T20:13:13.475430",
+  "source_url": "https://virginiabusiness.com/new-documents-reveal-scope-of-googles-chesterfield-data-center-campus/",
+  "discovered_at": "2025-12-22T18:07:37.855973",
   "version": "1.0",
-  "headline": {
-    "primary": null,
-    "fallback": null,
-    "tertiary": "h1",
-    "primary_success_rate": 0.0,
-    "fallback_success_rate": 0.0,
-    "tertiary_success_rate": 1.0,
-    "last_updated": "2025-11-11T20:04:12.472451"
-  },
-  "author": {
-    "primary": null,
-    "fallback": null,
-    "tertiary": "a[href*='/author/']",
-    "primary_success_rate": 0.0,
-    "fallback_success_rate": 0.0,
-    "tertiary_success_rate": 1.0,
-    "last_updated": "2025-11-11T20:04:12.472462"
-  },
-  "date": {
-    "primary": null,
-    "fallback": null,
-    "tertiary": "time[datetime]",
-    "primary_success_rate": 0.0,
-    "fallback_success_rate": 0.0,
-    "tertiary_success_rate": 1.0,
-    "last_updated": "2025-11-11T20:04:12.472467"
-  },
-  "body_text": {
-    "primary": null,
-    "fallback": null,
-    "tertiary": "p",
-    "primary_success_rate": 0.0,
-    "fallback_success_rate": 0.0,
-    "tertiary_success_rate": 1.0,
-    "last_updated": "2025-11-11T20:04:12.472469"
-  },
-  "related_content": {
-    "primary": null,
-    "fallback": null,
-    "tertiary": "h3 a",
-    "primary_success_rate": 0.0,
-    "fallback_success_rate": 0.0,
-    "tertiary_success_rate": 1.0,
-    "last_updated": "2025-11-11T20:04:12.472472"
+  "selectors": {
+    "headline": {
+      "primary": "h1.news-page-header",
+      "fallback": "h1",
+      "tertiary": "h2",
+      "working_priority": "primary",
+      "tested": true
+    },
+    "author": {
+      "primary": ".news-publish-info a[href*='author']",
+      "fallback": "a[href*='author']",
+      "tertiary": "NA",
+      "working_priority": "primary",
+      "tested": true
+    },
+    "date": {
+      "primary": ".news-publish-info p",
+      "fallback": ".news-publish-info",
+      "tertiary": "NA",
+      "working_priority": "primary",
+      "tested": true
+    },
+    "body_text": {
+      "primary": ".news-detail p",
+      "fallback": ".col-sm-9 p",
+      "tertiary": "p",
+      "working_priority": "primary",
+      "tested": true
+    }
   }
 }

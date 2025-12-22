@@ -1,0 +1,105 @@
+QUICK REFERENCE - Dev Tools Cheat Sheet
+========================================
+
+FIRST TIME SETUP
+================
+uv sync --group dev
+pre-commit install
+pre-commit install --hook-type commit-msg
+pre-commit run --all-files
+
+
+DAILY COMMANDS
+==============
+
+Ruff (Linter + Formatter)
+--------------------------
+ruff check .                    # Check for issues
+ruff check . --fix              # Auto-fix issues
+ruff format .                   # Format code
+ruff check . --watch            # Watch mode
+
+
+Mypy (Type Checker)
+-------------------
+mypy main.py                    # Check one file
+mypy .                          # Check all files
+mypy --strict main.py           # Strict mode
+mypy --install-types            # Install missing type stubs
+
+
+Pre-commit (Git Hooks)
+----------------------
+pre-commit run --all-files      # Run all hooks
+pre-commit run ruff             # Run specific hook
+pre-commit autoupdate           # Update hook versions
+git commit --no-verify          # Skip hooks (emergency!)
+
+
+Commitizen (Conventional Commits)
+----------------------------------
+cz commit                       # Interactive commit
+cz bump                         # Version bump + changelog
+cz changelog                    # Generate changelog
+cz version                      # Show current version
+
+
+COMMIT MESSAGE FORMAT
+=====================
+<type>(<scope>): <subject>
+
+Types: feat, fix, docs, style, refactor, perf, test, build, ci, chore
+
+Examples:
+✓ feat: add AI selector discovery
+✓ fix: handle missing article tags
+✓ docs: update README
+✓ refactor: split into modules
+✗ Added new feature                (missing type)
+✗ feat add feature                 (missing colon)
+
+
+COMMON WORKFLOWS
+================
+
+Making Changes:
+---------------
+1. Edit files
+2. git add <files>
+3. cz commit  (or git commit -m "type: message")
+4. Hooks run automatically
+5. Fix any issues, re-commit
+
+
+Checking Code:
+--------------
+ruff check . --fix              # Fix style issues
+mypy .                          # Check types
+pre-commit run --all-files      # Run all checks
+
+
+Releasing:
+----------
+cz bump                         # Bump version
+git push                        # Push commits
+git push --tags                 # Push tags
+
+
+HOOK STAGES
+===========
+pre-commit:     Runs before commit
+commit-msg:     Validates commit message
+pre-push:       Runs before push (not configured)
+
+
+SKIPPING HOOKS
+==============
+git commit --no-verify          # Skip all hooks
+SKIP=mypy git commit -m "..."   # Skip mypy only
+SKIP=ruff,mypy git commit       # Skip multiple
+
+
+CONFIGURATION FILES
+===================
+pyproject.toml                  # Ruff, Mypy, Commitizen config
+.pre-commit-config.yaml         # Pre-commit hooks

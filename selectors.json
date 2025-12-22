@@ -1,9 +1,0 @@
-{
-  "content": {
-    "headline": "h1",
-    "author": "strong a[href*=\"author\"]",
-    "date": "p:has(strong a[href*=\"author\"])",
-    "body_text": "p",
-    "related_content": "h4 + ul"
-  }
-}

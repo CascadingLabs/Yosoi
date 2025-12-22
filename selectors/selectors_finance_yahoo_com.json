@@ -1,50 +1,36 @@
 {
   "domain": "finance.yahoo.com",
-  "last_updated": "2025-11-11T20:04:53.730187",
+  "source_url": "https://finance.yahoo.com/video/three-big-questions-left-musk-125600891.html",
+  "discovered_at": "2025-12-22T18:07:48.777948",
   "version": "1.0",
-  "headline": {
-    "primary": null,
-    "fallback": null,
-    "tertiary": null,
-    "primary_success_rate": 0.0,
-    "fallback_success_rate": 0.0,
-    "tertiary_success_rate": 0.0,
-    "last_updated": "2025-11-11T20:04:53.730167"
-  },
-  "author": {
-    "primary": null,
-    "fallback": null,
-    "tertiary": null,
-    "primary_success_rate": 0.0,
-    "fallback_success_rate": 0.0,
-    "tertiary_success_rate": 0.0,
-    "last_updated": "2025-11-11T20:04:53.730179"
-  },
-  "date": {
-    "primary": null,
-    "fallback": null,
-    "tertiary": null,
-    "primary_success_rate": 0.0,
-    "fallback_success_rate": 0.0,
-    "tertiary_success_rate": 0.0,
-    "last_updated": "2025-11-11T20:04:53.730181"
-  },
-  "body_text": {
-    "primary": null,
-    "fallback": null,
-    "tertiary": null,
-    "primary_success_rate": 0.0,
-    "fallback_success_rate": 0.0,
-    "tertiary_success_rate": 0.0,
-    "last_updated": "2025-11-11T20:04:53.730183"
-  },
-  "related_content": {
-    "primary": null,
-    "fallback": null,
-    "tertiary": null,
-    "primary_success_rate": 0.0,
-    "fallback_success_rate": 0.0,
-    "tertiary_success_rate": 0.0,
-    "last_updated": "2025-11-11T20:04:53.730185"
+  "selectors": {
+    "headline": {
+      "primary": "h1.cover-title.yf-1c5x1vj",
+      "fallback": "h1.cover-title",
+      "tertiary": "h1",
+      "working_priority": "primary",
+      "tested": true
+    },
+    "author": {
+      "primary": "div.byline-attr-author.yf-o43a56",
+      "fallback": ".byline-attr-author",
+      "tertiary": "NA",
+      "working_priority": "primary",
+      "tested": true
+    },
+    "date": {
+      "primary": "time.byline-attr-meta-time",
+      "fallback": "time",
+      "tertiary": "NA",
+      "working_priority": "primary",
+      "tested": true
+    },
+    "body_text": {
+      "primary": "div[data-testid=\"article-body\"] p.yf-7hmkaz",
+      "fallback": "div[data-testid=\"article-body\"] p",
+      "tertiary": "p",
+      "working_priority": "primary",
+      "tested": true
+    }
   }
 }
