@@ -1,33 +1,33 @@
 {
   "domain": "virginiabusiness.com",
   "source_url": "https://virginiabusiness.com/new-documents-reveal-scope-of-googles-chesterfield-data-center-campus/",
-  "discovered_at": "2025-12-22T18:07:37.855973",
+  "discovered_at": "2025-12-22T18:54:29.173272",
   "version": "1.0",
   "selectors": {
     "headline": {
       "primary": "h1.news-page-header",
-      "fallback": "h1",
-      "tertiary": "h2",
+      "fallback": "div.newsdetail-wrapper h1",
+      "tertiary": "h1",
       "working_priority": "primary",
       "tested": true
     },
     "author": {
-      "primary": ".news-publish-info a[href*='author']",
+      "primary": "div.news-publish-info a[href*='author']",
       "fallback": "a[href*='author']",
-      "tertiary": "NA",
+      "tertiary": "b",
       "working_priority": "primary",
       "tested": true
     },
     "date": {
-      "primary": ".news-publish-info p",
-      "fallback": ".news-publish-info",
-      "tertiary": "NA",
+      "primary": "div.news-publish-info p",
+      "fallback": ".news-publish-info p",
+      "tertiary": "p",
       "working_priority": "primary",
       "tested": true
     },
     "body_text": {
-      "primary": ".news-detail p",
-      "fallback": ".col-sm-9 p",
+      "primary": "div.news-detail p",
+      "fallback": ".news-detail p",
       "tertiary": "p",
       "working_priority": "primary",
       "tested": true

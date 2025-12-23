@@ -1,19 +1,19 @@
 {
   "domain": "finance.yahoo.com",
   "source_url": "https://finance.yahoo.com/video/three-big-questions-left-musk-125600891.html",
-  "discovered_at": "2025-12-22T18:07:48.777948",
+  "discovered_at": "2025-12-22T18:54:38.613592",
   "version": "1.0",
   "selectors": {
     "headline": {
-      "primary": "h1.cover-title.yf-1c5x1vj",
-      "fallback": "h1.cover-title",
+      "primary": "h1.cover-title",
+      "fallback": "article h1",
       "tertiary": "h1",
       "working_priority": "primary",
       "tested": true
     },
     "author": {
-      "primary": "div.byline-attr-author.yf-o43a56",
-      "fallback": ".byline-attr-author",
+      "primary": ".byline-attr-author",
+      "fallback": ".byline-attr",
       "tertiary": "NA",
       "working_priority": "primary",
       "tested": true
@@ -26,7 +26,7 @@
       "tested": true
     },
     "body_text": {
-      "primary": "div[data-testid=\"article-body\"] p.yf-7hmkaz",
+      "primary": "p.yf-7hmkaz",
       "fallback": "div[data-testid=\"article-body\"] p",
       "tertiary": "p",
       "working_priority": "primary",
