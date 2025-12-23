@@ -26,8 +26,8 @@
       "tested": true
     },
     "body_text": {
-      "primary": ".news-detail p",
-      "fallback": ".col-sm-9 p",
+      "primary": "div.news-detail p",
+      "fallback": ".news-detail p",
       "tertiary": "p",
       "working_priority": "primary",
       "tested": true

@@ -1,0 +1,8 @@
+# Example URLs for testing selector discovery
+# One URL per line, comments start with #
+
+# Tech News
+https://virginiabusiness.com/new-documents-reveal-scope-of-googles-chesterfield-data-center-campus/
+https://finance.yahoo.com/video/three-big-questions-left-musk-125600891.html
+
+# Add your URLs below:

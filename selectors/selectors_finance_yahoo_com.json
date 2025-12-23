@@ -14,6 +14,8 @@
     "author": {
       "primary": ".byline-attr-author",
       "fallback": ".byline-attr",
+      "primary": ".byline-attr-author",
+      "fallback": ".byline-attr",
       "tertiary": "NA",
       "working_priority": "primary",
       "tested": true
