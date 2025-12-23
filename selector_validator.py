@@ -6,13 +6,15 @@ Validates that CSS selectors actually work on web pages.
 
 import requests
 from bs4 import BeautifulSoup
+from rich.console import Console
 
 
 class SelectorValidator:
     """Validates CSS selectors by testing them on actual pages."""
 
-    def __init__(self, user_agent: str = 'Mozilla/5.0'):
+    def __init__(self, user_agent: str = 'Mozilla/5.0', console: Console = None):
         self.user_agent = user_agent
+        self.console = console or Console()
 
     def validate_selectors(self, url: str, selectors: dict) -> dict:
         """
@@ -34,7 +36,7 @@ class SelectorValidator:
 
             # Test each field
             for field, field_selectors in selectors.items():
-                print(f'\n  Testing {field}:')
+                self.console.print(f'\n  Testing {field}:')
 
                 working_selector = self._find_working_selector(soup, field, field_selectors)
 
@@ -44,7 +46,7 @@ class SelectorValidator:
             return validated
 
         except Exception as e:
-            print(f'  ✗ Validation error: {e}')
+            self.console.print(f'[danger]  ✗ Validation error: {e}[/danger]')
             return {}
 
     def _find_working_selector(self, soup: BeautifulSoup, field: str, field_selectors: dict) -> dict | None:
@@ -58,21 +60,21 @@ class SelectorValidator:
             selector = field_selectors.get(priority)
 
             if not selector or selector == 'NA':
-                print(f'    {priority}: NA')
+                self.console.print(f'    [dim]{priority}: NA[/dim]')
                 continue
 
             # Test the selector
             works, sample_text = self._test_selector(soup, field, selector)
 
             if works:
-                print(f'    ✓ {priority}: \'{selector}\' → "{sample_text}..."')
+                self.console.print(f'    [success]✓ {priority}: \'{selector}\'[/success] → [dim]"{sample_text}..."[/dim]')
 
                 # Keep first working selector
                 if not best_selector:
                     best_selector = selector
                     best_priority = priority
             else:
-                print(f"    ✗ {priority}: '{selector}' (no elements found)")
+                self.console.print(f"    [danger]✗ {priority}: '{selector}' (no elements found)[/danger]")
 
         # Return the best working selector
         if best_selector:
@@ -82,9 +84,9 @@ class SelectorValidator:
                 'tertiary': field_selectors.get('tertiary'),
                 'working_priority': best_priority,
             }
-            print(f"  → Using {best_priority} selector: '{best_selector}'")
+            self.console.print(f"  → Using {best_priority} selector: '[cyan]{best_selector}[/cyan]'")
             return result
-        print(f'  → No working selectors for {field}')
+        self.console.print(f'[danger]  → No working selectors for {field}[/danger]')
         return None
 
     def _test_selector(self, soup: BeautifulSoup, field: str, selector: str) -> tuple[bool, str]:

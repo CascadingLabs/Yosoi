@@ -8,13 +8,15 @@ import json
 
 from bs4 import BeautifulSoup
 from langchain_google_genai import ChatGoogleGenerativeAI
+from rich.console import Console
 
 
 class SelectorDiscovery:
     """Discovers CSS selectors using AI to read HTML."""
 
-    def __init__(self, llm_model: ChatGoogleGenerativeAI):
+    def __init__(self, llm_model: ChatGoogleGenerativeAI, console: Console = None):
         self.llm = llm_model
+        self.console = console or Console()
         self.fallback_selectors = self._get_fallback_selectors()
 
     def discover_from_html(self, url: str, html: str) -> dict:
@@ -36,7 +38,8 @@ class SelectorDiscovery:
 
         # Use fallback if AI fails
         if not selectors or self._is_all_na(selectors):
-            print('  ⚠ AI returned no selectors, using fallback heuristics')
+
+            self.console.print('[warning]  ⚠ AI returned no selectors, using fallback heuristics[/warning]')
             selectors = self.fallback_selectors
 
         return selectors
@@ -78,8 +81,9 @@ class SelectorDiscovery:
         main_content = None
         for selector in content_selectors:
             main_content = soup.select_one(selector)
+            main_content = soup.select_one(selector)
             if main_content:
-                print(f"  → Extracted content from '{selector}'")
+                self.console.print(f"  → Extracted content from '[cyan]{selector}[/cyan]'")
                 break
 
         # Fallback: Look for div with most paragraphs (likely the article)
@@ -88,22 +92,24 @@ class SelectorDiscovery:
             if divs:
                 # Find div with most <p> tags
                 best_div = max(divs, key=lambda d: len(d.find_all('p')))
+                best_div = max(divs, key=lambda d: len(d.find_all('p')))
                 if len(best_div.find_all('p')) >= 3:
                     main_content = best_div
-                    print(f'  → Found content div with {len(best_div.find_all("p"))} paragraphs')
+                    self.console.print(f'  → Found content div with {len(best_div.find_all("p"))} paragraphs')
 
         # Last resort: use body
         if not main_content:
             main_content = soup.find('body')
+            main_content = soup.find('body')
             if main_content:
-                print('  → Extracted content from <body> tag (last resort)')
+                self.console.print('  → Extracted content from <body> tag (last resort)')
             else:
-                print('  → Using full HTML')
+                self.console.print('  → Using full HTML')
                 return str(soup)[:30000]
 
         # Return first 30k characters
         content_str = str(main_content)[:30000]
-        print(f'  → Analyzing {len(content_str)} characters')
+        self.console.print(f'  → Analyzing {len(content_str)} characters')
         return content_str
 
     def _get_selectors_from_ai(self, url: str, html: str) -> dict | None:
@@ -193,14 +199,14 @@ Return ONLY valid JSON, no markdown code blocks, no explanations."""
             # Parse JSON
             selectors = json.loads(result_text)
 
-            print('  ✓ AI found selectors')
+            self.console.print('[success]  ✓ AI found selectors[/success]')
             return selectors
 
         except json.JSONDecodeError as e:
-            print(f'  ✗ AI returned invalid JSON: {e}')
+            self.console.print(f'[danger]  ✗ AI returned invalid JSON: {e}[/danger]')
             return None
         except Exception as e:
-            print(f'  ✗ Error getting selectors from AI: {e}')
+            self.console.print(f'[danger]  ✗ Error getting selectors from AI: {e}[/danger]')
             return None
 
     def _is_all_na(self, selectors: dict) -> bool:
