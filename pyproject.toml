@@ -102,7 +102,7 @@ module = [
 ignore_missing_imports = true
 
 [tool.commitizen]
-name = "cz_conventional"
+name = "cz_conventional_commits"
 tag_format = "v$version"
 version_scheme = "semver"
 version_provider = "pep621"     # Reads/updates version in [project] section of pyproject.toml
