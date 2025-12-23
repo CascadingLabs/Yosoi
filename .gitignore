@@ -1,3 +1,6 @@
 .env
 .venv
 .todo.md
+todo.md
+TODO.md
+__pycache__
