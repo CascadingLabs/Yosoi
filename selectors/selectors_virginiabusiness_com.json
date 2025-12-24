@@ -1,36 +1,22 @@
 {
-  "domain": "virginiabusiness.com",
-  "source_url": "https://virginiabusiness.com/new-documents-reveal-scope-of-googles-chesterfield-data-center-campus/",
-  "discovered_at": "2025-12-23T07:49:47.377094",
-  "version": "1.0",
-  "selectors": {
-    "headline": {
-      "primary": "h1.news-page-header",
-      "fallback": ".news-page-header",
-      "tertiary": "h1",
-      "working_priority": "primary",
-      "tested": true
-    },
-    "author": {
-      "primary": "p a[href*='author']",
-      "fallback": ".news-publish-info a",
-      "tertiary": "a[href*='author']",
-      "working_priority": "primary",
-      "tested": true
-    },
-    "date": {
-      "primary": ".news-publish-info p",
-      "fallback": ".desktop_section p",
-      "tertiary": "p",
-      "working_priority": "primary",
-      "tested": true
-    },
-    "body_text": {
-      "primary": "div.news-detail p",
-      "fallback": ".news-detail p",
-      "tertiary": "p",
-      "working_priority": "primary",
-      "tested": true
-    }
+  "headline": {
+    "primary": "h1.news-page-header",
+    "fallback": ".news-page-header",
+    "tertiary": "h1"
+  },
+  "author": {
+    "primary": ".news-publish-info a[href*=\"author/\"]",
+    "fallback": ".news-publish-info a",
+    "tertiary": "a[href*=\"author/\"]"
+  },
+  "date": {
+    "primary": ".news-publish-info p",
+    "fallback": ".news-publish-info",
+    "tertiary": "p"
+  },
+  "body_text": {
+    "primary": ".news-detail p",
+    "fallback": "div.news-detail > p",
+    "tertiary": "p"
   }
 }

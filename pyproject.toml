@@ -15,7 +15,7 @@ dependencies = [
   "langchain-google-genai>=2",
   "python-dotenv>=1.2.1",
   "requests>=2.31",
-  "rich>=14.2.0",
+  "rich>=14.2",
   "scrapegraphai>=1.64",
   "toonify",
 ]
@@ -87,6 +87,7 @@ strict_equality = true
 show_error_codes = true
 show_column_numbers = true
 pretty = true
+ignore_missing_imports = true
 
 # Per-module options
 [[tool.mypy.overrides]]
@@ -105,9 +106,9 @@ ignore_missing_imports = true
 name = "cz_conventional_commits"
 tag_format = "v$version"
 version_scheme = "semver"
-version_provider = "pep621"     # Reads/updates version in [project] section of pyproject.toml
+version_provider = "pep621"      # Reads/updates version in [project] section of pyproject.toml
 update_changelog_on_bump = true
-major_version_zero = true       # Keeps you in 0.x.x (beta) semantics until you release 1.0.0
+major_version_zero = true        # Keeps you in 0.x.x (beta) semantics until you release 1.0.0
 
 # Optional: distinct types allowed in your project
 types = [

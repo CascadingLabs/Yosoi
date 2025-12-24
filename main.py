@@ -16,11 +16,10 @@ import sys
 
 import requests
 from dotenv import load_dotenv
-from langchain_google_genai import ChatGoogleGenerativeAI
 from rich.console import Console
+from rich.panel import Panel
 from rich.table import Table
 from rich.theme import Theme
-from rich.panel import Panel
 
 from selector_discovery import SelectorDiscovery
 from selector_storage import SelectorStorage
@@ -32,25 +31,32 @@ class SelectorDiscoveryPipeline:
 
     def __init__(self, gemini_api_key: str):
         """Initialize the pipeline with API key."""
+
         # Initialize Rich Console
-        self.custom_theme = Theme({
-            "info": "dim cyan",
-            "warning": "magenta",
-            "danger": "bold red",
-            "success": "bold green",
-            "step": "bold blue"
-        })
+        self.custom_theme = Theme(
+            {
+                'info': 'dim cyan',
+                'warning': 'magenta',
+                'danger': 'bold red',
+                'success': 'bold green',
+                'step': 'bold blue',
+            }
+        )
         self.console = Console(theme=self.custom_theme)
 
-        # Initialize LLM
-        self.llm = ChatGoogleGenerativeAI(
-            model='gemini-2.5-flash',
-            google_api_key=gemini_api_key,
-            temperature=0,
+        # Store model name
+        self.llm = type('LLM', (), {'model_name': 'gemini-2.5-flash'})()
+
+        import instructor
+        from openai import OpenAI
+
+        client = instructor.from_openai(
+            OpenAI(base_url='https://generativelanguage.googleapis.com/v1beta/openai/', api_key=gemini_api_key),
+            mode=instructor.Mode.JSON,
         )
 
         # Initialize components
-        self.discovery = SelectorDiscovery(self.llm, console=self.console)
+        self.discovery = SelectorDiscovery(llm_model=self.llm, client=client, console=self.console)
         self.validator = SelectorValidator(console=self.console)
         self.storage = SelectorStorage()
 
@@ -65,25 +71,27 @@ class SelectorDiscoveryPipeline:
         Returns:
             True if successful, False otherwise
         """
-        self.console.print(Panel(f"[bold]Processing:[/bold] [underline]{url}[/underline]", border_style="blue"))
+        self.console.print(Panel(f'[bold]Processing:[/bold] [underline]{url}[/underline]', border_style='blue'))
 
         # Check if selectors already exist
         domain = self.storage._extract_domain(url)
         if not force and self.storage.selector_exists(domain):
-            self.console.print(f'[success]✓ Selectors already exist for {domain}[/success] [dim](use --force to re-discover)[/dim]')
+            self.console.print(
+                f'[success]✓ Selectors already exist for {domain}[/success] [dim](use --force to re-discover)[/dim]'
+            )
             return True
 
         # Step 1: Fetch HTML
         html = None
-        with self.console.status("[step]Step 1: Fetching HTML...[/step]", spinner="dots"):
+        with self.console.status('[step]Step 1: Fetching HTML...[/step]', spinner='dots'):
             html = self._fetch_html(url)
-        
+
         if not html:
             return False
 
         # Step 2: Discover selectors with AI
         selectors = None
-        with self.console.status("[step]Step 2: AI analyzing HTML...[/step]", spinner="earth"):
+        with self.console.status('[step]Step 2: AI analyzing HTML...[/step]', spinner='earth'):
             selectors = self.discovery.discover_from_html(url, html)
 
         if not selectors:
@@ -94,8 +102,8 @@ class SelectorDiscoveryPipeline:
 
         # Step 3: Validate selectors
         validated = None
-        with self.console.status("[step]Step 3: Validating selectors...[/step]", spinner="bouncingBall"):
-             validated = self.validator.validate_selectors(url, selectors)
+        with self.console.status('[step]Step 3: Validating selectors...[/step]', spinner='bouncingBall'):
+            validated = self.validator.validate_selectors(url, selectors)
 
         if not validated:
             self.console.print('[danger]✗ No selectors validated successfully[/danger]')
@@ -110,7 +118,7 @@ class SelectorDiscoveryPipeline:
 
     def process_urls(self, urls: list, force: bool = False):
         """Process multiple URLs."""
-        results = {'successful': [], 'failed': []}
+        results: dict[str, list[str]] = {'successful': [], 'failed': []}
 
         for url in urls:
             try:
@@ -132,28 +140,24 @@ class SelectorDiscoveryPipeline:
         """Show summary of all saved selectors."""
         summary = self.storage.get_summary()
 
-        self.console.print(Panel("[bold]Selector Discovery Summary[/bold]", style="bold blue"))
+        self.console.print(Panel('[bold]Selector Discovery Summary[/bold]', style='bold blue'))
         self.console.print(f'Total domains: [bold]{summary["total_domains"]}[/bold]')
 
         if summary['domains']:
-            table = Table(title="Domains with Selectors")
-            table.add_column("Domain", style="cyan", no_wrap=True)
-            table.add_column("Discovered At", style="magenta")
-            table.add_column("Fields", style="green")
+            table = Table(title='Domains with Selectors')
+            table.add_column('Domain', style='cyan', no_wrap=True)
+            table.add_column('Discovered At', style='magenta')
+            table.add_column('Fields', style='green')
 
             for domain_info in summary['domains']:
-                table.add_row(
-                    domain_info["domain"],
-                    domain_info["discovered_at"],
-                    ", ".join(domain_info["fields"])
-                )
+                table.add_row(domain_info['domain'], domain_info['discovered_at'], ', '.join(domain_info['fields']))
             self.console.print(table)
         else:
             self.console.print('[warning]No selectors discovered yet.[/warning]')
 
         self.console.print()
 
-    def _fetch_html(self, url: str) -> str:
+    def _fetch_html(self, url: str) -> str | None:
         """Fetch HTML from URL."""
         try:
             response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=15)
@@ -167,15 +171,15 @@ class SelectorDiscoveryPipeline:
     def _print_summary(self, results: dict):
         """Print processing summary."""
         self.console.print()
-        table = Table(title="Processing Summary", show_header=False)
-        table.add_row("[green]Successful[/green]", str(len(results["successful"])))
-        table.add_row("[red]Failed[/red]", str(len(results["failed"])))
+        table = Table(title='Processing Summary', show_header=False)
+        table.add_row('[green]Successful[/green]', str(len(results['successful'])))
+        table.add_row('[red]Failed[/red]', str(len(results['failed'])))
         self.console.print(table)
 
         if results['failed']:
             self.console.print('\n[bold red]Failed URLs:[/bold red]')
             for url in results['failed']:
-                self.console.print(f'  - {url}', style="red")
+                self.console.print(f'  - {url}', style='red')
 
         self.console.print()
 

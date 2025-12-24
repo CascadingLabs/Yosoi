@@ -5,7 +5,7 @@ Validates that CSS selectors actually work on web pages.
 """
 
 import requests
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, ResultSet, Tag
 from rich.console import Console
 
 
@@ -67,7 +67,9 @@ class SelectorValidator:
             works, sample_text = self._test_selector(soup, field, selector)
 
             if works:
-                self.console.print(f'    [success]✓ {priority}: \'{selector}\'[/success] → [dim]"{sample_text}..."[/dim]')
+                self.console.print(
+                    f'    [success]✓ {priority}: \'{selector}\'[/success] → [dim]"{sample_text}..."[/dim]'
+                )
 
                 # Keep first working selector
                 if not best_selector:
@@ -99,10 +101,10 @@ class SelectorValidator:
         try:
             # For body_text, select multiple elements
             if field == 'body_text':
-                elements = soup.select(selector)
+                elements: ResultSet[Tag] | list[Tag] = soup.select(selector)
             else:
                 element = soup.select_one(selector)
-                elements = [element] if element else []
+                elements = [element] if element and isinstance(element, Tag) else []
 
             # Check if we found elements with text
             if not elements or not any(el and el.get_text(strip=True) for el in elements):

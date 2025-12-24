@@ -4,22 +4,25 @@ selector_discovery.py
 AI-powered CSS selector discovery by reading raw HTML.
 """
 
-import json
+from typing import Any
 
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 from langchain_google_genai import ChatGoogleGenerativeAI
 from rich.console import Console
+
+from models import ScrapingConfig
 
 
 class SelectorDiscovery:
     """Discovers CSS selectors using AI to read HTML."""
 
-    def __init__(self, llm_model: ChatGoogleGenerativeAI, console: Console = None):
+    def __init__(self, llm_model: ChatGoogleGenerativeAI, client, console: Console = None):
         self.llm = llm_model
+        self.client = client
         self.console = console or Console()
         self.fallback_selectors = self._get_fallback_selectors()
 
-    def discover_from_html(self, url: str, html: str) -> dict:
+    def discover_from_html(self, url: str, html: str) -> dict[str, Any]:
         """
         Main method: Extract relevant HTML and ask AI for selectors.
 
@@ -33,12 +36,18 @@ class SelectorDiscovery:
         # Extract clean HTML for analysis
         clean_html = self._extract_content_html(html)
 
-        # Ask AI to find selectors
-        selectors = self._get_selectors_from_ai(url, clean_html)
+        # Ask AI to find selectors returns as ScrapingConfig
+        selectors_obj = self._get_selectors_from_ai(url, clean_html)
+
+        # Convert Pydantic object to dict
+        selectors: dict[str, Any] | None = None
+        if selectors_obj:
+            selectors = selectors_obj.model_dump()
+        else:
+            selectors = None
 
         # Use fallback if AI fails
         if not selectors or self._is_all_na(selectors):
-
             self.console.print('[warning]  ⚠ AI returned no selectors, using fallback heuristics[/warning]')
             selectors = self.fallback_selectors
 
@@ -78,7 +87,7 @@ class SelectorDiscovery:
             '.main-content',
         ]
 
-        main_content = None
+        main_content: Tag | None = None
         for selector in content_selectors:
             main_content = soup.select_one(selector)
             main_content = soup.select_one(selector)
@@ -99,9 +108,9 @@ class SelectorDiscovery:
 
         # Last resort: use body
         if not main_content:
-            main_content = soup.find('body')
-            main_content = soup.find('body')
-            if main_content:
+            body_element = soup.find('body')
+            if isinstance(body_element, Tag):
+                main_content = body_element
                 self.console.print('  → Extracted content from <body> tag (last resort)')
             else:
                 self.console.print('  → Using full HTML')
@@ -112,7 +121,7 @@ class SelectorDiscovery:
         self.console.print(f'  → Analyzing {len(content_str)} characters')
         return content_str
 
-    def _get_selectors_from_ai(self, url: str, html: str) -> dict | None:
+    def _get_selectors_from_ai(self, url: str, html: str) -> ScrapingConfig | None:
         """Ask AI to find CSS selectors by reading the HTML."""
 
         prompt = f"""You are analyzing HTML to find CSS selectors for web scraping.
@@ -145,66 +154,16 @@ IMPORTANT RULES:
 1. Only use class names and IDs that ACTUALLY appear in the HTML above
 2. Avoid selectors that would match navigation, menus, headers, or footer elements
 3. For headline: find h1/h2 INSIDE the article content, not in page navigation
-4. For body_text: find paragraphs that are part of the article, not ads/sidebars/upcoming events
-
-Return as JSON in this exact format:
-{{
-  "headline": {{
-    "primary": "h1.actual-class-here",
-    "fallback": "h1",
-    "tertiary": "h2"
-  }},
-  "author": {{
-    "primary": "a[href*='author']",
-    "fallback": ".byline",
-    "tertiary": "NA"
-  }},
-  "date": {{
-    "primary": "time.date-class",
-    "fallback": "time",
-    "tertiary": ".published"
-  }},
-  "body_text": {{
-    "primary": "article.content p",
-    "fallback": "article p",
-    "tertiary": "p"
-  }},
-  "related_content": {{
-    "primary": "aside.related a",
-    "fallback": ".sidebar a",
-    "tertiary": "NA"
-  }}
-}}
-
-Return ONLY valid JSON, no markdown code blocks, no explanations."""
+4. For body_text: find paragraphs that are part of the article, not ads/sidebars/upcoming events"""
 
         try:
-            response = self.llm.invoke(prompt)
-            result_text = response.content
-
-            # Clean up response
-            result_text = result_text.strip()
-
-            # Remove markdown code blocks if present
-            if result_text.startswith('```json'):
-                result_text = result_text[7:]
-            elif result_text.startswith('```'):
-                result_text = result_text[3:]
-
-            if result_text.endswith('```'):
-                result_text = result_text[:-3]
-
-            result_text = result_text.strip()
-
-            # Parse JSON
-            selectors = json.loads(result_text)
+            response: ScrapingConfig = self.client.chat.completions.create(
+                model=self.llm.model_name, response_model=ScrapingConfig, messages=[{'role': 'user', 'content': prompt}]
+            )
 
             self.console.print('[success]  ✓ AI found selectors[/success]')
-            return selectors
+            return response
 
-        except json.JSONDecodeError as e:
-            self.console.print(f'[danger]  ✗ AI returned invalid JSON: {e}[/danger]')
-            return None
         except Exception as e:
             self.console.print(f'[danger]  ✗ Error getting selectors from AI: {e}[/danger]')
             return None
