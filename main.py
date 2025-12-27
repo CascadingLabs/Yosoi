@@ -13,6 +13,7 @@ Usage:
 import argparse
 import os
 import sys
+from typing import Any
 
 import requests
 from dotenv import load_dotenv
@@ -75,11 +76,57 @@ class SelectorDiscoveryPipeline:
 
         # Check if selectors already exist
         domain = self.storage._extract_domain(url)
+
         if not force and self.storage.selector_exists(domain):
-            self.console.print(
-                f'[success]✓ Selectors already exist for {domain}[/success] [dim](use --force to re-discover)[/dim]'
-            )
-            return True
+            self.console.print(f'[info]ℹ Selectors already exist for {domain}, validating...[/info]')
+
+            # Load existing selectors
+            try:
+                existing_selectors = self.storage.load_selectors(domain)
+
+                if existing_selectors:
+                    # Validate existing selectors
+                    with self.console.status('[step]Validating existing selectors...[/step]', spinner='bouncingBall'):
+                        validated = self.validator.validate_selectors(url, existing_selectors)
+
+                    # Count failures
+                    failed_count = len(existing_selectors) - len(validated)
+                    total_count = len(existing_selectors)
+
+                    self.console.print(
+                        f'[info]Validation: {len(validated)}/{total_count} selectors passed, '
+                        f'{failed_count} failed[/info]'
+                    )
+
+                    # Check if too many failed
+                    required_fields = {'headline', 'author', 'related_content'}  # Core fields only
+                    validated_required = set(validated.keys()) & required_fields
+                    missing_required = required_fields - validated_required
+
+                    if missing_required:
+                        self.console.print(
+                            f'[danger]✗ Missing required fields: {missing_required} - not saving[/danger]'
+                        )
+                        return False
+
+                    # Optional fields missing is OK
+                    optional_fields = {'date', 'body_text'}
+                    missing_optional = optional_fields - set(validated.keys())
+                    if missing_optional:
+                        self.console.print(f'[warning]⚠ Missing optional fields: {missing_optional}[/warning]')
+
+                    # If 4 or more selectors failed, re-discover
+                    if failed_count >= 2:
+                        self.console.print(f'[warning]⚠ {failed_count} selectors failed - re-discovering...[/warning]')
+                    else:
+                        self.console.print(
+                            '[success]✓ Existing selectors are valid (use --force to re-discover)[/success]'
+                        )
+                        return True
+                else:
+                    pass
+            except Exception as e:
+                self.console.print(f'[warning]⚠ Error loading existing selectors: {e}[/warning]')
 
         # Step 1: Fetch HTML
         html = None
@@ -90,7 +137,7 @@ class SelectorDiscoveryPipeline:
             return False
 
         # Step 2: Discover selectors with AI
-        selectors = None
+        selectors: dict[str, Any] | None = None
         with self.console.status('[step]Step 2: AI analyzing HTML...[/step]', spinner='earth'):
             selectors = self.discovery.discover_from_html(url, html)
 
@@ -101,7 +148,6 @@ class SelectorDiscoveryPipeline:
         self.console.print(f'[success]✓ Discovered selectors for {len(selectors)} fields[/success]')
 
         # Step 3: Validate selectors
-        validated = None
         with self.console.status('[step]Step 3: Validating selectors...[/step]', spinner='bouncingBall'):
             validated = self.validator.validate_selectors(url, selectors)
 
@@ -110,6 +156,12 @@ class SelectorDiscoveryPipeline:
             return False
 
         self.console.print(f'[success]✓ Validated {len(validated)}/{len(selectors)} fields[/success]')
+
+        # Check if too many failed
+        failed_count = len(selectors) - len(validated)
+        if failed_count >= 2:
+            self.console.print(f'[danger]✗ {failed_count} fields failed - not saving[/danger]')
+            return False
 
         # Step 4: Save selectors
         self.storage.save_selectors(url, validated)
@@ -185,11 +237,39 @@ class SelectorDiscoveryPipeline:
 
 
 def load_urls_from_file(filepath: str) -> list:
-    """Load URLs from a text file (one per line)."""
+    """
+    Load URLs from a text file (one per line) or JSON file.
+
+    Supports JSON formats:
+    - Array of objects: [{"url": "..."}, {"url": "..."}]
+    - Object with urls array: {"urls": [...]}
+    """
     try:
-        with open(filepath) as f:
-            urls = [line.strip() for line in f if line.strip() and not line.startswith('#')]
-        return urls
+        # Check if it's a JSON file
+        if filepath.endswith('.json'):
+            import json
+
+            with open(filepath) as f:
+                data = json.load(f)
+
+                # Handle array of objects with "url" field: [{"url": "..."}, ...]
+                if isinstance(data, list):
+                    urls = [item.get('url', '') for item in data if isinstance(item, dict)]
+                    return [url.strip() for url in urls if url.strip()]
+
+                # Handle object with "urls" field: {"urls": [...]}
+                if isinstance(data, dict):
+                    urls_data: str | list[Any] = data.get('urls', [])
+                    if isinstance(urls_data, str):
+                        urls = [urls_data.strip()]
+                    return [url.strip() for url in urls if url.strip()]
+
+                return []
+        else:
+            # Handle as text file (one URL per line)
+            with open(filepath) as f:
+                urls = [line.strip() for line in f if line.strip() and not line.startswith('#')]
+            return urls
     except Exception as e:
         print(f'Error loading URLs from file: {e}')
         return []
@@ -210,6 +290,7 @@ def main():
     parser = argparse.ArgumentParser(description='Discover CSS selectors from web pages using AI')
     parser.add_argument('--url', type=str, help='Single URL to process')
     parser.add_argument('--file', type=str, help='File containing URLs (one per line)')
+    parser.add_argument('--limit', type=int, help='Limit number of URLs to process from file')
     parser.add_argument('--force', action='store_true', help='Force re-discovery even if selectors exist')
     parser.add_argument('--summary', action='store_true', help='Show summary of saved selectors')
 
@@ -235,6 +316,12 @@ def main():
         if not urls:
             print(f'No valid URLs found in {args.file}')
             sys.exit(1)
+
+        # Apply limit if specified
+        if args.limit and args.limit > 0:
+            original_count = len(urls)
+            urls = urls[: args.limit]
+            print(f'Limiting to {len(urls)} of {original_count} URLs from file')
     else:
         # Default test URLs
         urls = [

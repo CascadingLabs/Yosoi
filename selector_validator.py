@@ -38,6 +38,26 @@ class SelectorValidator:
             for field, field_selectors in selectors.items():
                 self.console.print(f'\n  Testing {field}:')
 
+                # Ensure field_selectors is a dict with primary/fallback/tertiary
+                if not isinstance(field_selectors, dict):
+                    # Handle old format (string) or any other unexpected format
+                    self.console.print(f'    [dim]Converting {type(field_selectors).__name__} to dict format[/dim]')
+                    if isinstance(field_selectors, str):
+                        field_selectors = {'primary': field_selectors, 'fallback': 'NA', 'tertiary': 'NA'}
+                    else:
+                        # Skip if we don't know what this is
+                        self.console.print(f'    [warning]⚠ Skipping unknown format: {field_selectors}[/warning]')
+                        continue
+
+                # Ensure it has the required keys
+                if not all(k in field_selectors for k in ['primary', 'fallback', 'tertiary']):
+                    # Add missing keys
+                    field_selectors = {
+                        'primary': field_selectors.get('primary', 'NA'),
+                        'fallback': field_selectors.get('fallback', 'NA'),
+                        'tertiary': field_selectors.get('tertiary', 'NA'),
+                    }
+
                 working_selector = self._find_working_selector(soup, field, field_selectors)
 
                 if working_selector:
@@ -46,7 +66,10 @@ class SelectorValidator:
             return validated
 
         except Exception as e:
+            import traceback
+
             self.console.print(f'[danger]  ✗ Validation error: {e}[/danger]')
+            self.console.print(f'[dim]Traceback:\n{traceback.format_exc()}[/dim]')
             return {}
 
     def _find_working_selector(self, soup: BeautifulSoup, field: str, field_selectors: dict) -> dict | None:
@@ -81,10 +104,9 @@ class SelectorValidator:
         # Return the best working selector
         if best_selector:
             result = {
-                'primary': best_selector,
-                'fallback': field_selectors.get('fallback'),
-                'tertiary': field_selectors.get('tertiary'),
-                'working_priority': best_priority,
+                'primary': field_selectors.get('primary', 'NA'),
+                'fallback': field_selectors.get('fallback', 'NA'),
+                'tertiary': field_selectors.get('tertiary', 'NA'),
             }
             self.console.print(f"  → Using {best_priority} selector: '[cyan]{best_selector}[/cyan]'")
             return result

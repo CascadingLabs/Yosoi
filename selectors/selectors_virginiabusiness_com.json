@@ -5,18 +5,18 @@
     "tertiary": "h1"
   },
   "author": {
-    "primary": ".news-publish-info a[href*=\"author/\"]",
-    "fallback": ".news-publish-info a",
-    "tertiary": "a[href*=\"author/\"]"
+    "primary": ".news-publish-info a[href*=\"author\"]",
+    "fallback": "p a[href*=\"author\"]",
+    "tertiary": "a[href*=\"author\"]"
   },
   "date": {
     "primary": ".news-publish-info p",
-    "fallback": ".news-publish-info",
+    "fallback": "div.news-publish-info p",
     "tertiary": "p"
   },
   "body_text": {
     "primary": ".news-detail p",
-    "fallback": "div.news-detail > p",
+    "fallback": "div.news-detail p",
     "tertiary": "p"
   }
 }

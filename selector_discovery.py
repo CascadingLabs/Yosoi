@@ -4,6 +4,7 @@ selector_discovery.py
 AI-powered CSS selector discovery by reading raw HTML.
 """
 
+import json
 from typing import Any
 
 from bs4 import BeautifulSoup, Tag
@@ -42,7 +43,7 @@ class SelectorDiscovery:
         # Convert Pydantic object to dict
         selectors: dict[str, Any] | None = None
         if selectors_obj:
-            selectors = selectors_obj.model_dump()
+            selectors = json.loads(selectors_obj.model_dump_json())
         else:
             selectors = None
 
