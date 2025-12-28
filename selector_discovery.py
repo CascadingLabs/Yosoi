@@ -37,9 +37,6 @@ class SelectorDiscovery:
         # Extract clean HTML for analysis
         clean_html = self._extract_content_html(html)
 
-        # Ask AI to find selectors returns as ScrapingConfig
-        selectors_obj = self._get_selectors_from_ai(url, clean_html)
-
         # Convert Pydantic object to dict
         selectors: dict[str, Any] | None = None
         for attempt in range(1, max_retries + 1):
@@ -68,7 +65,7 @@ class SelectorDiscovery:
 
         # Use fallback if AI fails
         if not selectors or self._is_all_na(selectors):
-            self.console.print('[warning]  ⚠ AI returned no selectors, using fallback heuristics[/warning]')
+            self.console.print('[warning]  ⚠ All {max_retries} attempts failed, using fallback heuristics[/warning]')
             selectors = self.fallback_selectors
 
         return selectors
@@ -110,7 +107,6 @@ class SelectorDiscovery:
         main_content: Tag | None = None
         for selector in content_selectors:
             main_content = soup.select_one(selector)
-            main_content = soup.select_one(selector)
             if main_content:
                 self.console.print(f"  → Extracted content from '[cyan]{selector}[/cyan]'")
                 break
@@ -120,7 +116,6 @@ class SelectorDiscovery:
             divs = soup.find_all('div')
             if divs:
                 # Find div with most <p> tags
-                best_div = max(divs, key=lambda d: len(d.find_all('p')))
                 best_div = max(divs, key=lambda d: len(d.find_all('p')))
                 if len(best_div.find_all('p')) >= 3:
                     main_content = best_div
