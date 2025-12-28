@@ -25,7 +25,7 @@ dependencies = [
 dev = [
   "commitizen>=3.13",
   "mypy>=1.8",
-  "pre-commit>=3.6",
+  "prek>=0.2.25",
   "types-beautifulsoup4>=4.12",
   "types-requests>=2.31",
 ]
