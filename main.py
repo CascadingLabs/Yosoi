@@ -15,6 +15,7 @@ import os
 import sys
 from typing import Any
 
+import logfire
 import requests
 from dotenv import load_dotenv
 from rich.console import Console
@@ -72,121 +73,146 @@ class SelectorDiscoveryPipeline:
         Returns:
             True if successful, False otherwise
         """
-        self.console.print(Panel(f'[bold]Processing:[/bold] [underline]{url}[/underline]', border_style='blue'))
+        with logfire.span('process_url', url=url, force=force):
+            self.console.print(Panel(f'[bold]Processing:[/bold] [underline]{url}[/underline]', border_style='blue'))
 
-        # Check if selectors already exist
-        domain = self.storage._extract_domain(url)
+            # Check if selectors already exist
+            domain = self.storage._extract_domain(url)
 
-        if not force and self.storage.selector_exists(domain):
-            self.console.print(f'[info]ℹ Selectors already exist for {domain}, validating...[/info]')
+            if not force and self.storage.selector_exists(domain):
+                self.console.print(f'[info]ℹ Selectors already exist for {domain}, validating...[/info]')
 
-            # Load existing selectors
-            try:
-                existing_selectors = self.storage.load_selectors(domain)
+                # Load existing selectors
+                try:
+                    existing_selectors = self.storage.load_selectors(domain)
 
-                if existing_selectors:
-                    # Validate existing selectors
-                    with self.console.status('[step]Validating existing selectors...[/step]', spinner='bouncingBall'):
-                        validated = self.validator.validate_selectors(url, existing_selectors)
+                    if existing_selectors:
+                        with logfire.span('validate_existing_selectors', domain=domain):
+                            # Validate existing selectors
+                            with self.console.status(
+                                '[step]Validating existing selectors...[/step]', spinner='bouncingBall'
+                            ):
+                                validated = self.validator.validate_selectors(url, existing_selectors)
 
-                    # Count failures
-                    failed_count = len(existing_selectors) - len(validated)
-                    total_count = len(existing_selectors)
+                            # Count failures
+                            failed_count = len(existing_selectors) - len(validated)
+                            total_count = len(existing_selectors)
 
-                    self.console.print(
-                        f'[info]Validation: {len(validated)}/{total_count} selectors passed, '
-                        f'{failed_count} failed[/info]'
-                    )
+                            logfire.info(
+                                'Existing selectors validated',
+                                domain=domain,
+                                passed=len(validated),
+                                failed=failed_count,
+                                total=total_count,
+                            )
 
-                    # Check if too many failed
-                    required_fields = {'headline', 'author', 'related_content'}  # Core fields only
-                    validated_required = set(validated.keys()) & required_fields
-                    missing_required = required_fields - validated_required
+                            self.console.print(
+                                f'[info]Validation: {len(validated)}/{total_count} selectors passed, '
+                                f'{failed_count} failed[/info]'
+                            )
 
-                    if missing_required:
-                        self.console.print(
-                            f'[danger]✗ Missing required fields: {missing_required} - not saving[/danger]'
-                        )
-                        return False
+                            # Optional fields missing is OK
+                            optional_fields = {'date', 'body_text'}
+                            missing_optional = optional_fields - set(validated.keys())
+                            if missing_optional:
+                                self.console.print(f'[warning]⚠ Missing optional fields: {missing_optional}[/warning]')
 
-                    # Optional fields missing is OK
-                    optional_fields = {'date', 'body_text'}
-                    missing_optional = optional_fields - set(validated.keys())
-                    if missing_optional:
-                        self.console.print(f'[warning]⚠ Missing optional fields: {missing_optional}[/warning]')
+                            # If 4 or more selectors failed, re-discover
+                            if failed_count >= 2:
+                                self.console.print(
+                                    f'[warning]⚠ {failed_count} selectors failed - re-discovering...[/warning]'
+                                )
+                            else:
+                                self.console.print(
+                                    '[success]✓ Existing selectors are valid (use --force to re-discover)[/success]'
+                                )
+                                return True
+                except Exception as e:
+                    logfire.error('Error loading existing selectors', domain=domain, error=str(e))
+                    self.console.print(f'[warning]⚠ Error loading existing selectors: {e}[/warning]')
 
-                    # If 4 or more selectors failed, re-discover
-                    if failed_count >= 2:
-                        self.console.print(f'[warning]⚠ {failed_count} selectors failed - re-discovering...[/warning]')
-                    else:
-                        self.console.print(
-                            '[success]✓ Existing selectors are valid (use --force to re-discover)[/success]'
-                        )
-                        return True
-                else:
-                    pass
-            except Exception as e:
-                self.console.print(f'[warning]⚠ Error loading existing selectors: {e}[/warning]')
+            # Step 1: Fetch HTML
+            with logfire.span('fetch_html', url=url):
+                html = None
+                with self.console.status('[step]Step 1: Fetching HTML...[/step]', spinner='dots'):
+                    html = self._fetch_html(url)
 
-        # Step 1: Fetch HTML
-        html = None
-        with self.console.status('[step]Step 1: Fetching HTML...[/step]', spinner='dots'):
-            html = self._fetch_html(url)
+            if not html:
+                logfire.error('Failed to fetch HTML', url=url)
+                return False
 
-        if not html:
-            return False
+            # Step 2: Discover selectors with AI
+            with logfire.span('discovery_selectors', url=url):
+                selectors: dict[str, Any] | None = None
+                with self.console.status('[step]Step 2: AI analyzing HTML...[/step]', spinner='earth'):
+                    selectors = self.discovery.discover_from_html(url, html)
 
-        # Step 2: Discover selectors with AI
-        selectors: dict[str, Any] | None = None
-        with self.console.status('[step]Step 2: AI analyzing HTML...[/step]', spinner='earth'):
-            selectors = self.discovery.discover_from_html(url, html)
+            if not selectors:
+                logfire.error('Failed to discover selectors', url=url)
+                self.console.print('[danger]✗ Failed to discover selectors[/danger]')
+                return False
 
-        if not selectors:
-            self.console.print('[danger]✗ Failed to discover selectors[/danger]')
-            return False
+            logfire.info('Selectors discovered', url=url, field_count=len(selectors))
+            self.console.print(f'[success]✓ Discovered selectors for {len(selectors)} fields[/success]')
 
-        self.console.print(f'[success]✓ Discovered selectors for {len(selectors)} fields[/success]')
+            # Step 3: Validate selectors
+            with (
+                logfire.span('validate_selectors', url=url),
+                self.console.status('[step]Step 3: Validating selectors...[/step]', spinner='bouncingBall'),
+            ):
+                validated = self.validator.validate_selectors(url, selectors)
 
-        # Step 3: Validate selectors
-        with self.console.status('[step]Step 3: Validating selectors...[/step]', spinner='bouncingBall'):
-            validated = self.validator.validate_selectors(url, selectors)
+            if not validated:
+                logfire.error('No selectors validated', url=url)
+                self.console.print('[danger]✗ No selectors validated successfully[/danger]')
+                return False
 
-        if not validated:
-            self.console.print('[danger]✗ No selectors validated successfully[/danger]')
-            return False
+            self.console.print(f'[success]✓ Validated {len(validated)}/{len(selectors)} fields[/success]')
 
-        self.console.print(f'[success]✓ Validated {len(validated)}/{len(selectors)} fields[/success]')
+            # Check if too many failed
+            failed_count = len(selectors) - len(validated)
+            if failed_count >= 2:
+                logfire.warn('Too many validations failed', url=url, failed_count=failed_count)
+                self.console.print(f'[danger]✗ {failed_count} fields failed - not saving[/danger]')
+                return False
 
-        # Check if too many failed
-        failed_count = len(selectors) - len(validated)
-        if failed_count >= 2:
-            self.console.print(f'[danger]✗ {failed_count} fields failed - not saving[/danger]')
-            return False
+            # Step 4: Save selectors
+            with logfire.span('save_selectors', url=url, domain=domain):
+                self.storage.save_selectors(url, validated)
 
-        # Step 4: Save selectors
-        self.storage.save_selectors(url, validated)
+            logfire.info('Processing complete', url=url, domain=domain, fields_saved=len(validated))
 
-        return True
+            return True
 
     def process_urls(self, urls: list, force: bool = False):
         """Process multiple URLs."""
-        results: dict[str, list[str]] = {'successful': [], 'failed': []}
+        with logfire.span('process_urls', total=len(urls)):
+            results: dict[str, list[str]] = {'successful': [], 'failed': []}
 
-        for url in urls:
-            try:
-                success = self.process_url(url, force=force)
-                if success:
-                    results['successful'].append(url)
-                else:
+            for url in urls:
+                logfire.info('Processing URL', url=url)
+                try:
+                    success = self.process_url(url, force=force)
+                    if success:
+                        results['successful'].append(url)
+                    else:
+                        results['failed'].append(url)
+                except Exception as e:
+                    logfire.error('Error processing URL', url=url, error=str(e))
+                    self.console.print(f'[danger]✗ Error processing {url}: {e}[/danger]')
                     results['failed'].append(url)
-            except Exception as e:
-                self.console.print(f'[danger]✗ Error processing {url}: {e}[/danger]')
-                results['failed'].append(url)
 
-            self.console.print()  # Blank line between URLs
+                self.console.print()  # Blank line between URLs
 
-        # Print summary
-        self._print_summary(results)
+            logfire.info(
+                'Processing complete',
+                total=len(urls),
+                successful=len(results['successful']),
+                failed=len(results['failed']),
+            )
+
+            # Print summary
+            self._print_summary(results)
 
     def show_summary(self):
         """Show summary of all saved selectors."""
@@ -214,9 +240,13 @@ class SelectorDiscoveryPipeline:
         try:
             response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=15)
             response.raise_for_status()
+
+            logfire.info('HTML fetched', url=url, size_bytes=len(response.text), status_code=response.status_code)
+
             self.console.print(f'[success]✓ Fetched {len(response.text):,} characters of HTML[/success]')
             return response.text
         except Exception as e:
+            logfire.error('Failed to fetch HTML', url=url, error=str(e))
             self.console.print(f'[danger]✗ Failed to fetch HTML: {e}[/danger]')
             return None
 
@@ -285,6 +315,12 @@ def main():
         print('Error: GEMINI_KEY not found in environment variables.')
         print('Please create a .env file with your GEMINI_KEY.')
         sys.exit(1)
+
+    logfire_token = os.getenv('LOGFIRE_TOKEN')
+    if logfire_token:
+        logfire.configure(token=logfire_token, service_name='css-selector-discovery')
+    else:
+        print('LOGFIRE_TOKEN not set - skipping logfire setup')
 
     # Parse arguments
     parser = argparse.ArgumentParser(description='Discover CSS selectors from web pages using AI')

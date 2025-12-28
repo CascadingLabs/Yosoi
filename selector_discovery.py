@@ -23,7 +23,7 @@ class SelectorDiscovery:
         self.console = console or Console()
         self.fallback_selectors = self._get_fallback_selectors()
 
-    def discover_from_html(self, url: str, html: str) -> dict[str, Any]:
+    def discover_from_html(self, url: str, html: str, max_retries: int = 3) -> dict[str, Any]:
         """
         Main method: Extract relevant HTML and ask AI for selectors.
 
@@ -42,9 +42,28 @@ class SelectorDiscovery:
 
         # Convert Pydantic object to dict
         selectors: dict[str, Any] | None = None
-        if selectors_obj:
-            selectors = json.loads(selectors_obj.model_dump_json())
-        else:
+        for attempt in range(1, max_retries + 1):
+            if attempt > 1:
+                self.console.print(f'[warning]  🔄 Retry attempt {attempt}/{max_retries}...[/warning]')
+
+            # Ask AI to find selectors returns as ScrapingConfig
+            selectors_obj = self._get_selectors_from_ai(url, clean_html)
+
+            # Convert Pydantic object to dict
+            if selectors_obj:
+                selectors = json.loads(selectors_obj.model_dump_json())
+            else:
+                selectors = None
+
+            # Check if we got valid selectors
+            if selectors and not self._is_all_na(selectors):
+                if attempt > 1:
+                    self.console.print(f'[success]  ✓ Retry successful on attempt {attempt}[/success]')
+                break
+            if attempt < max_retries:
+                self.console.print(
+                    f'[warning]  ⚠ Attempt {attempt} failed - AI returned no/invalid selectors[/warning]'
+                )
             selectors = None
 
         # Use fallback if AI fails

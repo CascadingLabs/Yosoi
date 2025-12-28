@@ -1,0 +1,27 @@
+{
+  "headline": {
+    "primary": "h1.sd-title",
+    "fallback": ".sd-title",
+    "tertiary": "h1"
+  },
+  "author": {
+    "primary": "a.sd-username",
+    "fallback": ".sd-username",
+    "tertiary": "a[href*=\"/user/home/\"]"
+  },
+  "date": {
+    "primary": "span.sd-time",
+    "fallback": ".sd-time",
+    "tertiary": "span"
+  },
+  "body_text": {
+    "primary": "p.sd-text",
+    "fallback": ".sd-text",
+    "tertiary": "p"
+  },
+  "related_content": {
+    "primary": ".sd-tags a.sd-tag",
+    "fallback": ".sd-tags a",
+    "tertiary": "a[href*=\"/channel/\"]"
+  }
+}
