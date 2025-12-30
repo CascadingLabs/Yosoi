@@ -1,16 +1,16 @@
 {
   "headline": {
     "primary": "h1.news-page-header",
-    "fallback": "h1",
+    "fallback": ".newsdetail-wrapper h1",
     "tertiary": "h1"
   },
   "author": {
-    "primary": "a[href*='author']",
+    "primary": "a[href*=\"author\"]",
     "fallback": ".news-publish-info a",
     "tertiary": "a"
   },
   "date": {
-    "primary": ".news-publish-info p",
+    "primary": ".news-publish-info span",
     "fallback": ".news-publish-info",
     "tertiary": "time"
   },

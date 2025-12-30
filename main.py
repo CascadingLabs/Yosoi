@@ -31,7 +31,7 @@ from selector_validator import SelectorValidator
 class SelectorDiscoveryPipeline:
     """Main pipeline for discovering and saving CSS selectors."""
 
-    def __init__(self, ai_api_key: str, model_name: str):
+    def __init__(self, ai_api_key: str, model_name: str, provider: str = 'groq'):
         """Initialize the pipeline with API key."""
 
         # Initialize Rich Console
@@ -46,24 +46,14 @@ class SelectorDiscoveryPipeline:
         )
         self.console = Console(theme=self.custom_theme)
 
-        import instructor
-        from openai import OpenAI
-
-        # client = instructor.from_openai(
-        #    OpenAI(base_url='https://generativelanguage.googleapis.com/v1beta/openai/', api_key=ai_api_key),
-        #    mode=instructor.Mode.JSON,
-        # )
-        client = instructor.from_openai(
-            OpenAI(base_url='https://api.groq.com/openai/v1', api_key=ai_api_key),
-            mode=instructor.Mode.JSON,
-        )
-
         # Initialize components
-        self.discovery = SelectorDiscovery(model_name=model_name, client=client, console=self.console)
+        self.discovery = SelectorDiscovery(
+            model_name=model_name, api_key=ai_api_key, provider=provider, console=self.console
+        )
         self.validator = SelectorValidator(console=self.console)
         self.storage = SelectorStorage()
 
-    def process_url(self, url: str, force: bool = False) -> bool:
+    def process_url(self, url: str, force: bool = False, max_discovery_attempts: int = 2) -> bool:  # noqa: C901
         """
         Process a single URL: discover, validate, and save selectors.
 
@@ -118,54 +108,68 @@ class SelectorDiscoveryPipeline:
                             if missing_optional:
                                 self.console.print(f'[warning]⚠ Missing optional fields: {missing_optional}[/warning]')
 
-                            # If 4 or more selectors failed, re-discover
-                            if failed_count >= 2:
-                                self.console.print(
-                                    f'[warning]⚠ {failed_count} selectors failed - re-discovering...[/warning]'
-                                )
-                            else:
+                            # If 2 or fewer failed, keep existing selectors
+                            if failed_count < 2:
                                 self.console.print(
                                     '[success]✓ Existing selectors are valid (use --force to re-discover)[/success]'
                                 )
                                 return True
+
+                            # If 2+ failed, continue to re-discovery below
+                            self.console.print(
+                                f'[warning]⚠ {failed_count} selectors failed - re-discovering...[/warning]'
+                            )
                 except Exception as e:
                     logfire.error('Error loading existing selectors', domain=domain, error=str(e))
                     self.console.print(f'[warning]⚠ Error loading existing selectors: {e}[/warning]')
 
+            # Discovery loop with retries
+        for attempt in range(1, max_discovery_attempts + 1):
+            if attempt > 1:
+                self.console.print(
+                    f'\n[warning]🔄 Discovery retry attempt {attempt}/{max_discovery_attempts}...[/warning]\n'
+                )
+
             # Step 1: Fetch HTML
-            with logfire.span('fetch_html', url=url):
+            with logfire.span('fetch_html', url=url, attempt=attempt):
                 html = None
                 with self.console.status('[step]Step 1: Fetching HTML...[/step]', spinner='dots'):
                     html = self._fetch_html(url)
 
             if not html:
-                logfire.error('Failed to fetch HTML', url=url)
+                logfire.error('Failed to fetch HTML', url=url, attempt=attempt)
+                if attempt < max_discovery_attempts:
+                    continue
                 return False
 
             # Step 2: Discover selectors with AI
-            with logfire.span('discovery_selectors', url=url):
+            with logfire.span('discovery_selectors', url=url, attempt=attempt):
                 selectors: dict[str, Any] | None = None
                 with self.console.status('[step]Step 2: AI analyzing HTML...[/step]', spinner='earth'):
                     selectors = self.discovery.discover_from_html(url, html)
 
             if not selectors:
-                logfire.error('Failed to discover selectors', url=url)
+                logfire.error('Failed to discover selectors', url=url, attempt=attempt)
                 self.console.print('[danger]✗ Failed to discover selectors[/danger]')
+                if attempt < max_discovery_attempts:
+                    continue
                 return False
 
-            logfire.info('Selectors discovered', url=url, field_count=len(selectors))
+            logfire.info('Selectors discovered', url=url, field_count=len(selectors), attempt=attempt)
             self.console.print(f'[success]✓ Discovered selectors for {len(selectors)} fields[/success]')
 
             # Step 3: Validate selectors
             with (
-                logfire.span('validate_selectors', url=url),
+                logfire.span('validate_selectors', url=url, attempt=attempt),
                 self.console.status('[step]Step 3: Validating selectors...[/step]', spinner='bouncingBall'),
             ):
                 validated = self.validator.validate_selectors(url, selectors)
 
             if not validated:
-                logfire.error('No selectors validated', url=url)
+                logfire.error('No selectors validated', url=url, attempt=attempt)
                 self.console.print('[danger]✗ No selectors validated successfully[/danger]')
+                if attempt < max_discovery_attempts:
+                    continue
                 return False
 
             self.console.print(f'[success]✓ Validated {len(validated)}/{len(selectors)} fields[/success]')
@@ -173,17 +177,27 @@ class SelectorDiscoveryPipeline:
             # Check if too many failed
             failed_count = len(selectors) - len(validated)
             if failed_count >= 2:
-                logfire.warn('Too many validations failed', url=url, failed_count=failed_count)
-                self.console.print(f'[danger]✗ {failed_count} fields failed - not saving[/danger]')
+                logfire.warn('Too many validations failed', url=url, failed_count=failed_count, attempt=attempt)
+                self.console.print(f'[warning]⚠ {failed_count} fields failed[/warning]')
+
+                # Retry if we have attempts left
+                if attempt < max_discovery_attempts:
+                    self.console.print('[warning]Will retry discovery...[/warning]')
+                    continue
+
+                # Out of retries
+                self.console.print('[danger]✗ Out of retry attempts - not saving[/danger]')
                 return False
 
-            # Step 4: Save selectors
+            # Success! Save selectors
             with logfire.span('save_selectors', url=url, domain=domain):
                 self.storage.save_selectors(url, validated)
 
             logfire.info('Processing complete', url=url, domain=domain, fields_saved=len(validated))
-
             return True
+
+        # Should never reach here
+        return False
 
     def process_urls(self, urls: list, force: bool = False):
         """Process multiple URLs."""
@@ -323,6 +337,11 @@ def main():
 
     USE_GROQ = True
 
+    if USE_GROQ:
+        pipeline = SelectorDiscoveryPipeline(groq_api_key, 'llama-3.3-70b-versatile', provider='groq')
+    else:
+        pipeline = SelectorDiscoveryPipeline(gemini_api_key, 'gemini-2.0-flash-exp', provider='gemini')
+
     logfire_token = os.getenv('LOGFIRE_TOKEN')
     if logfire_token:
         logfire.configure(token=logfire_token, service_name='css-selector-discovery')
@@ -338,12 +357,6 @@ def main():
     parser.add_argument('--summary', action='store_true', help='Show summary of saved selectors')
 
     args = parser.parse_args()
-
-    # Initialize pipeline
-    if USE_GROQ:
-        pipeline = SelectorDiscoveryPipeline(groq_api_key, 'llama-3.3-70b-versatile')
-    else:
-        pipeline = SelectorDiscoveryPipeline(gemini_api_key, 'gemini-2.5-flash')
 
     # Handle summary request
     if args.summary:

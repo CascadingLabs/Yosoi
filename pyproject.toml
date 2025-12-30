@@ -10,10 +10,10 @@ classifiers = [
 
 dependencies = [
   "beautifulsoup4>=4.12",
-  "instructor>=1",
   "logfire>=4.16",
   "openai>=1",
   "pydantic>=2",
+  "pydantic-ai[openai]>=0.0.16",
   "python-dotenv>=1.2.1",
   "requests>=2.31",
   "rich>=14.2",
@@ -101,6 +101,24 @@ module = [
   "toonify.*",
 ]
 ignore_missing_imports = true
+
+[tool.gitleaks]
+# Configuration for Gitleaks moved to pyproject.toml
+
+[[tool.gitleaks.rules]]
+id = "generic-api-key"
+description = "Generic API Key"
+regex = '''(?i)(?:key|api|token|secret|password)[\s]*[=:>]{1}[\s]*['"]?([a-z0-9_\-]{20,})['"]?'''
+entropy = 4.5
+
+[[tool.gitleaks.allowlist]]
+paths = [
+  '''.*\.md$''',
+]
+regexes = [
+  '''llama-3\.3-70b-versatile''', # Model name, not a secret
+  '''gemini-2\.0-flash-exp''',    # Model name, not a secret
+]
 
 [tool.commitizen]
 name = "cz_conventional_commits"

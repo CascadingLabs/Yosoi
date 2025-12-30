@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: check-yaml
       - id: check-toml
@@ -13,7 +13,7 @@ repos:
       - id: trailing-whitespace
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.3
+    rev: v0.14.10
     hooks:
       - id: ruff
         args: [ --fix ]
@@ -22,7 +22,7 @@ repos:
         exclude: ^old_versions/
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.13.0
+    rev: v1.19.1
     hooks:
       - id: mypy
         additional_dependencies:
@@ -33,7 +33,7 @@ repos:
         files: ^(main|selector_.*).py$
 
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.5.11
+    rev: 0.9.21
     hooks:
       - id: uv-lock
 
@@ -41,14 +41,15 @@ repos:
     rev: v8.30.0
     hooks:
       - id: gitleaks
+        args: ['-c', 'pyproject.toml', '-v']
 
   - repo: https://github.com/tox-dev/pyproject-fmt
-    rev: v2.8.0
+    rev: v2.11.1
     hooks:
       - id: pyproject-fmt
 
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: v4.1.0
+    rev: v4.11.0
     hooks:
       - id: commitizen
         stages: [commit-msg]

@@ -1,17 +1,17 @@
 {
   "headline": {
     "primary": ".cover-title",
-    "fallback": ".cover-headline h1",
+    "fallback": "h1",
     "tertiary": "h1"
   },
   "author": {
     "primary": ".byline-attr-author",
-    "fallback": ".byline-attr div",
-    "tertiary": ".byline"
+    "fallback": ".byline-attr",
+    "tertiary": "NA"
   },
   "date": {
     "primary": ".byline-attr-meta-time",
-    "fallback": ".byline time",
+    "fallback": "time",
     "tertiary": "time"
   },
   "body_text": {

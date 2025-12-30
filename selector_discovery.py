@@ -8,6 +8,11 @@ import json
 from typing import Any
 
 from bs4 import BeautifulSoup, Tag
+from pydantic_ai import Agent
+from pydantic_ai.models.google import GoogleModel
+from pydantic_ai.models.groq import GroqModel
+from pydantic_ai.providers.google import GoogleProvider
+from pydantic_ai.providers.groq import GroqProvider
 from rich.console import Console
 
 from models import ScrapingConfig
@@ -16,11 +21,28 @@ from models import ScrapingConfig
 class SelectorDiscovery:
     """Discovers CSS selectors using AI to read HTML."""
 
-    def __init__(self, model_name: str, client, console: Console = None):
+    def __init__(self, model_name: str, api_key: str, provider: str = 'groq', console: Console = None):
         self.model_name = model_name
-        self.client = client
+        self.provider = provider
         self.console = console or Console()
         self.fallback_selectors = self._get_fallback_selectors()
+
+        # Set appropriate API key and model string based on provider
+        if provider == 'groq':
+            model = GroqModel(model_name, provider=GroqProvider(api_key=api_key))
+        elif provider == 'gemini':
+            model = GoogleModel(model_name, provider=GoogleProvider(api_key=api_key))
+        else:
+            raise ValueError(f"Unknown provider: {provider}. Use 'groq' or 'gemini'")
+
+        self.agent: Agent[None, ScrapingConfig] = Agent(
+            model,
+            output_type=ScrapingConfig,
+            system_prompt=(
+                'You are analyzing HTML to find CSS selectors for web scraping. '
+                'Return selectors that actually exist in the provided HTML.'
+            ),
+        )
 
     def discover_from_html(self, url: str, html: str, max_retries: int = 3) -> dict[str, Any]:
         """
@@ -48,14 +70,12 @@ class SelectorDiscovery:
             # Convert Pydantic object to dict
             if selectors_obj:
                 selectors = json.loads(selectors_obj.model_dump_json())
-            else:
-                selectors = None
 
-            # Check if we got valid selectors
-            if selectors and not self._is_all_na(selectors):
-                if attempt > 1:
-                    self.console.print(f'[success]  ✓ Retry successful on attempt {attempt}[/success]')
-                break
+                if selectors and not self._is_all_na(selectors):
+                    if attempt > 1:
+                        self.console.print(f'[success]  ✓ Retry successful on attempt {attempt}[/success]')
+                    break
+
             if attempt < max_retries:
                 self.console.print(
                     f'[warning]  ⚠ Attempt {attempt} failed - AI returned no/invalid selectors[/warning]'
@@ -138,9 +158,7 @@ class SelectorDiscovery:
     def _get_selectors_from_ai(self, url: str, html: str) -> ScrapingConfig | None:
         """Ask AI to find CSS selectors by reading the HTML."""
 
-        prompt = f"""You are analyzing HTML to find CSS selectors for web scraping.
-
-CRITICAL INSTRUCTIONS:
+        prompt = f"""CRITICAL INSTRUCTIONS:
 1. Look at the ACTUAL class names, IDs, and attributes in the HTML below
 2. Do NOT guess or make up common class names unless they actually appear
 3. Return ONLY selectors that exist in the provided HTML
@@ -171,15 +189,15 @@ IMPORTANT RULES:
 4. For body_text: find paragraphs that are part of the article, not ads/sidebars/upcoming events"""
 
         try:
-            response: ScrapingConfig = self.client.chat.completions.create(
-                model=self.model_name, response_model=ScrapingConfig, messages=[{'role': 'user', 'content': prompt}]
-            )
-
+            result = self.agent.run_sync(prompt)
             self.console.print('[success]  ✓ AI found selectors[/success]')
-            return response
+            return result.output  # type: ignore[no-any-return]
 
         except Exception as e:
             self.console.print(f'[danger]  ✗ Error getting selectors from AI: {e}[/danger]')
+            import traceback
+
+            self.console.print(f'[dim]{traceback.format_exc()}[/dim]')
             return None
 
     def _is_all_na(self, selectors: dict) -> bool:
