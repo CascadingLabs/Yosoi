@@ -1,22 +1,22 @@
 {
   "headline": {
     "primary": "h1.news-page-header",
-    "fallback": ".newsdetail-wrapper h1",
+    "fallback": ".news-page-header",
     "tertiary": "h1"
   },
   "author": {
-    "primary": "a[href*=\"author\"]",
+    "primary": ".news-publish-info a",
     "fallback": ".news-publish-info a",
     "tertiary": "a"
   },
   "date": {
-    "primary": ".news-publish-info span",
+    "primary": ".news-publish-info p",
     "fallback": ".news-publish-info",
-    "tertiary": "time"
+    "tertiary": "NA"
   },
   "body_text": {
     "primary": ".news-detail p",
-    "fallback": ".newsdetail-wrapper p",
+    "fallback": ".news-detail",
     "tertiary": "p"
   }
 }

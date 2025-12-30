@@ -335,7 +335,7 @@ def main():
         print('Error: GROQ_KEY not found in environment variables')
         sys.exit(1)
 
-    USE_GROQ = True
+    USE_GROQ = False
 
     if USE_GROQ:
         pipeline = SelectorDiscoveryPipeline(groq_api_key, 'llama-3.3-70b-versatile', provider='groq')
