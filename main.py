@@ -31,7 +31,7 @@ from selector_validator import SelectorValidator
 class SelectorDiscoveryPipeline:
     """Main pipeline for discovering and saving CSS selectors."""
 
-    def __init__(self, gemini_api_key: str):
+    def __init__(self, ai_api_key: str, model_name: str):
         """Initialize the pipeline with API key."""
 
         # Initialize Rich Console
@@ -46,19 +46,20 @@ class SelectorDiscoveryPipeline:
         )
         self.console = Console(theme=self.custom_theme)
 
-        # Store model name
-        self.llm = type('LLM', (), {'model_name': 'gemini-2.5-flash'})()
-
         import instructor
         from openai import OpenAI
 
+        # client = instructor.from_openai(
+        #    OpenAI(base_url='https://generativelanguage.googleapis.com/v1beta/openai/', api_key=ai_api_key),
+        #    mode=instructor.Mode.JSON,
+        # )
         client = instructor.from_openai(
-            OpenAI(base_url='https://generativelanguage.googleapis.com/v1beta/openai/', api_key=gemini_api_key),
+            OpenAI(base_url='https://api.groq.com/openai/v1', api_key=ai_api_key),
             mode=instructor.Mode.JSON,
         )
 
         # Initialize components
-        self.discovery = SelectorDiscovery(llm_model=self.llm, client=client, console=self.console)
+        self.discovery = SelectorDiscovery(model_name=model_name, client=client, console=self.console)
         self.validator = SelectorValidator(console=self.console)
         self.storage = SelectorStorage()
 
@@ -312,9 +313,15 @@ def main():
 
     gemini_api_key = os.getenv('GEMINI_KEY')
     if not gemini_api_key:
-        print('Error: GEMINI_KEY not found in environment variables.')
-        print('Please create a .env file with your GEMINI_KEY.')
+        print('Error: GEMINI_KEY not found in environment variables')
         sys.exit(1)
+
+    groq_api_key = os.getenv('GROQ_KEY')
+    if not groq_api_key:
+        print('Error: GROQ_KEY not found in environment variables')
+        sys.exit(1)
+
+    USE_GROQ = True
 
     logfire_token = os.getenv('LOGFIRE_TOKEN')
     if logfire_token:
@@ -333,7 +340,10 @@ def main():
     args = parser.parse_args()
 
     # Initialize pipeline
-    pipeline = SelectorDiscoveryPipeline(gemini_api_key)
+    if USE_GROQ:
+        pipeline = SelectorDiscoveryPipeline(gemini_api_key, 'gemini-2.5-flash')
+    else:
+        pipeline = SelectorDiscoveryPipeline(groq_api_key, 'llama-3.3-70b-versatile')
 
     # Handle summary request
     if args.summary:

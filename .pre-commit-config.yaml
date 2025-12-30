@@ -41,6 +41,7 @@ repos:
     rev: v8.30.0
     hooks:
       - id: gitleaks
+
   - repo: https://github.com/tox-dev/pyproject-fmt
     rev: v2.8.0
     hooks:

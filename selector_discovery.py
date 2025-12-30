@@ -8,7 +8,6 @@ import json
 from typing import Any
 
 from bs4 import BeautifulSoup, Tag
-from langchain_google_genai import ChatGoogleGenerativeAI
 from rich.console import Console
 
 from models import ScrapingConfig
@@ -17,8 +16,8 @@ from models import ScrapingConfig
 class SelectorDiscovery:
     """Discovers CSS selectors using AI to read HTML."""
 
-    def __init__(self, llm_model: ChatGoogleGenerativeAI, client, console: Console = None):
-        self.llm = llm_model
+    def __init__(self, model_name: str, client, console: Console = None):
+        self.model_name = model_name
         self.client = client
         self.console = console or Console()
         self.fallback_selectors = self._get_fallback_selectors()
@@ -41,7 +40,7 @@ class SelectorDiscovery:
         selectors: dict[str, Any] | None = None
         for attempt in range(1, max_retries + 1):
             if attempt > 1:
-                self.console.print(f'[warning]  🔄 Retry attempt {attempt}/{max_retries}...[/warning]')
+                self.console.print(f'[warning]  Retry attempt {attempt}/{max_retries}...[/warning]')
 
             # Ask AI to find selectors returns as ScrapingConfig
             selectors_obj = self._get_selectors_from_ai(url, clean_html)
@@ -173,7 +172,7 @@ IMPORTANT RULES:
 
         try:
             response: ScrapingConfig = self.client.chat.completions.create(
-                model=self.llm.model_name, response_model=ScrapingConfig, messages=[{'role': 'user', 'content': prompt}]
+                model=self.model_name, response_model=ScrapingConfig, messages=[{'role': 'user', 'content': prompt}]
             )
 
             self.console.print('[success]  ✓ AI found selectors[/success]')
