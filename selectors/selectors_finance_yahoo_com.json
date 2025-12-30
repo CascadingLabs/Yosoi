@@ -1,22 +1,22 @@
 {
   "headline": {
-    "primary": "h1.cover-title",
-    "fallback": ".cover-title",
+    "primary": ".cover-title",
+    "fallback": ".cover-headline h1",
     "tertiary": "h1"
   },
   "author": {
     "primary": ".byline-attr-author",
-    "fallback": "div.byline-attr-author",
-    "tertiary": "div"
+    "fallback": ".byline-attr div",
+    "tertiary": ".byline"
   },
   "date": {
-    "primary": "time.byline-attr-meta-time",
-    "fallback": ".byline-attr-meta-time",
+    "primary": ".byline-attr-meta-time",
+    "fallback": ".byline time",
     "tertiary": "time"
   },
   "body_text": {
-    "primary": "p.yf-7hmkaz",
-    "fallback": ".body[data-testid=\"article-body\"] p",
+    "primary": ".bodyItems-wrapper p",
+    "fallback": ".body p",
     "tertiary": "p"
   }
 }

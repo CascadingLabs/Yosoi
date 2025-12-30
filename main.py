@@ -341,9 +341,9 @@ def main():
 
     # Initialize pipeline
     if USE_GROQ:
-        pipeline = SelectorDiscoveryPipeline(gemini_api_key, 'gemini-2.5-flash')
-    else:
         pipeline = SelectorDiscoveryPipeline(groq_api_key, 'llama-3.3-70b-versatile')
+    else:
+        pipeline = SelectorDiscoveryPipeline(gemini_api_key, 'gemini-2.5-flash')
 
     # Handle summary request
     if args.summary:
