@@ -7,6 +7,7 @@ AI-powered CSS selector discovery by reading raw HTML.
 import json
 from typing import Any
 
+import logfire
 from bs4 import BeautifulSoup, Tag
 from pydantic_ai import Agent
 from pydantic_ai.models.google import GoogleModel
@@ -16,7 +17,12 @@ from pydantic_ai.providers.groq import GroqProvider
 from rich.console import Console
 
 from models import ScrapingConfig
+from services import configure_logfire
 
+# 1. Configure Logfire and instrument Pydantic
+# This automatically traces Pydantic model validation and Pydantic AI agents
+configure_logfire()
+logfire.instrument_pydantic()
 
 class SelectorDiscovery:
     """Discovers CSS selectors using AI to read HTML."""
@@ -44,51 +50,61 @@ class SelectorDiscovery:
             ),
         )
 
+    # 2. Instrument the main entry point. 
+    # extract_args=False prevents sending the massive raw HTML string to Logfire logs.
+    @logfire.instrument("discover_selectors", extract_args=False)
     def discover_from_html(self, url: str, html: str, max_retries: int = 3) -> dict[str, Any]:
         """
         Main method: Extract relevant HTML and ask AI for selectors.
-
-        Args:
-            url: The URL being analyzed
-            html: Raw HTML content
-
-        Returns:
-            Dict of selectors organized by field
         """
+        # Manually log the URL since we disabled auto-arg extraction
+        logfire.info("Starting discovery for {url}", url=url)
+
         # Extract clean HTML for analysis
         clean_html = self._extract_content_html(html)
 
         # Convert Pydantic object to dict
         selectors: dict[str, Any] | None = None
+        
         for attempt in range(1, max_retries + 1):
-            if attempt > 1:
-                self.console.print(f'[warning]  Retry attempt {attempt}/{max_retries}...[/warning]')
+            # Create a span for each retry attempt to group them in the UI
+            with logfire.span(f"attempt_{attempt}"):
+                if attempt > 1:
+                    msg = f"Retry attempt {attempt}/{max_retries}..."
+                    self.console.print(f'[warning]  {msg}[/warning]')
+                    logfire.warn(msg)
 
-            # Ask AI to find selectors returns as ScrapingConfig
-            selectors_obj = self._get_selectors_from_ai(url, clean_html)
+                # Ask AI to find selectors returns as ScrapingConfig
+                selectors_obj = self._get_selectors_from_ai(url, clean_html)
 
-            # Convert Pydantic object to dict
-            if selectors_obj:
-                selectors = json.loads(selectors_obj.model_dump_json())
+                # Convert Pydantic object to dict
+                if selectors_obj:
+                    selectors = json.loads(selectors_obj.model_dump_json())
 
-                if selectors and not self._is_all_na(selectors):
-                    if attempt > 1:
-                        self.console.print(f'[success]  ✓ Retry successful on attempt {attempt}[/success]')
-                    break
+                    if selectors and not self._is_all_na(selectors):
+                        if attempt > 1:
+                            self.console.print(f'[success]  ✓ Retry successful on attempt {attempt}[/success]')
+                        
+                        logfire.info("Selectors found successfully", selectors=selectors)
+                        break
 
-            if attempt < max_retries:
-                self.console.print(
-                    f'[warning]  ⚠ Attempt {attempt} failed - AI returned no/invalid selectors[/warning]'
-                )
-            selectors = None
+                if attempt < max_retries:
+                    self.console.print(
+                        f'[warning]  ⚠ Attempt {attempt} failed - AI returned no/invalid selectors[/warning]'
+                    )
+                selectors = None
 
         # Use fallback if AI fails
         if not selectors or self._is_all_na(selectors):
-            self.console.print('[warning]  ⚠ All {max_retries} attempts failed, using fallback heuristics[/warning]')
+            self.console.print(f'[warning]  ⚠ All {max_retries} attempts failed, using fallback heuristics[/warning]')
+            logfire.error("All attempts failed, using fallback", url=url)
             selectors = self.fallback_selectors
 
         return selectors
 
+    # 3. Instrument the CPU-bound parsing logic
+    # This helps you see how much time is spent cleaning HTML vs waiting for AI
+    @logfire.instrument("bs4_extract_content", extract_args=False)
     def _extract_content_html(self, html: str) -> str:
         """Extract the main content area from HTML."""
         soup = BeautifulSoup(html, 'html.parser')
@@ -108,19 +124,9 @@ class SelectorDiscovery:
 
         # Try to find main content area (in priority order)
         content_selectors = [
-            'article',
-            'main',
-            '[role="main"]',
-            '.post',
-            '.entry',
-            '.article',
-            '.content',
-            '#content',
-            '.article-content',
-            '.post-content',
-            '.entry-content',
-            '#main-content',
-            '.main-content',
+            'article', 'main', '[role="main"]', '.post', '.entry', '.article',
+            '.content', '#content', '.article-content', '.post-content',
+            '.entry-content', '#main-content', '.main-content',
         ]
 
         main_content: Tag | None = None
@@ -128,6 +134,7 @@ class SelectorDiscovery:
             main_content = soup.select_one(selector)
             if main_content:
                 self.console.print(f"  → Extracted content from '[cyan]{selector}[/cyan]'")
+                logfire.info(f"Extracted content using selector: {selector}")
                 break
 
         # Fallback: Look for div with most paragraphs (likely the article)
@@ -138,7 +145,7 @@ class SelectorDiscovery:
                 best_div = max(divs, key=lambda d: len(d.find_all('p')))
                 if len(best_div.find_all('p')) >= 3:
                     main_content = best_div
-                    self.console.print(f'  → Found content div with {len(best_div.find_all("p"))} paragraphs')
+                    self.console.print(f"  → Found content div with {len(best_div.find_all('p'))} paragraphs")
 
         # Last resort: use body
         if not main_content:
@@ -155,6 +162,10 @@ class SelectorDiscovery:
         self.console.print(f'  → Analyzing {len(content_str)} characters')
         return content_str
 
+    # 4. Instrument the AI call
+    # Pydantic AI automatically instruments the agent internals, but this outer span 
+    # captures the full context of prompt construction + execution.
+    @logfire.instrument("llm_discovery_request")
     def _get_selectors_from_ai(self, url: str, html: str) -> ScrapingConfig | None:
         """Ask AI to find CSS selectors by reading the HTML."""
 

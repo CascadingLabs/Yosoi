@@ -53,12 +53,3 @@ repos:
     hooks:
       - id: commitizen
         stages: [commit-msg]
-
-  - repo: local
-    hooks:
-      - id: uv-export
-        name: Export requirements.txt
-        entry: uv export --format requirements-txt --group dev --output-file requirements.txt
-        language: system
-        pass_filenames: false
-        files: ^(pyproject\.toml|uv\.lock)$

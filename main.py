@@ -326,16 +326,16 @@ def main():
     load_dotenv()
 
     gemini_api_key = os.getenv('GEMINI_KEY')
-    if not gemini_api_key:
-        print('Error: GEMINI_KEY not found in environment variables')
-        sys.exit(1)
-
     groq_api_key = os.getenv('GROQ_KEY')
-    if not groq_api_key:
-        print('Error: GROQ_KEY not found in environment variables')
-        sys.exit(1)
 
-    USE_GROQ = False
+    if not gemini_api_key:
+        print('Warning: GEMINI_KEY not found in environment variables')
+        if not groq_api_key:
+            print('Error: GROQ_KEY not found in environment variables')
+            sys.exit(1)
+    # USE_GROQ = False
+    USE_GROQ = bool(groq_api_key)
+    print(f'Using {"GROQ" if USE_GROQ else "Gemini"} as AI provider')
 
     if USE_GROQ:
         pipeline = SelectorDiscoveryPipeline(groq_api_key, 'llama-3.3-70b-versatile', provider='groq')
@@ -344,7 +344,9 @@ def main():
 
     logfire_token = os.getenv('LOGFIRE_TOKEN')
     if logfire_token:
-        logfire.configure(token=logfire_token, service_name='css-selector-discovery')
+        # logfire.configure(token=logfire_token, service_name='css-selector-discovery')
+        logfire.configure(token=logfire_token) # removed for my machine testing as I don't know what css-selector-discovery service is; my logfire worked after I removed it
+        print('Logfire setup complete')
     else:
         print('LOGFIRE_TOKEN not set - skipping logfire setup')
 
