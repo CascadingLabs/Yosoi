@@ -24,14 +24,18 @@ from services import configure_logfire
 configure_logfire()
 logfire.instrument_pydantic()
 
+
 class SelectorDiscovery:
     """Discovers CSS selectors using AI to read HTML."""
 
-    def __init__(self, model_name: str, api_key: str, provider: str = 'groq', console: Console = None):
+    def __init__(
+        self, model_name: str, api_key: str, provider: str = 'groq', console: Console = None, debug_mode: bool = False
+    ):
         self.model_name = model_name
         self.provider = provider
         self.console = console or Console()
         self.fallback_selectors = self._get_fallback_selectors()
+        self.debug_mode = debug_mode
 
         # Set appropriate API key and model string based on provider
         if provider == 'groq':
@@ -50,27 +54,30 @@ class SelectorDiscovery:
             ),
         )
 
-    # 2. Instrument the main entry point. 
+    # 2. Instrument the main entry point.
     # extract_args=False prevents sending the massive raw HTML string to Logfire logs.
-    @logfire.instrument("discover_selectors", extract_args=False)
+    @logfire.instrument('discover_selectors', extract_args=False)
     def discover_from_html(self, url: str, html: str, max_retries: int = 3) -> dict[str, Any]:
         """
         Main method: Extract relevant HTML and ask AI for selectors.
         """
         # Manually log the URL since we disabled auto-arg extraction
-        logfire.info("Starting discovery for {url}", url=url)
+        logfire.info('Starting discovery for {url}', url=url)
 
         # Extract clean HTML for analysis
         clean_html = self._extract_content_html(html)
 
+        if self.debug_mode:
+            self._debug_save_html(url, clean_html)
+
         # Convert Pydantic object to dict
         selectors: dict[str, Any] | None = None
-        
+
         for attempt in range(1, max_retries + 1):
             # Create a span for each retry attempt to group them in the UI
-            with logfire.span(f"attempt_{attempt}"):
+            with logfire.span(f'attempt_{attempt}'):
                 if attempt > 1:
-                    msg = f"Retry attempt {attempt}/{max_retries}..."
+                    msg = f'Retry attempt {attempt}/{max_retries}...'
                     self.console.print(f'[warning]  {msg}[/warning]')
                     logfire.warn(msg)
 
@@ -84,8 +91,8 @@ class SelectorDiscovery:
                     if selectors and not self._is_all_na(selectors):
                         if attempt > 1:
                             self.console.print(f'[success]  ✓ Retry successful on attempt {attempt}[/success]')
-                        
-                        logfire.info("Selectors found successfully", selectors=selectors)
+
+                        logfire.info('Selectors found successfully', selectors=selectors)
                         break
 
                 if attempt < max_retries:
@@ -97,75 +104,138 @@ class SelectorDiscovery:
         # Use fallback if AI fails
         if not selectors or self._is_all_na(selectors):
             self.console.print(f'[warning]  ⚠ All {max_retries} attempts failed, using fallback heuristics[/warning]')
-            logfire.error("All attempts failed, using fallback", url=url)
+            logfire.error('All attempts failed, using fallback', url=url)
             selectors = self.fallback_selectors
 
         return selectors
 
     # 3. Instrument the CPU-bound parsing logic
     # This helps you see how much time is spent cleaning HTML vs waiting for AI
-    @logfire.instrument("bs4_extract_content", extract_args=False)
-    def _extract_content_html(self, html: str) -> str:
+    @logfire.instrument('bs4_extract_content', extract_args=False)
+    def _extract_content_html(self, html: str) -> str:  # noqa: C901
         """Extract the main content area from HTML."""
         soup = BeautifulSoup(html, 'html.parser')
 
-        # Remove noise and navigation elements
+        # Remove noise
         for tag in soup.find_all(['script', 'style', 'svg', 'path', 'noscript', 'iframe']):
             tag.decompose()
-
-        # Remove navigation, header, footer, sidebar
         for tag in soup.find_all(['nav', 'header', 'footer']):
             tag.decompose()
-
-        # Remove common sidebar/widget classes
-        for selector in ['.sidebar', '.widget', '.advertisement', '.ad', '#sidebar', '.related-posts']:
+        for selector in [
+            '.sidebar',
+            '.widget',
+            '.advertisement',
+            '.ad',
+            '#sidebar',
+            '.related-posts',
+            '.useful-links',
+            '.useful-link-item',
+        ]:
+            element: Tag | None
             for element in soup.select(selector):
                 element.decompose()
 
-        # Try to find main content area (in priority order)
+        main_content: Tag | None = None
+        best_score = 0
+
+        # Step 1: Try hard-coded selectors
         content_selectors = [
-            'article', 'main', '[role="main"]', '.post', '.entry', '.article',
-            '.content', '#content', '.article-content', '.post-content',
-            '.entry-content', '#main-content', '.main-content',
+            # Standard HTML5 semantic tags
+            'article',
+            'main',
+            '[role="main"]',
+            # Blog platform specific
+            '.blog-post-full__body',  # Google Workspace blog
+            '.post-body',
+            '.entry-content',
+            '.post-content',
+            '.article-content',
+            '.blog-post-body',
+            # Generic content containers
+            '.post',
+            '.entry',
+            '.article',
+            '.content',
+            '#content',
+            '#main-content',
+            '.main-content',
         ]
 
-        main_content: Tag | None = None
         for selector in content_selectors:
-            main_content = soup.select_one(selector)
-            if main_content:
-                self.console.print(f"  → Extracted content from '[cyan]{selector}[/cyan]'")
-                logfire.info(f"Extracted content using selector: {selector}")
-                break
+            element = soup.select_one(selector)
+            if element is not None:
+                score = self._calculate_content_score(element)
+                if score > best_score:
+                    main_content = element
+                    best_score = score
+                    self.console.print(f"  → Found content with '[cyan]{selector}[/cyan]' (score: {score})")
+                    break
 
-        # Fallback: Look for div with most paragraphs (likely the article)
-        if not main_content:
+        # Step 2: Try div scoring
+        if main_content is None or best_score == 0:
             divs = soup.find_all('div')
             if divs:
-                # Find div with most <p> tags
-                best_div = max(divs, key=lambda d: len(d.find_all('p')))
-                if len(best_div.find_all('p')) >= 3:
-                    main_content = best_div
-                    self.console.print(f"  → Found content div with {len(best_div.find_all('p'))} paragraphs")
+                for div in divs:
+                    score = self._calculate_content_score(div)
+                    if score > best_score:
+                        best_score = score
+                        main_content = div
 
-        # Last resort: use body
-        if not main_content:
+                if main_content and best_score > 0:
+                    p_count = len(main_content.find_all('p'))
+                    self.console.print(f'  → Found content div with {p_count} paragraphs (score: {best_score})')
+
+        # Step 3: Manual div search if score still 0
+        if best_score == 0:
+            self.console.print('  [warning]⚠ Score is 0 - searching for any content div...[/warning]')
+            for div in soup.find_all('div'):
+                score = self._calculate_content_score(div)
+                if score > 10:  # At least some content
+                    main_content = div
+                    best_score = score
+                    self.console.print(f'  → Found fallback div with score: {score}')
+                    break
+
+        # Step 4: Fallback to body
+        if main_content is None or best_score == 0:
             body_element = soup.find('body')
             if isinstance(body_element, Tag):
                 main_content = body_element
-                self.console.print('  → Extracted content from <body> tag (last resort)')
-            else:
-                self.console.print('  → Using full HTML')
-                return str(soup)[:30000]
+                self.console.print('  → Extracted content from <body> tag')
 
-        # Return first 30k characters
+        # Last resort
+        if main_content is None:
+            self.console.print('  → Using full HTML (all content selectors failed)')
+            return str(soup)[:30000]
+
         content_str = str(main_content)[:30000]
         self.console.print(f'  → Analyzing {len(content_str)} characters')
         return content_str
 
+    def _calculate_content_score(self, element: Tag) -> int:
+        """Calculate quality score for a content element."""
+        score = 0
+
+        p_count = len(element.find_all('p'))
+        score += p_count * 10
+
+        h_count = len(element.find_all(['h1', 'h2', 'h3']))
+        score += h_count * 5
+
+        a_count = len(element.find_all('a'))
+        if p_count > 0 and a_count > p_count * 2:
+            score -= 20
+
+        text_length = len(element.get_text(strip=True))
+        if text_length < 200:
+            score -= 10
+
+        return score
+
     # 4. Instrument the AI call
-    # Pydantic AI automatically instruments the agent internals, but this outer span 
+    # Pydantic AI automatically instruments the agent internals, but this outer span
     # captures the full context of prompt construction + execution.
-    @logfire.instrument("llm_discovery_request")
+    @logfire.instrument('llm_discovery_request')
     def _get_selectors_from_ai(self, url: str, html: str) -> ScrapingConfig | None:
         """Ask AI to find CSS selectors by reading the HTML."""
 
@@ -175,7 +245,6 @@ class SelectorDiscovery:
 3. Return ONLY selectors that exist in the provided HTML
 
 Here is the HTML from {url}:
-
 ```html
 {html}
 ```
@@ -224,3 +293,24 @@ IMPORTANT RULES:
             'body_text': {'primary': 'article p', 'fallback': '.content p', 'tertiary': 'p'},
             'related_content': {'primary': 'aside a', 'fallback': '.related a', 'tertiary': '.sidebar a'},
         }
+
+    def _debug_save_html(self, url: str, html: str):
+        """Save extracted HTML to file for debugging."""
+        import os
+        from urllib.parse import urlparse
+
+        # Create debug directory
+        os.makedirs('debug_html', exist_ok=True)
+
+        # Create safe filename from URL
+        parsed = urlparse(url)
+        filename = f'{parsed.netloc}_{parsed.path.replace("/", "_")[:50]}.html'
+        filepath = os.path.join('debug_html', filename)
+
+        # Save HTML
+        with open(filepath, 'w', encoding='utf-8') as f:
+            f.write(f'<!-- URL: {url} -->\n')
+            f.write(f'<!-- Extracted HTML length: {len(html)} chars -->\n\n')
+            f.write(html)
+
+        self.console.print(f'  [dim]→ Debug HTML saved to: {filepath}[/dim]')

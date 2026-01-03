@@ -6,7 +6,7 @@
   },
   "author": {
     "primary": ".byline-attr-author",
-    "fallback": ".byline-attr-author",
+    "fallback": "NA",
     "tertiary": "NA"
   },
   "date": {
@@ -15,7 +15,7 @@
     "tertiary": "time"
   },
   "body_text": {
-    "primary": ".body-wrap .yf-7hmkaz",
+    "primary": ".body-items-wrapper p",
     "fallback": ".body-wrap p",
     "tertiary": "p"
   }

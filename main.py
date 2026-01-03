@@ -31,7 +31,7 @@ from selector_validator import SelectorValidator
 class SelectorDiscoveryPipeline:
     """Main pipeline for discovering and saving CSS selectors."""
 
-    def __init__(self, ai_api_key: str, model_name: str, provider: str = 'groq'):
+    def __init__(self, ai_api_key: str, model_name: str, provider: str = 'groq', debug_mode: bool = False):
         """Initialize the pipeline with API key."""
 
         # Initialize Rich Console
@@ -48,10 +48,11 @@ class SelectorDiscoveryPipeline:
 
         # Initialize components
         self.discovery = SelectorDiscovery(
-            model_name=model_name, api_key=ai_api_key, provider=provider, console=self.console
+            model_name=model_name, api_key=ai_api_key, provider=provider, console=self.console, debug_mode=debug_mode
         )
         self.validator = SelectorValidator(console=self.console)
         self.storage = SelectorStorage()
+        self.debug_mode = debug_mode
 
     def process_url(self, url: str, force: bool = False, max_discovery_attempts: int = 2) -> bool:  # noqa: C901
         """
@@ -60,6 +61,7 @@ class SelectorDiscoveryPipeline:
         Args:
             url: URL to process
             force: If True, re-discover even if selectors exist
+            max_discovery_attempts: Maximum retry attempts for discovery
 
         Returns:
             True if successful, False otherwise
@@ -134,10 +136,18 @@ class SelectorDiscoveryPipeline:
             with logfire.span('fetch_html', url=url, attempt=attempt):
                 html = None
                 with self.console.status('[step]Step 1: Fetching HTML...[/step]', spinner='dots'):
-                    html = self._fetch_html(url)
+                    html, http_error_code = self._fetch_html(url)
 
             if not html:
-                logfire.error('Failed to fetch HTML', url=url, attempt=attempt)
+                # Check if it's a server error (5xx)
+                if http_error_code and http_error_code >= 500:
+                    self.console.print(
+                        f'[danger]✗ Server error ({http_error_code}) - skipping retries (server issue, not selector issue)[/danger]'
+                    )
+                    logfire.error('Server error, skipping retries', url=url, status_code=http_error_code)
+                    return False
+
+                logfire.error('Failed to fetch HTML', url=url, attempt=attempt, status_code=http_error_code)
                 if attempt < max_discovery_attempts:
                     continue
                 return False
@@ -201,23 +211,26 @@ class SelectorDiscoveryPipeline:
 
     def process_urls(self, urls: list, force: bool = False):
         """Process multiple URLs."""
-        with logfire.span('process_urls', total=len(urls)):
-            results: dict[str, list[str]] = {'successful': [], 'failed': []}
+        results: dict[str, list] = {'successful': [], 'failed': [], 'skipped': []}
 
-            for url in urls:
-                logfire.info('Processing URL', url=url)
-                try:
-                    success = self.process_url(url, force=force)
-                    if success:
-                        results['successful'].append(url)
-                    else:
+        with logfire.span('process_urls', total_urls=len(urls)):
+            for idx, url in enumerate(urls, 1):
+                self.console.print(f'\n[bold blue]Processing URL {idx}/{len(urls)}[/bold blue]')
+
+                with logfire.span('Processing URL', url=url):
+                    logfire.info('Processing URL', url=url)
+                    try:
+                        success = self.process_url(url, force=force)
+                        if success:
+                            results['successful'].append(url)
+                        else:
+                            results['failed'].append(url)
+                    except Exception as e:
+                        logfire.error('Error processing URL', url=url, error=str(e))
+                        self.console.print(f'[danger]✗ Error processing {url}: {e}[/danger]')
                         results['failed'].append(url)
-                except Exception as e:
-                    logfire.error('Error processing URL', url=url, error=str(e))
-                    self.console.print(f'[danger]✗ Error processing {url}: {e}[/danger]')
-                    results['failed'].append(url)
 
-                self.console.print()  # Blank line between URLs
+                    self.console.print()  # Blank line between URLs
 
             logfire.info(
                 'Processing complete',
@@ -250,24 +263,44 @@ class SelectorDiscoveryPipeline:
 
         self.console.print()
 
-    def _fetch_html(self, url: str) -> str | None:
-        """Fetch HTML from URL."""
+    def _fetch_html(self, url: str) -> tuple[str | None, int | None]:
+        """
+        Fetch HTML from URL.
+
+        Returns:
+            (html_content, status_code)
+            - html_content: The HTML string if successful, None if failed
+            - http_error_code: HTTP status code if there was an error, None otherwise
+        """
         try:
             response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=15)
+            status_code: int | Any = response.status_code
+
+            # Raise for 4xx and 5xx errors
             response.raise_for_status()
 
-            logfire.info('HTML fetched', url=url, size_bytes=len(response.text), status_code=response.status_code)
+            logfire.info('HTML fetched', url=url, size_bytes=len(response.text), status_code=status_code)
 
             self.console.print(f'[success]✓ Fetched {len(response.text):,} characters of HTML[/success]')
-            return response.text
+            return response.text, status_code
+
+        except requests.exceptions.HTTPError as e:
+            # Extract status code from exception
+            status_code = e.response.status_code if hasattr(e, 'response') else None
+            logfire.error('HTTP error fetching HTML', url=url, error=str(e), status_code=status_code)
+            self.console.print(f'[danger]✗ HTTP {status_code} error: {e}[/danger]')
+            return None, status_code
+
         except Exception as e:
             logfire.error('Failed to fetch HTML', url=url, error=str(e))
             self.console.print(f'[danger]✗ Failed to fetch HTML: {e}[/danger]')
-            return None
+            return None, None
 
     def _print_summary(self, results: dict):
         """Print processing summary."""
         self.console.print()
+
+        # Results summary
         table = Table(title='Processing Summary', show_header=False)
         table.add_row('[green]Successful[/green]', str(len(results['successful'])))
         table.add_row('[red]Failed[/red]', str(len(results['failed'])))
@@ -333,19 +366,23 @@ def main():
         if not groq_api_key:
             print('Error: GROQ_KEY not found in environment variables')
             sys.exit(1)
-    # USE_GROQ = False
-    USE_GROQ = bool(groq_api_key)
+
+    USE_GROQ = False
+    # USE_GROQ = bool(groq_api_key)
     print(f'Using {"GROQ" if USE_GROQ else "Gemini"} as AI provider')
 
     if USE_GROQ:
+        if not groq_api_key:
+            raise ValueError('GROQ_API_KEY not found in environment')
         pipeline = SelectorDiscoveryPipeline(groq_api_key, 'llama-3.3-70b-versatile', provider='groq')
     else:
+        if not gemini_api_key:
+            raise ValueError('GEMINI_API_KEY not found in environment')
         pipeline = SelectorDiscoveryPipeline(gemini_api_key, 'gemini-2.0-flash-exp', provider='gemini')
 
     logfire_token = os.getenv('LOGFIRE_TOKEN')
     if logfire_token:
-        # logfire.configure(token=logfire_token, service_name='css-selector-discovery')
-        logfire.configure(token=logfire_token) # removed for my machine testing as I don't know what css-selector-discovery service is; my logfire worked after I removed it
+        logfire.configure(token=logfire_token)
         print('Logfire setup complete')
     else:
         print('LOGFIRE_TOKEN not set - skipping logfire setup')
@@ -357,8 +394,12 @@ def main():
     parser.add_argument('--limit', type=int, help='Limit number of URLs to process from file')
     parser.add_argument('--force', action='store_true', help='Force re-discovery even if selectors exist')
     parser.add_argument('--summary', action='store_true', help='Show summary of saved selectors')
+    parser.add_argument('--debug', action='store_true', help='Enable debug more (saves extracted HTML to debug_html/')
 
     args = parser.parse_args()
+
+    if args.debug:
+        print(' Debug mode enabled - extracted HTML will be saved to debug_html/')
 
     # Handle summary request
     if args.summary:
