@@ -367,8 +367,8 @@ def main():
             print('Error: GROQ_KEY not found in environment variables')
             sys.exit(1)
 
-    USE_GROQ = False
-    # USE_GROQ = bool(groq_api_key)
+    # USE_GROQ = False
+    USE_GROQ = bool(groq_api_key)
     print(f'Using {"GROQ" if USE_GROQ else "Gemini"} as AI provider')
 
     if USE_GROQ:
