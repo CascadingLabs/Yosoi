@@ -4,15 +4,6 @@
 
 Give Yosoi a URL, and it uses AI to automatically discover the best CSS selectors for extracting headlines, authors, dates, body text, and related content. Discovery takes 3 seconds and costs $0.001 per domain — then scrape thousands of articles for free with BeautifulSoup.
 
-## Why Yosoi?
-
-| Approach | Time (1000 articles) | Cost | Accuracy |
-|----------|---------------------|------|----------|
-| **Using AI every time** | 2.2 hours | $1.00+ | 95% |
-| **Yosoi (AI once + BeautifulSoup)** | ~8 minutes | $0.001 | 100%* |
-
-*Once selectors are validated
-
 **Key Benefits:**
 - **Fast**: 3 seconds to discover selectors per domain
 - **Cheap**: $0.001 per domain (one-time cost)
