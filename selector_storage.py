@@ -6,8 +6,10 @@ Handles saving and loading selector data to/from JSON files.
 
 import json
 import os
-from datetime import datetime
+from typing import Any
 from urllib.parse import urlparse
+
+from models import ScrapingConfig
 
 
 class SelectorStorage:
@@ -31,18 +33,12 @@ class SelectorStorage:
         domain = self._extract_domain(url)
         filepath = self._get_filepath(domain)
 
-        # Create structured data
-        data = {
-            'domain': domain,
-            'source_url': url,
-            'discovered_at': datetime.now().isoformat(),
-            'version': '1.0',
-            'selectors': self._format_selectors(selectors),
-        }
+        # Format selectors in Pydantic structure
+        formatted_selectors = self._format_selectors(selectors)
 
         # Save to file
         with open(filepath, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
+            json.dump(formatted_selectors, f, indent=2, ensure_ascii=False)
 
         print(f'\n✓ Saved selectors to: {filepath}')
         return filepath
@@ -64,10 +60,32 @@ class SelectorStorage:
 
         try:
             with open(filepath, encoding='utf-8') as f:
-                data = json.load(f)
-            return data.get('selectors')
+                data: dict[str, Any] = json.load(f)
+                return data
         except Exception as e:
             print(f'Error loading selectors: {e}')
+            return None
+
+    def load_selectors_as_model(self, domain: str) -> ScrapingConfig | None:
+        """
+        Load selectors as a validated Pydantic model.
+
+        Args:
+            domain: Domain name (e.g., 'example.com')
+
+        Returns:
+            ScrapingConfig object or None if not found
+        """
+        selectors = self.load_selectors(domain)
+
+        if not selectors:
+            return None
+
+        try:
+            # Validate and return as Pydantic model
+            return ScrapingConfig(**selectors)
+        except Exception as e:
+            print(f'Error loading selectors as model: {e}')
             return None
 
     def selector_exists(self, domain: str) -> bool:
@@ -95,7 +113,7 @@ class SelectorStorage:
         """Get summary of all saved selectors."""
         domains = self.list_domains()
 
-        summary = {'total_domains': len(domains), 'domains': []}
+        summary: dict[str, Any] = {'total_domains': len(domains), 'domains': []}
 
         for domain in domains:
             data = self._load_file_data(domain)
@@ -117,20 +135,9 @@ class SelectorStorage:
         for field, field_data in selectors.items():
             if isinstance(field_data, dict):
                 formatted[field] = {
-                    'primary': field_data.get('primary'),
-                    'fallback': field_data.get('fallback'),
-                    'tertiary': field_data.get('tertiary'),
-                    'working_priority': field_data.get('working_priority'),
-                    'tested': True,
-                }
-            else:
-                # Simple string selector
-                formatted[field] = {
-                    'primary': field_data,
-                    'fallback': None,
-                    'tertiary': None,
-                    'working_priority': 'primary',
-                    'tested': False,
+                    'primary': field_data.get('primary', 'NA'),
+                    'fallback': field_data.get('fallback', 'NA'),
+                    'tertiary': field_data.get('tertiary', 'NA'),
                 }
 
         return formatted
@@ -160,7 +167,8 @@ class SelectorStorage:
 
         try:
             with open(filepath, encoding='utf-8') as f:
-                return json.load(f)
+                selectors = json.load(f)
+                return {'selectors': selectors}
         except Exception:
             return None
 

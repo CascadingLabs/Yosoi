@@ -13,10 +13,15 @@ Usage:
 import argparse
 import os
 import sys
+from typing import Any
 
+import logfire
 import requests
 from dotenv import load_dotenv
-from langchain_google_genai import ChatGoogleGenerativeAI
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
+from rich.theme import Theme
 
 from selector_discovery import SelectorDiscovery
 from selector_storage import SelectorStorage
@@ -26,145 +31,323 @@ from selector_validator import SelectorValidator
 class SelectorDiscoveryPipeline:
     """Main pipeline for discovering and saving CSS selectors."""
 
-    def __init__(self, gemini_api_key: str):
+    def __init__(self, ai_api_key: str, model_name: str, provider: str = 'groq', debug_mode: bool = False):
         """Initialize the pipeline with API key."""
-        # Initialize LLM
-        self.llm = ChatGoogleGenerativeAI(
-            model='gemini-2.5-flash',
-            google_api_key=gemini_api_key,
-            temperature=0,
+
+        # Initialize Rich Console
+        self.custom_theme = Theme(
+            {
+                'info': 'dim cyan',
+                'warning': 'magenta',
+                'danger': 'bold red',
+                'success': 'bold green',
+                'step': 'bold blue',
+            }
         )
+        self.console = Console(theme=self.custom_theme)
 
         # Initialize components
-        self.discovery = SelectorDiscovery(self.llm)
-        self.validator = SelectorValidator()
+        self.discovery = SelectorDiscovery(
+            model_name=model_name, api_key=ai_api_key, provider=provider, console=self.console, debug_mode=debug_mode
+        )
+        self.validator = SelectorValidator(console=self.console)
         self.storage = SelectorStorage()
+        self.debug_mode = debug_mode
 
-    def process_url(self, url: str, force: bool = False) -> bool:
+    def process_url(self, url: str, force: bool = False, max_discovery_attempts: int = 2) -> bool:  # noqa: C901
         """
         Process a single URL: discover, validate, and save selectors.
 
         Args:
             url: URL to process
             force: If True, re-discover even if selectors exist
+            max_discovery_attempts: Maximum retry attempts for discovery
 
         Returns:
             True if successful, False otherwise
         """
-        print(f'\n{"=" * 80}')
-        print(f'Processing: {url}')
-        print(f'{"=" * 80}')
+        with logfire.span('process_url', url=url, force=force):
+            self.console.print(Panel(f'[bold]Processing:[/bold] [underline]{url}[/underline]', border_style='blue'))
 
-        # Check if selectors already exist
-        domain = self.storage._extract_domain(url)
-        if not force and self.storage.selector_exists(domain):
-            print(f'✓ Selectors already exist for {domain} (use --force to re-discover)')
+            # Check if selectors already exist
+            domain = self.storage._extract_domain(url)
+
+            if not force and self.storage.selector_exists(domain):
+                self.console.print(f'[info]ℹ Selectors already exist for {domain}, validating...[/info]')
+
+                # Load existing selectors
+                try:
+                    existing_selectors = self.storage.load_selectors(domain)
+
+                    if existing_selectors:
+                        with logfire.span('validate_existing_selectors', domain=domain):
+                            # Validate existing selectors
+                            with self.console.status(
+                                '[step]Validating existing selectors...[/step]', spinner='bouncingBall'
+                            ):
+                                validated = self.validator.validate_selectors(url, existing_selectors)
+
+                            # Count failures
+                            failed_count = len(existing_selectors) - len(validated)
+                            total_count = len(existing_selectors)
+
+                            logfire.info(
+                                'Existing selectors validated',
+                                domain=domain,
+                                passed=len(validated),
+                                failed=failed_count,
+                                total=total_count,
+                            )
+
+                            self.console.print(
+                                f'[info]Validation: {len(validated)}/{total_count} selectors passed, '
+                                f'{failed_count} failed[/info]'
+                            )
+
+                            # Optional fields missing is OK
+                            optional_fields = {'date', 'body_text'}
+                            missing_optional = optional_fields - set(validated.keys())
+                            if missing_optional:
+                                self.console.print(f'[warning]⚠ Missing optional fields: {missing_optional}[/warning]')
+
+                            # If 2 or fewer failed, keep existing selectors
+                            if failed_count < 2:
+                                self.console.print(
+                                    '[success]✓ Existing selectors are valid (use --force to re-discover)[/success]'
+                                )
+                                return True
+
+                            # If 2+ failed, continue to re-discovery below
+                            self.console.print(
+                                f'[warning]⚠ {failed_count} selectors failed - re-discovering...[/warning]'
+                            )
+                except Exception as e:
+                    logfire.error('Error loading existing selectors', domain=domain, error=str(e))
+                    self.console.print(f'[warning]⚠ Error loading existing selectors: {e}[/warning]')
+
+            # Discovery loop with retries
+        for attempt in range(1, max_discovery_attempts + 1):
+            if attempt > 1:
+                self.console.print(
+                    f'\n[warning]🔄 Discovery retry attempt {attempt}/{max_discovery_attempts}...[/warning]\n'
+                )
+
+            # Step 1: Fetch HTML
+            with logfire.span('fetch_html', url=url, attempt=attempt):
+                html = None
+                with self.console.status('[step]Step 1: Fetching HTML...[/step]', spinner='dots'):
+                    html, http_error_code = self._fetch_html(url)
+
+            if not html:
+                # Check if it's a server error (5xx)
+                if http_error_code and http_error_code >= 500:
+                    self.console.print(
+                        f'[danger]✗ Server error ({http_error_code}) - skipping retries (server issue, not selector issue)[/danger]'
+                    )
+                    logfire.error('Server error, skipping retries', url=url, status_code=http_error_code)
+                    return False
+
+                logfire.error('Failed to fetch HTML', url=url, attempt=attempt, status_code=http_error_code)
+                if attempt < max_discovery_attempts:
+                    continue
+                return False
+
+            # Step 2: Discover selectors with AI
+            with logfire.span('discovery_selectors', url=url, attempt=attempt):
+                selectors: dict[str, Any] | None = None
+                with self.console.status('[step]Step 2: AI analyzing HTML...[/step]', spinner='earth'):
+                    selectors = self.discovery.discover_from_html(url, html)
+
+            if not selectors:
+                logfire.error('Failed to discover selectors', url=url, attempt=attempt)
+                self.console.print('[danger]✗ Failed to discover selectors[/danger]')
+                if attempt < max_discovery_attempts:
+                    continue
+                return False
+
+            logfire.info('Selectors discovered', url=url, field_count=len(selectors), attempt=attempt)
+            self.console.print(f'[success]✓ Discovered selectors for {len(selectors)} fields[/success]')
+
+            # Step 3: Validate selectors
+            with (
+                logfire.span('validate_selectors', url=url, attempt=attempt),
+                self.console.status('[step]Step 3: Validating selectors...[/step]', spinner='bouncingBall'),
+            ):
+                validated = self.validator.validate_selectors(url, selectors)
+
+            if not validated:
+                logfire.error('No selectors validated', url=url, attempt=attempt)
+                self.console.print('[danger]✗ No selectors validated successfully[/danger]')
+                if attempt < max_discovery_attempts:
+                    continue
+                return False
+
+            self.console.print(f'[success]✓ Validated {len(validated)}/{len(selectors)} fields[/success]')
+
+            # Check if too many failed
+            failed_count = len(selectors) - len(validated)
+            if failed_count >= 2:
+                logfire.warn('Too many validations failed', url=url, failed_count=failed_count, attempt=attempt)
+                self.console.print(f'[warning]⚠ {failed_count} fields failed[/warning]')
+
+                # Retry if we have attempts left
+                if attempt < max_discovery_attempts:
+                    self.console.print('[warning]Will retry discovery...[/warning]')
+                    continue
+
+                # Out of retries
+                self.console.print('[danger]✗ Out of retry attempts - not saving[/danger]')
+                return False
+
+            # Success! Save selectors
+            with logfire.span('save_selectors', url=url, domain=domain):
+                self.storage.save_selectors(url, validated)
+
+            logfire.info('Processing complete', url=url, domain=domain, fields_saved=len(validated))
             return True
 
-        # Step 1: Fetch HTML
-        print('\nStep 1: Fetching HTML...')
-        html = self._fetch_html(url)
-        if not html:
-            return False
-
-        # Step 2: Discover selectors with AI
-        print('\nStep 2: AI analyzing HTML...')
-        selectors = self.discovery.discover_from_html(url, html)
-
-        if not selectors:
-            print('✗ Failed to discover selectors')
-            return False
-
-        print(f'✓ Discovered selectors for {len(selectors)} fields')
-
-        # Step 3: Validate selectors
-        print('\nStep 3: Validating selectors...')
-        validated = self.validator.validate_selectors(url, selectors)
-
-        if not validated:
-            print('✗ No selectors validated successfully')
-            return False
-
-        print(f'\n✓ Validated {len(validated)}/{len(selectors)} fields')
-
-        # Step 4: Save selectors
-        self.storage.save_selectors(url, validated)
-
-        return True
+        # Should never reach here
+        return False
 
     def process_urls(self, urls: list, force: bool = False):
         """Process multiple URLs."""
-        results = {'successful': [], 'failed': []}
+        results: dict[str, list] = {'successful': [], 'failed': [], 'skipped': []}
 
-        for url in urls:
-            try:
-                success = self.process_url(url, force=force)
-                if success:
-                    results['successful'].append(url)
-                else:
-                    results['failed'].append(url)
-            except Exception as e:
-                print(f'\n✗ Error processing {url}: {e}')
-                results['failed'].append(url)
+        with logfire.span('process_urls', total_urls=len(urls)):
+            for idx, url in enumerate(urls, 1):
+                self.console.print(f'\n[bold blue]Processing URL {idx}/{len(urls)}[/bold blue]')
 
-            print()  # Blank line between URLs
+                with logfire.span('Processing URL', url=url):
+                    logfire.info('Processing URL', url=url)
+                    try:
+                        success = self.process_url(url, force=force)
+                        if success:
+                            results['successful'].append(url)
+                        else:
+                            results['failed'].append(url)
+                    except Exception as e:
+                        logfire.error('Error processing URL', url=url, error=str(e))
+                        self.console.print(f'[danger]✗ Error processing {url}: {e}[/danger]')
+                        results['failed'].append(url)
 
-        # Print summary
-        self._print_summary(results)
+                    self.console.print()  # Blank line between URLs
+
+            logfire.info(
+                'Processing complete',
+                total=len(urls),
+                successful=len(results['successful']),
+                failed=len(results['failed']),
+            )
+
+            # Print summary
+            self._print_summary(results)
 
     def show_summary(self):
         """Show summary of all saved selectors."""
         summary = self.storage.get_summary()
 
-        print(f'\n{"=" * 80}')
-        print('Selector Discovery Summary')
-        print(f'{"=" * 80}')
-        print(f'\nTotal domains: {summary["total_domains"]}')
+        self.console.print(Panel('[bold]Selector Discovery Summary[/bold]', style='bold blue'))
+        self.console.print(f'Total domains: [bold]{summary["total_domains"]}[/bold]')
 
         if summary['domains']:
-            print('\nDomains with selectors:')
+            table = Table(title='Domains with Selectors')
+            table.add_column('Domain', style='cyan', no_wrap=True)
+            table.add_column('Discovered At', style='magenta')
+            table.add_column('Fields', style='green')
+
             for domain_info in summary['domains']:
-                print(f'\n  {domain_info["domain"]}')
-                print(f'    Discovered: {domain_info["discovered_at"]}')
-                print(f'    Fields: {", ".join(domain_info["fields"])}')
+                table.add_row(domain_info['domain'], domain_info['discovered_at'], ', '.join(domain_info['fields']))
+            self.console.print(table)
         else:
-            print('\nNo selectors discovered yet.')
+            self.console.print('[warning]No selectors discovered yet.[/warning]')
 
-        print(f'\n{"=" * 80}')
+        self.console.print()
 
-    def _fetch_html(self, url: str) -> str:
-        """Fetch HTML from URL."""
+    def _fetch_html(self, url: str) -> tuple[str | None, int | None]:
+        """
+        Fetch HTML from URL.
+
+        Returns:
+            (html_content, status_code)
+            - html_content: The HTML string if successful, None if failed
+            - http_error_code: HTTP status code if there was an error, None otherwise
+        """
         try:
             response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=15)
+            status_code: int | Any = response.status_code
+
+            # Raise for 4xx and 5xx errors
             response.raise_for_status()
-            print(f'✓ Fetched {len(response.text):,} characters of HTML')
-            return response.text
+
+            logfire.info('HTML fetched', url=url, size_bytes=len(response.text), status_code=status_code)
+
+            self.console.print(f'[success]✓ Fetched {len(response.text):,} characters of HTML[/success]')
+            return response.text, status_code
+
+        except requests.exceptions.HTTPError as e:
+            # Extract status code from exception
+            status_code = e.response.status_code if hasattr(e, 'response') else None
+            logfire.error('HTTP error fetching HTML', url=url, error=str(e), status_code=status_code)
+            self.console.print(f'[danger]✗ HTTP {status_code} error: {e}[/danger]')
+            return None, status_code
+
         except Exception as e:
-            print(f'✗ Failed to fetch HTML: {e}')
-            return None
+            logfire.error('Failed to fetch HTML', url=url, error=str(e))
+            self.console.print(f'[danger]✗ Failed to fetch HTML: {e}[/danger]')
+            return None, None
 
     def _print_summary(self, results: dict):
         """Print processing summary."""
-        print(f'{"=" * 80}')
-        print('Processing Summary')
-        print(f'{"=" * 80}')
-        print(f'Successful: {len(results["successful"])}')
-        print(f'Failed: {len(results["failed"])}')
+        self.console.print()
+
+        # Results summary
+        table = Table(title='Processing Summary', show_header=False)
+        table.add_row('[green]Successful[/green]', str(len(results['successful'])))
+        table.add_row('[red]Failed[/red]', str(len(results['failed'])))
+        self.console.print(table)
 
         if results['failed']:
-            print('\nFailed URLs:')
+            self.console.print('\n[bold red]Failed URLs:[/bold red]')
             for url in results['failed']:
-                print(f'  - {url}')
+                self.console.print(f'  - {url}', style='red')
 
-        print(f'{"=" * 80}')
+        self.console.print()
 
 
 def load_urls_from_file(filepath: str) -> list:
-    """Load URLs from a text file (one per line)."""
+    """
+    Load URLs from a text file (one per line) or JSON file.
+
+    Supports JSON formats:
+    - Array of objects: [{"url": "..."}, {"url": "..."}]
+    - Object with urls array: {"urls": [...]}
+    """
     try:
-        with open(filepath) as f:
-            urls = [line.strip() for line in f if line.strip() and not line.startswith('#')]
-        return urls
+        # Check if it's a JSON file
+        if filepath.endswith('.json'):
+            import json
+
+            with open(filepath) as f:
+                data = json.load(f)
+
+                # Handle array of objects with "url" field: [{"url": "..."}, ...]
+                if isinstance(data, list):
+                    urls = [item.get('url', '') for item in data if isinstance(item, dict)]
+                    return [url.strip() for url in urls if url.strip()]
+
+                # Handle object with "urls" field: {"urls": [...]}
+                if isinstance(data, dict):
+                    urls_data: str | list[Any] = data.get('urls', [])
+                    if isinstance(urls_data, str):
+                        urls = [urls_data.strip()]
+                    return [url.strip() for url in urls if url.strip()]
+
+                return []
+        else:
+            # Handle as text file (one URL per line)
+            with open(filepath) as f:
+                urls = [line.strip() for line in f if line.strip() and not line.startswith('#')]
+            return urls
     except Exception as e:
         print(f'Error loading URLs from file: {e}')
         return []
@@ -176,22 +359,47 @@ def main():
     load_dotenv()
 
     gemini_api_key = os.getenv('GEMINI_KEY')
+    groq_api_key = os.getenv('GROQ_KEY')
+
     if not gemini_api_key:
-        print('Error: GEMINI_KEY not found in environment variables.')
-        print('Please create a .env file with your GEMINI_KEY.')
-        sys.exit(1)
+        print('Warning: GEMINI_KEY not found in environment variables')
+        if not groq_api_key:
+            print('Error: GROQ_KEY not found in environment variables')
+            sys.exit(1)
+
+    # USE_GROQ = False
+    USE_GROQ = bool(groq_api_key)
+    print(f'Using {"GROQ" if USE_GROQ else "Gemini"} as AI provider')
+
+    if USE_GROQ:
+        if not groq_api_key:
+            raise ValueError('GROQ_API_KEY not found in environment')
+        pipeline = SelectorDiscoveryPipeline(groq_api_key, 'llama-3.3-70b-versatile', provider='groq')
+    else:
+        if not gemini_api_key:
+            raise ValueError('GEMINI_API_KEY not found in environment')
+        pipeline = SelectorDiscoveryPipeline(gemini_api_key, 'gemini-2.0-flash-exp', provider='gemini')
+
+    logfire_token = os.getenv('LOGFIRE_TOKEN')
+    if logfire_token:
+        logfire.configure(token=logfire_token)
+        print('Logfire setup complete')
+    else:
+        print('LOGFIRE_TOKEN not set - skipping logfire setup')
 
     # Parse arguments
     parser = argparse.ArgumentParser(description='Discover CSS selectors from web pages using AI')
     parser.add_argument('--url', type=str, help='Single URL to process')
     parser.add_argument('--file', type=str, help='File containing URLs (one per line)')
+    parser.add_argument('--limit', type=int, help='Limit number of URLs to process from file')
     parser.add_argument('--force', action='store_true', help='Force re-discovery even if selectors exist')
     parser.add_argument('--summary', action='store_true', help='Show summary of saved selectors')
+    parser.add_argument('--debug', action='store_true', help='Enable debug more (saves extracted HTML to debug_html/')
 
     args = parser.parse_args()
 
-    # Initialize pipeline
-    pipeline = SelectorDiscoveryPipeline(gemini_api_key)
+    if args.debug:
+        print(' Debug mode enabled - extracted HTML will be saved to debug_html/')
 
     # Handle summary request
     if args.summary:
@@ -210,6 +418,12 @@ def main():
         if not urls:
             print(f'No valid URLs found in {args.file}')
             sys.exit(1)
+
+        # Apply limit if specified
+        if args.limit and args.limit > 0:
+            original_count = len(urls)
+            urls = urls[: args.limit]
+            print(f'Limiting to {len(urls)} of {original_count} URLs from file')
     else:
         # Default test URLs
         urls = [

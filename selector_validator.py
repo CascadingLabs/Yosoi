@@ -5,14 +5,16 @@ Validates that CSS selectors actually work on web pages.
 """
 
 import requests
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, ResultSet, Tag
+from rich.console import Console
 
 
 class SelectorValidator:
     """Validates CSS selectors by testing them on actual pages."""
 
-    def __init__(self, user_agent: str = 'Mozilla/5.0'):
+    def __init__(self, user_agent: str = 'Mozilla/5.0', console: Console = None):
         self.user_agent = user_agent
+        self.console = console or Console()
 
     def validate_selectors(self, url: str, selectors: dict) -> dict:
         """
@@ -34,7 +36,27 @@ class SelectorValidator:
 
             # Test each field
             for field, field_selectors in selectors.items():
-                print(f'\n  Testing {field}:')
+                self.console.print(f'\n  Testing {field}:')
+
+                # Ensure field_selectors is a dict with primary/fallback/tertiary
+                if not isinstance(field_selectors, dict):
+                    # Handle old format (string) or any other unexpected format
+                    self.console.print(f'    [dim]Converting {type(field_selectors).__name__} to dict format[/dim]')
+                    if isinstance(field_selectors, str):
+                        field_selectors = {'primary': field_selectors, 'fallback': 'NA', 'tertiary': 'NA'}
+                    else:
+                        # Skip if we don't know what this is
+                        self.console.print(f'    [warning]⚠ Skipping unknown format: {field_selectors}[/warning]')
+                        continue
+
+                # Ensure it has the required keys
+                if not all(k in field_selectors for k in ['primary', 'fallback', 'tertiary']):
+                    # Add missing keys
+                    field_selectors = {
+                        'primary': field_selectors.get('primary', 'NA'),
+                        'fallback': field_selectors.get('fallback', 'NA'),
+                        'tertiary': field_selectors.get('tertiary', 'NA'),
+                    }
 
                 working_selector = self._find_working_selector(soup, field, field_selectors)
 
@@ -44,7 +66,10 @@ class SelectorValidator:
             return validated
 
         except Exception as e:
-            print(f'  ✗ Validation error: {e}')
+            import traceback
+
+            self.console.print(f'[danger]  ✗ Validation error: {e}[/danger]')
+            self.console.print(f'[dim]Traceback:\n{traceback.format_exc()}[/dim]')
             return {}
 
     def _find_working_selector(self, soup: BeautifulSoup, field: str, field_selectors: dict) -> dict | None:
@@ -58,33 +83,34 @@ class SelectorValidator:
             selector = field_selectors.get(priority)
 
             if not selector or selector == 'NA':
-                print(f'    {priority}: NA')
+                self.console.print(f'    [dim]{priority}: NA[/dim]')
                 continue
 
             # Test the selector
             works, sample_text = self._test_selector(soup, field, selector)
 
             if works:
-                print(f'    ✓ {priority}: \'{selector}\' → "{sample_text}..."')
+                self.console.print(
+                    f'    [success]✓ {priority}: \'{selector}\'[/success] → [dim]"{sample_text}..."[/dim]'
+                )
 
                 # Keep first working selector
                 if not best_selector:
                     best_selector = selector
                     best_priority = priority
             else:
-                print(f"    ✗ {priority}: '{selector}' (no elements found)")
+                self.console.print(f"    [danger]✗ {priority}: '{selector}' (no elements found)[/danger]")
 
         # Return the best working selector
         if best_selector:
             result = {
-                'primary': best_selector,
-                'fallback': field_selectors.get('fallback'),
-                'tertiary': field_selectors.get('tertiary'),
-                'working_priority': best_priority,
+                'primary': field_selectors.get('primary', 'NA'),
+                'fallback': field_selectors.get('fallback', 'NA'),
+                'tertiary': field_selectors.get('tertiary', 'NA'),
             }
-            print(f"  → Using {best_priority} selector: '{best_selector}'")
+            self.console.print(f"  → Using {best_priority} selector: '[cyan]{best_selector}[/cyan]'")
             return result
-        print(f'  → No working selectors for {field}')
+        self.console.print(f'[danger]  → No working selectors for {field}[/danger]')
         return None
 
     def _test_selector(self, soup: BeautifulSoup, field: str, selector: str) -> tuple[bool, str]:
@@ -97,10 +123,10 @@ class SelectorValidator:
         try:
             # For body_text, select multiple elements
             if field == 'body_text':
-                elements = soup.select(selector)
+                elements: ResultSet[Tag] | list[Tag] = soup.select(selector)
             else:
                 element = soup.select_one(selector)
-                elements = [element] if element else []
+                elements = [element] if element and isinstance(element, Tag) else []
 
             # Check if we found elements with text
             if not elements or not any(el and el.get_text(strip=True) for el in elements):

@@ -1,0 +1,22 @@
+{
+  "headline": {
+    "primary": ".cl-title",
+    "fallback": "a.cl-title",
+    "tertiary": "a"
+  },
+  "author": {
+    "primary": "a[href='/user/home/dveio']",
+    "fallback": ".cl-item-username",
+    "tertiary": "NA"
+  },
+  "date": {
+    "primary": ".cl-item-time",
+    "fallback": "span.cl-item-time",
+    "tertiary": "span"
+  },
+  "body_text": {
+    "primary": ".cl-item-text",
+    "fallback": "p.cl-item-text",
+    "tertiary": "p"
+  }
+}
