@@ -1,22 +1,27 @@
 {
   "headline": {
-    "primary": ".cl-title",
-    "fallback": "a.cl-title",
-    "tertiary": "a"
+    "primary": "h1.sd-title",
+    "fallback": "div.sd-content > h1",
+    "tertiary": "h1"
   },
   "author": {
-    "primary": "a[href='/user/home/dveio']",
-    "fallback": ".cl-item-username",
-    "tertiary": "NA"
+    "primary": "a.sd-username",
+    "fallback": "a[href*=\"author\"]",
+    "tertiary": "a"
   },
   "date": {
-    "primary": ".cl-item-time",
-    "fallback": "span.cl-item-time",
-    "tertiary": "span"
+    "primary": "span.sd-time",
+    "fallback": "span.sd-time",
+    "tertiary": "time"
   },
   "body_text": {
-    "primary": ".cl-item-text",
-    "fallback": "p.cl-item-text",
+    "primary": "div.sd-content > p.sd-text",
+    "fallback": "div.sd-content p",
     "tertiary": "p"
+  },
+  "related_content": {
+    "primary": "div.sd-tags a.sd-tag",
+    "fallback": "div.sd-tags a",
+    "tertiary": "NA"
   }
 }

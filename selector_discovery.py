@@ -29,13 +29,20 @@ class SelectorDiscovery:
     """Discovers CSS selectors using AI to read HTML."""
 
     def __init__(
-        self, model_name: str, api_key: str, provider: str = 'groq', console: Console = None, debug_mode: bool = False
+        self,
+        model_name: str,
+        api_key: str,
+        provider: str = 'groq',
+        console: Console | None = None,
+        debug_mode: bool = False,
+        remove_sidebars: bool = False,
     ):
         self.model_name = model_name
         self.provider = provider
         self.console = console or Console()
         self.fallback_selectors = self._get_fallback_selectors()
         self.debug_mode = debug_mode
+        self.remove_sidebars = remove_sidebars
 
         # Set appropriate API key and model string based on provider
         if provider == 'groq':
@@ -116,121 +123,50 @@ class SelectorDiscovery:
         """Extract the main content area from HTML."""
         soup = BeautifulSoup(html, 'html.parser')
 
-        # Remove noise
-        for tag in soup.find_all(['script', 'style', 'svg', 'path', 'noscript', 'iframe']):
+        # Step 1: Remove noise that's never useful
+        for tag in soup.find_all(['script', 'style', 'noscript', 'iframe']):
             tag.decompose()
-        for tag in soup.find_all(['nav', 'header', 'footer']):
+
+        # Step 2: Remove header, nav, footer
+        for tag in soup.find_all(['header', 'nav', 'footer']):
             tag.decompose()
-        for selector in [
-            '.sidebar',
-            '.widget',
-            '.advertisement',
-            '.ad',
-            '#sidebar',
-            '.related-posts',
-            '.useful-links',
-            '.useful-link-item',
-        ]:
-            element: Tag | None
-            for element in soup.select(selector):
-                element.decompose()
 
-        main_content: Tag | None = None
-        best_score = 0
+        # Step 3: Optionally remove sidebars, widgets, ads
+        if self.remove_sidebars:
+            for selector in [
+                '.sidebar',
+                '.widget',
+                '#sidebar',
+                '.advertisement',
+                '.ad',
+                '[class*="ad-"]',
+                '[id*="ad-"]',
+                '.related-posts',
+                '.useful-links',
+            ]:
+                for element in soup.select(selector):
+                    element.decompose()
+            self.console.print('  → Removed sidebars/widgets/ads')
 
-        # Step 1: Try hard-coded selectors
-        content_selectors = [
-            # Standard HTML5 semantic tags
-            'article',
-            'main',
-            '[role="main"]',
-            # Blog platform specific
-            '.blog-post-full__body',  # Google Workspace blog
-            '.post-body',
-            '.entry-content',
-            '.post-content',
-            '.article-content',
-            '.blog-post-body',
-            # Generic content containers
-            '.post',
-            '.entry',
-            '.article',
-            '.content',
-            '#content',
-            '#main-content',
-            '.main-content',
-        ]
+        # Step 4: Get body or main content
+        body = soup.find('body')
 
-        for selector in content_selectors:
-            element = soup.select_one(selector)
-            if element is not None:
-                score = self._calculate_content_score(element)
-                if score > best_score:
-                    main_content = element
-                    best_score = score
-                    self.console.print(f"  → Found content with '[cyan]{selector}[/cyan]' (score: {score})")
-                    break
+        if body and isinstance(body, Tag):
+            content_str = str(body)[:30000]  # Limit to 30k chars
+            self.console.print(f'  → Using entire <body> ({len(content_str)} chars)')
+            return content_str
 
-        # Step 2: Try div scoring
-        if main_content is None or best_score == 0:
-            divs = soup.find_all('div')
-            if divs:
-                for div in divs:
-                    score = self._calculate_content_score(div)
-                    if score > best_score:
-                        best_score = score
-                        main_content = div
+        # Fallback: Try main tag
+        main = soup.find('main')
+        if main and isinstance(main, Tag):
+            content_str = str(main)[:30000]  # ← FIX: Changed from str(body)
+            self.console.print(f'  → No <body> found, using <main> ({len(content_str)} chars)')
+            return content_str  # ← FIX: Added missing return
 
-                if main_content and best_score > 0:
-                    p_count = len(main_content.find_all('p'))
-                    self.console.print(f'  → Found content div with {p_count} paragraphs (score: {best_score})')
-
-        # Step 3: Manual div search if score still 0
-        if best_score == 0:
-            self.console.print('  [warning]⚠ Score is 0 - searching for any content div...[/warning]')
-            for div in soup.find_all('div'):
-                score = self._calculate_content_score(div)
-                if score > 10:  # At least some content
-                    main_content = div
-                    best_score = score
-                    self.console.print(f'  → Found fallback div with score: {score}')
-                    break
-
-        # Step 4: Fallback to body
-        if main_content is None or best_score == 0:
-            body_element = soup.find('body')
-            if isinstance(body_element, Tag):
-                main_content = body_element
-                self.console.print('  → Extracted content from <body> tag')
-
-        # Last resort
-        if main_content is None:
-            self.console.print('  → Using full HTML (all content selectors failed)')
-            return str(soup)[:30000]
-
-        content_str = str(main_content)[:30000]
-        self.console.print(f'  → Analyzing {len(content_str)} characters')
+        # Last resort: use entire soup
+        content_str = str(soup)[:30000]
+        self.console.print(f'  → No <body> or <main> found, using full HTML ({len(content_str)} chars)')
         return content_str
-
-    def _calculate_content_score(self, element: Tag) -> int:
-        """Calculate quality score for a content element."""
-        score = 0
-
-        p_count = len(element.find_all('p'))
-        score += p_count * 10
-
-        h_count = len(element.find_all(['h1', 'h2', 'h3']))
-        score += h_count * 5
-
-        a_count = len(element.find_all('a'))
-        if p_count > 0 and a_count > p_count * 2:
-            score -= 20
-
-        text_length = len(element.get_text(strip=True))
-        if text_length < 200:
-            score -= 10
-
-        return score
 
     # 4. Instrument the AI call
     # Pydantic AI automatically instruments the agent internals, but this outer span

@@ -6,12 +6,12 @@
   },
   "author": {
     "primary": "a.sd-username",
-    "fallback": "a[href*=\"user/home/\"]",
-    "tertiary": "a"
+    "fallback": "a[href*=\"user\"]",
+    "tertiary": "NA"
   },
   "date": {
     "primary": "span.sd-time",
-    "fallback": "span",
+    "fallback": "span.sd-time",
     "tertiary": "time"
   },
   "body_text": {
@@ -20,8 +20,8 @@
     "tertiary": "p"
   },
   "related_content": {
-    "primary": "div.sd-tags",
-    "fallback": "div.sd-source",
-    "tertiary": "aside"
+    "primary": "div.sd-tags > a.sd-tag",
+    "fallback": "div.sd-tags > a",
+    "tertiary": "aside a"
   }
 }

@@ -1,0 +1,22 @@
+{
+  "mediagazer.com": {
+    "llm_calls": 1,
+    "url_count": 92
+  },
+  "n4g.com": {
+    "llm_calls": 1,
+    "url_count": 58
+  },
+  "newsboiler-www-website.azurewebsites.net": {
+    "llm_calls": 1,
+    "url_count": 8
+  },
+  "workspaceupdates.googleblog.com": {
+    "llm_calls": 1,
+    "url_count": 28
+  },
+  "africanews.com": {
+    "llm_calls": 1,
+    "url_count": 2
+  }
+}

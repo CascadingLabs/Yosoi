@@ -1,22 +1,22 @@
 {
-  "headline": {
-    "primary": ".item .ii strong.L2 a.ourh",
-    "fallback": ".item .ii strong a.ourh",
-    "tertiary": "a.ourh"
-  },
   "author": {
-    "primary": ".item cite a",
-    "fallback": ".item cite",
-    "tertiary": "cite"
+    "primary": "cite a",
+    "fallback": ".ourh",
+    "tertiary": "a"
+  },
+  "date": {
+    "primary": "div.bcp div.col0rn",
+    "fallback": ".rncont",
+    "tertiary": "NA"
   },
   "body_text": {
-    "primary": ".item .ii",
-    "fallback": ".ii",
-    "tertiary": "div"
+    "primary": ".ii p",
+    "fallback": ".rncont p",
+    "tertiary": "p"
   },
   "related_content": {
-    "primary": ".relitems .item .ii a.ourh",
-    "fallback": ".relitems a",
+    "primary": ".relitems a",
+    "fallback": ".mls a",
     "tertiary": ".mlk a"
   }
 }

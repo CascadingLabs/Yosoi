@@ -23,6 +23,7 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.theme import Theme
 
+from llm_tracker import LLMTracker
 from selector_discovery import SelectorDiscovery
 from selector_storage import SelectorStorage
 from selector_validator import SelectorValidator
@@ -52,6 +53,7 @@ class SelectorDiscoveryPipeline:
         )
         self.validator = SelectorValidator(console=self.console)
         self.storage = SelectorStorage()
+        self.tracker = LLMTracker()
         self.debug_mode = debug_mode
 
     def process_url(self, url: str, force: bool = False, max_discovery_attempts: int = 2) -> bool:  # noqa: C901
@@ -68,6 +70,8 @@ class SelectorDiscoveryPipeline:
         """
         with logfire.span('process_url', url=url, force=force):
             self.console.print(Panel(f'[bold]Processing:[/bold] [underline]{url}[/underline]', border_style='blue'))
+
+            used_llm = False
 
             # Check if selectors already exist
             domain = self.storage._extract_domain(url)
@@ -115,6 +119,11 @@ class SelectorDiscoveryPipeline:
                                 self.console.print(
                                     '[success]✓ Existing selectors are valid (use --force to re-discover)[/success]'
                                 )
+
+                                used_llm = False
+                                stats = self.tracker.record_url(url, used_llm=used_llm)
+                                self._print_tracking_stats(domain, stats)
+
                                 return True
 
                             # If 2+ failed, continue to re-discovery below
@@ -157,6 +166,7 @@ class SelectorDiscoveryPipeline:
                 selectors: dict[str, Any] | None = None
                 with self.console.status('[step]Step 2: AI analyzing HTML...[/step]', spinner='earth'):
                     selectors = self.discovery.discover_from_html(url, html)
+                    used_llm = True
 
             if not selectors:
                 logfire.error('Failed to discover selectors', url=url, attempt=attempt)
@@ -204,10 +214,24 @@ class SelectorDiscoveryPipeline:
                 self.storage.save_selectors(url, validated)
 
             logfire.info('Processing complete', url=url, domain=domain, fields_saved=len(validated))
+
+            stats = self.tracker.record_url(url, used_llm=used_llm)
+            self._print_tracking_stats(domain, stats)
+
             return True
 
         # Should never reach here
         return False
+
+    def _print_tracking_stats(self, domain: str, stats: dict):
+        """Print LLM tracking statistics for this domain."""
+        self.console.print(f'\n[dim]  - Tracking Stats for {domain}:[/dim]')
+        self.console.print(f'[dim]    -- LLM Calls: {stats["llm_calls"]}[/dim]')
+        self.console.print(f'[dim]    -- URLs Processed: {stats["url_count"]}[/dim]')
+        if stats['llm_calls'] > 0:
+            efficiency = stats['url_count'] / stats['llm_calls']
+            self.console.print(f'[dim]     • Efficiency: {efficiency:.1f} URLs per LLM call[/dim]')
+        self.console.print()
 
     def process_urls(self, urls: list, force: bool = False):
         """Process multiple URLs."""
@@ -242,6 +266,8 @@ class SelectorDiscoveryPipeline:
             # Print summary
             self._print_summary(results)
 
+            self.show_llm_stats()
+
     def show_summary(self):
         """Show summary of all saved selectors."""
         summary = self.storage.get_summary()
@@ -263,38 +289,141 @@ class SelectorDiscoveryPipeline:
 
         self.console.print()
 
-    def _fetch_html(self, url: str) -> tuple[str | None, int | None]:
+    def show_llm_stats(self):
+        self.tracker.print_stats()
+
+    def _fetch_html(self, url: str) -> tuple[str | None, int | None]:  # noqa: C901
         """
-        Fetch HTML from URL.
+        Fetch HTML from URL with improved bot detection handling.
 
         Returns:
             (html_content, status_code)
             - html_content: The HTML string if successful, None if failed
             - http_error_code: HTTP status code if there was an error, None otherwise
         """
-        try:
-            response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=15)
-            status_code: int | Any = response.status_code
+        import random
+        import time
 
-            # Raise for 4xx and 5xx errors
-            response.raise_for_status()
+        # Multiple user agents to rotate through (looks more like real browsers)
+        user_agents = [
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15',
+        ]
 
-            logfire.info('HTML fetched', url=url, size_bytes=len(response.text), status_code=status_code)
+        # Better headers to mimic a real browser
+        def get_headers():
+            return {
+                'User-Agent': random.choice(user_agents),
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'DNT': '1',
+                'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1',
+                'Sec-Fetch-Dest': 'document',
+                'Sec-Fetch-Mode': 'navigate',
+                'Sec-Fetch-Site': 'none',
+                'Cache-Control': 'max-age=0',
+            }
 
-            self.console.print(f'[success]✓ Fetched {len(response.text):,} characters of HTML[/success]')
-            return response.text, status_code
+        # Try up to 3 times
+        max_attempts = 3
+        last_status_code = None
 
-        except requests.exceptions.HTTPError as e:
-            # Extract status code from exception
-            status_code = e.response.status_code if hasattr(e, 'response') else None
-            logfire.error('HTTP error fetching HTML', url=url, error=str(e), status_code=status_code)
-            self.console.print(f'[danger]✗ HTTP {status_code} error: {e}[/danger]')
-            return None, status_code
+        for attempt in range(1, max_attempts + 1):
+            try:
+                if attempt > 1:
+                    self.console.print(f'[warning]  → Retry attempt {attempt}/{max_attempts}...[/warning]')
+                    # Add delay with jitter between retries (appear more human)
+                    delay = 2.0 + random.uniform(0.5, 1.5)
+                    time.sleep(delay)
 
-        except Exception as e:
-            logfire.error('Failed to fetch HTML', url=url, error=str(e))
-            self.console.print(f'[danger]✗ Failed to fetch HTML: {e}[/danger]')
-            return None, None
+                response = requests.get(url, headers=get_headers(), timeout=15, allow_redirects=True)
+                status_code: int | Any = response.status_code
+                last_status_code = status_code
+
+                # Success!
+                if status_code == 200:
+                    logfire.info('HTML fetched', url=url, size_bytes=len(response.text), status_code=status_code)
+                    self.console.print(f'[success]✓ Fetched {len(response.text):,} characters of HTML[/success]')
+                    return response.text, status_code
+
+                # Handle specific error codes
+                if status_code == 403:
+                    self.console.print(
+                        f'[danger]✗ 403 Forbidden (bot detection) - attempt {attempt}/{max_attempts}[/danger]'
+                    )
+                    logfire.warn('403 Forbidden, retrying', url=url, attempt=attempt)
+                    if attempt < max_attempts:
+                        continue  # Retry
+                    return None, status_code
+
+                if status_code == 429:
+                    self.console.print(
+                        f'[danger]✗ 429 Too Many Requests (rate limited) - attempt {attempt}/{max_attempts}[/danger]'
+                    )
+                    logfire.warn('Rate limited, retrying with longer delay', url=url, attempt=attempt)
+                    if attempt < max_attempts:
+                        time.sleep(5.0)  # Longer wait for rate limits
+                        continue
+                    return None, status_code
+
+                if status_code == 434:
+                    self.console.print(f'[danger]✗ 434 Custom Error - attempt {attempt}/{max_attempts}[/danger]')
+                    logfire.warn('434 error, retrying', url=url, attempt=attempt)
+                    if attempt < max_attempts:
+                        continue
+                    return None, status_code
+
+                if status_code >= 500:
+                    # Server errors - don't retry
+                    self.console.print(f'[danger]✗ {status_code} Server Error - not retrying (server issue)[/danger]')
+                    logfire.error('Server error', url=url, status_code=status_code)
+                    return None, status_code
+
+                # Other errors - raise to trigger except block
+                response.raise_for_status()
+
+            except requests.exceptions.HTTPError as e:
+                # Extract status code from exception
+                status_code = e.response.status_code if hasattr(e, 'response') else None
+                last_status_code = status_code
+                logfire.error(
+                    'HTTP error fetching HTML', url=url, error=str(e), status_code=status_code, attempt=attempt
+                )
+                self.console.print(f'[danger]✗ HTTP {status_code} error: {e}[/danger]')
+
+                # Don't retry 5xx server errors
+                if status_code and status_code >= 500:
+                    return None, status_code
+
+                # Retry other errors
+                if attempt < max_attempts:
+                    continue
+
+                return None, status_code
+
+            except requests.exceptions.Timeout as e:
+                logfire.error('Timeout fetching HTML', url=url, error=str(e), attempt=attempt)
+                self.console.print(f'[danger]✗ Timeout after 15s - attempt {attempt}/{max_attempts}[/danger]')
+                if attempt < max_attempts:
+                    continue
+                return None, None
+
+            except Exception as e:
+                logfire.error('Failed to fetch HTML', url=url, error=str(e), attempt=attempt)
+                self.console.print(f'[danger]✗ Failed to fetch HTML: {e}[/danger]')
+
+                if attempt < max_attempts:
+                    continue
+
+                return None, None
+
+        # All attempts failed
+        self.console.print(f'[danger]✗ All {max_attempts} attempts failed for {url}[/danger]')
+        return None, last_status_code
 
     def _print_summary(self, results: dict):
         """Print processing summary."""
