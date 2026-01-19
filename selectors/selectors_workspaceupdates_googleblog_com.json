@@ -1,22 +1,27 @@
 {
   "headline": {
-    "primary": ".blog-post-full__title",
+    "primary": "h1.blog-post-full__title",
     "fallback": "h1",
     "tertiary": "h1"
   },
+  "author": {
+    "primary": "NA",
+    "fallback": "NA",
+    "tertiary": "NA"
+  },
   "date": {
-    "primary": ".blog-post-full__date",
-    "fallback": ".blog-post-full__date",
+    "primary": "p.blog-post-full__date",
+    "fallback": "p",
     "tertiary": "p"
   },
   "body_text": {
-    "primary": ".blog-post-full__body p",
-    "fallback": ".blog-post-full__body p",
-    "tertiary": "p"
+    "primary": "div.blog-post-full__body",
+    "fallback": "div",
+    "tertiary": "div"
   },
   "related_content": {
-    "primary": ".useful-link-item",
-    "fallback": ".useful-links-section a",
-    "tertiary": "a"
+    "primary": "div.useful-link-item",
+    "fallback": "div",
+    "tertiary": "div"
   }
 }

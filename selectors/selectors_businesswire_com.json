@@ -1,0 +1,27 @@
+{
+  "headline": {
+    "primary": "h1.ui-kit-press-release__headline",
+    "fallback": "h1.font-semibold",
+    "tertiary": "h1"
+  },
+  "author": {
+    "primary": "NA",
+    "fallback": "NA",
+    "tertiary": "NA"
+  },
+  "date": {
+    "primary": "div.ui-kit-press-release__date",
+    "fallback": "div.top-container",
+    "tertiary": "div"
+  },
+  "body_text": {
+    "primary": "div.bw-release-story p",
+    "fallback": "div.ui-kit-press-release-body__story p",
+    "tertiary": "p"
+  },
+  "related_content": {
+    "primary": "div .relative py-6",
+    "fallback": "a.font-figtree",
+    "tertiary": "a"
+  }
+}

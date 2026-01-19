@@ -1,8 +1,8 @@
 {
   "headline": {
-    "primary": "article h1",
-    "fallback": "h1",
-    "tertiary": "h1"
+    "primary": "article.main-content h2",
+    "fallback": "article h2",
+    "tertiary": "h2"
   },
   "author": {
     "primary": "NA",
@@ -10,17 +10,17 @@
     "tertiary": "NA"
   },
   "date": {
-    "primary": "article time.article__date",
+    "primary": "aside.lcds-card time",
     "fallback": "time",
     "tertiary": "time"
   },
   "body_text": {
-    "primary": "article p",
-    "fallback": "p",
+    "primary": "article.main-content p",
+    "fallback": "article p",
     "tertiary": "p"
   },
   "related_content": {
-    "primary": "aside .just-in__title a",
+    "primary": "aside.lcds-description-list a",
     "fallback": "aside a",
     "tertiary": "a"
   }

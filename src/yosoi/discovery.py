@@ -1,10 +1,9 @@
 """
-selector_discovery.py
+discovery.py
 =====================
 AI-powered CSS selector discovery by reading raw HTML.
 """
 
-import json
 from typing import Any
 
 import logfire
@@ -16,8 +15,7 @@ from pydantic_ai.providers.google import GoogleProvider
 from pydantic_ai.providers.groq import GroqProvider
 from rich.console import Console
 
-from models import ScrapingConfig
-from services import configure_logfire
+from yosoi.services import configure_logfire
 
 # 1. Configure Logfire and instrument Pydantic
 # This automatically traces Pydantic model validation and Pydantic AI agents
@@ -52,9 +50,8 @@ class SelectorDiscovery:
         else:
             raise ValueError(f"Unknown provider: {provider}. Use 'groq' or 'gemini'")
 
-        self.agent: Agent[None, ScrapingConfig] = Agent(
+        self.agent: Agent[None, str] = Agent(
             model,
-            output_type=ScrapingConfig,
             system_prompt=(
                 'You are analyzing HTML to find CSS selectors for web scraping. '
                 'Return selectors that actually exist in the provided HTML.'
@@ -91,9 +88,9 @@ class SelectorDiscovery:
                 # Ask AI to find selectors returns as ScrapingConfig
                 selectors_obj = self._get_selectors_from_ai(url, clean_html)
 
-                # Convert Pydantic object to dict
+                # AI now returns dict directly
                 if selectors_obj:
-                    selectors = json.loads(selectors_obj.model_dump_json())
+                    selectors = selectors_obj
 
                     if selectors and not self._is_all_na(selectors):
                         if attempt > 1:
@@ -172,7 +169,7 @@ class SelectorDiscovery:
     # Pydantic AI automatically instruments the agent internals, but this outer span
     # captures the full context of prompt construction + execution.
     @logfire.instrument('llm_discovery_request')
-    def _get_selectors_from_ai(self, url: str, html: str) -> ScrapingConfig | None:
+    def _get_selectors_from_ai(self, url: str, html: str) -> dict | None:
         """Ask AI to find CSS selectors by reading the HTML."""
 
         prompt = f"""CRITICAL INSTRUCTIONS:
@@ -195,7 +192,7 @@ Analyze the HTML above and find CSS selectors for these fields:
 
 For each field, return THREE selectors:
 - **primary**: Most specific (using actual classes/IDs from the HTML)
-- **fallback**: Less specific but reliable
+- **fallback**: Less specific but reliable'''Allow running as: python -m yosoi'''
 - **tertiary**: Generic (just tag name, or "NA" if field doesn't exist)
 
 IMPORTANT RULES:
@@ -206,14 +203,103 @@ IMPORTANT RULES:
 
         try:
             result = self.agent.run_sync(prompt)
-            self.console.print('[success]  ✓ AI found selectors[/success]')
-            return result.output  # type: ignore[no-any-return]
+            text_output = result.output
+
+            # Log raw output for debugging
+            logfire.debug('AI raw response', response=text_output[:500])
+
+            # Parse the simple text format
+            selectors = self._parse_text_selectors(text_output)
+
+            if selectors and not self._is_all_na(selectors):
+                self.console.print('[success]  ✓ AI found selectors[/success]')
+                return selectors
+            self.console.print('[warning]  ⚠ Could not parse AI response or all NA[/warning]')
+            return None
 
         except Exception as e:
             self.console.print(f'[danger]  ✗ Error getting selectors from AI: {e}[/danger]')
-            import traceback
+            logfire.error('AI request failed', error=str(e))
+            return None
 
-            self.console.print(f'[dim]{traceback.format_exc()}[/dim]')
+    def _parse_text_selectors(self, text: str) -> dict | None:
+        """
+        Parse simple text format into selector dictionary.
+
+        Expected format:
+            headline_primary: .primary h1
+            headline_fallback: article h1
+            headline_tertiary: h1
+            author_primary: .primary .author
+            ...
+
+        Returns:
+            {
+                'headline': {'primary': '...', 'fallback': '...', 'tertiary': '...'},
+                'author': {...},
+                ...
+            }
+        """
+        import re
+
+        try:
+            selectors = {'headline': {}, 'author': {}, 'date': {}, 'body_text': {}, 'related_content': {}}
+
+            # Clean up the text - remove markdown code blocks if present
+            text = text.strip()
+            text = re.sub(r'```.*?```', '', text, flags=re.DOTALL)  # Remove code blocks
+            text = re.sub(r'`', '', text)  # Remove backticks
+
+            lines_parsed = 0
+            for line in text.split('\n'):
+                line = line.strip()
+
+                # Skip empty lines and comments
+                if not line or line.startswith('#'):
+                    continue
+
+                # Must have a colon
+                if ':' not in line:
+                    continue
+
+                # Parse "field_priority: selector"
+                parts = line.split(':', 1)
+                if len(parts) != 2:
+                    continue
+
+                key = parts[0].strip()
+                value = parts[1].strip()
+
+                # Skip if value is empty
+                if not value:
+                    continue
+
+                # Split field and priority
+                if '_' not in key:
+                    continue
+
+                field, priority = key.rsplit('_', 1)
+
+                # Validate field and priority
+                if field in selectors and priority in ['primary', 'fallback', 'tertiary']:
+                    selectors[field][priority] = value
+                    lines_parsed += 1
+
+            self.console.print(f'[dim]  → Parsed {lines_parsed} selector lines[/dim]')
+
+            # Check if we got at least some valid selectors
+            # Each field should have at least one priority
+            valid_fields = sum(1 for field_sels in selectors.values() if len(field_sels) > 0)
+
+            if valid_fields >= 3:  # At least 3 fields with selectors
+                return selectors
+
+            self.console.print(f'[warning]  ⚠ Only parsed {valid_fields} valid fields[/warning]')
+            return None
+
+        except Exception as e:
+            self.console.print(f'[warning]  ⚠ Parse error: {e}[/warning]')
+            logfire.error('Parse error', error=str(e), text=text[:200])
             return None
 
     def _is_all_na(self, selectors: dict) -> bool:

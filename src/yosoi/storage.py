@@ -9,8 +9,6 @@ import os
 from typing import Any
 from urllib.parse import urlparse
 
-from models import ScrapingConfig
-
 
 class SelectorStorage:
     """Manages selector storage in JSON files."""
@@ -64,28 +62,6 @@ class SelectorStorage:
                 return data
         except Exception as e:
             print(f'Error loading selectors: {e}')
-            return None
-
-    def load_selectors_as_model(self, domain: str) -> ScrapingConfig | None:
-        """
-        Load selectors as a validated Pydantic model.
-
-        Args:
-            domain: Domain name (e.g., 'example.com')
-
-        Returns:
-            ScrapingConfig object or None if not found
-        """
-        selectors = self.load_selectors(domain)
-
-        if not selectors:
-            return None
-
-        try:
-            # Validate and return as Pydantic model
-            return ScrapingConfig(**selectors)
-        except Exception as e:
-            print(f'Error loading selectors as model: {e}')
             return None
 
     def selector_exists(self, domain: str) -> bool:
