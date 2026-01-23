@@ -16,7 +16,7 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.theme import Theme
 
-from yosoi.discovery import SelectorDiscovery
+from yosoi import LLMConfig, SelectorDiscovery, gemini, groq
 from yosoi.fetcher import BotDetectionError, create_fetcher
 from yosoi.storage import SelectorStorage
 from yosoi.tracker import LLMTracker
@@ -26,7 +26,7 @@ from yosoi.validator import SelectorValidator
 class SelectorDiscoveryPipeline:
     """Main pipeline for discovering and saving CSS selectors."""
 
-    def __init__(self, ai_api_key: str, model_name: str, provider: str = 'groq', debug_mode: bool = False):
+    def __init__(self, llm_config: LLMConfig, debug_mode: bool = False):
         """Initialize the pipeline with API key."""
 
         # Initialize Rich Console
@@ -42,9 +42,7 @@ class SelectorDiscoveryPipeline:
         self.console = Console(theme=self.custom_theme)
 
         # Initialize components
-        self.discovery = SelectorDiscovery(
-            model_name=model_name, api_key=ai_api_key, provider=provider, console=self.console, debug_mode=debug_mode
-        )
+        self.discovery = SelectorDiscovery(llm_config=llm_config, console=self.console, debug_mode=debug_mode)
         self.validator = SelectorValidator(console=self.console)
         self.storage = SelectorStorage()
         self.tracker = LLMTracker()
@@ -104,6 +102,12 @@ class SelectorDiscoveryPipeline:
                                 stats = self.tracker.record_url(url, used_llm=False)
                                 self._print_tracking_stats(domain, stats)
                                 return True
+
+                            # Explicit None check
+                            if result.html is None:
+                                self.console.print('[warning]⚠ No HTML content received[/warning]')
+                                return True
+
                             # Validate cached selectors
                             self.console.print('[step]Validating cached selectors...[/step]')
                             validated = self.validator.validate_selectors_with_html(
@@ -156,6 +160,11 @@ class SelectorDiscoveryPipeline:
                             self.console.print(f'[danger]Fetch failed: {result.block_reason}[/danger]')
                         else:
                             self.console.print('[danger]Fetch failed[/danger]')
+                        return False
+
+                    # Explicit None check
+                    if result.html is None:
+                        self.console.print('[danger]No HTML content received[/danger]')
                         return False
 
                     html = result.html
@@ -363,7 +372,7 @@ class SelectorDiscoveryPipeline:
 
     def show_llm_stats(self):
         """Show LLM usage statistics."""
-        stats = self.tracker.get_stats()
+        stats = self.tracker.get_all_stats()
 
         self.console.print('\n[bold cyan]═══ LLM Usage Statistics ═══[/bold cyan]')
         self.console.print(f'[info]Total URLs processed: {stats.get("total_urls", 0)}[/info]')
@@ -385,28 +394,27 @@ def main():  # noqa: C901
     gemini_api_key = os.getenv('GEMINI_KEY')
     groq_api_key = os.getenv('GROQ_KEY')
 
-    if not gemini_api_key:
-        print('Warning: GEMINI_KEY not found in environment variables')
-        if not groq_api_key:
-            print('Error: GROQ_KEY not found in environment variables')
-            sys.exit(1)
-
     # USE_GROQ = False
     USE_GROQ = bool(groq_api_key)
-    print(f'Using {"GROQ" if USE_GROQ else "Gemini"} as AI provider')
 
     if USE_GROQ:
-        if not groq_api_key:
-            raise ValueError('GROQ_API_KEY not found in environment')
-        pipeline = SelectorDiscoveryPipeline(groq_api_key, 'llama-3.3-70b-versatile', provider='groq')
+        assert groq_api_key is not None
+        llm_config = groq('llama-3.3-70b-versatile', groq_api_key)
+        print('Using GROQ as AI provider')
+    elif gemini_api_key:
+        assert gemini_api_key is not None
+        llm_config = gemini('gemini-2.0-flash-exp', gemini_api_key)
+        print('Using Gemini as AI provider')
     else:
-        if not gemini_api_key:
-            raise ValueError('GEMINI_API_KEY not found in environment')
-        pipeline = SelectorDiscoveryPipeline(gemini_api_key, 'gemini-2.0-flash-exp', provider='gemini')
+        print('Error: No API keys found. Set GROQ_KEY or GEMINI_KEY in environment')
+        sys.exit(1)
+
+    pipeline = SelectorDiscoveryPipeline(llm_config)
 
     logfire_token = os.getenv('LOGFIRE_TOKEN')
     if logfire_token:
         logfire.configure(token=logfire_token)
+        logfire.instrument_pydantic()
         print('Logfire setup complete')
     else:
         print('LOGFIRE_TOKEN not set - skipping logfire setup')

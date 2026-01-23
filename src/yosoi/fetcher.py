@@ -542,7 +542,7 @@ def create_fetcher(fetcher_type: str = 'simple', **kwargs) -> HTMLFetcher:
         >>> fetcher = create_fetcher('playwright', headless=True)
         >>> fetcher = create_fetcher('smart')
     """
-    fetchers = {
+    fetchers: dict[str, type[HTMLFetcher]] = {
         'simple': SimpleFetcher,
         'playwright': PlaywrightFetcher,
         'smart': SmartFetcher,

@@ -12,7 +12,7 @@ from rich.console import Console
 class SelectorValidator:
     """Validates CSS selectors by testing them on actual pages."""
 
-    def __init__(self, user_agent: str = 'Mozilla/5.0', console: Console = None):
+    def __init__(self, user_agent: str = 'Mozilla/5.0', console: Console | None = None):
         self.user_agent = user_agent
         self.console = console or Console()
 

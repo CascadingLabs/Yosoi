@@ -15,12 +15,7 @@ from pydantic_ai.providers.google import GoogleProvider
 from pydantic_ai.providers.groq import GroqProvider
 from rich.console import Console
 
-from yosoi.services import configure_logfire
-
-# 1. Configure Logfire and instrument Pydantic
-# This automatically traces Pydantic model validation and Pydantic AI agents
-configure_logfire()
-logfire.instrument_pydantic()
+from yosoi.llm_config import LLMConfig
 
 
 class SelectorDiscovery:
@@ -28,35 +23,65 @@ class SelectorDiscovery:
 
     def __init__(
         self,
-        model_name: str,
-        api_key: str,
+        llm_config: LLMConfig | None = None,
+        agent: Agent | None = None,
+        model_name: str | None = None,
+        api_key: str | None = None,
         provider: str = 'groq',
         console: Console | None = None,
         debug_mode: bool = False,
         remove_sidebars: bool = False,
     ):
-        self.model_name = model_name
-        self.provider = provider
         self.console = console or Console()
         self.fallback_selectors = self._get_fallback_selectors()
         self.debug_mode = debug_mode
         self.remove_sidebars = remove_sidebars
 
-        # Set appropriate API key and model string based on provider
-        if provider == 'groq':
-            model = GroqModel(model_name, provider=GroqProvider(api_key=api_key))
-        elif provider == 'gemini':
-            model = GoogleModel(model_name, provider=GoogleProvider(api_key=api_key))
-        else:
-            raise ValueError(f"Unknown provider: {provider}. Use 'groq' or 'gemini'")
-
-        self.agent: Agent[None, str] = Agent(
-            model,
-            system_prompt=(
-                'You are analyzing HTML to find CSS selectors for web scraping. '
-                'Return selectors that actually exist in the provided HTML.'
-            ),
+        # System prompt for the agent
+        system_prompt = (
+            'You are analyzing HTML to find CSS selectors for web scraping. '
+            'Return selectors that actually exist in the provided HTML.'
         )
+
+        # Priority: agent > llm_config > legacy params
+        if agent is not None:
+            # User provided a pre-configured agent
+            self.agent: Agent[None, str] = agent
+            self.model_name = 'custom-agent'
+            self.provider = 'custom'
+
+        elif llm_config is not None:
+            # User provided LLMConfig (NEW, recommended way)
+            from yosoi.llm_config import create_agent
+
+            self.agent = create_agent(llm_config, system_prompt)
+            self.model_name = llm_config.model_name
+            self.provider = llm_config.provider
+
+        else:
+            # Legacy initialization (DEPRECATED but still supported)
+            if not model_name or not api_key:
+                raise ValueError(
+                    'Either provide llm_config/agent OR legacy params (model_name + api_key). '
+                    'Recommendation: Use llm_config parameter instead.'
+                )
+
+            self.console.print(
+                '[warning] Using deprecated initialization. Consider using llm_config parameter instead.[/warning]'
+            )
+
+            self.model_name = model_name
+            self.provider = provider
+
+            # Old hardcoded logic
+            if provider == 'groq':
+                model: GroqModel | GoogleModel = GroqModel(model_name, provider=GroqProvider(api_key=api_key))
+            elif provider == 'gemini':
+                model = GoogleModel(model_name, provider=GoogleProvider(api_key=api_key))
+            else:
+                raise ValueError(f"Unknown provider: {provider}. Use 'groq' or 'gemini'")
+
+            self.agent = Agent(model, system_prompt=system_prompt)
 
     # 2. Instrument the main entry point.
     # extract_args=False prevents sending the massive raw HTML string to Logfire logs.
@@ -94,20 +119,20 @@ class SelectorDiscovery:
 
                     if selectors and not self._is_all_na(selectors):
                         if attempt > 1:
-                            self.console.print(f'[success]  ✓ Retry successful on attempt {attempt}[/success]')
+                            self.console.print(f'[success] Retry successful on attempt {attempt}[/success]')
 
                         logfire.info('Selectors found successfully', selectors=selectors)
                         break
 
                 if attempt < max_retries:
                     self.console.print(
-                        f'[warning]  ⚠ Attempt {attempt} failed - AI returned no/invalid selectors[/warning]'
+                        f'[warning] Attempt {attempt} failed - AI returned no/invalid selectors[/warning]'
                     )
                 selectors = None
 
         # Use fallback if AI fails
         if not selectors or self._is_all_na(selectors):
-            self.console.print(f'[warning]  ⚠ All {max_retries} attempts failed, using fallback heuristics[/warning]')
+            self.console.print(f'[warning] All {max_retries} attempts failed, using fallback heuristics[/warning]')
             logfire.error('All attempts failed, using fallback', url=url)
             selectors = self.fallback_selectors
 
@@ -212,13 +237,13 @@ IMPORTANT RULES:
             selectors = self._parse_text_selectors(text_output)
 
             if selectors and not self._is_all_na(selectors):
-                self.console.print('[success]  ✓ AI found selectors[/success]')
+                self.console.print('[success] AI found selectors[/success]')
                 return selectors
-            self.console.print('[warning]  ⚠ Could not parse AI response or all NA[/warning]')
+            self.console.print('[warning] Could not parse AI response or all NA[/warning]')
             return None
 
         except Exception as e:
-            self.console.print(f'[danger]  ✗ Error getting selectors from AI: {e}[/danger]')
+            self.console.print(f'[danger] Error getting selectors from AI: {e}[/danger]')
             logfire.error('AI request failed', error=str(e))
             return None
 
@@ -243,7 +268,13 @@ IMPORTANT RULES:
         import re
 
         try:
-            selectors = {'headline': {}, 'author': {}, 'date': {}, 'body_text': {}, 'related_content': {}}
+            selectors: dict[str, dict[str, str]] = {
+                'headline': {},
+                'author': {},
+                'date': {},
+                'body_text': {},
+                'related_content': {},
+            }
 
             # Clean up the text - remove markdown code blocks if present
             text = text.strip()
@@ -294,11 +325,11 @@ IMPORTANT RULES:
             if valid_fields >= 3:  # At least 3 fields with selectors
                 return selectors
 
-            self.console.print(f'[warning]  ⚠ Only parsed {valid_fields} valid fields[/warning]')
+            self.console.print(f'[warning] Only parsed {valid_fields} valid fields[/warning]')
             return None
 
         except Exception as e:
-            self.console.print(f'[warning]  ⚠ Parse error: {e}[/warning]')
+            self.console.print(f'[warning] Parse error: {e}[/warning]')
             logfire.error('Parse error', error=str(e), text=text[:200])
             return None
 
