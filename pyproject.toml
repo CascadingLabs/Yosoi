@@ -20,6 +20,7 @@ classifiers = [
 
 dependencies = [
   "beautifulsoup4>=4.12",
+  "brotli>=1.1",
   "logfire>=4.16",
   "pydantic>=2",
   "pydantic-ai>=0.0.16",

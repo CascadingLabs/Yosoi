@@ -1,8 +1,8 @@
 """
-HTML Fetcher Module - Pluggable HTML Retrieval with Content Detection
+HTML Fetcher Module - HTML Retrieval with Content Detection
 ======================================================================
 
-This module provides a pluggable interface for fetching HTML from URLs.
+This module provides a interface for fetching HTML from URLs.
 Now includes detection for:
 - Tailwind CSS (utility-first CSS that breaks selector discovery)
 - RSS feeds (XML, not HTML)
@@ -16,12 +16,11 @@ Usage:
 
     if result.is_rss:
         print("This is an RSS feed!")
-    elif result.is_tailwind_heavy:
-        print("Heavy Tailwind usage - use heuristics")
     elif result.requires_js:
         print("Needs JavaScript rendering")
 """
 
+import random
 import re
 import time
 from abc import ABC, abstractmethod
@@ -45,19 +44,12 @@ class ContentMetadata:
     """Metadata about the fetched content."""
 
     is_rss: bool = False
-    is_tailwind_heavy: bool = False
     requires_js: bool = False
     content_type: str = 'html'  # 'html', 'rss', 'xml', 'json'
-
-    # Tailwind detection details
-    tailwind_class_count: int = 0
 
     # JavaScript detection details
     js_framework: str | None = None  # 'react', 'vue', 'angular', etc.
 
-    # Additional metadata
-    has_body_tag: bool = True
-    has_main_tag: bool = False
     content_length: int = 0
 
 
@@ -72,7 +64,7 @@ class FetchResult:
     block_reason: str | None = None
     fetch_time: float = 0.0
 
-    # NEW: Content metadata
+    # Content metadata
     metadata: ContentMetadata = field(default_factory=ContentMetadata)
 
     @property
@@ -86,11 +78,6 @@ class FetchResult:
         return self.metadata.is_rss
 
     @property
-    def is_tailwind_heavy(self) -> bool:
-        """Shortcut to check if content uses heavy Tailwind."""
-        return self.metadata.is_tailwind_heavy
-
-    @property
     def requires_js(self) -> bool:
         """Shortcut to check if content requires JavaScript."""
         return self.metadata.requires_js
@@ -98,7 +85,7 @@ class FetchResult:
     @property
     def should_use_heuristics(self) -> bool:
         """Whether we should skip AI and use heuristics."""
-        return self.is_rss or self.is_tailwind_heavy or self.requires_js
+        return self.is_rss or self.requires_js
 
 
 class ContentAnalyzer:
@@ -128,16 +115,7 @@ class ContentAnalyzer:
             metadata.content_type = 'rss'
             return metadata  # Early return for RSS
 
-        # 2. Check for basic HTML structure
-        metadata.has_body_tag = '<body' in html_lower
-        metadata.has_main_tag = '<main' in html_lower
-
-        # 3. Detect Tailwind CSS
-        tailwind_data = ContentAnalyzer._detect_tailwind(html, html_lower)
-        metadata.is_tailwind_heavy = tailwind_data['is_heavy']
-        metadata.tailwind_class_count = tailwind_data['count']
-
-        # 4. Detect JavaScript-heavy sites
+        # 2. Detect JavaScript-heavy sites
         js_data = ContentAnalyzer._detect_javascript_heavy(html, html_lower)
         metadata.requires_js = js_data['requires_js']
         metadata.js_framework = js_data['framework']
@@ -164,52 +142,6 @@ class ContentAnalyzer:
         start = html_lower[:500]
 
         return any(indicator in start for indicator in rss_indicators)
-
-    @staticmethod
-    def _detect_tailwind(html: str, _html_lower: str) -> dict:  # Prefix with _
-        """
-        Detect heavy Tailwind CSS usage.
-
-        Tailwind uses utility classes with special characters like:
-        - lg:flex, md:hidden (responsive)
-        - hover:bg-blue-500 (pseudo-classes)
-        - [&_a]:underline (arbitrary values)
-
-        These break JSON parsing in Pydantic AI.
-        """
-        tailwind_patterns = [
-            r'lg:',
-            r'md:',
-            r'sm:',
-            r'xl:',
-            r'2xl:',
-            r'hover:',
-            r'focus:',
-            r'active:',
-            r'dark:',
-            r'\[&_',
-            r'text-\w+',
-            r'bg-\w+',
-            r'p-\d+',
-            r'm-\d+',
-            r'w-\d+',
-            r'h-\d+',
-            r'flex-\w+',
-            r'grid-\w+',
-        ]
-
-        count = 0
-        for pattern in tailwind_patterns:
-            matches = re.findall(pattern, html)
-            count += len(matches)
-
-        # Thresholds
-        # Light usage: < 50 (maybe a few utility classes)
-        # Medium usage: 50-200 (mixed approach)
-        # Heavy usage: > 200 (full Tailwind)
-        is_heavy = count > 200
-
-        return {'is_heavy': is_heavy, 'count': count}
 
     @staticmethod
     def _detect_javascript_heavy(_html: str, html_lower: str) -> dict:  # Prefix with _
@@ -285,10 +217,116 @@ class ContentAnalyzer:
         return {'requires_js': requires_js, 'framework': detected_framework}
 
 
+class UserAgentRotator:
+    """Manages a pool of realistic user agents."""
+
+    # Pool of realistic, recent user agents
+    USER_AGENTS = [
+        # Chrome on Windows
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+        # Chrome on Mac
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+        # Firefox on Windows
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0',
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0',
+        # Firefox on Mac
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:121.0) Gecko/20100101 Firefox/121.0',
+        # Safari on Mac
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15',
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
+        # Edge on Windows
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0',
+        # Chrome on Linux
+        'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    ]
+
+    @classmethod
+    def get_random(cls) -> str:
+        """Get a random user agent."""
+        return random.choice(cls.USER_AGENTS)
+
+    @classmethod
+    def get_chrome_windows(cls) -> str:
+        """Get a Chrome on Windows user agent (most common)."""
+        chrome_windows = [ua for ua in cls.USER_AGENTS if 'Chrome' in ua and 'Windows' in ua and 'Edg' not in ua]
+        return random.choice(chrome_windows)
+
+    @classmethod
+    def get_firefox(cls) -> str:
+        """Get a Firefox user agent."""
+        firefox = [ua for ua in cls.USER_AGENTS if 'Firefox' in ua]
+        return random.choice(firefox)
+
+
+class HeaderGenerator:
+    """Generates realistic browser headers with variation."""
+
+    @staticmethod
+    def generate_headers(user_agent: str | None = None, referer: str | None = None) -> dict[str, str]:
+        """
+        Generate realistic browser headers with randomization.
+
+        Args:
+            user_agent: Specific user agent to use (or random if None)
+            referer: Referer header to include
+
+        Returns:
+            Dictionary of HTTP headers
+        """
+        if user_agent is None:
+            user_agent = UserAgentRotator.get_random()
+
+        # Base headers that all browsers send
+        headers = {
+            'User-Agent': user_agent,
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+            'Accept-Language': HeaderGenerator._get_accept_language(),
+            'Accept-Encoding': 'gzip, deflate, br',
+            'DNT': '1',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+        }
+
+        # Add Sec-Fetch-* headers (Chrome/Edge specific)
+        if 'Chrome' in user_agent or 'Edg' in user_agent:
+            headers.update(
+                {
+                    'Sec-Fetch-Dest': 'document',
+                    'Sec-Fetch-Mode': 'navigate',
+                    'Sec-Fetch-Site': 'none' if referer is None else 'same-origin',
+                    'Sec-Fetch-User': '?1',
+                }
+            )
+
+        # Add referer if provided
+        if referer:
+            headers['Referer'] = referer
+
+        # Randomly add some optional headers
+        if random.random() > 0.5:
+            headers['Cache-Control'] = random.choice(['no-cache', 'max-age=0'])
+
+        return headers
+
+    @staticmethod
+    def _get_accept_language() -> str:
+        """Get a randomized Accept-Language header."""
+        languages = [
+            'en-US,en;q=0.9',
+            'en-GB,en;q=0.9',
+            'en-US,en;q=0.9,es;q=0.8',
+            'en-US,en;q=0.9,fr;q=0.8',
+            'en-US,en;q=0.5',
+        ]
+        return random.choice(languages)
+
+
 class HTMLFetcher(ABC):
     """
     Abstract base class for HTML fetchers.
-
     Implement this interface to create custom HTML fetchers.
     """
 
@@ -322,30 +360,54 @@ class HTMLFetcher(ABC):
         if not html or len(html) < 100:
             return True, ['HTML too short']
 
-        # Check status code
-        if status_code in [403, 429]:
+        # Block immediately on known bad status codes
+        if status_code in [403, 429, 503]:
             return True, [f'HTTP {status_code}']
 
-        # Check for common block indicators
-        html_lower = html.lower()
+        # For 200 OK responses, be conservative (avoid false positives)
+        if status_code == 200:
+            # Only check first 2000 chars where block messages appear
+            html_check = html[:2000].lower()
 
-        block_indicators = {
-            'captcha': 'CAPTCHA required',
-            'access denied': 'Access denied',
-            'cloudflare': 'Cloudflare protection',
-            'please verify you are a human': 'Human verification required',
-            'rate limit': 'Rate limited',
-            'too many requests': 'Too many requests',
-            'firewall': 'Firewall block',
-            'forbidden': 'Forbidden',
-        }
+            # Very specific patterns that indicate actual blocking
+            strict_indicators = {
+                'challenge-form': 'Cloudflare challenge',
+                'cf-captcha': 'Cloudflare CAPTCHA',
+                'access denied</title>': 'Access denied page',
+                'rate limit exceeded': 'Rate limit',
+                'please verify you are human': 'Human verification',
+                'enable javascript to continue': 'JavaScript block',
+            }
 
-        found = []
-        for indicator, message in block_indicators.items():
-            if indicator in html_lower:
-                found.append(message)
+            found = []
+            for indicator, message in strict_indicators.items():
+                if indicator in html_check:
+                    found.append(message)
 
-        return bool(found), found
+            return bool(found), found
+
+        # For other bad status codes (4xx, 5xx), be more aggressive
+        if status_code >= 400:
+            html_check = html[:2000].lower()
+
+            block_indicators = {
+                'captcha': 'CAPTCHA required',
+                'access denied': 'Access denied',
+                'cloudflare': 'Cloudflare protection',
+                'rate limit': 'Rate limited',
+                'too many requests': 'Too many requests',
+                'forbidden': 'Forbidden',
+            }
+
+            found = []
+            for indicator, message in block_indicators.items():
+                if indicator in html_check:
+                    found.append(message)
+
+            return bool(found), found
+
+        # No blocking detected
+        return False, []
 
     def _analyze_content(self, html: str, url: str) -> ContentMetadata:
         """Analyze fetched content."""
@@ -360,30 +422,113 @@ class SimpleFetcher(HTMLFetcher):
     Now includes content analysis.
     """
 
-    def __init__(self, timeout: int = 30):
+    def __init__(
+        self,
+        timeout: int = 30,
+        rotate_user_agent: bool = True,
+        use_session: bool = True,
+        min_delay: float = 0.5,
+        max_delay: float = 2.0,
+        randomize_headers: bool = True,
+    ):
         self.timeout = timeout
-        self.headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        self.rotate_user_agent = rotate_user_agent
+        self.use_session = use_session
+        self.min_delay = min_delay
+        self.max_delay = max_delay
+        self.randomize_headers = randomize_headers
+
+        # Create session if enabled
+        if self.use_session:
+            self.session = requests.Session()
+        else:
+            self.session = None
+
+        # Track last request time for delays
+        self.last_request_time = 0.0
+
+    def _apply_request_delay(self):
+        """Apply a random delay between requests to appear more human."""
+        if self.min_delay > 0:
+            elapsed = time.time() - self.last_request_time
+            delay_needed = random.uniform(self.min_delay, self.max_delay)
+
+            if elapsed < delay_needed:
+                time.sleep(delay_needed - elapsed)
+
+        self.last_request_time = time.time()
+
+    def _get_headers(self, url: str) -> dict[str, str]:  # noqa: ARG002
+        """
+        Get headers for the request.
+
+        Args:
+            url: URL being fetched (for referer logic)
+
+        Returns:
+            Dictionary of headers
+        """
+        if self.randomize_headers:
+            user_agent = UserAgentRotator.get_random() if self.rotate_user_agent else None
+            return HeaderGenerator.generate_headers(user_agent=user_agent)
+        # Fallback to static headers
+        return {
+            'User-Agent': UserAgentRotator.get_chrome_windows(),
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.9',
             'Accept-Encoding': 'gzip, deflate, br',
             'DNT': '1',
             'Connection': 'keep-alive',
             'Upgrade-Insecure-Requests': '1',
-            'Sec-Fetch-Dest': 'document',
-            'Sec-Fetch-Mode': 'navigate',
-            'Sec-Fetch-Site': 'none',
-            'Sec-Fetch-User': '?1',
         }
 
     def fetch(self, url: str) -> FetchResult:
-        """Fetch HTML using simple HTTP request with content analysis."""
+        """Fetch HTML using enhanced HTTP request with anti-bot measures."""
         start_time = time.time()
 
+        # Apply delay to avoid rate limiting
+        self._apply_request_delay()
+
         try:
-            response = requests.get(url, headers=self.headers, timeout=self.timeout)
-            html = response.text
+            # Get headers (potentially randomized)
+            headers = self._get_headers(url)
+
+            # Use session or direct request
+            if self.session:
+                response = self.session.get(url, headers=headers, timeout=self.timeout, allow_redirects=True)
+            else:
+                response = requests.get(url, headers=headers, timeout=self.timeout, allow_redirects=True)
+
             status_code = response.status_code
+
+            try:
+                # Try to get text with proper encoding
+                html = response.text
+
+                # Verify it's actually text
+                if html.startswith('\x1f\x8b'):
+                    # Still compressed! Force decompression
+                    import gzip
+
+                    html = gzip.decompress(response.content).decode('utf-8', errors='replace')
+
+            except Exception:
+                # Fallback: try to decode bytes manually
+                try:
+                    html = response.content.decode('utf-8', errors='replace')
+                except UnicodeDecodeError:
+                    html = response.content.decode('latin-1', errors='replace')
+
+            # Verify we got actual HTML
+            if not html or len(html) < 100:
+                return FetchResult(
+                    url=url,
+                    html=None,
+                    status_code=status_code,
+                    is_blocked=True,
+                    block_reason='Response too short or empty',
+                    fetch_time=time.time() - start_time,
+                )
 
             # Check for bot detection
             is_blocked, indicators = self._check_for_bot_detection(html, status_code)
@@ -408,6 +553,19 @@ class SimpleFetcher(HTMLFetcher):
             return FetchResult(
                 url=url, html=None, status_code=None, is_blocked=False, block_reason=str(e), fetch_time=fetch_time
             )
+
+    def close(self):
+        """Close the session if it exists."""
+        if self.session:
+            self.session.close()
+
+    def __enter__(self):
+        """Context manager entry."""
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Context manager exit."""
+        self.close()
 
 
 class PlaywrightFetcher(HTMLFetcher):
