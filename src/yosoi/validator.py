@@ -12,6 +12,8 @@ from rich.console import Console
 class SelectorValidator:
     """Validates CSS selectors by testing them on actual pages."""
 
+    EXPECTED_FIELDS = ['headline', 'author', 'date', 'body_text', 'related_content']
+
     def __init__(self, user_agent: str = 'Mozilla/5.0', console: Console | None = None):
         self.user_agent = user_agent
         self.console = console or Console()
@@ -35,60 +37,65 @@ class SelectorValidator:
         Returns:
             Dictionary of validated selectors (only selectors that worked)
         """
-        from bs4 import BeautifulSoup
-
-        self.console.print(f'[dim]  → Validating {len(selectors)} fields using fetched HTML...[/dim]')
+        self.console.print(f'  → Validating {len(self.EXPECTED_FIELDS)} fields using fetched HTML...')
 
         soup = BeautifulSoup(html, 'html.parser')
         validated = {}
 
-        for field, field_selectors in selectors.items():
-            # Try primary selector
+        # Validate each expected field
+        for field_name in self.EXPECTED_FIELDS:
+            # Check if selector exists for this field
+            if field_name not in selectors:
+                self.console.print(f'  ✗ {field_name}: no selector found')
+                continue
+
+            field_selectors = selectors[field_name]
+
+            # Try primary selector first
+            primary = field_selectors.get('primary', 'NA')
+
+            if primary == 'NA':
+                self.console.print(f'  ✗ {field_name}: selector is NA')
+                continue
+
             try:
-                elements = soup.select(field_selectors['primary'])
-                if elements and elements[0].get_text(strip=True):
-                    validated[field] = field_selectors
-                    self.console.print(
-                        f'[success]  ✓ {field}: primary selector works ({field_selectors["primary"]})[/success]'
-                    )
-                    continue
+                elements = soup.select(primary)
+                if elements:
+                    # Primary selector works!
+                    self.console.print(f'  ✓ {field_name}: primary selector works ({primary})')
+                    validated[field_name] = field_selectors
+                else:
+                    # Primary failed, try fallback
+                    fallback = field_selectors.get('fallback', 'NA')
+                    if fallback != 'NA':
+                        elements = soup.select(fallback)
+                        if elements:
+                            self.console.print(f'  ✓ {field_name}: fallback selector works ({fallback})')
+                            validated[field_name] = field_selectors
+                        else:
+                            # Try tertiary
+                            tertiary = field_selectors.get('tertiary', 'NA')
+                            if tertiary != 'NA':
+                                elements = soup.select(tertiary)
+                                if elements:
+                                    self.console.print(f'  ✓ {field_name}: tertiary selector works ({tertiary})')
+                                    validated[field_name] = field_selectors
+                                else:
+                                    self.console.print(f'  ✗ {field_name}: ALL selectors failed validation')
+                            else:
+                                self.console.print(f'   {field_name}: primary failed, no fallback available')
+                    else:
+                        self.console.print(f'  ✗ {field_name}: primary failed, no fallback available')
             except Exception as e:
-                self.console.print(f'[dim]    {field}: primary failed ({str(e)[:50]})[/dim]')
+                self.console.print(f'  ✗ {field_name}: validation error ({e})')
 
-            # Try fallback selector
-            try:
-                elements = soup.select(field_selectors['fallback'])
-                if elements and elements[0].get_text(strip=True):
-                    validated[field] = field_selectors
-                    self.console.print(
-                        f'[success]  ✓ {field}: fallback selector works ({field_selectors["fallback"]})[/success]'
-                    )
-                    continue
-            except Exception as e:
-                self.console.print(f'[dim]    {field}: fallback failed ({str(e)[:50]})[/dim]')
+        # Summary
+        total = len(self.EXPECTED_FIELDS)
+        validated_count = len(validated)
+        self.console.print(f'  → Summary: {validated_count}/{total} fields validated successfully')
 
-            # Try tertiary selector
-            try:
-                if field_selectors['tertiary'] != 'NA':
-                    elements = soup.select(field_selectors['tertiary'])
-                    if elements and elements[0].get_text(strip=True):
-                        validated[field] = field_selectors
-                        self.console.print(
-                            f'[success]  ✓ {field}: tertiary selector works ({field_selectors["tertiary"]})[/success]'
-                        )
-                        continue
-            except Exception as e:
-                self.console.print(f'[dim]    {field}: tertiary failed ({str(e)[:50]})[/dim]')
-
-            # All selectors failed for this field
-            self.console.print(f'[danger]  ✗ {field}: ALL selectors failed validation[/danger]')
-
-        if validated:
-            self.console.print(
-                f'[dim]  → Summary: {len(validated)}/{len(selectors)} fields validated successfully[/dim]'
-            )
-
-        return validated
+        # Return validated fields (or None if none validated)
+        return validated if validated else None
 
     def quick_test(self, url: str, selector: str) -> bool:
         """

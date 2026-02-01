@@ -295,9 +295,7 @@ class SelectorDiscoveryPipeline:
             validated = self.validator.validate_selectors_with_html(url, result.html, existing_selectors)
 
             if validated:
-                self.console.print(
-                    f'[success]✓ Validated {len(validated)}/{len(existing_selectors)} cached selectors[/success]'
-                )
+                self.console.print(f'[success]✓ Validated {len(validated)}/5 cached selectors[/success]')
                 self._track_cached_success(url, domain)
                 return True
 
@@ -355,7 +353,7 @@ class SelectorDiscoveryPipeline:
             return None
 
         failed_count = len(selectors) - len(validated)
-        self.console.print(f'[success]Validated {len(validated)}/{len(selectors)} fields successfully[/success]')
+        self.console.print(f'[success]Validated {len(validated)}/5 fields successfully[/success]')
 
         if failed_count >= 2:
             self.console.print(f'[warning]Warning: {failed_count} fields failed validation[/warning]')
