@@ -49,19 +49,19 @@ LOGFIRE_TOKEN=your_logfire_token_here     # For Logfire tracing
 
 ```bash
 # Process a single URL
-uv run main.py --url https://example.com/article
+uv run -m yosoi --url https://example.com/article
 
 # Process multiple URLs from a file
-uv run main.py --file urls.txt
+uv run -m yosoi --file urls.txt
 
 # Force re-discovery
-uv run main.py --url https://example.com --force
+uv run -m yosoi --url https://example.com --force
 
 # Show summary of all saved selectors
-uv run main.py --summary
+uv run -m yosoi --summary
 
 # Enable debug mode (saves extracted HTML)
-uv run main.py --url https://example.com --debug
+uv run -m yosoi --url https://example.com --debug
 ```
 
 ### URLs File Format

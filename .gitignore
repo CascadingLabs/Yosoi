@@ -5,3 +5,5 @@ todo.md
 TODO.md
 __pycache__
 primary-sources.json
+llm_tracking.json
+used-urls.json
