@@ -10,17 +10,24 @@ import os
 from typing import Any
 from urllib.parse import urlparse
 
+from yosoi.utils.files import get_tracking_path
+
 
 class LLMTracker:
     """Tracks LLM calls and URL counts per domain in a separate file."""
 
-    def __init__(self, tracking_file: str = 'llm_tracking.json'):
-        self.tracking_file = tracking_file
+    def __init__(self, tracking_file: str | None = None):
+        if tracking_file is None:
+            self.tracking_file = str(get_tracking_path())
+        else:
+            self.tracking_file = tracking_file
         self._ensure_file_exists()
 
     def _ensure_file_exists(self):
         """Create tracking file if it doesn't exist."""
         if not os.path.exists(self.tracking_file):
+            # Ensure directory exists
+            os.makedirs(os.path.dirname(self.tracking_file), exist_ok=True)
             with open(self.tracking_file, 'w') as f:
                 json.dump({}, f, indent=2)
 

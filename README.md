@@ -49,19 +49,19 @@ LOGFIRE_TOKEN=your_logfire_token_here     # For Logfire tracing
 
 ```bash
 # Process a single URL
-uv run -m yosoi --url https://example.com/article
+uv run yosoi --url https://example.com/article
 
 # Process multiple URLs from a file
-uv run -m yosoi --file urls.txt
+uv run yosoi --file urls.txt
 
 # Force re-discovery
-uv run -m yosoi --url https://example.com --force
+uv run yosoi --url https://example.com --force
 
 # Show summary of all saved selectors
-uv run -m yosoi --summary
+uv run yosoi --summary
 
 # Enable debug mode (saves extracted HTML)
-uv run -m yosoi --url https://example.com --debug
+uv run yosoi --url https://example.com --debug
 ```
 
 ### URLs File Format
@@ -88,6 +88,8 @@ Or use JSON format (`urls.json`):
 
 ```
 .
+├── .yosoi/                   # .yosoi helper directory (hidden)
+│   └── selectors/            # Discovered selectors (hidden)
 ├── main.py                   # CLI entry point & orchestrator
 ├── selector_discovery.py     # AI-powered selector discovery
 ├── selector_validator.py     # Selector validation & testing
@@ -143,7 +145,7 @@ Save validated selectors to JSON
 
 ## Output Format
 
-Selectors are saved as JSON files in the `selectors/` directory:
+Selectors are saved as JSON files in the `.yosoi/selectors/` directory:
 
 ```json
 {
