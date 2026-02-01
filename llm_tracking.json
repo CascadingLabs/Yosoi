@@ -1,0 +1,54 @@
+{
+  "webpronews.com": {
+    "llm_calls": 1,
+    "url_count": 1
+  },
+  "mediagazer.com": {
+    "llm_calls": 1,
+    "url_count": 45
+  },
+  "workspaceupdates.googleblog.com": {
+    "llm_calls": 1,
+    "url_count": 14
+  },
+  "africanews.com": {
+    "llm_calls": 1,
+    "url_count": 1
+  },
+  "businesswire.com": {
+    "llm_calls": 1,
+    "url_count": 45
+  },
+  "fda.gov": {
+    "llm_calls": 1,
+    "url_count": 1
+  },
+  "marketplacepulse.com": {
+    "llm_calls": 1,
+    "url_count": 3
+  },
+  "ny1.com": {
+    "llm_calls": 1,
+    "url_count": 1
+  },
+  "techmeme.com": {
+    "llm_calls": 1,
+    "url_count": 322
+  },
+  "vulture.com": {
+    "llm_calls": 1,
+    "url_count": 11
+  },
+  "1password.com": {
+    "llm_calls": 1,
+    "url_count": 1
+  },
+  "247wallst.com": {
+    "llm_calls": 1,
+    "url_count": 198
+  },
+  "3dprintingindustry.com": {
+    "llm_calls": 1,
+    "url_count": 3
+  }
+}
