@@ -39,6 +39,9 @@ dev = [
   "types-beautifulsoup4>=4.12",
   "types-requests>=2.31",
 ]
+tests = [
+  "pytest>=9.0.2",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = [ "src/yosoi" ]

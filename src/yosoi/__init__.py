@@ -24,6 +24,7 @@ from yosoi.llm_config import (
 )
 from yosoi.storage import SelectorStorage
 from yosoi.tracker import LLMTracker
+from yosoi.utils import init_yosoi
 from yosoi.validator import SelectorValidator
 
 __all__ = [
@@ -46,4 +47,5 @@ __all__ = [
     'groq',
     'gemini',
     'openai',
+    'init_yosoi',
 ]

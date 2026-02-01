@@ -15,6 +15,7 @@ from dotenv import load_dotenv
 
 from yosoi import gemini, groq
 from yosoi.pipeline import SelectorDiscoveryPipeline
+from yosoi.utils.files import init_yosoi, is_initialized
 
 
 def setup_llm_config():
@@ -113,6 +114,9 @@ def main():
 
     # Parse arguments
     args = parse_arguments()
+
+    if not is_initialized():
+        init_yosoi()
 
     # Set up LLM configuration
     llm_config = setup_llm_config()

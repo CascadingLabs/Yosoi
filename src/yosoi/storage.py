@@ -9,13 +9,14 @@ import os
 from typing import Any
 from urllib.parse import urlparse
 
+from yosoi.utils.files import init_yosoi
+
 
 class SelectorStorage:
     """Manages selector storage in JSON files."""
 
     def __init__(self, storage_dir: str = 'selectors'):
-        self.storage_dir = storage_dir
-        os.makedirs(storage_dir, exist_ok=True)
+        self.storage_dir = str(init_yosoi(storage_dir))
 
     def save_selectors(self, url: str, selectors: dict) -> str:
         """
