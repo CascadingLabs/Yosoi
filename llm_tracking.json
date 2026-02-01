@@ -50,5 +50,85 @@
   "3dprintingindustry.com": {
     "llm_calls": 1,
     "url_count": 3
+  },
+  "9meters.com": {
+    "llm_calls": 1,
+    "url_count": 9
+  },
+  "9to5google.com": {
+    "llm_calls": 1,
+    "url_count": 138
+  },
+  "9to5mac.com": {
+    "llm_calls": 1,
+    "url_count": 390
+  },
+  "9to5toys.com": {
+    "llm_calls": 1,
+    "url_count": 405
+  },
+  "abc11.com": {
+    "llm_calls": 0,
+    "url_count": 1
+  },
+  "abc7.com": {
+    "llm_calls": 0,
+    "url_count": 6
+  },
+  "abc7chicago.com": {
+    "llm_calls": 0,
+    "url_count": 1
+  },
+  "abc7news.com": {
+    "llm_calls": 0,
+    "url_count": 2
+  },
+  "abc7ny.com": {
+    "llm_calls": 1,
+    "url_count": 1
+  },
+  "abcnews.go.com": {
+    "llm_calls": 1,
+    "url_count": 3
+  },
+  "abovethelaw.com": {
+    "llm_calls": 1,
+    "url_count": 2
+  },
+  "acquirersmultiple.com": {
+    "llm_calls": 1,
+    "url_count": 4
+  },
+  "ads.apple.com": {
+    "llm_calls": 0,
+    "url_count": 2
+  },
+  "aircargoweek.com": {
+    "llm_calls": 1,
+    "url_count": 1
+  },
+  "aithority.com": {
+    "llm_calls": 0,
+    "url_count": 6
+  },
+  "allaboutromance.com": {
+    "llm_calls": 0,
+    "url_count": 1
+  },
+  "androidguys.com": {
+    "llm_calls": 0,
+    "url_count": 7
+  },
+  "antoniolinares.substack.com": {
+    "llm_calls": 0,
+    "url_count": 2
+  },
+  "appfairness.org": {
+    "llm_calls": 0,
+    "url_count": 1
+  },
+  "apple.slashdot.org": {
+    "llm_calls": 0,
+    "url_count": 10
   }
 }

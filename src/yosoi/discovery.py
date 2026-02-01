@@ -4,10 +4,11 @@ discovery.py
 AI-powered CSS selector discovery by reading raw HTML.
 """
 
+import re
 from typing import Any
 
 import logfire
-from bs4 import BeautifulSoup, Tag
+from bs4 import BeautifulSoup, Comment, Tag
 from pydantic_ai import Agent
 from rich.console import Console
 
@@ -80,6 +81,61 @@ class SelectorDiscovery:
         logfire.warn('Discovery failed - AI returned no/invalid selectors', url=url)
         return None
 
+    def _compress_html_simple(self, soup: BeautifulSoup) -> BeautifulSoup:  # noqa: C901
+        """
+        Simple, safe HTML compression for selector discovery.
+        """
+
+        # 1. Remove HTML comments
+        for comment in soup.find_all(text=lambda text: isinstance(text, Comment)):
+            comment.extract()
+
+        # 2. Remove attributes not used in CSS selectors
+        KEEP_ATTRIBUTES = {'class', 'id', 'href', 'src', 'datetime', 'alt', 'name', 'type'}
+
+        for tag in soup.find_all(True):
+            if isinstance(tag, Tag) and tag.attrs:
+                tag.attrs = {
+                    attr: value
+                    for attr, value in tag.attrs.items()
+                    if attr in KEEP_ATTRIBUTES or attr.startswith('data-')
+                }
+
+        # 3. Deduplicate list items (keep first 3 as examples)
+        for list_tag in soup.find_all(['ul', 'ol']):
+            items = list_tag.find_all('li', recursive=False)
+            if len(items) > 3:
+                for item in items[3:]:
+                    item.decompose()
+
+        # 4. Deduplicate table rows (keep first 5)
+        for table in soup.find_all('table'):
+            rows = table.find_all('tr')
+            if len(rows) > 5:
+                for row in rows[5:]:
+                    row.decompose()
+
+        # 5. Remove hidden elements
+        for tag in soup.find_all(True):
+            if isinstance(tag, Tag):
+                if tag.get('hidden') is not None:
+                    tag.decompose()
+                    continue
+                if tag.get('aria-hidden') == 'true':
+                    tag.decompose()
+
+        return soup
+
+    def _collapse_whitespace(self, html: str) -> str:
+        """Collapse excessive whitespace (20-30% savings)."""
+        # Multiple spaces → single space
+        html = re.sub(r'[ \t]+', ' ', html)
+        # Multiple newlines → single newline
+        html = re.sub(r'\n+', '\n', html)
+        # Remove leading/trailing whitespace per line
+        lines = [line.strip() for line in html.split('\n') if line.strip()]
+        return '\n'.join(lines)
+
     @logfire.instrument('bs4_extract_content', extract_args=False)
     def _extract_content_html(self, html: str) -> str:  # noqa: C901
         """Extract the main content area from HTML."""
@@ -112,21 +168,61 @@ class SelectorDiscovery:
 
         # Step 4: Get body or main content
         body = soup.find('body')
+        content = None
+        extraction_method = ''
 
         if body and isinstance(body, Tag):
-            content_str = str(body)[:30000]  # Limit to 30k chars
-            self.console.print(f'  → Using entire <body> ({len(content_str)} chars)')
-            return content_str
+            # Check for <main> inside <body> (most specific!)
+            main_in_body = body.find('main')
+            if main_in_body and isinstance(main_in_body, Tag):
+                content = main_in_body
+                extraction_method = '<main> inside <body>'
+            else:
+                content = body
+                extraction_method = '<body>'
+        else:
+            # No <body>, try top-level <main>
+            main = soup.find('main')
+            if main and isinstance(main, Tag):
+                body_in_main = main.find('body')
+                if body_in_main and isinstance(body_in_main, Tag):
+                    content = body_in_main
+                    extraction_method = '<body> inside <main>'
+                else:
+                    content = main
+                    extraction_method = '<main>'
+            else:
+                content = soup
+                extraction_method = 'full HTML'
 
-        # Fallback: Try main tag
-        main = soup.find('main')
-        if main and isinstance(main, Tag):
-            content_str = str(main)[:30000]
-            self.console.print(f'  → No <body> found, using <main> ({len(content_str)} chars)')
-            return content_str
+        # Step 5: Compress HTML
+        if content:
+            original_size = len(str(content))
 
-        # Last resort: use entire soup
-        content_str = str(soup)[:30000]
+            # Apply compression
+            content_soup = BeautifulSoup(str(content), 'html.parser')
+            content_soup = self._compress_html_simple(content_soup)
+
+            # Convert to string and collapse whitespace
+            content_str = str(content_soup)
+            content_str = self._collapse_whitespace(content_str)
+
+            # Truncate to 30k
+            final_str = content_str[:30000]
+
+            # Calculate savings
+            compression_ratio = (1 - len(content_str) / original_size) * 100 if original_size > 0 else 0
+
+            self.console.print(
+                f'  → Using {extraction_method}: '
+                f'{original_size:,} → {len(content_str):,} chars '
+                f'({compression_ratio:.0f}% savings)'
+            )
+
+            return final_str
+
+        # Fallback
+        return str(soup)[:30000]
         self.console.print(f'  → No <body> or <main> found, using full HTML ({len(content_str)} chars)')
         return content_str
 
