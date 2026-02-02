@@ -14,6 +14,7 @@ from rich.console import Console
 
 from yosoi.llm_config import LLMConfig, create_model
 from yosoi.models import ScrapingConfig
+from yosoi.utils.files import get_debug_html_path
 
 
 class SelectorDiscovery:
@@ -287,21 +288,21 @@ Return ONLY the JSON object, nothing else."""
 
     def _debug_save_html(self, url: str, html: str):
         """Save extracted HTML to file for debugging."""
-        import os
         from urllib.parse import urlparse
 
-        # Create debug directory
-        os.makedirs('debug_html', exist_ok=True)
+        # Get debug directory from utils
+        debug_dir = get_debug_html_path()
+        debug_dir.mkdir(parents=True, exist_ok=True)
 
         # Create safe filename from URL
         parsed = urlparse(url)
         filename = f'{parsed.netloc}_{parsed.path.replace("/", "_")[:50]}.html'
-        filepath = os.path.join('debug_html', filename)
+        filepath = debug_dir / filename
 
         # Save HTML
-        with open(filepath, 'w', encoding='utf-8') as f:
-            f.write(f'<!-- URL: {url} -->\n')
-            f.write(f'<!-- Extracted HTML length: {len(html)} chars -->\n\n')
-            f.write(html)
+        filepath.write_text(
+            f'<!-- URL: {url} -->\n<!-- Extracted HTML length: {len(html)} chars -->\n\n{html}',
+            encoding='utf-8',
+        )
 
         self.console.print(f'  [dim]→ Debug HTML saved to: {filepath}[/dim]')

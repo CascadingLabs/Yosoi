@@ -35,16 +35,37 @@ scripts.yosoi = "yosoi.cli:main"
 dev = [
   "commitizen>=3.13",
   "mypy>=1.8",
+  "poethepoet>=0.40",
   "prek>=0.2.25",
   "types-beautifulsoup4>=4.12",
   "types-requests>=2.31",
 ]
 tests = [
+  "poethepoet>=0.40",
   "pytest>=9.0.2",
+  "pytest-asyncio>=1.3",
+  "testcontainers>=4.14.1",
 ]
 
 [tool.hatch.build.targets.wheel]
 packages = [ "src/yosoi" ]
+exclude = [
+  "/tests",
+  "/docs",
+  "/examples",
+  "*.pyc",
+  "__pycache__",
+  ".venv",
+  ".env",
+  ".yosoi",
+  ".logfire",
+  ".ruff_cache",
+  ".pytest_cache",
+  ".mypy_cache",
+  ".ruff_cache",
+  ".pytest_cache",
+  ".mypy_cache",
+]
 
 [tool.ruff]
 # Assume Python 3.13
@@ -81,6 +102,11 @@ lint.ignore = [
   "W293",   # blank line contains whitespace
 ]
 lint.mccabe.max-complexity = 13
+
+[tool.pytest.ini_options]
+markers = [
+  "eval: mark test as an evaluation test (requires real LLM and is slow)",
+]
 
 [tool.mypy]
 python_version = "3.13"

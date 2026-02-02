@@ -87,6 +87,9 @@ Examples:
     parser.add_argument('--summary', action='store_true', help='Show summary of saved selectors')
     parser.add_argument('--debug', action='store_true', help='Enable debug mode (saves extracted HTML to debug_html/)')
     parser.add_argument('--skip-validation', action='store_true', help='Skip validation for faster processing')
+    # TODO added arg for output type or service
+    # redis --> long-term persistence
+    # local --> json or jsonl files
     parser.add_argument(
         '--fetcher',
         choices=['simple', 'playwright', 'smart'],

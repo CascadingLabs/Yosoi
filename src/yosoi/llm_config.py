@@ -29,7 +29,7 @@ class LLMConfig:
     provider: str  # 'groq', 'gemini', 'openai', etc.
     model_name: str
     api_key: str
-    temperature: float = 0.7
+    temperature: float = 0.01
     max_tokens: int | None = None
     extra_params: dict[str, Any] | None = None
 

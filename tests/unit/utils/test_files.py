@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from yosoi.utils.files import get_project_root, init_yosoi, is_initialized
+from yosoi.utils.files import get_debug_html_path, get_project_root, init_yosoi, is_initialized
 
 
 def test_get_project_root(monkeypatch, tmp_path):
@@ -28,6 +28,22 @@ def test_get_project_root_default(monkeypatch, tmp_path):
     assert root == tmp_path
 
 
+def test_get_debug_html_path(tmp_path):
+    project_root = tmp_path / 'project'
+    project_root.mkdir()
+
+    import yosoi.utils.files
+
+    original_get_project_root = yosoi.utils.files.get_project_root
+    yosoi.utils.files.get_project_root = lambda: project_root
+
+    try:
+        debug_path = get_debug_html_path()
+        assert debug_path == project_root / '.yosoi' / 'debug_html'
+    finally:
+        yosoi.utils.files.get_project_root = original_get_project_root
+
+
 def test_is_initialized(tmp_path):
     # Create a dummy project structure in a temp directory
     project_root = tmp_path / 'project'
@@ -50,6 +66,7 @@ def test_is_initialized(tmp_path):
         yosoi_dir = project_root / '.yosoi'
         assert yosoi_dir.is_dir()
         assert (yosoi_dir / 'selectors').is_dir()
+        assert (yosoi_dir / 'debug_html').is_dir()
         assert (yosoi_dir / 'llm_tracking.json').exists()
         assert (yosoi_dir / '.gitignore').exists()
         assert (yosoi_dir / '.gitignore').read_text() == '# Automatically created by yosoi\n*\n'
