@@ -1,6 +1,12 @@
 from pathlib import Path
 
-from yosoi.utils.files import get_debug_html_path, get_project_root, init_yosoi, is_initialized
+from yosoi.utils.files import (
+    get_debug_html_path,
+    get_project_root,
+    get_tracking_path,
+    init_yosoi,
+    is_initialized,
+)
 
 
 def test_get_project_root(monkeypatch, tmp_path):
@@ -40,6 +46,22 @@ def test_get_debug_html_path(tmp_path):
     try:
         debug_path = get_debug_html_path()
         assert debug_path == project_root / '.yosoi' / 'debug_html'
+    finally:
+        yosoi.utils.files.get_project_root = original_get_project_root
+
+
+def test_get_tracking_path(tmp_path):
+    project_root = tmp_path / 'project'
+    project_root.mkdir()
+
+    import yosoi.utils.files
+
+    original_get_project_root = yosoi.utils.files.get_project_root
+    yosoi.utils.files.get_project_root = lambda: project_root
+
+    try:
+        tracking_path = get_tracking_path()
+        assert tracking_path == project_root / '.yosoi' / 'llm_tracking.json'
     finally:
         yosoi.utils.files.get_project_root = original_get_project_root
 

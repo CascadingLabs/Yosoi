@@ -382,26 +382,17 @@ class SelectorDiscoveryPipeline:
 
     def show_summary(self):
         """Show summary of all saved selectors."""
-        import os
+        domains = self.storage.list_domains()
 
-        selectors_dir = 'selectors'
-
-        if not os.path.exists(selectors_dir):
-            self.console.print('[warning]No selectors directory found[/warning]')
-            return
-
-        files = [f for f in os.listdir(selectors_dir) if f.endswith('.json')]
-
-        if not files:
-            self.console.print('[warning]No selector files found[/warning]')
+        if not domains:
+            self.console.print('[warning]No selectors found in storage[/warning]')
             return
 
         table = Table(title='Saved Selectors Summary')
         table.add_column('Domain', style='cyan')
         table.add_column('Fields', style='green')
 
-        for file in sorted(files):
-            domain = file.replace('selectors_', '').replace('.json', '').replace('_', '.')
+        for domain in domains:
             try:
                 selectors = self.storage.load_selectors(domain)
                 if selectors:
@@ -410,7 +401,7 @@ class SelectorDiscoveryPipeline:
                 continue
 
         self.console.print(table)
-        self.console.print(f'\n[success]Total domains: {len(files)}[/success]')
+        self.console.print(f'\n[success]Total domains: {len(domains)}[/success]')
 
     def show_llm_stats(self):
         """Show LLM usage statistics."""
