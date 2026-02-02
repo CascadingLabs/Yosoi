@@ -48,7 +48,7 @@ tests = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = [ "src/yosoi" ]
+packages = [ "yosoi" ]
 exclude = [
   "/tests",
   "/docs",
