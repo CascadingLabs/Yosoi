@@ -71,21 +71,21 @@ class SelectorDiscoveryPipeline:
                 return False
 
             # Try using cached selectors if available
-            if not force and self._try_cached_selectors(url, domain, fetcher, skip_validation):
+            if not force and self._cached_selectors(url, domain, fetcher, skip_validation):
                 return True
 
             # Fetch HTML with retry logic for bot detection
-            result = self._fetch_with_retries(url, fetcher, max_retries=max_fetch_retries)
+            result = self._fetch(url, fetcher, max_retries=max_fetch_retries)
             if not result:
                 return False
 
             # Discover selectors with retry logic for AI failures
-            selectors, used_llm = self._discover_with_retries(url, result, max_retries=max_discovery_retries)
+            selectors, used_llm = self._discover(url, result, max_retries=max_discovery_retries)
             if not selectors:
                 return False
 
             # Validate selectors
-            validated = self._validate_selectors(url, result.html, selectors, skip_validation)
+            validated = self._validate(url, result.html, selectors, skip_validation)
             if not validated:
                 return False
 
@@ -136,10 +136,22 @@ class SelectorDiscoveryPipeline:
         return results
 
     # ============================================================================
-    # RETRY LOGIC - Centralized
+    # Private helper methods
     # ============================================================================
 
-    def _fetch_with_retries(self, url: str, fetcher: HTMLFetcher, max_retries: int = 2) -> FetchResult | None:
+    def _extract_domain(self, url: str) -> str:
+        """Extract domain from URL."""
+        return urlparse(url).netloc.replace('www.', '')
+
+    def _create_fetcher(self, fetcher_type: str) -> HTMLFetcher | None:
+        """Create HTML fetcher instance."""
+        try:
+            return create_fetcher(fetcher_type)
+        except ValueError:
+            self.console.print(f'[danger]Invalid fetcher type: {fetcher_type}[/danger]')
+            return None
+
+    def _fetch(self, url: str, fetcher: HTMLFetcher, max_retries: int = 2) -> FetchResult | None:
         """
         Fetch HTML with retry logic for bot detection.
 
@@ -201,7 +213,7 @@ class SelectorDiscoveryPipeline:
 
         return None
 
-    def _discover_with_retries(self, url: str, result: FetchResult, max_retries: int = 3) -> tuple[dict | None, bool]:
+    def _discover(self, url: str, result: FetchResult, max_retries: int = 3) -> tuple[dict | None, bool]:
         """
         Discover selectors with retry logic for AI failures.
 
@@ -248,23 +260,29 @@ class SelectorDiscoveryPipeline:
         logfire.error('All AI attempts failed, using fallback', url=url)
         return self.discovery.fallback_selectors, False
 
-    # ============================================================================
-    # Private helper methods
-    # ============================================================================
+    def _validate(self, url: str, html: str, selectors: dict, skip_validation: bool) -> dict | None:
+        """Validate discovered selectors."""
+        if skip_validation:
+            self.console.print('[warning]Skipping validation (--skip-validation enabled)[/warning]')
+            return selectors
 
-    def _extract_domain(self, url: str) -> str:
-        """Extract domain from URL."""
-        return urlparse(url).netloc.replace('www.', '')
+        self.console.print('[step]Step 3: Validating selectors against actual HTML...[/step]')
 
-    def _create_fetcher(self, fetcher_type: str) -> HTMLFetcher | None:
-        """Create HTML fetcher instance."""
-        try:
-            return create_fetcher(fetcher_type)
-        except ValueError:
-            self.console.print(f'[danger]Invalid fetcher type: {fetcher_type}[/danger]')
+        validated = self.validator.validate_selectors_with_html(url, html, selectors)
+
+        if not validated:
+            self.console.print('[danger]No selectors validated successfully - all selectors failed![/danger]')
             return None
 
-    def _try_cached_selectors(self, url: str, domain: str, fetcher: HTMLFetcher, skip_validation: bool) -> bool:
+        failed_count = len(selectors) - len(validated)
+        self.console.print(f'[success]Validated {len(validated)}/5 fields successfully[/success]')
+
+        if failed_count >= 2:
+            self.console.print(f'[warning]Warning: {failed_count} fields failed validation[/warning]')
+
+        return validated
+
+    def _cached_selectors(self, url: str, domain: str, fetcher: HTMLFetcher, skip_validation: bool) -> bool:
         """Try to use cached selectors if available."""
         existing_selectors = self.storage.load_selectors(domain)
         if not existing_selectors:
@@ -337,28 +355,6 @@ class SelectorDiscoveryPipeline:
             return True, f'JS-heavy ({framework})'
 
         return False, ''
-
-    def _validate_selectors(self, url: str, html: str, selectors: dict, skip_validation: bool) -> dict | None:
-        """Validate discovered selectors."""
-        if skip_validation:
-            self.console.print('[warning]Skipping validation (--skip-validation enabled)[/warning]')
-            return selectors
-
-        self.console.print('[step]Step 3: Validating selectors against actual HTML...[/step]')
-
-        validated = self.validator.validate_selectors_with_html(url, html, selectors)
-
-        if not validated:
-            self.console.print('[danger]No selectors validated successfully - all selectors failed![/danger]')
-            return None
-
-        failed_count = len(selectors) - len(validated)
-        self.console.print(f'[success]Validated {len(validated)}/5 fields successfully[/success]')
-
-        if failed_count >= 2:
-            self.console.print(f'[warning]Warning: {failed_count} fields failed validation[/warning]')
-
-        return validated
 
     def _save_and_track(self, url: str, domain: str, validated: dict, used_llm: bool):
         """Save selectors and track usage."""

@@ -26,16 +26,6 @@ class SelectorValidator:
     ) -> dict[str, dict[str, str]]:
         """
         Validate selectors using provided HTML (no re-fetch needed).
-
-        This is the NEW method that eliminates re-fetching the URL for validation.
-
-        Args:
-            url: URL being validated (for logging only)
-            html: HTML content to validate against
-            selectors: Selectors to validate
-
-        Returns:
-            Dictionary of validated selectors (only selectors that worked)
         """
         self.console.print(f'  → Validating {len(self.EXPECTED_FIELDS)} fields using fetched HTML...')
 
@@ -51,43 +41,24 @@ class SelectorValidator:
 
             field_selectors = selectors[field_name]
 
-            # Try primary selector first
+            # Get selectors
             primary = field_selectors.get('primary', 'NA')
+            fallback = field_selectors.get('fallback', 'NA')
+            tertiary = field_selectors.get('tertiary', 'NA')
 
-            if primary == 'NA':
-                self.console.print(f'  ✗ {field_name}: selector is NA')
-                continue
-
-            try:
-                elements = soup.select(primary)
-                if elements:
-                    # Primary selector works!
-                    self.console.print(f'  ✓ {field_name}: primary selector works ({primary})')
-                    validated[field_name] = field_selectors
-                else:
-                    # Primary failed, try fallback
-                    fallback = field_selectors.get('fallback', 'NA')
-                    if fallback != 'NA':
-                        elements = soup.select(fallback)
-                        if elements:
-                            self.console.print(f'  ✓ {field_name}: fallback selector works ({fallback})')
-                            validated[field_name] = field_selectors
-                        else:
-                            # Try tertiary
-                            tertiary = field_selectors.get('tertiary', 'NA')
-                            if tertiary != 'NA':
-                                elements = soup.select(tertiary)
-                                if elements:
-                                    self.console.print(f'  ✓ {field_name}: tertiary selector works ({tertiary})')
-                                    validated[field_name] = field_selectors
-                                else:
-                                    self.console.print(f'  ✗ {field_name}: ALL selectors failed validation')
-                            else:
-                                self.console.print(f'   {field_name}: primary failed, no fallback available')
-                    else:
-                        self.console.print(f'  ✗ {field_name}: primary failed, no fallback available')
-            except Exception as e:
-                self.console.print(f'  ✗ {field_name}: validation error ({e})')
+            if self._handle_selector(soup, primary, field_name):
+                self.console.print(f'  ✓ {field_name}: primary selector works ({primary})')
+                validated[field_name] = field_selectors
+            elif self._handle_selector(soup, fallback, field_name):
+                self.console.print(f'  ✗ {field_name}: primary failed')
+                self.console.print(f'  ✓ {field_name}: fallback selector works ({fallback})')
+                validated[field_name] = field_selectors
+            elif self._handle_selector(soup, tertiary, field_name):
+                self.console.print(f'  ✗ {field_name}: primary & fallback failed')
+                self.console.print(f'  ✓ {field_name}: fallback selector works ({tertiary})')
+                validated[field_name] = field_selectors
+            else:
+                self.console.print(f'  ✗ {field_name}: ALL selectors failed validation')
 
         # Summary
         total = len(self.EXPECTED_FIELDS)
@@ -97,16 +68,19 @@ class SelectorValidator:
         # Return validated fields (or None if none validated)
         return validated if validated else None
 
+    def _handle_selector(self, soup: BeautifulSoup, selector: str, field_name: str) -> bool:
+        if selector == 'NA':
+            return False
+        try:
+            elements = soup.select(selector)
+            return bool(elements)
+        except Exception as e:
+            self.console.print(f'  ✗ {field_name}: validation error ({e})')
+            return False
+
     def quick_test(self, url: str, selector: str) -> bool:
         """
         Quick test if a single selector works.
-
-        Args:
-            url: URL to test on
-            selector: CSS selector to test
-
-        Returns:
-            True if selector finds elements, False otherwise
         """
         try:
             response = requests.get(url, headers={'User-Agent': self.user_agent}, timeout=10)

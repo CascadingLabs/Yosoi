@@ -3,21 +3,6 @@ HTML Fetcher Module - HTML Retrieval with Content Detection
 ======================================================================
 
 This module provides a interface for fetching HTML from URLs.
-Now includes detection for:
-- Tailwind CSS (utility-first CSS that breaks selector discovery)
-- RSS feeds (XML, not HTML)
-- JavaScript-heavy sites (require browser rendering)
-
-Usage:
-    from yosoi.fetcher import SimpleFetcher
-
-    fetcher = SimpleFetcher()
-    result = fetcher.fetch(url)
-
-    if result.is_rss:
-        print("This is an RSS feed!")
-    elif result.requires_js:
-        print("Needs JavaScript rendering")
 """
 
 import random
@@ -45,10 +30,9 @@ class ContentMetadata:
 
     is_rss: bool = False
     requires_js: bool = False
-    content_type: str = 'html'  # 'html', 'rss', 'xml', 'json'
+    content_type: str = 'html'
 
-    # JavaScript detection details
-    js_framework: str | None = None  # 'react', 'vue', 'angular', etc.
+    js_framework: str | None = None
 
     content_length: int = 0
 
@@ -95,13 +79,6 @@ class ContentAnalyzer:
     def analyze(html: str, url: str) -> ContentMetadata:  # noqa: ARG004
         """
         Analyze HTML content and return metadata.
-
-        Args:
-            html: HTML content to analyze
-            url: URL being analyzed (for context)
-
-        Returns:
-            ContentMetadata with detection results
         """
         metadata = ContentMetadata()
         metadata.content_length = len(html)
@@ -126,8 +103,6 @@ class ContentAnalyzer:
     def _detect_rss(_html: str, html_lower: str) -> bool:  # Prefix with _
         """
         Detect if content is an RSS/Atom feed.
-
-        RSS feeds are XML, not HTML, and can't be scraped with CSS selectors.
         """
         rss_indicators = [
             '<?xml',
@@ -268,13 +243,6 @@ class HeaderGenerator:
     def generate_headers(user_agent: str | None = None, referer: str | None = None) -> dict[str, str]:
         """
         Generate realistic browser headers with randomization.
-
-        Args:
-            user_agent: Specific user agent to use (or random if None)
-            referer: Referer header to include
-
-        Returns:
-            Dictionary of HTTP headers
         """
         if user_agent is None:
             user_agent = UserAgentRotator.get_random()
@@ -349,13 +317,6 @@ class HTMLFetcher(ABC):
     def _check_for_bot_detection(self, html: str, status_code: int) -> tuple[bool, list[str]]:
         """
         Check if HTML indicates bot detection.
-
-        Args:
-            html: HTML content to check
-            status_code: HTTP status code
-
-        Returns:
-            (is_blocked, indicators) tuple
         """
         if not html or len(html) < 100:
             return True, ['HTML too short']
@@ -417,9 +378,6 @@ class HTMLFetcher(ABC):
 class SimpleFetcher(HTMLFetcher):
     """
     Simple HTTP fetcher with realistic browser headers.
-
-    Fast and works for most sites (~70%).
-    Now includes content analysis.
     """
 
     def __init__(
@@ -461,12 +419,6 @@ class SimpleFetcher(HTMLFetcher):
     def _get_headers(self, url: str) -> dict[str, str]:  # noqa: ARG002
         """
         Get headers for the request.
-
-        Args:
-            url: URL being fetched (for referer logic)
-
-        Returns:
-            Dictionary of headers
         """
         if self.randomize_headers:
             user_agent = UserAgentRotator.get_random() if self.rotate_user_agent else None
@@ -483,7 +435,9 @@ class SimpleFetcher(HTMLFetcher):
         }
 
     def fetch(self, url: str) -> FetchResult:
-        """Fetch HTML using enhanced HTTP request with anti-bot measures."""
+        """
+        Fetch HTML using enhanced HTTP request with anti-bot measures.
+        """
         start_time = time.time()
 
         # Apply delay to avoid rate limiting
@@ -507,7 +461,7 @@ class SimpleFetcher(HTMLFetcher):
 
                 # Verify it's actually text
                 if html.startswith('\x1f\x8b'):
-                    # Still compressed! Force decompression
+                    # Force decompression
                     import gzip
 
                     html = gzip.decompress(response.content).decode('utf-8', errors='replace')
@@ -554,11 +508,6 @@ class SimpleFetcher(HTMLFetcher):
                 url=url, html=None, status_code=None, is_blocked=False, block_reason=str(e), fetch_time=fetch_time
             )
 
-    def close(self):
-        """Close the session if it exists."""
-        if self.session:
-            self.session.close()
-
     def __enter__(self):
         """Context manager entry."""
         return self
@@ -566,6 +515,11 @@ class SimpleFetcher(HTMLFetcher):
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Context manager exit."""
         self.close()
+
+    def close(self):
+        """Close the session if it exists."""
+        if self.session:
+            self.session.close()
 
 
 class PlaywrightFetcher(HTMLFetcher):
