@@ -98,6 +98,9 @@ class SelectorDiscoveryPipeline:
             if not result:
                 return False
 
+            # At this point, result.html should never be None (checked in _fetch)
+            assert result.html is not None, 'result.html should not be None after successful fetch'
+
             # Discover selectors with retry logic for AI failures
             selectors, used_llm = self._discover(url, result, max_retries=max_discovery_retries)
             if not selectors:
@@ -299,6 +302,7 @@ class SelectorDiscoveryPipeline:
 
             self.console.print(f'[step]Step 2: AI analyzing HTML (attempt {attempt}/{max_retries})...[/step]')
 
+            assert result.html is not None, 'result.html should not be None in _discover'
             selectors = self.discovery.discover_from_html(url, result.html)
 
             if selectors:
@@ -555,13 +559,16 @@ class SelectorDiscoveryPipeline:
         """Show LLM usage statistics."""
         stats = self.tracker.get_all_stats()
 
-        self.console.print('\n[bold cyan]═══ LLM Usage Statistics ═══[/bold cyan]')
-        self.console.print(f'[info]Total URLs processed: {stats.get("total_urls", 0)}[/info]')
-        self.console.print(f'[info]LLM calls made: {stats.get("llm_calls", 0)}[/info]')
-        self.console.print(f'[info]Cache hits: {stats.get("cache_hits", 0)}[/info]')
+        # Aggregate stats across all domains
+        total_llm_calls = sum(domain_stats.get('llm_calls', 0) for domain_stats in stats.values())
+        total_urls = sum(domain_stats.get('url_count', 0) for domain_stats in stats.values())
 
-        if stats.get('llm_calls', 0) > 0:
-            efficiency = stats.get('total_urls', 0) / stats.get('llm_calls', 1)
+        self.console.print('\n[bold cyan]═══ LLM Usage Statistics ═══[/bold cyan]')
+        self.console.print(f'[info]Total URLs processed: {total_urls}[/info]')
+        self.console.print(f'[info]LLM calls made: {total_llm_calls}[/info]')
+
+        if total_llm_calls > 0:
+            efficiency = total_urls / total_llm_calls
             self.console.print(f'[success]Efficiency: {efficiency:.1f} URLs per LLM call[/success]')
 
         self.console.print()

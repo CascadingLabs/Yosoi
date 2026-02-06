@@ -101,21 +101,25 @@ def parse_arguments():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  %(prog)s --url https://example.com
-  %(prog)s --file urls.txt --limit 10
+  %(prog)s -u https://example.com
+  %(prog)s -f urls.txt -l 10
   %(prog)s --url https://example.com --force
-  %(prog)s --summary
+  %(prog)s -s
+  %(prog)s -u https://example.com -d -F
         """,
     )
 
-    parser.add_argument('--url', type=str, help='Single URL to process')
-    parser.add_argument('--file', type=str, help='File containing URLs (one per line, or JSON)')
-    parser.add_argument('--limit', type=int, help='Limit number of URLs to process from file')
-    parser.add_argument('--force', action='store_true', help='Force re-discovery even if selectors exist')
-    parser.add_argument('--summary', action='store_true', help='Show summary of saved selectors')
-    parser.add_argument('--debug', action='store_true', help='Enable debug mode (saves extracted HTML to debug_html/)')
-    parser.add_argument('--skip-validation', action='store_true', help='Skip validation for faster processing')
+    parser.add_argument('-u', '--url', type=str, help='Single URL to process')
+    parser.add_argument('-f', '--file', type=str, help='File containing URLs (one per line, or JSON)')
+    parser.add_argument('-l', '--limit', type=int, help='Limit number of URLs to process from file')
+    parser.add_argument('-F', '--force', action='store_true', help='Force re-discovery even if selectors exist')
+    parser.add_argument('-s', '--summary', action='store_true', help='Show summary of saved selectors')
     parser.add_argument(
+        '-d', '--debug', action='store_true', help='Enable debug mode (saves extracted HTML to debug_html/)'
+    )
+    parser.add_argument('-S', '--skip-validation', action='store_true', help='Skip validation for faster processing')
+    parser.add_argument(
+        '-t',
         '--fetcher',
         choices=['simple', 'playwright', 'smart'],
         default='simple',
