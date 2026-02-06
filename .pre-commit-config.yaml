@@ -30,7 +30,7 @@ repos:
           - types-beautifulsoup4
         args: [--config-file=pyproject.toml]
         # Only check your source files, not external dependencies
-        files: ^(main|selector_.*).py$
+        files: ^(src/)?yosoi/.*\.py$
 
   - repo: https://github.com/astral-sh/uv-pre-commit
     rev: 0.9.21
