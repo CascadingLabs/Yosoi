@@ -114,7 +114,7 @@ class ContentAnalyzer:
             html: The HTML of the URL
 
         Returns:
-            The metadata of the HTML from the URL 
+            The metadata of the HTML from the URL
         """
         metadata = ContentMetadata()
         metadata.content_length = len(html)
@@ -488,6 +488,7 @@ class SimpleFetcher(HTMLFetcher):
         self.max_delay = max_delay
         self.randomize_headers = randomize_headers
 
+        self.session: requests.Session | None
         # Create session if enabled
         if self.use_session:
             self.session = requests.Session()
@@ -627,7 +628,8 @@ class PlaywrightFetcher(HTMLFetcher):
     Slower but bypasses most bot detection.
     Also handles JavaScript-heavy sites.
     """
-    #TODO: Make work
+
+    # TODO: Make work
 
     def __init__(self, timeout: int = 60000, headless: bool = True):
         self.timeout = timeout
@@ -670,7 +672,7 @@ class PlaywrightFetcher(HTMLFetcher):
 
                 if is_blocked:
                     raise BotDetectionError(url, status_code or 0, indicators)
- 
+
                 # Analyze content
                 metadata = ContentAnalyzer.analyze(html)
 
@@ -700,7 +702,8 @@ class SmartFetcher(HTMLFetcher):
 
     Best balance of speed and effectiveness (~99%).
     """
-    #TODO: Make work
+
+    # TODO: Make work
 
     def __init__(self, timeout: int = 30, playwright_timeout: int = 60000):
         self.simple_fetcher = SimpleFetcher(timeout=timeout)

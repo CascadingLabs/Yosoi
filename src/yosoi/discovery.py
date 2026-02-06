@@ -81,7 +81,7 @@ class SelectorDiscovery:
             url: The URL that is being scraped
             html: The HTML of the URL
 
-        Returns: 
+        Returns:
             Dictionary of discovered selectors if found, None if discovery fails.
         """
         logfire.info('Starting discovery for {url}', url=url)
@@ -96,7 +96,7 @@ class SelectorDiscovery:
         selectors_obj = self._get_selectors_from_ai(url, clean_html)
 
         if selectors_obj:
-            selectors = selectors_obj.model_dump()
+            selectors: dict[str, Any] = selectors_obj.model_dump()
 
             if selectors and not self._is_all_na(selectors):
                 logfire.info('Selectors found successfully', selectors=selectors)
@@ -265,8 +265,6 @@ class SelectorDiscovery:
 
         # Fallback
         return str(soup)[:30000]
-        self.console.print(f'  → No <body> or <main> found, using full HTML ({len(content_str)} chars)')
-        return content_str
 
     @logfire.instrument('llm_discovery_request')
     def _get_selectors_from_ai(self, url: str, html: str) -> ScrapingConfig | None:

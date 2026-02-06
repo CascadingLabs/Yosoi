@@ -34,8 +34,8 @@ class SelectorValidator:
         self,
         _url: str,
         html: str,
-        selectors: dict[str, dict[str, str]],  # Prefix url with _
-    ) -> dict[str, dict[str, str]]:
+        selectors: dict[str, dict[str, str]],
+    ) -> dict[str, dict[str, str]] | None:
         """Validate selectors using provided HTML (no re-fetch needed).
 
         Args:
@@ -86,7 +86,9 @@ class SelectorValidator:
         self.console.print(f'  → Summary: {validated_count}/{total} fields validated successfully')
 
         # Return validated fields (or None if none validated)
-        return validated if validated else None
+        if validated:
+            return validated
+        return None
 
     def _handle_selector(self, soup: BeautifulSoup, selector: str, field_name: str) -> bool:
         """Test if a single selector finds elements in the HTML.
