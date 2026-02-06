@@ -1,4 +1,8 @@
-"""Allow running as: python -m yosoi"""
+"""
+__main__.py
+===========
+Entry point for running Yosoi as a module: python -m yosoi
+"""
 
 from yosoi.cli import main
 

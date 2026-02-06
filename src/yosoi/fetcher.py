@@ -1,7 +1,6 @@
 """
-HTML Fetcher Module - HTML Retrieval with Content Detection
+fetcher.py
 ======================================================================
-
 This module provides a interface for fetching HTML from URLs.
 """
 
@@ -26,7 +25,14 @@ class BotDetectionError(Exception):
 
 @dataclass
 class ContentMetadata:
-    """Metadata about the fetched content."""
+    """Metadata about the fetched content.
+
+    Attributes:
+        is_rss: True if the URL is rss
+        requires_js: True if the URL has JS
+        js_framework: If has JS, what type
+        content_length: Length of the HTML
+    """
 
     is_rss: bool = False
     requires_js: bool = False
@@ -39,7 +45,16 @@ class ContentMetadata:
 
 @dataclass
 class FetchResult:
-    """Result of an HTML fetch operation."""
+    """Result of an HTML fetch operation.
+
+    Attributes:
+        url: URL from which the HTML is grabbed
+        html: HTML content grabbed from the URL
+        status_code: The website code when fetching the URL
+        is_blocked: True if the URL is blocked for some reason
+        block_reason: For what reason the URL is blocked
+        fetch_time: Total time for the HTML to be fetched
+    """
 
     url: str
     html: str | None = None
@@ -53,22 +68,38 @@ class FetchResult:
 
     @property
     def success(self) -> bool:
-        """Whether the fetch was successful."""
+        """Whether the fetch was successful.
+
+        Returns:
+            True if the HTML was successfully fetched
+        """
         return self.html is not None and not self.is_blocked
 
     @property
     def is_rss(self) -> bool:
-        """Shortcut to check if content is RSS."""
+        """Shortcut to check if content is RSS.
+
+        Returns:
+            True if the URL is RSS
+        """
         return self.metadata.is_rss
 
     @property
     def requires_js(self) -> bool:
-        """Shortcut to check if content requires JavaScript."""
+        """Shortcut to check if content requires JavaScript.
+
+        Returns:
+            True if the HTML has JS
+        """
         return self.metadata.requires_js
 
     @property
     def should_use_heuristics(self) -> bool:
-        """Whether we should skip AI and use heuristics."""
+        """Whether we should skip AI and use heuristics.
+
+        Returns:
+            True if the URL is RSS or has JS, then use the heuristics
+        """
         return self.is_rss or self.requires_js
 
 
@@ -76,9 +107,14 @@ class ContentAnalyzer:
     """Analyzes fetched content to detect special cases."""
 
     @staticmethod
-    def analyze(html: str, url: str) -> ContentMetadata:  # noqa: ARG004
-        """
-        Analyze HTML content and return metadata.
+    def analyze(html: str) -> ContentMetadata:
+        """Analyze HTML content and return metadata.
+
+        Args:
+            html: The HTML of the URL
+
+        Returns:
+            The metadata of the HTML from the URL 
         """
         metadata = ContentMetadata()
         metadata.content_length = len(html)
@@ -87,22 +123,27 @@ class ContentAnalyzer:
         html_lower = html.lower()
 
         # 1. Check if it's RSS/XML
-        metadata.is_rss = ContentAnalyzer._detect_rss(html, html_lower)
+        metadata.is_rss = ContentAnalyzer._detect_rss(html_lower)
         if metadata.is_rss:
             metadata.content_type = 'rss'
-            return metadata  # Early return for RSS
+            return metadata
 
         # 2. Detect JavaScript-heavy sites
-        js_data = ContentAnalyzer._detect_javascript_heavy(html, html_lower)
+        js_data = ContentAnalyzer._detect_javascript_heavy(html_lower)
         metadata.requires_js = js_data['requires_js']
         metadata.js_framework = js_data['framework']
 
         return metadata
 
     @staticmethod
-    def _detect_rss(_html: str, html_lower: str) -> bool:  # Prefix with _
-        """
-        Detect if content is an RSS/Atom feed.
+    def _detect_rss(html_lower: str) -> bool:
+        """Detect if content is an RSS/Atom feed.
+
+        Args:
+            html_lower: The HTML of the URL in all lowercase
+
+        Returns:
+            True if the HTML has RSS indicators
         """
         rss_indicators = [
             '<?xml',
@@ -119,9 +160,14 @@ class ContentAnalyzer:
         return any(indicator in start for indicator in rss_indicators)
 
     @staticmethod
-    def _detect_javascript_heavy(_html: str, html_lower: str) -> dict:  # Prefix with _
-        """
-        Detect JavaScript-heavy sites that need browser rendering.
+    def _detect_javascript_heavy(html_lower: str) -> dict:
+        """Detect JavaScript-heavy sites that need browser rendering.
+
+        Args:
+            html_lower: The HTML of the URL in all lowercase
+
+        Returns:
+            A dict of if it has JS and if so what framework of JS
 
         These sites won't work with simple HTML fetching because:
         - Content is rendered client-side
@@ -193,7 +239,14 @@ class ContentAnalyzer:
 
 
 class UserAgentRotator:
-    """Manages a pool of realistic user agents."""
+    """Manages a pool of realistic user agents.
+
+    Provides methods to retrieve random or specific browser user agents
+    to help avoid bot detection.
+
+    Attributes:
+        USER_AGENTS: A list of agents to fetch an HTML
+    """
 
     # Pool of realistic, recent user agents
     USER_AGENTS = [
@@ -220,18 +273,30 @@ class UserAgentRotator:
 
     @classmethod
     def get_random(cls) -> str:
-        """Get a random user agent."""
+        """Get a random user agent.
+
+        Returns:
+            A random user agent to be used to fetch an HTML
+        """
         return random.choice(cls.USER_AGENTS)
 
     @classmethod
     def get_chrome_windows(cls) -> str:
-        """Get a Chrome on Windows user agent (most common)."""
+        """Get a Chrome on Windows user agent.
+
+        Returns:
+            A random Chrome on Windows user agent
+        """
         chrome_windows = [ua for ua in cls.USER_AGENTS if 'Chrome' in ua and 'Windows' in ua and 'Edg' not in ua]
         return random.choice(chrome_windows)
 
     @classmethod
     def get_firefox(cls) -> str:
-        """Get a Firefox user agent."""
+        """Get a Firefox user agent.
+
+        Returns:
+            A random Firefox user agent
+        """
         firefox = [ua for ua in cls.USER_AGENTS if 'Firefox' in ua]
         return random.choice(firefox)
 
@@ -241,17 +306,31 @@ class HeaderGenerator:
 
     @staticmethod
     def generate_headers(user_agent: str | None = None, referer: str | None = None) -> dict[str, str]:
-        """
-        Generate realistic browser headers with randomization.
+        """Generate realistic browser headers with randomization.
+
+        Args:
+            user_agent: The user agent to be attached to fetch an HTML
+            referer: The referer to be attached to fetch an HTML
+
+        Returns:
+            The header to be used to fetch an HTML
         """
         if user_agent is None:
             user_agent = UserAgentRotator.get_random()
+
+        languages = [
+            'en-US,en;q=0.9',
+            'en-GB,en;q=0.9',
+            'en-US,en;q=0.9,es;q=0.8',
+            'en-US,en;q=0.9,fr;q=0.8',
+            'en-US,en;q=0.5',
+        ]
 
         # Base headers that all browsers send
         headers = {
             'User-Agent': user_agent,
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-            'Accept-Language': HeaderGenerator._get_accept_language(),
+            'Accept-Language': random.choice(languages),
             'Accept-Encoding': 'gzip, deflate, br',
             'DNT': '1',
             'Connection': 'keep-alive',
@@ -279,29 +358,16 @@ class HeaderGenerator:
 
         return headers
 
-    @staticmethod
-    def _get_accept_language() -> str:
-        """Get a randomized Accept-Language header."""
-        languages = [
-            'en-US,en;q=0.9',
-            'en-GB,en;q=0.9',
-            'en-US,en;q=0.9,es;q=0.8',
-            'en-US,en;q=0.9,fr;q=0.8',
-            'en-US,en;q=0.5',
-        ]
-        return random.choice(languages)
-
 
 class HTMLFetcher(ABC):
-    """
-    Abstract base class for HTML fetchers.
+    """Abstract base class for HTML fetchers.
+
     Implement this interface to create custom HTML fetchers.
     """
 
     @abstractmethod
     def fetch(self, url: str) -> FetchResult:
-        """
-        Fetch HTML from a URL.
+        """Fetch HTML from a URL.
 
         Args:
             url: URL to fetch
@@ -315,8 +381,16 @@ class HTMLFetcher(ABC):
         pass
 
     def _check_for_bot_detection(self, html: str, status_code: int) -> tuple[bool, list[str]]:
-        """
-        Check if HTML indicates bot detection.
+        """Check if HTML indicates bot detection.
+
+        Args:
+            html: The HTML of the URL
+            status_code: The status code of the URL returned
+
+        Returns:
+            Tuple of (is_blocked, indicators) where is_blocked is True if bot
+            detection triggered, and indicators is a list of detection reasons.
+            Returns (False, []) if no blocking detected.
         """
         if not html or len(html) < 100:
             return True, ['HTML too short']
@@ -370,14 +444,22 @@ class HTMLFetcher(ABC):
         # No blocking detected
         return False, []
 
-    def _analyze_content(self, html: str, url: str) -> ContentMetadata:
-        """Analyze fetched content."""
-        return ContentAnalyzer.analyze(html, url)
-
 
 class SimpleFetcher(HTMLFetcher):
-    """
-    Simple HTTP fetcher with realistic browser headers.
+    """Simple HTTP fetcher with realistic browser headers and anti-bot measures.
+
+    Implements random delays, user agent rotation, and realistic headers
+    to avoid rate limiting and bot detection.
+
+    Attributes:
+        timeout: Request timeout in seconds (how long to wait for response)
+        rotate_user_agent: Whether to rotate user agents between requests
+        use_session: Whether to use a requests.Session for connection pooling
+        min_delay: Minimum delay between requests in seconds
+        max_delay: Maximum delay between requests in seconds
+        randomize_headers: Whether to randomize request headers
+        session: Requests session instance if use_session is True
+        last_request_time: Timestamp of last request for delay calculation
     """
 
     def __init__(
@@ -389,6 +471,16 @@ class SimpleFetcher(HTMLFetcher):
         max_delay: float = 2.0,
         randomize_headers: bool = True,
     ):
+        """Intialize the simple fetcher.
+
+        Args:
+            timeout: The time between retring to fetch a URL
+            rotate_user_agent: If True then will use different user agents for each retry
+            use_session: If True will create a session
+            min_delay: Minimum time to pause between fetches
+            max_delay: Maximum time to pause between fetches
+            randomize_headers: If True then will randomize the headers used to fetch
+        """
         self.timeout = timeout
         self.rotate_user_agent = rotate_user_agent
         self.use_session = use_session
@@ -416,9 +508,11 @@ class SimpleFetcher(HTMLFetcher):
 
         self.last_request_time = time.time()
 
-    def _get_headers(self, url: str) -> dict[str, str]:  # noqa: ARG002
-        """
-        Get headers for the request.
+    def _get_headers(self) -> dict[str, str]:
+        """Get headers for the request.
+
+        Returns:
+            A dict of the random headers and user agent
         """
         if self.randomize_headers:
             user_agent = UserAgentRotator.get_random() if self.rotate_user_agent else None
@@ -435,8 +529,13 @@ class SimpleFetcher(HTMLFetcher):
         }
 
     def fetch(self, url: str) -> FetchResult:
-        """
-        Fetch HTML using enhanced HTTP request with anti-bot measures.
+        """Fetch HTML using enhanced HTTP request with anti-bot measures.
+
+        Args:
+            url: The URL that is being fetched
+
+        Returns:
+            The fetched results like the HTML, URL, if it is blocked, etc.
         """
         start_time = time.time()
 
@@ -445,7 +544,7 @@ class SimpleFetcher(HTMLFetcher):
 
         try:
             # Get headers (potentially randomized)
-            headers = self._get_headers(url)
+            headers = self._get_headers()
 
             # Use session or direct request
             if self.session:
@@ -491,7 +590,7 @@ class SimpleFetcher(HTMLFetcher):
                 raise BotDetectionError(url, status_code, indicators)
 
             # Analyze content
-            metadata = self._analyze_content(html, url)
+            metadata = ContentAnalyzer.analyze(html)
 
             fetch_time = time.time() - start_time
 
@@ -523,12 +622,12 @@ class SimpleFetcher(HTMLFetcher):
 
 
 class PlaywrightFetcher(HTMLFetcher):
-    """
-    Playwright-based fetcher using a real browser.
+    """Playwright-based fetcher using a real browser.
 
-    Slower but bypasses most bot detection (~95%).
+    Slower but bypasses most bot detection.
     Also handles JavaScript-heavy sites.
     """
+    #TODO: Make work
 
     def __init__(self, timeout: int = 60000, headless: bool = True):
         self.timeout = timeout
@@ -571,9 +670,9 @@ class PlaywrightFetcher(HTMLFetcher):
 
                 if is_blocked:
                     raise BotDetectionError(url, status_code or 0, indicators)
-
+ 
                 # Analyze content
-                metadata = self._analyze_content(html, url)
+                metadata = ContentAnalyzer.analyze(html)
 
                 fetch_time = time.time() - start_time
 
@@ -597,11 +696,11 @@ class PlaywrightFetcher(HTMLFetcher):
 
 
 class SmartFetcher(HTMLFetcher):
-    """
-    Smart waterfall fetcher: try simple first, escalate if blocked.
+    """Smart waterfall fetcher: try simple first, escalate if blocked.
 
     Best balance of speed and effectiveness (~99%).
     """
+    #TODO: Make work
 
     def __init__(self, timeout: int = 30, playwright_timeout: int = 60000):
         self.simple_fetcher = SimpleFetcher(timeout=timeout)
@@ -639,8 +738,7 @@ class SmartFetcher(HTMLFetcher):
 
 # Factory function for easy fetcher creation
 def create_fetcher(fetcher_type: str = 'simple', **kwargs) -> HTMLFetcher:
-    """
-    Create an HTML fetcher.
+    """Create an HTML fetcher.
 
     Args:
         fetcher_type: Type of fetcher ('simple', 'playwright', 'smart')

@@ -17,7 +17,15 @@ from yosoi.models import ScrapingConfig
 
 
 class SelectorDiscovery:
-    """Discovers CSS selectors using AI to read HTML."""
+    """Discovers CSS selectors using AI to read HTML.
+
+    Attributes:
+        console: Rich console instance for formatted output
+        fallback_selectors: Second level of selectors to choose from
+        debug_mode: If enabled will give entire HTML
+        remove_sidebars: Enabled automatically and will remove the sidebars and more from HTML
+        system_prompt: The start of the prompt to give to the LLM
+    """
 
     def __init__(
         self,
@@ -27,6 +35,18 @@ class SelectorDiscovery:
         debug_mode: bool = False,
         remove_sidebars: bool = False,
     ):
+        """Initialize the discovery with LLM configuration or an agent
+
+        Args:
+            llm_config: Configuration for the LLM provider and model
+            agent: The LLM agent that will be used
+            console: Rich console instance for formatted output
+            debug_mode: If enabled will give entire HTML
+            remove_sidebars: Enabled automatically and will remove the sidebars and more from HTML
+
+        Raises:
+            ValueError: Must provide llm_config or an agent
+        """
         self.console = console or Console()
         self.fallback_selectors = self._get_fallback_selectors()
         self.debug_mode = debug_mode
@@ -55,10 +75,14 @@ class SelectorDiscovery:
 
     @logfire.instrument('discover_selectors', extract_args=False)
     def discover_from_html(self, url: str, html: str) -> dict[str, Any] | None:
-        """
-        Main method: Extract relevant HTML and ask AI for selectors.
+        """Main method: Extract relevant HTML and ask AI for selectors.
 
-        Returns None if discovery fails - pipeline handles retries.
+        Args:
+            url: The URL that is being scraped
+            html: The HTML of the URL
+
+        Returns: 
+            Dictionary of discovered selectors if found, None if discovery fails.
         """
         logfire.info('Starting discovery for {url}', url=url)
 
@@ -82,10 +106,14 @@ class SelectorDiscovery:
         return None
 
     def _compress_html_simple(self, soup: BeautifulSoup) -> BeautifulSoup:  # noqa: C901
-        """
-        Simple, safe HTML compression for selector discovery.
-        """
+        """Simple, safe HTML compression for selector discovery.
 
+        Args:
+            soup: BeautifulSoup parsed HTML
+
+        Returns:
+            The compressed BeautifulSoup parsed HTML
+        """
         # 1. Remove HTML comments
         for comment in soup.find_all(text=lambda text: isinstance(text, Comment)):
             comment.extract()
@@ -127,7 +155,14 @@ class SelectorDiscovery:
         return soup
 
     def _collapse_whitespace(self, html: str) -> str:
-        """Collapse excessive whitespace (20-30% savings)."""
+        """Collapse excessive whitespace.
+
+        Args:
+            html: HTML content to condense
+
+        Returns:
+            The compressed verion of the HTML
+        """
         # Multiple spaces → single space
         html = re.sub(r'[ \t]+', ' ', html)
         # Multiple newlines → single newline
@@ -138,7 +173,14 @@ class SelectorDiscovery:
 
     @logfire.instrument('bs4_extract_content', extract_args=False)
     def _extract_content_html(self, html: str) -> str:  # noqa: C901
-        """Extract the main content area from HTML."""
+        """Extract the main content area from HTML.
+
+        Args:
+            html: HTML content to extract
+
+        Returns:
+            Portion of HTML that will be used to give to LLM
+        """
         soup = BeautifulSoup(html, 'html.parser')
 
         # Step 1: Remove noise that's never useful
@@ -228,7 +270,15 @@ class SelectorDiscovery:
 
     @logfire.instrument('llm_discovery_request')
     def _get_selectors_from_ai(self, url: str, html: str) -> ScrapingConfig | None:
-        """Ask AI to find CSS selectors by reading the HTML."""
+        """Ask AI to find CSS selectors by reading the HTML.
+
+        Args:
+            url: URL from which the HTML was obtained
+            html: HTML content to give to LLM
+
+        Returns:
+            ScrapingConfig object with discovered selectors, or None if request failed.
+        """
 
         prompt = f"""Analyze this HTML and find CSS selectors for web scraping.
 
@@ -272,11 +322,22 @@ Return ONLY the JSON object, nothing else."""
             return None
 
     def _is_all_na(self, selectors: dict) -> bool:
-        """Check if AI returned all NA (gave up)."""
+        """Check if AI returned all NA (gave up).
+
+        Args:
+            selectors: The selectors gotten from the LLM
+
+        Returns:
+            True if all the selectors are NA, otherwise False
+        """
         return all(all(v == 'NA' for v in field_sel.values()) for field_sel in selectors.values())
 
     def _get_fallback_selectors(self) -> dict:
-        """Return generic heuristic selectors when AI fails."""
+        """Return generic heuristic selectors when AI fails.
+
+        Returns:
+            A dict of the average selectors of the data
+        """
         return {
             'headline': {'primary': 'h1', 'fallback': 'h2', 'tertiary': 'h3'},
             'author': {'primary': "a[href*='author']", 'fallback': '.author', 'tertiary': '.byline'},
@@ -286,7 +347,12 @@ Return ONLY the JSON object, nothing else."""
         }
 
     def _debug_save_html(self, url: str, html: str):
-        """Save extracted HTML to file for debugging."""
+        """Save extracted HTML to file for debugging.
+
+        Args:
+            url: URL from which the HTML was obtained
+            html: HTML content to save
+        """
         import os
         from urllib.parse import urlparse
 

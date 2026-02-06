@@ -21,10 +21,29 @@ from yosoi.validator import SelectorValidator
 
 
 class SelectorDiscoveryPipeline:
-    """Main pipeline for discovering and saving CSS selectors with retry logic."""
+    """Main pipeline for discovering and saving CSS selectors with retry logic.
+
+    The main pipeline of YOSOi that goes through all the other python files to
+    fetch the HTML, parse the HTML, have an LLM discover the selectors, and
+    validate and store the selectors.
+
+    Attributes:
+        custom_theme: Rich theme for console output
+        console: Rich console instance for formatted output
+        discovery: Python class to reduce the HTML and use LLM to find selectors
+        validator: Python class to check the selectors if they are real
+        storage: Store the found selectors as a JSON file
+        tracker: Used to track how much an LLM is used in comparison to amount of urls used
+        debug_mode: If enabled will output the HTML from the URL
+    """
 
     def __init__(self, llm_config: LLMConfig, debug_mode: bool = False):
-        """Initialize the pipeline with LLM configuration."""
+        """Initialize the pipeline with LLM configuration.
+
+        Args:
+            llm_config: Configuration of LLM
+            debug_mode: If enabled will output the HTML from the URL
+        """
         self.custom_theme = Theme(
             {
                 'info': 'dim cyan',
@@ -55,14 +74,14 @@ class SelectorDiscoveryPipeline:
 
         Args:
             url: URL to process
-            force: If True, re-discover even if selectors exist
-            max_fetch_retries: Maximum retry attempts for fetching (bot detection)
-            max_discovery_retries: Maximum retry attempts for AI discovery
-            skip_validation: Skip validation step
-            fetcher_type: Type of HTML fetcher to use
+            force: Force re-discovery even if selectors exist. Defaults to False.
+            skip_validation: Skip validation step. Defaults to False.
+            fetcher_type: Type of fetcher ('simple', 'playwright', 'smart'). Defaults to 'simple'.
+            max_fetch_retries: Maximum fetch retry attempts. Defaults to 2.
+            max_discovery_retries: Maximum AI discovery retry attempts. Defaults to 3.
 
         Returns:
-            True if successful, False otherwise
+            True if operation succeeded, False otherwise.
         """
         with logfire.span('process_url', url=url, force=force, fetcher_type=fetcher_type):
             domain = self._extract_domain(url)
@@ -102,7 +121,21 @@ class SelectorDiscoveryPipeline:
         max_fetch_retries: int = 2,
         max_discovery_retries: int = 3,
     ) -> dict[str, list[str]]:
-        """Process multiple URLs and return results."""
+        """Process multiple URLs and collect results.
+
+        Args:
+            urls: List of URLs to process.
+            force: Force re-discovery even if selectors exist. Defaults to False.
+            skip_validation: Skip validation step. Defaults to False.
+            fetcher_type: Type of fetcher ('simple', 'playwright', 'smart'). Defaults to 'simple'.
+            max_fetch_retries: Maximum fetch retry attempts. Defaults to 2.
+            max_discovery_retries: Maximum AI discovery retry attempts. Defaults to 3.
+
+        Returns:
+            Dictionary with two keys:
+                - 'successful': List of successfully processed URLs
+                - 'failed': List of URLs that failed processing
+        """
         results: dict[str, list[str]] = {'successful': [], 'failed': []}
 
         with logfire.span('process_urls', total_urls=len(urls)):
@@ -140,11 +173,25 @@ class SelectorDiscoveryPipeline:
     # ============================================================================
 
     def _extract_domain(self, url: str) -> str:
-        """Extract domain from URL."""
+        """Extract domain from URL.
+
+        Args:
+            url: The URL that is being fetched
+
+        Returns:
+            The domain of the URL
+        """
         return urlparse(url).netloc.replace('www.', '')
 
     def _create_fetcher(self, fetcher_type: str) -> HTMLFetcher | None:
-        """Create HTML fetcher instance."""
+        """Create HTML fetcher instance.
+
+        Args:
+            fetcher_type: The type of fetcher to be used to fetch HTMLs
+
+        Returns:
+            The fetcher to be used to fetch HTMLs
+        """
         try:
             return create_fetcher(fetcher_type)
         except ValueError:
@@ -152,16 +199,23 @@ class SelectorDiscoveryPipeline:
             return None
 
     def _fetch(self, url: str, fetcher: HTMLFetcher, max_retries: int = 2) -> FetchResult | None:
-        """
-        Fetch HTML with retry logic for bot detection.
+        """Fetch HTML with automatic retry logic for bot detection.
+
+        Attempts to fetch HTML with automatic retries when bot detection is
+        encountered. Logs and displays progress for each retry attempt.
 
         Args:
-            url: URL to fetch
-            fetcher: HTML fetcher instance
-            max_retries: Maximum number of retry attempts
+            url: The URL that is being fetched.
+            fetcher: HTML fetcher instance to use.
+            max_retries: Maximum retry attempts. Defaults to 2.
 
         Returns:
-            FetchResult if successful, None otherwise
+            FetchResult if fetch succeeds within retry limit, None if all
+            attempts fail or other errors occur.
+
+        Note:
+            Bot detection errors are caught and retried. Other exceptions
+            are caught and logged, returning None rather than raising.
         """
         self.console.print(Panel(f'Processing: {url}', style='bold blue'))
         self.console.print('[step]Step 1: Fetching HTML...[/step]')
@@ -214,16 +268,21 @@ class SelectorDiscoveryPipeline:
         return None
 
     def _discover(self, url: str, result: FetchResult, max_retries: int = 3) -> tuple[dict | None, bool]:
-        """
-        Discover selectors with retry logic for AI failures.
+        """Discover CSS selectors with AI, using fallback heuristics if needed.
+
+        Attempts AI-powered selector discovery with automatic retries. Falls
+        back to heuristic selectors for RSS feeds or JavaScript-heavy sites.
 
         Args:
-            url: URL being processed
-            result: Fetch result with HTML
-            max_retries: Maximum number of retry attempts
+            url: URL being processed (for logging).
+            result: FetchResult containing HTML and metadata.
+            max_retries: Maximum AI retry attempts. Defaults to 3.
 
         Returns:
-            Tuple of (selectors, used_llm)
+            Tuple of (selectors, used_llm) where:
+            - selectors: Dict mapping field names to selector configs,
+              or None if discovery completely failed
+            - used_llm: True if AI was used, False if using fallback heuristics
         """
         # Check if we should use heuristics instead of AI
         should_use_heuristics, reason = self._should_use_heuristics(result)
@@ -261,7 +320,19 @@ class SelectorDiscoveryPipeline:
         return self.discovery.fallback_selectors, False
 
     def _validate(self, url: str, html: str, selectors: dict, skip_validation: bool) -> dict | None:
-        """Validate discovered selectors."""
+        """Validate discovered selectors against HTML.
+
+        Args:
+            url: URL being processed (for logging only).
+            html: HTML content to validate selectors against.
+            selectors: Discovered selectors to validate.
+            skip_validation: Skip validation and return selectors as-is. Defaults to False.
+
+        Returns:
+            Dictionary of validated selectors (same structure as input) if validation
+            succeeds. Returns input selectors unchanged if skip_validation is True.
+            Returns None if all selectors fail validation.
+        """
         if skip_validation:
             self.console.print('[warning]Skipping validation (--skip-validation enabled)[/warning]')
             return selectors
@@ -283,7 +354,21 @@ class SelectorDiscoveryPipeline:
         return validated
 
     def _cached_selectors(self, url: str, domain: str, fetcher: HTMLFetcher, skip_validation: bool) -> bool:
-        """Try to use cached selectors if available."""
+        """Try to use cached selectors if available.
+
+        Checks if selectors exist for the domain, and optionally validates them
+        against the current URL. Tracks usage if successful.
+
+        Args:
+            url: URL being processed.
+            domain: Domain name extracted from URL.
+            fetcher: HTML fetcher instance for validation.
+            skip_validation: Skip validation of cached selectors. Defaults to False.
+
+        Returns:
+            True if cached selectors found and valid (or validation skipped),
+            False if no cached selectors exist or validation failed.
+        """
         existing_selectors = self.storage.load_selectors(domain)
         if not existing_selectors:
             return False
@@ -299,7 +384,25 @@ class SelectorDiscoveryPipeline:
         return self._validate_cached_selectors(url, domain, fetcher, existing_selectors)
 
     def _validate_cached_selectors(self, url: str, domain: str, fetcher: HTMLFetcher, existing_selectors: dict) -> bool:
-        """Validate cached selectors against current HTML."""
+        """Validate cached selectors against current HTML.
+
+        Fetches HTML from URL and validates existing selectors against it.
+        Falls back to using cached selectors as-is if fetch or validation fails.
+
+        Args:
+            url: URL to fetch and validate against.
+            domain: Domain name (for logging and tracking).
+            fetcher: HTML fetcher instance.
+            existing_selectors: Previously discovered selectors to validate.
+
+        Returns:
+            True if selectors validated successfully or fetch failed (uses cached
+            selectors as-is). False if validation explicitly failed (triggers
+            re-discovery).
+
+        Raises:
+            BotDetectionError: Passes through bot detection from fetcher.
+        """
         self.console.print('[step]Fetching HTML to validate cached selectors...[/step]')
 
         try:
@@ -328,12 +431,23 @@ class SelectorDiscoveryPipeline:
             return True
 
     def _track_cached_success(self, url: str, domain: str):
-        """Track successful use of cached selectors."""
+        """Track successful use of cached selectors.
+
+        Args:
+            url: The URL that is being fetched
+            domain: The domain from which the URL is grabbed
+        """
         stats = self.tracker.record_url(url, used_llm=False)
         self._print_tracking_stats(domain, stats)
 
     def _handle_bot_detection(self, error: BotDetectionError, attempt: int, max_retries: int):
-        """Handle bot detection error."""
+        """Handle bot detection error.
+
+        Args:
+            error: The error being handled
+            attempt: The amount of times it has been handled
+            max_retries: The maximum amount of times it can be handled
+        """
         self.console.print(f'[danger]BOT DETECTION (Attempt {attempt}/{max_retries})[/danger]')
         self.console.print(f'[danger]URL: {error.url}[/danger]')
         self.console.print(f'[danger]Status Code: {error.status_code}[/danger]')
@@ -344,7 +458,19 @@ class SelectorDiscoveryPipeline:
             self.console.print('[info]Try: --fetcher smart (or) --fetcher playwright[/info]')
 
     def _should_use_heuristics(self, result: FetchResult) -> tuple[bool, str]:
-        """Determine if we should use heuristics instead of AI."""
+        """Determine if heuristics should be used instead of AI.
+
+        Checks if content type or structure makes AI discovery ineffective,
+        such as RSS feeds or heavily JavaScript-rendered pages.
+
+        Args:
+            result: The result after the fetch
+
+        Returns:
+            Tuple of (selectors, used_llm) where:
+                - selectors: Dict of discovered selectors, or None if discovery failed
+                - used_llm: bool indicating if LLM was called (False for heuristics)
+        """
         if result.is_rss:
             self.console.print('[info]RSS feed detected - using heuristics[/info]')
             return True, 'RSS feed'
@@ -357,13 +483,30 @@ class SelectorDiscoveryPipeline:
         return False, ''
 
     def _save_and_track(self, url: str, domain: str, validated: dict, used_llm: bool):
-        """Save selectors and track usage."""
+        """Save validated selectors and track LLM usage.
+
+        Saves selectors to storage, records usage statistics, and displays
+        tracking information to console.
+
+        Args:
+            url: URL that was processed.
+            domain: Domain name.
+            validated: Validated selector dictionary to save.
+            used_llm: Whether LLM was called for this URL.
+        """
         self.storage.save_selectors(url, validated)
         stats = self.tracker.record_url(url, used_llm=used_llm)
         self._print_tracking_stats(domain, stats)
 
     def _print_tracking_stats(self, domain: str, stats: dict):
-        """Print LLM tracking statistics for this domain."""
+        """Print LLM tracking statistics for domain.
+
+        Displays LLM call count, URL count, and efficiency metrics.
+
+        Args:
+            domain: Domain name being tracked.
+            stats: Statistics dictionary with 'llm_calls' and 'url_count' keys.
+        """
         self.console.print(f'\n[dim]  - Tracking Stats for {domain}:[/dim]')
         self.console.print(f'[dim]    -- LLM Calls: {stats["llm_calls"]}[/dim]')
         self.console.print(f'[dim]    -- URLs Processed: {stats["url_count"]}[/dim]')

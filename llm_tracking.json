@@ -4,8 +4,8 @@
     "url_count": 1
   },
   "mediagazer.com": {
-    "llm_calls": 1,
-    "url_count": 45
+    "llm_calls": 2,
+    "url_count": 55
   },
   "workspaceupdates.googleblog.com": {
     "llm_calls": 1,
@@ -130,5 +130,9 @@
   "apple.slashdot.org": {
     "llm_calls": 0,
     "url_count": 10
+  },
+  "example.com": {
+    "llm_calls": 1,
+    "url_count": 1
   }
 }

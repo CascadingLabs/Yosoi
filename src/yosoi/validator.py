@@ -1,5 +1,5 @@
 """
-selector_validator.py
+validator.py
 ======================
 Validates that CSS selectors actually work on web pages.
 """
@@ -10,11 +10,23 @@ from rich.console import Console
 
 
 class SelectorValidator:
-    """Validates CSS selectors by testing them on actual pages."""
+    """Validates CSS selectors by testing them on actual pages.
+
+    Attributes:
+        user_agent: User agent string for HTTP requests
+        console: Rich console instance for formatted output
+        EXPECTED_FIELDS: List of field names that should be validated
+    """
 
     EXPECTED_FIELDS = ['headline', 'author', 'date', 'body_text', 'related_content']
 
     def __init__(self, user_agent: str = 'Mozilla/5.0', console: Console | None = None):
+        """Initialize the validator.
+
+        Args:
+            user_agent: User agent string for HTTP requests. Defaults to 'Mozilla/5.0'.
+            console: Rich console instance for formatted output. Defaults to None (creates new Console).
+        """
         self.user_agent = user_agent
         self.console = console or Console()
 
@@ -24,8 +36,16 @@ class SelectorValidator:
         html: str,
         selectors: dict[str, dict[str, str]],  # Prefix url with _
     ) -> dict[str, dict[str, str]]:
-        """
-        Validate selectors using provided HTML (no re-fetch needed).
+        """Validate selectors using provided HTML (no re-fetch needed).
+
+        Args:
+            _url: URL the selectors were discovered from (unused, for API consistency)
+            html: HTML content to validate selectors against
+            selectors: Dictionary of field names to selector dictionaries (primary, fallback, tertiary)
+
+        Returns:
+            Dictionary of validated selectors, or None if no selectors validated successfully.
+            Each field contains {'primary': str, 'fallback': str, 'tertiary': str}.
         """
         self.console.print(f'  → Validating {len(self.EXPECTED_FIELDS)} fields using fetched HTML...')
 
@@ -69,6 +89,16 @@ class SelectorValidator:
         return validated if validated else None
 
     def _handle_selector(self, soup: BeautifulSoup, selector: str, field_name: str) -> bool:
+        """Test if a single selector finds elements in the HTML.
+
+        Args:
+            soup: BeautifulSoup parsed HTML
+            selector: CSS selector string to test
+            field_name: Name of the field being validated (for error reporting)
+
+        Returns:
+            True if the selector finds at least one element, False otherwise.
+        """
         if selector == 'NA':
             return False
         try:
@@ -79,8 +109,16 @@ class SelectorValidator:
             return False
 
     def quick_test(self, url: str, selector: str) -> bool:
-        """
-        Quick test if a single selector works.
+        """Quick test if a single selector works on a URL.
+
+        Fetches the URL and tests if the selector finds any content.
+
+        Args:
+            url: URL to fetch and test against
+            selector: CSS selector string to test
+
+        Returns:
+            True if the selector finds an element with text content, False otherwise.
         """
         try:
             response = requests.get(url, headers={'User-Agent': self.user_agent}, timeout=10)

@@ -18,7 +18,16 @@ from yosoi.pipeline import SelectorDiscoveryPipeline
 
 
 def setup_llm_config():
-    """Set up LLM configuration from environment variables."""
+    """Set up LLM configuration from environment variables.
+
+    Checks for GROQ_KEY first, then GEMINI_KEY.
+
+    Returns:
+        LLMConfig instance configured with available API key.
+
+    Raises:
+        SystemExit: If no API keys are found in environment.
+    """
     groq_api_key = os.getenv('GROQ_KEY')
     gemini_api_key = os.getenv('GEMINI_KEY')
 
@@ -36,7 +45,13 @@ def setup_llm_config():
 
 
 def setup_logfire():
-    """Set up Logfire observability if token is available."""
+    """Set up Logfire observability if token is available.
+
+    Configures Logfire and instruments Pydantic if LOGFIRE_TOKEN is set.
+
+    Returns:
+        None
+    """
     logfire_token = os.getenv('LOGFIRE_TOKEN')
     if logfire_token:
         logfire.configure(token=logfire_token)
@@ -47,7 +62,17 @@ def setup_logfire():
 
 
 def load_urls_from_file(filepath: str) -> list[str]:
-    """Load URLs from a file (JSON or plain text)."""
+    """Load URLs from a file (JSON or plain text).
+
+    Args:
+        filepath: Path to file containing URLs
+
+    Returns:
+        List of URL strings.
+
+    Raises:
+        SystemExit: If file is not found.
+    """
     if not os.path.exists(filepath):
         print(f'Error: File not found: {filepath}')
         sys.exit(1)
@@ -66,7 +91,11 @@ def load_urls_from_file(filepath: str) -> list[str]:
 
 
 def parse_arguments():
-    """Parse command-line arguments."""
+    """Parse command-line arguments.
+
+    Returns:
+        argparse.Namespace object with parsed arguments.
+    """
     parser = argparse.ArgumentParser(
         description='Discover CSS selectors from web pages using AI',
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -97,7 +126,14 @@ Examples:
 
 
 def print_fetcher_info(fetcher_type: str):
-    """Print information about the selected fetcher."""
+    """Print information about the selected fetcher.
+
+    Args:
+        fetcher_type: Type of fetcher ('simple', 'playwright', or 'smart')
+
+    Returns:
+        None
+    """
     if fetcher_type == 'playwright':
         print('ℹ Using Playwright fetcher (slower but more reliable)')
     elif fetcher_type == 'smart':
