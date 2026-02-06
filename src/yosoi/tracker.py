@@ -1,7 +1,5 @@
-"""
-tracker.py
-==========
-Simple tracker for LLM calls and URL counts per domain.
+"""Simple tracker for LLM calls and URL counts per domain.
+
 Stores everything in a single llm_tracking.json file.
 """
 
@@ -16,6 +14,7 @@ class LLMTracker:
 
     Attributes:
         tracking_file: Path to the JSON file storing tracking data
+
     """
 
     def __init__(self, tracking_file: str = 'llm_tracking.json'):
@@ -23,6 +22,7 @@ class LLMTracker:
 
         Args:
             tracking_file: Path to the JSON file for storing tracking data. Defaults to 'llm_tracking.json'.
+
         """
         self.tracking_file = tracking_file
         self._ensure_file_exists()
@@ -39,6 +39,7 @@ class LLMTracker:
         Returns:
             Dictionary containing tracking data for all domains.
             Empty dict if file doesn't exist or is invalid.
+
         """
         try:
             with open(self.tracking_file) as f:
@@ -52,6 +53,7 @@ class LLMTracker:
 
         Args:
             data: Dictionary of tracking data to save
+
         """
         with open(self.tracking_file, 'w') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
@@ -66,6 +68,7 @@ class LLMTracker:
 
         Returns:
             Domain name without 'www.' prefix, or 'unknown' if URL is invalid.
+
         """
         try:
             parsed = urlparse(url)
@@ -85,6 +88,7 @@ class LLMTracker:
 
         Returns:
             Dictionary with 'llm_calls' and 'url_count' for this domain.
+
         """
         domain = self.extract_domain(url)
         data = self._load_data()
@@ -112,6 +116,7 @@ class LLMTracker:
 
         Returns:
             Number of LLM calls made for this domain.
+
         """
         domain = self.extract_domain(url_or_domain) if '://' in url_or_domain else url_or_domain
         data = self._load_data()
@@ -126,6 +131,7 @@ class LLMTracker:
 
         Returns:
             Number of URLs processed for this domain.
+
         """
         domain = self.extract_domain(url_or_domain) if '://' in url_or_domain else url_or_domain
         data = self._load_data()
@@ -140,6 +146,7 @@ class LLMTracker:
 
         Returns:
             Dictionary with 'llm_calls' and 'url_count' keys.
+
         """
         domain = self.extract_domain(url_or_domain) if '://' in url_or_domain else url_or_domain
         data = self._load_data()
@@ -152,6 +159,7 @@ class LLMTracker:
         Returns:
             Dictionary mapping domain names to their statistics.
             Each domain has 'llm_calls' and 'url_count' keys.
+
         """
         return self._load_data()
 
@@ -201,6 +209,7 @@ class LLMTracker:
 
         Args:
             domain: Specific domain to reset, or None to reset all. Defaults to None.
+
         """
         if domain:
             data = self._load_data()

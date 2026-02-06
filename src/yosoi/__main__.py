@@ -1,7 +1,7 @@
-"""
-__main__.py
-===========
-Entry point for running Yosoi as a module: python -m yosoi
+"""Module entry point.
+
+Invokes the CLI main function when the package is executed
+directly with the yosoi command.
 """
 
 from yosoi.cli import main

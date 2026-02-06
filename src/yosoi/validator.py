@@ -1,8 +1,4 @@
-"""
-validator.py
-======================
-Validates that CSS selectors actually work on web pages.
-"""
+"""Validates that selectors actually work on web pages."""
 
 import requests
 from bs4 import BeautifulSoup
@@ -10,12 +6,13 @@ from rich.console import Console
 
 
 class SelectorValidator:
-    """Validates CSS selectors by testing them on actual pages.
+    """Validates selectors by testing them on actual pages.
 
     Attributes:
         user_agent: User agent string for HTTP requests
         console: Rich console instance for formatted output
         EXPECTED_FIELDS: List of field names that should be validated
+
     """
 
     EXPECTED_FIELDS = ['headline', 'author', 'date', 'body_text', 'related_content']
@@ -26,6 +23,7 @@ class SelectorValidator:
         Args:
             user_agent: User agent string for HTTP requests. Defaults to 'Mozilla/5.0'.
             console: Rich console instance for formatted output. Defaults to None (creates new Console).
+
         """
         self.user_agent = user_agent
         self.console = console or Console()
@@ -46,6 +44,7 @@ class SelectorValidator:
         Returns:
             Dictionary of validated selectors, or None if no selectors validated successfully.
             Each field contains {'primary': str, 'fallback': str, 'tertiary': str}.
+
         """
         self.console.print(f'  → Validating {len(self.EXPECTED_FIELDS)} fields using fetched HTML...')
 
@@ -95,11 +94,12 @@ class SelectorValidator:
 
         Args:
             soup: BeautifulSoup parsed HTML
-            selector: CSS selector string to test
+            selector: Selector string to test
             field_name: Name of the field being validated (for error reporting)
 
         Returns:
             True if the selector finds at least one element, False otherwise.
+
         """
         if selector == 'NA':
             return False
@@ -117,10 +117,11 @@ class SelectorValidator:
 
         Args:
             url: URL to fetch and test against
-            selector: CSS selector string to test
+            selector: Selector string to test
 
         Returns:
             True if the selector finds an element with text content, False otherwise.
+
         """
         try:
             response = requests.get(url, headers={'User-Agent': self.user_agent}, timeout=10)

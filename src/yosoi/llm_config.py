@@ -1,7 +1,4 @@
-"""
-llm_config.py
-=============
-Modular LLM configuration system for Yosoi.
+"""Modular LLM configuration system for Yosoi.
 
 Supports multiple providers, easy extension, and flexible model configuration.
 """
@@ -33,6 +30,7 @@ class LLMConfig:
         temperature: Sampling temperature (0.0-2.0). Defaults to 0.7.
         max_tokens: Maximum tokens for generation. Defaults to None.
         extra_params: Additional provider-specific parameters. Defaults to None.
+
     """
 
     provider: str
@@ -47,6 +45,7 @@ class LLMConfig:
 
         Raises:
             ValueError: If API key or model name is missing.
+
         """
         if not self.api_key:
             raise ValueError(f'API key required for {self.provider}')
@@ -62,6 +61,7 @@ class FallbackConfig:
         primary: Primary LLM configuration
         fallbacks: List of fallback LLM configurations
         max_retries_per_model: Maximum retry attempts per model. Defaults to 2.
+
     """
 
     primary: LLMConfig
@@ -80,6 +80,7 @@ class LLMProvider(Protocol):
     Methods:
         create_model: Create a model instance from configuration
         create_agent: Create a configured agent from configuration
+
     """
 
     def create_model(self, config: LLMConfig) -> Any:
@@ -90,6 +91,7 @@ class LLMProvider(Protocol):
 
         Returns:
             Model instance specific to the provider.
+
         """
         ...
 
@@ -102,6 +104,7 @@ class LLMProvider(Protocol):
 
         Returns:
             Configured Pydantic AI Agent.
+
         """
         ...
 
@@ -119,6 +122,7 @@ def create_groq_model(config: LLMConfig) -> GroqModel:
 
     Returns:
         Configured GroqModel instance.
+
     """
     provider = GroqProvider(api_key=config.api_key)
 
@@ -140,6 +144,7 @@ def create_gemini_model(config: LLMConfig) -> GoogleModel:
 
     Returns:
         Configured GoogleModel instance.
+
     """
     provider = GoogleProvider(api_key=config.api_key)
 
@@ -160,6 +165,7 @@ def create_openai_model(config: LLMConfig) -> OpenAIModel:
 
     Returns:
         Configured OpenAIModel instance.
+
     """
     provider = OpenAIProvider(api_key=config.api_key)
 
@@ -189,8 +195,7 @@ PROVIDER_FACTORIES = {
 
 
 def create_model(config: LLMConfig) -> Any:
-    """
-    Create a model from configuration.
+    """Create a model from configuration.
 
     Args:
         config: LLMConfig specifying the provider and parameters
@@ -208,6 +213,7 @@ def create_model(config: LLMConfig) -> Any:
         ...     api_key='your-key'
         ... )
         >>> model = create_model(config)
+
     """
     provider_name = config.provider.lower()
 
@@ -220,8 +226,7 @@ def create_model(config: LLMConfig) -> Any:
 
 
 def create_agent(config: LLMConfig, system_prompt: str) -> Agent:
-    """
-    Create a Pydantic AI agent from configuration.
+    """Create a Pydantic AI agent from configuration.
 
     Args:
         config: LLMConfig specifying the provider and parameters
@@ -233,6 +238,7 @@ def create_agent(config: LLMConfig, system_prompt: str) -> Agent:
     Example:
         >>> config = LLMConfig(provider='groq', model_name='llama-3.3-70b-versatile', api_key='key')
         >>> agent = create_agent(config, 'You are a helpful assistant')
+
     """
     model = create_model(config)
     return Agent(model, system_prompt=system_prompt)
@@ -253,6 +259,7 @@ class LLMBuilder:
         ...     .api_key('your-key')
         ...     .temperature(0.5)
         ...     .build())
+
     """
 
     def __init__(self):
@@ -272,6 +279,7 @@ class LLMBuilder:
 
         Returns:
             Self for method chaining.
+
         """
         self._provider = name
         return self
@@ -284,6 +292,7 @@ class LLMBuilder:
 
         Returns:
             Self for method chaining.
+
         """
         self._model_name = name
         return self
@@ -296,6 +305,7 @@ class LLMBuilder:
 
         Returns:
             Self for method chaining.
+
         """
         self._api_key = key
         return self
@@ -308,6 +318,7 @@ class LLMBuilder:
 
         Returns:
             Self for method chaining.
+
         """
         self._temperature = temp
         return self
@@ -320,6 +331,7 @@ class LLMBuilder:
 
         Returns:
             Self for method chaining.
+
         """
         self._max_tokens = tokens
         return self
@@ -332,6 +344,7 @@ class LLMBuilder:
 
         Returns:
             Self for method chaining.
+
         """
         self._extra_params.update(kwargs)
         return self
@@ -344,6 +357,7 @@ class LLMBuilder:
 
         Raises:
             ValueError: If required fields (provider, model_name, api_key) are not set.
+
         """
         if not self._provider:
             raise ValueError('Provider must be set')
@@ -372,6 +386,7 @@ def groq(model_name: str, api_key: str, **kwargs) -> LLMConfig:
 
     Returns:
         Configured LLMConfig for Groq.
+
     """
     return LLMConfig(provider='groq', model_name=model_name, api_key=api_key, **kwargs)
 
@@ -386,6 +401,7 @@ def gemini(model_name: str, api_key: str, **kwargs) -> LLMConfig:
 
     Returns:
         Configured LLMConfig for Gemini.
+
     """
     return LLMConfig(provider='gemini', model_name=model_name, api_key=api_key, **kwargs)
 
@@ -400,6 +416,7 @@ def openai(model_name: str, api_key: str, **kwargs) -> LLMConfig:
 
     Returns:
         Configured LLMConfig for OpenAI.
+
     """
     return LLMConfig(provider='openai', model_name=model_name, api_key=api_key, **kwargs)
 
@@ -416,6 +433,7 @@ class MultiModelAgent:
         configs: List of LLM configurations in priority order
         system_prompt: System prompt used for all agents
         agents: List of configured Pydantic AI agents
+
     """
 
     def __init__(self, configs: list[LLMConfig], system_prompt: str):
@@ -424,6 +442,7 @@ class MultiModelAgent:
         Args:
             configs: List of LLMConfig objects in priority order
             system_prompt: System prompt for all agents
+
         """
         self.configs = configs
         self.system_prompt = system_prompt
@@ -441,6 +460,7 @@ class MultiModelAgent:
 
         Raises:
             RuntimeError: If all models fail to process the prompt.
+
         """
         for i, agent in enumerate(self.agents):
             config = self.configs[i]
@@ -470,6 +490,7 @@ class MultiModelAgent:
         Returns:
             Dictionary mapping model_id to result or error.
             Model IDs are in format 'provider:model_name'.
+
         """
         results: dict[str, Any] = {}
         for config, agent in zip(self.configs, self.agents, strict=True):

@@ -1,8 +1,4 @@
-"""
-storage.py
-==========
-Handles saving and loading selector data to/from JSON files.
-"""
+"""Handles saving and loading selector data to/from JSON files."""
 
 import json
 import os
@@ -15,6 +11,7 @@ class SelectorStorage:
 
     Attributes:
         storage_dir: Directory path where selector files are stored
+
     """
 
     def __init__(self, storage_dir: str = 'selectors'):
@@ -22,6 +19,7 @@ class SelectorStorage:
 
         Args:
             storage_dir: Directory path for storing selector files. Defaults to 'selectors'.
+
         """
         self.storage_dir = storage_dir
         os.makedirs(storage_dir, exist_ok=True)
@@ -35,6 +33,7 @@ class SelectorStorage:
 
         Returns:
             Path to the saved file.
+
         """
         domain = self._extract_domain(url)
         filepath = self._get_filepath(domain)
@@ -57,6 +56,7 @@ class SelectorStorage:
 
         Returns:
             Dictionary of selectors, or None if not found or error occurred.
+
         """
         filepath = self._get_filepath(domain)
 
@@ -79,6 +79,7 @@ class SelectorStorage:
 
         Returns:
             True if selector file exists for the domain, False otherwise.
+
         """
         filepath = self._get_filepath(domain)
         return os.path.exists(filepath)
@@ -88,6 +89,7 @@ class SelectorStorage:
 
         Returns:
             Sorted list of domain names with saved selectors.
+
         """
         if not os.path.exists(self.storage_dir):
             return []
@@ -109,6 +111,7 @@ class SelectorStorage:
         Returns:
             Dictionary containing 'total_domains' count and list of domain details.
             Each domain includes 'domain', 'discovered_at', and 'fields' keys.
+
         """
         domains = self.list_domains()
 
@@ -135,6 +138,7 @@ class SelectorStorage:
 
         Returns:
             Formatted selectors with primary, fallback, and tertiary keys.
+
         """
         formatted: dict[str, dict[str, str]] = {}
 
@@ -158,6 +162,7 @@ class SelectorStorage:
 
         Returns:
             Domain name without 'www.' prefix, or 'unknown' if URL is invalid.
+
         """
         try:
             parsed = urlparse(url)
@@ -176,6 +181,7 @@ class SelectorStorage:
 
         Returns:
             Full file path for the domain's selector file.
+
         """
         safe_domain = domain.replace('.', '_').replace('/', '_')
         return os.path.join(self.storage_dir, f'selectors_{safe_domain}.json')
@@ -188,6 +194,7 @@ class SelectorStorage:
 
         Returns:
             Dictionary with 'selectors' key, or None if not found or error occurred.
+
         """
         filepath = self._get_filepath(domain)
 
@@ -209,6 +216,7 @@ class SelectorStorage:
 
         Returns:
             Path to the exported file.
+
         """
         summary = self.get_summary()
 

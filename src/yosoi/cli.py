@@ -1,7 +1,5 @@
-"""
-cli.py
-======
-Command-line interface for Yosoi.
+"""Command-line interface for Yosoi.
+
 Handles argument parsing and delegates to pipeline.
 """
 
@@ -27,6 +25,7 @@ def setup_llm_config():
 
     Raises:
         SystemExit: If no API keys are found in environment.
+
     """
     groq_api_key = os.getenv('GROQ_KEY')
     gemini_api_key = os.getenv('GEMINI_KEY')
@@ -51,6 +50,7 @@ def setup_logfire():
 
     Returns:
         None
+
     """
     logfire_token = os.getenv('LOGFIRE_TOKEN')
     if logfire_token:
@@ -72,6 +72,7 @@ def load_urls_from_file(filepath: str) -> list[str]:
 
     Raises:
         SystemExit: If file is not found.
+
     """
     if not os.path.exists(filepath):
         print(f'Error: File not found: {filepath}')
@@ -95,9 +96,10 @@ def parse_arguments():
 
     Returns:
         argparse.Namespace object with parsed arguments.
+
     """
     parser = argparse.ArgumentParser(
-        description='Discover CSS selectors from web pages using AI',
+        description='Discover selectors from web pages using AI',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -137,6 +139,7 @@ def print_fetcher_info(fetcher_type: str):
 
     Returns:
         None
+
     """
     if fetcher_type == 'playwright':
         print('ℹ Using Playwright fetcher (slower but more reliable)')
@@ -147,7 +150,7 @@ def print_fetcher_info(fetcher_type: str):
 
 
 def main():
-    """Main entry point for CLI."""
+    """Run the CLI entry point."""
     # Load environment variables
     load_dotenv()
 

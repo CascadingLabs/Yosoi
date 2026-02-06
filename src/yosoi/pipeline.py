@@ -1,7 +1,5 @@
-"""
-pipeline.py
-===========
-Main pipeline for CSS selector discovery.
+"""Main pipeline for selector discovery.
+
 Centralized retry logic for bot detection and AI failures.
 """
 
@@ -35,6 +33,7 @@ class SelectorDiscoveryPipeline:
         storage: Store the found selectors as a JSON file
         tracker: Used to track how much an LLM is used in comparison to amount of urls used
         debug_mode: If enabled will output the HTML from the URL
+
     """
 
     def __init__(self, llm_config: LLMConfig, debug_mode: bool = False):
@@ -43,6 +42,7 @@ class SelectorDiscoveryPipeline:
         Args:
             llm_config: Configuration of LLM
             debug_mode: If enabled will output the HTML from the URL
+
         """
         self.custom_theme = Theme(
             {
@@ -69,8 +69,7 @@ class SelectorDiscoveryPipeline:
         skip_validation: bool = False,
         fetcher_type: str = 'simple',
     ) -> bool:
-        """
-        Process a single URL: discover, validate, and save selectors.
+        """Process a single URL: discover, validate, and save selectors.
 
         Args:
             url: URL to process
@@ -82,6 +81,7 @@ class SelectorDiscoveryPipeline:
 
         Returns:
             True if operation succeeded, False otherwise.
+
         """
         with logfire.span('process_url', url=url, force=force, fetcher_type=fetcher_type):
             domain = self._extract_domain(url)
@@ -138,6 +138,7 @@ class SelectorDiscoveryPipeline:
             Dictionary with two keys:
                 - 'successful': List of successfully processed URLs
                 - 'failed': List of URLs that failed processing
+
         """
         results: dict[str, list[str]] = {'successful': [], 'failed': []}
 
@@ -183,6 +184,7 @@ class SelectorDiscoveryPipeline:
 
         Returns:
             The domain of the URL
+
         """
         return urlparse(url).netloc.replace('www.', '')
 
@@ -194,6 +196,7 @@ class SelectorDiscoveryPipeline:
 
         Returns:
             The fetcher to be used to fetch HTMLs
+
         """
         try:
             return create_fetcher(fetcher_type)
@@ -219,6 +222,7 @@ class SelectorDiscoveryPipeline:
         Note:
             Bot detection errors are caught and retried. Other exceptions
             are caught and logged, returning None rather than raising.
+
         """
         self.console.print(Panel(f'Processing: {url}', style='bold blue'))
         self.console.print('[step]Step 1: Fetching HTML...[/step]')
@@ -286,6 +290,7 @@ class SelectorDiscoveryPipeline:
             - selectors: Dict mapping field names to selector configs,
               or None if discovery completely failed
             - used_llm: True if AI was used, False if using fallback heuristics
+
         """
         # Check if we should use heuristics instead of AI
         should_use_heuristics, reason = self._should_use_heuristics(result)
@@ -336,6 +341,7 @@ class SelectorDiscoveryPipeline:
             Dictionary of validated selectors (same structure as input) if validation
             succeeds. Returns input selectors unchanged if skip_validation is True.
             Returns None if all selectors fail validation.
+
         """
         if skip_validation:
             self.console.print('[warning]Skipping validation (--skip-validation enabled)[/warning]')
@@ -372,6 +378,7 @@ class SelectorDiscoveryPipeline:
         Returns:
             True if cached selectors found and valid (or validation skipped),
             False if no cached selectors exist or validation failed.
+
         """
         existing_selectors = self.storage.load_selectors(domain)
         if not existing_selectors:
@@ -406,6 +413,7 @@ class SelectorDiscoveryPipeline:
 
         Raises:
             BotDetectionError: Passes through bot detection from fetcher.
+
         """
         self.console.print('[step]Fetching HTML to validate cached selectors...[/step]')
 
@@ -440,6 +448,7 @@ class SelectorDiscoveryPipeline:
         Args:
             url: The URL that is being fetched
             domain: The domain from which the URL is grabbed
+
         """
         stats = self.tracker.record_url(url, used_llm=False)
         self._print_tracking_stats(domain, stats)
@@ -451,6 +460,7 @@ class SelectorDiscoveryPipeline:
             error: The error being handled
             attempt: The amount of times it has been handled
             max_retries: The maximum amount of times it can be handled
+
         """
         self.console.print(f'[danger]BOT DETECTION (Attempt {attempt}/{max_retries})[/danger]')
         self.console.print(f'[danger]URL: {error.url}[/danger]')
@@ -474,6 +484,7 @@ class SelectorDiscoveryPipeline:
             Tuple of (selectors, used_llm) where:
                 - selectors: Dict of discovered selectors, or None if discovery failed
                 - used_llm: bool indicating if LLM was called (False for heuristics)
+
         """
         if result.is_rss:
             self.console.print('[info]RSS feed detected - using heuristics[/info]')
@@ -497,6 +508,7 @@ class SelectorDiscoveryPipeline:
             domain: Domain name.
             validated: Validated selector dictionary to save.
             used_llm: Whether LLM was called for this URL.
+
         """
         self.storage.save_selectors(url, validated)
         stats = self.tracker.record_url(url, used_llm=used_llm)
@@ -510,6 +522,7 @@ class SelectorDiscoveryPipeline:
         Args:
             domain: Domain name being tracked.
             stats: Statistics dictionary with 'llm_calls' and 'url_count' keys.
+
         """
         self.console.print(f'\n[dim]  - Tracking Stats for {domain}:[/dim]')
         self.console.print(f'[dim]    -- LLM Calls: {stats["llm_calls"]}[/dim]')

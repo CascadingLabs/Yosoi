@@ -1,8 +1,4 @@
-"""
-fetcher.py
-======================================================================
-This module provides a interface for fetching HTML from URLs.
-"""
+"""Interface for fetching HTML from URLs with bot detection avoidance."""
 
 import random
 import re
@@ -17,6 +13,14 @@ class BotDetectionError(Exception):
     """Raised when bot detection is triggered."""
 
     def __init__(self, url: str, status_code: int, indicators: list[str]):
+        """Initialize bot detection error.
+
+        Args:
+            url: URL where bot detection was triggered
+            status_code: HTTP status code received
+            indicators: List of bot detection indicators found
+
+        """
         self.url = url
         self.status_code = status_code
         self.indicators = indicators
@@ -32,6 +36,7 @@ class ContentMetadata:
         requires_js: True if the URL has JS
         js_framework: If has JS, what type
         content_length: Length of the HTML
+
     """
 
     is_rss: bool = False
@@ -54,6 +59,7 @@ class FetchResult:
         is_blocked: True if the URL is blocked for some reason
         block_reason: For what reason the URL is blocked
         fetch_time: Total time for the HTML to be fetched
+
     """
 
     url: str
@@ -72,6 +78,7 @@ class FetchResult:
 
         Returns:
             True if the HTML was successfully fetched
+
         """
         return self.html is not None and not self.is_blocked
 
@@ -81,6 +88,7 @@ class FetchResult:
 
         Returns:
             True if the URL is RSS
+
         """
         return self.metadata.is_rss
 
@@ -90,6 +98,7 @@ class FetchResult:
 
         Returns:
             True if the HTML has JS
+
         """
         return self.metadata.requires_js
 
@@ -99,6 +108,7 @@ class FetchResult:
 
         Returns:
             True if the URL is RSS or has JS, then use the heuristics
+
         """
         return self.is_rss or self.requires_js
 
@@ -115,6 +125,7 @@ class ContentAnalyzer:
 
         Returns:
             The metadata of the HTML from the URL
+
         """
         metadata = ContentMetadata()
         metadata.content_length = len(html)
@@ -144,6 +155,7 @@ class ContentAnalyzer:
 
         Returns:
             True if the HTML has RSS indicators
+
         """
         rss_indicators = [
             '<?xml',
@@ -173,6 +185,7 @@ class ContentAnalyzer:
         - Content is rendered client-side
         - No meaningful HTML in initial response
         - Need Playwright/Selenium
+
         """
         # 1. Check for JS framework signatures
         frameworks = {
@@ -246,6 +259,7 @@ class UserAgentRotator:
 
     Attributes:
         USER_AGENTS: A list of agents to fetch an HTML
+
     """
 
     # Pool of realistic, recent user agents
@@ -277,6 +291,7 @@ class UserAgentRotator:
 
         Returns:
             A random user agent to be used to fetch an HTML
+
         """
         return random.choice(cls.USER_AGENTS)
 
@@ -286,6 +301,7 @@ class UserAgentRotator:
 
         Returns:
             A random Chrome on Windows user agent
+
         """
         chrome_windows = [ua for ua in cls.USER_AGENTS if 'Chrome' in ua and 'Windows' in ua and 'Edg' not in ua]
         return random.choice(chrome_windows)
@@ -296,6 +312,7 @@ class UserAgentRotator:
 
         Returns:
             A random Firefox user agent
+
         """
         firefox = [ua for ua in cls.USER_AGENTS if 'Firefox' in ua]
         return random.choice(firefox)
@@ -314,6 +331,7 @@ class HeaderGenerator:
 
         Returns:
             The header to be used to fetch an HTML
+
         """
         if user_agent is None:
             user_agent = UserAgentRotator.get_random()
@@ -377,6 +395,7 @@ class HTMLFetcher(ABC):
 
         Raises:
             BotDetectionError: If bot detection is triggered
+
         """
         pass
 
@@ -391,6 +410,7 @@ class HTMLFetcher(ABC):
             Tuple of (is_blocked, indicators) where is_blocked is True if bot
             detection triggered, and indicators is a list of detection reasons.
             Returns (False, []) if no blocking detected.
+
         """
         if not html or len(html) < 100:
             return True, ['HTML too short']
@@ -460,6 +480,7 @@ class SimpleFetcher(HTMLFetcher):
         randomize_headers: Whether to randomize request headers
         session: Requests session instance if use_session is True
         last_request_time: Timestamp of last request for delay calculation
+
     """
 
     def __init__(
@@ -480,6 +501,7 @@ class SimpleFetcher(HTMLFetcher):
             min_delay: Minimum time to pause between fetches
             max_delay: Maximum time to pause between fetches
             randomize_headers: If True then will randomize the headers used to fetch
+
         """
         self.timeout = timeout
         self.rotate_user_agent = rotate_user_agent
@@ -514,6 +536,7 @@ class SimpleFetcher(HTMLFetcher):
 
         Returns:
             A dict of the random headers and user agent
+
         """
         if self.randomize_headers:
             user_agent = UserAgentRotator.get_random() if self.rotate_user_agent else None
@@ -537,6 +560,7 @@ class SimpleFetcher(HTMLFetcher):
 
         Returns:
             The fetched results like the HTML, URL, if it is blocked, etc.
+
         """
         start_time = time.time()
 
@@ -632,6 +656,13 @@ class PlaywrightFetcher(HTMLFetcher):
     # TODO: Make work
 
     def __init__(self, timeout: int = 60000, headless: bool = True):
+        """Initialize Playwright fetcher.
+
+        Args:
+            timeout: Page load timeout in milliseconds
+            headless: Run browser in headless mode
+
+        """
         self.timeout = timeout
         self.headless = headless
 
@@ -706,12 +737,18 @@ class SmartFetcher(HTMLFetcher):
     # TODO: Make work
 
     def __init__(self, timeout: int = 30, playwright_timeout: int = 60000):
+        """Initialize smart fetcher with both simple and Playwright fetchers.
+
+        Args:
+            timeout: Timeout for simple fetcher in seconds
+            playwright_timeout: Timeout for Playwright fetcher in milliseconds
+
+        """
         self.simple_fetcher = SimpleFetcher(timeout=timeout)
         self.playwright_fetcher = PlaywrightFetcher(timeout=playwright_timeout)
 
     def fetch(self, url: str) -> FetchResult:
         """Fetch HTML using smart waterfall strategy."""
-
         # Attempt 1: Simple fetch (fast)
         try:
             result = self.simple_fetcher.fetch(url)
@@ -754,6 +791,7 @@ def create_fetcher(fetcher_type: str = 'simple', **kwargs) -> HTMLFetcher:
         >>> fetcher = create_fetcher('simple')
         >>> fetcher = create_fetcher('playwright', headless=True)
         >>> fetcher = create_fetcher('smart')
+
     """
     fetchers: dict[str, type[HTMLFetcher]] = {
         'simple': SimpleFetcher,
