@@ -1,15 +1,26 @@
+[build-system]
+build-backend = "hatchling.build"
+requires = [ "hatchling" ]
+
 [project]
 name = "yosoi"
 version = "0.1.0"
+description = "AI-Powered CSS Selector Discovery - Discover once, scrape forever with BeautifulSoup"
+readme = "README.md"
 requires-python = ">=3.13"
 classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
   "Programming Language :: Python :: 3 :: Only",
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
+  "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
+  "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 
 dependencies = [
   "beautifulsoup4>=4.12",
+  "brotli>=1.1",
   "logfire>=4.16",
   "pydantic>=2",
   "pydantic-ai>=0.0.16",
@@ -17,6 +28,8 @@ dependencies = [
   "requests>=2.31",
   "rich>=14.2",
 ]
+
+scripts.yosoi = "yosoi.cli:main"
 
 [dependency-groups]
 dev = [
@@ -26,6 +39,9 @@ dev = [
   "types-beautifulsoup4>=4.12",
   "types-requests>=2.31",
 ]
+
+[tool.hatch.build.targets.wheel]
+packages = [ "src/yosoi" ]
 
 [tool.ruff]
 # Assume Python 3.13
@@ -41,6 +57,7 @@ lint.select = [
   "ARG",  # flake8-unused-arguments
   "B",    # flake8-bugbear
   "C901", # mccabe complexity
+  "D",    # pydocstyle (docstring rules)
   "E",    # pycodestyle errors
   "F",    # pyflakes
   "I",    # isort (import sorting)
