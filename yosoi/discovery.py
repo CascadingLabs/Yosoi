@@ -28,7 +28,7 @@ class SelectorDiscovery:
     def __init__(
         self,
         llm_config: LLMConfig | None = None,
-        agent: Agent | None = None,
+        agent: Agent[Any, ScrapingConfig] | None = None,
         console: Console | None = None,
         debug_mode: bool = False,
         remove_sidebars: bool = False,
@@ -308,7 +308,7 @@ Return ONLY the JSON object, nothing else."""
         try:
             result = self.agent.run_sync(prompt)
             self.console.print('[success]  ✓ AI found selectors[/success]')
-            return result.output  # type: ignore[no-any-return]
+            return result.output
 
         except Exception as e:
             error_msg = str(e)

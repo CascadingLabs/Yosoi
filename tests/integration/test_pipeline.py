@@ -75,4 +75,5 @@ def test_pipeline_ai_failure(mocker, mock_llm_config, happy_path_html):
     # ASSERT
     assert success is True  # Success because of fallback heuristics
     saved = pipeline.storage.load_selectors('example.com')
+    assert saved is not None
     assert saved['headline']['primary'] == 'h1'  # Default heuristic

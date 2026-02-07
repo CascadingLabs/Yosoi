@@ -55,4 +55,5 @@ def test_snapshot_health_check(url, meta):
     validated = validator.validate_selectors_with_html(url, html_content, result)
 
     # We expect that the baseline selectors should still work on the snapshot they were recorded from
+    assert validated is not None
     assert len(validated) > 0, 'No selectors validated on original snapshot'

@@ -33,6 +33,8 @@ def test_agent_prompt_construction(mock_selectors):
     user_msg = messages[0]
     # Check parts for content. ModelRequest has a list of parts (SystemPromptPart, UserPromptPart, etc)
     # Each part usually has 'content' attribute if it's text-based
-    full_content = ' '.join(part.content for part in user_msg.parts if hasattr(part, 'content'))
+    full_content = ' '.join(
+        part.content for part in user_msg.parts if hasattr(part, 'content') and isinstance(part.content, str)
+    )
     assert 'Analyze this' in full_content
     assert 'Real Data' in full_content
