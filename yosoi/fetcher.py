@@ -671,6 +671,7 @@ class PlaywrightFetcher(HTMLFetcher):
         start_time = time.time()
 
         try:
+            # NOTE: playwright is not supported yet, only in dev deps to prevent bloating package size
             from playwright.sync_api import sync_playwright
         except ImportError as err:
             raise ImportError(
