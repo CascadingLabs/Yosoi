@@ -44,10 +44,8 @@ def sample_html():
     """
 
 
-def test_extract_content_html_removes_noise(sample_html):
-    from unittest.mock import MagicMock
-
-    discovery = SelectorDiscovery(llm_config=None, agent=MagicMock())  # Proper mock
+def test_extract_content_html_removes_noise(sample_html, mocker):
+    discovery = SelectorDiscovery(llm_config=None, agent=mocker.Mock())
     # We need to bypass the llm_config check in __init__ for unit testing the extraction method
     discovery.remove_sidebars = False
 
@@ -67,13 +65,11 @@ def test_extract_content_html_removes_noise(sample_html):
     assert 'This is the important content.' in clean_html
 
 
-def test_extract_content_html_removes_sidebars(sample_html):
+def test_extract_content_html_removes_sidebars(sample_html, mocker):
     # Mocking the Agent dependency
-    from unittest.mock import MagicMock
-
     from pydantic_ai import Agent
 
-    mock_agent = MagicMock(spec=Agent)
+    mock_agent = mocker.Mock(spec=Agent)
     discovery = SelectorDiscovery(agent=mock_agent, remove_sidebars=True)
 
     clean_html = discovery._extract_content_html(sample_html)
@@ -84,12 +80,10 @@ def test_extract_content_html_removes_sidebars(sample_html):
     assert 'Links' not in clean_html
 
 
-def test_extract_content_html_fallback_to_main():
+def test_extract_content_html_fallback_to_main(mocker):
     html = '<html><head></head><body><main><h1>Only Main</h1></main></body></html>'
     # Using a fake agent to avoid LLM initialization
-    from unittest.mock import MagicMock
-
-    mock_agent = MagicMock()
+    mock_agent = mocker.Mock()
     discovery = SelectorDiscovery(agent=mock_agent)
 
     clean_html = discovery._extract_content_html(html)
