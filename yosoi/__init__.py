@@ -1,6 +1,7 @@
-"""Yosoi - AI-Powered CSS Selector Discovery"""
+"""Yosoi - AI-Powered Selector Discovery.
 
-__version__ = '0.1.0'
+Discover once, scrape forever with BeautifulSoup.
+"""
 
 from yosoi.discovery import SelectorDiscovery
 from yosoi.fetcher import (

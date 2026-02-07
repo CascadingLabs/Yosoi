@@ -1,7 +1,5 @@
-"""
-llm_tracker.py
-==============
-Simple tracker for LLM calls and URL counts per domain.
+"""Simple tracker for LLM calls and URL counts per domain.
+
 Stores everything in a single llm_tracking.json file.
 """
 
@@ -14,9 +12,20 @@ from yosoi.utils.files import get_tracking_path
 
 
 class LLMTracker:
-    """Tracks LLM calls and URL counts per domain in a separate file."""
+    """Tracks LLM calls and URL counts per domain in a separate file.
+
+    Attributes:
+        tracking_file: Path to the JSON file storing tracking data
+
+    """
 
     def __init__(self, tracking_file: str | None = None):
+        """Initialize the tracker.
+
+        Args:
+            tracking_file: Path to the JSON file for storing tracking data. Defaults to 'llm_tracking.json'.
+
+        """
         if tracking_file is None:
             self.tracking_file = str(get_tracking_path())
         else:
@@ -32,7 +41,13 @@ class LLMTracker:
                 json.dump({}, f, indent=2)
 
     def _load_data(self) -> dict[str, Any]:
-        """Load tracking data from file."""
+        """Load tracking data from file.
+
+        Returns:
+            Dictionary containing tracking data for all domains.
+            Empty dict if file doesn't exist or is invalid.
+
+        """
         try:
             with open(self.tracking_file) as f:
                 data: dict[str, Any] = json.load(f)
@@ -41,12 +56,27 @@ class LLMTracker:
             return {}
 
     def _save_data(self, data: dict):
-        """Save tracking data to file."""
+        """Save tracking data to file.
+
+        Args:
+            data: Dictionary of tracking data to save
+
+        """
         with open(self.tracking_file, 'w') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
 
     def extract_domain(self, url: str) -> str:
-        """Extract domain from URL."""
+        """Extract domain from URL.
+
+        Removes 'www.' prefix if present.
+
+        Args:
+            url: URL to extract domain from
+
+        Returns:
+            Domain name without 'www.' prefix, or 'unknown' if URL is invalid.
+
+        """
         try:
             parsed = urlparse(url)
             domain = parsed.netloc
@@ -57,15 +87,15 @@ class LLMTracker:
             return 'unknown'
 
     def record_url(self, url: str, used_llm: bool = False) -> dict[str, int]:
-        """
-        Record that a URL was processed.
+        """Record that a URL was processed.
 
         Args:
             url: The URL that was processed
-            used_llm: Whether LLM was called for this URL
+            used_llm: Whether LLM was called for this URL. Defaults to False.
 
         Returns:
-            Dict with 'llm_calls' and 'url_count' for this domain
+            Dictionary with 'llm_calls' and 'url_count' for this domain.
+
         """
         domain = self.extract_domain(url)
         data = self._load_data()
@@ -86,28 +116,58 @@ class LLMTracker:
         return result
 
     def get_llm_calls(self, url_or_domain: str) -> int:
-        """Get LLM call count for a URL or domain."""
+        """Get LLM call count for a URL or domain.
+
+        Args:
+            url_or_domain: Either a full URL or domain name
+
+        Returns:
+            Number of LLM calls made for this domain.
+
+        """
         domain = self.extract_domain(url_or_domain) if '://' in url_or_domain else url_or_domain
         data = self._load_data()
         count: int = data.get(domain, {}).get('llm_calls', 0)
         return count
 
     def get_url_count(self, url_or_domain: str) -> int:
-        """Get URL count for a URL or domain."""
+        """Get URL count for a URL or domain.
+
+        Args:
+            url_or_domain: Either a full URL or domain name
+
+        Returns:
+            Number of URLs processed for this domain.
+
+        """
         domain = self.extract_domain(url_or_domain) if '://' in url_or_domain else url_or_domain
         data = self._load_data()
         count: int = data.get(domain, {}).get('url_count', 0)
         return count
 
     def get_stats(self, url_or_domain: str) -> dict[str, int]:
-        """Get all stats for a URL or domain."""
+        """Get all stats for a URL or domain.
+
+        Args:
+            url_or_domain: Either a full URL or domain name
+
+        Returns:
+            Dictionary with 'llm_calls' and 'url_count' keys.
+
+        """
         domain = self.extract_domain(url_or_domain) if '://' in url_or_domain else url_or_domain
         data = self._load_data()
         stats: dict[str, int] = data.get(domain, {'llm_calls': 0, 'url_count': 0})
         return stats
 
-    def get_all_stats(self) -> dict[str, int]:
-        """Get all tracking data."""
+    def get_all_stats(self) -> dict[str, dict[str, int]]:
+        """Get all tracking data.
+
+        Returns:
+            Dictionary mapping domain names to their statistics.
+            Each domain has 'llm_calls' and 'url_count' keys.
+
+        """
         return self._load_data()
 
     def print_stats(self):
@@ -151,12 +211,12 @@ class LLMTracker:
 
         print('\n' + '=' * 70 + '\n')
 
-    def reset(self, domain: str | None = None) -> None:
-        """
-        Reset tracking data.
+    def reset(self, domain: str | None = None):
+        """Reset tracking data.
 
         Args:
-            domain: Specific domain to reset, or None to reset all
+            domain: Specific domain to reset, or None to reset all. Defaults to None.
+
         """
         if domain:
             data = self._load_data()

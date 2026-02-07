@@ -1,7 +1,5 @@
-"""
-cli.py
-======
-Command-line interface for Yosoi.
+"""Command-line interface for Yosoi.
+
 Handles argument parsing and delegates to pipeline.
 """
 
@@ -19,7 +17,17 @@ from yosoi.utils.files import init_yosoi, is_initialized
 
 
 def setup_llm_config():
-    """Set up LLM configuration from environment variables."""
+    """Set up LLM configuration from environment variables.
+
+    Checks for GROQ_KEY first, then GEMINI_KEY.
+
+    Returns:
+        LLMConfig instance configured with available API key.
+
+    Raises:
+        SystemExit: If no API keys are found in environment.
+
+    """
     groq_api_key = os.getenv('GROQ_KEY')
     gemini_api_key = os.getenv('GEMINI_KEY')
 
@@ -37,7 +45,14 @@ def setup_llm_config():
 
 
 def setup_logfire():
-    """Set up Logfire observability if token is available."""
+    """Set up Logfire observability if token is available.
+
+    Configures Logfire and instruments Pydantic if LOGFIRE_TOKEN is set.
+
+    Returns:
+        None
+
+    """
     logfire_token = os.getenv('LOGFIRE_TOKEN')
     if logfire_token:
         logfire.configure(token=logfire_token)
@@ -48,7 +63,18 @@ def setup_logfire():
 
 
 def load_urls_from_file(filepath: str) -> list[str]:
-    """Load URLs from a file (JSON or plain text)."""
+    """Load URLs from a file (JSON or plain text).
+
+    Args:
+        filepath: Path to file containing URLs
+
+    Returns:
+        List of URL strings.
+
+    Raises:
+        SystemExit: If file is not found.
+
+    """
     if not os.path.exists(filepath):
         print(f'Error: File not found: {filepath}')
         sys.exit(1)
@@ -67,30 +93,39 @@ def load_urls_from_file(filepath: str) -> list[str]:
 
 
 def parse_arguments():
-    """Parse command-line arguments."""
+    """Parse command-line arguments.
+
+    Returns:
+        argparse.Namespace object with parsed arguments.
+
+    """
     parser = argparse.ArgumentParser(
-        description='Discover CSS selectors from web pages using AI',
+        description='Discover selectors from web pages using AI',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  %(prog)s --url https://example.com
-  %(prog)s --file urls.txt --limit 10
+  %(prog)s -u https://example.com
+  %(prog)s -f urls.txt -l 10
   %(prog)s --url https://example.com --force
-  %(prog)s --summary
+  %(prog)s -s
+  %(prog)s -u https://example.com -d -F
         """,
     )
 
-    parser.add_argument('--url', type=str, help='Single URL to process')
-    parser.add_argument('--file', type=str, help='File containing URLs (one per line, or JSON)')
-    parser.add_argument('--limit', type=int, help='Limit number of URLs to process from file')
-    parser.add_argument('--force', action='store_true', help='Force re-discovery even if selectors exist')
-    parser.add_argument('--summary', action='store_true', help='Show summary of saved selectors')
-    parser.add_argument('--debug', action='store_true', help='Enable debug mode (saves extracted HTML to debug_html/)')
-    parser.add_argument('--skip-validation', action='store_true', help='Skip validation for faster processing')
+    parser.add_argument('-u', '--url', type=str, help='Single URL to process')
+    parser.add_argument('-f', '--file', type=str, help='File containing URLs (one per line, or JSON)')
+    parser.add_argument('-l', '--limit', type=int, help='Limit number of URLs to process from file')
+    parser.add_argument('-F', '--force', action='store_true', help='Force re-discovery even if selectors exist')
+    parser.add_argument('-s', '--summary', action='store_true', help='Show summary of saved selectors')
+    parser.add_argument(
+        '-d', '--debug', action='store_true', help='Enable debug mode (saves extracted HTML to debug_html/)'
+    )
+    parser.add_argument('-S', '--skip-validation', action='store_true', help='Skip validation for faster processing')
     # TODO added arg for output type or service
     # redis --> long-term persistence
     # local --> json or jsonl files
     parser.add_argument(
+        '-t',
         '--fetcher',
         choices=['simple', 'playwright', 'smart'],
         default='simple',
@@ -101,7 +136,15 @@ Examples:
 
 
 def print_fetcher_info(fetcher_type: str):
-    """Print information about the selected fetcher."""
+    """Print information about the selected fetcher.
+
+    Args:
+        fetcher_type: Type of fetcher ('simple', 'playwright', or 'smart')
+
+    Returns:
+        None
+
+    """
     if fetcher_type == 'playwright':
         print('ℹ Using Playwright fetcher (slower but more reliable)')
     elif fetcher_type == 'smart':
@@ -111,7 +154,7 @@ def print_fetcher_info(fetcher_type: str):
 
 
 def main():
-    """Main entry point for CLI."""
+    """Run the CLI entry point."""
     # Load environment variables
     load_dotenv()
 
