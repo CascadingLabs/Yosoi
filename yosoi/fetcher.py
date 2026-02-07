@@ -674,7 +674,8 @@ class PlaywrightFetcher(HTMLFetcher):
             from playwright.sync_api import sync_playwright
         except ImportError as err:
             raise ImportError(
-                'Playwright not installed. Install with: pip install playwright && playwright install chromium'
+                # TODO deprecate
+                'Playwright not installed. Install with: uv add playwright && playwright install chromium'
             ) from err
 
         try:

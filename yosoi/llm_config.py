@@ -9,7 +9,7 @@ from typing import Any, Protocol
 from pydantic_ai import Agent
 from pydantic_ai.models.google import GoogleModel
 from pydantic_ai.models.groq import GroqModel
-from pydantic_ai.models.openai import OpenAIModel
+from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.google import GoogleProvider
 from pydantic_ai.providers.groq import GroqProvider
 from pydantic_ai.providers.openai import OpenAIProvider
@@ -157,14 +157,14 @@ def create_gemini_model(config: LLMConfig) -> GoogleModel:
     return GoogleModel(config.model_name, provider=provider)
 
 
-def create_openai_model(config: LLMConfig) -> OpenAIModel:
+def create_openai_model(config: LLMConfig) -> OpenAIChatModel:
     """Create an OpenAI model from configuration.
 
     Args:
         config: LLM configuration with OpenAI settings
 
     Returns:
-        Configured OpenAIModel instance.
+        Configured OpenAIChatModel instance.
 
     """
     provider = OpenAIProvider(api_key=config.api_key)
@@ -177,7 +177,7 @@ def create_openai_model(config: LLMConfig) -> OpenAIModel:
     if config.extra_params:
         model_params.update(config.extra_params)
 
-    return OpenAIModel(config.model_name, provider=provider)
+    return OpenAIChatModel(config.model_name, provider=provider)
 
 
 # ============================================================================
@@ -201,7 +201,7 @@ def create_model(config: LLMConfig) -> Any:
         config: LLMConfig specifying the provider and parameters
 
     Returns:
-        Model instance (GroqModel, GoogleModel, OpenAIModel, etc.)
+        Model instance (GroqModel, GoogleModel, OpenAIChatModel, etc.)
 
     Raises:
         ValueError: If provider is not supported
