@@ -7,14 +7,14 @@ assignees: ''
 
 ---
 
-# Usecase / Thoughts
-short blurb on the reasoning and/or use case of this ticket. This is the driving factor of the change.
+## Usecase / Thoughts
+> short blurb on the reasoning and/or use case of this ticket. This is the driving factor of the change.
 ---
-# Pain Points / Friction
-What does this ticket aim to solve/avoid/prevent
+## Pain Points / Friction
+> What does this ticket aim to solve/avoid/prevent
 ---
-# Proposed Plan
-What steps do you need to-do to get to completion
+## Proposed Plan
+> What steps do you need to-do to get to completion
 ---
-# Technical Notes
-Anything the implementer should know
+## Technical Notes
+> Anything the implementer should know
