@@ -15,38 +15,57 @@ repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.0
     hooks:
+      # LOCAL: Automatically fixes linting errors
       - id: ruff-check
+        name: ruff-local-fix
         args: [--fix]
         exclude: ^old_versions/
+        stages: [pre-commit]
+
+      # CI: Strictly reports errors, does not modify files
+      - id: ruff-check
+        name: ruff-ci-check
+        args: [--no-fix, --exit-non-zero-on-fix]
+        exclude: ^old_versions/
+        stages: [manual]
+
+      # Formatter: Runs in both to ensure style compliance
       - id: ruff-format
         exclude: ^old_versions/
+        stages: [pre-commit, manual]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.19.1
     hooks:
       - id: mypy
+        stages: [manual] # Heavy lifting moved to CI
         additional_dependencies:
           - types-requests
           - types-beautifulsoup4
+          - pytest
+          - pydantic
         args: [--config-file=pyproject.toml]
-        # only check yosoi files
-        files: ^(yosoi/.*\.py$)
+        files: ^(yosoi|tests)/.*\.py$
 
   - repo: https://github.com/astral-sh/uv-pre-commit
     rev: 0.10.0
     hooks:
       - id: uv-lock
+        stages: [pre-commit, manual]
 
   - repo: https://github.com/gitleaks/gitleaks
     rev: v8.30.0
     hooks:
       - id: gitleaks
+        # Keep local to prevent secrets from ever leaving your machine
+        stages: [pre-commit, manual]
         args: ["-c", "pyproject.toml", "-v"]
 
   - repo: https://github.com/tox-dev/pyproject-fmt
     rev: v2.12.1
     hooks:
       - id: pyproject-fmt
+        stages: [pre-commit]
 
   - repo: https://github.com/commitizen-tools/commitizen
     rev: v4.13.6

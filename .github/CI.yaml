@@ -1,9 +1,11 @@
-# GH actions CI for pytests and pre-commit checks
 name: CI
 
 on:
   pull_request:
-    branches: "*"
+    # Trigger on all PRs regardless of target branch
+  push:
+    branches:
+      - main
 
 jobs:
   test:
@@ -17,9 +19,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v5
         with:
-          # Enable caching for uv's global cache
           enable-cache: true
-          # Automatically sync the uv version from a .python-version file if it exists
           cache-dependency-glob: "**/pyproject.toml"
 
       - name: Set up Python
@@ -28,10 +28,8 @@ jobs:
       - name: Install dependencies
         run: uv sync --group tests --group dev
 
-      - name: Run Pre-commit
-        # We run this through uv to ensure the environment is used
-        run: uv run prek run --all-files --show-diff-on-failure
+      - name: Run Prek checks (ruff, mypy, etc)
+        run: uv run prek run --all-files --hook-stage manual --show-diff-on-failure
 
       - name: Run CI Tests
-        # Replace 'pytest' with your preferred test runner if different
         run: uv run poe ci
