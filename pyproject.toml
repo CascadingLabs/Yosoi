@@ -1,6 +1,6 @@
 [build-system]
-build-backend = "hatchling.build"
-requires = [ "hatchling" ]
+build-backend = "uv_build"
+requires = [ "uv-build>=0.1" ]
 
 [project]
 name = "yosoi"
@@ -34,17 +34,53 @@ scripts.yosoi = "yosoi.cli:main"
 [dependency-groups]
 dev = [
   "commitizen>=3.13",
+  "memray>=1.19.1",
   "mypy>=1.8",
+  "playwright>=1.58",
+  "poethepoet>=0.40",
   "prek>=0.2.25",
   "types-beautifulsoup4>=4.12",
   "types-requests>=2.31",
 ]
+tests = [
+  "deepeval>=3.8.4",
+  "dirty-equals>=0.11",
+  "poethepoet>=0.40",
+  "polyfactory>=3.2",
+  "pytest>=9.0.2",
+  "pytest-asyncio>=1.3",
+  "pytest-cov>=7",
+  "pytest-mock>=3.15.1",
+  "pytest-sugar>=1.1.1",
+  "pytest-xdist>=3.8",
+  "respx>=0.22",
+  "syrupy>=5.1",
+  "testcontainers>=4.14.1",
+]
 
-[tool.hatch.build.targets.wheel]
-packages = [ "src/yosoi" ]
+[tool.uv]
+package = true
+
+[tool.uv.build-backend]
+module-name = "yosoi"
+module-root = ""      # This tells uv the package is in the root, not src/
+
+source-exclude = [
+  "tests/**",
+  "docs/**",
+  "examples/**",
+  "**/*.pyc",
+  "**/__pycache__",
+  ".venv/**",
+  ".env",
+  ".yosoi/**",
+  ".logfire/**",
+  ".ruff_cache/**",
+  ".pytest_cache/**",
+  ".mypy_cache/**",
+]
 
 [tool.ruff]
-# Assume Python 3.13
 target-version = "py313"
 line-length = 120
 indent-width = 4
@@ -57,11 +93,11 @@ lint.select = [
   "ARG",  # flake8-unused-arguments
   "B",    # flake8-bugbear
   "C901", # mccabe complexity
-  "D",    # pydocstyle (docstring rules)
+  "D",    # pydocstyle
   "E",    # pycodestyle errors
   "F",    # pyflakes
-  "I",    # isort (import sorting)
-  "PERF", # performance anti-patterns
+  "I",    # isort
+  "PERF", # performance
   "RET",  # flake8-return
   "SIM",  # flake8-simplify
   "TID",  # flake8-tidy-imports
@@ -78,7 +114,17 @@ lint.ignore = [
   "SIM108", # allow if-else instead of ternary
   "W293",   # blank line contains whitespace
 ]
+lint.per-file-ignores."tests/**/*.py" = [
+  "ARG001", # unused arguments in test functions
+  "ARG002", # unused method arguments in tests
+  "D",      # pydocstyle - no docstrings required for tests
+]
 lint.mccabe.max-complexity = 13
+
+[tool.pytest.ini_options]
+markers = [
+  "eval: mark test as an evaluation test (requires real LLM and is slow)",
+]
 
 [tool.mypy]
 python_version = "3.13"
@@ -118,15 +164,14 @@ module = [
 ]
 ignore_missing_imports = true
 
+[tool.poe.tasks]
+eval = 'uv run pytest -m "eval"'                                                    # run deepeval tests
+integration = "uv run pytest -m 'integration'"                                      # run integration tests
+unit = "uv run pytest -m 'unit'"                                                    # run unit tests
+ci-test = "uv run pytest -m 'not eval'"
+ci-check = "uv run prek run --all-files --hook-stage manual --show-diff-on-failure"
+
 [tool.gitleaks]
-# Configuration for Gitleaks moved to pyproject.toml
-
-[[tool.gitleaks.rules]]
-id = "generic-api-key"
-description = "Generic API Key"
-regex = '''(?i)(?:key|api|token|secret|password)[\s]*[=:>]{1}[\s]*['"]?([a-z0-9_\-]{20,})['"]?'''
-entropy = 4.5
-
 [[tool.gitleaks.allowlist]]
 paths = [
   '''.*\.md$''',
@@ -135,6 +180,14 @@ regexes = [
   '''llama-3\.3-70b-versatile''', # Model name, not a secret
   '''gemini-2\.0-flash-exp''',    # Model name, not a secret
 ]
+
+# Configuration for Gitleaks moved to pyproject.toml
+
+[[tool.gitleaks.rules]]
+id = "generic-api-key"
+description = "Generic API Key"
+regex = '''(?i)(?:key|api|token|secret|password)[\s]*[=:>]{1}[\s]*['"]?([a-z0-9_\-]{20,})['"]?'''
+entropy = 4.5
 
 [tool.commitizen]
 name = "cz_conventional_commits"

@@ -1,0 +1,34 @@
+{
+  "https://blog.python.org/2024/05/python-3130b1-released.html": {
+    "filename": "blog_python_org_f7f07406.html",
+    "domain": "blog_python_org",
+    "expected_selectors": {
+      "headline": {
+        "primary": "#Blog1 > div.blog-posts.hfeed > h2",
+        "fallback": "div.blog-posts.hfeed > h2",
+        "tertiary": "h2"
+      },
+      "author": {
+        "primary": "#Blog1 > div.blog-posts.hfeed > div:nth-child(2) > div",
+        "fallback": "div.blog-posts.hfeed > div",
+        "tertiary": "NA"
+      },
+      "date": {
+        "primary": "#Blog1 > div.blog-posts.hfeed > div:nth-child(2) > div",
+        "fallback": "div.blog-posts.hfeed > div",
+        "tertiary": "time"
+      },
+      "body_text": {
+        "primary": "#Blog1 > div.blog-posts.hfeed > div:nth-child(2) > p",
+        "fallback": "div.blog-posts.hfeed > p",
+        "tertiary": "p"
+      },
+      "related_content": {
+        "primary": "#LinkList1 > div.widget-content > ul",
+        "fallback": "aside#sidebar1",
+        "tertiary": "aside"
+      }
+    },
+    "recorded_at": "1769986605.0189161"
+  }
+}

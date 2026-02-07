@@ -7,3 +7,6 @@ __pycache__
 primary-sources.json
 test_batch.py
 .batch_progress.json
+used-urls.json
+.yosoi/
+memray*.bin

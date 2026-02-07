@@ -49,19 +49,19 @@ LOGFIRE_TOKEN=your_logfire_token_here     # For Logfire tracing
 
 ```bash
 # Process a single URL
-uv run main.py --url https://example.com/article
+uv run yosoi --url https://example.com/article
 
 # Process multiple URLs from a file
-uv run main.py --file urls.txt
+uv run yosoi --file urls.txt
 
 # Force re-discovery
-uv run main.py --url https://example.com --force
+uv run yosoi --url https://example.com --force
 
 # Show summary of all saved selectors
-uv run main.py --summary
+uv run yosoi --summary
 
 # Enable debug mode (saves extracted HTML)
-uv run main.py --url https://example.com --debug
+uv run yosoi --url https://example.com --debug
 ```
 
 ### URLs File Format
@@ -88,6 +88,8 @@ Or use JSON format (`urls.json`):
 
 ```
 .
+├── .yosoi/                   # .yosoi helper directory (hidden)
+│   └── selectors/            # Discovered selectors (hidden)
 ├── main.py                   # CLI entry point & orchestrator
 ├── selector_discovery.py     # AI-powered selector discovery
 ├── selector_validator.py     # Selector validation & testing
@@ -143,7 +145,7 @@ Save validated selectors to JSON
 
 ## Output Format
 
-Selectors are saved as JSON files in the `selectors/` directory:
+Selectors are saved as JSON files in the `.yosoi/selectors/` directory:
 
 ```json
 {
@@ -261,57 +263,6 @@ Yosoi integrates with [Logfire](https://logfire.pydantic.dev) for comprehensive 
 3. Add `LOGFIRE_TOKEN=your_token` to `.env`
 4. Run your discovery process
 5. View traces in Logfire dashboard
-
-## Development Tools
-
-Yosoi includes a complete development toolchain:
-
-### Setup Dev Environment
-
-```bash
-# Install with dev dependencies
-uv sync --group dev
-
-# Install pre-commit hooks
-uv run pre-commit install
-uv run pre-commit install --hook-type commit-msg
-
-# Run all checks
-uv run pre-commit run --all-files
-```
-
-### Available Tools
-
-| Tool | Purpose | Command |
-|------|---------|---------|
-| **Ruff** | Linting & Formatting | `uv run ruff check .` |
-| **Mypy** | Type Checking | `uv run mypy .` |
-| **Pre-commit** | Git Hooks | `uv run pre-commit run --all-files` |
-| **Commitizen** | Conventional Commits | `uv run cz commit` |
-
-See [CHEAT_SHEET.md](CHEAT_SHEET.md) for detailed commands.
-
-### Commit Guidelines
-
-Use conventional commits:
-
-```bash
-# Interactive commit
-uv run cz commit
-
-# Manual commit (must follow format)
-git commit -m "feat: add new selector discovery feature"
-git commit -m "fix: handle missing author tags"
-git commit -m "docs: update README with examples"
-```
-
-**Commit Types:**
-- `feat`: New feature
-- `fix`: Bug fix
-- `docs`: Documentation only
-- `refactor`: Code refactoring
-- `test`: Adding tests
-- `chore`: Maintenance
 
 ## Features
 
