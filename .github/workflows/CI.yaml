@@ -35,7 +35,7 @@ jobs:
         run: uv sync --group tests --group dev
 
       - name: Run Prek checks (ruff, mypy, etc)
-        run: uv run prek run --all-files --hook-stage manual --show-diff-on-failure
+        run: uv run poe ci-check
 
       - name: Run CI Tests
-        run: uv run poe ci
+        run: uv run poe ci-test

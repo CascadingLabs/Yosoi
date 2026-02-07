@@ -165,20 +165,13 @@ module = [
 ignore_missing_imports = true
 
 [tool.poe.tasks]
-eval = 'uv run pytest -m "eval"'               # run deepeval tests
-integration = "uv run pytest -m 'integration'" # run integration tests
-unit = "uv run pytest -m 'unit'"               # run unit tests
-ci = "uv run pytest -m 'not eval'"
+eval = 'uv run pytest -m "eval"'                                                    # run deepeval tests
+integration = "uv run pytest -m 'integration'"                                      # run integration tests
+unit = "uv run pytest -m 'unit'"                                                    # run unit tests
+ci-test = "uv run pytest -m 'not eval'"
+ci-check = "uv run prek run --all-files --hook-stage manual --show-diff-on-failure"
 
 [tool.gitleaks]
-# Configuration for Gitleaks moved to pyproject.toml
-
-[[tool.gitleaks.rules]]
-id = "generic-api-key"
-description = "Generic API Key"
-regex = '''(?i)(?:key|api|token|secret|password)[\s]*[=:>]{1}[\s]*['"]?([a-z0-9_\-]{20,})['"]?'''
-entropy = 4.5
-
 [[tool.gitleaks.allowlist]]
 paths = [
   '''.*\.md$''',
@@ -187,6 +180,14 @@ regexes = [
   '''llama-3\.3-70b-versatile''', # Model name, not a secret
   '''gemini-2\.0-flash-exp''',    # Model name, not a secret
 ]
+
+# Configuration for Gitleaks moved to pyproject.toml
+
+[[tool.gitleaks.rules]]
+id = "generic-api-key"
+description = "Generic API Key"
+regex = '''(?i)(?:key|api|token|secret|password)[\s]*[=:>]{1}[\s]*['"]?([a-z0-9_\-]{20,})['"]?'''
+entropy = 4.5
 
 [tool.commitizen]
 name = "cz_conventional_commits"
