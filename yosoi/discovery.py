@@ -21,9 +21,19 @@ class SelectorDiscovery:
         fallback_selectors: Second level of selectors to choose from
         debug_mode: If enabled will give entire HTML
         remove_sidebars: Enabled automatically and will remove the sidebars and more from HTML
-        system_prompt: The start of the prompt to give to the LLM
+        agent: The LLM agent that will be used
+        model_name: Name of the model being used
+        provider: Name of the LLM provider
 
     """
+
+    console: Console
+    fallback_selectors: dict[str, Any]
+    debug_mode: bool
+    remove_sidebars: bool
+    agent: Agent[Any, ScrapingConfig]
+    model_name: str
+    provider: str
 
     def __init__(
         self,
@@ -61,7 +71,7 @@ class SelectorDiscovery:
 
         # Priority: agent > llm_config
         if agent is not None:
-            self.agent: Agent[None, ScrapingConfig] = agent
+            self.agent = agent
             self.model_name = 'custom-agent'
             self.provider = 'custom'
         elif llm_config is not None:
