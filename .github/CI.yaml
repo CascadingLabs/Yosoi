@@ -1,0 +1,37 @@
+# GH actions CI for pytests and pre-commit checks
+name: CI
+
+on:
+  pull_request:
+    branches: "*"
+
+jobs:
+  test:
+    name: Run Tests & Pre-commit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          # Enable caching for uv's global cache
+          enable-cache: true
+          # Automatically sync the uv version from a .python-version file if it exists
+          cache-dependency-glob: "**/pyproject.toml"
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Install dependencies
+        run: uv sync --group tests --group dev
+
+      - name: Run Pre-commit
+        # We run this through uv to ensure the environment is used
+        run: uv run prek run --all-files --show-diff-on-failure
+
+      - name: Run CI Tests
+        # Replace 'pytest' with your preferred test runner if different
+        run: uv run poe ci

@@ -1,10 +1,12 @@
+"""Utility functions for file and directory management in Yosoi."""
+
 import shutil
 from pathlib import Path
 
 
 def get_project_root() -> Path:
-    """
-    Find the project root by searching upwards from the Current Working Directory.
+    """Find the project root by searching upwards from the Current Working Directory.
+
     Stops at the first directory containing a marker file.
     """
     # Start where the user ran the command
@@ -25,34 +27,26 @@ def get_project_root() -> Path:
 
 
 def get_tracking_path() -> Path:
-    """
-    Returns the path to the LLM tracking file in .yosoi.
-    """
+    """Return the path to the LLM tracking file in .yosoi."""
     root = get_project_root()
     return root / '.yosoi' / 'llm_tracking.json'
 
 
 def get_debug_html_path() -> Path:
-    """
-    Returns the path to the debug HTML directory in .yosoi.
-    """
+    """Return the path to the debug HTML directory in .yosoi."""
     root = get_project_root()
     return root / '.yosoi' / 'debug_html'
 
 
 def is_initialized() -> bool:
-    """
-    Checks if the .yosoi directory exists in the project root.
-    """
+    """Check if the .yosoi directory exists in the project root."""
     root = get_project_root()
     yosoi_dir = root / '.yosoi'
     return yosoi_dir.is_dir() and (yosoi_dir / 'llm_tracking.json').exists()
 
 
 def init_yosoi(storage_name: str = 'selectors') -> Path:
-    """
-    Initializes .yosoi directory and returns the storage path.
-    """
+    """Initialize .yosoi directory and return the storage path."""
     root = get_project_root()
     yosoi_dir = root / '.yosoi'
     storage_dir = yosoi_dir / storage_name
