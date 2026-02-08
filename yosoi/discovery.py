@@ -209,7 +209,7 @@ class SelectorDiscovery:
             Portion of HTML that will be used to give to LLM
 
         """
-        soup = BeautifulSoup(html, 'html.parser')
+        soup = BeautifulSoup(html, 'lxml')
 
         # Step 1: Remove noise that's never useful
         for tag in soup.find_all(['script', 'style', 'noscript', 'iframe']):
@@ -270,7 +270,7 @@ class SelectorDiscovery:
             original_size = len(str(content))
 
             # Apply compression
-            content_soup = BeautifulSoup(str(content), 'html.parser')
+            content_soup = BeautifulSoup(str(content), 'lxml')
             content_soup = self._compress_html_simple(content_soup)
 
             # Convert to string and collapse whitespace

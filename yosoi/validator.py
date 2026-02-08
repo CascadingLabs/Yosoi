@@ -56,7 +56,7 @@ class SelectorValidator:
 
         self.console.print(f'  → Validating {len(expected_fields)} fields using fetched HTML...')
 
-        soup = BeautifulSoup(html, 'html.parser')
+        soup = BeautifulSoup(html, 'lxml')
         validated = {}
 
         # Validate each expected field
@@ -133,7 +133,7 @@ class SelectorValidator:
         """
         try:
             response = requests.get(url, headers={'User-Agent': self.user_agent}, timeout=10)
-            soup = BeautifulSoup(response.text, 'html.parser')
+            soup = BeautifulSoup(response.text, 'lxml')
 
             element = soup.select_one(selector)
             return element is not None and bool(element.get_text(strip=True))
