@@ -12,6 +12,8 @@ from rich.table import Table
 from rich.theme import Theme
 
 from yosoi import LLMConfig, SelectorDiscovery
+from yosoi.cleaner import HTMLCleaner
+from yosoi.extractor import ContentExtractor
 from yosoi.fetcher import BotDetectionError, FetchResult, HTMLFetcher, create_fetcher
 from yosoi.storage import SelectorStorage
 from yosoi.tracker import LLMTracker
@@ -28,8 +30,10 @@ class SelectorDiscoveryPipeline:
     Attributes:
         custom_theme: Rich theme for console output
         console: Rich console instance for formatted output
-        discovery: Python class to reduce the HTML and use LLM to find selectors
+        cleaner: Python class to clean and extract main content from HTML
+        discovery: Python class to use LLM to find selectors from cleaned HTML
         validator: Python class to check the selectors if they are real
+        extractor: Python class to extract content using validated selectors
         storage: Store the found selectors as a JSON file
         tracker: Used to track how much an LLM is used in comparison to amount of urls used
         debug_mode: If enabled will output the HTML from the URL
@@ -54,8 +58,10 @@ class SelectorDiscoveryPipeline:
             }
         )
         self.console = Console(theme=self.custom_theme)
-        self.discovery = SelectorDiscovery(llm_config=llm_config, console=self.console, debug_mode=debug_mode)
+        self.cleaner = HTMLCleaner(console=self.console)
+        self.discovery = SelectorDiscovery(llm_config=llm_config, console=self.console)
         self.validator = SelectorValidator(console=self.console)
+        self.extractor = ContentExtractor(console=self.console)
         self.storage = SelectorStorage()
         self.tracker = LLMTracker()
         self.debug_mode = debug_mode
@@ -101,18 +107,30 @@ class SelectorDiscoveryPipeline:
             # At this point, result.html should never be None (checked in _fetch)
             assert result.html is not None, 'result.html should not be None after successful fetch'
 
-            # Discover selectors with retry logic for AI failures
-            selectors, used_llm = self._discover(url, result, max_retries=max_discovery_retries)
+            # Clean HTML (Step 1.5)
+            cleaned_html = self._clean(url, result)
+            if not cleaned_html:
+                return False
+
+            # Discover selectors with retry logic for AI failures (Step 2)
+            # Returns: (selectors, used_llm)
+            selectors, used_llm = self._discover(url, cleaned_html, result, max_retries=max_discovery_retries)
             if not selectors:
                 return False
 
-            # Validate selectors
-            validated = self._validate(url, result.html, selectors, skip_validation)
+            # Validate selectors using cleaned HTML (Step 3)
+            validated = self._validate(url, cleaned_html, selectors, skip_validation)
             if not validated:
                 return False
 
-            # Save and track
-            self._save_and_track(url, domain, validated, used_llm)
+            # Extract content using validated selectors and cleaned HTML (Step 4)
+            extracted = self._extract(url, cleaned_html, validated)
+            # Note: extraction can fail but we still save the selectors
+            if not extracted:
+                self.console.print('[warning]⚠ Extraction failed, but selectors are valid[/warning]')
+
+            # Save and track (save selectors + content if extracted)
+            self._save_and_track(url, domain, validated, extracted, used_llm)
             return True
 
     def process_urls(
@@ -204,6 +222,35 @@ class SelectorDiscoveryPipeline:
             self.console.print(f'[danger]Invalid fetcher type: {fetcher_type}[/danger]')
             return None
 
+    def _save_debug_html(self, url: str, html: str):
+        """Save cleaned HTML to file for debugging.
+
+        Args:
+            url: URL from which the HTML was obtained
+            html: Cleaned HTML content to save
+
+        """
+        from urllib.parse import urlparse
+
+        from yosoi.utils.files import get_debug_html_path
+
+        # Get debug directory from utils
+        debug_dir = get_debug_html_path()
+        debug_dir.mkdir(parents=True, exist_ok=True)
+
+        # Create safe filename from URL
+        parsed = urlparse(url)
+        filename = f'{parsed.netloc}_{parsed.path.replace("/", "_")[:50]}.html'
+        filepath = debug_dir / filename
+
+        # Save HTML
+        filepath.write_text(
+            f'<!-- URL: {url} -->\n<!-- Cleaned HTML length: {len(html)} chars -->\n\n{html}',
+            encoding='utf-8',
+        )
+
+        self.console.print(f'  [dim]↻ Debug HTML saved to: {filepath}[/dim]')
+
     def _fetch(self, url: str, fetcher: HTMLFetcher, max_retries: int = 2) -> FetchResult | None:
         """Fetch HTML with automatic retry logic for bot detection.
 
@@ -274,7 +321,36 @@ class SelectorDiscoveryPipeline:
 
         return None
 
-    def _discover(self, url: str, result: FetchResult, max_retries: int = 3) -> tuple[dict | None, bool]:
+    def _clean(self, url: str, result: FetchResult) -> str | None:
+        """Clean HTML by removing noise and extracting main content.
+
+        Args:
+            url: URL being processed (for logging and debug output).
+            result: FetchResult containing raw HTML.
+
+        Returns:
+            Cleaned HTML string, or None if result contains no HTML.
+
+        """
+        assert result.html is not None, 'result.html should not be None in _clean'
+
+        self.console.print('[step]Step 1.5: Cleaning HTML...[/step]')
+        cleaned_html = self.cleaner.clean_html(result.html)
+
+        if not cleaned_html:
+            self.console.print('[danger]HTML cleaning produced empty result[/danger]')
+            return None
+
+        # Save debug HTML if enabled
+        if self.debug_mode:
+            self._save_debug_html(url, cleaned_html)
+
+        self.console.print(f'[success]Cleaned HTML ready ({len(cleaned_html):,} chars)[/success]')
+        return cleaned_html
+
+    def _discover(
+        self, url: str, cleaned_html: str, result: FetchResult, max_retries: int = 3
+    ) -> tuple[dict | None, bool]:
         """Discover CSS selectors with AI, using fallback heuristics if needed.
 
         Attempts AI-powered selector discovery with automatic retries. Falls
@@ -282,7 +358,8 @@ class SelectorDiscoveryPipeline:
 
         Args:
             url: URL being processed (for logging).
-            result: FetchResult containing HTML and metadata.
+            cleaned_html: Pre-cleaned HTML content to analyze.
+            result: FetchResult containing metadata (for heuristics check).
             max_retries: Maximum AI retry attempts. Defaults to 3.
 
         Returns:
@@ -307,8 +384,8 @@ class SelectorDiscoveryPipeline:
 
             self.console.print(f'[step]Step 2: AI analyzing HTML (attempt {attempt}/{max_retries})...[/step]')
 
-            assert result.html is not None, 'result.html should not be None in _discover'
-            selectors = self.discovery.discover_from_html(url, result.html)
+            # discover_selectors takes cleaned HTML and returns just selectors
+            selectors = self.discovery.discover_selectors(cleaned_html, url)
 
             if selectors:
                 self.console.print(f'[success]Discovered selectors for {len(selectors)} fields[/success]')
@@ -363,11 +440,34 @@ class SelectorDiscoveryPipeline:
 
         return validated
 
+    def _extract(self, url: str, html: str, validated_selectors: dict) -> dict | None:
+        """Extract content from HTML using validated selectors.
+
+        Args:
+            url: URL being processed (for logging).
+            html: Cleaned HTML content to extract from.
+            validated_selectors: Validated selectors to use for extraction.
+
+        Returns:
+            Dictionary of extracted content by field name, or None if extraction failed.
+
+        """
+        self.console.print('[step]Step 4: Extracting content using validated selectors...[/step]')
+
+        extracted = self.extractor.extract_content_with_html(url, html, validated_selectors)
+
+        if not extracted:
+            self.console.print('[danger]Content extraction failed - no content extracted[/danger]')
+            return None
+
+        self.console.print(f'[success]Extracted content from {len(extracted)} fields successfully[/success]')
+        return extracted
+
     def _cached_selectors(self, url: str, domain: str, fetcher: HTMLFetcher, skip_validation: bool) -> bool:
         """Try to use cached selectors if available.
 
-        Checks if selectors exist for the domain, and optionally validates them
-        against the current URL. Tracks usage if successful.
+        Checks if selectors exist for the domain, validates them against
+        the current URL, extracts content, and tracks usage.
 
         Args:
             url: URL being processed.
@@ -376,7 +476,7 @@ class SelectorDiscoveryPipeline:
             skip_validation: Skip validation of cached selectors. Defaults to False.
 
         Returns:
-            True if cached selectors found and valid (or validation skipped),
+            True if cached selectors found and used successfully,
             False if no cached selectors exist or validation failed.
 
         """
@@ -388,16 +488,19 @@ class SelectorDiscoveryPipeline:
         logfire.info('Using cached selectors', domain=domain, url=url)
 
         if skip_validation:
-            self._track_cached_success(url, domain)
+            # Still need to fetch and extract even if skipping validation
+            self._extract_with_cached_selectors(url, domain, fetcher, existing_selectors)
             return True
 
-        # Validate cached selectors
-        return self._validate_cached_selectors(url, domain, fetcher, existing_selectors)
+        # Validate and extract with cached selectors
+        return self._validate_and_extract_cached(url, domain, fetcher, existing_selectors)
 
-    def _validate_cached_selectors(self, url: str, domain: str, fetcher: HTMLFetcher, existing_selectors: dict) -> bool:
-        """Validate cached selectors against current HTML.
+    def _validate_and_extract_cached(
+        self, url: str, domain: str, fetcher: HTMLFetcher, existing_selectors: dict
+    ) -> bool:
+        """Validate cached selectors and extract content from current URL.
 
-        Fetches HTML from URL and validates existing selectors against it.
+        Fetches HTML, validates cached selectors, and extracts content.
         Falls back to using cached selectors as-is if fetch or validation fails.
 
         Args:
@@ -421,14 +524,33 @@ class SelectorDiscoveryPipeline:
             result = fetcher.fetch(url)
 
             if not result.success or result.html is None:
-                self.console.print('[warning]⚠ Could not fetch HTML, using cached selectors as-is[/warning]')
+                self.console.print('[warning]⚠ Could not fetch HTML, skipping extraction[/warning]')
                 self._track_cached_success(url, domain)
                 return True
 
-            validated = self.validator.validate_selectors_with_html(url, result.html, existing_selectors)
+            # Clean HTML
+            self.console.print('[step]Cleaning HTML...[/step]')
+            cleaned_html = self.cleaner.clean_html(result.html)
+
+            # Save debug HTML if enabled
+            if self.debug_mode:
+                self._save_debug_html(url, cleaned_html)
+
+            # Validate selectors
+            validated = self.validator.validate_selectors_with_html(url, cleaned_html, existing_selectors)
 
             if validated:
                 self.console.print(f'[success]✓ Validated {len(validated)}/5 cached selectors[/success]')
+
+                # Extract content using validated cached selectors
+                extracted = self._extract(url, cleaned_html, validated)
+
+                # Save extracted content
+                if extracted:
+                    self.storage.save_content(url, extracted)
+                else:
+                    self.console.print('[warning]⚠ Extraction failed with cached selectors[/warning]')
+
                 self._track_cached_success(url, domain)
                 return True
 
@@ -438,9 +560,52 @@ class SelectorDiscoveryPipeline:
         except BotDetectionError:
             raise
         except Exception as e:
-            self.console.print(f'[warning]⚠ Validation error: {e}, using cached selectors as-is[/warning]')
+            self.console.print(f'[warning]⚠ Validation error: {e}, skipping extraction[/warning]')
             self._track_cached_success(url, domain)
             return True
+
+    def _extract_with_cached_selectors(self, url: str, domain: str, fetcher: HTMLFetcher, existing_selectors: dict):
+        """Extract content using cached selectors without validation.
+
+        Args:
+            url: URL to fetch and extract from.
+            domain: Domain name (for logging and tracking).
+            fetcher: HTML fetcher instance.
+            existing_selectors: Previously discovered selectors to use.
+
+        """
+        self.console.print('[step]Fetching HTML for extraction with cached selectors...[/step]')
+
+        try:
+            result = fetcher.fetch(url)
+
+            if not result.success or result.html is None:
+                self.console.print('[warning]⚠ Could not fetch HTML, skipping extraction[/warning]')
+                self._track_cached_success(url, domain)
+                return
+
+            # Clean HTML
+            self.console.print('[step]Cleaning HTML...[/step]')
+            cleaned_html = self.cleaner.clean_html(result.html)
+
+            # Save debug HTML if enabled
+            if self.debug_mode:
+                self._save_debug_html(url, cleaned_html)
+
+            # Extract content (no validation)
+            extracted = self._extract(url, cleaned_html, existing_selectors)
+
+            # Save extracted content
+            if extracted:
+                self.storage.save_content(url, extracted)
+            else:
+                self.console.print('[warning]⚠ Extraction failed with cached selectors[/warning]')
+
+            self._track_cached_success(url, domain)
+
+        except Exception as e:
+            self.console.print(f'[warning]⚠ Extraction error: {e}[/warning]')
+            self._track_cached_success(url, domain)
 
     def _track_cached_success(self, url: str, domain: str):
         """Track successful use of cached selectors.
@@ -497,20 +662,25 @@ class SelectorDiscoveryPipeline:
 
         return False, ''
 
-    def _save_and_track(self, url: str, domain: str, validated: dict, used_llm: bool):
-        """Save validated selectors and track LLM usage.
+    def _save_and_track(self, url: str, domain: str, validated: dict, extracted: dict | None, used_llm: bool):
+        """Save validated selectors, extracted content, and track LLM usage.
 
-        Saves selectors to storage, records usage statistics, and displays
-        tracking information to console.
+        Saves selectors to storage, optionally saves extracted content,
+        records usage statistics, and displays tracking information to console.
 
         Args:
             url: URL that was processed.
             domain: Domain name.
             validated: Validated selector dictionary to save.
+            extracted: Extracted content dictionary to save, or None if extraction failed.
             used_llm: Whether LLM was called for this URL.
 
         """
         self.storage.save_selectors(url, validated)
+
+        if extracted:
+            self.storage.save_content(url, extracted)
+
         stats = self.tracker.record_url(url, used_llm=used_llm)
         self._print_tracking_stats(domain, stats)
 

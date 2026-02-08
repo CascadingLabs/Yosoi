@@ -13,17 +13,20 @@ class SelectorStorage:
 
     Attributes:
         storage_dir: Directory path where selector files are stored
+        content_dir: Directory path where extracted content is stored
 
     """
 
-    def __init__(self, storage_dir: str = 'selectors'):
+    def __init__(self, storage_dir: str = 'selectors', content_dir: str = 'content'):
         """Initialize the storage manager.
 
         Args:
             storage_dir: Directory path for storing selector files. Defaults to 'selectors'.
+            content_dir: Directory path for storing extracted content. Defaults to 'content'.
 
         """
         self.storage_dir = str(init_yosoi(storage_dir))
+        self.content_dir = str(init_yosoi(content_dir))
 
     def save_selectors(self, url: str, selectors: dict) -> str:
         """Save selectors to a JSON file.
@@ -83,6 +86,76 @@ class SelectorStorage:
 
         """
         filepath = self._get_filepath(domain)
+        return os.path.exists(filepath)
+
+    def save_content(self, url: str, content: dict) -> str:
+        """Save extracted content to a JSON file.
+
+        Args:
+            url: URL the content was extracted from
+            content: Dictionary of extracted content by field
+
+        Returns:
+            Path to the saved file.
+
+        """
+        from datetime import datetime
+
+        domain = self._extract_domain(url)
+        filepath = self._get_content_filepath(url)
+
+        # Add metadata
+        content_with_metadata = {
+            'url': url,
+            'domain': domain,
+            'extracted_at': datetime.now().isoformat(),
+            'content': content,
+        }
+
+        # Ensure directory exists
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+
+        # Save to file
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(content_with_metadata, f, indent=2, ensure_ascii=False)
+
+        print(f'✓ Saved content to: {filepath}')
+        return filepath
+
+    def load_content(self, url: str) -> dict | None:
+        """Load extracted content from a JSON file.
+
+        Args:
+            url: URL to load content for
+
+        Returns:
+            Dictionary of extracted content, or None if not found or error occurred.
+
+        """
+        filepath = self._get_content_filepath(url)
+
+        if not os.path.exists(filepath):
+            return None
+
+        try:
+            with open(filepath, encoding='utf-8') as f:
+                data: dict[str, Any] = json.load(f)
+                return data
+        except Exception as e:
+            print(f'Error loading content: {e}')
+            return None
+
+    def content_exists(self, url: str) -> bool:
+        """Check if extracted content exists for a URL.
+
+        Args:
+            url: URL to check
+
+        Returns:
+            True if content file exists for the URL, False otherwise.
+
+        """
+        filepath = self._get_content_filepath(url)
         return os.path.exists(filepath)
 
     def list_domains(self) -> list[str]:
@@ -186,6 +259,40 @@ class SelectorStorage:
         """
         safe_domain = domain.replace('.', '_').replace('/', '_')
         return os.path.join(self.storage_dir, f'selectors_{safe_domain}.json')
+
+    def _get_content_filepath(self, url: str) -> str:
+        """Get filepath for a URL's extracted content.
+
+        Creates a safe filename from the full URL including path.
+
+        Args:
+            url: Full URL
+
+        Returns:
+            Full file path for the URL's content file.
+
+        """
+        import hashlib
+
+        # Parse URL
+        parsed = urlparse(url)
+        domain = parsed.netloc.replace('www.', '')
+
+        # Create safe domain directory
+        safe_domain = domain.replace('.', '_').replace('/', '_')
+        domain_dir = os.path.join(self.content_dir, safe_domain)
+
+        # Create filename from URL path or use hash for homepage
+        if parsed.path and parsed.path != '/':
+            # Use path for filename (sanitized)
+            path_parts = parsed.path.strip('/').replace('/', '_')
+            filename = f'{path_parts[:100]}.json'
+        else:
+            # Homepage - use a hash of the full URL
+            url_hash = hashlib.md5(url.encode()).hexdigest()[:8]
+            filename = f'homepage_{url_hash}.json'
+
+        return os.path.join(domain_dir, filename)
 
     def _load_file_data(self, domain: str) -> dict[str, Any] | None:
         """Load complete file data for a domain.
