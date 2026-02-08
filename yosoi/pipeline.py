@@ -698,10 +698,10 @@ class SelectorDiscoveryPipeline:
             validated: Validated selector dictionary to save.
             extracted: Extracted content dictionary to save, or None if extraction failed.
             used_llm: Whether LLM was called for this URL.
-            output_format: Format for extracted content ('json' or 'markdown').
+            output_format: Format for output files ('json' or 'markdown').
 
         """
-        self.storage.save_selectors(url, validated)
+        self.storage.save_selectors(url, validated, output_format)
 
         if extracted:
             self.storage.save_content(url, extracted, output_format)
