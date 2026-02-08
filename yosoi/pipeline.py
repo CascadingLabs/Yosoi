@@ -13,6 +13,7 @@ from rich.theme import Theme
 
 from yosoi import LLMConfig, SelectorDiscovery
 from yosoi.fetcher import BotDetectionError, FetchResult, HTMLFetcher, create_fetcher
+from yosoi.models import DEFAULT_BLUEPRINT, BluePrint
 from yosoi.storage import SelectorStorage
 from yosoi.tracker import LLMTracker
 from yosoi.validator import SelectorValidator
@@ -28,6 +29,7 @@ class SelectorDiscoveryPipeline:
     Attributes:
         custom_theme: Rich theme for console output
         console: Rich console instance for formatted output
+        blueprint: BluePrint defining fields to discover
         discovery: Python class to reduce the HTML and use LLM to find selectors
         validator: Python class to check the selectors if they are real
         storage: Store the found selectors as a JSON file
@@ -36,11 +38,12 @@ class SelectorDiscoveryPipeline:
 
     """
 
-    def __init__(self, llm_config: LLMConfig, debug_mode: bool = False):
+    def __init__(self, llm_config: LLMConfig, blueprint: type[BluePrint] | None = None, debug_mode: bool = False):
         """Initialize the pipeline with LLM configuration.
 
         Args:
             llm_config: Configuration of LLM
+            blueprint: BluePrint class defining fields to discover (uses ArticleBluePrint if None)
             debug_mode: If enabled will output the HTML from the URL
 
         """
@@ -54,8 +57,11 @@ class SelectorDiscoveryPipeline:
             }
         )
         self.console = Console(theme=self.custom_theme)
-        self.discovery = SelectorDiscovery(llm_config=llm_config, console=self.console, debug_mode=debug_mode)
-        self.validator = SelectorValidator(console=self.console)
+        self.blueprint = blueprint or DEFAULT_BLUEPRINT
+        self.discovery = SelectorDiscovery(
+            llm_config=llm_config, blueprint=self.blueprint, console=self.console, debug_mode=debug_mode
+        )
+        self.validator = SelectorValidator(console=self.console, blueprint=self.blueprint)
         self.storage = SelectorStorage()
         self.tracker = LLMTracker()
         self.debug_mode = debug_mode
@@ -355,8 +361,9 @@ class SelectorDiscoveryPipeline:
             self.console.print('[danger]No selectors validated successfully - all selectors failed![/danger]')
             return None
 
+        total_fields = len(self.blueprint.get_all_fields())
         failed_count = len(selectors) - len(validated)
-        self.console.print(f'[success]Validated {len(validated)}/5 fields successfully[/success]')
+        self.console.print(f'[success]Validated {len(validated)}/{total_fields} fields successfully[/success]')
 
         if failed_count >= 2:
             self.console.print(f'[warning]Warning: {failed_count} fields failed validation[/warning]')
@@ -428,7 +435,8 @@ class SelectorDiscoveryPipeline:
             validated = self.validator.validate_selectors_with_html(url, result.html, existing_selectors)
 
             if validated:
-                self.console.print(f'[success]✓ Validated {len(validated)}/5 cached selectors[/success]')
+                total_fields = len(self.blueprint.get_all_fields())
+                self.console.print(f'[success]✓ Validated {len(validated)}/{total_fields} cached selectors[/success]')
                 self._track_cached_success(url, domain)
                 return True
 

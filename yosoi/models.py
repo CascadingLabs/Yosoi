@@ -70,48 +70,6 @@ class FieldKindRegistry:
 
 
 # =============================================================================
-# DEFAULT FIELD KINDS - Built-in primitives
-# =============================================================================
-
-
-class DefaultFieldKinds:
-    """Default field kinds provided by Yosoi.
-
-    These cover common scraping scenarios.
-    """
-
-    # Headline content
-    HEADLINE = FieldKindRegistry.register(
-        FieldKindBase(name='headline', discovery_hints='Look for the headline of the article in HTML')
-    )
-
-    # Authors
-    AUTHOR = FieldKindRegistry.register(
-        FieldKindBase(
-            name='author',
-            discovery_hints="Look for bylines, author links, or elements with 'author', 'byline', 'written-by' in class names.",
-        )
-    )
-
-    # Dates/times
-    DATETIME = FieldKindRegistry.register(
-        FieldKindBase(
-            name='datetime',
-            discovery_hints="Look for tags with datetime attributes, or date-formatted text. Check for relative dates like '2 hours ago'.",
-        )
-    )
-
-    # Text content
-    BODY = FieldKindRegistry.register(
-        FieldKindBase(name='body_text', discovery_hints='Look for body text content in HTML')
-    )
-
-
-# Convenience alias
-FieldKind = DefaultFieldKinds
-
-
-# =============================================================================
 # CUSTOM FIELD KIND CREATOR
 # =============================================================================
 
@@ -172,7 +130,7 @@ def field_kind(name: str, discovery_hints: str, examples: list[str] | None = Non
 
 
 # =============================================================================
-# FIELD METADATA & BLUEPRINT (unchanged from before)
+# FIELD METADATA & BLUEPRINT
 # =============================================================================
 
 
@@ -272,3 +230,124 @@ class BluePrint(BaseModel):
             schema['fields'].append(field_schema)
 
         return schema
+
+
+# =============================================================================
+# DYNAMIC MODEL GENERATION
+# =============================================================================
+
+
+def create_scraping_config_model(blueprint: type[BluePrint]) -> type[BaseModel]:
+    """Dynamically create a ScrapingConfig model from a BluePrint.
+
+    Args:
+        blueprint: BluePrint class defining the fields to scrape
+
+    Returns:
+        A Pydantic model class with Selectors fields for each BluePrint field
+
+    """
+    annotations = {}
+    field_definitions = {}
+    all_fields = blueprint.get_all_fields()
+
+    for field_name in all_fields:
+        # Set the type annotation
+        annotations[field_name] = Selectors
+        # Set the field definition
+        field_definitions[field_name] = PydanticField(description=f'Selectors for {field_name}')
+
+    # Create the model dynamically with proper annotations
+    ScrapingConfigModel = type(
+        f'{blueprint.__name__}ScrapingConfig',
+        (BaseModel,),
+        {
+            '__annotations__': annotations,
+            **field_definitions,
+            'model_config': ConfigDict(arbitrary_types_allowed=True),
+        },
+    )
+
+    return ScrapingConfigModel
+
+
+# =============================================================================
+# DEFAULT FIELD KINDS - Built-in primitives
+# =============================================================================
+
+
+class DefaultFieldKinds:
+    """Default field kinds provided by Yosoi.
+
+    These cover common scraping scenarios.
+    """
+
+    # Headline content
+    HEADLINE = FieldKindRegistry.register(
+        FieldKindBase(name='headline', discovery_hints='Look for the headline of the article in HTML')
+    )
+
+    # Authors
+    AUTHOR = FieldKindRegistry.register(
+        FieldKindBase(
+            name='author',
+            discovery_hints="Look for bylines, author links, or elements with 'author', 'byline', 'written-by' in class names.",
+        )
+    )
+
+    # Dates/times
+    DATETIME = FieldKindRegistry.register(
+        FieldKindBase(
+            name='datetime',
+            discovery_hints="Look for tags with datetime attributes, or date-formatted text. Check for relative dates like '2 hours ago'.",
+        )
+    )
+
+    # Text content
+    BODY = FieldKindRegistry.register(
+        FieldKindBase(name='body_text', discovery_hints='Look for body text content in HTML')
+    )
+
+
+# Convenience alias
+FieldKind = DefaultFieldKinds
+
+
+# =============================================================================
+# DEFAULT BLUEPRINT - Standard article scraping
+# =============================================================================
+
+
+class ArticleBluePrint(BluePrint):
+    """Default blueprint for article scraping.
+
+    Contains standard fields for news articles and blog posts.
+    """
+
+    headline: str = Field(
+        kind=FieldKind.HEADLINE,
+        description='Main article headline',
+        required=True,
+    )
+
+    author: str = Field(
+        kind=FieldKind.AUTHOR,
+        description='Article author name',
+        required=False,
+    )
+
+    date: str = Field(
+        kind=FieldKind.DATETIME,
+        description='Publication date',
+        required=False,
+    )
+
+    body_text: str = Field(
+        kind=FieldKind.BODY,
+        description='Main article content',
+        required=True,
+    )
+
+
+# Default instance to use throughout the codebase
+DEFAULT_BLUEPRINT = ArticleBluePrint

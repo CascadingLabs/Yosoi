@@ -1,15 +1,17 @@
 """AI-powered selector discovery by reading raw HTML."""
 
 import re
-from typing import Any, cast
+from typing import Any
 
 import logfire
 from bs4 import BeautifulSoup, Comment, Tag
+from pydantic import BaseModel
 from pydantic_ai import Agent
 from rich.console import Console
 
-from yosoi.llm_config import LLMConfig, create_model
-from yosoi.models import ScrapingConfig
+from yosoi.llm_config import LLMConfig
+from yosoi.llm_config import create_model as create_llm_model
+from yosoi.models import DEFAULT_BLUEPRINT, BluePrint, create_scraping_config_model
 from yosoi.utils.files import get_debug_html_path
 
 
@@ -18,27 +20,32 @@ class SelectorDiscovery:
 
     Attributes:
         console: Rich console instance for formatted output
+        blueprint: BluePrint defining fields to discover
         fallback_selectors: Second level of selectors to choose from
         debug_mode: If enabled will give entire HTML
         remove_sidebars: Enabled automatically and will remove the sidebars and more from HTML
         agent: The LLM agent that will be used
+        scraping_config_model: Dynamically generated Pydantic model for LLM output
         model_name: Name of the model being used
         provider: Name of the LLM provider
 
     """
 
     console: Console
+    blueprint: type[BluePrint]
     fallback_selectors: dict[str, Any]
     debug_mode: bool
     remove_sidebars: bool
-    agent: Agent[Any, ScrapingConfig]
+    agent: Agent[Any, BaseModel]
+    scraping_config_model: type[BaseModel]
     model_name: str
     provider: str
 
     def __init__(
         self,
         llm_config: LLMConfig | None = None,
-        agent: Agent[Any, ScrapingConfig] | None = None,
+        agent: Agent[Any, BaseModel] | None = None,
+        blueprint: type[BluePrint] | None = None,
         console: Console | None = None,
         debug_mode: bool = False,
         remove_sidebars: bool = False,
@@ -48,6 +55,7 @@ class SelectorDiscovery:
         Args:
             llm_config: Configuration for the LLM provider and model
             agent: The LLM agent that will be used
+            blueprint: BluePrint class defining fields to discover (uses ArticleBluePrint if None)
             console: Rich console instance for formatted output
             debug_mode: If enabled will give entire HTML
             remove_sidebars: Enabled automatically and will remove the sidebars and more from HTML
@@ -57,6 +65,13 @@ class SelectorDiscovery:
 
         """
         self.console = console or Console()
+
+        # Use default blueprint if none provided
+        self.blueprint = blueprint or DEFAULT_BLUEPRINT
+
+        # Create dynamic ScrapingConfig model from blueprint
+        self.scraping_config_model = create_scraping_config_model(self.blueprint)
+
         self.fallback_selectors = self._get_fallback_selectors()
         self.debug_mode = debug_mode
         self.remove_sidebars = remove_sidebars
@@ -75,8 +90,8 @@ class SelectorDiscovery:
             self.model_name = 'custom-agent'
             self.provider = 'custom'
         elif llm_config is not None:
-            model = create_model(llm_config)
-            self.agent = Agent(model, output_type=ScrapingConfig, system_prompt=system_prompt)
+            model = create_llm_model(llm_config)
+            self.agent = Agent(model, output_type=self.scraping_config_model, system_prompt=system_prompt)
             self.model_name = llm_config.model_name
             self.provider = llm_config.provider
         else:
@@ -280,7 +295,7 @@ class SelectorDiscovery:
         return str(soup)[:30000]
 
     @logfire.instrument('llm_discovery_request')
-    def _get_selectors_from_ai(self, url: str, html: str) -> ScrapingConfig | None:
+    def _get_selectors_from_ai(self, url: str, html: str) -> BaseModel | None:
         """Ask AI to find selectors by reading the HTML.
 
         Args:
@@ -291,6 +306,19 @@ class SelectorDiscovery:
             ScrapingConfig object with discovered selectors, or None if request failed.
 
         """
+        # Generate field descriptions from blueprint
+        field_descriptions = []
+        all_fields = self.blueprint.get_all_fields()
+
+        for field_name, (_, metadata) in all_fields.items():
+            field_kind = metadata.get_field_kind()
+            hints = metadata.selector_hints or (field_kind.discovery_hints if field_kind else '')
+            desc = metadata.description or f'Extract {field_name}'
+
+            field_descriptions.append(f'**{field_name}** - {desc} ({hints})')
+
+        fields_prompt = '\n'.join(field_descriptions)
+
         prompt = f"""Analyze this HTML and find selectors for web scraping.
 
 Here is the HTML from {url}:
@@ -300,11 +328,7 @@ Here is the HTML from {url}:
 
 Find CSS selectors for these fields:
 
-**headline** - Main article title (h1/h2 in article, NOT navigation)
-**author** - Author name (author/byline classes or links)
-**date** - Publication date (time tags or date/published classes)
-**body_text** - Article paragraphs (p tags in article, NOT sidebars/ads)
-**related_content** - Related article links (aside/sidebar sections)
+{fields_prompt}
 
 For each field provide three selectors:
 - primary: Most specific selector using actual classes/IDs from the HTML
@@ -318,7 +342,7 @@ Return ONLY the JSON object, nothing else."""
         try:
             result = self.agent.run_sync(prompt)
             self.console.print('[success]  ✓ AI found selectors[/success]')
-            return cast(ScrapingConfig, result.output)
+            return result.output
 
         except Exception as e:
             error_msg = str(e)
@@ -345,19 +369,39 @@ Return ONLY the JSON object, nothing else."""
         return all(all(v == 'NA' for v in field_sel.values()) for field_sel in selectors.values())
 
     def _get_fallback_selectors(self) -> dict:
-        """Return generic heuristic selectors when AI fails.
+        """Return generic heuristic selectors based on blueprint fields.
 
         Returns:
-            A dict of the average selectors of the data
+            A dict of generic selectors for each field in the blueprint
 
         """
-        return {
+        fallback = {}
+        all_fields = self.blueprint.get_all_fields()
+
+        # Define generic fallback selectors for common field kinds
+        kind_fallbacks = {
             'headline': {'primary': 'h1', 'fallback': 'h2', 'tertiary': 'h3'},
             'author': {'primary': "a[href*='author']", 'fallback': '.author', 'tertiary': '.byline'},
-            'date': {'primary': 'time', 'fallback': '.published', 'tertiary': '.date'},
+            'datetime': {'primary': 'time', 'fallback': '.published', 'tertiary': '.date'},
             'body_text': {'primary': 'article p', 'fallback': '.content p', 'tertiary': 'p'},
-            'related_content': {'primary': 'aside a', 'fallback': '.related a', 'tertiary': '.sidebar a'},
         }
+
+        for field_name, (_, metadata) in all_fields.items():
+            field_kind = metadata.get_field_kind()
+            kind_name = field_kind.name if field_kind else 'text'
+
+            # Use kind-specific fallback if available, otherwise generic
+            if kind_name in kind_fallbacks:
+                fallback[field_name] = kind_fallbacks[kind_name]
+            else:
+                # Generic fallback for custom fields
+                fallback[field_name] = {
+                    'primary': f'.{field_name}',
+                    'fallback': f'[data-{field_name}]',
+                    'tertiary': 'NA',
+                }
+
+        return fallback
 
     def _debug_save_html(self, url: str, html: str):
         """Save extracted HTML to file for debugging.

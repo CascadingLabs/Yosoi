@@ -23,16 +23,29 @@ from yosoi.llm_config import (
     groq,
     openai,
 )
+from yosoi.models import (
+    DEFAULT_BLUEPRINT,
+    ArticleBluePrint,
+    BluePrint,
+    Field,
+    FieldKind,
+    Selectors,
+    create_field_kind,
+    create_scraping_config_model,
+    field_kind,
+)
 from yosoi.storage import SelectorStorage
 from yosoi.tracker import LLMTracker
 from yosoi.utils import init_yosoi
 from yosoi.validator import SelectorValidator
 
 __all__ = [
+    # Core components
     'SelectorDiscovery',
     'SelectorStorage',
     'SelectorValidator',
     'LLMTracker',
+    # Fetchers
     'BotDetectionError',
     'FetchResult',
     'HTMLFetcher',
@@ -40,6 +53,7 @@ __all__ = [
     'SimpleFetcher',
     'SmartFetcher',
     'create_fetcher',
+    # LLM configuration
     'LLMConfig',
     'LLMBuilder',
     'MultiModelAgent',
@@ -48,5 +62,17 @@ __all__ = [
     'groq',
     'gemini',
     'openai',
+    # Utilities
     'init_yosoi',
+    # Models and BluePrints
+    'BluePrint',
+    'Field',
+    'FieldKind',
+    'Selectors',
+    'create_field_kind',
+    'field_kind',
+    'create_scraping_config_model',
+    # Defaults
+    'ArticleBluePrint',
+    'DEFAULT_BLUEPRINT',
 ]
