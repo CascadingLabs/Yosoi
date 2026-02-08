@@ -40,12 +40,13 @@ class SelectorDiscoveryPipeline:
 
     """
 
-    def __init__(self, llm_config: LLMConfig, debug_mode: bool = False):
+    def __init__(self, llm_config: LLMConfig, debug_mode: bool = False, output_format: str = 'json'):
         """Initialize the pipeline with LLM configuration.
 
         Args:
             llm_config: Configuration of LLM
             debug_mode: If enabled will output the HTML from the URL
+            output_format: Format for extracted content ('json' or 'markdown'). Defaults to 'json'.
 
         """
         self.custom_theme = Theme(
@@ -65,6 +66,7 @@ class SelectorDiscoveryPipeline:
         self.storage = SelectorStorage()
         self.tracker = LLMTracker()
         self.debug_mode = debug_mode
+        self.output_format = output_format
 
     def process_url(
         self,
@@ -74,6 +76,7 @@ class SelectorDiscoveryPipeline:
         max_discovery_retries: int = 3,
         skip_validation: bool = False,
         fetcher_type: str = 'simple',
+        output_format: str | None = None,
     ) -> bool:
         """Process a single URL: discover, validate, and save selectors.
 
@@ -84,11 +87,16 @@ class SelectorDiscoveryPipeline:
             fetcher_type: Type of fetcher ('simple', 'playwright', 'smart'). Defaults to 'simple'.
             max_fetch_retries: Maximum fetch retry attempts. Defaults to 2.
             max_discovery_retries: Maximum AI discovery retry attempts. Defaults to 3.
+            output_format: Format for extracted content ('json' or 'markdown').
+                          Defaults to None (uses pipeline default).
 
         Returns:
             True if operation succeeded, False otherwise.
 
         """
+        # Use provided format or fall back to pipeline default
+        format_to_use = output_format or self.output_format
+
         with logfire.span('process_url', url=url, force=force, fetcher_type=fetcher_type):
             domain = self._extract_domain(url)
             fetcher = self._create_fetcher(fetcher_type)
@@ -96,7 +104,7 @@ class SelectorDiscoveryPipeline:
                 return False
 
             # Try using cached selectors if available
-            if not force and self._cached_selectors(url, domain, fetcher, skip_validation):
+            if not force and self._cached_selectors(url, domain, fetcher, skip_validation, format_to_use):
                 return True
 
             # Fetch HTML with retry logic for bot detection
@@ -130,7 +138,7 @@ class SelectorDiscoveryPipeline:
                 self.console.print('[warning]⚠ Extraction failed, but selectors are valid[/warning]')
 
             # Save and track (save selectors + content if extracted)
-            self._save_and_track(url, domain, validated, extracted, used_llm)
+            self._save_and_track(url, domain, validated, extracted, used_llm, format_to_use)
             return True
 
     def process_urls(
@@ -141,6 +149,7 @@ class SelectorDiscoveryPipeline:
         fetcher_type: str = 'simple',
         max_fetch_retries: int = 2,
         max_discovery_retries: int = 3,
+        output_format: str | None = None,
     ) -> dict[str, list[str]]:
         """Process multiple URLs and collect results.
 
@@ -151,6 +160,8 @@ class SelectorDiscoveryPipeline:
             fetcher_type: Type of fetcher ('simple', 'playwright', 'smart'). Defaults to 'simple'.
             max_fetch_retries: Maximum fetch retry attempts. Defaults to 2.
             max_discovery_retries: Maximum AI discovery retry attempts. Defaults to 3.
+            output_format: Format for extracted content ('json' or 'markdown').
+                          Defaults to None (uses pipeline default).
 
         Returns:
             Dictionary with two keys:
@@ -158,6 +169,9 @@ class SelectorDiscoveryPipeline:
                 - 'failed': List of URLs that failed processing
 
         """
+        # Use provided format or fall back to pipeline default
+        format_to_use = output_format or self.output_format
+
         results: dict[str, list[str]] = {'successful': [], 'failed': []}
 
         with logfire.span('process_urls', total_urls=len(urls)):
@@ -172,6 +186,7 @@ class SelectorDiscoveryPipeline:
                         max_discovery_retries=max_discovery_retries,
                         skip_validation=skip_validation,
                         fetcher_type=fetcher_type,
+                        output_format=format_to_use,
                     )
                     results['successful' if success else 'failed'].append(url)
                 except Exception as e:
@@ -463,7 +478,9 @@ class SelectorDiscoveryPipeline:
         self.console.print(f'[success]Extracted content from {len(extracted)} fields successfully[/success]')
         return extracted
 
-    def _cached_selectors(self, url: str, domain: str, fetcher: HTMLFetcher, skip_validation: bool) -> bool:
+    def _cached_selectors(
+        self, url: str, domain: str, fetcher: HTMLFetcher, skip_validation: bool, output_format: str
+    ) -> bool:
         """Try to use cached selectors if available.
 
         Checks if selectors exist for the domain, validates them against
@@ -474,6 +491,7 @@ class SelectorDiscoveryPipeline:
             domain: Domain name extracted from URL.
             fetcher: HTML fetcher instance for validation.
             skip_validation: Skip validation of cached selectors. Defaults to False.
+            output_format: Format for extracted content ('json' or 'markdown').
 
         Returns:
             True if cached selectors found and used successfully,
@@ -489,14 +507,14 @@ class SelectorDiscoveryPipeline:
 
         if skip_validation:
             # Still need to fetch and extract even if skipping validation
-            self._extract_with_cached_selectors(url, domain, fetcher, existing_selectors)
+            self._extract_with_cached_selectors(url, domain, fetcher, existing_selectors, output_format)
             return True
 
         # Validate and extract with cached selectors
-        return self._validate_and_extract_cached(url, domain, fetcher, existing_selectors)
+        return self._validate_and_extract_cached(url, domain, fetcher, existing_selectors, output_format)
 
     def _validate_and_extract_cached(
-        self, url: str, domain: str, fetcher: HTMLFetcher, existing_selectors: dict
+        self, url: str, domain: str, fetcher: HTMLFetcher, existing_selectors: dict, output_format: str
     ) -> bool:
         """Validate cached selectors and extract content from current URL.
 
@@ -508,6 +526,7 @@ class SelectorDiscoveryPipeline:
             domain: Domain name (for logging and tracking).
             fetcher: HTML fetcher instance.
             existing_selectors: Previously discovered selectors to validate.
+            output_format: Format for extracted content ('json' or 'markdown').
 
         Returns:
             True if selectors validated successfully or fetch failed (uses cached
@@ -547,7 +566,7 @@ class SelectorDiscoveryPipeline:
 
                 # Save extracted content
                 if extracted:
-                    self.storage.save_content(url, extracted)
+                    self.storage.save_content(url, extracted, output_format)
                 else:
                     self.console.print('[warning]⚠ Extraction failed with cached selectors[/warning]')
 
@@ -564,7 +583,9 @@ class SelectorDiscoveryPipeline:
             self._track_cached_success(url, domain)
             return True
 
-    def _extract_with_cached_selectors(self, url: str, domain: str, fetcher: HTMLFetcher, existing_selectors: dict):
+    def _extract_with_cached_selectors(
+        self, url: str, domain: str, fetcher: HTMLFetcher, existing_selectors: dict, output_format: str
+    ):
         """Extract content using cached selectors without validation.
 
         Args:
@@ -572,6 +593,7 @@ class SelectorDiscoveryPipeline:
             domain: Domain name (for logging and tracking).
             fetcher: HTML fetcher instance.
             existing_selectors: Previously discovered selectors to use.
+            output_format: Format for extracted content ('json' or 'markdown').
 
         """
         self.console.print('[step]Fetching HTML for extraction with cached selectors...[/step]')
@@ -597,7 +619,7 @@ class SelectorDiscoveryPipeline:
 
             # Save extracted content
             if extracted:
-                self.storage.save_content(url, extracted)
+                self.storage.save_content(url, extracted, output_format)
             else:
                 self.console.print('[warning]⚠ Extraction failed with cached selectors[/warning]')
 
@@ -662,7 +684,9 @@ class SelectorDiscoveryPipeline:
 
         return False, ''
 
-    def _save_and_track(self, url: str, domain: str, validated: dict, extracted: dict | None, used_llm: bool):
+    def _save_and_track(
+        self, url: str, domain: str, validated: dict, extracted: dict | None, used_llm: bool, output_format: str
+    ):
         """Save validated selectors, extracted content, and track LLM usage.
 
         Saves selectors to storage, optionally saves extracted content,
@@ -674,12 +698,13 @@ class SelectorDiscoveryPipeline:
             validated: Validated selector dictionary to save.
             extracted: Extracted content dictionary to save, or None if extraction failed.
             used_llm: Whether LLM was called for this URL.
+            output_format: Format for extracted content ('json' or 'markdown').
 
         """
         self.storage.save_selectors(url, validated)
 
         if extracted:
-            self.storage.save_content(url, extracted)
+            self.storage.save_content(url, extracted, output_format)
 
         stats = self.tracker.record_url(url, used_llm=used_llm)
         self._print_tracking_stats(domain, stats)

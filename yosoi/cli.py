@@ -121,9 +121,13 @@ Examples:
         '-d', '--debug', action='store_true', help='Enable debug mode (saves extracted HTML to debug_html/)'
     )
     parser.add_argument('-S', '--skip-validation', action='store_true', help='Skip validation for faster processing')
-    # TODO added arg for output type or service
-    # redis --> long-term persistence
-    # local --> json or jsonl files
+    parser.add_argument(
+        '-o',
+        '--output',
+        choices=['json', 'markdown', 'md'],
+        default='json',
+        help='Output format for extracted content (default: json)',
+    )
     parser.add_argument(
         '-t',
         '--fetcher',
@@ -167,8 +171,11 @@ def main():
     # Set up LLM configuration
     llm_config = setup_llm_config()
 
-    # Initialize pipeline
-    pipeline = SelectorDiscoveryPipeline(llm_config, debug_mode=args.debug)
+    # Normalize output format
+    output_format = 'markdown' if args.output in ['markdown', 'md'] else 'json'
+
+    # Initialize pipeline with output format
+    pipeline = SelectorDiscoveryPipeline(llm_config, debug_mode=args.debug, output_format=output_format)
 
     # Set up Logfire
     setup_logfire()
@@ -202,11 +209,19 @@ def main():
     if args.debug:
         print('ℹ Debug mode enabled - extracted HTML will be saved to debug_html/')
 
+    # Show output format info
+    print(f'ℹ Output format: {output_format}')
+
     # Show fetcher info
     print_fetcher_info(args.fetcher)
 
-    # Process URLs
-    pipeline.process_urls(urls, force=args.force, skip_validation=args.skip_validation, fetcher_type=args.fetcher)
+    # Process URLs (output_format already set in pipeline)
+    pipeline.process_urls(
+        urls,
+        force=args.force,
+        skip_validation=args.skip_validation,
+        fetcher_type=args.fetcher,
+    )
 
 
 if __name__ == '__main__':

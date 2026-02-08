@@ -25,6 +25,7 @@ from yosoi.llm_config import (
     groq,
     openai,
 )
+from yosoi.outputs import format_content, save_formatted_content
 from yosoi.storage import SelectorStorage
 from yosoi.tracker import LLMTracker
 from yosoi.utils import init_yosoi
@@ -53,4 +54,6 @@ __all__ = [
     'gemini',
     'openai',
     'init_yosoi',
+    'format_content',
+    'save_formatted_content',
 ]

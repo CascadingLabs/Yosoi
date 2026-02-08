@@ -88,36 +88,25 @@ class SelectorStorage:
         filepath = self._get_filepath(domain)
         return os.path.exists(filepath)
 
-    def save_content(self, url: str, content: dict) -> str:
-        """Save extracted content to a JSON file.
+    def save_content(self, url: str, content: dict, output_format: str = 'json') -> str:
+        """Save extracted content to a file in the specified format.
 
         Args:
             url: URL the content was extracted from
             content: Dictionary of extracted content by field
+            output_format: Output format ('json' or 'markdown'). Defaults to 'json'.
 
         Returns:
             Path to the saved file.
 
         """
-        from datetime import datetime
+        from yosoi.outputs.utils import save_formatted_content
 
         domain = self._extract_domain(url)
-        filepath = self._get_content_filepath(url)
+        filepath = self._get_content_filepath(url, output_format)
 
-        # Add metadata
-        content_with_metadata = {
-            'url': url,
-            'domain': domain,
-            'extracted_at': datetime.now().isoformat(),
-            'content': content,
-        }
-
-        # Ensure directory exists
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
-
-        # Save to file
-        with open(filepath, 'w', encoding='utf-8') as f:
-            json.dump(content_with_metadata, f, indent=2, ensure_ascii=False)
+        # Use output module to format and save
+        save_formatted_content(filepath, url, domain, content, output_format)
 
         print(f'✓ Saved content to: {filepath}')
         return filepath
@@ -260,13 +249,14 @@ class SelectorStorage:
         safe_domain = domain.replace('.', '_').replace('/', '_')
         return os.path.join(self.storage_dir, f'selectors_{safe_domain}.json')
 
-    def _get_content_filepath(self, url: str) -> str:
+    def _get_content_filepath(self, url: str, output_format: str = 'json') -> str:
         """Get filepath for a URL's extracted content.
 
         Creates a safe filename from the full URL including path.
 
         Args:
             url: Full URL
+            output_format: Output format ('json' or 'markdown'). Defaults to 'json'.
 
         Returns:
             Full file path for the URL's content file.
@@ -282,15 +272,18 @@ class SelectorStorage:
         safe_domain = domain.replace('.', '_').replace('/', '_')
         domain_dir = os.path.join(self.content_dir, safe_domain)
 
+        # Determine file extension
+        extension = 'md' if output_format == 'markdown' else 'json'
+
         # Create filename from URL path or use hash for homepage
         if parsed.path and parsed.path != '/':
             # Use path for filename (sanitized)
             path_parts = parsed.path.strip('/').replace('/', '_')
-            filename = f'{path_parts[:100]}.json'
+            filename = f'{path_parts[:100]}.{extension}'
         else:
             # Homepage - use a hash of the full URL
             url_hash = hashlib.md5(url.encode()).hexdigest()[:8]
-            filename = f'homepage_{url_hash}.json'
+            filename = f'homepage_{url_hash}.{extension}'
 
         return os.path.join(domain_dir, filename)
 
