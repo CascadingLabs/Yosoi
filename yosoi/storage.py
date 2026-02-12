@@ -28,13 +28,14 @@ class SelectorStorage:
         self.storage_dir = str(init_yosoi(storage_dir))
         self.content_dir = str(init_yosoi(content_dir))
 
-    def save_selectors(self, url: str, selectors: dict, output_format: str = 'json') -> str:
-        """Save selectors to a file in the specified format.
+    def save_selectors(self, url: str, selectors: dict) -> str:
+        """Save selectors to a JSON file.
+
+        Selectors are always saved as JSON for machine readability and reuse.
 
         Args:
             url: URL the selectors were discovered from
             selectors: Dictionary of validated selectors
-            output_format: Output format ('json' or 'markdown'). Defaults to 'json'.
 
         Returns:
             Path to the saved file.
@@ -43,13 +44,13 @@ class SelectorStorage:
         from yosoi.outputs.utils import save_formatted_selectors
 
         domain = self._extract_domain(url)
-        filepath = self._get_selector_filepath(domain, output_format)
+        filepath = self._get_selector_filepath(domain)
 
         # Format selectors
         formatted_selectors = self._format_selectors(selectors)
 
-        # Use output module to format and save
-        save_formatted_selectors(filepath, url, domain, formatted_selectors, output_format)
+        # Use output module to format and save (always JSON)
+        save_formatted_selectors(filepath, url, domain, formatted_selectors)
 
         print(f'\n✓ Saved selectors to: {filepath}')
         return filepath
@@ -239,7 +240,7 @@ class SelectorStorage:
             return 'unknown'
 
     def _get_filepath(self, domain: str) -> str:
-        """Get filepath for a domain's selectors (JSON only, for backward compatibility).
+        """Get filepath for a domain's selectors (always JSON).
 
         Args:
             domain: Domain name
@@ -248,22 +249,20 @@ class SelectorStorage:
             Full file path for the domain's selector file (JSON).
 
         """
-        return self._get_selector_filepath(domain, 'json')
+        return self._get_selector_filepath(domain)
 
-    def _get_selector_filepath(self, domain: str, output_format: str = 'json') -> str:
-        """Get filepath for a domain's selectors.
+    def _get_selector_filepath(self, domain: str) -> str:
+        """Get filepath for a domain's selectors (always JSON).
 
         Args:
             domain: Domain name
-            output_format: Output format ('json' or 'markdown'). Defaults to 'json'.
 
         Returns:
             Full file path for the domain's selector file.
 
         """
         safe_domain = domain.replace('.', '_').replace('/', '_')
-        extension = 'md' if output_format == 'markdown' else 'json'
-        return os.path.join(self.storage_dir, f'selectors_{safe_domain}.{extension}')
+        return os.path.join(self.storage_dir, f'selectors_{safe_domain}.json')
 
     def _get_content_filepath(self, url: str, output_format: str = 'json') -> str:
         """Get filepath for a URL's extracted content.

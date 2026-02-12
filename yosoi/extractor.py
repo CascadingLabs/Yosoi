@@ -29,7 +29,7 @@ class ContentExtractor:
         _url: str,
         html: str,
         validated_selectors: dict[str, dict[str, str]],
-    ) -> dict[str, str | list[str]] | None:
+    ) -> dict[str, str | list[str | dict[str, str]]] | None:
         """Extract content using validated selectors and provided HTML.
 
         Args:
@@ -39,7 +39,7 @@ class ContentExtractor:
 
         Returns:
             Dictionary of extracted content by field name, or None if extraction failed.
-            Each field contains the extracted text or list of texts.
+            Each field contains extracted text, list of texts, or list of dicts (for related_content).
 
         """
         self.console.print(f'  ↻ Extracting {len(self.EXPECTED_FIELDS)} fields using validated selectors...')
@@ -102,7 +102,7 @@ class ContentExtractor:
         soup: BeautifulSoup,
         selector: str,
         field_name: str,
-    ) -> str | list[str] | None:
+    ) -> str | list[str | dict[str, str]] | None:
         """Extract content using a single selector.
 
         Args:
@@ -111,7 +111,8 @@ class ContentExtractor:
             field_name: Name of the field being extracted (determines extraction strategy)
 
         Returns:
-            Extracted content as string or list of strings, or None if extraction failed.
+            Extracted content as string, list of strings/dicts, or None if extraction failed.
+            For related_content, returns list of dicts with 'text' and 'href' keys.
 
         """
         try:
@@ -130,7 +131,9 @@ class ContentExtractor:
                 links = []
                 for elem in elements:
                     text = elem.get_text(strip=True)
-                    href = elem.get('href', '')
+                    href_value = elem.get('href', '')
+                    # BeautifulSoup can return list for some attributes, ensure it's a string
+                    href: str = ' '.join(href_value) if isinstance(href_value, list) else (href_value or '')
                     if text:
                         links.append({'text': text, 'href': href} if href else text)
                 return links if links else None
@@ -144,7 +147,9 @@ class ContentExtractor:
             self.console.print(f'  ✗ {field_name}: extraction error ({e})')
             return None
 
-    def quick_extract(self, url: str, selector: str, field_type: str = 'text') -> str | list | None:
+    def quick_extract(
+        self, url: str, selector: str, field_type: str = 'text'
+    ) -> str | list[str | dict[str, str]] | None:
         """Quick extraction of a single field from a URL.
 
         Fetches the URL and extracts content using the provided selector.
@@ -155,7 +160,7 @@ class ContentExtractor:
             field_type: Type of field ('text', 'body_text', or 'related_content'). Defaults to 'text'.
 
         Returns:
-            Extracted content, or None if extraction failed.
+            Extracted content (string, list of strings/dicts), or None if extraction failed.
 
         """
         import requests

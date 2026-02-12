@@ -45,7 +45,9 @@ def test_snapshot_health_check(url, meta):
     )
 
     discovery = SelectorDiscovery(agent=agent)
-    result = discovery.discover_from_html(url, html_content)
+    # Updated: use discover_selectors instead of discover_from_html
+    # Note: discover_selectors expects (html, url) not (url, html)
+    result = discovery.discover_selectors(html_content, url)
 
     # Verify discovery output matches snapshot baseline
     assert result == expected_data

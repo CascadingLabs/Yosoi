@@ -701,7 +701,8 @@ class SelectorDiscoveryPipeline:
             output_format: Format for output files ('json' or 'markdown').
 
         """
-        self.storage.save_selectors(url, validated, output_format)
+        # Save selectors (always JSON) and content (user's choice of format)
+        self.storage.save_selectors(url, validated)
 
         if extracted:
             self.storage.save_content(url, extracted, output_format)

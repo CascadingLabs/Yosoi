@@ -1,4 +1,7 @@
-"""Markdown output formatter for extracted content."""
+"""Markdown output formatter for extracted content.
+
+This module only handles content output formatting.
+"""
 
 import os
 from datetime import datetime
@@ -97,7 +100,7 @@ def _get_title(content: dict) -> str:
     for value in content.values():
         if value and isinstance(value, str) and len(value.strip()) > 0:
             # Use first 100 chars if it's long
-            title = value.strip()
+            title: str = value.strip()
             return title[:100] + '...' if len(title) > 100 else title
 
     return 'Untitled'
@@ -163,79 +166,3 @@ def _format_value(value) -> list[str]:
         lines.append(str(value))
 
     return lines
-
-
-def format_selectors_markdown(url: str, domain: str, selectors: dict) -> str:
-    """Format selectors as Markdown.
-
-    Creates markdown output for CSS selectors discovered for a domain.
-
-    Args:
-        url: Source URL where selectors were discovered
-        domain: Domain name
-        selectors: Dictionary of selectors (field -> {primary, fallback, tertiary})
-
-    Returns:
-        Formatted markdown string.
-
-    """
-    lines = []
-
-    # Title
-    lines.append(f'# Selectors for {domain}')
-    lines.append('')
-
-    # Metadata section
-    lines.append('---')
-    lines.append(f'**Domain:** {domain}')
-    lines.append(f'**Source URL:** {url}')
-    lines.append(f'**Discovered:** {datetime.now().isoformat()}')
-    lines.append('---')
-    lines.append('')
-
-    # Selector sections - iterate through all fields
-    for field, selector_data in selectors.items():
-        if not selector_data:
-            continue
-
-        # Format field name as section header
-        field_title = _format_field_name(field)
-        lines.append(f'## {field_title}')
-        lines.append('')
-
-        # Show primary, fallback, tertiary selectors
-        if isinstance(selector_data, dict):
-            for selector_type in ['primary', 'fallback', 'tertiary']:
-                selector_value = selector_data.get(selector_type)
-                if selector_value and selector_value != 'NA':
-                    lines.append(f'- **{selector_type.capitalize()}:** `{selector_value}`')
-        else:
-            # If it's not a dict, just show the value
-            lines.append(f'- `{selector_data}`')
-
-        lines.append('')
-
-    return '\n'.join(lines)
-
-
-def save_selectors_markdown(filepath: str, url: str, domain: str, selectors: dict):
-    """Format and save selectors as Markdown file.
-
-    Handles directory creation and complete Markdown formatting with metadata.
-
-    Args:
-        filepath: Path to save the file
-        url: Source URL where selectors were discovered
-        domain: Domain name
-        selectors: Dictionary of selectors (field -> {primary, fallback, tertiary})
-
-    """
-    # Ensure directory exists
-    os.makedirs(os.path.dirname(filepath), exist_ok=True)
-
-    # Format as markdown
-    markdown_content = format_selectors_markdown(url, domain, selectors)
-
-    # Write to file
-    with open(filepath, 'w', encoding='utf-8') as f:
-        f.write(markdown_content)
