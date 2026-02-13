@@ -3,7 +3,9 @@
 Discover once, scrape forever with BeautifulSoup.
 """
 
+from yosoi.cleaner import HTMLCleaner
 from yosoi.discovery import SelectorDiscovery
+from yosoi.extractor import ContentExtractor
 from yosoi.fetcher import (
     BotDetectionError,
     FetchResult,
@@ -23,13 +25,16 @@ from yosoi.llm_config import (
     groq,
     openai,
 )
+from yosoi.outputs import format_content, save_formatted_content
 from yosoi.storage import SelectorStorage
 from yosoi.tracker import LLMTracker
 from yosoi.utils import init_yosoi
 from yosoi.validator import SelectorValidator
 
 __all__ = [
+    'HTMLCleaner',
     'SelectorDiscovery',
+    'ContentExtractor',
     'SelectorStorage',
     'SelectorValidator',
     'LLMTracker',
@@ -49,4 +54,6 @@ __all__ = [
     'gemini',
     'openai',
     'init_yosoi',
+    'format_content',
+    'save_formatted_content',
 ]

@@ -13,20 +13,25 @@ class SelectorStorage:
 
     Attributes:
         storage_dir: Directory path where selector files are stored
+        content_dir: Directory path where extracted content is stored
 
     """
 
-    def __init__(self, storage_dir: str = 'selectors'):
+    def __init__(self, storage_dir: str = 'selectors', content_dir: str = 'content'):
         """Initialize the storage manager.
 
         Args:
             storage_dir: Directory path for storing selector files. Defaults to 'selectors'.
+            content_dir: Directory path for storing extracted content. Defaults to 'content'.
 
         """
         self.storage_dir = str(init_yosoi(storage_dir))
+        self.content_dir = str(init_yosoi(content_dir))
 
     def save_selectors(self, url: str, selectors: dict) -> str:
         """Save selectors to a JSON file.
+
+        Selectors are always saved as JSON for machine readability and reuse.
 
         Args:
             url: URL the selectors were discovered from
@@ -36,15 +41,16 @@ class SelectorStorage:
             Path to the saved file.
 
         """
-        domain = self._extract_domain(url)
-        filepath = self._get_filepath(domain)
+        from yosoi.outputs.utils import save_formatted_selectors
 
-        # Format selectors in Pydantic structure
+        domain = self._extract_domain(url)
+        filepath = self._get_selector_filepath(domain)
+
+        # Format selectors
         formatted_selectors = self._format_selectors(selectors)
 
-        # Save to file
-        with open(filepath, 'w', encoding='utf-8') as f:
-            json.dump(formatted_selectors, f, indent=2, ensure_ascii=False)
+        # Use output module to format and save (always JSON)
+        save_formatted_selectors(filepath, url, domain, formatted_selectors)
 
         print(f'\n✓ Saved selectors to: {filepath}')
         return filepath
@@ -67,7 +73,9 @@ class SelectorStorage:
         try:
             with open(filepath, encoding='utf-8') as f:
                 data: dict[str, Any] = json.load(f)
-                return data
+                # Return just the selectors portion, not the metadata wrapper
+                selectors: dict[str, Any] = data.get('selectors', data)
+                return selectors
         except Exception as e:
             print(f'Error loading selectors: {e}')
             return None
@@ -83,6 +91,67 @@ class SelectorStorage:
 
         """
         filepath = self._get_filepath(domain)
+        return os.path.exists(filepath)
+
+    def save_content(self, url: str, content: dict, output_format: str = 'json') -> str:
+        """Save extracted content to a file in the specified format.
+
+        Args:
+            url: URL the content was extracted from
+            content: Dictionary of extracted content by field
+            output_format: Output format ('json' or 'markdown'). Defaults to 'json'.
+
+        Returns:
+            Path to the saved file.
+
+        """
+        from yosoi.outputs.utils import save_formatted_content
+
+        domain = self._extract_domain(url)
+        filepath = self._get_content_filepath(url, output_format)
+
+        # Use output module to format and save
+        save_formatted_content(filepath, url, domain, content, output_format)
+
+        print(f'✓ Saved content to: {filepath}')
+        return filepath
+
+    def load_content(self, url: str) -> dict | None:
+        """Load extracted content from a JSON file.
+
+        Args:
+            url: URL to load content for
+
+        Returns:
+            Dictionary of extracted content, or None if not found or error occurred.
+
+        """
+        filepath = self._get_content_filepath(url)
+
+        if not os.path.exists(filepath):
+            return None
+
+        try:
+            with open(filepath, encoding='utf-8') as f:
+                data: dict[str, Any] = json.load(f)
+                # Return just the content portion, not the metadata wrapper
+                content: dict[str, Any] = data.get('content', data)
+                return content
+        except Exception as e:
+            print(f'Error loading content: {e}')
+            return None
+
+    def content_exists(self, url: str) -> bool:
+        """Check if extracted content exists for a URL.
+
+        Args:
+            url: URL to check
+
+        Returns:
+            True if content file exists for the URL, False otherwise.
+
+        """
+        filepath = self._get_content_filepath(url)
         return os.path.exists(filepath)
 
     def list_domains(self) -> list[str]:
@@ -175,7 +244,19 @@ class SelectorStorage:
             return 'unknown'
 
     def _get_filepath(self, domain: str) -> str:
-        """Get filepath for a domain's selectors.
+        """Get filepath for a domain's selectors (always JSON).
+
+        Args:
+            domain: Domain name
+
+        Returns:
+            Full file path for the domain's selector file (JSON).
+
+        """
+        return self._get_selector_filepath(domain)
+
+    def _get_selector_filepath(self, domain: str) -> str:
+        """Get filepath for a domain's selectors (always JSON).
 
         Args:
             domain: Domain name
@@ -187,6 +268,44 @@ class SelectorStorage:
         safe_domain = domain.replace('.', '_').replace('/', '_')
         return os.path.join(self.storage_dir, f'selectors_{safe_domain}.json')
 
+    def _get_content_filepath(self, url: str, output_format: str = 'json') -> str:
+        """Get filepath for a URL's extracted content.
+
+        Creates a safe filename from the full URL including path.
+
+        Args:
+            url: Full URL
+            output_format: Output format ('json' or 'markdown'). Defaults to 'json'.
+
+        Returns:
+            Full file path for the URL's content file.
+
+        """
+        import hashlib
+
+        # Parse URL
+        parsed = urlparse(url)
+        domain = parsed.netloc.replace('www.', '')
+
+        # Create safe domain directory
+        safe_domain = domain.replace('.', '_').replace('/', '_')
+        domain_dir = os.path.join(self.content_dir, safe_domain)
+
+        # Determine file extension
+        extension = 'md' if output_format == 'markdown' else 'json'
+
+        # Create filename from URL path or use hash for homepage
+        if parsed.path and parsed.path != '/':
+            # Use path for filename (sanitized)
+            path_parts = parsed.path.strip('/').replace('/', '_')
+            filename = f'{path_parts[:100]}.{extension}'
+        else:
+            # Homepage - use a hash of the full URL
+            url_hash = hashlib.md5(url.encode()).hexdigest()[:8]
+            filename = f'homepage_{url_hash}.{extension}'
+
+        return os.path.join(domain_dir, filename)
+
     def _load_file_data(self, domain: str) -> dict[str, Any] | None:
         """Load complete file data for a domain.
 
@@ -194,7 +313,8 @@ class SelectorStorage:
             domain: Domain name
 
         Returns:
-            Dictionary with 'selectors' key, or None if not found or error occurred.
+            Dictionary with full JSON structure (url, domain, discovered_at, selectors),
+            or None if not found or error occurred.
 
         """
         filepath = self._get_filepath(domain)
@@ -204,8 +324,8 @@ class SelectorStorage:
 
         try:
             with open(filepath, encoding='utf-8') as f:
-                selectors = json.load(f)
-                return {'selectors': selectors}
+                file_data: dict[str, Any] = json.load(f)
+                return file_data
         except Exception:
             return None
 
