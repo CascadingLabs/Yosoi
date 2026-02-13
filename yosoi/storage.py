@@ -74,7 +74,8 @@ class SelectorStorage:
             with open(filepath, encoding='utf-8') as f:
                 data: dict[str, Any] = json.load(f)
                 # Return just the selectors portion, not the metadata wrapper
-                return data.get('selectors', data)
+                selectors: dict[str, Any] = data.get('selectors', data)
+                return selectors
         except Exception as e:
             print(f'Error loading selectors: {e}')
             return None
@@ -134,7 +135,8 @@ class SelectorStorage:
             with open(filepath, encoding='utf-8') as f:
                 data: dict[str, Any] = json.load(f)
                 # Return just the content portion, not the metadata wrapper
-                return data.get('content', data)
+                content: dict[str, Any] = data.get('content', data)
+                return content
         except Exception as e:
             print(f'Error loading content: {e}')
             return None
@@ -322,8 +324,8 @@ class SelectorStorage:
 
         try:
             with open(filepath, encoding='utf-8') as f:
-                data = json.load(f)
-                return data
+                file_data: dict[str, Any] = json.load(f)
+                return file_data
         except Exception:
             return None
 
