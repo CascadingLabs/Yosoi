@@ -4,14 +4,18 @@ requires = [ "uv-build>=0.1" ]
 
 [project]
 name = "yosoi"
-version = "0.1.0"
-description = "AI-Powered CSS Selector Discovery - Discover once, scrape forever with BeautifulSoup"
+version = "0.0.1a5"
+description = "AI-Powered Selector Discovery - Discover once, scrape forever"
 readme = "README.md"
-requires-python = ">=3.13"
+license = { file = "LICENSE.md" }
+requires-python = ">=3.10"
 classifiers = [
   "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",
   "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
   "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
@@ -74,15 +78,20 @@ source-exclude = [
   "**/__pycache__",
   ".venv/**",
   ".env",
+  ".env.example",
   ".yosoi/**",
   ".logfire/**",
   ".ruff_cache/**",
   ".pytest_cache/**",
   ".mypy_cache/**",
+  "uv.lock",
+  "AGENTS.md",
+  "urls.txt",
+  "CONTRIBUTING.md",
 ]
 
 [tool.ruff]
-target-version = "py313"
+target-version = "py310"
 line-length = 120
 indent-width = 4
 
@@ -128,7 +137,7 @@ markers = [
 ]
 
 [tool.mypy]
-python_version = "3.13"
+python_version = "3.10"
 
 warn_unused_configs = true
 warn_return_any = true
