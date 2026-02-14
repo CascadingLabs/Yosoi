@@ -6,6 +6,7 @@ Centralized retry logic for bot detection and AI failures.
 from urllib.parse import urlparse
 
 import logfire
+import requests
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
@@ -96,6 +97,8 @@ class SelectorDiscoveryPipeline:
         """
         # Use provided format or fall back to pipeline default
         format_to_use = output_format or self.output_format
+
+        url = self.normalize_url(url)
 
         with logfire.span('process_url', url=url, force=force, fetcher_type=fetcher_type):
             domain = self._extract_domain(url)
@@ -208,6 +211,27 @@ class SelectorDiscoveryPipeline:
     # ============================================================================
     # Private helper methods
     # ============================================================================
+
+    def normalize_url(self, url: str) -> str:
+        """Add protocol to URL, preferring https.
+
+        Args:
+            url: The URL that is being fetched
+
+        Returns:
+            The complete URL
+
+        """
+        if not url.startswith(('http://', 'https://')):
+            # Try HTTPS first
+            try:
+                test_url = 'https://' + url
+                requests.head(test_url, timeout=3)
+                return test_url
+            except requests.exceptions.RequestException:
+                # Fall back to HTTP
+                return 'http://' + url
+        return url
 
     def _extract_domain(self, url: str) -> str:
         """Extract domain from URL.
