@@ -26,6 +26,7 @@ from yosoi.llm_config import (
     openai,
 )
 from yosoi.outputs import format_content, save_formatted_content
+from yosoi.retry import get_retryer, log_retry
 from yosoi.storage import SelectorStorage
 from yosoi.tracker import LLMTracker
 from yosoi.utils import init_yosoi
@@ -56,4 +57,6 @@ __all__ = [
     'init_yosoi',
     'format_content',
     'save_formatted_content',
+    'get_retryer',
+    'log_retry',
 ]

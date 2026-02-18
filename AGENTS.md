@@ -9,6 +9,28 @@ Yosoi is an AI-powered tool that discovers resilient selectors for web scraping.
 - **Linting/Formatting**: `ruff`
 - **Testing**: `pytest`
 - **Type Checking**: `mypy`
+- **Retry Logic**: `tenacity` (Mandatory for all flaky/network operations)
+
+## Retry Logic & Durability
+We use `tenacity` to handle retries.
+- **DO NOT** use `time.sleep()` in loops.
+- **DO** use granular `Retrying` context managers or decorators.
+- **DO** use `wait_exponential` to avoid thundering herds.
+
+### Example
+```python
+from tenacity import Retrying, stop_after_attempt, wait_exponential, retry_if_exception_type
+
+# Preferred pattern: Context Manager
+for attempt in Retrying(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, max=10),
+    retry=retry_if_exception_type(NetworkError),
+    reraise=True
+):
+    with attempt:
+        make_network_call()
+```
 
 ## Critical Rules
 1. **Dependency Management**: ALWAYS use `uv add` or `uv sync`. never install with pip.
