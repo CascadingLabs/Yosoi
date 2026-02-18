@@ -127,7 +127,7 @@ class SelectorDiscoveryPipeline:
 
             # Discover selectors with retry logic for AI failures (Step 2)
             # Returns: (selectors, used_llm)
-            selectors, used_llm = self._discover(url, cleaned_html, result, max_retries=max_discovery_retries)
+            selectors, used_llm = self._discover(url, cleaned_html, max_retries=max_discovery_retries)
             if not selectors:
                 return False
 
@@ -373,6 +373,8 @@ class SelectorDiscoveryPipeline:
         except Exception:
             return None
 
+        return None
+
     def _clean(self, url: str, result: FetchResult) -> str | None:
         """Clean HTML by removing noise and extracting main content.
 
@@ -400,9 +402,7 @@ class SelectorDiscoveryPipeline:
         self.console.print(f'[success]Cleaned HTML ready ({len(cleaned_html):,} chars)[/success]')
         return cleaned_html
 
-    def _discover(
-        self, url: str, cleaned_html: str, result: FetchResult, max_retries: int = 3
-    ) -> tuple[dict | None, bool]:
+    def _discover(self, url: str, cleaned_html: str, max_retries: int = 3) -> tuple[dict | None, bool]:
         """Discover CSS selectors with AI, using fallback heuristics if needed.
 
         Attempts AI-powered selector discovery with automatic retries. Falls
@@ -411,7 +411,6 @@ class SelectorDiscoveryPipeline:
         Args:
             url: URL being processed (for logging).
             cleaned_html: Pre-cleaned HTML content to analyze.
-            result: FetchResult containing metadata (for heuristics check).
             max_retries: Maximum AI retry attempts. Defaults to 3.
 
         Returns:
@@ -421,11 +420,6 @@ class SelectorDiscoveryPipeline:
             - used_llm: True if AI was used, False if using fallback heuristics
 
         """
-        should_use_heuristics, reason = self._should_use_heuristics(result)
-
-        if should_use_heuristics:
-            self.console.print(f'[step]Step 2: Using heuristic selectors ({reason})[/step]')
-            return self.discovery.fallback_selectors, False
 
         # Use AI discovery with retries
         def before_ai_sleep_log(retry_state):
@@ -712,32 +706,6 @@ class SelectorDiscoveryPipeline:
         if attempt >= max_retries:
             self.console.print('[danger]ABORTING - All fetch attempts exhausted[/danger]')
             self.console.print('[info]Try: --fetcher smart (or) --fetcher playwright[/info]')
-
-    def _should_use_heuristics(self, result: FetchResult) -> tuple[bool, str]:
-        """Determine if heuristics should be used instead of AI.
-
-        Checks if content type or structure makes AI discovery ineffective,
-        such as RSS feeds or heavily JavaScript-rendered pages.
-
-        Args:
-            result: The result after the fetch
-
-        Returns:
-            Tuple of (selectors, used_llm) where:
-                - selectors: Dict of discovered selectors, or None if discovery failed
-                - used_llm: bool indicating if LLM was called (False for heuristics)
-
-        """
-        if result.is_rss:
-            self.console.print('[info]RSS feed detected - using heuristics[/info]')
-            return True, 'RSS feed'
-
-        if result.requires_js:
-            framework = result.metadata.js_framework or 'unknown'
-            self.console.print(f'[info]JavaScript-heavy site ({framework}) - using heuristics[/info]')
-            return True, f'JS-heavy ({framework})'
-
-        return False, ''
 
     def _save_and_track(
         self, url: str, domain: str, validated: dict, extracted: dict | None, used_llm: bool, output_format: str
