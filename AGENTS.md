@@ -47,7 +47,14 @@ for attempt in Retrying(
 - `yosoi/`: The core python package.
 - `tests/`: Integration and unit tests.
 - `examples/`: Usage examples.
-- `.yosoi/`: Local storage for selectors (gitignored).
+- `.yosoi/`: Local storage for selectors, debug HTML, and logs (gitignored).
+    - `logs/`: Contains run logs in `run_YYYYMMDD_HHMMSS.log` format.
+    - `debug_html/`: Extracted HTML for debugging.
+
+## Logging & Observability
+- **Local Logs**: Every run generates a log file in `.yosoi/logs/`. These logs contain detailed debug information and full tracebacks.
+- **Logfire**: Used for cloud-based observability if `LOGFIRE_TOKEN` is set.
+- **Console**: Keeping it minimal and stylish for human eyes.
 
 ## Interaction Guidelines
 When working on this repo, generic python solutions often fail. Always check `pyproject.toml` for available scripts and configuration.

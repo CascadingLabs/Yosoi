@@ -1,5 +1,6 @@
 """Interface for fetching HTML from URLs with bot detection avoidance."""
 
+import logging
 import random
 import re
 import time
@@ -503,6 +504,7 @@ class SimpleFetcher(HTMLFetcher):
 
         # Track last request time for delays
         self.last_request_time = 0.0
+        self.logger = logging.getLogger(__name__)
 
     def _apply_request_delay(self):
         """Apply a random delay between requests to appear more human."""

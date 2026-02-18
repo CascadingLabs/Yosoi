@@ -3,6 +3,7 @@
 Centralized retry logic for bot detection and AI failures.
 """
 
+import logging
 from urllib.parse import urlparse
 
 import logfire
@@ -40,6 +41,7 @@ class SelectorDiscoveryPipeline:
         storage: Store the found selectors as a JSON file
         tracker: Used to track how much an LLM is used in comparison to amount of urls used
         debug_mode: If enabled will output the HTML from the URL
+        logger: Logger instance for detailed run tracking
 
     """
 
@@ -70,6 +72,7 @@ class SelectorDiscoveryPipeline:
         self.tracker = LLMTracker()
         self.debug_mode = debug_mode
         self.output_format = output_format
+        self.logger = logging.getLogger(__name__)
 
     def process_url(
         self,
@@ -103,6 +106,7 @@ class SelectorDiscoveryPipeline:
         url = self.normalize_url(url)
 
         with logfire.span('process_url', url=url, force=force, fetcher_type=fetcher_type):
+            self.logger.info(f'Processing URL: {url} (force={force}, fetcher={fetcher_type})')
             domain = self._extract_domain(url)
             fetcher = self._create_fetcher(fetcher_type)
             if not fetcher:
@@ -182,6 +186,7 @@ class SelectorDiscoveryPipeline:
         with logfire.span('process_urls', total_urls=len(urls)):
             for idx, url in enumerate(urls, 1):
                 self.console.print(f'\n[bold blue]Processing URL {idx}/{len(urls)}[/bold blue]')
+                self.logger.info(f'--- Processing URL {idx}/{len(urls)}: {url} ---')
 
                 try:
                     success = self.process_url(
@@ -196,6 +201,7 @@ class SelectorDiscoveryPipeline:
                     results['successful' if success else 'failed'].append(url)
                 except Exception as e:
                     logfire.error('Error processing URL', url=url, error=str(e))
+                    self.logger.exception(f'Critical error processing {url}')
                     self.console.print(f'[danger]Error processing {url}: {e}[/danger]')
                     results['failed'].append(url)
 
@@ -362,6 +368,7 @@ class SelectorDiscoveryPipeline:
                             f'Fetch failed: {getattr(result, "block_reason", "Unknown")}',
                         ]:
                             self.console.print(f'[danger]Unexpected error: {e}[/danger]')
+                            self.logger.exception(f'Fetch error for {url}')
                             logfire.error(
                                 'Fetch error', url=url, error=str(e), attempt=attempt.retry_state.attempt_number
                             )
@@ -456,6 +463,7 @@ class SelectorDiscoveryPipeline:
                         return selectors, True
 
                     self.console.print('[danger]AI discovery failed[/danger]')
+                    self.logger.warning(f'AI discovery failed for {url}')
                     raise Exception('AI discovery failed')
 
         except RetryError:
@@ -628,6 +636,7 @@ class SelectorDiscoveryPipeline:
         except BotDetectionError:
             raise
         except Exception as e:
+            self.logger.exception(f'Cached selector validation failed for {url}')
             self.console.print(f'[warning]⚠ Validation error: {e}, skipping extraction[/warning]')
             self._track_cached_success(url, domain)
             return True
