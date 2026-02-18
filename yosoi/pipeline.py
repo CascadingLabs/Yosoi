@@ -470,9 +470,10 @@ class SelectorDiscoveryPipeline:
             pass
 
         # All attempts failed - use fallback
-        self.console.print(f'[warning]All {max_retries} AI attempts failed, using fallback heuristics[/warning]')
-        logfire.error('All AI attempts failed, using fallback', url=url)
-        return self.discovery.fallback_selectors, False
+        # All attempts failed
+        self.console.print(f'[danger]All {max_retries} AI attempts failed[/danger]')
+        logfire.error('All AI attempts failed', url=url)
+        return None, False
 
     def _validate(self, url: str, html: str, selectors: dict, skip_validation: bool) -> dict | None:
         """Validate discovered selectors against HTML.

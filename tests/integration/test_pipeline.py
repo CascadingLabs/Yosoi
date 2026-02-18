@@ -58,7 +58,7 @@ def test_pipeline_ai_failure(mocker, mock_llm_config, happy_path_html):
     # 2. Mock Fetcher
     mock_fetcher = mocker.Mock()
     mock_fetcher.fetch.return_value = FetchResult(
-        url='http://example.com',
+        url='http://ai-failure.com',
         html=happy_path_html,
         status_code=200,
         metadata=ContentMetadata(content_length=len(happy_path_html)),
@@ -69,11 +69,10 @@ def test_pipeline_ai_failure(mocker, mock_llm_config, happy_path_html):
     pipeline = SelectorDiscoveryPipeline(mock_llm_config)
 
     # ACT
-    # Should fallback to heuristics if AI fails
-    success = pipeline.process_url('http://example.com', force=True, max_discovery_retries=1)
+    # Should fail if AI fails (Fail Fast)
+    success = pipeline.process_url('http://ai-failure.com', force=True, max_discovery_retries=1)
 
     # ASSERT
-    assert success is True  # Success because of fallback heuristics
-    saved = pipeline.storage.load_selectors('example.com')
-    assert saved is not None
-    assert saved['headline']['primary'] == 'h1'  # Default heuristic
+    assert success is False
+    saved = pipeline.storage.load_selectors('ai-failure.com')
+    assert saved is None

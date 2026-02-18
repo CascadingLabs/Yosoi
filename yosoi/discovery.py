@@ -24,7 +24,6 @@ class SelectorDiscovery:
     """
 
     console: Console
-    fallback_selectors: dict[str, Any]
     agent: Agent[Any, ScrapingConfig]
     model_name: str
     provider: str
@@ -47,7 +46,6 @@ class SelectorDiscovery:
 
         """
         self.console = console or Console()
-        self.fallback_selectors = self._get_fallback_selectors()
 
         # System prompt for the agent
         system_prompt = (
@@ -167,18 +165,3 @@ Return ONLY the JSON object, nothing else."""
 
         """
         return all(all(v == 'NA' for v in field_sel.values()) for field_sel in selectors.values())
-
-    def _get_fallback_selectors(self) -> dict:
-        """Return generic heuristic selectors when AI fails.
-
-        Returns:
-            A dict of the average selectors of the data
-
-        """
-        return {
-            'headline': {'primary': 'h1', 'fallback': 'h2', 'tertiary': 'h3'},
-            'author': {'primary': "a[href*='author']", 'fallback': '.author', 'tertiary': '.byline'},
-            'date': {'primary': 'time', 'fallback': '.published', 'tertiary': '.date'},
-            'body_text': {'primary': 'article p', 'fallback': '.content p', 'tertiary': 'p'},
-            'related_content': {'primary': 'aside a', 'fallback': '.related a', 'tertiary': '.sidebar a'},
-        }

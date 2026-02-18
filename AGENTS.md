@@ -3,6 +3,8 @@
 ## Context & Philosophy
 Yosoi is an AI-powered tool that discovers resilient selectors for web scraping. The core philosophy is "Discover once, scrape forever." We use LLMs to analyze HTML structure and find selectors that are robust to layout changes, then validate them to ensure accuracy.
 
+**Fail Fast**: We do not use fallback heuristics. If AI discovery fails, we fail the process. This ensures we don't return garbage data from unreliable selectors.
+
 ## Technology Stack & Standards
 - **Language**: Python 3.10+
 - **Package Manager**: `uv` (Strict requirement. DO NOT use pip/poetry directly).
