@@ -8,23 +8,7 @@ from dataclasses import dataclass, field
 
 import requests
 
-
-class BotDetectionError(Exception):
-    """Raised when bot detection is triggered."""
-
-    def __init__(self, url: str, status_code: int, indicators: list[str]):
-        """Initialize bot detection error.
-
-        Args:
-            url: URL where bot detection was triggered
-            status_code: HTTP status code received
-            indicators: List of bot detection indicators found
-
-        """
-        self.url = url
-        self.status_code = status_code
-        self.indicators = indicators
-        super().__init__(f'Bot detection triggered on {url} (status={status_code}): {", ".join(indicators)}')
+from yosoi.exceptions import BotDetectionError
 
 
 @dataclass

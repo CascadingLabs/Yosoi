@@ -6,6 +6,7 @@ import logfire
 from pydantic_ai import Agent
 from rich.console import Console
 
+from yosoi.exceptions import LLMGenerationError
 from yosoi.llm_config import LLMConfig, create_model
 from yosoi.models import ScrapingConfig
 
@@ -84,15 +85,20 @@ class SelectorDiscovery:
         url_context = url or 'the provided page'
         logfire.info('Starting discovery', url=url_context)
 
-        # Ask AI to find selectors - returns as ScrapingConfig object
-        selectors_obj = self._get_selectors_from_ai(url_context, html)
+        try:
+            # Ask AI to find selectors - returns as ScrapingConfig object
+            selectors_obj = self._get_selectors_from_ai(url_context, html)
 
-        if selectors_obj:
-            selectors: dict[str, Any] = selectors_obj.model_dump()
+            if selectors_obj:
+                selectors: dict[str, Any] = selectors_obj.model_dump()
 
-            if selectors and not self._is_all_na(selectors):
-                logfire.info('Selectors found successfully', selectors=selectors)
-                return selectors
+                if selectors and not self._is_all_na(selectors):
+                    logfire.info('Selectors found successfully', selectors=selectors)
+                    return selectors
+
+        except LLMGenerationError as e:
+            logfire.warn('Discovery failed - AI error', error=str(e), url=url_context)
+            return None
 
         logfire.warn('Discovery failed - AI returned no/invalid selectors', url=url_context)
         return None
@@ -148,7 +154,7 @@ Return ONLY the JSON object, nothing else."""
                 self.console.print(f'[danger]  ✗ Error getting selectors from AI: {e}[/danger]')
 
             logfire.error('AI request failed', error=error_msg, provider=self.provider)
-            return None
+            raise LLMGenerationError(f'AI discovery failed: {error_msg}') from e
 
     def _is_all_na(self, selectors: dict) -> bool:
         """Check if AI returned all NA (gave up).

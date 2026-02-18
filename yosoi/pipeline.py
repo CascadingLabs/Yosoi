@@ -421,7 +421,6 @@ class SelectorDiscoveryPipeline:
             - used_llm: True if AI was used, False if using fallback heuristics
 
         """
-        # Check if we should use heuristics instead of AI
         should_use_heuristics, reason = self._should_use_heuristics(result)
 
         if should_use_heuristics:

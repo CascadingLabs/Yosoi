@@ -39,6 +39,7 @@ for attempt in Retrying(
    - Example: `uv run pytest`
 3. **Code Style**: Run `uv run ruff check .` and `uv run ruff format .` before finishing a task.
 4. **Type Safety**: Maintain strong typing. Use `mypy` to verify.
+5. **Retry Logic**: Use `tenacity` for all retry patterns. Never implement custom retry loops with `for` or `while`.
 
 ## Repository Structure
 - `yosoi/`: The core python package.
