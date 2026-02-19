@@ -11,6 +11,7 @@ This directory (`yosoi/`) contains the core application logic. It is structured 
 - **`validator.py`**: Verifies that discovered selectors actually work on the provided HTML.
 - **`extractor.py`**: Uses validated selectors to pull content.
 - **`storage.py`**: Manages JSON persistence of selectors.
+- **`exceptions.py`**: Custom exceptions for the Yosoi package.
 - **`cli.py`**: Entry point for terminal interaction.
 
 ## Development Guidelines

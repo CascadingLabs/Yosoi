@@ -32,6 +32,7 @@ dependencies = [
   "python-dotenv>=1.2.1",
   "requests>=2.31",
   "rich>=14.2",
+  "tenacity>=9.1.4",
 ]
 
 scripts.yosoi = "yosoi.cli:main"
@@ -118,6 +119,9 @@ lint.select = [
 lint.ignore = [
   "ARG001", # unused args are common in dynamic APIs
   "B008",   # allow function calls in defaults when intentional
+  "D203",   # conflicts with D211 and the ruff formatter
+  "D211",
+  "D213",
   "E402",   # module level import not at top of file
   "E501",   # formatter handles line length
   "RET504", # allow implicit return None
