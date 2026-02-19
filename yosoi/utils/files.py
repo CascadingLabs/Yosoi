@@ -38,6 +38,12 @@ def get_debug_html_path() -> Path:
     return root / '.yosoi' / 'debug_html'
 
 
+def get_logs_path() -> Path:
+    """Return the path to the logs directory in .yosoi."""
+    root = get_project_root()
+    return root / '.yosoi' / 'logs'
+
+
 def is_initialized() -> bool:
     """Check if the .yosoi directory exists in the project root."""
     root = get_project_root()
@@ -51,10 +57,12 @@ def init_yosoi(storage_name: str = 'selectors') -> Path:
     yosoi_dir = root / '.yosoi'
     storage_dir = yosoi_dir / storage_name
     debug_dir = yosoi_dir / 'debug_html'
+    logs_dir = yosoi_dir / 'logs'
 
     # Create directory structure
     storage_dir.mkdir(parents=True, exist_ok=True)
     debug_dir.mkdir(parents=True, exist_ok=True)
+    logs_dir.mkdir(parents=True, exist_ok=True)
 
     # Initialize tracking file if it doesn't exist
     tracking_file = yosoi_dir / 'llm_tracking.json'

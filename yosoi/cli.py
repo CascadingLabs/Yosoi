@@ -14,6 +14,7 @@ from dotenv import load_dotenv
 from yosoi import gemini, groq
 from yosoi.pipeline import SelectorDiscoveryPipeline
 from yosoi.utils.files import init_yosoi, is_initialized
+from yosoi.utils.logging import setup_local_logging
 
 
 def setup_llm_config():
@@ -135,6 +136,13 @@ Examples:
         default='simple',
         help='HTML fetcher to use (default: simple)',
     )
+    parser.add_argument(
+        '-L',
+        '--log-level',
+        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'ALL'],
+        default=os.getenv('YOSOI_LOG_LEVEL', 'DEBUG'),
+        help='Logging level for the local log file (default: DEBUG or YOSOI_LOG_LEVEL env)',
+    )
 
     return parser.parse_args()
 
@@ -171,6 +179,9 @@ def main():
     # Set up LLM configuration
     llm_config = setup_llm_config()
 
+    # Initialize logging
+    log_file = setup_local_logging(level=args.log_level)
+
     # Normalize output format
     output_format = 'markdown' if args.output in ['markdown', 'md'] else 'json'
 
@@ -179,6 +190,11 @@ def main():
 
     # Set up Logfire
     setup_logfire()
+
+    from rich import print as rprint
+
+    # Show log file link
+    rprint(f'ℹ Log file: [link=file://{log_file}]file://{log_file}[/link]')
 
     # Handle summary request (quick exit)
     if args.summary:

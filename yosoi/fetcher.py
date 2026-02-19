@@ -1,5 +1,6 @@
 """Interface for fetching HTML from URLs with bot detection avoidance."""
 
+import logging
 import random
 import re
 import time
@@ -8,23 +9,7 @@ from dataclasses import dataclass, field
 
 import requests
 
-
-class BotDetectionError(Exception):
-    """Raised when bot detection is triggered."""
-
-    def __init__(self, url: str, status_code: int, indicators: list[str]):
-        """Initialize bot detection error.
-
-        Args:
-            url: URL where bot detection was triggered
-            status_code: HTTP status code received
-            indicators: List of bot detection indicators found
-
-        """
-        self.url = url
-        self.status_code = status_code
-        self.indicators = indicators
-        super().__init__(f'Bot detection triggered on {url} (status={status_code}): {", ".join(indicators)}')
+from yosoi.exceptions import BotDetectionError
 
 
 @dataclass
@@ -519,6 +504,7 @@ class SimpleFetcher(HTMLFetcher):
 
         # Track last request time for delays
         self.last_request_time = 0.0
+        self.logger = logging.getLogger(__name__)
 
     def _apply_request_delay(self):
         """Apply a random delay between requests to appear more human."""
