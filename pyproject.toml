@@ -35,6 +35,10 @@ dependencies = [
 ]
 
 scripts.yosoi = "yosoi.cli:main"
+Homepage = "https://https://cascadinglabs.com/yosoi/"
+Repository = "https://github.com/CascadingLabs/Yosoi"
+Issues = "https://github.com/CascadingLabs/Yosoi/issues"
+Changelog = "https://github.com/CascadingLabs/Yosoi/blob/main/CHANGELOG.md"
 
 [dependency-groups]
 dev = [
