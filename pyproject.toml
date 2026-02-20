@@ -4,7 +4,7 @@ requires = [ "uv-build>=0.1" ]
 
 [project]
 name = "yosoi"
-version = "0.0.1a6"
+version = "0.0.1a7"
 description = "AI-Powered Selector Discovery - Discover once, scrape forever"
 readme = "README.md"
 license = { file = "LICENSE.md" }
@@ -36,6 +36,10 @@ dependencies = [
 ]
 
 scripts.yosoi = "yosoi.cli:main"
+Homepage = "https://https://cascadinglabs.com/yosoi/"
+Repository = "https://github.com/CascadingLabs/Yosoi"
+Issues = "https://github.com/CascadingLabs/Yosoi/issues"
+Changelog = "https://github.com/CascadingLabs/Yosoi/blob/main/CHANGELOG.md"
 
 [dependency-groups]
 dev = [
