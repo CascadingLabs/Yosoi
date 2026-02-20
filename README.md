@@ -347,11 +347,21 @@ uv sync
 - **Dynamic selectors**: Sites that change class names frequently
 - **Rate limits**: Some sites may block or rate-limit requests
 
-## Acknowledgments
+## Citation
 
-Built with:
-- [Pydantic AI](https://ai.pydantic.dev/) - AI framework
-- [Beautiful Soup](https://www.crummy.com/software/BeautifulSoup/) - HTML parsing
-- [Logfire](https://logfire.pydantic.dev/) - Observability
-- [Rich](https://rich.readthedocs.io/) - Terminal UI
-- [Ruff](https://github.com/astral-sh/ruff) - Linting & formatting
+If you use **yosoi** in your research or project, please cite it using the metadata provided in the `CITATION.cff` file.
+
+### BibTeX
+If you are using LaTeX, you can use the following entry:
+
+```bibtex
+@software{Berg_yosoi_2026,
+author = {Berg, Andrew and Miles, Houston and Mefford, Braeden and Wang, Mia},
+license = {Apache-2.0},
+month = feb,
+title = {{yosoi}},
+url = {https://github.com/CascadingLabs/Yosoi},
+version = {0.0.1-alpha6},
+year = {2026}
+}
+```

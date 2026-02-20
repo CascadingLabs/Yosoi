@@ -3,6 +3,7 @@
 Centralized retry logic for bot detection and AI failures.
 """
 
+import logging
 from urllib.parse import urlparse
 
 import logfire
@@ -11,11 +12,13 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 from rich.theme import Theme
+from tenacity import RetryError
 
 from yosoi import LLMConfig, SelectorDiscovery
 from yosoi.cleaner import HTMLCleaner
 from yosoi.extractor import ContentExtractor
 from yosoi.fetcher import BotDetectionError, FetchResult, HTMLFetcher, create_fetcher
+from yosoi.retry import get_retryer
 from yosoi.storage import SelectorStorage
 from yosoi.tracker import LLMTracker
 from yosoi.validator import SelectorValidator
@@ -38,6 +41,7 @@ class SelectorDiscoveryPipeline:
         storage: Store the found selectors as a JSON file
         tracker: Used to track how much an LLM is used in comparison to amount of urls used
         debug_mode: If enabled will output the HTML from the URL
+        logger: Logger instance for detailed run tracking
 
     """
 
@@ -68,6 +72,7 @@ class SelectorDiscoveryPipeline:
         self.tracker = LLMTracker()
         self.debug_mode = debug_mode
         self.output_format = output_format
+        self.logger = logging.getLogger(__name__)
 
     def process_url(
         self,
@@ -101,6 +106,7 @@ class SelectorDiscoveryPipeline:
         url = self.normalize_url(url)
 
         with logfire.span('process_url', url=url, force=force, fetcher_type=fetcher_type):
+            self.logger.info(f'Processing URL: {url} (force={force}, fetcher={fetcher_type})')
             domain = self._extract_domain(url)
             fetcher = self._create_fetcher(fetcher_type)
             if not fetcher:
@@ -125,7 +131,7 @@ class SelectorDiscoveryPipeline:
 
             # Discover selectors with retry logic for AI failures (Step 2)
             # Returns: (selectors, used_llm)
-            selectors, used_llm = self._discover(url, cleaned_html, result, max_retries=max_discovery_retries)
+            selectors, used_llm = self._discover(url, cleaned_html, max_retries=max_discovery_retries)
             if not selectors:
                 return False
 
@@ -180,6 +186,7 @@ class SelectorDiscoveryPipeline:
         with logfire.span('process_urls', total_urls=len(urls)):
             for idx, url in enumerate(urls, 1):
                 self.console.print(f'\n[bold blue]Processing URL {idx}/{len(urls)}[/bold blue]')
+                self.logger.info(f'--- Processing URL {idx}/{len(urls)}: {url} ---')
 
                 try:
                     success = self.process_url(
@@ -194,6 +201,7 @@ class SelectorDiscoveryPipeline:
                     results['successful' if success else 'failed'].append(url)
                 except Exception as e:
                     logfire.error('Error processing URL', url=url, error=str(e))
+                    self.logger.exception(f'Critical error processing {url}')
                     self.console.print(f'[danger]Error processing {url}: {e}[/danger]')
                     results['failed'].append(url)
 
@@ -313,50 +321,64 @@ class SelectorDiscoveryPipeline:
         self.console.print(Panel(f'Processing: {url}', style='bold blue'))
         self.console.print('[step]Step 1: Fetching HTML...[/step]')
 
-        for attempt in range(1, max_retries + 1):
-            try:
-                if attempt > 1:
-                    self.console.print(f'[warning]Fetch retry attempt {attempt}/{max_retries}...[/warning]')
-                    logfire.warn('Retrying fetch', url=url, attempt=attempt)
+        def before_sleep_log(retry_state):
+            attempt = retry_state.attempt_number
+            if attempt >= 1:
+                self.console.print(f'[warning]Fetch retry attempt {attempt}/{max_retries}...[/warning]')
+                logfire.warn('Retrying fetch', url=url, attempt=attempt)
 
-                result = fetcher.fetch(url)
+        try:
+            retryer = get_retryer(
+                max_attempts=max_retries,
+                wait_min=1,
+                wait_max=10,
+                exceptions=(BotDetectionError, Exception),
+                log_callback=before_sleep_log,
+            )
 
-                if not result.success:
-                    self.console.print(f'[danger]Fetch failed: {result.block_reason or "Unknown error"}[/danger]')
+            for attempt in retryer:
+                with attempt:
+                    try:
+                        result = fetcher.fetch(url)
 
-                    # If not the last attempt, continue to retry
-                    if attempt < max_retries:
-                        continue
-                    return None
+                        if not result.success:
+                            self.console.print(
+                                f'[danger]Fetch failed: {result.block_reason or "Unknown error"}[/danger]'
+                            )
+                            # Raise exception to trigger retry
+                            raise Exception(f'Fetch failed: {result.block_reason}')
 
-                if result.html is None:
-                    self.console.print('[danger]No HTML content received[/danger]')
-                    if attempt < max_retries:
-                        continue
-                    return None
+                        if result.html is None:
+                            self.console.print('[danger]No HTML content received[/danger]')
+                            raise Exception('No HTML content received')
 
-                self.console.print(
-                    f'[success]Fetched {len(result.html):,} characters of HTML ({result.fetch_time:.2f}s)[/success]'
-                )
-                return result
+                        self.console.print(
+                            f'[success]Fetched {len(result.html):,} characters of HTML ({result.fetch_time:.2f}s)[/success]'
+                        )
+                        return result
 
-            except BotDetectionError as e:
-                self._handle_bot_detection(e, attempt, max_retries)
+                    except BotDetectionError as e:
+                        self._handle_bot_detection(e, attempt.retry_state.attempt_number, max_retries)
+                        raise
 
-                # If not the last attempt, continue to retry
-                if attempt < max_retries:
-                    continue
+                    except Exception as e:
+                        # Don't re-log if we just raised it ourselves above
+                        if str(e) not in [
+                            'No HTML content received',
+                            f'Fetch failed: {getattr(result, "block_reason", "Unknown")}',
+                        ]:
+                            self.console.print(f'[danger]Unexpected error: {e}[/danger]')
+                            self.logger.exception(f'Fetch error for {url}')
+                            logfire.error(
+                                'Fetch error', url=url, error=str(e), attempt=attempt.retry_state.attempt_number
+                            )
+                        raise
 
-                # Last attempt also failed
-                raise
-
-            except Exception as e:
-                self.console.print(f'[danger]Unexpected error: {e}[/danger]')
-                logfire.error('Fetch error', url=url, error=str(e), attempt=attempt)
-
-                if attempt < max_retries:
-                    continue
-                return None
+        except RetryError:
+            self.console.print(f'[danger]All {max_retries} attempts failed[/danger]')
+            return None
+        except Exception:
+            return None
 
         return None
 
@@ -387,9 +409,7 @@ class SelectorDiscoveryPipeline:
         self.console.print(f'[success]Cleaned HTML ready ({len(cleaned_html):,} chars)[/success]')
         return cleaned_html
 
-    def _discover(
-        self, url: str, cleaned_html: str, result: FetchResult, max_retries: int = 3
-    ) -> tuple[dict | None, bool]:
+    def _discover(self, url: str, cleaned_html: str, max_retries: int = 3) -> tuple[dict | None, bool]:
         """Discover CSS selectors with AI, using fallback heuristics if needed.
 
         Attempts AI-powered selector discovery with automatic retries. Falls
@@ -398,7 +418,6 @@ class SelectorDiscoveryPipeline:
         Args:
             url: URL being processed (for logging).
             cleaned_html: Pre-cleaned HTML content to analyze.
-            result: FetchResult containing metadata (for heuristics check).
             max_retries: Maximum AI retry attempts. Defaults to 3.
 
         Returns:
@@ -408,41 +427,55 @@ class SelectorDiscoveryPipeline:
             - used_llm: True if AI was used, False if using fallback heuristics
 
         """
-        # Check if we should use heuristics instead of AI
-        should_use_heuristics, reason = self._should_use_heuristics(result)
-
-        if should_use_heuristics:
-            self.console.print(f'[step]Step 2: Using heuristic selectors ({reason})[/step]')
-            return self.discovery.fallback_selectors, False
 
         # Use AI discovery with retries
-        for attempt in range(1, max_retries + 1):
-            if attempt > 1:
+        def before_ai_sleep_log(retry_state):
+            attempt = retry_state.attempt_number
+            if attempt >= 1:
                 self.console.print(f'[warning]AI retry attempt {attempt}/{max_retries}...[/warning]')
                 logfire.warn('Retrying AI discovery', url=url, attempt=attempt)
 
-            self.console.print(f'[step]Step 2: AI analyzing HTML (attempt {attempt}/{max_retries})...[/step]')
+        # Use AI discovery with retries
+        try:
+            retryer = get_retryer(
+                max_attempts=max_retries,
+                wait_min=1,
+                wait_max=10,
+                exceptions=(Exception,),
+                log_callback=before_ai_sleep_log,
+            )
 
-            # discover_selectors takes cleaned HTML and returns just selectors
-            selectors = self.discovery.discover_selectors(cleaned_html, url)
+            for attempt in retryer:
+                with attempt:
+                    self.console.print(
+                        f'[step]Step 2: AI analyzing HTML (attempt {attempt.retry_state.attempt_number}/{max_retries})...[/step]'
+                    )
 
-            if selectors:
-                self.console.print(f'[success]Discovered selectors for {len(selectors)} fields[/success]')
-                if attempt > 1:
-                    self.console.print(f'[success]AI retry successful on attempt {attempt}[/success]')
-                return selectors, True
+                    # discover_selectors takes cleaned HTML and returns just selectors
+                    selectors = self.discovery.discover_selectors(cleaned_html, url)
 
-            self.console.print('[danger]AI discovery failed[/danger]')
+                    if selectors:
+                        self.console.print(f'[success]Discovered selectors for {len(selectors)} fields[/success]')
+                        if attempt.retry_state.attempt_number > 1:
+                            self.console.print(
+                                f'[success]AI retry successful on attempt {attempt.retry_state.attempt_number}[/success]'
+                            )
+                        return selectors, True
 
-            # If not last attempt, continue
-            if attempt < max_retries:
-                self.console.print('[warning]Retrying AI discovery...[/warning]')
-                continue
+                    self.console.print('[danger]AI discovery failed[/danger]')
+                    self.logger.warning(f'AI discovery failed for {url}')
+                    raise Exception('AI discovery failed')
+
+        except RetryError:
+            pass
+        except Exception:
+            pass
 
         # All attempts failed - use fallback
-        self.console.print(f'[warning]All {max_retries} AI attempts failed, using fallback heuristics[/warning]')
-        logfire.error('All AI attempts failed, using fallback', url=url)
-        return self.discovery.fallback_selectors, False
+        # All attempts failed
+        self.console.print(f'[danger]All {max_retries} AI attempts failed[/danger]')
+        logfire.error('All AI attempts failed', url=url)
+        return None, False
 
     def _validate(self, url: str, html: str, selectors: dict, skip_validation: bool) -> dict | None:
         """Validate discovered selectors against HTML.
@@ -603,6 +636,7 @@ class SelectorDiscoveryPipeline:
         except BotDetectionError:
             raise
         except Exception as e:
+            self.logger.exception(f'Cached selector validation failed for {url}')
             self.console.print(f'[warning]⚠ Validation error: {e}, skipping extraction[/warning]')
             self._track_cached_success(url, domain)
             return True
@@ -682,32 +716,6 @@ class SelectorDiscoveryPipeline:
             self.console.print('[danger]ABORTING - All fetch attempts exhausted[/danger]')
             self.console.print('[info]Try: --fetcher smart (or) --fetcher playwright[/info]')
 
-    def _should_use_heuristics(self, result: FetchResult) -> tuple[bool, str]:
-        """Determine if heuristics should be used instead of AI.
-
-        Checks if content type or structure makes AI discovery ineffective,
-        such as RSS feeds or heavily JavaScript-rendered pages.
-
-        Args:
-            result: The result after the fetch
-
-        Returns:
-            Tuple of (selectors, used_llm) where:
-                - selectors: Dict of discovered selectors, or None if discovery failed
-                - used_llm: bool indicating if LLM was called (False for heuristics)
-
-        """
-        if result.is_rss:
-            self.console.print('[info]RSS feed detected - using heuristics[/info]')
-            return True, 'RSS feed'
-
-        if result.requires_js:
-            framework = result.metadata.js_framework or 'unknown'
-            self.console.print(f'[info]JavaScript-heavy site ({framework}) - using heuristics[/info]')
-            return True, f'JS-heavy ({framework})'
-
-        return False, ''
-
     def _save_and_track(
         self, url: str, domain: str, validated: dict, extracted: dict | None, used_llm: bool, output_format: str
     ):
@@ -769,12 +777,9 @@ class SelectorDiscoveryPipeline:
         table.add_column('Fields', style='green')
 
         for domain in domains:
-            try:
-                selectors = self.storage.load_selectors(domain)
-                if selectors:
-                    table.add_row(domain, str(len(selectors)))
-            except Exception:
-                continue
+            selectors = self.storage.load_selectors(domain)
+            if selectors:
+                table.add_row(domain, str(len(selectors)))
 
         self.console.print(table)
         self.console.print(f'\n[success]Total domains: {len(domains)}[/success]')

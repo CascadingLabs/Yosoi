@@ -1,0 +1,27 @@
+cff-version: 1.2.0
+message: "If you use this software in an academic publication, please cite it as below."
+type: "software"
+authors:
+  - family-names: "Berg"
+    given-names: "Andrew"
+    orcid: "https://orcid.org/0009-0000-1148-7174"
+    affiliation: "College of Charleston, Cascading Labs"
+  - family-names: "Miles"
+    given-names: "Houston"
+    orcid: "https://orcid.org/0000-0000-0000-0000"
+    affiliation: "College of Charleston, Cascading Labs"
+  - family-names: "Mefford"
+    given-names: "Braeden"
+    affiliation: "College of Charleston, Cascading Labs"
+  - family-names: "Wang"
+    given-names: "Mia"
+    orcid: "https://orcid.org/0000-0003-2954-0855"
+    affiliation: "College of Charleston, Cascading Labs"
+title: "yosoi"
+version: 0.0.1-alpha6
+date-released: 2026-02-18
+url: "https://github.com/CascadingLabs/Yosoi"
+keywords:
+  - "web scraping"
+  - "Agentic AI"
+license: "Apache-2.0"

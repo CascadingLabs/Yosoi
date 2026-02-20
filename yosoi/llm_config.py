@@ -13,6 +13,9 @@ from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.google import GoogleProvider
 from pydantic_ai.providers.groq import GroqProvider
 from pydantic_ai.providers.openai import OpenAIProvider
+from tenacity import RetryError
+
+from yosoi.retry import get_retryer
 
 # ============================================================================
 # 1. CONFIG DATACLASSES - Simple configuration objects
@@ -462,24 +465,37 @@ class MultiModelAgent:
             RuntimeError: If all models fail to process the prompt.
 
         """
+        last_error = None
+
         for i, agent in enumerate(self.agents):
             config = self.configs[i]
-            for attempt in range(max_retries):
-                try:
-                    result = agent.run_sync(prompt)
-                    model_id = f'{config.provider}:{config.model_name}'
-                    return result, model_id
-                except Exception as e:
-                    if attempt < max_retries - 1:
-                        continue
-                    # Last retry for this model failed
-                    if i < len(self.agents) - 1:
-                        # Try next model
-                        break
-                    # Last model also failed
-                    raise RuntimeError(f'All models failed. Last error: {e}') from e
+            model_id = f'{config.provider}:{config.model_name}'
 
-        raise RuntimeError('All models exhausted without success')
+            try:
+                # Use tenacity for retries on the current model
+                retryer = get_retryer(
+                    max_attempts=max_retries,
+                    wait_min=0.5,
+                    wait_max=2.0,
+                    wait_multiplier=0.5,
+                    exceptions=(Exception,),
+                    reraise=True,
+                )
+
+                for attempt in retryer:
+                    with attempt:
+                        result = agent.run_sync(prompt)
+                        return result, model_id
+
+            except RetryError:
+                # All retries for this model failed
+                continue
+            except Exception as e:
+                last_error = e
+                # Try next model
+                continue
+
+        raise RuntimeError(f'All models exhausted without success. Last error: {last_error}')
 
     def run_all_compare(self, prompt: str) -> dict[str, Any]:
         """Run prompt on all models and return all results for comparison.
