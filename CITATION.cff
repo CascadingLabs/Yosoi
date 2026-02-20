@@ -17,8 +17,8 @@ authors:
     orcid: "https://orcid.org/0000-0003-2954-0855"
     affiliation: "College of Charleston, Cascading Labs"
 title: "yosoi"
-version: "0.0.1-alpha7"
-date-released: 2026-02-18
+version: "0.0.1-alpha9"
+date-released: 2026-02-20
 url: "https://github.com/CascadingLabs/Yosoi"
 keywords:
   - "web scraping"
