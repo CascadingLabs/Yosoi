@@ -1,3 +1,11 @@
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.18713573.svg)](https://doi.org/10.5281/zenodo.18713573)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
+[![Actions status](https://github.com/CascadingLabs/Yosoi/actions/workflows/CI.yaml/badge.svg)](https://github.com/CascadingLabs/Yosoi/actions)
+[![image](https://img.shields.io/pypi/pyversions/yosoi.svg)](https://pypi.python.org/pypi/yosoi)
+[![image](https://img.shields.io/pypi/v/yosoi.svg)](https://pypi.python.org/pypi/yosoi)
+<!-- [![image](https://img.shields.io/pypi/l/yosoi.svg)](https://pypi.python.org/pypi/yosoi) -->
+
 # Yosoi - AI-Powered CSS Selector Discover
 
 > **Discover CSS selectors once with AI, scrape forever with BeautifulSoup**
