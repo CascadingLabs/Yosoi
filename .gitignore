@@ -58,6 +58,7 @@ MANIFEST
 .ruff_cache/
 .mypy_cache/
 .typecheck_cache/
+.deepeval
 
 # Coverage
 .coverage
