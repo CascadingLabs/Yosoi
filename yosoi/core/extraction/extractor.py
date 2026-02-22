@@ -15,6 +15,7 @@ class ContentExtractor:
 
     """
 
+    # TODO make dynamic based on ys.contract
     EXPECTED_FIELDS: ClassVar[tuple[str, ...]] = (
         'headline',
         'author',
@@ -56,6 +57,7 @@ class ContentExtractor:
         extracted = {}
 
         # Extract each expected field
+        # TODO this should play better with ys.contract and Pydantic. Why are we
         for field_name in self.EXPECTED_FIELDS:
             # Check if selector exists for this field
             if field_name not in validated_selectors:
