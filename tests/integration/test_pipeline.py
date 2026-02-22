@@ -1,5 +1,4 @@
 from pydantic_ai import Agent
-
 from yosoi.fetcher import ContentMetadata, FetchResult
 from yosoi.pipeline import SelectorDiscoveryPipeline
 

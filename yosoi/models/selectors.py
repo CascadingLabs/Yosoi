@@ -9,23 +9,21 @@ class FieldSelectors(BaseModel):
     Attributes:
         primary: Most specific selector (uses actual classes/IDs)
         fallback: Less specific but reliable selector
-        tertiary: Generic selector or 'NA' if field doesn't exist
+        tertiary: Generic selector or None if field doesn't exist
 
     """
 
     primary: str = Field(description='Most specific selector')
-    fallback: str = Field(description='Less specific fallback')
-    tertiary: str = Field(description="Generic selector or 'NA'")
+    fallback: str | None = Field(default=None, description='Less specific fallback')
+    tertiary: str | None = Field(default=None, description='Generic selector or None')
 
-
-# TODO Make this a dynamic class. Perhaps include a way for users to define via pydantic models?
-# >> Maybe we make a custom pydantic model that can be used to define what is being scraped?
-# >> This might look like YosoiContent(BaseModel):
-# >>     url: str FieldSelectors
-# >>     date: DATETIME FieldSelector
-# >>     body_text: str
-# >>     related_content: str
-# >> And then we can use this to generate the ScrapingConfig dynamically?
+    def as_tuples(self) -> list[tuple[str, str | None]]:
+        """Return selectors as list of (level, selector) tuples."""
+        return [
+            ('primary', self.primary),
+            ('fallback', self.fallback),
+            ('tertiary', self.tertiary),
+        ]
 
 
 class ScrapingConfig(BaseModel):

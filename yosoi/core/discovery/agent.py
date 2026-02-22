@@ -6,9 +6,10 @@ import logfire
 from pydantic_ai import Agent
 from rich.console import Console
 
-from yosoi.exceptions import LLMGenerationError
-from yosoi.llm_config import LLMConfig, create_model
+from yosoi.core.discovery.config import LLMConfig, create_model
 from yosoi.models import ScrapingConfig
+from yosoi.utils import load_prompt
+from yosoi.utils.exceptions import LLMGenerationError
 
 
 class SelectorDiscovery:
@@ -48,12 +49,7 @@ class SelectorDiscovery:
         self.console = console or Console()
 
         # System prompt for the agent
-        system_prompt = (
-            'You are analyzing HTML to find selectors for web scraping. '
-            'Return selectors that actually exist in the provided HTML. '
-            'CRITICAL: You must return valid JSON only. No preamble, no markdown formatting, '
-            'no code fences. Just pure JSON matching the ScrapingConfig schema.'
-        )
+        system_prompt = load_prompt('discovery_system')
 
         # Priority: agent > llm_config
         if agent is not None:
@@ -88,7 +84,7 @@ class SelectorDiscovery:
             selectors_obj = self._get_selectors_from_ai(url_context, html)
 
             if selectors_obj:
-                selectors: dict[str, Any] = selectors_obj.model_dump()
+                selectors: dict[str, Any] = selectors_obj.model_dump(exclude_none=True)
 
                 if selectors and not self._is_all_na(selectors):
                     logfire.info('Selectors found successfully', selectors=selectors)
@@ -113,29 +109,8 @@ class SelectorDiscovery:
             ScrapingConfig object with discovered selectors, or None if request failed.
 
         """
-        prompt = f"""Analyze this HTML and find selectors for web scraping.
-
-Here is the HTML from {url}:
-```html
-{html}
-```
-
-Find CSS selectors for these fields:
-
-**headline** - Main article title (h1/h2 in article, NOT navigation)
-**author** - Author name (author/byline classes or links)
-**date** - Publication date (time tags or date/published classes)
-**body_text** - Article paragraphs (p tags in article, NOT sidebars/ads)
-**related_content** - Related article links (aside/sidebar sections)
-
-For each field provide three selectors:
-- primary: Most specific selector using actual classes/IDs from the HTML
-- fallback: Less specific but reliable selector
-- tertiary: Generic selector or "NA" if field doesn't exist
-
-IMPORTANT: Only use selectors that actually exist in the HTML above.
-
-Return ONLY the JSON object, nothing else."""
+        template = load_prompt('discovery_user')
+        prompt = template.format(url=url, html=html)
 
         try:
             result = self.agent.run_sync(prompt)
@@ -147,7 +122,7 @@ Return ONLY the JSON object, nothing else."""
 
             # Check for structured output failures
             if 'tool_use_failed' in error_msg or 'invalid_request_error' in error_msg:
-                self.console.print('[danger]  ✗ AI failed to generate valid JSON structure[/danger]')
+                self.console.print('[danger]  ✗ AI failed to generate structured output[/danger]')
             else:
                 self.console.print(f'[danger]  ✗ Error getting selectors from AI: {e}[/danger]')
 
@@ -161,7 +136,11 @@ Return ONLY the JSON object, nothing else."""
             selectors: The selectors gotten from the LLM
 
         Returns:
-            True if all the selectors are NA, otherwise False
+            True if all the selectors are NA or None, otherwise False
 
         """
-        return all(all(v == 'NA' for v in field_sel.values()) for field_sel in selectors.values())
+        for field_sel in selectors.values():
+            for v in field_sel.values():
+                if v and v != 'NA':
+                    return False
+        return True

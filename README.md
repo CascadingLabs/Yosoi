@@ -96,19 +96,61 @@ Or use JSON format (`urls.json`):
 
 ```
 .
-├── .yosoi/                   # .yosoi helper directory (hidden)
-│   └── selectors/            # Discovered selectors (hidden)
-├── main.py                   # CLI entry point & orchestrator
-├── selector_discovery.py     # AI-powered selector discovery
-├── selector_validator.py     # Selector validation & testing
-├── selector_storage.py       # JSON storage operations
-├── services.py              # Shared services (Logfire config)
-├── models.py                # Pydantic models
-├── pyproject.toml           # Project config & dependencies
-├── .env                     # API keys (create this)
-├── CHEAT_SHEET.md          # Dev tools quick reference
-└── selectors/              # Output directory
-    └── selectors_*.json     # Discovered selectors per domain
+├── .yosoi/                        # Hidden runtime directory
+│   └── selectors/                 # Persisted selector snapshots
+├── yosoi/                         # Main package
+│   ├── __init__.py
+│   ├── __main__.py
+│   ├── cli.py                     # CLI entry point & argument parsing
+│   ├── core/                      # Core pipeline logic
+│   │   ├── pipeline.py            # SelectorDiscoveryPipeline orchestrator
+│   │   ├── cleaning/
+│   │   │   └── cleaner.py         # HTML noise removal
+│   │   ├── discovery/
+│   │   │   ├── agent.py           # pydantic-ai agent definition
+│   │   │   └── config.py          # Model / provider configuration
+│   │   ├── extraction/
+│   │   │   └── extractor.py       # Relevant HTML extraction
+│   │   ├── fetcher/
+│   │   │   ├── base.py            # Abstract fetcher interface
+│   │   │   ├── simple.py          # httpx-based fetcher
+│   │   │   ├── playwright.py      # Playwright fetcher (JS-heavy sites)
+│   │   │   └── smart.py           # Auto-selects fetcher strategy
+│   │   └── verification/
+│   │       └── verifier.py        # CSS selector verification
+│   ├── models/                    # Pydantic data models
+│   │   ├── selectors.py           # SelectorSet & field models
+│   │   └── results.py             # Pipeline result types
+│   ├── storage/                   # Persistence layer
+│   │   ├── persistence.py         # JSON read/write for selectors
+│   │   ├── tracking.py            # Domain-level tracking & stats
+│   │   └── debug.py               # Debug HTML snapshot storage
+│   ├── outputs/                   # Output formatters
+│   │   ├── json.py                # JSON report formatter
+│   │   ├── markdown.py            # Markdown / Rich table output
+│   │   └── utils.py               # Shared output helpers
+│   ├── prompts/                   # LLM prompt templates (markdown)
+│   │   ├── discovery_system.md
+│   │   └── discovery_user.md
+│   └── utils/                     # Shared utilities
+│       ├── exceptions.py          # Custom exception hierarchy
+│       ├── files.py               # File-path helpers
+│       ├── headers.py             # HTTP header rotation
+│       ├── logging.py             # Structured logging setup
+│       ├── prompts.py             # Prompt loader utility
+│       └── retry.py               # Retry / back-off helpers
+├── tests/
+│   ├── conftest.py
+│   ├── integration/
+│   │   ├── test_pipeline.py       # End-to-end pipeline tests
+│   │   └── test_snapshots.py      # Selector snapshot regression tests
+│   └── unit/
+│       ├── test_discovery_bs4.py
+│       ├── test_pipeline.py
+│       └── test_pydantic_flow.py
+├── pyproject.toml                 # Project config & dependencies
+├── env.example                    # API key template
+└── urls.txt                       # Example URL list
 ```
 
 ## How It Works
@@ -132,12 +174,10 @@ AI reads actual HTML structure
   ↓
 Finds real class names & IDs
   ↓
-Returns 3 selectors per field:
+Returns up to 3 selectors per field:
   - Primary (most specific)
   - Fallback (reliable backup)
   - Tertiary (generic)
-  ↓
-Smart fallback if AI fails
 ```
 
 ### Phase 3: Validation
@@ -190,7 +230,7 @@ Selectors are saved as JSON files in the `.yosoi/selectors/` directory:
 Once selectors are discovered, use them with standard BeautifulSoup:
 
 ```python
-from selector_storage import SelectorStorage
+from yosoi.storage.persistence import SelectorStorage
 from bs4 import BeautifulSoup
 import requests
 
@@ -219,7 +259,7 @@ print(f"\nBody:\n{body_text}")
 ### Using as a Library
 
 ```python
-from main import SelectorDiscoveryPipeline
+from yosoi.core.pipeline import SelectorDiscoveryPipeline
 import os
 
 # Initialize with your preferred provider
@@ -248,7 +288,7 @@ pipeline.show_summary()
 - **Setup**: `GROQ_KEY` in `.env`
 
 ### Google Gemini
-- **Model**: `gemini-2.0-flash-exp`
+- **Model**: `gemini-2.0-flash`
 - **Cost**: Free tier available
 - **Setup**: `GEMINI_KEY` in `.env`
 
@@ -276,9 +316,8 @@ Yosoi integrates with [Logfire](https://logfire.pydantic.dev) for comprehensive 
 
 **AI-Powered** - Uses Groq/Gemini to read HTML and find selectors
 **Cheap** - $0.001 per domain
-**Validated** - Tests each selector before saving
+**Verified** - Tests each selector on the live page before saving
 **Organized** - Clean JSON output per domain
-**Fallback System** - Uses heuristics when AI fails
 **Rich CLI** - Nice terminal output with progress indicators
 **Type-Safe** - Full type hints with mypy checking
 **Observable** - Integrated with Logfire for tracing
@@ -291,8 +330,8 @@ Yosoi integrates with [Logfire](https://logfire.pydantic.dev) for comprehensive 
 **Solution**:
 - Check if site requires JavaScript (use debug mode: `--debug`)
 - Review extracted HTML in `debug_html/` directory
-- Consider using Selenium for JavaScript-heavy sites
-- Fallback heuristics will be used automatically
+- Use the Playwright fetcher for JavaScript-heavy sites (`SmartFetcher` selects it automatically)
+- If the site explicitly fails, re-run with `--force` after verifying the page loads in a browser
 
 ### Selectors Don't Work
 **Cause**: Site structure changed or uses dynamic content

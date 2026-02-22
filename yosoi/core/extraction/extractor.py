@@ -57,25 +57,25 @@ class ContentExtractor:
             field_selectors = validated_selectors[field_name]
 
             # Get selectors in priority order
-            primary = field_selectors.get('primary', 'NA')
-            fallback = field_selectors.get('fallback', 'NA')
-            tertiary = field_selectors.get('tertiary', 'NA')
+            primary = field_selectors.get('primary')
+            fallback = field_selectors.get('fallback')
+            tertiary = field_selectors.get('tertiary')
 
             # Try each selector in priority order
             content = None
             selector_used = None
 
-            if primary != 'NA':
+            if primary:
                 content = self._extract_with_selector(soup, primary, field_name)
                 if content:
                     selector_used = 'primary'
 
-            if not content and fallback != 'NA':
+            if not content and fallback:
                 content = self._extract_with_selector(soup, fallback, field_name)
                 if content:
                     selector_used = 'fallback'
 
-            if not content and tertiary != 'NA':
+            if not content and tertiary:
                 content = self._extract_with_selector(soup, tertiary, field_name)
                 if content:
                     selector_used = 'tertiary'

@@ -15,7 +15,7 @@ from pydantic_ai.providers.groq import GroqProvider
 from pydantic_ai.providers.openai import OpenAIProvider
 from tenacity import RetryError
 
-from yosoi.retry import get_retryer
+from yosoi.utils.retry import get_retryer
 
 # ============================================================================
 # 1. CONFIG DATACLASSES - Simple configuration objects
@@ -541,7 +541,7 @@ if __name__ == '__main__':
     config2 = (
         LLMBuilder()
         .provider('gemini')
-        .model('gemini-2.0-flash-exp')
+        .model('gemini-2.0-flash')
         .api_key(os.getenv('GEMINI_KEY', 'test-key'))
         .temperature(0.5)
         .build()
@@ -557,7 +557,7 @@ if __name__ == '__main__':
     print('\nExample 4: Multi-Model Fallback')
     configs = [
         groq('llama-3.3-70b-versatile', os.getenv('GROQ_KEY', 'test-key')),
-        gemini('gemini-2.0-flash-exp', os.getenv('GEMINI_KEY', 'test-key')),
+        gemini('gemini-2.0-flash', os.getenv('GEMINI_KEY', 'test-key')),
     ]
     print(f'  Primary: {configs[0].provider}')
     print(f'  Fallback: {configs[1].provider}')

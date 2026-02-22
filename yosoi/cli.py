@@ -11,8 +11,7 @@ import sys
 import logfire
 from dotenv import load_dotenv
 
-from yosoi import gemini, groq
-from yosoi.pipeline import SelectorDiscoveryPipeline
+from yosoi import Pipeline, gemini, groq
 from yosoi.utils.files import init_yosoi, is_initialized
 from yosoi.utils.logging import setup_local_logging
 
@@ -38,7 +37,7 @@ def setup_llm_config():
 
     if gemini_api_key:
         print('Using Gemini as AI provider')
-        return gemini('gemini-2.0-flash-exp', gemini_api_key)
+        return gemini('gemini-2.0-flash', gemini_api_key)
 
     print('Error: No API keys found')
     print('Please set GROQ_KEY or GEMINI_KEY in your .env file')
@@ -118,10 +117,10 @@ Examples:
     parser.add_argument('-l', '--limit', type=int, help='Limit number of URLs to process from file')
     parser.add_argument('-F', '--force', action='store_true', help='Force re-discovery even if selectors exist')
     parser.add_argument('-s', '--summary', action='store_true', help='Show summary of saved selectors')
+    parser.add_argument('-d', '--debug', action='store_true', help='Enable debug mode (saves extracted HTML to debug/)')
     parser.add_argument(
-        '-d', '--debug', action='store_true', help='Enable debug mode (saves extracted HTML to debug_html/)'
+        '-S', '--skip-verification', action='store_true', help='Skip verification for faster processing'
     )
-    parser.add_argument('-S', '--skip-validation', action='store_true', help='Skip validation for faster processing')
     parser.add_argument(
         '-o',
         '--output',
@@ -186,7 +185,7 @@ def main():
     output_format = 'markdown' if args.output in ['markdown', 'md'] else 'json'
 
     # Initialize pipeline with output format
-    pipeline = SelectorDiscoveryPipeline(llm_config, debug_mode=args.debug, output_format=output_format)
+    pipeline = Pipeline(llm_config, debug_mode=args.debug, output_format=output_format)
 
     # Set up Logfire
     setup_logfire()
@@ -223,7 +222,7 @@ def main():
 
     # Show debug info
     if args.debug:
-        print('ℹ Debug mode enabled - extracted HTML will be saved to debug_html/')
+        print('ℹ Debug mode enabled - extracted HTML will be saved to debug/')
 
     # Show output format info
     print(f'ℹ Output format: {output_format}')
@@ -235,7 +234,7 @@ def main():
     pipeline.process_urls(
         urls,
         force=args.force,
-        skip_validation=args.skip_validation,
+        skip_verification=args.skip_verification,
         fetcher_type=args.fetcher,
     )
 
