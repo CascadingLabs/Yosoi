@@ -119,7 +119,9 @@ Examples:
     parser.add_argument('-F', '--force', action='store_true', help='Force re-discovery even if selectors exist')
     parser.add_argument('-s', '--summary', action='store_true', help='Show summary of saved selectors')
     parser.add_argument('-d', '--debug', action='store_true', help='Enable debug mode (saves extracted HTML to debug/)')
-    parser.add_argument('-S', '--skip-validation', action='store_true', help='Skip validation for faster processing')
+    parser.add_argument(
+        '-S', '--skip-verification', action='store_true', help='Skip verification for faster processing'
+    )
     parser.add_argument(
         '-o',
         '--output',
@@ -233,7 +235,7 @@ def main():
     pipeline.process_urls(
         urls,
         force=args.force,
-        skip_validation=args.skip_validation,
+        skip_verification=args.skip_verification,
         fetcher_type=args.fetcher,
     )
 
