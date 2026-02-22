@@ -30,14 +30,14 @@ from yosoi.retry import get_retryer, log_retry
 from yosoi.storage import SelectorStorage
 from yosoi.tracker import LLMTracker
 from yosoi.utils import init_yosoi
-from yosoi.validator import SelectorValidator
+from yosoi.verifier import SelectorVerifier
 
 __all__ = [
     'HTMLCleaner',
     'SelectorDiscovery',
     'ContentExtractor',
     'SelectorStorage',
-    'SelectorValidator',
+    'SelectorVerifier',
     'LLMTracker',
     'BotDetectionError',
     'FetchResult',

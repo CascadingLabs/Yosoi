@@ -21,7 +21,7 @@ from yosoi.fetcher import BotDetectionError, FetchResult, HTMLFetcher, create_fe
 from yosoi.retry import get_retryer
 from yosoi.storage import SelectorStorage
 from yosoi.tracker import LLMTracker
-from yosoi.validator import SelectorValidator
+from yosoi.verifier import SelectorVerifier
 
 
 class SelectorDiscoveryPipeline:
@@ -66,7 +66,7 @@ class SelectorDiscoveryPipeline:
         self.console = Console(theme=self.custom_theme)
         self.cleaner = HTMLCleaner(console=self.console)
         self.discovery = SelectorDiscovery(llm_config=llm_config, console=self.console)
-        self.validator = SelectorValidator(console=self.console)
+        self.verifier = SelectorVerifier(console=self.console)
         self.extractor = ContentExtractor(console=self.console)
         self.storage = SelectorStorage()
         self.tracker = LLMTracker()
@@ -498,7 +498,7 @@ class SelectorDiscoveryPipeline:
 
         self.console.print('[step]Step 3: Validating selectors against actual HTML...[/step]')
 
-        validated = self.validator.validate_selectors_with_html(url, html, selectors)
+        validated = self.verifier.verify_selectors_with_html(url, html, selectors)
 
         if not validated:
             self.console.print('[danger]No selectors validated successfully - all selectors failed![/danger]')
@@ -613,7 +613,7 @@ class SelectorDiscoveryPipeline:
                 self._save_debug_html(url, cleaned_html)
 
             # Validate selectors
-            validated = self.validator.validate_selectors_with_html(url, cleaned_html, existing_selectors)
+            validated = self.verifier.verify_selectors_with_html(url, cleaned_html, existing_selectors)
 
             if validated:
                 self.console.print(f'[success]✓ Validated {len(validated)}/5 cached selectors[/success]')

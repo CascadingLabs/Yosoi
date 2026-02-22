@@ -7,7 +7,7 @@ from pydantic_ai.models.test import TestModel
 
 from yosoi.discovery import SelectorDiscovery
 from yosoi.models import ScrapingConfig
-from yosoi.validator import SelectorValidator
+from yosoi.verifier import SelectorVerifier
 
 # Load Manifest
 TEST_DATA_DIR = Path(__file__).parent.parent / 'data'
@@ -53,8 +53,8 @@ def test_snapshot_health_check(url, meta):
     assert result == expected_data
 
     # Verify validator logic on this snapshot
-    validator = SelectorValidator()
-    validated = validator.validate_selectors_with_html(url, html_content, result)
+    validator = SelectorVerifier()
+    validated = validator.verify_selectors_with_html(url, html_content, result)
 
     # We expect that the baseline selectors should still work on the snapshot they were recorded from
     assert validated is not None
