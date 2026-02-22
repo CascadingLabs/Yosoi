@@ -26,7 +26,7 @@ def get_snapshots():
 def test_snapshot_health_check(url, meta):
     """
     Fast health check using TestModel and manifest data.
-    Verifies extraction logic and validator against the snapshot HTML.
+    Verifies extraction logic and verification against the snapshot HTML.
     """
     snapshot_path = TEST_DATA_DIR / 'snapshots' / meta['filename']
     if not snapshot_path.exists():
@@ -52,10 +52,10 @@ def test_snapshot_health_check(url, meta):
     # Verify discovery output matches snapshot baseline
     assert result == expected_data
 
-    # Verify validator logic on this snapshot
-    validator = SelectorVerifier()
-    validated = validator.verify_selectors_with_html(url, html_content, result)
+    # Verify verifier logic on this snapshot
+    verifier = SelectorVerifier()
+    verified = verifier.verify_selectors_with_html(url, html_content, result)
 
     # We expect that the baseline selectors should still work on the snapshot they were recorded from
-    assert validated is not None
-    assert len(validated) > 0, 'No selectors validated on original snapshot'
+    assert verified is not None
+    assert len(verified) > 0, 'No selectors verified on original snapshot'
