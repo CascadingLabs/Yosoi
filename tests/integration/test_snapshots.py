@@ -4,10 +4,10 @@ from pathlib import Path
 import pytest
 from pydantic_ai import Agent
 from pydantic_ai.models.test import TestModel
-
 from yosoi.discovery import SelectorDiscovery
-from yosoi.models import ScrapingConfig
 from yosoi.verifier import SelectorVerifier
+
+from yosoi.models import ScrapingConfig
 
 # Load Manifest
 TEST_DATA_DIR = Path(__file__).parent.parent / 'data'
