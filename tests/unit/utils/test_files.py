@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from yosoi.utils.files import (
-    get_debug_html_path,
+    get_debug_path,
     get_project_root,
     get_tracking_path,
     init_yosoi,
@@ -44,7 +44,7 @@ def test_get_debug_html_path(tmp_path):
     yosoi.utils.files.get_project_root = lambda: project_root
 
     try:
-        debug_path = get_debug_html_path()
+        debug_path = get_debug_path()
         assert debug_path == project_root / '.yosoi' / 'debug_html'
     finally:
         yosoi.utils.files.get_project_root = original_get_project_root

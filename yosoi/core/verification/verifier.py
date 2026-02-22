@@ -90,6 +90,8 @@ class SelectorVerifier:
         failed_selectors: list[SelectorFailure] = []
 
         for level, selector in selectors:
+            if selector is None:
+                continue
             success, reason = self._test_selector(soup, selector)
             if success:
                 return FieldVerificationResult(
