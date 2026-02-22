@@ -14,19 +14,18 @@ from rich.table import Table
 from rich.theme import Theme
 from tenacity import RetryError
 
-from yosoi import LLMConfig
-from yosoi.cleaner import HTMLCleaner
-from yosoi.debug import DebugManager
-from yosoi.discovery import SelectorDiscovery
-from yosoi.extractor import ContentExtractor
-from yosoi.fetcher import BotDetectionError, FetchResult, HTMLFetcher, create_fetcher
-from yosoi.retry import get_retryer
-from yosoi.storage import SelectorStorage
-from yosoi.tracker import LLMTracker
-from yosoi.verifier import SelectorVerifier
+from yosoi.core.cleaning import HTMLCleaner
+from yosoi.core.discovery import LLMConfig, SelectorDiscovery
+from yosoi.core.extraction import ContentExtractor
+from yosoi.core.fetcher import HTMLFetcher, create_fetcher
+from yosoi.core.verification import SelectorVerifier
+from yosoi.models import FetchResult
+from yosoi.storage import DebugManager, LLMTracker, SelectorStorage
+from yosoi.utils.exceptions import BotDetectionError
+from yosoi.utils.retry import get_retryer
 
 
-class SelectorDiscoveryPipeline:
+class Pipeline:
     """Main pipeline for discovering and saving CSS selectors with retry logic.
 
     The main pipeline of YOSOi that goes through all the other python files to

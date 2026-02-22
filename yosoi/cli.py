@@ -11,8 +11,7 @@ import sys
 import logfire
 from dotenv import load_dotenv
 
-from yosoi import gemini, groq
-from yosoi.pipeline import SelectorDiscoveryPipeline
+from yosoi import Pipeline, gemini, groq
 from yosoi.utils.files import init_yosoi, is_initialized
 from yosoi.utils.logging import setup_local_logging
 
@@ -186,7 +185,7 @@ def main():
     output_format = 'markdown' if args.output in ['markdown', 'md'] else 'json'
 
     # Initialize pipeline with output format
-    pipeline = SelectorDiscoveryPipeline(llm_config, debug_mode=args.debug, output_format=output_format)
+    pipeline = Pipeline(llm_config, debug_mode=args.debug, output_format=output_format)
 
     # Set up Logfire
     setup_logfire()

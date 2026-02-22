@@ -6,10 +6,10 @@ import logfire
 from pydantic_ai import Agent
 from rich.console import Console
 
-from yosoi.exceptions import LLMGenerationError
-from yosoi.llm_config import LLMConfig, create_model
+from yosoi.core.discovery.config import LLMConfig, create_model
 from yosoi.models import ScrapingConfig
 from yosoi.utils import load_prompt
+from yosoi.utils.exceptions import LLMGenerationError
 
 
 class SelectorDiscovery:

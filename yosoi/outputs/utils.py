@@ -1,7 +1,7 @@
 """Utility functions for formatting and saving extracted content."""
 
-from yosoi.outputs.json_output import format_json, format_selectors_json, save_json, save_selectors_json
-from yosoi.outputs.markdown_output import format_markdown, save_markdown
+from yosoi.outputs.json import format_json, format_selectors_json, save_json, save_selectors_json
+from yosoi.outputs.markdown import format_markdown, save_markdown
 
 
 def format_content(url: str, domain: str, content: dict, output_format: str = 'json') -> str | dict:

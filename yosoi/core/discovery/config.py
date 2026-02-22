@@ -15,7 +15,7 @@ from pydantic_ai.providers.groq import GroqProvider
 from pydantic_ai.providers.openai import OpenAIProvider
 from tenacity import RetryError
 
-from yosoi.retry import get_retryer
+from yosoi.utils.retry import get_retryer
 
 # ============================================================================
 # 1. CONFIG DATACLASSES - Simple configuration objects
