@@ -1,6 +1,6 @@
 import pytest
-from yosoi.llm_config import LLMConfig
 
+from yosoi.llm_config import LLMConfig
 from yosoi.models import FieldSelectors, ScrapingConfig
 
 

@@ -1,6 +1,7 @@
 """Manages realistic user agents and headers for fetching."""
 
 import random
+from typing import ClassVar
 
 
 class UserAgentRotator:
@@ -15,7 +16,7 @@ class UserAgentRotator:
     """
 
     # Pool of realistic, recent user agents
-    USER_AGENTS = [
+    USER_AGENTS: ClassVar[tuple[str, ...]] = (
         # Chrome on Windows
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
@@ -35,7 +36,7 @@ class UserAgentRotator:
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0',
         # Chrome on Linux
         'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    ]
+    )
 
     @classmethod
     def get_random(cls) -> str:

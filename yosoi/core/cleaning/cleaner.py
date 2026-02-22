@@ -117,7 +117,7 @@ class HTMLCleaner:
         # Fallback
         return str(soup)[:30000]
 
-    def _compress_html_simple(self, soup: BeautifulSoup) -> BeautifulSoup:  # noqa: C901
+    def _compress_html_simple(self, soup: BeautifulSoup) -> BeautifulSoup:
         """Compress HTML safely for selector discovery.
 
         Args:

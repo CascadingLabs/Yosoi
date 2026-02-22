@@ -1,5 +1,7 @@
 """Extracts content from web pages using validated selectors."""
 
+from typing import ClassVar
+
 from bs4 import BeautifulSoup
 from rich.console import Console
 
@@ -13,7 +15,13 @@ class ContentExtractor:
 
     """
 
-    EXPECTED_FIELDS = ['headline', 'author', 'date', 'body_text', 'related_content']
+    EXPECTED_FIELDS: ClassVar[tuple[str, ...]] = (
+        'headline',
+        'author',
+        'date',
+        'body_text',
+        'related_content',
+    )
 
     def __init__(self, console: Console | None = None):
         """Initialize the extractor.

@@ -4,10 +4,10 @@ from pathlib import Path
 import pytest
 from pydantic_ai import Agent
 from pydantic_ai.models.test import TestModel
-from yosoi.discovery import SelectorDiscovery
-from yosoi.verifier import SelectorVerifier
 
+from yosoi.discovery import SelectorDiscovery
 from yosoi.models import ScrapingConfig
+from yosoi.verifier import SelectorVerifier
 
 # Load Manifest
 TEST_DATA_DIR = Path(__file__).parent.parent / 'data'
@@ -22,7 +22,7 @@ def get_snapshots():
     return list(data.items())
 
 
-@pytest.mark.parametrize('url, meta', get_snapshots())
+@pytest.mark.parametrize(('url', 'meta'), get_snapshots())
 def test_snapshot_health_check(url, meta):
     """
     Fast health check using TestModel and manifest data.

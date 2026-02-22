@@ -29,4 +29,4 @@ def create_fetcher(fetcher_type: str = 'simple', **kwargs) -> HTMLFetcher:
     return fetchers[fetcher_type](**kwargs)
 
 
-__all__ = ['HTMLFetcher', 'SimpleFetcher', 'PlaywrightFetcher', 'SmartFetcher', 'create_fetcher']
+__all__ = ['HTMLFetcher', 'PlaywrightFetcher', 'SimpleFetcher', 'SmartFetcher', 'create_fetcher']

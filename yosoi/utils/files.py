@@ -16,7 +16,7 @@ def get_project_root() -> Path:
     markers = {'.git', 'pyproject.toml', '.yosoi', 'requirements.txt'}
 
     # Walk up the filesystem
-    for parent in [current_path] + list(current_path.parents):
+    for parent in [current_path, *list(current_path.parents)]:
         # Check if any marker exists in this directory
         if any((parent / marker).exists() for marker in markers):
             return parent
