@@ -1,5 +1,6 @@
 import pytest
 from bs4 import BeautifulSoup
+
 from yosoi.cleaner import HTMLCleaner
 
 

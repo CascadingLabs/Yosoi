@@ -10,11 +10,11 @@ from yosoi.models.results import (
 from yosoi.models.selectors import FieldSelectors, ScrapingConfig
 
 __all__ = [
-    'FieldSelectors',
-    'ScrapingConfig',
     'ContentMetadata',
     'FetchResult',
-    'SelectorFailure',
+    'FieldSelectors',
     'FieldVerificationResult',
+    'ScrapingConfig',
+    'SelectorFailure',
     'VerificationResult',
 ]

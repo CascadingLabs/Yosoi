@@ -49,6 +49,7 @@ dev = [
   "playwright>=1.58",
   "poethepoet>=0.40",
   "prek>=0.2.25",
+  "ruff>=0.9.7",
   "types-beautifulsoup4>=4.12",
   "types-requests>=2.31",
 ]
@@ -107,13 +108,16 @@ format.skip-magic-trailing-comma = false
 lint.select = [
   "ARG",  # flake8-unused-arguments
   "B",    # flake8-bugbear
+  "C4",   # flake8-comprehensions
   "C901", # mccabe complexity
   "D",    # pydocstyle
   "E",    # pycodestyle errors
   "F",    # pyflakes
   "I",    # isort
   "PERF", # performance
+  "PT",   # flake8-pytest-style
   "RET",  # flake8-return
+  "RUF",  # ruff-specific rules
   "SIM",  # flake8-simplify
   "TID",  # flake8-tidy-imports
   "UP",   # pyupgrade
@@ -129,15 +133,21 @@ lint.ignore = [
   "E402",   # module level import not at top of file
   "E501",   # formatter handles line length
   "RET504", # allow implicit return None
+  "RUF001", # ambigious variable name
   "SIM108", # allow if-else instead of ternary
   "W293",   # blank line contains whitespace
 ]
+lint.per-file-ignores."__init__.py" = [ "F401" ]
 lint.per-file-ignores."tests/**/*.py" = [
   "ARG001", # unused arguments in test functions
   "ARG002", # unused method arguments in tests
   "D",      # pydocstyle - no docstrings required for tests
 ]
-lint.mccabe.max-complexity = 13
+lint.per-file-ignores."yosoi/core/cleaning/cleaner.py" = [ "C901" ]
+lint.isort.known-first-party = [ "yosoi" ]
+lint.mccabe.max-complexity = 12
+
+lint.pydocstyle.convention = "google"
 
 [tool.pytest.ini_options]
 markers = [
@@ -188,6 +198,7 @@ integration = "uv run pytest -m 'integration'"                                  
 unit = "uv run pytest -m 'unit'"                                                    # run unit tests
 ci-test = "uv run pytest -m 'not eval'"
 ci-check = "uv run prek run --all-files --hook-stage manual --show-diff-on-failure"
+ci-format = "uv run ruff check --fix"
 
 [tool.gitleaks]
 [[tool.gitleaks.allowlist]]

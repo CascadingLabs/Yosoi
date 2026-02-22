@@ -1,13 +1,13 @@
-# Utils Agent Guide
+# Utils Module Rules
 
 ## Purpose
-The `utils` directory holds shared, stateless functionality that doesn't fit into the core domain objects.
+Shared, globally accessible, stateless pure functions and helpers.
 
-## When to put code here?
-- **Generic Helpers**: String manipulation, file I/O, URL normalization.
-- **Shared Constants**: If they are used across multiple modules.
-- **No Side Effects**: Utils should generally be pure functions.
-
-## What NOT to put here
-- **Business Logic**: Core domain rules (like how to validate a selector) belong in their respective modules.
-- **Stateful Classes**: If it needs to hold state, it's probably a Service or a Model, not a Util.
+## Constraints
+1. **Pure Functions Only**: Code here must have no side-effects (exceptions allowed for logging).
+2. **No Core Dependencies**: Never import from `yosoi.core` to prevent circular dependencies.
+3. **Mandatory Reuse**:
+   - Network failure? Use `retry.get_retryer`.
+   - Need HTTP headers? Use `headers.UserAgentRotator`.
+   - Loading AI text? Use `prompts.load_prompt`.
+4. **Exception Handling**: Define and use custom subclasses of `YosoiError` (found in `exceptions.py`) rather than raising generic `Exception`.

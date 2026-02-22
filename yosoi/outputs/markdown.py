@@ -93,7 +93,7 @@ def _get_title(content: dict) -> str:
     title_fields = ['headline', 'title', 'name', 'heading', 'h1']
 
     for field in title_fields:
-        if field in content and content[field]:
+        if content.get(field):
             return str(content[field])
 
     # Fallback: use first non-empty string value

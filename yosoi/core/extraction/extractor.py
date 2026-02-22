@@ -1,5 +1,7 @@
 """Extracts content from web pages using validated selectors."""
 
+from typing import ClassVar
+
 from bs4 import BeautifulSoup
 from rich.console import Console
 
@@ -13,7 +15,14 @@ class ContentExtractor:
 
     """
 
-    EXPECTED_FIELDS = ['headline', 'author', 'date', 'body_text', 'related_content']
+    # TODO make dynamic based on ys.contract
+    EXPECTED_FIELDS: ClassVar[tuple[str, ...]] = (
+        'headline',
+        'author',
+        'date',
+        'body_text',
+        'related_content',
+    )
 
     def __init__(self, console: Console | None = None):
         """Initialize the extractor.
@@ -48,6 +57,7 @@ class ContentExtractor:
         extracted = {}
 
         # Extract each expected field
+        # TODO this should play better with ys.contract and Pydantic. Why are we
         for field_name in self.EXPECTED_FIELDS:
             # Check if selector exists for this field
             if field_name not in validated_selectors:
