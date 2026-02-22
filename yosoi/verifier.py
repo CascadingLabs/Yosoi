@@ -3,7 +3,7 @@
 from bs4 import BeautifulSoup
 from rich.console import Console
 
-from yosoi.models import FieldSelectors, FieldVerificationResult, VerificationResult
+from yosoi.models import FieldSelectors, FieldVerificationResult, SelectorFailure, VerificationResult
 
 
 class SelectorVerifier:
@@ -75,7 +75,7 @@ class SelectorVerifier:
             field_data: FieldSelectors model or raw dict with primary/fallback/tertiary
 
         Returns:
-            FieldVerificationResult with verification status
+            FieldVerificationResult with verification status and failure details
 
         """
         if isinstance(field_data, FieldSelectors):
@@ -87,21 +87,33 @@ class SelectorVerifier:
                 ('tertiary', field_data.get('tertiary', 'NA')),
             ]
 
+        failed_selectors: list[SelectorFailure] = []
+
         for level, selector in selectors:
-            if self._test_selector(soup, selector):
+            success, reason = self._test_selector(soup, selector)
+            if success:
                 return FieldVerificationResult(
                     field_name=field_name,
                     status='verified',
                     working_level=level,
                     selector=selector,
+                    failed_selectors=failed_selectors,
                 )
+            failed_selectors.append(
+                SelectorFailure(
+                    level=level,
+                    selector=selector,
+                    reason=reason,
+                )
+            )
 
         return FieldVerificationResult(
             field_name=field_name,
             status='failed',
+            failed_selectors=failed_selectors,
         )
 
-    def _test_selector(self, soup: BeautifulSoup, selector: str) -> bool:
+    def _test_selector(self, soup: BeautifulSoup, selector: str) -> tuple[bool, str]:
         """Test if a selector finds elements in HTML.
 
         Args:
@@ -109,17 +121,20 @@ class SelectorVerifier:
             selector: CSS selector string
 
         Returns:
-            True if selector matches at least one element
+            Tuple of (success, reason) where success is True if selector matches
+            at least one element, and reason explains the result.
 
         """
         if not selector or selector == 'NA':
-            return False
+            return False, 'na_selector'
 
         try:
             elements = soup.select(selector)
-            return bool(elements)
-        except Exception:
-            return False
+            if elements:
+                return True, 'found'
+            return False, 'no_elements_found'
+        except Exception as e:
+            return False, f'invalid_syntax: {e}'
 
     def _print_field_result(self, result: FieldVerificationResult) -> None:
         """Print verification result for a single field."""
@@ -133,6 +148,8 @@ class SelectorVerifier:
                 self.console.print(f'  → {result.field_name}: using {result.working_level} ({result.selector})')
         else:
             self.console.print(f'  ✗ {result.field_name}: all selectors failed')
+            for failure in result.failed_selectors:
+                self.console.print(f'      → {failure.level}: "{failure.selector}" → {failure.reason}')
 
     def verify_selectors_with_html(
         self,

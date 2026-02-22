@@ -5,6 +5,21 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 
+class SelectorFailure(BaseModel):
+    """Details about why a single selector failed.
+
+    Attributes:
+        level: Which selector level ('primary', 'fallback', 'tertiary')
+        selector: The CSS selector that was attempted
+        reason: Why the selector failed (e.g., 'no_elements_found', 'invalid_syntax', 'na_selector')
+
+    """
+
+    level: str = Field(description='Selector level (primary/fallback/tertiary)')
+    selector: str = Field(description='The CSS selector attempted')
+    reason: str = Field(description='Why the selector failed')
+
+
 class FieldSelectors(BaseModel):
     """Selectors for a single field with fallback options.
 
@@ -36,6 +51,7 @@ class FieldVerificationResult(BaseModel):
         status: Whether verification succeeded or failed
         working_level: Which selector level worked ('primary', 'fallback', 'tertiary'), or None if all failed
         selector: The actual selector string that worked, if any
+        failed_selectors: List of selectors that failed with reasons
 
     """
 
@@ -45,6 +61,7 @@ class FieldVerificationResult(BaseModel):
     status: Literal['verified', 'failed'] = Field(description='Verification status')
     working_level: str | None = Field(default=None, description='Which level worked')
     selector: str | None = Field(default=None, description='Selector that worked')
+    failed_selectors: list[SelectorFailure] = Field(default_factory=list, description='Failed selectors with reasons')
 
 
 class VerificationResult(BaseModel):

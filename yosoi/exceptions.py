@@ -34,4 +34,23 @@ class LLMGenerationError(YosoiError):
 class SelectorError(YosoiError):
     """Raised when selector operations fail."""
 
-    pass
+    def __init__(
+        self,
+        field_name: str,
+        selectors_tried: list[tuple[str, str]],
+        failure_reasons: list[tuple[str, str]],
+    ):
+        """Initialize selector error with detailed failure info.
+
+        Args:
+            field_name: Name of the field whose selectors failed
+            selectors_tried: List of (level, selector) tuples that were attempted
+            failure_reasons: List of (level, reason) tuples explaining failures
+
+        """
+        self.field_name = field_name
+        self.selectors_tried = selectors_tried
+        self.failure_reasons = failure_reasons
+
+        reasons_str = ', '.join(f'{level}: {reason}' for level, reason in failure_reasons)
+        super().__init__(f"Selector verification failed for '{field_name}': {reasons_str}")

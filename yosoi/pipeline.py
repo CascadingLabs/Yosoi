@@ -454,11 +454,11 @@ class SelectorDiscoveryPipeline:
         logfire.error('All AI attempts failed', url=url)
         return None, False
 
-    def _verify(self, url: str, html: str, selectors: dict, skip_verification: bool) -> dict | None:
+    def _verify(self, _url: str, html: str, selectors: dict, skip_verification: bool) -> dict | None:
         """Verify discovered selectors against HTML.
 
         Args:
-            url: URL being processed (for logging only).
+            _url: URL being processed (for logging only, unused).
             html: HTML content to verify selectors against.
             selectors: Discovered selectors to verify.
             skip_verification: Skip verification and return selectors as-is. Defaults to False.
@@ -475,19 +475,45 @@ class SelectorDiscoveryPipeline:
 
         self.console.print('[step]Step 3: Verifying selectors against actual HTML...[/step]')
 
-        verified = self.verifier.verify_selectors_with_html(url, html, selectors)
+        result = self.verifier.verify(html, selectors)
 
-        if not verified:
-            self.console.print('[danger]No selectors verified successfully - all selectors failed![/danger]')
+        if not result.success:
+            self._print_verification_failure(result)
             return None
 
-        failed_count = len(selectors) - len(verified)
-        self.console.print(f'[success]Verified {len(verified)}/5 fields successfully[/success]')
+        verified = {name: selectors[name] for name in result.results if result.results[name].status == 'verified'}
 
-        if failed_count >= 2:
-            self.console.print(f'[warning]Warning: {failed_count} fields failed verification[/warning]')
+        failed_count = len(selectors) - len(verified)
+        self.console.print(f'[success]Verified {len(verified)}/{result.total_fields} fields successfully[/success]')
+
+        if failed_count >= 1:
+            self._print_partial_failure(result)
 
         return verified
+
+    def _print_verification_failure(self, result) -> None:
+        """Print detailed failure summary when all selectors fail."""
+        self.console.print('[danger]Verification failed - no selectors matched![/danger]')
+        self.console.print('')
+
+        for field_name, field_result in result.results.items():
+            self.console.print(f'  [danger]✗ {field_name}[/danger]')
+            for failure in field_result.failed_selectors:
+                self.console.print(
+                    f'      [dim]→ {failure.level}:[/dim] "{failure.selector}" [warning]→ {failure.reason}[/warning]'
+                )
+
+        self.console.print('')
+
+    def _print_partial_failure(self, result) -> None:
+        """Print summary of partial failures."""
+        failed_fields = [name for name in result.results if result.results[name].status == 'failed']
+        self.console.print(f'[warning]  ⚠ {len(failed_fields)} field(s) failed verification:[/warning]')
+        for field_name in failed_fields:
+            field_result = result.results[field_name]
+            reasons = [f.reason for f in field_result.failed_selectors if f.reason != 'na_selector']
+            primary_reason = reasons[0] if reasons else 'all_na'
+            self.console.print(f'      [dim]• {field_name}:[/dim] {primary_reason}')
 
     def _extract(self, url: str, html: str, verified_selectors: dict) -> dict | None:
         """Extract content from HTML using verified selectors.
