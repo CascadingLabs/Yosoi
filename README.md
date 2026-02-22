@@ -248,7 +248,7 @@ pipeline.show_summary()
 - **Setup**: `GROQ_KEY` in `.env`
 
 ### Google Gemini
-- **Model**: `gemini-2.0-flash-exp`
+- **Model**: `gemini-2.0-flash`
 - **Cost**: Free tier available
 - **Setup**: `GEMINI_KEY` in `.env`
 

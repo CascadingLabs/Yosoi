@@ -38,7 +38,7 @@ def setup_llm_config():
 
     if gemini_api_key:
         print('Using Gemini as AI provider')
-        return gemini('gemini-2.0-flash-exp', gemini_api_key)
+        return gemini('gemini-2.0-flash', gemini_api_key)
 
     print('Error: No API keys found')
     print('Please set GROQ_KEY or GEMINI_KEY in your .env file')
@@ -118,9 +118,7 @@ Examples:
     parser.add_argument('-l', '--limit', type=int, help='Limit number of URLs to process from file')
     parser.add_argument('-F', '--force', action='store_true', help='Force re-discovery even if selectors exist')
     parser.add_argument('-s', '--summary', action='store_true', help='Show summary of saved selectors')
-    parser.add_argument(
-        '-d', '--debug', action='store_true', help='Enable debug mode (saves extracted HTML to debug_html/)'
-    )
+    parser.add_argument('-d', '--debug', action='store_true', help='Enable debug mode (saves extracted HTML to debug/)')
     parser.add_argument('-S', '--skip-validation', action='store_true', help='Skip validation for faster processing')
     parser.add_argument(
         '-o',
@@ -223,7 +221,7 @@ def main():
 
     # Show debug info
     if args.debug:
-        print('ℹ Debug mode enabled - extracted HTML will be saved to debug_html/')
+        print('ℹ Debug mode enabled - extracted HTML will be saved to debug/')
 
     # Show output format info
     print(f'ℹ Output format: {output_format}')

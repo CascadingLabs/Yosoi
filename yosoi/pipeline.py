@@ -14,8 +14,10 @@ from rich.table import Table
 from rich.theme import Theme
 from tenacity import RetryError
 
-from yosoi import LLMConfig, SelectorDiscovery
+from yosoi import LLMConfig
 from yosoi.cleaner import HTMLCleaner
+from yosoi.debug import DebugManager
+from yosoi.discovery import SelectorDiscovery
 from yosoi.extractor import ContentExtractor
 from yosoi.fetcher import BotDetectionError, FetchResult, HTMLFetcher, create_fetcher
 from yosoi.retry import get_retryer
@@ -36,7 +38,7 @@ class SelectorDiscoveryPipeline:
         console: Rich console instance for formatted output
         cleaner: Python class to clean and extract main content from HTML
         discovery: Python class to use LLM to find selectors from cleaned HTML
-        validator: Python class to check the selectors if they are real
+        verifier: Python class to check the selectors if they are real
         extractor: Python class to extract content using validated selectors
         storage: Store the found selectors as a JSON file
         tracker: Used to track how much an LLM is used in comparison to amount of urls used
@@ -71,6 +73,7 @@ class SelectorDiscoveryPipeline:
         self.storage = SelectorStorage()
         self.tracker = LLMTracker()
         self.debug_mode = debug_mode
+        self.debug = DebugManager(console=self.console, enabled=debug_mode)
         self.output_format = output_format
         self.logger = logging.getLogger(__name__)
 
@@ -269,35 +272,6 @@ class SelectorDiscoveryPipeline:
             self.console.print(f'[danger]Invalid fetcher type: {fetcher_type}[/danger]')
             return None
 
-    def _save_debug_html(self, url: str, html: str):
-        """Save cleaned HTML to file for debugging.
-
-        Args:
-            url: URL from which the HTML was obtained
-            html: Cleaned HTML content to save
-
-        """
-        from urllib.parse import urlparse
-
-        from yosoi.utils.files import get_debug_html_path
-
-        # Get debug directory from utils
-        debug_dir = get_debug_html_path()
-        debug_dir.mkdir(parents=True, exist_ok=True)
-
-        # Create safe filename from URL
-        parsed = urlparse(url)
-        filename = f'{parsed.netloc}_{parsed.path.replace("/", "_")[:50]}.html'
-        filepath = debug_dir / filename
-
-        # Save HTML
-        filepath.write_text(
-            f'<!-- URL: {url} -->\n<!-- Cleaned HTML length: {len(html)} chars -->\n\n{html}',
-            encoding='utf-8',
-        )
-
-        self.console.print(f'  [dim]↻ Debug HTML saved to: {filepath}[/dim]')
-
     def _fetch(self, url: str, fetcher: HTMLFetcher, max_retries: int = 2) -> FetchResult | None:
         """Fetch HTML with automatic retry logic for bot detection.
 
@@ -403,8 +377,7 @@ class SelectorDiscoveryPipeline:
             return None
 
         # Save debug HTML if enabled
-        if self.debug_mode:
-            self._save_debug_html(url, cleaned_html)
+        self.debug.save_debug_html(url, cleaned_html)
 
         self.console.print(f'[success]Cleaned HTML ready ({len(cleaned_html):,} chars)[/success]')
         return cleaned_html
@@ -456,6 +429,10 @@ class SelectorDiscoveryPipeline:
 
                     if selectors:
                         self.console.print(f'[success]Discovered selectors for {len(selectors)} fields[/success]')
+
+                        # Save debug selectors if enabled
+                        self.debug.save_debug_selectors(url, selectors)
+
                         if attempt.retry_state.attempt_number > 1:
                             self.console.print(
                                 f'[success]AI retry successful on attempt {attempt.retry_state.attempt_number}[/success]'
@@ -609,8 +586,7 @@ class SelectorDiscoveryPipeline:
             cleaned_html = self.cleaner.clean_html(result.html)
 
             # Save debug HTML if enabled
-            if self.debug_mode:
-                self._save_debug_html(url, cleaned_html)
+            self.debug.save_debug_html(url, cleaned_html)
 
             # Validate selectors
             validated = self.verifier.verify_selectors_with_html(url, cleaned_html, existing_selectors)
@@ -669,8 +645,7 @@ class SelectorDiscoveryPipeline:
             cleaned_html = self.cleaner.clean_html(result.html)
 
             # Save debug HTML if enabled
-            if self.debug_mode:
-                self._save_debug_html(url, cleaned_html)
+            self.debug.save_debug_html(url, cleaned_html)
 
             # Extract content (no validation)
             extracted = self._extract(url, cleaned_html, existing_selectors)

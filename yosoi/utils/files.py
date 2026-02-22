@@ -32,10 +32,10 @@ def get_tracking_path() -> Path:
     return root / '.yosoi' / 'llm_tracking.json'
 
 
-def get_debug_html_path() -> Path:
-    """Return the path to the debug HTML directory in .yosoi."""
+def get_debug_path() -> Path:
+    """Return the path to the debug directory in .yosoi."""
     root = get_project_root()
-    return root / '.yosoi' / 'debug_html'
+    return root / '.yosoi' / 'debug'
 
 
 def get_logs_path() -> Path:
@@ -56,7 +56,7 @@ def init_yosoi(storage_name: str = 'selectors') -> Path:
     root = get_project_root()
     yosoi_dir = root / '.yosoi'
     storage_dir = yosoi_dir / storage_name
-    debug_dir = yosoi_dir / 'debug_html'
+    debug_dir = yosoi_dir / 'debug'
     logs_dir = yosoi_dir / 'logs'
 
     # Create directory structure
