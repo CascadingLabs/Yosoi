@@ -84,7 +84,7 @@ class SelectorDiscovery:
             selectors_obj = self._get_selectors_from_ai(url_context, html)
 
             if selectors_obj:
-                selectors: dict[str, Any] = selectors_obj.model_dump()
+                selectors: dict[str, Any] = selectors_obj.model_dump(exclude_none=True)
 
                 if selectors and not self._is_all_na(selectors):
                     logfire.info('Selectors found successfully', selectors=selectors)
@@ -136,7 +136,11 @@ class SelectorDiscovery:
             selectors: The selectors gotten from the LLM
 
         Returns:
-            True if all the selectors are NA, otherwise False
+            True if all the selectors are NA or None, otherwise False
 
         """
-        return all(all(v == 'NA' for v in field_sel.values()) for field_sel in selectors.values())
+        for field_sel in selectors.values():
+            for v in field_sel.values():
+                if v and v != 'NA':
+                    return False
+        return True

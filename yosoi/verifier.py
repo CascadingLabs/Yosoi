@@ -82,9 +82,9 @@ class SelectorVerifier:
             selectors = field_data.as_tuples()
         else:
             selectors = [
-                ('primary', field_data.get('primary', 'NA')),
-                ('fallback', field_data.get('fallback', 'NA')),
-                ('tertiary', field_data.get('tertiary', 'NA')),
+                ('primary', field_data.get('primary')),
+                ('fallback', field_data.get('fallback')),
+                ('tertiary', field_data.get('tertiary')),
             ]
 
         failed_selectors: list[SelectorFailure] = []

@@ -37,11 +37,11 @@ def happy_path_html():
 @pytest.fixture
 def mock_selectors():
     return ScrapingConfig(
-        headline=FieldSelectors(primary='h1.title', fallback='h1', tertiary='NA'),
-        author=FieldSelectors(primary='span.author', fallback='.author', tertiary='NA'),
-        date=FieldSelectors(primary='span.date', fallback='.date', tertiary='NA'),
-        body_text=FieldSelectors(primary='article', fallback='body', tertiary='NA'),
-        related_content=FieldSelectors(primary='.related', fallback='aside', tertiary='NA'),
+        headline=FieldSelectors(primary='h1.title', fallback='h1', tertiary=None),
+        author=FieldSelectors(primary='span.author', fallback='.author', tertiary=None),
+        date=FieldSelectors(primary='span.date', fallback='.date', tertiary=None),
+        body_text=FieldSelectors(primary='article', fallback='body', tertiary=None),
+        related_content=FieldSelectors(primary='.related', fallback='aside', tertiary=None),
     )
 
 

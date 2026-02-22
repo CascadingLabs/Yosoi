@@ -26,15 +26,15 @@ class FieldSelectors(BaseModel):
     Attributes:
         primary: Most specific selector (uses actual classes/IDs)
         fallback: Less specific but reliable selector
-        tertiary: Generic selector or 'NA' if field doesn't exist
+        tertiary: Generic selector or None if field doesn't exist
 
     """
 
     primary: str = Field(description='Most specific selector')
-    fallback: str = Field(description='Less specific fallback')
-    tertiary: str = Field(description="Generic selector or 'NA'")
+    fallback: str | None = Field(default=None, description='Less specific fallback')
+    tertiary: str | None = Field(default=None, description='Generic selector or None')
 
-    def as_tuples(self) -> list[tuple[str, str]]:
+    def as_tuples(self) -> list[tuple[str, str | None]]:
         """Return selectors as list of (level, selector) tuples."""
         return [
             ('primary', self.primary),

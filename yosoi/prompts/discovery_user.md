@@ -16,6 +16,6 @@ Find CSS/HTML/JS selectors for these fields:
 For each field provide three selectors:
 - primary: Most specific selector using actual classes/IDs from the HTML
 - fallback: Less specific but reliable selector
-- tertiary: Generic selector or "NA" if field doesn't exist
+- tertiary: Generic selector or null if field doesn't exist
 
 IMPORTANT: Only use selectors that actually exist in the HTML above.
