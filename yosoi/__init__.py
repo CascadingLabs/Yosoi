@@ -29,7 +29,7 @@ from yosoi.outputs import format_content, save_formatted_content
 from yosoi.retry import get_retryer, log_retry
 from yosoi.storage import SelectorStorage
 from yosoi.tracker import LLMTracker
-from yosoi.utils import init_yosoi
+from yosoi.utils import init_yosoi, load_prompt
 from yosoi.verifier import SelectorVerifier
 
 __all__ = [
@@ -55,6 +55,7 @@ __all__ = [
     'gemini',
     'openai',
     'init_yosoi',
+    'load_prompt',
     'format_content',
     'save_formatted_content',
     'get_retryer',
