@@ -18,12 +18,12 @@ import yosoi as ys
 load_dotenv()
 
 # Pick whichever key is available; Cerebras is tried first.
-if os.environ.get('CEREBRAS_API_KEY'):
-    config = ys.cerebras('llama-3.3-70b', os.environ['CEREBRAS_API_KEY'])
+if os.environ.get('CEREBRAS_KEY'):
+    config = ys.cerebras('llama3.1-8b', os.environ['CEREBRAS_KEY'])
 elif os.environ.get('GROQ_KEY'):
     config = ys.groq('llama-3.3-70b-versatile', os.environ['GROQ_KEY'])
 else:
-    raise RuntimeError('Set CEREBRAS_API_KEY or GROQ_KEY in your .env file')
+    raise RuntimeError('Set CEREBRAS_KEY or GROQ_KEY in your .env file')
 
 
 # ── Example 1: Product page ──────────────────────────────────────────────────
