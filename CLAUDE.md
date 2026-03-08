@@ -5,3 +5,5 @@ Always use Context7 MCP when I need library/API documentation, code generation, 
 use uv run python
 
 consider poe tasks in pyproject.toml
+
+we use uv run poe ci-check for static type checking and formatting. Run it before finishing
