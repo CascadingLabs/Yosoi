@@ -599,90 +599,18 @@ class Pipeline:
         self.console.print(f'[success]✓ Found cached selectors for {domain}[/success]')
         logfire.info('Using cached selectors', domain=domain, url=url)
 
-        if skip_verification:
-            # Still need to fetch and extract even if skipping verification
-            self._extract_with_cached_selectors(url, domain, fetcher, existing_selectors, output_format)
-            return True
+        return self._use_cached_selectors(url, domain, fetcher, existing_selectors, output_format, skip_verification)
 
-        # Verify and extract with cached selectors
-        return self._verify_and_extract_cached(url, domain, fetcher, existing_selectors, output_format)
-
-    def _verify_and_extract_cached(
-        self, url: str, domain: str, fetcher: HTMLFetcher, existing_selectors: dict, output_format: str
+    def _use_cached_selectors(
+        self,
+        url: str,
+        domain: str,
+        fetcher: HTMLFetcher,
+        existing_selectors: dict,
+        output_format: str,
+        skip_verification: bool,
     ) -> bool:
-        """Verify cached selectors and extract content from current URL.
-
-        Fetches HTML, verifies cached selectors, and extracts content.
-        Falls back to using cached selectors as-is if fetch or verification fails.
-
-        Args:
-            url: URL to fetch and verify against.
-            domain: Domain name (for logging and tracking).
-            fetcher: HTML fetcher instance.
-            existing_selectors: Previously discovered selectors to verify.
-            output_format: Format for extracted content ('json' or 'markdown').
-
-        Returns:
-            True if selectors verified successfully or fetch failed (uses cached
-            selectors as-is). False if verification explicitly failed (triggers
-            re-discovery).
-
-        Raises:
-            BotDetectionError: Passes through bot detection from fetcher.
-
-        """
-        self.console.print('[step]Fetching HTML to verify cached selectors...[/step]')
-
-        try:
-            result = fetcher.fetch(url)
-
-            if not result.success or result.html is None:
-                self.console.print('[warning]⚠ Could not fetch HTML, skipping extraction[/warning]')
-                self._track_cached_success(url, domain)
-                return True
-
-            # Clean HTML
-            self.console.print('[step]Cleaning HTML...[/step]')
-            cleaned_html = self.cleaner.clean_html(result.html)
-
-            # Save debug HTML if enabled
-            self.debug.save_debug_html(url, cleaned_html)
-
-            # Verify selectors
-            verified = self.verifier.verify_selectors_with_html(url, cleaned_html, existing_selectors)
-
-            if verified:
-                self.console.print(
-                    f'[success]✓ Verified {len(verified)}/{len(self.contract.model_fields)} cached selectors[/success]'
-                )
-
-                # Extract content using verified cached selectors
-                extracted = self._extract(url, cleaned_html, verified)
-
-                # Save extracted content
-                if extracted:
-                    self.storage.save_content(url, extracted, output_format)
-                else:
-                    self.console.print('[warning]⚠ Extraction failed with cached selectors[/warning]')
-
-                self._track_cached_success(url, domain)
-                return True
-
-            self.console.print('[warning]⚠ Cached selectors failed verification - forcing re-discovery[/warning]')
-            return False
-
-        except BotDetectionError:
-            raise
-        except Exception as e:
-            self.logger.exception(f'Cached selector verification failed for {url}')
-            self.console.print(f'[warning]⚠ Verification error: {e}, skipping extraction[/warning]')
-            self._track_cached_success(url, domain)
-            return True
-
-    def _extract_with_cached_selectors(
-        self, url: str, domain: str, fetcher: HTMLFetcher, existing_selectors: dict, output_format: str
-    ):
-        """Extract content using cached selectors without verification.
+        """Fetch, optionally verify, and extract content using cached selectors.
 
         Args:
             url: URL to fetch and extract from.
@@ -690,9 +618,22 @@ class Pipeline:
             fetcher: HTML fetcher instance.
             existing_selectors: Previously discovered selectors to use.
             output_format: Format for extracted content ('json' or 'markdown').
+            skip_verification: Skip selector verification if True.
+
+        Returns:
+            True if extraction succeeded or fetch failed gracefully.
+            False if verification failed (triggers re-discovery).
+
+        Raises:
+            BotDetectionError: Passes through bot detection from fetcher.
 
         """
-        self.console.print('[step]Fetching HTML for extraction with cached selectors...[/step]')
+        step = (
+            'Fetching HTML for extraction with cached selectors...'
+            if skip_verification
+            else 'Fetching HTML to verify cached selectors...'
+        )
+        self.console.print(f'[step]{step}[/step]')
 
         try:
             result = fetcher.fetch(url)
@@ -700,29 +641,46 @@ class Pipeline:
             if not result.success or result.html is None:
                 self.console.print('[warning]⚠ Could not fetch HTML, skipping extraction[/warning]')
                 self._track_cached_success(url, domain)
-                return
+                return True
 
-            # Clean HTML
             self.console.print('[step]Cleaning HTML...[/step]')
             cleaned_html = self.cleaner.clean_html(result.html)
-
-            # Save debug HTML if enabled
             self.debug.save_debug_html(url, cleaned_html)
 
-            # Extract content (no verification)
-            extracted = self._extract(url, cleaned_html, existing_selectors)
+            if not skip_verification:
+                verification = self.verifier.verify(cleaned_html, existing_selectors)
+                if not verification.success:
+                    self.console.print(
+                        '[warning]⚠ Cached selectors failed verification - forcing re-discovery[/warning]'
+                    )
+                    return False
+                selectors_to_use = {
+                    name: existing_selectors[name]
+                    for name in verification.results
+                    if verification.results[name].status == 'verified'
+                }
+                self.console.print(
+                    f'[success]✓ Verified {len(selectors_to_use)}/{len(self.contract.model_fields)} cached selectors[/success]'
+                )
+            else:
+                selectors_to_use = existing_selectors
 
-            # Save extracted content
+            extracted = self._extract(url, cleaned_html, selectors_to_use)
             if extracted:
                 self.storage.save_content(url, extracted, output_format)
             else:
                 self.console.print('[warning]⚠ Extraction failed with cached selectors[/warning]')
 
             self._track_cached_success(url, domain)
+            return True
 
+        except BotDetectionError:
+            raise
         except Exception as e:
-            self.console.print(f'[warning]⚠ Extraction error: {e}[/warning]')
+            self.logger.exception(f'Cached selector handling failed for {url}')
+            self.console.print(f'[warning]⚠ Error: {e}, skipping extraction[/warning]')
             self._track_cached_success(url, domain)
+            return True
 
     def _track_cached_success(self, url: str, domain: str):
         """Track successful use of cached selectors.

@@ -40,9 +40,11 @@ uv sync --group dev
 Create a `.env` file (see `env.example`):
 
 ```bash
-# Choose one or both providers
-GROQ_KEY=your_groq_api_key_here           # For Llama 3.3 (faster, recommended)
-GEMINI_KEY=your_gemini_api_key_here       # For Gemini 2.0 Flash
+# Set keys for whichever providers you want to use
+GROQ_KEY=your_groq_api_key_here           # groq/...
+GEMINI_KEY=your_gemini_api_key_here       # gemini/...
+OPENAI_KEY=your_openai_api_key_here       # openai/...
+CEREBRAS_KEY=your_cerebras_api_key_here   # cerebras/...
 
 # Optional: Observability
 LOGFIRE_TOKEN=your_logfire_token_here     # For Logfire tracing
@@ -56,11 +58,16 @@ LOGFIRE_TOKEN=your_logfire_token_here     # For Logfire tracing
 ### Basic Usage
 
 ```bash
-# Process a single URL
+# Process a single URL (uses GROQ_KEY or GEMINI_KEY from .env)
 uv run yosoi --url https://example.com/article
 
+# Specify model explicitly with -m provider/model-name
+uv run yosoi -m groq/llama-3.3-70b-versatile --url https://example.com/article
+uv run yosoi -m gemini/gemini-2.0-flash --url https://example.com/article
+uv run yosoi -m openai/gpt-4o --url https://example.com/article
+
 # Process multiple URLs from a file
-uv run yosoi --file urls.txt
+uv run yosoi -m groq/llama-3.3-70b-versatile --file urls.txt
 
 # Force re-discovery
 uv run yosoi --url https://example.com --force
@@ -282,17 +289,16 @@ pipeline.show_summary()
 
 ## Supported AI Models
 
-### Groq (Recommended)
-- **Model**: `llama-3.3-70b-versatile`
-- **Cost**: Free tier available
-- **Setup**: `GROQ_KEY` in `.env`
+Use `-m provider/model-name` to select any model explicitly. The API key is read from the corresponding environment variable.
 
-### Google Gemini
-- **Model**: `gemini-2.0-flash`
-- **Cost**: Free tier available
-- **Setup**: `GEMINI_KEY` in `.env`
+| Provider | `-m` prefix | Env key | Example model |
+|----------|-------------|---------|---------------|
+| Groq | `groq/` | `GROQ_KEY` | `llama-3.3-70b-versatile` |
+| Google Gemini | `gemini/` | `GEMINI_KEY` | `gemini-2.0-flash` |
+| OpenAI | `openai/` | `OPENAI_KEY` | `gpt-4o` |
+| Cerebras | `cerebras/` | `CEREBRAS_KEY` | `llama-3.3-70b` |
 
-The system automatically uses Groq if `GROQ_KEY` is set, otherwise falls back to Gemini.
+If `-m` is not provided, Yosoi auto-detects: uses Groq if `GROQ_KEY` is set, otherwise Gemini.
 
 ## Observability with Logfire
 

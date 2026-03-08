@@ -153,33 +153,6 @@ class SelectorVerifier:
             for failure in result.failed_selectors:
                 self.console.print(f'      → {failure.level}: "{failure.selector}" → {failure.reason}')
 
-    def verify_selectors_with_html(
-        self,
-        _url: str,
-        html: str,
-        selectors: dict[str, dict[str, str]],
-    ) -> dict[str, dict[str, str]] | None:
-        """Backward-compatible method for legacy callers.
-
-        Args:
-            _url: URL (unused, kept for API compatibility)
-            html: HTML content to verify against
-            selectors: Dict of field names to selector dicts
-
-        Returns:
-            Dict of verified selectors, or None if none verified
-
-        Deprecated:
-            Use verify() instead for structured results.
-
-        """
-        result = self.verify(html, selectors)
-
-        if not result.success:
-            return None
-
-        return {name: selectors[name] for name in result.results if result.results[name].status == 'verified'}
-
     def quick_test(self, url: str, selector: str) -> bool:
         """Quick test if a selector works on a URL.
 

@@ -13,38 +13,69 @@ import sys
 import logfire
 from dotenv import load_dotenv
 
-from yosoi import Pipeline, gemini, groq
+from yosoi import Pipeline
+from yosoi.core.discovery.config import LLMConfig
 from yosoi.models.contract import Contract
 from yosoi.models.defaults import NewsArticle
 from yosoi.utils.files import init_yosoi, is_initialized
 from yosoi.utils.logging import setup_local_logging
 
+# Maps provider names to their expected env key
+PROVIDER_ENV_KEYS: dict[str, str] = {
+    'groq': 'GROQ_KEY',
+    'gemini': 'GEMINI_KEY',
+    'google': 'GEMINI_KEY',
+    'openai': 'OPENAI_KEY',
+    'gpt': 'OPENAI_KEY',
+    'cerebras': 'CEREBRAS_KEY',
+}
 
-def setup_llm_config():
-    """Set up LLM configuration from environment variables.
 
-    Checks for GROQ_KEY first, then GEMINI_KEY.
+def setup_llm_config(model_arg: str | None = None) -> LLMConfig:
+    """Set up LLM configuration from -m/--model flag or environment variables.
+
+    Args:
+        model_arg: Model string in ``provider/model-name`` format (e.g. ``groq/llama-3.3-70b-versatile``).
+                   If None, falls back to auto-detecting from GROQ_KEY or GEMINI_KEY.
 
     Returns:
-        LLMConfig instance configured with available API key.
+        LLMConfig instance configured with the selected provider and model.
 
     Raises:
-        SystemExit: If no API keys are found in environment.
+        SystemExit: If the provider is unknown, the API key is missing, or no config can be determined.
 
     """
+    if model_arg:
+        if '/' not in model_arg:
+            print('Error: --model must be in provider/model-name format (e.g. groq/llama-3.3-70b-versatile)')
+            sys.exit(1)
+        provider, model_name = model_arg.split('/', 1)
+        provider = provider.lower()
+        env_key = PROVIDER_ENV_KEYS.get(provider)
+        if env_key is None:
+            available = ', '.join(PROVIDER_ENV_KEYS.keys())
+            print(f'Error: Unknown provider {provider!r}. Available: {available}')
+            sys.exit(1)
+        api_key = os.getenv(env_key)
+        if not api_key:
+            print(f'Error: {env_key} not set for provider {provider!r}')
+            sys.exit(1)
+        print(f'Using {provider} / {model_name}')
+        return LLMConfig(provider=provider, model_name=model_name, api_key=api_key)
+
+    # Legacy auto-detect fallback
     groq_api_key = os.getenv('GROQ_KEY')
     gemini_api_key = os.getenv('GEMINI_KEY')
 
     if groq_api_key:
-        print('Using GROQ as AI provider')
-        return groq('llama-3.3-70b-versatile', groq_api_key)
+        print('Using GROQ as AI provider (tip: use -m groq/<model> to choose explicitly)')
+        return LLMConfig(provider='groq', model_name='llama-3.3-70b-versatile', api_key=groq_api_key)
 
     if gemini_api_key:
-        print('Using Gemini as AI provider')
-        return gemini('gemini-2.0-flash', gemini_api_key)
+        print('Using Gemini as AI provider (tip: use -m gemini/<model> to choose explicitly)')
+        return LLMConfig(provider='gemini', model_name='gemini-2.0-flash', api_key=gemini_api_key)
 
-    print('Error: No API keys found')
-    print('Please set GROQ_KEY or GEMINI_KEY in your .env file')
+    print('Error: No API keys found. Set GROQ_KEY or GEMINI_KEY, or use -m provider/model.')
     sys.exit(1)
 
 
@@ -204,13 +235,22 @@ def parse_arguments():
         epilog="""
 Examples:
   %(prog)s -u https://example.com
-  %(prog)s -f urls.txt -l 10
+  %(prog)s -m groq/llama-3.3-70b-versatile -u https://example.com
+  %(prog)s -m gemini/gemini-2.0-flash -f urls.txt -l 10
   %(prog)s --url https://example.com --force
   %(prog)s -s
   %(prog)s -u https://example.com -d -F
         """,
     )
 
+    parser.add_argument(
+        '-m',
+        '--model',
+        type=str,
+        default=None,
+        metavar='PROVIDER/MODEL',
+        help='LLM model in provider/model format (e.g. groq/llama-3.3-70b-versatile, gemini/gemini-2.0-flash)',
+    )
     parser.add_argument('-u', '--url', type=str, help='Single URL to process')
     parser.add_argument('-f', '--file', type=str, help='File containing URLs (one per line, or JSON)')
     parser.add_argument('-l', '--limit', type=int, help='Limit number of URLs to process from file')
@@ -286,7 +326,7 @@ def main():
         init_yosoi()
 
     # Set up LLM configuration
-    llm_config = setup_llm_config()
+    llm_config = setup_llm_config(args.model)
 
     # Initialize logging
     log_file = setup_local_logging(level=args.log_level)
