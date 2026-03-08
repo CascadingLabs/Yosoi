@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 import yosoi as ys
 
 load_dotenv()
-config = ys.openrouter('llama-3.3-70b-versatile:free', os.environ['OPENROUTER_KEY'])
+config = ys.openrouter('meta-llama/llama-3.3-70b-instruct:free', os.environ['OPENROUTER_KEY'])
 
 
 # -- Example 1: Static Contract subclass --------------------------------------
