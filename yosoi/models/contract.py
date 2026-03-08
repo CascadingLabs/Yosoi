@@ -5,11 +5,30 @@ from __future__ import annotations
 from typing import Any
 
 import pydantic
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class Contract(BaseModel):
     """Base class for user-defined scraping contracts."""
+
+    @model_validator(mode='before')
+    @classmethod
+    def _apply_inner_validators(cls, data: Any) -> Any:
+        """Apply per-field transforms defined in a nested Validators class."""
+        if not isinstance(data, dict):
+            return data
+        validators_cls = next(
+            (klass.__dict__['Validators'] for klass in cls.__mro__ if 'Validators' in klass.__dict__),
+            None,
+        )
+        if validators_cls is None:
+            return data
+        result = dict(data)
+        for field_name, value in list(result.items()):
+            fn = getattr(validators_cls, field_name, None)
+            if callable(fn):
+                result[field_name] = fn(value)
+        return result
 
     @classmethod
     def to_selector_model(cls) -> type[BaseModel]:

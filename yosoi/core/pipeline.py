@@ -183,6 +183,10 @@ class Pipeline:
             if not extracted:
                 self.console.print('[warning]⚠ Extraction failed, but selectors are valid[/warning]')
 
+            # Validate and transform extracted data using Contract (Step 4.5)
+            if extracted:
+                extracted = self._validate_with_contract(extracted)
+
             # Save and track (save selectors + content if extracted)
             self._save_and_track(url, domain, verified, extracted, used_llm, format_to_use)
             return True
@@ -667,6 +671,7 @@ class Pipeline:
 
             extracted = self._extract(url, cleaned_html, selectors_to_use)
             if extracted:
+                extracted = self._validate_with_contract(extracted)
                 self.storage.save_content(url, extracted, output_format)
             else:
                 self.console.print('[warning]⚠ Extraction failed with cached selectors[/warning]')
@@ -710,6 +715,26 @@ class Pipeline:
         if attempt >= max_retries:
             self.console.print('[danger]ABORTING - All fetch attempts exhausted[/danger]')
             self.console.print('[info]Try: --fetcher smart (or) --fetcher playwright[/info]')
+
+    def _validate_with_contract(self, extracted: dict) -> dict:
+        """Instantiate Contract with extracted data to run validators and type coercion.
+
+        Args:
+            extracted: Raw extracted data dictionary.
+
+        Returns:
+            Validated and transformed data dictionary, or the original if validation fails.
+
+        """
+        try:
+            instance = self.contract.model_validate(extracted)
+            validated = instance.model_dump()
+            self.console.print('[success]✓ Contract validation applied[/success]')
+            return validated
+        except Exception as e:
+            self.logger.warning(f'Contract validation failed, using raw data: {e}')
+            self.console.print(f'[warning]⚠ Validation skipped: {e}[/warning]')
+            return extracted
 
     def _save_and_track(
         self, url: str, domain: str, verified: dict, extracted: dict | None, used_llm: bool, output_format: str
