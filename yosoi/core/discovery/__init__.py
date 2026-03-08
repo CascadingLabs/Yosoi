@@ -10,6 +10,7 @@ from yosoi.core.discovery.config import (
     gemini,
     groq,
     openai,
+    openrouter,
 )
 
 __all__ = [
@@ -22,4 +23,5 @@ __all__ = [
     'gemini',
     'groq',
     'openai',
+    'openrouter',
 ]

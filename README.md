@@ -45,6 +45,7 @@ GROQ_KEY=your_groq_api_key_here           # groq/...
 GEMINI_KEY=your_gemini_api_key_here       # gemini/...
 OPENAI_KEY=your_openai_api_key_here       # openai/...
 CEREBRAS_KEY=your_cerebras_api_key_here   # cerebras/...
+OPENROUTER_API_KEY=your_openrouter_key_here  # openrouter/...
 
 # Optional: Observability
 LOGFIRE_TOKEN=your_logfire_token_here     # For Logfire tracing
@@ -53,7 +54,10 @@ LOGFIRE_TOKEN=your_logfire_token_here     # For Logfire tracing
 **Get API Keys:**
 - Groq (Free): https://console.groq.com/keys
 - Gemini: https://aistudio.google.com/app/apikey
+- OpenRouter (Free tier available): https://openrouter.ai/keys
 - Logfire (Optional): https://logfire.pydantic.dev
+
+> Some Free models from OpenRouter require configuration of your [Privacy Settings](https://openrouter.ai/settings/privacy) to allow training on your data.
 
 ### Basic Usage
 
@@ -65,6 +69,7 @@ uv run yosoi --url https://example.com/article
 uv run yosoi -m groq/llama-3.3-70b-versatile --url https://example.com/article
 uv run yosoi -m gemini/gemini-2.0-flash --url https://example.com/article
 uv run yosoi -m openai/gpt-4o --url https://example.com/article
+uv run yosoi -m openrouter/gpt-oss --url https://example.com/article
 
 # Process multiple URLs from a file
 uv run yosoi -m groq/llama-3.3-70b-versatile --file urls.txt
@@ -297,6 +302,7 @@ Use `-m provider/model-name` to select any model explicitly. The API key is read
 | Google Gemini | `gemini/` | `GEMINI_KEY` | `gemini-2.0-flash` |
 | OpenAI | `openai/` | `OPENAI_KEY` | `gpt-4o` |
 | Cerebras | `cerebras/` | `CEREBRAS_KEY` | `llama-3.3-70b` |
+| OpenRouter | `openrouter/` | `OPENROUTER_API_KEY` | `gpt-oss` |
 
 If `-m` is not provided, Yosoi auto-detects: uses Groq if `GROQ_KEY` is set, otherwise Gemini.
 

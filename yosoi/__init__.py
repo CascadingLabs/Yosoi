@@ -1,7 +1,7 @@
 """Yosoi: AI-powered CSS selector discovery and web scraping."""
 
 from yosoi.config import DebugConfig, TelemetryConfig, YosoiConfig
-from yosoi.core.discovery import LLMConfig, cerebras, gemini, groq, openai
+from yosoi.core.discovery import LLMConfig, cerebras, gemini, groq, openai, openrouter
 from yosoi.core.fetcher import SmartFetcher
 from yosoi.core.pipeline import Pipeline
 from yosoi.models.contract import Contract
@@ -34,4 +34,5 @@ __all__ = [
     'gemini',
     'groq',
     'openai',
+    'openrouter',
 ]

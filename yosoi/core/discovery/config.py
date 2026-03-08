@@ -11,10 +11,12 @@ from pydantic_ai.models.cerebras import CerebrasModel
 from pydantic_ai.models.google import GoogleModel
 from pydantic_ai.models.groq import GroqModel
 from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.models.openrouter import OpenRouterModel
 from pydantic_ai.providers.cerebras import CerebrasProvider
 from pydantic_ai.providers.google import GoogleProvider
 from pydantic_ai.providers.groq import GroqProvider
 from pydantic_ai.providers.openai import OpenAIProvider
+from pydantic_ai.providers.openrouter import OpenRouterProvider
 
 # ============================================================================
 # 1. CONFIG DATACLASSES - Simple configuration objects
@@ -156,6 +158,23 @@ def create_openai_model(config: LLMConfig) -> OpenAIChatModel:
     return OpenAIChatModel(config.model_name, provider=provider)
 
 
+def create_openrouter_model(config: LLMConfig) -> OpenRouterModel:
+    """Create an OpenRouter model from configuration.
+
+    Uses the native pydantic-ai OpenRouterModel/OpenRouterProvider, giving
+    access to hundreds of models from different providers via a single key.
+
+    Args:
+        config: LLM configuration with OpenRouter settings
+
+    Returns:
+        Configured OpenRouterModel instance.
+
+    """
+    provider = OpenRouterProvider(api_key=config.api_key)
+    return OpenRouterModel(config.model_name, provider=provider)
+
+
 # ============================================================================
 # 4. MAIN FACTORY - Central creation point
 # ============================================================================
@@ -168,6 +187,7 @@ PROVIDER_FACTORIES = {
     'openai': create_openai_model,
     'gpt': create_openai_model,  # Alias
     'cerebras': create_cerebras_model,
+    'openrouter': create_openrouter_model,
 }
 
 
@@ -411,6 +431,21 @@ def openai(model_name: str, api_key: str, **kwargs) -> LLMConfig:
 
     """
     return LLMConfig(provider='openai', model_name=model_name, api_key=api_key, **kwargs)
+
+
+def openrouter(model_name: str, api_key: str, **kwargs) -> LLMConfig:
+    """Quick config for OpenRouter.
+
+    Args:
+        model_name: OpenRouter model identifier (e.g. 'stepfun/step-3.5-flash:free')
+        api_key: OpenRouter API key
+        **kwargs: Additional configuration options
+
+    Returns:
+        Configured LLMConfig for OpenRouter.
+
+    """
+    return LLMConfig(provider='openrouter', model_name=model_name, api_key=api_key, **kwargs)
 
 
 # ============================================================================
