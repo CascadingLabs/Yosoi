@@ -18,7 +18,8 @@ import yosoi as ys
 load_dotenv()
 
 # Pick whichever key is available; Cerebras is tried first.
-config = ys.groq('llama-3.1-8b-instant', os.environ['GROQ_KEY'])
+# config = ys.groq('llama-3.1-8b-instant', os.environ['GROQ_KEY'])
+config = ys.openrouter('llama-3.3-70b-versatile:free', os.environ['OPENROUTER_KEY'])
 
 
 # ── Example 1: Product page ──────────────────────────────────────────────────
