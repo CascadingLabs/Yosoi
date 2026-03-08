@@ -1,16 +1,14 @@
 """Examples of the dynamic Contract system.
 
 Three examples demonstrating different ways to use contracts with the Pipeline:
-1. Static subclass with field validator (books.toscrape.com)
+1. Static subclass with field-right types (books.toscrape.com)
 2. ContractBuilder fluent API (quotes.toscrape.com)
-3. Default NewsArticle contract (vlr.gg)
 """
 
 import os
-from typing import Annotated
 
 from dotenv import load_dotenv
-from pydantic import Field, field_validator
+from pydantic import field_validator
 
 import yosoi as ys
 
@@ -25,21 +23,21 @@ config = ys.LLMConfig(
 )
 
 
-# ── Example 1: Static subclass ──────────────────────────────────────────────
+# -- Example 1: Static subclass ----------------------------------------------
 class Book(ys.Contract):
     """Scrape book data from books.toscrape.com."""
 
-    title: Annotated[str, Field(description='Book title')]
-    price: Annotated[str, Field(description='Book price including currency symbol')]
-    rating: Annotated[str, Field(description="Star rating (e.g. 'Three')")]
-    footer: Annotated[str, Field(description='optional footer if the site has one')]
+    title: str = ys.Title()
+    price: float = ys.Price(hint='Book price including currency symbol')
+    rating: str = ys.Rating(hint="Star rating (e.g. 'Three')")
+    footer: str = ys.Field(description='optional footer if the site has one')
 
     @field_validator('price', mode='after')
     @classmethod
-    def price_must_have_symbol(cls, v: str) -> str:
-        """Ensure price contains a currency symbol."""
-        if '£' not in v and '$' not in v:
-            raise ValueError('price must include currency symbol')
+    def price_must_be_positive(cls, v: float) -> float:
+        """Ensure price is positive."""
+        if v <= 0:
+            raise ValueError('price must be positive')
         return v
 
 
@@ -50,7 +48,7 @@ def example_1_static_subclass():
     pipeline.process_url('https://books.toscrape.com')
 
 
-# ── Example 2: ContractBuilder fluent API ───────────────────────────────────
+# -- Example 2: ContractBuilder fluent API ------------------------------------
 def example_2_contract_builder():
     """ContractBuilder fluent API for defining contracts at runtime."""
     print('\n=== Example 2: ContractBuilder (quotes.toscrape.com) ===')

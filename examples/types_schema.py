@@ -1,7 +1,11 @@
-"""Examples of Yosoi semantic type aliases.
+"""Examples of Yosoi semantic type factories.
 
-Three examples mirroring dynamic_schema.py but using ys.Price, ys.Title etc.
-instead of raw Annotated[str, Field(...)] boilerplate:
+Three examples using the field-right pattern:
+
+    price: float = ys.Price()
+    title: str = ys.Title()
+
+Plain Python type on the left, Yosoi factory on the right.
 
 1. E-commerce product page  — ys.Price, ys.Title, ys.Rating, ys.Url
 2. Blog / news article       — ys.Title, ys.Author, ys.Datetime, ys.BodyText
@@ -11,7 +15,6 @@ instead of raw Annotated[str, Field(...)] boilerplate:
 import os
 
 from dotenv import load_dotenv
-from pydantic import field_validator
 
 import yosoi as ys
 
@@ -22,22 +25,14 @@ load_dotenv()
 config = ys.openrouter('llama-3.3-70b-versatile:free', os.environ['OPENROUTER_KEY'])
 
 
-# ── Example 1: Product page ──────────────────────────────────────────────────
+# -- Example 1: Product page -------------------------------------------------
 class Product(ys.Contract):
-    """Scrape product data from books.toscrape.com using semantic type aliases."""
+    """Scrape product data from books.toscrape.com using semantic type factories."""
 
-    title: ys.Title
-    price: ys.Price = ys.Field(hint='Book price — always includes £ symbol')
-    rating: ys.Rating = ys.Field(hint="Star rating written as a word e.g. 'Three'")
-    url: ys.Url = ys.Field(hint='Canonical URL or href of this product listing')
-
-    @field_validator('price', mode='before')
-    @classmethod
-    def coerce_price(cls, v: object) -> float:
-        """Strip currency symbols and convert to float."""
-        if isinstance(v, str):
-            return float(v.replace('£', '').replace('$', '').strip())
-        return float(v)  # type: ignore[arg-type]
+    title: str = ys.Title()
+    price: float = ys.Price(hint='Book price — always includes £ symbol')
+    rating: str = ys.Rating(hint="Star rating written as a word e.g. 'Three'")
+    url: str = ys.Url(hint='Canonical URL or href of this product listing')
 
 
 def example_1_product():
@@ -47,14 +42,14 @@ def example_1_product():
     pipeline.process_url('https://books.toscrape.com')
 
 
-# ── Example 2: Blog / news article ──────────────────────────────────────────
+# -- Example 2: Blog / news article ------------------------------------------
 class BlogPost(ys.Contract):
-    """Scrape a blog or news article using semantic type aliases."""
+    """Scrape a blog or news article using semantic type factories."""
 
-    headline: ys.Title
-    author: ys.Author
-    published: ys.Datetime
-    body: ys.BodyText = ys.Field(hint='Main article body — exclude nav, ads, and sidebars')
+    headline: str = ys.Title()
+    author: str = ys.Author()
+    published: str = ys.Datetime()
+    body: str = ys.BodyText(hint='Main article body — exclude nav, ads, and sidebars')
 
 
 def example_2_blog():
@@ -64,20 +59,20 @@ def example_2_blog():
     pipeline.process_url('https://quotes.toscrape.com')
 
 
-# ── Example 3: Job listing with field hints ──────────────────────────────────
+# -- Example 3: Job listing with field hints ----------------------------------
 class JobListing(ys.Contract):
-    """Scrape a job posting; all fields use ys.Field(hint=...) for AI guidance."""
+    """Scrape a job posting; all fields use hint=... for AI guidance."""
 
-    title: ys.Title = ys.Field(hint='Job title / position name in the main heading')
-    company: ys.Author = ys.Field(hint='Hiring company name — often near the job title')
+    title: str = ys.Title(hint='Job title / position name in the main heading')
+    company: str = ys.Author(hint='Hiring company name — often near the job title')
     location: str = ys.Field(hint='City, region, or "Remote" label')
-    salary: ys.Price = ys.Field(hint='Annual or hourly salary; return 0.0 if not listed')
-    apply_url: ys.Url = ys.Field(hint='Direct link to the application form or "Apply" button')
+    salary: float = ys.Price(hint='Annual or hourly salary; return 0.0 if not listed')
+    apply_url: str = ys.Url(hint='Direct link to the application form or "Apply" button')
 
 
 def example_3_job():
-    """Job listing contract combining type aliases with ys.Field hints."""
-    print('\n=== Example 3: Job listing (using type aliases + hints) ===')
+    """Job listing contract combining type factories with hints."""
+    print('\n=== Example 3: Job listing (using type factories + hints) ===')
     pipeline = ys.Pipeline(llm_config=config, contract=JobListing)
     # Replace with a real job board URL to test
     pipeline.process_url('https://jobs.lever.co/anthropic')

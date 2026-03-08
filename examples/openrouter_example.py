@@ -1,4 +1,4 @@
-"""OpenRouter example using stepfun/step-3.5-flash:free.
+"""OpenRouter example using llama-3.3-70b-versatile:free.
 
 OpenRouter provides access to hundreds of models (including free tiers) via a
 single OpenAI-compatible API.  Get a key at https://openrouter.ai/keys and add
@@ -16,17 +16,16 @@ from dotenv import load_dotenv
 import yosoi as ys
 
 load_dotenv()
-# stepfun/step-3.5-flash:free is a free model available on OpenRouter
 config = ys.openrouter('llama-3.3-70b-versatile:free', os.environ['OPENROUTER_KEY'])
 
 
-# ── Example 1: Static Contract subclass ─────────────────────────────────────
+# -- Example 1: Static Contract subclass --------------------------------------
 class Book(ys.Contract):
     """Scrape book data from books.toscrape.com."""
 
-    title: ys.Title
-    price: ys.Price = ys.Field(hint='Book price — always includes £ symbol')
-    rating: ys.Rating = ys.Field(hint="Star rating written as a word e.g. 'Three'")
+    title: str = ys.Title()
+    price: float = ys.Price(hint='Book price — always includes £ symbol')
+    rating: str = ys.Rating(hint="Star rating written as a word e.g. 'Three'")
 
 
 def example_1_books():
@@ -36,7 +35,7 @@ def example_1_books():
     pipeline.process_url('https://books.toscrape.com')
 
 
-# ── Example 2: ContractBuilder fluent API ───────────────────────────────────
+# -- Example 2: ContractBuilder fluent API ------------------------------------
 def example_2_quotes():
     """Scrape quotes.toscrape.com using ContractBuilder and OpenRouter."""
     print('\n=== Example 2: Quotes (quotes.toscrape.com) via OpenRouter ===')

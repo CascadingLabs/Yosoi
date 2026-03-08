@@ -185,7 +185,7 @@ class Pipeline:
 
             # Validate and transform extracted data using Contract (Step 4.5)
             if extracted:
-                extracted = self._validate_with_contract(extracted)
+                extracted = self._validate_with_contract(extracted, url)
 
             # Save and track (save selectors + content if extracted)
             self._save_and_track(url, domain, verified, extracted, used_llm, format_to_use)
@@ -671,7 +671,7 @@ class Pipeline:
 
             extracted = self._extract(url, cleaned_html, selectors_to_use)
             if extracted:
-                extracted = self._validate_with_contract(extracted)
+                extracted = self._validate_with_contract(extracted, url)
                 self.storage.save_content(url, extracted, output_format)
             else:
                 self.console.print('[warning]⚠ Extraction failed with cached selectors[/warning]')
@@ -716,18 +716,19 @@ class Pipeline:
             self.console.print('[danger]ABORTING - All fetch attempts exhausted[/danger]')
             self.console.print('[info]Try: --fetcher smart (or) --fetcher playwright[/info]')
 
-    def _validate_with_contract(self, extracted: dict) -> dict:
+    def _validate_with_contract(self, extracted: dict, url: str = '') -> dict:
         """Instantiate Contract with extracted data to run validators and type coercion.
 
         Args:
             extracted: Raw extracted data dictionary.
+            url: Source URL injected into validation context for relative URL resolution.
 
         Returns:
             Validated and transformed data dictionary, or the original if validation fails.
 
         """
         try:
-            instance = self.contract.model_validate(extracted)
+            instance = self.contract.model_validate(extracted, context={'source_url': url})
             validated = instance.model_dump()
             self.console.print('[success]✓ Contract validation applied[/success]')
             return validated

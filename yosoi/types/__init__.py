@@ -1,4 +1,4 @@
-"""Semantic type aliases and field helpers for Yosoi contracts."""
+"""Semantic type factories and field helpers for Yosoi contracts."""
 
 from yosoi.types.author import Author
 from yosoi.types.body_text import BodyText

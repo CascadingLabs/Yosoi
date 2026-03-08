@@ -1,18 +1,27 @@
-"""Author type alias for Yosoi contracts."""
+"""Author type for Yosoi contracts."""
 
-from typing import Annotated
-
-from pydantic.functional_validators import BeforeValidator
+from typing import Any
 
 from yosoi.types.field import Field
 
 
-def _clean_str(v: object) -> str:
-    return str(v).strip() if v is not None else ''
+def Author(
+    description: str = 'Author or creator name',
+    **kwargs: Any,
+) -> Any:
+    """Configure an author field.
 
+    Args:
+        description: Field description for schema/manifest.
+        **kwargs: Additional arguments forwarded to Field.
 
-Author = Annotated[
-    str,
-    BeforeValidator(_clean_str),
-    Field(description='Author or creator name', json_schema_extra={'yosoi_type': 'author'}),
-]
+    Example::
+
+        class Blog(Contract):
+            author: str = ys.Author()
+    """
+    return Field(
+        description=description,
+        json_schema_extra={'yosoi_type': 'author'},
+        **kwargs,
+    )

@@ -2,7 +2,7 @@
 
 Two examples — no boilerplate @field_validator needed:
 
-1. Built-in type coercion  — ys.Price strips £/$/€ automatically; ys.Title strips whitespace
+1. Built-in type coercion  — ys.Price() strips currency automatically; ys.Title() strips whitespace
 2. Validators inner class  — per-field transforms defined as plain static methods
 """
 
@@ -17,19 +17,19 @@ load_dotenv()
 config = ys.openrouter('llama-3.3-70b-versatile:free', os.environ['OPENROUTER_KEY'])
 
 
-# ── Example 1: Built-in type coercion ────────────────────────────────────────
-# ys.Price strips currency symbols and commas automatically — no @field_validator needed.
-# ys.Title, ys.Author, etc. strip leading/trailing whitespace.
+# -- Example 1: Built-in type coercion ----------------------------------------
+# ys.Price() strips currency symbols and commas automatically — no @field_validator needed.
+# ys.Title(), ys.Author(), etc. strip leading/trailing whitespace.
 class Product(ys.Contract):
     """E-commerce product — price is always a clean float, no manual parsing required."""
 
-    title: ys.Title
-    price: ys.Price = ys.Field(hint='Book price — always includes £ symbol')
-    rating: ys.Rating = ys.Field(hint="Star rating written as a word e.g. 'Three'")
+    title: str = ys.Title()
+    price: float = ys.Price(hint='Book price — always includes £ symbol')
+    rating: str = ys.Rating(hint="Star rating written as a word e.g. 'Three'")
 
 
 def example_1_builtin_coercion():
-    """Show that ys.Price coerces '£12.99' → 12.99 without any extra code."""
+    """Show that ys.Price() coerces '£12.99' -> 12.99 without any extra code."""
     print('\n=== Example 1: Built-in type coercion ===')
 
     # Simulate what the pipeline returns after extraction
@@ -41,21 +41,21 @@ def example_1_builtin_coercion():
     print(f'rating : {result.rating!r}')  # 'Three'  (whitespace stripped)
 
 
-# ── Example 2: Validators inner class ────────────────────────────────────────
+# -- Example 2: Validators inner class ----------------------------------------
 # Define per-field transforms as plain static methods inside a Validators class.
 # They run before Pydantic's own field validation — no decorator ceremony required.
 class BookStore(ys.Contract):
     """Book listing with custom per-field normalisation."""
 
-    title: ys.Title
-    price: ys.Price = ys.Field(hint='Book price including currency symbol')
+    title: str = ys.Title()
+    price: float = ys.Price(hint='Book price including currency symbol')
     category: str = ys.Field(hint='Genre or category label')
 
     class Validators:
         @staticmethod
         def title(v: str) -> str:
             """Truncate very long titles to 60 characters."""
-            return v[:60].rstrip() + ('…' if len(v) > 60 else '')
+            return v[:60].rstrip() + ('...' if len(v) > 60 else '')
 
         @staticmethod
         def category(v: str) -> str:

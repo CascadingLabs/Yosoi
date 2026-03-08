@@ -1,18 +1,27 @@
-"""BodyText type alias for Yosoi contracts."""
+"""BodyText type for Yosoi contracts."""
 
-from typing import Annotated
-
-from pydantic.functional_validators import BeforeValidator
+from typing import Any
 
 from yosoi.types.field import Field
 
 
-def _clean_str(v: object) -> str:
-    return str(v).strip() if v is not None else ''
+def BodyText(
+    description: str = 'Main body text content',
+    **kwargs: Any,
+) -> Any:
+    """Configure a body text field.
 
+    Args:
+        description: Field description for schema/manifest.
+        **kwargs: Additional arguments forwarded to Field.
 
-BodyText = Annotated[
-    str,
-    BeforeValidator(_clean_str),
-    Field(description='Main body text content', json_schema_extra={'yosoi_type': 'body_text'}),
-]
+    Example::
+
+        class Blog(Contract):
+            body: str = ys.BodyText()
+    """
+    return Field(
+        description=description,
+        json_schema_extra={'yosoi_type': 'body_text'},
+        **kwargs,
+    )
