@@ -12,13 +12,13 @@ from typing import Annotated
 from dotenv import load_dotenv
 from pydantic import Field, field_validator
 
-from yosoi import Contract, LLMConfig, Pipeline
+import yosoi as ys
 
 # Load environment variables
 load_dotenv()
 
 # Configure your LLM (edit as needed)
-config = LLMConfig(
+config = ys.LLMConfig(
     provider='groq',
     model_name='llama-3.3-70b-versatile',
     api_key=os.environ.get('GROQ_KEY', ''),
@@ -26,12 +26,13 @@ config = LLMConfig(
 
 
 # ── Example 1: Static subclass ──────────────────────────────────────────────
-class Book(Contract):
+class Book(ys.Contract):
     """Scrape book data from books.toscrape.com."""
 
     title: Annotated[str, Field(description='Book title')]
     price: Annotated[str, Field(description='Book price including currency symbol')]
     rating: Annotated[str, Field(description="Star rating (e.g. 'Three')")]
+    footer: Annotated[str, Field(description='optional footer if the site has one')]
 
     @field_validator('price', mode='after')
     @classmethod
@@ -45,7 +46,7 @@ class Book(Contract):
 def example_1_static_subclass():
     """Static contract subclass with field validators."""
     print('\n=== Example 1: Static Contract Subclass (books.toscrape.com) ===')
-    pipeline = Pipeline(llm_config=config, contract=Book)
+    pipeline = ys.Pipeline(llm_config=config, contract=Book)
     pipeline.process_url('https://books.toscrape.com')
 
 
@@ -55,26 +56,17 @@ def example_2_contract_builder():
     print('\n=== Example 2: ContractBuilder (quotes.toscrape.com) ===')
 
     Quote = (
-        Contract.define('Quote')
+        ys.Contract.define('Quote')
         .text(description='The quote text', type=str)
         .author(description="The author's name", type=str)
         .tags(description='Comma-separated tags', type=str)
         .build()
     )
 
-    pipeline = Pipeline(llm_config=config, contract=Quote)
+    pipeline = ys.Pipeline(llm_config=config, contract=Quote)
     pipeline.process_url('https://quotes.toscrape.com')
-
-
-# ── Example 3: Default NewsArticle (no contract arg) ────────────────────────
-def example_3_default():
-    """No contract = default NewsArticle behavior (5-field schema)."""
-    print('\n=== Example 3: Default NewsArticle contract (vlr.gg) ===')
-    pipeline = Pipeline(llm_config=config)
-    pipeline.process_url('https://www.vlr.gg')
 
 
 if __name__ == '__main__':
     example_1_static_subclass()
     example_2_contract_builder()
-    example_3_default()
