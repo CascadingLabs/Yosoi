@@ -1,7 +1,8 @@
 import pytest
 
-from yosoi.llm_config import LLMConfig
-from yosoi.models import FieldSelectors, ScrapingConfig
+from yosoi.core.discovery.config import LLMConfig
+from yosoi.models import FieldSelectors
+from yosoi.models.contract import NewsArticle
 
 
 @pytest.fixture
@@ -36,7 +37,8 @@ def happy_path_html():
 
 @pytest.fixture
 def mock_selectors():
-    return ScrapingConfig(
+    selector_model = NewsArticle.to_selector_model()
+    return selector_model(
         headline=FieldSelectors(primary='h1.title', fallback='h1', tertiary=None),
         author=FieldSelectors(primary='span.author', fallback='.author', tertiary=None),
         date=FieldSelectors(primary='span.date', fallback='.date', tertiary=None),

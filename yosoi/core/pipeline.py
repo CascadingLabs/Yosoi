@@ -20,6 +20,7 @@ from yosoi.core.extraction import ContentExtractor
 from yosoi.core.fetcher import HTMLFetcher, create_fetcher
 from yosoi.core.verification import SelectorVerifier
 from yosoi.models import FetchResult
+from yosoi.models.contract import Contract, NewsArticle
 from yosoi.storage import DebugManager, LLMTracker, SelectorStorage
 from yosoi.utils.exceptions import BotDetectionError
 from yosoi.utils.retry import get_retryer
@@ -46,13 +47,20 @@ class Pipeline:
 
     """
 
-    def __init__(self, llm_config: LLMConfig, debug_mode: bool = False, output_format: str = 'json'):
+    def __init__(
+        self,
+        llm_config: LLMConfig,
+        debug_mode: bool = False,
+        output_format: str = 'json',
+        contract: type[Contract] | None = None,
+    ):
         """Initialize the pipeline with LLM configuration.
 
         Args:
             llm_config: Configuration of LLM
             debug_mode: If enabled will output the HTML from the URL
             output_format: Format for extracted content ('json' or 'markdown'). Defaults to 'json'.
+            contract: Contract subclass defining fields to scrape. Defaults to None (uses NewsArticle).
 
         """
         self.custom_theme = Theme(
@@ -64,11 +72,12 @@ class Pipeline:
                 'step': 'bold blue',
             }
         )
+        self.contract = contract if contract is not None else NewsArticle
         self.console = Console(theme=self.custom_theme)
         self.cleaner = HTMLCleaner(console=self.console)
-        self.discovery = SelectorDiscovery(llm_config=llm_config, console=self.console)
+        self.discovery = SelectorDiscovery(llm_config=llm_config, console=self.console, contract=self.contract)
         self.verifier = SelectorVerifier(console=self.console)
-        self.extractor = ContentExtractor(console=self.console)
+        self.extractor = ContentExtractor(console=self.console, contract=self.contract)
         self.storage = SelectorStorage()
         self.tracker = LLMTracker()
         self.debug_mode = debug_mode
@@ -617,7 +626,9 @@ class Pipeline:
             verified = self.verifier.verify_selectors_with_html(url, cleaned_html, existing_selectors)
 
             if verified:
-                self.console.print(f'[success]✓ Verified {len(verified)}/5 cached selectors[/success]')
+                self.console.print(
+                    f'[success]✓ Verified {len(verified)}/{len(self.contract.model_fields)} cached selectors[/success]'
+                )
 
                 # Extract content using verified cached selectors
                 extracted = self._extract(url, cleaned_html, verified)

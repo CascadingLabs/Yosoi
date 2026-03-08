@@ -1,7 +1,7 @@
 from pydantic_ai import Agent, capture_run_messages
 from pydantic_ai.models.test import TestModel
 
-from yosoi.models import ScrapingConfig
+from yosoi.models.contract import NewsArticle
 
 
 def test_agent_prompt_construction(mock_selectors):
@@ -14,7 +14,8 @@ def test_agent_prompt_construction(mock_selectors):
     model = TestModel(custom_output_args=mock_selectors)
 
     # 2. Inject into your Agent
-    agent = Agent(model, output_type=ScrapingConfig)
+    SelectorModel = NewsArticle.to_selector_model()
+    agent = Agent(model, output_type=SelectorModel)
 
     html_input = '<html><body><h1>Real Data</h1></body></html>'
 
@@ -25,7 +26,7 @@ def test_agent_prompt_construction(mock_selectors):
         result = agent.run_sync(f'Analyze this: {html_input}')
 
     # 4. Assert Result (Schema Validation worked)
-    assert isinstance(result.output, ScrapingConfig)
+    assert isinstance(result.output, SelectorModel)
     assert result.output.headline.primary == 'h1.title'
 
     # 5. Assert Prompt Engineering (The "Context" check)

@@ -1,5 +1,6 @@
 """Pydantic models for selectors and results."""
 
+from yosoi.models.contract import Contract, ContractBuilder, NewsArticle
 from yosoi.models.results import (
     ContentMetadata,
     FetchResult,
@@ -7,14 +8,16 @@ from yosoi.models.results import (
     SelectorFailure,
     VerificationResult,
 )
-from yosoi.models.selectors import FieldSelectors, ScrapingConfig
+from yosoi.models.selectors import FieldSelectors
 
 __all__ = [
     'ContentMetadata',
+    'Contract',
+    'ContractBuilder',
     'FetchResult',
     'FieldSelectors',
     'FieldVerificationResult',
-    'ScrapingConfig',
+    'NewsArticle',
     'SelectorFailure',
     'VerificationResult',
 ]

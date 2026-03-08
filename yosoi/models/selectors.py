@@ -24,22 +24,3 @@ class FieldSelectors(BaseModel):
             ('fallback', self.fallback),
             ('tertiary', self.tertiary),
         ]
-
-
-class ScrapingConfig(BaseModel):
-    """Complete set of selectors for web scraping.
-
-    Attributes:
-        headline: Selectors for main article title
-        author: Selectors for author name/byline
-        date: Selectors for publication date
-        body_text: Selectors for article paragraphs
-        related_content: Selectors for related article links
-
-    """
-
-    headline: FieldSelectors
-    author: FieldSelectors
-    date: FieldSelectors
-    body_text: FieldSelectors
-    related_content: FieldSelectors

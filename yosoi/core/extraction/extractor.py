@@ -24,14 +24,18 @@ class ContentExtractor:
         'related_content',
     )
 
-    def __init__(self, console: Console | None = None):
+    def __init__(self, console: Console | None = None, contract=None):
         """Initialize the extractor.
 
         Args:
             console: Rich console instance for formatted output. Defaults to None (creates new Console).
+            contract: Contract subclass defining expected fields. Defaults to None (uses EXPECTED_FIELDS).
 
         """
         self.console = console or Console()
+        self.expected_fields: tuple[str, ...] = (
+            tuple(contract.model_fields.keys()) if contract is not None else self.EXPECTED_FIELDS
+        )
 
     def extract_content_with_html(
         self,
@@ -51,14 +55,14 @@ class ContentExtractor:
             Each field contains extracted text, list of texts, or list of dicts (for related_content).
 
         """
-        self.console.print(f'  ↻ Extracting {len(self.EXPECTED_FIELDS)} fields using validated selectors...')
+        self.console.print(f'  ↻ Extracting {len(self.expected_fields)} fields using validated selectors...')
 
         soup = BeautifulSoup(html, 'lxml')
         extracted = {}
 
         # Extract each expected field
         # TODO this should play better with ys.contract and Pydantic. Why are we
-        for field_name in self.EXPECTED_FIELDS:
+        for field_name in self.expected_fields:
             # Check if selector exists for this field
             if field_name not in validated_selectors:
                 self.console.print(f'  ✗ {field_name}: no selector found')
@@ -98,7 +102,7 @@ class ContentExtractor:
                 self.console.print(f'  ✗ {field_name}: no content found with any selector')
 
         # Summary
-        total = len(self.EXPECTED_FIELDS)
+        total = len(self.expected_fields)
         extracted_count = len(extracted)
         self.console.print(f'  ↻ Summary: {extracted_count}/{total} fields extracted successfully')
 
