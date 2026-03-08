@@ -4,6 +4,7 @@ Handles argument parsing and delegates to pipeline.
 """
 
 import argparse
+import importlib.util
 import json
 import os
 import sys
@@ -12,6 +13,8 @@ import logfire
 from dotenv import load_dotenv
 
 from yosoi import Pipeline, gemini, groq
+from yosoi.models.contract import Contract
+from yosoi.models.defaults import NewsArticle
 from yosoi.utils.files import init_yosoi, is_initialized
 from yosoi.utils.logging import setup_local_logging
 
@@ -60,6 +63,48 @@ def setup_logfire():
         print('Logfire setup complete')
     else:
         print('LOGFIRE_TOKEN not set - skipping logfire setup')
+
+
+def load_schema(schema_str: str) -> type[Contract]:
+    """Load a Contract class by path or built-in name.
+
+    Args:
+        schema_str: Either ``path/to/file.py:ClassName`` for dynamic import
+                    or a bare name like ``NewsArticle`` for built-in schemas.
+
+    Returns:
+        The Contract subclass.
+
+    Raises:
+        SystemExit: If the schema cannot be found or loaded.
+
+    """
+    if ':' in schema_str:
+        file_path, class_name = schema_str.rsplit(':', 1)
+        if not os.path.exists(file_path):
+            print(f'Error: Schema file not found: {file_path}')
+            sys.exit(1)
+        spec = importlib.util.spec_from_file_location('_yosoi_schema', file_path)
+        if spec is None or spec.loader is None:
+            print(f'Error: Could not load schema from {file_path}')
+            sys.exit(1)
+        module = importlib.util.module_from_spec(spec)
+        loader = spec.loader
+        assert loader is not None
+        loader.exec_module(module)
+        cls = getattr(module, class_name, None)
+        if cls is None:
+            print(f'Error: Class {class_name!r} not found in {file_path}')
+            sys.exit(1)
+        return cls  # type: ignore[no-any-return]
+    from yosoi.models.defaults import BUILTIN_SCHEMAS
+
+    schema = BUILTIN_SCHEMAS.get(schema_str)
+    if schema is None:
+        available = ', '.join(BUILTIN_SCHEMAS.keys())
+        print(f'Error: Unknown built-in schema {schema_str!r}. Available: {available}')
+        sys.exit(1)
+    return schema
 
 
 def load_urls_from_file(filepath: str) -> list[str]:
@@ -119,7 +164,7 @@ Examples:
     parser.add_argument('-s', '--summary', action='store_true', help='Show summary of saved selectors')
     parser.add_argument('-d', '--debug', action='store_true', help='Enable debug mode (saves extracted HTML to debug/)')
     parser.add_argument(
-        '-S', '--skip-verification', action='store_true', help='Skip verification for faster processing'
+        '-sv', '--skip-verification', action='store_true', help='Skip verification for faster processing'
     )
     parser.add_argument(
         '-o',
@@ -141,6 +186,17 @@ Examples:
         choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'ALL'],
         default=os.getenv('YOSOI_LOG_LEVEL', 'DEBUG'),
         help='Logging level for the local log file (default: DEBUG or YOSOI_LOG_LEVEL env)',
+    )
+    parser.add_argument(
+        '-sc',
+        '--schema',
+        type=str,
+        default=None,
+        help=(
+            'Contract schema to use. '
+            'Built-in: NewsArticle, Video, Product, JobPosting. '
+            'Dynamic: /path/to/file.py:ClassName'
+        ),
     )
 
     return parser.parse_args()
@@ -184,8 +240,11 @@ def main():
     # Normalize output format
     output_format = 'markdown' if args.output in ['markdown', 'md'] else 'json'
 
+    # Resolve contract schema
+    contract = load_schema(args.schema) if args.schema else NewsArticle
+
     # Initialize pipeline with output format
-    pipeline = Pipeline(llm_config, debug_mode=args.debug, output_format=output_format)
+    pipeline = Pipeline(llm_config, contract=contract, debug_mode=args.debug, output_format=output_format)
 
     # Set up Logfire
     setup_logfire()

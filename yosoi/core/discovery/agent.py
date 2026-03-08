@@ -8,7 +8,7 @@ from pydantic_ai import Agent
 from rich.console import Console
 
 from yosoi.core.discovery.config import LLMConfig, create_model
-from yosoi.models.contract import Contract, NewsArticle
+from yosoi.models.contract import Contract
 from yosoi.utils import load_prompt
 from yosoi.utils.exceptions import LLMGenerationError
 
@@ -31,10 +31,10 @@ class SelectorDiscovery:
 
     def __init__(
         self,
+        contract: type[Contract],
         llm_config: LLMConfig | None = None,
         agent: Agent[Any, BaseModel] | None = None,
         console: Console | None = None,
-        contract: type[Contract] | None = None,
     ):
         """Initialize the discovery with LLM configuration or an agent.
 
@@ -42,14 +42,14 @@ class SelectorDiscovery:
             llm_config: Configuration for the LLM provider and model
             agent: The LLM agent that will be used
             console: Rich console instance for formatted output
-            contract: Contract subclass defining fields to discover. Defaults to NewsArticle.
+            contract: Contract subclass defining fields to discover.
 
         Raises:
             ValueError: Must provide llm_config or an agent
 
         """
         self.console = console or Console()
-        self._contract = contract if contract is not None else NewsArticle
+        self._contract = contract
 
         system_prompt = load_prompt('discovery_system')
         output_model = self._contract.to_selector_model()
@@ -131,9 +131,6 @@ class SelectorDiscovery:
     def _build_user_prompt(self, url: str, html: str) -> str:
         """Build the user prompt for AI discovery.
 
-        Uses the discovery_user.md template for NewsArticle, and generates
-        a dynamic prompt for custom contracts.
-
         Args:
             url: URL for context
             html: Cleaned HTML content
@@ -142,10 +139,6 @@ class SelectorDiscovery:
             Formatted prompt string
 
         """
-        if self._contract is NewsArticle:
-            template = load_prompt('discovery_user')
-            return template.format(url=url, html=html)
-
         descriptions = self._contract.field_descriptions()
         fields_text = '\n'.join(f'**{name}** - {desc}' for name, desc in descriptions.items())
 

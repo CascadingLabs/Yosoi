@@ -14,13 +14,14 @@ from rich.table import Table
 from rich.theme import Theme
 from tenacity import RetryError
 
+from yosoi.config import YosoiConfig
 from yosoi.core.cleaning import HTMLCleaner
 from yosoi.core.discovery import LLMConfig, SelectorDiscovery
 from yosoi.core.extraction import ContentExtractor
 from yosoi.core.fetcher import HTMLFetcher, create_fetcher
 from yosoi.core.verification import SelectorVerifier
 from yosoi.models import FetchResult
-from yosoi.models.contract import Contract, NewsArticle
+from yosoi.models.contract import Contract
 from yosoi.storage import DebugManager, LLMTracker, SelectorStorage
 from yosoi.utils.exceptions import BotDetectionError
 from yosoi.utils.retry import get_retryer
@@ -49,20 +50,32 @@ class Pipeline:
 
     def __init__(
         self,
-        llm_config: LLMConfig,
+        llm_config: LLMConfig | YosoiConfig,
+        contract: type[Contract],
         debug_mode: bool = False,
         output_format: str = 'json',
-        contract: type[Contract] | None = None,
     ):
         """Initialize the pipeline with LLM configuration.
 
         Args:
-            llm_config: Configuration of LLM
-            debug_mode: If enabled will output the HTML from the URL
+            llm_config: LLMConfig or YosoiConfig. When YosoiConfig is passed,
+                debug_mode and telemetry are extracted from it automatically.
+            debug_mode: If enabled will output the HTML from the URL.
+                        Overridden by YosoiConfig.debug.save_html when YosoiConfig is passed.
             output_format: Format for extracted content ('json' or 'markdown'). Defaults to 'json'.
-            contract: Contract subclass defining fields to scrape. Defaults to None (uses NewsArticle).
+            contract: Contract subclass defining the fields to scrape.
 
         """
+        if isinstance(llm_config, YosoiConfig):
+            yosoi_cfg = llm_config
+            llm_config = yosoi_cfg.llm
+            debug_mode = yosoi_cfg.debug.save_html
+            if yosoi_cfg.telemetry.logfire_token:
+                import logfire as _logfire
+
+                _logfire.configure(token=yosoi_cfg.telemetry.logfire_token)
+                _logfire.instrument_pydantic()
+
         self.custom_theme = Theme(
             {
                 'info': 'dim cyan',
@@ -72,7 +85,7 @@ class Pipeline:
                 'step': 'bold blue',
             }
         )
-        self.contract = contract if contract is not None else NewsArticle
+        self.contract = contract
         self.console = Console(theme=self.custom_theme)
         self.cleaner = HTMLCleaner(console=self.console)
         self.discovery = SelectorDiscovery(llm_config=llm_config, console=self.console, contract=self.contract)

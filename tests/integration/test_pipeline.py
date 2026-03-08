@@ -1,6 +1,7 @@
 from pydantic_ai import Agent
 
 from yosoi.fetcher import ContentMetadata, FetchResult
+from yosoi.models.defaults import NewsArticle
 from yosoi.pipeline import SelectorDiscoveryPipeline
 
 
@@ -20,7 +21,7 @@ def test_pipeline_happy_path(mocker, mock_llm_config, happy_path_html, mock_sele
     )
     mocker.patch('yosoi.pipeline.create_fetcher', return_value=mock_fetcher)
 
-    pipeline = SelectorDiscoveryPipeline(mock_llm_config)
+    pipeline = SelectorDiscoveryPipeline(mock_llm_config, contract=NewsArticle)
 
     # ACT
     success = pipeline.process_url('http://example.com', force=True)
@@ -40,7 +41,7 @@ def test_pipeline_fetch_failure(mocker, mock_llm_config):
     )
     mocker.patch('yosoi.pipeline.create_fetcher', return_value=mock_fetcher)
 
-    pipeline = SelectorDiscoveryPipeline(mock_llm_config)
+    pipeline = SelectorDiscoveryPipeline(mock_llm_config, contract=NewsArticle)
 
     # ACT
     success = pipeline.process_url('http://example.com', force=True)
@@ -66,7 +67,7 @@ def test_pipeline_ai_failure(mocker, mock_llm_config, happy_path_html):
     mocker.patch('yosoi.pipeline.create_fetcher', return_value=mock_fetcher)
 
     # 3. Use heuristics as fallback
-    pipeline = SelectorDiscoveryPipeline(mock_llm_config)
+    pipeline = SelectorDiscoveryPipeline(mock_llm_config, contract=NewsArticle)
 
     # ACT
     # Should fail if AI fails (Fail Fast)

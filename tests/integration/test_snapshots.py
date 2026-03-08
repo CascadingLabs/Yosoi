@@ -6,7 +6,7 @@ from pydantic_ai import Agent
 from pydantic_ai.models.test import TestModel
 
 from yosoi.discovery import SelectorDiscovery
-from yosoi.models.contract import NewsArticle
+from yosoi.models.defaults import NewsArticle
 from yosoi.verifier import SelectorVerifier
 
 # Load Manifest
@@ -45,7 +45,7 @@ def test_snapshot_health_check(url, meta):
         output_type=SelectorModel,
     )
 
-    discovery = SelectorDiscovery(agent=agent)
+    discovery = SelectorDiscovery(agent=agent, contract=NewsArticle)
     # Updated: use discover_selectors instead of discover_from_html
     # Note: discover_selectors expects (html, url) not (url, html)
     result = discovery.discover_selectors(html_content, url)

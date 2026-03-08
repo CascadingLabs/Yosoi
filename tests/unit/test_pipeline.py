@@ -1,3 +1,4 @@
+from yosoi.models.defaults import NewsArticle
 from yosoi.pipeline import SelectorDiscoveryPipeline
 
 
@@ -39,7 +40,7 @@ def test_pipeline_happy_path(mocker, mock_llm_config, happy_path_html, mock_sele
     # We also need to mock create_model because SelectorDiscovery calls it
     mocker.patch('yosoi.discovery.create_model')
 
-    pipeline = SelectorDiscoveryPipeline(mock_llm_config)
+    pipeline = SelectorDiscoveryPipeline(mock_llm_config, contract=NewsArticle)
 
     # ACT
     success = pipeline.process_url('http://example.com', force=True)

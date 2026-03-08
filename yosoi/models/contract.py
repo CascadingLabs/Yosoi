@@ -30,16 +30,6 @@ class Contract(BaseModel):
         return ContractBuilder(name)
 
 
-class NewsArticle(Contract):
-    """Default contract matching the original 5-field behavior."""
-
-    headline: str = Field(description='Main article title (h1/h2 in article, NOT navigation)')
-    author: str = Field(description='Author name (author/byline classes or links)')
-    date: str = Field(description='Publication date (time tags or date/published classes)')
-    body_text: str = Field(description='Article paragraphs (p tags in article, NOT sidebars/ads)')
-    related_content: str = Field(description='Related article links (aside/sidebar sections)')
-
-
 class ContractBuilder:
     """Fluent builder for creating Contract subclasses at runtime."""
 

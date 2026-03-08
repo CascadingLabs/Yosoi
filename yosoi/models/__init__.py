@@ -1,6 +1,7 @@
 """Pydantic models for selectors and results."""
 
-from yosoi.models.contract import Contract, ContractBuilder, NewsArticle
+from yosoi.models.contract import Contract, ContractBuilder
+from yosoi.models.defaults import NewsArticle
 from yosoi.models.results import (
     ContentMetadata,
     FetchResult,

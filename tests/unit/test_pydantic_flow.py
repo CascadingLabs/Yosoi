@@ -1,7 +1,7 @@
 from pydantic_ai import Agent, capture_run_messages
 from pydantic_ai.models.test import TestModel
 
-from yosoi.models.contract import NewsArticle
+from yosoi.models.defaults import NewsArticle
 
 
 def test_agent_prompt_construction(mock_selectors):

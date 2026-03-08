@@ -2,7 +2,7 @@ import pytest
 
 from yosoi.core.discovery.config import LLMConfig
 from yosoi.models import FieldSelectors
-from yosoi.models.contract import NewsArticle
+from yosoi.models.defaults import NewsArticle
 
 
 @pytest.fixture
