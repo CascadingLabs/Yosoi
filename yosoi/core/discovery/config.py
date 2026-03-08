@@ -7,9 +7,11 @@ from dataclasses import dataclass
 from typing import Any, Protocol
 
 from pydantic_ai import Agent
+from pydantic_ai.models.cerebras import CerebrasModel
 from pydantic_ai.models.google import GoogleModel
 from pydantic_ai.models.groq import GroqModel
 from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.providers.cerebras import CerebrasProvider
 from pydantic_ai.providers.google import GoogleProvider
 from pydantic_ai.providers.groq import GroqProvider
 from pydantic_ai.providers.openai import OpenAIProvider
@@ -117,6 +119,20 @@ class LLMProvider(Protocol):
 # ============================================================================
 
 
+def create_cerebras_model(config: LLMConfig) -> CerebrasModel:
+    """Create a Cerebras model from configuration.
+
+    Args:
+        config: LLM configuration with Cerebras settings
+
+    Returns:
+        Configured CerebrasModel instance.
+
+    """
+    provider = CerebrasProvider(api_key=config.api_key)
+    return CerebrasModel(config.model_name, provider=provider)
+
+
 def create_groq_model(config: LLMConfig) -> GroqModel:
     """Create a Groq model from configuration.
 
@@ -194,6 +210,7 @@ PROVIDER_FACTORIES = {
     'google': create_gemini_model,  # Alias
     'openai': create_openai_model,
     'gpt': create_openai_model,  # Alias
+    'cerebras': create_cerebras_model,
 }
 
 
@@ -407,6 +424,21 @@ def gemini(model_name: str, api_key: str, **kwargs) -> LLMConfig:
 
     """
     return LLMConfig(provider='gemini', model_name=model_name, api_key=api_key, **kwargs)
+
+
+def cerebras(model_name: str, api_key: str, **kwargs) -> LLMConfig:
+    """Quick config for Cerebras.
+
+    Args:
+        model_name: Cerebras model identifier (e.g. 'llama-3.3-70b')
+        api_key: Cerebras API key
+        **kwargs: Additional configuration options
+
+    Returns:
+        Configured LLMConfig for Cerebras.
+
+    """
+    return LLMConfig(provider='cerebras', model_name=model_name, api_key=api_key, **kwargs)
 
 
 def openai(model_name: str, api_key: str, **kwargs) -> LLMConfig:

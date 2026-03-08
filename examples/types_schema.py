@@ -17,11 +17,13 @@ import yosoi as ys
 
 load_dotenv()
 
-config = ys.LLMConfig(
-    provider='groq',
-    model_name='llama-3.3-70b-versatile',
-    api_key=os.environ.get('GROQ_KEY', ''),
-)
+# Pick whichever key is available; Cerebras is tried first.
+if os.environ.get('CEREBRAS_API_KEY'):
+    config = ys.cerebras('llama-3.3-70b', os.environ['CEREBRAS_API_KEY'])
+elif os.environ.get('GROQ_KEY'):
+    config = ys.groq('llama-3.3-70b-versatile', os.environ['GROQ_KEY'])
+else:
+    raise RuntimeError('Set CEREBRAS_API_KEY or GROQ_KEY in your .env file')
 
 
 # ── Example 1: Product page ──────────────────────────────────────────────────
