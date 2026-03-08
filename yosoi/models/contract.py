@@ -50,6 +50,8 @@ class ContractBuilder:
 
     def __getattr__(self, field_name: str):
         """Return an _add function that registers the named field."""
+        if field_name.startswith('__'):
+            raise AttributeError(field_name)
 
         def _add(description: str = '', type: type = str) -> ContractBuilder:
             self._fields.append((field_name, type, description))

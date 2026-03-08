@@ -27,7 +27,7 @@ def test_agent_prompt_construction(mock_selectors):
 
     # 4. Assert Result (Schema Validation worked)
     assert isinstance(result.output, SelectorModel)
-    assert result.output.headline.primary == 'h1.title'
+    assert result.output.headline.primary == 'h1.title'  # type: ignore[attr-defined]
 
     # 5. Assert Prompt Engineering (The "Context" check)
     # This proves extraction logic actually put text in the prompt

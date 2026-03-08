@@ -5,6 +5,8 @@ from typing import ClassVar
 from bs4 import BeautifulSoup
 from rich.console import Console
 
+from yosoi.models.contract import Contract
+
 
 class ContentExtractor:
     """Extracts content from HTML using validated selectors.
@@ -24,7 +26,7 @@ class ContentExtractor:
         'related_content',
     )
 
-    def __init__(self, console: Console | None = None, contract=None):
+    def __init__(self, console: Console | None = None, contract: type[Contract] | None = None):
         """Initialize the extractor.
 
         Args:

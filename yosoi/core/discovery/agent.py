@@ -1,6 +1,6 @@
 """AI-powered selector discovery by reading cleaned HTML."""
 
-from typing import Any
+from typing import Any, cast
 
 import logfire
 from pydantic import BaseModel
@@ -115,7 +115,7 @@ class SelectorDiscovery:
         try:
             result = self.agent.run_sync(prompt)
             self.console.print('[success]  ✓ AI found selectors[/success]')
-            return result.output
+            return cast(BaseModel, result.output)
 
         except Exception as e:
             error_msg = str(e)
