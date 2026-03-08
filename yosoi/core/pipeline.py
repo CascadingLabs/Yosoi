@@ -98,6 +98,19 @@ class Pipeline:
         self.output_format = output_format
         self.logger = logging.getLogger(__name__)
 
+        # Auto-initialize .yosoi dir and file logging when used outside the CLI
+        has_file_handler = any(isinstance(h, logging.FileHandler) for h in logging.getLogger().handlers)
+        if not has_file_handler:
+            from yosoi.utils.files import init_yosoi, is_initialized
+            from yosoi.utils.logging import setup_local_logging
+
+            if not is_initialized():
+                init_yosoi()
+            log_file = setup_local_logging()
+            from rich import print as rprint
+
+            rprint(f'ℹ Log file: [link=file://{log_file}]file://{log_file}[/link]')
+
     def process_url(
         self,
         url: str,

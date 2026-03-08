@@ -4,6 +4,7 @@ Handles argument parsing and delegates to pipeline.
 """
 
 import argparse
+import difflib
 import importlib.util
 import json
 import os
@@ -65,6 +66,44 @@ def setup_logfire():
         print('LOGFIRE_TOKEN not set - skipping logfire setup')
 
 
+def _suggest_file(file_path: str, class_name: str) -> list[str]:
+    """Return suggested ``file:class`` strings for a missing file path.
+
+    Tries adding a ``.py`` extension first, then fuzzy-matches against files
+    in the same directory.
+
+    Args:
+        file_path: The path that was not found.
+        class_name: The class name from the original argument.
+
+    Returns:
+        List of suggestion strings in ``path:ClassName`` format.
+
+    """
+    suggestions: list[str] = []
+
+    # Try adding .py extension
+    if not file_path.endswith('.py'):
+        py_path = file_path + '.py'
+        if os.path.exists(py_path):
+            suggestions.append(f'{py_path}:{class_name}')
+
+    # Fuzzy-match filenames in the same directory
+    dir_part = os.path.dirname(file_path) or '.'
+    base_name = os.path.basename(file_path)
+    try:
+        candidates = [f for f in os.listdir(dir_part) if f.endswith('.py')]
+        matches = difflib.get_close_matches(base_name, candidates, n=3, cutoff=0.4)
+        for m in matches:
+            candidate = f'{os.path.join(dir_part, m)}:{class_name}'
+            if candidate not in suggestions:
+                suggestions.append(candidate)
+    except OSError:
+        pass
+
+    return suggestions
+
+
 def load_schema(schema_str: str) -> type[Contract]:
     """Load a Contract class by path or built-in name.
 
@@ -83,6 +122,11 @@ def load_schema(schema_str: str) -> type[Contract]:
         file_path, class_name = schema_str.rsplit(':', 1)
         if not os.path.exists(file_path):
             print(f'Error: Schema file not found: {file_path}')
+            suggestions = _suggest_file(file_path, class_name)
+            if suggestions:
+                print(f'Did you mean: {suggestions[0]}')
+                if len(suggestions) > 1:
+                    print(f'  Other options: {", ".join(suggestions[1:])}')
             sys.exit(1)
         spec = importlib.util.spec_from_file_location('_yosoi_schema', file_path)
         if spec is None or spec.loader is None:
@@ -94,15 +138,25 @@ def load_schema(schema_str: str) -> type[Contract]:
         loader.exec_module(module)
         cls = getattr(module, class_name, None)
         if cls is None:
+            available = [
+                name for name in dir(module) if not name.startswith('_') and isinstance(getattr(module, name), type)
+            ]
             print(f'Error: Class {class_name!r} not found in {file_path}')
+            matches = difflib.get_close_matches(class_name, available, n=3, cutoff=0.5)
+            if matches:
+                print(f'Did you mean: {matches[0]}')
+                if len(matches) > 1:
+                    print(f'  Other options: {", ".join(matches[1:])}')
+            elif available:
+                print(f'Available classes: {", ".join(available)}')
             sys.exit(1)
         return cls  # type: ignore[no-any-return]
     from yosoi.models.defaults import BUILTIN_SCHEMAS
 
     schema = BUILTIN_SCHEMAS.get(schema_str)
     if schema is None:
-        available = ', '.join(BUILTIN_SCHEMAS.keys())
-        print(f'Error: Unknown built-in schema {schema_str!r}. Available: {available}')
+        available_str = ', '.join(BUILTIN_SCHEMAS.keys())
+        print(f'Error: Unknown built-in schema {schema_str!r}. Available: {available_str}')
         sys.exit(1)
     return schema
 
