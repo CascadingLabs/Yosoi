@@ -3,13 +3,20 @@
 import re
 from typing import Any
 
-from yosoi.types.field import Field
+from yosoi.types.registry import register_coercion
 
 _ZERO_VALUE_WORDS = ('free', 'complimentary', 'gratis')
 
 
-def coerce_price(v: object, config: dict[str, Any]) -> float | None:
-    """Coerce a raw scraped value into a numeric price."""
+@register_coercion('price', description='A monetary price value', currency_symbol=None, require_decimals=False)
+def Price(v: object, config: dict[str, Any], source_url: str | None = None) -> float | None:
+    """Configure a price field with optional currency and decimal enforcement.
+
+    Example::
+
+        class Shop(Contract):
+            price: float = ys.Price(currency_symbol='€', require_decimals=True)
+    """
     currency_symbol: str | None = config.get('currency_symbol')
     require_decimals: bool = config.get('require_decimals', False)
 
@@ -45,33 +52,3 @@ def coerce_price(v: object, config: dict[str, Any]) -> float | None:
         num_str = num_str.replace(',', '.')
 
     return float(num_str)
-
-
-def Price(
-    currency_symbol: str | None = None,
-    require_decimals: bool = False,
-    description: str = 'A monetary price value',
-    **kwargs: Any,
-) -> Any:
-    """Configure a price field with optional currency and decimal enforcement.
-
-    Args:
-        currency_symbol: If set, raises if this symbol is absent from input.
-        require_decimals: If True, raises if no decimal separator is found.
-        description: Field description for schema/manifest. Defaults to 'A monetary price value'.
-        **kwargs: Additional arguments forwarded to Field.
-
-    Example::
-
-        class Shop(Contract):
-            price: float = ys.Price(currency_symbol='€', require_decimals=True)
-    """
-    return Field(
-        description=description,
-        json_schema_extra={
-            'yosoi_type': 'price',
-            'currency_symbol': currency_symbol,
-            'require_decimals': require_decimals,
-        },
-        **kwargs,
-    )

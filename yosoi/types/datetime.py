@@ -7,13 +7,21 @@ from typing import Any
 
 import dateparser  # type: ignore[import-untyped]
 
-from yosoi.types.field import Field
+from yosoi.types.registry import register_coercion
 
 _STRIP_PREFIXES = ('published:', 'updated:', 'posted on')
 
 
-def coerce_datetime(v: object, config: dict[str, Any]) -> dt_module.datetime | str:
-    """Coerce a raw scraped value into a datetime or ISO 8601 string."""
+@register_coercion('datetime', description='A date or datetime value', assume_utc=True, past_only=False, as_iso=True)
+def Datetime(v: object, config: dict[str, Any], source_url: str | None = None) -> dt_module.datetime | str:
+    """Configure a datetime field with timezone, tense, and format options.
+
+    Example::
+
+        class Blog(Contract):
+            published: str = ys.Datetime(past_only=True)
+            updated: datetime = ys.Datetime(as_iso=False)
+    """
     assume_utc: bool = config.get('assume_utc', True)
     past_only: bool = config.get('past_only', False)
     as_iso: bool = config.get('as_iso', True)
@@ -40,37 +48,3 @@ def coerce_datetime(v: object, config: dict[str, Any]) -> dt_module.datetime | s
     if as_iso:
         return parsed.isoformat()  # type: ignore[no-any-return]
     return parsed  # type: ignore[no-any-return]
-
-
-def Datetime(
-    assume_utc: bool = True,
-    past_only: bool = False,
-    as_iso: bool = True,
-    description: str = 'A date or datetime value',
-    **kwargs: Any,
-) -> Any:
-    """Configure a datetime field with timezone, tense, and format options.
-
-    Args:
-        assume_utc: Treat ambiguous timestamps as UTC. Defaults to True.
-        past_only: Raise if parsed datetime is in the future. Defaults to False.
-        as_iso: Return ISO 8601 string. Set False to return a datetime object. Defaults to True.
-        description: Field description for schema/manifest.
-        **kwargs: Additional arguments forwarded to Field.
-
-    Example::
-
-        class Blog(Contract):
-            published: str = ys.Datetime(past_only=True)
-            updated: datetime = ys.Datetime(as_iso=False)
-    """
-    return Field(
-        description=description,
-        json_schema_extra={
-            'yosoi_type': 'datetime',
-            'assume_utc': assume_utc,
-            'past_only': past_only,
-            'as_iso': as_iso,
-        },
-        **kwargs,
-    )

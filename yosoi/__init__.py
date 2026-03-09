@@ -15,6 +15,8 @@ from yosoi.types import (
     Rating,
     Title,
     Url,
+    YosoiType,
+    register_coercion,
 )
 
 __version__ = '0.1.0'
@@ -39,9 +41,11 @@ __all__ = [
     'Url',
     'Video',
     'YosoiConfig',
+    'YosoiType',
     'cerebras',
     'gemini',
     'groq',
     'openai',
     'openrouter',
+    'register_coercion',
 ]

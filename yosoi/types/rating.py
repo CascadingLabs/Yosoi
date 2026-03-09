@@ -3,7 +3,7 @@
 import re
 from typing import Any
 
-from yosoi.types.field import Field
+from yosoi.types.registry import register_coercion
 
 _WORD_MAP = {
     'one': 1,
@@ -19,8 +19,16 @@ _WORD_MAP = {
 }
 
 
-def coerce_rating(v: object, config: dict[str, Any]) -> float | str:
-    """Coerce a raw scraped value into a rating (float or cleaned string)."""
+@register_coercion('rating', description='A rating or review score', as_float=False, scale=5)
+def Rating(v: object, config: dict[str, Any], source_url: str | None = None) -> float | str:
+    """Configure a rating field with optional numeric conversion and scale validation.
+
+    Example::
+
+        class Shop(Contract):
+            rating: float = ys.Rating(as_float=True, scale=10)
+            stars: str = ys.Rating()
+    """
     as_float: bool = config.get('as_float', False)
     scale: int = config.get('scale', 5)
 
@@ -42,34 +50,3 @@ def coerce_rating(v: object, config: dict[str, Any]) -> float | str:
         return val
 
     raise ValueError(f'Could not extract numeric rating from: {raw!r}')
-
-
-def Rating(
-    as_float: bool = False,
-    scale: int = 5,
-    description: str = 'A rating or review score',
-    **kwargs: Any,
-) -> Any:
-    """Configure a rating field with optional numeric conversion and scale validation.
-
-    Args:
-        as_float: Convert word/fraction ratings to float. Defaults to False (returns cleaned str).
-        scale: Max expected rating value. Defaults to 5.
-        description: Field description for schema/manifest.
-        **kwargs: Additional arguments forwarded to Field.
-
-    Example::
-
-        class Shop(Contract):
-            rating: float = ys.Rating(as_float=True, scale=10)
-            stars: str = ys.Rating()
-    """
-    return Field(
-        description=description,
-        json_schema_extra={
-            'yosoi_type': 'rating',
-            'as_float': as_float,
-            'scale': scale,
-        },
-        **kwargs,
-    )

@@ -2,29 +2,9 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from typing import Any
 
-from yosoi.types.datetime import coerce_datetime
-from yosoi.types.price import coerce_price
-from yosoi.types.rating import coerce_rating
-from yosoi.types.url import coerce_url
-
-
-def _clean_str(v: object, _config: dict[str, Any]) -> str:
-    return str(v).strip() if v is not None else ''
-
-
-# Maps yosoi_type -> coercion function(value, config) -> coerced_value
-# URL is handled specially because it needs source_url context.
-_COERCERS: dict[str, Callable[..., Any]] = {
-    'price': coerce_price,
-    'datetime': coerce_datetime,
-    'rating': coerce_rating,
-    'title': _clean_str,
-    'author': _clean_str,
-    'body_text': _clean_str,
-}
+from yosoi.types.registry import _registry
 
 
 def dispatch(
@@ -51,10 +31,7 @@ def dispatch(
     if value is None:
         return value
 
-    if yosoi_type == 'url':
-        return coerce_url(value, config, source_url=source_url)
-
-    coercer = _COERCERS.get(yosoi_type)
+    coercer = _registry.get(yosoi_type)
     if coercer is None:
         return value
-    return coercer(value, config)
+    return coercer(value, config, source_url=source_url)

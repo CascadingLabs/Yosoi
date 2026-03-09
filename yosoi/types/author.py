@@ -2,26 +2,16 @@
 
 from typing import Any
 
-from yosoi.types.field import Field
+from yosoi.types.registry import register_coercion
 
 
-def Author(
-    description: str = 'Author or creator name',
-    **kwargs: Any,
-) -> Any:
+@register_coercion('author', description='Author or creator name')
+def Author(v: object, config: dict[str, Any], source_url: str | None = None) -> str:
     """Configure an author field.
-
-    Args:
-        description: Field description for schema/manifest.
-        **kwargs: Additional arguments forwarded to Field.
 
     Example::
 
         class Blog(Contract):
             author: str = ys.Author()
     """
-    return Field(
-        description=description,
-        json_schema_extra={'yosoi_type': 'author'},
-        **kwargs,
-    )
+    return str(v).strip() if v is not None else ''

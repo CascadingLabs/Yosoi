@@ -2,26 +2,16 @@
 
 from typing import Any
 
-from yosoi.types.field import Field
+from yosoi.types.registry import register_coercion
 
 
-def BodyText(
-    description: str = 'Main body text content',
-    **kwargs: Any,
-) -> Any:
+@register_coercion('body_text', description='Main body text content')
+def BodyText(v: object, config: dict[str, Any], source_url: str | None = None) -> str:
     """Configure a body text field.
-
-    Args:
-        description: Field description for schema/manifest.
-        **kwargs: Additional arguments forwarded to Field.
 
     Example::
 
         class Blog(Contract):
             body: str = ys.BodyText()
     """
-    return Field(
-        description=description,
-        json_schema_extra={'yosoi_type': 'body_text'},
-        **kwargs,
-    )
+    return str(v).strip() if v is not None else ''

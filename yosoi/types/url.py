@@ -3,13 +3,20 @@
 from typing import Any
 from urllib.parse import urljoin, urlparse, urlunparse
 
-from yosoi.types.field import Field
+from yosoi.types.registry import register_coercion
 
 _TRACKING_PREFIXES = ('utm_', 'fbclid', 'gclid', '_gl', 'ref')
 
 
-def coerce_url(v: object, config: dict[str, Any], source_url: str | None = None) -> str:
-    """Coerce a raw scraped value into a clean URL."""
+@register_coercion('url', description='A URL or href', require_https=True, strip_tracking=True)
+def Url(v: object, config: dict[str, Any], source_url: str | None = None) -> str:
+    """Configure a URL field with optional HTTPS upgrade and tracking removal.
+
+    Example::
+
+        class Shop(Contract):
+            url: str = ys.Url(strip_tracking=True)
+    """
     require_https: bool = config.get('require_https', True)
     strip_tracking: bool = config.get('strip_tracking', True)
 
@@ -34,33 +41,3 @@ def coerce_url(v: object, config: dict[str, Any], source_url: str | None = None)
         raw = urlunparse(parsed._replace(query='&'.join(clean_params))).rstrip('?')
 
     return raw
-
-
-def Url(
-    require_https: bool = True,
-    strip_tracking: bool = True,
-    description: str = 'A URL or href',
-    **kwargs: Any,
-) -> Any:
-    """Configure a URL field with optional HTTPS upgrade and tracking removal.
-
-    Args:
-        require_https: Upgrade http:// to https://. Defaults to True.
-        strip_tracking: Remove common UTM/tracking query params. Defaults to True.
-        description: Field description for schema/manifest. Defaults to 'A URL or href'.
-        **kwargs: Additional arguments forwarded to Field.
-
-    Example::
-
-        class Shop(Contract):
-            url: str = ys.Url(strip_tracking=True)
-    """
-    return Field(
-        description=description,
-        json_schema_extra={
-            'yosoi_type': 'url',
-            'require_https': require_https,
-            'strip_tracking': strip_tracking,
-        },
-        **kwargs,
-    )

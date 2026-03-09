@@ -2,26 +2,16 @@
 
 from typing import Any
 
-from yosoi.types.field import Field
+from yosoi.types.registry import register_coercion
 
 
-def Title(
-    description: str = 'A title or heading',
-    **kwargs: Any,
-) -> Any:
+@register_coercion('title', description='A title or heading')
+def Title(v: object, config: dict[str, Any], source_url: str | None = None) -> str:
     """Configure a title field.
-
-    Args:
-        description: Field description for schema/manifest.
-        **kwargs: Additional arguments forwarded to Field.
 
     Example::
 
         class Blog(Contract):
             title: str = ys.Title()
     """
-    return Field(
-        description=description,
-        json_schema_extra={'yosoi_type': 'title'},
-        **kwargs,
-    )
+    return str(v).strip() if v is not None else ''
