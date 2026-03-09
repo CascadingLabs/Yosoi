@@ -49,6 +49,7 @@ class YosoiConfig(BaseModel):
     debug: DebugConfig = Field(default_factory=DebugConfig)
     telemetry: TelemetryConfig = Field(default_factory=TelemetryConfig)
     logs: bool = True
+    force: bool = False
 
     @model_validator(mode='after')
     def validate_api_key_env(self) -> 'YosoiConfig':

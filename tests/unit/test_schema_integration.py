@@ -3,6 +3,7 @@ from pydantic_ai import Agent, capture_run_messages
 from pydantic_ai.models.test import TestModel
 
 from yosoi.models.contract import Contract
+from yosoi.types.field import Field as YsField
 from yosoi.types.price import Price
 
 
@@ -11,6 +12,14 @@ class TestContract(Contract):
 
     item_price: float = Price(currency_symbol='£', hint='Look for GBP symbol')
     name: str = Field(description='The name of the item')
+
+
+class OverrideContract(Contract):
+    """Contract with a mix of AI-discovered and selector-overridden fields."""
+
+    title: str = Field(description='The item title')
+    price: float = YsField(description='The item price', selector='p.price_color')  # type: ignore[assignment]
+    rating: str = YsField(description='Star rating', selector='p.star-rating')  # type: ignore[assignment]
 
 
 def test_selector_model_metadata_preservation():
@@ -60,3 +69,50 @@ def test_pydantic_ai_schema_rendering():
     assert schema['properties']['item_price']['description'] == 'Look for GBP symbol'
     assert schema['properties']['item_price']['yosoi_hint'] == 'Look for GBP symbol'
     assert schema['properties']['name']['description'] == 'The name of the item'
+
+
+# ---------------------------------------------------------------------------
+# Selector override tests
+# ---------------------------------------------------------------------------
+
+
+def test_overridden_fields_excluded_from_selector_model():
+    """Fields with yosoi_selector must not appear in the LLM selector model."""
+    SelectorModel = OverrideContract.to_selector_model()
+    fields = SelectorModel.model_fields
+
+    assert 'title' in fields, 'Non-overridden field should be in selector model'
+    assert 'price' not in fields, 'Overridden field should be excluded from selector model'
+    assert 'rating' not in fields, 'Overridden field should be excluded from selector model'
+
+
+def test_overridden_fields_excluded_from_field_descriptions():
+    """field_descriptions() must omit overridden fields so they don't appear in the prompt."""
+    descriptions = OverrideContract.field_descriptions()
+
+    assert 'title' in descriptions
+    assert 'price' not in descriptions
+    assert 'rating' not in descriptions
+
+
+def test_get_selector_overrides_returns_correct_mapping():
+    """get_selector_overrides() should return only fields with yosoi_selector set."""
+    overrides = OverrideContract.get_selector_overrides()
+
+    assert overrides == {
+        'price': {'primary': 'p.price_color'},
+        'rating': {'primary': 'p.star-rating'},
+    }
+    assert 'title' not in overrides
+
+
+def test_fully_overridden_contract_produces_empty_selector_model():
+    """A contract where every field is overridden should yield an empty selector model."""
+
+    class AllOverride(Contract):
+        name: str = YsField(description='Name', selector='h1')  # type: ignore[assignment]
+        desc: str = YsField(description='Desc', selector='p.desc')  # type: ignore[assignment]
+
+    SelectorModel = AllOverride.to_selector_model()
+    assert AllOverride.field_descriptions() == {}
+    assert len(SelectorModel.model_fields) == 0

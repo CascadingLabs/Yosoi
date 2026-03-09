@@ -9,6 +9,7 @@ import pydantic.fields
 def Field(
     hint: str | None = None,
     frozen: bool = False,
+    selector: str | None = None,
     **kwargs: Any,
 ) -> pydantic.fields.FieldInfo:
     """Yosoi-aware Field wrapper that stores hints in json_schema_extra.
@@ -16,6 +17,8 @@ def Field(
     Args:
         hint: Optional scraping hint that guides the AI selector discovery.
         frozen: If True, marks the field as frozen (selector won't be re-discovered).
+        selector: Optional CSS selector override. When set, AI discovery is skipped
+            for this field and the provided selector is used directly.
         **kwargs: Additional arguments forwarded to pydantic.Field.
 
     Returns:
@@ -27,4 +30,6 @@ def Field(
         extra['yosoi_hint'] = hint
     if frozen:
         extra['yosoi_frozen'] = True
+    if selector:
+        extra['yosoi_selector'] = selector
     return cast(pydantic.fields.FieldInfo, pydantic.Field(json_schema_extra=extra or None, **kwargs))

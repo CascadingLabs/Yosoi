@@ -61,14 +61,20 @@ class Contract(BaseModel):
 
         This ensures that the LLM agent knows exactly which fields to find selectors for,
         preserving any descriptions or hints provided in the contract.
+        Fields with a ``yosoi_selector`` override are excluded — their selectors are
+        provided directly and do not require AI discovery.
         """
         from yosoi.models.selectors import FieldSelectors
 
         field_defs: dict[str, Any] = {}
         for name, field_info in cls.model_fields.items():
+            extra = field_info.json_schema_extra or {}
+            # Skip fields that have a manual selector override
+            if isinstance(extra, dict) and extra.get('yosoi_selector'):
+                continue
+
             # Copy description and yosoi_hint to the selector field
             description = field_info.description or f'Selectors for {name}'
-            extra = field_info.json_schema_extra or {}
             hint = extra.get('yosoi_hint') if isinstance(extra, dict) else None
 
             selector_field = Field(
@@ -80,9 +86,33 @@ class Contract(BaseModel):
         return pydantic.create_model(f'{cls.__name__}SelectorConfig', **field_defs)
 
     @classmethod
+    def get_selector_overrides(cls) -> dict[str, dict[str, str]]:
+        """Return selector overrides defined on fields via ``yosoi_selector``.
+
+        Returns:
+            Mapping of field name → selector dict (compatible with ``FieldSelectors``
+            structure, e.g. ``{"primary": "h1.title"}``).
+
+        """
+        overrides: dict[str, dict[str, str]] = {}
+        for name, field_info in cls.model_fields.items():
+            extra = field_info.json_schema_extra
+            if isinstance(extra, dict):
+                sel = extra.get('yosoi_selector')
+                if isinstance(sel, str) and sel:
+                    overrides[name] = {'primary': sel}
+        return overrides
+
+    @classmethod
     def field_descriptions(cls) -> dict[str, str]:
-        """Return a mapping of field name to description."""
-        return {name: (fi.description or name) for name, fi in cls.model_fields.items()}
+        """Return a mapping of field name to description, excluding selector overrides."""
+        result: dict[str, str] = {}
+        for name, fi in cls.model_fields.items():
+            extra = fi.json_schema_extra
+            if isinstance(extra, dict) and extra.get('yosoi_selector'):
+                continue
+            result[name] = fi.description or name
+        return result
 
     @classmethod
     def generate_manifest(cls) -> str:
@@ -90,17 +120,19 @@ class Contract(BaseModel):
         lines = [f'# {cls.__name__} Contract Manifest\n']
         if cls.__doc__:
             lines.append(f'> {cls.__doc__.strip()}\n')
-        lines.append('| Field | Semantic Type | Required | Config | AI Hint |')
-        lines.append('|-------|---------------|----------|--------|---------|')
+        lines.append('| Field | Semantic Type | Required | Config | AI Hint | Selector Override |')
+        lines.append('|-------|---------------|----------|--------|---------|-------------------|')
+        _SKIP_KEYS = ('yosoi_type', 'yosoi_hint', 'yosoi_frozen', 'yosoi_selector')
         for name, field_info in cls.model_fields.items():
             raw_extra = field_info.json_schema_extra
             extra: dict[str, Any] = raw_extra if isinstance(raw_extra, dict) else {}
             yosoi_type = extra.get('yosoi_type', 'text')
             hint = extra.get('yosoi_hint', field_info.description or '—')
             required = 'Yes' if field_info.is_required() else 'No'
-            config_items = {k: v for k, v in extra.items() if k not in ('yosoi_type', 'yosoi_hint', 'yosoi_frozen')}
+            config_items = {k: v for k, v in extra.items() if k not in _SKIP_KEYS}
             config_str = ', '.join(f'{k}={v!r}' for k, v in config_items.items()) or '—'
-            lines.append(f'| `{name}` | `{yosoi_type}` | {required} | {config_str} | {hint} |')
+            override = f'`{extra["yosoi_selector"]}`' if extra.get('yosoi_selector') else '—'
+            lines.append(f'| `{name}` | `{yosoi_type}` | {required} | {config_str} | {hint} | {override} |')
         return '\n'.join(lines)
 
     @classmethod

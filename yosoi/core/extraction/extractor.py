@@ -24,6 +24,9 @@ class ContentExtractor:
         """
         self.console = console or Console()
         self.expected_fields: tuple[str, ...] = tuple(contract.model_fields.keys()) if contract is not None else ()
+        self._overridden_fields: frozenset[str] = (
+            frozenset(contract.get_selector_overrides().keys()) if contract is not None else frozenset()
+        )
 
     def extract_content_with_html(
         self,
@@ -83,7 +86,10 @@ class ContentExtractor:
             # Store extracted content
             if content:
                 extracted[field_name] = content
-                self.console.print(f'  ✓ {field_name}: extracted using {selector_used} selector')
+                if field_name in self._overridden_fields:
+                    self.console.print(f'  - {field_name}: extracted using provided selector')
+                else:
+                    self.console.print(f'  ✓ {field_name}: extracted using {selector_used} selector')
             else:
                 self.console.print(f'  ✗ {field_name}: no content found with any selector')
 

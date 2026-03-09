@@ -54,6 +54,7 @@ class Pipeline:
         contract: type[Contract],
         debug_mode: bool = False,
         output_format: str = 'json',
+        force: bool = False,
     ):
         """Initialize the pipeline with LLM configuration.
 
@@ -64,12 +65,15 @@ class Pipeline:
                         Overridden by YosoiConfig.debug.save_html when YosoiConfig is passed.
             output_format: Format for extracted content ('json' or 'markdown'). Defaults to 'json'.
             contract: Contract subclass defining the fields to scrape.
+            force: Force re-discovery even if selectors are cached. Overridden by
+                   YosoiConfig.force when YosoiConfig is passed. Defaults to False.
 
         """
         if isinstance(llm_config, YosoiConfig):
             yosoi_cfg = llm_config
             llm_config = yosoi_cfg.llm
             debug_mode = yosoi_cfg.debug.save_html
+            force = yosoi_cfg.force
             if yosoi_cfg.telemetry.logfire_token:
                 import logfire as _logfire
 
@@ -96,6 +100,7 @@ class Pipeline:
         self.debug_mode = debug_mode
         self.debug = DebugManager(console=self.console, enabled=debug_mode)
         self.output_format = output_format
+        self.force = force
         self.logger = logging.getLogger(__name__)
 
         # Auto-initialize .yosoi dir and file logging when used outside the CLI
@@ -114,7 +119,7 @@ class Pipeline:
     def process_url(
         self,
         url: str,
-        force: bool = False,
+        force: bool | None = None,
         max_fetch_retries: int = 2,
         max_discovery_retries: int = 3,
         skip_verification: bool = False,
@@ -139,18 +144,19 @@ class Pipeline:
         """
         # Use provided format or fall back to pipeline default
         format_to_use = output_format or self.output_format
+        force_flag = self.force if force is None else force
 
         url = self.normalize_url(url)
 
-        with logfire.span('process_url', url=url, force=force, fetcher_type=fetcher_type):
-            self.logger.info(f'Processing URL: {url} (force={force}, fetcher={fetcher_type})')
+        with logfire.span('process_url', url=url, force=force_flag, fetcher_type=fetcher_type):
+            self.logger.info(f'Processing URL: {url} (force={force_flag}, fetcher={fetcher_type})')
             domain = self._extract_domain(url)
             fetcher = self._create_fetcher(fetcher_type)
             if not fetcher:
                 return False
 
             # Try using cached selectors if available
-            if not force and self._cached_selectors(url, domain, fetcher, skip_verification, format_to_use):
+            if not force_flag and self._cached_selectors(url, domain, fetcher, skip_verification, format_to_use):
                 return True
 
             # Fetch HTML with retry logic for bot detection
@@ -194,7 +200,7 @@ class Pipeline:
     def process_urls(
         self,
         urls: list[str],
-        force: bool = False,
+        force: bool | None = None,
         skip_verification: bool = False,
         fetcher_type: str = 'simple',
         max_fetch_retries: int = 2,
@@ -221,6 +227,7 @@ class Pipeline:
         """
         # Use provided format or fall back to pipeline default
         format_to_use = output_format or self.output_format
+        force_flag = self.force if force is None else force
 
         results: dict[str, list[str]] = {'successful': [], 'failed': []}
 
@@ -232,7 +239,7 @@ class Pipeline:
                 try:
                     success = self.process_url(
                         url,
-                        force,
+                        force_flag,
                         max_fetch_retries=max_fetch_retries,
                         max_discovery_retries=max_discovery_retries,
                         skip_verification=skip_verification,
@@ -438,6 +445,19 @@ class Pipeline:
             - used_llm: True if AI was used, False if using fallback heuristics
 
         """
+        # Collect any manual selector overrides defined on the contract fields
+        overrides = self.contract.get_selector_overrides()
+        if overrides:
+            override_fields = ', '.join(f'`{f}`' for f in overrides)
+            self.console.print(f'[info]  ↳ Using selector overrides for: {override_fields}[/info]')
+
+        # If every field has an override, skip AI entirely
+        all_fields = set(self.contract.model_fields.keys())
+        if all_fields and all_fields == set(overrides.keys()):
+            self.console.print('[step]Step 2: All fields have selector overrides — skipping AI discovery[/step]')
+            logfire.info('Skipping AI discovery — all fields overridden', url=url)
+            self.debug.save_debug_selectors(url, overrides)
+            return overrides, False
 
         # Use AI discovery with retries
         def before_ai_sleep_log(retry_state):
@@ -466,6 +486,9 @@ class Pipeline:
                     selectors = self.discovery.discover_selectors(cleaned_html, url)
 
                     if selectors:
+                        # Merge manual overrides (overrides take precedence)
+                        selectors.update(overrides)
+
                         self.console.print(f'[success]Discovered selectors for {len(selectors)} fields[/success]')
 
                         # Save debug selectors if enabled
@@ -486,7 +509,6 @@ class Pipeline:
         except Exception:
             pass
 
-        # All attempts failed - use fallback
         # All attempts failed
         self.console.print(f'[danger]All {max_retries} AI attempts failed[/danger]')
         logfire.error('All AI attempts failed', url=url)
