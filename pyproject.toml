@@ -57,7 +57,7 @@ dev = [
 tests = [
   "deepeval>=3.8.4",
   "dirty-equals>=0.11",
-  "mutmut>=3",
+  "mutmut>=3.5",
   "poethepoet>=0.40",
   "polyfactory>=3.2",
   "pytest>=9.0.2",
@@ -154,6 +154,7 @@ lint.mccabe.max-complexity = 12
 lint.pydocstyle.convention = "google"
 
 [tool.pytest.ini_options]
+testpaths = [ "tests" ]
 markers = [
   "eval: mark test as an evaluation test (requires real LLM and is slow)",
 ]

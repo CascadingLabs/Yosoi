@@ -44,6 +44,7 @@ class YosoiType:
 
     type_name: str
 
+    @classmethod
     def __init_subclass__(cls, **kwargs: Any) -> None:
         """Auto-register coerce method when both type_name and coerce are defined."""
         super().__init_subclass__(**kwargs)
