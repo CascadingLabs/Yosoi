@@ -1,9 +1,9 @@
 """Extracts content from web pages using validated selectors."""
 
-from typing import ClassVar
-
 from bs4 import BeautifulSoup
 from rich.console import Console
+
+from yosoi.models.contract import Contract
 
 
 class ContentExtractor:
@@ -11,27 +11,22 @@ class ContentExtractor:
 
     Attributes:
         console: Rich console instance for formatted output
-        EXPECTED_FIELDS: List of field names that should be extracted
 
     """
 
-    # TODO make dynamic based on ys.contract
-    EXPECTED_FIELDS: ClassVar[tuple[str, ...]] = (
-        'headline',
-        'author',
-        'date',
-        'body_text',
-        'related_content',
-    )
-
-    def __init__(self, console: Console | None = None):
+    def __init__(self, console: Console | None = None, contract: type[Contract] | None = None):
         """Initialize the extractor.
 
         Args:
             console: Rich console instance for formatted output. Defaults to None (creates new Console).
+            contract: Contract subclass defining expected fields. Defaults to None.
 
         """
         self.console = console or Console()
+        self.expected_fields: tuple[str, ...] = tuple(contract.model_fields.keys()) if contract is not None else ()
+        self._overridden_fields: frozenset[str] = (
+            frozenset(contract.get_selector_overrides().keys()) if contract is not None else frozenset()
+        )
 
     def extract_content_with_html(
         self,
@@ -51,14 +46,12 @@ class ContentExtractor:
             Each field contains extracted text, list of texts, or list of dicts (for related_content).
 
         """
-        self.console.print(f'  ↻ Extracting {len(self.EXPECTED_FIELDS)} fields using validated selectors...')
+        self.console.print(f'  ↻ Extracting {len(self.expected_fields)} fields using validated selectors...')
 
         soup = BeautifulSoup(html, 'lxml')
         extracted = {}
 
-        # Extract each expected field
-        # TODO this should play better with ys.contract and Pydantic. Why are we
-        for field_name in self.EXPECTED_FIELDS:
+        for field_name in self.expected_fields:
             # Check if selector exists for this field
             if field_name not in validated_selectors:
                 self.console.print(f'  ✗ {field_name}: no selector found')
@@ -93,12 +86,15 @@ class ContentExtractor:
             # Store extracted content
             if content:
                 extracted[field_name] = content
-                self.console.print(f'  ✓ {field_name}: extracted using {selector_used} selector')
+                if field_name in self._overridden_fields:
+                    self.console.print(f'  - {field_name}: extracted using provided selector')
+                else:
+                    self.console.print(f'  ✓ {field_name}: extracted using {selector_used} selector')
             else:
                 self.console.print(f'  ✗ {field_name}: no content found with any selector')
 
         # Summary
-        total = len(self.EXPECTED_FIELDS)
+        total = len(self.expected_fields)
         extracted_count = len(extracted)
         self.console.print(f'  ↻ Summary: {extracted_count}/{total} fields extracted successfully')
 
@@ -133,7 +129,9 @@ class ContentExtractor:
             # Different extraction strategies based on field type
             if field_name == 'body_text':
                 # Extract all paragraphs and join with newlines
-                paragraphs = [elem.get_text(strip=True) for elem in elements if elem.get_text(strip=True)]
+                paragraphs = [
+                    elem.get_text(separator=' ', strip=True) for elem in elements if elem.get_text(strip=True)
+                ]
                 return '\n\n'.join(paragraphs) if paragraphs else None
 
             if field_name == 'related_content':
@@ -173,10 +171,10 @@ class ContentExtractor:
             Extracted content (string, list of strings/dicts), or None if extraction failed.
 
         """
-        import requests
+        import httpx
 
         try:
-            response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=10)
+            response = httpx.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=10, follow_redirects=True)
             soup = BeautifulSoup(response.text, 'lxml')
 
             return self._extract_with_selector(soup, selector, field_type)

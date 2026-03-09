@@ -4,6 +4,8 @@ Handles argument parsing and delegates to pipeline.
 """
 
 import argparse
+import difflib
+import importlib.util
 import json
 import os
 import sys
@@ -11,37 +13,46 @@ import sys
 import logfire
 from dotenv import load_dotenv
 
-from yosoi import Pipeline, gemini, groq
+from yosoi import Pipeline
+from yosoi.config import DebugConfig, TelemetryConfig, YosoiConfig
+from yosoi.core.discovery.config import LLMConfig
+from yosoi.models.contract import Contract
+from yosoi.models.defaults import NewsArticle
 from yosoi.utils.files import init_yosoi, is_initialized
 from yosoi.utils.logging import setup_local_logging
 
 
-def setup_llm_config():
-    """Set up LLM configuration from environment variables.
+def setup_llm_config(model_arg: str | None = None) -> LLMConfig:
+    """Set up LLM configuration from -m/--model flag or environment variables.
 
-    Checks for GROQ_KEY first, then GEMINI_KEY.
+    Args:
+        model_arg: Model string in ``provider/model-name`` format (e.g. ``groq/llama-3.3-70b-versatile``).
+                   If None, falls back to auto-detecting from GROQ_KEY or GEMINI_KEY.
 
     Returns:
-        LLMConfig instance configured with available API key.
+        LLMConfig instance configured with the selected provider and model.
 
     Raises:
-        SystemExit: If no API keys are found in environment.
+        SystemExit: If the provider is unknown, the API key is missing, or no config can be determined.
 
     """
-    groq_api_key = os.getenv('GROQ_KEY')
-    gemini_api_key = os.getenv('GEMINI_KEY')
+    if model_arg:
+        if '/' not in model_arg:
+            print('Error: --model must be in provider/model-name format (e.g. groq/llama-3.3-70b-versatile)')
+            sys.exit(1)
+        provider, model_name = model_arg.split('/', 1)
+        # We don't fetch the API key here; YosoiConfig will handle it during validation
+        return LLMConfig(provider=provider, model_name=model_name, api_key='')
 
-    if groq_api_key:
-        print('Using GROQ as AI provider')
-        return groq('llama-3.3-70b-versatile', groq_api_key)
+    # Legacy auto-detect fallback (defaults)
+    if os.getenv('GROQ_KEY'):
+        return LLMConfig(provider='groq', model_name='llama-3.3-70b-versatile', api_key='')
 
-    if gemini_api_key:
-        print('Using Gemini as AI provider')
-        return gemini('gemini-2.0-flash', gemini_api_key)
+    if os.getenv('GEMINI_KEY'):
+        return LLMConfig(provider='gemini', model_name='gemini-2.0-flash', api_key='')
 
-    print('Error: No API keys found')
-    print('Please set GROQ_KEY or GEMINI_KEY in your .env file')
-    sys.exit(1)
+    # Return a partially filled config; validation in YosoiConfig will catch missing keys
+    return LLMConfig(provider='groq', model_name='llama-3.3-70b-versatile', api_key='')
 
 
 def setup_logfire():
@@ -60,6 +71,101 @@ def setup_logfire():
         print('Logfire setup complete')
     else:
         print('LOGFIRE_TOKEN not set - skipping logfire setup')
+
+
+def _suggest_file(file_path: str, class_name: str) -> list[str]:
+    """Return suggested ``file:class`` strings for a missing file path.
+
+    Tries adding a ``.py`` extension first, then fuzzy-matches against files
+    in the same directory.
+
+    Args:
+        file_path: The path that was not found.
+        class_name: The class name from the original argument.
+
+    Returns:
+        List of suggestion strings in ``path:ClassName`` format.
+
+    """
+    suggestions: list[str] = []
+
+    # Try adding .py extension
+    if not file_path.endswith('.py'):
+        py_path = file_path + '.py'
+        if os.path.exists(py_path):
+            suggestions.append(f'{py_path}:{class_name}')
+
+    # Fuzzy-match filenames in the same directory
+    dir_part = os.path.dirname(file_path) or '.'
+    base_name = os.path.basename(file_path)
+    try:
+        candidates = [f for f in os.listdir(dir_part) if f.endswith('.py')]
+        matches = difflib.get_close_matches(base_name, candidates, n=3, cutoff=0.4)
+        for m in matches:
+            candidate = f'{os.path.join(dir_part, m)}:{class_name}'
+            if candidate not in suggestions:
+                suggestions.append(candidate)
+    except OSError:
+        pass
+
+    return suggestions
+
+
+def load_schema(schema_str: str) -> type[Contract]:
+    """Load a Contract class by path or built-in name.
+
+    Args:
+        schema_str: Either ``path/to/file.py:ClassName`` for dynamic import
+                    or a bare name like ``NewsArticle`` for built-in schemas.
+
+    Returns:
+        The Contract subclass.
+
+    Raises:
+        SystemExit: If the schema cannot be found or loaded.
+
+    """
+    if ':' in schema_str:
+        file_path, class_name = schema_str.rsplit(':', 1)
+        if not os.path.exists(file_path):
+            print(f'Error: Schema file not found: {file_path}')
+            suggestions = _suggest_file(file_path, class_name)
+            if suggestions:
+                print(f'Did you mean: {suggestions[0]}')
+                if len(suggestions) > 1:
+                    print(f'  Other options: {", ".join(suggestions[1:])}')
+            sys.exit(1)
+        spec = importlib.util.spec_from_file_location('_yosoi_schema', file_path)
+        if spec is None or spec.loader is None:
+            print(f'Error: Could not load schema from {file_path}')
+            sys.exit(1)
+        module = importlib.util.module_from_spec(spec)
+        loader = spec.loader
+        assert loader is not None
+        loader.exec_module(module)
+        cls = getattr(module, class_name, None)
+        if cls is None:
+            available = [
+                name for name in dir(module) if not name.startswith('_') and isinstance(getattr(module, name), type)
+            ]
+            print(f'Error: Class {class_name!r} not found in {file_path}')
+            matches = difflib.get_close_matches(class_name, available, n=3, cutoff=0.5)
+            if matches:
+                print(f'Did you mean: {matches[0]}')
+                if len(matches) > 1:
+                    print(f'  Other options: {", ".join(matches[1:])}')
+            elif available:
+                print(f'Available classes: {", ".join(available)}')
+            sys.exit(1)
+        return cls  # type: ignore[no-any-return]
+    from yosoi.models.defaults import BUILTIN_SCHEMAS
+
+    schema = BUILTIN_SCHEMAS.get(schema_str)
+    if schema is None:
+        available_str = ', '.join(BUILTIN_SCHEMAS.keys())
+        print(f'Error: Unknown built-in schema {schema_str!r}. Available: {available_str}')
+        sys.exit(1)
+    return schema
 
 
 def load_urls_from_file(filepath: str) -> list[str]:
@@ -105,13 +211,22 @@ def parse_arguments():
         epilog="""
 Examples:
   %(prog)s -u https://example.com
-  %(prog)s -f urls.txt -l 10
+  %(prog)s -m groq/llama-3.3-70b-versatile -u https://example.com
+  %(prog)s -m gemini/gemini-2.0-flash -f urls.txt -l 10
   %(prog)s --url https://example.com --force
   %(prog)s -s
   %(prog)s -u https://example.com -d -F
         """,
     )
 
+    parser.add_argument(
+        '-m',
+        '--model',
+        type=str,
+        default=None,
+        metavar='PROVIDER/MODEL',
+        help='LLM model in provider/model format (e.g. groq/llama-3.3-70b-versatile, gemini/gemini-2.0-flash)',
+    )
     parser.add_argument('-u', '--url', type=str, help='Single URL to process')
     parser.add_argument('-f', '--file', type=str, help='File containing URLs (one per line, or JSON)')
     parser.add_argument('-l', '--limit', type=int, help='Limit number of URLs to process from file')
@@ -119,7 +234,7 @@ Examples:
     parser.add_argument('-s', '--summary', action='store_true', help='Show summary of saved selectors')
     parser.add_argument('-d', '--debug', action='store_true', help='Enable debug mode (saves extracted HTML to debug/)')
     parser.add_argument(
-        '-S', '--skip-verification', action='store_true', help='Skip verification for faster processing'
+        '-sv', '--skip-verification', action='store_true', help='Skip verification for faster processing'
     )
     parser.add_argument(
         '-o',
@@ -141,6 +256,17 @@ Examples:
         choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'ALL'],
         default=os.getenv('YOSOI_LOG_LEVEL', 'DEBUG'),
         help='Logging level for the local log file (default: DEBUG or YOSOI_LOG_LEVEL env)',
+    )
+    parser.add_argument(
+        '-sc',
+        '--schema',
+        type=str,
+        default=None,
+        help=(
+            'Contract schema to use. '
+            'Built-in: NewsArticle, Video, Product, JobPosting. '
+            'Dynamic: /path/to/file.py:ClassName'
+        ),
     )
 
     return parser.parse_args()
@@ -176,7 +302,20 @@ def main():
         init_yosoi()
 
     # Set up LLM configuration
-    llm_config = setup_llm_config()
+    llm_config = setup_llm_config(args.model)
+
+    # Create YosoiConfig for validation
+    try:
+        yosoi_config = YosoiConfig(
+            llm=llm_config,
+            debug=DebugConfig(save_html=args.debug),
+            telemetry=TelemetryConfig(logfire_token=os.getenv('LOGFIRE_TOKEN')),
+        )
+    except Exception as e:
+        print(f'Configuration Error: {e}')
+        sys.exit(1)
+
+    print(f'Using {yosoi_config.llm.provider} / {yosoi_config.llm.model_name}')
 
     # Initialize logging
     log_file = setup_local_logging(level=args.log_level)
@@ -184,11 +323,11 @@ def main():
     # Normalize output format
     output_format = 'markdown' if args.output in ['markdown', 'md'] else 'json'
 
-    # Initialize pipeline with output format
-    pipeline = Pipeline(llm_config, debug_mode=args.debug, output_format=output_format)
+    # Resolve contract schema
+    contract = load_schema(args.schema) if args.schema else NewsArticle
 
-    # Set up Logfire
-    setup_logfire()
+    # Initialize pipeline with output format
+    pipeline = Pipeline(yosoi_config, contract=contract, output_format=output_format)
 
     from rich import print as rprint
 

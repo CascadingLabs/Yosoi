@@ -106,3 +106,6 @@ test_batch.py
 used-urls.json
 .yosoi/
 memray*.bin
+.claude/settings.local.json
+
+mutants

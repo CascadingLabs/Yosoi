@@ -1,7 +1,7 @@
 import pytest
 from bs4 import BeautifulSoup
 
-from yosoi.cleaner import HTMLCleaner
+from yosoi.core.cleaning.cleaner import HTMLCleaner
 
 
 @pytest.fixture
@@ -50,14 +50,12 @@ def test_clean_html_removes_noise(sample_html):
     clean_html = cleaner.clean_html(sample_html)
     soup = BeautifulSoup(clean_html, 'html.parser')
 
-    # Verify noise removal
     assert soup.find('script') is None
     assert soup.find('style') is None
     assert soup.find('nav') is None
     assert soup.find('header') is None
     assert soup.find('footer') is None
 
-    # Verify content remains
     assert soup.find('h2', class_='headline') is not None
     assert 'Main Story' in clean_html
     assert 'This is the important content.' in clean_html
@@ -69,9 +67,7 @@ def test_clean_html_removes_sidebars(sample_html):
     clean_html = cleaner.clean_html(sample_html)
     soup = BeautifulSoup(clean_html, 'html.parser')
 
-    # Verify sidebar removal (sidebars are always removed in clean_html)
     assert soup.find('aside', class_='sidebar') is None
-    # Note: The word "Links" might still appear if it's in the main content
 
 
 def test_clean_html_fallback_to_main():

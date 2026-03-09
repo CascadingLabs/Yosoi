@@ -6,20 +6,22 @@ Centralized retry logic for bot detection and AI failures.
 import logging
 from urllib.parse import urlparse
 
+import httpx
 import logfire
-import requests
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 from rich.theme import Theme
 from tenacity import RetryError
 
+from yosoi.config import YosoiConfig
 from yosoi.core.cleaning import HTMLCleaner
 from yosoi.core.discovery import LLMConfig, SelectorDiscovery
 from yosoi.core.extraction import ContentExtractor
 from yosoi.core.fetcher import HTMLFetcher, create_fetcher
 from yosoi.core.verification import SelectorVerifier
 from yosoi.models import FetchResult
+from yosoi.models.contract import Contract
 from yosoi.storage import DebugManager, LLMTracker, SelectorStorage
 from yosoi.utils.exceptions import BotDetectionError
 from yosoi.utils.retry import get_retryer
@@ -46,15 +48,38 @@ class Pipeline:
 
     """
 
-    def __init__(self, llm_config: LLMConfig, debug_mode: bool = False, output_format: str = 'json'):
+    def __init__(
+        self,
+        llm_config: LLMConfig | YosoiConfig,
+        contract: type[Contract],
+        debug_mode: bool = False,
+        output_format: str = 'json',
+        force: bool = False,
+    ):
         """Initialize the pipeline with LLM configuration.
 
         Args:
-            llm_config: Configuration of LLM
-            debug_mode: If enabled will output the HTML from the URL
+            llm_config: LLMConfig or YosoiConfig. When YosoiConfig is passed,
+                debug_mode and telemetry are extracted from it automatically.
+            debug_mode: If enabled will output the HTML from the URL.
+                        Overridden by YosoiConfig.debug.save_html when YosoiConfig is passed.
             output_format: Format for extracted content ('json' or 'markdown'). Defaults to 'json'.
+            contract: Contract subclass defining the fields to scrape.
+            force: Force re-discovery even if selectors are cached. Overridden by
+                   YosoiConfig.force when YosoiConfig is passed. Defaults to False.
 
         """
+        if isinstance(llm_config, YosoiConfig):
+            yosoi_cfg = llm_config
+            llm_config = yosoi_cfg.llm
+            debug_mode = yosoi_cfg.debug.save_html
+            force = yosoi_cfg.force
+            if yosoi_cfg.telemetry.logfire_token:
+                import logfire as _logfire
+
+                _logfire.configure(token=yosoi_cfg.telemetry.logfire_token)
+                _logfire.instrument_pydantic()
+
         self.custom_theme = Theme(
             {
                 'info': 'dim cyan',
@@ -64,22 +89,37 @@ class Pipeline:
                 'step': 'bold blue',
             }
         )
+        self.contract = contract
         self.console = Console(theme=self.custom_theme)
         self.cleaner = HTMLCleaner(console=self.console)
-        self.discovery = SelectorDiscovery(llm_config=llm_config, console=self.console)
+        self.discovery = SelectorDiscovery(llm_config=llm_config, console=self.console, contract=self.contract)
         self.verifier = SelectorVerifier(console=self.console)
-        self.extractor = ContentExtractor(console=self.console)
+        self.extractor = ContentExtractor(console=self.console, contract=self.contract)
         self.storage = SelectorStorage()
         self.tracker = LLMTracker()
         self.debug_mode = debug_mode
         self.debug = DebugManager(console=self.console, enabled=debug_mode)
         self.output_format = output_format
+        self.force = force
         self.logger = logging.getLogger(__name__)
+
+        # Auto-initialize .yosoi dir and file logging when used outside the CLI
+        has_file_handler = any(isinstance(h, logging.FileHandler) for h in logging.getLogger().handlers)
+        if not has_file_handler:
+            from yosoi.utils.files import init_yosoi, is_initialized
+            from yosoi.utils.logging import setup_local_logging
+
+            if not is_initialized():
+                init_yosoi()
+            log_file = setup_local_logging()
+            from rich import print as rprint
+
+            rprint(f'ℹ Log file: [link=file://{log_file}]file://{log_file}[/link]')
 
     def process_url(
         self,
         url: str,
-        force: bool = False,
+        force: bool | None = None,
         max_fetch_retries: int = 2,
         max_discovery_retries: int = 3,
         skip_verification: bool = False,
@@ -104,18 +144,19 @@ class Pipeline:
         """
         # Use provided format or fall back to pipeline default
         format_to_use = output_format or self.output_format
+        force_flag = self.force if force is None else force
 
         url = self.normalize_url(url)
 
-        with logfire.span('process_url', url=url, force=force, fetcher_type=fetcher_type):
-            self.logger.info(f'Processing URL: {url} (force={force}, fetcher={fetcher_type})')
+        with logfire.span('process_url', url=url, force=force_flag, fetcher_type=fetcher_type):
+            self.logger.info(f'Processing URL: {url} (force={force_flag}, fetcher={fetcher_type})')
             domain = self._extract_domain(url)
             fetcher = self._create_fetcher(fetcher_type)
             if not fetcher:
                 return False
 
             # Try using cached selectors if available
-            if not force and self._cached_selectors(url, domain, fetcher, skip_verification, format_to_use):
+            if not force_flag and self._cached_selectors(url, domain, fetcher, skip_verification, format_to_use):
                 return True
 
             # Fetch HTML with retry logic for bot detection
@@ -148,6 +189,10 @@ class Pipeline:
             if not extracted:
                 self.console.print('[warning]⚠ Extraction failed, but selectors are valid[/warning]')
 
+            # Validate and transform extracted data using Contract (Step 4.5)
+            if extracted:
+                extracted = self._validate_with_contract(extracted, url)
+
             # Save and track (save selectors + content if extracted)
             self._save_and_track(url, domain, verified, extracted, used_llm, format_to_use)
             return True
@@ -155,7 +200,7 @@ class Pipeline:
     def process_urls(
         self,
         urls: list[str],
-        force: bool = False,
+        force: bool | None = None,
         skip_verification: bool = False,
         fetcher_type: str = 'simple',
         max_fetch_retries: int = 2,
@@ -182,6 +227,7 @@ class Pipeline:
         """
         # Use provided format or fall back to pipeline default
         format_to_use = output_format or self.output_format
+        force_flag = self.force if force is None else force
 
         results: dict[str, list[str]] = {'successful': [], 'failed': []}
 
@@ -193,7 +239,7 @@ class Pipeline:
                 try:
                     success = self.process_url(
                         url,
-                        force,
+                        force_flag,
                         max_fetch_retries=max_fetch_retries,
                         max_discovery_retries=max_discovery_retries,
                         skip_verification=skip_verification,
@@ -236,9 +282,9 @@ class Pipeline:
             # Try HTTPS first
             try:
                 test_url = 'https://' + url
-                requests.head(test_url, timeout=3)
+                httpx.head(test_url, timeout=3, follow_redirects=True)
                 return test_url
-            except requests.exceptions.RequestException:
+            except httpx.HTTPError:
                 # Fall back to HTTP
                 return 'http://' + url
         return url
@@ -399,6 +445,18 @@ class Pipeline:
             - used_llm: True if AI was used, False if using fallback heuristics
 
         """
+        # Collect any manual selector overrides defined on the contract fields
+        overrides = self.contract.get_selector_overrides()
+        if overrides:
+            override_fields = ', '.join(f'`{f}`' for f in overrides)
+            self.console.print(f'[info]  ↳ Using selector overrides for: {override_fields}[/info]')
+
+        # If every field has an override, skip AI entirely
+        if not self.contract.field_descriptions():
+            self.console.print('[step]Step 2: All fields have selector overrides — skipping AI discovery[/step]')
+            logfire.info('Skipping AI discovery — all fields overridden', url=url)
+            self.debug.save_debug_selectors(url, overrides)
+            return overrides, False
 
         # Use AI discovery with retries
         def before_ai_sleep_log(retry_state):
@@ -427,6 +485,9 @@ class Pipeline:
                     selectors = self.discovery.discover_selectors(cleaned_html, url)
 
                     if selectors:
+                        # Merge manual overrides (overrides take precedence)
+                        selectors.update(overrides)
+
                         self.console.print(f'[success]Discovered selectors for {len(selectors)} fields[/success]')
 
                         # Save debug selectors if enabled
@@ -447,7 +508,6 @@ class Pipeline:
         except Exception:
             pass
 
-        # All attempts failed - use fallback
         # All attempts failed
         self.console.print(f'[danger]All {max_retries} AI attempts failed[/danger]')
         logfire.error('All AI attempts failed', url=url)
@@ -564,88 +624,18 @@ class Pipeline:
         self.console.print(f'[success]✓ Found cached selectors for {domain}[/success]')
         logfire.info('Using cached selectors', domain=domain, url=url)
 
-        if skip_verification:
-            # Still need to fetch and extract even if skipping verification
-            self._extract_with_cached_selectors(url, domain, fetcher, existing_selectors, output_format)
-            return True
+        return self._use_cached_selectors(url, domain, fetcher, existing_selectors, output_format, skip_verification)
 
-        # Verify and extract with cached selectors
-        return self._verify_and_extract_cached(url, domain, fetcher, existing_selectors, output_format)
-
-    def _verify_and_extract_cached(
-        self, url: str, domain: str, fetcher: HTMLFetcher, existing_selectors: dict, output_format: str
+    def _use_cached_selectors(
+        self,
+        url: str,
+        domain: str,
+        fetcher: HTMLFetcher,
+        existing_selectors: dict,
+        output_format: str,
+        skip_verification: bool,
     ) -> bool:
-        """Verify cached selectors and extract content from current URL.
-
-        Fetches HTML, verifies cached selectors, and extracts content.
-        Falls back to using cached selectors as-is if fetch or verification fails.
-
-        Args:
-            url: URL to fetch and verify against.
-            domain: Domain name (for logging and tracking).
-            fetcher: HTML fetcher instance.
-            existing_selectors: Previously discovered selectors to verify.
-            output_format: Format for extracted content ('json' or 'markdown').
-
-        Returns:
-            True if selectors verified successfully or fetch failed (uses cached
-            selectors as-is). False if verification explicitly failed (triggers
-            re-discovery).
-
-        Raises:
-            BotDetectionError: Passes through bot detection from fetcher.
-
-        """
-        self.console.print('[step]Fetching HTML to verify cached selectors...[/step]')
-
-        try:
-            result = fetcher.fetch(url)
-
-            if not result.success or result.html is None:
-                self.console.print('[warning]⚠ Could not fetch HTML, skipping extraction[/warning]')
-                self._track_cached_success(url, domain)
-                return True
-
-            # Clean HTML
-            self.console.print('[step]Cleaning HTML...[/step]')
-            cleaned_html = self.cleaner.clean_html(result.html)
-
-            # Save debug HTML if enabled
-            self.debug.save_debug_html(url, cleaned_html)
-
-            # Verify selectors
-            verified = self.verifier.verify_selectors_with_html(url, cleaned_html, existing_selectors)
-
-            if verified:
-                self.console.print(f'[success]✓ Verified {len(verified)}/5 cached selectors[/success]')
-
-                # Extract content using verified cached selectors
-                extracted = self._extract(url, cleaned_html, verified)
-
-                # Save extracted content
-                if extracted:
-                    self.storage.save_content(url, extracted, output_format)
-                else:
-                    self.console.print('[warning]⚠ Extraction failed with cached selectors[/warning]')
-
-                self._track_cached_success(url, domain)
-                return True
-
-            self.console.print('[warning]⚠ Cached selectors failed verification - forcing re-discovery[/warning]')
-            return False
-
-        except BotDetectionError:
-            raise
-        except Exception as e:
-            self.logger.exception(f'Cached selector verification failed for {url}')
-            self.console.print(f'[warning]⚠ Verification error: {e}, skipping extraction[/warning]')
-            self._track_cached_success(url, domain)
-            return True
-
-    def _extract_with_cached_selectors(
-        self, url: str, domain: str, fetcher: HTMLFetcher, existing_selectors: dict, output_format: str
-    ):
-        """Extract content using cached selectors without verification.
+        """Fetch, optionally verify, and extract content using cached selectors.
 
         Args:
             url: URL to fetch and extract from.
@@ -653,9 +643,22 @@ class Pipeline:
             fetcher: HTML fetcher instance.
             existing_selectors: Previously discovered selectors to use.
             output_format: Format for extracted content ('json' or 'markdown').
+            skip_verification: Skip selector verification if True.
+
+        Returns:
+            True if extraction succeeded or fetch failed gracefully.
+            False if verification failed (triggers re-discovery).
+
+        Raises:
+            BotDetectionError: Passes through bot detection from fetcher.
 
         """
-        self.console.print('[step]Fetching HTML for extraction with cached selectors...[/step]')
+        step = (
+            'Fetching HTML for extraction with cached selectors...'
+            if skip_verification
+            else 'Fetching HTML to verify cached selectors...'
+        )
+        self.console.print(f'[step]{step}[/step]')
 
         try:
             result = fetcher.fetch(url)
@@ -663,29 +666,47 @@ class Pipeline:
             if not result.success or result.html is None:
                 self.console.print('[warning]⚠ Could not fetch HTML, skipping extraction[/warning]')
                 self._track_cached_success(url, domain)
-                return
+                return True
 
-            # Clean HTML
             self.console.print('[step]Cleaning HTML...[/step]')
             cleaned_html = self.cleaner.clean_html(result.html)
-
-            # Save debug HTML if enabled
             self.debug.save_debug_html(url, cleaned_html)
 
-            # Extract content (no verification)
-            extracted = self._extract(url, cleaned_html, existing_selectors)
+            if not skip_verification:
+                verification = self.verifier.verify(cleaned_html, existing_selectors)
+                if not verification.success:
+                    self.console.print(
+                        '[warning]⚠ Cached selectors failed verification - forcing re-discovery[/warning]'
+                    )
+                    return False
+                selectors_to_use = {
+                    name: existing_selectors[name]
+                    for name in verification.results
+                    if verification.results[name].status == 'verified'
+                }
+                self.console.print(
+                    f'[success]✓ Verified {len(selectors_to_use)}/{len(self.contract.model_fields)} cached selectors[/success]'
+                )
+            else:
+                selectors_to_use = existing_selectors
 
-            # Save extracted content
+            extracted = self._extract(url, cleaned_html, selectors_to_use)
             if extracted:
+                extracted = self._validate_with_contract(extracted, url)
                 self.storage.save_content(url, extracted, output_format)
             else:
                 self.console.print('[warning]⚠ Extraction failed with cached selectors[/warning]')
 
             self._track_cached_success(url, domain)
+            return True
 
+        except BotDetectionError:
+            raise
         except Exception as e:
-            self.console.print(f'[warning]⚠ Extraction error: {e}[/warning]')
+            self.logger.exception(f'Cached selector handling failed for {url}')
+            self.console.print(f'[warning]⚠ Error: {e}, skipping extraction[/warning]')
             self._track_cached_success(url, domain)
+            return True
 
     def _track_cached_success(self, url: str, domain: str):
         """Track successful use of cached selectors.
@@ -715,6 +736,27 @@ class Pipeline:
         if attempt >= max_retries:
             self.console.print('[danger]ABORTING - All fetch attempts exhausted[/danger]')
             self.console.print('[info]Try: --fetcher smart (or) --fetcher playwright[/info]')
+
+    def _validate_with_contract(self, extracted: dict, url: str = '') -> dict:
+        """Instantiate Contract with extracted data to run validators and type coercion.
+
+        Args:
+            extracted: Raw extracted data dictionary.
+            url: Source URL injected into validation context for relative URL resolution.
+
+        Returns:
+            Validated and transformed data dictionary, or the original if validation fails.
+
+        """
+        try:
+            instance = self.contract.model_validate(extracted, context={'source_url': url})
+            validated = instance.model_dump()
+            self.console.print('[success]✓ Contract validation applied[/success]')
+            return validated
+        except Exception as e:
+            self.logger.warning(f'Contract validation failed, using raw data: {e}')
+            self.console.print(f'[warning]⚠ Validation skipped: {e}[/warning]')
+            return extracted
 
     def _save_and_track(
         self, url: str, domain: str, verified: dict, extracted: dict | None, used_llm: bool, output_format: str

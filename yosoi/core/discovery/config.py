@@ -3,38 +3,39 @@
 Supports multiple providers, easy extension, and flexible model configuration.
 """
 
-from dataclasses import dataclass
 from typing import Any, Protocol
-
-from pydantic_ai import Agent
-from pydantic_ai.models.google import GoogleModel
-from pydantic_ai.models.groq import GroqModel
-from pydantic_ai.models.openai import OpenAIChatModel
-from pydantic_ai.providers.google import GoogleProvider
-from pydantic_ai.providers.groq import GroqProvider
-from pydantic_ai.providers.openai import OpenAIProvider
-from tenacity import RetryError
-
-from yosoi.utils.retry import get_retryer
 
 # ============================================================================
 # 1. CONFIG DATACLASSES - Simple configuration objects
 # ============================================================================
+from pydantic import BaseModel, ConfigDict
+from pydantic_ai import Agent
+from pydantic_ai.models.cerebras import CerebrasModel
+from pydantic_ai.models.google import GoogleModel
+from pydantic_ai.models.groq import GroqModel
+from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.models.openrouter import OpenRouterModel
+from pydantic_ai.providers.cerebras import CerebrasProvider
+from pydantic_ai.providers.google import GoogleProvider
+from pydantic_ai.providers.groq import GroqProvider
+from pydantic_ai.providers.openai import OpenAIProvider
+from pydantic_ai.providers.openrouter import OpenRouterProvider
 
 
-@dataclass
-class LLMConfig:
+class LLMConfig(BaseModel):
     """Base configuration for any LLM provider.
 
     Attributes:
         provider: Provider name ('groq', 'gemini', 'openai', etc.)
         model_name: Model identifier string
         api_key: API key for authentication
-        temperature: Sampling temperature (0.0-2.0). Defaults to 0.7.
+        temperature: Sampling temperature (0.0-2.0). Defaults to 0.01.
         max_tokens: Maximum tokens for generation. Defaults to None.
         extra_params: Additional provider-specific parameters. Defaults to None.
 
     """
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     provider: str
     model_name: str
@@ -42,34 +43,6 @@ class LLMConfig:
     temperature: float = 0.01
     max_tokens: int | None = None
     extra_params: dict[str, Any] | None = None
-
-    def __post_init__(self) -> None:
-        """Validate configuration after initialization.
-
-        Raises:
-            ValueError: If API key or model name is missing.
-
-        """
-        if not self.api_key:
-            raise ValueError(f'API key required for {self.provider}')
-        if not self.model_name:
-            raise ValueError(f'Model name required for {self.provider}')
-
-
-@dataclass
-class FallbackConfig:
-    """Configuration for fallback LLM chain.
-
-    Attributes:
-        primary: Primary LLM configuration
-        fallbacks: List of fallback LLM configurations
-        max_retries_per_model: Maximum retry attempts per model. Defaults to 2.
-
-    """
-
-    primary: LLMConfig
-    fallbacks: list[LLMConfig]
-    max_retries_per_model: int = 2
 
 
 # ============================================================================
@@ -117,6 +90,20 @@ class LLMProvider(Protocol):
 # ============================================================================
 
 
+def create_cerebras_model(config: LLMConfig) -> CerebrasModel:
+    """Create a Cerebras model from configuration.
+
+    Args:
+        config: LLM configuration with Cerebras settings
+
+    Returns:
+        Configured CerebrasModel instance.
+
+    """
+    provider = CerebrasProvider(api_key=config.api_key)
+    return CerebrasModel(config.model_name, provider=provider)
+
+
 def create_groq_model(config: LLMConfig) -> GroqModel:
     """Create a Groq model from configuration.
 
@@ -128,14 +115,6 @@ def create_groq_model(config: LLMConfig) -> GroqModel:
 
     """
     provider = GroqProvider(api_key=config.api_key)
-
-    # Merge extra params if provided
-    model_params = {}
-    if config.temperature is not None:
-        model_params['temperature'] = config.temperature
-    if config.extra_params:
-        model_params.update(config.extra_params)
-
     return GroqModel(config.model_name, provider=provider)
 
 
@@ -150,13 +129,6 @@ def create_gemini_model(config: LLMConfig) -> GoogleModel:
 
     """
     provider = GoogleProvider(api_key=config.api_key)
-
-    model_params = {}
-    if config.temperature is not None:
-        model_params['temperature'] = config.temperature
-    if config.extra_params:
-        model_params.update(config.extra_params)
-
     return GoogleModel(config.model_name, provider=provider)
 
 
@@ -171,16 +143,24 @@ def create_openai_model(config: LLMConfig) -> OpenAIChatModel:
 
     """
     provider = OpenAIProvider(api_key=config.api_key)
-
-    model_params = {}
-    if config.temperature is not None:
-        model_params['temperature'] = config.temperature
-    if config.max_tokens:
-        model_params['max_tokens'] = config.max_tokens
-    if config.extra_params:
-        model_params.update(config.extra_params)
-
     return OpenAIChatModel(config.model_name, provider=provider)
+
+
+def create_openrouter_model(config: LLMConfig) -> OpenRouterModel:
+    """Create an OpenRouter model from configuration.
+
+    Uses the native pydantic-ai OpenRouterModel/OpenRouterProvider, giving
+    access to hundreds of models from different providers via a single key.
+
+    Args:
+        config: LLM configuration with OpenRouter settings
+
+    Returns:
+        Configured OpenRouterModel instance.
+
+    """
+    provider = OpenRouterProvider(api_key=config.api_key)
+    return OpenRouterModel(config.model_name, provider=provider)
 
 
 # ============================================================================
@@ -194,6 +174,8 @@ PROVIDER_FACTORIES = {
     'google': create_gemini_model,  # Alias
     'openai': create_openai_model,
     'gpt': create_openai_model,  # Alias
+    'cerebras': create_cerebras_model,
+    'openrouter': create_openrouter_model,
 }
 
 
@@ -409,6 +391,21 @@ def gemini(model_name: str, api_key: str, **kwargs) -> LLMConfig:
     return LLMConfig(provider='gemini', model_name=model_name, api_key=api_key, **kwargs)
 
 
+def cerebras(model_name: str, api_key: str, **kwargs) -> LLMConfig:
+    """Quick config for Cerebras.
+
+    Args:
+        model_name: Cerebras model identifier (e.g. 'llama-3.3-70b')
+        api_key: Cerebras API key
+        **kwargs: Additional configuration options
+
+    Returns:
+        Configured LLMConfig for Cerebras.
+
+    """
+    return LLMConfig(provider='cerebras', model_name=model_name, api_key=api_key, **kwargs)
+
+
 def openai(model_name: str, api_key: str, **kwargs) -> LLMConfig:
     """Quick config for OpenAI.
 
@@ -424,104 +421,23 @@ def openai(model_name: str, api_key: str, **kwargs) -> LLMConfig:
     return LLMConfig(provider='openai', model_name=model_name, api_key=api_key, **kwargs)
 
 
-# ============================================================================
-# 6. MULTI-MODEL SUPPORT - Fallback chains and comparison
-# ============================================================================
+def openrouter(model_name: str, api_key: str, **kwargs) -> LLMConfig:
+    """Quick config for OpenRouter.
 
+    Args:
+        model_name: OpenRouter model identifier (e.g. 'stepfun/step-3.5-flash:free')
+        api_key: OpenRouter API key
+        **kwargs: Additional configuration options
 
-class MultiModelAgent:
-    """Agent that can use multiple models with fallback.
-
-    Attributes:
-        configs: List of LLM configurations in priority order
-        system_prompt: System prompt used for all agents
-        agents: List of configured Pydantic AI agents
+    Returns:
+        Configured LLMConfig for OpenRouter.
 
     """
-
-    def __init__(self, configs: list[LLMConfig], system_prompt: str):
-        """Initialize with multiple model configurations.
-
-        Args:
-            configs: List of LLMConfig objects in priority order
-            system_prompt: System prompt for all agents
-
-        """
-        self.configs = configs
-        self.system_prompt = system_prompt
-        self.agents = [create_agent(config, system_prompt) for config in configs]
-
-    def run_with_fallback(self, prompt: str, max_retries: int = 1) -> tuple[Any, str]:
-        """Run prompt with fallback to next model on failure.
-
-        Args:
-            prompt: Prompt to send to the model
-            max_retries: Maximum retry attempts per model. Defaults to 1.
-
-        Returns:
-            Tuple of (result, model_id) where model_id is in format 'provider:model_name'.
-
-        Raises:
-            RuntimeError: If all models fail to process the prompt.
-
-        """
-        last_error = None
-
-        for i, agent in enumerate(self.agents):
-            config = self.configs[i]
-            model_id = f'{config.provider}:{config.model_name}'
-
-            try:
-                # Use tenacity for retries on the current model
-                retryer = get_retryer(
-                    max_attempts=max_retries,
-                    wait_min=0.5,
-                    wait_max=2.0,
-                    wait_multiplier=0.5,
-                    exceptions=(Exception,),
-                    reraise=True,
-                )
-
-                for attempt in retryer:
-                    with attempt:
-                        result = agent.run_sync(prompt)
-                        return result, model_id
-
-            except RetryError:
-                # All retries for this model failed
-                continue
-            except Exception as e:
-                last_error = e
-                # Try next model
-                continue
-
-        raise RuntimeError(f'All models exhausted without success. Last error: {last_error}')
-
-    def run_all_compare(self, prompt: str) -> dict[str, Any]:
-        """Run prompt on all models and return all results for comparison.
-
-        Args:
-            prompt: Prompt to send to all models
-
-        Returns:
-            Dictionary mapping model_id to result or error.
-            Model IDs are in format 'provider:model_name'.
-
-        """
-        results: dict[str, Any] = {}
-        for config, agent in zip(self.configs, self.agents, strict=True):
-            model_id = f'{config.provider}:{config.model_name}'
-            try:
-                result = agent.run_sync(prompt)
-                results[model_id] = result
-            except Exception as e:
-                results[model_id] = {'error': str(e)}
-
-        return results
+    return LLMConfig(provider='openrouter', model_name=model_name, api_key=api_key, **kwargs)
 
 
 # ============================================================================
-# 7. EXAMPLES & USAGE
+# 6. EXAMPLES & USAGE
 # ============================================================================
 
 if __name__ == '__main__':
@@ -552,14 +468,5 @@ if __name__ == '__main__':
     print('\nExample 3: Quick Helpers')
     config3 = groq('llama-3.3-70b-versatile', os.getenv('GROQ_KEY', 'test-key'))
     print(f'  Config: {config3.provider} / {config3.model_name}')
-
-    # Example 4: Multi-model with fallback
-    print('\nExample 4: Multi-Model Fallback')
-    configs = [
-        groq('llama-3.3-70b-versatile', os.getenv('GROQ_KEY', 'test-key')),
-        gemini('gemini-2.0-flash', os.getenv('GEMINI_KEY', 'test-key')),
-    ]
-    print(f'  Primary: {configs[0].provider}')
-    print(f'  Fallback: {configs[1].provider}')
 
     print('\n✓ All examples completed')

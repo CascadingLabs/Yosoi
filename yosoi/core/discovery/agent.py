@@ -3,11 +3,12 @@
 from typing import Any, cast
 
 import logfire
+from pydantic import BaseModel
 from pydantic_ai import Agent
 from rich.console import Console
 
 from yosoi.core.discovery.config import LLMConfig, create_model
-from yosoi.models import ScrapingConfig
+from yosoi.models.contract import Contract
 from yosoi.utils import load_prompt
 from yosoi.utils.exceptions import LLMGenerationError
 
@@ -17,7 +18,6 @@ class SelectorDiscovery:
 
     Attributes:
         console: Rich console instance for formatted output
-        fallback_selectors: Second level of selectors to choose from
         agent: The LLM agent that will be used
         model_name: Name of the model being used
         provider: Name of the LLM provider
@@ -25,14 +25,15 @@ class SelectorDiscovery:
     """
 
     console: Console
-    agent: Agent[Any, ScrapingConfig]
+    agent: Agent[Any, BaseModel]
     model_name: str
     provider: str
 
     def __init__(
         self,
+        contract: type[Contract],
         llm_config: LLMConfig | None = None,
-        agent: Agent[Any, ScrapingConfig] | None = None,
+        agent: Agent[Any, BaseModel] | None = None,
         console: Console | None = None,
     ):
         """Initialize the discovery with LLM configuration or an agent.
@@ -41,24 +42,25 @@ class SelectorDiscovery:
             llm_config: Configuration for the LLM provider and model
             agent: The LLM agent that will be used
             console: Rich console instance for formatted output
+            contract: Contract subclass defining fields to discover.
 
         Raises:
             ValueError: Must provide llm_config or an agent
 
         """
         self.console = console or Console()
+        self._contract = contract
 
-        # System prompt for the agent
         system_prompt = load_prompt('discovery_system')
+        output_model = self._contract.to_selector_model()
 
-        # Priority: agent > llm_config
         if agent is not None:
             self.agent = agent
             self.model_name = 'custom-agent'
             self.provider = 'custom'
         elif llm_config is not None:
             model = create_model(llm_config)
-            self.agent = Agent(model, output_type=ScrapingConfig, system_prompt=system_prompt)
+            self.agent = Agent(model, output_type=output_model, system_prompt=system_prompt)
             self.model_name = llm_config.model_name
             self.provider = llm_config.provider
         else:
@@ -80,7 +82,6 @@ class SelectorDiscovery:
         logfire.info('Starting discovery', url=url_context)
 
         try:
-            # Ask AI to find selectors - returns as ScrapingConfig object
             selectors_obj = self._get_selectors_from_ai(url_context, html)
 
             if selectors_obj:
@@ -98,7 +99,7 @@ class SelectorDiscovery:
         return None
 
     @logfire.instrument('llm_discovery_request')
-    def _get_selectors_from_ai(self, url: str, html: str) -> ScrapingConfig | None:
+    def _get_selectors_from_ai(self, url: str, html: str) -> BaseModel | None:
         """Ask AI to find selectors by reading the HTML.
 
         Args:
@@ -106,21 +107,19 @@ class SelectorDiscovery:
             html: HTML content to give to LLM
 
         Returns:
-            ScrapingConfig object with discovered selectors, or None if request failed.
+            Selector config model with discovered selectors, or None if request failed.
 
         """
-        template = load_prompt('discovery_user')
-        prompt = template.format(url=url, html=html)
+        prompt = self._build_user_prompt(url, html)
 
         try:
             result = self.agent.run_sync(prompt)
             self.console.print('[success]  ✓ AI found selectors[/success]')
-            return cast(ScrapingConfig, result.output)
+            return cast(BaseModel, result.output)
 
         except Exception as e:
             error_msg = str(e)
 
-            # Check for structured output failures
             if 'tool_use_failed' in error_msg or 'invalid_request_error' in error_msg:
                 self.console.print('[danger]  ✗ AI failed to generate structured output[/danger]')
             else:
@@ -128,6 +127,22 @@ class SelectorDiscovery:
 
             logfire.error('AI request failed', error=error_msg, provider=self.provider)
             raise LLMGenerationError(f'AI discovery failed: {error_msg}') from e
+
+    def _build_user_prompt(self, url: str, html: str) -> str:
+        """Build the user prompt for AI discovery.
+
+        Args:
+            url: URL for context
+            html: Cleaned HTML content
+
+        Returns:
+            Formatted prompt string
+
+        """
+        descriptions = self._contract.field_descriptions()
+        fields_text = '\n'.join(f'**{name}** - {desc}' for name, desc in descriptions.items())
+
+        return load_prompt('discovery_user').format(url=url, html=html, fields_text=fields_text)
 
     def _is_all_na(self, selectors: dict) -> bool:
         """Check if AI returned all NA (gave up).
