@@ -123,7 +123,9 @@ class ContentExtractor:
             # Different extraction strategies based on field type
             if field_name == 'body_text':
                 # Extract all paragraphs and join with newlines
-                paragraphs = [elem.get_text(strip=True) for elem in elements if elem.get_text(strip=True)]
+                paragraphs = [
+                    elem.get_text(separator=' ', strip=True) for elem in elements if elem.get_text(strip=True)
+                ]
                 return '\n\n'.join(paragraphs) if paragraphs else None
 
             if field_name == 'related_content':
