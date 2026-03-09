@@ -28,7 +28,7 @@ PROVIDER_ENV_KEYS: dict[str, str] = {
     'openai': 'OPENAI_KEY',
     'gpt': 'OPENAI_KEY',
     'cerebras': 'CEREBRAS_KEY',
-    'openrouter': 'OPENROUTER_API_KEY',
+    'openrouter': 'OPENROUTER_KEY',
 }
 
 
