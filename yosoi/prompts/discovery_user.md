@@ -7,6 +7,8 @@ Here is the HTML from {url}:
 
 Find CSS/HTML/JS selectors for these fields:
 
+{fields_text}
+
 For each field provide three selectors:
 - primary: Most specific selector using actual classes/IDs from the HTML
 - fallback: Less specific but reliable selector

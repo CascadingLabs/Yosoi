@@ -142,23 +142,7 @@ class SelectorDiscovery:
         descriptions = self._contract.field_descriptions()
         fields_text = '\n'.join(f'**{name}** - {desc}' for name, desc in descriptions.items())
 
-        return f"""Analyze this HTML and find selectors for web scraping.
-
-Here is the HTML from {url}:
-```html
-{html}
-```
-
-Find CSS/HTML/JS selectors for these fields:
-
-{fields_text}
-
-For each field provide three selectors:
-- primary: Most specific selector using actual classes/IDs from the HTML
-- fallback: Less specific but reliable selector
-- tertiary: Generic selector or null if field doesn't exist
-
-IMPORTANT: Only use selectors that actually exist in the HTML above."""
+        return load_prompt('discovery_user').format(url=url, html=html, fields_text=fields_text)
 
     def _is_all_na(self, selectors: dict) -> bool:
         """Check if AI returned all NA (gave up).
