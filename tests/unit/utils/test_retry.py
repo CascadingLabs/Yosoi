@@ -1,7 +1,5 @@
 """Tests for get_retryer config and log_retry."""
 
-from unittest.mock import MagicMock
-
 import logfire
 from tenacity import Retrying
 
@@ -35,11 +33,11 @@ def test_get_retryer_reraise_can_be_disabled():
     assert retryer.reraise is False
 
 
-def test_log_retry_calls_logfire_warn(monkeypatch):
+def test_log_retry_calls_logfire_warn(monkeypatch, mocker):
     logged = []
     monkeypatch.setattr(logfire, 'warn', lambda msg, **kwargs: logged.append((msg, kwargs)))
 
-    state = MagicMock()
+    state = mocker.MagicMock()
     state.attempt_number = 2
     state.outcome.exception.return_value = ValueError('test error')
 

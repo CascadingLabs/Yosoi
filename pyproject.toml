@@ -57,7 +57,7 @@ dev = [
 tests = [
   "deepeval>=3.8.4",
   "dirty-equals>=0.11",
-  "mutmut>=2.5",
+  "mutmut>=3",
   "poethepoet>=0.40",
   "polyfactory>=3.2",
   "pytest>=9.0.2",
@@ -206,9 +206,8 @@ module = [
 ignore_missing_imports = true
 
 [tool.mutmut]
-paths_to_mutate = "yosoi/"
-tests_dir = "tests/unit/"
-runner = "uv run pytest tests/unit/ -x -q"
+paths_to_mutate = [ "yosoi/" ]
+tests_dir = [ "tests/unit/" ]
 
 [tool.poe.tasks]
 eval = 'uv run pytest -m "eval"'                                                          # run deepeval tests
