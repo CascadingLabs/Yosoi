@@ -2,13 +2,43 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, TypeVar
 
 import pydantic
 from pydantic import BaseModel, Field, ValidationInfo, model_validator
 from typing_extensions import Self
 
 from yosoi.types.coerce import dispatch as _coerce_dispatch
+
+
+def _unwrap(attr: Any) -> Any:
+    """Unwrap a classmethod to its underlying function, or return as-is."""
+    return attr.__func__ if isinstance(attr, classmethod) else attr
+
+
+def _run_field_validators(cls: type, result: dict[str, Any]) -> None:
+    """Run @ys.validator("field") decorated methods against the result dict."""
+    for klass in cls.__mro__:
+        for attr in klass.__dict__.values():
+            fn = _unwrap(attr)
+            if not callable(fn) or not hasattr(fn, '_yosoi_field_validator'):
+                continue
+            for target_field in fn._yosoi_field_validator:
+                if target_field in result:
+                    result[target_field] = fn(cls, result[target_field])
+
+
+_T = TypeVar('_T')
+
+
+def _run_model_validators(cls: type, instance: _T) -> _T:
+    """Run @ys.validator() decorated methods against the constructed instance."""
+    for klass in cls.__mro__:
+        for attr in klass.__dict__.values():
+            fn = _unwrap(attr)
+            if callable(fn) and hasattr(fn, '_yosoi_model_validator'):
+                instance = fn(instance)
+    return instance
 
 
 class Contract(BaseModel):
@@ -52,8 +82,14 @@ class Contract(BaseModel):
                 continue
             result[field_name] = _coerce_dispatch(yosoi_type, result[field_name], raw_extra, source_url)
 
-        # Step 3: Core pydantic validation
-        return handler(result)
+        # Step 3: @ys.validator("field") — atomic field validators (post-coercion)
+        _run_field_validators(cls, result)
+
+        # Step 4: Core pydantic validation
+        instance = handler(result)
+
+        # Step 5: @ys.validator() — holistic model validators (post-construction)
+        return _run_model_validators(cls, instance)
 
     @classmethod
     def to_selector_model(cls) -> type[BaseModel]:

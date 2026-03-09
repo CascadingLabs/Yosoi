@@ -18,6 +18,7 @@ from yosoi.types import (
     YosoiType,
     register_coercion,
 )
+from yosoi.validators import validator
 
 __version__ = '0.1.0'
 
@@ -48,4 +49,5 @@ __all__ = [
     'openai',
     'openrouter',
     'register_coercion',
+    'validator',
 ]

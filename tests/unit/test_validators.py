@@ -427,3 +427,189 @@ def test_contract_generate_manifest():
     assert '# BookContract' in manifest
     assert '| `price`' in manifest
     assert '`price`' in manifest
+
+
+# ---------------------------------------------------------------------------
+# @ys.validator("field") — Atomic Field Validators
+# ---------------------------------------------------------------------------
+
+
+def test_field_validator_transforms_value():
+    class C(Contract):
+        sku: str
+
+        @ys.validator('sku')
+        @classmethod
+        def validate_sku(cls, v: str) -> str:
+            return v.upper()
+
+    result = C.model_validate({'sku': 'abc-123'})
+    assert result.sku == 'ABC-123'
+
+
+def test_field_validator_raises_on_invalid():
+    class C(Contract):
+        sku: str
+
+        @ys.validator('sku')
+        @classmethod
+        def validate_sku(cls, v: str) -> str:
+            if not v.startswith('ABC-'):
+                raise ValueError('Invalid SKU format')
+            return v
+
+    with pytest.raises(ValidationError):
+        C.model_validate({'sku': 'XYZ-999'})
+
+    result = C.model_validate({'sku': 'ABC-001'})
+    assert result.sku == 'ABC-001'
+
+
+def test_field_validator_runs_after_coercion():
+    """Field validators see the coerced value, not the raw string."""
+
+    class C(Contract):
+        price: float = ys.Price()
+
+        @ys.validator('price')
+        @classmethod
+        def validate_min_price(cls, v: float) -> float:
+            if v < 1.0:
+                raise ValueError('Price too low')
+            return v
+
+    # Price coercion runs first (£ → float), then field validator checks
+    result = C.model_validate({'price': '£5.00'})
+    assert result.price == 5.0
+
+    with pytest.raises(ValidationError):
+        C.model_validate({'price': '£0.50'})
+
+
+def test_field_validator_multiple_fields():
+    """A single validator can target multiple fields."""
+
+    class C(Contract):
+        name: str
+        category: str
+
+        @ys.validator('name', 'category')
+        @classmethod
+        def strip_and_upper(cls, v: str) -> str:
+            return v.strip().upper()
+
+    result = C.model_validate({'name': '  laptop  ', 'category': '  tech  '})
+    assert result.name == 'LAPTOP'
+    assert result.category == 'TECH'
+
+
+def test_field_validator_skips_missing_fields():
+    """Validators don't run for fields absent from the input data."""
+
+    class C(Contract):
+        name: str
+        tag: str = 'default'
+
+        @ys.validator('tag')
+        @classmethod
+        def validate_tag(cls, v: str) -> str:
+            if v == 'bad':
+                raise ValueError('bad tag')
+            return v
+
+    result = C.model_validate({'name': 'item'})
+    assert result.tag == 'default'
+
+
+# ---------------------------------------------------------------------------
+# @ys.validator() — Holistic Model Validators
+# ---------------------------------------------------------------------------
+
+
+def test_model_validator_checks_cross_field_logic():
+    class C(Contract):
+        price: float = ys.Price()
+        sale_price: float = ys.Price(description='Sale Price', default=0.0)
+
+        @ys.validator()
+        def validate_sale_logic(self) -> C:
+            if self.sale_price > self.price:
+                raise ValueError(f'Sale price ({self.sale_price}) cannot exceed list price ({self.price})')
+            return self
+
+    # Valid: sale < price
+    result = C.model_validate({'price': '$100.00', 'sale_price': '$79.99'})
+    assert result.price == 100.0
+    assert result.sale_price == 79.99
+
+    # Invalid: sale > price
+    with pytest.raises(ValidationError):
+        C.model_validate({'price': '$50.00', 'sale_price': '$75.00'})
+
+
+def test_model_validator_can_mutate_instance():
+    class C(Contract):
+        name: str
+        slug: str = ''
+
+        @ys.validator()
+        def generate_slug(self) -> C:
+            if not self.slug:
+                self.slug = self.name.lower().replace(' ', '-')
+            return self
+
+    result = C.model_validate({'name': 'Hello World'})
+    assert result.slug == 'hello-world'
+
+
+# ---------------------------------------------------------------------------
+# Combined: @ys.validator field + model + inner Validators + coercion
+# ---------------------------------------------------------------------------
+
+
+def test_full_validator_pipeline():
+    """Inner Validators → coercion → @ys.validator(field) → pydantic → @ys.validator() model."""
+
+    class ProductContract(Contract):
+        name: str = ys.Title(description='Product Title')
+        price: float = ys.Price(description='Original Price')
+        sale_price: float = ys.Price(description='Sale Price', default=0.0)
+        sku: str
+
+        class Validators:
+            @staticmethod
+            def name(v: str) -> str:
+                # Step 1: inner Validators pre-coercion transform
+                return v.strip()
+
+        @ys.validator('sku')
+        @classmethod
+        def validate_sku_format(cls, v: str) -> str:
+            # Step 3: field validator post-coercion
+            if not v.startswith('ABC-'):
+                raise ValueError('Invalid SKU format for this site')
+            return v
+
+        @ys.validator()
+        def validate_sale_logic(self) -> ProductContract:
+            # Step 5: model validator post-construction
+            if self.sale_price > self.price:
+                raise ValueError(f'Sale price ({self.sale_price}) cannot exceed list price ({self.price})')
+            return self
+
+    # Everything passes
+    result = ProductContract.model_validate(
+        {'name': '  Widget  ', 'price': '$99.99', 'sale_price': '$49.99', 'sku': 'ABC-001'}
+    )
+    assert result.name == 'Widget'
+    assert result.price == 99.99
+    assert result.sale_price == 49.99
+    assert result.sku == 'ABC-001'
+
+    # SKU field validator rejects
+    with pytest.raises(ValidationError):
+        ProductContract.model_validate({'name': 'Widget', 'price': '$99.99', 'sale_price': '$49.99', 'sku': 'XYZ-001'})
+
+    # Model validator rejects (sale > price)
+    with pytest.raises(ValidationError):
+        ProductContract.model_validate({'name': 'Widget', 'price': '$10.00', 'sale_price': '$20.00', 'sku': 'ABC-001'})
