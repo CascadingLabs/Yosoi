@@ -56,16 +56,14 @@ def pytest_configure(config):
 
 def pytest_collection_modifyitems(config, items):
     """Apply directory-based marks to collected test items."""
+    from pathlib import Path
 
     for item in items:
-        # Get the test file path
         if hasattr(item, 'fspath'):
-            file_path = str(item.fspath)
-
-            # Add marks based on directory
-            if '/tests/integration/' in file_path:
+            parts = Path(item.fspath).parts
+            if 'integration' in parts:
                 item.add_marker(pytest.mark.integration)
-            elif '/tests/unit/' in file_path:
+            elif 'unit' in parts:
                 item.add_marker(pytest.mark.unit)
-            elif '/tests/evals/' in file_path:
+            elif 'evals' in parts:
                 item.add_marker(pytest.mark.eval)

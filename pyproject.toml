@@ -57,6 +57,7 @@ dev = [
 tests = [
   "deepeval>=3.8.4",
   "dirty-equals>=0.11",
+  "mutmut>=2.5",
   "poethepoet>=0.40",
   "polyfactory>=3.2",
   "pytest>=9.0.2",
@@ -143,6 +144,7 @@ lint.per-file-ignores."examples/**/*.py" = [ "D" ]
 lint.per-file-ignores."tests/**/*.py" = [
   "ARG001", # unused arguments in test functions
   "ARG002", # unused method arguments in tests
+  "ARG004", # unused static method arguments in tests (coerce stubs)
   "D",      # pydocstyle - no docstrings required for tests
 ]
 lint.per-file-ignores."yosoi/core/cleaning/cleaner.py" = [ "C901" ]
@@ -155,6 +157,15 @@ lint.pydocstyle.convention = "google"
 markers = [
   "eval: mark test as an evaluation test (requires real LLM and is slow)",
 ]
+
+[tool.coverage.report]
+exclude_lines = [ "pragma: no cover", "if TYPE_CHECKING:", "def __repr__" ]
+show_missing = true
+fail_under = 70
+
+[tool.coverage.run]
+source = [ "yosoi" ]
+omit = [ "yosoi/__main__.py", "yosoi/cli.py" ]
 
 [tool.mypy]
 python_version = "3.10"
@@ -194,13 +205,21 @@ module = [
 ]
 ignore_missing_imports = true
 
+[tool.mutmut]
+paths_to_mutate = "yosoi/"
+tests_dir = "tests/unit/"
+runner = "uv run pytest tests/unit/ -x -q"
+
 [tool.poe.tasks]
-eval = 'uv run pytest -m "eval"'                                                    # run deepeval tests
-integration = "uv run pytest -m 'integration'"                                      # run integration tests
-unit = "uv run pytest -m 'unit'"                                                    # run unit tests
+eval = 'uv run pytest -m "eval"'                                                          # run deepeval tests
+integration = "uv run pytest -m 'integration'"                                            # run integration tests
+unit = "uv run pytest -m 'unit'"                                                          # run unit tests
 ci-test = "uv run pytest -m 'not eval'"
 ci-check = "uv run prek run --all-files --hook-stage manual --show-diff-on-failure"
 ci-format = "uv run ruff check --fix"
+coverage = "uv run pytest --cov=yosoi --cov-report=term-missing --cov-report=html tests/"
+mutmut-run = "uv run mutmut run"
+mutmut-results = "uv run mutmut results"
 
 [tool.gitleaks]
 [[tool.gitleaks.allowlist]]
