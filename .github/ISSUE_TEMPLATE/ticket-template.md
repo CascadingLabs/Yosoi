@@ -7,10 +7,10 @@ assignees: ''
 
 ---
 
-## Usecase / Thoughts
+<h2>Usecase / Thoughts</h2>
 
 ---
-## Proposed Plan
+<h2> Proposed Plan </h2>
 
 ---
-## Technical Notes
+<h2> Technical Notes </h2>
