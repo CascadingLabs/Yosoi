@@ -57,10 +57,26 @@ class Contract(BaseModel):
 
     @classmethod
     def to_selector_model(cls) -> type[BaseModel]:
-        """Generate a Pydantic model mapping each contract field to FieldSelectors."""
+        """Generate a Pydantic model mapping each contract field to FieldSelectors.
+
+        This ensures that the LLM agent knows exactly which fields to find selectors for,
+        preserving any descriptions or hints provided in the contract.
+        """
         from yosoi.models.selectors import FieldSelectors
 
-        field_defs: dict[str, Any] = dict.fromkeys(cls.model_fields, (FieldSelectors, ...))
+        field_defs: dict[str, Any] = {}
+        for name, field_info in cls.model_fields.items():
+            # Copy description and yosoi_hint to the selector field
+            description = field_info.description or f'Selectors for {name}'
+            extra = field_info.json_schema_extra or {}
+            hint = extra.get('yosoi_hint') if isinstance(extra, dict) else None
+
+            selector_field = Field(
+                description=description,
+                json_schema_extra={'yosoi_hint': hint} if hint else None,
+            )
+            field_defs[name] = (FieldSelectors, selector_field)
+
         return pydantic.create_model(f'{cls.__name__}SelectorConfig', **field_defs)
 
     @classmethod
