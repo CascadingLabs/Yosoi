@@ -15,3 +15,6 @@ def Author(v: object, config: dict[str, Any], source_url: str | None = None) -> 
             author: str = ys.Author()
     """
     return str(v).strip() if v is not None else ''
+
+
+# TODO make sure that author has only name components, is this syntactically validatible?
