@@ -452,8 +452,7 @@ class Pipeline:
             self.console.print(f'[info]  ↳ Using selector overrides for: {override_fields}[/info]')
 
         # If every field has an override, skip AI entirely
-        all_fields = set(self.contract.model_fields.keys())
-        if all_fields and all_fields == set(overrides.keys()):
+        if not self.contract.field_descriptions():
             self.console.print('[step]Step 2: All fields have selector overrides — skipping AI discovery[/step]')
             logfire.info('Skipping AI discovery — all fields overridden', url=url)
             self.debug.save_debug_selectors(url, overrides)

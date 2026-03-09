@@ -66,14 +66,14 @@ class Contract(BaseModel):
         """
         from yosoi.models.selectors import FieldSelectors
 
+        overridden = cls.get_selector_overrides()
         field_defs: dict[str, Any] = {}
         for name, field_info in cls.model_fields.items():
-            extra = field_info.json_schema_extra or {}
-            # Skip fields that have a manual selector override
-            if isinstance(extra, dict) and extra.get('yosoi_selector'):
+            if name in overridden:
                 continue
 
             # Copy description and yosoi_hint to the selector field
+            extra = field_info.json_schema_extra or {}
             description = field_info.description or f'Selectors for {name}'
             hint = extra.get('yosoi_hint') if isinstance(extra, dict) else None
 
@@ -106,13 +106,8 @@ class Contract(BaseModel):
     @classmethod
     def field_descriptions(cls) -> dict[str, str]:
         """Return a mapping of field name to description, excluding selector overrides."""
-        result: dict[str, str] = {}
-        for name, fi in cls.model_fields.items():
-            extra = fi.json_schema_extra
-            if isinstance(extra, dict) and extra.get('yosoi_selector'):
-                continue
-            result[name] = fi.description or name
-        return result
+        overridden = cls.get_selector_overrides()
+        return {name: (fi.description or name) for name, fi in cls.model_fields.items() if name not in overridden}
 
     @classmethod
     def generate_manifest(cls) -> str:
