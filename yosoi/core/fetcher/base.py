@@ -211,11 +211,10 @@ class HTMLFetcher(ABC):
         # For other bad status codes (4xx, 5xx), be more aggressive
         if status_code >= 400:
             html_check = html[:2000].lower()
-
+            # TODO find more robust way to detect blockers
             block_indicators = {
                 'captcha': 'CAPTCHA required',
                 'access denied': 'Access denied',
-                'cloudflare': 'Cloudflare protection',
                 'rate limit': 'Rate limited',
                 'too many requests': 'Too many requests',
                 'forbidden': 'Forbidden',
