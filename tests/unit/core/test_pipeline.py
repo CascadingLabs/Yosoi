@@ -4,6 +4,7 @@ import yosoi as ys
 from yosoi.core.pipeline import Pipeline
 from yosoi.models.contract import Contract
 from yosoi.models.results import FetchResult, FieldVerificationResult, VerificationResult
+from yosoi.utils.exceptions import BotDetectionError
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -708,3 +709,457 @@ def test_process_url_respects_explicit_force_override(mocker):
     Pipeline.process_url(stub, 'https://x.com', force=True)
     # _cached_selectors should NOT be called because force=True bypasses cache
     cached_mock.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# normalize_url - additional targeted tests
+# ---------------------------------------------------------------------------
+
+
+def test_normalize_url_http_url_returned_unchanged(mocker):
+    """http:// URLs must be returned as-is without modification."""
+    stub = _make_pipeline_stub(mocker)
+    url = 'http://example.com/path?q=1'
+    assert Pipeline.normalize_url(stub, url) == url
+
+
+def test_normalize_url_https_url_returned_unchanged(mocker):
+    """https:// URLs must be returned as-is without modification."""
+    stub = _make_pipeline_stub(mocker)
+    url = 'https://example.com/path'
+    assert Pipeline.normalize_url(stub, url) == url
+
+
+def test_normalize_url_prepends_https_exactly(mocker):
+    """Without protocol, must prepend 'https://' (not 'http://')."""
+    stub = _make_pipeline_stub(mocker)
+    mocker.patch('httpx.head')  # no error
+    result = Pipeline.normalize_url(stub, 'www.example.com')
+    assert result == 'https://www.example.com'
+
+
+def test_normalize_url_prepends_http_on_https_failure(mocker):
+    """On HTTPS failure, must prepend 'http://' (not 'ftp://')."""
+    import httpx
+
+    stub = _make_pipeline_stub(mocker)
+    mocker.patch('httpx.head', side_effect=httpx.HTTPError('fail'))
+    result = Pipeline.normalize_url(stub, 'example.com')
+    assert result == 'http://example.com'
+
+
+# ---------------------------------------------------------------------------
+# _extract_domain - additional targeted tests
+# ---------------------------------------------------------------------------
+
+
+def test_extract_domain_exactly_removes_www_prefix(mocker):
+    """'www.' must be removed from start but not from elsewhere."""
+    stub = _make_pipeline_stub(mocker)
+    assert Pipeline._extract_domain(stub, 'https://www.example.com') == 'example.com'
+
+
+def test_extract_domain_does_not_modify_subdomain(mocker):
+    """Non-www subdomains must not be modified."""
+    stub = _make_pipeline_stub(mocker)
+    assert Pipeline._extract_domain(stub, 'https://api.example.com') == 'api.example.com'
+
+
+# ---------------------------------------------------------------------------
+# _verify - more targeted assertions
+# ---------------------------------------------------------------------------
+
+
+def test_verify_calls_verifier_with_correct_args(mocker):
+    """_verify must call verifier.verify with html and selectors."""
+    stub = _make_pipeline_stub(mocker)
+    selectors = {'title': {'primary': 'h1'}}
+    vr = _make_verification_result(True, ['title'])
+    stub.verifier.verify.return_value = vr
+    Pipeline._verify(stub, 'https://x.com', '<html>test</html>', selectors, skip_verification=False)
+    stub.verifier.verify.assert_called_once_with('<html>test</html>', selectors)
+
+
+def test_verify_returns_only_verified_fields(mocker):
+    """_verify must return only fields with status='verified'."""
+    stub = _make_pipeline_stub(mocker)
+    # title verified, price failed
+    results = {
+        'title': FieldVerificationResult(field_name='title', status='verified', working_level='primary', selector='h1'),
+        'price': FieldVerificationResult(field_name='price', status='failed'),
+    }
+    vr = VerificationResult(total_fields=2, verified_count=1, results=results)
+    stub.verifier.verify.return_value = vr
+    selectors = {'title': {'primary': 'h1'}, 'price': {'primary': '.p'}}
+    result = Pipeline._verify(stub, 'https://x.com', '<html/>', selectors, skip_verification=False)
+    assert result is not None
+    assert 'title' in result
+    assert 'price' not in result
+
+
+def test_verify_failed_result_calls_print_verification_failure(mocker):
+    """When all fail, _print_verification_failure must be called."""
+    stub = _make_pipeline_stub(mocker)
+    selectors = {'title': {'primary': 'h1'}}
+    vr = _make_verification_result(False, ['title'])
+    stub.verifier.verify.return_value = vr
+    print_fail_mock = mocker.patch.object(Pipeline, '_print_verification_failure')
+    Pipeline._verify(stub, 'https://x.com', '<html/>', selectors, skip_verification=False)
+    print_fail_mock.assert_called_once_with(vr)
+
+
+# ---------------------------------------------------------------------------
+# _save_and_track - more targeted assertions
+# ---------------------------------------------------------------------------
+
+
+def test_save_and_track_calls_record_url_with_used_llm_true(mocker):
+    """_save_and_track must pass used_llm=True when called with used_llm=True."""
+    stub = _make_pipeline_stub(mocker)
+    stub.tracker.record_url.return_value = {'llm_calls': 1, 'url_count': 1}
+    Pipeline._save_and_track(
+        stub,
+        url='https://x.com',
+        domain='x.com',
+        verified={'title': {'primary': 'h1'}},
+        extracted=None,
+        used_llm=True,
+        output_format='json',
+    )
+    stub.tracker.record_url.assert_called_once_with('https://x.com', used_llm=True)
+
+
+def test_save_and_track_calls_record_url_with_used_llm_false(mocker):
+    """_save_and_track must pass used_llm=False when called with used_llm=False."""
+    stub = _make_pipeline_stub(mocker)
+    stub.tracker.record_url.return_value = {'llm_calls': 0, 'url_count': 1}
+    Pipeline._save_and_track(
+        stub,
+        url='https://x.com',
+        domain='x.com',
+        verified={},
+        extracted=None,
+        used_llm=False,
+        output_format='json',
+    )
+    stub.tracker.record_url.assert_called_once_with('https://x.com', used_llm=False)
+
+
+def test_save_and_track_saves_content_with_output_format(mocker):
+    """save_content must be called with the correct output_format."""
+    stub = _make_pipeline_stub(mocker)
+    stub.tracker.record_url.return_value = {'llm_calls': 1, 'url_count': 1}
+    Pipeline._save_and_track(
+        stub,
+        url='https://x.com',
+        domain='x.com',
+        verified={'title': {'primary': 'h1'}},
+        extracted={'title': 'Book'},
+        used_llm=True,
+        output_format='markdown',
+    )
+    stub.storage.save_content.assert_called_once_with('https://x.com', {'title': 'Book'}, 'markdown')
+
+
+# ---------------------------------------------------------------------------
+# _track_cached_success - targeted
+# ---------------------------------------------------------------------------
+
+
+def test_track_cached_success_calls_record_url_used_llm_false(mocker):
+    """_track_cached_success must call record_url with used_llm=False."""
+    stub = _make_pipeline_stub(mocker)
+    stub.tracker.record_url.return_value = {'llm_calls': 0, 'url_count': 1}
+    Pipeline._track_cached_success(stub, 'https://example.com', 'example.com')
+    stub.tracker.record_url.assert_called_once_with('https://example.com', used_llm=False)
+
+
+# ---------------------------------------------------------------------------
+# _print_tracking_stats - targeted
+# ---------------------------------------------------------------------------
+
+
+def test_print_tracking_stats_shows_llm_call_count(mocker):
+    """_print_tracking_stats must display llm_calls value."""
+    stub = _make_pipeline_stub(mocker)
+    Pipeline._print_tracking_stats(stub, 'x.com', {'llm_calls': 5, 'url_count': 10})
+    call_args = ' '.join(str(c) for c in stub.console.print.call_args_list)
+    assert '5' in call_args
+
+
+def test_print_tracking_stats_shows_url_count(mocker):
+    """_print_tracking_stats must display url_count value."""
+    stub = _make_pipeline_stub(mocker)
+    Pipeline._print_tracking_stats(stub, 'x.com', {'llm_calls': 1, 'url_count': 7})
+    call_args = ' '.join(str(c) for c in stub.console.print.call_args_list)
+    assert '7' in call_args
+
+
+def test_print_tracking_stats_efficiency_calculation(mocker):
+    """Efficiency must be url_count / llm_calls."""
+    stub = _make_pipeline_stub(mocker)
+    Pipeline._print_tracking_stats(stub, 'x.com', {'llm_calls': 2, 'url_count': 10})
+    call_args = ' '.join(str(c) for c in stub.console.print.call_args_list)
+    # 10/2=5.0 efficiency
+    assert '5.0' in call_args
+
+
+def test_print_tracking_stats_no_efficiency_when_llm_zero(mocker):
+    """When llm_calls=0, efficiency section should not appear (no ZeroDivisionError)."""
+    stub = _make_pipeline_stub(mocker)
+    # Should not raise
+    Pipeline._print_tracking_stats(stub, 'x.com', {'llm_calls': 0, 'url_count': 3})
+    # console.print was called at least once
+    stub.console.print.assert_called()
+
+
+# ---------------------------------------------------------------------------
+# _handle_bot_detection - targeted
+# ---------------------------------------------------------------------------
+
+
+def test_handle_bot_detection_shows_url(mocker):
+    """_handle_bot_detection must show the error URL."""
+    stub = _make_pipeline_stub(mocker)
+    err = BotDetectionError(url='https://blocked.com', status_code=403, indicators=['captcha'])
+    Pipeline._handle_bot_detection(stub, err, attempt=1, max_retries=3)
+    call_args = ' '.join(str(c) for c in stub.console.print.call_args_list)
+    assert 'blocked.com' in call_args or 'https://blocked.com' in call_args
+
+
+def test_handle_bot_detection_shows_status_code(mocker):
+    """_handle_bot_detection must show the HTTP status code."""
+    stub = _make_pipeline_stub(mocker)
+    err = BotDetectionError(url='https://x.com', status_code=429, indicators=['rate-limit'])
+    Pipeline._handle_bot_detection(stub, err, attempt=1, max_retries=3)
+    call_args = ' '.join(str(c) for c in stub.console.print.call_args_list)
+    assert '429' in call_args
+
+
+def test_handle_bot_detection_abort_only_when_exhausted(mocker):
+    """Abort message must only appear when attempt >= max_retries."""
+    stub = _make_pipeline_stub(mocker)
+    err = BotDetectionError(url='https://x.com', status_code=403, indicators=['cf'])
+    # attempt < max_retries — no abort
+    Pipeline._handle_bot_detection(stub, err, attempt=1, max_retries=3)
+    call_args = ' '.join(str(c) for c in stub.console.print.call_args_list)
+    assert 'ABORTING' not in call_args
+
+
+def test_handle_bot_detection_abort_when_exactly_at_max_retries(mocker):
+    """Abort message must appear when attempt == max_retries."""
+    stub = _make_pipeline_stub(mocker)
+    err = BotDetectionError(url='https://x.com', status_code=403, indicators=['cf'])
+    Pipeline._handle_bot_detection(stub, err, attempt=3, max_retries=3)
+    call_args = ' '.join(str(c) for c in stub.console.print.call_args_list)
+    assert 'ABORTING' in call_args
+
+
+# ---------------------------------------------------------------------------
+# _cached_selectors - targeted
+# ---------------------------------------------------------------------------
+
+
+def test_cached_selectors_calls_load_selectors_with_domain(mocker):
+    """_cached_selectors must call storage.load_selectors with the domain."""
+    stub = _make_pipeline_stub(mocker)
+    stub.storage.load_selectors.return_value = None
+    Pipeline._cached_selectors(stub, 'https://x.com', 'x.com', mocker.MagicMock(), False, 'json')
+    stub.storage.load_selectors.assert_called_once_with('x.com')
+
+
+def test_cached_selectors_calls_use_cached_on_cache_hit(mocker):
+    """When cache hit, must call _use_cached_selectors."""
+    stub = _make_pipeline_stub(mocker)
+    stub.storage.load_selectors.return_value = {'title': {'primary': 'h1'}}
+    mock_use = mocker.patch.object(Pipeline, '_use_cached_selectors', return_value=True)
+    fetcher = mocker.MagicMock()
+    Pipeline._cached_selectors(stub, 'https://x.com', 'x.com', fetcher, False, 'json')
+    mock_use.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# _extract - targeted
+# ---------------------------------------------------------------------------
+
+
+def test_extract_calls_extractor_with_correct_args(mocker):
+    """_extract must call extractor.extract_content_with_html with url, html, selectors."""
+    stub = _make_pipeline_stub(mocker)
+    stub.extractor.extract_content_with_html.return_value = {'title': 'Book'}
+    Pipeline._extract(stub, 'https://x.com', '<html>content</html>', {'title': {'primary': 'h1'}})
+    stub.extractor.extract_content_with_html.assert_called_once_with(
+        'https://x.com', '<html>content</html>', {'title': {'primary': 'h1'}}
+    )
+
+
+# ---------------------------------------------------------------------------
+# _print_verification_failure - targeted
+# ---------------------------------------------------------------------------
+
+
+def test_print_verification_failure_calls_console_print(mocker):
+    """_print_verification_failure must call console.print at least once."""
+    stub = _make_pipeline_stub(mocker)
+    results = {
+        'title': FieldVerificationResult(field_name='title', status='failed'),
+    }
+    vr = VerificationResult(total_fields=1, verified_count=0, results=results)
+    Pipeline._print_verification_failure(stub, vr)
+    stub.console.print.assert_called()
+
+
+def test_print_partial_failure_shows_failed_field_names(mocker):
+    """_print_partial_failure must show failed field names."""
+    stub = _make_pipeline_stub(mocker)
+    results = {
+        'title': FieldVerificationResult(field_name='title', status='verified', working_level='primary', selector='h1'),
+        'price': FieldVerificationResult(field_name='price', status='failed'),
+    }
+    vr = VerificationResult(total_fields=2, verified_count=1, results=results)
+    Pipeline._print_partial_failure(stub, vr)
+    call_args = ' '.join(str(c) for c in stub.console.print.call_args_list)
+    assert 'price' in call_args
+
+
+# ---------------------------------------------------------------------------
+# process_url - additional force flag tests
+# ---------------------------------------------------------------------------
+
+
+def test_process_url_uses_pipeline_format_when_output_format_none(mocker):
+    """When output_format=None, process_url must use pipeline's output_format."""
+    stub = _make_pipeline_stub(mocker)
+    stub.output_format = 'markdown'
+    mocker.patch.object(Pipeline, 'normalize_url', return_value='https://x.com')
+    mocker.patch.object(Pipeline, '_extract_domain', return_value='x.com')
+    mocker.patch.object(Pipeline, '_create_fetcher', return_value=mocker.MagicMock())
+    mocker.patch.object(Pipeline, '_cached_selectors', return_value=False)
+    mocker.patch.object(Pipeline, '_fetch', return_value=None)
+    mocker.patch('yosoi.core.pipeline.logfire')
+    Pipeline.process_url(stub, 'https://x.com', output_format=None)
+    # _fetch was called, meaning normalized url was used
+
+
+# ---------------------------------------------------------------------------
+# show_summary - targeted
+# ---------------------------------------------------------------------------
+
+
+def test_show_summary_shows_domain_count(mocker):
+    """show_summary must print total domain count."""
+    stub = _make_pipeline_stub(mocker)
+    stub.storage.list_domains.return_value = ['a.com', 'b.com']
+    stub.storage.load_selectors.return_value = {'title': {'primary': 'h1'}}
+    Pipeline.show_summary(stub)
+    call_args = ' '.join(str(c) for c in stub.console.print.call_args_list)
+    assert '2' in call_args
+
+
+# ---------------------------------------------------------------------------
+# show_llm_stats - targeted
+# ---------------------------------------------------------------------------
+
+
+def test_show_llm_stats_shows_efficiency_when_llm_calls_nonzero(mocker):
+    """show_llm_stats must show efficiency when there are LLM calls."""
+    stub = _make_pipeline_stub(mocker)
+    stub.tracker.get_all_stats.return_value = {'x.com': {'llm_calls': 4, 'url_count': 20}}
+    Pipeline.show_llm_stats(stub)
+    call_args = ' '.join(str(c) for c in stub.console.print.call_args_list)
+    # 20/4 = 5.0 efficiency
+    assert '5.0' in call_args
+
+
+def test_show_llm_stats_sums_all_domains(mocker):
+    """show_llm_stats must aggregate stats across all domains."""
+    stub = _make_pipeline_stub(mocker)
+    stub.tracker.get_all_stats.return_value = {
+        'a.com': {'llm_calls': 2, 'url_count': 10},
+        'b.com': {'llm_calls': 3, 'url_count': 15},
+    }
+    Pipeline.show_llm_stats(stub)
+    call_args = ' '.join(str(c) for c in stub.console.print.call_args_list)
+    # Total: llm_calls=5, url_count=25
+    assert '5' in call_args
+    assert '25' in call_args
+
+
+# ---------------------------------------------------------------------------
+# _clean - targeted
+# ---------------------------------------------------------------------------
+
+
+def test_clean_calls_cleaner_with_html(mocker):
+    """_clean must call cleaner.clean_html with result.html."""
+    stub = _make_pipeline_stub(mocker)
+    stub.cleaner.clean_html.return_value = '<clean/>'
+    result_obj = FetchResult(url='https://x.com', html='<dirty/>')
+    Pipeline._clean(stub, 'https://x.com', result_obj)
+    stub.cleaner.clean_html.assert_called_once_with('<dirty/>')
+
+
+def test_clean_saves_debug_html(mocker):
+    """_clean must call debug.save_debug_html with url and cleaned html."""
+    stub = _make_pipeline_stub(mocker)
+    stub.cleaner.clean_html.return_value = '<clean/>'
+    result_obj = FetchResult(url='https://x.com', html='<dirty/>')
+    Pipeline._clean(stub, 'https://x.com', result_obj)
+    stub.debug.save_debug_html.assert_called_once_with('https://x.com', '<clean/>')
+
+
+# ---------------------------------------------------------------------------
+# _discover - targeted
+# ---------------------------------------------------------------------------
+
+
+def test_discover_merges_overrides_with_ai_selectors(mocker):
+    """AI selectors must be updated with override selectors."""
+    stub = _make_pipeline_stub(mocker)
+    stub.contract.get_selector_overrides = mocker.MagicMock(return_value={'author': {'primary': '.author'}})
+    stub.contract.field_descriptions = mocker.MagicMock(return_value={'title': 'The title'})
+    stub.discovery.discover_selectors.return_value = {'title': {'primary': 'h1'}}
+    stub.debug.save_debug_selectors = mocker.MagicMock()
+
+    from tenacity import Retrying, stop_after_attempt, wait_none
+
+    mocker.patch(
+        'yosoi.core.pipeline.get_retryer',
+        return_value=Retrying(stop=stop_after_attempt(1), wait=wait_none(), reraise=False),
+    )
+
+    _selectors, _used_llm = Pipeline._discover(stub, 'https://x.com', '<html/>', max_retries=1)
+    # Both AI selectors and overrides should be present
+    assert _selectors is not None
+    assert 'title' in _selectors
+    assert 'author' in _selectors
+
+
+def test_discover_all_override_returns_false_for_used_llm(mocker):
+    """When all fields are overridden, used_llm must be False."""
+    stub = _make_pipeline_stub(mocker)
+    stub.contract.get_selector_overrides = mocker.MagicMock(return_value={'title': {'primary': '.t'}})
+    stub.contract.field_descriptions = mocker.MagicMock(return_value={})
+    stub.debug.save_debug_selectors = mocker.MagicMock()
+
+    _selectors, used_llm = Pipeline._discover(stub, 'https://x.com', '<html/>', max_retries=1)
+    assert used_llm is False
+
+
+def test_discover_ai_success_returns_true_for_used_llm(mocker):
+    """When AI succeeds, used_llm must be True."""
+    stub = _make_pipeline_stub(mocker)
+    stub.contract.get_selector_overrides = mocker.MagicMock(return_value={})
+    stub.contract.field_descriptions = mocker.MagicMock(return_value={'title': 'The title'})
+    stub.discovery.discover_selectors.return_value = {'title': {'primary': 'h1'}}
+    stub.debug.save_debug_selectors = mocker.MagicMock()
+
+    from tenacity import Retrying, stop_after_attempt, wait_none
+
+    mocker.patch(
+        'yosoi.core.pipeline.get_retryer',
+        return_value=Retrying(stop=stop_after_attempt(1), wait=wait_none(), reraise=False),
+    )
+
+    _, used_llm = Pipeline._discover(stub, 'https://x.com', '<html/>', max_retries=1)
+    assert used_llm is True

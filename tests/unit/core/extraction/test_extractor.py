@@ -204,3 +204,159 @@ def test_extract_content_multiple_fields():
     assert result is not None
     assert result['title'] == 'Great Book'
     assert result['price'] == '$12.99'
+
+
+# ---------------------------------------------------------------------------
+# ContentExtractor - targeted mutant-killing tests
+# ---------------------------------------------------------------------------
+
+
+def test_extractor_without_contract_has_no_expected_fields():
+    extractor = _make_extractor()
+    assert extractor.expected_fields == ()
+
+
+def test_extractor_with_contract_has_expected_fields():
+    class MyContract(Contract):
+        title: str = ys.Title()
+        price: float = ys.Price()
+
+    extractor = _make_extractor(MyContract)
+    assert 'title' in extractor.expected_fields
+    assert 'price' in extractor.expected_fields
+
+
+def test_body_text_uses_double_newline_separator():
+    extractor = _make_extractor()
+    html = '<div><p>Para one.</p><p>Para two.</p></div>'
+    soup = BeautifulSoup(html, 'html.parser')
+    result = extractor._extract_with_selector(soup, 'p', 'body_text')
+    assert isinstance(result, str)
+    assert '\n\n' in result
+
+
+def test_body_text_only_one_paragraph_no_double_newline():
+    extractor = _make_extractor()
+    html = '<div><p>Single para.</p></div>'
+    soup = BeautifulSoup(html, 'html.parser')
+    result = extractor._extract_with_selector(soup, 'p', 'body_text')
+    assert isinstance(result, str)
+    assert result == 'Single para.'
+    assert '\n\n' not in result
+
+
+def test_related_content_with_href_returns_dict_with_text_and_href():
+    extractor = _make_extractor()
+    html = '<a href="/link">Article</a>'
+    soup = BeautifulSoup(html, 'html.parser')
+    result = extractor._extract_with_selector(soup, 'a', 'related_content')
+    assert isinstance(result, list)
+    assert result[0] == {'text': 'Article', 'href': '/link'}
+
+
+def test_related_content_without_href_returns_plain_text():
+    extractor = _make_extractor()
+    html = '<span>Text Only</span>'
+    soup = BeautifulSoup(html, 'html.parser')
+    result = extractor._extract_with_selector(soup, 'span', 'related_content')
+    assert isinstance(result, list)
+    assert 'Text Only' in result
+    # No href, so plain string not dict
+    assert isinstance(result[0], str)
+
+
+def test_extract_content_uses_primary_when_available():
+    class MyContract(Contract):
+        title: str = ys.Title()
+
+    extractor = _make_extractor(MyContract)
+    html = '<html><body><h1 class="primary">Primary Title</h1><h2 class="fallback">Fallback</h2></body></html>'
+    selectors = {'title': {'primary': 'h1.primary', 'fallback': 'h2.fallback'}}
+    result = extractor.extract_content_with_html('https://x.com', html, selectors)
+    assert result is not None
+    assert result['title'] == 'Primary Title'
+
+
+def test_extract_content_returns_none_when_no_fields():
+    class EmptyContract(Contract):
+        pass
+
+    extractor = _make_extractor(EmptyContract)
+    html = '<html><body><h1>Title</h1></body></html>'
+    selectors = {'title': {'primary': 'h1'}}
+    # No expected fields, so nothing to extract → return None
+    result = extractor.extract_content_with_html('https://x.com', html, selectors)
+    assert result is None
+
+
+def test_extractor_no_contract_overridden_fields_is_empty_frozenset():
+    """Without contract, _overridden_fields must be empty frozenset."""
+    extractor = _make_extractor()
+    assert extractor._overridden_fields == frozenset()
+
+
+def test_extractor_with_contract_expected_fields_is_tuple():
+    """expected_fields must be a tuple, not list or other."""
+
+    class MyContract(Contract):
+        title: str = ys.Title()
+
+    extractor = _make_extractor(MyContract)
+    assert isinstance(extractor.expected_fields, tuple)
+
+
+def test_extractor_expected_fields_exact_names():
+    """expected_fields must contain exact field names from contract."""
+
+    class MyContract(Contract):
+        title: str = ys.Title()
+        price: float = ys.Price()
+
+    extractor = _make_extractor(MyContract)
+    assert set(extractor.expected_fields) == {'title', 'price'}
+
+
+def test_body_text_separator_is_double_newline():
+    """body_text paragraphs must be joined with '\\n\\n', not single newline."""
+    extractor = _make_extractor()
+    html = '<div><p>Para one.</p><p>Para two.</p><p>Para three.</p></div>'
+    soup = BeautifulSoup(html, 'html.parser')
+    result = extractor._extract_with_selector(soup, 'p', 'body_text')
+    assert isinstance(result, str)
+    assert result == 'Para one.\n\nPara two.\n\nPara three.'
+
+
+def test_extract_selector_returns_none_when_empty_elements():
+    """When selector matches no elements, must return None."""
+    extractor = _make_extractor()
+    html = '<div><p>Some content</p></div>'
+    soup = BeautifulSoup(html, 'html.parser')
+    result = extractor._extract_with_selector(soup, '.no-such-class', 'title')
+    assert result is None
+
+
+def test_related_content_empty_text_skipped():
+    """Elements with no text should not appear in related_content results."""
+    extractor = _make_extractor()
+    html = '<div><a href="/link1">Text</a><a href="/link2"></a></div>'
+    soup = BeautifulSoup(html, 'html.parser')
+    result = extractor._extract_with_selector(soup, 'a', 'related_content')
+    assert isinstance(result, list)
+    # Only one link has text, so result should have 1 item
+    assert len(result) == 1
+
+
+def test_extract_uses_primary_not_fallback_when_primary_works():
+    """When primary selector works, fallback must NOT be used."""
+
+    class MyContract(Contract):
+        title: str = ys.Title()
+
+    extractor = _make_extractor(MyContract)
+    html = '<html><body><h1 class="primary">Primary Title</h1><h2 class="fallback">Fallback Title</h2></body></html>'
+    selectors = {'title': {'primary': 'h1.primary', 'fallback': 'h2.fallback'}}
+    result = extractor.extract_content_with_html('https://x.com', html, selectors)
+    assert result is not None
+    # Must use primary, not fallback
+    assert result['title'] == 'Primary Title'
+    assert result['title'] != 'Fallback Title'

@@ -162,7 +162,7 @@ markers = [
 [tool.coverage.report]
 exclude_lines = [ "pragma: no cover", "if TYPE_CHECKING:", "def __repr__" ]
 show_missing = true
-fail_under = 70
+fail_under = 85
 
 [tool.coverage.run]
 source = [ "yosoi" ]
