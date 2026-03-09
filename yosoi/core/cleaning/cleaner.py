@@ -100,8 +100,13 @@ class HTMLCleaner:
             content_str = str(content_soup)
             content_str = self._collapse_whitespace(content_str)
 
-            # Truncate to 30k
-            final_str = content_str[:30000]
+            # Warn if content is large but pass through untruncated
+            WARN_CHARS = 30_000
+            if len(content_str) > WARN_CHARS:
+                self.console.print(
+                    f'  ⚠ Content is {len(content_str):,} chars (above {WARN_CHARS:,} warning threshold)'
+                )
+            final_str = content_str
 
             # Calculate savings
             compression_ratio = (1 - len(content_str) / original_size) * 100 if original_size > 0 else 0
@@ -115,7 +120,7 @@ class HTMLCleaner:
             return final_str
 
         # Fallback
-        return str(soup)[:30000]
+        return str(self._compress_html_simple(soup))
 
     def _compress_html_simple(self, soup: BeautifulSoup) -> BeautifulSoup:
         """Compress HTML safely for selector discovery.
@@ -164,6 +169,48 @@ class HTMLCleaner:
                     continue
                 if tag.get('aria-hidden') == 'true':
                     tag.decompose()
+
+        # 6. Remove non-semantic bloat (svg, canvas, base64, empty deep divs)
+        self._prune_non_semantic(soup)
+
+        return soup
+
+    def _prune_non_semantic(self, soup: BeautifulSoup) -> BeautifulSoup:
+        """Remove non-semantic bloat from parsed HTML.
+
+        Strips SVG/canvas elements, base64 image data URIs, and deeply nested
+        empty divs/spans that contribute no meaningful content.
+
+        Args:
+            soup: BeautifulSoup parsed HTML to prune in-place
+
+        Returns:
+            The pruned BeautifulSoup object (mutated in-place).
+
+        """
+        # Strip <svg> and <canvas> entirely
+        for tag in soup.find_all(['svg', 'canvas']):
+            tag.decompose()
+
+        # Strip base64 inline image data (src="data:image/...")
+        for tag in soup.find_all(True):
+            if isinstance(tag, Tag):
+                src = tag.get('src', '')
+                if isinstance(src, str) and src.startswith('data:'):
+                    tag['src'] = '[data-uri-removed]'
+
+        # Strip deeply nested anonymous divs/spans (depth > 8, no class/id/data-* attrs, empty text)
+        for tag in reversed(soup.find_all(['div', 'span'])):
+            if not isinstance(tag, Tag):
+                continue
+            has_semantic_attrs = (
+                'class' in tag.attrs or 'id' in tag.attrs or any(k.startswith('data-') for k in tag.attrs)
+            )
+            if has_semantic_attrs:
+                continue
+            depth = sum(1 for _ in tag.parents)
+            if depth > 8 and len(tag.get_text(strip=True)) == 0:
+                tag.decompose()
 
         return soup
 

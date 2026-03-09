@@ -1,7 +1,7 @@
 import pytest
 from bs4 import BeautifulSoup
 
-from yosoi.cleaner import HTMLCleaner
+from yosoi.core.cleaning.cleaner import HTMLCleaner
 
 
 @pytest.fixture
