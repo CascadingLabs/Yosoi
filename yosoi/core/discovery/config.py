@@ -3,9 +3,12 @@
 Supports multiple providers, easy extension, and flexible model configuration.
 """
 
-from dataclasses import dataclass
 from typing import Any, Protocol
 
+# ============================================================================
+# 1. CONFIG DATACLASSES - Simple configuration objects
+# ============================================================================
+from pydantic import BaseModel, ConfigDict
 from pydantic_ai import Agent
 from pydantic_ai.models.cerebras import CerebrasModel
 from pydantic_ai.models.google import GoogleModel
@@ -18,24 +21,21 @@ from pydantic_ai.providers.groq import GroqProvider
 from pydantic_ai.providers.openai import OpenAIProvider
 from pydantic_ai.providers.openrouter import OpenRouterProvider
 
-# ============================================================================
-# 1. CONFIG DATACLASSES - Simple configuration objects
-# ============================================================================
 
-
-@dataclass
-class LLMConfig:
+class LLMConfig(BaseModel):
     """Base configuration for any LLM provider.
 
     Attributes:
         provider: Provider name ('groq', 'gemini', 'openai', etc.)
         model_name: Model identifier string
         api_key: API key for authentication
-        temperature: Sampling temperature (0.0-2.0). Defaults to 0.7.
+        temperature: Sampling temperature (0.0-2.0). Defaults to 0.01.
         max_tokens: Maximum tokens for generation. Defaults to None.
         extra_params: Additional provider-specific parameters. Defaults to None.
 
     """
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     provider: str
     model_name: str
@@ -43,18 +43,6 @@ class LLMConfig:
     temperature: float = 0.01
     max_tokens: int | None = None
     extra_params: dict[str, Any] | None = None
-
-    def __post_init__(self) -> None:
-        """Validate configuration after initialization.
-
-        Raises:
-            ValueError: If API key or model name is missing.
-
-        """
-        if not self.api_key:
-            raise ValueError(f'API key required for {self.provider}')
-        if not self.model_name:
-            raise ValueError(f'Model name required for {self.provider}')
 
 
 # ============================================================================

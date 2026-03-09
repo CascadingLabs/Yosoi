@@ -14,22 +14,12 @@ import logfire
 from dotenv import load_dotenv
 
 from yosoi import Pipeline
+from yosoi.config import DebugConfig, TelemetryConfig, YosoiConfig
 from yosoi.core.discovery.config import LLMConfig
 from yosoi.models.contract import Contract
 from yosoi.models.defaults import NewsArticle
 from yosoi.utils.files import init_yosoi, is_initialized
 from yosoi.utils.logging import setup_local_logging
-
-# Maps provider names to their expected env key
-PROVIDER_ENV_KEYS: dict[str, str] = {
-    'groq': 'GROQ_KEY',
-    'gemini': 'GEMINI_KEY',
-    'google': 'GEMINI_KEY',
-    'openai': 'OPENAI_KEY',
-    'gpt': 'OPENAI_KEY',
-    'cerebras': 'CEREBRAS_KEY',
-    'openrouter': 'OPENROUTER_KEY',
-}
 
 
 def setup_llm_config(model_arg: str | None = None) -> LLMConfig:
@@ -51,33 +41,18 @@ def setup_llm_config(model_arg: str | None = None) -> LLMConfig:
             print('Error: --model must be in provider/model-name format (e.g. groq/llama-3.3-70b-versatile)')
             sys.exit(1)
         provider, model_name = model_arg.split('/', 1)
-        provider = provider.lower()
-        env_key = PROVIDER_ENV_KEYS.get(provider)
-        if env_key is None:
-            available = ', '.join(PROVIDER_ENV_KEYS.keys())
-            print(f'Error: Unknown provider {provider!r}. Available: {available}')
-            sys.exit(1)
-        api_key = os.getenv(env_key)
-        if not api_key:
-            print(f'Error: {env_key} not set for provider {provider!r}')
-            sys.exit(1)
-        print(f'Using {provider} / {model_name}')
-        return LLMConfig(provider=provider, model_name=model_name, api_key=api_key)
+        # We don't fetch the API key here; YosoiConfig will handle it during validation
+        return LLMConfig(provider=provider, model_name=model_name, api_key='')
 
-    # Legacy auto-detect fallback
-    groq_api_key = os.getenv('GROQ_KEY')
-    gemini_api_key = os.getenv('GEMINI_KEY')
+    # Legacy auto-detect fallback (defaults)
+    if os.getenv('GROQ_KEY'):
+        return LLMConfig(provider='groq', model_name='llama-3.3-70b-versatile', api_key='')
 
-    if groq_api_key:
-        print('Using GROQ as AI provider (tip: use -m groq/<model> to choose explicitly)')
-        return LLMConfig(provider='groq', model_name='llama-3.3-70b-versatile', api_key=groq_api_key)
+    if os.getenv('GEMINI_KEY'):
+        return LLMConfig(provider='gemini', model_name='gemini-2.0-flash', api_key='')
 
-    if gemini_api_key:
-        print('Using Gemini as AI provider (tip: use -m gemini/<model> to choose explicitly)')
-        return LLMConfig(provider='gemini', model_name='gemini-2.0-flash', api_key=gemini_api_key)
-
-    print('Error: No API keys found. Set GROQ_KEY or GEMINI_KEY, or use -m provider/model.')
-    sys.exit(1)
+    # Return a partially filled config; validation in YosoiConfig will catch missing keys
+    return LLMConfig(provider='groq', model_name='llama-3.3-70b-versatile', api_key='')
 
 
 def setup_logfire():
@@ -329,6 +304,19 @@ def main():
     # Set up LLM configuration
     llm_config = setup_llm_config(args.model)
 
+    # Create YosoiConfig for validation
+    try:
+        yosoi_config = YosoiConfig(
+            llm=llm_config,
+            debug=DebugConfig(save_html=args.debug),
+            telemetry=TelemetryConfig(logfire_token=os.getenv('LOGFIRE_TOKEN')),
+        )
+    except Exception as e:
+        print(f'Configuration Error: {e}')
+        sys.exit(1)
+
+    print(f'Using {yosoi_config.llm.provider} / {yosoi_config.llm.model_name}')
+
     # Initialize logging
     log_file = setup_local_logging(level=args.log_level)
 
@@ -339,10 +327,7 @@ def main():
     contract = load_schema(args.schema) if args.schema else NewsArticle
 
     # Initialize pipeline with output format
-    pipeline = Pipeline(llm_config, contract=contract, debug_mode=args.debug, output_format=output_format)
-
-    # Set up Logfire
-    setup_logfire()
+    pipeline = Pipeline(yosoi_config, contract=contract, output_format=output_format)
 
     from rich import print as rprint
 
