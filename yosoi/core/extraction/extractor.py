@@ -163,10 +163,10 @@ class ContentExtractor:
             Extracted content (string, list of strings/dicts), or None if extraction failed.
 
         """
-        import requests
+        import httpx
 
         try:
-            response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=10)
+            response = httpx.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=10, follow_redirects=True)
             soup = BeautifulSoup(response.text, 'lxml')
 
             return self._extract_with_selector(soup, selector, field_type)

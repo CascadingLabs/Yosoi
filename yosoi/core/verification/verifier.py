@@ -164,10 +164,10 @@ class SelectorVerifier:
             True if selector finds an element with text content
 
         """
-        import requests
+        import httpx
 
         try:
-            response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=10)
+            response = httpx.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=10, follow_redirects=True)
             soup = BeautifulSoup(response.text, 'lxml')
             element = soup.select_one(selector)
             return element is not None and bool(element.get_text(strip=True))

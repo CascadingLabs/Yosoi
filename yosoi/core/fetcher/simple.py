@@ -4,7 +4,7 @@ import logging
 import random
 import time
 
-import requests
+import httpx
 
 from yosoi.core.fetcher.base import ContentAnalyzer, HTMLFetcher
 from yosoi.models.results import FetchResult
@@ -25,7 +25,7 @@ class SimpleFetcher(HTMLFetcher):
         min_delay: Minimum delay between requests in seconds
         max_delay: Maximum delay between requests in seconds
         randomize_headers: Whether to randomize request headers
-        session: Requests session instance if use_session is True
+        session: httpx.Client instance if use_session is True
         last_request_time: Timestamp of last request for delay calculation
 
     """
@@ -57,10 +57,10 @@ class SimpleFetcher(HTMLFetcher):
         self.max_delay = max_delay
         self.randomize_headers = randomize_headers
 
-        self.session: requests.Session | None
+        self.session: httpx.Client | None
         # Create session if enabled
         if self.use_session:
-            self.session = requests.Session()
+            self.session = httpx.Client()
         else:
             self.session = None
 
@@ -121,9 +121,9 @@ class SimpleFetcher(HTMLFetcher):
 
             # Use session or direct request
             if self.session:
-                response = self.session.get(url, headers=headers, timeout=self.timeout, allow_redirects=True)
+                response = self.session.get(url, headers=headers, timeout=self.timeout, follow_redirects=True)
             else:
-                response = requests.get(url, headers=headers, timeout=self.timeout, allow_redirects=True)
+                response = httpx.get(url, headers=headers, timeout=self.timeout, follow_redirects=True)
 
             status_code = response.status_code
 

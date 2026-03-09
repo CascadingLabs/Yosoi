@@ -26,12 +26,13 @@ dependencies = [
   "beautifulsoup4>=4.12",
   "brotli>=1.1",
   "dateparser>=1.3",
+  "httpx>=0.28.1",
+  "httpx>=0.28.1",
   "logfire>=4.16",
   "lxml>=6.0.2",
   "pydantic>=2",
   "pydantic-ai>=0.0.16",
   "python-dotenv>=1.2.1",
-  "requests>=2.31",
   "rich>=14.2",
   "tenacity>=9.1.4",
 ]
@@ -52,7 +53,6 @@ dev = [
   "prek>=0.2.25",
   "ruff>=0.9.7",
   "types-beautifulsoup4>=4.12",
-  "types-requests>=2.31",
 ]
 tests = [
   "deepeval>=3.8.4",

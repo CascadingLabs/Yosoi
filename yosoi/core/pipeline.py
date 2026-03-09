@@ -6,8 +6,8 @@ Centralized retry logic for bot detection and AI failures.
 import logging
 from urllib.parse import urlparse
 
+import httpx
 import logfire
-import requests
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
@@ -275,9 +275,9 @@ class Pipeline:
             # Try HTTPS first
             try:
                 test_url = 'https://' + url
-                requests.head(test_url, timeout=3)
+                httpx.head(test_url, timeout=3, follow_redirects=True)
                 return test_url
-            except requests.exceptions.RequestException:
+            except httpx.HTTPError:
                 # Fall back to HTTP
                 return 'http://' + url
         return url
