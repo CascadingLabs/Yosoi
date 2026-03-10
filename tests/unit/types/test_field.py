@@ -30,6 +30,7 @@ def test_field_without_hint_no_yosoi_hint():
     result = Field()
     extra = result.json_schema_extra
     if extra is not None:
+        assert isinstance(extra, dict)
         assert 'yosoi_hint' not in extra
 
 
@@ -43,6 +44,7 @@ def test_field_with_frozen_false_no_yosoi_frozen():
     result = Field(frozen=False)
     extra = result.json_schema_extra
     if extra is not None:
+        assert isinstance(extra, dict)
         assert 'yosoi_frozen' not in extra
 
 
@@ -56,6 +58,7 @@ def test_field_without_selector_no_yosoi_selector():
     result = Field()
     extra = result.json_schema_extra
     if extra is not None:
+        assert isinstance(extra, dict)
         assert 'yosoi_selector' not in extra
 
 
@@ -118,12 +121,14 @@ def test_field_hint_exact_value_stored():
     """The exact hint string must be stored in yosoi_hint."""
     hint = 'Look for the price element'
     result = Field(hint=hint)
+    assert isinstance(result.json_schema_extra, dict)
     assert result.json_schema_extra['yosoi_hint'] == hint
 
 
 def test_field_frozen_true_value_is_true():
     """yosoi_frozen must be exactly True, not a truthy value like 1."""
     result = Field(frozen=True)
+    assert isinstance(result.json_schema_extra, dict)
     assert result.json_schema_extra['yosoi_frozen'] is True
 
 
@@ -131,6 +136,7 @@ def test_field_selector_exact_value_stored():
     """The exact selector string must be stored in yosoi_selector."""
     selector = 'div.product-price > span.amount'
     result = Field(selector=selector)
+    assert isinstance(result.json_schema_extra, dict)
     assert result.json_schema_extra['yosoi_selector'] == selector
 
 

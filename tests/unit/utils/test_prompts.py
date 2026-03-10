@@ -58,7 +58,7 @@ def test_load_prompt_uses_md_extension(tmp_path, monkeypatch):
         prompt_path = fake_prompts_dir / f'{name}.md'
         if not prompt_path.exists():
             raise FileNotFoundError(f'Prompt file not found: {prompt_path}')
-        return prompt_path.read_text(encoding='utf-8').strip()
+        return str(prompt_path.read_text(encoding='utf-8').strip())
 
     monkeypatch.setattr(prompts_mod, 'load_prompt', patched_load)
     result = prompts_mod.load_prompt('test_prompt')
@@ -78,7 +78,7 @@ def test_load_prompt_strips_leading_whitespace(tmp_path, monkeypatch):
         prompt_path = fake_prompts_dir / f'{name}.md'
         if not prompt_path.exists():
             raise FileNotFoundError(f'Prompt file not found: {prompt_path}')
-        return prompt_path.read_text(encoding='utf-8').strip()
+        return str(prompt_path.read_text(encoding='utf-8').strip())
 
     monkeypatch.setattr(prompts_mod, 'load_prompt', patched_load)
     result = prompts_mod.load_prompt('padded')
