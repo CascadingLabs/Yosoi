@@ -1,0 +1,40 @@
+# CodeRabbit Configuration for yosoi
+version: "1"
+language: "python"
+
+reviews:
+  profile: "assertive" # High-signal, direct feedback
+  request_changes_workflow: true
+  high_level_summary: true
+  collapse_walkthrough: false
+  # Focus on structural integrity and asymmetric risk
+  system_instructions: |
+    You are an elite technical auditor. Review this code through a lens of "respectful skepticism."
+    - Identify structural weaknesses in the AI extraction pipelines first.
+    - Check for leakages in abstraction layers (core vs types).
+    - Ensure logging strictly adheres to Langfuse patterns; flag any use of Logfire or generic print statements.
+    - Prioritize truth and technical correctness over agreement or "clean code" aesthetics.
+    - Call out mediocre error handling or "safe" incremental logic that avoids edge cases.
+
+  path_filters:
+    - "!dist/**"
+    - "!htmlcov/**"
+    - "!mutants/**"
+    - "!**/*.pyc"
+    - "!**/*.meta"
+    - "!**/__pycache__/**"
+    - "yosoi/**"
+    - "tests/**"
+    - "examples/**"
+
+chat:
+  acknowledgement_details: true
+  # Keeps the AI in your preferred "Accelerationist/Futurist" persona
+  instructions: |
+    Respond as a high-level strategic advisor. Focus on leverage, scalability,
+    and identifying "dead ends" in the logic.
+
+knowledge_base:
+  - "The project uses Langfuse for observability and logging."
+  - "Built using the 'uv' package manager and Python 3.12/3.13."
+  - "Core architecture separates extraction, discovery, and verification agents."
