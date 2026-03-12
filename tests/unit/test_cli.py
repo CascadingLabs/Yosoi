@@ -71,11 +71,11 @@ class TestSchemaFlag:
     def test_builtin_schema_passed_to_pipeline(self, runner, mock_pipeline, monkeypatch):
         monkeypatch.setenv('GROQ_KEY', 'test-key')
         _, mock_pipeline_cls = mock_pipeline
-        result = runner.invoke(main, ['-sc', 'Product', '-u', 'https://example.com'])
+        result = runner.invoke(main, ['-C', 'Product', '-u', 'https://example.com'])
         assert result.exit_code == 0, result.output
 
         call_kwargs = mock_pipeline_cls.call_args[1]
-        assert call_kwargs['contract'] is Product
+        assert call_kwargs['contract'] is Product  # resolved_contract passed to Pipeline
 
 
 class TestSummaryFlag:

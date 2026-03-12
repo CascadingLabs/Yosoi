@@ -26,7 +26,7 @@ click.rich_click.TEXT_MARKUP = 'rich'
 _option_groups = [
     {
         'name': 'Input',
-        'options': ['--url', '--file', '--schema', '--limit'],
+        'options': ['--url', '--file', '--contract', '--limit'],
     },
     {
         'name': 'Model & Fetcher',
@@ -211,6 +211,7 @@ def load_schema(schema_str: str) -> type[Contract]:
 
 
 def load_urls_from_file(filepath: str) -> list[str]:
+    # TODO upgrade this to be more extensible w/ more file types (pdf, xlsx, csv, etc.)
     """Load URLs from a file (JSON or plain text).
 
     Args:
@@ -287,7 +288,7 @@ def print_fetcher_info(fetcher_type: str):
     help='Logging level for the local log file',
 )
 @click.option(
-    '-sc', '--schema', type=SchemaParamType(), default=None, help='Contract schema (built-in name or path:Class)'
+    '-C', '--contract', type=SchemaParamType(), default=None, help='Contract schema (built-in name or path:Class)'
 )
 def main(
     model: str | None,
@@ -301,7 +302,7 @@ def main(
     output: str,
     fetcher: str,
     log_level: str,
-    schema: type[Contract] | None,
+    contract: type[Contract] | None,
 ):
     """Discover selectors from web pages using AI.
 
@@ -312,6 +313,8 @@ def main(
     yosoi -m groq/llama-3.3-70b-versatile -u https://example.com
 
     yosoi -m gemini/gemini-2.0-flash -f urls.txt -l 10
+
+    yosoi -C Product -u https://example.com
 
     yosoi -u https://example.com -F -d
 
@@ -344,9 +347,9 @@ def main(
 
     output_format = 'markdown' if output in ['markdown', 'md'] else 'json'
 
-    contract = schema if schema else NewsArticle
+    resolved_contract = contract if contract else NewsArticle
 
-    pipeline = Pipeline(yosoi_config, contract=contract, output_format=output_format)
+    pipeline = Pipeline(yosoi_config, contract=resolved_contract, output_format=output_format)
 
     console.print(f'[cyan]ℹ Log file:[/cyan] [link=file://{log_file}]{log_file}[/link]')
 
