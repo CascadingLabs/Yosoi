@@ -3984,6 +3984,21 @@ wheels = [
 ]
 
 [[package]]
+name = "rich-click"
+version = "1.9.7"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "click" },
+    { name = "colorama", marker = "sys_platform == 'win32'" },
+    { name = "rich" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/04/27/091e140ea834272188e63f8dd6faac1f5c687582b687197b3e0ec3c78ebf/rich_click-1.9.7.tar.gz", hash = "sha256:022997c1e30731995bdbc8ec2f82819340d42543237f033a003c7b1f843fc5dc", size = 74838, upload-time = "2026-01-31T04:29:27.707Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ca/e5/d708d262b600a352abe01c2ae360d8ff75b0af819b78e9af293191d928e6/rich_click-1.9.7-py3-none-any.whl", hash = "sha256:2f99120fca78f536e07b114d3b60333bc4bb2a0969053b1250869bcdc1b5351b", size = 71491, upload-time = "2026-01-31T04:29:26.777Z" },
+]
+
+[[package]]
 name = "rich-rst"
 version = "1.3.2"
 source = { registry = "https://pypi.org/simple" }
@@ -5162,6 +5177,7 @@ source = { editable = "." }
 dependencies = [
     { name = "beautifulsoup4" },
     { name = "brotli" },
+    { name = "click" },
     { name = "dateparser" },
     { name = "httpx" },
     { name = "logfire" },
@@ -5170,6 +5186,7 @@ dependencies = [
     { name = "pydantic-ai" },
     { name = "python-dotenv" },
     { name = "rich" },
+    { name = "rich-click" },
     { name = "tenacity" },
 ]
 
@@ -5205,6 +5222,7 @@ tests = [
 requires-dist = [
     { name = "beautifulsoup4", specifier = ">=4.12" },
     { name = "brotli", specifier = ">=1.1" },
+    { name = "click", specifier = ">=8.2.1" },
     { name = "dateparser", specifier = ">=1.3" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "logfire", specifier = ">=4.16" },
@@ -5213,6 +5231,7 @@ requires-dist = [
     { name = "pydantic-ai", specifier = ">=0.0.16" },
     { name = "python-dotenv", specifier = ">=1.2.1" },
     { name = "rich", specifier = ">=14.2" },
+    { name = "rich-click", specifier = ">=1.9.7" },
     { name = "tenacity", specifier = ">=9.1.4" },
 ]
 

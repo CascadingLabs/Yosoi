@@ -1,47 +1,121 @@
 """Command-line interface for Yosoi.
 
-Handles argument parsing and delegates to pipeline.
+Handles argument parsing via Click and delegates to pipeline.
 """
 
-import argparse
 import difflib
 import importlib.util
 import json
 import os
-import sys
 
-import logfire
+import rich_click as click
 from dotenv import load_dotenv
+from rich.console import Console
 
-from yosoi import Pipeline
-from yosoi.config import DebugConfig, TelemetryConfig, YosoiConfig
-from yosoi.core.discovery.config import LLMConfig
 from yosoi.models.contract import Contract
-from yosoi.models.defaults import NewsArticle
-from yosoi.utils.files import init_yosoi, is_initialized
-from yosoi.utils.logging import setup_local_logging
+from yosoi.models.defaults import BUILTIN_SCHEMAS, NewsArticle
+
+console = Console()
+console_err = Console(stderr=True)
+
+# ── rich-click styling ──────────────────────────────────────────────
+click.rich_click.TEXT_MARKUP = 'rich'
+click.rich_click.OPTION_GROUPS = {
+    'main': [
+        {
+            'name': 'Input',
+            'options': ['--url', '--file', '--schema', '--limit'],
+        },
+        {
+            'name': 'Model & Fetcher',
+            'options': ['--model', '--fetcher'],
+        },
+        {
+            'name': 'Output',
+            'options': ['--output', '--summary'],
+        },
+        {
+            'name': 'Advanced',
+            'options': ['--force', '--debug', '--skip-verification', '--log-level'],
+        },
+    ],
+}
 
 
-def setup_llm_config(model_arg: str | None = None) -> LLMConfig:
+# ── SchemaParamType ─────────────────────────────────────────────────
+class SchemaParamType(click.ParamType):
+    """Click parameter type that resolves schema names with fuzzy matching."""
+
+    name = 'schema'
+
+    def get_metavar(self, param: click.Parameter, ctx: click.Context | None = None) -> str:
+        """Return metavar for help text."""
+        return 'NAME|path:Class'
+
+    def shell_complete(self, ctx: click.Context, param: click.Parameter, incomplete: str) -> list:
+        """Provide shell completion for built-in schema names."""
+        return [
+            click.shell_completion.CompletionItem(name)
+            for name in BUILTIN_SCHEMAS
+            if name.lower().startswith(incomplete.lower())
+        ]
+
+    def convert(self, value: str, param: click.Parameter | None, ctx: click.Context | None) -> type[Contract]:
+        """Convert a string value to a Contract class.
+
+        Resolution order:
+        1. Exact match in BUILTIN_SCHEMAS
+        2. Case-insensitive match
+        3. Fuzzy match (with warning)
+        4. Dynamic import via ``path:ClassName``
+        """
+        # 1. Exact match
+        if value in BUILTIN_SCHEMAS:
+            return BUILTIN_SCHEMAS[value]
+
+        # 2. Case-insensitive match
+        lower_map = {k.lower(): k for k in BUILTIN_SCHEMAS}
+        if value.lower() in lower_map:
+            return BUILTIN_SCHEMAS[lower_map[value.lower()]]
+
+        # 3. Fuzzy match
+        close = difflib.get_close_matches(value, BUILTIN_SCHEMAS.keys(), n=1, cutoff=0.4)
+        if close:
+            matched = close[0]
+            console_err.print(f'[yellow]Warning: fuzzy-matched schema {value!r} → {matched!r}[/yellow]')
+            return BUILTIN_SCHEMAS[matched]
+
+        # 4. Dynamic import (path:ClassName)
+        if ':' in value:
+            return load_schema(value)
+
+        available_str = ', '.join(BUILTIN_SCHEMAS.keys())
+        self.fail(f'Unknown schema {value!r}. Available: {available_str}', param, ctx)
+        raise AssertionError('unreachable')  # self.fail always raises
+
+
+# ── Helper functions ────────────────────────────────────────────────
+def setup_llm_config(model_arg: str | None = None):
     """Set up LLM configuration from -m/--model flag or environment variables.
 
     Args:
-        model_arg: Model string in ``provider/model-name`` format (e.g. ``groq/llama-3.3-70b-versatile``).
-                   If None, falls back to auto-detecting from GROQ_KEY or GEMINI_KEY.
+        model_arg: Model string in ``provider/model-name`` format.
 
     Returns:
-        LLMConfig instance configured with the selected provider and model.
+        LLMConfig instance.
 
     Raises:
-        SystemExit: If the provider is unknown, the API key is missing, or no config can be determined.
+        click.ClickException: If the provider format is invalid.
 
     """
+    from yosoi.core.discovery.config import LLMConfig
+
     if model_arg:
         if '/' not in model_arg:
-            print('Error: --model must be in provider/model-name format (e.g. groq/llama-3.3-70b-versatile)')
-            sys.exit(1)
+            raise click.ClickException(
+                '--model must be in provider/model-name format (e.g. groq/llama-3.3-70b-versatile)'
+            )
         provider, model_name = model_arg.split('/', 1)
-        # We don't fetch the API key here; YosoiConfig will handle it during validation
         return LLMConfig(provider=provider, model_name=model_name, api_key='')
 
     # Legacy auto-detect fallback (defaults)
@@ -51,51 +125,31 @@ def setup_llm_config(model_arg: str | None = None) -> LLMConfig:
     if os.getenv('GEMINI_KEY'):
         return LLMConfig(provider='gemini', model_name='gemini-2.0-flash', api_key='')
 
-    # Return a partially filled config; validation in YosoiConfig will catch missing keys
     return LLMConfig(provider='groq', model_name='llama-3.3-70b-versatile', api_key='')
 
 
 def setup_logfire():
-    """Set up Logfire observability if token is available.
+    """Set up Logfire observability if token is available."""
+    import logfire
 
-    Configures Logfire and instruments Pydantic if LOGFIRE_TOKEN is set.
-
-    Returns:
-        None
-
-    """
     logfire_token = os.getenv('LOGFIRE_TOKEN')
     if logfire_token:
         logfire.configure(token=logfire_token)
         logfire.instrument_pydantic()
-        print('Logfire setup complete')
+        console.print('[green]Logfire setup complete[/green]')
     else:
-        print('LOGFIRE_TOKEN not set - skipping logfire setup')
+        console.print('[dim]LOGFIRE_TOKEN not set - skipping logfire setup[/dim]')
 
 
 def _suggest_file(file_path: str, class_name: str) -> list[str]:
-    """Return suggested ``file:class`` strings for a missing file path.
-
-    Tries adding a ``.py`` extension first, then fuzzy-matches against files
-    in the same directory.
-
-    Args:
-        file_path: The path that was not found.
-        class_name: The class name from the original argument.
-
-    Returns:
-        List of suggestion strings in ``path:ClassName`` format.
-
-    """
+    """Return suggested ``file:class`` strings for a missing file path."""
     suggestions: list[str] = []
 
-    # Try adding .py extension
     if not file_path.endswith('.py'):
         py_path = file_path + '.py'
         if os.path.exists(py_path):
             suggestions.append(f'{py_path}:{class_name}')
 
-    # Fuzzy-match filenames in the same directory
     dir_part = os.path.dirname(file_path) or '.'
     base_name = os.path.basename(file_path)
     try:
@@ -112,269 +166,231 @@ def _suggest_file(file_path: str, class_name: str) -> list[str]:
 
 
 def load_schema(schema_str: str) -> type[Contract]:
-    """Load a Contract class by path or built-in name.
+    """Load a Contract class from a ``path/to/file.py:ClassName`` string.
 
     Args:
-        schema_str: Either ``path/to/file.py:ClassName`` for dynamic import
-                    or a bare name like ``NewsArticle`` for built-in schemas.
+        schema_str: Dynamic import path in ``file:ClassName`` format.
 
     Returns:
         The Contract subclass.
 
     Raises:
-        SystemExit: If the schema cannot be found or loaded.
+        click.ClickException: If the schema cannot be found or loaded.
 
     """
-    if ':' in schema_str:
-        file_path, class_name = schema_str.rsplit(':', 1)
-        if not os.path.exists(file_path):
-            print(f'Error: Schema file not found: {file_path}')
-            suggestions = _suggest_file(file_path, class_name)
-            if suggestions:
-                print(f'Did you mean: {suggestions[0]}')
-                if len(suggestions) > 1:
-                    print(f'  Other options: {", ".join(suggestions[1:])}')
-            sys.exit(1)
-        spec = importlib.util.spec_from_file_location('_yosoi_schema', file_path)
-        if spec is None or spec.loader is None:
-            print(f'Error: Could not load schema from {file_path}')
-            sys.exit(1)
-        module = importlib.util.module_from_spec(spec)
-        loader = spec.loader
-        assert loader is not None
-        loader.exec_module(module)
-        cls = getattr(module, class_name, None)
-        if cls is None:
-            available = [
-                name for name in dir(module) if not name.startswith('_') and isinstance(getattr(module, name), type)
-            ]
-            print(f'Error: Class {class_name!r} not found in {file_path}')
-            matches = difflib.get_close_matches(class_name, available, n=3, cutoff=0.5)
-            if matches:
-                print(f'Did you mean: {matches[0]}')
-                if len(matches) > 1:
-                    print(f'  Other options: {", ".join(matches[1:])}')
-            elif available:
-                print(f'Available classes: {", ".join(available)}')
-            sys.exit(1)
-        return cls  # type: ignore[no-any-return]
-    from yosoi.models.defaults import BUILTIN_SCHEMAS
+    if ':' not in schema_str:
+        raise click.ClickException(f'Dynamic schema must use path:ClassName format, got {schema_str!r}')
 
-    schema = BUILTIN_SCHEMAS.get(schema_str)
-    if schema is None:
-        available_str = ', '.join(BUILTIN_SCHEMAS.keys())
-        print(f'Error: Unknown built-in schema {schema_str!r}. Available: {available_str}')
-        sys.exit(1)
-    return schema
+    file_path, class_name = schema_str.rsplit(':', 1)
+    if not os.path.exists(file_path):
+        msg = f'Schema file not found: {file_path}'
+        suggestions = _suggest_file(file_path, class_name)
+        if suggestions:
+            msg += f'\nDid you mean: {suggestions[0]}'
+            if len(suggestions) > 1:
+                msg += f'\n  Other options: {", ".join(suggestions[1:])}'
+        raise click.ClickException(msg)
+
+    spec = importlib.util.spec_from_file_location('_yosoi_schema', file_path)
+    if spec is None or spec.loader is None:
+        raise click.ClickException(f'Could not load schema from {file_path}')
+
+    module = importlib.util.module_from_spec(spec)
+    loader = spec.loader
+    assert loader is not None
+    loader.exec_module(module)
+
+    cls = getattr(module, class_name, None)
+    if cls is None:
+        available = [
+            name for name in dir(module) if not name.startswith('_') and isinstance(getattr(module, name), type)
+        ]
+        msg = f'Class {class_name!r} not found in {file_path}'
+        matches = difflib.get_close_matches(class_name, available, n=3, cutoff=0.5)
+        if matches:
+            msg += f'\nDid you mean: {matches[0]}'
+            if len(matches) > 1:
+                msg += f'\n  Other options: {", ".join(matches[1:])}'
+        elif available:
+            msg += f'\nAvailable classes: {", ".join(available)}'
+        raise click.ClickException(msg)
+    return cls  # type: ignore[no-any-return]
 
 
 def load_urls_from_file(filepath: str) -> list[str]:
     """Load URLs from a file (JSON or plain text).
 
     Args:
-        filepath: Path to file containing URLs
+        filepath: Path to file containing URLs.
 
     Returns:
         List of URL strings.
 
     Raises:
-        SystemExit: If file is not found.
+        click.ClickException: If file is not found.
 
     """
     if not os.path.exists(filepath):
-        print(f'Error: File not found: {filepath}')
-        sys.exit(1)
+        raise click.ClickException(f'File not found: {filepath}')
 
     if filepath.endswith('.json'):
         with open(filepath) as f:
             data = json.load(f)
 
-        # Extract URLs based on structure
         if isinstance(data, list):
             return [item.get('url', item) for item in data if item]
         return [data[key]['url'] for key in data if 'url' in data.get(key, {})]
-    # Plain text file
+
     with open(filepath) as f:
         return [line.strip() for line in f if line.strip() and not line.startswith('#')]
-
-
-def parse_arguments():
-    """Parse command-line arguments.
-
-    Returns:
-        argparse.Namespace object with parsed arguments.
-
-    """
-    parser = argparse.ArgumentParser(
-        description='Discover selectors from web pages using AI',
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  %(prog)s -u https://example.com
-  %(prog)s -m groq/llama-3.3-70b-versatile -u https://example.com
-  %(prog)s -m gemini/gemini-2.0-flash -f urls.txt -l 10
-  %(prog)s --url https://example.com --force
-  %(prog)s -s
-  %(prog)s -u https://example.com -d -F
-        """,
-    )
-
-    parser.add_argument(
-        '-m',
-        '--model',
-        type=str,
-        default=None,
-        metavar='PROVIDER/MODEL',
-        help='LLM model in provider/model format (e.g. groq/llama-3.3-70b-versatile, gemini/gemini-2.0-flash)',
-    )
-    parser.add_argument('-u', '--url', type=str, help='Single URL to process')
-    parser.add_argument('-f', '--file', type=str, help='File containing URLs (one per line, or JSON)')
-    parser.add_argument('-l', '--limit', type=int, help='Limit number of URLs to process from file')
-    parser.add_argument('-F', '--force', action='store_true', help='Force re-discovery even if selectors exist')
-    parser.add_argument('-s', '--summary', action='store_true', help='Show summary of saved selectors')
-    parser.add_argument('-d', '--debug', action='store_true', help='Enable debug mode (saves extracted HTML to debug/)')
-    parser.add_argument(
-        '-sv', '--skip-verification', action='store_true', help='Skip verification for faster processing'
-    )
-    parser.add_argument(
-        '-o',
-        '--output',
-        choices=['json', 'markdown', 'md'],
-        default='json',
-        help='Output format for extracted content (default: json)',
-    )
-    parser.add_argument(
-        '-t',
-        '--fetcher',
-        choices=['simple', 'playwright', 'smart'],
-        default='simple',
-        help='HTML fetcher to use (default: simple)',
-    )
-    parser.add_argument(
-        '-L',
-        '--log-level',
-        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'ALL'],
-        default=os.getenv('YOSOI_LOG_LEVEL', 'DEBUG'),
-        help='Logging level for the local log file (default: DEBUG or YOSOI_LOG_LEVEL env)',
-    )
-    parser.add_argument(
-        '-sc',
-        '--schema',
-        type=str,
-        default=None,
-        help=(
-            'Contract schema to use. '
-            'Built-in: NewsArticle, Video, Product, JobPosting. '
-            'Dynamic: /path/to/file.py:ClassName'
-        ),
-    )
-
-    return parser.parse_args()
 
 
 def print_fetcher_info(fetcher_type: str):
     """Print information about the selected fetcher.
 
     Args:
-        fetcher_type: Type of fetcher ('simple', 'playwright', or 'smart')
-
-    Returns:
-        None
+        fetcher_type: Type of fetcher ('simple', 'playwright', or 'smart').
 
     """
     if fetcher_type == 'playwright':
-        print('ℹ Using Playwright fetcher (slower but more reliable)')
+        console.print('[cyan]ℹ Using Playwright fetcher[/cyan] [dim](slower but more reliable)[/dim]')
     elif fetcher_type == 'smart':
-        print('ℹ Using Smart fetcher (tries simple first, falls back to Playwright)')
+        console.print('[cyan]ℹ Using Smart fetcher[/cyan] [dim](tries simple first, falls back to Playwright)[/dim]')
     else:
-        print('ℹ Using Simple fetcher (fast, works for most sites)')
+        console.print('[cyan]ℹ Using Simple fetcher[/cyan] [dim](fast, works for most sites)[/dim]')
 
 
-def main():
-    """Run the CLI entry point."""
-    # Load environment variables
+# ── Main CLI command ────────────────────────────────────────────────
+@click.command()
+@click.option(
+    '-m', '--model', default=None, metavar='PROVIDER/MODEL', help='LLM model (e.g. groq/llama-3.3-70b-versatile)'
+)
+@click.option('-u', '--url', default=None, help='Single URL to process')
+@click.option('-f', '--file', 'file_path', default=None, help='File containing URLs (one per line, or JSON)')
+@click.option('-l', '--limit', type=int, default=None, help='Limit number of URLs to process from file')
+@click.option('-F', '--force', is_flag=True, help='Force re-discovery even if selectors exist')
+@click.option('-s', '--summary', is_flag=True, help='Show summary of saved selectors')
+@click.option('-d', '--debug', is_flag=True, help='Enable debug mode (saves extracted HTML to debug/)')
+@click.option('-S', '--skip-verification', is_flag=True, help='Skip verification for faster processing')
+@click.option(
+    '-o',
+    '--output',
+    type=click.Choice(['json', 'markdown', 'md'], case_sensitive=False),
+    default='json',
+    help='Output format for extracted content',
+)
+@click.option(
+    '-t',
+    '--fetcher',
+    type=click.Choice(['simple', 'playwright', 'smart'], case_sensitive=False),
+    default='simple',
+    help='HTML fetcher to use',
+)
+@click.option(
+    '-L',
+    '--log-level',
+    type=click.Choice(['DEBUG', 'INFO', 'WARNING', 'ERROR', 'ALL'], case_sensitive=False),
+    default=os.getenv('YOSOI_LOG_LEVEL', 'DEBUG'),
+    help='Logging level for the local log file',
+)
+@click.option(
+    '-sc', '--schema', type=SchemaParamType(), default=None, help='Contract schema (built-in name or path:Class)'
+)
+def main(
+    model: str | None,
+    url: str | None,
+    file_path: str | None,
+    limit: int | None,
+    force: bool,
+    summary: bool,
+    debug: bool,
+    skip_verification: bool,
+    output: str,
+    fetcher: str,
+    log_level: str,
+    schema: type[Contract] | None,
+):
+    """Discover selectors from web pages using AI.
+
+    [bold]Examples:[/bold]
+
+    yosoi -u https://example.com
+
+    yosoi -m groq/llama-3.3-70b-versatile -u https://example.com
+
+    yosoi -m gemini/gemini-2.0-flash -f urls.txt -l 10
+
+    yosoi -u https://example.com -F -d
+
+    yosoi -s
+    """
+    from yosoi import Pipeline
+    from yosoi.config import DebugConfig, TelemetryConfig, YosoiConfig
+    from yosoi.utils.files import init_yosoi, is_initialized
+    from yosoi.utils.logging import setup_local_logging
+
     load_dotenv()
-
-    # Parse arguments
-    args = parse_arguments()
 
     if not is_initialized():
         init_yosoi()
 
-    # Set up LLM configuration
-    llm_config = setup_llm_config(args.model)
+    llm_config = setup_llm_config(model)
 
-    # Create YosoiConfig for validation
     try:
         yosoi_config = YosoiConfig(
             llm=llm_config,
-            debug=DebugConfig(save_html=args.debug),
+            debug=DebugConfig(save_html=debug),
             telemetry=TelemetryConfig(logfire_token=os.getenv('LOGFIRE_TOKEN')),
         )
     except Exception as e:
-        print(f'Configuration Error: {e}')
-        sys.exit(1)
+        raise click.ClickException(f'Configuration Error: {e}') from e
 
-    print(f'Using {yosoi_config.llm.provider} / {yosoi_config.llm.model_name}')
+    console.print(
+        f'[bold]Using[/bold] [green]{yosoi_config.llm.provider}[/green] / [cyan]{yosoi_config.llm.model_name}[/cyan]'
+    )
 
-    # Initialize logging
-    log_file = setup_local_logging(level=args.log_level)
+    log_file = setup_local_logging(level=log_level)
 
-    # Normalize output format
-    output_format = 'markdown' if args.output in ['markdown', 'md'] else 'json'
+    output_format = 'markdown' if output in ['markdown', 'md'] else 'json'
 
-    # Resolve contract schema
-    contract = load_schema(args.schema) if args.schema else NewsArticle
+    contract = schema if schema else NewsArticle
 
-    # Initialize pipeline with output format
     pipeline = Pipeline(yosoi_config, contract=contract, output_format=output_format)
 
-    from rich import print as rprint
+    console.print(f'[cyan]ℹ Log file:[/cyan] [link=file://{log_file}]{log_file}[/link]')
 
-    # Show log file link
-    rprint(f'ℹ Log file: [link=file://{log_file}]file://{log_file}[/link]')
-
-    # Handle summary request (quick exit)
-    if args.summary:
+    if summary:
         pipeline.show_summary()
         return
 
-    # Gather URLs
-    urls = []
+    urls: list[str] = []
 
-    if args.url:
-        urls.append(args.url)
+    if url:
+        urls.append(url)
 
-    if args.file:
-        file_urls = load_urls_from_file(args.file)
+    if file_path:
+        file_urls = load_urls_from_file(file_path)
         urls.extend(file_urls)
 
     if not urls:
-        print('Error: No URLs provided')
-        print('Use --url <url> or --file <file>')
-        sys.exit(1)
+        raise click.UsageError('No URLs provided. Use --url <url> or --file <file>')
 
-    # Apply limit if specified
-    if args.limit:
-        urls = urls[: args.limit]
-        print(f'ℹ Limiting to first {args.limit} URLs')
+    if limit:
+        urls = urls[:limit]
+        console.print(f'[cyan]ℹ Limiting to first {limit} URLs[/cyan]')
 
-    # Show debug info
-    if args.debug:
-        print('ℹ Debug mode enabled - extracted HTML will be saved to debug/')
+    if debug:
+        console.print('[cyan]ℹ Debug mode enabled[/cyan] [dim]- extracted HTML will be saved to debug/[/dim]')
 
-    # Show output format info
-    print(f'ℹ Output format: {output_format}')
+    console.print(f'[cyan]ℹ Output format:[/cyan] [bold]{output_format}[/bold]')
 
-    # Show fetcher info
-    print_fetcher_info(args.fetcher)
+    print_fetcher_info(fetcher)
 
-    # Process URLs (output_format already set in pipeline)
     pipeline.process_urls(
         urls,
-        force=args.force,
-        skip_verification=args.skip_verification,
-        fetcher_type=args.fetcher,
+        force=force,
+        skip_verification=skip_verification,
+        fetcher_type=fetcher,
     )
 
 
