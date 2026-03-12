@@ -15,30 +15,36 @@ from rich.console import Console
 from yosoi.models.contract import Contract
 from yosoi.models.defaults import BUILTIN_SCHEMAS, NewsArticle
 
+# Load .env early so env vars are available for option defaults (e.g. YOSOI_LOG_LEVEL)
+load_dotenv()
+
 console = Console()
 console_err = Console(stderr=True)
 
 # ── rich-click styling ──────────────────────────────────────────────
 click.rich_click.TEXT_MARKUP = 'rich'
+_option_groups = [
+    {
+        'name': 'Input',
+        'options': ['--url', '--file', '--schema', '--limit'],
+    },
+    {
+        'name': 'Model & Fetcher',
+        'options': ['--model', '--fetcher'],
+    },
+    {
+        'name': 'Output',
+        'options': ['--output', '--summary'],
+    },
+    {
+        'name': 'Advanced',
+        'options': ['--force', '--debug', '--skip-verification', '--log-level'],
+    },
+]
+# Register for both the function name ('main') and the entry-point name ('yosoi')
 click.rich_click.OPTION_GROUPS = {
-    'main': [
-        {
-            'name': 'Input',
-            'options': ['--url', '--file', '--schema', '--limit'],
-        },
-        {
-            'name': 'Model & Fetcher',
-            'options': ['--model', '--fetcher'],
-        },
-        {
-            'name': 'Output',
-            'options': ['--output', '--summary'],
-        },
-        {
-            'name': 'Advanced',
-            'options': ['--force', '--debug', '--skip-verification', '--log-level'],
-        },
-    ],
+    'main': _option_groups,
+    'yosoi': _option_groups,
 }
 
 
@@ -126,19 +132,6 @@ def setup_llm_config(model_arg: str | None = None):
         return LLMConfig(provider='gemini', model_name='gemini-2.0-flash', api_key='')
 
     return LLMConfig(provider='groq', model_name='llama-3.3-70b-versatile', api_key='')
-
-
-def setup_logfire():
-    """Set up Logfire observability if token is available."""
-    import logfire
-
-    logfire_token = os.getenv('LOGFIRE_TOKEN')
-    if logfire_token:
-        logfire.configure(token=logfire_token)
-        logfire.instrument_pydantic()
-        console.print('[green]Logfire setup complete[/green]')
-    else:
-        console.print('[dim]LOGFIRE_TOKEN not set - skipping logfire setup[/dim]')
 
 
 def _suggest_file(file_path: str, class_name: str) -> list[str]:
@@ -328,8 +321,6 @@ def main(
     from yosoi.config import DebugConfig, TelemetryConfig, YosoiConfig
     from yosoi.utils.files import init_yosoi, is_initialized
     from yosoi.utils.logging import setup_local_logging
-
-    load_dotenv()
 
     if not is_initialized():
         init_yosoi()

@@ -1,7 +1,5 @@
 """Tests for Click CLI."""
 
-from unittest.mock import MagicMock
-
 import click
 import pytest
 from click.testing import CliRunner
@@ -18,17 +16,15 @@ def runner():
 @pytest.fixture
 def mock_pipeline(mocker):
     """Mock out heavy dependencies so the CLI can run without real config."""
-    mocker.patch('yosoi.cli.load_dotenv')
-
     mocker.patch('yosoi.utils.files.is_initialized', return_value=True)
     mocker.patch('yosoi.utils.logging.setup_local_logging', return_value='/tmp/test.log')
 
-    mock_pipe = MagicMock()
+    mock_pipe = mocker.MagicMock()
     mock_pipeline_cls = mocker.patch('yosoi.Pipeline', return_value=mock_pipe)
     mocker.patch(
         'yosoi.config.YosoiConfig',
-        return_value=MagicMock(
-            llm=MagicMock(provider='groq', model_name='llama-3.3-70b-versatile'),
+        return_value=mocker.MagicMock(
+            llm=mocker.MagicMock(provider='groq', model_name='llama-3.3-70b-versatile'),
         ),
     )
     mocker.patch('yosoi.cli.console')
@@ -104,3 +100,39 @@ class TestModelFlag:
         result = runner.invoke(main, ['-m', 'badformat', '-u', 'https://example.com'])
         assert result.exit_code != 0
         assert 'provider/model-name' in result.output
+
+
+class TestFileFlag:
+    def test_file_flag_loads_urls(self, runner, mock_pipeline, monkeypatch, tmp_path):
+        monkeypatch.setenv('GROQ_KEY', 'test-key')
+        mock_pipe, _ = mock_pipeline
+
+        url_file = tmp_path / 'urls.txt'
+        url_file.write_text('https://a.com\nhttps://b.com\n')
+
+        result = runner.invoke(main, ['-f', str(url_file)])
+        assert result.exit_code == 0, result.output
+
+        call_args = mock_pipe.process_urls.call_args
+        assert call_args[0][0] == ['https://a.com', 'https://b.com']
+
+    def test_file_not_found(self, runner, mock_pipeline, monkeypatch):
+        monkeypatch.setenv('GROQ_KEY', 'test-key')
+        result = runner.invoke(main, ['-f', '/nonexistent/urls.txt'])
+        assert result.exit_code != 0
+        assert 'File not found' in result.output
+
+
+class TestLimitFlag:
+    def test_limit_truncates_urls(self, runner, mock_pipeline, monkeypatch, tmp_path):
+        monkeypatch.setenv('GROQ_KEY', 'test-key')
+        mock_pipe, _ = mock_pipeline
+
+        url_file = tmp_path / 'urls.txt'
+        url_file.write_text('https://a.com\nhttps://b.com\nhttps://c.com\n')
+
+        result = runner.invoke(main, ['-f', str(url_file), '-l', '2'])
+        assert result.exit_code == 0, result.output
+
+        call_args = mock_pipe.process_urls.call_args
+        assert call_args[0][0] == ['https://a.com', 'https://b.com']
