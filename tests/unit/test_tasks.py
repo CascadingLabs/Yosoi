@@ -92,7 +92,9 @@ class TestProcessUrlTask:
         # Call the task function directly (not via kiq) for unit testing
         result = await process_url_task.original_func(url='http://example.com', force=True)
 
-        assert result == {'url': 'http://example.com', 'success': True}
+        assert result['url'] == 'http://example.com'
+        assert result['success'] is True
+        assert 'elapsed' in result
         mock_pipeline.process_url.assert_awaited_once()
         await shutdown_broker()
 
@@ -107,7 +109,9 @@ class TestProcessUrlTask:
 
         result = await process_url_task.original_func(url='http://fail.com')
 
-        assert result == {'url': 'http://fail.com', 'success': False}
+        assert result['url'] == 'http://fail.com'
+        assert result['success'] is False
+        assert 'elapsed' in result
         await shutdown_broker()
 
     async def test_task_catches_exception(self, mocker, mock_llm_config, clean_broker):
@@ -124,6 +128,7 @@ class TestProcessUrlTask:
         assert result['url'] == 'http://error.com'
         assert result['success'] is False
         assert 'boom' in result['error']
+        assert 'elapsed' in result
         await shutdown_broker()
 
 

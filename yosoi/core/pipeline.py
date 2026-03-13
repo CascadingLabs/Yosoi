@@ -4,6 +4,7 @@ Centralized retry logic for bot detection and AI failures.
 """
 
 import logging
+import time
 from urllib.parse import urlparse
 
 import httpx
@@ -55,6 +56,7 @@ class Pipeline:
         debug_mode: bool = False,
         output_format: str = 'json',
         force: bool = False,
+        quiet: bool = False,
     ):
         """Initialize the pipeline with LLM configuration.
 
@@ -67,6 +69,8 @@ class Pipeline:
             contract: Contract subclass defining the fields to scrape.
             force: Force re-discovery even if selectors are cached. Overridden by
                    YosoiConfig.force when YosoiConfig is passed. Defaults to False.
+            quiet: Suppress console output. Used in concurrent mode where a
+                   progress display replaces per-task output. Defaults to False.
 
         """
         if isinstance(llm_config, YosoiConfig):
@@ -90,7 +94,7 @@ class Pipeline:
             }
         )
         self.contract = contract
-        self.console = Console(theme=self.custom_theme)
+        self.console = Console(theme=self.custom_theme, quiet=quiet)
         self.cleaner = HTMLCleaner(console=self.console)
         self.discovery = SelectorDiscovery(llm_config=llm_config, console=self.console, contract=self.contract)
         self.verifier = SelectorVerifier(console=self.console)
@@ -231,11 +235,13 @@ class Pipeline:
 
         results: dict[str, list[str]] = {'successful': [], 'failed': []}
 
+        run_start = time.monotonic()
         with logfire.span('process_urls', total_urls=len(urls)):
             for idx, url in enumerate(urls, 1):
                 self.console.print(f'\n[bold blue]Processing URL {idx}/{len(urls)}[/bold blue]')
                 self.logger.info(f'--- Processing URL {idx}/{len(urls)}: {url} ---')
 
+                url_start = time.monotonic()
                 try:
                     success = await self.process_url(
                         url,
@@ -253,7 +259,16 @@ class Pipeline:
                     self.console.print(f'[danger]Error processing {url}: {e}[/danger]')
                     results['failed'].append(url)
 
+                url_elapsed = time.monotonic() - url_start
+                self.console.print(f'[dim]  ⏱ {url_elapsed:.1f}s elapsed[/dim]')
                 self.console.print()
+
+            total_elapsed = time.monotonic() - run_start
+            self.console.print(
+                f'[bold]Done:[/bold] {len(results["successful"])} succeeded, '
+                f'{len(results["failed"])} failed '
+                f'[dim]({total_elapsed:.1f}s total)[/dim]'
+            )
 
             logfire.info(
                 'Processing complete',

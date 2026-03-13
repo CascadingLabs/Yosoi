@@ -5,6 +5,8 @@ Uses InMemoryBroker with SmartRetryMiddleware for in-process async concurrency.
 
 import asyncio
 import logging
+import time
+from collections.abc import Awaitable, Callable
 from typing import Any
 from urllib.parse import urlparse
 
@@ -114,8 +116,10 @@ async def process_url_task(
             config['llm_config'],
             contract=config['contract'],
             output_format=config['output_format'],
+            quiet=True,
         )
 
+        start = time.monotonic()
         try:
             success = await pipeline.process_url(
                 url,
@@ -125,10 +129,12 @@ async def process_url_task(
                 skip_verification=skip_verification,
                 fetcher_type=fetcher_type,
             )
-            return {'url': url, 'success': success}
+            elapsed = time.monotonic() - start
+            return {'url': url, 'success': success, 'elapsed': elapsed}
         except Exception as e:
+            elapsed = time.monotonic() - start
             logger.exception(f'Task failed for {url}')
-            return {'url': url, 'success': False, 'error': str(e)}
+            return {'url': url, 'success': False, 'error': str(e), 'elapsed': elapsed}
 
 
 class DomainDedup:
@@ -171,7 +177,8 @@ async def enqueue_urls(
     max_fetch_retries: int = 2,
     max_discovery_retries: int = 3,
     dedup_by_domain: bool = True,
-) -> dict[str, list[str]]:
+    on_complete: Callable[[str, bool, float], Awaitable[None]] | None = None,
+) -> dict[str, list]:
     """Enqueue URLs as tasks and collect results.
 
     Args:
@@ -182,13 +189,15 @@ async def enqueue_urls(
         max_fetch_retries: Max fetch retry attempts.
         max_discovery_retries: Max AI discovery retry attempts.
         dedup_by_domain: Skip duplicate domains. Defaults to True.
+        on_complete: Optional async callback ``(url, success, elapsed)`` called
+            when each task finishes. Used by the CLI progress display.
 
     Returns:
         Dictionary with 'successful' and 'failed' URL lists,
         plus 'skipped' for deduped URLs.
 
     """
-    results: dict[str, list[str]] = {'successful': [], 'failed': [], 'skipped': []}
+    results: dict[str, list] = {'successful': [], 'failed': [], 'skipped': []}
     dedup = DomainDedup()
 
     # Enqueue all tasks
@@ -217,7 +226,13 @@ async def enqueue_urls(
 
     # Collect results
     for handle, url in zip(handles, enqueued_urls, strict=True):
-        _collect_single_result(results, handle, url, await _wait_for_handle(handle, url))
+        task_result = await _wait_for_handle(handle, url)
+        _collect_single_result(results, handle, url, task_result)
+        if on_complete is not None:
+            rv = task_result.return_value if task_result and not task_result.is_err else None
+            success = rv.get('success', False) if rv else False
+            elapsed = rv.get('elapsed', 0.0) if rv else 0.0
+            await on_complete(url, success, elapsed)
 
     return results
 
@@ -240,7 +255,7 @@ async def _wait_for_handle(handle, url: str):
         return None
 
 
-def _collect_single_result(results: dict[str, list[str]], handle, url: str, result) -> None:
+def _collect_single_result(results: dict[str, list], handle, url: str, result) -> None:
     """Classify a single task result into successful or failed.
 
     Args:
