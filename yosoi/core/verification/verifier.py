@@ -179,6 +179,6 @@ class SelectorVerifier:
             soup = BeautifulSoup(response.text, 'lxml')
             element = soup.select_one(selector)
             return element is not None and bool(element.get_text(strip=True))
-        except (httpx.HTTPError, ValueError) as exc:
+        except (httpx.HTTPError, ValueError, SelectorSyntaxError) as exc:
             logger.warning('quick_test failed for selector %r on %r: %s', selector, url, exc)
             return False

@@ -131,10 +131,10 @@ async def process_url_task(
             )
             elapsed = time.monotonic() - start
             return {'url': url, 'success': success, 'elapsed': elapsed}
-        except Exception as e:
-            elapsed = time.monotonic() - start
+        except Exception:
             logger.exception('Task failed for %s', url)
-            return {'url': url, 'success': False, 'error': str(e), 'elapsed': elapsed}
+            # We reraise so that taskiq can do its job of handling retries w/ its middleware
+            raise
 
 
 class DomainDedup:

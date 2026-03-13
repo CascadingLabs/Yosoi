@@ -151,6 +151,20 @@ class HTMLFetcher(ABC):
     Implement this interface to create custom HTML fetchers.
     """
 
+    async def close(self) -> None:  # noqa: B027
+        """Release any held resources (e.g. HTTP client connections).
+
+        Override in subclasses that hold persistent connections.
+        """
+
+    async def __aenter__(self) -> 'HTMLFetcher':
+        """Enter async context manager."""
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+        """Exit async context manager and close resources."""
+        await self.close()
+
     @abstractmethod
     async def fetch(self, url: str) -> FetchResult:
         """Fetch HTML from a URL.

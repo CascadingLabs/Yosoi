@@ -303,7 +303,7 @@ def _load_urls_from_json(data: object) -> list[str]:
                 urls.append(item)
             elif isinstance(item, dict):
                 url = item.get('url')
-                if url:
+                if isinstance(url, str) and url:
                     urls.append(url)
         return urls
     if isinstance(data, dict):
@@ -312,7 +312,7 @@ def _load_urls_from_json(data: object) -> list[str]:
             value = data.get(key, {})
             if isinstance(value, str) and value:
                 urls.append(value)
-            elif isinstance(value, dict) and 'url' in value:
+            elif isinstance(value, dict) and 'url' in value and isinstance(value['url'], str) and value['url']:
                 urls.append(value['url'])
         return urls
     return []

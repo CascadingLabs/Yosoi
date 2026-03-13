@@ -116,9 +116,7 @@ class Pipeline:
             if not is_initialized():
                 init_yosoi()
             log_file = setup_local_logging()
-            from rich import print as rprint
-
-            rprint(f'ℹ Log file: [link=file://{log_file}]file://{log_file}[/link]')
+            self.console.print(f'ℹ Log file: [link=file://{log_file}]file://{log_file}[/link]')
 
     async def process_url(
         self,
@@ -159,47 +157,50 @@ class Pipeline:
             if not fetcher:
                 return False
 
-            # Try using cached selectors if available
-            if not force_flag and await self._cached_selectors(url, domain, fetcher, skip_verification, format_to_use):
+            async with fetcher:
+                # Try using cached selectors if available
+                if not force_flag and await self._cached_selectors(
+                    url, domain, fetcher, skip_verification, format_to_use
+                ):
+                    return True
+
+                # Fetch HTML with retry logic for bot detection
+                result = await self._fetch(url, fetcher, max_retries=max_fetch_retries)
+                if not result:
+                    return False
+
+                # At this point, result.html should never be None (checked in _fetch)
+                assert result.html is not None, 'result.html should not be None after successful fetch'
+
+                # Clean HTML (Step 1.5)
+                cleaned_html = self._clean(url, result)
+                if not cleaned_html:
+                    return False
+
+                # Discover selectors with retry logic for AI failures (Step 2)
+                # Returns: (selectors, used_llm)
+                selectors, used_llm = await self._discover(url, cleaned_html, max_retries=max_discovery_retries)
+                if not selectors:
+                    return False
+
+                # Verify selectors using cleaned HTML (Step 3)
+                verified = self._verify(url, cleaned_html, selectors, skip_verification)
+                if not verified:
+                    return False
+
+                # Extract content using verified selectors and cleaned HTML (Step 4)
+                extracted = self._extract(url, cleaned_html, verified)
+                # Note: extraction can fail but we still save the selectors
+                if not extracted:
+                    self.console.print('[warning]⚠ Extraction failed, but selectors are valid[/warning]')
+
+                # Validate and transform extracted data using Contract (Step 4.5)
+                if extracted:
+                    extracted = self._validate_with_contract(extracted, url)
+
+                # Save and track (save selectors + content if extracted)
+                self._save_and_track(url, domain, verified, extracted, used_llm, format_to_use)
                 return True
-
-            # Fetch HTML with retry logic for bot detection
-            result = await self._fetch(url, fetcher, max_retries=max_fetch_retries)
-            if not result:
-                return False
-
-            # At this point, result.html should never be None (checked in _fetch)
-            assert result.html is not None, 'result.html should not be None after successful fetch'
-
-            # Clean HTML (Step 1.5)
-            cleaned_html = self._clean(url, result)
-            if not cleaned_html:
-                return False
-
-            # Discover selectors with retry logic for AI failures (Step 2)
-            # Returns: (selectors, used_llm)
-            selectors, used_llm = await self._discover(url, cleaned_html, max_retries=max_discovery_retries)
-            if not selectors:
-                return False
-
-            # Verify selectors using cleaned HTML (Step 3)
-            verified = self._verify(url, cleaned_html, selectors, skip_verification)
-            if not verified:
-                return False
-
-            # Extract content using verified selectors and cleaned HTML (Step 4)
-            extracted = self._extract(url, cleaned_html, verified)
-            # Note: extraction can fail but we still save the selectors
-            if not extracted:
-                self.console.print('[warning]⚠ Extraction failed, but selectors are valid[/warning]')
-
-            # Validate and transform extracted data using Contract (Step 4.5)
-            if extracted:
-                extracted = self._validate_with_contract(extracted, url)
-
-            # Save and track (save selectors + content if extracted)
-            self._save_and_track(url, domain, verified, extracted, used_llm, format_to_use)
-            return True
 
     async def process_urls(
         self,
@@ -374,6 +375,7 @@ class Pipeline:
 
             async for attempt in retryer:
                 with attempt:
+                    result = None
                     try:
                         result = await fetcher.fetch(url)
 
