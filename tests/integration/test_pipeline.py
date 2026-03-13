@@ -5,7 +5,7 @@ from yosoi.models.defaults import NewsArticle
 from yosoi.models.results import ContentMetadata, FetchResult
 
 
-def test_pipeline_happy_path(mocker, mock_llm_config, happy_path_html, mock_selectors, tmp_path):
+async def test_pipeline_happy_path(mocker, mock_llm_config, happy_path_html, mock_selectors, tmp_path):
     selector_dir = tmp_path / 'selectors'
     content_dir = tmp_path / 'content'
     selector_dir.mkdir(parents=True, exist_ok=True)
@@ -16,26 +16,28 @@ def test_pipeline_happy_path(mocker, mock_llm_config, happy_path_html, mock_sele
     mocker.patch('yosoi.utils.files.is_initialized', return_value=True)
     mocker.patch('yosoi.utils.logging.setup_local_logging', return_value=str(tmp_path / 'test.log'))
 
-    # 1. Mock Agent
+    # 1. Mock Agent (async — use .run instead of .run_sync)
     mock_agent = mocker.Mock(spec=Agent)
-    mock_agent.run_sync.return_value = mocker.Mock(output=mock_selectors)
+    mock_agent.run = mocker.AsyncMock(return_value=mocker.Mock(output=mock_selectors))
     mocker.patch('yosoi.core.discovery.agent.Agent', return_value=mock_agent)
     mocker.patch('yosoi.core.discovery.agent.create_model')
 
-    # 2. Mock Fetcher
+    # 2. Mock Fetcher (async fetch)
     mock_fetcher = mocker.Mock()
-    mock_fetcher.fetch.return_value = FetchResult(
-        url='http://example.com',
-        html=happy_path_html,
-        status_code=200,
-        metadata=ContentMetadata(content_length=len(happy_path_html)),
+    mock_fetcher.fetch = mocker.AsyncMock(
+        return_value=FetchResult(
+            url='http://example.com',
+            html=happy_path_html,
+            status_code=200,
+            metadata=ContentMetadata(content_length=len(happy_path_html)),
+        )
     )
     mocker.patch('yosoi.core.pipeline.create_fetcher', return_value=mock_fetcher)
 
     pipeline = Pipeline(mock_llm_config, contract=NewsArticle)
 
     # ACT
-    success = pipeline.process_url('http://example.com', force=True)
+    success = await pipeline.process_url('http://example.com', force=True)
 
     # ASSERT
     assert success is True
@@ -44,7 +46,7 @@ def test_pipeline_happy_path(mocker, mock_llm_config, happy_path_html, mock_sele
     assert saved['headline']['primary'] == 'h1.title'
 
 
-def test_pipeline_fetch_failure(mocker, mock_llm_config, tmp_path):
+async def test_pipeline_fetch_failure(mocker, mock_llm_config, tmp_path):
     selector_dir = tmp_path / 'selectors'
     content_dir = tmp_path / 'content'
     selector_dir.mkdir(parents=True, exist_ok=True)
@@ -57,23 +59,25 @@ def test_pipeline_fetch_failure(mocker, mock_llm_config, tmp_path):
     mocker.patch('yosoi.core.discovery.agent.create_model')
     mocker.patch('yosoi.core.discovery.agent.Agent')
 
-    # Mock Fetcher
+    # Mock Fetcher (async fetch)
     mock_fetcher = mocker.Mock()
-    mock_fetcher.fetch.return_value = FetchResult(
-        url='http://example.com', html=None, status_code=403, is_blocked=True, block_reason='Forbidden'
+    mock_fetcher.fetch = mocker.AsyncMock(
+        return_value=FetchResult(
+            url='http://example.com', html=None, status_code=403, is_blocked=True, block_reason='Forbidden'
+        )
     )
     mocker.patch('yosoi.core.pipeline.create_fetcher', return_value=mock_fetcher)
 
     pipeline = Pipeline(mock_llm_config, contract=NewsArticle)
 
     # ACT
-    success = pipeline.process_url('http://example.com', force=True)
+    success = await pipeline.process_url('http://example.com', force=True)
 
     # ASSERT
     assert success is False
 
 
-def test_pipeline_ai_failure(mocker, mock_llm_config, happy_path_html, tmp_path):
+async def test_pipeline_ai_failure(mocker, mock_llm_config, happy_path_html, tmp_path):
     selector_dir = tmp_path / 'selectors'
     content_dir = tmp_path / 'content'
     selector_dir.mkdir(parents=True, exist_ok=True)
@@ -84,26 +88,28 @@ def test_pipeline_ai_failure(mocker, mock_llm_config, happy_path_html, tmp_path)
     mocker.patch('yosoi.utils.files.is_initialized', return_value=True)
     mocker.patch('yosoi.utils.logging.setup_local_logging', return_value=str(tmp_path / 'test.log'))
 
-    # 1. Mock Agent to fail
+    # 1. Mock Agent to fail (async)
     mock_agent = mocker.Mock(spec=Agent)
-    mock_agent.run_sync.side_effect = Exception('AI Error')
+    mock_agent.run = mocker.AsyncMock(side_effect=Exception('AI Error'))
     mocker.patch('yosoi.core.discovery.agent.Agent', return_value=mock_agent)
     mocker.patch('yosoi.core.discovery.agent.create_model')
 
-    # 2. Mock Fetcher
+    # 2. Mock Fetcher (async fetch)
     mock_fetcher = mocker.Mock()
-    mock_fetcher.fetch.return_value = FetchResult(
-        url='http://ai-failure.com',
-        html=happy_path_html,
-        status_code=200,
-        metadata=ContentMetadata(content_length=len(happy_path_html)),
+    mock_fetcher.fetch = mocker.AsyncMock(
+        return_value=FetchResult(
+            url='http://ai-failure.com',
+            html=happy_path_html,
+            status_code=200,
+            metadata=ContentMetadata(content_length=len(happy_path_html)),
+        )
     )
     mocker.patch('yosoi.core.pipeline.create_fetcher', return_value=mock_fetcher)
 
     pipeline = Pipeline(mock_llm_config, contract=NewsArticle)
 
     # ACT — should fail if AI fails (Fail Fast)
-    success = pipeline.process_url('http://ai-failure.com', force=True, max_discovery_retries=1)
+    success = await pipeline.process_url('http://ai-failure.com', force=True, max_discovery_retries=1)
 
     # ASSERT
     assert success is False

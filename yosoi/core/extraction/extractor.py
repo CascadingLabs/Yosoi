@@ -155,7 +155,7 @@ class ContentExtractor:
             self.console.print(f'  ✗ {field_name}: extraction error ({e})')
             return None
 
-    def quick_extract(
+    async def quick_extract(
         self, url: str, selector: str, field_type: str = 'text'
     ) -> str | list[str | dict[str, str]] | None:
         """Quick extraction of a single field from a URL.
@@ -174,7 +174,10 @@ class ContentExtractor:
         import httpx
 
         try:
-            response = httpx.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=10, follow_redirects=True)
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=10, follow_redirects=True
+                )
             soup = BeautifulSoup(response.text, 'lxml')
 
             return self._extract_with_selector(soup, selector, field_type)

@@ -153,7 +153,7 @@ class SelectorVerifier:
             for failure in result.failed_selectors:
                 self.console.print(f'      → {failure.level}: "{failure.selector}" → {failure.reason}')
 
-    def quick_test(self, url: str, selector: str) -> bool:
+    async def quick_test(self, url: str, selector: str) -> bool:
         """Quick test if a selector works on a URL.
 
         Args:
@@ -167,7 +167,10 @@ class SelectorVerifier:
         import httpx
 
         try:
-            response = httpx.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=10, follow_redirects=True)
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=10, follow_redirects=True
+                )
             soup = BeautifulSoup(response.text, 'lxml')
             element = soup.select_one(selector)
             return element is not None and bool(element.get_text(strip=True))

@@ -4,6 +4,7 @@ Handles argument parsing and delegates to pipeline.
 """
 
 import argparse
+import asyncio
 import difflib
 import importlib.util
 import json
@@ -246,7 +247,7 @@ Examples:
     parser.add_argument(
         '-t',
         '--fetcher',
-        choices=['simple', 'playwright', 'smart'],
+        choices=['simple'],
         default='simple',
         help='HTML fetcher to use (default: simple)',
     )
@@ -276,18 +277,13 @@ def print_fetcher_info(fetcher_type: str):
     """Print information about the selected fetcher.
 
     Args:
-        fetcher_type: Type of fetcher ('simple', 'playwright', or 'smart')
+        fetcher_type: Type of fetcher ('simple')
 
     Returns:
         None
 
     """
-    if fetcher_type == 'playwright':
-        print('ℹ Using Playwright fetcher (slower but more reliable)')
-    elif fetcher_type == 'smart':
-        print('ℹ Using Smart fetcher (tries simple first, falls back to Playwright)')
-    else:
-        print('ℹ Using Simple fetcher (fast, works for most sites)')
+    print('ℹ Using Simple fetcher (fast, works for most sites)')
 
 
 def main():
@@ -370,11 +366,13 @@ def main():
     print_fetcher_info(args.fetcher)
 
     # Process URLs (output_format already set in pipeline)
-    pipeline.process_urls(
-        urls,
-        force=args.force,
-        skip_verification=args.skip_verification,
-        fetcher_type=args.fetcher,
+    asyncio.run(
+        pipeline.process_urls(
+            urls,
+            force=args.force,
+            skip_verification=args.skip_verification,
+            fetcher_type=args.fetcher,
+        )
     )
 
 

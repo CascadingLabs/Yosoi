@@ -151,7 +151,7 @@ class HTMLFetcher(ABC):
     """
 
     @abstractmethod
-    def fetch(self, url: str) -> FetchResult:
+    async def fetch(self, url: str) -> FetchResult:
         """Fetch HTML from a URL.
 
         Args:

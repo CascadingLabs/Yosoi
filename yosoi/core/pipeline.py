@@ -116,7 +116,7 @@ class Pipeline:
 
             rprint(f'ℹ Log file: [link=file://{log_file}]file://{log_file}[/link]')
 
-    def process_url(
+    async def process_url(
         self,
         url: str,
         force: bool | None = None,
@@ -132,7 +132,7 @@ class Pipeline:
             url: URL to process
             force: Force re-discovery even if selectors exist. Defaults to False.
             skip_verification: Skip verification step. Defaults to False.
-            fetcher_type: Type of fetcher ('simple', 'playwright', 'smart'). Defaults to 'simple'.
+            fetcher_type: Type of fetcher ('simple'). Defaults to 'simple'.
             max_fetch_retries: Maximum fetch retry attempts. Defaults to 2.
             max_discovery_retries: Maximum AI discovery retry attempts. Defaults to 3.
             output_format: Format for extracted content ('json' or 'markdown').
@@ -146,7 +146,7 @@ class Pipeline:
         format_to_use = output_format or self.output_format
         force_flag = self.force if force is None else force
 
-        url = self.normalize_url(url)
+        url = await self.normalize_url(url)
 
         with logfire.span('process_url', url=url, force=force_flag, fetcher_type=fetcher_type):
             self.logger.info(f'Processing URL: {url} (force={force_flag}, fetcher={fetcher_type})')
@@ -156,11 +156,11 @@ class Pipeline:
                 return False
 
             # Try using cached selectors if available
-            if not force_flag and self._cached_selectors(url, domain, fetcher, skip_verification, format_to_use):
+            if not force_flag and await self._cached_selectors(url, domain, fetcher, skip_verification, format_to_use):
                 return True
 
             # Fetch HTML with retry logic for bot detection
-            result = self._fetch(url, fetcher, max_retries=max_fetch_retries)
+            result = await self._fetch(url, fetcher, max_retries=max_fetch_retries)
             if not result:
                 return False
 
@@ -174,7 +174,7 @@ class Pipeline:
 
             # Discover selectors with retry logic for AI failures (Step 2)
             # Returns: (selectors, used_llm)
-            selectors, used_llm = self._discover(url, cleaned_html, max_retries=max_discovery_retries)
+            selectors, used_llm = await self._discover(url, cleaned_html, max_retries=max_discovery_retries)
             if not selectors:
                 return False
 
@@ -197,7 +197,7 @@ class Pipeline:
             self._save_and_track(url, domain, verified, extracted, used_llm, format_to_use)
             return True
 
-    def process_urls(
+    async def process_urls(
         self,
         urls: list[str],
         force: bool | None = None,
@@ -213,7 +213,7 @@ class Pipeline:
             urls: List of URLs to process.
             force: Force re-discovery even if selectors exist. Defaults to False.
             skip_verification: Skip verification step. Defaults to False.
-            fetcher_type: Type of fetcher ('simple', 'playwright', 'smart'). Defaults to 'simple'.
+            fetcher_type: Type of fetcher ('simple'). Defaults to 'simple'.
             max_fetch_retries: Maximum fetch retry attempts. Defaults to 2.
             max_discovery_retries: Maximum AI discovery retry attempts. Defaults to 3.
             output_format: Format for extracted content ('json' or 'markdown').
@@ -237,7 +237,7 @@ class Pipeline:
                 self.logger.info(f'--- Processing URL {idx}/{len(urls)}: {url} ---')
 
                 try:
-                    success = self.process_url(
+                    success = await self.process_url(
                         url,
                         force_flag,
                         max_fetch_retries=max_fetch_retries,
@@ -268,7 +268,7 @@ class Pipeline:
     # Private helper methods
     # ============================================================================
 
-    def normalize_url(self, url: str) -> str:
+    async def normalize_url(self, url: str) -> str:
         """Add protocol to URL, preferring https.
 
         Args:
@@ -282,7 +282,8 @@ class Pipeline:
             # Try HTTPS first
             try:
                 test_url = 'https://' + url
-                httpx.head(test_url, timeout=3, follow_redirects=True)
+                async with httpx.AsyncClient() as client:
+                    await client.head(test_url, timeout=3, follow_redirects=True)
                 return test_url
             except httpx.HTTPError:
                 # Fall back to HTTP
@@ -317,7 +318,7 @@ class Pipeline:
             self.console.print(f'[danger]Invalid fetcher type: {fetcher_type}[/danger]')
             return None
 
-    def _fetch(self, url: str, fetcher: HTMLFetcher, max_retries: int = 2) -> FetchResult | None:
+    async def _fetch(self, url: str, fetcher: HTMLFetcher, max_retries: int = 2) -> FetchResult | None:
         """Fetch HTML with automatic retry logic for bot detection.
 
         Attempts to fetch HTML with automatic retries when bot detection is
@@ -358,7 +359,7 @@ class Pipeline:
             for attempt in retryer:
                 with attempt:
                     try:
-                        result = fetcher.fetch(url)
+                        result = await fetcher.fetch(url)
 
                         if not result.success:
                             self.console.print(
@@ -427,7 +428,7 @@ class Pipeline:
         self.console.print(f'[success]Cleaned HTML ready ({len(cleaned_html):,} chars)[/success]')
         return cleaned_html
 
-    def _discover(self, url: str, cleaned_html: str, max_retries: int = 3) -> tuple[dict | None, bool]:
+    async def _discover(self, url: str, cleaned_html: str, max_retries: int = 3) -> tuple[dict | None, bool]:
         """Discover CSS selectors with AI, using fallback heuristics if needed.
 
         Attempts AI-powered selector discovery with automatic retries. Falls
@@ -482,7 +483,7 @@ class Pipeline:
                     )
 
                     # discover_selectors takes cleaned HTML and returns just selectors
-                    selectors = self.discovery.discover_selectors(cleaned_html, url)
+                    selectors = await self.discovery.discover_selectors(cleaned_html, url)
 
                     if selectors:
                         # Merge manual overrides (overrides take precedence)
@@ -597,7 +598,7 @@ class Pipeline:
         self.console.print(f'[success]Extracted content from {len(extracted)} fields successfully[/success]')
         return extracted
 
-    def _cached_selectors(
+    async def _cached_selectors(
         self, url: str, domain: str, fetcher: HTMLFetcher, skip_verification: bool, output_format: str
     ) -> bool:
         """Try to use cached selectors if available.
@@ -624,9 +625,11 @@ class Pipeline:
         self.console.print(f'[success]✓ Found cached selectors for {domain}[/success]')
         logfire.info('Using cached selectors', domain=domain, url=url)
 
-        return self._use_cached_selectors(url, domain, fetcher, existing_selectors, output_format, skip_verification)
+        return await self._use_cached_selectors(
+            url, domain, fetcher, existing_selectors, output_format, skip_verification
+        )
 
-    def _use_cached_selectors(
+    async def _use_cached_selectors(
         self,
         url: str,
         domain: str,
@@ -661,7 +664,7 @@ class Pipeline:
         self.console.print(f'[step]{step}[/step]')
 
         try:
-            result = fetcher.fetch(url)
+            result = await fetcher.fetch(url)
 
             if not result.success or result.html is None:
                 self.console.print('[warning]⚠ Could not fetch HTML, skipping extraction[/warning]')
@@ -735,7 +738,7 @@ class Pipeline:
 
         if attempt >= max_retries:
             self.console.print('[danger]ABORTING - All fetch attempts exhausted[/danger]')
-            self.console.print('[info]Try: --fetcher smart (or) --fetcher playwright[/info]')
+            self.console.print('[info]All fetch attempts exhausted for this URL[/info]')
 
     def _validate_with_contract(self, extracted: dict, url: str = '') -> dict:
         """Instantiate Contract with extracted data to run validators and type coercion.

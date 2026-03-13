@@ -27,7 +27,6 @@ dependencies = [
   "brotli>=1.1",
   "dateparser>=1.3",
   "httpx>=0.28.1",
-  "httpx>=0.28.1",
   "logfire>=4.16",
   "lxml>=6.0.2",
   "pydantic>=2",
@@ -155,6 +154,7 @@ lint.pydocstyle.convention = "google"
 
 [tool.pytest.ini_options]
 testpaths = [ "tests" ]
+asyncio_mode = "auto"
 markers = [
   "eval: mark test as an evaluation test (requires real LLM and is slow)",
 ]

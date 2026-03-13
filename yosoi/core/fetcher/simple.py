@@ -1,5 +1,6 @@
 """Simple HTTP fetcher with realistic browser headers and anti-bot measures."""
 
+import asyncio
 import logging
 import random
 import time
@@ -21,11 +22,11 @@ class SimpleFetcher(HTMLFetcher):
     Attributes:
         timeout: Request timeout in seconds (how long to wait for response)
         rotate_user_agent: Whether to rotate user agents between requests
-        use_session: Whether to use a requests.Session for connection pooling
+        use_session: Whether to use an httpx.AsyncClient for connection pooling
         min_delay: Minimum delay between requests in seconds
         max_delay: Maximum delay between requests in seconds
         randomize_headers: Whether to randomize request headers
-        session: httpx.Client instance if use_session is True
+        client: httpx.AsyncClient instance if use_session is True
         last_request_time: Timestamp of last request for delay calculation
 
     """
@@ -57,25 +58,25 @@ class SimpleFetcher(HTMLFetcher):
         self.max_delay = max_delay
         self.randomize_headers = randomize_headers
 
-        self.session: httpx.Client | None
-        # Create session if enabled
+        self.client: httpx.AsyncClient | None
+        # Create client if enabled
         if self.use_session:
-            self.session = httpx.Client()
+            self.client = httpx.AsyncClient()
         else:
-            self.session = None
+            self.client = None
 
         # Track last request time for delays
         self.last_request_time = 0.0
         self.logger = logging.getLogger(__name__)
 
-    def _apply_request_delay(self):
+    async def _apply_request_delay(self):
         """Apply a random delay between requests to appear more human."""
         if self.min_delay > 0:
             elapsed = time.time() - self.last_request_time
             delay_needed = random.uniform(self.min_delay, self.max_delay)
 
             if elapsed < delay_needed:
-                time.sleep(delay_needed - elapsed)
+                await asyncio.sleep(delay_needed - elapsed)
 
         self.last_request_time = time.time()
 
@@ -100,7 +101,7 @@ class SimpleFetcher(HTMLFetcher):
             'Upgrade-Insecure-Requests': '1',
         }
 
-    def fetch(self, url: str) -> FetchResult:
+    async def fetch(self, url: str) -> FetchResult:
         """Fetch HTML using enhanced HTTP request with anti-bot measures.
 
         Args:
@@ -113,17 +114,18 @@ class SimpleFetcher(HTMLFetcher):
         start_time = time.time()
 
         # Apply delay to avoid rate limiting
-        self._apply_request_delay()
+        await self._apply_request_delay()
 
         try:
             # Get headers (potentially randomized)
             headers = self._get_headers()
 
-            # Use session or direct request
-            if self.session:
-                response = self.session.get(url, headers=headers, timeout=self.timeout, follow_redirects=True)
+            # Use client or direct request
+            if self.client:
+                response = await self.client.get(url, headers=headers, timeout=self.timeout, follow_redirects=True)
             else:
-                response = httpx.get(url, headers=headers, timeout=self.timeout, follow_redirects=True)
+                async with httpx.AsyncClient() as client:
+                    response = await client.get(url, headers=headers, timeout=self.timeout, follow_redirects=True)
 
             status_code = response.status_code
 
@@ -180,15 +182,15 @@ class SimpleFetcher(HTMLFetcher):
                 url=url, html=None, status_code=None, is_blocked=False, block_reason=str(e), fetch_time=fetch_time
             )
 
-    def __enter__(self):
-        """Context manager entry."""
+    async def __aenter__(self):
+        """Async context manager entry."""
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """Context manager exit."""
-        self.close()
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Async context manager exit."""
+        await self.close()
 
-    def close(self):
-        """Close the session if it exists."""
-        if self.session:
-            self.session.close()
+    async def close(self):
+        """Close the client if it exists."""
+        if self.client:
+            await self.client.aclose()
