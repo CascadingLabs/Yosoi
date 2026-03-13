@@ -158,7 +158,35 @@ def _suggest_file(file_path: str, class_name: str) -> list[str]:
     return suggestions
 
 
+def _find_contract_classes(module: object) -> list[str]:
+    """Return names of all Contract subclasses in a module."""
+    return [
+        name
+        for name in dir(module)
+        if not name.startswith('_')
+        and isinstance(getattr(module, name), type)
+        and issubclass(getattr(module, name), Contract)
+    ]
+
+
+def _raise_class_not_found(class_name: str, file_path: str, module: object, contract_classes: list[str]) -> None:
+    """Raise a ClickException with helpful hints when a class is not found."""
+    available = [name for name in dir(module) if not name.startswith('_') and isinstance(getattr(module, name), type)]
+    msg = f'Class {class_name!r} not found in {file_path}'
+    matches = difflib.get_close_matches(class_name, available, n=3, cutoff=0.5)
+    if matches:
+        msg += f'\nDid you mean: {matches[0]}'
+        if len(matches) > 1:
+            msg += f'\n  Other options: {", ".join(matches[1:])}'
+    elif contract_classes:
+        msg += f'\nAvailable Contract subclasses: {", ".join(contract_classes)}'
+    elif available:
+        msg += f'\nAvailable classes: {", ".join(available)}'
+    raise click.ClickException(msg)
+
+
 def load_schema(schema_str: str) -> type[Contract]:
+    # TODO make a global registry of Contracts so that in the CLI we can suggset on custom COntracts too!
     """Load a Contract class from a ``path/to/file.py:ClassName`` string.
 
     Args:
@@ -194,20 +222,18 @@ def load_schema(schema_str: str) -> type[Contract]:
     loader.exec_module(module)
 
     cls = getattr(module, class_name, None)
+    contract_classes = _find_contract_classes(module)
+
     if cls is None:
-        available = [
-            name for name in dir(module) if not name.startswith('_') and isinstance(getattr(module, name), type)
-        ]
-        msg = f'Class {class_name!r} not found in {file_path}'
-        matches = difflib.get_close_matches(class_name, available, n=3, cutoff=0.5)
-        if matches:
-            msg += f'\nDid you mean: {matches[0]}'
-            if len(matches) > 1:
-                msg += f'\n  Other options: {", ".join(matches[1:])}'
-        elif available:
-            msg += f'\nAvailable classes: {", ".join(available)}'
+        _raise_class_not_found(class_name, file_path, module, contract_classes)
+
+    if not (isinstance(cls, type) and issubclass(cls, Contract)):
+        msg = f'Found {class_name!r} in {file_path}, but it is not a Contract subclass'
+        if contract_classes:
+            msg += f'\nAvailable Contract subclasses: {", ".join(contract_classes)}'
         raise click.ClickException(msg)
-    return cls  # type: ignore[no-any-return]
+
+    return cls
 
 
 def load_urls_from_file(filepath: str) -> list[str]:
@@ -232,8 +258,25 @@ def load_urls_from_file(filepath: str) -> list[str]:
             data = json.load(f)
 
         if isinstance(data, list):
-            return [item.get('url', item) for item in data if item]
-        return [data[key]['url'] for key in data if 'url' in data.get(key, {})]
+            urls: list[str] = []
+            for item in data:
+                if isinstance(item, str) and item:
+                    urls.append(item)
+                elif isinstance(item, dict):
+                    url = item.get('url')
+                    if url:
+                        urls.append(url)
+            return urls
+        if isinstance(data, dict):
+            urls = []
+            for key in data:
+                value = data.get(key, {})
+                if isinstance(value, str) and value:
+                    urls.append(value)
+                elif isinstance(value, dict) and 'url' in value:
+                    urls.append(value['url'])
+            return urls
+        return []
 
     with open(filepath) as f:
         return [line.strip() for line in f if line.strip() and not line.startswith('#')]
@@ -374,7 +417,7 @@ def main(
         console.print(f'[cyan]ℹ Limiting to first {limit} URLs[/cyan]')
 
     if debug:
-        console.print('[cyan]ℹ Debug mode enabled[/cyan] [dim]- extracted HTML will be saved to debug/[/dim]')
+        console.print('[cyan]ℹ Debug mode enabled[/cyan] [dim]- extracted HTML will be saved to .yosoi/debug/[/dim]')
 
     console.print(f'[cyan]ℹ Output format:[/cyan] [bold]{output_format}[/bold]')
 
