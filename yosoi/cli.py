@@ -219,7 +219,10 @@ def load_schema(schema_str: str) -> type[Contract]:
     module = importlib.util.module_from_spec(spec)
     loader = spec.loader
     assert loader is not None
-    loader.exec_module(module)
+    try:
+        loader.exec_module(module)
+    except Exception as e:
+        raise click.ClickException(f'Failed to load {file_path}: {e}') from e
 
     cls = getattr(module, class_name, None)
     contract_classes = _find_contract_classes(module)
