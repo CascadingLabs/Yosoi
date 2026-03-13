@@ -12,6 +12,7 @@ import os
 import rich_click as click
 from dotenv import load_dotenv
 from rich.console import Console
+from rich_click.utils import OptionGroupDict
 
 from yosoi.models.contract import Contract
 from yosoi.models.defaults import BUILTIN_SCHEMAS, NewsArticle
@@ -24,7 +25,7 @@ console_err = Console(stderr=True)
 
 # ── rich-click styling ──────────────────────────────────────────────
 click.rich_click.TEXT_MARKUP = 'rich'
-_option_groups = [
+_option_groups: list[OptionGroupDict] = [
     {
         'name': 'Input',
         'options': ['--url', '--file', '--contract', '--limit'],
@@ -66,7 +67,7 @@ class SchemaParamType(click.ParamType):
     def shell_complete(self, ctx: click.Context, param: click.Parameter, incomplete: str) -> list:
         """Provide shell completion for built-in schema names."""
         return [
-            click.shell_completion.CompletionItem(name)
+            click.shell_completion.CompletionItem(name)  # type: ignore[attr-defined]
             for name in BUILTIN_SCHEMAS
             if name.lower().startswith(incomplete.lower())
         ]

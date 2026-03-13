@@ -47,9 +47,9 @@ Changelog = "https://github.com/CascadingLabs/Yosoi/blob/main/CHANGELOG.md"
 
 [dependency-groups]
 dev = [
-  "basedpyright>=1.28",
   "commitizen>=3.13",
   "memray>=1.19.1",
+  "mypy>=1.13",
   "playwright>=1.58",
   "poethepoet>=0.40",
   "prek>=0.2.25",
@@ -175,26 +175,15 @@ fail_under = 80
 source = [ "yosoi" ]
 omit = [ "yosoi/__main__.py" ]
 
-[tool.basedpyright]
-pythonVersion = "3.10"
-typeCheckingMode = "standard"
-
-# Disable the noisiest rules while you fix things incrementally
-reportAttributeAccessIssue = "warning" # or false
-reportArgumentType = "warning"
-reportOperatorIssue = "warning"
-reportCallIssue = "warning"
-
+[tool.mypy]
+python_version = "3.10"
+strict = false
+ignore_missing_imports = true
+warn_unused_ignores = false
 exclude = [
-  "yosoi/utils/*.py", # Fix these later
-  "mutants/**",
-]
-
-reportMissingImports = true
-reportMissingModuleSource = false
-
-ignore = [
-  "tests/**",
+  "tests/",
+  "mutants/",
+  "yosoi/utils/",
 ]
 
 [tool.mutmut]

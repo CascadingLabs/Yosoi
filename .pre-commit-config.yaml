@@ -46,9 +46,9 @@ repos:
 
   - repo: local
     hooks:
-      - id: basedpyright
-        name: basedpyright
-        entry: uv run basedpyright
+      - id: mypy
+        name: mypy
+        entry: uv run mypy yosoi
         language: system
         types: [python]
         pass_filenames: false

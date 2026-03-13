@@ -17,6 +17,7 @@ Run with:
 import re
 from typing import Any
 
+from pydantic import ValidationError
 from rich.console import Console
 from rich.panel import Panel
 
@@ -179,8 +180,8 @@ def demo_phone() -> None:
         ContactPage.model_validate(
             {'name': 'X', 'us_phone': 'N/A', 'uk_phone': '+44 20 7946 0958', 'website': 'https://x.com'}
         )
-    except Exception as e:
-        msgs = [err['msg'] for err in e.errors()]  # type: ignore[attr-defined]
+    except ValidationError as e:
+        msgs = [err['msg'] for err in e.errors()]
         console.print(f'  [red]  x {msgs[0]}[/red]')
 
 
@@ -210,8 +211,8 @@ def demo_isbn() -> None:
         BookListing.model_validate(
             {'title': 'T', 'author': 'A', 'price': '$1.00', 'isbn': '0306406152', 'isbn13': '0306406152'}
         )
-    except Exception as e:
-        msgs = [err['msg'] for err in e.errors()]  # type: ignore[attr-defined]
+    except ValidationError as e:
+        msgs = [err['msg'] for err in e.errors()]
         console.print(f'  [red]  x {msgs[0]}[/red]')
 
 
