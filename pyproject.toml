@@ -33,6 +33,7 @@ dependencies = [
   "pydantic-ai>=0.0.16",
   "python-dotenv>=1.2.1",
   "rich>=14.2",
+  "taskiq>=0.12.1",
   "tenacity>=9.1.4",
 ]
 
@@ -107,22 +108,23 @@ format.line-ending = "auto"
 format.skip-magic-trailing-comma = false
 
 lint.select = [
-  "ARG",  # flake8-unused-arguments
-  "B",    # flake8-bugbear
-  "C4",   # flake8-comprehensions
-  "C901", # mccabe complexity
-  "D",    # pydocstyle
-  "E",    # pycodestyle errors
-  "F",    # pyflakes
-  "I",    # isort
-  "PERF", # performance
-  "PT",   # flake8-pytest-style
-  "RET",  # flake8-return
-  "RUF",  # ruff-specific rules
-  "SIM",  # flake8-simplify
-  "TID",  # flake8-tidy-imports
-  "UP",   # pyupgrade
-  "W",    # pycodestyle warnings
+  "ARG",   # flake8-unused-arguments
+  "ASYNC", # flake8-async
+  "B",     # flake8-bugbear
+  "C4",    # flake8-comprehensions
+  "C901",  # mccabe complexity
+  "D",     # pydocstyle
+  "E",     # pycodestyle errors
+  "F",     # pyflakes
+  "I",     # isort
+  "PERF",  # performance
+  "PT",    # flake8-pytest-style
+  "RET",   # flake8-return
+  "RUF",   # ruff-specific rules
+  "SIM",   # flake8-simplify
+  "TID",   # flake8-tidy-imports
+  "UP",    # pyupgrade
+  "W",     # pycodestyle warnings
 ]
 
 lint.ignore = [

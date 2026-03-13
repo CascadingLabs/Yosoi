@@ -269,6 +269,14 @@ Examples:
             'Dynamic: /path/to/file.py:ClassName'
         ),
     )
+    parser.add_argument(
+        '-w',
+        '--workers',
+        type=int,
+        default=1,
+        metavar='N',
+        help='Number of concurrent workers for batch processing (default: 1, sequential)',
+    )
 
     return parser.parse_args()
 
@@ -284,6 +292,52 @@ def print_fetcher_info(fetcher_type: str):
 
     """
     print('ℹ Using Simple fetcher (fast, works for most sites)')
+
+
+async def _run_concurrent(
+    yosoi_config: YosoiConfig,
+    contract: type[Contract],
+    urls: list[str],
+    output_format: str = 'json',
+    force: bool = False,
+    skip_verification: bool = False,
+    fetcher_type: str = 'simple',
+    max_workers: int = 5,
+):
+    """Run URL processing concurrently via taskiq broker.
+
+    Args:
+        yosoi_config: Validated YosoiConfig.
+        contract: Contract subclass.
+        urls: URLs to process.
+        output_format: Output format.
+        force: Force re-discovery.
+        skip_verification: Skip verification step.
+        fetcher_type: Fetcher type.
+        max_workers: Max concurrent workers.
+
+    """
+    from yosoi.tasks import configure_broker, enqueue_urls, shutdown_broker
+
+    await configure_broker(yosoi_config, contract=contract, output_format=output_format, max_workers=max_workers)
+    try:
+        results = await enqueue_urls(
+            urls,
+            force=force,
+            skip_verification=skip_verification,
+            fetcher_type=fetcher_type,
+        )
+
+        # Print summary
+        print(f'\nResults: {len(results["successful"])} succeeded, {len(results["failed"])} failed')
+        if results.get('skipped'):
+            print(f'  {len(results["skipped"])} skipped (duplicate domains)')
+        if results['failed']:
+            print('Failed URLs:')
+            for url in results['failed']:
+                print(f'  - {url}')
+    finally:
+        await shutdown_broker()
 
 
 def main():
@@ -322,16 +376,14 @@ def main():
     # Resolve contract schema
     contract = load_schema(args.schema) if args.schema else NewsArticle
 
-    # Initialize pipeline with output format
-    pipeline = Pipeline(yosoi_config, contract=contract, output_format=output_format)
-
     from rich import print as rprint
 
     # Show log file link
     rprint(f'ℹ Log file: [link=file://{log_file}]file://{log_file}[/link]')
 
-    # Handle summary request (quick exit)
+    # Handle summary request (quick exit — needs pipeline for storage access)
     if args.summary:
+        pipeline = Pipeline(yosoi_config, contract=contract, output_format=output_format)
         pipeline.show_summary()
         return
 
@@ -365,15 +417,39 @@ def main():
     # Show fetcher info
     print_fetcher_info(args.fetcher)
 
-    # Process URLs (output_format already set in pipeline)
-    asyncio.run(
-        pipeline.process_urls(
-            urls,
-            force=args.force,
-            skip_verification=args.skip_verification,
-            fetcher_type=args.fetcher,
+    # Determine effective concurrency
+    effective_workers = min(args.workers, len(urls))
+
+    if args.workers > 1 and len(urls) == 1:
+        print(f'ℹ --workers {args.workers} has no effect with a single URL, running sequentially')
+    elif args.workers > len(urls):
+        print(f'ℹ --workers {args.workers} capped to {len(urls)} (one per URL)')
+
+    # Process URLs
+    if effective_workers > 1:
+        print(f'ℹ Using {effective_workers} concurrent workers via taskiq')
+        asyncio.run(
+            _run_concurrent(
+                yosoi_config,
+                contract,
+                urls,
+                output_format=output_format,
+                force=args.force,
+                skip_verification=args.skip_verification,
+                fetcher_type=args.fetcher,
+                max_workers=effective_workers,
+            )
         )
-    )
+    else:
+        pipeline = Pipeline(yosoi_config, contract=contract, output_format=output_format)
+        asyncio.run(
+            pipeline.process_urls(
+                urls,
+                force=args.force,
+                skip_verification=args.skip_verification,
+                fetcher_type=args.fetcher,
+            )
+        )
 
 
 if __name__ == '__main__':
