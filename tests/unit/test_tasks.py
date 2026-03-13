@@ -2,7 +2,7 @@
 
 import pytest
 
-from yosoi.tasks import (
+from yosoi.core.tasks import (
     DomainDedup,
     _pipeline_config,
     configure_broker,
@@ -55,7 +55,7 @@ class TestDomainDedup:
 
 class TestBrokerConfig:
     async def test_configure_and_shutdown(self, mock_llm_config, clean_broker):
-        import yosoi.tasks
+        import yosoi.core.tasks as yosoi_tasks
         from yosoi.models.defaults import NewsArticle
 
         await configure_broker(mock_llm_config, contract=NewsArticle, max_workers=3)
@@ -64,10 +64,10 @@ class TestBrokerConfig:
         assert config['output_format'] == 'json'
         assert config['max_workers'] == 3
         # Semaphore should be created with the right limit
-        assert yosoi.tasks._semaphore is not None
+        assert yosoi_tasks._semaphore is not None
         await shutdown_broker()
         assert _pipeline_config == {}
-        assert yosoi.tasks._semaphore is None
+        assert yosoi_tasks._semaphore is None
 
     def test_get_config_before_configure_raises(self, clean_broker):
         with pytest.raises(RuntimeError, match='Broker not configured'):

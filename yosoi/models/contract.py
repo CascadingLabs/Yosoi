@@ -10,9 +10,19 @@ from typing_extensions import Self
 
 from yosoi.types.coerce import dispatch as _coerce_dispatch
 
+# Global registry of all Contract subclasses, populated via __init_subclass__.
+# Builtins are registered when yosoi.models.defaults is imported; custom schemas
+# are registered when their module is loaded (e.g. via load_schema in the CLI).
+_CONTRACT_REGISTRY: dict[str, type[Contract]] = {}
+
 
 class Contract(BaseModel):
     """Base class for user-defined scraping contracts."""
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        """Register every Contract subclass in the global _CONTRACT_REGISTRY."""
+        super().__init_subclass__(**kwargs)
+        _CONTRACT_REGISTRY[cls.__name__] = cls
 
     @model_validator(mode='wrap')
     @classmethod

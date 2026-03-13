@@ -1,7 +1,7 @@
 # Core Module Rules
 
 ## Purpose
-Contains the primary business logic and operational pipeline for Yosoi: network ingestion, HTML cleaning, AI discovery, verification, and extraction.
+Contains the primary business logic and operational pipeline for Yosoi: network ingestion, HTML cleaning, AI discovery, verification, extraction, configuration, and task queue management.
 
 ## Constraints
 1. **Statelessness**: Core components (Fetcher, Cleaner, Discovery, Verifier, Extractor) must be stateless. Pass state via method arguments.
@@ -9,3 +9,5 @@ Contains the primary business logic and operational pipeline for Yosoi: network 
 3. **Dependency Injection**: Never instantiate `rich.console.Console` deeply inside logic. Require it as an optional constructor argument.
 4. **Network Boundaries**: `requests` and `playwright` are strictly confined to the `fetcher/` subdirectory.
 5. **LLM Boundaries**: `pydantic_ai` and LLM interactions are strictly confined to the `discovery/` subdirectory.
+6. **Configuration**: `configs.py` holds `YosoiConfig`, `DebugConfig`, `TelemetryConfig`, and provider resolution logic.
+7. **Task Queue**: `tasks.py` holds taskiq broker setup, `process_url_task`, `enqueue_urls`, and concurrency helpers.

@@ -2,6 +2,7 @@
 
 from bs4 import BeautifulSoup
 from rich.console import Console
+from soupsieve.util import SelectorSyntaxError
 
 from yosoi.models.contract import Contract
 
@@ -151,7 +152,7 @@ class ContentExtractor:
             text = first_element.get_text(strip=True)
             return text if text else None
 
-        except ValueError as e:
+        except (ValueError, SelectorSyntaxError) as e:
             self.console.print(f'  ✗ {field_name}: extraction error ({e})')
             return None
 

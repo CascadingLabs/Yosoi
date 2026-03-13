@@ -4,6 +4,7 @@ import logging
 
 from bs4 import BeautifulSoup
 from rich.console import Console
+from soupsieve.util import SelectorSyntaxError
 
 logger = logging.getLogger(__name__)
 
@@ -139,7 +140,7 @@ class SelectorVerifier:
             if elements:
                 return True, 'found'
             return False, 'no_elements_found'
-        except ValueError as e:
+        except (ValueError, SelectorSyntaxError) as e:
             return False, f'invalid_syntax: {e}'
 
     def _print_field_result(self, result: FieldVerificationResult) -> None:

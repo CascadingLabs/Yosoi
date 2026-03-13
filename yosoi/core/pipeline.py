@@ -15,8 +15,8 @@ from rich.table import Table
 from rich.theme import Theme
 from tenacity import RetryError
 
-from yosoi.config import YosoiConfig
 from yosoi.core.cleaning import HTMLCleaner
+from yosoi.core.configs import YosoiConfig
 from yosoi.core.discovery import LLMConfig, SelectorDiscovery
 from yosoi.core.extraction import ContentExtractor
 from yosoi.core.fetcher import HTMLFetcher, create_fetcher
@@ -369,6 +369,7 @@ class Pipeline:
                 wait_max=10,
                 exceptions=(BotDetectionError, Exception),
                 log_callback=before_sleep_log,
+                reraise=False,
             )
 
             async for attempt in retryer:
@@ -489,6 +490,7 @@ class Pipeline:
                 wait_max=10,
                 exceptions=(Exception,),
                 log_callback=before_ai_sleep_log,
+                reraise=False,
             )
 
             async for attempt in retryer:

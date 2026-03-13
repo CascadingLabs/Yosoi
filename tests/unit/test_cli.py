@@ -23,7 +23,7 @@ def mock_pipeline(mocker):
     mock_pipe.process_urls = mocker.AsyncMock(return_value={'successful': [], 'failed': []})
     mock_pipeline_cls = mocker.patch('yosoi.Pipeline', return_value=mock_pipe)
     mocker.patch(
-        'yosoi.config.YosoiConfig',
+        'yosoi.core.configs.YosoiConfig',
         return_value=mocker.MagicMock(
             llm=mocker.MagicMock(provider='groq', model_name='llama-3.3-70b-versatile'),
         ),
@@ -122,6 +122,46 @@ class TestFileFlag:
         result = runner.invoke(main, ['-f', '/nonexistent/urls.txt'])
         assert result.exit_code != 0
         assert 'File not found' in result.output
+
+
+class TestScanForContracts:
+    def test_skips_tests_directory(self, tmp_path):
+        """Contracts defined under tests/ must not appear in scan results."""
+        from yosoi.cli.utils import scan_for_contracts
+
+        user_file = tmp_path / 'my_schema.py'
+        user_file.write_text('from yosoi.models.contract import Contract\n\nclass UserContract(Contract):\n    pass\n')
+
+        tests_dir = tmp_path / 'tests'
+        tests_dir.mkdir()
+        test_file = tests_dir / 'test_something.py'
+        test_file.write_text(
+            'from yosoi.models.contract import Contract\n\nclass TestFixtureContract(Contract):\n    pass\n'
+        )
+
+        results = scan_for_contracts([str(tmp_path)])
+
+        assert 'UserContract' in results
+        assert 'TestFixtureContract' not in results
+
+    def test_skips_examples_directory(self, tmp_path):
+        """Contracts defined under examples/ must not appear in scan results."""
+        from yosoi.cli.utils import scan_for_contracts
+
+        user_file = tmp_path / 'schema.py'
+        user_file.write_text('from yosoi.models.contract import Contract\n\nclass RealContract(Contract):\n    pass\n')
+
+        examples_dir = tmp_path / 'examples'
+        examples_dir.mkdir()
+        example_file = examples_dir / 'demo.py'
+        example_file.write_text(
+            'from yosoi.models.contract import Contract\n\nclass DemoContract(Contract):\n    pass\n'
+        )
+
+        results = scan_for_contracts([str(tmp_path)])
+
+        assert 'RealContract' in results
+        assert 'DemoContract' not in results
 
 
 class TestLimitFlag:

@@ -13,7 +13,7 @@ from urllib.parse import urlparse
 from taskiq import InMemoryBroker
 from taskiq.middlewares import SmartRetryMiddleware
 
-from yosoi.config import YosoiConfig
+from yosoi.core.configs import YosoiConfig
 from yosoi.core.discovery.config import LLMConfig
 from yosoi.models.contract import Contract
 

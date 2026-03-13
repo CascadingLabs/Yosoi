@@ -152,7 +152,7 @@ lint.per-file-ignores."tests/**/*.py" = [
   "ARG004", # unused static method arguments in tests (coerce stubs)
   "D",      # pydocstyle - no docstrings required for tests
 ]
-lint.per-file-ignores."yosoi/cli.py" = [ "ARG002" ] # Click ParamType method overrides require unused params
+lint.per-file-ignores."yosoi/cli/args.py" = [ "ARG002" ] # Click ParamType method overrides require unused params
 lint.per-file-ignores."yosoi/core/cleaning/cleaner.py" = [ "C901" ]
 lint.isort.known-first-party = [ "yosoi" ]
 lint.mccabe.max-complexity = 12

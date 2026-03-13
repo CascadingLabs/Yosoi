@@ -14,15 +14,15 @@ import pytest
 
 from yosoi.core.discovery.agent import SelectorDiscovery
 from yosoi.core.discovery.config import LLMConfig
-from yosoi.models import FieldSelectors
-from yosoi.models.defaults import NewsArticle
-from yosoi.tasks import (
+from yosoi.core.tasks import (
     _pipeline_config,
     configure_broker,
     enqueue_urls,
     process_url_task,
     shutdown_broker,
 )
+from yosoi.models import FieldSelectors
+from yosoi.models.defaults import NewsArticle
 
 
 @pytest.fixture
@@ -311,16 +311,16 @@ class TestEndToEndBrokerAgent:
 
     async def test_broker_lifecycle_clean_shutdown(self, mock_llm_config, clean_broker):
         """Broker starts, processes, and shuts down cleanly without leaked state."""
-        import yosoi.tasks
+        import yosoi.core.tasks as yosoi_tasks
 
         await configure_broker(mock_llm_config, contract=NewsArticle, max_workers=2)
 
-        assert yosoi.tasks._semaphore is not None
+        assert yosoi_tasks._semaphore is not None
         assert _pipeline_config['contract'] is NewsArticle
 
         await shutdown_broker()
 
-        assert yosoi.tasks._semaphore is None
+        assert yosoi_tasks._semaphore is None
         assert _pipeline_config == {}
 
     async def test_mixed_success_and_failure_results(self, mocker, mock_llm_config, clean_broker):

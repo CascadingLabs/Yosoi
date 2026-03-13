@@ -19,7 +19,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: 'stable'
+          go-version: "stable"
           cache: true
 
       - name: Install uv
@@ -34,7 +34,7 @@ jobs:
       - name: Install dependencies
         run: uv sync --group tests --group dev
 
-      - name: Run Prek checks (ruff, basedpyright, etc)
+      - name: Run Prek checks (ruff, mypy, etc)
         run: uv run poe ci-check
 
       - name: Run CI Tests
