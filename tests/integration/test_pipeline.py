@@ -23,7 +23,7 @@ async def test_pipeline_happy_path(mocker, mock_llm_config, happy_path_html, moc
     mocker.patch('yosoi.core.discovery.agent.create_model')
 
     # 2. Mock Fetcher (async fetch)
-    mock_fetcher = mocker.Mock()
+    mock_fetcher = mocker.AsyncMock()
     mock_fetcher.fetch = mocker.AsyncMock(
         return_value=FetchResult(
             url='http://example.com',
@@ -60,7 +60,7 @@ async def test_pipeline_fetch_failure(mocker, mock_llm_config, tmp_path):
     mocker.patch('yosoi.core.discovery.agent.Agent')
 
     # Mock Fetcher (async fetch)
-    mock_fetcher = mocker.Mock()
+    mock_fetcher = mocker.AsyncMock()
     mock_fetcher.fetch = mocker.AsyncMock(
         return_value=FetchResult(
             url='http://example.com', html=None, status_code=403, is_blocked=True, block_reason='Forbidden'
@@ -95,7 +95,7 @@ async def test_pipeline_ai_failure(mocker, mock_llm_config, happy_path_html, tmp
     mocker.patch('yosoi.core.discovery.agent.create_model')
 
     # 2. Mock Fetcher (async fetch)
-    mock_fetcher = mocker.Mock()
+    mock_fetcher = mocker.AsyncMock()
     mock_fetcher.fetch = mocker.AsyncMock(
         return_value=FetchResult(
             url='http://ai-failure.com',

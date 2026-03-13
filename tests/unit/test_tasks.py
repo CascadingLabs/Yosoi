@@ -114,7 +114,7 @@ class TestProcessUrlTask:
         assert 'elapsed' in result
         await shutdown_broker()
 
-    async def test_task_catches_exception(self, mocker, mock_llm_config, clean_broker):
+    async def test_task_reraises_exception(self, mocker, mock_llm_config, clean_broker):
         from yosoi.models.defaults import NewsArticle
 
         await configure_broker(mock_llm_config, contract=NewsArticle)
@@ -123,12 +123,8 @@ class TestProcessUrlTask:
         mock_pipeline = mock_pipeline_cls.return_value
         mock_pipeline.process_url = mocker.AsyncMock(side_effect=Exception('boom'))
 
-        result = await process_url_task.original_func(url='http://error.com')
-
-        assert result['url'] == 'http://error.com'
-        assert result['success'] is False
-        assert 'boom' in result['error']
-        assert 'elapsed' in result
+        with pytest.raises(Exception, match='boom'):
+            await process_url_task.original_func(url='http://error.com')
         await shutdown_broker()
 
 

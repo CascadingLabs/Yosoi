@@ -183,7 +183,8 @@ class TestAgentFailureIsolation:
         assert 'http://good1.com' in results['successful']
         assert 'http://good2.com' in results['successful']
         assert 'http://fail.com' in results['failed']
-        assert call_count == 3
+        # fail.com is retried (max_retries=2 means up to 2 total attempts), so 2 attempts + 1 each for the two good URLs
+        assert call_count == 4
         await shutdown_broker()
 
     async def test_timeout_in_one_task_doesnt_block_others(self, mocker, mock_llm_config, clean_broker):
