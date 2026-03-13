@@ -159,9 +159,16 @@ class SimpleFetcher(HTMLFetcher):
                 )
 
             # Check for bot detection
-            is_blocked, indicators = self._check_for_bot_detection(html, status_code)
+            response_headers = dict(response.headers)
+            is_blocked, indicators = self._check_for_bot_detection(html, status_code, response_headers)
 
             if is_blocked:
+                self.logger.warning(
+                    'Bot detection triggered for %s (status=%d): %s',
+                    url,
+                    status_code,
+                    ', '.join(indicators),
+                )
                 raise BotDetectionError(url, status_code, indicators)
 
             # Analyze content

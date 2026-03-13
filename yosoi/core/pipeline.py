@@ -753,6 +753,23 @@ class Pipeline:
         self.console.print(f'[danger]Status Code: {error.status_code}[/danger]')
         self.console.print(f'[danger]Indicators: {", ".join(error.indicators)}[/danger]')
 
+        self.logger.warning(
+            'Bot detection (attempt %d/%d) for %s (status=%d): %s',
+            attempt,
+            max_retries,
+            error.url,
+            error.status_code,
+            ', '.join(error.indicators),
+        )
+        logfire.warn(
+            'Bot detection triggered',
+            url=error.url,
+            status_code=error.status_code,
+            indicators=error.indicators,
+            attempt=attempt,
+            max_retries=max_retries,
+        )
+
         if attempt >= max_retries:
             self.console.print('[danger]ABORTING - All fetch attempts exhausted[/danger]')
             self.console.print('[info]All fetch attempts exhausted for this URL[/info]')

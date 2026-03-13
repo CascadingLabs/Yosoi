@@ -28,7 +28,7 @@ def mock_pipeline(mocker):
             llm=mocker.MagicMock(provider='groq', model_name='llama-3.3-70b-versatile'),
         ),
     )
-    mocker.patch('yosoi.cli.console')
+    mocker.patch('yosoi.cli.main.console')
 
     return mock_pipe, mock_pipeline_cls
 
