@@ -25,7 +25,7 @@ from yosoi.models import FetchResult
 from yosoi.models.contract import Contract
 from yosoi.storage import DebugManager, LLMTracker, SelectorStorage
 from yosoi.utils.exceptions import BotDetectionError
-from yosoi.utils.retry import get_retryer
+from yosoi.utils.retry import get_async_retryer
 
 
 class Pipeline:
@@ -153,7 +153,7 @@ class Pipeline:
         url = await self.normalize_url(url)
 
         with logfire.span('process_url', url=url, force=force_flag, fetcher_type=fetcher_type):
-            self.logger.info(f'Processing URL: {url} (force={force_flag}, fetcher={fetcher_type})')
+            self.logger.info('Processing URL: %s (force=%s, fetcher=%s)', url, force_flag, fetcher_type)
             domain = self._extract_domain(url)
             fetcher = self._create_fetcher(fetcher_type)
             if not fetcher:
@@ -239,7 +239,7 @@ class Pipeline:
         with logfire.span('process_urls', total_urls=len(urls)):
             for idx, url in enumerate(urls, 1):
                 self.console.print(f'\n[bold blue]Processing URL {idx}/{len(urls)}[/bold blue]')
-                self.logger.info(f'--- Processing URL {idx}/{len(urls)}: {url} ---')
+                self.logger.info('--- Processing URL %d/%d: %s ---', idx, len(urls), url)
 
                 url_start = time.monotonic()
                 try:
@@ -255,7 +255,7 @@ class Pipeline:
                     results['successful' if success else 'failed'].append(url)
                 except Exception as e:
                     logfire.error('Error processing URL', url=url, error=str(e))
-                    self.logger.exception(f'Critical error processing {url}')
+                    self.logger.exception('Critical error processing %s', url)
                     self.console.print(f'[danger]Error processing {url}: {e}[/danger]')
                     results['failed'].append(url)
 
@@ -363,7 +363,7 @@ class Pipeline:
                 logfire.warn('Retrying fetch', url=url, attempt=attempt)
 
         try:
-            retryer = get_retryer(
+            retryer = get_async_retryer(
                 max_attempts=max_retries,
                 wait_min=1,
                 wait_max=10,
@@ -371,7 +371,7 @@ class Pipeline:
                 log_callback=before_sleep_log,
             )
 
-            for attempt in retryer:
+            async for attempt in retryer:
                 with attempt:
                     try:
                         result = await fetcher.fetch(url)
@@ -396,14 +396,14 @@ class Pipeline:
                         self._handle_bot_detection(e, attempt.retry_state.attempt_number, max_retries)
                         raise
 
-                    except Exception as e:
+                    except (httpx.HTTPError, OSError, ValueError, RuntimeError) as e:
                         # Don't re-log if we just raised it ourselves above
                         if str(e) not in [
                             'No HTML content received',
                             f'Fetch failed: {getattr(result, "block_reason", "Unknown")}',
                         ]:
                             self.console.print(f'[danger]Unexpected error: {e}[/danger]')
-                            self.logger.exception(f'Fetch error for {url}')
+                            self.logger.exception('Fetch error for %s', url)
                             logfire.error(
                                 'Fetch error', url=url, error=str(e), attempt=attempt.retry_state.attempt_number
                             )
@@ -412,7 +412,7 @@ class Pipeline:
         except RetryError:
             self.console.print(f'[danger]All {max_retries} attempts failed[/danger]')
             return None
-        except Exception:
+        except (httpx.HTTPError, OSError, ValueError, RuntimeError):
             return None
 
         return None
@@ -483,7 +483,7 @@ class Pipeline:
 
         # Use AI discovery with retries
         try:
-            retryer = get_retryer(
+            retryer = get_async_retryer(
                 max_attempts=max_retries,
                 wait_min=1,
                 wait_max=10,
@@ -491,7 +491,7 @@ class Pipeline:
                 log_callback=before_ai_sleep_log,
             )
 
-            for attempt in retryer:
+            async for attempt in retryer:
                 with attempt:
                     self.console.print(
                         f'[step]Step 2: AI analyzing HTML (attempt {attempt.retry_state.attempt_number}/{max_retries})...[/step]'
@@ -516,12 +516,12 @@ class Pipeline:
                         return selectors, True
 
                     self.console.print('[danger]AI discovery failed[/danger]')
-                    self.logger.warning(f'AI discovery failed for {url}')
+                    self.logger.warning('AI discovery failed for %s', url)
                     raise Exception('AI discovery failed')
 
         except RetryError:
             pass
-        except Exception:
+        except (httpx.HTTPError, OSError, ValueError, RuntimeError):
             pass
 
         # All attempts failed
@@ -721,7 +721,7 @@ class Pipeline:
         except BotDetectionError:
             raise
         except Exception as e:
-            self.logger.exception(f'Cached selector handling failed for {url}')
+            self.logger.exception('Cached selector handling failed for %s', url)
             self.console.print(f'[warning]⚠ Error: {e}, skipping extraction[/warning]')
             self._track_cached_success(url, domain)
             return True
@@ -771,8 +771,8 @@ class Pipeline:
             validated = instance.model_dump()
             self.console.print('[success]✓ Contract validation applied[/success]')
             return validated
-        except Exception as e:
-            self.logger.warning(f'Contract validation failed, using raw data: {e}')
+        except (ValueError, TypeError) as e:
+            self.logger.warning('Contract validation failed, using raw data: %s', e)
             self.console.print(f'[warning]⚠ Validation skipped: {e}[/warning]')
             return extracted
 

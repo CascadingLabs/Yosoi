@@ -34,7 +34,7 @@ jobs:
       - name: Install dependencies
         run: uv sync --group tests --group dev
 
-      - name: Run Prek checks (ruff, mypy, etc)
+      - name: Run Prek checks (ruff, basedpyright, etc)
         run: uv run poe ci-check
 
       - name: Run CI Tests

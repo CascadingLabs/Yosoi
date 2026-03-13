@@ -140,7 +140,7 @@ class SimpleFetcher(HTMLFetcher):
 
                     html = gzip.decompress(response.content).decode('utf-8', errors='replace')
 
-            except Exception:
+            except (OSError, UnicodeDecodeError):
                 # Fallback: try to decode bytes manually
                 try:
                     html = response.content.decode('utf-8', errors='replace')
@@ -176,7 +176,7 @@ class SimpleFetcher(HTMLFetcher):
         except BotDetectionError:
             raise  # Re-raise bot detection errors
 
-        except Exception as e:
+        except (httpx.HTTPError, OSError, ValueError) as e:
             fetch_time = time.time() - start_time
             return FetchResult(
                 url=url, html=None, status_code=None, is_blocked=False, block_reason=str(e), fetch_time=fetch_time

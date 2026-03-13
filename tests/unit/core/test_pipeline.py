@@ -422,10 +422,13 @@ async def test_fetch_returns_result_on_success(mocker):
     fetch_result = FetchResult(url='https://x.com', html='<html/>', status_code=200)
     mock_fetcher = mocker.MagicMock()
     mock_fetcher.fetch = mocker.AsyncMock(return_value=fetch_result)
-    # Use a real retryer to test the flow properly
-    from tenacity import Retrying, stop_after_attempt
+    # Use a real async retryer to test the flow properly
+    from tenacity import AsyncRetrying, stop_after_attempt
 
-    mocker.patch('yosoi.core.pipeline.get_retryer', return_value=Retrying(stop=stop_after_attempt(1), reraise=True))
+    mocker.patch(
+        'yosoi.core.pipeline.get_async_retryer',
+        return_value=AsyncRetrying(stop=stop_after_attempt(1), reraise=True),
+    )
     result = await Pipeline._fetch(stub, 'https://x.com', mock_fetcher, max_retries=1)
     assert result is fetch_result
 
@@ -436,11 +439,11 @@ async def test_fetch_returns_none_when_all_retries_fail(mocker):
     mock_fetcher.fetch = mocker.AsyncMock(
         return_value=FetchResult(url='https://x.com', html=None, is_blocked=True, block_reason='blocked')
     )
-    from tenacity import Retrying, stop_after_attempt, wait_none
+    from tenacity import AsyncRetrying, stop_after_attempt, wait_none
 
     mocker.patch(
-        'yosoi.core.pipeline.get_retryer',
-        return_value=Retrying(stop=stop_after_attempt(1), wait=wait_none(), reraise=False),
+        'yosoi.core.pipeline.get_async_retryer',
+        return_value=AsyncRetrying(stop=stop_after_attempt(1), wait=wait_none(), reraise=False),
     )
     result = await Pipeline._fetch(stub, 'https://x.com', mock_fetcher, max_retries=1)
     assert result is None
@@ -475,11 +478,11 @@ async def test_discover_returns_selectors_on_ai_success(mocker):
     stub.discovery.discover_selectors = mocker.AsyncMock(return_value={'title': {'primary': 'h1'}})
     stub.debug.save_debug_selectors = mocker.MagicMock()
 
-    from tenacity import Retrying, stop_after_attempt, wait_none
+    from tenacity import AsyncRetrying, stop_after_attempt, wait_none
 
     mocker.patch(
-        'yosoi.core.pipeline.get_retryer',
-        return_value=Retrying(stop=stop_after_attempt(1), wait=wait_none(), reraise=False),
+        'yosoi.core.pipeline.get_async_retryer',
+        return_value=AsyncRetrying(stop=stop_after_attempt(1), wait=wait_none(), reraise=False),
     )
 
     selectors, used_llm = await Pipeline._discover(stub, 'https://x.com', '<html/>', max_retries=1)
@@ -493,11 +496,11 @@ async def test_discover_returns_none_when_all_ai_attempts_fail(mocker):
     stub.contract.field_descriptions = mocker.MagicMock(return_value={'title': 'The title'})
     stub.discovery.discover_selectors = mocker.AsyncMock(return_value=None)
 
-    from tenacity import Retrying, stop_after_attempt, wait_none
+    from tenacity import AsyncRetrying, stop_after_attempt, wait_none
 
     mocker.patch(
-        'yosoi.core.pipeline.get_retryer',
-        return_value=Retrying(stop=stop_after_attempt(1), wait=wait_none(), reraise=False),
+        'yosoi.core.pipeline.get_async_retryer',
+        return_value=AsyncRetrying(stop=stop_after_attempt(1), wait=wait_none(), reraise=False),
     )
 
     selectors, used_llm = await Pipeline._discover(stub, 'https://x.com', '<html/>', max_retries=1)
@@ -1133,11 +1136,11 @@ async def test_discover_merges_overrides_with_ai_selectors(mocker):
     stub.discovery.discover_selectors = mocker.AsyncMock(return_value={'title': {'primary': 'h1'}})
     stub.debug.save_debug_selectors = mocker.MagicMock()
 
-    from tenacity import Retrying, stop_after_attempt, wait_none
+    from tenacity import AsyncRetrying, stop_after_attempt, wait_none
 
     mocker.patch(
-        'yosoi.core.pipeline.get_retryer',
-        return_value=Retrying(stop=stop_after_attempt(1), wait=wait_none(), reraise=False),
+        'yosoi.core.pipeline.get_async_retryer',
+        return_value=AsyncRetrying(stop=stop_after_attempt(1), wait=wait_none(), reraise=False),
     )
 
     _selectors, _used_llm = await Pipeline._discover(stub, 'https://x.com', '<html/>', max_retries=1)
@@ -1166,11 +1169,11 @@ async def test_discover_ai_success_returns_true_for_used_llm(mocker):
     stub.discovery.discover_selectors = mocker.AsyncMock(return_value={'title': {'primary': 'h1'}})
     stub.debug.save_debug_selectors = mocker.MagicMock()
 
-    from tenacity import Retrying, stop_after_attempt, wait_none
+    from tenacity import AsyncRetrying, stop_after_attempt, wait_none
 
     mocker.patch(
-        'yosoi.core.pipeline.get_retryer',
-        return_value=Retrying(stop=stop_after_attempt(1), wait=wait_none(), reraise=False),
+        'yosoi.core.pipeline.get_async_retryer',
+        return_value=AsyncRetrying(stop=stop_after_attempt(1), wait=wait_none(), reraise=False),
     )
 
     _, used_llm = await Pipeline._discover(stub, 'https://x.com', '<html/>', max_retries=1)

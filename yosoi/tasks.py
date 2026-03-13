@@ -133,7 +133,7 @@ async def process_url_task(
             return {'url': url, 'success': success, 'elapsed': elapsed}
         except Exception as e:
             elapsed = time.monotonic() - start
-            logger.exception(f'Task failed for {url}')
+            logger.exception('Task failed for %s', url)
             return {'url': url, 'success': False, 'error': str(e), 'elapsed': elapsed}
 
 
@@ -209,7 +209,7 @@ async def enqueue_urls(
             parse_url = url if url.startswith(('http://', 'https://')) else f'https://{url}'
             domain = urlparse(parse_url).netloc.replace('www.', '')
             if not dedup.should_process(domain):
-                logger.info(f'Skipping duplicate domain: {domain} (url: {url})')
+                logger.info('Skipping duplicate domain: %s (url: %s)', domain, url)
                 results['skipped'].append(url)
                 continue
 
@@ -251,7 +251,7 @@ async def _wait_for_handle(handle, url: str):
     try:
         return await handle.wait_result(timeout=120)
     except Exception:
-        logger.exception(f'Failed to get result for {url}')
+        logger.exception('Failed to get result for %s', url)
         return None
 
 

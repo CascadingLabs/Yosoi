@@ -74,7 +74,7 @@ class DebugManager:
                 encoding='utf-8',
             )
             self.console.print(f'  [dim]↻ Debug HTML saved to: {filepath}[/dim]')
-        except Exception as e:
+        except OSError as e:
             self.console.print(f'[warning]Failed to save debug HTML: {e}[/warning]')
 
     def save_debug_selectors(self, url: str, selectors: dict):
@@ -97,5 +97,5 @@ class DebugManager:
             with open(filepath, 'w', encoding='utf-8') as f:
                 json.dump(debug_data, f, indent=2)
             self.console.print(f'  [dim]↻ Debug selectors saved to: {filepath}[/dim]')
-        except Exception as e:
+        except (OSError, ValueError) as e:
             self.console.print(f'[warning]Failed to save debug selectors: {e}[/warning]')

@@ -151,7 +151,7 @@ class ContentExtractor:
             text = first_element.get_text(strip=True)
             return text if text else None
 
-        except Exception as e:
+        except ValueError as e:
             self.console.print(f'  ✗ {field_name}: extraction error ({e})')
             return None
 
@@ -182,5 +182,5 @@ class ContentExtractor:
 
             return self._extract_with_selector(soup, selector, field_type)
 
-        except Exception:
+        except (httpx.HTTPError, ValueError):
             return None

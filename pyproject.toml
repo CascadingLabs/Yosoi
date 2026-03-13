@@ -47,9 +47,9 @@ Changelog = "https://github.com/CascadingLabs/Yosoi/blob/main/CHANGELOG.md"
 
 [dependency-groups]
 dev = [
+  "basedpyright>=1.28",
   "commitizen>=3.13",
   "memray>=1.19.1",
-  "mypy>=1.8",
   "playwright>=1.58",
   "poethepoet>=0.40",
   "prek>=0.2.25",
@@ -113,11 +113,13 @@ lint.select = [
   "ARG",   # flake8-unused-arguments
   "ASYNC", # flake8-async
   "B",     # flake8-bugbear
+  "BLE",   # flake8-blind-except (no bare `except Exception`)
   "C4",    # flake8-comprehensions
   "C901",  # mccabe complexity
   "D",     # pydocstyle
   "E",     # pycodestyle errors
   "F",     # pyflakes
+  "G",     # flake8-logging-format (lazy % formatting in log calls)
   "I",     # isort
   "PERF",  # performance
   "PT",    # flake8-pytest-style
@@ -143,7 +145,7 @@ lint.ignore = [
   "W293",   # blank line contains whitespace
 ]
 lint.per-file-ignores."__init__.py" = [ "F401" ]
-lint.per-file-ignores."examples/**/*.py" = [ "D" ]
+lint.per-file-ignores."examples/**/*.py" = [ "BLE", "D" ]
 lint.per-file-ignores."tests/**/*.py" = [
   "ARG001", # unused arguments in test functions
   "ARG002", # unused method arguments in tests
@@ -173,43 +175,27 @@ fail_under = 80
 source = [ "yosoi" ]
 omit = [ "yosoi/__main__.py" ]
 
-[tool.mypy]
-python_version = "3.10"
+[tool.basedpyright]
+pythonVersion = "3.10"
+typeCheckingMode = "standard"
 
-warn_unused_configs = true
-warn_return_any = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-warn_no_return = true
-warn_unreachable = true
-strict_equality = true
-check_untyped_defs = true
-no_implicit_optional = true
+# Disable the noisiest rules while you fix things incrementally
+reportAttributeAccessIssue = "warning" # or false
+reportArgumentType = "warning"
+reportOperatorIssue = "warning"
+reportCallIssue = "warning"
 
-# Progressive strictness - enable these when ready
-disallow_untyped_defs = false    # TODO: Enable for full type coverage
-disallow_any_generics = false    # TODO: Enable for stricter generics
-disallow_subclassing_any = false
-disallow_untyped_calls = false
-disallow_incomplete_defs = false
-
-show_error_codes = true
-show_column_numbers = true
-pretty = true
-
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = [
-  "scrapegraphai.*",
-  "langchain.*",
-  "langchain_google_genai.*",
-  "langchain_core.*",
-  "langchain_community.*",
-  "dspy.*",
-  "toonify.*",
+exclude = [
+  "yosoi/utils/*.py", # Fix these later
+  "mutants/**",
 ]
-ignore_missing_imports = true
+
+reportMissingImports = true
+reportMissingModuleSource = false
+
+ignore = [
+  "tests/**",
+]
 
 [tool.mutmut]
 paths_to_mutate = [ "yosoi/" ]

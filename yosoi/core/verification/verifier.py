@@ -1,7 +1,11 @@
 """Verifies that CSS selectors match elements in HTML."""
 
+import logging
+
 from bs4 import BeautifulSoup
 from rich.console import Console
+
+logger = logging.getLogger(__name__)
 
 from yosoi.models import FieldSelectors, FieldVerificationResult, SelectorFailure, VerificationResult
 
@@ -135,7 +139,7 @@ class SelectorVerifier:
             if elements:
                 return True, 'found'
             return False, 'no_elements_found'
-        except Exception as e:
+        except ValueError as e:
             return False, f'invalid_syntax: {e}'
 
     def _print_field_result(self, result: FieldVerificationResult) -> None:
@@ -174,5 +178,6 @@ class SelectorVerifier:
             soup = BeautifulSoup(response.text, 'lxml')
             element = soup.select_one(selector)
             return element is not None and bool(element.get_text(strip=True))
-        except Exception:
+        except (httpx.HTTPError, ValueError) as exc:
+            logger.warning('quick_test failed for selector %r on %r: %s', selector, url, exc)
             return False

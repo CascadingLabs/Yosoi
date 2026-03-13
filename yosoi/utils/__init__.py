@@ -4,7 +4,7 @@ from yosoi.utils.exceptions import BotDetectionError, LLMGenerationError, Select
 from yosoi.utils.files import init_yosoi
 from yosoi.utils.headers import HeaderGenerator, UserAgentRotator
 from yosoi.utils.prompts import load_prompt
-from yosoi.utils.retry import get_retryer, log_retry
+from yosoi.utils.retry import get_async_retryer, get_retryer, log_retry
 
 __all__ = [
     'BotDetectionError',
@@ -13,6 +13,7 @@ __all__ = [
     'SelectorError',
     'UserAgentRotator',
     'YosoiError',
+    'get_async_retryer',
     'get_retryer',
     'init_yosoi',
     'load_prompt',

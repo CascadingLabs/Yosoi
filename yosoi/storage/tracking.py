@@ -52,7 +52,7 @@ class LLMTracker:
             with open(self.tracking_file) as f:
                 data: dict[str, Any] = json.load(f)
                 return data
-        except Exception:
+        except (OSError, json.JSONDecodeError):
             return {}
 
     def _save_data(self, data: dict):
@@ -83,7 +83,7 @@ class LLMTracker:
             if domain.startswith('www.'):
                 domain = domain[4:]
             return domain
-        except Exception:
+        except ValueError:
             return 'unknown'
 
     def record_url(self, url: str, used_llm: bool = False) -> dict[str, int]:
