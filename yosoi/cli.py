@@ -109,6 +109,12 @@ class SchemaParamType(click.ParamType):
 def setup_llm_config(model_arg: str | None = None):
     """Set up LLM configuration from -m/--model flag or environment variables.
 
+    When no ``--model`` flag is given, walks all known providers and picks the
+    first one whose API key is present in the environment.  The actual key
+    resolution (and cross-provider fallback) is handled by
+    ``YosoiConfig.validate_api_key_env``, so the LLMConfig returned here may
+    have an empty ``api_key``.
+
     Args:
         model_arg: Model string in ``provider/model-name`` format.
 
@@ -119,6 +125,7 @@ def setup_llm_config(model_arg: str | None = None):
         click.ClickException: If the provider format is invalid.
 
     """
+    from yosoi.config import find_available_provider
     from yosoi.core.discovery.config import LLMConfig
 
     if model_arg:
@@ -127,15 +134,17 @@ def setup_llm_config(model_arg: str | None = None):
                 '--model must be in provider/model-name format (e.g. groq/llama-3.3-70b-versatile)'
             )
         provider, model_name = model_arg.split('/', 1)
+        # api_key left empty — YosoiConfig validator will resolve it (with fallback)
         return LLMConfig(provider=provider, model_name=model_name, api_key='')
 
-    # Legacy auto-detect fallback (defaults)
-    if os.getenv('GROQ_KEY'):
-        return LLMConfig(provider='groq', model_name='llama-3.3-70b-versatile', api_key='')
+    # Auto-detect: pick first provider with an available key
+    found = find_available_provider()
+    if found:
+        provider, model_name, _ = found
+        # api_key left empty — validator will fill it in
+        return LLMConfig(provider=provider, model_name=model_name, api_key='')
 
-    if os.getenv('GEMINI_KEY'):
-        return LLMConfig(provider='gemini', model_name='gemini-2.0-flash', api_key='')
-
+    # Nothing found — return groq as placeholder; validator will give a clear error
     return LLMConfig(provider='groq', model_name='llama-3.3-70b-versatile', api_key='')
 
 
@@ -288,6 +297,44 @@ def load_urls_from_file(filepath: str) -> list[str]:
 
     with open(filepath) as f:
         return [line.strip() for line in f if line.strip() and not line.startswith('#')]
+
+
+def build_yosoi_config(model_arg: str | None, debug: bool):
+    """Build a YosoiConfig from CLI args, with provider fallback and user warnings.
+
+    Args:
+        model_arg: Model string in ``provider/model-name`` format, or None.
+        debug: Whether to enable debug HTML saving.
+
+    Returns:
+        Validated YosoiConfig.
+
+    Raises:
+        click.ClickException: On configuration errors.
+    """
+    from yosoi.config import DebugConfig, TelemetryConfig, YosoiConfig
+
+    llm_config = setup_llm_config(model_arg)
+    original_provider = llm_config.provider
+
+    try:
+        yosoi_config = YosoiConfig(
+            llm=llm_config,
+            debug=DebugConfig(save_html=debug),
+            telemetry=TelemetryConfig(logfire_token=os.getenv('LOGFIRE_TOKEN')),
+        )
+    except Exception as e:
+        raise click.ClickException(f'Configuration Error: {e}') from e
+
+    if yosoi_config.llm.provider != original_provider:
+        console_err.print(
+            f'[yellow]Warning: {original_provider!r} has no API key — '
+            f'fell back to {yosoi_config.llm.provider!r}[/yellow]'
+        )
+    console.print(
+        f'[bold]Using[/bold] [green]{yosoi_config.llm.provider}[/green] / [cyan]{yosoi_config.llm.model_name}[/cyan]'
+    )
+    return yosoi_config
 
 
 def print_fetcher_info(fetcher_type: str):
@@ -495,27 +542,13 @@ def main(
     yosoi -s
     """
     from yosoi import Pipeline
-    from yosoi.config import DebugConfig, TelemetryConfig, YosoiConfig
     from yosoi.utils.files import init_yosoi, is_initialized
     from yosoi.utils.logging import setup_local_logging
 
     if not is_initialized():
         init_yosoi()
 
-    llm_config = setup_llm_config(model)
-
-    try:
-        yosoi_config = YosoiConfig(
-            llm=llm_config,
-            debug=DebugConfig(save_html=debug),
-            telemetry=TelemetryConfig(logfire_token=os.getenv('LOGFIRE_TOKEN')),
-        )
-    except Exception as e:
-        raise click.ClickException(f'Configuration Error: {e}') from e
-
-    console.print(
-        f'[bold]Using[/bold] [green]{yosoi_config.llm.provider}[/green] / [cyan]{yosoi_config.llm.model_name}[/cyan]'
-    )
+    yosoi_config = build_yosoi_config(model, debug)
 
     log_file = setup_local_logging(level=log_level)
     output_format = 'markdown' if output in ['markdown', 'md'] else 'json'
