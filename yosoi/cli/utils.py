@@ -3,6 +3,7 @@
 import ast
 import difflib
 import importlib.util
+import inspect
 import json
 import os
 import pathlib
@@ -93,13 +94,15 @@ def _suggest_file(file_path: str, class_name: str) -> list[str]:
 
 
 def _find_contract_classes(module: object) -> list[str]:
-    """Return names of all Contract subclasses in a module."""
+    """Return names of concrete Contract subclasses in a module."""
     return [
         name
         for name in dir(module)
         if not name.startswith('_')
         and isinstance(getattr(module, name), type)
         and issubclass(getattr(module, name), Contract)
+        and getattr(module, name) is not Contract
+        and not inspect.isabstract(getattr(module, name))
     ]
 
 
@@ -291,7 +294,7 @@ def load_urls_from_file(filepath: str) -> list[str]:
         return _load_urls_from_json(data)
 
     with open(filepath) as f:
-        return [line.strip() for line in f if line.strip() and not line.startswith('#')]
+        return [s for line in f if (s := line.strip()) and not s.startswith('#')]
 
 
 def _load_urls_from_json(data: object) -> list[str]:
