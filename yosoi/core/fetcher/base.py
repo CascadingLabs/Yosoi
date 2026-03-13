@@ -2,6 +2,7 @@
 
 import re
 from abc import ABC, abstractmethod
+from typing import ClassVar
 
 from yosoi.models.results import ContentMetadata, FetchResult
 
@@ -150,8 +151,22 @@ class HTMLFetcher(ABC):
     Implement this interface to create custom HTML fetchers.
     """
 
+    async def close(self) -> None:  # noqa: B027
+        """Release any held resources (e.g. HTTP client connections).
+
+        Override in subclasses that hold persistent connections.
+        """
+
+    async def __aenter__(self) -> 'HTMLFetcher':
+        """Enter async context manager."""
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+        """Exit async context manager and close resources."""
+        await self.close()
+
     @abstractmethod
-    def fetch(self, url: str) -> FetchResult:
+    async def fetch(self, url: str) -> FetchResult:
         """Fetch HTML from a URL.
 
         Args:
@@ -166,12 +181,55 @@ class HTMLFetcher(ABC):
         """
         pass
 
-    def _check_for_bot_detection(self, html: str, status_code: int) -> tuple[bool, list[str]]:
+    # Body patterns checked on every response
+    _BOT_BODY_PATTERNS: ClassVar[dict[str, str]] = {
+        'challenge-platform': 'Cloudflare challenge platform',
+        'cf-browser-verification': 'Cloudflare browser verification',
+        '__cf_chl_jschl_tk__': 'Cloudflare JS challenge token',
+        'cf-captcha-container': 'Cloudflare CAPTCHA container',
+        'just a moment...': 'Cloudflare "Just a moment" page',
+        'checking your browser': 'Cloudflare browser check',
+        'attention required! | cloudflare': 'Cloudflare attention page',
+        'g-recaptcha': 'Google reCAPTCHA',
+        'h-captcha': 'hCaptcha',
+        'cf-turnstile': 'Cloudflare Turnstile',
+        'access denied</title>': 'Access denied page',
+        'you have been blocked': 'Explicit block message',
+    }
+
+    # Additional body patterns only checked on >=400 responses
+    _BOT_BODY_PATTERNS_4XX: ClassVar[dict[str, str]] = {
+        'captcha': 'CAPTCHA required',
+        'rate limit': 'Rate limited',
+        'too many requests': 'Too many requests',
+        'forbidden': 'Forbidden',
+    }
+
+    def _enrich_with_header_context(self, found: list[str], headers_lower: dict[str, str]) -> list[str]:
+        """Append Cloudflare/rate-limit header details to an indicator list."""
+        if retry_after := headers_lower.get('retry-after'):
+            found.append(f'Retry-After: {retry_after}')
+        if 'cloudflare' in headers_lower.get('server', '').lower():
+            found.append('Cloudflare server')
+        if cf_ray := headers_lower.get('cf-ray'):
+            found.append(f'CF-Ray: {cf_ray}')
+        return found
+
+    def _scan_body_patterns(self, html_check: str, patterns: dict[str, str], found: list[str]) -> None:
+        """Append matching pattern messages to *found* in-place."""
+        for indicator, message in patterns.items():
+            if indicator in html_check and message not in found:
+                found.append(message)
+
+    def _check_for_bot_detection(
+        self, html: str, status_code: int, headers: dict[str, str] | None = None
+    ) -> tuple[bool, list[str]]:
         """Check if HTML indicates bot detection.
 
         Args:
             html: The HTML of the URL
             status_code: The status code of the URL returned
+            headers: Optional response headers for additional signal detection
 
         Returns:
             Tuple of (is_blocked, indicators) where is_blocked is True if bot
@@ -182,50 +240,28 @@ class HTMLFetcher(ABC):
         if not html or len(html) < 100:
             return True, ['HTML too short']
 
-        # Block immediately on known bad status codes
+        headers_lower: dict[str, str] = {k.lower(): v for k, v in (headers or {}).items()}
+
+        # Hard-block status codes — enrich with header context and return immediately
         if status_code in [403, 429, 503]:
-            return True, [f'HTTP {status_code}']
+            return True, self._enrich_with_header_context([f'HTTP {status_code}'], headers_lower)
 
-        # For 200 OK responses, be conservative (avoid false positives)
+        # cf-mitigated is a definitive Cloudflare block signal on any status code
+        if 'cf-mitigated' in headers_lower:
+            return True, self._enrich_with_header_context(['Cloudflare mitigation active'], headers_lower)
+
+        found: list[str] = []
+        if 'retry-after' in headers_lower and status_code >= 400:
+            found.append('Rate limited (Retry-After header)')
+
+        html_check = html[:3000].lower()
+        self._scan_body_patterns(html_check, self._BOT_BODY_PATTERNS, found)
+
         if status_code == 200:
-            # Only check first 2000 chars where block messages appear
-            html_check = html[:2000].lower()
-
-            # Very specific patterns that indicate actual blocking
-            strict_indicators = {
-                'challenge-form': 'Cloudflare challenge',
-                'cf-captcha': 'Cloudflare CAPTCHA',
-                'access denied</title>': 'Access denied page',
-                'rate limit exceeded': 'Rate limit',
-                'please verify you are human': 'Human verification',
-                'enable javascript to continue': 'JavaScript block',
-            }
-
-            found = []
-            for indicator, message in strict_indicators.items():
-                if indicator in html_check:
-                    found.append(message)
-
             return bool(found), found
 
-        # For other bad status codes (4xx, 5xx), be more aggressive
         if status_code >= 400:
-            html_check = html[:2000].lower()
-            # TODO find more robust way to detect blockers
-            block_indicators = {
-                'captcha': 'CAPTCHA required',
-                'access denied': 'Access denied',
-                'rate limit': 'Rate limited',
-                'too many requests': 'Too many requests',
-                'forbidden': 'Forbidden',
-            }
-
-            found = []
-            for indicator, message in block_indicators.items():
-                if indicator in html_check:
-                    found.append(message)
-
+            self._scan_body_patterns(html_check, self._BOT_BODY_PATTERNS_4XX, found)
             return bool(found), found
 
-        # No blocking detected
         return False, []

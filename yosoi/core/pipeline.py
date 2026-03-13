@@ -4,6 +4,7 @@ Centralized retry logic for bot detection and AI failures.
 """
 
 import logging
+import time
 from urllib.parse import urlparse
 
 import httpx
@@ -14,8 +15,8 @@ from rich.table import Table
 from rich.theme import Theme
 from tenacity import RetryError
 
-from yosoi.config import YosoiConfig
 from yosoi.core.cleaning import HTMLCleaner
+from yosoi.core.configs import YosoiConfig
 from yosoi.core.discovery import LLMConfig, SelectorDiscovery
 from yosoi.core.extraction import ContentExtractor
 from yosoi.core.fetcher import HTMLFetcher, create_fetcher
@@ -24,7 +25,7 @@ from yosoi.models import FetchResult
 from yosoi.models.contract import Contract
 from yosoi.storage import DebugManager, LLMTracker, SelectorStorage
 from yosoi.utils.exceptions import BotDetectionError
-from yosoi.utils.retry import get_retryer
+from yosoi.utils.retry import get_async_retryer
 
 
 class Pipeline:
@@ -55,6 +56,7 @@ class Pipeline:
         debug_mode: bool = False,
         output_format: str = 'json',
         force: bool = False,
+        quiet: bool = False,
     ):
         """Initialize the pipeline with LLM configuration.
 
@@ -67,6 +69,8 @@ class Pipeline:
             contract: Contract subclass defining the fields to scrape.
             force: Force re-discovery even if selectors are cached. Overridden by
                    YosoiConfig.force when YosoiConfig is passed. Defaults to False.
+            quiet: Suppress console output. Used in concurrent mode where a
+                   progress display replaces per-task output. Defaults to False.
 
         """
         if isinstance(llm_config, YosoiConfig):
@@ -90,7 +94,7 @@ class Pipeline:
             }
         )
         self.contract = contract
-        self.console = Console(theme=self.custom_theme)
+        self.console = Console(theme=self.custom_theme, quiet=quiet)
         self.cleaner = HTMLCleaner(console=self.console)
         self.discovery = SelectorDiscovery(llm_config=llm_config, console=self.console, contract=self.contract)
         self.verifier = SelectorVerifier(console=self.console)
@@ -112,11 +116,9 @@ class Pipeline:
             if not is_initialized():
                 init_yosoi()
             log_file = setup_local_logging()
-            from rich import print as rprint
+            self.console.print(f'ℹ Log file: [link=file://{log_file}]file://{log_file}[/link]')
 
-            rprint(f'ℹ Log file: [link=file://{log_file}]file://{log_file}[/link]')
-
-    def process_url(
+    async def process_url(
         self,
         url: str,
         force: bool | None = None,
@@ -132,7 +134,7 @@ class Pipeline:
             url: URL to process
             force: Force re-discovery even if selectors exist. Defaults to False.
             skip_verification: Skip verification step. Defaults to False.
-            fetcher_type: Type of fetcher ('simple', 'playwright', 'smart'). Defaults to 'simple'.
+            fetcher_type: Type of fetcher ('simple'). Defaults to 'simple'.
             max_fetch_retries: Maximum fetch retry attempts. Defaults to 2.
             max_discovery_retries: Maximum AI discovery retry attempts. Defaults to 3.
             output_format: Format for extracted content ('json' or 'markdown').
@@ -146,58 +148,61 @@ class Pipeline:
         format_to_use = output_format or self.output_format
         force_flag = self.force if force is None else force
 
-        url = self.normalize_url(url)
+        url = await self.normalize_url(url)
 
         with logfire.span('process_url', url=url, force=force_flag, fetcher_type=fetcher_type):
-            self.logger.info(f'Processing URL: {url} (force={force_flag}, fetcher={fetcher_type})')
+            self.logger.info('Processing URL: %s (force=%s, fetcher=%s)', url, force_flag, fetcher_type)
             domain = self._extract_domain(url)
             fetcher = self._create_fetcher(fetcher_type)
             if not fetcher:
                 return False
 
-            # Try using cached selectors if available
-            if not force_flag and self._cached_selectors(url, domain, fetcher, skip_verification, format_to_use):
+            async with fetcher:
+                # Try using cached selectors if available
+                if not force_flag and await self._cached_selectors(
+                    url, domain, fetcher, skip_verification, format_to_use
+                ):
+                    return True
+
+                # Fetch HTML with retry logic for bot detection
+                result = await self._fetch(url, fetcher, max_retries=max_fetch_retries)
+                if not result:
+                    return False
+
+                # At this point, result.html should never be None (checked in _fetch)
+                assert result.html is not None, 'result.html should not be None after successful fetch'
+
+                # Clean HTML (Step 1.5)
+                cleaned_html = self._clean(url, result)
+                if not cleaned_html:
+                    return False
+
+                # Discover selectors with retry logic for AI failures (Step 2)
+                # Returns: (selectors, used_llm)
+                selectors, used_llm = await self._discover(url, cleaned_html, max_retries=max_discovery_retries)
+                if not selectors:
+                    return False
+
+                # Verify selectors using cleaned HTML (Step 3)
+                verified = self._verify(url, cleaned_html, selectors, skip_verification)
+                if not verified:
+                    return False
+
+                # Extract content using verified selectors and cleaned HTML (Step 4)
+                extracted = self._extract(url, cleaned_html, verified)
+                # Note: extraction can fail but we still save the selectors
+                if not extracted:
+                    self.console.print('[warning]⚠ Extraction failed, but selectors are valid[/warning]')
+
+                # Validate and transform extracted data using Contract (Step 4.5)
+                if extracted:
+                    extracted = self._validate_with_contract(extracted, url)
+
+                # Save and track (save selectors + content if extracted)
+                self._save_and_track(url, domain, verified, extracted, used_llm, format_to_use)
                 return True
 
-            # Fetch HTML with retry logic for bot detection
-            result = self._fetch(url, fetcher, max_retries=max_fetch_retries)
-            if not result:
-                return False
-
-            # At this point, result.html should never be None (checked in _fetch)
-            assert result.html is not None, 'result.html should not be None after successful fetch'
-
-            # Clean HTML (Step 1.5)
-            cleaned_html = self._clean(url, result)
-            if not cleaned_html:
-                return False
-
-            # Discover selectors with retry logic for AI failures (Step 2)
-            # Returns: (selectors, used_llm)
-            selectors, used_llm = self._discover(url, cleaned_html, max_retries=max_discovery_retries)
-            if not selectors:
-                return False
-
-            # Verify selectors using cleaned HTML (Step 3)
-            verified = self._verify(url, cleaned_html, selectors, skip_verification)
-            if not verified:
-                return False
-
-            # Extract content using verified selectors and cleaned HTML (Step 4)
-            extracted = self._extract(url, cleaned_html, verified)
-            # Note: extraction can fail but we still save the selectors
-            if not extracted:
-                self.console.print('[warning]⚠ Extraction failed, but selectors are valid[/warning]')
-
-            # Validate and transform extracted data using Contract (Step 4.5)
-            if extracted:
-                extracted = self._validate_with_contract(extracted, url)
-
-            # Save and track (save selectors + content if extracted)
-            self._save_and_track(url, domain, verified, extracted, used_llm, format_to_use)
-            return True
-
-    def process_urls(
+    async def process_urls(
         self,
         urls: list[str],
         force: bool | None = None,
@@ -213,7 +218,7 @@ class Pipeline:
             urls: List of URLs to process.
             force: Force re-discovery even if selectors exist. Defaults to False.
             skip_verification: Skip verification step. Defaults to False.
-            fetcher_type: Type of fetcher ('simple', 'playwright', 'smart'). Defaults to 'simple'.
+            fetcher_type: Type of fetcher ('simple'). Defaults to 'simple'.
             max_fetch_retries: Maximum fetch retry attempts. Defaults to 2.
             max_discovery_retries: Maximum AI discovery retry attempts. Defaults to 3.
             output_format: Format for extracted content ('json' or 'markdown').
@@ -231,13 +236,15 @@ class Pipeline:
 
         results: dict[str, list[str]] = {'successful': [], 'failed': []}
 
+        run_start = time.monotonic()
         with logfire.span('process_urls', total_urls=len(urls)):
             for idx, url in enumerate(urls, 1):
                 self.console.print(f'\n[bold blue]Processing URL {idx}/{len(urls)}[/bold blue]')
-                self.logger.info(f'--- Processing URL {idx}/{len(urls)}: {url} ---')
+                self.logger.info('--- Processing URL %d/%d: %s ---', idx, len(urls), url)
 
+                url_start = time.monotonic()
                 try:
-                    success = self.process_url(
+                    success = await self.process_url(
                         url,
                         force_flag,
                         max_fetch_retries=max_fetch_retries,
@@ -249,11 +256,20 @@ class Pipeline:
                     results['successful' if success else 'failed'].append(url)
                 except Exception as e:
                     logfire.error('Error processing URL', url=url, error=str(e))
-                    self.logger.exception(f'Critical error processing {url}')
+                    self.logger.exception('Critical error processing %s', url)
                     self.console.print(f'[danger]Error processing {url}: {e}[/danger]')
                     results['failed'].append(url)
 
+                url_elapsed = time.monotonic() - url_start
+                self.console.print(f'[dim]  ⏱ {url_elapsed:.1f}s elapsed[/dim]')
                 self.console.print()
+
+            total_elapsed = time.monotonic() - run_start
+            self.console.print(
+                f'[bold]Done:[/bold] {len(results["successful"])} succeeded, '
+                f'{len(results["failed"])} failed '
+                f'[dim]({total_elapsed:.1f}s total)[/dim]'
+            )
 
             logfire.info(
                 'Processing complete',
@@ -268,7 +284,7 @@ class Pipeline:
     # Private helper methods
     # ============================================================================
 
-    def normalize_url(self, url: str) -> str:
+    async def normalize_url(self, url: str) -> str:
         """Add protocol to URL, preferring https.
 
         Args:
@@ -282,7 +298,8 @@ class Pipeline:
             # Try HTTPS first
             try:
                 test_url = 'https://' + url
-                httpx.head(test_url, timeout=3, follow_redirects=True)
+                async with httpx.AsyncClient() as client:
+                    await client.head(test_url, timeout=3, follow_redirects=True)
                 return test_url
             except httpx.HTTPError:
                 # Fall back to HTTP
@@ -317,7 +334,7 @@ class Pipeline:
             self.console.print(f'[danger]Invalid fetcher type: {fetcher_type}[/danger]')
             return None
 
-    def _fetch(self, url: str, fetcher: HTMLFetcher, max_retries: int = 2) -> FetchResult | None:
+    async def _fetch(self, url: str, fetcher: HTMLFetcher, max_retries: int = 2) -> FetchResult | None:
         """Fetch HTML with automatic retry logic for bot detection.
 
         Attempts to fetch HTML with automatic retries when bot detection is
@@ -347,18 +364,20 @@ class Pipeline:
                 logfire.warn('Retrying fetch', url=url, attempt=attempt)
 
         try:
-            retryer = get_retryer(
+            retryer = get_async_retryer(
                 max_attempts=max_retries,
                 wait_min=1,
                 wait_max=10,
                 exceptions=(BotDetectionError, Exception),
                 log_callback=before_sleep_log,
+                reraise=False,
             )
 
-            for attempt in retryer:
+            async for attempt in retryer:
                 with attempt:
+                    result = None
                     try:
-                        result = fetcher.fetch(url)
+                        result = await fetcher.fetch(url)
 
                         if not result.success:
                             self.console.print(
@@ -380,14 +399,14 @@ class Pipeline:
                         self._handle_bot_detection(e, attempt.retry_state.attempt_number, max_retries)
                         raise
 
-                    except Exception as e:
+                    except (httpx.HTTPError, OSError, ValueError, RuntimeError) as e:
                         # Don't re-log if we just raised it ourselves above
                         if str(e) not in [
                             'No HTML content received',
                             f'Fetch failed: {getattr(result, "block_reason", "Unknown")}',
                         ]:
                             self.console.print(f'[danger]Unexpected error: {e}[/danger]')
-                            self.logger.exception(f'Fetch error for {url}')
+                            self.logger.exception('Fetch error for %s', url)
                             logfire.error(
                                 'Fetch error', url=url, error=str(e), attempt=attempt.retry_state.attempt_number
                             )
@@ -396,7 +415,7 @@ class Pipeline:
         except RetryError:
             self.console.print(f'[danger]All {max_retries} attempts failed[/danger]')
             return None
-        except Exception:
+        except (httpx.HTTPError, OSError, ValueError, RuntimeError):
             return None
 
         return None
@@ -427,7 +446,7 @@ class Pipeline:
         self.console.print(f'[success]Cleaned HTML ready ({len(cleaned_html):,} chars)[/success]')
         return cleaned_html
 
-    def _discover(self, url: str, cleaned_html: str, max_retries: int = 3) -> tuple[dict | None, bool]:
+    async def _discover(self, url: str, cleaned_html: str, max_retries: int = 3) -> tuple[dict | None, bool]:
         """Discover CSS selectors with AI, using fallback heuristics if needed.
 
         Attempts AI-powered selector discovery with automatic retries. Falls
@@ -467,22 +486,23 @@ class Pipeline:
 
         # Use AI discovery with retries
         try:
-            retryer = get_retryer(
+            retryer = get_async_retryer(
                 max_attempts=max_retries,
                 wait_min=1,
                 wait_max=10,
                 exceptions=(Exception,),
                 log_callback=before_ai_sleep_log,
+                reraise=False,
             )
 
-            for attempt in retryer:
+            async for attempt in retryer:
                 with attempt:
                     self.console.print(
                         f'[step]Step 2: AI analyzing HTML (attempt {attempt.retry_state.attempt_number}/{max_retries})...[/step]'
                     )
 
                     # discover_selectors takes cleaned HTML and returns just selectors
-                    selectors = self.discovery.discover_selectors(cleaned_html, url)
+                    selectors = await self.discovery.discover_selectors(cleaned_html, url)
 
                     if selectors:
                         # Merge manual overrides (overrides take precedence)
@@ -500,12 +520,12 @@ class Pipeline:
                         return selectors, True
 
                     self.console.print('[danger]AI discovery failed[/danger]')
-                    self.logger.warning(f'AI discovery failed for {url}')
+                    self.logger.warning('AI discovery failed for %s', url)
                     raise Exception('AI discovery failed')
 
         except RetryError:
             pass
-        except Exception:
+        except (httpx.HTTPError, OSError, ValueError, RuntimeError):
             pass
 
         # All attempts failed
@@ -597,7 +617,7 @@ class Pipeline:
         self.console.print(f'[success]Extracted content from {len(extracted)} fields successfully[/success]')
         return extracted
 
-    def _cached_selectors(
+    async def _cached_selectors(
         self, url: str, domain: str, fetcher: HTMLFetcher, skip_verification: bool, output_format: str
     ) -> bool:
         """Try to use cached selectors if available.
@@ -624,9 +644,11 @@ class Pipeline:
         self.console.print(f'[success]✓ Found cached selectors for {domain}[/success]')
         logfire.info('Using cached selectors', domain=domain, url=url)
 
-        return self._use_cached_selectors(url, domain, fetcher, existing_selectors, output_format, skip_verification)
+        return await self._use_cached_selectors(
+            url, domain, fetcher, existing_selectors, output_format, skip_verification
+        )
 
-    def _use_cached_selectors(
+    async def _use_cached_selectors(
         self,
         url: str,
         domain: str,
@@ -661,7 +683,7 @@ class Pipeline:
         self.console.print(f'[step]{step}[/step]')
 
         try:
-            result = fetcher.fetch(url)
+            result = await fetcher.fetch(url)
 
             if not result.success or result.html is None:
                 self.console.print('[warning]⚠ Could not fetch HTML, skipping extraction[/warning]')
@@ -703,7 +725,7 @@ class Pipeline:
         except BotDetectionError:
             raise
         except Exception as e:
-            self.logger.exception(f'Cached selector handling failed for {url}')
+            self.logger.exception('Cached selector handling failed for %s', url)
             self.console.print(f'[warning]⚠ Error: {e}, skipping extraction[/warning]')
             self._track_cached_success(url, domain)
             return True
@@ -733,9 +755,26 @@ class Pipeline:
         self.console.print(f'[danger]Status Code: {error.status_code}[/danger]')
         self.console.print(f'[danger]Indicators: {", ".join(error.indicators)}[/danger]')
 
+        self.logger.warning(
+            'Bot detection (attempt %d/%d) for %s (status=%d): %s',
+            attempt,
+            max_retries,
+            error.url,
+            error.status_code,
+            ', '.join(error.indicators),
+        )
+        logfire.warn(
+            'Bot detection triggered',
+            url=error.url,
+            status_code=error.status_code,
+            indicators=error.indicators,
+            attempt=attempt,
+            max_retries=max_retries,
+        )
+
         if attempt >= max_retries:
             self.console.print('[danger]ABORTING - All fetch attempts exhausted[/danger]')
-            self.console.print('[info]Try: --fetcher smart (or) --fetcher playwright[/info]')
+            self.console.print('[info]All fetch attempts exhausted for this URL[/info]')
 
     def _validate_with_contract(self, extracted: dict, url: str = '') -> dict:
         """Instantiate Contract with extracted data to run validators and type coercion.
@@ -753,8 +792,8 @@ class Pipeline:
             validated = instance.model_dump()
             self.console.print('[success]✓ Contract validation applied[/success]')
             return validated
-        except Exception as e:
-            self.logger.warning(f'Contract validation failed, using raw data: {e}')
+        except (ValueError, TypeError) as e:
+            self.logger.warning('Contract validation failed, using raw data: %s', e)
             self.console.print(f'[warning]⚠ Validation skipped: {e}[/warning]')
             return extracted
 

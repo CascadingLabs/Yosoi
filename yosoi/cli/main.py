@@ -1,0 +1,164 @@
+"""Main CLI command definition."""
+
+import asyncio
+import os
+
+import rich_click as click
+
+from yosoi.cli.args import SchemaParamType
+from yosoi.cli.progress import run_concurrent
+from yosoi.cli.setup import build_yosoi_config, print_fetcher_info
+from yosoi.cli.utils import console, load_urls_from_file
+from yosoi.models.contract import Contract
+from yosoi.models.defaults import NewsArticle
+
+
+@click.command()
+@click.option(
+    '-m', '--model', default=None, metavar='PROVIDER/MODEL', help='LLM model (e.g. groq/llama-3.3-70b-versatile)'
+)
+@click.option('-u', '--url', default=None, help='Single URL to process')
+@click.option('-f', '--file', 'file_path', default=None, help='File containing URLs (one per line, or JSON)')
+@click.option('-l', '--limit', type=int, default=None, help='Limit number of URLs to process from file')
+@click.option('-F', '--force', is_flag=True, help='Force re-discovery even if selectors exist')
+@click.option('-s', '--summary', is_flag=True, help='Show summary of saved selectors')
+@click.option('-d', '--debug', is_flag=True, help='Enable debug mode (saves extracted HTML to debug/)')
+@click.option('-S', '--skip-verification', is_flag=True, help='Skip verification for faster processing')
+@click.option(
+    '-o',
+    '--output',
+    type=click.Choice(['json', 'markdown', 'md'], case_sensitive=False),
+    default='json',
+    help='Output format for extracted content',
+)
+@click.option(
+    '-t',
+    '--fetcher',
+    type=click.Choice(['simple'], case_sensitive=False),
+    default='simple',
+    help='HTML fetcher to use',
+)
+@click.option(
+    '-L',
+    '--log-level',
+    type=click.Choice(['DEBUG', 'INFO', 'WARNING', 'ERROR', 'ALL'], case_sensitive=False),
+    default=os.getenv('YOSOI_LOG_LEVEL', 'DEBUG'),
+    help='Logging level for the local log file',
+)
+@click.option(
+    '-C', '--contract', type=SchemaParamType(), default=None, help='Contract schema (built-in name or path:Class)'
+)
+@click.option(
+    '-w',
+    '--workers',
+    type=int,
+    default=1,
+    metavar='N',
+    help='Number of concurrent workers for batch processing (default: 1, sequential)',
+)
+def main(
+    model: str | None,
+    url: str | None,
+    file_path: str | None,
+    limit: int | None,
+    force: bool,
+    summary: bool,
+    debug: bool,
+    skip_verification: bool,
+    output: str,
+    fetcher: str,
+    log_level: str,
+    contract: type[Contract] | None,
+    workers: int,
+):
+    """Discover selectors from web pages using AI.
+
+    [bold]Examples:[/bold]
+
+    yosoi -u https://example.com
+
+    yosoi -m groq/llama-3.3-70b-versatile -u https://example.com
+
+    yosoi -m gemini/gemini-2.0-flash -f urls.txt -l 10
+
+    yosoi -C Product -u https://example.com
+
+    yosoi -u https://example.com -F -d
+
+    yosoi -w 3 -f urls.txt
+
+    yosoi -s
+    """
+    from yosoi import Pipeline
+    from yosoi.utils.files import init_yosoi, is_initialized
+    from yosoi.utils.logging import setup_local_logging
+
+    if not is_initialized():
+        init_yosoi()
+
+    yosoi_config = build_yosoi_config(model, debug)
+
+    log_file = setup_local_logging(level=log_level)
+    output_format = 'markdown' if output in ['markdown', 'md'] else 'json'
+    resolved_contract = contract if contract else NewsArticle
+
+    console.print(f'[cyan]ℹ Log file:[/cyan] [link=file://{log_file}]{log_file}[/link]')
+
+    if summary:
+        pipeline = Pipeline(yosoi_config, contract=resolved_contract, output_format=output_format)
+        pipeline.show_summary()
+        return
+
+    urls: list[str] = []
+
+    if url:
+        urls.append(url)
+
+    if file_path:
+        urls.extend(load_urls_from_file(file_path))
+
+    if not urls:
+        raise click.UsageError('No URLs provided. Use --url <url> or --file <file>')
+
+    if limit:
+        urls = urls[:limit]
+        console.print(f'[cyan]ℹ Limiting to first {limit} URLs[/cyan]')
+
+    if debug:
+        console.print('[cyan]ℹ Debug mode enabled[/cyan] [dim]- extracted HTML will be saved to .yosoi/debug/[/dim]')
+
+    console.print(f'[cyan]ℹ Output format:[/cyan] [bold]{output_format}[/bold]')
+
+    print_fetcher_info(fetcher)
+
+    effective_workers = min(workers, len(urls))
+
+    if workers > 1 and len(urls) == 1:
+        console.print(f'[cyan]ℹ --workers {workers} has no effect with a single URL, running sequentially[/cyan]')
+    elif workers > len(urls):
+        console.print(f'[cyan]ℹ --workers {workers} capped to {len(urls)} (one per URL)[/cyan]')
+
+    if effective_workers > 1:
+        console.print(f'[cyan]ℹ Using {effective_workers} concurrent workers via taskiq[/cyan]')
+        asyncio.run(
+            run_concurrent(
+                yosoi_config,
+                resolved_contract,
+                urls,
+                output_format=output_format,
+                force=force,
+                skip_verification=skip_verification,
+                fetcher_type=fetcher,
+                max_workers=effective_workers,
+            )
+        )
+    else:
+        pipeline = Pipeline(yosoi_config, contract=resolved_contract, output_format=output_format)
+        asyncio.run(
+            pipeline.process_urls(
+                urls,
+                force=force,
+                skip_verification=skip_verification,
+                fetcher_type=fetcher,
+            )
+        )

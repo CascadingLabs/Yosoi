@@ -44,18 +44,15 @@ repos:
         exclude: ^old_versions/
         stages: [pre-commit, manual]
 
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.19.1
+  - repo: local
     hooks:
       - id: mypy
-        stages: [manual] # Heavy lifting moved to CI
-        additional_dependencies:
-          - types-requests
-          - types-beautifulsoup4
-          - pytest
-          - pydantic
-        args: [--config-file=pyproject.toml]
-        files: ^(yosoi|tests)/.*\.py$
+        name: mypy
+        entry: uv run mypy yosoi
+        language: system
+        types: [python]
+        pass_filenames: false
+        stages: [manual]
 
   - repo: https://github.com/astral-sh/uv-pre-commit
     rev: 0.10.0

@@ -67,7 +67,7 @@ class SelectorDiscovery:
             raise ValueError('Either provide llm_config or agent parameter')
 
     @logfire.instrument('discover_selectors', extract_args=False)
-    def discover_selectors(self, html: str, url: str | None = None) -> dict[str, Any] | None:
+    async def discover_selectors(self, html: str, url: str | None = None) -> dict[str, Any] | None:
         """Discover CSS selectors from cleaned HTML using AI.
 
         Args:
@@ -82,7 +82,7 @@ class SelectorDiscovery:
         logfire.info('Starting discovery', url=url_context)
 
         try:
-            selectors_obj = self._get_selectors_from_ai(url_context, html)
+            selectors_obj = await self._get_selectors_from_ai(url_context, html)
 
             if selectors_obj:
                 selectors: dict[str, Any] = selectors_obj.model_dump(exclude_none=True)
@@ -99,7 +99,7 @@ class SelectorDiscovery:
         return None
 
     @logfire.instrument('llm_discovery_request')
-    def _get_selectors_from_ai(self, url: str, html: str) -> BaseModel | None:
+    async def _get_selectors_from_ai(self, url: str, html: str) -> BaseModel | None:
         """Ask AI to find selectors by reading the HTML.
 
         Args:
@@ -113,7 +113,7 @@ class SelectorDiscovery:
         prompt = self._build_user_prompt(url, html)
 
         try:
-            result = self.agent.run_sync(prompt)
+            result = await self.agent.run(prompt)
             self.console.print('[success]  ✓ AI found selectors[/success]')
             return cast(BaseModel, result.output)
 

@@ -18,6 +18,7 @@ Run with:
 
 import datetime as dt_module
 
+from pydantic import ValidationError
 from rich.console import Console
 from rich.panel import Panel
 
@@ -91,8 +92,8 @@ def demo_price() -> None:
     console.print('  [dim]Wrong currency symbol -> ValidationError:[/dim]')
     try:
         EuropeShop.model_validate({'title': 'T', 'price': '$9.99', 'url': 'https://a.com', 'rating': '4'})
-    except Exception as e:
-        msgs = [err['msg'] for err in e.errors()]  # type: ignore[attr-defined]
+    except ValidationError as e:
+        msgs = [err['msg'] for err in e.errors()]
         console.print(f'  [red]  x {msgs[0]}[/red]')
 
 
@@ -112,8 +113,8 @@ def demo_url() -> None:
                 'url': 'javascript:void(0)',
             }
         )
-    except Exception as e:
-        msgs = [err['msg'] for err in e.errors()]  # type: ignore[attr-defined]
+    except ValidationError as e:
+        msgs = [err['msg'] for err in e.errors()]
         console.print(f'  [red]  x {msgs[0]}[/red]')
 
     dirty = 'https://example.com/article?utm_source=rss&utm_medium=email&id=99'
@@ -171,8 +172,8 @@ def demo_datetime() -> None:
     console.print('  [dim]Unparseable string -> ValidationError:[/dim]')
     try:
         AnyDate.model_validate({'dt': 'not a date xyz'})
-    except Exception as e:
-        msgs = [err['msg'] for err in e.errors()]  # type: ignore[attr-defined]
+    except ValidationError as e:
+        msgs = [err['msg'] for err in e.errors()]
         console.print(f'  [red]  x {msgs[0]}[/red]')
 
 

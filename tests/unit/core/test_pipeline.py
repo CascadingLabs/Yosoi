@@ -24,6 +24,7 @@ def _make_pipeline_stub(mocker, contract=None):
     stub.logger = mocker.MagicMock()
     stub.cleaner = mocker.MagicMock()
     stub.discovery = mocker.MagicMock()
+    stub.discovery.discover_selectors = mocker.AsyncMock()
     stub.verifier = mocker.MagicMock()
     stub.extractor = mocker.MagicMock()
     stub.storage = mocker.MagicMock()
@@ -35,34 +36,46 @@ def _make_pipeline_stub(mocker, contract=None):
     return stub
 
 
+def _mock_async_client(mocker, *, raise_on_head=None):
+    """Patch httpx.AsyncClient for normalize_url tests.
+
+    Returns a mock client whose `.head()` either succeeds or raises.
+    """
+    mock_client = mocker.AsyncMock()
+    if raise_on_head is not None:
+        mock_client.__aenter__.return_value.head.side_effect = raise_on_head
+    mocker.patch('yosoi.core.pipeline.httpx.AsyncClient', return_value=mock_client)
+    return mock_client
+
+
 # ---------------------------------------------------------------------------
 # normalize_url
 # ---------------------------------------------------------------------------
 
 
-def test_normalize_url_already_https(mocker):
+async def test_normalize_url_already_https(mocker):
     stub = _make_pipeline_stub(mocker)
-    assert Pipeline.normalize_url(stub, 'https://example.com') == 'https://example.com'
+    assert await Pipeline.normalize_url(stub, 'https://example.com') == 'https://example.com'
 
 
-def test_normalize_url_already_http(mocker):
+async def test_normalize_url_already_http(mocker):
     stub = _make_pipeline_stub(mocker)
-    assert Pipeline.normalize_url(stub, 'http://example.com') == 'http://example.com'
+    assert await Pipeline.normalize_url(stub, 'http://example.com') == 'http://example.com'
 
 
-def test_normalize_url_adds_https_on_success(mocker):
+async def test_normalize_url_adds_https_on_success(mocker):
     stub = _make_pipeline_stub(mocker)
-    mocker.patch('httpx.head')  # doesn't raise
-    result = Pipeline.normalize_url(stub, 'example.com')
+    _mock_async_client(mocker)  # head() succeeds
+    result = await Pipeline.normalize_url(stub, 'example.com')
     assert result == 'https://example.com'
 
 
-def test_normalize_url_falls_back_to_http_on_error(mocker):
+async def test_normalize_url_falls_back_to_http_on_error(mocker):
     import httpx
 
     stub = _make_pipeline_stub(mocker)
-    mocker.patch('httpx.head', side_effect=httpx.HTTPError('fail'))
-    result = Pipeline.normalize_url(stub, 'example.com')
+    _mock_async_client(mocker, raise_on_head=httpx.HTTPError('fail'))
+    result = await Pipeline.normalize_url(stub, 'example.com')
     assert result == 'http://example.com'
 
 
@@ -341,18 +354,18 @@ def test_handle_bot_detection_prints_abort_when_exhausted(mocker):
 # ---------------------------------------------------------------------------
 
 
-def test_cached_selectors_returns_false_when_no_cache(mocker):
+async def test_cached_selectors_returns_false_when_no_cache(mocker):
     stub = _make_pipeline_stub(mocker)
     stub.storage.load_selectors.return_value = None
-    result = Pipeline._cached_selectors(stub, 'https://x.com', 'x.com', mocker.MagicMock(), False, 'json')
+    result = await Pipeline._cached_selectors(stub, 'https://x.com', 'x.com', mocker.MagicMock(), False, 'json')
     assert result is False
 
 
-def test_cached_selectors_returns_true_when_cache_exists(mocker):
+async def test_cached_selectors_returns_true_when_cache_exists(mocker):
     stub = _make_pipeline_stub(mocker)
     stub.storage.load_selectors.return_value = {'title': {'primary': 'h1'}}
     mocker.patch.object(Pipeline, '_use_cached_selectors', return_value=True)
-    result = Pipeline._cached_selectors(stub, 'https://x.com', 'x.com', mocker.MagicMock(), False, 'json')
+    result = await Pipeline._cached_selectors(stub, 'https://x.com', 'x.com', mocker.MagicMock(), False, 'json')
     assert result is True
 
 
@@ -361,38 +374,38 @@ def test_cached_selectors_returns_true_when_cache_exists(mocker):
 # ---------------------------------------------------------------------------
 
 
-def test_use_cached_selectors_returns_true_on_fetch_failure(mocker):
+async def test_use_cached_selectors_returns_true_on_fetch_failure(mocker):
     stub = _make_pipeline_stub(mocker)
     mock_fetcher = mocker.MagicMock()
-    mock_fetcher.fetch.return_value = FetchResult(url='https://x.com', html=None, is_blocked=True)
+    mock_fetcher.fetch = mocker.AsyncMock(return_value=FetchResult(url='https://x.com', html=None, is_blocked=True))
     stub.tracker.record_url.return_value = {'llm_calls': 0, 'url_count': 1}
-    result = Pipeline._use_cached_selectors(
+    result = await Pipeline._use_cached_selectors(
         stub, 'https://x.com', 'x.com', mock_fetcher, {'title': {'primary': 'h1'}}, 'json', False
     )
     assert result is True
 
 
-def test_use_cached_selectors_returns_false_when_verification_fails(mocker):
+async def test_use_cached_selectors_returns_false_when_verification_fails(mocker):
     stub = _make_pipeline_stub(mocker)
     mock_fetcher = mocker.MagicMock()
-    mock_fetcher.fetch.return_value = FetchResult(url='https://x.com', html='<html/>')
+    mock_fetcher.fetch = mocker.AsyncMock(return_value=FetchResult(url='https://x.com', html='<html/>'))
     stub.cleaner.clean_html.return_value = '<html/>'
     vr = _make_verification_result(False, ['title'])
     stub.verifier.verify.return_value = vr
-    result = Pipeline._use_cached_selectors(
+    result = await Pipeline._use_cached_selectors(
         stub, 'https://x.com', 'x.com', mock_fetcher, {'title': {'primary': 'h1'}}, 'json', False
     )
     assert result is False
 
 
-def test_use_cached_selectors_skips_verification_when_flag_set(mocker):
+async def test_use_cached_selectors_skips_verification_when_flag_set(mocker):
     stub = _make_pipeline_stub(mocker)
     mock_fetcher = mocker.MagicMock()
-    mock_fetcher.fetch.return_value = FetchResult(url='https://x.com', html='<html/>')
+    mock_fetcher.fetch = mocker.AsyncMock(return_value=FetchResult(url='https://x.com', html='<html/>'))
     stub.cleaner.clean_html.return_value = '<html/>'
     stub.extractor.extract_content_with_html.return_value = None
     stub.tracker.record_url.return_value = {'llm_calls': 0, 'url_count': 1}
-    result = Pipeline._use_cached_selectors(
+    result = await Pipeline._use_cached_selectors(
         stub, 'https://x.com', 'x.com', mock_fetcher, {'title': {'primary': 'h1'}}, 'json', True
     )
     stub.verifier.verify.assert_not_called()
@@ -404,33 +417,35 @@ def test_use_cached_selectors_skips_verification_when_flag_set(mocker):
 # ---------------------------------------------------------------------------
 
 
-def test_fetch_returns_result_on_success(mocker):
+async def test_fetch_returns_result_on_success(mocker):
     stub = _make_pipeline_stub(mocker)
     fetch_result = FetchResult(url='https://x.com', html='<html/>', status_code=200)
     mock_fetcher = mocker.MagicMock()
-    mock_fetcher.fetch.return_value = fetch_result
-    mocker.patch('yosoi.core.pipeline.get_retryer')
-    # Use a real retryer to test the flow properly
-    from tenacity import Retrying, stop_after_attempt
+    mock_fetcher.fetch = mocker.AsyncMock(return_value=fetch_result)
+    # Use a real async retryer to test the flow properly
+    from tenacity import AsyncRetrying, stop_after_attempt
 
-    mocker.patch('yosoi.core.pipeline.get_retryer', return_value=Retrying(stop=stop_after_attempt(1), reraise=True))
-    result = Pipeline._fetch(stub, 'https://x.com', mock_fetcher, max_retries=1)
+    mocker.patch(
+        'yosoi.core.pipeline.get_async_retryer',
+        return_value=AsyncRetrying(stop=stop_after_attempt(1), reraise=True),
+    )
+    result = await Pipeline._fetch(stub, 'https://x.com', mock_fetcher, max_retries=1)
     assert result is fetch_result
 
 
-def test_fetch_returns_none_when_all_retries_fail(mocker):
+async def test_fetch_returns_none_when_all_retries_fail(mocker):
     stub = _make_pipeline_stub(mocker)
     mock_fetcher = mocker.MagicMock()
-    mock_fetcher.fetch.return_value = FetchResult(
-        url='https://x.com', html=None, is_blocked=True, block_reason='blocked'
+    mock_fetcher.fetch = mocker.AsyncMock(
+        return_value=FetchResult(url='https://x.com', html=None, is_blocked=True, block_reason='blocked')
     )
-    from tenacity import Retrying, stop_after_attempt, wait_none
+    from tenacity import AsyncRetrying, stop_after_attempt, wait_none
 
     mocker.patch(
-        'yosoi.core.pipeline.get_retryer',
-        return_value=Retrying(stop=stop_after_attempt(1), wait=wait_none(), reraise=False),
+        'yosoi.core.pipeline.get_async_retryer',
+        return_value=AsyncRetrying(stop=stop_after_attempt(1), wait=wait_none(), reraise=False),
     )
-    result = Pipeline._fetch(stub, 'https://x.com', mock_fetcher, max_retries=1)
+    result = await Pipeline._fetch(stub, 'https://x.com', mock_fetcher, max_retries=1)
     assert result is None
 
 
@@ -439,7 +454,7 @@ def test_fetch_returns_none_when_all_retries_fail(mocker):
 # ---------------------------------------------------------------------------
 
 
-def test_discover_returns_overrides_when_no_fields_need_discovery(mocker):
+async def test_discover_returns_overrides_when_no_fields_need_discovery(mocker):
     stub = _make_pipeline_stub(mocker)
 
     class OverrideContract(Contract):
@@ -450,45 +465,45 @@ def test_discover_returns_overrides_when_no_fields_need_discovery(mocker):
     stub.contract.field_descriptions = mocker.MagicMock(return_value={})
     stub.debug.save_debug_selectors = mocker.MagicMock()
 
-    selectors, used_llm = Pipeline._discover(stub, 'https://x.com', '<html/>', max_retries=1)
+    selectors, used_llm = await Pipeline._discover(stub, 'https://x.com', '<html/>', max_retries=1)
     assert selectors == {'title': {'primary': '.title'}}
     assert used_llm is False
     stub.discovery.discover_selectors.assert_not_called()
 
 
-def test_discover_returns_selectors_on_ai_success(mocker):
+async def test_discover_returns_selectors_on_ai_success(mocker):
     stub = _make_pipeline_stub(mocker)
     stub.contract.get_selector_overrides = mocker.MagicMock(return_value={})
     stub.contract.field_descriptions = mocker.MagicMock(return_value={'title': 'The title'})
-    stub.discovery.discover_selectors.return_value = {'title': {'primary': 'h1'}}
+    stub.discovery.discover_selectors = mocker.AsyncMock(return_value={'title': {'primary': 'h1'}})
     stub.debug.save_debug_selectors = mocker.MagicMock()
 
-    from tenacity import Retrying, stop_after_attempt, wait_none
+    from tenacity import AsyncRetrying, stop_after_attempt, wait_none
 
     mocker.patch(
-        'yosoi.core.pipeline.get_retryer',
-        return_value=Retrying(stop=stop_after_attempt(1), wait=wait_none(), reraise=False),
+        'yosoi.core.pipeline.get_async_retryer',
+        return_value=AsyncRetrying(stop=stop_after_attempt(1), wait=wait_none(), reraise=False),
     )
 
-    selectors, used_llm = Pipeline._discover(stub, 'https://x.com', '<html/>', max_retries=1)
+    selectors, used_llm = await Pipeline._discover(stub, 'https://x.com', '<html/>', max_retries=1)
     assert selectors == {'title': {'primary': 'h1'}}
     assert used_llm is True
 
 
-def test_discover_returns_none_when_all_ai_attempts_fail(mocker):
+async def test_discover_returns_none_when_all_ai_attempts_fail(mocker):
     stub = _make_pipeline_stub(mocker)
     stub.contract.get_selector_overrides = mocker.MagicMock(return_value={})
     stub.contract.field_descriptions = mocker.MagicMock(return_value={'title': 'The title'})
-    stub.discovery.discover_selectors.return_value = None
+    stub.discovery.discover_selectors = mocker.AsyncMock(return_value=None)
 
-    from tenacity import Retrying, stop_after_attempt, wait_none
+    from tenacity import AsyncRetrying, stop_after_attempt, wait_none
 
     mocker.patch(
-        'yosoi.core.pipeline.get_retryer',
-        return_value=Retrying(stop=stop_after_attempt(1), wait=wait_none(), reraise=False),
+        'yosoi.core.pipeline.get_async_retryer',
+        return_value=AsyncRetrying(stop=stop_after_attempt(1), wait=wait_none(), reraise=False),
     )
 
-    selectors, used_llm = Pipeline._discover(stub, 'https://x.com', '<html/>', max_retries=1)
+    selectors, used_llm = await Pipeline._discover(stub, 'https://x.com', '<html/>', max_retries=1)
     assert selectors is None
     assert used_llm is False
 
@@ -498,7 +513,7 @@ def test_discover_returns_none_when_all_ai_attempts_fail(mocker):
 # ---------------------------------------------------------------------------
 
 
-def test_process_url_returns_false_when_fetch_fails(mocker):
+async def test_process_url_returns_false_when_fetch_fails(mocker):
     stub = _make_pipeline_stub(mocker)
     mocker.patch.object(Pipeline, 'normalize_url', return_value='https://x.com')
     mocker.patch.object(Pipeline, '_extract_domain', return_value='x.com')
@@ -506,32 +521,32 @@ def test_process_url_returns_false_when_fetch_fails(mocker):
     mocker.patch.object(Pipeline, '_cached_selectors', return_value=False)
     mocker.patch.object(Pipeline, '_fetch', return_value=None)
     mocker.patch('yosoi.core.pipeline.logfire')
-    result = Pipeline.process_url(stub, 'https://x.com')
+    result = await Pipeline.process_url(stub, 'https://x.com')
     assert result is False
 
 
-def test_process_url_returns_false_when_create_fetcher_fails(mocker):
+async def test_process_url_returns_false_when_create_fetcher_fails(mocker):
     stub = _make_pipeline_stub(mocker)
     mocker.patch.object(Pipeline, 'normalize_url', return_value='https://x.com')
     mocker.patch.object(Pipeline, '_extract_domain', return_value='x.com')
     mocker.patch.object(Pipeline, '_create_fetcher', return_value=None)
     mocker.patch('yosoi.core.pipeline.logfire')
-    result = Pipeline.process_url(stub, 'https://x.com')
+    result = await Pipeline.process_url(stub, 'https://x.com')
     assert result is False
 
 
-def test_process_url_returns_true_when_cached_selectors_used(mocker):
+async def test_process_url_returns_true_when_cached_selectors_used(mocker):
     stub = _make_pipeline_stub(mocker)
     mocker.patch.object(Pipeline, 'normalize_url', return_value='https://x.com')
     mocker.patch.object(Pipeline, '_extract_domain', return_value='x.com')
     mocker.patch.object(Pipeline, '_create_fetcher', return_value=mocker.MagicMock())
     mocker.patch.object(Pipeline, '_cached_selectors', return_value=True)
     mocker.patch('yosoi.core.pipeline.logfire')
-    result = Pipeline.process_url(stub, 'https://x.com')
+    result = await Pipeline.process_url(stub, 'https://x.com')
     assert result is True
 
 
-def test_process_url_full_success_path(mocker):
+async def test_process_url_full_success_path(mocker):
     stub = _make_pipeline_stub(mocker)
     fetch_result = FetchResult(url='https://x.com', html='<html/>', status_code=200)
     mocker.patch.object(Pipeline, 'normalize_url', return_value='https://x.com')
@@ -546,11 +561,11 @@ def test_process_url_full_success_path(mocker):
     mocker.patch.object(Pipeline, '_validate_with_contract', return_value={'title': 'Book'})
     mocker.patch.object(Pipeline, '_save_and_track')
     mocker.patch('yosoi.core.pipeline.logfire')
-    result = Pipeline.process_url(stub, 'https://x.com')
+    result = await Pipeline.process_url(stub, 'https://x.com')
     assert result is True
 
 
-def test_process_url_returns_true_even_when_extraction_fails(mocker):
+async def test_process_url_returns_true_even_when_extraction_fails(mocker):
     stub = _make_pipeline_stub(mocker)
     fetch_result = FetchResult(url='https://x.com', html='<html/>', status_code=200)
     mocker.patch.object(Pipeline, 'normalize_url', return_value='https://x.com')
@@ -564,11 +579,11 @@ def test_process_url_returns_true_even_when_extraction_fails(mocker):
     mocker.patch.object(Pipeline, '_extract', return_value=None)
     mocker.patch.object(Pipeline, '_save_and_track')
     mocker.patch('yosoi.core.pipeline.logfire')
-    result = Pipeline.process_url(stub, 'https://x.com')
+    result = await Pipeline.process_url(stub, 'https://x.com')
     assert result is True
 
 
-def test_process_url_returns_false_when_clean_fails(mocker):
+async def test_process_url_returns_false_when_clean_fails(mocker):
     stub = _make_pipeline_stub(mocker)
     fetch_result = FetchResult(url='https://x.com', html='<html/>', status_code=200)
     mocker.patch.object(Pipeline, 'normalize_url', return_value='https://x.com')
@@ -578,11 +593,11 @@ def test_process_url_returns_false_when_clean_fails(mocker):
     mocker.patch.object(Pipeline, '_fetch', return_value=fetch_result)
     mocker.patch.object(Pipeline, '_clean', return_value=None)
     mocker.patch('yosoi.core.pipeline.logfire')
-    result = Pipeline.process_url(stub, 'https://x.com')
+    result = await Pipeline.process_url(stub, 'https://x.com')
     assert result is False
 
 
-def test_process_url_returns_false_when_discover_fails(mocker):
+async def test_process_url_returns_false_when_discover_fails(mocker):
     stub = _make_pipeline_stub(mocker)
     fetch_result = FetchResult(url='https://x.com', html='<html/>', status_code=200)
     mocker.patch.object(Pipeline, 'normalize_url', return_value='https://x.com')
@@ -593,11 +608,11 @@ def test_process_url_returns_false_when_discover_fails(mocker):
     mocker.patch.object(Pipeline, '_clean', return_value='<clean/>')
     mocker.patch.object(Pipeline, '_discover', return_value=(None, False))
     mocker.patch('yosoi.core.pipeline.logfire')
-    result = Pipeline.process_url(stub, 'https://x.com')
+    result = await Pipeline.process_url(stub, 'https://x.com')
     assert result is False
 
 
-def test_process_url_returns_false_when_verify_fails(mocker):
+async def test_process_url_returns_false_when_verify_fails(mocker):
     stub = _make_pipeline_stub(mocker)
     fetch_result = FetchResult(url='https://x.com', html='<html/>', status_code=200)
     mocker.patch.object(Pipeline, 'normalize_url', return_value='https://x.com')
@@ -609,7 +624,7 @@ def test_process_url_returns_false_when_verify_fails(mocker):
     mocker.patch.object(Pipeline, '_discover', return_value=({'title': {'primary': 'h1'}}, True))
     mocker.patch.object(Pipeline, '_verify', return_value=None)
     mocker.patch('yosoi.core.pipeline.logfire')
-    result = Pipeline.process_url(stub, 'https://x.com')
+    result = await Pipeline.process_url(stub, 'https://x.com')
     assert result is False
 
 
@@ -618,35 +633,35 @@ def test_process_url_returns_false_when_verify_fails(mocker):
 # ---------------------------------------------------------------------------
 
 
-def test_process_urls_collects_results(mocker):
+async def test_process_urls_collects_results(mocker):
     stub = _make_pipeline_stub(mocker)
     mocker.patch.object(Pipeline, 'process_url', side_effect=[True, False])
     mocker.patch('yosoi.core.pipeline.logfire')
-    results = Pipeline.process_urls(stub, ['https://a.com', 'https://b.com'])
+    results = await Pipeline.process_urls(stub, ['https://a.com', 'https://b.com'])
     assert 'https://a.com' in results['successful']
     assert 'https://b.com' in results['failed']
 
 
-def test_process_urls_catches_exceptions(mocker):
+async def test_process_urls_catches_exceptions(mocker):
     stub = _make_pipeline_stub(mocker)
     mocker.patch.object(Pipeline, 'process_url', side_effect=RuntimeError('boom'))
     mocker.patch('yosoi.core.pipeline.logfire')
-    results = Pipeline.process_urls(stub, ['https://a.com'])
+    results = await Pipeline.process_urls(stub, ['https://a.com'])
     assert 'https://a.com' in results['failed']
 
 
-def test_process_urls_uses_pipeline_force_flag(mocker):
+async def test_process_urls_uses_pipeline_force_flag(mocker):
     stub = _make_pipeline_stub(mocker)
     stub.force = True
     calls = []
 
-    def capture_call(url, *args, **kwargs):
+    async def capture_call(url, *args, **kwargs):
         calls.append(kwargs.get('force', args[0] if args else None))
         return True
 
     mocker.patch.object(Pipeline, 'process_url', side_effect=capture_call)
     mocker.patch('yosoi.core.pipeline.logfire')
-    Pipeline.process_urls(stub, ['https://a.com'])
+    await Pipeline.process_urls(stub, ['https://a.com'])
     # process_urls passes force_flag = self.force
     assert len(calls) == 1
 
@@ -695,7 +710,7 @@ def test_show_llm_stats_no_calls(mocker):
 # ---------------------------------------------------------------------------
 
 
-def test_process_url_respects_explicit_force_override(mocker):
+async def test_process_url_respects_explicit_force_override(mocker):
     """Explicit force=True overrides pipeline's self.force=False."""
     stub = _make_pipeline_stub(mocker)
     stub.force = False
@@ -706,7 +721,7 @@ def test_process_url_respects_explicit_force_override(mocker):
     cached_mock = mocker.patch.object(Pipeline, '_cached_selectors', return_value=False)
     mocker.patch.object(Pipeline, '_fetch', return_value=None)
     mocker.patch('yosoi.core.pipeline.logfire')
-    Pipeline.process_url(stub, 'https://x.com', force=True)
+    await Pipeline.process_url(stub, 'https://x.com', force=True)
     # _cached_selectors should NOT be called because force=True bypasses cache
     cached_mock.assert_not_called()
 
@@ -716,35 +731,35 @@ def test_process_url_respects_explicit_force_override(mocker):
 # ---------------------------------------------------------------------------
 
 
-def test_normalize_url_http_url_returned_unchanged(mocker):
+async def test_normalize_url_http_url_returned_unchanged(mocker):
     """http:// URLs must be returned as-is without modification."""
     stub = _make_pipeline_stub(mocker)
     url = 'http://example.com/path?q=1'
-    assert Pipeline.normalize_url(stub, url) == url
+    assert await Pipeline.normalize_url(stub, url) == url
 
 
-def test_normalize_url_https_url_returned_unchanged(mocker):
+async def test_normalize_url_https_url_returned_unchanged(mocker):
     """https:// URLs must be returned as-is without modification."""
     stub = _make_pipeline_stub(mocker)
     url = 'https://example.com/path'
-    assert Pipeline.normalize_url(stub, url) == url
+    assert await Pipeline.normalize_url(stub, url) == url
 
 
-def test_normalize_url_prepends_https_exactly(mocker):
+async def test_normalize_url_prepends_https_exactly(mocker):
     """Without protocol, must prepend 'https://' (not 'http://')."""
     stub = _make_pipeline_stub(mocker)
-    mocker.patch('httpx.head')  # no error
-    result = Pipeline.normalize_url(stub, 'www.example.com')
+    _mock_async_client(mocker)  # head() succeeds
+    result = await Pipeline.normalize_url(stub, 'www.example.com')
     assert result == 'https://www.example.com'
 
 
-def test_normalize_url_prepends_http_on_https_failure(mocker):
+async def test_normalize_url_prepends_http_on_https_failure(mocker):
     """On HTTPS failure, must prepend 'http://' (not 'ftp://')."""
     import httpx
 
     stub = _make_pipeline_stub(mocker)
-    mocker.patch('httpx.head', side_effect=httpx.HTTPError('fail'))
-    result = Pipeline.normalize_url(stub, 'example.com')
+    _mock_async_client(mocker, raise_on_head=httpx.HTTPError('fail'))
+    result = await Pipeline.normalize_url(stub, 'example.com')
     assert result == 'http://example.com'
 
 
@@ -960,21 +975,21 @@ def test_handle_bot_detection_abort_when_exactly_at_max_retries(mocker):
 # ---------------------------------------------------------------------------
 
 
-def test_cached_selectors_calls_load_selectors_with_domain(mocker):
+async def test_cached_selectors_calls_load_selectors_with_domain(mocker):
     """_cached_selectors must call storage.load_selectors with the domain."""
     stub = _make_pipeline_stub(mocker)
     stub.storage.load_selectors.return_value = None
-    Pipeline._cached_selectors(stub, 'https://x.com', 'x.com', mocker.MagicMock(), False, 'json')
+    await Pipeline._cached_selectors(stub, 'https://x.com', 'x.com', mocker.MagicMock(), False, 'json')
     stub.storage.load_selectors.assert_called_once_with('x.com')
 
 
-def test_cached_selectors_calls_use_cached_on_cache_hit(mocker):
+async def test_cached_selectors_calls_use_cached_on_cache_hit(mocker):
     """When cache hit, must call _use_cached_selectors."""
     stub = _make_pipeline_stub(mocker)
     stub.storage.load_selectors.return_value = {'title': {'primary': 'h1'}}
     mock_use = mocker.patch.object(Pipeline, '_use_cached_selectors', return_value=True)
     fetcher = mocker.MagicMock()
-    Pipeline._cached_selectors(stub, 'https://x.com', 'x.com', fetcher, False, 'json')
+    await Pipeline._cached_selectors(stub, 'https://x.com', 'x.com', fetcher, False, 'json')
     mock_use.assert_called_once()
 
 
@@ -1027,7 +1042,7 @@ def test_print_partial_failure_shows_failed_field_names(mocker):
 # ---------------------------------------------------------------------------
 
 
-def test_process_url_uses_pipeline_format_when_output_format_none(mocker):
+async def test_process_url_uses_pipeline_format_when_output_format_none(mocker):
     """When output_format=None, process_url must use pipeline's output_format."""
     stub = _make_pipeline_stub(mocker)
     stub.output_format = 'markdown'
@@ -1037,7 +1052,7 @@ def test_process_url_uses_pipeline_format_when_output_format_none(mocker):
     mocker.patch.object(Pipeline, '_cached_selectors', return_value=False)
     mocker.patch.object(Pipeline, '_fetch', return_value=None)
     mocker.patch('yosoi.core.pipeline.logfire')
-    Pipeline.process_url(stub, 'https://x.com', output_format=None)
+    await Pipeline.process_url(stub, 'https://x.com', output_format=None)
     # _fetch was called, meaning normalized url was used
 
 
@@ -1113,53 +1128,53 @@ def test_clean_saves_debug_html(mocker):
 # ---------------------------------------------------------------------------
 
 
-def test_discover_merges_overrides_with_ai_selectors(mocker):
+async def test_discover_merges_overrides_with_ai_selectors(mocker):
     """AI selectors must be updated with override selectors."""
     stub = _make_pipeline_stub(mocker)
     stub.contract.get_selector_overrides = mocker.MagicMock(return_value={'author': {'primary': '.author'}})
     stub.contract.field_descriptions = mocker.MagicMock(return_value={'title': 'The title'})
-    stub.discovery.discover_selectors.return_value = {'title': {'primary': 'h1'}}
+    stub.discovery.discover_selectors = mocker.AsyncMock(return_value={'title': {'primary': 'h1'}})
     stub.debug.save_debug_selectors = mocker.MagicMock()
 
-    from tenacity import Retrying, stop_after_attempt, wait_none
+    from tenacity import AsyncRetrying, stop_after_attempt, wait_none
 
     mocker.patch(
-        'yosoi.core.pipeline.get_retryer',
-        return_value=Retrying(stop=stop_after_attempt(1), wait=wait_none(), reraise=False),
+        'yosoi.core.pipeline.get_async_retryer',
+        return_value=AsyncRetrying(stop=stop_after_attempt(1), wait=wait_none(), reraise=False),
     )
 
-    _selectors, _used_llm = Pipeline._discover(stub, 'https://x.com', '<html/>', max_retries=1)
+    _selectors, _used_llm = await Pipeline._discover(stub, 'https://x.com', '<html/>', max_retries=1)
     # Both AI selectors and overrides should be present
     assert _selectors is not None
     assert 'title' in _selectors
     assert 'author' in _selectors
 
 
-def test_discover_all_override_returns_false_for_used_llm(mocker):
+async def test_discover_all_override_returns_false_for_used_llm(mocker):
     """When all fields are overridden, used_llm must be False."""
     stub = _make_pipeline_stub(mocker)
     stub.contract.get_selector_overrides = mocker.MagicMock(return_value={'title': {'primary': '.t'}})
     stub.contract.field_descriptions = mocker.MagicMock(return_value={})
     stub.debug.save_debug_selectors = mocker.MagicMock()
 
-    _selectors, used_llm = Pipeline._discover(stub, 'https://x.com', '<html/>', max_retries=1)
+    _selectors, used_llm = await Pipeline._discover(stub, 'https://x.com', '<html/>', max_retries=1)
     assert used_llm is False
 
 
-def test_discover_ai_success_returns_true_for_used_llm(mocker):
+async def test_discover_ai_success_returns_true_for_used_llm(mocker):
     """When AI succeeds, used_llm must be True."""
     stub = _make_pipeline_stub(mocker)
     stub.contract.get_selector_overrides = mocker.MagicMock(return_value={})
     stub.contract.field_descriptions = mocker.MagicMock(return_value={'title': 'The title'})
-    stub.discovery.discover_selectors.return_value = {'title': {'primary': 'h1'}}
+    stub.discovery.discover_selectors = mocker.AsyncMock(return_value={'title': {'primary': 'h1'}})
     stub.debug.save_debug_selectors = mocker.MagicMock()
 
-    from tenacity import Retrying, stop_after_attempt, wait_none
+    from tenacity import AsyncRetrying, stop_after_attempt, wait_none
 
     mocker.patch(
-        'yosoi.core.pipeline.get_retryer',
-        return_value=Retrying(stop=stop_after_attempt(1), wait=wait_none(), reraise=False),
+        'yosoi.core.pipeline.get_async_retryer',
+        return_value=AsyncRetrying(stop=stop_after_attempt(1), wait=wait_none(), reraise=False),
     )
 
-    _, used_llm = Pipeline._discover(stub, 'https://x.com', '<html/>', max_retries=1)
+    _, used_llm = await Pipeline._discover(stub, 'https://x.com', '<html/>', max_retries=1)
     assert used_llm is True

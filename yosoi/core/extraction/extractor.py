@@ -2,6 +2,7 @@
 
 from bs4 import BeautifulSoup
 from rich.console import Console
+from soupsieve.util import SelectorSyntaxError
 
 from yosoi.models.contract import Contract
 
@@ -151,11 +152,11 @@ class ContentExtractor:
             text = first_element.get_text(strip=True)
             return text if text else None
 
-        except Exception as e:
+        except (ValueError, SelectorSyntaxError) as e:
             self.console.print(f'  ✗ {field_name}: extraction error ({e})')
             return None
 
-    def quick_extract(
+    async def quick_extract(
         self, url: str, selector: str, field_type: str = 'text'
     ) -> str | list[str | dict[str, str]] | None:
         """Quick extraction of a single field from a URL.
@@ -174,10 +175,13 @@ class ContentExtractor:
         import httpx
 
         try:
-            response = httpx.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=10, follow_redirects=True)
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=10, follow_redirects=True
+                )
             soup = BeautifulSoup(response.text, 'lxml')
 
             return self._extract_with_selector(soup, selector, field_type)
 
-        except Exception:
+        except (httpx.HTTPError, ValueError):
             return None

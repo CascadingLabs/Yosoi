@@ -76,7 +76,7 @@ class SelectorStorage:
                 # Return just the selectors portion, not the metadata wrapper
                 selectors: dict[str, Any] = data.get('selectors', data)
                 return selectors
-        except Exception as e:
+        except (OSError, json.JSONDecodeError, ValueError) as e:
             print(f'Error loading selectors: {e}')
             return None
 
@@ -137,7 +137,7 @@ class SelectorStorage:
                 # Return just the content portion, not the metadata wrapper
                 content: dict[str, Any] = data.get('content', data)
                 return content
-        except Exception as e:
+        except (OSError, json.JSONDecodeError, ValueError) as e:
             print(f'Error loading content: {e}')
             return None
 
@@ -240,7 +240,7 @@ class SelectorStorage:
             if domain.startswith('www.'):
                 domain = domain[4:]
             return domain
-        except Exception:
+        except ValueError:
             return 'unknown'
 
     def _get_filepath(self, domain: str) -> str:
@@ -326,7 +326,7 @@ class SelectorStorage:
             with open(filepath, encoding='utf-8') as f:
                 file_data: dict[str, Any] = json.load(f)
                 return file_data
-        except Exception:
+        except (OSError, json.JSONDecodeError):
             return None
 
     def export_summary(self, output_file: str = 'selectors_summary.json') -> str:

@@ -1,7 +1,12 @@
 """Verifies that CSS selectors match elements in HTML."""
 
+import logging
+
 from bs4 import BeautifulSoup
 from rich.console import Console
+from soupsieve.util import SelectorSyntaxError
+
+logger = logging.getLogger(__name__)
 
 from yosoi.models import FieldSelectors, FieldVerificationResult, SelectorFailure, VerificationResult
 
@@ -135,7 +140,7 @@ class SelectorVerifier:
             if elements:
                 return True, 'found'
             return False, 'no_elements_found'
-        except Exception as e:
+        except (ValueError, SelectorSyntaxError) as e:
             return False, f'invalid_syntax: {e}'
 
     def _print_field_result(self, result: FieldVerificationResult) -> None:
@@ -153,7 +158,7 @@ class SelectorVerifier:
             for failure in result.failed_selectors:
                 self.console.print(f'      → {failure.level}: "{failure.selector}" → {failure.reason}')
 
-    def quick_test(self, url: str, selector: str) -> bool:
+    async def quick_test(self, url: str, selector: str) -> bool:
         """Quick test if a selector works on a URL.
 
         Args:
@@ -167,9 +172,13 @@ class SelectorVerifier:
         import httpx
 
         try:
-            response = httpx.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=10, follow_redirects=True)
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=10, follow_redirects=True
+                )
             soup = BeautifulSoup(response.text, 'lxml')
             element = soup.select_one(selector)
             return element is not None and bool(element.get_text(strip=True))
-        except Exception:
+        except (httpx.HTTPError, ValueError, SelectorSyntaxError) as exc:
+            logger.warning('quick_test failed for selector %r on %r: %s', selector, url, exc)
             return False
