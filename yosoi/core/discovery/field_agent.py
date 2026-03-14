@@ -4,7 +4,6 @@ import logfire
 from pydantic_ai import Agent
 from rich.console import Console
 
-from yosoi.core.discovery.agent import _extract_provider_error
 from yosoi.core.discovery.config import LLMConfig, create_model
 from yosoi.models.selectors import FieldSelectors, SelectorLevel
 from yosoi.prompts.discovery import (
@@ -17,6 +16,30 @@ from yosoi.prompts.discovery import (
     field_single_page_hints,
 )
 from yosoi.utils.exceptions import LLMGenerationError
+
+
+def _extract_provider_error(exc: Exception) -> str | None:
+    """Extract a human-readable error message from provider exceptions.
+
+    Walks the exception chain to find provider-specific error details
+    (e.g. Groq's ``body['error']['message']`` or pydantic-ai's
+    ``ModelHTTPError``).
+
+    Returns:
+        A concise error string, or None if no actionable detail was found.
+
+    """
+    current: BaseException | None = exc
+    while current is not None:
+        body = getattr(current, 'body', None)
+        if isinstance(body, dict):
+            error = body.get('error', {})
+            if isinstance(error, dict):
+                msg = error.get('message')
+                if msg:
+                    return str(msg)
+        current = current.__cause__
+    return None
 
 
 class FieldDiscoveryAgent:

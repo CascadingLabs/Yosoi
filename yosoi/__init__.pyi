@@ -6,7 +6,6 @@ from yosoi.core.configs import DebugConfig as DebugConfig
 from yosoi.core.configs import TelemetryConfig as TelemetryConfig
 from yosoi.core.configs import YosoiConfig as YosoiConfig
 from yosoi.core.discovery import LLMConfig as LLMConfig
-from yosoi.core.discovery import YosoiAgent as YosoiAgent
 from yosoi.core.discovery.config import LLMBuilder as LLMBuilder
 from yosoi.core.pipeline import Pipeline as Pipeline
 from yosoi.models.contract import Contract as Contract

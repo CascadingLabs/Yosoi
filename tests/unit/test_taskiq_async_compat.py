@@ -11,8 +11,6 @@ Validates that:
 import asyncio
 
 import yosoi.core.tasks as _tasks_mod
-from yosoi.core.discovery.agent import SelectorDiscovery
-from yosoi.core.discovery.yosoi_agent import YosoiAgent
 from yosoi.core.tasks import (
     configure_broker,
     enqueue_urls,
@@ -207,49 +205,6 @@ class TestAgentRunInsideTask:
         assert 'elapsed' in result
         await shutdown_broker()
 
-    async def test_discovery_agent_async_run(self, mocker, mock_selectors):
-        """SelectorDiscovery.discover_selectors() calls agent.run() correctly in async context."""
-        mock_agent = mocker.Mock(spec=YosoiAgent)
-        mock_agent._contract = NewsArticle
-        mock_agent.run = mocker.AsyncMock(
-            return_value=mocker.Mock(output=mock_selectors),
-        )
-
-        discovery = SelectorDiscovery(
-            contract=NewsArticle,
-            agent=mock_agent,
-        )
-
-        selectors = await discovery.discover_selectors(FAKE_HTML, url='http://test.com')
-
-        assert selectors is not None
-        assert 'headline' in selectors
-        mock_agent.run.assert_awaited_once()
-
-    async def test_multiple_discovery_agents_concurrent(self, mocker, mock_selectors):
-        """Multiple SelectorDiscovery instances can run concurrently without conflicts."""
-        agents = []
-        discoveries = []
-
-        for _ in range(3):
-            agent = mocker.Mock(spec=YosoiAgent)
-            agent._contract = NewsArticle
-            agent.run = mocker.AsyncMock(
-                return_value=mocker.Mock(output=mock_selectors),
-            )
-            agents.append(agent)
-            discoveries.append(SelectorDiscovery(contract=NewsArticle, agent=agent))
-
-        # Run all discoveries concurrently
-        results = await asyncio.gather(
-            *[d.discover_selectors(FAKE_HTML, url=f'http://site{i}.com') for i, d in enumerate(discoveries)]
-        )
-
-        assert all(r is not None for r in results)
-        assert all('headline' in r for r in results)
-        for agent in agents:
-            agent.run.assert_awaited_once()
-
 
 # ──────────────────────────────────────────────────────────────────────
 # Full broker→enqueue→process→agent path (mocked network)
@@ -348,18 +303,3 @@ class TestEventLoopSafety:
         # All tasks must run in the same loop
         assert len(set(loops_seen)) == 1
         await shutdown_broker()
-
-    async def test_agent_run_is_properly_awaited(self, mocker, mock_selectors):
-        """Ensure agent.run() is awaited, not just called (returns coroutine)."""
-        mock_agent = mocker.Mock(spec=YosoiAgent)
-        mock_agent._contract = NewsArticle
-        mock_agent.run = mocker.AsyncMock(
-            return_value=mocker.Mock(output=mock_selectors),
-        )
-
-        discovery = SelectorDiscovery(contract=NewsArticle, agent=mock_agent)
-        result = await discovery.discover_selectors(FAKE_HTML, url='http://test.com')
-
-        # AsyncMock tracks await calls separately
-        mock_agent.run.assert_awaited_once()
-        assert result is not None
