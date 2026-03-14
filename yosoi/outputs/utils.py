@@ -10,7 +10,10 @@ from yosoi.outputs.markdown import format_markdown, save_markdown
 from yosoi.outputs.parquet import save_parquet
 from yosoi.outputs.xlsx import save_xlsx
 
-_Saver = Callable[[str, str, str, dict[str, Any]], None]
+# Content param is Any because savers have mixed signatures: json/markdown accept
+# dict | list, while accumulating formats (csv, jsonl, etc.) accept only dict.
+# The dispatch logic in save_formatted_content ensures correctness at runtime.
+_Saver = Callable[[str, str, str, Any], None]
 
 
 def format_content(url: str, domain: str, content: dict[str, Any], output_format: str = 'json') -> str | dict[str, Any]:
@@ -32,7 +35,11 @@ def format_content(url: str, domain: str, content: dict[str, Any], output_format
 
 
 def save_formatted_content(
-    filepath: str, url: str, domain: str, content: dict[str, Any], output_format: str = 'json'
+    filepath: str,
+    url: str,
+    domain: str,
+    content: dict[str, Any] | list[dict[str, Any]],
+    output_format: str = 'json',
 ) -> str:
     """Format and save extracted content to file.
 
@@ -40,13 +47,15 @@ def save_formatted_content(
         filepath: Path to save the file
         url: Source URL
         domain: Domain name
-        content: Extracted content dictionary (field -> value)
+        content: Extracted content dictionary or list of dicts for multi-item pages
         output_format: Output format. Defaults to 'json'.
 
     Returns:
         Path to the saved file.
 
     """
+    _ACCUMULATING = {'jsonl', 'ndjson', 'csv', 'xlsx', 'parquet'}
+
     # Build the dispatch table at call time so module-level names are resolved
     # against the current globals() — this ensures test mocks are respected.
     _dispatch: dict[str, _Saver] = {
@@ -59,7 +68,13 @@ def save_formatted_content(
         'parquet': save_parquet,
     }
     saver: _Saver = _dispatch.get(output_format, save_json)
-    saver(filepath, url, domain, content)
+
+    # For accumulating formats, write one row per item when content is a list
+    if isinstance(content, list) and output_format in _ACCUMULATING:
+        for item in content:
+            saver(filepath, url, domain, item)
+    else:
+        saver(filepath, url, domain, content)
     return filepath
 
 

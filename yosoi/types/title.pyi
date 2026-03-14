@@ -1,0 +1,3 @@
+from typing import Any
+
+def Title(description: str = ..., **kwargs: Any) -> Any: ...

@@ -38,7 +38,11 @@ def _resolve_output_formats(flag_values: tuple[str, ...]) -> list[str]:
 @click.command()
 @click.pass_context
 @click.option(
-    '-m', '--model', default=None, metavar='PROVIDER/MODEL', help='LLM model (e.g. groq/llama-3.3-70b-versatile)'
+    '-m',
+    '--model',
+    default=None,
+    metavar='PROVIDER:MODEL',
+    help='LLM model (e.g. groq:llama-3.3-70b-versatile). Defaults to $YOSOI_MODEL env var if set.',
 )
 @click.option('-u', '--url', default=None, help='Single URL to process')
 @click.option('-f', '--file', 'file_path', default=None, help='File containing URLs (one per line, or JSON)')
@@ -110,9 +114,9 @@ def main(
 
     yosoi -u https://example.com
 
-    yosoi -m groq/llama-3.3-70b-versatile -u https://example.com
+    yosoi -m groq:llama-3.3-70b-versatile -u https://example.com
 
-    yosoi -m gemini/gemini-2.0-flash -f urls.txt -l 10
+    yosoi -m openrouter:meta-llama/llama-3.3-70b-instruct:free -f urls.txt -l 10
 
     yosoi -C Product -u https://example.com
 

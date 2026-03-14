@@ -5,6 +5,7 @@ Supports multiple providers, easy extension, and flexible model configuration.
 
 from __future__ import annotations
 
+import os
 from typing import Any, Protocol
 
 # ============================================================================
@@ -12,6 +13,7 @@ from typing import Any, Protocol
 # ============================================================================
 from pydantic import BaseModel, ConfigDict
 from pydantic_ai import Agent
+from pydantic_ai.models import Model
 from pydantic_ai.models.cerebras import CerebrasModel
 from pydantic_ai.models.google import GoogleModel
 from pydantic_ai.models.groq import GroqModel
@@ -41,7 +43,7 @@ class LLMConfig(BaseModel):
 
     provider: str
     model_name: str
-    api_key: str
+    api_key: str | None = None
     temperature: float = 0.01
     max_tokens: int | None = None
     extra_params: dict[str, Any] | None = None
@@ -61,7 +63,7 @@ class LLMProvider(Protocol):
 
     """
 
-    def create_model(self, config: LLMConfig) -> Any:
+    def create_model(self, config: LLMConfig) -> Model:
         """Create a model instance from configuration.
 
         Args:
@@ -92,6 +94,18 @@ class LLMProvider(Protocol):
 # ============================================================================
 
 
+def _provider_kwargs(config: LLMConfig) -> dict[str, Any]:
+    """Build keyword arguments for a provider constructor.
+
+    Only includes api_key when explicitly set, allowing providers to fall back
+    to their own environment variable resolution.
+    """
+    kwargs: dict[str, Any] = {}
+    if config.api_key is not None:
+        kwargs['api_key'] = config.api_key
+    return kwargs
+
+
 def create_cerebras_model(config: LLMConfig) -> CerebrasModel:
     """Create a Cerebras model from configuration.
 
@@ -102,7 +116,7 @@ def create_cerebras_model(config: LLMConfig) -> CerebrasModel:
         Configured CerebrasModel instance.
 
     """
-    provider = CerebrasProvider(api_key=config.api_key)
+    provider = CerebrasProvider(**_provider_kwargs(config))
     return CerebrasModel(config.model_name, provider=provider)
 
 
@@ -116,7 +130,7 @@ def create_groq_model(config: LLMConfig) -> GroqModel:
         Configured GroqModel instance.
 
     """
-    provider = GroqProvider(api_key=config.api_key)
+    provider = GroqProvider(**_provider_kwargs(config))
     return GroqModel(config.model_name, provider=provider)
 
 
@@ -130,7 +144,7 @@ def create_gemini_model(config: LLMConfig) -> GoogleModel:
         Configured GoogleModel instance.
 
     """
-    provider = GoogleProvider(api_key=config.api_key)
+    provider = GoogleProvider(**_provider_kwargs(config))
     return GoogleModel(config.model_name, provider=provider)
 
 
@@ -144,7 +158,7 @@ def create_openai_model(config: LLMConfig) -> OpenAIChatModel:
         Configured OpenAIChatModel instance.
 
     """
-    provider = OpenAIProvider(api_key=config.api_key)
+    provider = OpenAIProvider(**_provider_kwargs(config))
     return OpenAIChatModel(config.model_name, provider=provider)
 
 
@@ -161,7 +175,7 @@ def create_openrouter_model(config: LLMConfig) -> OpenRouterModel:
         Configured OpenRouterModel instance.
 
     """
-    provider = OpenRouterProvider(api_key=config.api_key)
+    provider = OpenRouterProvider(**_provider_kwargs(config))
     return OpenRouterModel(config.model_name, provider=provider)
 
 
@@ -181,7 +195,7 @@ PROVIDER_FACTORIES = {
 }
 
 
-def create_model(config: LLMConfig) -> Any:
+def create_model(config: LLMConfig) -> Model:
     """Create a model from configuration.
 
     Args:
@@ -256,7 +270,7 @@ class LLMBuilder:
         self._api_key: str | None = None
         self._temperature: float = 0.7
         self._max_tokens: int | None = None
-        self._extra_params: dict[str, Any] = {}
+        self._extra_params: dict[str, str | int | float | bool] = {}
 
     def provider(self, name: str) -> LLMBuilder:
         """Set the provider (groq, gemini, openai, etc.).
@@ -323,7 +337,7 @@ class LLMBuilder:
         self._max_tokens = tokens
         return self
 
-    def extra(self, **kwargs: Any) -> LLMBuilder:
+    def extra(self, **kwargs: str | int | float | bool) -> LLMBuilder:
         """Add extra provider-specific parameters.
 
         Args:
@@ -350,96 +364,216 @@ class LLMBuilder:
             raise ValueError('Provider must be set')
         if not self._model_name:
             raise ValueError('Model name must be set')
-        if not self._api_key:
-            raise ValueError('API key must be set')
-
         return LLMConfig(
             provider=self._provider,
             model_name=self._model_name,
-            api_key=self._api_key,
+            api_key=_resolve_api_key(self._provider, self._api_key),
             temperature=self._temperature,
             max_tokens=self._max_tokens,
             extra_params=self._extra_params if self._extra_params else None,
         )
 
 
-def groq(model_name: str, api_key: str, **kwargs: Any) -> LLMConfig:
+_PROVIDER_ENV_VARS: dict[str, list[str]] = {
+    'groq': ['GROQ_API_KEY', 'GROQ_KEY'],
+    'gemini': ['GEMINI_API_KEY', 'GEMINI_KEY', 'GOOGLE_API_KEY'],
+    'google': ['GEMINI_API_KEY', 'GEMINI_KEY', 'GOOGLE_API_KEY'],
+    'openai': ['OPENAI_API_KEY', 'OPENAI_KEY'],
+    'gpt': ['OPENAI_API_KEY', 'OPENAI_KEY'],
+    'cerebras': ['CEREBRAS_API_KEY', 'CEREBRAS_KEY'],
+    'openrouter': ['OPENROUTER_API_KEY', 'OPENROUTER_KEY'],
+}
+
+
+def _resolve_api_key(provider: str, api_key: str | None) -> str | None:
+    """Resolve an API key from the explicit value or environment variables.
+
+    Automatically loads a .env file (if present) before checking env vars.
+    Checks the provider's known env var names (e.g. OPENROUTER_API_KEY,
+    OPENROUTER_KEY) and returns the first one found. Returns None if nothing
+    is available, letting the underlying provider attempt its own resolution.
+    """
+    if api_key is not None:
+        return api_key
+    from dotenv import load_dotenv
+
+    load_dotenv()
+    for env_var in _PROVIDER_ENV_VARS.get(provider, []):
+        val = os.environ.get(env_var)
+        if val:
+            return val
+    return None
+
+
+def groq(model_name: str, api_key: str | None = None, **kwargs: Any) -> LLMConfig:
     """Quick config for Groq.
 
     Args:
         model_name: Groq model identifier
-        api_key: Groq API key
+        api_key: Groq API key. If omitted, reads from GROQ_API_KEY or GROQ_KEY env vars.
         **kwargs: Additional configuration options
 
     Returns:
         Configured LLMConfig for Groq.
 
     """
-    return LLMConfig(provider='groq', model_name=model_name, api_key=api_key, **kwargs)
+    return LLMConfig(provider='groq', model_name=model_name, api_key=_resolve_api_key('groq', api_key), **kwargs)
 
 
-def gemini(model_name: str, api_key: str, **kwargs: Any) -> LLMConfig:
+def gemini(model_name: str, api_key: str | None = None, **kwargs: Any) -> LLMConfig:
     """Quick config for Gemini.
 
     Args:
         model_name: Gemini model identifier
-        api_key: Google API key
+        api_key: Google API key. If omitted, reads from GEMINI_API_KEY, GEMINI_KEY, or GOOGLE_API_KEY env vars.
         **kwargs: Additional configuration options
 
     Returns:
         Configured LLMConfig for Gemini.
 
     """
-    return LLMConfig(provider='gemini', model_name=model_name, api_key=api_key, **kwargs)
+    return LLMConfig(provider='gemini', model_name=model_name, api_key=_resolve_api_key('gemini', api_key), **kwargs)
 
 
-def cerebras(model_name: str, api_key: str, **kwargs: Any) -> LLMConfig:
+def cerebras(model_name: str, api_key: str | None = None, **kwargs: Any) -> LLMConfig:
     """Quick config for Cerebras.
 
     Args:
         model_name: Cerebras model identifier (e.g. 'llama-3.3-70b')
-        api_key: Cerebras API key
+        api_key: Cerebras API key. If omitted, reads from CEREBRAS_API_KEY or CEREBRAS_KEY env vars.
         **kwargs: Additional configuration options
 
     Returns:
         Configured LLMConfig for Cerebras.
 
     """
-    return LLMConfig(provider='cerebras', model_name=model_name, api_key=api_key, **kwargs)
+    return LLMConfig(
+        provider='cerebras', model_name=model_name, api_key=_resolve_api_key('cerebras', api_key), **kwargs
+    )
 
 
-def openai(model_name: str, api_key: str, **kwargs: Any) -> LLMConfig:
+def openai(model_name: str, api_key: str | None = None, **kwargs: Any) -> LLMConfig:
     """Quick config for OpenAI.
 
     Args:
         model_name: OpenAI model identifier
-        api_key: OpenAI API key
+        api_key: OpenAI API key. If omitted, reads from OPENAI_API_KEY or OPENAI_KEY env vars.
         **kwargs: Additional configuration options
 
     Returns:
         Configured LLMConfig for OpenAI.
 
     """
-    return LLMConfig(provider='openai', model_name=model_name, api_key=api_key, **kwargs)
+    return LLMConfig(provider='openai', model_name=model_name, api_key=_resolve_api_key('openai', api_key), **kwargs)
 
 
-def openrouter(model_name: str, api_key: str, **kwargs: Any) -> LLMConfig:
+def openrouter(model_name: str, api_key: str | None = None, **kwargs: Any) -> LLMConfig:
     """Quick config for OpenRouter.
 
     Args:
         model_name: OpenRouter model identifier (e.g. 'stepfun/step-3.5-flash:free')
-        api_key: OpenRouter API key
+        api_key: OpenRouter API key. If omitted, reads from OPENROUTER_API_KEY or OPENROUTER_KEY env vars.
         **kwargs: Additional configuration options
 
     Returns:
         Configured LLMConfig for OpenRouter.
 
     """
-    return LLMConfig(provider='openrouter', model_name=model_name, api_key=api_key, **kwargs)
+    return LLMConfig(
+        provider='openrouter', model_name=model_name, api_key=_resolve_api_key('openrouter', api_key), **kwargs
+    )
 
 
 # ============================================================================
-# 6. EXAMPLES & USAGE
+# 6. UNIFIED PROVIDER FUNCTION - Magic model string parsing
+# ============================================================================
+
+# Canonical provider names recognised by `provider()`.  Aliases (google, gpt)
+# are included so that `ys.provider("gpt:gpt-4o")` works.
+_KNOWN_PROVIDERS: set[str] = set(PROVIDER_FACTORIES.keys())
+
+
+def _parse_model_string(model_string: str) -> tuple[str, str]:
+    """Split a model string into (provider, model_name).
+
+    Supports two formats (checked in order):
+
+    1. **Colon format** (preferred): ``provider:model-name``
+       e.g. ``groq:llama-3.3-70b-versatile``,
+       ``openrouter:meta-llama/llama-3.3-70b-instruct:free``
+    2. **Slash format** (legacy / CLI compat): ``provider/model-name``
+       Only when the first segment is a known provider name.
+
+    The colon format is unambiguous even for OpenRouter models whose names
+    contain slashes.
+
+    Returns:
+        Tuple of (provider, model_name).
+
+    Raises:
+        ValueError: When no provider can be determined.
+    """
+    # 1. Try colon format — split on FIRST colon only
+    if ':' in model_string:
+        first, rest = model_string.split(':', 1)
+        if first.lower() in _KNOWN_PROVIDERS:
+            return first.lower(), rest
+
+    # 2. Try slash format — only if the first segment is a known provider
+    if '/' in model_string:
+        first, rest = model_string.split('/', 1)
+        if first.lower() in _KNOWN_PROVIDERS:
+            return first.lower(), rest
+
+    # Neither format matched
+    raise ValueError(
+        f'Cannot determine provider from {model_string!r}. '
+        f"Use 'provider:model-name' format, e.g. 'groq:{model_string}'. "
+        f'Known providers: {", ".join(sorted(_KNOWN_PROVIDERS - {"google", "gpt"}))}'
+    )
+
+
+def provider(model_string: str, api_key: str | None = None, **kwargs: Any) -> LLMConfig:
+    """Create an LLM config from a single model string.
+
+    This is the recommended, unified way to configure a model.  The provider is
+    parsed from the model string automatically.
+
+    Preferred format uses ``:`` as the separator::
+
+        import yosoi as ys
+
+        config = ys.provider('groq:llama-3.3-70b-versatile')
+        config = ys.provider('openrouter:meta-llama/llama-3.3-70b-instruct:free')
+        config = ys.provider('gemini:gemini-2.0-flash')
+
+    The ``provider/model`` format is also supported for known providers::
+
+        config = ys.provider('groq/llama-3.3-70b-versatile')
+
+    Args:
+        model_string: Model identifier in ``provider:model-name`` format.
+        api_key: Explicit API key. If omitted, resolved from environment.
+        **kwargs: Additional LLMConfig fields (temperature, max_tokens, etc.)
+
+    Returns:
+        Configured LLMConfig instance.
+
+    Raises:
+        ValueError: If the provider cannot be determined.
+
+    """
+    prov, model_name = _parse_model_string(model_string)
+    return LLMConfig(
+        provider=prov,
+        model_name=model_name,
+        api_key=_resolve_api_key(prov, api_key),
+        **kwargs,
+    )
+
+
+# ============================================================================
+# 7. EXAMPLES & USAGE
 # ============================================================================
 
 if __name__ == '__main__':

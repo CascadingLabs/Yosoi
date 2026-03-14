@@ -33,7 +33,7 @@ def test_save_selectors_formats_with_primary_fallback_tertiary(storage):
     loaded = storage.load_selectors('example.com')
     assert loaded['title']['primary'] == 'h1'
     assert loaded['title']['fallback'] == 'h2'
-    assert loaded['title']['tertiary'] == 'NA'  # default when not provided
+    assert loaded['title']['tertiary'] is None  # default when not provided
 
 
 def test_nonexistent_domain_returns_none(storage):
@@ -124,11 +124,11 @@ def test_load_selectors_returns_none_for_missing(storage):
     assert storage.load_selectors('missing.com') is None
 
 
-def test_format_selectors_uses_na_for_missing_fallback(storage):
+def test_format_selectors_uses_none_for_missing_fallback(storage):
     selectors = {'title': {'primary': 'h1'}}
     formatted = storage._format_selectors(selectors)
-    assert formatted['title']['fallback'] == 'NA'
-    assert formatted['title']['tertiary'] == 'NA'
+    assert formatted['title']['fallback'] is None
+    assert formatted['title']['tertiary'] is None
 
 
 def test_format_selectors_uses_provided_values(storage):
@@ -267,11 +267,11 @@ def test_get_selector_filepath_dots_replaced_with_underscores(storage):
     assert 'example_com' in filename
 
 
-def test_format_selectors_primary_na_when_missing(storage):
-    """Missing 'primary' key must default to 'NA'."""
+def test_format_selectors_primary_none_when_missing(storage):
+    """Missing 'primary' key must default to None."""
     selectors = {'title': {'fallback': 'h2'}}
     formatted = storage._format_selectors(selectors)
-    assert formatted['title']['primary'] == 'NA'
+    assert formatted['title']['primary'] is None
 
 
 def test_format_selectors_preserves_all_three_levels(storage):
@@ -518,3 +518,50 @@ def test_export_summary_empty(storage, tmp_path):
     with open(output_file) as f:
         data = json.load(f)
     assert data['total_domains'] == 0
+
+
+# ---------------------------------------------------------------------------
+# Coverage: lines 79-81 — load_selectors with corrupt JSON
+# ---------------------------------------------------------------------------
+
+
+def test_load_selectors_corrupt_json_returns_none(storage):
+    """load_selectors returns None for a file containing invalid JSON."""
+    import pathlib
+
+    filepath = storage._get_filepath('corrupt.com')
+    pathlib.Path(filepath).write_text('NOT JSON')
+    result = storage.load_selectors('corrupt.com')
+    assert result is None
+
+
+# ---------------------------------------------------------------------------
+# Coverage: lines 140-142 — load_content multi-item format
+# ---------------------------------------------------------------------------
+
+
+def test_load_content_multi_item_format(storage):
+    """load_content returns list of dicts for multi-item 'items' format."""
+    import json
+    import pathlib
+
+    filepath = storage._get_content_filepath('https://example.com/multi')
+    pathlib.Path(filepath).parent.mkdir(parents=True, exist_ok=True)
+    data = {'items': [{'title': 'A'}, {'title': 'B'}]}
+    pathlib.Path(filepath).write_text(json.dumps(data))
+    loaded = storage.load_content('https://example.com/multi')
+    assert isinstance(loaded, list)
+    assert len(loaded) == 2
+    assert loaded[0]['title'] == 'A'
+
+
+# ---------------------------------------------------------------------------
+# Coverage: lines 249-250 — _extract_domain ValueError
+# ---------------------------------------------------------------------------
+
+
+def test_extract_domain_valueerror_returns_unknown(storage, mocker):
+    """_extract_domain returns 'unknown' when urlparse raises ValueError."""
+    mocker.patch('yosoi.storage.persistence.urlparse', side_effect=ValueError('bad url'))
+    result = storage._extract_domain('anything')
+    assert result == 'unknown'

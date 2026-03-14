@@ -23,18 +23,6 @@ def test_selector_level_jsonld_is_4():
     assert SelectorLevel.JSONLD == 4
 
 
-def test_selector_level_clean_alias():
-    assert SelectorLevel.CLEAN == SelectorLevel.CSS
-
-
-def test_selector_level_standard_alias():
-    assert SelectorLevel.STANDARD == SelectorLevel.XPATH
-
-
-def test_selector_level_all_alias():
-    assert SelectorLevel.ALL == SelectorLevel.JSONLD
-
-
 def test_selector_level_ordering():
     assert SelectorLevel.CSS < SelectorLevel.XPATH < SelectorLevel.REGEX < SelectorLevel.JSONLD
 
@@ -46,27 +34,27 @@ def test_selector_level_ordering():
 
 def test_selector_entry_defaults_to_css():
     e = SelectorEntry(value='h1')
-    assert e.strategy == 'css'
+    assert e.type == 'css'
     assert e.level == SelectorLevel.CSS
 
 
 def test_selector_entry_xpath_sets_level():
-    e = SelectorEntry(strategy='xpath', value='//h1')
+    e = SelectorEntry(type='xpath', value='//h1')
     assert e.level == SelectorLevel.XPATH
 
 
 def test_selector_entry_regex_sets_level():
-    e = SelectorEntry(strategy='regex', value=r'\d+')
+    e = SelectorEntry(type='regex', value=r'\d+')
     assert e.level == SelectorLevel.REGEX
 
 
 def test_selector_entry_jsonld_sets_level():
-    e = SelectorEntry(strategy='jsonld', value='$.name')
+    e = SelectorEntry(type='jsonld', value='$.name')
     assert e.level == SelectorLevel.JSONLD
 
 
-def test_selector_entry_level_synced_from_strategy():
-    e = SelectorEntry(strategy='xpath', value='//h1')
+def test_selector_entry_level_synced_from_type():
+    e = SelectorEntry(type='xpath', value='//h1')
     assert e.level == 2
 
 
@@ -88,9 +76,9 @@ def test_field_selectors_coerces_fallback_str():
 
 
 def test_field_selectors_accepts_selector_entry_directly():
-    entry = SelectorEntry(strategy='xpath', value='//h1')
+    entry = SelectorEntry(type='xpath', value='//h1')
     fs = FieldSelectors(primary=entry)
-    assert fs.primary.strategy == 'xpath'
+    assert fs.primary.type == 'xpath'
 
 
 def test_field_selectors_fallback_none_by_default():
@@ -109,12 +97,12 @@ def test_field_selectors_max_level_plain_str_is_css():
 
 
 def test_field_selectors_max_level_with_xpath_fallback():
-    fs = FieldSelectors(primary='h1', fallback=SelectorEntry(strategy='xpath', value='//h1'))
+    fs = FieldSelectors(primary='h1', fallback=SelectorEntry(type='xpath', value='//h1'))
     assert fs.max_level == SelectorLevel.XPATH
 
 
 def test_field_selectors_max_level_with_xpath_primary():
-    fs = FieldSelectors(primary=SelectorEntry(strategy='xpath', value='//h1'))
+    fs = FieldSelectors(primary=SelectorEntry(type='xpath', value='//h1'))
     assert fs.max_level == SelectorLevel.XPATH
 
 
@@ -179,7 +167,72 @@ def test_as_entries_none_preserved():
 
 
 def test_as_entries_xpath_entry_preserved():
-    entry = SelectorEntry(strategy='xpath', value='//h1')
+    entry = SelectorEntry(type='xpath', value='//h1')
     fs = FieldSelectors(primary=entry)
     entries = fs.as_entries()
-    assert entries[0][1].strategy == 'xpath'  # type: ignore[union-attr]
+    assert entries[0][1].type == 'xpath'  # type: ignore[union-attr]
+
+
+# ---------------------------------------------------------------------------
+# FieldSelectors — NA coercion
+# ---------------------------------------------------------------------------
+
+
+def test_na_fallback_becomes_none():
+    fs = FieldSelectors(primary='h1', fallback='NA')
+    assert fs.fallback is None
+
+
+def test_na_lowercase_fallback_becomes_none():
+    fs = FieldSelectors(primary='h1', fallback='na')
+    assert fs.fallback is None
+
+
+def test_na_mixed_case_tertiary_becomes_none():
+    fs = FieldSelectors(primary='h1', tertiary='Na')
+    assert fs.tertiary is None
+
+
+def test_empty_string_fallback_becomes_none():
+    fs = FieldSelectors(primary='h1', fallback='')
+    assert fs.fallback is None
+
+
+# ---------------------------------------------------------------------------
+# FieldSelectors — deduplication
+# ---------------------------------------------------------------------------
+
+
+def test_dedup_fallback_equals_primary():
+    fs = FieldSelectors(primary='.star', fallback='.star')
+    assert fs.fallback is None
+
+
+def test_dedup_tertiary_equals_fallback():
+    fs = FieldSelectors(primary='h1', fallback='.title', tertiary='.title')
+    assert fs.fallback is not None
+    assert fs.fallback.value == '.title'
+    assert fs.tertiary is None
+
+
+def test_dedup_tertiary_equals_primary_when_fallback_deduped():
+    # fallback == primary → fallback becomes None; tertiary == primary → tertiary cleared
+    fs = FieldSelectors(primary='.star', fallback='.star', tertiary='.star')
+    assert fs.fallback is None
+    assert fs.tertiary is None
+
+
+def test_dedup_unique_selectors_preserved():
+    fs = FieldSelectors(primary='h1', fallback='.title', tertiary='#heading')
+    assert fs.fallback is not None
+    assert fs.fallback.value == '.title'
+    assert fs.tertiary is not None
+    assert fs.tertiary.value == '#heading'
+
+
+def test_dedup_only_tertiary_duplicates_primary():
+    # fallback is unique; tertiary duplicates primary → only tertiary cleared
+    fs = FieldSelectors(primary='h1', fallback='.unique', tertiary='h1')
+    assert fs.fallback is not None
+    assert fs.fallback.value == '.unique'
+    assert fs.tertiary is None

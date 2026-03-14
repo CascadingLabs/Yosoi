@@ -11,6 +11,7 @@ from yosoi.core.discovery.config import (
     groq,
     openai,
     openrouter,
+    provider,
 )
 
 # ---------------------------------------------------------------------------
@@ -144,10 +145,13 @@ class TestLLMBuilder:
         with pytest.raises(ValueError, match='Model name must be set'):
             LLMBuilder().provider('groq').api_key('k').build()
 
-    def test_missing_api_key_raises(self):
-        """Build without api_key raises ValueError."""
-        with pytest.raises(ValueError, match='API key must be set'):
-            LLMBuilder().provider('groq').model('m').build()
+    def test_missing_api_key_resolves_to_none(self, monkeypatch):
+        """Build without api_key resolves to None (provider handles resolution)."""
+        monkeypatch.setattr('dotenv.load_dotenv', lambda: None)
+        monkeypatch.delenv('GROQ_API_KEY', raising=False)
+        monkeypatch.delenv('GROQ_KEY', raising=False)
+        cfg = LLMBuilder().provider('groq').model('m').build()
+        assert cfg.api_key is None
 
     def test_no_extra_params_results_in_none(self):
         """When no extra params set, extra_params is None."""
@@ -197,6 +201,104 @@ class TestConvenienceHelpers:
 # ---------------------------------------------------------------------------
 # Coverage: lines 228-229 — create_agent function
 # ---------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------
+# provider() — unified model string parsing
+# ---------------------------------------------------------------------------
+
+
+class TestProvider:
+    """Tests for the unified provider() function."""
+
+    # -- Colon format (preferred) --
+
+    def test_colon_groq(self):
+        """provider('groq:llama') parses colon format."""
+        cfg = provider('groq:llama-3.3-70b-versatile', api_key='k')
+        assert cfg.provider == 'groq'
+        assert cfg.model_name == 'llama-3.3-70b-versatile'
+        assert cfg.api_key == 'k'
+
+    def test_colon_openrouter_preserves_slashes(self):
+        """Colon format preserves slashes in OpenRouter model names."""
+        cfg = provider('openrouter:meta-llama/llama-3.3-70b-instruct:free', api_key='k')
+        assert cfg.provider == 'openrouter'
+        assert cfg.model_name == 'meta-llama/llama-3.3-70b-instruct:free'
+
+    def test_colon_openrouter_stepfun(self):
+        """openrouter:stepfun/step-3.5-flash:free works."""
+        cfg = provider('openrouter:stepfun/step-3.5-flash:free', api_key='k')
+        assert cfg.provider == 'openrouter'
+        assert cfg.model_name == 'stepfun/step-3.5-flash:free'
+
+    def test_colon_gemini(self):
+        """provider('gemini:gemini-2.0-flash') works."""
+        cfg = provider('gemini:gemini-2.0-flash', api_key='k')
+        assert cfg.provider == 'gemini'
+        assert cfg.model_name == 'gemini-2.0-flash'
+
+    def test_colon_openai(self):
+        """provider('openai:gpt-4o') works."""
+        cfg = provider('openai:gpt-4o', api_key='k')
+        assert cfg.provider == 'openai'
+        assert cfg.model_name == 'gpt-4o'
+
+    def test_colon_gpt_alias(self):
+        """provider('gpt:gpt-4o') uses the gpt alias."""
+        cfg = provider('gpt:gpt-4o', api_key='k')
+        assert cfg.provider == 'gpt'
+
+    def test_colon_cerebras(self):
+        """provider('cerebras:llama-3.3-70b') works."""
+        cfg = provider('cerebras:llama-3.3-70b', api_key='k')
+        assert cfg.provider == 'cerebras'
+
+    def test_colon_case_insensitive(self):
+        """provider('GROQ:llama') is case insensitive."""
+        cfg = provider('GROQ:llama', api_key='k')
+        assert cfg.provider == 'groq'
+
+    # -- Slash format (legacy / CLI compat) --
+
+    def test_slash_groq(self):
+        """provider('groq/llama') still works (legacy format)."""
+        cfg = provider('groq/llama-3.3-70b-versatile', api_key='k')
+        assert cfg.provider == 'groq'
+        assert cfg.model_name == 'llama-3.3-70b-versatile'
+
+    def test_slash_openrouter_known_prefix(self):
+        """provider('openrouter/meta-llama/llama:free') works via slash when prefix is known."""
+        cfg = provider('openrouter/meta-llama/llama-3.3-70b-instruct:free', api_key='k')
+        assert cfg.provider == 'openrouter'
+        assert cfg.model_name == 'meta-llama/llama-3.3-70b-instruct:free'
+
+    # -- Error cases --
+
+    def test_bare_model_name_raises(self):
+        """A model name without provider prefix raises ValueError."""
+        with pytest.raises(ValueError, match='Cannot determine provider'):
+            provider('llama-3.3-70b-versatile', api_key='k')
+
+    def test_unknown_prefix_raises(self):
+        """Unknown prefix (not a known provider) raises ValueError."""
+        with pytest.raises(ValueError, match='Cannot determine provider'):
+            provider('meta-llama/llama-3.3-70b-instruct', api_key='k')
+
+    # -- kwargs --
+
+    def test_kwargs_forwarded(self):
+        """Extra kwargs like temperature are forwarded."""
+        cfg = provider('groq:llama', api_key='k', temperature=0.9, max_tokens=50)
+        assert cfg.temperature == 0.9
+        assert cfg.max_tokens == 50
+
+    def test_top_level_import(self):
+        """provider is accessible as ys.provider."""
+        import yosoi as ys
+
+        assert hasattr(ys, 'provider')
+        assert callable(ys.provider)
 
 
 class TestCreateAgent:

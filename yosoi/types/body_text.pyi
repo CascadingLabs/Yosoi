@@ -1,0 +1,3 @@
+from typing import Any
+
+def BodyText(description: str = ..., **kwargs: Any) -> Any: ...

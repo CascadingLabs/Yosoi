@@ -5,10 +5,19 @@ Stores everything in a single stats.json file.
 
 import json
 import os
-from typing import Any
+from typing import TypedDict
 from urllib.parse import urlparse
 
 from yosoi.utils.files import get_tracking_path
+
+
+class DomainStats(TypedDict):
+    """Per-domain tracking statistics."""
+
+    llm_calls: int
+    url_count: int
+    level_distribution: dict[str, int]
+    total_elapsed: float
 
 
 class LLMTracker:
@@ -40,22 +49,22 @@ class LLMTracker:
             with open(self.tracking_file, 'w') as f:
                 json.dump({}, f, indent=2)
 
-    def _load_data(self) -> dict[str, Any]:
+    def _load_data(self) -> dict[str, DomainStats]:
         """Load tracking data from file.
 
         Returns:
-            Dictionary containing tracking data for all domains.
+            Dictionary mapping domain names to their DomainStats.
             Empty dict if file doesn't exist or is invalid.
 
         """
         try:
             with open(self.tracking_file) as f:
-                data: dict[str, Any] = json.load(f)
+                data: dict[str, DomainStats] = json.load(f)
                 return data
         except (OSError, json.JSONDecodeError):
             return {}
 
-    def _save_data(self, data: dict[str, Any]) -> None:
+    def _save_data(self, data: dict[str, DomainStats]) -> None:
         """Save tracking data to file.
 
         Args:
@@ -91,28 +100,34 @@ class LLMTracker:
         url: str,
         used_llm: bool = False,
         level_distribution: dict[str, int] | None = None,
-    ) -> dict[str, int]:
+        elapsed: float | None = None,
+    ) -> DomainStats:
         """Record that a URL was processed.
 
         Args:
             url: The URL that was processed
             used_llm: Whether LLM was called for this URL. Defaults to False.
             level_distribution: Count of verified fields by selector strategy level. Defaults to None.
+            elapsed: Time in seconds spent processing this URL. Defaults to None.
 
         Returns:
-            Dictionary with 'llm_calls' and 'url_count' for this domain.
+            DomainStats with 'llm_calls', 'url_count', 'level_distribution', 'total_elapsed'.
 
         """
         domain = self.extract_domain(url)
         data = self._load_data()
 
         if domain not in data:
-            data[domain] = {'llm_calls': 0, 'url_count': 0, 'level_distribution': {}}
+            data[domain] = {'llm_calls': 0, 'url_count': 0, 'level_distribution': {}, 'total_elapsed': 0.0}
 
         data[domain]['url_count'] += 1
 
         if used_llm:
             data[domain]['llm_calls'] += 1
+
+        if elapsed is not None:
+            data[domain].setdefault('total_elapsed', 0.0)
+            data[domain]['total_elapsed'] += elapsed
 
         if level_distribution:
             dist: dict[str, int] = data[domain].setdefault('level_distribution', {})
@@ -120,9 +135,7 @@ class LLMTracker:
                 dist[level] = dist.get(level, 0) + count
 
         self._save_data(data)
-
-        result: dict[str, int] = data[domain]
-        return result
+        return data[domain]
 
     def get_llm_calls(self, url_or_domain: str) -> int:
         """Get LLM call count for a URL or domain.
@@ -135,9 +148,8 @@ class LLMTracker:
 
         """
         domain = self.extract_domain(url_or_domain) if '://' in url_or_domain else url_or_domain
-        data = self._load_data()
-        count: int = data.get(domain, {}).get('llm_calls', 0)
-        return count
+        stats = self._load_data().get(domain)
+        return stats['llm_calls'] if stats else 0
 
     def get_url_count(self, url_or_domain: str) -> int:
         """Get URL count for a URL or domain.
@@ -150,31 +162,28 @@ class LLMTracker:
 
         """
         domain = self.extract_domain(url_or_domain) if '://' in url_or_domain else url_or_domain
-        data = self._load_data()
-        count: int = data.get(domain, {}).get('url_count', 0)
-        return count
+        stats = self._load_data().get(domain)
+        return stats['url_count'] if stats else 0
 
-    def get_stats(self, url_or_domain: str) -> dict[str, int]:
+    def get_stats(self, url_or_domain: str) -> DomainStats:
         """Get all stats for a URL or domain.
 
         Args:
             url_or_domain: Either a full URL or domain name
 
         Returns:
-            Dictionary with 'llm_calls' and 'url_count' keys.
+            DomainStats for the given domain.
 
         """
         domain = self.extract_domain(url_or_domain) if '://' in url_or_domain else url_or_domain
         data = self._load_data()
-        stats: dict[str, int] = data.get(domain, {'llm_calls': 0, 'url_count': 0})
-        return stats
+        return data.get(domain, DomainStats(llm_calls=0, url_count=0, level_distribution={}, total_elapsed=0.0))
 
-    def get_all_stats(self) -> dict[str, dict[str, int]]:
+    def get_all_stats(self) -> dict[str, DomainStats]:
         """Get all tracking data.
 
         Returns:
-            Dictionary mapping domain names to their statistics.
-            Each domain has 'llm_calls' and 'url_count' keys.
+            Dictionary mapping domain names to their DomainStats.
 
         """
         return self._load_data()
@@ -195,8 +204,11 @@ class LLMTracker:
         total_llm_calls = sum(stats['llm_calls'] for stats in data.values())
         total_urls = sum(stats['url_count'] for stats in data.values())
 
+        total_elapsed = sum(stats.get('total_elapsed', 0.0) for stats in data.values())
+
         print(f'\nTotal LLM Calls: {total_llm_calls}')
         print(f'Total URLs Processed: {total_urls}')
+        print(f'Total Elapsed: {total_elapsed:.1f}s')
         print(f'Total Domains: {len(data)}')
 
         print('\n' + '-' * 70)

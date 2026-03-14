@@ -1,0 +1,3 @@
+from typing import Any
+
+def RelatedContent(description: str = ..., **kwargs: Any) -> Any: ...

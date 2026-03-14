@@ -55,7 +55,8 @@ def test_get_stats_returns_dict(tracker):
 
 def test_get_stats_unknown_domain_returns_zeros(tracker):
     stats = tracker.get_stats('neverrecorded.com')
-    assert stats == {'llm_calls': 0, 'url_count': 0}
+    assert stats['llm_calls'] == 0
+    assert stats['url_count'] == 0
 
 
 def test_get_all_stats_returns_all_domains(tracker):
@@ -404,3 +405,55 @@ def test_extract_domain_no_netloc_returns_empty(tracker):
     # urlparse rarely raises ValueError; this tests the path string case
     result = tracker.extract_domain('just-a-string')
     assert isinstance(result, str)
+
+
+# ---------------------------------------------------------------------------
+# elapsed time tracking
+# ---------------------------------------------------------------------------
+
+
+def test_record_url_stores_elapsed(tracker):
+    """record_url with elapsed stores total_elapsed in the tracking file."""
+    tracker.record_url('https://a.com/x', used_llm=True, elapsed=2.5)
+    data = tracker._load_data()
+    assert data['a.com']['total_elapsed'] == 2.5
+
+
+def test_elapsed_accumulates_across_urls(tracker):
+    """total_elapsed sums across multiple record_url calls."""
+    tracker.record_url('https://a.com/x', used_llm=True, elapsed=1.5)
+    tracker.record_url('https://a.com/y', used_llm=False, elapsed=2.3)
+    data = tracker._load_data()
+    assert data['a.com']['total_elapsed'] == 3.8
+
+
+def test_record_url_without_elapsed_leaves_existing(tracker):
+    """Calling record_url without elapsed doesn't reset existing total_elapsed."""
+    tracker.record_url('https://a.com/x', used_llm=True, elapsed=5.0)
+    tracker.record_url('https://a.com/y', used_llm=False)
+    data = tracker._load_data()
+    assert data['a.com']['total_elapsed'] == 5.0
+
+
+def test_elapsed_independent_per_domain(tracker):
+    """total_elapsed is tracked independently for each domain."""
+    tracker.record_url('https://a.com/x', elapsed=1.0)
+    tracker.record_url('https://b.com/x', elapsed=2.0)
+    data = tracker._load_data()
+    assert data['a.com']['total_elapsed'] == 1.0
+    assert data['b.com']['total_elapsed'] == 2.0
+
+
+def test_new_domain_initializes_total_elapsed_to_zero(tracker):
+    """New domain starts with total_elapsed of 0.0."""
+    tracker.record_url('https://new.com/x', used_llm=False)
+    data = tracker._load_data()
+    assert data['new.com']['total_elapsed'] == 0.0
+
+
+def test_elapsed_accumulates_without_precision_loss(tracker):
+    """total_elapsed stores raw sum; rounding happens only at presentation."""
+    tracker.record_url('https://a.com/x', elapsed=1.123)
+    tracker.record_url('https://a.com/y', elapsed=2.456)
+    data = tracker._load_data()
+    assert data['a.com']['total_elapsed'] == pytest.approx(1.123 + 2.456)

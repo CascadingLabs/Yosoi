@@ -12,11 +12,11 @@ import asyncio
 
 import pytest
 
+import yosoi.core.tasks as _tasks_mod
 from yosoi.core.discovery.agent import SelectorDiscovery
 from yosoi.core.discovery.config import LLMConfig
 from yosoi.core.discovery.yosoi_agent import YosoiAgent
 from yosoi.core.tasks import (
-    _pipeline_config,
     configure_broker,
     enqueue_urls,
     process_url_task,
@@ -29,9 +29,9 @@ from yosoi.models.defaults import NewsArticle
 @pytest.fixture
 def clean_broker():
     """Ensure broker state is clean before and after each test."""
-    _pipeline_config.clear()
+    _tasks_mod._pipeline_config = None
     yield
-    _pipeline_config.clear()
+    _tasks_mod._pipeline_config = None
 
 
 @pytest.fixture
@@ -229,11 +229,10 @@ class TestAgentRunInsideTask:
         # Mock the full pipeline flow: fetch → clean → discover → verify → save
         mock_pipeline_cls = mocker.patch('yosoi.core.pipeline.Pipeline')
         mock_pipeline = mock_pipeline_cls.return_value
-        mock_pipeline.process_url = mocker.AsyncMock(return_value=True)
+        mock_pipeline.process_url = mocker.AsyncMock(return_value=None)
 
         result = await process_url_task.original_func(url='http://example.com')
 
-        assert result['success'] is True
         assert result['url'] == 'http://example.com'
         assert 'elapsed' in result
         await shutdown_broker()
@@ -297,6 +296,7 @@ class TestEndToEndBrokerAgent:
         mock_pipeline_cls = mocker.patch('yosoi.core.pipeline.Pipeline')
         mock_pipeline = mock_pipeline_cls.return_value
         mock_pipeline.process_url = mocker.AsyncMock(return_value=True)
+        mock_pipeline.last_elapsed = 0.1
 
         completed = []
 
@@ -320,23 +320,23 @@ class TestEndToEndBrokerAgent:
         await configure_broker(mock_llm_config, contract=NewsArticle, max_workers=2)
 
         assert yosoi_tasks._semaphore is not None
-        assert _pipeline_config['contract'] is NewsArticle
+        assert _tasks_mod._pipeline_config is not None
+        assert _tasks_mod._pipeline_config['contract'] is NewsArticle
 
         await shutdown_broker()
 
         assert yosoi_tasks._semaphore is None
-        assert _pipeline_config == {}
+        assert _tasks_mod._pipeline_config is None
 
     async def test_mixed_success_and_failure_results(self, mocker, mock_llm_config, clean_broker):
         """Enqueue mix of passing and failing URLs, verify correct bucketing."""
         await configure_broker(mock_llm_config, contract=NewsArticle, max_workers=3)
 
-        call_idx = 0
-
         async def _alternate(url, **kwargs):
-            nonlocal call_idx
-            call_idx += 1
-            return call_idx % 2 == 1  # odd calls succeed, even fail
+            # odd-numbered sites always fail (even with retries), even ones succeed
+            site_num = int(url.split('site')[1].split('.')[0])
+            if site_num % 2 == 1:
+                raise RuntimeError(f'Processing failed for {url}')
 
         mock_pipeline_cls = mocker.patch('yosoi.core.pipeline.Pipeline')
         mock_pipeline = mock_pipeline_cls.return_value

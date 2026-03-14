@@ -1,12 +1,10 @@
 """BodyText type for Yosoi contracts."""
 
-from typing import Any
-
-from yosoi.types.registry import register_coercion
+from yosoi.types.registry import CoercionConfig, register_coercion
 
 
 @register_coercion('body_text', description='Main body text content')
-def BodyText(v: object, config: dict[str, Any], source_url: str | None = None) -> str:
+def BodyText(v: object, config: CoercionConfig, source_url: str | None = None) -> str:
     """Configure a body text field.
 
     Example::

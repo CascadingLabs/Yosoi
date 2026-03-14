@@ -109,3 +109,4 @@ memray*.bin
 .claude/settings.local.json
 
 mutants
+_check.py

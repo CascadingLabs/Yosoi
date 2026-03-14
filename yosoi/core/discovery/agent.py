@@ -1,7 +1,6 @@
 """AI-powered selector discovery by reading cleaned HTML."""
 
 import logging
-from typing import Any
 
 import logfire
 from pydantic import BaseModel
@@ -23,6 +22,34 @@ from yosoi.prompts.discovery import (
 )
 from yosoi.utils.exceptions import LLMGenerationError
 
+# Selector dict: field name → {primary, fallback, tertiary} CSS selectors
+SelectorMap = dict[str, dict[str, str]]
+
+
+def _extract_provider_error(exc: Exception) -> str | None:
+    """Extract a human-readable error message from provider exceptions.
+
+    Walks the exception chain to find provider-specific error details
+    (e.g. Groq's ``body['error']['message']`` or pydantic-ai's
+    ``ModelHTTPError``).
+
+    Returns:
+        A concise error string, or None if no actionable detail was found.
+
+    """
+    current: BaseException | None = exc
+    while current is not None:
+        # Provider SDK exceptions (groq, openai, etc.) attach a body dict
+        body = getattr(current, 'body', None)
+        if isinstance(body, dict):
+            error = body.get('error', {})
+            if isinstance(error, dict):
+                msg = error.get('message')
+                if msg:
+                    return str(msg)
+        current = current.__cause__
+    return None
+
 
 class SelectorDiscovery:
     """Discovers selectors using AI to read cleaned HTML.
@@ -37,7 +64,7 @@ class SelectorDiscovery:
     """
 
     console: Console
-    agent: Agent[Any, BaseModel]
+    agent: Agent[DiscoveryDeps, BaseModel]
     model_name: str
     provider: str
     target_level: SelectorLevel
@@ -86,7 +113,7 @@ class SelectorDiscovery:
                 )
         elif llm_config is not None:
             model = create_model(llm_config)
-            self.agent = Agent(model, deps_type=DiscoveryDeps, output_type=output_model)
+            self.agent = Agent(model, deps_type=DiscoveryDeps, output_type=output_model, output_retries=3)
             # Register dynamic system-prompt functions
             self.agent.system_prompt(base_instructions)
             self.agent.system_prompt(field_instructions)
@@ -99,7 +126,7 @@ class SelectorDiscovery:
             raise ValueError('Either provide llm_config or agent parameter')
 
     @logfire.instrument('discover_selectors', extract_args=False)
-    async def discover_selectors(self, html: str, url: str | None = None) -> dict[str, Any] | None:
+    async def discover_selectors(self, html: str, url: str | None = None) -> SelectorMap | None:
         """Discover CSS selectors from cleaned HTML using AI.
 
         Args:
@@ -117,7 +144,7 @@ class SelectorDiscovery:
             selectors_obj = await self._get_selectors_from_ai(url_context, html)
 
             if selectors_obj:
-                selectors: dict[str, Any] = selectors_obj.model_dump(exclude_none=True)
+                selectors: SelectorMap = selectors_obj.model_dump(exclude_none=True)
 
                 if selectors and not self._is_all_na(selectors):
                     logfire.info('Selectors found successfully', selectors=selectors)
@@ -160,16 +187,19 @@ class SelectorDiscovery:
 
         except Exception as e:
             error_msg = str(e)
+            detail = _extract_provider_error(e)
 
-            if 'tool_use_failed' in error_msg or 'invalid_request_error' in error_msg:
+            if detail:
+                self.console.print(f'[danger]  ✗ {detail}[/danger]')
+            elif 'tool_use_failed' in error_msg or 'invalid_request_error' in error_msg:
                 self.console.print('[danger]  ✗ AI failed to generate structured output[/danger]')
             else:
                 self.console.print(f'[danger]  ✗ Error getting selectors from AI: {e}[/danger]')
 
             logfire.error('AI request failed', error=error_msg, provider=self.provider)
-            raise LLMGenerationError(f'AI discovery failed: {error_msg}') from e
+            raise LLMGenerationError(f'AI discovery failed: {detail or error_msg}') from e
 
-    def _is_all_na(self, selectors: dict[str, Any]) -> bool:
+    def _is_all_na(self, selectors: SelectorMap) -> bool:
         """Check if AI returned all NA (gave up).
 
         Args:
@@ -179,7 +209,9 @@ class SelectorDiscovery:
             True if all the selectors are NA or None, otherwise False
 
         """
-        for field_sel in selectors.values():
+        for field_name, field_sel in selectors.items():
+            if field_name == 'yosoi_container':
+                continue
             for v in field_sel.values():
                 if v and v != 'NA':
                     return False

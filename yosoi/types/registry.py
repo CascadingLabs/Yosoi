@@ -1,12 +1,19 @@
 """Coercion function registry for Yosoi semantic types."""
 
+import datetime
 from collections.abc import Callable
 from typing import Any
 
 from yosoi.types.field import Field
 
+# Coercion config: json_schema_extra dict passed to coercion functions
+CoercionConfig = dict[str, str | int | float | bool | None]
+
+# Coercion function return type (includes datetime for Datetime coercer)
+CoercedValue = str | float | int | datetime.datetime | None
+
 # Maps yosoi_type -> coerce(v, config, source_url) -> coerced_value
-_registry: dict[str, Callable[..., Any]] = {}
+_registry: dict[str, Callable[..., CoercedValue]] = {}
 
 
 def register_coercion(
@@ -14,7 +21,7 @@ def register_coercion(
     *,
     description: str = '',
     **config_defaults: Any,
-) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+) -> Callable[[Callable[..., CoercedValue]], Callable[..., Any]]:
     r"""Decorator that registers a coercion function and returns a Field factory.
 
     The decorated function becomes the Field factory — its name is what you use
@@ -43,7 +50,7 @@ def register_coercion(
         # PhoneNumber(country_code='+44') -> Field(json_schema_extra={...})
     """
 
-    def decorator(coerce_fn: Callable[..., Any]) -> Callable[..., Any]:
+    def decorator(coerce_fn: Callable[..., CoercedValue]) -> Callable[..., Any]:
         # Store the raw coerce function in the registry.
         _registry[type_name] = coerce_fn
 
@@ -53,7 +60,7 @@ def register_coercion(
 
         def factory(description: str = _description, **kwargs: Any) -> Any:
             # Split kwargs: config keys go to json_schema_extra, rest go to Field.
-            config: dict[str, Any] = {'yosoi_type': type_name, **_config_defaults}
+            config: CoercionConfig = {'yosoi_type': type_name, **_config_defaults}
             field_kwargs: dict[str, Any] = {}
             for k, v in kwargs.items():
                 if k in _config_defaults:

@@ -1,12 +1,10 @@
 """Title type for Yosoi contracts."""
 
-from typing import Any
-
-from yosoi.types.registry import register_coercion
+from yosoi.types.registry import CoercionConfig, register_coercion
 
 
 @register_coercion('title', description='A title or heading')
-def Title(v: object, config: dict[str, Any], source_url: str | None = None) -> str:
+def Title(v: object, config: CoercionConfig, source_url: str | None = None) -> str:
     """Configure a title field.
 
     Example::

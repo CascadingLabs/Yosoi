@@ -1,10 +1,14 @@
 """Extracts content from web pages using validated selectors."""
 
+from typing import Literal
+
 from parsel import Selector, SelectorList
 from rich.console import Console
 
 from yosoi.models.contract import Contract
 from yosoi.models.selectors import SelectorEntry, SelectorLevel, coerce_selector_entry
+
+FieldMode = Literal['body_text', 'related_content', 'text']
 
 
 class ContentExtractor:
@@ -28,13 +32,15 @@ class ContentExtractor:
         self._overridden_fields: frozenset[str] = (
             frozenset(contract.get_selector_overrides().keys()) if contract is not None else frozenset()
         )
-        self._field_modes: dict[str, str] = {}
+        self._field_modes: dict[str, FieldMode] = {}
         if contract is not None:
             for name, fi in contract.model_fields.items():
                 extra = fi.json_schema_extra
-                ytype = extra.get('yosoi_type') if isinstance(extra, dict) else None
-                if isinstance(ytype, str) and ytype in ('body_text', 'related_content'):
-                    self._field_modes[name] = ytype
+                raw_ytype = extra.get('yosoi_type') if isinstance(extra, dict) else None
+                if raw_ytype == 'body_text':
+                    self._field_modes[name] = 'body_text'
+                elif raw_ytype == 'related_content':
+                    self._field_modes[name] = 'related_content'
 
     def extract_content_with_html(
         self,
@@ -121,9 +127,9 @@ class ContentExtractor:
         """
         if entry.level > max_level:
             return None
-        if entry.strategy == 'xpath':
+        if entry.type == 'xpath':
             return self._extract_with_xpath_selector(sel, entry.value, field_name)
-        if entry.strategy in ('regex', 'jsonld'):
+        if entry.type in ('regex', 'jsonld'):
             return None  # unsupported strategies fail closed
         return self._extract_with_selector(sel, entry.value, field_name)
 
@@ -215,6 +221,68 @@ class ContentExtractor:
         first_element = elements[0]
         text = ' '.join(first_element.xpath('.//text()').getall()).strip()
         return text if text else None
+
+    def extract_items(
+        self,
+        _url: str,
+        html: str,
+        validated_selectors: dict[str, dict[str, str]],
+        container_selector: str,
+        max_level: SelectorLevel = SelectorLevel.CSS,
+    ) -> list[dict[str, str | list[str | dict[str, str]]]] | None:
+        """Extract multiple items from HTML using a container selector.
+
+        Each container element is treated as a scoped subtree from which
+        per-field selectors are resolved independently.
+
+        Args:
+            _url: URL the content is being extracted from (unused, for API consistency)
+            html: Cleaned HTML content to extract from
+            validated_selectors: Dictionary of validated selectors per field
+            container_selector: CSS selector matching each repeating item container
+            max_level: Maximum selector strategy level to use. Defaults to CSS.
+
+        Returns:
+            List of extracted content dicts (one per container), or None if no items found.
+
+        """
+        sel = Selector(text=html)
+        containers = sel.css(container_selector)
+
+        if not containers:
+            self.console.print(f'  ✗ No containers matched selector: {container_selector}')
+            return None
+
+        self.console.print(f'  ↻ Found {len(containers)} items with container selector: {container_selector}')
+
+        items: list[dict[str, str | list[str | dict[str, str]]]] = []
+        for container in containers:
+            item: dict[str, str | list[str | dict[str, str]]] = {}
+
+            for field_name in self.expected_fields:
+                if field_name not in validated_selectors:
+                    continue
+
+                field_selectors = validated_selectors[field_name]
+                candidates: list[tuple[str, SelectorEntry | None]] = [
+                    ('primary', coerce_selector_entry(field_selectors.get('primary'))),
+                    ('fallback', coerce_selector_entry(field_selectors.get('fallback'))),
+                    ('tertiary', coerce_selector_entry(field_selectors.get('tertiary'))),
+                ]
+
+                for _level_name, entry in candidates:
+                    if entry is None:
+                        continue
+                    content = self._resolve(container, entry, field_name, max_level)
+                    if content:
+                        item[field_name] = content
+                        break
+
+            if item:
+                items.append(item)
+
+        self.console.print(f'  ↻ Extracted {len(items)} non-empty items')
+        return items if items else None
 
     async def quick_extract(
         self, url: str, selector: str, field_type: str = 'text'

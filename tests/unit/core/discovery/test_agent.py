@@ -1,11 +1,15 @@
+import logging
+
 import pytest
 from pydantic_ai import Agent, capture_run_messages
 from pydantic_ai.models.test import TestModel
 from rich.console import Console
 
-from yosoi.core.discovery.agent import SelectorDiscovery
+from yosoi.core.discovery.agent import SelectorDiscovery, _extract_provider_error
 from yosoi.core.discovery.yosoi_agent import YosoiAgent
+from yosoi.models.contract import Contract
 from yosoi.models.defaults import NewsArticle
+from yosoi.models.selectors import SelectorLevel
 
 
 def _make_yosoi_agent() -> YosoiAgent:
@@ -96,3 +100,84 @@ def test_yosoi_agent_inner_has_system_prompt():
     """YosoiAgent with system_prompt should pass it to the inner agent."""
     agent = YosoiAgent(TestModel(), contract=NewsArticle, system_prompt='Find selectors.')
     assert agent.inner is not None
+
+
+# ---------------------------------------------------------------------------
+# _extract_provider_error — pure function tests
+# ---------------------------------------------------------------------------
+
+
+def test_extract_provider_error_finds_body_message():
+    """Exception with .body={'error': {'message': ...}} returns the message."""
+    exc = Exception('wrapper')
+    exc.body = {'error': {'message': 'rate limit exceeded'}}  # type: ignore[attr-defined]
+    assert _extract_provider_error(exc) == 'rate limit exceeded'
+
+
+def test_extract_provider_error_returns_none_for_plain_exception():
+    """Plain ValueError without body attr returns None."""
+    assert _extract_provider_error(ValueError('plain')) is None
+
+
+def test_extract_provider_error_walks_cause_chain():
+    """Walks __cause__ chain to find body on inner exception."""
+    inner = Exception('inner')
+    inner.body = {'error': {'message': 'from inner'}}  # type: ignore[attr-defined]
+    outer = Exception('outer')
+    outer.__cause__ = inner
+    assert _extract_provider_error(outer) == 'from inner'
+
+
+# ---------------------------------------------------------------------------
+# _is_all_na — pure method tests
+# ---------------------------------------------------------------------------
+
+
+def test_is_all_na_true_when_all_na():
+    """All fields NA (ignoring yosoi_container) returns True."""
+    discovery = SelectorDiscovery(contract=NewsArticle, agent=_make_yosoi_agent(), console=Console(quiet=True))
+    selectors = {
+        'headline': {'primary': 'NA'},
+        'yosoi_container': {'primary': '.items'},
+    }
+    assert discovery._is_all_na(selectors) is True
+
+
+def test_is_all_na_false_when_valid_selector():
+    """A real selector value makes _is_all_na return False."""
+    discovery = SelectorDiscovery(contract=NewsArticle, agent=_make_yosoi_agent(), console=Console(quiet=True))
+    selectors = {'headline': {'primary': 'h1.title'}}
+    assert discovery._is_all_na(selectors) is False
+
+
+# ---------------------------------------------------------------------------
+# Contract mismatch
+# ---------------------------------------------------------------------------
+
+
+class _OtherContract(Contract):
+    title: str
+
+
+def test_contract_mismatch_raises_valueerror():
+    """Passing an agent built with a different contract raises ValueError."""
+    agent = _make_yosoi_agent()  # built with NewsArticle
+    with pytest.raises(ValueError, match='Contract mismatch'):
+        SelectorDiscovery(contract=_OtherContract, agent=agent, console=Console(quiet=True))
+
+
+# ---------------------------------------------------------------------------
+# target_level warning with custom agent
+# ---------------------------------------------------------------------------
+
+
+def test_target_level_warning_with_custom_agent(caplog):
+    """Non-default target_level with custom agent logs a warning."""
+    with caplog.at_level(logging.WARNING, logger='yosoi.core.discovery.agent'):
+        SelectorDiscovery(
+            contract=NewsArticle,
+            agent=_make_yosoi_agent(),
+            console=Console(quiet=True),
+            target_level=SelectorLevel.XPATH,
+        )
+    assert 'has no effect with custom agents' in caplog.text

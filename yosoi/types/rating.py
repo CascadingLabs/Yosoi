@@ -1,9 +1,8 @@
 """Rating type for Yosoi contracts."""
 
 import re
-from typing import Any
 
-from yosoi.types.registry import register_coercion
+from yosoi.types.registry import CoercionConfig, register_coercion
 
 _WORD_MAP = {
     'one': 1,
@@ -20,7 +19,7 @@ _WORD_MAP = {
 
 
 @register_coercion('rating', description='A rating or review score', as_float=False, scale=5)
-def Rating(v: object, config: dict[str, Any], source_url: str | None = None) -> float | str:
+def Rating(v: object, config: CoercionConfig, source_url: str | None = None) -> float | str:
     """Configure a rating field with optional numeric conversion and scale validation.
 
     Example::

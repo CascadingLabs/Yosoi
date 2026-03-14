@@ -3,17 +3,16 @@
 from __future__ import annotations
 
 import datetime as dt_module
-from typing import Any
 
 import dateparser
 
-from yosoi.types.registry import register_coercion
+from yosoi.types.registry import CoercionConfig, register_coercion
 
 _STRIP_PREFIXES = ('published:', 'updated:', 'posted on')
 
 
 @register_coercion('datetime', description='A date or datetime value', assume_utc=True, past_only=False, as_iso=True)
-def Datetime(v: object, config: dict[str, Any], source_url: str | None = None) -> dt_module.datetime | str:
+def Datetime(v: object, config: CoercionConfig, source_url: str | None = None) -> dt_module.datetime | str:
     """Configure a datetime field with timezone, tense, and format options.
 
     Example::

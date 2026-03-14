@@ -17,14 +17,14 @@ if TYPE_CHECKING:
 def setup_llm_config(model_arg: str | None = None) -> LLMConfig:
     """Set up LLM configuration from -m/--model flag or environment variables.
 
-    When no ``--model`` flag is given, walks all known providers and picks the
-    first one whose API key is present in the environment.  The actual key
-    resolution (and cross-provider fallback) is handled by
-    ``YosoiConfig.validate_api_key_env``, so the LLMConfig returned here may
-    have an empty ``api_key``.
+    Resolution order:
+    1. ``--model`` CLI flag
+    2. ``YOSOI_MODEL`` environment variable (from shell or .env)
+    3. First provider with an available API key (auto-detect)
+    4. Groq default fallback
 
     Args:
-        model_arg: Model string in ``provider/model-name`` format.
+        model_arg: Model string in ``provider:model-name`` or ``provider/model-name`` format.
 
     Returns:
         LLMConfig instance.
@@ -33,16 +33,27 @@ def setup_llm_config(model_arg: str | None = None) -> LLMConfig:
         click.ClickException: If the provider format is invalid.
 
     """
+    from dotenv import load_dotenv
+
     from yosoi.core.configs import find_available_provider
-    from yosoi.core.discovery.config import LLMConfig
+    from yosoi.core.discovery.config import LLMConfig, _parse_model_string
+
+    load_dotenv()
 
     if model_arg:
-        if '/' not in model_arg:
-            raise click.ClickException(
-                '--model must be in provider/model-name format (e.g. groq/llama-3.3-70b-versatile)'
-            )
-        provider, model_name = model_arg.split('/', 1)
-        return LLMConfig(provider=provider, model_name=model_name, api_key='')
+        try:
+            prov, model_name = _parse_model_string(model_arg)
+        except ValueError as e:
+            raise click.ClickException(str(e)) from e
+        return LLMConfig(provider=prov, model_name=model_name, api_key='')
+
+    yosoi_model = os.getenv('YOSOI_MODEL')
+    if yosoi_model:
+        try:
+            prov, model_name = _parse_model_string(yosoi_model)
+        except ValueError as e:
+            raise click.ClickException(f'YOSOI_MODEL env var is invalid: {e}') from e
+        return LLMConfig(provider=prov, model_name=model_name, api_key='')
 
     found = find_available_provider()
     if found:
@@ -56,7 +67,7 @@ def build_yosoi_config(model_arg: str | None, debug: bool) -> YosoiConfig:
     """Build a YosoiConfig from CLI args, with provider fallback and user warnings.
 
     Args:
-        model_arg: Model string in ``provider/model-name`` format, or None.
+        model_arg: Model string in ``provider:model-name`` format, or None.
         debug: Whether to enable debug HTML saving.
 
     Returns:

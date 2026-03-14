@@ -4,3 +4,7 @@
 exc_type  # noqa
 exc_val  # noqa
 exc_tb  # noqa
+
+# TYPE_CHECKING imports used in string annotations (invisible to vulture)
+TaskiqResult  # noqa
+AsyncTaskiqTask  # noqa

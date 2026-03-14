@@ -7,19 +7,9 @@ from pathlib import Path
 from pydantic import BaseModel, Field, model_validator
 
 from yosoi.core.discovery import LLMConfig
+from yosoi.core.discovery.config import _PROVIDER_ENV_VARS
 
 log = logging.getLogger(__name__)
-
-# Maps provider names to their expected env key
-PROVIDER_ENV_KEYS: dict[str, str] = {
-    'groq': 'GROQ_KEY',
-    'gemini': 'GEMINI_KEY',
-    'google': 'GEMINI_KEY',
-    'openai': 'OPENAI_KEY',
-    'gpt': 'OPENAI_KEY',
-    'cerebras': 'CEREBRAS_KEY',
-    'openrouter': 'OPENROUTER_KEY',
-}
 
 # Preferred fallback order with default model names per provider.
 # Aliases (google, gpt) are excluded — only canonical names here.
@@ -32,6 +22,15 @@ PROVIDER_FALLBACK_ORDER: list[tuple[str, str]] = [
 ]
 
 
+def _find_env_key(provider: str) -> str | None:
+    """Try all known env var names for a provider, return the first found value."""
+    for env_var in _PROVIDER_ENV_VARS.get(provider, []):
+        val = os.getenv(env_var)
+        if val:
+            return val
+    return None
+
+
 def find_available_provider() -> tuple[str, str, str] | None:
     """Find the first provider with an available API key.
 
@@ -39,8 +38,7 @@ def find_available_provider() -> tuple[str, str, str] | None:
         Tuple of (provider, model_name, api_key) or None if nothing found.
     """
     for provider, default_model in PROVIDER_FALLBACK_ORDER:
-        env_key = PROVIDER_ENV_KEYS[provider]
-        val = os.getenv(env_key)
+        val = _find_env_key(provider)
         if val:
             return provider, default_model, val
     return None
@@ -92,14 +90,13 @@ class YosoiConfig(BaseModel):
             return self
 
         provider = self.llm.provider.lower()
-        env_key = PROVIDER_ENV_KEYS.get(provider)
 
-        if not env_key:
-            available = ', '.join(PROVIDER_ENV_KEYS.keys())
+        if provider not in _PROVIDER_ENV_VARS:
+            available = ', '.join(_PROVIDER_ENV_VARS.keys())
             raise ValueError(f'Unknown provider {provider!r}. Available: {available}')
 
-        # Try the configured provider's env var first
-        val = os.getenv(env_key)
+        # Try the configured provider's env vars first
+        val = _find_env_key(provider)
         if val:
             self.llm.api_key = val
             return self
@@ -108,9 +105,10 @@ class YosoiConfig(BaseModel):
         fallback = find_available_provider()
         if fallback:
             fb_provider, fb_model, fb_key = fallback
+            env_names = _PROVIDER_ENV_VARS.get(provider, [])
             log.warning(
                 'No %s found for provider %r — falling back to %r (%s)',
-                env_key,
+                '/'.join(env_names),
                 provider,
                 fb_provider,
                 fb_model,
@@ -121,5 +119,11 @@ class YosoiConfig(BaseModel):
             return self
 
         # Nothing available at all
-        env_vars = list(dict.fromkeys(PROVIDER_ENV_KEYS.values()))
-        raise ValueError(f'No API key found. Set one of: {", ".join(env_vars)}')
+        all_vars: list[str] = []
+        seen: set[str] = set()
+        for vars_list in _PROVIDER_ENV_VARS.values():
+            for v in vars_list:
+                if v not in seen:
+                    all_vars.append(v)
+                    seen.add(v)
+        raise ValueError(f'No API key found. Set one of: {", ".join(all_vars)}')

@@ -1,0 +1,45 @@
+"""Type stubs for yosoi public API."""
+
+from typing import Any
+
+from yosoi.core.configs import DebugConfig as DebugConfig
+from yosoi.core.configs import TelemetryConfig as TelemetryConfig
+from yosoi.core.configs import YosoiConfig as YosoiConfig
+from yosoi.core.discovery import LLMConfig as LLMConfig
+from yosoi.core.discovery import YosoiAgent as YosoiAgent
+from yosoi.core.discovery.config import LLMBuilder as LLMBuilder
+from yosoi.core.pipeline import Pipeline as Pipeline
+from yosoi.models.contract import Contract as Contract
+from yosoi.models.defaults import JobPosting as JobPosting
+from yosoi.models.defaults import NewsArticle as NewsArticle
+from yosoi.models.defaults import Product as Product
+from yosoi.models.defaults import Video as Video
+from yosoi.types.base import YosoiType as YosoiType
+from yosoi.types.field import Field as Field
+from yosoi.types.registry import register_coercion as register_coercion
+
+# Semantic type factories — override the dynamic signatures produced by @register_coercion
+# Return Any (not FieldInfo) so assignments like `name: str = ys.Title()` pass type checking,
+# matching pydantic.Field()'s own stub convention.
+def Title(description: str = ..., **kwargs: Any) -> Any: ...
+def Price(
+    description: str = ..., *, currency_symbol: str | None = ..., require_decimals: bool = ..., **kwargs: Any
+) -> Any: ...
+def Rating(description: str = ..., *, as_float: bool = ..., scale: int = ..., **kwargs: Any) -> Any: ...
+def BodyText(description: str = ..., **kwargs: Any) -> Any: ...
+def Author(description: str = ..., **kwargs: Any) -> Any: ...
+def Url(description: str = ..., *, require_https: bool = ..., strip_tracking: bool = ..., **kwargs: Any) -> Any: ...
+def Datetime(
+    description: str = ..., *, assume_utc: bool = ..., past_only: bool = ..., as_iso: bool = ..., **kwargs: Any
+) -> Any: ...
+
+# Provider helpers
+def groq(model_name: str, api_key: str | None = ..., **kwargs: Any) -> LLMConfig: ...
+def gemini(model_name: str, api_key: str | None = ..., **kwargs: Any) -> LLMConfig: ...
+def cerebras(model_name: str, api_key: str | None = ..., **kwargs: Any) -> LLMConfig: ...
+def openai(model_name: str, api_key: str | None = ..., **kwargs: Any) -> LLMConfig: ...
+def openrouter(model_name: str, api_key: str | None = ..., **kwargs: Any) -> LLMConfig: ...
+def provider(model_string: str, api_key: str | None = ..., **kwargs: Any) -> LLMConfig: ...
+
+__version__: str
+__all__: list[str]

@@ -2,9 +2,9 @@
 
 import pytest
 
+import yosoi.core.tasks as _tasks_mod
 from yosoi.core.tasks import (
     DomainDedup,
-    _pipeline_config,
     configure_broker,
     enqueue_urls,
     get_pipeline_config,
@@ -16,9 +16,9 @@ from yosoi.core.tasks import (
 @pytest.fixture
 def clean_broker():
     """Ensure broker state is clean before and after each test."""
-    _pipeline_config.clear()
+    _tasks_mod._pipeline_config = None
     yield
-    _pipeline_config.clear()
+    _tasks_mod._pipeline_config = None
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -66,7 +66,7 @@ class TestBrokerConfig:
         # Semaphore should be created with the right limit
         assert yosoi_tasks._semaphore is not None
         await shutdown_broker()
-        assert _pipeline_config == {}
+        assert _tasks_mod._pipeline_config is None
         assert yosoi_tasks._semaphore is None
 
     def test_get_config_before_configure_raises(self, clean_broker):
@@ -87,31 +87,14 @@ class TestProcessUrlTask:
 
         mock_pipeline_cls = mocker.patch('yosoi.core.pipeline.Pipeline')
         mock_pipeline = mock_pipeline_cls.return_value
-        mock_pipeline.process_url = mocker.AsyncMock(return_value=True)
+        mock_pipeline.process_url = mocker.AsyncMock(return_value=None)
 
         # Call the task function directly (not via kiq) for unit testing
         result = await process_url_task.original_func(url='http://example.com', force=True)
 
         assert result['url'] == 'http://example.com'
-        assert result['success'] is True
         assert 'elapsed' in result
         mock_pipeline.process_url.assert_awaited_once()
-        await shutdown_broker()
-
-    async def test_task_returns_failure(self, mocker, mock_llm_config, clean_broker):
-        from yosoi.models.defaults import NewsArticle
-
-        await configure_broker(mock_llm_config, contract=NewsArticle)
-
-        mock_pipeline_cls = mocker.patch('yosoi.core.pipeline.Pipeline')
-        mock_pipeline = mock_pipeline_cls.return_value
-        mock_pipeline.process_url = mocker.AsyncMock(return_value=False)
-
-        result = await process_url_task.original_func(url='http://fail.com')
-
-        assert result['url'] == 'http://fail.com'
-        assert result['success'] is False
-        assert 'elapsed' in result
         await shutdown_broker()
 
     async def test_task_reraises_exception(self, mocker, mock_llm_config, clean_broker):
@@ -141,7 +124,7 @@ class TestEnqueueUrls:
 
         mock_pipeline_cls = mocker.patch('yosoi.core.pipeline.Pipeline')
         mock_pipeline = mock_pipeline_cls.return_value
-        mock_pipeline.process_url = mocker.AsyncMock(return_value=True)
+        mock_pipeline.process_url = mocker.AsyncMock(return_value=None)
 
         results = await enqueue_urls(
             ['http://a.com/page1', 'http://b.com/page1'],
@@ -160,7 +143,7 @@ class TestEnqueueUrls:
 
         mock_pipeline_cls = mocker.patch('yosoi.core.pipeline.Pipeline')
         mock_pipeline = mock_pipeline_cls.return_value
-        mock_pipeline.process_url = mocker.AsyncMock(return_value=True)
+        mock_pipeline.process_url = mocker.AsyncMock(return_value=None)
 
         results = await enqueue_urls(
             ['http://example.com/page1', 'http://example.com/page2'],
@@ -179,7 +162,7 @@ class TestEnqueueUrls:
 
         mock_pipeline_cls = mocker.patch('yosoi.core.pipeline.Pipeline')
         mock_pipeline = mock_pipeline_cls.return_value
-        mock_pipeline.process_url = mocker.AsyncMock(return_value=False)
+        mock_pipeline.process_url = mocker.AsyncMock(side_effect=Exception('fail'))
 
         results = await enqueue_urls(['http://fail.com'], dedup_by_domain=False)
 
@@ -195,7 +178,7 @@ class TestEnqueueUrls:
 
         mock_pipeline_cls = mocker.patch('yosoi.core.pipeline.Pipeline')
         mock_pipeline = mock_pipeline_cls.return_value
-        mock_pipeline.process_url = mocker.AsyncMock(return_value=True)
+        mock_pipeline.process_url = mocker.AsyncMock(return_value=None)
 
         results = await enqueue_urls(
             ['example.com/page1', 'example.com/page2'],

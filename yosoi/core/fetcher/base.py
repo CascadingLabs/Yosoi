@@ -4,9 +4,16 @@ from __future__ import annotations
 
 import re
 from abc import ABC, abstractmethod
-from typing import ClassVar
+from typing import ClassVar, TypedDict
 
 from yosoi.models.results import ContentMetadata, FetchResult
+
+
+class JSDetectionResult(TypedDict):
+    """Result of JavaScript framework detection."""
+
+    requires_js: bool
+    framework: str | None
 
 
 class ContentAnalyzer:
@@ -68,7 +75,7 @@ class ContentAnalyzer:
         return any(indicator in start for indicator in rss_indicators)
 
     @staticmethod
-    def _detect_javascript_heavy(html_lower: str) -> dict[str, bool | str | None]:
+    def _detect_javascript_heavy(html_lower: str) -> JSDetectionResult:
         """Detect JavaScript-heavy sites that need browser rendering.
 
         Args:
