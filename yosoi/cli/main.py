@@ -11,6 +11,12 @@ from yosoi.cli.setup import build_yosoi_config, print_fetcher_info
 from yosoi.cli.utils import console, load_urls_from_file
 from yosoi.models.contract import Contract
 from yosoi.models.defaults import NewsArticle
+from yosoi.models.selectors import SelectorLevel
+
+_LEVEL_MAP: dict[str, SelectorLevel] = {
+    **{m.name.lower(): m for m in SelectorLevel},
+    'all': max(SelectorLevel),  # alias → most inclusive level
+}
 
 
 @click.command()
@@ -27,8 +33,9 @@ from yosoi.models.defaults import NewsArticle
 @click.option(
     '-o',
     '--output',
-    type=click.Choice(['json', 'markdown', 'md'], case_sensitive=False),
+    type=click.Choice(['json', 'md', 'markdown'], case_sensitive=False),
     default='json',
+    metavar='[json|md]',
     help='Output format for extracted content',
 )
 @click.option(
@@ -56,6 +63,13 @@ from yosoi.models.defaults import NewsArticle
     metavar='N',
     help='Number of concurrent workers for batch processing (default: 1, sequential)',
 )
+@click.option(
+    '-x',
+    '--selector-level',
+    type=click.Choice(list(_LEVEL_MAP), case_sensitive=False),
+    default='css',
+    help='Maximum selector strategy level (default: css)',
+)
 def main(
     model: str | None,
     url: str | None,
@@ -70,6 +84,7 @@ def main(
     log_level: str,
     contract: type[Contract] | None,
     workers: int,
+    selector_level: str,
 ):
     """Discover selectors from web pages using AI.
 
@@ -101,8 +116,12 @@ def main(
     log_file = setup_local_logging(level=log_level)
     output_format = 'markdown' if output in ['markdown', 'md'] else 'json'
     resolved_contract = contract if contract else NewsArticle
+    resolved_level = _LEVEL_MAP[selector_level.lower()]
 
     console.print(f'[cyan]ℹ Log file:[/cyan] [link=file://{log_file}]{log_file}[/link]')
+
+    if selector_level != 'css':
+        console.print(f'[cyan]ℹ Selector level:[/cyan] [bold]{selector_level}[/bold]')
 
     if summary:
         pipeline = Pipeline(yosoi_config, contract=resolved_contract, output_format=output_format)
@@ -153,7 +172,12 @@ def main(
             )
         )
     else:
-        pipeline = Pipeline(yosoi_config, contract=resolved_contract, output_format=output_format)
+        pipeline = Pipeline(
+            yosoi_config,
+            contract=resolved_contract,
+            output_format=output_format,
+            selector_level=resolved_level,
+        )
         asyncio.run(
             pipeline.process_urls(
                 urls,

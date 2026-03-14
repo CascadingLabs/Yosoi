@@ -450,3 +450,58 @@ def test_invalid_css_selector_returns_false_not_exception(verifier, simple_html)
     success, reason = verifier._test_selector(sel, '>>>[invalid<<<')
     assert success is False
     assert reason.startswith('invalid_syntax')
+
+
+# ---------------------------------------------------------------------------
+# Phase 3: Level-aware dispatch
+# ---------------------------------------------------------------------------
+
+
+def test_test_selector_dispatches_xpath(verifier, simple_html):
+    from yosoi.models.selectors import SelectorEntry
+
+    sel = Selector(text=simple_html)
+    entry = SelectorEntry(strategy='xpath', value='//h1')
+    success, reason = verifier._test_selector(sel, entry)
+    assert success is True
+    assert reason == 'found'
+
+
+def test_verify_skips_entry_above_max_level(verifier, simple_html):
+    from yosoi.models.selectors import FieldSelectors, SelectorEntry, SelectorLevel
+
+    # XPath entry but max_level=CSS → should be skipped, field fails
+    sel = Selector(text=simple_html)
+    xpath_entry = SelectorEntry(strategy='xpath', value='//h1[@class="title"]')
+    fs = FieldSelectors(primary=xpath_entry)
+    result = verifier._verify_field(sel, 'title', fs, max_level=SelectorLevel.CSS)
+    assert result.status == 'failed'
+
+
+def test_verify_uses_xpath_when_level_allows(verifier, simple_html):
+    from yosoi.models.selectors import FieldSelectors, SelectorEntry, SelectorLevel
+
+    sel = Selector(text=simple_html)
+    xpath_entry = SelectorEntry(strategy='xpath', value='//h1')
+    fs = FieldSelectors(primary=xpath_entry)
+    result = verifier._verify_field(sel, 'title', fs, max_level=SelectorLevel.XPATH)
+    assert result.status == 'verified'
+
+
+def test_verify_max_level_propagated(verifier, simple_html):
+    from yosoi.models.selectors import SelectorLevel
+
+    # XPath-only selectors in dict form; verify() with CSS ceiling → all fail
+    selectors = {'title': {'primary': '//h1'}}  # looks like xpath but stored as string → css
+    result = verifier.verify(simple_html, selectors, max_level=SelectorLevel.CSS)
+    # '//h1' as a CSS selector won't match, so it should fail
+    assert result.results['title'].status == 'failed'
+
+
+def test_pipeline_accepts_selector_level(mocker):
+    from yosoi.core.pipeline import Pipeline
+    from yosoi.models.selectors import SelectorLevel
+
+    stub = Pipeline.__new__(Pipeline)
+    stub.selector_level = SelectorLevel.XPATH
+    assert stub.selector_level == SelectorLevel.XPATH

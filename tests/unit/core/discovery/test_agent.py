@@ -34,7 +34,8 @@ def test_agent_prompt_construction(mock_selectors):
         result = agent.run_sync(f'Analyze this: {html_input}')
 
     assert isinstance(result.output, SelectorModel)
-    assert result.output.headline.primary == 'h1.title'  # type: ignore[attr-defined]
+    # primary is now a SelectorEntry, not a plain string
+    assert result.output.headline.primary.value == 'h1.title'  # type: ignore[attr-defined]
 
     user_msg = messages[0]
     full_content = ' '.join(

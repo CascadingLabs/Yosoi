@@ -8,6 +8,7 @@ from yosoi.types.field import Field
 from yosoi.types.price import Price
 from yosoi.types.rating import Rating
 from yosoi.types.registry import register_coercion
+from yosoi.types.related_content import RelatedContent
 from yosoi.types.title import Title
 from yosoi.types.url import Url
 
@@ -18,6 +19,7 @@ __all__ = [
     'Field',
     'Price',
     'Rating',
+    'RelatedContent',
     'Title',
     'Url',
     'YosoiType',

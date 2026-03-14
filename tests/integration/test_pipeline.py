@@ -43,7 +43,10 @@ async def test_pipeline_happy_path(mocker, mock_llm_config, happy_path_html, moc
     assert success is True
     saved = pipeline.storage.load_selectors('example.com')
     assert saved is not None
-    assert saved['headline']['primary'] == 'h1.title'
+    # primary is now a SelectorEntry dict: {'strategy': 'css', 'level': 1, 'value': '...'}
+    primary = saved['headline']['primary']
+    assert isinstance(primary, dict)
+    assert primary['value'] == 'h1.title'
 
 
 async def test_pipeline_fetch_failure(mocker, mock_llm_config, tmp_path):

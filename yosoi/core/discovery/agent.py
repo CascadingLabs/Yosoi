@@ -9,7 +9,16 @@ from rich.console import Console
 
 from yosoi.core.discovery.config import LLMConfig, create_model
 from yosoi.models.contract import Contract
-from yosoi.utils import load_prompt
+from yosoi.models.selectors import SelectorLevel
+from yosoi.prompts.discovery import (
+    DiscoveryDeps,
+    base_instructions,
+    build_custom_agent_prompt,
+    build_user_prompt,
+    field_instructions,
+    level_instructions,
+    page_hints,
+)
 from yosoi.utils.exceptions import LLMGenerationError
 
 
@@ -21,6 +30,7 @@ class SelectorDiscovery:
         agent: The LLM agent that will be used
         model_name: Name of the model being used
         provider: Name of the LLM provider
+        target_level: Maximum selector strategy level for discovery
 
     """
 
@@ -28,6 +38,7 @@ class SelectorDiscovery:
     agent: Agent[Any, BaseModel]
     model_name: str
     provider: str
+    target_level: SelectorLevel
 
     def __init__(
         self,
@@ -35,6 +46,7 @@ class SelectorDiscovery:
         llm_config: LLMConfig | None = None,
         agent: Agent[Any, BaseModel] | None = None,
         console: Console | None = None,
+        target_level: SelectorLevel = SelectorLevel.CSS,
     ):
         """Initialize the discovery with LLM configuration or an agent.
 
@@ -43,6 +55,7 @@ class SelectorDiscovery:
             agent: The LLM agent that will be used
             console: Rich console instance for formatted output
             contract: Contract subclass defining fields to discover.
+            target_level: Maximum selector strategy level. Defaults to CSS.
 
         Raises:
             ValueError: Must provide llm_config or an agent
@@ -50,19 +63,25 @@ class SelectorDiscovery:
         """
         self.console = console or Console()
         self._contract = contract
-
-        system_prompt = load_prompt('discovery_system')
+        self.target_level = target_level
         output_model = self._contract.to_selector_model()
 
         if agent is not None:
             self.agent = agent
             self.model_name = 'custom-agent'
             self.provider = 'custom'
+            self._use_deps = False
         elif llm_config is not None:
             model = create_model(llm_config)
-            self.agent = Agent(model, output_type=output_model, system_prompt=system_prompt)
+            self.agent = Agent(model, deps_type=DiscoveryDeps, output_type=output_model)
+            # Register dynamic system-prompt functions
+            self.agent.system_prompt(base_instructions)
+            self.agent.system_prompt(field_instructions)
+            self.agent.system_prompt(level_instructions)
+            self.agent.system_prompt(page_hints)
             self.model_name = llm_config.model_name
             self.provider = llm_config.provider
+            self._use_deps = True
         else:
             raise ValueError('Either provide llm_config or agent parameter')
 
@@ -113,7 +132,17 @@ class SelectorDiscovery:
         prompt = self._build_user_prompt(url, html)
 
         try:
-            result = await self.agent.run(prompt)
+            if self._use_deps:
+                deps = DiscoveryDeps(
+                    contract=self._contract,
+                    url=url,
+                    target_level=self.target_level,
+                    html=html,
+                )
+                result = await self.agent.run(prompt, deps=deps)
+            else:
+                result = await self.agent.run(prompt)
+
             self.console.print('[success]  ✓ AI found selectors[/success]')
             return cast(BaseModel, result.output)
 
@@ -131,6 +160,10 @@ class SelectorDiscovery:
     def _build_user_prompt(self, url: str, html: str) -> str:
         """Build the user prompt for AI discovery.
 
+        When using deps (auto-created agent), field descriptions are injected via system
+        prompts — the user message only needs to provide the HTML.
+        When using a custom agent, include field descriptions in the user message.
+
         Args:
             url: URL for context
             html: Cleaned HTML content
@@ -139,10 +172,12 @@ class SelectorDiscovery:
             Formatted prompt string
 
         """
+        if self._use_deps:
+            return build_user_prompt(url, html)
+
         descriptions = self._contract.field_descriptions()
         fields_text = '\n'.join(f'**{name}** - {desc}' for name, desc in descriptions.items())
-
-        return load_prompt('discovery_user').format(url=url, html=html, fields_text=fields_text)
+        return build_custom_agent_prompt(url, html, fields_text)
 
     def _is_all_na(self, selectors: dict) -> bool:
         """Check if AI returned all NA (gave up).

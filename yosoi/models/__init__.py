@@ -9,7 +9,7 @@ from yosoi.models.results import (
     SelectorFailure,
     VerificationResult,
 )
-from yosoi.models.selectors import FieldSelectors
+from yosoi.models.selectors import FieldSelectors, SelectorEntry, SelectorLevel
 
 __all__ = [
     'ContentMetadata',
@@ -19,6 +19,8 @@ __all__ = [
     'FieldSelectors',
     'FieldVerificationResult',
     'NewsArticle',
+    'SelectorEntry',
     'SelectorFailure',
+    'SelectorLevel',
     'VerificationResult',
 ]

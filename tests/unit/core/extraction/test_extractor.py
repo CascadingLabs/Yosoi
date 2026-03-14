@@ -388,3 +388,56 @@ def test_body_text_joins_all_text_nodes():
     assert 'Hello' in result
     assert 'World' in result
     assert result == 'Hello World'
+
+
+# ---------------------------------------------------------------------------
+# Phase 3: Level-aware dispatch (_resolve)
+# ---------------------------------------------------------------------------
+
+
+def test_resolve_css_entry_extracts():
+    from yosoi.models.selectors import SelectorEntry, SelectorLevel
+
+    extractor = _make_extractor()
+    html = '<h1>Title</h1>'
+    sel = Selector(text=html)
+    entry = SelectorEntry(strategy='css', value='h1')
+    result = extractor._resolve(sel, entry, 'title', SelectorLevel.CSS)
+    assert result == 'Title'
+
+
+def test_resolve_skips_entry_above_max_level():
+    from yosoi.models.selectors import SelectorEntry, SelectorLevel
+
+    extractor = _make_extractor()
+    html = '<h1>Title</h1>'
+    sel = Selector(text=html)
+    entry = SelectorEntry(strategy='xpath', value='//h1')
+    result = extractor._resolve(sel, entry, 'title', SelectorLevel.CSS)
+    assert result is None
+
+
+def test_resolve_xpath_extracts_text():
+    from yosoi.models.selectors import SelectorEntry, SelectorLevel
+
+    extractor = _make_extractor()
+    html = '<h1>XPath Title</h1>'
+    sel = Selector(text=html)
+    entry = SelectorEntry(strategy='xpath', value='//h1')
+    result = extractor._resolve(sel, entry, 'title', SelectorLevel.XPATH)
+    assert result == 'XPath Title'
+
+
+def test_extract_content_respects_max_level():
+    """XPath selectors above CSS ceiling must be skipped → field not extracted."""
+    from yosoi.models.selectors import SelectorLevel
+
+    class MyContract(Contract):
+        title: str = ys.Title()
+
+    extractor = _make_extractor(MyContract)
+    html = '<html><body><h1>Title</h1></body></html>'
+    # Force XPath entry via SelectorEntry — max_level=CSS so it should be skipped
+    selectors = {'title': {'primary': ''}}  # empty primary → no extraction
+    result = extractor.extract_content_with_html('https://x.com', html, selectors, max_level=SelectorLevel.CSS)
+    assert result is None

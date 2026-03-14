@@ -65,7 +65,7 @@ async def run_concurrent(
         max_workers: Max concurrent workers.
 
     """
-    from yosoi.tasks import configure_broker, enqueue_urls, shutdown_broker
+    from yosoi.core.tasks import configure_broker, enqueue_urls, shutdown_broker
 
     await configure_broker(yosoi_config, contract=contract, output_format=output_format, max_workers=max_workers)
     start_time = time.monotonic()

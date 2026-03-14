@@ -2,6 +2,7 @@
 
 import difflib
 
+import click as _click
 import rich_click as click
 from rich_click.utils import OptionGroupDict
 
@@ -53,7 +54,7 @@ class SchemaParamType(click.ParamType):
         """Provide shell completion for built-in, registered, and file-scanned schema names."""
         all_names = set(BUILTIN_SCHEMAS) | set(_CONTRACT_REGISTRY) | set(scan_for_contracts())
         return [
-            click.shell_completion.CompletionItem(name)  # type: ignore[attr-defined]
+            _click.shell_completion.CompletionItem(name)
             for name in sorted(all_names)
             if name.lower().startswith(incomplete.lower())
         ]

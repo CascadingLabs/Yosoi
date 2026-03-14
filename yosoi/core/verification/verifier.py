@@ -8,6 +8,20 @@ from rich.console import Console
 logger = logging.getLogger(__name__)
 
 from yosoi.models import FieldSelectors, FieldVerificationResult, SelectorFailure, VerificationResult
+from yosoi.models.selectors import SelectorEntry, SelectorLevel
+
+
+def _coerce_entry(v: object) -> SelectorEntry | None:
+    """Coerce a raw selector value to SelectorEntry or None."""
+    if v is None:
+        return None
+    if isinstance(v, SelectorEntry):
+        return v
+    if isinstance(v, dict):
+        return SelectorEntry.model_validate(v)
+    if isinstance(v, str):
+        return SelectorEntry(value=v)
+    return None
 
 
 class SelectorVerifier:
@@ -29,12 +43,14 @@ class SelectorVerifier:
         self,
         html: str,
         selectors: dict[str, FieldSelectors] | dict[str, dict[str, str]],
+        max_level: SelectorLevel = SelectorLevel.CSS,
     ) -> VerificationResult:
         """Verify all selectors against HTML content.
 
         Args:
             html: HTML content to verify selectors against
             selectors: Dict mapping field names to FieldSelectors models or raw dicts
+            max_level: Maximum selector strategy level to test. Defaults to CSS.
 
         Returns:
             VerificationResult with per-field verification status
@@ -47,7 +63,7 @@ class SelectorVerifier:
             self.console.print(f'  → Verifying {len(selectors)} fields against HTML...')
 
         for field_name, field_data in selectors.items():
-            result = self._verify_field(sel, field_name, field_data)
+            result = self._verify_field(sel, field_name, field_data, max_level)
             results[field_name] = result
 
             if self.console:
@@ -70,6 +86,7 @@ class SelectorVerifier:
         sel: Selector,
         field_name: str,
         field_data: FieldSelectors | dict[str, str],
+        max_level: SelectorLevel = SelectorLevel.CSS,
     ) -> FieldVerificationResult:
         """Verify a single field's selectors.
 
@@ -77,38 +94,41 @@ class SelectorVerifier:
             sel: Parsel Selector for the parsed HTML
             field_name: Name of the field
             field_data: FieldSelectors model or raw dict with primary/fallback/tertiary
+            max_level: Maximum selector strategy level to test.
 
         Returns:
             FieldVerificationResult with verification status and failure details
 
         """
         if isinstance(field_data, FieldSelectors):
-            selectors = field_data.as_tuples()
+            entries: list[tuple[str, SelectorEntry | None]] = field_data.as_entries()
         else:
-            selectors = [
-                ('primary', field_data.get('primary')),
-                ('fallback', field_data.get('fallback')),
-                ('tertiary', field_data.get('tertiary')),
+            entries = [
+                ('primary', _coerce_entry(field_data.get('primary'))),
+                ('fallback', _coerce_entry(field_data.get('fallback'))),
+                ('tertiary', _coerce_entry(field_data.get('tertiary'))),
             ]
 
         failed_selectors: list[SelectorFailure] = []
 
-        for level, selector in selectors:
-            if selector is None:
+        for level, entry in entries:
+            if entry is None:
                 continue
-            success, reason = self._test_selector(sel, selector)
+            if entry.level > max_level:
+                continue  # Skip entries above configured ceiling
+            success, reason = self._test_selector(sel, entry)
             if success:
                 return FieldVerificationResult(
                     field_name=field_name,
                     status='verified',
                     working_level=level,
-                    selector=selector,
+                    selector=entry.value,
                     failed_selectors=failed_selectors,
                 )
             failed_selectors.append(
                 SelectorFailure(
                     level=level,
-                    selector=selector,
+                    selector=entry.value,
                     reason=reason,
                 )
             )
@@ -119,23 +139,28 @@ class SelectorVerifier:
             failed_selectors=failed_selectors,
         )
 
-    def _test_selector(self, sel: Selector, selector: str) -> tuple[bool, str]:
+    def _test_selector(self, sel: Selector, selector: SelectorEntry | str) -> tuple[bool, str]:
         """Test if a selector finds elements in HTML.
 
         Args:
             sel: Parsel Selector for the parsed HTML
-            selector: CSS selector string
+            selector: CSS selector string or SelectorEntry (dispatches on strategy)
 
         Returns:
             Tuple of (success, reason) where success is True if selector matches
             at least one element, and reason explains the result.
 
         """
-        if not selector or selector == 'NA':
+        if isinstance(selector, str):
+            value, strategy = selector, 'css'
+        else:
+            value, strategy = selector.value, selector.strategy
+
+        if not value or value == 'NA':
             return False, 'na_selector'
 
         try:
-            elements = sel.css(selector)
+            elements = sel.xpath(value) if strategy == 'xpath' else sel.css(value)
             if elements:
                 return True, 'found'
             return False, 'no_elements_found'

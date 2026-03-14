@@ -33,6 +33,9 @@ def _make_pipeline_stub(mocker, contract=None):
     stub.debug_mode = False
     stub.output_format = 'json'
     stub.force = False
+    from yosoi.models.selectors import SelectorLevel
+
+    stub.selector_level = SelectorLevel.CSS
     return stub
 
 
@@ -792,7 +795,9 @@ def test_verify_calls_verifier_with_correct_args(mocker):
     vr = _make_verification_result(True, ['title'])
     stub.verifier.verify.return_value = vr
     Pipeline._verify(stub, 'https://x.com', '<html>test</html>', selectors, skip_verification=False)
-    stub.verifier.verify.assert_called_once_with('<html>test</html>', selectors)
+    from yosoi.models.selectors import SelectorLevel
+
+    stub.verifier.verify.assert_called_once_with('<html>test</html>', selectors, max_level=SelectorLevel.CSS)
 
 
 def test_verify_returns_only_verified_fields(mocker):
@@ -1003,8 +1008,10 @@ def test_extract_calls_extractor_with_correct_args(mocker):
     stub = _make_pipeline_stub(mocker)
     stub.extractor.extract_content_with_html.return_value = {'title': 'Book'}
     Pipeline._extract(stub, 'https://x.com', '<html>content</html>', {'title': {'primary': 'h1'}})
+    from yosoi.models.selectors import SelectorLevel
+
     stub.extractor.extract_content_with_html.assert_called_once_with(
-        'https://x.com', '<html>content</html>', {'title': {'primary': 'h1'}}
+        'https://x.com', '<html>content</html>', {'title': {'primary': 'h1'}}, max_level=SelectorLevel.CSS
     )
 
 

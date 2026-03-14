@@ -23,6 +23,7 @@ from yosoi.core.fetcher import HTMLFetcher, create_fetcher
 from yosoi.core.verification import SelectorVerifier
 from yosoi.models import FetchResult
 from yosoi.models.contract import Contract
+from yosoi.models.selectors import SelectorLevel
 from yosoi.storage import DebugManager, LLMTracker, SelectorStorage
 from yosoi.utils.exceptions import BotDetectionError
 from yosoi.utils.retry import get_async_retryer
@@ -57,6 +58,7 @@ class Pipeline:
         output_format: str = 'json',
         force: bool = False,
         quiet: bool = False,
+        selector_level: SelectorLevel = SelectorLevel.CSS,
     ):
         """Initialize the pipeline with LLM configuration.
 
@@ -71,8 +73,12 @@ class Pipeline:
                    YosoiConfig.force when YosoiConfig is passed. Defaults to False.
             quiet: Suppress console output. Used in concurrent mode where a
                    progress display replaces per-task output. Defaults to False.
+            selector_level: Maximum selector strategy level for discovery and extraction.
+                            Defaults to CSS.
 
         """
+        self.selector_level = selector_level
+
         if isinstance(llm_config, YosoiConfig):
             yosoi_cfg = llm_config
             llm_config = yosoi_cfg.llm
@@ -96,7 +102,12 @@ class Pipeline:
         self.contract = contract
         self.console = Console(theme=self.custom_theme, quiet=quiet)
         self.cleaner = HTMLCleaner(console=self.console)
-        self.discovery = SelectorDiscovery(llm_config=llm_config, console=self.console, contract=self.contract)
+        self.discovery = SelectorDiscovery(
+            llm_config=llm_config,
+            console=self.console,
+            contract=self.contract,
+            target_level=self.selector_level,
+        )
         self.verifier = SelectorVerifier(console=self.console)
         self.extractor = ContentExtractor(console=self.console, contract=self.contract)
         self.storage = SelectorStorage()
@@ -554,7 +565,7 @@ class Pipeline:
 
         self.console.print('[step]Step 3: Verifying selectors against actual HTML...[/step]')
 
-        result = self.verifier.verify(html, selectors)
+        result = self.verifier.verify(html, selectors, max_level=self.selector_level)
 
         if not result.success:
             self._print_verification_failure(result)
@@ -608,7 +619,9 @@ class Pipeline:
         """
         self.console.print('[step]Step 4: Extracting content using verified selectors...[/step]')
 
-        extracted = self.extractor.extract_content_with_html(url, html, verified_selectors)
+        extracted = self.extractor.extract_content_with_html(
+            url, html, verified_selectors, max_level=self.selector_level
+        )
 
         if not extracted:
             self.console.print('[danger]Content extraction failed - no content extracted[/danger]')
@@ -695,7 +708,7 @@ class Pipeline:
             self.debug.save_debug_html(url, cleaned_html)
 
             if not skip_verification:
-                verification = self.verifier.verify(cleaned_html, existing_selectors)
+                verification = self.verifier.verify(cleaned_html, existing_selectors, max_level=self.selector_level)
                 if not verification.success:
                     self.console.print(
                         '[warning]⚠ Cached selectors failed verification - forcing re-discovery[/warning]'
