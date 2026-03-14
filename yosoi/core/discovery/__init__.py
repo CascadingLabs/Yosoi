@@ -12,11 +12,13 @@ from yosoi.core.discovery.config import (
     openai,
     openrouter,
 )
+from yosoi.core.discovery.yosoi_agent import YosoiAgent
 
 __all__ = [
     'LLMBuilder',
     'LLMConfig',
     'SelectorDiscovery',
+    'YosoiAgent',
     'cerebras',
     'create_agent',
     'create_model',

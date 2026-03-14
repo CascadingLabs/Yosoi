@@ -1,10 +1,12 @@
 import json
 
 from pydantic import Field
-from pydantic_ai import Agent, capture_run_messages
+from pydantic_ai import capture_run_messages
 from pydantic_ai.models.test import TestModel
 
+from yosoi.core.discovery.yosoi_agent import YosoiAgent
 from yosoi.models.contract import Contract
+from yosoi.prompts.discovery import DiscoveryInput
 from yosoi.types.price import Price
 from yosoi.types.url import Url
 
@@ -21,37 +23,32 @@ class ShoppingContract(Contract):
 def main():
     print('--- Pydantic AI Prompt Rendering Demo ---')
 
-    # 1. Setup the Selector Model (this is what the agent returns)
-    SelectorModel = ShoppingContract.to_selector_model()
-
-    # 2. Setup the Agent with a TestModel
-    # We don't need a real LLM for this; TestModel just echoes back what we give it
+    # 1. Setup the Agent — output type is derived from the contract automatically
     model = TestModel()
-
     system_prompt = 'You are a web scraping expert. Find CSS selectors for the requested fields.'
-    agent = Agent(model, output_type=SelectorModel, system_prompt=system_prompt)
+    agent = YosoiAgent(model, contract=ShoppingContract, system_prompt=system_prompt)
 
-    user_prompt = (
-        "Analyze this HTML: <div class='product'><h1 id='name'>Coffee Maker</h1><span class='price'>$49.99</span></div>"
+    # 2. Build a typed DiscoveryInput and capture the run
+    discovery_input = DiscoveryInput(
+        url='https://example.com/product',
+        html="<div class='product'><h1 id='name'>Coffee Maker</h1><span class='price'>$49.99</span></div>",
     )
 
-    # 3. Capture the run
     import contextlib
 
     with capture_run_messages() as messages, contextlib.suppress(Exception):
-        agent.run_sync(user_prompt)
+        agent.run_sync(discovery_input)
 
-    # 4. Display the rendered messages
+    # 3. Display the rendered messages
     for i, msg in enumerate(messages):
         print(f'\n[Message {i} - {type(msg).__name__}]')
         for part in msg.parts:
             if hasattr(part, 'content'):
                 print(f'Content:\n{part.content}')
 
-    # 5. Display the JSON Schema that Pydantic AI sends to the model
-    # (This is how the model knows what structure to return)
+    # 4. Display the JSON Schema that Pydantic AI sends to the model
     print('\n--- Model Output Schema ---')
-    schema = SelectorModel.model_json_schema()
+    schema = ShoppingContract.to_selector_model().model_json_schema()
     print(json.dumps(schema, indent=2))
 
 

@@ -3,6 +3,7 @@
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Final
 
+from pydantic import BaseModel
 from pydantic_ai import RunContext
 
 from yosoi.models.selectors import SelectorLevel
@@ -44,17 +45,23 @@ _HINT_JSON_LD: Final = (
 
 _HINT_DATA_QA: Final = 'Page uses data-qa/data-cy test attributes — they are stable selector targets.'
 
-# ---------------------------------------------------------------------------
-# User prompt templates
-# ---------------------------------------------------------------------------
-
-_USER_PROMPT: Final = 'Analyze this HTML from {url}:\n```html\n{html}\n```'
-
 _CUSTOM_AGENT_SELECTOR_GUIDE: Final = """\
 For each field provide:
 - primary: Most specific selector using actual classes/IDs
 - fallback: Less specific but reliable
 - tertiary: Generic or null if not found"""
+
+
+# ---------------------------------------------------------------------------
+# Input model
+# ---------------------------------------------------------------------------
+
+
+class DiscoveryInput(BaseModel):
+    """Typed input for selector discovery containing the source URL and HTML."""
+
+    url: str
+    html: str
 
 
 # ---------------------------------------------------------------------------
@@ -68,16 +75,14 @@ class DiscoveryDeps:
 
     Attributes:
         contract: The Contract class defining fields to discover
-        url: Source URL for context
+        input: Typed discovery input containing url and html
         target_level: Maximum selector strategy level allowed
-        html: Raw HTML used for page-signal detection in hints
 
     """
 
     contract: type['Contract']
-    url: str
+    input: DiscoveryInput
     target_level: SelectorLevel = field(default=SelectorLevel.CSS)
-    html: str = field(default='')
 
 
 # ---------------------------------------------------------------------------
@@ -108,7 +113,7 @@ def level_instructions(ctx: RunContext['DiscoveryDeps']) -> str:
 
 def page_hints(ctx: RunContext['DiscoveryDeps']) -> str:
     """Detect structural signals from the HTML and surface them as hints."""
-    html = ctx.deps.html
+    html = ctx.deps.input.html
     hints: list[str] = []
 
     if 'data-testid' in html:
@@ -126,15 +131,12 @@ def page_hints(ctx: RunContext['DiscoveryDeps']) -> str:
 # ---------------------------------------------------------------------------
 
 
-def build_user_prompt(url: str, html: str) -> str:
+def build_user_prompt(discovery_input: DiscoveryInput) -> str:
     """Build the user prompt for the deps-based agent (system prompts handle context)."""
-    return _USER_PROMPT.format(url=url, html=html)
+    return discovery_input.model_dump_json()
 
 
-def build_custom_agent_prompt(url: str, html: str, fields_text: str) -> str:
+def build_custom_agent_prompt(discovery_input: DiscoveryInput, fields_text: str) -> str:
     """Build the user prompt for custom agents (no system-prompt injection)."""
-    return (
-        f'{_USER_PROMPT.format(url=url, html=html)}\n\n'
-        f'Find selectors for these fields:\n{fields_text}\n\n'
-        f'{_CUSTOM_AGENT_SELECTOR_GUIDE}'
-    )
+    html_block = f'Analyze this HTML from {discovery_input.url}:\n```html\n{discovery_input.html}\n```'
+    return f'{html_block}\n\nFind selectors for these fields:\n{fields_text}\n\n{_CUSTOM_AGENT_SELECTOR_GUIDE}'

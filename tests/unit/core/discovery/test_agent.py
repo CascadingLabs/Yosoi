@@ -4,7 +4,12 @@ from pydantic_ai.models.test import TestModel
 from rich.console import Console
 
 from yosoi.core.discovery.agent import SelectorDiscovery
+from yosoi.core.discovery.yosoi_agent import YosoiAgent
 from yosoi.models.defaults import NewsArticle
+
+
+def _make_yosoi_agent() -> YosoiAgent:
+    return YosoiAgent(TestModel(), contract=NewsArticle)
 
 
 def test_selector_discovery_with_no_config_raises():
@@ -13,10 +18,7 @@ def test_selector_discovery_with_no_config_raises():
 
 
 def test_selector_discovery_with_custom_agent():
-    model = TestModel()
-    SelectorModel = NewsArticle.to_selector_model()
-    agent = Agent(model, output_type=SelectorModel)
-    discovery = SelectorDiscovery(contract=NewsArticle, agent=agent, console=Console(quiet=True))
+    discovery = SelectorDiscovery(contract=NewsArticle, agent=_make_yosoi_agent(), console=Console(quiet=True))
     assert discovery.model_name == 'custom-agent'
     assert discovery.provider == 'custom'
 
@@ -47,28 +49,19 @@ def test_agent_prompt_construction(mock_selectors):
 
 def test_selector_discovery_with_custom_agent_model_name_is_custom():
     """When using custom agent, model_name must be 'custom-agent'."""
-    model = TestModel()
-    SelectorModel = NewsArticle.to_selector_model()
-    agent = Agent(model, output_type=SelectorModel)
-    discovery = SelectorDiscovery(contract=NewsArticle, agent=agent, console=Console(quiet=True))
+    discovery = SelectorDiscovery(contract=NewsArticle, agent=_make_yosoi_agent(), console=Console(quiet=True))
     assert discovery.model_name == 'custom-agent'
 
 
 def test_selector_discovery_with_custom_agent_provider_is_custom():
     """When using custom agent, provider must be 'custom'."""
-    model = TestModel()
-    SelectorModel = NewsArticle.to_selector_model()
-    agent = Agent(model, output_type=SelectorModel)
-    discovery = SelectorDiscovery(contract=NewsArticle, agent=agent, console=Console(quiet=True))
+    discovery = SelectorDiscovery(contract=NewsArticle, agent=_make_yosoi_agent(), console=Console(quiet=True))
     assert discovery.provider == 'custom'
 
 
 def test_selector_discovery_console_defaults_to_console():
     """When no console given, a Console instance should be created."""
-    model = TestModel()
-    SelectorModel = NewsArticle.to_selector_model()
-    agent = Agent(model, output_type=SelectorModel)
-    discovery = SelectorDiscovery(contract=NewsArticle, agent=agent)
+    discovery = SelectorDiscovery(contract=NewsArticle, agent=_make_yosoi_agent())
     from rich.console import Console as RichConsole
 
     assert isinstance(discovery.console, RichConsole)
@@ -76,23 +69,30 @@ def test_selector_discovery_console_defaults_to_console():
 
 def test_selector_discovery_contract_is_stored():
     """The contract parameter must be stored as _contract."""
-    model = TestModel()
-    SelectorModel = NewsArticle.to_selector_model()
-    agent = Agent(model, output_type=SelectorModel)
-    discovery = SelectorDiscovery(contract=NewsArticle, agent=agent, console=Console(quiet=True))
+    discovery = SelectorDiscovery(contract=NewsArticle, agent=_make_yosoi_agent(), console=Console(quiet=True))
     assert discovery._contract is NewsArticle
 
 
 def test_selector_discovery_custom_agent_is_stored():
-    """When custom agent is passed, it must be stored as self.agent."""
-    model = TestModel()
-    SelectorModel = NewsArticle.to_selector_model()
-    agent = Agent(model, output_type=SelectorModel)
-    discovery = SelectorDiscovery(contract=NewsArticle, agent=agent, console=Console(quiet=True))
-    assert discovery.agent is agent
+    """When YosoiAgent is passed, it must be stored as self._yosoi_agent."""
+    yosoi_agent = _make_yosoi_agent()
+    discovery = SelectorDiscovery(contract=NewsArticle, agent=yosoi_agent, console=Console(quiet=True))
+    assert discovery._yosoi_agent is yosoi_agent
 
 
 def test_selector_discovery_raises_valueerror_message():
     """ValueError message must be exact: 'Either provide llm_config or agent parameter'."""
     with pytest.raises(ValueError, match='Either provide llm_config or agent'):
         SelectorDiscovery(contract=NewsArticle, llm_config=None, agent=None)
+
+
+def test_yosoi_agent_derives_output_type_from_contract():
+    """YosoiAgent should internally derive output_type from the contract."""
+    agent = _make_yosoi_agent()
+    assert agent.inner.output_type.__name__ == NewsArticle.to_selector_model().__name__
+
+
+def test_yosoi_agent_inner_has_system_prompt():
+    """YosoiAgent with system_prompt should pass it to the inner agent."""
+    agent = YosoiAgent(TestModel(), contract=NewsArticle, system_prompt='Find selectors.')
+    assert agent.inner is not None

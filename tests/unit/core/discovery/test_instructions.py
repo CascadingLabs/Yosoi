@@ -7,6 +7,7 @@ from yosoi.models.defaults import NewsArticle
 from yosoi.models.selectors import SelectorLevel
 from yosoi.prompts.discovery import (
     DiscoveryDeps,
+    DiscoveryInput,
     base_instructions,
     field_instructions,
     level_instructions,
@@ -29,7 +30,11 @@ def _deps(
     level: SelectorLevel = SelectorLevel.CSS,
     html: str = '',
 ) -> DiscoveryDeps:
-    return DiscoveryDeps(contract=NewsArticle, url='https://example.com', target_level=level, html=html)
+    return DiscoveryDeps(
+        contract=NewsArticle,
+        input=DiscoveryInput(url='https://example.com', html=html),
+        target_level=level,
+    )
 
 
 # ---------------------------------------------------------------------------

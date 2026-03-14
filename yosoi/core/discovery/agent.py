@@ -8,12 +8,13 @@ from pydantic_ai import Agent
 from rich.console import Console
 
 from yosoi.core.discovery.config import LLMConfig, create_model
+from yosoi.core.discovery.yosoi_agent import YosoiAgent
 from yosoi.models.contract import Contract
 from yosoi.models.selectors import SelectorLevel
 from yosoi.prompts.discovery import (
     DiscoveryDeps,
+    DiscoveryInput,
     base_instructions,
-    build_custom_agent_prompt,
     build_user_prompt,
     field_instructions,
     level_instructions,
@@ -44,7 +45,7 @@ class SelectorDiscovery:
         self,
         contract: type[Contract],
         llm_config: LLMConfig | None = None,
-        agent: Agent[Any, BaseModel] | None = None,
+        agent: YosoiAgent | None = None,
         console: Console | None = None,
         target_level: SelectorLevel = SelectorLevel.CSS,
     ):
@@ -52,7 +53,7 @@ class SelectorDiscovery:
 
         Args:
             llm_config: Configuration for the LLM provider and model
-            agent: The LLM agent that will be used
+            agent: A YosoiAgent wrapping a pydantic-ai Agent
             console: Rich console instance for formatted output
             contract: Contract subclass defining fields to discover.
             target_level: Maximum selector strategy level. Defaults to CSS.
@@ -67,7 +68,7 @@ class SelectorDiscovery:
         output_model = self._contract.to_selector_model()
 
         if agent is not None:
-            self.agent = agent
+            self._yosoi_agent = agent
             self.model_name = 'custom-agent'
             self.provider = 'custom'
             self._use_deps = False
@@ -129,19 +130,18 @@ class SelectorDiscovery:
             Selector config model with discovered selectors, or None if request failed.
 
         """
-        prompt = self._build_user_prompt(url, html)
+        discovery_input = DiscoveryInput(url=url, html=html)
 
         try:
             if self._use_deps:
                 deps = DiscoveryDeps(
                     contract=self._contract,
-                    url=url,
+                    input=discovery_input,
                     target_level=self.target_level,
-                    html=html,
                 )
-                result = await self.agent.run(prompt, deps=deps)
+                result = await self.agent.run(build_user_prompt(discovery_input), deps=deps)
             else:
-                result = await self.agent.run(prompt)
+                result = await self._yosoi_agent.run(discovery_input)
 
             self.console.print('[success]  ✓ AI found selectors[/success]')
             return cast(BaseModel, result.output)
@@ -156,28 +156,6 @@ class SelectorDiscovery:
 
             logfire.error('AI request failed', error=error_msg, provider=self.provider)
             raise LLMGenerationError(f'AI discovery failed: {error_msg}') from e
-
-    def _build_user_prompt(self, url: str, html: str) -> str:
-        """Build the user prompt for AI discovery.
-
-        When using deps (auto-created agent), field descriptions are injected via system
-        prompts — the user message only needs to provide the HTML.
-        When using a custom agent, include field descriptions in the user message.
-
-        Args:
-            url: URL for context
-            html: Cleaned HTML content
-
-        Returns:
-            Formatted prompt string
-
-        """
-        if self._use_deps:
-            return build_user_prompt(url, html)
-
-        descriptions = self._contract.field_descriptions()
-        fields_text = '\n'.join(f'**{name}** - {desc}' for name, desc in descriptions.items())
-        return build_custom_agent_prompt(url, html, fields_text)
 
     def _is_all_na(self, selectors: dict) -> bool:
         """Check if AI returned all NA (gave up).
