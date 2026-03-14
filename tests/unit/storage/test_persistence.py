@@ -565,3 +565,31 @@ def test_extract_domain_valueerror_returns_unknown(storage, mocker):
     mocker.patch('yosoi.storage.persistence.urlparse', side_effect=ValueError('bad url'))
     result = storage._extract_domain('anything')
     assert result == 'unknown'
+
+
+# ---------------------------------------------------------------------------
+# load_field_selector
+# ---------------------------------------------------------------------------
+
+
+def test_load_field_selector_returns_entry_for_existing_field(storage):
+    selectors = {
+        'headline': {'primary': 'h1.title', 'fallback': 'h1', 'tertiary': None},
+        'author': {'primary': '.author', 'fallback': None, 'tertiary': None},
+    }
+    storage.save_selectors('https://example.com/article', selectors)
+    result = storage.load_field_selector('example.com', 'headline')
+    assert result is not None
+    assert result['primary'] == 'h1.title'
+
+
+def test_load_field_selector_returns_none_for_missing_field(storage):
+    selectors = {'headline': {'primary': 'h1', 'fallback': None, 'tertiary': None}}
+    storage.save_selectors('https://example.com', selectors)
+    result = storage.load_field_selector('example.com', 'nonexistent_field')
+    assert result is None
+
+
+def test_load_field_selector_returns_none_for_missing_domain(storage):
+    result = storage.load_field_selector('nothere.com', 'headline')
+    assert result is None

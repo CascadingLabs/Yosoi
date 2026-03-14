@@ -6,6 +6,7 @@ Centralized retry logic for bot detection and AI failures.
 import logging
 import time
 from collections.abc import AsyncIterator
+from typing import Any
 from urllib.parse import urlparse
 
 import httpx
@@ -18,7 +19,7 @@ from tenacity import RetryCallState, RetryError
 
 from yosoi.core.cleaning import HTMLCleaner
 from yosoi.core.configs import YosoiConfig
-from yosoi.core.discovery import LLMConfig, SelectorDiscovery
+from yosoi.core.discovery import DiscoveryOrchestrator, LLMConfig
 from yosoi.core.extraction import ContentExtractor
 from yosoi.core.fetcher import HTMLFetcher, create_fetcher
 from yosoi.core.verification import SelectorVerifier
@@ -31,8 +32,9 @@ from yosoi.storage.tracking import DomainStats
 from yosoi.utils.exceptions import BotDetectionError
 from yosoi.utils.retry import get_async_retryer
 
-# Selector dict: field name → {primary, fallback, tertiary} CSS selectors
-SelectorMap = dict[str, dict[str, str]]
+# Selector dict: field name → {primary, fallback, tertiary} selectors
+# Values may be plain strings, SelectorEntry dicts, or None depending on source
+SelectorMap = dict[str, dict[str, Any]]
 # Extracted content: field name → extracted value(s)
 ContentMap = dict[str, str | list[str | dict[str, str]]]
 # Multi-item extraction: list of ContentMap dicts
@@ -119,15 +121,16 @@ class Pipeline:
         self.contract = contract
         self.console = Console(theme=self.custom_theme, quiet=quiet)
         self.cleaner = HTMLCleaner(console=self.console)
-        self.discovery = SelectorDiscovery(
-            llm_config=llm_config,
-            console=self.console,
+        self.storage = SelectorStorage()
+        self.discovery = DiscoveryOrchestrator(
             contract=self.contract,
+            llm_config=llm_config,
+            storage=self.storage,
+            console=self.console,
             target_level=self.selector_level,
         )
         self.verifier = SelectorVerifier(console=self.console)
         self.extractor = ContentExtractor(console=self.console, contract=self.contract)
-        self.storage = SelectorStorage()
         self.tracker = LLMTracker()
         self.debug_mode = debug_mode
         self.debug = DebugManager(console=self.console, enabled=debug_mode)
@@ -673,29 +676,18 @@ class Pipeline:
     async def _discover_with_escalation(
         self, url: str, cleaned_html: str, max_retries: int = 3
     ) -> tuple[SelectorMap | None, bool]:
-        """Try discovery at each SelectorLevel from CSS up to self.selector_level.
+        """Delegate to _discover — per-field escalation is handled by DiscoveryOrchestrator.
 
         Args:
             url: URL being processed (for logging).
             cleaned_html: Pre-cleaned HTML content to analyze.
-            max_retries: Maximum AI retry attempts per level. Defaults to 3.
+            max_retries: Maximum AI retry attempts per field per level. Defaults to 3.
 
         Returns:
             Tuple of (selectors, used_llm) — same as _discover.
 
         """
-        for level in SelectorLevel:
-            if level > self.selector_level:
-                break
-            self.discovery.target_level = level
-            selectors, used_llm = await self._discover(url, cleaned_html, max_retries)
-            if selectors:
-                if level > SelectorLevel.CSS:
-                    self.console.print(f'[info]  ↳ Escalated to {level.name} selectors[/info]')
-                    logfire.info('Discovery escalated', url=url, level=level.name)
-                return selectors, used_llm
-
-        return None, False
+        return await self._discover(url, cleaned_html, max_retries)
 
     @staticmethod
     def _pop_container(selectors: SelectorMap) -> str | None:
@@ -889,6 +881,22 @@ class Pipeline:
 
             # Resolve container selector from cached selectors
             container_selector = self._resolve_container(existing_selectors)
+
+            # Verify container selector before proceeding — a stale container means
+            # all content extractions will silently fail, so force re-discovery.
+            if container_selector and not skip_verification:
+                from parsel import Selector as _PS
+
+                from yosoi.models.selectors import coerce_selector_entry
+
+                _entry = coerce_selector_entry(container_selector)
+                if _entry is not None:
+                    _ok, _ = self.verifier._test_selector(_PS(text=cleaned_html), _entry)
+                    if not _ok:
+                        self.console.print(
+                            '[warning]⚠ Cached container selector failed — forcing re-discovery[/warning]'
+                        )
+                        return None, False
 
             if not skip_verification:
                 verification = self.verifier.verify(cleaned_html, existing_selectors, max_level=self.selector_level)

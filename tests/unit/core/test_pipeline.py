@@ -440,6 +440,28 @@ async def test_extract_with_cached_skips_verification_when_flag_set(mocker):
     assert cache_valid is True
 
 
+async def test_stale_container_triggers_rediscovery(mocker):
+    """Stale container selector must return cache_valid=False, not silently fail."""
+    stub = _make_pipeline_stub(mocker)
+    stub.cleaner.clean_html.return_value = '<html><body><h1>Title</h1></body></html>'
+    stub.verifier._test_selector = mocker.MagicMock(return_value=(False, 'no_elements_found'))
+
+    mock_fetcher = mocker.MagicMock()
+    mock_fetcher.fetch = mocker.AsyncMock(
+        return_value=FetchResult(url='https://x.com', html='<html><body><h1>Title</h1></body></html>')
+    )
+
+    # Patch _resolve_container to return a non-None stale container string
+    mocker.patch.object(stub, '_resolve_container', return_value='article.product_pod')
+
+    items, cache_valid = await Pipeline._extract_with_cached(
+        stub, 'https://x.com', mock_fetcher, {'title': {'primary': 'h1'}}, False
+    )
+
+    assert cache_valid is False
+    assert items is None
+
+
 # ---------------------------------------------------------------------------
 # _fetch
 # ---------------------------------------------------------------------------
@@ -552,8 +574,12 @@ async def test_discover_with_escalation_succeeds_at_css(mocker):
     Pipeline._discover.assert_called_once()
 
 
-async def test_discover_with_escalation_retries_at_xpath_when_css_fails(mocker):
-    """When CSS discovery fails, escalates to XPATH if selector_level allows it."""
+async def test_discover_with_escalation_delegates_to_discover(mocker):
+    """_discover_with_escalation now delegates to _discover once.
+
+    Per-field escalation (CSS→XPath→…) is handled inside DiscoveryOrchestrator,
+    not in the pipeline-level loop.
+    """
     from yosoi.models.selectors import SelectorLevel
 
     stub = _make_pipeline_stub(mocker)
@@ -561,16 +587,13 @@ async def test_discover_with_escalation_retries_at_xpath_when_css_fails(mocker):
     mocker.patch.object(
         Pipeline,
         '_discover',
-        side_effect=[
-            (None, False),  # CSS fails
-            ({'title': {'primary': '//h1'}}, True),  # XPATH succeeds
-        ],
+        return_value=({'title': {'primary': '//h1'}}, True),
     )
-    selectors, _used_llm = await Pipeline._discover_with_escalation(stub, 'https://x.com', '<html/>')
+    selectors, used_llm = await Pipeline._discover_with_escalation(stub, 'https://x.com', '<html/>')
     assert selectors is not None
-    assert Pipeline._discover.call_count == 2
-    # discovery target_level updated to XPATH before second call
-    assert stub.discovery.target_level == SelectorLevel.XPATH
+    assert used_llm is True
+    # Only one call — orchestrator handles the per-field level loop internally
+    Pipeline._discover.assert_called_once()
 
 
 async def test_discover_with_escalation_does_not_retry_beyond_max_level(mocker):

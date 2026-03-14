@@ -13,9 +13,13 @@ from yosoi.core.discovery.config import (
     openrouter,
     provider,
 )
+from yosoi.core.discovery.field_agent import FieldDiscoveryAgent
+from yosoi.core.discovery.orchestrator import DiscoveryOrchestrator
 from yosoi.core.discovery.yosoi_agent import YosoiAgent
 
 __all__ = [
+    'DiscoveryOrchestrator',
+    'FieldDiscoveryAgent',
     'LLMBuilder',
     'LLMConfig',
     'SelectorDiscovery',

@@ -147,6 +147,78 @@ def page_hints(ctx: RunContext['DiscoveryDeps']) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Per-field deps and prompt functions
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class FieldDiscoveryDeps:
+    """Runtime context for single-field selector discovery.
+
+    Attributes:
+        field_name: Name of the field to discover selectors for
+        field_description: Human-readable description of the field
+        field_hint: Optional AI hint from the contract field definition
+        input: Typed discovery input containing url and html
+        target_level: Maximum selector strategy level allowed
+        is_container: True if discovering the yosoi_container selector
+
+    """
+
+    field_name: str
+    field_description: str
+    field_hint: str | None
+    input: DiscoveryInput
+    target_level: SelectorLevel = field(default=SelectorLevel.CSS)
+    is_container: bool = False
+
+
+def field_single_base_instructions(ctx: RunContext['FieldDiscoveryDeps']) -> str:
+    """Core identity and task description for single-field discovery."""
+    return _BASE
+
+
+def field_single_field_instructions(ctx: RunContext['FieldDiscoveryDeps']) -> str:
+    """Describe the single field the agent must find selectors for."""
+    deps = ctx.deps
+    hint_text = f'\n    Hint: {deps.field_hint}' if deps.field_hint else ''
+    text = (
+        f'Find selectors for this field:\n'
+        f'**{deps.field_name}** — {deps.field_description}{hint_text}\n\n'
+        f'{_FIELD_SELECTOR_GUIDE}'
+    )
+    if deps.is_container:
+        text += f'\n\n{_CONTAINER_GUIDANCE}'
+    return text
+
+
+def field_single_level_instructions(ctx: RunContext['FieldDiscoveryDeps']) -> str:
+    """Explain which selector strategies are allowed based on target_level."""
+    if ctx.deps.target_level >= SelectorLevel.JSONLD:
+        return _LEVEL_JSONLD_ALLOWED
+    if ctx.deps.target_level >= SelectorLevel.REGEX:
+        return _LEVEL_REGEX_ALLOWED
+    if ctx.deps.target_level >= SelectorLevel.XPATH:
+        return _LEVEL_XPATH_ALLOWED
+    return _LEVEL_CSS_ONLY
+
+
+def field_single_page_hints(ctx: RunContext['FieldDiscoveryDeps']) -> str:
+    """Detect structural signals from the HTML and surface them as hints."""
+    html = ctx.deps.input.html
+    hints: list[str] = []
+
+    if 'data-testid' in html:
+        hints.append(_HINT_TESTID)
+    if '"@type"' in html or '"@context"' in html:
+        hints.append(_HINT_JSON_LD)
+    if 'data-qa' in html or 'data-cy' in html:
+        hints.append(_HINT_DATA_QA)
+
+    return '\n'.join(hints)
+
+
+# ---------------------------------------------------------------------------
 # User-prompt builders
 # ---------------------------------------------------------------------------
 

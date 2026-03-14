@@ -80,6 +80,23 @@ class SelectorStorage:
             print(f'Error loading selectors: {e}')
             return None
 
+    def load_field_selector(self, domain: str, field_name: str) -> dict[str, Any] | None:
+        """Return raw selector dict for a single field, or None if not cached.
+
+        Args:
+            domain: Domain name (e.g., 'example.com')
+            field_name: Field name to look up
+
+        Returns:
+            Dict with primary/fallback/tertiary keys, or None if not found.
+
+        """
+        data = self.load_selectors(domain)
+        if data is None:
+            return None
+        entry = data.get(field_name)
+        return entry if isinstance(entry, dict) else None
+
     def selector_exists(self, domain: str) -> bool:
         """Check if selectors exist for a domain.
 

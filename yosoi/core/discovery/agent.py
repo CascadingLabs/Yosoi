@@ -52,6 +52,7 @@ def _extract_provider_error(exc: Exception) -> str | None:
 
 
 class SelectorDiscovery:
+    # TODO plan to strangle this
     """Discovers selectors using AI to read cleaned HTML.
 
     Attributes:
