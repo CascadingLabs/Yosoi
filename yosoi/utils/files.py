@@ -47,10 +47,9 @@ def get_logs_path() -> Path:
 
 
 def ensure_tracking_file(yosoi_dir: Path) -> None:
-    """Migrate legacy tracking files or create a new one if needed.
+    """Migrate root-level tracking file or create a new one if needed.
 
-    Handles three migration paths:
-    - .yosoi/llm_tracking.json → .yosoi/stats.json (legacy rename)
+    Handles two paths:
     - <root>/stats.json → .yosoi/stats.json (root-level move)
     - Create new empty .yosoi/stats.json
 
@@ -60,19 +59,11 @@ def ensure_tracking_file(yosoi_dir: Path) -> None:
     """
     tracking_file = yosoi_dir / 'stats.json'
     root_tracking = yosoi_dir.parent / 'stats.json'
-    legacy_tracking = yosoi_dir / 'llm_tracking.json'
 
     if tracking_file.exists():
         return
 
-    if legacy_tracking.exists():
-        with logfire.span('tracking.migrate.legacy', source=str(legacy_tracking), destination=str(tracking_file)):
-            try:
-                shutil.move(str(legacy_tracking), str(tracking_file))
-            except Exception:
-                logfire.exception('Failed to migrate legacy tracking')
-                raise
-    elif root_tracking.exists():
+    if root_tracking.exists():
         with logfire.span('tracking.migrate.root', source=str(root_tracking), destination=str(tracking_file)):
             try:
                 shutil.move(str(root_tracking), str(tracking_file))

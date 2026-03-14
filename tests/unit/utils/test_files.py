@@ -3,6 +3,7 @@ from pathlib import Path
 
 import yosoi.utils.files
 from yosoi.utils.files import (
+    ensure_tracking_file,
     get_debug_path,
     get_logs_path,
     get_project_root,
@@ -455,3 +456,28 @@ def test_get_logs_path_returns_exact_path(monkeypatch, tmp_path):
 
     logs_path = get_logs_path()
     assert logs_path == project_root / '.yosoi' / 'logs'
+
+
+# ---------------------------------------------------------------------------
+# Coverage: ensure_tracking_file root migration
+# ---------------------------------------------------------------------------
+
+
+def test_ensure_tracking_migrates_root_file(mocker, tmp_path):
+    """ensure_tracking_file moves <root>/stats.json → .yosoi/stats.json."""
+    yosoi_dir = tmp_path / '.yosoi'
+    yosoi_dir.mkdir()
+    root_tracking = tmp_path / 'stats.json'
+    root_tracking.write_text('{"root": true}')
+
+    mock_span = mocker.MagicMock()
+    mock_span.__enter__ = mocker.MagicMock(return_value=mock_span)
+    mock_span.__exit__ = mocker.MagicMock(return_value=False)
+    mocker.patch('yosoi.utils.files.logfire.span', return_value=mock_span)
+
+    ensure_tracking_file(yosoi_dir)
+
+    assert (yosoi_dir / 'stats.json').exists()
+    assert not root_tracking.exists()
+    data = json.loads((yosoi_dir / 'stats.json').read_text())
+    assert data == {'root': True}

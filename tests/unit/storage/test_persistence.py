@@ -518,3 +518,50 @@ def test_export_summary_empty(storage, tmp_path):
     with open(output_file) as f:
         data = json.load(f)
     assert data['total_domains'] == 0
+
+
+# ---------------------------------------------------------------------------
+# Coverage: lines 79-81 — load_selectors with corrupt JSON
+# ---------------------------------------------------------------------------
+
+
+def test_load_selectors_corrupt_json_returns_none(storage):
+    """load_selectors returns None for a file containing invalid JSON."""
+    import pathlib
+
+    filepath = storage._get_filepath('corrupt.com')
+    pathlib.Path(filepath).write_text('NOT JSON')
+    result = storage.load_selectors('corrupt.com')
+    assert result is None
+
+
+# ---------------------------------------------------------------------------
+# Coverage: lines 140-142 — load_content multi-item format
+# ---------------------------------------------------------------------------
+
+
+def test_load_content_multi_item_format(storage):
+    """load_content returns list of dicts for multi-item 'items' format."""
+    import json
+    import pathlib
+
+    filepath = storage._get_content_filepath('https://example.com/multi')
+    pathlib.Path(filepath).parent.mkdir(parents=True, exist_ok=True)
+    data = {'items': [{'title': 'A'}, {'title': 'B'}]}
+    pathlib.Path(filepath).write_text(json.dumps(data))
+    loaded = storage.load_content('https://example.com/multi')
+    assert isinstance(loaded, list)
+    assert len(loaded) == 2
+    assert loaded[0]['title'] == 'A'
+
+
+# ---------------------------------------------------------------------------
+# Coverage: lines 249-250 — _extract_domain ValueError
+# ---------------------------------------------------------------------------
+
+
+def test_extract_domain_valueerror_returns_unknown(storage, mocker):
+    """_extract_domain returns 'unknown' when urlparse raises ValueError."""
+    mocker.patch('yosoi.storage.persistence.urlparse', side_effect=ValueError('bad url'))
+    result = storage._extract_domain('anything')
+    assert result == 'unknown'

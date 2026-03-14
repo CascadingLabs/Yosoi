@@ -1,7 +1,5 @@
 """Unit tests for multi-item pipeline features."""
 
-from unittest.mock import AsyncMock
-
 from pydantic import ConfigDict
 
 import yosoi as ys
@@ -230,7 +228,7 @@ def _make_scrape_stub(mocker, contract=None):
     stub.selector_level = SelectorLevel.CSS
 
     # Stub normalize_url to pass through
-    mocker.patch.object(stub, 'normalize_url', new=AsyncMock(side_effect=lambda u: u))
+    mocker.patch.object(stub, 'normalize_url', new=mocker.AsyncMock(side_effect=lambda u: u))
     return stub
 
 
