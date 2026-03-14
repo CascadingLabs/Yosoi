@@ -39,3 +39,8 @@ jobs:
 
       - name: Run CI Tests
         run: uv run poe ci-test
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
