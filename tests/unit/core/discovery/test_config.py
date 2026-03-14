@@ -144,10 +144,10 @@ class TestLLMBuilder:
         with pytest.raises(ValueError, match='Model name must be set'):
             LLMBuilder().provider('groq').api_key('k').build()
 
-    def test_missing_api_key_raises(self):
-        """Build without api_key raises ValueError."""
-        with pytest.raises(ValueError, match='API key must be set'):
-            LLMBuilder().provider('groq').model('m').build()
+    def test_missing_api_key_resolves_to_none(self):
+        """Build without api_key resolves to None (provider handles resolution)."""
+        cfg = LLMBuilder().provider('groq').model('m').build()
+        assert cfg.api_key is None
 
     def test_no_extra_params_results_in_none(self):
         """When no extra params set, extra_params is None."""
