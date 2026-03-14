@@ -2,17 +2,17 @@
 
 from __future__ import annotations
 
-from typing import Any
+from collections.abc import Mapping
 
-from yosoi.types.registry import _registry
+from yosoi.types.registry import CoercedValue, _registry
 
 
 def dispatch(
     yosoi_type: str,
     value: object,
-    config: dict[str, Any],
+    config: Mapping[str, object],
     source_url: str | None = None,
-) -> Any:
+) -> CoercedValue | object:
     """Dispatch coercion for a given yosoi_type.
 
     Args:
@@ -22,14 +22,14 @@ def dispatch(
         source_url: Optional source URL for resolving relative URLs.
 
     Returns:
-        The coerced value.
+        The coerced value, or the raw value unchanged if no coercer is registered.
 
     Raises:
         ValueError: If the value cannot be coerced.
 
     """
     if value is None:
-        return value
+        return None
 
     coercer = _registry.get(yosoi_type)
     if coercer is None:

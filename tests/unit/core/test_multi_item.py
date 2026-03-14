@@ -5,21 +5,19 @@ from unittest.mock import AsyncMock
 from pydantic import ConfigDict
 
 import yosoi as ys
-from yosoi.core.pipeline import Pipeline
-from yosoi.models.contract import Contract
-from yosoi.models.results import FetchResult
 
 # ---------------------------------------------------------------------------
 # Contract helpers
 # ---------------------------------------------------------------------------
+from yosoi import FetchResult, Pipeline
 
 
-class SimpleContract(Contract):
+class SimpleContract(ys.Contract):
     title: str = ys.Title()
     price: float = ys.Price()
 
 
-class ContainerContract(Contract):
+class ContainerContract(ys.Contract):
     model_config = ConfigDict(json_schema_extra={'yosoi_container': '.product-card'})
 
     name: str = ys.Title()
@@ -40,14 +38,14 @@ def test_get_container_selector_returns_override():
 
 
 def test_get_container_selector_ignores_non_string():
-    class BadContainer(Contract):
+    class BadContainer(ys.Contract):
         model_config = ConfigDict(json_schema_extra={'yosoi_container': 123})
 
     assert BadContainer.get_container_selector() is None
 
 
 def test_get_container_selector_ignores_empty_string():
-    class EmptyContainer(Contract):
+    class EmptyContainer(ys.Contract):
         model_config = ConfigDict(json_schema_extra={'yosoi_container': ''})
 
     assert EmptyContainer.get_container_selector() is None

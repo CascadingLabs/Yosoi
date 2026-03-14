@@ -12,11 +12,11 @@ import asyncio
 
 import pytest
 
+import yosoi.core.tasks as _tasks_mod
 from yosoi.core.discovery.agent import SelectorDiscovery
 from yosoi.core.discovery.config import LLMConfig
 from yosoi.core.discovery.yosoi_agent import YosoiAgent
 from yosoi.core.tasks import (
-    _pipeline_config,
     configure_broker,
     enqueue_urls,
     process_url_task,
@@ -29,9 +29,9 @@ from yosoi.models.defaults import NewsArticle
 @pytest.fixture
 def clean_broker():
     """Ensure broker state is clean before and after each test."""
-    _pipeline_config.clear()
+    _tasks_mod._pipeline_config = None
     yield
-    _pipeline_config.clear()
+    _tasks_mod._pipeline_config = None
 
 
 @pytest.fixture
@@ -321,12 +321,13 @@ class TestEndToEndBrokerAgent:
         await configure_broker(mock_llm_config, contract=NewsArticle, max_workers=2)
 
         assert yosoi_tasks._semaphore is not None
-        assert _pipeline_config['contract'] is NewsArticle
+        assert _tasks_mod._pipeline_config is not None
+        assert _tasks_mod._pipeline_config['contract'] is NewsArticle
 
         await shutdown_broker()
 
         assert yosoi_tasks._semaphore is None
-        assert _pipeline_config == {}
+        assert _tasks_mod._pipeline_config is None
 
     async def test_mixed_success_and_failure_results(self, mocker, mock_llm_config, clean_broker):
         """Enqueue mix of passing and failing URLs, verify correct bucketing."""

@@ -3,7 +3,10 @@
 import asyncio
 from typing import Any
 
+from pydantic import BaseModel
 from pydantic_ai import Agent
+from pydantic_ai.models import KnownModelName, Model
+from pydantic_ai.run import AgentRunResult
 
 from yosoi.models.contract import Contract
 from yosoi.prompts.discovery import DiscoveryInput
@@ -23,14 +26,14 @@ class YosoiAgent:
 
     def __init__(
         self,
-        model: Any,
+        model: Model | KnownModelName,
         contract: type[Contract],
         system_prompt: str | None = None,
     ):
         """Initialise YosoiAgent, deriving the output type from the contract.
 
         Args:
-            model: Any pydantic-ai compatible model (e.g. ``TestModel``, ``GroqModel``).
+            model: A pydantic-ai compatible model (e.g. ``TestModel``, ``GroqModel``).
             contract: Contract subclass whose selector model is used as the agent output type.
             system_prompt: Optional static system prompt for the inner agent.
 
@@ -38,20 +41,20 @@ class YosoiAgent:
         self._contract = contract
         output_model = contract.to_selector_model()
         if system_prompt is not None:
-            self._agent: Agent[None, Any] = Agent(model, output_type=output_model, system_prompt=system_prompt)
+            self._agent: Agent[None, BaseModel] = Agent(model, output_type=output_model, system_prompt=system_prompt)
         else:
             self._agent = Agent(model, output_type=output_model)
 
-    async def run(self, discovery_input: DiscoveryInput, **kwargs: Any) -> Any:
+    async def run(self, discovery_input: DiscoveryInput, **kwargs: Any) -> AgentRunResult[BaseModel]:
         """Run the agent with a JSON-serialised DiscoveryInput prompt."""
         prompt = discovery_input.model_dump_json()
         return await self._agent.run(prompt, **kwargs)
 
-    def run_sync(self, discovery_input: DiscoveryInput, **kwargs: Any) -> Any:
+    def run_sync(self, discovery_input: DiscoveryInput, **kwargs: Any) -> AgentRunResult[BaseModel]:
         """Synchronous convenience wrapper around :meth:`run`."""
         return asyncio.run(self.run(discovery_input, **kwargs))
 
     @property
-    def inner(self) -> Agent[None, Any]:
+    def inner(self) -> Agent[None, BaseModel]:
         """The underlying pydantic-ai Agent."""
         return self._agent

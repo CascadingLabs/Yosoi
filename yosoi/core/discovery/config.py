@@ -13,6 +13,7 @@ from typing import Any, Protocol
 # ============================================================================
 from pydantic import BaseModel, ConfigDict
 from pydantic_ai import Agent
+from pydantic_ai.models import Model
 from pydantic_ai.models.cerebras import CerebrasModel
 from pydantic_ai.models.google import GoogleModel
 from pydantic_ai.models.groq import GroqModel
@@ -62,7 +63,7 @@ class LLMProvider(Protocol):
 
     """
 
-    def create_model(self, config: LLMConfig) -> Any:
+    def create_model(self, config: LLMConfig) -> Model:
         """Create a model instance from configuration.
 
         Args:
@@ -194,7 +195,7 @@ PROVIDER_FACTORIES = {
 }
 
 
-def create_model(config: LLMConfig) -> Any:
+def create_model(config: LLMConfig) -> Model:
     """Create a model from configuration.
 
     Args:
@@ -269,7 +270,7 @@ class LLMBuilder:
         self._api_key: str | None = None
         self._temperature: float = 0.7
         self._max_tokens: int | None = None
-        self._extra_params: dict[str, Any] = {}
+        self._extra_params: dict[str, str | int | float | bool] = {}
 
     def provider(self, name: str) -> LLMBuilder:
         """Set the provider (groq, gemini, openai, etc.).
@@ -336,7 +337,7 @@ class LLMBuilder:
         self._max_tokens = tokens
         return self
 
-    def extra(self, **kwargs: Any) -> LLMBuilder:
+    def extra(self, **kwargs: str | int | float | bool) -> LLMBuilder:
         """Add extra provider-specific parameters.
 
         Args:

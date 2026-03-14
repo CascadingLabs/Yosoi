@@ -216,6 +216,7 @@ ci-test = "uv run pytest -m 'not eval' --cov=yosoi --cov-branch --cov-report=xml
 ci-check = "uv run prek run --all-files --hook-stage manual --show-diff-on-failure"
 ci-format = "uv run ruff check --fix"
 coverage = "uv run pytest --cov=yosoi --cov-report=term-missing --cov-report=html tests/"
+stub-test = "uv run pytest tests/stubs/ -v"
 mutmut-run = "uv run mutmut run"
 mutmut-results = "uv run mutmut results"
 

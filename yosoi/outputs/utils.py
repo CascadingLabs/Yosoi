@@ -10,7 +10,10 @@ from yosoi.outputs.markdown import format_markdown, save_markdown
 from yosoi.outputs.parquet import save_parquet
 from yosoi.outputs.xlsx import save_xlsx
 
-_Saver = Callable[[str, str, str, dict[str, Any]], None]
+# Content param is Any because savers have mixed signatures: json/markdown accept
+# dict | list, while accumulating formats (csv, jsonl, etc.) accept only dict.
+# The dispatch logic in save_formatted_content ensures correctness at runtime.
+_Saver = Callable[[str, str, str, Any], None]
 
 
 def format_content(url: str, domain: str, content: dict[str, Any], output_format: str = 'json') -> str | dict[str, Any]:
@@ -71,7 +74,7 @@ def save_formatted_content(
         for item in content:
             saver(filepath, url, domain, item)
     else:
-        saver(filepath, url, domain, content)  # type: ignore[arg-type]
+        saver(filepath, url, domain, content)
     return filepath
 
 

@@ -6,7 +6,6 @@ Centralized retry logic for bot detection and AI failures.
 import logging
 import time
 from collections.abc import AsyncIterator
-from typing import Any
 from urllib.parse import urlparse
 
 import httpx
@@ -15,7 +14,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 from rich.theme import Theme
-from tenacity import RetryError
+from tenacity import RetryCallState, RetryError
 
 from yosoi.core.cleaning import HTMLCleaner
 from yosoi.core.configs import YosoiConfig
@@ -28,6 +27,7 @@ from yosoi.models.contract import Contract
 from yosoi.models.results import VerificationResult
 from yosoi.models.selectors import SelectorLevel
 from yosoi.storage import DebugManager, LLMTracker, SelectorStorage
+from yosoi.storage.tracking import DomainStats
 from yosoi.utils.exceptions import BotDetectionError
 from yosoi.utils.retry import get_async_retryer
 
@@ -501,8 +501,8 @@ class Pipeline:
         self.console.print(Panel(f'Processing: {url}', style='bold blue'))
         self.console.print('[step]Step 1: Fetching HTML...[/step]')
 
-        def before_sleep_log(retry_state: object) -> None:
-            attempt = retry_state.attempt_number  # type: ignore[attr-defined]
+        def before_sleep_log(retry_state: RetryCallState) -> None:
+            attempt = retry_state.attempt_number
             if attempt >= 1:
                 self.console.print(f'[warning]Fetch retry attempt {attempt}/{max_retries}...[/warning]')
                 logfire.warn('Retrying fetch', url=url, attempt=attempt)
@@ -622,8 +622,8 @@ class Pipeline:
             return overrides, False
 
         # Use AI discovery with retries
-        def before_ai_sleep_log(retry_state: object) -> None:
-            attempt = retry_state.attempt_number  # type: ignore[attr-defined]
+        def before_ai_sleep_log(retry_state: RetryCallState) -> None:
+            attempt = retry_state.attempt_number
             if attempt >= 1:
                 self.console.print(f'[warning]AI retry attempt {attempt}/{max_retries}...[/warning]')
                 logfire.warn('Retrying AI discovery', url=url, attempt=attempt)
@@ -722,7 +722,8 @@ class Pipeline:
                 return primary
             # Handle SelectorEntry-style dicts
             if isinstance(primary, dict):
-                return primary.get('value')  # type: ignore[return-value]
+                value = primary.get('value')
+                return value if isinstance(value, str) else None
         return None
 
     def _verify(self, _url: str, html: str, selectors: SelectorMap, skip_verification: bool) -> SelectorMap | None:
@@ -1054,15 +1055,14 @@ class Pipeline:
         stats = self.tracker.record_url(url, used_llm=used_llm, level_distribution=level_dist or None, elapsed=elapsed)
         self._print_tracking_stats(domain, stats)
 
-    def _print_tracking_stats(self, domain: str, stats: dict[str, Any]) -> None:
+    def _print_tracking_stats(self, domain: str, stats: 'DomainStats') -> None:
         """Print LLM tracking statistics for domain.
 
         Displays LLM call count, URL count, elapsed time, and efficiency metrics.
 
         Args:
             domain: Domain name being tracked.
-            stats: Statistics dictionary with 'llm_calls', 'url_count', and
-                   optionally 'total_elapsed' keys.
+            stats: DomainStats with tracking data for the domain.
 
         """
         self.console.print(f'\n[dim]  - Tracking Stats for {domain}:[/dim]')

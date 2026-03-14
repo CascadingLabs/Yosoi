@@ -1,12 +1,10 @@
 """RelatedContent type for Yosoi contracts."""
 
-from typing import Any
-
-from yosoi.types.registry import register_coercion
+from yosoi.types.registry import CoercionConfig, register_coercion
 
 
 @register_coercion('related_content', description='Related links (text + href pairs)')
-def RelatedContent(v: object, config: dict[str, Any], source_url: str | None = None) -> str:
+def RelatedContent(v: object, config: CoercionConfig, source_url: str | None = None) -> str:
     """Configure a related content / links field.
 
     The extractor returns a list of dicts with 'text' and 'href' keys.

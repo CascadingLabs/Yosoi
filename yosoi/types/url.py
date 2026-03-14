@@ -1,15 +1,14 @@
 """Url type for Yosoi contracts."""
 
-from typing import Any
 from urllib.parse import urljoin, urlparse, urlunparse
 
-from yosoi.types.registry import register_coercion
+from yosoi.types.registry import CoercionConfig, register_coercion
 
 _TRACKING_PREFIXES = ('utm_', 'fbclid', 'gclid', '_gl', 'ref')
 
 
 @register_coercion('url', description='A URL or href', require_https=True, strip_tracking=True)
-def Url(v: object, config: dict[str, Any], source_url: str | None = None) -> str:
+def Url(v: object, config: CoercionConfig, source_url: str | None = None) -> str:
     """Configure a URL field with optional HTTPS upgrade and tracking removal.
 
     Example::

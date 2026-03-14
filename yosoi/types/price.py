@@ -1,15 +1,14 @@
 """Price type for Yosoi contracts."""
 
 import re
-from typing import Any
 
-from yosoi.types.registry import register_coercion
+from yosoi.types.registry import CoercionConfig, register_coercion
 
 _ZERO_VALUE_WORDS = ('free', 'complimentary', 'gratis')
 
 
 @register_coercion('price', description='A monetary price value', currency_symbol=None, require_decimals=False)
-def Price(v: object, config: dict[str, Any], source_url: str | None = None) -> float | None:
+def Price(v: object, config: CoercionConfig, source_url: str | None = None) -> float | None:
     """Configure a price field with optional currency and decimal enforcement.
 
     Example::

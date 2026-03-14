@@ -1,7 +1,6 @@
 """AI-powered selector discovery by reading cleaned HTML."""
 
 import logging
-from typing import Any
 
 import logfire
 from pydantic import BaseModel
@@ -22,6 +21,9 @@ from yosoi.prompts.discovery import (
     page_hints,
 )
 from yosoi.utils.exceptions import LLMGenerationError
+
+# Selector dict: field name → {primary, fallback, tertiary} CSS selectors
+SelectorMap = dict[str, dict[str, str]]
 
 
 def _extract_provider_error(exc: Exception) -> str | None:
@@ -62,7 +64,7 @@ class SelectorDiscovery:
     """
 
     console: Console
-    agent: Agent[Any, BaseModel]
+    agent: Agent[DiscoveryDeps, BaseModel]
     model_name: str
     provider: str
     target_level: SelectorLevel
@@ -124,7 +126,7 @@ class SelectorDiscovery:
             raise ValueError('Either provide llm_config or agent parameter')
 
     @logfire.instrument('discover_selectors', extract_args=False)
-    async def discover_selectors(self, html: str, url: str | None = None) -> dict[str, Any] | None:
+    async def discover_selectors(self, html: str, url: str | None = None) -> SelectorMap | None:
         """Discover CSS selectors from cleaned HTML using AI.
 
         Args:
@@ -142,7 +144,7 @@ class SelectorDiscovery:
             selectors_obj = await self._get_selectors_from_ai(url_context, html)
 
             if selectors_obj:
-                selectors: dict[str, Any] = selectors_obj.model_dump(exclude_none=True)
+                selectors: SelectorMap = selectors_obj.model_dump(exclude_none=True)
 
                 if selectors and not self._is_all_na(selectors):
                     logfire.info('Selectors found successfully', selectors=selectors)
@@ -197,7 +199,7 @@ class SelectorDiscovery:
             logfire.error('AI request failed', error=error_msg, provider=self.provider)
             raise LLMGenerationError(f'AI discovery failed: {detail or error_msg}') from e
 
-    def _is_all_na(self, selectors: dict[str, Any]) -> bool:
+    def _is_all_na(self, selectors: SelectorMap) -> bool:
         """Check if AI returned all NA (gave up).
 
         Args:

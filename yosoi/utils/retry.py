@@ -10,6 +10,7 @@ import logfire
 from tenacity import (
     AsyncRetrying,
     BaseRetrying,
+    RetryCallState,
     Retrying,
     retry_if_exception_type,
     stop_after_attempt,
@@ -23,7 +24,7 @@ def _build_retry_kwargs(
     wait_max: float = 10.0,
     wait_multiplier: float = 1.0,
     exceptions: tuple[type[Exception], ...] = (Exception,),
-    log_callback: Callable[[Any], None] | None = None,
+    log_callback: Callable[[RetryCallState], None] | None = None,
     reraise: bool = True,
 ) -> dict[str, Any]:
     return {
@@ -41,7 +42,7 @@ def get_retryer(
     wait_max: float = 10.0,
     wait_multiplier: float = 1.0,
     exceptions: tuple[type[Exception], ...] = (Exception,),
-    log_callback: Callable[[Any], None] | None = None,
+    log_callback: Callable[[RetryCallState], None] | None = None,
     reraise: bool = True,
 ) -> BaseRetrying:
     """Create a standardized tenacity Retrying object for synchronous code.
@@ -79,7 +80,7 @@ def get_async_retryer(
     wait_max: float = 10.0,
     wait_multiplier: float = 1.0,
     exceptions: tuple[type[Exception], ...] = (Exception,),
-    log_callback: Callable[[Any], None] | None = None,
+    log_callback: Callable[[RetryCallState], None] | None = None,
     reraise: bool = True,
 ) -> AsyncRetrying:
     """Create a standardized tenacity AsyncRetrying object for async code.
@@ -114,7 +115,7 @@ def get_async_retryer(
     )
 
 
-def log_retry(retry_state: Any) -> None:
+def log_retry(retry_state: RetryCallState) -> None:
     """Default logging callback for retries.
 
     Logs a warning with logfire.
@@ -123,6 +124,7 @@ def log_retry(retry_state: Any) -> None:
         retry_state: The tenacity retry state object.
 
     """
-    exception = retry_state.outcome.exception()
+    outcome = retry_state.outcome
+    exception = outcome.exception() if outcome is not None else None
     attempt = retry_state.attempt_number
     logfire.warn('Retrying operation', attempt=attempt, error=str(exception) if exception else 'Unknown error')

@@ -2,9 +2,9 @@
 
 import pytest
 
+import yosoi.core.tasks as _tasks_mod
 from yosoi.core.tasks import (
     DomainDedup,
-    _pipeline_config,
     configure_broker,
     enqueue_urls,
     get_pipeline_config,
@@ -16,9 +16,9 @@ from yosoi.core.tasks import (
 @pytest.fixture
 def clean_broker():
     """Ensure broker state is clean before and after each test."""
-    _pipeline_config.clear()
+    _tasks_mod._pipeline_config = None
     yield
-    _pipeline_config.clear()
+    _tasks_mod._pipeline_config = None
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -66,7 +66,7 @@ class TestBrokerConfig:
         # Semaphore should be created with the right limit
         assert yosoi_tasks._semaphore is not None
         await shutdown_broker()
-        assert _pipeline_config == {}
+        assert _tasks_mod._pipeline_config is None
         assert yosoi_tasks._semaphore is None
 
     def test_get_config_before_configure_raises(self, clean_broker):

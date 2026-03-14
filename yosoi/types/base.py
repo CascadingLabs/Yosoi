@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from yosoi.types.registry import _registry, register_coercion
+from yosoi.types.registry import CoercionConfig, _registry, register_coercion
 
 
 class YosoiType:
@@ -52,7 +52,7 @@ class YosoiType:
             _registry[cls.type_name] = cls.coerce
 
     @staticmethod
-    def coerce(v: object, config: dict[str, Any], source_url: str | None = None) -> Any:  # noqa: ARG004
+    def coerce(v: object, config: CoercionConfig, source_url: str | None = None) -> str:  # noqa: ARG004
         """Default coercion: strip whitespace. Override in subclasses."""
         return str(v).strip() if v is not None else ''
 

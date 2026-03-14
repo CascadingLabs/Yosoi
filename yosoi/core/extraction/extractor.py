@@ -1,10 +1,14 @@
 """Extracts content from web pages using validated selectors."""
 
+from typing import Literal
+
 from parsel import Selector, SelectorList
 from rich.console import Console
 
 from yosoi.models.contract import Contract
 from yosoi.models.selectors import SelectorEntry, SelectorLevel, coerce_selector_entry
+
+FieldMode = Literal['body_text', 'related_content', 'text']
 
 
 class ContentExtractor:
@@ -28,13 +32,15 @@ class ContentExtractor:
         self._overridden_fields: frozenset[str] = (
             frozenset(contract.get_selector_overrides().keys()) if contract is not None else frozenset()
         )
-        self._field_modes: dict[str, str] = {}
+        self._field_modes: dict[str, FieldMode] = {}
         if contract is not None:
             for name, fi in contract.model_fields.items():
                 extra = fi.json_schema_extra
-                ytype = extra.get('yosoi_type') if isinstance(extra, dict) else None
-                if isinstance(ytype, str) and ytype in ('body_text', 'related_content'):
-                    self._field_modes[name] = ytype
+                raw_ytype = extra.get('yosoi_type') if isinstance(extra, dict) else None
+                if raw_ytype == 'body_text':
+                    self._field_modes[name] = 'body_text'
+                elif raw_ytype == 'related_content':
+                    self._field_modes[name] = 'related_content'
 
     def extract_content_with_html(
         self,
