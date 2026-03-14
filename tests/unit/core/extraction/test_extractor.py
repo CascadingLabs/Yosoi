@@ -1,5 +1,6 @@
 """Unit tests for ContentExtractor."""
 
+import pytest
 from parsel import Selector
 from rich.console import Console
 
@@ -441,4 +442,186 @@ def test_extract_content_respects_max_level():
     xpath_entry = SelectorEntry(strategy='xpath', value='//h1')
     selectors = {'title': {'primary': xpath_entry.model_dump()}}
     result = extractor.extract_content_with_html('https://x.com', html, selectors, max_level=SelectorLevel.CSS)
+    assert result is None
+
+
+# ---------------------------------------------------------------------------
+# Coverage: lines 15, 20 — _coerce_entry returning None for unexpected types
+# ---------------------------------------------------------------------------
+
+
+def test_coerce_entry_returns_none_for_int():
+    """_coerce_entry with a non-str/dict/SelectorEntry value returns None."""
+    from yosoi.models.selectors import coerce_selector_entry as _coerce_entry
+
+    assert _coerce_entry(42) is None
+
+
+def test_coerce_entry_returns_none_for_list():
+    """_coerce_entry with a list value returns None."""
+    from yosoi.models.selectors import coerce_selector_entry as _coerce_entry
+
+    assert _coerce_entry([1, 2, 3]) is None
+
+
+def test_coerce_entry_returns_none_for_none():
+    """_coerce_entry with None returns None."""
+    from yosoi.models.selectors import coerce_selector_entry as _coerce_entry
+
+    assert _coerce_entry(None) is None
+
+
+def test_coerce_entry_returns_selector_entry_from_dict():
+    """_coerce_entry with a dict returns SelectorEntry."""
+    from yosoi.models.selectors import SelectorEntry
+    from yosoi.models.selectors import coerce_selector_entry as _coerce_entry
+
+    result = _coerce_entry({'value': 'h1.title', 'strategy': 'css'})
+    assert isinstance(result, SelectorEntry)
+    assert result.value == 'h1.title'
+
+
+def test_coerce_entry_returns_selector_entry_from_string():
+    """_coerce_entry with a non-empty string returns SelectorEntry."""
+    from yosoi.models.selectors import SelectorEntry
+    from yosoi.models.selectors import coerce_selector_entry as _coerce_entry
+
+    result = _coerce_entry('h1.title')
+    assert isinstance(result, SelectorEntry)
+    assert result.value == 'h1.title'
+
+
+def test_coerce_entry_returns_none_for_empty_string():
+    """_coerce_entry with an empty string returns None."""
+    from yosoi.models.selectors import coerce_selector_entry as _coerce_entry
+
+    assert _coerce_entry('') is None
+
+
+def test_coerce_entry_passthrough_selector_entry():
+    """_coerce_entry with a SelectorEntry passes through."""
+    from yosoi.models.selectors import SelectorEntry
+    from yosoi.models.selectors import coerce_selector_entry as _coerce_entry
+
+    entry = SelectorEntry(value='h1')
+    assert _coerce_entry(entry) is entry
+
+
+# ---------------------------------------------------------------------------
+# Coverage: line 104 — overridden field prints different message
+# ---------------------------------------------------------------------------
+
+
+def test_extract_content_overridden_field_message():
+    """When a field is in overridden_fields, a different message is printed."""
+    from yosoi.types.field import Field as YsField
+
+    class OverrideContract(Contract):
+        title: str = YsField(description='Title', selector='h1.title')  # type: ignore[assignment]
+
+    extractor = _make_extractor(OverrideContract)
+    html = '<html><body><h1 class="title">My Title</h1></body></html>'
+    selectors = {'title': {'primary': 'h1.title'}}
+    result = extractor.extract_content_with_html('https://x.com', html, selectors)
+    assert result is not None
+    assert result['title'] == 'My Title'
+
+
+# ---------------------------------------------------------------------------
+# Coverage: line 140 — regex/jsonld strategies return None
+# ---------------------------------------------------------------------------
+
+
+def test_resolve_regex_strategy_returns_none():
+    """Regex strategy is unsupported and returns None."""
+    from yosoi.models.selectors import SelectorEntry, SelectorLevel
+
+    extractor = _make_extractor()
+    html = '<h1>Title</h1>'
+    sel = Selector(text=html)
+    entry = SelectorEntry(strategy='regex', value=r'\d+')
+    result = extractor._resolve(sel, entry, 'title', SelectorLevel.REGEX)
+    assert result is None
+
+
+def test_resolve_jsonld_strategy_returns_none():
+    """JSONLD strategy is unsupported and returns None."""
+    from yosoi.models.selectors import SelectorEntry, SelectorLevel
+
+    extractor = _make_extractor()
+    html = '<h1>Title</h1>'
+    sel = Selector(text=html)
+    entry = SelectorEntry(strategy='jsonld', value='$.title')
+    result = extractor._resolve(sel, entry, 'title', SelectorLevel.JSONLD)
+    assert result is None
+
+
+# ---------------------------------------------------------------------------
+# Coverage: lines 190, 192-194 — xpath extraction exception handling
+# ---------------------------------------------------------------------------
+
+
+def test_extract_with_xpath_returns_none_for_no_match():
+    """XPath selector that matches nothing returns None."""
+    extractor = _make_extractor()
+    html = '<p>content</p>'
+    sel = Selector(text=html)
+    result = extractor._extract_with_xpath_selector(sel, '//h1', 'title')
+    assert result is None
+
+
+def test_extract_with_xpath_returns_text():
+    """XPath selector that matches returns extracted text."""
+    extractor = _make_extractor()
+    html = '<h1>XPath Title</h1>'
+    sel = Selector(text=html)
+    result = extractor._extract_with_xpath_selector(sel, '//h1', 'title')
+    assert result == 'XPath Title'
+
+
+def test_extract_with_xpath_exception_returns_none():
+    """Invalid XPath expression returns None instead of raising."""
+    extractor = _make_extractor()
+    html = '<p>content</p>'
+    sel = Selector(text=html)
+    # Invalid xpath syntax
+    result = extractor._extract_with_xpath_selector(sel, '///[[[invalid', 'title')
+    assert result is None
+
+
+# ---------------------------------------------------------------------------
+# Coverage: lines 248-258 — quick_extract async method
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_quick_extract_success(mocker):
+    """quick_extract fetches URL and extracts content."""
+    extractor = _make_extractor()
+    mock_response = mocker.MagicMock()
+    mock_response.text = '<html><body><h1>Hello World</h1></body></html>'
+
+    mock_client = mocker.AsyncMock()
+    mock_client.get.return_value = mock_response
+    mock_client.__aenter__ = mocker.AsyncMock(return_value=mock_client)
+    mock_client.__aexit__ = mocker.AsyncMock(return_value=False)
+    mocker.patch('httpx.AsyncClient', return_value=mock_client)
+
+    result = await extractor.quick_extract('https://example.com', 'h1', 'text')
+    assert result == 'Hello World'
+
+
+@pytest.mark.asyncio
+async def test_quick_extract_returns_none_on_http_error(mocker):
+    """quick_extract returns None when HTTP error occurs."""
+    import httpx
+
+    extractor = _make_extractor()
+    mock_client = mocker.AsyncMock()
+    mock_client.get.side_effect = httpx.ConnectError('failed')
+    mock_client.__aenter__ = mocker.AsyncMock(return_value=mock_client)
+    mock_client.__aexit__ = mocker.AsyncMock(return_value=False)
+    mocker.patch('httpx.AsyncClient', return_value=mock_client)
+
+    result = await extractor.quick_extract('https://example.com', 'h1')
     assert result is None

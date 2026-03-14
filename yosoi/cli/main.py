@@ -21,9 +21,9 @@ _LEVEL_MAP: dict[str, SelectorLevel] = {
 _VALID_FORMATS = {'json', 'md', 'markdown', 'jsonl', 'ndjson', 'csv', 'xlsx', 'parquet'}
 
 
-def _resolve_output_formats(flag_values: tuple[str, ...], extra_args: list[str]) -> list[str]:
-    """Merge -o flag values and space-separated extra args into a normalised format list."""
-    raw = [tok.strip().lower() for item in (*flag_values, *extra_args) for tok in item.split(',') if tok.strip()]
+def _resolve_output_formats(flag_values: tuple[str, ...]) -> list[str]:
+    """Parse -o flag values into a normalised, deduplicated format list."""
+    raw = [tok.strip().lower() for item in flag_values for tok in item.split(',') if tok.strip()]
     invalid = [f for f in raw if f not in _VALID_FORMATS]
     if invalid:
         raise click.BadParameter(
@@ -33,7 +33,7 @@ def _resolve_output_formats(flag_values: tuple[str, ...], extra_args: list[str])
     return list(dict.fromkeys(normalised)) or ['json']
 
 
-@click.command(context_settings={'allow_extra_args': True, 'ignore_unknown_options': False})
+@click.command()
 @click.pass_context
 @click.option(
     '-m', '--model', default=None, metavar='PROVIDER/MODEL', help='LLM model (e.g. groq/llama-3.3-70b-versatile)'
@@ -130,7 +130,7 @@ def main(
     yosoi_config = build_yosoi_config(model, debug)
 
     log_file = setup_local_logging(level=log_level)
-    output_formats = _resolve_output_formats(output, list(ctx.args))
+    output_formats = _resolve_output_formats(output)
     resolved_contract = contract if contract else NewsArticle
     resolved_level = _LEVEL_MAP[selector_level.lower()]
 

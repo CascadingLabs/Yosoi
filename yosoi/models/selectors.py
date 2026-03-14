@@ -46,6 +46,27 @@ class SelectorEntry(BaseModel):
         return self
 
 
+def coerce_selector_entry(v: object) -> SelectorEntry | None:
+    """Coerce a raw selector value (str, dict, or SelectorEntry) to SelectorEntry.
+
+    Args:
+        v: Raw value — None, SelectorEntry, dict, or str.
+
+    Returns:
+        A SelectorEntry instance or None if the value is empty/unrecognised.
+
+    """
+    if v is None:
+        return None
+    if isinstance(v, SelectorEntry):
+        return v
+    if isinstance(v, dict):
+        return SelectorEntry.model_validate(v)
+    if isinstance(v, str):
+        return SelectorEntry(value=v) if v else None
+    return None
+
+
 class FieldSelectors(BaseModel):
     """Selectors for a single field with fallback options.
 

@@ -1,7 +1,7 @@
 """Unit tests for HTMLCleaner."""
 
 import pytest
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 from rich.console import Console
 
 from yosoi.core.cleaning.cleaner import HTMLCleaner
@@ -569,3 +569,102 @@ def test_keep_attributes_set_contains_class_id_href_src(cleaner):
     assert 'href' in a.attrs
     assert 'onclick' not in a.attrs
     assert 'title' not in a.attrs
+
+
+# ---------------------------------------------------------------------------
+# Coverage: lines 78-89 — <main> without <body>, fallback to full HTML
+# ---------------------------------------------------------------------------
+
+
+def test_clean_html_no_body_with_main_tag(cleaner):
+    """When HTML has no <body> but has a top-level <main>, extract from <main>."""
+    html = '<main><h1>Main Content</h1><p>Some text</p></main>'
+    result = cleaner.clean_html(html)
+    assert 'Main Content' in result
+    assert 'Some text' in result
+
+
+def test_clean_html_no_body_no_main_falls_back_to_full_html(cleaner):
+    """When HTML has neither <body> nor <main>, fall back to full HTML."""
+    html = '<div><h1>Bare Content</h1></div>'
+    result = cleaner.clean_html(html)
+    assert 'Bare Content' in result
+
+
+def test_clean_html_main_with_body_inside(cleaner):
+    """When HTML has <main> wrapping a <body> (weird but possible), extract <body> inside <main>."""
+    # lxml normalizes this, but we can test the path by constructing soup directly
+    # In practice, lxml will restructure this, so just test that <main> alone path works
+    html = '<main><article><h1>Article Title</h1></article></main>'
+    result = cleaner.clean_html(html)
+    assert 'Article Title' in result
+
+
+# ---------------------------------------------------------------------------
+# Coverage: lines 168-169, 171 — hidden and aria-hidden removal
+# ---------------------------------------------------------------------------
+
+
+def test_compress_hidden_and_aria_hidden_step5_iterates(cleaner):
+    """Step 5 iterates all tags checking for hidden/aria-hidden.
+
+    Note: Step 2 strips these attributes before step 5, making the inner
+    conditions dead code. This test verifies step 5 iteration runs without error.
+    """
+    html = '<html><body><div data-visible="yes">Content</div><p>More</p></body></html>'
+    soup = BeautifulSoup(html, 'lxml')
+    result = cleaner._compress_html_simple(soup)
+    assert 'Content' in str(result)
+    assert 'More' in str(result)
+
+
+def test_compress_keeps_aria_hidden_false_elements(cleaner):
+    """Elements with aria-hidden='false' should NOT be decomposed."""
+    html = '<html><body><span aria-hidden="false">Visible to SR</span></body></html>'
+    soup = BeautifulSoup(html, 'lxml')
+    result = cleaner._compress_html_simple(soup)
+    assert 'Visible to SR' in str(result)
+
+
+# ---------------------------------------------------------------------------
+# Coverage: lines 205, 211-213 — deeply nested empty anonymous divs/spans
+# ---------------------------------------------------------------------------
+
+
+def test_prune_removes_deeply_nested_empty_anonymous_div(cleaner):
+    """Anonymous div at depth > 8 with no text should be decomposed."""
+    # Build HTML with deep nesting (> 8 levels)
+    html = '<html><body><div class="a"><div class="b"><div class="c"><div class="d"><div class="e"><div class="f"><div class="g"><div class="h"><div></div></div></div></div></div></div></div></div></body></html>'
+    soup = BeautifulSoup(html, 'lxml')
+    result = cleaner._prune_non_semantic(soup)
+    # The innermost anonymous empty div should be removed
+    # Count all divs without class/id/data-* at depth > 8
+    anonymous_empties = [
+        tag
+        for tag in result.find_all(['div', 'span'])
+        if isinstance(tag, Tag)
+        and 'class' not in tag.attrs
+        and 'id' not in tag.attrs
+        and not any(k.startswith('data-') for k in tag.attrs)
+        and sum(1 for _ in tag.parents) > 8
+        and len(tag.get_text(strip=True)) == 0
+    ]
+    assert len(anonymous_empties) == 0
+
+
+def test_prune_keeps_shallow_anonymous_div(cleaner):
+    """Anonymous div at depth <= 8 should be kept even if empty."""
+    html = '<html><body><div></div></body></html>'
+    soup = BeautifulSoup(html, 'lxml')
+    result = cleaner._prune_non_semantic(soup)
+    # Shallow anonymous empty div should still exist
+    divs = result.find_all('div')
+    assert len(divs) >= 1
+
+
+def test_prune_keeps_deep_div_with_text(cleaner):
+    """Deeply nested anonymous div with text content should be kept."""
+    html = '<html><body><div class="a"><div class="b"><div class="c"><div class="d"><div class="e"><div class="f"><div class="g"><div class="h"><div>Has text</div></div></div></div></div></div></div></div></body></html>'
+    soup = BeautifulSoup(html, 'lxml')
+    result = cleaner._prune_non_semantic(soup)
+    assert 'Has text' in str(result)

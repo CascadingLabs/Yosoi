@@ -4,20 +4,7 @@ from parsel import Selector, SelectorList
 from rich.console import Console
 
 from yosoi.models.contract import Contract
-from yosoi.models.selectors import SelectorEntry, SelectorLevel
-
-
-def _coerce_entry(v: object) -> SelectorEntry | None:
-    """Coerce a raw selector value (str, dict, or SelectorEntry) to SelectorEntry."""
-    if v is None:
-        return None
-    if isinstance(v, SelectorEntry):
-        return v
-    if isinstance(v, dict):
-        return SelectorEntry.model_validate(v)
-    if isinstance(v, str):
-        return SelectorEntry(value=v) if v else None
-    return None
+from yosoi.models.selectors import SelectorEntry, SelectorLevel, coerce_selector_entry
 
 
 class ContentExtractor:
@@ -82,9 +69,9 @@ class ContentExtractor:
             field_selectors = validated_selectors[field_name]
 
             candidates: list[tuple[str, SelectorEntry | None]] = [
-                ('primary', _coerce_entry(field_selectors.get('primary'))),
-                ('fallback', _coerce_entry(field_selectors.get('fallback'))),
-                ('tertiary', _coerce_entry(field_selectors.get('tertiary'))),
+                ('primary', coerce_selector_entry(field_selectors.get('primary'))),
+                ('fallback', coerce_selector_entry(field_selectors.get('fallback'))),
+                ('tertiary', coerce_selector_entry(field_selectors.get('tertiary'))),
             ]
 
             content = None

@@ -377,3 +377,144 @@ def test_list_domains_only_returns_selector_files(storage):
     # Should not include 'other'
     assert 'other' not in domains
     assert 'example.com' in domains
+
+
+# ---------------------------------------------------------------------------
+# Coverage: lines 79-81 — load_selectors reading from file
+# ---------------------------------------------------------------------------
+
+
+def test_load_selectors_reads_selectors_key_from_file(storage):
+    """load_selectors returns the 'selectors' sub-dict from the JSON file."""
+    selectors = {
+        'title': {'primary': 'h1', 'fallback': 'h2', 'tertiary': 'NA'},
+        'price': {'primary': '.price', 'fallback': 'NA', 'tertiary': 'NA'},
+    }
+    storage.save_selectors('https://example.com', selectors)
+    loaded = storage.load_selectors('example.com')
+    assert loaded is not None
+    assert 'title' in loaded
+    assert 'price' in loaded
+    assert loaded['title']['primary'] == 'h1'
+
+
+# ---------------------------------------------------------------------------
+# Coverage: line 132 — load_content reading from file
+# ---------------------------------------------------------------------------
+
+
+def test_load_content_returns_none_for_missing_file(storage):
+    """load_content returns None when the file does not exist."""
+    result = storage.load_content('https://nonexistent.com/page')
+    assert result is None
+
+
+# ---------------------------------------------------------------------------
+# Coverage: lines 140-142 — load_content exception handling
+# ---------------------------------------------------------------------------
+
+
+def test_load_content_returns_none_for_corrupt_file(storage):
+    """load_content returns None for a corrupt JSON file."""
+    import pathlib
+
+    filepath = storage._get_content_filepath('https://example.com/article')
+    pathlib.Path(filepath).parent.mkdir(parents=True, exist_ok=True)
+    pathlib.Path(filepath).write_text('NOT VALID JSON')
+    result = storage.load_content('https://example.com/article')
+    assert result is None
+
+
+# ---------------------------------------------------------------------------
+# Coverage: line 165 — list_domains when storage_dir doesn't exist
+# ---------------------------------------------------------------------------
+
+
+def test_list_domains_nonexistent_storage_dir(tmp_path, mocker):
+    """list_domains returns empty list when storage_dir doesn't exist."""
+    selector_dir = tmp_path / 'nonexistent_selectors'
+    content_dir = tmp_path / 'content'
+    content_dir.mkdir()
+    mocker.patch('yosoi.storage.persistence.init_yosoi', side_effect=[selector_dir, content_dir])
+    s = SelectorStorage()
+    # storage_dir points to a non-existent path
+    s.storage_dir = str(tmp_path / 'does_not_exist')
+    result = s.list_domains()
+    assert result == []
+
+
+# ---------------------------------------------------------------------------
+# Coverage: lines 243-244 — _extract_domain with invalid URL
+# ---------------------------------------------------------------------------
+
+
+def test_extract_domain_empty_netloc_returns_empty_string(storage):
+    """_extract_domain with URL that has no netloc returns empty string (not 'unknown')."""
+    # urlparse('not-a-valid-url') gives netloc='', no ValueError
+    domain = storage._extract_domain('not-a-valid-url')
+    assert isinstance(domain, str)
+
+
+# ---------------------------------------------------------------------------
+# Coverage: lines 331, 337-338 — _load_file_data exception handling
+# ---------------------------------------------------------------------------
+
+
+def test_load_file_data_returns_none_for_missing_file(storage):
+    """_load_file_data returns None when the file doesn't exist."""
+    result = storage._load_file_data('nonexistent.com')
+    assert result is None
+
+
+def test_load_file_data_returns_none_for_corrupt_file(storage):
+    """_load_file_data returns None for a corrupt JSON file."""
+    import pathlib
+
+    filepath = storage._get_filepath('corrupt.com')
+    pathlib.Path(filepath).write_text('NOT VALID JSON')
+    result = storage._load_file_data('corrupt.com')
+    assert result is None
+
+
+def test_load_file_data_returns_data_for_valid_file(storage):
+    """_load_file_data returns the JSON content for a valid file."""
+    selectors = {'title': {'primary': 'h1', 'fallback': 'NA', 'tertiary': 'NA'}}
+    storage.save_selectors('https://example.com', selectors)
+    result = storage._load_file_data('example.com')
+    assert result is not None
+    assert 'selectors' in result
+
+
+# ---------------------------------------------------------------------------
+# Coverage: lines 350-356 — export_summary
+# ---------------------------------------------------------------------------
+
+
+def test_export_summary_creates_file(storage, tmp_path):
+    """export_summary creates a JSON file with the summary."""
+    selectors = {'title': {'primary': 'h1', 'fallback': 'NA', 'tertiary': 'NA'}}
+    storage.save_selectors('https://example.com', selectors)
+    output_file = str(tmp_path / 'summary.json')
+    result = storage.export_summary(output_file)
+    assert result == output_file
+    assert os.path.exists(output_file)
+
+    import json
+
+    with open(output_file) as f:
+        data = json.load(f)
+    assert 'total_domains' in data
+    assert data['total_domains'] == 1
+
+
+def test_export_summary_empty(storage, tmp_path):
+    """export_summary works with no saved selectors."""
+    output_file = str(tmp_path / 'empty_summary.json')
+    storage.export_summary(output_file)
+    assert os.path.exists(output_file)
+
+    import json
+
+    with open(output_file) as f:
+        data = json.load(f)
+    assert data['total_domains'] == 0

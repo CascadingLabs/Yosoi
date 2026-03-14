@@ -8,20 +8,7 @@ from rich.console import Console
 logger = logging.getLogger(__name__)
 
 from yosoi.models import FieldSelectors, FieldVerificationResult, SelectorFailure, VerificationResult
-from yosoi.models.selectors import SelectorEntry, SelectorLevel
-
-
-def _coerce_entry(v: object) -> SelectorEntry | None:
-    """Coerce a raw selector value to SelectorEntry or None."""
-    if v is None:
-        return None
-    if isinstance(v, SelectorEntry):
-        return v
-    if isinstance(v, dict):
-        return SelectorEntry.model_validate(v)
-    if isinstance(v, str):
-        return SelectorEntry(value=v)
-    return None
+from yosoi.models.selectors import SelectorEntry, SelectorLevel, coerce_selector_entry
 
 
 class SelectorVerifier:
@@ -104,9 +91,9 @@ class SelectorVerifier:
             entries: list[tuple[str, SelectorEntry | None]] = field_data.as_entries()
         else:
             entries = [
-                ('primary', _coerce_entry(field_data.get('primary'))),
-                ('fallback', _coerce_entry(field_data.get('fallback'))),
-                ('tertiary', _coerce_entry(field_data.get('tertiary'))),
+                ('primary', coerce_selector_entry(field_data.get('primary'))),
+                ('fallback', coerce_selector_entry(field_data.get('fallback'))),
+                ('tertiary', coerce_selector_entry(field_data.get('tertiary'))),
             ]
 
         failed_selectors: list[SelectorFailure] = []

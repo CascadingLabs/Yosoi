@@ -69,6 +69,12 @@ class SelectorDiscovery:
         output_model = self._contract.to_selector_model()
 
         if agent is not None:
+            if agent._contract != contract:
+                raise ValueError(
+                    f'Contract mismatch: SelectorDiscovery received contract={contract.__name__} '
+                    f'but the YosoiAgent was built with contract={agent._contract.__name__}. '
+                    f'Use the same contract for both, or omit contract= to inherit from the agent.'
+                )
             self._yosoi_agent = agent
             self.model_name = 'custom-agent'
             self.provider = 'custom'

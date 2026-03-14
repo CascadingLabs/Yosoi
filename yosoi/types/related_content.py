@@ -23,7 +23,12 @@ def RelatedContent(v: object, config: dict[str, Any], source_url: str | None = N
             if isinstance(item, dict):
                 text = item.get('text', '')
                 href = item.get('href', '')
-                parts.append(f'{text} ({href})' if text and href else text)
+                if text and href:
+                    parts.append(f'{text} ({href})')
+                elif text:
+                    parts.append(text)
+                elif href:
+                    parts.append(href)
             else:
                 parts.append(str(item))
         return '\n'.join(p for p in parts if p)

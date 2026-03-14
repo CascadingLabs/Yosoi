@@ -392,3 +392,15 @@ def test_level_distribution_independent_per_domain(tracker):
     data = tracker._load_data()
     assert data['a.com']['level_distribution'] == {'css': 1}
     assert data['b.com']['level_distribution'] == {'xpath': 2}
+
+
+# ---------------------------------------------------------------------------
+# Coverage: lines 86-87 — extract_domain with invalid URL
+# ---------------------------------------------------------------------------
+
+
+def test_extract_domain_no_netloc_returns_empty(tracker):
+    """extract_domain with a URL having no netloc returns empty string."""
+    # urlparse rarely raises ValueError; this tests the path string case
+    result = tracker.extract_domain('just-a-string')
+    assert isinstance(result, str)

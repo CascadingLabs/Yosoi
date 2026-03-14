@@ -201,3 +201,127 @@ def test_contract_generate_manifest():
     assert '# BookContract' in manifest
     assert '| `price`' in manifest
     assert '`price`' in manifest
+
+
+# ---------------------------------------------------------------------------
+# Coverage: line 37 — _apply_validators_and_coerce when data is not a dict
+# ---------------------------------------------------------------------------
+
+
+def test_validators_and_coerce_passthrough_for_non_dict():
+    """When data is not a dict (e.g., a Contract instance), it passes through."""
+
+    class SimpleContract(Contract):
+        name: str
+
+    instance = SimpleContract(name='test')
+    # Validate from an existing instance — should pass through
+    result = SimpleContract.model_validate(instance)
+    assert result.name == 'test'
+
+
+# ---------------------------------------------------------------------------
+# Coverage: line 62 — json_schema_extra that's not a dict
+# ---------------------------------------------------------------------------
+
+
+def test_yosoi_type_skipped_when_extra_not_dict():
+    """When json_schema_extra is not a dict, yosoi_type coercion is skipped."""
+
+    class PlainContract(Contract):
+        name: str = Field(description='A name')
+
+    result = PlainContract.model_validate({'name': 'hello'})
+    assert result.name == 'hello'
+
+
+# ---------------------------------------------------------------------------
+# Coverage: line 127 — generate_manifest with docstring
+# ---------------------------------------------------------------------------
+
+
+def test_generate_manifest_includes_docstring():
+    """generate_manifest includes the contract docstring if present."""
+
+    class DocumentedContract(Contract):
+        """This is a documented contract."""
+
+        title: str
+
+    manifest = DocumentedContract.generate_manifest()
+    assert '# DocumentedContract' in manifest
+    assert 'This is a documented contract.' in manifest
+
+
+def test_generate_manifest_without_docstring():
+    """generate_manifest works without a docstring."""
+
+    class UndocContract(Contract):
+        title: str
+
+    manifest = UndocContract.generate_manifest()
+    assert '# UndocContract' in manifest
+
+
+# ---------------------------------------------------------------------------
+# Coverage: line 146 — Contract.define(name) returning ContractBuilder
+# ---------------------------------------------------------------------------
+
+
+def test_contract_define_returns_builder():
+    """Contract.define() returns a ContractBuilder."""
+    from yosoi.models.contract import ContractBuilder
+
+    builder = Contract.define('MySchema')
+    assert isinstance(builder, ContractBuilder)
+
+
+# ---------------------------------------------------------------------------
+# Coverage: lines 154-155 — ContractBuilder.__getattr__ raises for dunder
+# ---------------------------------------------------------------------------
+
+
+def test_contract_builder_dunder_raises_attribute_error():
+    """Accessing dunder attributes on ContractBuilder raises AttributeError."""
+    builder = Contract.define('Test')
+    with pytest.raises(AttributeError):
+        _ = builder.__foobar__
+
+
+# ---------------------------------------------------------------------------
+# Coverage: lines 159-166 — ContractBuilder.__getattr__ _add function
+# ---------------------------------------------------------------------------
+
+
+def test_contract_builder_add_field():
+    """ContractBuilder allows adding fields via attribute access."""
+    builder = Contract.define('Product')
+    result = builder.title('The product title')
+    # Returns self for chaining
+    assert result is builder
+
+
+def test_contract_builder_chain_fields():
+    """ContractBuilder supports method chaining for multiple fields."""
+    builder = Contract.define('Product').title('Title').price('Price', type=float)
+    assert builder is not None
+
+
+# ---------------------------------------------------------------------------
+# Coverage: lines 170-171 — ContractBuilder.build()
+# ---------------------------------------------------------------------------
+
+
+def test_contract_builder_build_creates_contract():
+    """ContractBuilder.build() creates a Contract subclass."""
+    MyContract = Contract.define('DynContract').title('The title').price('The price', type=float).build()
+    assert issubclass(MyContract, Contract)
+    assert 'title' in MyContract.model_fields
+    assert 'price' in MyContract.model_fields
+
+
+def test_contract_builder_build_validates_data():
+    """Built contract can validate data."""
+    MyContract = Contract.define('ValidContract').name('Name field').build()
+    instance = MyContract.model_validate({'name': 'Test'})
+    assert instance.name == 'Test'

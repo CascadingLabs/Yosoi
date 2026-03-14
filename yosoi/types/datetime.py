@@ -5,7 +5,7 @@ from __future__ import annotations
 import datetime as dt_module
 from typing import Any
 
-import dateparser  # type: ignore[import-untyped]
+import dateparser
 
 from yosoi.types.registry import register_coercion
 

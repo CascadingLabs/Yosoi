@@ -44,6 +44,16 @@ def test_format_jsonl_no_trailing_newline():
     assert not line.endswith('\n')
 
 
+def test_format_jsonl_filters_reserved_keys():
+    content = {'url': 'http://attacker.com', 'domain': 'evil.com', 'extracted_at': 'fake', 'headline': 'Test'}
+    line = format_jsonl(URL, DOMAIN, content)
+    parsed = json.loads(line)
+    assert parsed['url'] == URL
+    assert parsed['domain'] == DOMAIN
+    assert parsed['extracted_at'] != 'fake'
+    assert parsed['headline'] == 'Test'
+
+
 def test_save_jsonl_creates_file(tmp_path):
     filepath = str(tmp_path / 'results.jsonl')
     save_jsonl(filepath, URL, DOMAIN, CONTENT)

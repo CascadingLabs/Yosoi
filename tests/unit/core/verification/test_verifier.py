@@ -529,6 +529,151 @@ def test_verify_max_level_propagated(verifier, simple_html):
     assert result.results['title'].status == 'failed'
 
 
+# ---------------------------------------------------------------------------
+# Coverage: lines 19, 24 — _coerce_entry for dict and str inputs
+# ---------------------------------------------------------------------------
+
+
+def test_coerce_entry_dict_creates_selector_entry():
+    """_coerce_entry with a dict returns SelectorEntry."""
+    from yosoi.models.selectors import SelectorEntry
+    from yosoi.models.selectors import coerce_selector_entry as _coerce_entry
+
+    result = _coerce_entry({'value': 'h1', 'strategy': 'css'})
+    assert isinstance(result, SelectorEntry)
+    assert result.value == 'h1'
+
+
+def test_coerce_entry_str_creates_selector_entry():
+    """_coerce_entry with a string returns SelectorEntry."""
+    from yosoi.models.selectors import SelectorEntry
+    from yosoi.models.selectors import coerce_selector_entry as _coerce_entry
+
+    result = _coerce_entry('.price')
+    assert isinstance(result, SelectorEntry)
+    assert result.value == '.price'
+
+
+def test_coerce_entry_returns_none_for_int():
+    """_coerce_entry with unsupported type returns None."""
+    from yosoi.models.selectors import coerce_selector_entry as _coerce_entry
+
+    assert _coerce_entry(123) is None
+
+
+def test_coerce_entry_passthrough_selector_entry():
+    """_coerce_entry with SelectorEntry passes through."""
+    from yosoi.models.selectors import SelectorEntry
+    from yosoi.models.selectors import coerce_selector_entry as _coerce_entry
+
+    entry = SelectorEntry(value='h1')
+    assert _coerce_entry(entry) is entry
+
+
+# ---------------------------------------------------------------------------
+# Coverage: line 177 — _print_field_result returns early when console is None
+# ---------------------------------------------------------------------------
+
+
+def test_print_field_result_returns_early_when_no_console():
+    """_print_field_result returns early without error when console is None."""
+    from yosoi.models import FieldVerificationResult
+
+    v = SelectorVerifier(console=None)
+    result = FieldVerificationResult(field_name='title', status='verified', working_level='primary', selector='h1')
+    # Should not raise
+    v._print_field_result(result)
+
+
+# ---------------------------------------------------------------------------
+# Coverage: line 183 — printing fallback/tertiary working selector
+# ---------------------------------------------------------------------------
+
+
+def test_print_field_result_fallback_selector(simple_html):
+    """_print_field_result prints 'using fallback' for non-primary working levels."""
+    v = SelectorVerifier(console=Console(quiet=True))
+    sel = Selector(text=simple_html)
+    result = v._verify_field(
+        sel,
+        'price',
+        {'primary': '.missing', 'fallback': '.price'},
+    )
+    assert result.status == 'verified'
+    assert result.working_level == 'fallback'
+    # Should not raise when printing
+    v._print_field_result(result)
+
+
+def test_print_field_result_tertiary_selector(simple_html):
+    """_print_field_result prints 'using tertiary' for tertiary working level."""
+    v = SelectorVerifier(console=Console(quiet=True))
+    sel = Selector(text=simple_html)
+    result = v._verify_field(
+        sel,
+        'desc',
+        {'primary': '.gone', 'fallback': '.also-gone', 'tertiary': '#description'},
+    )
+    assert result.status == 'verified'
+    assert result.working_level == 'tertiary'
+    v._print_field_result(result)
+
+
+# ---------------------------------------------------------------------------
+# Coverage: lines 200-212 — quick_test async method
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_quick_test_success(mocker):
+    """quick_test returns True when selector finds element with text."""
+    v = SelectorVerifier()
+    mock_response = mocker.MagicMock()
+    mock_response.text = '<html><body><h1>Hello World</h1></body></html>'
+
+    mock_client = mocker.AsyncMock()
+    mock_client.get.return_value = mock_response
+    mock_client.__aenter__ = mocker.AsyncMock(return_value=mock_client)
+    mock_client.__aexit__ = mocker.AsyncMock(return_value=False)
+    mocker.patch('httpx.AsyncClient', return_value=mock_client)
+
+    result = await v.quick_test('https://example.com', 'h1')
+    assert result is True
+
+
+@pytest.mark.asyncio
+async def test_quick_test_no_match(mocker):
+    """quick_test returns False when selector finds no elements."""
+    v = SelectorVerifier()
+    mock_response = mocker.MagicMock()
+    mock_response.text = '<html><body><p>No heading</p></body></html>'
+
+    mock_client = mocker.AsyncMock()
+    mock_client.get.return_value = mock_response
+    mock_client.__aenter__ = mocker.AsyncMock(return_value=mock_client)
+    mock_client.__aexit__ = mocker.AsyncMock(return_value=False)
+    mocker.patch('httpx.AsyncClient', return_value=mock_client)
+
+    result = await v.quick_test('https://example.com', 'h1')
+    assert result is False
+
+
+@pytest.mark.asyncio
+async def test_quick_test_http_error(mocker):
+    """quick_test returns False on HTTP error."""
+    import httpx
+
+    v = SelectorVerifier()
+    mock_client = mocker.AsyncMock()
+    mock_client.get.side_effect = httpx.ConnectError('failed')
+    mock_client.__aenter__ = mocker.AsyncMock(return_value=mock_client)
+    mock_client.__aexit__ = mocker.AsyncMock(return_value=False)
+    mocker.patch('httpx.AsyncClient', return_value=mock_client)
+
+    result = await v.quick_test('https://example.com', 'h1')
+    assert result is False
+
+
 def test_pipeline_accepts_selector_level(mocker, tmp_path):
     from yosoi.core.pipeline import Pipeline
     from yosoi.models.defaults import NewsArticle

@@ -4,7 +4,10 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
+import logfire
 
+
+@logfire.instrument('yosoi.format_jsonl')
 def format_jsonl(url: str, domain: str, content: dict) -> str:
     """Format a single record as a JSONL line (no trailing newline).
 

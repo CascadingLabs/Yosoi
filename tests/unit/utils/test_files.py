@@ -222,19 +222,17 @@ def test_init_yosoi_returns_storage_dir_path(monkeypatch, tmp_path):
     assert result == project_root / '.yosoi' / 'mystore'
 
 
-def test_is_initialized_requires_both_dir_and_tracking(monkeypatch, tmp_path):
+def test_is_initialized_creates_tracking_file_if_missing(monkeypatch, tmp_path):
+    """is_initialized auto-creates stats.json via ensure_tracking_file."""
     project_root = tmp_path / 'project_partial'
     project_root.mkdir()
 
     monkeypatch.setattr(yosoi.utils.files, 'get_project_root', lambda: project_root)
 
-    # Create .yosoi dir but no tracking file
+    # Create .yosoi dir but no tracking file — is_initialized creates it
     (project_root / '.yosoi').mkdir()
-    assert not is_initialized()
-
-    # Now add the tracking file
-    (project_root / '.yosoi' / 'stats.json').write_text('{}')
     assert is_initialized()
+    assert (project_root / '.yosoi' / 'stats.json').exists()
 
 
 def test_get_project_root_finds_git_marker(monkeypatch, tmp_path):
@@ -415,15 +413,15 @@ def test_init_yosoi_migration_moves_file_not_copies(monkeypatch, tmp_path):
     assert (project_root / '.yosoi' / 'stats.json').exists()
 
 
-def test_is_initialized_requires_tracking_file(monkeypatch, tmp_path):
-    """is_initialized returns False if .yosoi exists but tracking file doesn't."""
+def test_is_initialized_auto_creates_tracking_when_dir_exists(monkeypatch, tmp_path):
+    """is_initialized returns True when .yosoi exists (auto-creates stats.json)."""
     project_root = tmp_path / 'proj_notinit'
     project_root.mkdir()
 
     monkeypatch.setattr(yosoi.utils.files, 'get_project_root', lambda: project_root)
 
     (project_root / '.yosoi').mkdir()
-    assert not is_initialized()
+    assert is_initialized()  # ensure_tracking_file creates stats.json
 
 
 def test_get_debug_path_returns_exact_path(monkeypatch, tmp_path):
