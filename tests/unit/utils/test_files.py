@@ -306,7 +306,7 @@ def test_init_yosoi_debug_dir_name_is_debug(monkeypatch, tmp_path):
     assert not (project_root / '.yosoi' / 'debug_html').exists()
 
 
-def test_init_yosoi_tracking_file_name_is_llm_tracking_json(monkeypatch, tmp_path):
+def test_init_yosoi_tracking_file_name_is_stats_json(monkeypatch, tmp_path):
     """Tracking file must be 'stats.json', not some other name."""
     project_root = tmp_path / 'proj_tracking_name'
     project_root.mkdir()
