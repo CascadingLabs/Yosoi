@@ -118,7 +118,7 @@ class LLMTracker:
 
         if elapsed is not None:
             data[domain].setdefault('total_elapsed', 0.0)
-            data[domain]['total_elapsed'] = round(data[domain]['total_elapsed'] + elapsed, 2)
+            data[domain]['total_elapsed'] += elapsed
 
         if level_distribution:
             dist: dict[str, int] = data[domain].setdefault('level_distribution', {})

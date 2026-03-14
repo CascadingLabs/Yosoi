@@ -176,7 +176,7 @@ async def example_5_multi_format():
 if __name__ == '__main__':
     # Run whichever example you like:
     asyncio.run(example_1_auto_discovery())
-    # asyncio.run(example_2_pinned_container())
-    # asyncio.run(example_3_single_item())
-    # asyncio.run(example_4_process_url())
-    # asyncio.run(example_5_multi_format())
+    asyncio.run(example_2_pinned_container())
+    asyncio.run(example_3_single_item())
+    asyncio.run(example_4_process_url())
+    asyncio.run(example_5_multi_format())

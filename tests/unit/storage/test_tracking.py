@@ -451,9 +451,9 @@ def test_new_domain_initializes_total_elapsed_to_zero(tracker):
     assert data['new.com']['total_elapsed'] == 0.0
 
 
-def test_elapsed_is_rounded_to_two_decimals(tracker):
-    """total_elapsed is rounded to avoid float drift."""
+def test_elapsed_accumulates_without_precision_loss(tracker):
+    """total_elapsed stores raw sum; rounding happens only at presentation."""
     tracker.record_url('https://a.com/x', elapsed=1.123)
     tracker.record_url('https://a.com/y', elapsed=2.456)
     data = tracker._load_data()
-    assert data['a.com']['total_elapsed'] == 3.58
+    assert data['a.com']['total_elapsed'] == pytest.approx(1.123 + 2.456)
