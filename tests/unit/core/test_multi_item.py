@@ -9,7 +9,8 @@ import yosoi as ys
 # ---------------------------------------------------------------------------
 # Contract helpers
 # ---------------------------------------------------------------------------
-from yosoi import FetchResult, Pipeline
+from yosoi import Pipeline
+from yosoi.models.results import FetchResult
 
 
 class SimpleContract(ys.Contract):
