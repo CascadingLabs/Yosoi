@@ -2,9 +2,8 @@
 
 import logging
 
-from bs4 import BeautifulSoup
+from parsel import Selector
 from rich.console import Console
-from soupsieve.util import SelectorSyntaxError
 
 logger = logging.getLogger(__name__)
 
@@ -41,14 +40,14 @@ class SelectorVerifier:
             VerificationResult with per-field verification status
 
         """
-        soup = BeautifulSoup(html, 'lxml')
+        sel = Selector(text=html)
         results: dict[str, FieldVerificationResult] = {}
 
         if self.console:
             self.console.print(f'  → Verifying {len(selectors)} fields against HTML...')
 
         for field_name, field_data in selectors.items():
-            result = self._verify_field(soup, field_name, field_data)
+            result = self._verify_field(sel, field_name, field_data)
             results[field_name] = result
 
             if self.console:
@@ -68,14 +67,14 @@ class SelectorVerifier:
 
     def _verify_field(
         self,
-        soup: BeautifulSoup,
+        sel: Selector,
         field_name: str,
         field_data: FieldSelectors | dict[str, str],
     ) -> FieldVerificationResult:
         """Verify a single field's selectors.
 
         Args:
-            soup: Parsed HTML
+            sel: Parsel Selector for the parsed HTML
             field_name: Name of the field
             field_data: FieldSelectors model or raw dict with primary/fallback/tertiary
 
@@ -97,7 +96,7 @@ class SelectorVerifier:
         for level, selector in selectors:
             if selector is None:
                 continue
-            success, reason = self._test_selector(soup, selector)
+            success, reason = self._test_selector(sel, selector)
             if success:
                 return FieldVerificationResult(
                     field_name=field_name,
@@ -120,11 +119,11 @@ class SelectorVerifier:
             failed_selectors=failed_selectors,
         )
 
-    def _test_selector(self, soup: BeautifulSoup, selector: str) -> tuple[bool, str]:
+    def _test_selector(self, sel: Selector, selector: str) -> tuple[bool, str]:
         """Test if a selector finds elements in HTML.
 
         Args:
-            soup: Parsed HTML
+            sel: Parsel Selector for the parsed HTML
             selector: CSS selector string
 
         Returns:
@@ -136,11 +135,11 @@ class SelectorVerifier:
             return False, 'na_selector'
 
         try:
-            elements = soup.select(selector)
+            elements = sel.css(selector)
             if elements:
                 return True, 'found'
             return False, 'no_elements_found'
-        except (ValueError, SelectorSyntaxError) as e:
+        except Exception as e:  # noqa: BLE001
             return False, f'invalid_syntax: {e}'
 
     def _print_field_result(self, result: FieldVerificationResult) -> None:
@@ -176,9 +175,9 @@ class SelectorVerifier:
                 response = await client.get(
                     url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=10, follow_redirects=True
                 )
-            soup = BeautifulSoup(response.text, 'lxml')
-            element = soup.select_one(selector)
-            return element is not None and bool(element.get_text(strip=True))
-        except (httpx.HTTPError, ValueError, SelectorSyntaxError) as exc:
+            sel = Selector(text=response.text)
+            elements = sel.css(selector)
+            return bool(elements) and bool(' '.join(elements[0].xpath('.//text()').getall()).strip())
+        except (httpx.HTTPError, ValueError) as exc:
             logger.warning('quick_test failed for selector %r on %r: %s', selector, url, exc)
             return False

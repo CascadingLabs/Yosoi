@@ -866,6 +866,15 @@ wheels = [
 ]
 
 [[package]]
+name = "cssselect"
+version = "1.4.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ec/2e/cdfd8b01c37cbf4f9482eefd455853a3cf9c995029a46acd31dfaa9c1dd6/cssselect-1.4.0.tar.gz", hash = "sha256:fdaf0a1425e17dfe8c5cf66191d211b357cf7872ae8afc4c6762ddd8ac47fc92", size = 40589, upload-time = "2026-01-29T07:00:26.701Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/20/0c/7bb51e3acfafd16c48875bf3db03607674df16f5b6ef8d056586af7e2b8b/cssselect-1.4.0-py3-none-any.whl", hash = "sha256:c0ec5c0191c8ee39fcc8afc1540331d8b55b0183478c50e9c8a79d44dbceb1d8", size = 18540, upload-time = "2026-01-29T07:00:24.994Z" },
+]
+
+[[package]]
 name = "cyclopts"
 version = "4.5.3"
 source = { registry = "https://pypi.org/simple" }
@@ -3185,6 +3194,22 @@ wheels = [
 ]
 
 [[package]]
+name = "parsel"
+version = "1.11.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "cssselect" },
+    { name = "jmespath" },
+    { name = "lxml" },
+    { name = "packaging" },
+    { name = "w3lib" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/91/c8/4ace3a5c61e39ca21734a5715d0e076eea6200dd8daea2a5b99452f5a0d6/parsel-1.11.0.tar.gz", hash = "sha256:5925fe087eb16fc404a7ed91e31e2c1e2a9b230da4b64f34d81358c0d0e27e88", size = 106849, upload-time = "2026-01-29T07:19:23.388Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/08/23/4e0dae5e5bee14aea26dba003a682e621563451a20f751ed985810f818b6/parsel-1.11.0-py3-none-any.whl", hash = "sha256:bda82575df1774dd64e1c1396163f3cadb3e383e0f8080d43d45fa6705355daa", size = 14176, upload-time = "2026-01-29T07:19:22.255Z" },
+]
+
+[[package]]
 name = "pastel"
 version = "0.2.1"
 source = { registry = "https://pypi.org/simple" }
@@ -5195,6 +5220,15 @@ wheels = [
 ]
 
 [[package]]
+name = "w3lib"
+version = "2.4.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/f1/91/186665abf1a6d16c0c5ea1f0e681d9c852b45c3a750aa8657f8f956690a8/w3lib-2.4.0.tar.gz", hash = "sha256:e233ad21649b69d0e047a10f30181ae9677524a29f6f71f6f3c758dc0c8d2648", size = 48302, upload-time = "2026-01-29T07:05:07.504Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2e/f5/ce3ab627e0cb51591c9e3dc4b9b173f15d7f2bec1c0010420b15fc442940/w3lib-2.4.0-py3-none-any.whl", hash = "sha256:260b5a22aeb86ae73213857f69ed20829a45150f8d5b12050b1f02ada414db79", size = 21603, upload-time = "2026-01-29T07:05:05.841Z" },
+]
+
+[[package]]
 name = "watchfiles"
 version = "1.1.1"
 source = { registry = "https://pypi.org/simple" }
@@ -5603,6 +5637,7 @@ dependencies = [
     { name = "httpx" },
     { name = "logfire" },
     { name = "lxml" },
+    { name = "parsel" },
     { name = "pydantic" },
     { name = "pydantic-ai" },
     { name = "python-dotenv" },
@@ -5662,8 +5697,9 @@ requires-dist = [
     { name = "logfire", specifier = ">=4.16" },
     { name = "lxml", specifier = ">=6.0.2" },
     { name = "openpyxl", marker = "extra == 'tabular'", specifier = ">=3.1" },
-    { name = "pandas", marker = "extra == 'tabular'", specifier = ">=2.0" },
-    { name = "pyarrow", marker = "extra == 'tabular'", specifier = ">=14.0" },
+    { name = "pandas", marker = "extra == 'tabular'", specifier = ">=2" },
+    { name = "parsel", specifier = ">=1.9" },
+    { name = "pyarrow", marker = "extra == 'tabular'", specifier = ">=14" },
     { name = "pydantic", specifier = ">=2" },
     { name = "pydantic-ai", specifier = ">=0.0.16" },
     { name = "python-dotenv", specifier = ">=1.2.1" },
@@ -5690,10 +5726,10 @@ tests = [
     { name = "dirty-equals", specifier = ">=0.11" },
     { name = "mutmut", specifier = ">=3.5" },
     { name = "openpyxl", specifier = ">=3.1" },
-    { name = "pandas", specifier = ">=2.0" },
+    { name = "pandas", specifier = ">=2" },
     { name = "poethepoet", specifier = ">=0.40" },
     { name = "polyfactory", specifier = ">=3.2" },
-    { name = "pyarrow", specifier = ">=14.0" },
+    { name = "pyarrow", specifier = ">=14" },
     { name = "pytest", specifier = ">=9.0.2" },
     { name = "pytest-asyncio", specifier = ">=1.3" },
     { name = "pytest-cov", specifier = ">=7" },

@@ -1,6 +1,6 @@
 """Unit tests for ContentExtractor."""
 
-from bs4 import BeautifulSoup
+from parsel import Selector
 from rich.console import Console
 
 import yosoi as ys
@@ -20,24 +20,24 @@ def _make_extractor(contract=None) -> ContentExtractor:
 def test_body_text_adjacent_spans_have_spaces():
     extractor = _make_extractor()
     html = '<p><span>Hello</span><span>World</span></p>'
-    soup = BeautifulSoup(html, 'html.parser')
-    result = extractor._extract_with_selector(soup, 'p', 'body_text')
+    sel = Selector(text=html)
+    result = extractor._extract_with_selector(sel, 'p', 'body_text')
     assert result == 'Hello World'
 
 
 def test_body_text_multiple_paragraphs_joined_with_newlines():
     extractor = _make_extractor()
     html = '<div><p>First paragraph.</p><p>Second paragraph.</p></div>'
-    soup = BeautifulSoup(html, 'html.parser')
-    result = extractor._extract_with_selector(soup, 'p', 'body_text')
+    sel = Selector(text=html)
+    result = extractor._extract_with_selector(sel, 'p', 'body_text')
     assert result == 'First paragraph.\n\nSecond paragraph.'
 
 
 def test_body_text_skips_empty_elements():
     extractor = _make_extractor()
     html = '<div><p>Content</p><p>   </p><p>More</p></div>'
-    soup = BeautifulSoup(html, 'html.parser')
-    result = extractor._extract_with_selector(soup, 'p', 'body_text')
+    sel = Selector(text=html)
+    result = extractor._extract_with_selector(sel, 'p', 'body_text')
     assert result is not None
     assert '\n\n\n\n' not in result
     assert 'Content' in result
@@ -47,8 +47,8 @@ def test_body_text_skips_empty_elements():
 def test_body_text_returns_none_when_no_elements():
     extractor = _make_extractor()
     html = '<div></div>'
-    soup = BeautifulSoup(html, 'html.parser')
-    result = extractor._extract_with_selector(soup, '.nonexistent', 'body_text')
+    sel = Selector(text=html)
+    result = extractor._extract_with_selector(sel, '.nonexistent', 'body_text')
     assert result is None
 
 
@@ -60,8 +60,8 @@ def test_body_text_returns_none_when_no_elements():
 def test_related_content_extracts_links_with_href():
     extractor = _make_extractor()
     html = '<ul><li><a href="/article1">Article One</a></li><li><a href="/article2">Article Two</a></li></ul>'
-    soup = BeautifulSoup(html, 'html.parser')
-    result = extractor._extract_with_selector(soup, 'a', 'related_content')
+    sel = Selector(text=html)
+    result = extractor._extract_with_selector(sel, 'a', 'related_content')
     assert isinstance(result, list)
     assert len(result) == 2
     assert result[0] == {'text': 'Article One', 'href': '/article1'}
@@ -70,8 +70,8 @@ def test_related_content_extracts_links_with_href():
 def test_related_content_handles_links_without_href():
     extractor = _make_extractor()
     html = '<span>Just text</span><span>More text</span>'
-    soup = BeautifulSoup(html, 'html.parser')
-    result = extractor._extract_with_selector(soup, 'span', 'related_content')
+    sel = Selector(text=html)
+    result = extractor._extract_with_selector(sel, 'span', 'related_content')
     # No href so returns strings, not dicts
     assert isinstance(result, list)
     assert 'Just text' in result
@@ -80,8 +80,8 @@ def test_related_content_handles_links_without_href():
 def test_related_content_returns_none_when_no_elements():
     extractor = _make_extractor()
     html = '<div></div>'
-    soup = BeautifulSoup(html, 'html.parser')
-    result = extractor._extract_with_selector(soup, '.missing', 'related_content')
+    sel = Selector(text=html)
+    result = extractor._extract_with_selector(sel, '.missing', 'related_content')
     assert result is None
 
 
@@ -93,32 +93,32 @@ def test_related_content_returns_none_when_no_elements():
 def test_default_field_returns_first_match():
     extractor = _make_extractor()
     html = '<h1>First Title</h1><h1>Second Title</h1>'
-    soup = BeautifulSoup(html, 'html.parser')
-    result = extractor._extract_with_selector(soup, 'h1', 'title')
+    sel = Selector(text=html)
+    result = extractor._extract_with_selector(sel, 'h1', 'title')
     assert result == 'First Title'
 
 
 def test_default_field_returns_none_when_empty():
     extractor = _make_extractor()
     html = '<h1></h1>'
-    soup = BeautifulSoup(html, 'html.parser')
-    result = extractor._extract_with_selector(soup, 'h1', 'title')
+    sel = Selector(text=html)
+    result = extractor._extract_with_selector(sel, 'h1', 'title')
     assert result is None
 
 
 def test_default_field_returns_none_for_missing_selector():
     extractor = _make_extractor()
     html = '<p>content</p>'
-    soup = BeautifulSoup(html, 'html.parser')
-    result = extractor._extract_with_selector(soup, '.nonexistent', 'title')
+    sel = Selector(text=html)
+    result = extractor._extract_with_selector(sel, '.nonexistent', 'title')
     assert result is None
 
 
 def test_invalid_selector_returns_none_gracefully():
     extractor = _make_extractor()
     html = '<p>content</p>'
-    soup = BeautifulSoup(html, 'html.parser')
-    result = extractor._extract_with_selector(soup, '>>>invalid<<<', 'title')
+    sel = Selector(text=html)
+    result = extractor._extract_with_selector(sel, '>>>invalid<<<', 'title')
     assert result is None
 
 
@@ -229,8 +229,8 @@ def test_extractor_with_contract_has_expected_fields():
 def test_body_text_uses_double_newline_separator():
     extractor = _make_extractor()
     html = '<div><p>Para one.</p><p>Para two.</p></div>'
-    soup = BeautifulSoup(html, 'html.parser')
-    result = extractor._extract_with_selector(soup, 'p', 'body_text')
+    sel = Selector(text=html)
+    result = extractor._extract_with_selector(sel, 'p', 'body_text')
     assert isinstance(result, str)
     assert '\n\n' in result
 
@@ -238,8 +238,8 @@ def test_body_text_uses_double_newline_separator():
 def test_body_text_only_one_paragraph_no_double_newline():
     extractor = _make_extractor()
     html = '<div><p>Single para.</p></div>'
-    soup = BeautifulSoup(html, 'html.parser')
-    result = extractor._extract_with_selector(soup, 'p', 'body_text')
+    sel = Selector(text=html)
+    result = extractor._extract_with_selector(sel, 'p', 'body_text')
     assert isinstance(result, str)
     assert result == 'Single para.'
     assert '\n\n' not in result
@@ -248,8 +248,8 @@ def test_body_text_only_one_paragraph_no_double_newline():
 def test_related_content_with_href_returns_dict_with_text_and_href():
     extractor = _make_extractor()
     html = '<a href="/link">Article</a>'
-    soup = BeautifulSoup(html, 'html.parser')
-    result = extractor._extract_with_selector(soup, 'a', 'related_content')
+    sel = Selector(text=html)
+    result = extractor._extract_with_selector(sel, 'a', 'related_content')
     assert isinstance(result, list)
     assert result[0] == {'text': 'Article', 'href': '/link'}
 
@@ -257,8 +257,8 @@ def test_related_content_with_href_returns_dict_with_text_and_href():
 def test_related_content_without_href_returns_plain_text():
     extractor = _make_extractor()
     html = '<span>Text Only</span>'
-    soup = BeautifulSoup(html, 'html.parser')
-    result = extractor._extract_with_selector(soup, 'span', 'related_content')
+    sel = Selector(text=html)
+    result = extractor._extract_with_selector(sel, 'span', 'related_content')
     assert isinstance(result, list)
     assert 'Text Only' in result
     # No href, so plain string not dict
@@ -320,8 +320,8 @@ def test_body_text_separator_is_double_newline():
     """body_text paragraphs must be joined with '\\n\\n', not single newline."""
     extractor = _make_extractor()
     html = '<div><p>Para one.</p><p>Para two.</p><p>Para three.</p></div>'
-    soup = BeautifulSoup(html, 'html.parser')
-    result = extractor._extract_with_selector(soup, 'p', 'body_text')
+    sel = Selector(text=html)
+    result = extractor._extract_with_selector(sel, 'p', 'body_text')
     assert isinstance(result, str)
     assert result == 'Para one.\n\nPara two.\n\nPara three.'
 
@@ -330,8 +330,8 @@ def test_extract_selector_returns_none_when_empty_elements():
     """When selector matches no elements, must return None."""
     extractor = _make_extractor()
     html = '<div><p>Some content</p></div>'
-    soup = BeautifulSoup(html, 'html.parser')
-    result = extractor._extract_with_selector(soup, '.no-such-class', 'title')
+    sel = Selector(text=html)
+    result = extractor._extract_with_selector(sel, '.no-such-class', 'title')
     assert result is None
 
 
@@ -339,8 +339,8 @@ def test_related_content_empty_text_skipped():
     """Elements with no text should not appear in related_content results."""
     extractor = _make_extractor()
     html = '<div><a href="/link1">Text</a><a href="/link2"></a></div>'
-    soup = BeautifulSoup(html, 'html.parser')
-    result = extractor._extract_with_selector(soup, 'a', 'related_content')
+    sel = Selector(text=html)
+    result = extractor._extract_with_selector(sel, 'a', 'related_content')
     assert isinstance(result, list)
     # Only one link has text, so result should have 1 item
     assert len(result) == 1
@@ -360,3 +360,31 @@ def test_extract_uses_primary_not_fallback_when_primary_works():
     # Must use primary, not fallback
     assert result['title'] == 'Primary Title'
     assert result['title'] != 'Fallback Title'
+
+
+# ---------------------------------------------------------------------------
+# Phase 1: New Parsel-specific tests
+# ---------------------------------------------------------------------------
+
+
+def test_extract_uses_parsel_selector():
+    """ContentExtractor must use Parsel Selector, not BeautifulSoup."""
+    extractor = _make_extractor()
+    html = '<p>Hello</p>'
+    sel = Selector(text=html)
+    # _extract_with_selector accepts Selector instance
+    result = extractor._extract_with_selector(sel, 'p', 'title')
+    assert result == 'Hello'
+
+
+def test_body_text_joins_all_text_nodes():
+    """Nested spans must produce space-joined text via xpath .//text()."""
+    extractor = _make_extractor()
+    html = '<p><span>Hello</span><span>World</span></p>'
+    sel = Selector(text=html)
+    result = extractor._extract_with_selector(sel, 'p', 'body_text')
+    # Both span texts must appear, joined with a space
+    assert result is not None
+    assert 'Hello' in result
+    assert 'World' in result
+    assert result == 'Hello World'

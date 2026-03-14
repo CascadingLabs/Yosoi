@@ -30,6 +30,7 @@ dependencies = [
   "httpx>=0.28.1",
   "logfire>=4.16",
   "lxml>=6.0.2",
+  "parsel>=1.9",
   "pydantic>=2",
   "pydantic-ai>=0.0.16",
   "python-dotenv>=1.2.1",

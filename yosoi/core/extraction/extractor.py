@@ -1,8 +1,7 @@
 """Extracts content from web pages using validated selectors."""
 
-from bs4 import BeautifulSoup
+from parsel import Selector
 from rich.console import Console
-from soupsieve.util import SelectorSyntaxError
 
 from yosoi.models.contract import Contract
 
@@ -49,7 +48,7 @@ class ContentExtractor:
         """
         self.console.print(f'  ↻ Extracting {len(self.expected_fields)} fields using validated selectors...')
 
-        soup = BeautifulSoup(html, 'lxml')
+        sel = Selector(text=html)
         extracted = {}
 
         for field_name in self.expected_fields:
@@ -70,17 +69,17 @@ class ContentExtractor:
             selector_used = None
 
             if primary:
-                content = self._extract_with_selector(soup, primary, field_name)
+                content = self._extract_with_selector(sel, primary, field_name)
                 if content:
                     selector_used = 'primary'
 
             if not content and fallback:
-                content = self._extract_with_selector(soup, fallback, field_name)
+                content = self._extract_with_selector(sel, fallback, field_name)
                 if content:
                     selector_used = 'fallback'
 
             if not content and tertiary:
-                content = self._extract_with_selector(soup, tertiary, field_name)
+                content = self._extract_with_selector(sel, tertiary, field_name)
                 if content:
                     selector_used = 'tertiary'
 
@@ -106,14 +105,14 @@ class ContentExtractor:
 
     def _extract_with_selector(
         self,
-        soup: BeautifulSoup,
+        sel: Selector,
         selector: str,
         field_name: str,
     ) -> str | list[str | dict[str, str]] | None:
         """Extract content using a single selector.
 
         Args:
-            soup: BeautifulSoup parsed HTML
+            sel: Parsel Selector for the parsed HTML
             selector: CSS selector to use
             field_name: Name of the field being extracted (determines extraction strategy)
 
@@ -123,36 +122,33 @@ class ContentExtractor:
 
         """
         try:
-            elements = soup.select(selector)
+            elements = sel.css(selector)
             if not elements:
                 return None
 
             # Different extraction strategies based on field type
             if field_name == 'body_text':
                 # Extract all paragraphs and join with newlines
-                paragraphs = [
-                    elem.get_text(separator=' ', strip=True) for elem in elements if elem.get_text(strip=True)
-                ]
+                paragraphs = [' '.join(el.xpath('.//text()').getall()).strip() for el in elements]
+                paragraphs = [p for p in paragraphs if p]
                 return '\n\n'.join(paragraphs) if paragraphs else None
 
             if field_name == 'related_content':
                 # Extract list of links/titles
-                links = []
-                for elem in elements:
-                    text = elem.get_text(strip=True)
-                    href_value = elem.get('href', '')
-                    # BeautifulSoup can return list for some attributes, ensure it's a string
-                    href: str = ' '.join(href_value) if isinstance(href_value, list) else (href_value or '')
+                links: list[str | dict[str, str]] = []
+                for el in elements:
+                    text = ' '.join(el.xpath('.//text()').getall()).strip()
+                    href = el.attrib.get('href', '')
                     if text:
                         links.append({'text': text, 'href': href} if href else text)
                 return links if links else None
 
             # For headline, author, date - extract first matching element
             first_element = elements[0]
-            text = first_element.get_text(strip=True)
+            text = ' '.join(first_element.xpath('.//text()').getall()).strip()
             return text if text else None
 
-        except (ValueError, SelectorSyntaxError) as e:
+        except Exception as e:  # noqa: BLE001
             self.console.print(f'  ✗ {field_name}: extraction error ({e})')
             return None
 
@@ -179,9 +175,9 @@ class ContentExtractor:
                 response = await client.get(
                     url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=10, follow_redirects=True
                 )
-            soup = BeautifulSoup(response.text, 'lxml')
+            sel = Selector(text=response.text)
 
-            return self._extract_with_selector(soup, selector, field_type)
+            return self._extract_with_selector(sel, selector, field_type)
 
         except (httpx.HTTPError, ValueError):
             return None
