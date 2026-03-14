@@ -1,7 +1,15 @@
 """Utility functions for formatting and saving extracted content."""
 
+from collections.abc import Callable
+
+from yosoi.outputs.csv import save_csv
 from yosoi.outputs.json import format_json, format_selectors_json, save_json, save_selectors_json
+from yosoi.outputs.jsonl import save_jsonl
 from yosoi.outputs.markdown import format_markdown, save_markdown
+from yosoi.outputs.parquet import save_parquet
+from yosoi.outputs.xlsx import save_xlsx
+
+_Saver = Callable[[str, str, str, dict], None]
 
 
 def format_content(url: str, domain: str, content: dict, output_format: str = 'json') -> str | dict:
@@ -30,18 +38,25 @@ def save_formatted_content(filepath: str, url: str, domain: str, content: dict, 
         url: Source URL
         domain: Domain name
         content: Extracted content dictionary (field -> value)
-        output_format: Output format ('json' or 'markdown'). Defaults to 'json'.
+        output_format: Output format. Defaults to 'json'.
 
     Returns:
         Path to the saved file.
 
     """
-    # Save using format-specific function (handles directory creation internally)
-    if output_format == 'markdown':
-        save_markdown(filepath, url, domain, content)
-    else:
-        save_json(filepath, url, domain, content)
-
+    # Build the dispatch table at call time so module-level names are resolved
+    # against the current globals() — this ensures test mocks are respected.
+    _dispatch: dict[str, _Saver] = {
+        'json': save_json,
+        'markdown': save_markdown,
+        'jsonl': save_jsonl,
+        'ndjson': save_jsonl,
+        'csv': save_csv,
+        'xlsx': save_xlsx,
+        'parquet': save_parquet,
+    }
+    saver: _Saver = _dispatch.get(output_format, save_json)
+    saver(filepath, url, domain, content)
     return filepath
 
 

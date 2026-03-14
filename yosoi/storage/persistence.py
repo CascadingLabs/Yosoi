@@ -271,11 +271,12 @@ class SelectorStorage:
     def _get_content_filepath(self, url: str, output_format: str = 'json') -> str:
         """Get filepath for a URL's extracted content.
 
-        Creates a safe filename from the full URL including path.
+        Accumulating formats (jsonl, csv, xlsx, parquet) share a single results file
+        per domain. Per-URL formats (json, markdown) produce one file per URL.
 
         Args:
             url: Full URL
-            output_format: Output format ('json' or 'markdown'). Defaults to 'json'.
+            output_format: Output format. Defaults to 'json'.
 
         Returns:
             Full file path for the URL's content file.
@@ -283,26 +284,33 @@ class SelectorStorage:
         """
         import hashlib
 
-        # Parse URL
+        _ACCUMULATING = {'jsonl', 'ndjson', 'csv', 'xlsx', 'parquet'}
+        _EXTENSIONS = {
+            'json': 'json',
+            'markdown': 'md',
+            'jsonl': 'jsonl',
+            'ndjson': 'jsonl',
+            'csv': 'csv',
+            'xlsx': 'xlsx',
+            'parquet': 'parquet',
+        }
+
         parsed = urlparse(url)
         domain = parsed.netloc.replace('www.', '')
-
-        # Create safe domain directory
         safe_domain = domain.replace('.', '_').replace('/', '_')
+        ext = _EXTENSIONS.get(output_format, 'json')
         domain_dir = os.path.join(self.content_dir, safe_domain)
 
-        # Determine file extension
-        extension = 'md' if output_format == 'markdown' else 'json'
+        if output_format in _ACCUMULATING:
+            return os.path.join(domain_dir, f'results.{ext}')
 
-        # Create filename from URL path or use hash for homepage
+        # Per-URL (json, markdown) — derive filename from URL path
         if parsed.path and parsed.path != '/':
-            # Use path for filename (sanitized)
             path_parts = parsed.path.strip('/').replace('/', '_')
-            filename = f'{path_parts[:100]}.{extension}'
+            filename = f'{path_parts[:100]}.{ext}'
         else:
-            # Homepage - use a hash of the full URL
             url_hash = hashlib.md5(url.encode()).hexdigest()[:8]
-            filename = f'homepage_{url_hash}.{extension}'
+            filename = f'homepage_{url_hash}.{ext}'
 
         return os.path.join(domain_dir, filename)
 

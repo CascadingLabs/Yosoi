@@ -37,7 +37,7 @@ _semaphore: asyncio.Semaphore | None = None
 async def configure_broker(
     llm_config: LLMConfig | YosoiConfig,
     contract: type[Contract],
-    output_format: str = 'json',
+    output_format: str | list[str] = 'json',
     max_workers: int = 5,
 ) -> None:
     """Configure the broker with pipeline settings and start it.

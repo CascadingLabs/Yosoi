@@ -46,7 +46,7 @@ async def run_concurrent(
     yosoi_config,
     contract: type[Contract],
     urls: list[str],
-    output_format: str = 'json',
+    output_format: str | list[str] = 'json',
     force: bool = False,
     skip_verification: bool = False,
     fetcher_type: str = 'simple',

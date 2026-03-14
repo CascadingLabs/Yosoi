@@ -327,6 +327,43 @@ def test_get_summary_domains_have_discovered_at(storage):
     assert 'discovered_at' in domain_info
 
 
+def test_jsonl_filepath_uses_results_filename(storage):
+    """JSONL format must produce a 'results.jsonl' accumulating file per domain."""
+    filepath = storage._get_content_filepath('https://example.com/article', 'jsonl')
+    assert os.path.basename(filepath) == 'results.jsonl'
+
+
+def test_ndjson_filepath_uses_results_jsonl_extension(storage):
+    """ndjson alias must produce the same accumulating file as jsonl."""
+    filepath = storage._get_content_filepath('https://example.com/article', 'ndjson')
+    assert os.path.basename(filepath) == 'results.jsonl'
+
+
+def test_csv_filepath_uses_results_filename(storage):
+    """CSV format must produce a 'results.csv' accumulating file per domain."""
+    filepath = storage._get_content_filepath('https://example.com/article', 'csv')
+    assert os.path.basename(filepath) == 'results.csv'
+
+
+def test_xlsx_filepath_uses_results_filename(storage):
+    """XLSX format must produce a 'results.xlsx' accumulating file per domain."""
+    filepath = storage._get_content_filepath('https://example.com/article', 'xlsx')
+    assert os.path.basename(filepath) == 'results.xlsx'
+
+
+def test_parquet_filepath_uses_results_filename(storage):
+    """Parquet format must produce a 'results.parquet' accumulating file per domain."""
+    filepath = storage._get_content_filepath('https://example.com/article', 'parquet')
+    assert os.path.basename(filepath) == 'results.parquet'
+
+
+def test_jsonl_same_domain_same_filepath(storage):
+    """Two URLs on the same domain must share the same JSONL accumulating file."""
+    fp1 = storage._get_content_filepath('https://example.com/page1', 'jsonl')
+    fp2 = storage._get_content_filepath('https://example.com/page2', 'jsonl')
+    assert fp1 == fp2
+
+
 def test_list_domains_only_returns_selector_files(storage):
     """list_domains must only return filenames starting with 'selectors_'."""
     # Save a selector

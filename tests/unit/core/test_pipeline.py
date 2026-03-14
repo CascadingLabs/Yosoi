@@ -31,7 +31,7 @@ def _make_pipeline_stub(mocker, contract=None):
     stub.tracker = mocker.MagicMock()
     stub.debug = mocker.MagicMock()
     stub.debug_mode = False
-    stub.output_format = 'json'
+    stub.output_formats = ['json']
     stub.force = False
     from yosoi.models.selectors import SelectorLevel
 
@@ -273,7 +273,7 @@ def test_save_and_track_saves_selectors_and_content(mocker):
         verified={'title': {'primary': 'h1'}},
         extracted={'title': 'Book'},
         used_llm=True,
-        output_format='json',
+        output_format=['json'],
     )
     stub.storage.save_selectors.assert_called_once()
     stub.storage.save_content.assert_called_once()
@@ -290,7 +290,7 @@ def test_save_and_track_skips_content_when_none(mocker):
         verified={'title': {'primary': 'h1'}},
         extracted=None,
         used_llm=True,
-        output_format='json',
+        output_format=['json'],
     )
     stub.storage.save_selectors.assert_called_once()
     stub.storage.save_content.assert_not_called()
@@ -905,7 +905,7 @@ def test_save_and_track_calls_record_url_with_used_llm_true(mocker):
         verified={'title': {'primary': 'h1'}},
         extracted=None,
         used_llm=True,
-        output_format='json',
+        output_format=['json'],
     )
     stub.tracker.record_url.assert_called_once_with('https://x.com', used_llm=True, level_distribution=None)
 
@@ -921,7 +921,7 @@ def test_save_and_track_calls_record_url_with_used_llm_false(mocker):
         verified={},
         extracted=None,
         used_llm=False,
-        output_format='json',
+        output_format=['json'],
     )
     stub.tracker.record_url.assert_called_once_with('https://x.com', used_llm=False, level_distribution=None)
 
@@ -937,7 +937,7 @@ def test_save_and_track_saves_content_with_output_format(mocker):
         verified={'title': {'primary': 'h1'}},
         extracted={'title': 'Book'},
         used_llm=True,
-        output_format='markdown',
+        output_format=['markdown'],
     )
     stub.storage.save_content.assert_called_once_with('https://x.com', {'title': 'Book'}, 'markdown')
 
@@ -1113,7 +1113,7 @@ def test_print_partial_failure_shows_failed_field_names(mocker):
 async def test_process_url_uses_pipeline_format_when_output_format_none(mocker):
     """When output_format=None, process_url must use pipeline's output_format."""
     stub = _make_pipeline_stub(mocker)
-    stub.output_format = 'markdown'
+    stub.output_formats = ['markdown']
     mocker.patch.object(Pipeline, 'normalize_url', return_value='https://x.com')
     mocker.patch.object(Pipeline, '_extract_domain', return_value='x.com')
     mocker.patch.object(Pipeline, '_create_fetcher', return_value=mocker.MagicMock())
