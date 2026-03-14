@@ -206,7 +206,7 @@ class SelectorStorage:
 
         return summary
 
-    def _format_selectors(self, selectors: dict[str, Any]) -> dict[str, dict[str, str]]:
+    def _format_selectors(self, selectors: dict[str, Any]) -> dict[str, dict[str, str | None]]:
         """Format selectors for storage.
 
         Args:
@@ -216,14 +216,14 @@ class SelectorStorage:
             Formatted selectors with primary, fallback, and tertiary keys.
 
         """
-        formatted: dict[str, dict[str, str]] = {}
+        formatted: dict[str, dict[str, str | None]] = {}
 
         for field, field_data in selectors.items():
             if isinstance(field_data, dict):
                 formatted[field] = {
-                    'primary': field_data.get('primary', 'NA'),
-                    'fallback': field_data.get('fallback', 'NA'),
-                    'tertiary': field_data.get('tertiary', 'NA'),
+                    'primary': field_data.get('primary'),
+                    'fallback': field_data.get('fallback'),
+                    'tertiary': field_data.get('tertiary'),
                 }
 
         return formatted

@@ -74,7 +74,7 @@ def coerce_selector_entry(v: object) -> SelectorEntry | None:
     if isinstance(v, dict):
         return SelectorEntry.model_validate(v)
     if isinstance(v, str):
-        return SelectorEntry(value=v) if v else None
+        return SelectorEntry(value=v) if v and v.upper() != 'NA' else None
     return None
 
 
@@ -103,10 +103,25 @@ class FieldSelectors(BaseModel):
     @field_validator('fallback', 'tertiary', mode='before')
     @classmethod
     def _coerce_optional(cls, v: object) -> object:
-        """Coerce bare string to SelectorEntry for optional fields."""
+        """Coerce bare string to SelectorEntry for optional fields; treat 'NA' as None."""
         if isinstance(v, str):
+            if not v or v.upper() == 'NA':
+                return None
             return SelectorEntry(value=v)
         return v
+
+    @model_validator(mode='after')
+    def _deduplicate(self) -> 'FieldSelectors':
+        """Remove fallback/tertiary if their value duplicates any earlier level."""
+        if self.fallback and self.fallback.value == self.primary.value:
+            self.fallback = None
+        if self.tertiary:
+            seen = {self.primary.value}
+            if self.fallback:
+                seen.add(self.fallback.value)
+            if self.tertiary.value in seen:
+                self.tertiary = None
+        return self
 
     @property
     def max_level(self) -> SelectorLevel:
