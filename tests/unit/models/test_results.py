@@ -95,3 +95,73 @@ def test_verification_result_verified_fields_empty_when_all_fail():
         },
     )
     assert result.verified_fields == []
+
+
+# ---------------------------------------------------------------------------
+# FieldVerificationResult.selector_level
+# ---------------------------------------------------------------------------
+
+
+def test_field_verification_result_selector_level_defaults_to_none():
+    r = FieldVerificationResult(field_name='title', status='failed')
+    assert r.selector_level is None
+
+
+def test_field_verification_result_stores_selector_level():
+    r = FieldVerificationResult(field_name='title', status='verified', selector='h1', selector_level='css')
+    assert r.selector_level == 'css'
+
+
+def test_field_verification_result_stores_xpath_level():
+    r = FieldVerificationResult(field_name='title', status='verified', selector='//h1', selector_level='xpath')
+    assert r.selector_level == 'xpath'
+
+
+# ---------------------------------------------------------------------------
+# VerificationResult.level_distribution
+# ---------------------------------------------------------------------------
+
+
+def test_level_distribution_counts_by_strategy():
+    result = VerificationResult(
+        total_fields=3,
+        verified_count=3,
+        results={
+            'title': FieldVerificationResult(
+                field_name='title', status='verified', selector='h1', selector_level='css'
+            ),
+            'author': FieldVerificationResult(
+                field_name='author', status='verified', selector='//span', selector_level='xpath'
+            ),
+            'date': FieldVerificationResult(
+                field_name='date', status='verified', selector='time', selector_level='css'
+            ),
+        },
+    )
+    dist = result.level_distribution
+    assert dist == {'css': 2, 'xpath': 1}
+
+
+def test_level_distribution_only_counts_verified_fields():
+    result = VerificationResult(
+        total_fields=2,
+        verified_count=1,
+        results={
+            'title': FieldVerificationResult(
+                field_name='title', status='verified', selector='h1', selector_level='css'
+            ),
+            'price': FieldVerificationResult(field_name='price', status='failed'),
+        },
+    )
+    assert result.level_distribution == {'css': 1}
+
+
+def test_level_distribution_empty_when_no_selector_levels_set():
+    result = VerificationResult(
+        total_fields=1,
+        verified_count=1,
+        results={
+            'title': FieldVerificationResult(field_name='title', status='verified', selector='h1'),
+        },
+    )
+    assert result.level_distribution == {}

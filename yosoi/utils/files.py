@@ -29,7 +29,7 @@ def get_project_root() -> Path:
 def get_tracking_path() -> Path:
     """Return the path to the LLM tracking file in .yosoi."""
     root = get_project_root()
-    return root / '.yosoi' / 'llm_tracking.json'
+    return root / '.yosoi' / 'stats.json'
 
 
 def get_debug_path() -> Path:
@@ -48,7 +48,7 @@ def is_initialized() -> bool:
     """Check if the .yosoi directory exists in the project root."""
     root = get_project_root()
     yosoi_dir = root / '.yosoi'
-    return yosoi_dir.is_dir() and (yosoi_dir / 'llm_tracking.json').exists()
+    return yosoi_dir.is_dir() and (yosoi_dir / 'stats.json').exists()
 
 
 def init_yosoi(storage_name: str = 'selectors') -> Path:
@@ -65,8 +65,8 @@ def init_yosoi(storage_name: str = 'selectors') -> Path:
     logs_dir.mkdir(parents=True, exist_ok=True)
 
     # Initialize tracking file if it doesn't exist
-    tracking_file = yosoi_dir / 'llm_tracking.json'
-    root_tracking = root / 'llm_tracking.json'
+    tracking_file = yosoi_dir / 'stats.json'
+    root_tracking = root / 'stats.json'
 
     if not tracking_file.exists():
         if root_tracking.exists():

@@ -1,6 +1,6 @@
 """Simple tracker for LLM calls and URL counts per domain.
 
-Stores everything in a single llm_tracking.json file.
+Stores everything in a single stats.json file.
 """
 
 import json
@@ -23,7 +23,7 @@ class LLMTracker:
         """Initialize the tracker.
 
         Args:
-            tracking_file: Path to the JSON file for storing tracking data. Defaults to 'llm_tracking.json'.
+            tracking_file: Path to the JSON file for storing tracking data. Defaults to 'stats.json'.
 
         """
         if tracking_file is None:
@@ -86,12 +86,18 @@ class LLMTracker:
         except ValueError:
             return 'unknown'
 
-    def record_url(self, url: str, used_llm: bool = False) -> dict[str, int]:
+    def record_url(
+        self,
+        url: str,
+        used_llm: bool = False,
+        level_distribution: dict[str, int] | None = None,
+    ) -> dict[str, int]:
         """Record that a URL was processed.
 
         Args:
             url: The URL that was processed
             used_llm: Whether LLM was called for this URL. Defaults to False.
+            level_distribution: Count of verified fields by selector strategy level. Defaults to None.
 
         Returns:
             Dictionary with 'llm_calls' and 'url_count' for this domain.
@@ -101,14 +107,17 @@ class LLMTracker:
         data = self._load_data()
 
         if domain not in data:
-            data[domain] = {'llm_calls': 0, 'url_count': 0}
+            data[domain] = {'llm_calls': 0, 'url_count': 0, 'level_distribution': {}}
 
-        # Always increment URL count
         data[domain]['url_count'] += 1
 
-        # Increment LLM count only if LLM was used
         if used_llm:
             data[domain]['llm_calls'] += 1
+
+        if level_distribution:
+            dist: dict[str, int] = data[domain].setdefault('level_distribution', {})
+            for level, count in level_distribution.items():
+                dist[level] = dist.get(level, 0) + count
 
         self._save_data(data)
 

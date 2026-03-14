@@ -123,6 +123,7 @@ class SelectorVerifier:
                     status='verified',
                     working_level=level,
                     selector=entry.value,
+                    selector_level=entry.strategy,
                     failed_selectors=failed_selectors,
                 )
             failed_selectors.append(

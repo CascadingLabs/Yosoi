@@ -190,7 +190,9 @@ class Pipeline:
 
                 # Discover selectors with retry logic for AI failures (Step 2)
                 # Returns: (selectors, used_llm)
-                selectors, used_llm = await self._discover(url, cleaned_html, max_retries=max_discovery_retries)
+                selectors, used_llm = await self._discover_with_escalation(
+                    url, cleaned_html, max_retries=max_discovery_retries
+                )
                 if not selectors:
                     return False
 
@@ -544,6 +546,33 @@ class Pipeline:
         logfire.error('All AI attempts failed', url=url)
         return None, False
 
+    async def _discover_with_escalation(
+        self, url: str, cleaned_html: str, max_retries: int = 3
+    ) -> tuple[dict | None, bool]:
+        """Try discovery at each SelectorLevel from CSS up to self.selector_level.
+
+        Args:
+            url: URL being processed (for logging).
+            cleaned_html: Pre-cleaned HTML content to analyze.
+            max_retries: Maximum AI retry attempts per level. Defaults to 3.
+
+        Returns:
+            Tuple of (selectors, used_llm) — same as _discover.
+
+        """
+        for level in SelectorLevel:
+            if level > self.selector_level:
+                break
+            self.discovery.target_level = level
+            selectors, used_llm = await self._discover(url, cleaned_html, max_retries)
+            if selectors:
+                if level > SelectorLevel.CSS:
+                    self.console.print(f'[info]  ↳ Escalated to {level.name} selectors[/info]')
+                    logfire.info('Discovery escalated', url=url, level=level.name)
+                return selectors, used_llm
+
+        return None, False
+
     def _verify(self, _url: str, html: str, selectors: dict, skip_verification: bool) -> dict | None:
         """Verify discovered selectors against HTML.
 
@@ -566,6 +595,7 @@ class Pipeline:
         self.console.print('[step]Step 3: Verifying selectors against actual HTML...[/step]')
 
         result = self.verifier.verify(html, selectors, max_level=self.selector_level)
+        self._last_level_distribution = result.level_distribution
 
         if not result.success:
             self._print_verification_failure(result)
@@ -751,7 +781,7 @@ class Pipeline:
             domain: The domain from which the URL is grabbed
 
         """
-        stats = self.tracker.record_url(url, used_llm=False)
+        stats = self.tracker.record_url(url, used_llm=False, level_distribution=None)
         self._print_tracking_stats(domain, stats)
 
     def _handle_bot_detection(self, error: BotDetectionError, attempt: int, max_retries: int):
@@ -833,7 +863,8 @@ class Pipeline:
         if extracted:
             self.storage.save_content(url, extracted, output_format)
 
-        stats = self.tracker.record_url(url, used_llm=used_llm)
+        level_dist = getattr(self, '_last_level_distribution', None)
+        stats = self.tracker.record_url(url, used_llm=used_llm, level_distribution=level_dist or None)
         self._print_tracking_stats(domain, stats)
 
     def _print_tracking_stats(self, domain: str, stats: dict):

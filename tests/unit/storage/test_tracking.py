@@ -355,3 +355,40 @@ def test_print_stats_shows_domain_count(tracker, capsys):
     tracker.print_stats()
     captured = capsys.readouterr()
     assert 'Total Domains: 2' in captured.out
+
+
+# ---------------------------------------------------------------------------
+# level_distribution tracking
+# ---------------------------------------------------------------------------
+
+
+def test_record_url_stores_level_distribution(tracker):
+    """record_url with level_distribution stores it in the tracking file."""
+    tracker.record_url('https://a.com/x', used_llm=True, level_distribution={'css': 3, 'xpath': 1})
+    data = tracker._load_data()
+    assert data['a.com']['level_distribution'] == {'css': 3, 'xpath': 1}
+
+
+def test_level_distribution_accumulates_across_urls(tracker):
+    """level_distribution merges (sums) across multiple record_url calls."""
+    tracker.record_url('https://a.com/x', used_llm=True, level_distribution={'css': 2})
+    tracker.record_url('https://a.com/y', used_llm=True, level_distribution={'css': 1, 'xpath': 1})
+    data = tracker._load_data()
+    assert data['a.com']['level_distribution'] == {'css': 3, 'xpath': 1}
+
+
+def test_record_url_without_level_distribution_leaves_existing(tracker):
+    """Calling record_url without level_distribution doesn't reset existing distribution."""
+    tracker.record_url('https://a.com/x', used_llm=True, level_distribution={'css': 2})
+    tracker.record_url('https://a.com/y', used_llm=False)
+    data = tracker._load_data()
+    assert data['a.com']['level_distribution'] == {'css': 2}
+
+
+def test_level_distribution_independent_per_domain(tracker):
+    """level_distribution is tracked independently for each domain."""
+    tracker.record_url('https://a.com/x', level_distribution={'css': 1})
+    tracker.record_url('https://b.com/x', level_distribution={'xpath': 2})
+    data = tracker._load_data()
+    assert data['a.com']['level_distribution'] == {'css': 1}
+    assert data['b.com']['level_distribution'] == {'xpath': 2}

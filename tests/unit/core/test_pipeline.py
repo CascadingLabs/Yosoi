@@ -277,7 +277,7 @@ def test_save_and_track_saves_selectors_and_content(mocker):
     )
     stub.storage.save_selectors.assert_called_once()
     stub.storage.save_content.assert_called_once()
-    stub.tracker.record_url.assert_called_once_with('https://x.com', used_llm=True)
+    stub.tracker.record_url.assert_called_once_with('https://x.com', used_llm=True, level_distribution=None)
 
 
 def test_save_and_track_skips_content_when_none(mocker):
@@ -305,7 +305,7 @@ def test_track_cached_success_calls_record_url(mocker):
     stub = _make_pipeline_stub(mocker)
     stub.tracker.record_url.return_value = {'llm_calls': 0, 'url_count': 3}
     Pipeline._track_cached_success(stub, 'https://x.com', 'x.com')
-    stub.tracker.record_url.assert_called_once_with('https://x.com', used_llm=False)
+    stub.tracker.record_url.assert_called_once_with('https://x.com', used_llm=False, level_distribution=None)
 
 
 # ---------------------------------------------------------------------------
@@ -507,6 +507,67 @@ async def test_discover_returns_none_when_all_ai_attempts_fail(mocker):
     )
 
     selectors, used_llm = await Pipeline._discover(stub, 'https://x.com', '<html/>', max_retries=1)
+    assert selectors is None
+    assert used_llm is False
+
+
+# ---------------------------------------------------------------------------
+# _discover_with_escalation
+# ---------------------------------------------------------------------------
+
+
+async def test_discover_with_escalation_succeeds_at_css(mocker):
+    """When _discover succeeds at CSS, no escalation occurs."""
+    stub = _make_pipeline_stub(mocker)
+    mocker.patch.object(Pipeline, '_discover', return_value=({'title': {'primary': 'h1'}}, True))
+    selectors, used_llm = await Pipeline._discover_with_escalation(stub, 'https://x.com', '<html/>')
+    assert selectors == {'title': {'primary': 'h1'}}
+    assert used_llm is True
+    # _discover called once only (CSS level)
+    Pipeline._discover.assert_called_once()
+
+
+async def test_discover_with_escalation_retries_at_xpath_when_css_fails(mocker):
+    """When CSS discovery fails, escalates to XPATH if selector_level allows it."""
+    from yosoi.models.selectors import SelectorLevel
+
+    stub = _make_pipeline_stub(mocker)
+    stub.selector_level = SelectorLevel.XPATH
+    mocker.patch.object(
+        Pipeline,
+        '_discover',
+        side_effect=[
+            (None, False),  # CSS fails
+            ({'title': {'primary': '//h1'}}, True),  # XPATH succeeds
+        ],
+    )
+    selectors, _used_llm = await Pipeline._discover_with_escalation(stub, 'https://x.com', '<html/>')
+    assert selectors is not None
+    assert Pipeline._discover.call_count == 2
+    # discovery target_level updated to XPATH before second call
+    assert stub.discovery.target_level == SelectorLevel.XPATH
+
+
+async def test_discover_with_escalation_does_not_retry_beyond_max_level(mocker):
+    """Does not escalate past self.selector_level even if all attempts fail."""
+    from yosoi.models.selectors import SelectorLevel
+
+    stub = _make_pipeline_stub(mocker)
+    stub.selector_level = SelectorLevel.CSS  # only CSS allowed
+    mocker.patch.object(Pipeline, '_discover', return_value=(None, False))
+    selectors, _used_llm = await Pipeline._discover_with_escalation(stub, 'https://x.com', '<html/>')
+    assert selectors is None
+    Pipeline._discover.assert_called_once()  # no escalation beyond CSS
+
+
+async def test_discover_with_escalation_returns_none_when_all_levels_fail(mocker):
+    """Returns None when every level fails."""
+    from yosoi.models.selectors import SelectorLevel
+
+    stub = _make_pipeline_stub(mocker)
+    stub.selector_level = SelectorLevel.XPATH
+    mocker.patch.object(Pipeline, '_discover', return_value=(None, False))
+    selectors, used_llm = await Pipeline._discover_with_escalation(stub, 'https://x.com', '<html/>')
     assert selectors is None
     assert used_llm is False
 
@@ -846,7 +907,7 @@ def test_save_and_track_calls_record_url_with_used_llm_true(mocker):
         used_llm=True,
         output_format='json',
     )
-    stub.tracker.record_url.assert_called_once_with('https://x.com', used_llm=True)
+    stub.tracker.record_url.assert_called_once_with('https://x.com', used_llm=True, level_distribution=None)
 
 
 def test_save_and_track_calls_record_url_with_used_llm_false(mocker):
@@ -862,7 +923,7 @@ def test_save_and_track_calls_record_url_with_used_llm_false(mocker):
         used_llm=False,
         output_format='json',
     )
-    stub.tracker.record_url.assert_called_once_with('https://x.com', used_llm=False)
+    stub.tracker.record_url.assert_called_once_with('https://x.com', used_llm=False, level_distribution=None)
 
 
 def test_save_and_track_saves_content_with_output_format(mocker):
@@ -891,7 +952,7 @@ def test_track_cached_success_calls_record_url_used_llm_false(mocker):
     stub = _make_pipeline_stub(mocker)
     stub.tracker.record_url.return_value = {'llm_calls': 0, 'url_count': 1}
     Pipeline._track_cached_success(stub, 'https://example.com', 'example.com')
-    stub.tracker.record_url.assert_called_once_with('https://example.com', used_llm=False)
+    stub.tracker.record_url.assert_called_once_with('https://example.com', used_llm=False, level_distribution=None)
 
 
 # ---------------------------------------------------------------------------
