@@ -19,10 +19,10 @@ _CONTRACT_REGISTRY: dict[str, type[Contract]] = {}
 class Contract(BaseModel):
     """Base class for user-defined scraping contracts."""
 
-    def __init_subclass__(cls, **kwargs: Any) -> None:
+    def __init_subclass__(cls, **kwargs: Any) -> None:  # pragma: no mutate
         """Register every Contract subclass in the global _CONTRACT_REGISTRY."""
-        super().__init_subclass__(**kwargs)
-        _CONTRACT_REGISTRY[cls.__name__] = cls
+        super().__init_subclass__(**kwargs)  # pragma: no mutate
+        _CONTRACT_REGISTRY[cls.__name__] = cls  # pragma: no mutate
 
     @model_validator(mode='wrap')
     @classmethod

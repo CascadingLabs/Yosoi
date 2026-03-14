@@ -206,6 +206,7 @@ exclude = [
 [tool.mutmut]
 paths_to_mutate = [ "yosoi/" ]
 tests_dir = [ "tests/unit/" ]
+debug = true
 
 [tool.poe.tasks]
 eval = 'uv run pytest -m "eval"'                                                          # run deepeval tests
