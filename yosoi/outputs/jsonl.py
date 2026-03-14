@@ -8,7 +8,7 @@ import logfire
 
 
 @logfire.instrument('yosoi.format_jsonl')
-def format_jsonl(url: str, domain: str, content: dict) -> str:
+def format_jsonl(url: str, domain: str, content: dict[str, object]) -> str:
     """Format a single record as a JSONL line (no trailing newline).
 
     Args:
@@ -31,7 +31,7 @@ def format_jsonl(url: str, domain: str, content: dict) -> str:
     return json.dumps(record, ensure_ascii=False)
 
 
-def save_jsonl(filepath: str, url: str, domain: str, content: dict) -> None:
+def save_jsonl(filepath: str, url: str, domain: str, content: dict[str, object]) -> None:
     """Append one record to a JSONL file, creating it if it doesn't exist.
 
     Args:

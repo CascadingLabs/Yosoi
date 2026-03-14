@@ -1,6 +1,9 @@
 """Concurrent URL processing with rich Live progress display."""
 
+from __future__ import annotations
+
 import time
+from typing import TYPE_CHECKING
 from urllib.parse import urlparse as _urlparse
 
 from rich.live import Live
@@ -8,6 +11,11 @@ from rich.live import Live
 from yosoi.cli.utils import console
 from yosoi.models.contract import Contract
 from yosoi.models.selectors import SelectorLevel
+
+if TYPE_CHECKING:
+    from rich.table import Table
+
+    from yosoi.core.configs import YosoiConfig
 
 _STATUS_STYLES: dict[str, tuple[str, bool]] = {
     'Queued': ('dim', False),
@@ -18,7 +26,7 @@ _STATUS_STYLES: dict[str, tuple[str, bool]] = {
 }
 
 
-def _build_progress_table(url_status: dict[str, tuple[str, float]]):
+def _build_progress_table(url_status: dict[str, tuple[str, float]]) -> Table:
     """Build a rich Table showing per-URL progress.
 
     Args:
@@ -44,7 +52,7 @@ def _build_progress_table(url_status: dict[str, tuple[str, float]]):
 
 
 async def run_concurrent(
-    yosoi_config,
+    yosoi_config: YosoiConfig,
     contract: type[Contract],
     urls: list[str],
     output_format: str | list[str] = 'json',
@@ -52,8 +60,8 @@ async def run_concurrent(
     skip_verification: bool = False,
     fetcher_type: str = 'simple',
     max_workers: int = 5,
-    selector_level: 'SelectorLevel | None' = None,
-):
+    selector_level: SelectorLevel | None = None,
+) -> None:
     """Run URL processing concurrently via taskiq broker.
 
     Args:
@@ -94,7 +102,7 @@ async def run_concurrent(
 
     live = Live(_build_progress_table(url_status), console=console, refresh_per_second=4)
 
-    async def _on_complete(url: str, success: bool, elapsed: float):
+    async def _on_complete(url: str, success: bool, elapsed: float) -> None:
         url_status[url] = ('Done' if success else 'Failed', elapsed)
         live.update(_build_progress_table(url_status))
 

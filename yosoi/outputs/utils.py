@@ -1,6 +1,7 @@
 """Utility functions for formatting and saving extracted content."""
 
 from collections.abc import Callable
+from typing import Any
 
 from yosoi.outputs.csv import save_csv
 from yosoi.outputs.json import format_json, format_selectors_json, save_json, save_selectors_json
@@ -9,10 +10,10 @@ from yosoi.outputs.markdown import format_markdown, save_markdown
 from yosoi.outputs.parquet import save_parquet
 from yosoi.outputs.xlsx import save_xlsx
 
-_Saver = Callable[[str, str, str, dict], None]
+_Saver = Callable[[str, str, str, dict[str, Any]], None]
 
 
-def format_content(url: str, domain: str, content: dict, output_format: str = 'json') -> str | dict:
+def format_content(url: str, domain: str, content: dict[str, Any], output_format: str = 'json') -> str | dict[str, Any]:
     """Format extracted content in the specified format.
 
     Args:
@@ -30,7 +31,9 @@ def format_content(url: str, domain: str, content: dict, output_format: str = 'j
     return format_json(url, domain, content)
 
 
-def save_formatted_content(filepath: str, url: str, domain: str, content: dict, output_format: str = 'json') -> str:
+def save_formatted_content(
+    filepath: str, url: str, domain: str, content: dict[str, Any], output_format: str = 'json'
+) -> str:
     """Format and save extracted content to file.
 
     Args:
@@ -60,7 +63,7 @@ def save_formatted_content(filepath: str, url: str, domain: str, content: dict, 
     return filepath
 
 
-def format_selectors(url: str, domain: str, selectors: dict) -> dict:
+def format_selectors(url: str, domain: str, selectors: dict[str, Any]) -> dict[str, Any]:
     """Format selectors as JSON.
 
     Selectors are always formatted as JSON for machine readability.
@@ -77,7 +80,7 @@ def format_selectors(url: str, domain: str, selectors: dict) -> dict:
     return format_selectors_json(url, domain, selectors)
 
 
-def save_formatted_selectors(filepath: str, url: str, domain: str, selectors: dict) -> str:
+def save_formatted_selectors(filepath: str, url: str, domain: str, selectors: dict[str, Any]) -> str:
     """Format and save selectors to JSON file.
 
     Selectors are always saved as JSON for machine readability and reuse.

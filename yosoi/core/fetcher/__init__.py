@@ -4,7 +4,7 @@ from yosoi.core.fetcher.base import HTMLFetcher
 from yosoi.core.fetcher.simple import SimpleFetcher
 
 
-def create_fetcher(fetcher_type: str = 'simple', **kwargs) -> HTMLFetcher:
+def create_fetcher(fetcher_type: str = 'simple', **kwargs: object) -> HTMLFetcher:
     """Create an HTML fetcher.
 
     Args:

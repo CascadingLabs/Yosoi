@@ -1,13 +1,20 @@
 """LLM config setup and CLI configuration helpers."""
 
+from __future__ import annotations
+
 import os
+from typing import TYPE_CHECKING
 
 import rich_click as click
 
 from yosoi.cli.utils import console, console_err
 
+if TYPE_CHECKING:
+    from yosoi.core.configs import YosoiConfig
+    from yosoi.core.discovery.config import LLMConfig
 
-def setup_llm_config(model_arg: str | None = None):
+
+def setup_llm_config(model_arg: str | None = None) -> LLMConfig:
     """Set up LLM configuration from -m/--model flag or environment variables.
 
     When no ``--model`` flag is given, walks all known providers and picks the
@@ -45,7 +52,7 @@ def setup_llm_config(model_arg: str | None = None):
     return LLMConfig(provider='groq', model_name='llama-3.3-70b-versatile', api_key='')
 
 
-def build_yosoi_config(model_arg: str | None, debug: bool):
+def build_yosoi_config(model_arg: str | None, debug: bool) -> YosoiConfig:
     """Build a YosoiConfig from CLI args, with provider fallback and user warnings.
 
     Args:
@@ -83,7 +90,7 @@ def build_yosoi_config(model_arg: str | None, debug: bool):
     return yosoi_config
 
 
-def print_fetcher_info(fetcher_type: str):
+def print_fetcher_info(fetcher_type: str) -> None:
     """Print information about the selected fetcher.
 
     Args:

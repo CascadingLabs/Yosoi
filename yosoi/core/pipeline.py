@@ -23,10 +23,16 @@ from yosoi.core.fetcher import HTMLFetcher, create_fetcher
 from yosoi.core.verification import SelectorVerifier
 from yosoi.models import FetchResult
 from yosoi.models.contract import Contract
+from yosoi.models.results import VerificationResult
 from yosoi.models.selectors import SelectorLevel
 from yosoi.storage import DebugManager, LLMTracker, SelectorStorage
 from yosoi.utils.exceptions import BotDetectionError
 from yosoi.utils.retry import get_async_retryer
+
+# Selector dict: field name → {primary, fallback, tertiary} CSS selectors
+SelectorMap = dict[str, dict[str, str]]
+# Extracted content: field name → extracted value(s)
+ContentMap = dict[str, str | list[str | dict[str, str]]]
 
 
 class Pipeline:
@@ -370,8 +376,8 @@ class Pipeline:
         self.console.print(Panel(f'Processing: {url}', style='bold blue'))
         self.console.print('[step]Step 1: Fetching HTML...[/step]')
 
-        def before_sleep_log(retry_state):
-            attempt = retry_state.attempt_number
+        def before_sleep_log(retry_state: object) -> None:
+            attempt = retry_state.attempt_number  # type: ignore[attr-defined]
             if attempt >= 1:
                 self.console.print(f'[warning]Fetch retry attempt {attempt}/{max_retries}...[/warning]')
                 logfire.warn('Retrying fetch', url=url, attempt=attempt)
@@ -459,7 +465,7 @@ class Pipeline:
         self.console.print(f'[success]Cleaned HTML ready ({len(cleaned_html):,} chars)[/success]')
         return cleaned_html
 
-    async def _discover(self, url: str, cleaned_html: str, max_retries: int = 3) -> tuple[dict | None, bool]:
+    async def _discover(self, url: str, cleaned_html: str, max_retries: int = 3) -> tuple[SelectorMap | None, bool]:
         """Discover CSS selectors with AI, using fallback heuristics if needed.
 
         Attempts AI-powered selector discovery with automatic retries. Falls
@@ -491,8 +497,8 @@ class Pipeline:
             return overrides, False
 
         # Use AI discovery with retries
-        def before_ai_sleep_log(retry_state):
-            attempt = retry_state.attempt_number
+        def before_ai_sleep_log(retry_state: object) -> None:
+            attempt = retry_state.attempt_number  # type: ignore[attr-defined]
             if attempt >= 1:
                 self.console.print(f'[warning]AI retry attempt {attempt}/{max_retries}...[/warning]')
                 logfire.warn('Retrying AI discovery', url=url, attempt=attempt)
@@ -548,7 +554,7 @@ class Pipeline:
 
     async def _discover_with_escalation(
         self, url: str, cleaned_html: str, max_retries: int = 3
-    ) -> tuple[dict | None, bool]:
+    ) -> tuple[SelectorMap | None, bool]:
         """Try discovery at each SelectorLevel from CSS up to self.selector_level.
 
         Args:
@@ -573,7 +579,7 @@ class Pipeline:
 
         return None, False
 
-    def _verify(self, _url: str, html: str, selectors: dict, skip_verification: bool) -> dict | None:
+    def _verify(self, _url: str, html: str, selectors: SelectorMap, skip_verification: bool) -> SelectorMap | None:
         """Verify discovered selectors against HTML.
 
         Args:
@@ -611,7 +617,7 @@ class Pipeline:
 
         return verified
 
-    def _print_verification_failure(self, result) -> None:
+    def _print_verification_failure(self, result: VerificationResult) -> None:
         """Print detailed failure summary when all selectors fail."""
         self.console.print('[danger]Verification failed - no selectors matched![/danger]')
         self.console.print('')
@@ -625,7 +631,7 @@ class Pipeline:
 
         self.console.print('')
 
-    def _print_partial_failure(self, result) -> None:
+    def _print_partial_failure(self, result: VerificationResult) -> None:
         """Print summary of partial failures."""
         failed_fields = [name for name in result.results if result.results[name].status == 'failed']
         self.console.print(f'[warning]  ⚠ {len(failed_fields)} field(s) failed verification:[/warning]')
@@ -635,7 +641,7 @@ class Pipeline:
             primary_reason = reasons[0] if reasons else 'all_na'
             self.console.print(f'      [dim]• {field_name}:[/dim] {primary_reason}')
 
-    def _extract(self, url: str, html: str, verified_selectors: dict) -> dict | None:
+    def _extract(self, url: str, html: str, verified_selectors: SelectorMap) -> ContentMap | None:
         """Extract content from HTML using verified selectors.
 
         Args:
@@ -696,7 +702,7 @@ class Pipeline:
         url: str,
         domain: str,
         fetcher: HTMLFetcher,
-        existing_selectors: dict,
+        existing_selectors: SelectorMap,
         output_format: list[str],
         skip_verification: bool,
     ) -> bool:
@@ -774,7 +780,7 @@ class Pipeline:
             self._track_cached_success(url, domain)
             return True
 
-    def _track_cached_success(self, url: str, domain: str):
+    def _track_cached_success(self, url: str, domain: str) -> None:
         """Track successful use of cached selectors.
 
         Args:
@@ -785,7 +791,7 @@ class Pipeline:
         stats = self.tracker.record_url(url, used_llm=False, level_distribution=None)
         self._print_tracking_stats(domain, stats)
 
-    def _handle_bot_detection(self, error: BotDetectionError, attempt: int, max_retries: int):
+    def _handle_bot_detection(self, error: BotDetectionError, attempt: int, max_retries: int) -> None:
         """Handle bot detection error.
 
         Args:
@@ -820,7 +826,7 @@ class Pipeline:
             self.console.print('[danger]ABORTING - All fetch attempts exhausted[/danger]')
             self.console.print('[info]All fetch attempts exhausted for this URL[/info]')
 
-    def _validate_with_contract(self, extracted: dict, url: str = '') -> dict:
+    def _validate_with_contract(self, extracted: ContentMap, url: str = '') -> ContentMap:
         """Instantiate Contract with extracted data to run validators and type coercion.
 
         Args:
@@ -842,8 +848,14 @@ class Pipeline:
             return extracted
 
     def _save_and_track(
-        self, url: str, domain: str, verified: dict, extracted: dict | None, used_llm: bool, output_format: list[str]
-    ):
+        self,
+        url: str,
+        domain: str,
+        verified: SelectorMap,
+        extracted: ContentMap | None,
+        used_llm: bool,
+        output_format: list[str],
+    ) -> None:
         """Save verified selectors, extracted content, and track LLM usage.
 
         Saves selectors to storage, optionally saves extracted content,
@@ -869,7 +881,7 @@ class Pipeline:
         stats = self.tracker.record_url(url, used_llm=used_llm, level_distribution=level_dist or None)
         self._print_tracking_stats(domain, stats)
 
-    def _print_tracking_stats(self, domain: str, stats: dict):
+    def _print_tracking_stats(self, domain: str, stats: dict[str, int]) -> None:
         """Print LLM tracking statistics for domain.
 
         Displays LLM call count, URL count, and efficiency metrics.
@@ -891,7 +903,7 @@ class Pipeline:
     # Display methods
     # ============================================================================
 
-    def show_summary(self):
+    def show_summary(self) -> None:
         """Show summary of all saved selectors."""
         domains = self.storage.list_domains()
 
@@ -911,7 +923,7 @@ class Pipeline:
         self.console.print(table)
         self.console.print(f'\n[success]Total domains: {len(domains)}[/success]')
 
-    def show_llm_stats(self):
+    def show_llm_stats(self) -> None:
         """Show LLM usage statistics."""
         stats = self.tracker.get_all_stats()
 

@@ -1,5 +1,7 @@
 """Main CLI command definition."""
 
+from __future__ import annotations
+
 import asyncio
 import os
 
@@ -101,7 +103,7 @@ def main(
     contract: type[Contract] | None,
     workers: int,
     selector_level: str,
-):
+) -> None:
     """Discover selectors from web pages using AI.
 
     [bold]Examples:[/bold]

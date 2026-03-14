@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 
 
-def save_parquet(filepath: str, url: str, domain: str, content: dict) -> None:
+def save_parquet(filepath: str, url: str, domain: str, content: dict[str, object]) -> None:
     """Append one record to a Parquet file, creating it if it doesn't exist.
 
     Requires pyarrow. Install with: uv add pyarrow

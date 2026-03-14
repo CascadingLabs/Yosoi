@@ -183,7 +183,7 @@ async def enqueue_urls(
     max_discovery_retries: int = 3,
     dedup_by_domain: bool = True,
     on_complete: Callable[[str, bool, float], Awaitable[None]] | None = None,
-) -> dict[str, list]:
+) -> dict[str, list[str]]:
     """Enqueue URLs as tasks and collect results.
 
     Args:
@@ -202,7 +202,7 @@ async def enqueue_urls(
         plus 'skipped' for deduped URLs.
 
     """
-    results: dict[str, list] = {'successful': [], 'failed': [], 'skipped': []}
+    results: dict[str, list[str]] = {'successful': [], 'failed': [], 'skipped': []}
     dedup = DomainDedup()
 
     # Enqueue all tasks
@@ -242,7 +242,7 @@ async def enqueue_urls(
     return results
 
 
-async def _wait_for_handle(handle, url: str):
+async def _wait_for_handle(handle: Any, url: str) -> Any:
     """Await a single task handle, returning the result or None on error.
 
     Args:
@@ -260,7 +260,7 @@ async def _wait_for_handle(handle, url: str):
         return None
 
 
-def _collect_single_result(results: dict[str, list], handle, url: str, result) -> None:
+def _collect_single_result(results: dict[str, list[str]], handle: object, url: str, result: Any) -> None:
     """Classify a single task result into successful or failed.
 
     Args:

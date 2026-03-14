@@ -1,7 +1,7 @@
 """AI-powered selector discovery by reading cleaned HTML."""
 
 import logging
-from typing import Any, cast
+from typing import Any
 
 import logfire
 from pydantic import BaseModel
@@ -156,7 +156,7 @@ class SelectorDiscovery:
                 result = await self._yosoi_agent.run(discovery_input)
 
             self.console.print('[success]  ✓ AI found selectors[/success]')
-            return cast(BaseModel, result.output)
+            return result.output  # type: ignore[return-value]
 
         except Exception as e:
             error_msg = str(e)
@@ -169,7 +169,7 @@ class SelectorDiscovery:
             logfire.error('AI request failed', error=error_msg, provider=self.provider)
             raise LLMGenerationError(f'AI discovery failed: {error_msg}') from e
 
-    def _is_all_na(self, selectors: dict) -> bool:
+    def _is_all_na(self, selectors: dict[str, Any]) -> bool:
         """Check if AI returned all NA (gave up).
 
         Args:

@@ -3,6 +3,8 @@
 Supports multiple providers, easy extension, and flexible model configuration.
 """
 
+from __future__ import annotations
+
 from typing import Any, Protocol
 
 # ============================================================================
@@ -247,7 +249,7 @@ class LLMBuilder:
 
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the builder with default values."""
         self._provider: str | None = None
         self._model_name: str | None = None
@@ -256,7 +258,7 @@ class LLMBuilder:
         self._max_tokens: int | None = None
         self._extra_params: dict[str, Any] = {}
 
-    def provider(self, name: str) -> 'LLMBuilder':
+    def provider(self, name: str) -> LLMBuilder:
         """Set the provider (groq, gemini, openai, etc.).
 
         Args:
@@ -269,7 +271,7 @@ class LLMBuilder:
         self._provider = name
         return self
 
-    def model(self, name: str) -> 'LLMBuilder':
+    def model(self, name: str) -> LLMBuilder:
         """Set the model name.
 
         Args:
@@ -282,7 +284,7 @@ class LLMBuilder:
         self._model_name = name
         return self
 
-    def api_key(self, key: str) -> 'LLMBuilder':
+    def api_key(self, key: str) -> LLMBuilder:
         """Set the API key.
 
         Args:
@@ -295,7 +297,7 @@ class LLMBuilder:
         self._api_key = key
         return self
 
-    def temperature(self, temp: float) -> 'LLMBuilder':
+    def temperature(self, temp: float) -> LLMBuilder:
         """Set the temperature (0.0-2.0).
 
         Args:
@@ -308,7 +310,7 @@ class LLMBuilder:
         self._temperature = temp
         return self
 
-    def max_tokens(self, tokens: int) -> 'LLMBuilder':
+    def max_tokens(self, tokens: int) -> LLMBuilder:
         """Set max tokens for generation.
 
         Args:
@@ -321,7 +323,7 @@ class LLMBuilder:
         self._max_tokens = tokens
         return self
 
-    def extra(self, **kwargs) -> 'LLMBuilder':
+    def extra(self, **kwargs: Any) -> LLMBuilder:
         """Add extra provider-specific parameters.
 
         Args:
@@ -361,7 +363,7 @@ class LLMBuilder:
         )
 
 
-def groq(model_name: str, api_key: str, **kwargs) -> LLMConfig:
+def groq(model_name: str, api_key: str, **kwargs: Any) -> LLMConfig:
     """Quick config for Groq.
 
     Args:
@@ -376,7 +378,7 @@ def groq(model_name: str, api_key: str, **kwargs) -> LLMConfig:
     return LLMConfig(provider='groq', model_name=model_name, api_key=api_key, **kwargs)
 
 
-def gemini(model_name: str, api_key: str, **kwargs) -> LLMConfig:
+def gemini(model_name: str, api_key: str, **kwargs: Any) -> LLMConfig:
     """Quick config for Gemini.
 
     Args:
@@ -391,7 +393,7 @@ def gemini(model_name: str, api_key: str, **kwargs) -> LLMConfig:
     return LLMConfig(provider='gemini', model_name=model_name, api_key=api_key, **kwargs)
 
 
-def cerebras(model_name: str, api_key: str, **kwargs) -> LLMConfig:
+def cerebras(model_name: str, api_key: str, **kwargs: Any) -> LLMConfig:
     """Quick config for Cerebras.
 
     Args:
@@ -406,7 +408,7 @@ def cerebras(model_name: str, api_key: str, **kwargs) -> LLMConfig:
     return LLMConfig(provider='cerebras', model_name=model_name, api_key=api_key, **kwargs)
 
 
-def openai(model_name: str, api_key: str, **kwargs) -> LLMConfig:
+def openai(model_name: str, api_key: str, **kwargs: Any) -> LLMConfig:
     """Quick config for OpenAI.
 
     Args:
@@ -421,7 +423,7 @@ def openai(model_name: str, api_key: str, **kwargs) -> LLMConfig:
     return LLMConfig(provider='openai', model_name=model_name, api_key=api_key, **kwargs)
 
 
-def openrouter(model_name: str, api_key: str, **kwargs) -> LLMConfig:
+def openrouter(model_name: str, api_key: str, **kwargs: Any) -> LLMConfig:
     """Quick config for OpenRouter.
 
     Args:

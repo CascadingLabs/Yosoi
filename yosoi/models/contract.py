@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any
 
 import pydantic
@@ -154,7 +155,7 @@ class ContractBuilder:
         self._name = name
         self._fields: list[tuple[str, type, str]] = []
 
-    def __getattr__(self, field_name: str):
+    def __getattr__(self, field_name: str) -> Callable[..., ContractBuilder]:
         """Return an _add function that registers the named field."""
         if field_name.startswith('__'):
             raise AttributeError(field_name)

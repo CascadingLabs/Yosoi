@@ -1,10 +1,16 @@
 """Click parameter types and option group configuration."""
 
+from __future__ import annotations
+
 import difflib
+from typing import TYPE_CHECKING
 
 import click as _click
 import rich_click as click
 from rich_click.utils import OptionGroupDict
+
+if TYPE_CHECKING:
+    from click.shell_completion import CompletionItem
 
 from yosoi.cli.utils import console_err, load_schema, scan_for_contracts
 from yosoi.models.contract import _CONTRACT_REGISTRY, Contract
@@ -50,7 +56,7 @@ class SchemaParamType(click.ParamType):
         """Return metavar for help text."""
         return 'NAME|path:Class'
 
-    def shell_complete(self, ctx: click.Context, param: click.Parameter, incomplete: str) -> list:
+    def shell_complete(self, ctx: click.Context, param: click.Parameter, incomplete: str) -> list[CompletionItem]:
         """Provide shell completion for built-in, registered, and file-scanned schema names."""
         all_names = set(BUILTIN_SCHEMAS) | set(_CONTRACT_REGISTRY) | set(scan_for_contracts())
         return [

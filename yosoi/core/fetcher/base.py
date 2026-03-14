@@ -1,5 +1,7 @@
 """Abstract base class for HTML fetchers and content analyzer."""
 
+from __future__ import annotations
+
 import re
 from abc import ABC, abstractmethod
 from typing import ClassVar
@@ -35,8 +37,8 @@ class ContentAnalyzer:
 
         # 2. Detect JavaScript-heavy sites
         js_data = ContentAnalyzer._detect_javascript_heavy(html_lower)
-        metadata.requires_js = js_data['requires_js']
-        metadata.js_framework = js_data['framework']
+        metadata.requires_js = bool(js_data['requires_js'])
+        metadata.js_framework = str(js_data['framework']) if js_data['framework'] is not None else None
 
         return metadata
 
@@ -66,7 +68,7 @@ class ContentAnalyzer:
         return any(indicator in start for indicator in rss_indicators)
 
     @staticmethod
-    def _detect_javascript_heavy(html_lower: str) -> dict:
+    def _detect_javascript_heavy(html_lower: str) -> dict[str, bool | str | None]:
         """Detect JavaScript-heavy sites that need browser rendering.
 
         Args:
@@ -157,11 +159,13 @@ class HTMLFetcher(ABC):
         Override in subclasses that hold persistent connections.
         """
 
-    async def __aenter__(self) -> 'HTMLFetcher':
+    async def __aenter__(self) -> HTMLFetcher:
         """Enter async context manager."""
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+    async def __aexit__(
+        self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: object
+    ) -> None:
         """Exit async context manager and close resources."""
         await self.close()
 

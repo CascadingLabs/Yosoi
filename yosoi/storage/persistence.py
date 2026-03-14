@@ -28,7 +28,7 @@ class SelectorStorage:
         self.storage_dir = str(init_yosoi(storage_dir))
         self.content_dir = str(init_yosoi(content_dir))
 
-    def save_selectors(self, url: str, selectors: dict) -> str:
+    def save_selectors(self, url: str, selectors: dict[str, Any]) -> str:
         """Save selectors to a JSON file.
 
         Selectors are always saved as JSON for machine readability and reuse.
@@ -55,7 +55,7 @@ class SelectorStorage:
         print(f'\n✓ Saved selectors to: {filepath}')
         return filepath
 
-    def load_selectors(self, domain: str) -> dict | None:
+    def load_selectors(self, domain: str) -> dict[str, Any] | None:
         """Load selectors from a JSON file.
 
         Args:
@@ -93,7 +93,7 @@ class SelectorStorage:
         filepath = self._get_filepath(domain)
         return os.path.exists(filepath)
 
-    def save_content(self, url: str, content: dict, output_format: str = 'json') -> str:
+    def save_content(self, url: str, content: dict[str, Any], output_format: str = 'json') -> str:
         """Save extracted content to a file in the specified format.
 
         Args:
@@ -116,7 +116,7 @@ class SelectorStorage:
         print(f'✓ Saved content to: {filepath}')
         return filepath
 
-    def load_content(self, url: str) -> dict | None:
+    def load_content(self, url: str) -> dict[str, Any] | None:
         """Load extracted content from a JSON file.
 
         Args:
@@ -200,7 +200,7 @@ class SelectorStorage:
 
         return summary
 
-    def _format_selectors(self, selectors: dict) -> dict[str, dict[str, str]]:
+    def _format_selectors(self, selectors: dict[str, Any]) -> dict[str, dict[str, str]]:
         """Format selectors for storage.
 
         Args:

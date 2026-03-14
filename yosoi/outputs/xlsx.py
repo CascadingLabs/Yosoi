@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 
 
-def save_xlsx(filepath: str, url: str, domain: str, content: dict) -> None:
+def save_xlsx(filepath: str, url: str, domain: str, content: dict[str, object]) -> None:
     """Append one record to an XLSX workbook, creating it if it doesn't exist.
 
     Requires openpyxl. Install with: uv add openpyxl

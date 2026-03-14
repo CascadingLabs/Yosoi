@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 
 
-def format_csv(url: str, domain: str, content: dict) -> str:
+def format_csv(url: str, domain: str, content: dict[str, object]) -> str:
     """Format a single record as a CSV row string (no header, no trailing newline).
 
     Args:
@@ -25,7 +25,7 @@ def format_csv(url: str, domain: str, content: dict) -> str:
     return buf.getvalue()
 
 
-def save_csv(filepath: str, url: str, domain: str, content: dict) -> None:
+def save_csv(filepath: str, url: str, domain: str, content: dict[str, object]) -> None:
     """Append one record to a CSV file.
 
     Writes a header row on first creation. Subsequent calls append data rows only.

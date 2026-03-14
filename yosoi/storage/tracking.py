@@ -32,7 +32,7 @@ class LLMTracker:
             self.tracking_file = tracking_file
         self._ensure_file_exists()
 
-    def _ensure_file_exists(self):
+    def _ensure_file_exists(self) -> None:
         """Create tracking file if it doesn't exist."""
         if not os.path.exists(self.tracking_file):
             # Ensure directory exists
@@ -55,7 +55,7 @@ class LLMTracker:
         except (OSError, json.JSONDecodeError):
             return {}
 
-    def _save_data(self, data: dict):
+    def _save_data(self, data: dict[str, Any]) -> None:
         """Save tracking data to file.
 
         Args:
@@ -179,7 +179,7 @@ class LLMTracker:
         """
         return self._load_data()
 
-    def print_stats(self):
+    def print_stats(self) -> None:
         """Print statistics in a readable format."""
         data = self._load_data()
 
@@ -220,7 +220,7 @@ class LLMTracker:
 
         print('\n' + '=' * 70 + '\n')
 
-    def reset(self, domain: str | None = None):
+    def reset(self, domain: str | None = None) -> None:
         """Reset tracking data.
 
         Args:
