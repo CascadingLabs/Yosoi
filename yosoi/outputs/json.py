@@ -5,27 +5,32 @@ import os
 from datetime import datetime
 
 
-def format_json(url: str, domain: str, content: dict[str, object]) -> dict[str, object]:
+def format_json(url: str, domain: str, content: dict[str, object] | list[dict[str, object]]) -> dict[str, object]:
     """Format extracted content as JSON with metadata.
 
     Args:
         url: Source URL
         domain: Domain name
-        content: Extracted content dictionary (field -> value)
+        content: Extracted content dictionary or list of dicts for multi-item pages
 
     Returns:
         Dictionary with metadata and content, ready for JSON serialization.
 
     """
-    return {
+    base: dict[str, object] = {
         'url': url,
         'domain': domain,
         'extracted_at': datetime.now().isoformat(),
-        'content': content,
     }
+    if isinstance(content, list):
+        base['item_count'] = len(content)
+        base['items'] = content
+    else:
+        base['content'] = content
+    return base
 
 
-def save_json(filepath: str, url: str, domain: str, content: dict[str, object]) -> None:
+def save_json(filepath: str, url: str, domain: str, content: dict[str, object] | list[dict[str, object]]) -> None:
     """Format and save content as JSON file.
 
     Handles directory creation and complete JSON formatting with metadata.
@@ -34,7 +39,7 @@ def save_json(filepath: str, url: str, domain: str, content: dict[str, object]) 
         filepath: Path to save the file
         url: Source URL
         domain: Domain name
-        content: Extracted content dictionary (field -> value)
+        content: Extracted content dictionary or list of dicts for multi-item pages
 
     """
     # Ensure directory exists

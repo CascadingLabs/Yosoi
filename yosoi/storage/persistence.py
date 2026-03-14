@@ -93,12 +93,14 @@ class SelectorStorage:
         filepath = self._get_filepath(domain)
         return os.path.exists(filepath)
 
-    def save_content(self, url: str, content: dict[str, Any], output_format: str = 'json') -> str:
+    def save_content(
+        self, url: str, content: dict[str, Any] | list[dict[str, Any]], output_format: str = 'json'
+    ) -> str:
         """Save extracted content to a file in the specified format.
 
         Args:
             url: URL the content was extracted from
-            content: Dictionary of extracted content by field
+            content: Dictionary of extracted content or list of dicts for multi-item pages
             output_format: Output format ('json' or 'markdown'). Defaults to 'json'.
 
         Returns:
@@ -116,14 +118,14 @@ class SelectorStorage:
         print(f'✓ Saved content to: {filepath}')
         return filepath
 
-    def load_content(self, url: str) -> dict[str, Any] | None:
+    def load_content(self, url: str) -> dict[str, Any] | list[dict[str, Any]] | None:
         """Load extracted content from a JSON file.
 
         Args:
             url: URL to load content for
 
         Returns:
-            Dictionary of extracted content, or None if not found or error occurred.
+            Single content dict, list of item dicts for multi-item pages, or None.
 
         """
         filepath = self._get_content_filepath(url)
@@ -134,7 +136,11 @@ class SelectorStorage:
         try:
             with open(filepath, encoding='utf-8') as f:
                 data: dict[str, Any] = json.load(f)
-                # Return just the content portion, not the metadata wrapper
+                # Multi-item format uses 'items' key
+                if 'items' in data and isinstance(data['items'], list):
+                    items: list[dict[str, Any]] = data['items']
+                    return items
+                # Single-item format uses 'content' key
                 content: dict[str, Any] = data.get('content', data)
                 return content
         except (OSError, json.JSONDecodeError, ValueError) as e:

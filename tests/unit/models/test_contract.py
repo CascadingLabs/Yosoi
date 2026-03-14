@@ -115,7 +115,8 @@ def test_fully_overridden_contract_produces_empty_selector_model():
 
     SelectorModel = AllOverride.to_selector_model()
     assert AllOverride.field_descriptions() == {}
-    assert len(SelectorModel.model_fields) == 0
+    # Only yosoi_container remains (always added for multi-item discovery)
+    assert set(SelectorModel.model_fields.keys()) == {'yosoi_container'}
 
 
 # ---------------------------------------------------------------------------

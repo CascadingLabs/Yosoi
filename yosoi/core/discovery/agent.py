@@ -86,7 +86,7 @@ class SelectorDiscovery:
                 )
         elif llm_config is not None:
             model = create_model(llm_config)
-            self.agent = Agent(model, deps_type=DiscoveryDeps, output_type=output_model)
+            self.agent = Agent(model, deps_type=DiscoveryDeps, output_type=output_model, output_retries=3)
             # Register dynamic system-prompt functions
             self.agent.system_prompt(base_instructions)
             self.agent.system_prompt(field_instructions)
@@ -179,7 +179,9 @@ class SelectorDiscovery:
             True if all the selectors are NA or None, otherwise False
 
         """
-        for field_sel in selectors.values():
+        for field_name, field_sel in selectors.items():
+            if field_name == 'yosoi_container':
+                continue
             for v in field_sel.values():
                 if v and v != 'NA':
                     return False

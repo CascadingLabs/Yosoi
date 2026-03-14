@@ -398,66 +398,46 @@ def test_handle_bot_detection_prints_abort_when_exhausted(mocker):
 
 
 # ---------------------------------------------------------------------------
-# _cached_selectors
+# _extract_with_cached
 # ---------------------------------------------------------------------------
 
 
-async def test_cached_selectors_returns_false_when_no_cache(mocker):
-    stub = _make_pipeline_stub(mocker)
-    stub.storage.load_selectors.return_value = None
-    result = await Pipeline._cached_selectors(stub, 'https://x.com', 'x.com', mocker.MagicMock(), False, 'json')
-    assert result is False
-
-
-async def test_cached_selectors_returns_true_when_cache_exists(mocker):
-    stub = _make_pipeline_stub(mocker)
-    stub.storage.load_selectors.return_value = {'title': {'primary': 'h1'}}
-    mocker.patch.object(Pipeline, '_use_cached_selectors', return_value=True)
-    result = await Pipeline._cached_selectors(stub, 'https://x.com', 'x.com', mocker.MagicMock(), False, 'json')
-    assert result is True
-
-
-# ---------------------------------------------------------------------------
-# _use_cached_selectors
-# ---------------------------------------------------------------------------
-
-
-async def test_use_cached_selectors_returns_true_on_fetch_failure(mocker):
+async def test_extract_with_cached_fail_open_on_fetch_failure(mocker):
     stub = _make_pipeline_stub(mocker)
     mock_fetcher = mocker.MagicMock()
     mock_fetcher.fetch = mocker.AsyncMock(return_value=FetchResult(url='https://x.com', html=None, is_blocked=True))
-    stub.tracker.record_url.return_value = {'llm_calls': 0, 'url_count': 1}
-    result = await Pipeline._use_cached_selectors(
-        stub, 'https://x.com', 'x.com', mock_fetcher, {'title': {'primary': 'h1'}}, 'json', False
+    items, cache_valid = await Pipeline._extract_with_cached(
+        stub, 'https://x.com', mock_fetcher, {'title': {'primary': 'h1'}}, False
     )
-    assert result is True
+    assert cache_valid is True
+    assert items is None
 
 
-async def test_use_cached_selectors_returns_false_when_verification_fails(mocker):
+async def test_extract_with_cached_returns_invalid_when_verification_fails(mocker):
     stub = _make_pipeline_stub(mocker)
     mock_fetcher = mocker.MagicMock()
     mock_fetcher.fetch = mocker.AsyncMock(return_value=FetchResult(url='https://x.com', html='<html/>'))
     stub.cleaner.clean_html.return_value = '<html/>'
     vr = _make_verification_result(False, ['title'])
     stub.verifier.verify.return_value = vr
-    result = await Pipeline._use_cached_selectors(
-        stub, 'https://x.com', 'x.com', mock_fetcher, {'title': {'primary': 'h1'}}, 'json', False
+    items, cache_valid = await Pipeline._extract_with_cached(
+        stub, 'https://x.com', mock_fetcher, {'title': {'primary': 'h1'}}, False
     )
-    assert result is False
+    assert cache_valid is False
+    assert items is None
 
 
-async def test_use_cached_selectors_skips_verification_when_flag_set(mocker):
+async def test_extract_with_cached_skips_verification_when_flag_set(mocker):
     stub = _make_pipeline_stub(mocker)
     mock_fetcher = mocker.MagicMock()
     mock_fetcher.fetch = mocker.AsyncMock(return_value=FetchResult(url='https://x.com', html='<html/>'))
     stub.cleaner.clean_html.return_value = '<html/>'
     stub.extractor.extract_content_with_html.return_value = None
-    stub.tracker.record_url.return_value = {'llm_calls': 0, 'url_count': 1}
-    result = await Pipeline._use_cached_selectors(
-        stub, 'https://x.com', 'x.com', mock_fetcher, {'title': {'primary': 'h1'}}, 'json', True
+    _items, cache_valid = await Pipeline._extract_with_cached(
+        stub, 'https://x.com', mock_fetcher, {'title': {'primary': 'h1'}}, True
     )
     stub.verifier.verify.assert_not_called()
-    assert result is True
+    assert cache_valid is True
 
 
 # ---------------------------------------------------------------------------
@@ -627,7 +607,7 @@ async def test_process_url_returns_false_when_fetch_fails(mocker):
     mocker.patch.object(Pipeline, 'normalize_url', return_value='https://x.com')
     mocker.patch.object(Pipeline, '_extract_domain', return_value='x.com')
     mocker.patch.object(Pipeline, '_create_fetcher', return_value=mocker.MagicMock())
-    mocker.patch.object(Pipeline, '_cached_selectors', return_value=False)
+    stub.storage.load_selectors.return_value = None
     mocker.patch.object(Pipeline, '_fetch', return_value=None)
     mocker.patch('yosoi.core.pipeline.logfire')
     result = await Pipeline.process_url(stub, 'https://x.com')
@@ -649,7 +629,9 @@ async def test_process_url_returns_true_when_cached_selectors_used(mocker):
     mocker.patch.object(Pipeline, 'normalize_url', return_value='https://x.com')
     mocker.patch.object(Pipeline, '_extract_domain', return_value='x.com')
     mocker.patch.object(Pipeline, '_create_fetcher', return_value=mocker.MagicMock())
-    mocker.patch.object(Pipeline, '_cached_selectors', return_value=True)
+    stub.storage.load_selectors.return_value = {'title': {'primary': 'h1'}}
+    mocker.patch.object(Pipeline, '_extract_with_cached', return_value=([{'title': 'Book'}], True))
+    stub.tracker.record_url.return_value = {'llm_calls': 0, 'url_count': 1}
     mocker.patch('yosoi.core.pipeline.logfire')
     result = await Pipeline.process_url(stub, 'https://x.com')
     assert result is True
@@ -661,7 +643,7 @@ async def test_process_url_full_success_path(mocker):
     mocker.patch.object(Pipeline, 'normalize_url', return_value='https://x.com')
     mocker.patch.object(Pipeline, '_extract_domain', return_value='x.com')
     mocker.patch.object(Pipeline, '_create_fetcher', return_value=mocker.MagicMock())
-    mocker.patch.object(Pipeline, '_cached_selectors', return_value=False)
+    stub.storage.load_selectors.return_value = None
     mocker.patch.object(Pipeline, '_fetch', return_value=fetch_result)
     mocker.patch.object(Pipeline, '_clean', return_value='<clean/>')
     mocker.patch.object(Pipeline, '_discover', return_value=({'title': {'primary': 'h1'}}, True))
@@ -680,7 +662,7 @@ async def test_process_url_returns_true_even_when_extraction_fails(mocker):
     mocker.patch.object(Pipeline, 'normalize_url', return_value='https://x.com')
     mocker.patch.object(Pipeline, '_extract_domain', return_value='x.com')
     mocker.patch.object(Pipeline, '_create_fetcher', return_value=mocker.MagicMock())
-    mocker.patch.object(Pipeline, '_cached_selectors', return_value=False)
+    stub.storage.load_selectors.return_value = None
     mocker.patch.object(Pipeline, '_fetch', return_value=fetch_result)
     mocker.patch.object(Pipeline, '_clean', return_value='<clean/>')
     mocker.patch.object(Pipeline, '_discover', return_value=({'title': {'primary': 'h1'}}, True))
@@ -698,7 +680,7 @@ async def test_process_url_returns_false_when_clean_fails(mocker):
     mocker.patch.object(Pipeline, 'normalize_url', return_value='https://x.com')
     mocker.patch.object(Pipeline, '_extract_domain', return_value='x.com')
     mocker.patch.object(Pipeline, '_create_fetcher', return_value=mocker.MagicMock())
-    mocker.patch.object(Pipeline, '_cached_selectors', return_value=False)
+    stub.storage.load_selectors.return_value = None
     mocker.patch.object(Pipeline, '_fetch', return_value=fetch_result)
     mocker.patch.object(Pipeline, '_clean', return_value=None)
     mocker.patch('yosoi.core.pipeline.logfire')
@@ -712,7 +694,7 @@ async def test_process_url_returns_false_when_discover_fails(mocker):
     mocker.patch.object(Pipeline, 'normalize_url', return_value='https://x.com')
     mocker.patch.object(Pipeline, '_extract_domain', return_value='x.com')
     mocker.patch.object(Pipeline, '_create_fetcher', return_value=mocker.MagicMock())
-    mocker.patch.object(Pipeline, '_cached_selectors', return_value=False)
+    stub.storage.load_selectors.return_value = None
     mocker.patch.object(Pipeline, '_fetch', return_value=fetch_result)
     mocker.patch.object(Pipeline, '_clean', return_value='<clean/>')
     mocker.patch.object(Pipeline, '_discover', return_value=(None, False))
@@ -727,7 +709,7 @@ async def test_process_url_returns_false_when_verify_fails(mocker):
     mocker.patch.object(Pipeline, 'normalize_url', return_value='https://x.com')
     mocker.patch.object(Pipeline, '_extract_domain', return_value='x.com')
     mocker.patch.object(Pipeline, '_create_fetcher', return_value=mocker.MagicMock())
-    mocker.patch.object(Pipeline, '_cached_selectors', return_value=False)
+    stub.storage.load_selectors.return_value = None
     mocker.patch.object(Pipeline, '_fetch', return_value=fetch_result)
     mocker.patch.object(Pipeline, '_clean', return_value='<clean/>')
     mocker.patch.object(Pipeline, '_discover', return_value=({'title': {'primary': 'h1'}}, True))
@@ -827,12 +809,12 @@ async def test_process_url_respects_explicit_force_override(mocker):
     mocker.patch.object(Pipeline, '_extract_domain', return_value='x.com')
     mock_fetcher = mocker.MagicMock()
     mocker.patch.object(Pipeline, '_create_fetcher', return_value=mock_fetcher)
-    cached_mock = mocker.patch.object(Pipeline, '_cached_selectors', return_value=False)
+    stub.storage.load_selectors.return_value = {'title': {'primary': 'h1'}}
     mocker.patch.object(Pipeline, '_fetch', return_value=None)
     mocker.patch('yosoi.core.pipeline.logfire')
     await Pipeline.process_url(stub, 'https://x.com', force=True)
-    # _cached_selectors should NOT be called because force=True bypasses cache
-    cached_mock.assert_not_called()
+    # load_selectors should NOT be called because force=True bypasses cache
+    stub.storage.load_selectors.assert_not_called()
 
 
 # ---------------------------------------------------------------------------
@@ -1100,26 +1082,36 @@ def test_handle_bot_detection_abort_when_exactly_at_max_retries(mocker):
 
 
 # ---------------------------------------------------------------------------
-# _cached_selectors - targeted
+# _extract_with_cached - targeted
 # ---------------------------------------------------------------------------
 
 
-async def test_cached_selectors_calls_load_selectors_with_domain(mocker):
-    """_cached_selectors must call storage.load_selectors with the domain."""
+async def test_extract_with_cached_returns_items_on_success(mocker):
+    """_extract_with_cached returns (items, True) when extraction succeeds."""
     stub = _make_pipeline_stub(mocker)
-    stub.storage.load_selectors.return_value = None
-    await Pipeline._cached_selectors(stub, 'https://x.com', 'x.com', mocker.MagicMock(), False, 'json')
-    stub.storage.load_selectors.assert_called_once_with('x.com')
+    mock_fetcher = mocker.MagicMock()
+    mock_fetcher.fetch = mocker.AsyncMock(return_value=FetchResult(url='https://x.com', html='<html/>'))
+    stub.cleaner.clean_html.return_value = '<html/>'
+    vr = _make_verification_result(True, ['title'])
+    stub.verifier.verify.return_value = vr
+    stub.extractor.extract_content_with_html.return_value = {'title': 'Book'}
+    items, cache_valid = await Pipeline._extract_with_cached(
+        stub, 'https://x.com', mock_fetcher, {'title': {'primary': 'h1'}}, False
+    )
+    assert cache_valid is True
+    assert items == [{'title': 'Book'}]
 
 
-async def test_cached_selectors_calls_use_cached_on_cache_hit(mocker):
-    """When cache hit, must call _use_cached_selectors."""
+async def test_extract_with_cached_fail_open_on_exception(mocker):
+    """_extract_with_cached returns (None, True) on unexpected exception (fail-open)."""
     stub = _make_pipeline_stub(mocker)
-    stub.storage.load_selectors.return_value = {'title': {'primary': 'h1'}}
-    mock_use = mocker.patch.object(Pipeline, '_use_cached_selectors', return_value=True)
-    fetcher = mocker.MagicMock()
-    await Pipeline._cached_selectors(stub, 'https://x.com', 'x.com', fetcher, False, 'json')
-    mock_use.assert_called_once()
+    mock_fetcher = mocker.MagicMock()
+    mock_fetcher.fetch = mocker.AsyncMock(side_effect=RuntimeError('network error'))
+    items, cache_valid = await Pipeline._extract_with_cached(
+        stub, 'https://x.com', mock_fetcher, {'title': {'primary': 'h1'}}, False
+    )
+    assert cache_valid is True
+    assert items is None
 
 
 # ---------------------------------------------------------------------------
@@ -1180,7 +1172,7 @@ async def test_process_url_uses_pipeline_format_when_output_format_none(mocker):
     mocker.patch.object(Pipeline, 'normalize_url', return_value='https://x.com')
     mocker.patch.object(Pipeline, '_extract_domain', return_value='x.com')
     mocker.patch.object(Pipeline, '_create_fetcher', return_value=mocker.MagicMock())
-    mocker.patch.object(Pipeline, '_cached_selectors', return_value=False)
+    stub.storage.load_selectors.return_value = None
     mocker.patch.object(Pipeline, '_fetch', return_value=None)
     mocker.patch('yosoi.core.pipeline.logfire')
     await Pipeline.process_url(stub, 'https://x.com', output_format=None)

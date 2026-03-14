@@ -94,6 +94,19 @@ class Contract(BaseModel):
             )
             field_defs[name] = (FieldSelectors, selector_field)
 
+        # Add optional yosoi_container field for multi-item pages
+        field_defs['yosoi_container'] = (
+            FieldSelectors | None,
+            Field(
+                default=None,
+                description=(
+                    'Selector for the repeating wrapper element that contains one complete item '
+                    '(e.g., .product-card, article.listing). '
+                    'Should match each individual item on the page. Set to null for single-item pages.'
+                ),
+            ),
+        )
+
         return pydantic.create_model(f'{cls.__name__}SelectorConfig', **field_defs)
 
     @classmethod
@@ -140,6 +153,22 @@ class Contract(BaseModel):
             override = f'`{extra["yosoi_selector"]}`' if extra.get('yosoi_selector') else '—'
             lines.append(f'| `{name}` | `{yosoi_type}` | {required} | {config_str} | {hint} | {override} |')
         return '\n'.join(lines)
+
+    @classmethod
+    def get_container_selector(cls) -> str | None:
+        """Return the container selector from model_config's json_schema_extra, if set.
+
+        Returns:
+            CSS selector string for the repeating container element, or None.
+
+        """
+        config = getattr(cls, 'model_config', {})
+        extra = config.get('json_schema_extra')
+        if isinstance(extra, dict):
+            sel = extra.get('yosoi_container')
+            if isinstance(sel, str) and sel:
+                return sel
+        return None
 
     @classmethod
     def define(cls, name: str) -> ContractBuilder:

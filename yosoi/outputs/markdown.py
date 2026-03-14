@@ -7,22 +7,26 @@ import os
 from datetime import datetime
 
 
-def format_markdown(url: str, domain: str, content: dict[str, object]) -> str:
+def format_markdown(url: str, domain: str, content: dict[str, object] | list[dict[str, object]]) -> str:
     """Format extracted content as Markdown.
 
     Creates generic markdown output that works for any field structure,
     not just articles. Iterates through all fields and formats appropriately.
+    For multi-item content (list of dicts), renders each item as a numbered section.
 
     Args:
         url: Source URL
         domain: Domain name
-        content: Extracted content dictionary (field -> value)
+        content: Extracted content dictionary or list of dicts for multi-item pages
 
     Returns:
         Formatted markdown string.
 
     """
-    lines = []
+    if isinstance(content, list):
+        return _format_markdown_items(url, domain, content)
+
+    lines: list[str] = []
 
     # Title - use first non-empty text field, or "Untitled"
     title = _get_title(content)
@@ -54,7 +58,53 @@ def format_markdown(url: str, domain: str, content: dict[str, object]) -> str:
     return '\n'.join(lines)
 
 
-def save_markdown(filepath: str, url: str, domain: str, content: dict[str, object]) -> None:
+def _format_markdown_items(url: str, domain: str, items: list[dict[str, object]]) -> str:
+    """Format a list of extracted items as numbered Markdown sections.
+
+    Args:
+        url: Source URL
+        domain: Domain name
+        items: List of extracted content dicts
+
+    Returns:
+        Formatted markdown string with numbered items separated by ``---``.
+
+    """
+    lines: list[str] = []
+    lines.append(f'# Extracted Items ({len(items)})')
+    lines.append('')
+    lines.append('---')
+    lines.append(f'**Source:** {url}')
+    lines.append(f'**Domain:** {domain}')
+    lines.append(f'**Extracted:** {datetime.now().isoformat()}')
+    lines.append(f'**Item Count:** {len(items)}')
+    lines.append('---')
+    lines.append('')
+
+    for idx, item in enumerate(items, 1):
+        lines.append(f'## Item {idx}')
+        lines.append('')
+        for field, value in item.items():
+            if value is None or value == '':
+                continue
+            field_title = _format_field_name(field)
+            formatted = _format_value(value)
+            if len(formatted) == 1:
+                # Inline: **Field:** value
+                lines.append(f'**{field_title}:** {formatted[0]}')
+            else:
+                # Block: label then multi-line value
+                lines.append(f'**{field_title}:**')
+                lines.extend(formatted)
+            lines.append('')
+        if idx < len(items):
+            lines.append('---')
+            lines.append('')
+
+    return '\n'.join(lines)
+
+
+def save_markdown(filepath: str, url: str, domain: str, content: dict[str, object] | list[dict[str, object]]) -> None:
     """Format and save content as Markdown file.
 
     Handles directory creation and complete Markdown formatting with metadata.
@@ -63,7 +113,7 @@ def save_markdown(filepath: str, url: str, domain: str, content: dict[str, objec
         filepath: Path to save the file
         url: Source URL
         domain: Domain name
-        content: Extracted content dictionary (field -> value)
+        content: Extracted content dictionary or list of dicts for multi-item pages
 
     """
     # Ensure directory exists
