@@ -160,6 +160,9 @@ class SelectorVerifier:
         if not value or value == 'NA':
             return False, 'na_selector'
 
+        if strategy in ('regex', 'jsonld'):
+            return False, 'unsupported_strategy'
+
         try:
             elements = sel.xpath(value) if strategy == 'xpath' else sel.css(value)
             if elements:

@@ -7,6 +7,7 @@ from rich.live import Live
 
 from yosoi.cli.utils import console
 from yosoi.models.contract import Contract
+from yosoi.models.selectors import SelectorLevel
 
 _STATUS_STYLES: dict[str, tuple[str, bool]] = {
     'Queued': ('dim', False),
@@ -51,6 +52,7 @@ async def run_concurrent(
     skip_verification: bool = False,
     fetcher_type: str = 'simple',
     max_workers: int = 5,
+    selector_level: 'SelectorLevel | None' = None,
 ):
     """Run URL processing concurrently via taskiq broker.
 
@@ -63,11 +65,18 @@ async def run_concurrent(
         skip_verification: Skip verification step.
         fetcher_type: Fetcher type.
         max_workers: Max concurrent workers.
+        selector_level: Maximum selector strategy level. Defaults to CSS.
 
     """
     from yosoi.core.tasks import configure_broker, enqueue_urls, shutdown_broker
 
-    await configure_broker(yosoi_config, contract=contract, output_format=output_format, max_workers=max_workers)
+    await configure_broker(
+        yosoi_config,
+        contract=contract,
+        output_format=output_format,
+        max_workers=max_workers,
+        selector_level=selector_level,
+    )
     start_time = time.monotonic()
 
     url_status: dict[str, tuple[str, float]] = dict.fromkeys(urls, ('Queued', 0.0))

@@ -1,5 +1,6 @@
 """AI-powered selector discovery by reading cleaned HTML."""
 
+import logging
 from typing import Any, cast
 
 import logfire
@@ -72,6 +73,11 @@ class SelectorDiscovery:
             self.model_name = 'custom-agent'
             self.provider = 'custom'
             self._use_deps = False
+            if target_level != SelectorLevel.CSS:
+                logging.getLogger(__name__).warning(
+                    'target_level=%s has no effect with custom agents (deps not injected)',
+                    target_level.name,
+                )
         elif llm_config is not None:
             model = create_model(llm_config)
             self.agent = Agent(model, deps_type=DiscoveryDeps, output_type=output_model)

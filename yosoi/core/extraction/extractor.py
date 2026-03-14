@@ -136,6 +136,8 @@ class ContentExtractor:
             return None
         if entry.strategy == 'xpath':
             return self._extract_with_xpath_selector(sel, entry.value, field_name)
+        if entry.strategy in ('regex', 'jsonld'):
+            return None  # unsupported strategies fail closed
         return self._extract_with_selector(sel, entry.value, field_name)
 
     def _extract_with_selector(

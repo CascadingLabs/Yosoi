@@ -198,7 +198,7 @@ def test_save_formatted_content_routes_ndjson(mocker, tmp_path):
     mock = mocker.patch('yosoi.outputs.utils.save_jsonl')
     filepath = str(tmp_path / 'results.jsonl')
     save_formatted_content(filepath, 'https://example.com', 'example.com', {'title': 'X'}, 'ndjson')
-    mock.assert_called_once()
+    mock.assert_called_once_with(filepath, 'https://example.com', 'example.com', {'title': 'X'})
 
 
 def test_save_formatted_content_routes_csv(mocker, tmp_path):

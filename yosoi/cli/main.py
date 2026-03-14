@@ -23,13 +23,14 @@ _VALID_FORMATS = {'json', 'md', 'markdown', 'jsonl', 'ndjson', 'csv', 'xlsx', 'p
 
 def _resolve_output_formats(flag_values: tuple[str, ...], extra_args: list[str]) -> list[str]:
     """Merge -o flag values and space-separated extra args into a normalised format list."""
-    raw = [tok.strip() for item in (*flag_values, *extra_args) for tok in item.split(',') if tok.strip()]
-    invalid = [f for f in raw if f.lower() not in _VALID_FORMATS]
+    raw = [tok.strip().lower() for item in (*flag_values, *extra_args) for tok in item.split(',') if tok.strip()]
+    invalid = [f for f in raw if f not in _VALID_FORMATS]
     if invalid:
         raise click.BadParameter(
             f'Unknown format(s): {", ".join(invalid)}. Choose from: {", ".join(sorted(_VALID_FORMATS))}'
         )
-    return ['markdown' if f in ('md', 'markdown') else f for f in raw] or ['json']
+    normalised = ['markdown' if f in ('md', 'markdown') else f for f in raw]
+    return list(dict.fromkeys(normalised)) or ['json']
 
 
 @click.command(context_settings={'allow_extra_args': True, 'ignore_unknown_options': False})
@@ -184,6 +185,7 @@ def main(
                 skip_verification=skip_verification,
                 fetcher_type=fetcher,
                 max_workers=effective_workers,
+                selector_level=resolved_level,
             )
         )
     else:

@@ -57,6 +57,7 @@ dev = [
   "prek>=0.2.25",
   "ruff>=0.9.7",
   "types-beautifulsoup4>=4.12",
+  "vulture>=2.15",
 ]
 tests = [
   "deepeval>=3.8.4",

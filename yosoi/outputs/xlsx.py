@@ -25,17 +25,20 @@ def save_xlsx(filepath: str, url: str, domain: str, content: dict) -> None:
         raise ImportError('openpyxl is required for XLSX output. Install it: uv add openpyxl') from None
 
     record = {'url': url, 'domain': domain, **content}
-    values = [str(v) if v is not None else '' for v in record.values()]
 
     if os.path.exists(filepath):
         wb = openpyxl.load_workbook(filepath)
         ws = wb.active
-        ws.append(values)
+        # Read existing header to align columns
+        header = [cell.value for cell in ws[1]]
+        row = [str(record.get(col, '')) if record.get(col) is not None else '' for col in header]
+        ws.append(row)
     else:
         Path(filepath).parent.mkdir(parents=True, exist_ok=True)
         wb = openpyxl.Workbook()
         ws = wb.active
         ws.append(list(record.keys()))
+        values = [str(v) if v is not None else '' for v in record.values()]
         ws.append(values)
 
     wb.save(filepath)

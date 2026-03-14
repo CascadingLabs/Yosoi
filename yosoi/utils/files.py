@@ -67,9 +67,13 @@ def init_yosoi(storage_name: str = 'selectors') -> Path:
     # Initialize tracking file if it doesn't exist
     tracking_file = yosoi_dir / 'stats.json'
     root_tracking = root / 'stats.json'
+    legacy_tracking = yosoi_dir / 'llm_tracking.json'
 
     if not tracking_file.exists():
-        if root_tracking.exists():
+        if legacy_tracking.exists():
+            # Migrate from legacy name
+            shutil.move(str(legacy_tracking), str(tracking_file))
+        elif root_tracking.exists():
             # Move from root if it exists there
             shutil.move(str(root_tracking), str(tracking_file))
         else:

@@ -121,7 +121,9 @@ class FieldVerificationResult(BaseModel):
     status: Literal['verified', 'failed'] = Field(description='Verification status')
     working_level: str | None = Field(default=None, description='Which level worked')
     selector: str | None = Field(default=None, description='Selector that worked')
-    selector_level: str | None = Field(default=None, description='Strategy level that worked (css/xpath/regex/jsonld)')
+    selector_level: Literal['css', 'xpath', 'regex', 'jsonld'] | None = Field(
+        default=None, description='Strategy level that worked (css/xpath/regex/jsonld)'
+    )
     failed_selectors: list[SelectorFailure] = Field(default_factory=list, description='Failed selectors with reasons')
 
 

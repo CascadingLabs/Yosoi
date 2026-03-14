@@ -16,6 +16,7 @@ from taskiq.middlewares import SmartRetryMiddleware
 from yosoi.core.configs import YosoiConfig
 from yosoi.core.discovery.config import LLMConfig
 from yosoi.models.contract import Contract
+from yosoi.models.selectors import SelectorLevel
 
 logger = logging.getLogger(__name__)
 
@@ -39,14 +40,16 @@ async def configure_broker(
     contract: type[Contract],
     output_format: str | list[str] = 'json',
     max_workers: int = 5,
+    selector_level: SelectorLevel | None = None,
 ) -> None:
     """Configure the broker with pipeline settings and start it.
 
     Args:
         llm_config: LLM or full Yosoi configuration.
         contract: Contract subclass for scraping fields.
-        output_format: Output format ('json' or 'markdown').
+        output_format: Output format(s): json, markdown, jsonl, ndjson, csv, xlsx, parquet.
         max_workers: Maximum concurrent tasks.
+        selector_level: Maximum selector strategy level. Defaults to CSS.
 
     """
     global _semaphore
@@ -54,6 +57,7 @@ async def configure_broker(
     _pipeline_config['contract'] = contract
     _pipeline_config['output_format'] = output_format
     _pipeline_config['max_workers'] = max_workers
+    _pipeline_config['selector_level'] = selector_level or SelectorLevel.CSS
     _semaphore = asyncio.Semaphore(max_workers)
     await broker.startup()
 
@@ -117,6 +121,7 @@ async def process_url_task(
             contract=config['contract'],
             output_format=config['output_format'],
             quiet=True,
+            selector_level=config.get('selector_level', SelectorLevel.CSS),
         )
 
         start = time.monotonic()

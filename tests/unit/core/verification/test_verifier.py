@@ -467,6 +467,37 @@ def test_test_selector_dispatches_xpath(verifier, simple_html):
     assert reason == 'found'
 
 
+def test_test_selector_regex_returns_unsupported(verifier, simple_html):
+    from yosoi.models.selectors import SelectorEntry
+
+    sel = Selector(text=simple_html)
+    entry = SelectorEntry(strategy='regex', value=r'\d+\.\d+')
+    success, reason = verifier._test_selector(sel, entry)
+    assert success is False
+    assert reason == 'unsupported_strategy'
+
+
+def test_test_selector_jsonld_returns_unsupported(verifier, simple_html):
+    from yosoi.models.selectors import SelectorEntry
+
+    sel = Selector(text=simple_html)
+    entry = SelectorEntry(strategy='jsonld', value='$.price')
+    success, reason = verifier._test_selector(sel, entry)
+    assert success is False
+    assert reason == 'unsupported_strategy'
+
+
+def test_verify_field_skips_regex_entry(verifier, simple_html):
+    from yosoi.models.selectors import FieldSelectors, SelectorEntry, SelectorLevel
+
+    sel = Selector(text=simple_html)
+    regex_entry = SelectorEntry(strategy='regex', value=r'\d+')
+    fs = FieldSelectors(primary=regex_entry)
+    result = verifier._verify_field(sel, 'price', fs, max_level=SelectorLevel.REGEX)
+    assert result.status == 'failed'
+    assert result.failed_selectors[0].reason == 'unsupported_strategy'
+
+
 def test_verify_skips_entry_above_max_level(verifier, simple_html):
     from yosoi.models.selectors import FieldSelectors, SelectorEntry, SelectorLevel
 
@@ -498,10 +529,20 @@ def test_verify_max_level_propagated(verifier, simple_html):
     assert result.results['title'].status == 'failed'
 
 
-def test_pipeline_accepts_selector_level(mocker):
+def test_pipeline_accepts_selector_level(mocker, tmp_path):
     from yosoi.core.pipeline import Pipeline
+    from yosoi.models.defaults import NewsArticle
     from yosoi.models.selectors import SelectorLevel
 
-    stub = Pipeline.__new__(Pipeline)
-    stub.selector_level = SelectorLevel.XPATH
-    assert stub.selector_level == SelectorLevel.XPATH
+    mocker.patch('yosoi.storage.persistence.init_yosoi', side_effect=[tmp_path / 'sel', tmp_path / 'content'])
+    mocker.patch('yosoi.storage.tracking.get_tracking_path', return_value=tmp_path / 'tracking.json')
+    mocker.patch('yosoi.utils.files.is_initialized', return_value=True)
+    mocker.patch('yosoi.utils.logging.setup_local_logging', return_value=str(tmp_path / 'test.log'))
+    mocker.patch('yosoi.core.discovery.agent.Agent')
+    mocker.patch('yosoi.core.discovery.agent.create_model')
+
+    from yosoi.core.discovery.config import LLMConfig
+
+    cfg = LLMConfig(provider='test', model_name='test-model', api_key='fake')
+    pipeline = Pipeline(cfg, contract=NewsArticle, selector_level=SelectorLevel.XPATH)
+    assert pipeline.selector_level == SelectorLevel.XPATH

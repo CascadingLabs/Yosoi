@@ -430,14 +430,15 @@ def test_resolve_xpath_extracts_text():
 
 def test_extract_content_respects_max_level():
     """XPath selectors above CSS ceiling must be skipped → field not extracted."""
-    from yosoi.models.selectors import SelectorLevel
+    from yosoi.models.selectors import SelectorEntry, SelectorLevel
 
     class MyContract(Contract):
         title: str = ys.Title()
 
     extractor = _make_extractor(MyContract)
     html = '<html><body><h1>Title</h1></body></html>'
-    # Force XPath entry via SelectorEntry — max_level=CSS so it should be skipped
-    selectors = {'title': {'primary': ''}}  # empty primary → no extraction
+    # XPath entry should be skipped when max_level=CSS
+    xpath_entry = SelectorEntry(strategy='xpath', value='//h1')
+    selectors = {'title': {'primary': xpath_entry.model_dump()}}
     result = extractor.extract_content_with_html('https://x.com', html, selectors, max_level=SelectorLevel.CSS)
     assert result is None

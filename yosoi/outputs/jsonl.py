@@ -17,11 +17,13 @@ def format_jsonl(url: str, domain: str, content: dict) -> str:
         JSON-serialized string for one record.
 
     """
+    _RESERVED = {'url', 'domain', 'extracted_at'}
+    safe_content = {k: v for k, v in content.items() if k not in _RESERVED}
     record = {
         'url': url,
         'domain': domain,
         'extracted_at': datetime.now(timezone.utc).isoformat(),
-        **content,
+        **safe_content,
     }
     return json.dumps(record, ensure_ascii=False)
 

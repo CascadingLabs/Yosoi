@@ -102,3 +102,4 @@ def test_save_jsonl_none_values_serialized(tmp_path):
     save_jsonl(filepath, URL, DOMAIN, content)
     parsed = json.loads(Path(filepath).read_text().strip())
     assert parsed['author'] == 'Someone'
+    assert parsed['headline'] is None

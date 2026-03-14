@@ -36,6 +36,19 @@ _LEVEL_XPATH_ALLOWED: Final = (
     'Prefix XPath selectors with // so they are recognisable.'
 )
 
+_LEVEL_REGEX_ALLOWED: Final = (
+    'You may use CSS selectors, XPath expressions, or regex patterns. '
+    'Prefer CSS when possible. Use XPath when CSS cannot express the needed structure. '
+    'Use regex only as a last resort for fields embedded in unstructured text.'
+)
+
+_LEVEL_JSONLD_ALLOWED: Final = (
+    'You may use CSS selectors, XPath expressions, regex patterns, or JSON-LD extraction. '
+    'Prefer CSS when possible. Use XPath when CSS cannot express the needed structure. '
+    'Use regex for fields in unstructured text. '
+    'Use JSON-LD for fields available in <script type="application/ld+json"> blocks.'
+)
+
 _HINT_TESTID: Final = 'Page uses data-testid attributes — prefer them over class names (they are more stable).'
 
 _HINT_JSON_LD: Final = (
@@ -44,12 +57,6 @@ _HINT_JSON_LD: Final = (
 )
 
 _HINT_DATA_QA: Final = 'Page uses data-qa/data-cy test attributes — they are stable selector targets.'
-
-_CUSTOM_AGENT_SELECTOR_GUIDE: Final = """\
-For each field provide:
-- primary: Most specific selector using actual classes/IDs
-- fallback: Less specific but reliable
-- tertiary: Generic or null if not found"""
 
 
 # ---------------------------------------------------------------------------
@@ -106,6 +113,10 @@ def field_instructions(ctx: RunContext['DiscoveryDeps']) -> str:
 
 def level_instructions(ctx: RunContext['DiscoveryDeps']) -> str:
     """Explain which selector strategies are allowed based on target_level."""
+    if ctx.deps.target_level >= SelectorLevel.JSONLD:
+        return _LEVEL_JSONLD_ALLOWED
+    if ctx.deps.target_level >= SelectorLevel.REGEX:
+        return _LEVEL_REGEX_ALLOWED
     if ctx.deps.target_level >= SelectorLevel.XPATH:
         return _LEVEL_XPATH_ALLOWED
     return _LEVEL_CSS_ONLY
@@ -134,9 +145,3 @@ def page_hints(ctx: RunContext['DiscoveryDeps']) -> str:
 def build_user_prompt(discovery_input: DiscoveryInput) -> str:
     """Build the user prompt for the deps-based agent (system prompts handle context)."""
     return discovery_input.model_dump_json()
-
-
-def build_custom_agent_prompt(discovery_input: DiscoveryInput, fields_text: str) -> str:
-    """Build the user prompt for custom agents (no system-prompt injection)."""
-    html_block = f'Analyze this HTML from {discovery_input.url}:\n```html\n{discovery_input.html}\n```'
-    return f'{html_block}\n\nFind selectors for these fields:\n{fields_text}\n\n{_CUSTOM_AGENT_SELECTOR_GUIDE}'
