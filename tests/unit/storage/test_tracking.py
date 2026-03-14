@@ -276,9 +276,9 @@ def test_extract_domain_returns_netloc_without_www(tracker):
     assert result == 'test.example.com'
 
 
-def test_extract_domain_exact_removal():
+def test_extract_domain_exact_removal(tmp_path):
     """'www.' must be removed only when at start of netloc, not from subdomains like 'mywww.com'."""
-    tracker = LLMTracker(tracking_file='/tmp/test_tracker.json')
+    tracker = LLMTracker(tracking_file=str(tmp_path / 'tracking.json'))
     # 'www.' only removed from start
     result = tracker.extract_domain('https://www.example.com')
     assert result == 'example.com'

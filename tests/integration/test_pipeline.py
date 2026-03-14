@@ -1,3 +1,4 @@
+import pytest
 from pydantic_ai import Agent
 
 from yosoi.core.pipeline import Pipeline
@@ -73,8 +74,6 @@ async def test_pipeline_fetch_failure(mocker, mock_llm_config, tmp_path):
     pipeline = Pipeline(mock_llm_config, contract=NewsArticle)
 
     # ACT + ASSERT — fetch failure must raise
-    import pytest
-
     with pytest.raises(RuntimeError):
         await pipeline.process_url('http://example.com', force=True)
 
@@ -111,8 +110,6 @@ async def test_pipeline_ai_failure(mocker, mock_llm_config, happy_path_html, tmp
     pipeline = Pipeline(mock_llm_config, contract=NewsArticle)
 
     # ACT + ASSERT — AI failure must raise (Fail Fast)
-    import pytest
-
     with pytest.raises(RuntimeError):
         await pipeline.process_url('http://ai-failure.com', force=True, max_discovery_retries=1)
     saved = pipeline.storage.load_selectors('ai-failure.com')

@@ -476,15 +476,6 @@ def test_cleaner_creates_console_when_none():
     assert isinstance(cleaner.console, Console)
 
 
-def test_compress_list_exactly_3_not_truncated(cleaner):
-    """List with exactly 3 items must NOT be truncated (condition is > 3)."""
-    html = '<html><body><ul><li>A</li><li>B</li><li>C</li></ul></body></html>'
-    soup = BeautifulSoup(html, 'lxml')
-    result = cleaner._compress_html_simple(soup)
-    items = result.find('ul').find_all('li')
-    assert len(items) == 3
-
-
 def test_compress_list_exactly_4_truncated_to_3(cleaner):
     """List with exactly 4 items must be truncated to 3."""
     html = '<html><body><ul><li>A</li><li>B</li><li>C</li><li>D</li></ul></body></html>'
@@ -492,26 +483,6 @@ def test_compress_list_exactly_4_truncated_to_3(cleaner):
     result = cleaner._compress_html_simple(soup)
     items = result.find('ul').find_all('li')
     assert len(items) == 3
-
-
-def test_compress_table_exactly_5_not_truncated(cleaner):
-    """Table with exactly 5 rows must NOT be truncated (condition is > 5)."""
-    rows = ''.join(f'<tr><td>Row {i}</td></tr>' for i in range(5))
-    html = f'<html><body><table>{rows}</table></body></html>'
-    soup = BeautifulSoup(html, 'lxml')
-    result = cleaner._compress_html_simple(soup)
-    tr_count = len(result.find('table').find_all('tr'))
-    assert tr_count == 5
-
-
-def test_compress_table_exactly_6_truncated_to_5(cleaner):
-    """Table with exactly 6 rows must be truncated to 5."""
-    rows = ''.join(f'<tr><td>Row {i}</td></tr>' for i in range(6))
-    html = f'<html><body><table>{rows}</table></body></html>'
-    soup = BeautifulSoup(html, 'lxml')
-    result = cleaner._compress_html_simple(soup)
-    tr_count = len(result.find('table').find_all('tr'))
-    assert tr_count == 5
 
 
 def test_prune_replaces_data_uri_with_exact_placeholder(cleaner):

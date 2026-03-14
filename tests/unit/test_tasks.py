@@ -12,15 +12,6 @@ from yosoi.core.tasks import (
     shutdown_broker,
 )
 
-
-@pytest.fixture
-def clean_broker():
-    """Ensure broker state is clean before and after each test."""
-    _tasks_mod._pipeline_config = None
-    yield
-    _tasks_mod._pipeline_config = None
-
-
 # ──────────────────────────────────────────────────────────────────────
 # DomainDedup
 # ──────────────────────────────────────────────────────────────────────

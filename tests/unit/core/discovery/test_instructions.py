@@ -61,7 +61,7 @@ def test_base_instructions_mentions_html():
 def test_field_instructions_includes_field_names():
     result = field_instructions(_ctx(_deps()))
     # NewsArticle has fields like headline, body_text, etc.
-    assert 'headline' in result or 'title' in result or len(result) > 0
+    assert 'headline' in result or 'body_text' in result
 
 
 def test_field_instructions_returns_string():

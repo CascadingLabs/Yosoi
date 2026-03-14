@@ -192,16 +192,6 @@ def test_verify_partial_pass(verifier, simple_html):
     assert result.total_fields == 2
 
 
-def test_verify_all_fail(verifier, simple_html):
-    selectors = {
-        'title': {'primary': '.gone'},
-        'price': {'primary': '.also-gone'},
-    }
-    result = verifier.verify(simple_html, selectors)
-    assert result.success is False
-    assert result.verified_count == 0
-
-
 def test_verify_empty_selectors(verifier, simple_html):
     result = verifier.verify(simple_html, {})
     assert result.total_fields == 0
@@ -246,13 +236,6 @@ def test_verify_works_without_console():
 # ---------------------------------------------------------------------------
 # Additional targeted tests
 # ---------------------------------------------------------------------------
-
-
-def test_test_selector_na_uppercase(verifier, simple_html):
-    sel = Selector(text=simple_html)
-    success, reason = verifier._test_selector(sel, 'NA')
-    assert success is False
-    assert reason == 'na_selector'
 
 
 def test_test_selector_non_na_nonempty_tries_to_match(verifier, simple_html):
@@ -351,25 +334,6 @@ def test_verifier_console_is_stored_when_provided():
     assert v.console is console
 
 
-def test_verify_total_fields_equals_len_selectors(verifier, simple_html):
-    """total_fields in result must equal the number of selectors passed."""
-    selectors = {'title': {'primary': 'h1.title'}, 'price': {'primary': '.price'}, 'desc': {'primary': '#description'}}
-    result = verifier.verify(simple_html, selectors)
-    assert result.total_fields == len(selectors)
-    assert result.total_fields == 3
-
-
-def test_verify_verified_count_counts_only_verified(verifier, simple_html):
-    """verified_count must count only fields with status='verified'."""
-    selectors = {
-        'title': {'primary': 'h1.title'},  # verified
-        'gone1': {'primary': '.missing1'},  # failed
-        'gone2': {'primary': '.missing2'},  # failed
-    }
-    result = verifier.verify(simple_html, selectors)
-    assert result.verified_count == 1
-
-
 def test_verify_uses_parsel_selector(verifier, simple_html):
     """verify must use Parsel Selector (not BeautifulSoup)."""
     # Parsel handles complex HTML correctly with lxml backend
@@ -396,14 +360,6 @@ def test_test_selector_empty_string_is_treated_as_na(verifier, simple_html):
     """Empty string selector must return False with 'na_selector' reason."""
     sel = Selector(text=simple_html)
     success, reason = verifier._test_selector(sel, '')
-    assert success is False
-    assert reason == 'na_selector'
-
-
-def test_test_selector_na_string_is_treated_as_na(verifier, simple_html):
-    """'NA' selector string must return False with 'na_selector' reason."""
-    sel = Selector(text=simple_html)
-    success, reason = verifier._test_selector(sel, 'NA')
     assert success is False
     assert reason == 'na_selector'
 

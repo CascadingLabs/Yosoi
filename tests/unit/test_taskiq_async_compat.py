@@ -10,11 +10,8 @@ Validates that:
 
 import asyncio
 
-import pytest
-
 import yosoi.core.tasks as _tasks_mod
 from yosoi.core.discovery.agent import SelectorDiscovery
-from yosoi.core.discovery.config import LLMConfig
 from yosoi.core.discovery.yosoi_agent import YosoiAgent
 from yosoi.core.tasks import (
     configure_broker,
@@ -22,34 +19,7 @@ from yosoi.core.tasks import (
     process_url_task,
     shutdown_broker,
 )
-from yosoi.models import FieldSelectors
 from yosoi.models.defaults import NewsArticle
-
-
-@pytest.fixture
-def clean_broker():
-    """Ensure broker state is clean before and after each test."""
-    _tasks_mod._pipeline_config = None
-    yield
-    _tasks_mod._pipeline_config = None
-
-
-@pytest.fixture
-def mock_llm_config():
-    return LLMConfig(provider='groq', model_name='llama-3.3-70b-versatile', api_key='test-key', temperature=0.0)
-
-
-@pytest.fixture
-def mock_selectors():
-    selector_model = NewsArticle.to_selector_model()
-    return selector_model(
-        headline=FieldSelectors(primary='h1.title', fallback='h1', tertiary=None),
-        author=FieldSelectors(primary='span.author', fallback='.author', tertiary=None),
-        date=FieldSelectors(primary='span.date', fallback='.date', tertiary=None),
-        body_text=FieldSelectors(primary='article', fallback='body', tertiary=None),
-        related_content=FieldSelectors(primary='.related', fallback='aside', tertiary=None),
-    )
-
 
 FAKE_HTML = """
 <html><head><title>Test</title></head>

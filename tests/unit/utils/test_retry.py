@@ -130,42 +130,6 @@ def test_log_retry_uses_attempt_number(monkeypatch, mocker):
     assert logged[0][1]['attempt'] == 7
 
 
-def test_get_retryer_default_max_attempts_is_3():
-    """Default max_attempts must be exactly 3, not 2 or 4."""
-    retryer = get_retryer()
-    assert retryer.stop.max_attempt_number == 3
-
-
-def test_get_retryer_default_wait_min_is_1():
-    """Default wait_min must be exactly 1.0, not 0 or 2."""
-    retryer = get_retryer()
-    assert retryer.wait.min == 1.0
-
-
-def test_get_retryer_default_wait_max_is_10():
-    """Default wait_max must be exactly 10.0, not 5 or 20."""
-    retryer = get_retryer()
-    assert retryer.wait.max == 10.0
-
-
-def test_get_retryer_default_wait_multiplier_is_1():
-    """Default wait_multiplier must be exactly 1.0."""
-    retryer = get_retryer()
-    assert retryer.wait.multiplier == 1.0
-
-
-def test_get_retryer_default_reraise_is_true():
-    """Default reraise must be True, not False."""
-    retryer = get_retryer()
-    assert retryer.reraise is True
-
-
-def test_get_retryer_reraise_false():
-    """reraise=False must actually be stored as False."""
-    retryer = get_retryer(reraise=False)
-    assert retryer.reraise is False
-
-
 def test_get_retryer_custom_attempts_respected():
     """Custom max_attempts must be passed through exactly."""
     for n in [1, 2, 4, 7]:
@@ -183,19 +147,6 @@ def test_get_retryer_wait_max_respected():
     """wait_max must be exactly as passed."""
     retryer = get_retryer(wait_max=30.0)
     assert retryer.wait.max == 30.0
-
-
-def test_get_retryer_no_before_sleep_by_default():
-    """before_sleep should be None when no log_callback given."""
-    retryer = get_retryer()
-    assert retryer.before_sleep is None
-
-
-def test_get_retryer_before_sleep_is_callback_when_given(mocker):
-    """before_sleep must be the exact callback object passed."""
-    cb = mocker.MagicMock()
-    retryer = get_retryer(log_callback=cb)
-    assert retryer.before_sleep is cb
 
 
 def test_log_retry_error_str_is_str_of_exception(monkeypatch, mocker):

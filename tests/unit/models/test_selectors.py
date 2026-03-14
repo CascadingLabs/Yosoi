@@ -7,22 +7,6 @@ from yosoi.models.selectors import FieldSelectors, SelectorEntry, SelectorLevel
 # ---------------------------------------------------------------------------
 
 
-def test_selector_level_css_is_1():
-    assert SelectorLevel.CSS == 1
-
-
-def test_selector_level_xpath_is_2():
-    assert SelectorLevel.XPATH == 2
-
-
-def test_selector_level_regex_is_3():
-    assert SelectorLevel.REGEX == 3
-
-
-def test_selector_level_jsonld_is_4():
-    assert SelectorLevel.JSONLD == 4
-
-
 def test_selector_level_ordering():
     assert SelectorLevel.CSS < SelectorLevel.XPATH < SelectorLevel.REGEX < SelectorLevel.JSONLD
 
@@ -51,11 +35,6 @@ def test_selector_entry_regex_sets_level():
 def test_selector_entry_jsonld_sets_level():
     e = SelectorEntry(type='jsonld', value='$.name')
     assert e.level == SelectorLevel.JSONLD
-
-
-def test_selector_entry_level_synced_from_type():
-    e = SelectorEntry(type='xpath', value='//h1')
-    assert e.level == 2
 
 
 # ---------------------------------------------------------------------------

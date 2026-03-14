@@ -20,7 +20,13 @@ class TestYosoiAgentInit:
         """YosoiAgent with system_prompt sets it on the inner agent."""
         model = TestModel()
         agent = YosoiAgent(model, contract=SimpleContract, system_prompt='Find selectors.')
-        assert agent.inner is not None
+        # Verify the system prompt is registered on the inner pydantic-ai Agent
+        inner = agent.inner
+        assert inner is not None
+        system_prompts = inner._system_prompts
+        assert len(system_prompts) > 0
+        # The first system prompt should contain our text
+        assert any('Find selectors.' in str(p) for p in system_prompts)
 
     def test_creates_agent_without_system_prompt(self):
         """YosoiAgent without system_prompt creates agent without one."""
