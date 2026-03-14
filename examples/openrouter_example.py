@@ -9,6 +9,7 @@ Two examples:
 2. ContractBuilder fluent API (quotes.toscrape.com)
 """
 
+import asyncio
 import os
 
 from dotenv import load_dotenv
@@ -32,7 +33,7 @@ def example_1_books():
     """Scrape books.toscrape.com using a static Contract and OpenRouter."""
     print('\n=== Example 1: Books (books.toscrape.com) via OpenRouter ===')
     pipeline = ys.Pipeline(llm_config=config, contract=Book)
-    pipeline.process_url('https://books.toscrape.com')
+    asyncio.run(pipeline.process_url('https://books.toscrape.com'))
 
 
 # -- Example 2: ContractBuilder fluent API ------------------------------------
@@ -49,7 +50,7 @@ def example_2_quotes():
     )
 
     pipeline = ys.Pipeline(llm_config=config, contract=Quote)
-    pipeline.process_url('https://quotes.toscrape.com')
+    asyncio.run(pipeline.process_url('https://quotes.toscrape.com'))
 
 
 if __name__ == '__main__':

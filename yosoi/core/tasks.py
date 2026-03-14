@@ -5,7 +5,6 @@ Uses InMemoryBroker with SmartRetryMiddleware for in-process async concurrency.
 
 import asyncio
 import logging
-import time
 from collections.abc import Awaitable, Callable
 from typing import Any
 from urllib.parse import urlparse
@@ -124,7 +123,6 @@ async def process_url_task(
             selector_level=config.get('selector_level', SelectorLevel.CSS),
         )
 
-        start = time.monotonic()
         try:
             success = await pipeline.process_url(
                 url,
@@ -134,7 +132,7 @@ async def process_url_task(
                 skip_verification=skip_verification,
                 fetcher_type=fetcher_type,
             )
-            elapsed = time.monotonic() - start
+            elapsed = getattr(pipeline, 'last_elapsed', 0.0)
             return {'url': url, 'success': success, 'elapsed': elapsed}
         except Exception:
             logger.exception('Task failed for %s', url)

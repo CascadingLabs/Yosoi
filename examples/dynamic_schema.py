@@ -5,6 +5,7 @@ Three examples demonstrating different ways to use contracts with the Pipeline:
 2. ContractBuilder fluent API (quotes.toscrape.com)
 """
 
+import asyncio
 import os
 
 from dotenv import load_dotenv
@@ -45,7 +46,7 @@ def example_1_static_subclass():
     """Static contract subclass with field validators."""
     print('\n=== Example 1: Static Contract Subclass (books.toscrape.com) ===')
     pipeline = ys.Pipeline(llm_config=config, contract=Book)
-    pipeline.process_url('https://books.toscrape.com')
+    asyncio.run(pipeline.process_url('https://books.toscrape.com'))
 
 
 # -- Example 2: ContractBuilder fluent API ------------------------------------
@@ -62,7 +63,7 @@ def example_2_contract_builder():
     )
 
     pipeline = ys.Pipeline(llm_config=config, contract=Quote)
-    pipeline.process_url('https://quotes.toscrape.com')
+    asyncio.run(pipeline.process_url('https://quotes.toscrape.com'))
 
 
 if __name__ == '__main__':

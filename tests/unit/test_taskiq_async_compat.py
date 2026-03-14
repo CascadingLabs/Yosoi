@@ -297,6 +297,7 @@ class TestEndToEndBrokerAgent:
         mock_pipeline_cls = mocker.patch('yosoi.core.pipeline.Pipeline')
         mock_pipeline = mock_pipeline_cls.return_value
         mock_pipeline.process_url = mocker.AsyncMock(return_value=True)
+        mock_pipeline.last_elapsed = 0.1
 
         completed = []
 

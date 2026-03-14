@@ -5,6 +5,7 @@ Centralized retry logic for bot detection and AI failures.
 
 import logging
 import time
+from typing import Any
 from urllib.parse import urlparse
 
 import httpx
@@ -160,6 +161,8 @@ class Pipeline:
             True if operation succeeded, False otherwise.
 
         """
+        self._url_start = time.monotonic()
+
         # Normalise to list, fall back to pipeline default
         _raw = output_format if output_format is not None else self.output_formats
         format_to_use: list[str] = [_raw] if isinstance(_raw, str) else list(_raw)
@@ -179,6 +182,8 @@ class Pipeline:
                 if not force_flag and await self._cached_selectors(
                     url, domain, fetcher, skip_verification, format_to_use
                 ):
+                    self.last_elapsed = time.monotonic() - self._url_start
+                    self.console.print(f'[dim]  ⏱ {self.last_elapsed:.1f}s elapsed[/dim]')
                     return True
 
                 # Fetch HTML with retry logic for bot detection
@@ -218,7 +223,10 @@ class Pipeline:
                     extracted = self._validate_with_contract(extracted, url)
 
                 # Save and track (save selectors + content if extracted)
-                self._save_and_track(url, domain, verified, extracted, used_llm, format_to_use)
+                elapsed = time.monotonic() - self._url_start
+                self.last_elapsed = elapsed
+                self._save_and_track(url, domain, verified, extracted, used_llm, format_to_use, elapsed)
+                self.console.print(f'[dim]  ⏱ {self.last_elapsed:.1f}s elapsed[/dim]')
                 return True
 
     async def process_urls(
@@ -261,7 +269,6 @@ class Pipeline:
                 self.console.print(f'\n[bold blue]Processing URL {idx}/{len(urls)}[/bold blue]')
                 self.logger.info('--- Processing URL %d/%d: %s ---', idx, len(urls), url)
 
-                url_start = time.monotonic()
                 try:
                     success = await self.process_url(
                         url,
@@ -279,8 +286,6 @@ class Pipeline:
                     self.console.print(f'[danger]Error processing {url}: {e}[/danger]')
                     results['failed'].append(url)
 
-                url_elapsed = time.monotonic() - url_start
-                self.console.print(f'[dim]  ⏱ {url_elapsed:.1f}s elapsed[/dim]')
                 self.console.print()
 
             total_elapsed = time.monotonic() - run_start
@@ -788,7 +793,8 @@ class Pipeline:
             domain: The domain from which the URL is grabbed
 
         """
-        stats = self.tracker.record_url(url, used_llm=False, level_distribution=None)
+        elapsed = time.monotonic() - self._url_start if hasattr(self, '_url_start') else None
+        stats = self.tracker.record_url(url, used_llm=False, level_distribution=None, elapsed=elapsed)
         self._print_tracking_stats(domain, stats)
 
     def _handle_bot_detection(self, error: BotDetectionError, attempt: int, max_retries: int) -> None:
@@ -855,6 +861,7 @@ class Pipeline:
         extracted: ContentMap | None,
         used_llm: bool,
         output_format: list[str],
+        elapsed: float | None = None,
     ) -> None:
         """Save verified selectors, extracted content, and track LLM usage.
 
@@ -868,6 +875,7 @@ class Pipeline:
             extracted: Extracted content dictionary to save, or None if extraction failed.
             used_llm: Whether LLM was called for this URL.
             output_format: Format for output files ('json' or 'markdown').
+            elapsed: Time in seconds spent processing this URL. Defaults to None.
 
         """
         # Save selectors (always JSON) and content (user's choice of format)
@@ -878,22 +886,26 @@ class Pipeline:
                 self.storage.save_content(url, extracted, fmt)
 
         level_dist = getattr(self, '_last_level_distribution', None)
-        stats = self.tracker.record_url(url, used_llm=used_llm, level_distribution=level_dist or None)
+        stats = self.tracker.record_url(url, used_llm=used_llm, level_distribution=level_dist or None, elapsed=elapsed)
         self._print_tracking_stats(domain, stats)
 
-    def _print_tracking_stats(self, domain: str, stats: dict[str, int]) -> None:
+    def _print_tracking_stats(self, domain: str, stats: dict[str, Any]) -> None:
         """Print LLM tracking statistics for domain.
 
-        Displays LLM call count, URL count, and efficiency metrics.
+        Displays LLM call count, URL count, elapsed time, and efficiency metrics.
 
         Args:
             domain: Domain name being tracked.
-            stats: Statistics dictionary with 'llm_calls' and 'url_count' keys.
+            stats: Statistics dictionary with 'llm_calls', 'url_count', and
+                   optionally 'total_elapsed' keys.
 
         """
         self.console.print(f'\n[dim]  - Tracking Stats for {domain}:[/dim]')
         self.console.print(f'[dim]    -- LLM Calls: {stats["llm_calls"]}[/dim]')
         self.console.print(f'[dim]    -- URLs Processed: {stats["url_count"]}[/dim]')
+        total_elapsed = stats.get('total_elapsed', 0.0)
+        if total_elapsed:
+            self.console.print(f'[dim]    -- Total Elapsed: {total_elapsed:.1f}s[/dim]')
         if stats['llm_calls'] > 0:
             efficiency = stats['url_count'] / stats['llm_calls']
             self.console.print(f'[dim]     • Efficiency: {efficiency:.1f} URLs per LLM call[/dim]')

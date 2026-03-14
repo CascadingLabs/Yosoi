@@ -277,7 +277,9 @@ def test_save_and_track_saves_selectors_and_content(mocker):
     )
     stub.storage.save_selectors.assert_called_once()
     stub.storage.save_content.assert_called_once()
-    stub.tracker.record_url.assert_called_once_with('https://x.com', used_llm=True, level_distribution=None)
+    stub.tracker.record_url.assert_called_once_with(
+        'https://x.com', used_llm=True, level_distribution=None, elapsed=None
+    )
 
 
 def test_save_and_track_skips_content_when_none(mocker):
@@ -296,6 +298,24 @@ def test_save_and_track_skips_content_when_none(mocker):
     stub.storage.save_content.assert_not_called()
 
 
+def test_save_and_track_passes_elapsed_to_record_url(mocker):
+    stub = _make_pipeline_stub(mocker)
+    stub.tracker.record_url.return_value = {'llm_calls': 1, 'url_count': 1}
+    Pipeline._save_and_track(
+        stub,
+        url='https://x.com',
+        domain='x.com',
+        verified={'title': {'primary': 'h1'}},
+        extracted={'title': 'Book'},
+        used_llm=True,
+        output_format=['json'],
+        elapsed=3.5,
+    )
+    stub.tracker.record_url.assert_called_once_with(
+        'https://x.com', used_llm=True, level_distribution=None, elapsed=3.5
+    )
+
+
 # ---------------------------------------------------------------------------
 # _track_cached_success
 # ---------------------------------------------------------------------------
@@ -303,9 +323,16 @@ def test_save_and_track_skips_content_when_none(mocker):
 
 def test_track_cached_success_calls_record_url(mocker):
     stub = _make_pipeline_stub(mocker)
+    stub._url_start = 100.0
+    mocker.patch('yosoi.core.pipeline.time')
+    mocker.patch('yosoi.core.pipeline.time.monotonic', return_value=102.5)
     stub.tracker.record_url.return_value = {'llm_calls': 0, 'url_count': 3}
     Pipeline._track_cached_success(stub, 'https://x.com', 'x.com')
-    stub.tracker.record_url.assert_called_once_with('https://x.com', used_llm=False, level_distribution=None)
+    call_args = stub.tracker.record_url.call_args
+    assert call_args[0] == ('https://x.com',)
+    assert call_args[1]['used_llm'] is False
+    assert call_args[1]['level_distribution'] is None
+    assert call_args[1]['elapsed'] is not None
 
 
 # ---------------------------------------------------------------------------
@@ -907,7 +934,9 @@ def test_save_and_track_calls_record_url_with_used_llm_true(mocker):
         used_llm=True,
         output_format=['json'],
     )
-    stub.tracker.record_url.assert_called_once_with('https://x.com', used_llm=True, level_distribution=None)
+    stub.tracker.record_url.assert_called_once_with(
+        'https://x.com', used_llm=True, level_distribution=None, elapsed=None
+    )
 
 
 def test_save_and_track_calls_record_url_with_used_llm_false(mocker):
@@ -923,7 +952,9 @@ def test_save_and_track_calls_record_url_with_used_llm_false(mocker):
         used_llm=False,
         output_format=['json'],
     )
-    stub.tracker.record_url.assert_called_once_with('https://x.com', used_llm=False, level_distribution=None)
+    stub.tracker.record_url.assert_called_once_with(
+        'https://x.com', used_llm=False, level_distribution=None, elapsed=None
+    )
 
 
 def test_save_and_track_saves_content_with_output_format(mocker):
@@ -948,11 +979,17 @@ def test_save_and_track_saves_content_with_output_format(mocker):
 
 
 def test_track_cached_success_calls_record_url_used_llm_false(mocker):
-    """_track_cached_success must call record_url with used_llm=False."""
+    """_track_cached_success must call record_url with used_llm=False and elapsed."""
     stub = _make_pipeline_stub(mocker)
+    stub._url_start = 100.0
+    mocker.patch('yosoi.core.pipeline.time.monotonic', return_value=103.0)
     stub.tracker.record_url.return_value = {'llm_calls': 0, 'url_count': 1}
     Pipeline._track_cached_success(stub, 'https://example.com', 'example.com')
-    stub.tracker.record_url.assert_called_once_with('https://example.com', used_llm=False, level_distribution=None)
+    call_args = stub.tracker.record_url.call_args
+    assert call_args[0] == ('https://example.com',)
+    assert call_args[1]['used_llm'] is False
+    assert call_args[1]['level_distribution'] is None
+    assert call_args[1]['elapsed'] == 3.0
 
 
 # ---------------------------------------------------------------------------
@@ -992,6 +1029,14 @@ def test_print_tracking_stats_no_efficiency_when_llm_zero(mocker):
     Pipeline._print_tracking_stats(stub, 'x.com', {'llm_calls': 0, 'url_count': 3})
     # console.print was called at least once
     stub.console.print.assert_called()
+
+
+def test_print_tracking_stats_shows_total_elapsed(mocker):
+    """_print_tracking_stats must display total_elapsed when present."""
+    stub = _make_pipeline_stub(mocker)
+    Pipeline._print_tracking_stats(stub, 'x.com', {'llm_calls': 1, 'url_count': 2, 'total_elapsed': 5.3})
+    call_args = ' '.join(str(c) for c in stub.console.print.call_args_list)
+    assert '5.3' in call_args
 
 
 # ---------------------------------------------------------------------------

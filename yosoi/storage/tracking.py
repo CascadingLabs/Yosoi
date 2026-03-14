@@ -91,28 +91,34 @@ class LLMTracker:
         url: str,
         used_llm: bool = False,
         level_distribution: dict[str, int] | None = None,
-    ) -> dict[str, int]:
+        elapsed: float | None = None,
+    ) -> dict[str, Any]:
         """Record that a URL was processed.
 
         Args:
             url: The URL that was processed
             used_llm: Whether LLM was called for this URL. Defaults to False.
             level_distribution: Count of verified fields by selector strategy level. Defaults to None.
+            elapsed: Time in seconds spent processing this URL. Defaults to None.
 
         Returns:
-            Dictionary with 'llm_calls' and 'url_count' for this domain.
+            Dictionary with 'llm_calls', 'url_count', and 'total_elapsed' for this domain.
 
         """
         domain = self.extract_domain(url)
         data = self._load_data()
 
         if domain not in data:
-            data[domain] = {'llm_calls': 0, 'url_count': 0, 'level_distribution': {}}
+            data[domain] = {'llm_calls': 0, 'url_count': 0, 'level_distribution': {}, 'total_elapsed': 0.0}
 
         data[domain]['url_count'] += 1
 
         if used_llm:
             data[domain]['llm_calls'] += 1
+
+        if elapsed is not None:
+            data[domain].setdefault('total_elapsed', 0.0)
+            data[domain]['total_elapsed'] = round(data[domain]['total_elapsed'] + elapsed, 2)
 
         if level_distribution:
             dist: dict[str, int] = data[domain].setdefault('level_distribution', {})
@@ -121,7 +127,7 @@ class LLMTracker:
 
         self._save_data(data)
 
-        result: dict[str, int] = data[domain]
+        result: dict[str, Any] = data[domain]
         return result
 
     def get_llm_calls(self, url_or_domain: str) -> int:
@@ -195,8 +201,11 @@ class LLMTracker:
         total_llm_calls = sum(stats['llm_calls'] for stats in data.values())
         total_urls = sum(stats['url_count'] for stats in data.values())
 
+        total_elapsed = sum(stats.get('total_elapsed', 0.0) for stats in data.values())
+
         print(f'\nTotal LLM Calls: {total_llm_calls}')
         print(f'Total URLs Processed: {total_urls}')
+        print(f'Total Elapsed: {total_elapsed:.1f}s')
         print(f'Total Domains: {len(data)}')
 
         print('\n' + '-' * 70)
