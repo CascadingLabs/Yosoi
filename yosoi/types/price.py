@@ -21,7 +21,7 @@ def Price(v: object, config: dict[str, Any], source_url: str | None = None) -> f
     require_decimals: bool = config.get('require_decimals', False)
 
     if not isinstance(v, str):
-        return float(v)  # type: ignore[arg-type]
+        return float(str(v))
 
     cleaned = v.strip().lower()
 

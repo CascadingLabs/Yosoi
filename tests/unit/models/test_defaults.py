@@ -82,4 +82,4 @@ def test_news_article_selector_model_instantiates():
         body_text=FieldSelectors(primary='article'),
         related_content=FieldSelectors(primary='aside'),
     )
-    assert instance.headline.primary == 'h1'  # type: ignore[attr-defined]
+    assert instance.headline.primary.value == 'h1'  # type: ignore[attr-defined]

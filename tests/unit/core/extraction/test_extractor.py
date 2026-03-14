@@ -1,6 +1,7 @@
 """Unit tests for ContentExtractor."""
 
-from bs4 import BeautifulSoup
+import pytest
+from parsel import Selector
 from rich.console import Console
 
 import yosoi as ys
@@ -20,24 +21,24 @@ def _make_extractor(contract=None) -> ContentExtractor:
 def test_body_text_adjacent_spans_have_spaces():
     extractor = _make_extractor()
     html = '<p><span>Hello</span><span>World</span></p>'
-    soup = BeautifulSoup(html, 'html.parser')
-    result = extractor._extract_with_selector(soup, 'p', 'body_text')
+    sel = Selector(text=html)
+    result = extractor._extract_with_selector(sel, 'p', 'body_text')
     assert result == 'Hello World'
 
 
 def test_body_text_multiple_paragraphs_joined_with_newlines():
     extractor = _make_extractor()
     html = '<div><p>First paragraph.</p><p>Second paragraph.</p></div>'
-    soup = BeautifulSoup(html, 'html.parser')
-    result = extractor._extract_with_selector(soup, 'p', 'body_text')
+    sel = Selector(text=html)
+    result = extractor._extract_with_selector(sel, 'p', 'body_text')
     assert result == 'First paragraph.\n\nSecond paragraph.'
 
 
 def test_body_text_skips_empty_elements():
     extractor = _make_extractor()
     html = '<div><p>Content</p><p>   </p><p>More</p></div>'
-    soup = BeautifulSoup(html, 'html.parser')
-    result = extractor._extract_with_selector(soup, 'p', 'body_text')
+    sel = Selector(text=html)
+    result = extractor._extract_with_selector(sel, 'p', 'body_text')
     assert result is not None
     assert '\n\n\n\n' not in result
     assert 'Content' in result
@@ -47,8 +48,8 @@ def test_body_text_skips_empty_elements():
 def test_body_text_returns_none_when_no_elements():
     extractor = _make_extractor()
     html = '<div></div>'
-    soup = BeautifulSoup(html, 'html.parser')
-    result = extractor._extract_with_selector(soup, '.nonexistent', 'body_text')
+    sel = Selector(text=html)
+    result = extractor._extract_with_selector(sel, '.nonexistent', 'body_text')
     assert result is None
 
 
@@ -60,8 +61,8 @@ def test_body_text_returns_none_when_no_elements():
 def test_related_content_extracts_links_with_href():
     extractor = _make_extractor()
     html = '<ul><li><a href="/article1">Article One</a></li><li><a href="/article2">Article Two</a></li></ul>'
-    soup = BeautifulSoup(html, 'html.parser')
-    result = extractor._extract_with_selector(soup, 'a', 'related_content')
+    sel = Selector(text=html)
+    result = extractor._extract_with_selector(sel, 'a', 'related_content')
     assert isinstance(result, list)
     assert len(result) == 2
     assert result[0] == {'text': 'Article One', 'href': '/article1'}
@@ -70,8 +71,8 @@ def test_related_content_extracts_links_with_href():
 def test_related_content_handles_links_without_href():
     extractor = _make_extractor()
     html = '<span>Just text</span><span>More text</span>'
-    soup = BeautifulSoup(html, 'html.parser')
-    result = extractor._extract_with_selector(soup, 'span', 'related_content')
+    sel = Selector(text=html)
+    result = extractor._extract_with_selector(sel, 'span', 'related_content')
     # No href so returns strings, not dicts
     assert isinstance(result, list)
     assert 'Just text' in result
@@ -80,8 +81,8 @@ def test_related_content_handles_links_without_href():
 def test_related_content_returns_none_when_no_elements():
     extractor = _make_extractor()
     html = '<div></div>'
-    soup = BeautifulSoup(html, 'html.parser')
-    result = extractor._extract_with_selector(soup, '.missing', 'related_content')
+    sel = Selector(text=html)
+    result = extractor._extract_with_selector(sel, '.missing', 'related_content')
     assert result is None
 
 
@@ -93,32 +94,32 @@ def test_related_content_returns_none_when_no_elements():
 def test_default_field_returns_first_match():
     extractor = _make_extractor()
     html = '<h1>First Title</h1><h1>Second Title</h1>'
-    soup = BeautifulSoup(html, 'html.parser')
-    result = extractor._extract_with_selector(soup, 'h1', 'title')
+    sel = Selector(text=html)
+    result = extractor._extract_with_selector(sel, 'h1', 'title')
     assert result == 'First Title'
 
 
 def test_default_field_returns_none_when_empty():
     extractor = _make_extractor()
     html = '<h1></h1>'
-    soup = BeautifulSoup(html, 'html.parser')
-    result = extractor._extract_with_selector(soup, 'h1', 'title')
+    sel = Selector(text=html)
+    result = extractor._extract_with_selector(sel, 'h1', 'title')
     assert result is None
 
 
 def test_default_field_returns_none_for_missing_selector():
     extractor = _make_extractor()
     html = '<p>content</p>'
-    soup = BeautifulSoup(html, 'html.parser')
-    result = extractor._extract_with_selector(soup, '.nonexistent', 'title')
+    sel = Selector(text=html)
+    result = extractor._extract_with_selector(sel, '.nonexistent', 'title')
     assert result is None
 
 
 def test_invalid_selector_returns_none_gracefully():
     extractor = _make_extractor()
     html = '<p>content</p>'
-    soup = BeautifulSoup(html, 'html.parser')
-    result = extractor._extract_with_selector(soup, '>>>invalid<<<', 'title')
+    sel = Selector(text=html)
+    result = extractor._extract_with_selector(sel, '>>>invalid<<<', 'title')
     assert result is None
 
 
@@ -229,8 +230,8 @@ def test_extractor_with_contract_has_expected_fields():
 def test_body_text_uses_double_newline_separator():
     extractor = _make_extractor()
     html = '<div><p>Para one.</p><p>Para two.</p></div>'
-    soup = BeautifulSoup(html, 'html.parser')
-    result = extractor._extract_with_selector(soup, 'p', 'body_text')
+    sel = Selector(text=html)
+    result = extractor._extract_with_selector(sel, 'p', 'body_text')
     assert isinstance(result, str)
     assert '\n\n' in result
 
@@ -238,8 +239,8 @@ def test_body_text_uses_double_newline_separator():
 def test_body_text_only_one_paragraph_no_double_newline():
     extractor = _make_extractor()
     html = '<div><p>Single para.</p></div>'
-    soup = BeautifulSoup(html, 'html.parser')
-    result = extractor._extract_with_selector(soup, 'p', 'body_text')
+    sel = Selector(text=html)
+    result = extractor._extract_with_selector(sel, 'p', 'body_text')
     assert isinstance(result, str)
     assert result == 'Single para.'
     assert '\n\n' not in result
@@ -248,8 +249,8 @@ def test_body_text_only_one_paragraph_no_double_newline():
 def test_related_content_with_href_returns_dict_with_text_and_href():
     extractor = _make_extractor()
     html = '<a href="/link">Article</a>'
-    soup = BeautifulSoup(html, 'html.parser')
-    result = extractor._extract_with_selector(soup, 'a', 'related_content')
+    sel = Selector(text=html)
+    result = extractor._extract_with_selector(sel, 'a', 'related_content')
     assert isinstance(result, list)
     assert result[0] == {'text': 'Article', 'href': '/link'}
 
@@ -257,8 +258,8 @@ def test_related_content_with_href_returns_dict_with_text_and_href():
 def test_related_content_without_href_returns_plain_text():
     extractor = _make_extractor()
     html = '<span>Text Only</span>'
-    soup = BeautifulSoup(html, 'html.parser')
-    result = extractor._extract_with_selector(soup, 'span', 'related_content')
+    sel = Selector(text=html)
+    result = extractor._extract_with_selector(sel, 'span', 'related_content')
     assert isinstance(result, list)
     assert 'Text Only' in result
     # No href, so plain string not dict
@@ -320,8 +321,8 @@ def test_body_text_separator_is_double_newline():
     """body_text paragraphs must be joined with '\\n\\n', not single newline."""
     extractor = _make_extractor()
     html = '<div><p>Para one.</p><p>Para two.</p><p>Para three.</p></div>'
-    soup = BeautifulSoup(html, 'html.parser')
-    result = extractor._extract_with_selector(soup, 'p', 'body_text')
+    sel = Selector(text=html)
+    result = extractor._extract_with_selector(sel, 'p', 'body_text')
     assert isinstance(result, str)
     assert result == 'Para one.\n\nPara two.\n\nPara three.'
 
@@ -330,8 +331,8 @@ def test_extract_selector_returns_none_when_empty_elements():
     """When selector matches no elements, must return None."""
     extractor = _make_extractor()
     html = '<div><p>Some content</p></div>'
-    soup = BeautifulSoup(html, 'html.parser')
-    result = extractor._extract_with_selector(soup, '.no-such-class', 'title')
+    sel = Selector(text=html)
+    result = extractor._extract_with_selector(sel, '.no-such-class', 'title')
     assert result is None
 
 
@@ -339,8 +340,8 @@ def test_related_content_empty_text_skipped():
     """Elements with no text should not appear in related_content results."""
     extractor = _make_extractor()
     html = '<div><a href="/link1">Text</a><a href="/link2"></a></div>'
-    soup = BeautifulSoup(html, 'html.parser')
-    result = extractor._extract_with_selector(soup, 'a', 'related_content')
+    sel = Selector(text=html)
+    result = extractor._extract_with_selector(sel, 'a', 'related_content')
     assert isinstance(result, list)
     # Only one link has text, so result should have 1 item
     assert len(result) == 1
@@ -360,3 +361,267 @@ def test_extract_uses_primary_not_fallback_when_primary_works():
     # Must use primary, not fallback
     assert result['title'] == 'Primary Title'
     assert result['title'] != 'Fallback Title'
+
+
+# ---------------------------------------------------------------------------
+# Phase 1: New Parsel-specific tests
+# ---------------------------------------------------------------------------
+
+
+def test_extract_uses_parsel_selector():
+    """ContentExtractor must use Parsel Selector, not BeautifulSoup."""
+    extractor = _make_extractor()
+    html = '<p>Hello</p>'
+    sel = Selector(text=html)
+    # _extract_with_selector accepts Selector instance
+    result = extractor._extract_with_selector(sel, 'p', 'title')
+    assert result == 'Hello'
+
+
+def test_body_text_joins_all_text_nodes():
+    """Nested spans must produce space-joined text via xpath .//text()."""
+    extractor = _make_extractor()
+    html = '<p><span>Hello</span><span>World</span></p>'
+    sel = Selector(text=html)
+    result = extractor._extract_with_selector(sel, 'p', 'body_text')
+    # Both span texts must appear, joined with a space
+    assert result is not None
+    assert 'Hello' in result
+    assert 'World' in result
+    assert result == 'Hello World'
+
+
+# ---------------------------------------------------------------------------
+# Phase 3: Level-aware dispatch (_resolve)
+# ---------------------------------------------------------------------------
+
+
+def test_resolve_css_entry_extracts():
+    from yosoi.models.selectors import SelectorEntry, SelectorLevel
+
+    extractor = _make_extractor()
+    html = '<h1>Title</h1>'
+    sel = Selector(text=html)
+    entry = SelectorEntry(strategy='css', value='h1')
+    result = extractor._resolve(sel, entry, 'title', SelectorLevel.CSS)
+    assert result == 'Title'
+
+
+def test_resolve_skips_entry_above_max_level():
+    from yosoi.models.selectors import SelectorEntry, SelectorLevel
+
+    extractor = _make_extractor()
+    html = '<h1>Title</h1>'
+    sel = Selector(text=html)
+    entry = SelectorEntry(strategy='xpath', value='//h1')
+    result = extractor._resolve(sel, entry, 'title', SelectorLevel.CSS)
+    assert result is None
+
+
+def test_resolve_xpath_extracts_text():
+    from yosoi.models.selectors import SelectorEntry, SelectorLevel
+
+    extractor = _make_extractor()
+    html = '<h1>XPath Title</h1>'
+    sel = Selector(text=html)
+    entry = SelectorEntry(strategy='xpath', value='//h1')
+    result = extractor._resolve(sel, entry, 'title', SelectorLevel.XPATH)
+    assert result == 'XPath Title'
+
+
+def test_extract_content_respects_max_level():
+    """XPath selectors above CSS ceiling must be skipped → field not extracted."""
+    from yosoi.models.selectors import SelectorEntry, SelectorLevel
+
+    class MyContract(Contract):
+        title: str = ys.Title()
+
+    extractor = _make_extractor(MyContract)
+    html = '<html><body><h1>Title</h1></body></html>'
+    # XPath entry should be skipped when max_level=CSS
+    xpath_entry = SelectorEntry(strategy='xpath', value='//h1')
+    selectors = {'title': {'primary': xpath_entry.model_dump()}}
+    result = extractor.extract_content_with_html('https://x.com', html, selectors, max_level=SelectorLevel.CSS)
+    assert result is None
+
+
+# ---------------------------------------------------------------------------
+# Coverage: lines 15, 20 — _coerce_entry returning None for unexpected types
+# ---------------------------------------------------------------------------
+
+
+def test_coerce_entry_returns_none_for_int():
+    """_coerce_entry with a non-str/dict/SelectorEntry value returns None."""
+    from yosoi.models.selectors import coerce_selector_entry as _coerce_entry
+
+    assert _coerce_entry(42) is None
+
+
+def test_coerce_entry_returns_none_for_list():
+    """_coerce_entry with a list value returns None."""
+    from yosoi.models.selectors import coerce_selector_entry as _coerce_entry
+
+    assert _coerce_entry([1, 2, 3]) is None
+
+
+def test_coerce_entry_returns_none_for_none():
+    """_coerce_entry with None returns None."""
+    from yosoi.models.selectors import coerce_selector_entry as _coerce_entry
+
+    assert _coerce_entry(None) is None
+
+
+def test_coerce_entry_returns_selector_entry_from_dict():
+    """_coerce_entry with a dict returns SelectorEntry."""
+    from yosoi.models.selectors import SelectorEntry
+    from yosoi.models.selectors import coerce_selector_entry as _coerce_entry
+
+    result = _coerce_entry({'value': 'h1.title', 'strategy': 'css'})
+    assert isinstance(result, SelectorEntry)
+    assert result.value == 'h1.title'
+
+
+def test_coerce_entry_returns_selector_entry_from_string():
+    """_coerce_entry with a non-empty string returns SelectorEntry."""
+    from yosoi.models.selectors import SelectorEntry
+    from yosoi.models.selectors import coerce_selector_entry as _coerce_entry
+
+    result = _coerce_entry('h1.title')
+    assert isinstance(result, SelectorEntry)
+    assert result.value == 'h1.title'
+
+
+def test_coerce_entry_returns_none_for_empty_string():
+    """_coerce_entry with an empty string returns None."""
+    from yosoi.models.selectors import coerce_selector_entry as _coerce_entry
+
+    assert _coerce_entry('') is None
+
+
+def test_coerce_entry_passthrough_selector_entry():
+    """_coerce_entry with a SelectorEntry passes through."""
+    from yosoi.models.selectors import SelectorEntry
+    from yosoi.models.selectors import coerce_selector_entry as _coerce_entry
+
+    entry = SelectorEntry(value='h1')
+    assert _coerce_entry(entry) is entry
+
+
+# ---------------------------------------------------------------------------
+# Coverage: line 104 — overridden field prints different message
+# ---------------------------------------------------------------------------
+
+
+def test_extract_content_overridden_field_message():
+    """When a field is in overridden_fields, a different message is printed."""
+    from yosoi.types.field import Field as YsField
+
+    class OverrideContract(Contract):
+        title: str = YsField(description='Title', selector='h1.title')  # type: ignore[assignment]
+
+    extractor = _make_extractor(OverrideContract)
+    html = '<html><body><h1 class="title">My Title</h1></body></html>'
+    selectors = {'title': {'primary': 'h1.title'}}
+    result = extractor.extract_content_with_html('https://x.com', html, selectors)
+    assert result is not None
+    assert result['title'] == 'My Title'
+
+
+# ---------------------------------------------------------------------------
+# Coverage: line 140 — regex/jsonld strategies return None
+# ---------------------------------------------------------------------------
+
+
+def test_resolve_regex_strategy_returns_none():
+    """Regex strategy is unsupported and returns None."""
+    from yosoi.models.selectors import SelectorEntry, SelectorLevel
+
+    extractor = _make_extractor()
+    html = '<h1>Title</h1>'
+    sel = Selector(text=html)
+    entry = SelectorEntry(strategy='regex', value=r'\d+')
+    result = extractor._resolve(sel, entry, 'title', SelectorLevel.REGEX)
+    assert result is None
+
+
+def test_resolve_jsonld_strategy_returns_none():
+    """JSONLD strategy is unsupported and returns None."""
+    from yosoi.models.selectors import SelectorEntry, SelectorLevel
+
+    extractor = _make_extractor()
+    html = '<h1>Title</h1>'
+    sel = Selector(text=html)
+    entry = SelectorEntry(strategy='jsonld', value='$.title')
+    result = extractor._resolve(sel, entry, 'title', SelectorLevel.JSONLD)
+    assert result is None
+
+
+# ---------------------------------------------------------------------------
+# Coverage: lines 190, 192-194 — xpath extraction exception handling
+# ---------------------------------------------------------------------------
+
+
+def test_extract_with_xpath_returns_none_for_no_match():
+    """XPath selector that matches nothing returns None."""
+    extractor = _make_extractor()
+    html = '<p>content</p>'
+    sel = Selector(text=html)
+    result = extractor._extract_with_xpath_selector(sel, '//h1', 'title')
+    assert result is None
+
+
+def test_extract_with_xpath_returns_text():
+    """XPath selector that matches returns extracted text."""
+    extractor = _make_extractor()
+    html = '<h1>XPath Title</h1>'
+    sel = Selector(text=html)
+    result = extractor._extract_with_xpath_selector(sel, '//h1', 'title')
+    assert result == 'XPath Title'
+
+
+def test_extract_with_xpath_exception_returns_none():
+    """Invalid XPath expression returns None instead of raising."""
+    extractor = _make_extractor()
+    html = '<p>content</p>'
+    sel = Selector(text=html)
+    # Invalid xpath syntax
+    result = extractor._extract_with_xpath_selector(sel, '///[[[invalid', 'title')
+    assert result is None
+
+
+# ---------------------------------------------------------------------------
+# Coverage: lines 248-258 — quick_extract async method
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_quick_extract_success(mocker):
+    """quick_extract fetches URL and extracts content."""
+    extractor = _make_extractor()
+    mock_response = mocker.MagicMock()
+    mock_response.text = '<html><body><h1>Hello World</h1></body></html>'
+
+    mock_client = mocker.AsyncMock()
+    mock_client.get.return_value = mock_response
+    mock_client.__aenter__ = mocker.AsyncMock(return_value=mock_client)
+    mock_client.__aexit__ = mocker.AsyncMock(return_value=False)
+    mocker.patch('httpx.AsyncClient', return_value=mock_client)
+
+    result = await extractor.quick_extract('https://example.com', 'h1', 'text')
+    assert result == 'Hello World'
+
+
+@pytest.mark.asyncio
+async def test_quick_extract_returns_none_on_http_error(mocker):
+    """quick_extract returns None when HTTP error occurs."""
+    import httpx
+
+    extractor = _make_extractor()
+    mock_client = mocker.AsyncMock()
+    mock_client.get.side_effect = httpx.ConnectError('failed')
+    mock_client.__aenter__ = mocker.AsyncMock(return_value=mock_client)
+    mock_client.__aexit__ = mocker.AsyncMock(return_value=False)
+    mocker.patch('httpx.AsyncClient', return_value=mock_client)
+
+    result = await extractor.quick_extract('https://example.com', 'h1')
+    assert result is None

@@ -5,6 +5,7 @@ Handles saving of HTML and selectors for debugging purposes.
 
 import json
 from pathlib import Path
+from typing import Any
 from urllib.parse import urlparse
 
 from rich.console import Console
@@ -53,7 +54,7 @@ class DebugManager:
         base = f'{parsed.netloc}{safe_path}'
         return f'{base}.{suffix}'
 
-    def save_debug_html(self, url: str, html: str):
+    def save_debug_html(self, url: str, html: str) -> None:
         """Save cleaned HTML to file for debugging.
 
         Args:
@@ -77,7 +78,7 @@ class DebugManager:
         except OSError as e:
             self.console.print(f'[warning]Failed to save debug HTML: {e}[/warning]')
 
-    def save_debug_selectors(self, url: str, selectors: dict):
+    def save_debug_selectors(self, url: str, selectors: dict[str, Any]) -> None:
         """Save discovered selectors to file for debugging.
 
         Args:

@@ -4,6 +4,7 @@
 [![Actions status](https://github.com/CascadingLabs/Yosoi/actions/workflows/CI.yaml/badge.svg)](https://github.com/CascadingLabs/Yosoi/actions)
 [![image](https://img.shields.io/pypi/pyversions/yosoi.svg)](https://pypi.python.org/pypi/yosoi)
 [![image](https://img.shields.io/pypi/v/yosoi.svg)](https://pypi.python.org/pypi/yosoi)
+[![codecov](https://codecov.io/gh/CascadingLabs/Yosoi/graph/badge.svg?token=DFDI574EEA)](https://codecov.io/gh/CascadingLabs/Yosoi)
 <!-- [![image](https://img.shields.io/pypi/l/yosoi.svg)](https://pypi.python.org/pypi/yosoi) -->
 
 # Yosoi - AI-Powered CSS Selector Discover

@@ -30,6 +30,7 @@ dependencies = [
   "httpx>=0.28.1",
   "logfire>=4.16",
   "lxml>=6.0.2",
+  "parsel>=1.9",
   "pydantic>=2",
   "pydantic-ai>=0.0.16",
   "python-dotenv>=1.2.1",
@@ -56,6 +57,8 @@ dev = [
   "prek>=0.2.25",
   "ruff>=0.9.7",
   "types-beautifulsoup4>=4.12",
+  "types-dateparser>=1.3.0.20260211",
+  "vulture>=2.15",
 ]
 tests = [
   "deepeval>=3.8.4",
@@ -171,34 +174,45 @@ markers = [
 ]
 
 [tool.coverage.report]
-exclude_lines = [ "pragma: no cover", "if TYPE_CHECKING:", "def __repr__" ]
+exclude_lines = [
+  "pragma: no cover",
+  "if TYPE_CHECKING:",
+  "def __repr__",
+  "if __name__ == .__main__.",
+  "raise NotImplementedError",
+  "\\.\\.\\.",                 # Protocol method bodies (just `...`)
+]
 show_missing = true
-fail_under = 80
+fail_under = 93
 
 [tool.coverage.run]
 source = [ "yosoi" ]
-omit = [ "yosoi/__main__.py" ]
+omit = [
+  "yosoi/__main__.py",
+  "yosoi/cli/__main__.py",
+  "yosoi/*/__init__.py",
+  "yosoi/*/*/__init__.py",
+]
 
 [tool.mypy]
 python_version = "3.10"
-strict = false
+strict = true
 ignore_missing_imports = true
 warn_unused_ignores = false
 exclude = [
-  "tests/",
   "mutants/",
-  "yosoi/utils/",
 ]
 
 [tool.mutmut]
 paths_to_mutate = [ "yosoi/" ]
 tests_dir = [ "tests/unit/" ]
+debug = true
 
 [tool.poe.tasks]
 eval = 'uv run pytest -m "eval"'                                                          # run deepeval tests
 integration = "uv run pytest -m 'integration'"                                            # run integration tests
 unit = "uv run pytest -m 'unit'"                                                          # run unit tests
-ci-test = "uv run pytest -m 'not eval'"
+ci-test = "uv run pytest -m 'not eval' --cov=yosoi --cov-branch --cov-report=xml"
 ci-check = "uv run prek run --all-files --hook-stage manual --show-diff-on-failure"
 ci-format = "uv run ruff check --fix"
 coverage = "uv run pytest --cov=yosoi --cov-report=term-missing --cov-report=html tests/"

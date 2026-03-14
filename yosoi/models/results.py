@@ -121,6 +121,9 @@ class FieldVerificationResult(BaseModel):
     status: Literal['verified', 'failed'] = Field(description='Verification status')
     working_level: str | None = Field(default=None, description='Which level worked')
     selector: str | None = Field(default=None, description='Selector that worked')
+    selector_level: Literal['css', 'xpath', 'regex', 'jsonld'] | None = Field(
+        default=None, description='Strategy level that worked (css/xpath/regex/jsonld)'
+    )
     failed_selectors: list[SelectorFailure] = Field(default_factory=list, description='Failed selectors with reasons')
 
 
@@ -147,3 +150,12 @@ class VerificationResult(BaseModel):
     def verified_fields(self) -> list[str]:
         """Names of fields that passed verification."""
         return [name for name, result in self.results.items() if result.status == 'verified']
+
+    @property
+    def level_distribution(self) -> dict[str, int]:
+        """Count of verified fields by selector strategy level."""
+        dist: dict[str, int] = {}
+        for r in self.results.values():
+            if r.status == 'verified' and r.selector_level:
+                dist[r.selector_level] = dist.get(r.selector_level, 0) + 1
+        return dist

@@ -14,6 +14,7 @@ import pytest
 
 from yosoi.core.discovery.agent import SelectorDiscovery
 from yosoi.core.discovery.config import LLMConfig
+from yosoi.core.discovery.yosoi_agent import YosoiAgent
 from yosoi.core.tasks import (
     _pipeline_config,
     configure_broker,
@@ -239,7 +240,8 @@ class TestAgentRunInsideTask:
 
     async def test_discovery_agent_async_run(self, mocker, mock_selectors):
         """SelectorDiscovery.discover_selectors() calls agent.run() correctly in async context."""
-        mock_agent = mocker.Mock()
+        mock_agent = mocker.Mock(spec=YosoiAgent)
+        mock_agent._contract = NewsArticle
         mock_agent.run = mocker.AsyncMock(
             return_value=mocker.Mock(output=mock_selectors),
         )
@@ -261,7 +263,8 @@ class TestAgentRunInsideTask:
         discoveries = []
 
         for _ in range(3):
-            agent = mocker.Mock()
+            agent = mocker.Mock(spec=YosoiAgent)
+            agent._contract = NewsArticle
             agent.run = mocker.AsyncMock(
                 return_value=mocker.Mock(output=mock_selectors),
             )
@@ -378,7 +381,8 @@ class TestEventLoopSafety:
 
     async def test_agent_run_is_properly_awaited(self, mocker, mock_selectors):
         """Ensure agent.run() is awaited, not just called (returns coroutine)."""
-        mock_agent = mocker.Mock()
+        mock_agent = mocker.Mock(spec=YosoiAgent)
+        mock_agent._contract = NewsArticle
         mock_agent.run = mocker.AsyncMock(
             return_value=mocker.Mock(output=mock_selectors),
         )

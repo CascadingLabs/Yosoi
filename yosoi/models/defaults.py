@@ -15,7 +15,7 @@ class NewsArticle(Contract):
     author: str = ys.Author(description='Author name (author/byline classes or links)')
     date: str = ys.Datetime(description='Publication date (time tags or date/published classes)')
     body_text: str = ys.BodyText(description='Article paragraphs (p tags in article, NOT sidebars/ads)')
-    related_content: str = Field(description='Related article links (aside/sidebar sections)')
+    related_content: str = ys.RelatedContent(description='Related article links (aside/sidebar sections)')
 
 
 class Video(Contract):

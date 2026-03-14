@@ -28,7 +28,7 @@ class SelectorStorage:
         self.storage_dir = str(init_yosoi(storage_dir))
         self.content_dir = str(init_yosoi(content_dir))
 
-    def save_selectors(self, url: str, selectors: dict) -> str:
+    def save_selectors(self, url: str, selectors: dict[str, Any]) -> str:
         """Save selectors to a JSON file.
 
         Selectors are always saved as JSON for machine readability and reuse.
@@ -55,7 +55,7 @@ class SelectorStorage:
         print(f'\n✓ Saved selectors to: {filepath}')
         return filepath
 
-    def load_selectors(self, domain: str) -> dict | None:
+    def load_selectors(self, domain: str) -> dict[str, Any] | None:
         """Load selectors from a JSON file.
 
         Args:
@@ -93,7 +93,7 @@ class SelectorStorage:
         filepath = self._get_filepath(domain)
         return os.path.exists(filepath)
 
-    def save_content(self, url: str, content: dict, output_format: str = 'json') -> str:
+    def save_content(self, url: str, content: dict[str, Any], output_format: str = 'json') -> str:
         """Save extracted content to a file in the specified format.
 
         Args:
@@ -116,7 +116,7 @@ class SelectorStorage:
         print(f'✓ Saved content to: {filepath}')
         return filepath
 
-    def load_content(self, url: str) -> dict | None:
+    def load_content(self, url: str) -> dict[str, Any] | None:
         """Load extracted content from a JSON file.
 
         Args:
@@ -200,7 +200,7 @@ class SelectorStorage:
 
         return summary
 
-    def _format_selectors(self, selectors: dict) -> dict[str, dict[str, str]]:
+    def _format_selectors(self, selectors: dict[str, Any]) -> dict[str, dict[str, str]]:
         """Format selectors for storage.
 
         Args:
@@ -271,11 +271,12 @@ class SelectorStorage:
     def _get_content_filepath(self, url: str, output_format: str = 'json') -> str:
         """Get filepath for a URL's extracted content.
 
-        Creates a safe filename from the full URL including path.
+        Accumulating formats (jsonl, csv, xlsx, parquet) share a single results file
+        per domain. Per-URL formats (json, markdown) produce one file per URL.
 
         Args:
             url: Full URL
-            output_format: Output format ('json' or 'markdown'). Defaults to 'json'.
+            output_format: Output format. Defaults to 'json'.
 
         Returns:
             Full file path for the URL's content file.
@@ -283,26 +284,33 @@ class SelectorStorage:
         """
         import hashlib
 
-        # Parse URL
+        _ACCUMULATING = {'jsonl', 'ndjson', 'csv', 'xlsx', 'parquet'}
+        _EXTENSIONS = {
+            'json': 'json',
+            'markdown': 'md',
+            'jsonl': 'jsonl',
+            'ndjson': 'jsonl',
+            'csv': 'csv',
+            'xlsx': 'xlsx',
+            'parquet': 'parquet',
+        }
+
         parsed = urlparse(url)
         domain = parsed.netloc.replace('www.', '')
-
-        # Create safe domain directory
         safe_domain = domain.replace('.', '_').replace('/', '_')
+        ext = _EXTENSIONS.get(output_format, 'json')
         domain_dir = os.path.join(self.content_dir, safe_domain)
 
-        # Determine file extension
-        extension = 'md' if output_format == 'markdown' else 'json'
+        if output_format in _ACCUMULATING:
+            return os.path.join(domain_dir, f'results.{ext}')
 
-        # Create filename from URL path or use hash for homepage
+        # Per-URL (json, markdown) — derive filename from URL path
         if parsed.path and parsed.path != '/':
-            # Use path for filename (sanitized)
             path_parts = parsed.path.strip('/').replace('/', '_')
-            filename = f'{path_parts[:100]}.{extension}'
+            filename = f'{path_parts[:100]}.{ext}'
         else:
-            # Homepage - use a hash of the full URL
             url_hash = hashlib.md5(url.encode()).hexdigest()[:8]
-            filename = f'homepage_{url_hash}.{extension}'
+            filename = f'homepage_{url_hash}.{ext}'
 
         return os.path.join(domain_dir, filename)
 

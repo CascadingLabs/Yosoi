@@ -5,7 +5,7 @@ from __future__ import annotations
 import datetime as dt_module
 from typing import Any
 
-import dateparser  # type: ignore[import-untyped]
+import dateparser
 
 from yosoi.types.registry import register_coercion
 
@@ -38,7 +38,7 @@ def Datetime(v: object, config: dict[str, Any], source_url: str | None = None) -
     if assume_utc:
         settings['TIMEZONE'] = 'UTC'
 
-    parsed = dateparser.parse(raw, settings=settings)
+    parsed: dt_module.datetime | None = dateparser.parse(raw, settings=settings)
     if not parsed:
         raise ValueError(f'Could not parse datetime from string: {raw!r}')
 
@@ -46,5 +46,5 @@ def Datetime(v: object, config: dict[str, Any], source_url: str | None = None) -
         raise ValueError(f'Temporal hallucination: extracted date {parsed} is in the future')
 
     if as_iso:
-        return parsed.isoformat()  # type: ignore[no-any-return]
-    return parsed  # type: ignore[no-any-return]
+        return parsed.isoformat()
+    return parsed

@@ -31,8 +31,11 @@ def _make_pipeline_stub(mocker, contract=None):
     stub.tracker = mocker.MagicMock()
     stub.debug = mocker.MagicMock()
     stub.debug_mode = False
-    stub.output_format = 'json'
+    stub.output_formats = ['json']
     stub.force = False
+    from yosoi.models.selectors import SelectorLevel
+
+    stub.selector_level = SelectorLevel.CSS
     return stub
 
 
@@ -270,11 +273,11 @@ def test_save_and_track_saves_selectors_and_content(mocker):
         verified={'title': {'primary': 'h1'}},
         extracted={'title': 'Book'},
         used_llm=True,
-        output_format='json',
+        output_format=['json'],
     )
     stub.storage.save_selectors.assert_called_once()
     stub.storage.save_content.assert_called_once()
-    stub.tracker.record_url.assert_called_once_with('https://x.com', used_llm=True)
+    stub.tracker.record_url.assert_called_once_with('https://x.com', used_llm=True, level_distribution=None)
 
 
 def test_save_and_track_skips_content_when_none(mocker):
@@ -287,7 +290,7 @@ def test_save_and_track_skips_content_when_none(mocker):
         verified={'title': {'primary': 'h1'}},
         extracted=None,
         used_llm=True,
-        output_format='json',
+        output_format=['json'],
     )
     stub.storage.save_selectors.assert_called_once()
     stub.storage.save_content.assert_not_called()
@@ -302,7 +305,7 @@ def test_track_cached_success_calls_record_url(mocker):
     stub = _make_pipeline_stub(mocker)
     stub.tracker.record_url.return_value = {'llm_calls': 0, 'url_count': 3}
     Pipeline._track_cached_success(stub, 'https://x.com', 'x.com')
-    stub.tracker.record_url.assert_called_once_with('https://x.com', used_llm=False)
+    stub.tracker.record_url.assert_called_once_with('https://x.com', used_llm=False, level_distribution=None)
 
 
 # ---------------------------------------------------------------------------
@@ -504,6 +507,67 @@ async def test_discover_returns_none_when_all_ai_attempts_fail(mocker):
     )
 
     selectors, used_llm = await Pipeline._discover(stub, 'https://x.com', '<html/>', max_retries=1)
+    assert selectors is None
+    assert used_llm is False
+
+
+# ---------------------------------------------------------------------------
+# _discover_with_escalation
+# ---------------------------------------------------------------------------
+
+
+async def test_discover_with_escalation_succeeds_at_css(mocker):
+    """When _discover succeeds at CSS, no escalation occurs."""
+    stub = _make_pipeline_stub(mocker)
+    mocker.patch.object(Pipeline, '_discover', return_value=({'title': {'primary': 'h1'}}, True))
+    selectors, used_llm = await Pipeline._discover_with_escalation(stub, 'https://x.com', '<html/>')
+    assert selectors == {'title': {'primary': 'h1'}}
+    assert used_llm is True
+    # _discover called once only (CSS level)
+    Pipeline._discover.assert_called_once()
+
+
+async def test_discover_with_escalation_retries_at_xpath_when_css_fails(mocker):
+    """When CSS discovery fails, escalates to XPATH if selector_level allows it."""
+    from yosoi.models.selectors import SelectorLevel
+
+    stub = _make_pipeline_stub(mocker)
+    stub.selector_level = SelectorLevel.XPATH
+    mocker.patch.object(
+        Pipeline,
+        '_discover',
+        side_effect=[
+            (None, False),  # CSS fails
+            ({'title': {'primary': '//h1'}}, True),  # XPATH succeeds
+        ],
+    )
+    selectors, _used_llm = await Pipeline._discover_with_escalation(stub, 'https://x.com', '<html/>')
+    assert selectors is not None
+    assert Pipeline._discover.call_count == 2
+    # discovery target_level updated to XPATH before second call
+    assert stub.discovery.target_level == SelectorLevel.XPATH
+
+
+async def test_discover_with_escalation_does_not_retry_beyond_max_level(mocker):
+    """Does not escalate past self.selector_level even if all attempts fail."""
+    from yosoi.models.selectors import SelectorLevel
+
+    stub = _make_pipeline_stub(mocker)
+    stub.selector_level = SelectorLevel.CSS  # only CSS allowed
+    mocker.patch.object(Pipeline, '_discover', return_value=(None, False))
+    selectors, _used_llm = await Pipeline._discover_with_escalation(stub, 'https://x.com', '<html/>')
+    assert selectors is None
+    Pipeline._discover.assert_called_once()  # no escalation beyond CSS
+
+
+async def test_discover_with_escalation_returns_none_when_all_levels_fail(mocker):
+    """Returns None when every level fails."""
+    from yosoi.models.selectors import SelectorLevel
+
+    stub = _make_pipeline_stub(mocker)
+    stub.selector_level = SelectorLevel.XPATH
+    mocker.patch.object(Pipeline, '_discover', return_value=(None, False))
+    selectors, used_llm = await Pipeline._discover_with_escalation(stub, 'https://x.com', '<html/>')
     assert selectors is None
     assert used_llm is False
 
@@ -792,7 +856,9 @@ def test_verify_calls_verifier_with_correct_args(mocker):
     vr = _make_verification_result(True, ['title'])
     stub.verifier.verify.return_value = vr
     Pipeline._verify(stub, 'https://x.com', '<html>test</html>', selectors, skip_verification=False)
-    stub.verifier.verify.assert_called_once_with('<html>test</html>', selectors)
+    from yosoi.models.selectors import SelectorLevel
+
+    stub.verifier.verify.assert_called_once_with('<html>test</html>', selectors, max_level=SelectorLevel.CSS)
 
 
 def test_verify_returns_only_verified_fields(mocker):
@@ -839,9 +905,9 @@ def test_save_and_track_calls_record_url_with_used_llm_true(mocker):
         verified={'title': {'primary': 'h1'}},
         extracted=None,
         used_llm=True,
-        output_format='json',
+        output_format=['json'],
     )
-    stub.tracker.record_url.assert_called_once_with('https://x.com', used_llm=True)
+    stub.tracker.record_url.assert_called_once_with('https://x.com', used_llm=True, level_distribution=None)
 
 
 def test_save_and_track_calls_record_url_with_used_llm_false(mocker):
@@ -855,9 +921,9 @@ def test_save_and_track_calls_record_url_with_used_llm_false(mocker):
         verified={},
         extracted=None,
         used_llm=False,
-        output_format='json',
+        output_format=['json'],
     )
-    stub.tracker.record_url.assert_called_once_with('https://x.com', used_llm=False)
+    stub.tracker.record_url.assert_called_once_with('https://x.com', used_llm=False, level_distribution=None)
 
 
 def test_save_and_track_saves_content_with_output_format(mocker):
@@ -871,7 +937,7 @@ def test_save_and_track_saves_content_with_output_format(mocker):
         verified={'title': {'primary': 'h1'}},
         extracted={'title': 'Book'},
         used_llm=True,
-        output_format='markdown',
+        output_format=['markdown'],
     )
     stub.storage.save_content.assert_called_once_with('https://x.com', {'title': 'Book'}, 'markdown')
 
@@ -886,7 +952,7 @@ def test_track_cached_success_calls_record_url_used_llm_false(mocker):
     stub = _make_pipeline_stub(mocker)
     stub.tracker.record_url.return_value = {'llm_calls': 0, 'url_count': 1}
     Pipeline._track_cached_success(stub, 'https://example.com', 'example.com')
-    stub.tracker.record_url.assert_called_once_with('https://example.com', used_llm=False)
+    stub.tracker.record_url.assert_called_once_with('https://example.com', used_llm=False, level_distribution=None)
 
 
 # ---------------------------------------------------------------------------
@@ -1003,8 +1069,10 @@ def test_extract_calls_extractor_with_correct_args(mocker):
     stub = _make_pipeline_stub(mocker)
     stub.extractor.extract_content_with_html.return_value = {'title': 'Book'}
     Pipeline._extract(stub, 'https://x.com', '<html>content</html>', {'title': {'primary': 'h1'}})
+    from yosoi.models.selectors import SelectorLevel
+
     stub.extractor.extract_content_with_html.assert_called_once_with(
-        'https://x.com', '<html>content</html>', {'title': {'primary': 'h1'}}
+        'https://x.com', '<html>content</html>', {'title': {'primary': 'h1'}}, max_level=SelectorLevel.CSS
     )
 
 
@@ -1045,7 +1113,7 @@ def test_print_partial_failure_shows_failed_field_names(mocker):
 async def test_process_url_uses_pipeline_format_when_output_format_none(mocker):
     """When output_format=None, process_url must use pipeline's output_format."""
     stub = _make_pipeline_stub(mocker)
-    stub.output_format = 'markdown'
+    stub.output_formats = ['markdown']
     mocker.patch.object(Pipeline, 'normalize_url', return_value='https://x.com')
     mocker.patch.object(Pipeline, '_extract_domain', return_value='x.com')
     mocker.patch.object(Pipeline, '_create_fetcher', return_value=mocker.MagicMock())

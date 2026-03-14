@@ -51,7 +51,7 @@ def test_get_tracking_path(monkeypatch, tmp_path):
     monkeypatch.setattr(yosoi.utils.files, 'get_project_root', lambda: project_root)
 
     tracking_path = get_tracking_path()
-    assert tracking_path == project_root / '.yosoi' / 'llm_tracking.json'
+    assert tracking_path == project_root / '.yosoi' / 'stats.json'
 
 
 def test_is_initialized(monkeypatch, tmp_path):
@@ -70,7 +70,7 @@ def test_is_initialized(monkeypatch, tmp_path):
     assert yosoi_dir.is_dir()
     assert (yosoi_dir / 'selectors').is_dir()
     assert (yosoi_dir / 'debug').is_dir()
-    assert (yosoi_dir / 'llm_tracking.json').exists()
+    assert (yosoi_dir / 'stats.json').exists()
     assert (yosoi_dir / '.gitignore').exists()
     assert (yosoi_dir / '.gitignore').read_text() == '# Automatically created by yosoi\n*\n'
 
@@ -102,12 +102,12 @@ def test_init_yosoi_from_subdirs(monkeypatch, tmp_path):
 
 
 def test_init_yosoi_migrates_tracking(monkeypatch, tmp_path):
-    """Test that init_yosoi moves llm_tracking.json from root to .yosoi."""
+    """Test that init_yosoi moves stats.json from root to .yosoi."""
     project_root = tmp_path / 'project_migration'
     project_root.mkdir()
     (project_root / 'pyproject.toml').touch()
 
-    root_tracking = project_root / 'llm_tracking.json'
+    root_tracking = project_root / 'stats.json'
     initial_data = {'test.com': {'llm_calls': 5, 'url_count': 10}}
     root_tracking.write_text(json.dumps(initial_data))
 
@@ -116,7 +116,7 @@ def test_init_yosoi_migrates_tracking(monkeypatch, tmp_path):
     init_yosoi()
 
     assert not root_tracking.exists()
-    yosoi_tracking = project_root / '.yosoi' / 'llm_tracking.json'
+    yosoi_tracking = project_root / '.yosoi' / 'stats.json'
     assert yosoi_tracking.exists()
 
     with open(yosoi_tracking) as f:
@@ -165,7 +165,7 @@ def test_init_yosoi_creates_empty_tracking_json(monkeypatch, tmp_path):
 
     init_yosoi()
 
-    tracking_file = project_root / '.yosoi' / 'llm_tracking.json'
+    tracking_file = project_root / '.yosoi' / 'stats.json'
     assert tracking_file.exists()
     with open(tracking_file) as f:
         data = json.load(f)
@@ -183,7 +183,7 @@ def test_init_yosoi_does_not_overwrite_existing_tracking(monkeypatch, tmp_path):
     # Create yosoi dir first with data
     yosoi_dir = project_root / '.yosoi'
     yosoi_dir.mkdir()
-    tracking_file = yosoi_dir / 'llm_tracking.json'
+    tracking_file = yosoi_dir / 'stats.json'
     existing_data = {'example.com': {'llm_calls': 3, 'url_count': 5}}
     tracking_file.write_text(json.dumps(existing_data))
 
@@ -222,19 +222,17 @@ def test_init_yosoi_returns_storage_dir_path(monkeypatch, tmp_path):
     assert result == project_root / '.yosoi' / 'mystore'
 
 
-def test_is_initialized_requires_both_dir_and_tracking(monkeypatch, tmp_path):
+def test_is_initialized_creates_tracking_file_if_missing(monkeypatch, tmp_path):
+    """is_initialized auto-creates stats.json via ensure_tracking_file."""
     project_root = tmp_path / 'project_partial'
     project_root.mkdir()
 
     monkeypatch.setattr(yosoi.utils.files, 'get_project_root', lambda: project_root)
 
-    # Create .yosoi dir but no tracking file
+    # Create .yosoi dir but no tracking file — is_initialized creates it
     (project_root / '.yosoi').mkdir()
-    assert not is_initialized()
-
-    # Now add the tracking file
-    (project_root / '.yosoi' / 'llm_tracking.json').write_text('{}')
     assert is_initialized()
+    assert (project_root / '.yosoi' / 'stats.json').exists()
 
 
 def test_get_project_root_finds_git_marker(monkeypatch, tmp_path):
@@ -306,15 +304,15 @@ def test_init_yosoi_debug_dir_name_is_debug(monkeypatch, tmp_path):
     assert not (project_root / '.yosoi' / 'debug_html').exists()
 
 
-def test_init_yosoi_tracking_file_name_is_llm_tracking_json(monkeypatch, tmp_path):
-    """Tracking file must be 'llm_tracking.json', not some other name."""
+def test_init_yosoi_tracking_file_name_is_stats_json(monkeypatch, tmp_path):
+    """Tracking file must be 'stats.json', not some other name."""
     project_root = tmp_path / 'proj_tracking_name'
     project_root.mkdir()
 
     monkeypatch.setattr(yosoi.utils.files, 'get_project_root', lambda: project_root)
 
     init_yosoi()
-    tracking_file = project_root / '.yosoi' / 'llm_tracking.json'
+    tracking_file = project_root / '.yosoi' / 'stats.json'
     assert tracking_file.exists()
 
 
@@ -338,7 +336,7 @@ def test_init_yosoi_tracking_file_contains_empty_dict(monkeypatch, tmp_path):
     monkeypatch.setattr(yosoi.utils.files, 'get_project_root', lambda: project_root)
 
     init_yosoi()
-    tracking_file = project_root / '.yosoi' / 'llm_tracking.json'
+    tracking_file = project_root / '.yosoi' / 'stats.json'
     data = json.loads(tracking_file.read_text())
     assert data == {}
     assert isinstance(data, dict)
@@ -398,11 +396,11 @@ def test_init_yosoi_gitignore_second_line_is_star(monkeypatch, tmp_path):
 
 
 def test_init_yosoi_migration_moves_file_not_copies(monkeypatch, tmp_path):
-    """When migrating llm_tracking.json, original file must be removed."""
+    """When migrating stats.json, original file must be removed."""
     project_root = tmp_path / 'proj_move_check'
     project_root.mkdir()
 
-    root_tracking = project_root / 'llm_tracking.json'
+    root_tracking = project_root / 'stats.json'
     root_tracking.write_text('{}')
 
     monkeypatch.setattr(yosoi.utils.files, 'get_project_root', lambda: project_root)
@@ -412,18 +410,18 @@ def test_init_yosoi_migration_moves_file_not_copies(monkeypatch, tmp_path):
     # Original should be gone (moved, not copied)
     assert not root_tracking.exists()
     # New location should exist
-    assert (project_root / '.yosoi' / 'llm_tracking.json').exists()
+    assert (project_root / '.yosoi' / 'stats.json').exists()
 
 
-def test_is_initialized_requires_tracking_file(monkeypatch, tmp_path):
-    """is_initialized returns False if .yosoi exists but tracking file doesn't."""
+def test_is_initialized_auto_creates_tracking_when_dir_exists(monkeypatch, tmp_path):
+    """is_initialized returns True when .yosoi exists (auto-creates stats.json)."""
     project_root = tmp_path / 'proj_notinit'
     project_root.mkdir()
 
     monkeypatch.setattr(yosoi.utils.files, 'get_project_root', lambda: project_root)
 
     (project_root / '.yosoi').mkdir()
-    assert not is_initialized()
+    assert is_initialized()  # ensure_tracking_file creates stats.json
 
 
 def test_get_debug_path_returns_exact_path(monkeypatch, tmp_path):
@@ -438,14 +436,14 @@ def test_get_debug_path_returns_exact_path(monkeypatch, tmp_path):
 
 
 def test_get_tracking_path_returns_exact_path(monkeypatch, tmp_path):
-    """get_tracking_path must return exactly root / '.yosoi' / 'llm_tracking.json'."""
+    """get_tracking_path must return exactly root / '.yosoi' / 'stats.json'."""
     project_root = tmp_path / 'proj_tracking_path'
     project_root.mkdir()
 
     monkeypatch.setattr(yosoi.utils.files, 'get_project_root', lambda: project_root)
 
     tracking_path = get_tracking_path()
-    assert tracking_path == project_root / '.yosoi' / 'llm_tracking.json'
+    assert tracking_path == project_root / '.yosoi' / 'stats.json'
 
 
 def test_get_logs_path_returns_exact_path(monkeypatch, tmp_path):

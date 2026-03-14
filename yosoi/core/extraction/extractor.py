@@ -1,10 +1,10 @@
 """Extracts content from web pages using validated selectors."""
 
-from bs4 import BeautifulSoup
+from parsel import Selector, SelectorList
 from rich.console import Console
-from soupsieve.util import SelectorSyntaxError
 
 from yosoi.models.contract import Contract
+from yosoi.models.selectors import SelectorEntry, SelectorLevel, coerce_selector_entry
 
 
 class ContentExtractor:
@@ -28,12 +28,20 @@ class ContentExtractor:
         self._overridden_fields: frozenset[str] = (
             frozenset(contract.get_selector_overrides().keys()) if contract is not None else frozenset()
         )
+        self._field_modes: dict[str, str] = {}
+        if contract is not None:
+            for name, fi in contract.model_fields.items():
+                extra = fi.json_schema_extra
+                ytype = extra.get('yosoi_type') if isinstance(extra, dict) else None
+                if isinstance(ytype, str) and ytype in ('body_text', 'related_content'):
+                    self._field_modes[name] = ytype
 
     def extract_content_with_html(
         self,
         _url: str,
         html: str,
         validated_selectors: dict[str, dict[str, str]],
+        max_level: SelectorLevel = SelectorLevel.CSS,
     ) -> dict[str, str | list[str | dict[str, str]]] | None:
         """Extract content using validated selectors and provided HTML.
 
@@ -41,6 +49,7 @@ class ContentExtractor:
             _url: URL the content is being extracted from (unused, for API consistency)
             html: Cleaned HTML content to extract from
             validated_selectors: Dictionary of validated selectors (primary, fallback, tertiary)
+            max_level: Maximum selector strategy level to use. Defaults to CSS.
 
         Returns:
             Dictionary of extracted content by field name, or None if extraction failed.
@@ -49,42 +58,33 @@ class ContentExtractor:
         """
         self.console.print(f'  ↻ Extracting {len(self.expected_fields)} fields using validated selectors...')
 
-        soup = BeautifulSoup(html, 'lxml')
+        sel = Selector(text=html)
         extracted = {}
 
         for field_name in self.expected_fields:
-            # Check if selector exists for this field
             if field_name not in validated_selectors:
                 self.console.print(f'  ✗ {field_name}: no selector found')
                 continue
 
             field_selectors = validated_selectors[field_name]
 
-            # Get selectors in priority order
-            primary = field_selectors.get('primary')
-            fallback = field_selectors.get('fallback')
-            tertiary = field_selectors.get('tertiary')
+            candidates: list[tuple[str, SelectorEntry | None]] = [
+                ('primary', coerce_selector_entry(field_selectors.get('primary'))),
+                ('fallback', coerce_selector_entry(field_selectors.get('fallback'))),
+                ('tertiary', coerce_selector_entry(field_selectors.get('tertiary'))),
+            ]
 
-            # Try each selector in priority order
             content = None
             selector_used = None
 
-            if primary:
-                content = self._extract_with_selector(soup, primary, field_name)
+            for level_name, entry in candidates:
+                if entry is None:
+                    continue
+                content = self._resolve(sel, entry, field_name, max_level)
                 if content:
-                    selector_used = 'primary'
+                    selector_used = level_name
+                    break
 
-            if not content and fallback:
-                content = self._extract_with_selector(soup, fallback, field_name)
-                if content:
-                    selector_used = 'fallback'
-
-            if not content and tertiary:
-                content = self._extract_with_selector(soup, tertiary, field_name)
-                if content:
-                    selector_used = 'tertiary'
-
-            # Store extracted content
             if content:
                 extracted[field_name] = content
                 if field_name in self._overridden_fields:
@@ -94,27 +94,50 @@ class ContentExtractor:
             else:
                 self.console.print(f'  ✗ {field_name}: no content found with any selector')
 
-        # Summary
         total = len(self.expected_fields)
         extracted_count = len(extracted)
         self.console.print(f'  ↻ Summary: {extracted_count}/{total} fields extracted successfully')
 
-        # Return extracted content (or None if nothing extracted)
-        if extracted:
-            return extracted
-        return None
+        return extracted if extracted else None
+
+    def _resolve(
+        self,
+        sel: Selector,
+        entry: SelectorEntry,
+        field_name: str,
+        max_level: SelectorLevel,
+    ) -> str | list[str | dict[str, str]] | None:
+        """Resolve content for a single SelectorEntry, respecting max_level.
+
+        Args:
+            sel: Parsel Selector for the parsed HTML
+            entry: Selector entry with strategy and value
+            field_name: Name of the field (determines extraction strategy)
+            max_level: Entries with level > max_level are skipped
+
+        Returns:
+            Extracted content, or None if skipped or not found.
+
+        """
+        if entry.level > max_level:
+            return None
+        if entry.strategy == 'xpath':
+            return self._extract_with_xpath_selector(sel, entry.value, field_name)
+        if entry.strategy in ('regex', 'jsonld'):
+            return None  # unsupported strategies fail closed
+        return self._extract_with_selector(sel, entry.value, field_name)
 
     def _extract_with_selector(
         self,
-        soup: BeautifulSoup,
+        sel: Selector,
         selector: str,
         field_name: str,
     ) -> str | list[str | dict[str, str]] | None:
-        """Extract content using a single selector.
+        """Extract content using a CSS selector.
 
         Args:
-            soup: BeautifulSoup parsed HTML
-            selector: CSS selector to use
+            sel: Parsel Selector for the parsed HTML
+            selector: CSS selector string
             field_name: Name of the field being extracted (determines extraction strategy)
 
         Returns:
@@ -123,38 +146,75 @@ class ContentExtractor:
 
         """
         try:
-            elements = soup.select(selector)
+            elements = sel.css(selector)
             if not elements:
                 return None
-
-            # Different extraction strategies based on field type
-            if field_name == 'body_text':
-                # Extract all paragraphs and join with newlines
-                paragraphs = [
-                    elem.get_text(separator=' ', strip=True) for elem in elements if elem.get_text(strip=True)
-                ]
-                return '\n\n'.join(paragraphs) if paragraphs else None
-
-            if field_name == 'related_content':
-                # Extract list of links/titles
-                links = []
-                for elem in elements:
-                    text = elem.get_text(strip=True)
-                    href_value = elem.get('href', '')
-                    # BeautifulSoup can return list for some attributes, ensure it's a string
-                    href: str = ' '.join(href_value) if isinstance(href_value, list) else (href_value or '')
-                    if text:
-                        links.append({'text': text, 'href': href} if href else text)
-                return links if links else None
-
-            # For headline, author, date - extract first matching element
-            first_element = elements[0]
-            text = first_element.get_text(strip=True)
-            return text if text else None
-
-        except (ValueError, SelectorSyntaxError) as e:
+            return self._extract_from_elements(elements, field_name)
+        except Exception as e:  # noqa: BLE001
             self.console.print(f'  ✗ {field_name}: extraction error ({e})')
             return None
+
+    def _extract_with_xpath_selector(
+        self,
+        sel: Selector,
+        xpath: str,
+        field_name: str,
+    ) -> str | list[str | dict[str, str]] | None:
+        """Extract content using an XPath selector.
+
+        Args:
+            sel: Parsel Selector for the parsed HTML
+            xpath: XPath expression
+            field_name: Name of the field being extracted
+
+        Returns:
+            Extracted content, or None if not found.
+
+        """
+        try:
+            elements = sel.xpath(xpath)
+            if not elements:
+                return None
+            return self._extract_from_elements(elements, field_name)
+        except Exception as e:  # noqa: BLE001
+            self.console.print(f'  ✗ {field_name}: xpath extraction error ({e})')
+            return None
+
+    def _extract_from_elements(
+        self,
+        elements: SelectorList[Selector],
+        field_name: str,
+    ) -> str | list[str | dict[str, str]] | None:
+        """Shared extraction logic given a SelectorList.
+
+        Args:
+            elements: Parsel SelectorList of matched elements
+            field_name: Name of the field (determines extraction strategy)
+
+        Returns:
+            Extracted content, or None if nothing usable found.
+
+        """
+        _KNOWN_MODES = ('body_text', 'related_content')
+        mode = self._field_modes.get(field_name) or (field_name if field_name in _KNOWN_MODES else 'text')
+
+        if mode == 'body_text':
+            paragraphs = [' '.join(el.xpath('.//text()').getall()).strip() for el in elements]
+            paragraphs = [p for p in paragraphs if p]
+            return '\n\n'.join(paragraphs) if paragraphs else None
+
+        if mode == 'related_content':
+            links: list[str | dict[str, str]] = []
+            for el in elements:
+                text = ' '.join(el.xpath('.//text()').getall()).strip()
+                href = el.attrib.get('href', '')
+                if text:
+                    links.append({'text': text, 'href': href} if href else text)
+            return links if links else None
+
+        first_element = elements[0]
+        text = ' '.join(first_element.xpath('.//text()').getall()).strip()
+        return text if text else None
 
     async def quick_extract(
         self, url: str, selector: str, field_type: str = 'text'
@@ -179,9 +239,7 @@ class ContentExtractor:
                 response = await client.get(
                     url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=10, follow_redirects=True
                 )
-            soup = BeautifulSoup(response.text, 'lxml')
-
-            return self._extract_with_selector(soup, selector, field_type)
-
+            sel = Selector(text=response.text)
+            return self._extract_with_selector(sel, selector, field_type)
         except (httpx.HTTPError, ValueError):
             return None

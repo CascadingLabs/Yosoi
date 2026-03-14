@@ -1,12 +1,21 @@
 """Concurrent URL processing with rich Live progress display."""
 
+from __future__ import annotations
+
 import time
+from typing import TYPE_CHECKING
 from urllib.parse import urlparse as _urlparse
 
 from rich.live import Live
 
 from yosoi.cli.utils import console
 from yosoi.models.contract import Contract
+from yosoi.models.selectors import SelectorLevel
+
+if TYPE_CHECKING:
+    from rich.table import Table
+
+    from yosoi.core.configs import YosoiConfig
 
 _STATUS_STYLES: dict[str, tuple[str, bool]] = {
     'Queued': ('dim', False),
@@ -17,7 +26,7 @@ _STATUS_STYLES: dict[str, tuple[str, bool]] = {
 }
 
 
-def _build_progress_table(url_status: dict[str, tuple[str, float]]):
+def _build_progress_table(url_status: dict[str, tuple[str, float]]) -> Table:
     """Build a rich Table showing per-URL progress.
 
     Args:
@@ -43,15 +52,16 @@ def _build_progress_table(url_status: dict[str, tuple[str, float]]):
 
 
 async def run_concurrent(
-    yosoi_config,
+    yosoi_config: YosoiConfig,
     contract: type[Contract],
     urls: list[str],
-    output_format: str = 'json',
+    output_format: str | list[str] = 'json',
     force: bool = False,
     skip_verification: bool = False,
     fetcher_type: str = 'simple',
     max_workers: int = 5,
-):
+    selector_level: SelectorLevel | None = None,
+) -> None:
     """Run URL processing concurrently via taskiq broker.
 
     Args:
@@ -63,11 +73,18 @@ async def run_concurrent(
         skip_verification: Skip verification step.
         fetcher_type: Fetcher type.
         max_workers: Max concurrent workers.
+        selector_level: Maximum selector strategy level. Defaults to CSS.
 
     """
-    from yosoi.tasks import configure_broker, enqueue_urls, shutdown_broker
+    from yosoi.core.tasks import configure_broker, enqueue_urls, shutdown_broker
 
-    await configure_broker(yosoi_config, contract=contract, output_format=output_format, max_workers=max_workers)
+    await configure_broker(
+        yosoi_config,
+        contract=contract,
+        output_format=output_format,
+        max_workers=max_workers,
+        selector_level=selector_level,
+    )
     start_time = time.monotonic()
 
     url_status: dict[str, tuple[str, float]] = dict.fromkeys(urls, ('Queued', 0.0))
@@ -85,7 +102,7 @@ async def run_concurrent(
 
     live = Live(_build_progress_table(url_status), console=console, refresh_per_second=4)
 
-    async def _on_complete(url: str, success: bool, elapsed: float):
+    async def _on_complete(url: str, success: bool, elapsed: float) -> None:
         url_status[url] = ('Done' if success else 'Failed', elapsed)
         live.update(_build_progress_table(url_status))
 

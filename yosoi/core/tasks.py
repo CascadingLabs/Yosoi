@@ -16,6 +16,7 @@ from taskiq.middlewares import SmartRetryMiddleware
 from yosoi.core.configs import YosoiConfig
 from yosoi.core.discovery.config import LLMConfig
 from yosoi.models.contract import Contract
+from yosoi.models.selectors import SelectorLevel
 
 logger = logging.getLogger(__name__)
 
@@ -37,16 +38,18 @@ _semaphore: asyncio.Semaphore | None = None
 async def configure_broker(
     llm_config: LLMConfig | YosoiConfig,
     contract: type[Contract],
-    output_format: str = 'json',
+    output_format: str | list[str] = 'json',
     max_workers: int = 5,
+    selector_level: SelectorLevel | None = None,
 ) -> None:
     """Configure the broker with pipeline settings and start it.
 
     Args:
         llm_config: LLM or full Yosoi configuration.
         contract: Contract subclass for scraping fields.
-        output_format: Output format ('json' or 'markdown').
+        output_format: Output format(s): json, markdown, jsonl, ndjson, csv, xlsx, parquet.
         max_workers: Maximum concurrent tasks.
+        selector_level: Maximum selector strategy level. Defaults to CSS.
 
     """
     global _semaphore
@@ -54,6 +57,7 @@ async def configure_broker(
     _pipeline_config['contract'] = contract
     _pipeline_config['output_format'] = output_format
     _pipeline_config['max_workers'] = max_workers
+    _pipeline_config['selector_level'] = selector_level or SelectorLevel.CSS
     _semaphore = asyncio.Semaphore(max_workers)
     await broker.startup()
 
@@ -117,6 +121,7 @@ async def process_url_task(
             contract=config['contract'],
             output_format=config['output_format'],
             quiet=True,
+            selector_level=config.get('selector_level', SelectorLevel.CSS),
         )
 
         start = time.monotonic()
@@ -178,7 +183,7 @@ async def enqueue_urls(
     max_discovery_retries: int = 3,
     dedup_by_domain: bool = True,
     on_complete: Callable[[str, bool, float], Awaitable[None]] | None = None,
-) -> dict[str, list]:
+) -> dict[str, list[str]]:
     """Enqueue URLs as tasks and collect results.
 
     Args:
@@ -197,7 +202,7 @@ async def enqueue_urls(
         plus 'skipped' for deduped URLs.
 
     """
-    results: dict[str, list] = {'successful': [], 'failed': [], 'skipped': []}
+    results: dict[str, list[str]] = {'successful': [], 'failed': [], 'skipped': []}
     dedup = DomainDedup()
 
     # Enqueue all tasks
@@ -237,7 +242,7 @@ async def enqueue_urls(
     return results
 
 
-async def _wait_for_handle(handle, url: str):
+async def _wait_for_handle(handle: Any, url: str) -> Any:
     """Await a single task handle, returning the result or None on error.
 
     Args:
@@ -255,7 +260,7 @@ async def _wait_for_handle(handle, url: str):
         return None
 
 
-def _collect_single_result(results: dict[str, list], handle, url: str, result) -> None:
+def _collect_single_result(results: dict[str, list[str]], handle: object, url: str, result: Any) -> None:
     """Classify a single task result into successful or failed.
 
     Args:

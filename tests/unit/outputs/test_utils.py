@@ -182,3 +182,48 @@ def test_save_formatted_selectors_returns_filepath(mocker, tmp_path):
     filepath = str(tmp_path / 'sel2.json')
     result = save_formatted_selectors(filepath, 'https://example.com', 'example.com', {})
     assert result == filepath
+
+
+# --- New format routing tests ---
+
+
+def test_save_formatted_content_routes_jsonl(mocker, tmp_path):
+    mock = mocker.patch('yosoi.outputs.utils.save_jsonl')
+    filepath = str(tmp_path / 'results.jsonl')
+    save_formatted_content(filepath, 'https://example.com', 'example.com', {'title': 'X'}, 'jsonl')
+    mock.assert_called_once_with(filepath, 'https://example.com', 'example.com', {'title': 'X'})
+
+
+def test_save_formatted_content_routes_ndjson(mocker, tmp_path):
+    mock = mocker.patch('yosoi.outputs.utils.save_jsonl')
+    filepath = str(tmp_path / 'results.jsonl')
+    save_formatted_content(filepath, 'https://example.com', 'example.com', {'title': 'X'}, 'ndjson')
+    mock.assert_called_once_with(filepath, 'https://example.com', 'example.com', {'title': 'X'})
+
+
+def test_save_formatted_content_routes_csv(mocker, tmp_path):
+    mock = mocker.patch('yosoi.outputs.utils.save_csv')
+    filepath = str(tmp_path / 'results.csv')
+    save_formatted_content(filepath, 'https://example.com', 'example.com', {'title': 'X'}, 'csv')
+    mock.assert_called_once_with(filepath, 'https://example.com', 'example.com', {'title': 'X'})
+
+
+def test_save_formatted_content_routes_xlsx(mocker, tmp_path):
+    mock = mocker.patch('yosoi.outputs.utils.save_xlsx')
+    filepath = str(tmp_path / 'results.xlsx')
+    save_formatted_content(filepath, 'https://example.com', 'example.com', {'title': 'X'}, 'xlsx')
+    mock.assert_called_once_with(filepath, 'https://example.com', 'example.com', {'title': 'X'})
+
+
+def test_save_formatted_content_routes_parquet(mocker, tmp_path):
+    mock = mocker.patch('yosoi.outputs.utils.save_parquet')
+    filepath = str(tmp_path / 'results.parquet')
+    save_formatted_content(filepath, 'https://example.com', 'example.com', {'title': 'X'}, 'parquet')
+    mock.assert_called_once_with(filepath, 'https://example.com', 'example.com', {'title': 'X'})
+
+
+def test_save_formatted_content_unknown_format_falls_back_to_json(mocker, tmp_path):
+    mock = mocker.patch('yosoi.outputs.utils.save_json')
+    filepath = str(tmp_path / 'out.xml')
+    save_formatted_content(filepath, 'https://example.com', 'example.com', {'title': 'X'}, 'xml')
+    mock.assert_called_once()

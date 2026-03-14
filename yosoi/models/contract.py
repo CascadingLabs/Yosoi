@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any
 
 import pydantic
@@ -19,10 +20,10 @@ _CONTRACT_REGISTRY: dict[str, type[Contract]] = {}
 class Contract(BaseModel):
     """Base class for user-defined scraping contracts."""
 
-    def __init_subclass__(cls, **kwargs: Any) -> None:
+    def __init_subclass__(cls, **kwargs: Any) -> None:  # pragma: no mutate
         """Register every Contract subclass in the global _CONTRACT_REGISTRY."""
-        super().__init_subclass__(**kwargs)
-        _CONTRACT_REGISTRY[cls.__name__] = cls
+        super().__init_subclass__(**kwargs)  # pragma: no mutate
+        _CONTRACT_REGISTRY[cls.__name__] = cls  # pragma: no mutate
 
     @model_validator(mode='wrap')
     @classmethod
@@ -154,7 +155,7 @@ class ContractBuilder:
         self._name = name
         self._fields: list[tuple[str, type, str]] = []
 
-    def __getattr__(self, field_name: str):
+    def __getattr__(self, field_name: str) -> Callable[..., ContractBuilder]:
         """Return an _add function that registers the named field."""
         if field_name.startswith('__'):
             raise AttributeError(field_name)

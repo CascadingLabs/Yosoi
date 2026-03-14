@@ -5,7 +5,7 @@ import os
 from datetime import datetime
 
 
-def format_json(url: str, domain: str, content: dict) -> dict:
+def format_json(url: str, domain: str, content: dict[str, object]) -> dict[str, object]:
     """Format extracted content as JSON with metadata.
 
     Args:
@@ -25,7 +25,7 @@ def format_json(url: str, domain: str, content: dict) -> dict:
     }
 
 
-def save_json(filepath: str, url: str, domain: str, content: dict):
+def save_json(filepath: str, url: str, domain: str, content: dict[str, object]) -> None:
     """Format and save content as JSON file.
 
     Handles directory creation and complete JSON formatting with metadata.
@@ -48,7 +48,7 @@ def save_json(filepath: str, url: str, domain: str, content: dict):
         json.dump(data, f, indent=2, ensure_ascii=False)
 
 
-def format_selectors_json(url: str, domain: str, selectors: dict) -> dict:
+def format_selectors_json(url: str, domain: str, selectors: dict[str, object]) -> dict[str, object]:
     """Format selectors as JSON with metadata.
 
     Args:
@@ -68,7 +68,7 @@ def format_selectors_json(url: str, domain: str, selectors: dict) -> dict:
     }
 
 
-def save_selectors_json(filepath: str, url: str, domain: str, selectors: dict):
+def save_selectors_json(filepath: str, url: str, domain: str, selectors: dict[str, object]) -> None:
     """Format and save selectors as JSON file.
 
     Handles directory creation and complete JSON formatting with metadata.

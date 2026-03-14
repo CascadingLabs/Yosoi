@@ -1,5 +1,7 @@
 """Simple HTTP fetcher with realistic browser headers and anti-bot measures."""
 
+from __future__ import annotations
+
 import asyncio
 import logging
 import random
@@ -69,7 +71,7 @@ class SimpleFetcher(HTMLFetcher):
         self.last_request_time = 0.0
         self.logger = logging.getLogger(__name__)
 
-    async def _apply_request_delay(self):
+    async def _apply_request_delay(self) -> None:
         """Apply a random delay between requests to appear more human."""
         if self.min_delay > 0:
             elapsed = time.time() - self.last_request_time
@@ -189,15 +191,17 @@ class SimpleFetcher(HTMLFetcher):
                 url=url, html=None, status_code=None, is_blocked=False, block_reason=str(e), fetch_time=fetch_time
             )
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> SimpleFetcher:
         """Async context manager entry."""
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(
+        self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: object
+    ) -> None:
         """Async context manager exit."""
         await self.close()
 
-    async def close(self):
+    async def close(self) -> None:
         """Close the client if it exists."""
         if self.client:
             await self.client.aclose()

@@ -1,6 +1,7 @@
 """AI-powered selector discovery by reading cleaned HTML."""
 
-from typing import Any, cast
+import logging
+from typing import Any
 
 import logfire
 from pydantic import BaseModel
@@ -8,8 +9,18 @@ from pydantic_ai import Agent
 from rich.console import Console
 
 from yosoi.core.discovery.config import LLMConfig, create_model
+from yosoi.core.discovery.yosoi_agent import YosoiAgent
 from yosoi.models.contract import Contract
-from yosoi.utils import load_prompt
+from yosoi.models.selectors import SelectorLevel
+from yosoi.prompts.discovery import (
+    DiscoveryDeps,
+    DiscoveryInput,
+    base_instructions,
+    build_user_prompt,
+    field_instructions,
+    level_instructions,
+    page_hints,
+)
 from yosoi.utils.exceptions import LLMGenerationError
 
 
@@ -21,6 +32,7 @@ class SelectorDiscovery:
         agent: The LLM agent that will be used
         model_name: Name of the model being used
         provider: Name of the LLM provider
+        target_level: Maximum selector strategy level for discovery
 
     """
 
@@ -28,21 +40,24 @@ class SelectorDiscovery:
     agent: Agent[Any, BaseModel]
     model_name: str
     provider: str
+    target_level: SelectorLevel
 
     def __init__(
         self,
         contract: type[Contract],
         llm_config: LLMConfig | None = None,
-        agent: Agent[Any, BaseModel] | None = None,
+        agent: YosoiAgent | None = None,
         console: Console | None = None,
+        target_level: SelectorLevel = SelectorLevel.CSS,
     ):
         """Initialize the discovery with LLM configuration or an agent.
 
         Args:
             llm_config: Configuration for the LLM provider and model
-            agent: The LLM agent that will be used
+            agent: A YosoiAgent wrapping a pydantic-ai Agent
             console: Rich console instance for formatted output
             contract: Contract subclass defining fields to discover.
+            target_level: Maximum selector strategy level. Defaults to CSS.
 
         Raises:
             ValueError: Must provide llm_config or an agent
@@ -50,19 +65,36 @@ class SelectorDiscovery:
         """
         self.console = console or Console()
         self._contract = contract
-
-        system_prompt = load_prompt('discovery_system')
+        self.target_level = target_level
         output_model = self._contract.to_selector_model()
 
         if agent is not None:
-            self.agent = agent
+            if agent._contract != contract:
+                raise ValueError(
+                    f'Contract mismatch: SelectorDiscovery received contract={contract.__name__} '
+                    f'but the YosoiAgent was built with contract={agent._contract.__name__}. '
+                    f'Use the same contract for both, or omit contract= to inherit from the agent.'
+                )
+            self._yosoi_agent = agent
             self.model_name = 'custom-agent'
             self.provider = 'custom'
+            self._use_deps = False
+            if target_level != SelectorLevel.CSS:
+                logging.getLogger(__name__).warning(
+                    'target_level=%s has no effect with custom agents (deps not injected)',
+                    target_level.name,
+                )
         elif llm_config is not None:
             model = create_model(llm_config)
-            self.agent = Agent(model, output_type=output_model, system_prompt=system_prompt)
+            self.agent = Agent(model, deps_type=DiscoveryDeps, output_type=output_model)
+            # Register dynamic system-prompt functions
+            self.agent.system_prompt(base_instructions)
+            self.agent.system_prompt(field_instructions)
+            self.agent.system_prompt(level_instructions)
+            self.agent.system_prompt(page_hints)
             self.model_name = llm_config.model_name
             self.provider = llm_config.provider
+            self._use_deps = True
         else:
             raise ValueError('Either provide llm_config or agent parameter')
 
@@ -110,12 +142,21 @@ class SelectorDiscovery:
             Selector config model with discovered selectors, or None if request failed.
 
         """
-        prompt = self._build_user_prompt(url, html)
+        discovery_input = DiscoveryInput(url=url, html=html)
 
         try:
-            result = await self.agent.run(prompt)
+            if self._use_deps:
+                deps = DiscoveryDeps(
+                    contract=self._contract,
+                    input=discovery_input,
+                    target_level=self.target_level,
+                )
+                result = await self.agent.run(build_user_prompt(discovery_input), deps=deps)
+            else:
+                result = await self._yosoi_agent.run(discovery_input)
+
             self.console.print('[success]  ✓ AI found selectors[/success]')
-            return cast(BaseModel, result.output)
+            return result.output  # type: ignore[return-value]
 
         except Exception as e:
             error_msg = str(e)
@@ -128,23 +169,7 @@ class SelectorDiscovery:
             logfire.error('AI request failed', error=error_msg, provider=self.provider)
             raise LLMGenerationError(f'AI discovery failed: {error_msg}') from e
 
-    def _build_user_prompt(self, url: str, html: str) -> str:
-        """Build the user prompt for AI discovery.
-
-        Args:
-            url: URL for context
-            html: Cleaned HTML content
-
-        Returns:
-            Formatted prompt string
-
-        """
-        descriptions = self._contract.field_descriptions()
-        fields_text = '\n'.join(f'**{name}** - {desc}' for name, desc in descriptions.items())
-
-        return load_prompt('discovery_user').format(url=url, html=html, fields_text=fields_text)
-
-    def _is_all_na(self, selectors: dict) -> bool:
+    def _is_all_na(self, selectors: dict[str, Any]) -> bool:
         """Check if AI returned all NA (gave up).
 
         Args:

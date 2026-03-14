@@ -7,7 +7,7 @@ import os
 from datetime import datetime
 
 
-def format_markdown(url: str, domain: str, content: dict) -> str:
+def format_markdown(url: str, domain: str, content: dict[str, object]) -> str:
     """Format extracted content as Markdown.
 
     Creates generic markdown output that works for any field structure,
@@ -54,7 +54,7 @@ def format_markdown(url: str, domain: str, content: dict) -> str:
     return '\n'.join(lines)
 
 
-def save_markdown(filepath: str, url: str, domain: str, content: dict):
+def save_markdown(filepath: str, url: str, domain: str, content: dict[str, object]) -> None:
     """Format and save content as Markdown file.
 
     Handles directory creation and complete Markdown formatting with metadata.
@@ -77,7 +77,7 @@ def save_markdown(filepath: str, url: str, domain: str, content: dict):
         f.write(markdown_content)
 
 
-def _get_title(content: dict) -> str:
+def _get_title(content: dict[str, object]) -> str:
     """Extract title from content fields.
 
     Looks for common title fields, or uses first non-empty text field.
@@ -121,7 +121,7 @@ def _format_field_name(field: str) -> str:
     return field.replace('_', ' ').title()
 
 
-def _format_value(value) -> list[str]:
+def _format_value(value: object) -> list[str]:
     """Format a value for markdown output.
 
     Handles different data types appropriately:
