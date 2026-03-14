@@ -255,9 +255,8 @@ async def test_scrape_cached_fail_open_yields_nothing(mocker):
     items = [item async for item in stub.scrape('https://example.com')]
     assert items == []
 
-    # process_url wrapper should return True
-    result = await stub.process_url('https://example.com')
-    assert result is True
+    # process_url wrapper completes without raising (fail-open)
+    await stub.process_url('https://example.com')
 
 
 # ---------------------------------------------------------------------------

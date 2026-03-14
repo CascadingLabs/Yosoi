@@ -34,7 +34,7 @@ class Product(Contract):
 
     name: str = ys.Title(description='Product name or title')
     price: float | None = ys.Price(description='Product price (including currency symbol)')
-    rating: float | str = ys.Rating(description='Star rating or review score')
+    rating: float | None = ys.Rating(as_float=True, description='Star rating or review score (numeric, e.g. 4.2)')
     reviews_count: int | None = Field(description='Number of reviews or ratings')
     description: str = ys.BodyText(description='Product description or summary')
     availability: str = Field(description='Stock status (e.g. "In Stock", "Out of Stock")')

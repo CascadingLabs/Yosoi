@@ -229,11 +229,10 @@ class TestAgentRunInsideTask:
         # Mock the full pipeline flow: fetch → clean → discover → verify → save
         mock_pipeline_cls = mocker.patch('yosoi.core.pipeline.Pipeline')
         mock_pipeline = mock_pipeline_cls.return_value
-        mock_pipeline.process_url = mocker.AsyncMock(return_value=True)
+        mock_pipeline.process_url = mocker.AsyncMock(return_value=None)
 
         result = await process_url_task.original_func(url='http://example.com')
 
-        assert result['success'] is True
         assert result['url'] == 'http://example.com'
         assert 'elapsed' in result
         await shutdown_broker()
@@ -333,12 +332,11 @@ class TestEndToEndBrokerAgent:
         """Enqueue mix of passing and failing URLs, verify correct bucketing."""
         await configure_broker(mock_llm_config, contract=NewsArticle, max_workers=3)
 
-        call_idx = 0
-
         async def _alternate(url, **kwargs):
-            nonlocal call_idx
-            call_idx += 1
-            return call_idx % 2 == 1  # odd calls succeed, even fail
+            # odd-numbered sites always fail (even with retries), even ones succeed
+            site_num = int(url.split('site')[1].split('.')[0])
+            if site_num % 2 == 1:
+                raise RuntimeError(f'Processing failed for {url}')
 
         mock_pipeline_cls = mocker.patch('yosoi.core.pipeline.Pipeline')
         mock_pipeline = mock_pipeline_cls.return_value

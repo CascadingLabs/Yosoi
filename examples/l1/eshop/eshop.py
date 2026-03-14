@@ -21,7 +21,7 @@ import yosoi as ys
 class Product(ys.Contract):
     name: str = ys.Title(description='Product name or title')
     price: float | None = ys.Price(description='Product price (including currency symbol)')
-    rating: float | str = ys.Rating(description='Star rating or review score')
+    rating: float = ys.Rating(description='review score as a number')
     reviews_count: int | None = ys.Field(description='Number of reviews or ratings')
     description: str = ys.BodyText(description='Product description or summary')
     availability: str = ys.Field(description='Stock status (e.g. "In Stock", "Out of Stock")')
@@ -29,7 +29,7 @@ class Product(ys.Contract):
 
 # pipeline = ys.Pipeline(llm_config=config, contract=Product)
 pipeline = ys.Pipeline(llm_config='openrouter:stepfun/step-3.5-flash:free', contract=Product)
-asyncio.run(pipeline.process_url('https://qscrape.dev/l1/eshop/catalog/?cat=Forge%20%26%20Smithing', force=True))
+asyncio.run(pipeline.process_url('https://qscrape.dev/l1/eshop/catalog/?cat=Forge%20%26%20Smithing'))
 
 
 # # ---------------------------------------------------------------------------

@@ -37,10 +37,9 @@ async def test_pipeline_happy_path(mocker, mock_llm_config, happy_path_html, moc
     pipeline = Pipeline(mock_llm_config, contract=NewsArticle)
 
     # ACT
-    success = await pipeline.process_url('http://example.com', force=True)
+    await pipeline.process_url('http://example.com', force=True)
 
     # ASSERT
-    assert success is True
     saved = pipeline.storage.load_selectors('example.com')
     assert saved is not None
     # primary is now a SelectorEntry dict: {'strategy': 'css', 'level': 1, 'value': '...'}
@@ -73,11 +72,11 @@ async def test_pipeline_fetch_failure(mocker, mock_llm_config, tmp_path):
 
     pipeline = Pipeline(mock_llm_config, contract=NewsArticle)
 
-    # ACT
-    success = await pipeline.process_url('http://example.com', force=True)
+    # ACT + ASSERT — fetch failure must raise
+    import pytest
 
-    # ASSERT
-    assert success is False
+    with pytest.raises(RuntimeError):
+        await pipeline.process_url('http://example.com', force=True)
 
 
 async def test_pipeline_ai_failure(mocker, mock_llm_config, happy_path_html, tmp_path):
@@ -111,10 +110,10 @@ async def test_pipeline_ai_failure(mocker, mock_llm_config, happy_path_html, tmp
 
     pipeline = Pipeline(mock_llm_config, contract=NewsArticle)
 
-    # ACT — should fail if AI fails (Fail Fast)
-    success = await pipeline.process_url('http://ai-failure.com', force=True, max_discovery_retries=1)
+    # ACT + ASSERT — AI failure must raise (Fail Fast)
+    import pytest
 
-    # ASSERT
-    assert success is False
+    with pytest.raises(RuntimeError):
+        await pipeline.process_url('http://ai-failure.com', force=True, max_discovery_retries=1)
     saved = pipeline.storage.load_selectors('ai-failure.com')
     assert saved is None

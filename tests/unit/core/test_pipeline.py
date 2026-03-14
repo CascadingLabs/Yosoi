@@ -602,7 +602,9 @@ async def test_discover_with_escalation_returns_none_when_all_levels_fail(mocker
 # ---------------------------------------------------------------------------
 
 
-async def test_process_url_returns_false_when_fetch_fails(mocker):
+async def test_process_url_raises_when_fetch_fails(mocker):
+    import pytest
+
     stub = _make_pipeline_stub(mocker)
     mocker.patch.object(Pipeline, 'normalize_url', return_value='https://x.com')
     mocker.patch.object(Pipeline, '_extract_domain', return_value='x.com')
@@ -610,21 +612,23 @@ async def test_process_url_returns_false_when_fetch_fails(mocker):
     stub.storage.load_selectors.return_value = None
     mocker.patch.object(Pipeline, '_fetch', return_value=None)
     mocker.patch('yosoi.core.pipeline.logfire')
-    result = await Pipeline.process_url(stub, 'https://x.com')
-    assert result is False
+    with pytest.raises(RuntimeError):
+        await Pipeline.process_url(stub, 'https://x.com')
 
 
-async def test_process_url_returns_false_when_create_fetcher_fails(mocker):
+async def test_process_url_raises_when_create_fetcher_fails(mocker):
+    import pytest
+
     stub = _make_pipeline_stub(mocker)
     mocker.patch.object(Pipeline, 'normalize_url', return_value='https://x.com')
     mocker.patch.object(Pipeline, '_extract_domain', return_value='x.com')
     mocker.patch.object(Pipeline, '_create_fetcher', return_value=None)
     mocker.patch('yosoi.core.pipeline.logfire')
-    result = await Pipeline.process_url(stub, 'https://x.com')
-    assert result is False
+    with pytest.raises(RuntimeError):
+        await Pipeline.process_url(stub, 'https://x.com')
 
 
-async def test_process_url_returns_true_when_cached_selectors_used(mocker):
+async def test_process_url_succeeds_with_cached_selectors(mocker):
     stub = _make_pipeline_stub(mocker)
     mocker.patch.object(Pipeline, 'normalize_url', return_value='https://x.com')
     mocker.patch.object(Pipeline, '_extract_domain', return_value='x.com')
@@ -633,8 +637,7 @@ async def test_process_url_returns_true_when_cached_selectors_used(mocker):
     mocker.patch.object(Pipeline, '_extract_with_cached', return_value=([{'title': 'Book'}], True))
     stub.tracker.record_url.return_value = {'llm_calls': 0, 'url_count': 1}
     mocker.patch('yosoi.core.pipeline.logfire')
-    result = await Pipeline.process_url(stub, 'https://x.com')
-    assert result is True
+    await Pipeline.process_url(stub, 'https://x.com')
 
 
 async def test_process_url_full_success_path(mocker):
@@ -652,11 +655,10 @@ async def test_process_url_full_success_path(mocker):
     mocker.patch.object(Pipeline, '_validate_with_contract', return_value={'title': 'Book'})
     mocker.patch.object(Pipeline, '_save_and_track')
     mocker.patch('yosoi.core.pipeline.logfire')
-    result = await Pipeline.process_url(stub, 'https://x.com')
-    assert result is True
+    await Pipeline.process_url(stub, 'https://x.com')
 
 
-async def test_process_url_returns_true_even_when_extraction_fails(mocker):
+async def test_process_url_succeeds_even_when_extraction_fails(mocker):
     stub = _make_pipeline_stub(mocker)
     fetch_result = FetchResult(url='https://x.com', html='<html/>', status_code=200)
     mocker.patch.object(Pipeline, 'normalize_url', return_value='https://x.com')
@@ -670,11 +672,12 @@ async def test_process_url_returns_true_even_when_extraction_fails(mocker):
     mocker.patch.object(Pipeline, '_extract', return_value=None)
     mocker.patch.object(Pipeline, '_save_and_track')
     mocker.patch('yosoi.core.pipeline.logfire')
-    result = await Pipeline.process_url(stub, 'https://x.com')
-    assert result is True
+    await Pipeline.process_url(stub, 'https://x.com')
 
 
-async def test_process_url_returns_false_when_clean_fails(mocker):
+async def test_process_url_raises_when_clean_fails(mocker):
+    import pytest
+
     stub = _make_pipeline_stub(mocker)
     fetch_result = FetchResult(url='https://x.com', html='<html/>', status_code=200)
     mocker.patch.object(Pipeline, 'normalize_url', return_value='https://x.com')
@@ -684,11 +687,13 @@ async def test_process_url_returns_false_when_clean_fails(mocker):
     mocker.patch.object(Pipeline, '_fetch', return_value=fetch_result)
     mocker.patch.object(Pipeline, '_clean', return_value=None)
     mocker.patch('yosoi.core.pipeline.logfire')
-    result = await Pipeline.process_url(stub, 'https://x.com')
-    assert result is False
+    with pytest.raises(RuntimeError):
+        await Pipeline.process_url(stub, 'https://x.com')
 
 
-async def test_process_url_returns_false_when_discover_fails(mocker):
+async def test_process_url_raises_when_discover_fails(mocker):
+    import pytest
+
     stub = _make_pipeline_stub(mocker)
     fetch_result = FetchResult(url='https://x.com', html='<html/>', status_code=200)
     mocker.patch.object(Pipeline, 'normalize_url', return_value='https://x.com')
@@ -699,11 +704,13 @@ async def test_process_url_returns_false_when_discover_fails(mocker):
     mocker.patch.object(Pipeline, '_clean', return_value='<clean/>')
     mocker.patch.object(Pipeline, '_discover', return_value=(None, False))
     mocker.patch('yosoi.core.pipeline.logfire')
-    result = await Pipeline.process_url(stub, 'https://x.com')
-    assert result is False
+    with pytest.raises(RuntimeError):
+        await Pipeline.process_url(stub, 'https://x.com')
 
 
-async def test_process_url_returns_false_when_verify_fails(mocker):
+async def test_process_url_raises_when_verify_fails(mocker):
+    import pytest
+
     stub = _make_pipeline_stub(mocker)
     fetch_result = FetchResult(url='https://x.com', html='<html/>', status_code=200)
     mocker.patch.object(Pipeline, 'normalize_url', return_value='https://x.com')
@@ -715,8 +722,8 @@ async def test_process_url_returns_false_when_verify_fails(mocker):
     mocker.patch.object(Pipeline, '_discover', return_value=({'title': {'primary': 'h1'}}, True))
     mocker.patch.object(Pipeline, '_verify', return_value=None)
     mocker.patch('yosoi.core.pipeline.logfire')
-    result = await Pipeline.process_url(stub, 'https://x.com')
-    assert result is False
+    with pytest.raises(RuntimeError):
+        await Pipeline.process_url(stub, 'https://x.com')
 
 
 # ---------------------------------------------------------------------------
@@ -726,7 +733,7 @@ async def test_process_url_returns_false_when_verify_fails(mocker):
 
 async def test_process_urls_collects_results(mocker):
     stub = _make_pipeline_stub(mocker)
-    mocker.patch.object(Pipeline, 'process_url', side_effect=[True, False])
+    mocker.patch.object(Pipeline, 'process_url', side_effect=[None, RuntimeError('fail')])
     mocker.patch('yosoi.core.pipeline.logfire')
     results = await Pipeline.process_urls(stub, ['https://a.com', 'https://b.com'])
     assert 'https://a.com' in results['successful']
@@ -803,6 +810,8 @@ def test_show_llm_stats_no_calls(mocker):
 
 async def test_process_url_respects_explicit_force_override(mocker):
     """Explicit force=True overrides pipeline's self.force=False."""
+    import pytest
+
     stub = _make_pipeline_stub(mocker)
     stub.force = False
     mocker.patch.object(Pipeline, 'normalize_url', return_value='https://x.com')
@@ -812,7 +821,8 @@ async def test_process_url_respects_explicit_force_override(mocker):
     stub.storage.load_selectors.return_value = {'title': {'primary': 'h1'}}
     mocker.patch.object(Pipeline, '_fetch', return_value=None)
     mocker.patch('yosoi.core.pipeline.logfire')
-    await Pipeline.process_url(stub, 'https://x.com', force=True)
+    with pytest.raises(RuntimeError):
+        await Pipeline.process_url(stub, 'https://x.com', force=True)
     # load_selectors should NOT be called because force=True bypasses cache
     stub.storage.load_selectors.assert_not_called()
 
@@ -1166,17 +1176,21 @@ def test_print_partial_failure_shows_failed_field_names(mocker):
 
 
 async def test_process_url_uses_pipeline_format_when_output_format_none(mocker):
-    """When output_format=None, process_url must use pipeline's output_format."""
+    """When output_format=None, process_url passes it through to scrape which resolves pipeline's output_format."""
+    import pytest
+
     stub = _make_pipeline_stub(mocker)
     stub.output_formats = ['markdown']
     mocker.patch.object(Pipeline, 'normalize_url', return_value='https://x.com')
     mocker.patch.object(Pipeline, '_extract_domain', return_value='x.com')
     mocker.patch.object(Pipeline, '_create_fetcher', return_value=mocker.MagicMock())
     stub.storage.load_selectors.return_value = None
-    mocker.patch.object(Pipeline, '_fetch', return_value=None)
+    mock_fetch = mocker.patch.object(Pipeline, '_fetch', return_value=None)
     mocker.patch('yosoi.core.pipeline.logfire')
-    await Pipeline.process_url(stub, 'https://x.com', output_format=None)
-    # _fetch was called, meaning normalized url was used
+    with pytest.raises(RuntimeError):
+        await Pipeline.process_url(stub, 'https://x.com', output_format=None)
+    # _fetch was called, meaning the pipeline reached the fetch step
+    mock_fetch.assert_called_once()
 
 
 # ---------------------------------------------------------------------------
