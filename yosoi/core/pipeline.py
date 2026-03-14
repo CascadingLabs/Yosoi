@@ -59,7 +59,7 @@ class Pipeline:
 
     def __init__(
         self,
-        llm_config: LLMConfig | YosoiConfig,
+        llm_config: LLMConfig | YosoiConfig | str,
         contract: type[Contract],
         debug_mode: bool = False,
         output_format: str | list[str] = 'json',
@@ -70,8 +70,9 @@ class Pipeline:
         """Initialize the pipeline with LLM configuration.
 
         Args:
-            llm_config: LLMConfig or YosoiConfig. When YosoiConfig is passed,
-                debug_mode and telemetry are extracted from it automatically.
+            llm_config: LLMConfig, YosoiConfig, or a model string
+                (e.g. ``'groq:llama-3.3-70b-versatile'``). Strings are
+                auto-resolved via :func:`yosoi.core.discovery.config.provider`.
             debug_mode: If enabled will output the HTML from the URL.
                         Overridden by YosoiConfig.debug.save_html when YosoiConfig is passed.
             output_format: Format for extracted content ('json' or 'markdown'). Defaults to 'json'.
@@ -85,6 +86,12 @@ class Pipeline:
 
         """
         self.selector_level = selector_level
+
+        # Auto-resolve model strings → LLMConfig
+        if isinstance(llm_config, str):
+            from yosoi.core.discovery.config import provider
+
+            llm_config = provider(llm_config)
 
         if isinstance(llm_config, YosoiConfig):
             yosoi_cfg = llm_config

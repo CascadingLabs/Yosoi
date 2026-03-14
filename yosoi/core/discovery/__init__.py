@@ -11,6 +11,7 @@ from yosoi.core.discovery.config import (
     groq,
     openai,
     openrouter,
+    provider,
 )
 from yosoi.core.discovery.yosoi_agent import YosoiAgent
 
@@ -26,4 +27,5 @@ __all__ = [
     'groq',
     'openai',
     'openrouter',
+    'provider',
 ]

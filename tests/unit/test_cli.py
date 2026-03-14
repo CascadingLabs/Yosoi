@@ -92,7 +92,7 @@ class TestModelFlag:
     def test_model_flag_configures_llm(self, runner, mock_pipeline, monkeypatch):
         monkeypatch.setenv('GROQ_KEY', 'test-key')
         mock_pipe, _ = mock_pipeline
-        result = runner.invoke(main, ['-m', 'groq/llama-3.3-70b-versatile', '-u', 'https://example.com'])
+        result = runner.invoke(main, ['-m', 'groq:llama-3.3-70b-versatile', '-u', 'https://example.com'])
         assert result.exit_code == 0, result.output
         mock_pipe.process_urls.assert_called_once()
 
@@ -100,7 +100,7 @@ class TestModelFlag:
         monkeypatch.setenv('GROQ_KEY', 'test-key')
         result = runner.invoke(main, ['-m', 'badformat', '-u', 'https://example.com'])
         assert result.exit_code != 0
-        assert 'provider/model-name' in result.output
+        assert 'provider:model-name' in result.output
 
 
 class TestFileFlag:

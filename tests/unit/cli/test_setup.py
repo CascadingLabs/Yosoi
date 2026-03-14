@@ -14,16 +14,16 @@ def _clean_env(monkeypatch):
 
 
 class TestSetupLlmConfig:
-    def test_model_arg_with_slash(self):
-        """--model flag with provider/model format works."""
-        cfg = setup_llm_config('groq/llama-3.3-70b')
+    def test_model_arg_with_colon(self):
+        """--model flag with provider:model format works."""
+        cfg = setup_llm_config('groq:llama-3.3-70b')
         assert cfg.provider == 'groq'
         assert cfg.model_name == 'llama-3.3-70b'
         assert cfg.api_key == ''
 
     def test_model_arg_no_slash_raises(self):
-        """--model flag without slash raises ClickException."""
-        with pytest.raises(click.ClickException, match='provider/model-name'):
+        """--model flag without separator raises ClickException."""
+        with pytest.raises(click.ClickException, match='provider:model-name'):
             setup_llm_config('groq-llama')
 
     def test_auto_detect_provider(self, monkeypatch):
@@ -42,24 +42,24 @@ class TestBuildYosoiConfig:
     def test_successful_build(self, monkeypatch):
         """Builds config successfully when API key is available."""
         monkeypatch.setenv('GROQ_KEY', 'groq-key')
-        cfg = build_yosoi_config('groq/llama', debug=False)
+        cfg = build_yosoi_config('groq:llama', debug=False)
         assert cfg.llm.api_key == 'groq-key'
         assert cfg.debug.save_html is False
 
     def test_debug_mode_enabled(self, monkeypatch):
         """Debug mode sets save_html to True."""
         monkeypatch.setenv('GROQ_KEY', 'groq-key')
-        cfg = build_yosoi_config('groq/llama', debug=True)
+        cfg = build_yosoi_config('groq:llama', debug=True)
         assert cfg.debug.save_html is True
 
     def test_no_api_key_raises(self):
         """Missing API key raises ClickException."""
         with pytest.raises(click.ClickException, match='Configuration Error'):
-            build_yosoi_config('groq/llama', debug=False)
+            build_yosoi_config('groq:llama', debug=False)
 
     def test_provider_fallback_warning(self, monkeypatch, capsys):
         """When configured provider lacks key and another is used, warns."""
         monkeypatch.setenv('GEMINI_KEY', 'gem-key')
-        cfg = build_yosoi_config('groq/llama', debug=False)
+        cfg = build_yosoi_config('groq:llama', debug=False)
         # Provider should have been swapped
         assert cfg.llm.provider == 'gemini'

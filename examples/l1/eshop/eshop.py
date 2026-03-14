@@ -11,10 +11,10 @@ import asyncio
 import yosoi as ys
 
 # MODEL_USED = 'meta-llama/llama-3.3-70b-instruct:free'
-MODEL_USED = 'stepfun/step-3.5-flash:free'
+# MODEL_USED = 'stepfun/step-3.5-flash:free'
 # MODEL_USED = 'llama-3.3-70b-versatile'
 # why can't I go to defition from this???
-config = ys.openrouter(MODEL_USED)
+# config = ys.openrouter(MODEL_USED)
 # config = ys.groq(MODEL_USED)
 
 
@@ -27,7 +27,8 @@ class Product(ys.Contract):
     availability: str = ys.Field(description='Stock status (e.g. "In Stock", "Out of Stock")')
 
 
-pipeline = ys.Pipeline(llm_config=config, contract=Product)
+# pipeline = ys.Pipeline(llm_config=config, contract=Product)
+pipeline = ys.Pipeline(llm_config='openrouter:stepfun/step-3.5-flash:free', contract=Product)
 asyncio.run(pipeline.process_url('https://qscrape.dev/l1/eshop/catalog/?cat=Forge%20%26%20Smithing', force=True))
 
 

@@ -104,6 +104,24 @@ def test_extract_domain_preserves_subdomain(mocker):
 
 
 # ---------------------------------------------------------------------------
+# Pipeline __init__ accepts string
+# ---------------------------------------------------------------------------
+
+
+def test_pipeline_accepts_model_string(mocker):
+    """Pipeline(llm_config='groq:llama', ...) auto-resolves the string."""
+    mocker.patch('yosoi.storage.persistence.init_yosoi')
+    mocker.patch('yosoi.storage.tracking.get_tracking_path', return_value='/tmp/tracking.json')
+    mocker.patch('yosoi.utils.files.is_initialized', return_value=True)
+    mocker.patch('yosoi.utils.logging.setup_local_logging', return_value='/tmp/test.log')
+    mocker.patch('yosoi.core.discovery.agent.Agent')
+    mocker.patch('yosoi.core.discovery.agent.create_model')
+
+    p = Pipeline(llm_config='groq:llama-3.3-70b-versatile', contract=SimpleContract)
+    assert p.discovery is not None
+
+
+# ---------------------------------------------------------------------------
 # _create_fetcher
 # ---------------------------------------------------------------------------
 

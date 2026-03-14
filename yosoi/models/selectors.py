@@ -28,14 +28,13 @@ class SelectorEntry(BaseModel):
 
     Attributes:
         strategy: Selector strategy type ('css', 'xpath', 'regex', 'jsonld')
-        level: Numeric level derived from strategy (set automatically)
         value: The selector expression
         regex: Optional regex pattern (only used when strategy='regex')
 
     """
 
     strategy: Literal['css', 'xpath', 'regex', 'jsonld'] = 'css'
-    level: SelectorLevel = SelectorLevel.CSS
+    level: SelectorLevel = Field(default=SelectorLevel.CSS, exclude=True)
     value: str
     regex: str | None = None
 

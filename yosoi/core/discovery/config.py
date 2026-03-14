@@ -484,7 +484,95 @@ def openrouter(model_name: str, api_key: str | None = None, **kwargs: Any) -> LL
 
 
 # ============================================================================
-# 6. EXAMPLES & USAGE
+# 6. UNIFIED PROVIDER FUNCTION - Magic model string parsing
+# ============================================================================
+
+# Canonical provider names recognised by `provider()`.  Aliases (google, gpt)
+# are included so that `ys.provider("gpt:gpt-4o")` works.
+_KNOWN_PROVIDERS: set[str] = set(PROVIDER_FACTORIES.keys())
+
+
+def _parse_model_string(model_string: str) -> tuple[str, str]:
+    """Split a model string into (provider, model_name).
+
+    Supports two formats (checked in order):
+
+    1. **Colon format** (preferred): ``provider:model-name``
+       e.g. ``groq:llama-3.3-70b-versatile``,
+       ``openrouter:meta-llama/llama-3.3-70b-instruct:free``
+    2. **Slash format** (legacy / CLI compat): ``provider/model-name``
+       Only when the first segment is a known provider name.
+
+    The colon format is unambiguous even for OpenRouter models whose names
+    contain slashes.
+
+    Returns:
+        Tuple of (provider, model_name).
+
+    Raises:
+        ValueError: When no provider can be determined.
+    """
+    # 1. Try colon format — split on FIRST colon only
+    if ':' in model_string:
+        first, rest = model_string.split(':', 1)
+        if first.lower() in _KNOWN_PROVIDERS:
+            return first.lower(), rest
+
+    # 2. Try slash format — only if the first segment is a known provider
+    if '/' in model_string:
+        first, rest = model_string.split('/', 1)
+        if first.lower() in _KNOWN_PROVIDERS:
+            return first.lower(), rest
+
+    # Neither format matched
+    raise ValueError(
+        f'Cannot determine provider from {model_string!r}. '
+        f"Use 'provider:model-name' format, e.g. 'groq:{model_string}'. "
+        f'Known providers: {", ".join(sorted(_KNOWN_PROVIDERS - {"google", "gpt"}))}'
+    )
+
+
+def provider(model_string: str, api_key: str | None = None, **kwargs: Any) -> LLMConfig:
+    """Create an LLM config from a single model string.
+
+    This is the recommended, unified way to configure a model.  The provider is
+    parsed from the model string automatically.
+
+    Preferred format uses ``:`` as the separator::
+
+        import yosoi as ys
+
+        config = ys.provider('groq:llama-3.3-70b-versatile')
+        config = ys.provider('openrouter:meta-llama/llama-3.3-70b-instruct:free')
+        config = ys.provider('gemini:gemini-2.0-flash')
+
+    The ``provider/model`` format is also supported for known providers::
+
+        config = ys.provider('groq/llama-3.3-70b-versatile')
+
+    Args:
+        model_string: Model identifier in ``provider:model-name`` format.
+        api_key: Explicit API key. If omitted, resolved from environment.
+        **kwargs: Additional LLMConfig fields (temperature, max_tokens, etc.)
+
+    Returns:
+        Configured LLMConfig instance.
+
+    Raises:
+        ValueError: If the provider cannot be determined.
+
+    """
+    prov, model_name = _parse_model_string(model_string)
+    return LLMConfig(
+        provider=prov,
+        model_name=model_name,
+        api_key=_resolve_api_key(prov, api_key),
+        **kwargs,
+    )
+
+
+# ============================================================================
+# 7. EXAMPLES & USAGE
 # ============================================================================
 
 if __name__ == '__main__':
