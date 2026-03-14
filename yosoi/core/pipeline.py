@@ -155,11 +155,11 @@ class Pipeline:
         skip_verification: bool = False,
         fetcher_type: str = 'simple',
         output_format: str | list[str] | None = None,
-    ) -> bool:
+    ) -> None:
         """Process a single URL: discover, verify, and save selectors.
 
-        Thin wrapper around :meth:`scrape` that drains the generator and
-        returns a boolean success/failure flag.
+        Thin wrapper around :meth:`scrape` that drains the generator.
+        Raises on failure — callers are responsible for error handling.
 
         Args:
             url: URL to process
@@ -170,24 +170,17 @@ class Pipeline:
             max_discovery_retries: Maximum AI discovery retry attempts. Defaults to 3.
             output_format: Format(s) for extracted content. Defaults to None (uses pipeline default).
 
-        Returns:
-            True if operation succeeded, False otherwise.
-
         """
-        try:
-            async for _ in self.scrape(
-                url,
-                force=force,
-                max_fetch_retries=max_fetch_retries,
-                max_discovery_retries=max_discovery_retries,
-                skip_verification=skip_verification,
-                fetcher_type=fetcher_type,
-                output_format=output_format,
-            ):
-                pass
-            return True
-        except Exception:  # noqa: BLE001
-            return False
+        async for _ in self.scrape(
+            url,
+            force=force,
+            max_fetch_retries=max_fetch_retries,
+            max_discovery_retries=max_discovery_retries,
+            skip_verification=skip_verification,
+            fetcher_type=fetcher_type,
+            output_format=output_format,
+        ):
+            pass
 
     async def process_urls(
         self,
@@ -230,7 +223,7 @@ class Pipeline:
                 self.logger.info('--- Processing URL %d/%d: %s ---', idx, len(urls), url)
 
                 try:
-                    success = await self.process_url(
+                    await self.process_url(
                         url,
                         force_flag,
                         max_fetch_retries=max_fetch_retries,
@@ -239,7 +232,7 @@ class Pipeline:
                         fetcher_type=fetcher_type,
                         output_format=format_to_use,
                     )
-                    results['successful' if success else 'failed'].append(url)
+                    results['successful'].append(url)
                 except Exception as e:
                     logfire.error('Error processing URL', url=url, error=str(e))
                     self.logger.exception('Critical error processing %s', url)

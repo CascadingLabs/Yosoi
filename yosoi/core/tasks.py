@@ -38,7 +38,6 @@ class TaskResult(TypedDict):
     """Return type of process_url_task."""
 
     url: str
-    success: bool
     elapsed: float
 
 
@@ -158,7 +157,7 @@ async def process_url_task(
         )
 
         try:
-            success = await pipeline.process_url(
+            await pipeline.process_url(
                 url,
                 force=force,
                 max_fetch_retries=max_fetch_retries,
@@ -167,11 +166,10 @@ async def process_url_task(
                 fetcher_type=fetcher_type,
             )
             elapsed = getattr(pipeline, 'last_elapsed', 0.0)
-            return {'url': url, 'success': success, 'elapsed': elapsed}
+            return {'url': url, 'elapsed': elapsed}
         except Exception:
             logger.exception('Task failed for %s', url)
-            # We reraise so that taskiq can do its job of handling retries w/ its middleware
-            raise
+            raise  # taskiq retry middleware fires here
 
 
 class DomainDedup:
@@ -265,9 +263,8 @@ async def enqueue_urls(
         task_result = await _wait_for_handle(handle, url)
         _collect_single_result(results, handle, url, task_result)
         if on_complete is not None:
-            rv = task_result.return_value if task_result and not task_result.is_err else None
-            success = rv.get('success', False) if rv else False
-            elapsed = rv.get('elapsed', 0.0) if rv else 0.0
+            success = task_result is not None and not task_result.is_err
+            elapsed = task_result.return_value.get('elapsed', 0.0) if task_result and success else 0.0
             await on_complete(url, success, elapsed)
 
     return results
@@ -311,7 +308,5 @@ def _collect_single_result(
     """
     if result is None or result.is_err:
         results['failed'].append(url)
-    elif result.return_value and result.return_value.get('success'):
-        results['successful'].append(url)
     else:
-        results['failed'].append(url)
+        results['successful'].append(url)

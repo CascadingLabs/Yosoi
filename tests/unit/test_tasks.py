@@ -87,31 +87,14 @@ class TestProcessUrlTask:
 
         mock_pipeline_cls = mocker.patch('yosoi.core.pipeline.Pipeline')
         mock_pipeline = mock_pipeline_cls.return_value
-        mock_pipeline.process_url = mocker.AsyncMock(return_value=True)
+        mock_pipeline.process_url = mocker.AsyncMock(return_value=None)
 
         # Call the task function directly (not via kiq) for unit testing
         result = await process_url_task.original_func(url='http://example.com', force=True)
 
         assert result['url'] == 'http://example.com'
-        assert result['success'] is True
         assert 'elapsed' in result
         mock_pipeline.process_url.assert_awaited_once()
-        await shutdown_broker()
-
-    async def test_task_returns_failure(self, mocker, mock_llm_config, clean_broker):
-        from yosoi.models.defaults import NewsArticle
-
-        await configure_broker(mock_llm_config, contract=NewsArticle)
-
-        mock_pipeline_cls = mocker.patch('yosoi.core.pipeline.Pipeline')
-        mock_pipeline = mock_pipeline_cls.return_value
-        mock_pipeline.process_url = mocker.AsyncMock(return_value=False)
-
-        result = await process_url_task.original_func(url='http://fail.com')
-
-        assert result['url'] == 'http://fail.com'
-        assert result['success'] is False
-        assert 'elapsed' in result
         await shutdown_broker()
 
     async def test_task_reraises_exception(self, mocker, mock_llm_config, clean_broker):
@@ -141,7 +124,7 @@ class TestEnqueueUrls:
 
         mock_pipeline_cls = mocker.patch('yosoi.core.pipeline.Pipeline')
         mock_pipeline = mock_pipeline_cls.return_value
-        mock_pipeline.process_url = mocker.AsyncMock(return_value=True)
+        mock_pipeline.process_url = mocker.AsyncMock(return_value=None)
 
         results = await enqueue_urls(
             ['http://a.com/page1', 'http://b.com/page1'],
@@ -160,7 +143,7 @@ class TestEnqueueUrls:
 
         mock_pipeline_cls = mocker.patch('yosoi.core.pipeline.Pipeline')
         mock_pipeline = mock_pipeline_cls.return_value
-        mock_pipeline.process_url = mocker.AsyncMock(return_value=True)
+        mock_pipeline.process_url = mocker.AsyncMock(return_value=None)
 
         results = await enqueue_urls(
             ['http://example.com/page1', 'http://example.com/page2'],
@@ -179,7 +162,7 @@ class TestEnqueueUrls:
 
         mock_pipeline_cls = mocker.patch('yosoi.core.pipeline.Pipeline')
         mock_pipeline = mock_pipeline_cls.return_value
-        mock_pipeline.process_url = mocker.AsyncMock(return_value=False)
+        mock_pipeline.process_url = mocker.AsyncMock(side_effect=Exception('fail'))
 
         results = await enqueue_urls(['http://fail.com'], dedup_by_domain=False)
 
@@ -195,7 +178,7 @@ class TestEnqueueUrls:
 
         mock_pipeline_cls = mocker.patch('yosoi.core.pipeline.Pipeline')
         mock_pipeline = mock_pipeline_cls.return_value
-        mock_pipeline.process_url = mocker.AsyncMock(return_value=True)
+        mock_pipeline.process_url = mocker.AsyncMock(return_value=None)
 
         results = await enqueue_urls(
             ['example.com/page1', 'example.com/page2'],
