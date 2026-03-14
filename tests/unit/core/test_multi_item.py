@@ -92,7 +92,7 @@ def test_pop_container_returns_none_when_absent():
 
 def test_pop_container_handles_selector_entry_dict():
     selectors = {
-        'yosoi_container': {'primary': {'strategy': 'css', 'value': '.card'}, 'fallback': None},
+        'yosoi_container': {'primary': {'type': 'css', 'value': '.card'}, 'fallback': None},
     }
     result = Pipeline._pop_container(selectors)
     assert result == '.card'

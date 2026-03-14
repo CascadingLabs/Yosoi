@@ -461,7 +461,7 @@ def test_test_selector_dispatches_xpath(verifier, simple_html):
     from yosoi.models.selectors import SelectorEntry
 
     sel = Selector(text=simple_html)
-    entry = SelectorEntry(strategy='xpath', value='//h1')
+    entry = SelectorEntry(type='xpath', value='//h1')
     success, reason = verifier._test_selector(sel, entry)
     assert success is True
     assert reason == 'found'
@@ -471,7 +471,7 @@ def test_test_selector_regex_returns_unsupported(verifier, simple_html):
     from yosoi.models.selectors import SelectorEntry
 
     sel = Selector(text=simple_html)
-    entry = SelectorEntry(strategy='regex', value=r'\d+\.\d+')
+    entry = SelectorEntry(type='regex', value=r'\d+\.\d+')
     success, reason = verifier._test_selector(sel, entry)
     assert success is False
     assert reason == 'unsupported_strategy'
@@ -481,7 +481,7 @@ def test_test_selector_jsonld_returns_unsupported(verifier, simple_html):
     from yosoi.models.selectors import SelectorEntry
 
     sel = Selector(text=simple_html)
-    entry = SelectorEntry(strategy='jsonld', value='$.price')
+    entry = SelectorEntry(type='jsonld', value='$.price')
     success, reason = verifier._test_selector(sel, entry)
     assert success is False
     assert reason == 'unsupported_strategy'
@@ -491,7 +491,7 @@ def test_verify_field_skips_regex_entry(verifier, simple_html):
     from yosoi.models.selectors import FieldSelectors, SelectorEntry, SelectorLevel
 
     sel = Selector(text=simple_html)
-    regex_entry = SelectorEntry(strategy='regex', value=r'\d+')
+    regex_entry = SelectorEntry(type='regex', value=r'\d+')
     fs = FieldSelectors(primary=regex_entry)
     result = verifier._verify_field(sel, 'price', fs, max_level=SelectorLevel.REGEX)
     assert result.status == 'failed'
@@ -503,7 +503,7 @@ def test_verify_skips_entry_above_max_level(verifier, simple_html):
 
     # XPath entry but max_level=CSS → should be skipped, field fails
     sel = Selector(text=simple_html)
-    xpath_entry = SelectorEntry(strategy='xpath', value='//h1[@class="title"]')
+    xpath_entry = SelectorEntry(type='xpath', value='//h1[@class="title"]')
     fs = FieldSelectors(primary=xpath_entry)
     result = verifier._verify_field(sel, 'title', fs, max_level=SelectorLevel.CSS)
     assert result.status == 'failed'
@@ -513,7 +513,7 @@ def test_verify_uses_xpath_when_level_allows(verifier, simple_html):
     from yosoi.models.selectors import FieldSelectors, SelectorEntry, SelectorLevel
 
     sel = Selector(text=simple_html)
-    xpath_entry = SelectorEntry(strategy='xpath', value='//h1')
+    xpath_entry = SelectorEntry(type='xpath', value='//h1')
     fs = FieldSelectors(primary=xpath_entry)
     result = verifier._verify_field(sel, 'title', fs, max_level=SelectorLevel.XPATH)
     assert result.status == 'verified'
@@ -539,7 +539,7 @@ def test_coerce_entry_dict_creates_selector_entry():
     from yosoi.models.selectors import SelectorEntry
     from yosoi.models.selectors import coerce_selector_entry as _coerce_entry
 
-    result = _coerce_entry({'value': 'h1', 'strategy': 'css'})
+    result = _coerce_entry({'value': 'h1', 'type': 'css'})
     assert isinstance(result, SelectorEntry)
     assert result.value == 'h1'
 

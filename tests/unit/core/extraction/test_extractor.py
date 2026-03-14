@@ -402,7 +402,7 @@ def test_resolve_css_entry_extracts():
     extractor = _make_extractor()
     html = '<h1>Title</h1>'
     sel = Selector(text=html)
-    entry = SelectorEntry(strategy='css', value='h1')
+    entry = SelectorEntry(type='css', value='h1')
     result = extractor._resolve(sel, entry, 'title', SelectorLevel.CSS)
     assert result == 'Title'
 
@@ -413,7 +413,7 @@ def test_resolve_skips_entry_above_max_level():
     extractor = _make_extractor()
     html = '<h1>Title</h1>'
     sel = Selector(text=html)
-    entry = SelectorEntry(strategy='xpath', value='//h1')
+    entry = SelectorEntry(type='xpath', value='//h1')
     result = extractor._resolve(sel, entry, 'title', SelectorLevel.CSS)
     assert result is None
 
@@ -424,7 +424,7 @@ def test_resolve_xpath_extracts_text():
     extractor = _make_extractor()
     html = '<h1>XPath Title</h1>'
     sel = Selector(text=html)
-    entry = SelectorEntry(strategy='xpath', value='//h1')
+    entry = SelectorEntry(type='xpath', value='//h1')
     result = extractor._resolve(sel, entry, 'title', SelectorLevel.XPATH)
     assert result == 'XPath Title'
 
@@ -439,7 +439,7 @@ def test_extract_content_respects_max_level():
     extractor = _make_extractor(MyContract)
     html = '<html><body><h1>Title</h1></body></html>'
     # XPath entry should be skipped when max_level=CSS
-    xpath_entry = SelectorEntry(strategy='xpath', value='//h1')
+    xpath_entry = SelectorEntry(type='xpath', value='//h1')
     selectors = {'title': {'primary': xpath_entry.model_dump()}}
     result = extractor.extract_content_with_html('https://x.com', html, selectors, max_level=SelectorLevel.CSS)
     assert result is None
@@ -476,7 +476,7 @@ def test_coerce_entry_returns_selector_entry_from_dict():
     from yosoi.models.selectors import SelectorEntry
     from yosoi.models.selectors import coerce_selector_entry as _coerce_entry
 
-    result = _coerce_entry({'value': 'h1.title', 'strategy': 'css'})
+    result = _coerce_entry({'value': 'h1.title', 'type': 'css'})
     assert isinstance(result, SelectorEntry)
     assert result.value == 'h1.title'
 
@@ -539,7 +539,7 @@ def test_resolve_regex_strategy_returns_none():
     extractor = _make_extractor()
     html = '<h1>Title</h1>'
     sel = Selector(text=html)
-    entry = SelectorEntry(strategy='regex', value=r'\d+')
+    entry = SelectorEntry(type='regex', value=r'\d+')
     result = extractor._resolve(sel, entry, 'title', SelectorLevel.REGEX)
     assert result is None
 
@@ -551,7 +551,7 @@ def test_resolve_jsonld_strategy_returns_none():
     extractor = _make_extractor()
     html = '<h1>Title</h1>'
     sel = Selector(text=html)
-    entry = SelectorEntry(strategy='jsonld', value='$.title')
+    entry = SelectorEntry(type='jsonld', value='$.title')
     result = extractor._resolve(sel, entry, 'title', SelectorLevel.JSONLD)
     assert result is None
 

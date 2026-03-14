@@ -110,7 +110,7 @@ class SelectorVerifier:
                     status='verified',
                     working_level=level,
                     selector=entry.value,
-                    selector_level=entry.strategy,
+                    selector_level=entry.type,
                     failed_selectors=failed_selectors,
                 )
             failed_selectors.append(
@@ -142,7 +142,7 @@ class SelectorVerifier:
         if isinstance(selector, str):
             value, strategy = selector, 'css'
         else:
-            value, strategy = selector.value, selector.strategy
+            value, strategy = selector.value, selector.type
 
         if not value or value == 'NA':
             return False, 'na_selector'

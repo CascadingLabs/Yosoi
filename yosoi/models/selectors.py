@@ -1,9 +1,9 @@
 """Pydantic models for structured CSS selector data."""
 
 from enum import IntEnum
-from typing import Literal
+from typing import Any, Literal
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class SelectorLevel(IntEnum):
@@ -14,34 +14,46 @@ class SelectorLevel(IntEnum):
     REGEX = 3
     JSONLD = 4
 
-    # Convenience aliases
-    CLEAN = 1
-    STANDARD = 2
-    ALL = 4
-
 
 _STRATEGY_TO_LEVEL: dict[str, int] = {'css': 1, 'xpath': 2, 'regex': 3, 'jsonld': 4}
+
+
+def _strip_level(schema: dict[str, Any]) -> None:
+    """Remove the internal ``level`` field from the JSON schema.
+
+    ``level`` is an implementation detail synced from ``type`` — it should
+    never appear in schemas sent to LLM providers (some, like Groq, reject
+    schemas with unnecessary complexity).
+    """
+    props = schema.get('properties')
+    if isinstance(props, dict):
+        props.pop('level', None)
+    defs = schema.get('$defs')
+    if isinstance(defs, dict):
+        defs.pop('SelectorLevel', None)
 
 
 class SelectorEntry(BaseModel):
     """A single selector with its strategy and value.
 
     Attributes:
-        strategy: Selector strategy type ('css', 'xpath', 'regex', 'jsonld')
+        type: Selector strategy type ('css', 'xpath', 'regex', 'jsonld')
         value: The selector expression
-        regex: Optional regex pattern (only used when strategy='regex')
+        regex: Optional regex pattern (only used when type='regex')
 
     """
 
-    strategy: Literal['css', 'xpath', 'regex', 'jsonld'] = 'css'
+    model_config = ConfigDict(json_schema_extra=_strip_level)
+
+    type: Literal['css', 'xpath', 'regex', 'jsonld'] = 'css'
     level: SelectorLevel = Field(default=SelectorLevel.CSS, exclude=True)
     value: str
     regex: str | None = None
 
     @model_validator(mode='after')
     def _sync_level(self) -> 'SelectorEntry':
-        """Sync level from strategy after validation."""
-        self.level = SelectorLevel(_STRATEGY_TO_LEVEL[self.strategy])
+        """Sync level from type after validation."""
+        self.level = SelectorLevel(_STRATEGY_TO_LEVEL[self.type])
         return self
 
 

@@ -92,7 +92,7 @@ def test_level_instructions_forbids_xpath_when_css_only():
 
 
 def test_level_instructions_all_level_allows_xpath():
-    result = level_instructions(_ctx(_deps(level=SelectorLevel.ALL)))
+    result = level_instructions(_ctx(_deps(level=SelectorLevel.JSONLD)))
     assert 'XPath' in result or 'xpath' in result.lower()
 
 

@@ -24,6 +24,31 @@ from yosoi.prompts.discovery import (
 from yosoi.utils.exceptions import LLMGenerationError
 
 
+def _extract_provider_error(exc: Exception) -> str | None:
+    """Extract a human-readable error message from provider exceptions.
+
+    Walks the exception chain to find provider-specific error details
+    (e.g. Groq's ``body['error']['message']`` or pydantic-ai's
+    ``ModelHTTPError``).
+
+    Returns:
+        A concise error string, or None if no actionable detail was found.
+
+    """
+    current: BaseException | None = exc
+    while current is not None:
+        # Provider SDK exceptions (groq, openai, etc.) attach a body dict
+        body = getattr(current, 'body', None)
+        if isinstance(body, dict):
+            error = body.get('error', {})
+            if isinstance(error, dict):
+                msg = error.get('message')
+                if msg:
+                    return str(msg)
+        current = current.__cause__
+    return None
+
+
 class SelectorDiscovery:
     """Discovers selectors using AI to read cleaned HTML.
 
@@ -160,14 +185,17 @@ class SelectorDiscovery:
 
         except Exception as e:
             error_msg = str(e)
+            detail = _extract_provider_error(e)
 
-            if 'tool_use_failed' in error_msg or 'invalid_request_error' in error_msg:
+            if detail:
+                self.console.print(f'[danger]  ✗ {detail}[/danger]')
+            elif 'tool_use_failed' in error_msg or 'invalid_request_error' in error_msg:
                 self.console.print('[danger]  ✗ AI failed to generate structured output[/danger]')
             else:
                 self.console.print(f'[danger]  ✗ Error getting selectors from AI: {e}[/danger]')
 
             logfire.error('AI request failed', error=error_msg, provider=self.provider)
-            raise LLMGenerationError(f'AI discovery failed: {error_msg}') from e
+            raise LLMGenerationError(f'AI discovery failed: {detail or error_msg}') from e
 
     def _is_all_na(self, selectors: dict[str, Any]) -> bool:
         """Check if AI returned all NA (gave up).

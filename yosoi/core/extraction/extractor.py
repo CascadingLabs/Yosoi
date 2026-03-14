@@ -121,9 +121,9 @@ class ContentExtractor:
         """
         if entry.level > max_level:
             return None
-        if entry.strategy == 'xpath':
+        if entry.type == 'xpath':
             return self._extract_with_xpath_selector(sel, entry.value, field_name)
-        if entry.strategy in ('regex', 'jsonld'):
+        if entry.type in ('regex', 'jsonld'):
             return None  # unsupported strategies fail closed
         return self._extract_with_selector(sel, entry.value, field_name)
 

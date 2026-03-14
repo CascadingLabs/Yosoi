@@ -8,9 +8,27 @@ from yosoi.cli.setup import build_yosoi_config, setup_llm_config
 
 @pytest.fixture(autouse=True)
 def _clean_env(monkeypatch):
-    """Ensure no provider env keys leak."""
-    for key in ('GROQ_KEY', 'GEMINI_KEY', 'OPENAI_KEY', 'CEREBRAS_KEY', 'OPENROUTER_KEY', 'LOGFIRE_TOKEN'):
+    """Ensure no provider env keys leak and .env file is not loaded during tests."""
+    for key in (
+        'GROQ_KEY',
+        'GROQ_API_KEY',
+        'GEMINI_KEY',
+        'GEMINI_API_KEY',
+        'GOOGLE_API_KEY',
+        'OPENAI_KEY',
+        'OPENAI_API_KEY',
+        'CEREBRAS_KEY',
+        'CEREBRAS_API_KEY',
+        'OPENROUTER_KEY',
+        'OPENROUTER_API_KEY',
+        'LOGFIRE_TOKEN',
+        'YOSOI_MODEL',
+    ):
         monkeypatch.delenv(key, raising=False)
+
+    import dotenv
+
+    monkeypatch.setattr(dotenv, 'load_dotenv', lambda: False)
 
 
 class TestSetupLlmConfig:
@@ -36,6 +54,34 @@ class TestSetupLlmConfig:
         """Falls back to groq when no env keys."""
         cfg = setup_llm_config(None)
         assert cfg.provider == 'groq'
+
+    def test_yosoi_model_env_used_as_default(self, monkeypatch):
+        """YOSOI_MODEL env var is used when no --model flag."""
+        monkeypatch.setenv('YOSOI_MODEL', 'openrouter:mistralai/mistral-7b')
+        cfg = setup_llm_config(None)
+        assert cfg.provider == 'openrouter'
+        assert cfg.model_name == 'mistralai/mistral-7b'
+
+    def test_model_arg_overrides_yosoi_model_env(self, monkeypatch):
+        """--model flag takes precedence over YOSOI_MODEL env var."""
+        monkeypatch.setenv('YOSOI_MODEL', 'openrouter:mistralai/mistral-7b')
+        cfg = setup_llm_config('groq:llama-3.3-70b')
+        assert cfg.provider == 'groq'
+        assert cfg.model_name == 'llama-3.3-70b'
+
+    def test_yosoi_model_invalid_raises(self, monkeypatch):
+        """Invalid YOSOI_MODEL env var raises ClickException."""
+        monkeypatch.setenv('YOSOI_MODEL', 'not-a-valid-model-string')
+        with pytest.raises(click.ClickException, match='YOSOI_MODEL'):
+            setup_llm_config(None)
+
+    def test_yosoi_model_takes_priority_over_auto_detect(self, monkeypatch):
+        """YOSOI_MODEL takes priority over API-key-based auto-detection."""
+        monkeypatch.setenv('YOSOI_MODEL', 'gemini:gemini-2.0-flash')
+        monkeypatch.setenv('GROQ_KEY', 'groq-key')
+        cfg = setup_llm_config(None)
+        assert cfg.provider == 'gemini'
+        assert cfg.model_name == 'gemini-2.0-flash'
 
 
 class TestBuildYosoiConfig:

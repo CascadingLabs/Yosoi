@@ -38,7 +38,11 @@ def _resolve_output_formats(flag_values: tuple[str, ...]) -> list[str]:
 @click.command()
 @click.pass_context
 @click.option(
-    '-m', '--model', default=None, metavar='PROVIDER:MODEL', help='LLM model (e.g. groq:llama-3.3-70b-versatile)'
+    '-m',
+    '--model',
+    default=None,
+    metavar='PROVIDER:MODEL',
+    help='LLM model (e.g. groq:llama-3.3-70b-versatile). Defaults to $YOSOI_MODEL env var if set.',
 )
 @click.option('-u', '--url', default=None, help='Single URL to process')
 @click.option('-f', '--file', 'file_path', default=None, help='File containing URLs (one per line, or JSON)')
