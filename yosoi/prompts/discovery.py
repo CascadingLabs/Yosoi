@@ -116,7 +116,8 @@ def field_instructions(ctx: RunContext['DiscoveryDeps']) -> str:
     if not descriptions:
         return ''
     fields_text = '\n'.join(f'**{name}** — {desc}' for name, desc in descriptions.items())
-    return f'Find selectors for these fields:\n{fields_text}\n\n{_FIELD_SELECTOR_GUIDE}\n\n{_CONTAINER_GUIDANCE}'
+    container_guidance = '' if ctx.deps.contract.get_container_selector() else f'\n\n{_CONTAINER_GUIDANCE}'
+    return f'Find selectors for these fields:\n{fields_text}\n\n{_FIELD_SELECTOR_GUIDE}{container_guidance}'
 
 
 def level_instructions(ctx: RunContext['DiscoveryDeps']) -> str:
