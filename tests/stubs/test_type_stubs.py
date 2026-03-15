@@ -3,9 +3,8 @@
 import subprocess
 import sys
 import textwrap
-from pathlib import Path
 
-SNIPPETS_DIR = Path(__file__).parent / 'snippets'
+from tests.stubs.conftest import SNIPPETS_DIR
 
 
 def _run_mypy(code: str) -> subprocess.CompletedProcess[str]:

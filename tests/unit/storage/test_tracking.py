@@ -46,17 +46,17 @@ def test_multiple_domains_tracked_independently(tracker):
     assert tracker.get_llm_calls('other.com') == 1
 
 
-def test_get_stats_returns_dict(tracker):
+def test_get_stats_returns_domain_stats(tracker):
     tracker.record_url('https://example.com/x', used_llm=True)
     stats = tracker.get_stats('example.com')
-    assert 'llm_calls' in stats
-    assert 'url_count' in stats
+    assert hasattr(stats, 'llm_calls')
+    assert hasattr(stats, 'url_count')
 
 
 def test_get_stats_unknown_domain_returns_zeros(tracker):
     stats = tracker.get_stats('neverrecorded.com')
-    assert stats['llm_calls'] == 0
-    assert stats['url_count'] == 0
+    assert stats.llm_calls == 0
+    assert stats.url_count == 0
 
 
 def test_get_all_stats_returns_all_domains(tracker):
@@ -111,17 +111,17 @@ def test_print_stats_empty(tracker, capsys):
 # ---------------------------------------------------------------------------
 
 
-def test_record_url_returns_dict_with_llm_calls_and_url_count(tracker):
+def test_record_url_returns_domain_stats_with_llm_calls_and_url_count(tracker):
     result = tracker.record_url('https://example.com/a', used_llm=True)
-    assert 'llm_calls' in result
-    assert 'url_count' in result
+    assert hasattr(result, 'llm_calls')
+    assert hasattr(result, 'url_count')
 
 
 def test_record_url_returns_exact_counts(tracker):
     tracker.record_url('https://example.com/a', used_llm=True)
     result = tracker.record_url('https://example.com/b', used_llm=False)
-    assert result['llm_calls'] == 1
-    assert result['url_count'] == 2
+    assert result.llm_calls == 1
+    assert result.url_count == 2
 
 
 def test_record_url_llm_false_does_not_add_llm_call(tracker):
@@ -166,8 +166,8 @@ def test_get_url_count_plain_domain(tracker):
 
 def test_record_url_increments_from_zero_on_first_call(tracker):
     result = tracker.record_url('https://newsite.com/a', used_llm=True)
-    assert result['llm_calls'] == 1
-    assert result['url_count'] == 1
+    assert result.llm_calls == 1
+    assert result.url_count == 1
 
 
 def test_reset_domain_removes_only_that_domain(tracker):
@@ -218,8 +218,8 @@ def test_load_data_returns_empty_dict_for_invalid_json(tmp_path):
 
 def test_get_stats_returns_zeros_for_unknown_domain(tracker):
     stats = tracker.get_stats('unknown.xyz')
-    assert stats['llm_calls'] == 0
-    assert stats['url_count'] == 0
+    assert stats.llm_calls == 0
+    assert stats.url_count == 0
 
 
 def test_tracker_init_with_none_uses_get_tracking_path(mocker, tmp_path):
@@ -291,8 +291,8 @@ def test_record_url_initializes_domain_with_zero_counts(tracker):
     """First record for a domain must start with zero, then increment."""
     result = tracker.record_url('https://brand-new.com/page', used_llm=False)
     # After first record: url_count=1, llm_calls=0
-    assert result['url_count'] == 1
-    assert result['llm_calls'] == 0
+    assert result.url_count == 1
+    assert result.llm_calls == 0
 
 
 def test_get_llm_calls_uses_extract_domain_for_url_with_scheme(tracker):

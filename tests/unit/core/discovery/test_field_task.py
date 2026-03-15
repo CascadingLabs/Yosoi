@@ -203,6 +203,27 @@ async def test_semaphore_is_respected(mock_agent):
 
 
 @pytest.mark.anyio
+async def test_invalid_cached_entry_triggers_rediscovery(mock_agent):
+    """When cached_entry can't be validated as FieldSelectors, fall through to LLM."""
+    cached_entry = {'primary': 12345}  # invalid type
+
+    result = await run_field_task(
+        field_name='headline',
+        field_description='Article title',
+        field_hint=None,
+        discovery_input=_DISCOVERY_INPUT,
+        html=_HTML,
+        agent=mock_agent,
+        cached_entry=cached_entry,
+        max_level=SelectorLevel.CSS,
+    )
+
+    assert result.from_cache is False
+    assert result.selectors is not None
+    mock_agent.discover_field.assert_called()
+
+
+@pytest.mark.anyio
 async def test_field_task_result_dataclass():
     result = FieldTaskResult(
         field_name='test',

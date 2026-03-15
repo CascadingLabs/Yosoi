@@ -50,8 +50,8 @@ class TestTaskiqAgentConcurrency:
         urls = [f'http://site{i}.com/article' for i in range(5)]
         results = await enqueue_urls(urls, dedup_by_domain=False)
 
-        assert len(results['successful']) == 5
-        assert results['failed'] == []
+        assert len(results.successful) == 5
+        assert results.failed == []
         assert mock_pipeline.process_url.await_count == 5
         await shutdown_broker()
 
@@ -75,7 +75,7 @@ class TestTaskiqAgentConcurrency:
         urls = ['http://a.com', 'http://b.com', 'http://c.com']
         results = await enqueue_urls(urls, dedup_by_domain=False)
 
-        assert len(results['successful']) == 3
+        assert len(results.successful) == 3
         # Each task should create its own Pipeline instance
         assert len(pipeline_instances) == 3
         # Verify they're distinct objects
@@ -116,7 +116,7 @@ class TestSemaphoreConcurrency:
         urls = [f'http://site{i}.com' for i in range(6)]
         results = await enqueue_urls(urls, dedup_by_domain=False)
 
-        assert len(results['successful']) == 6
+        assert len(results.successful) == 6
         assert peak_concurrent <= 2
         await shutdown_broker()
 
@@ -149,9 +149,9 @@ class TestAgentFailureIsolation:
         urls = ['http://good1.com', 'http://fail.com', 'http://good2.com']
         results = await enqueue_urls(urls, dedup_by_domain=False)
 
-        assert 'http://good1.com' in results['successful']
-        assert 'http://good2.com' in results['successful']
-        assert 'http://fail.com' in results['failed']
+        assert 'http://good1.com' in results.successful
+        assert 'http://good2.com' in results.successful
+        assert 'http://fail.com' in results.failed
         # fail.com is retried (max_retries=2 means up to 2 total attempts), so 2 attempts + 1 each for the two good URLs
         assert call_count == 4
         await shutdown_broker()
@@ -174,7 +174,7 @@ class TestAgentFailureIsolation:
         urls = ['http://fast1.com', 'http://slow.com', 'http://fast2.com']
         results = await enqueue_urls(urls, dedup_by_domain=False)
 
-        assert len(results['successful']) == 3
+        assert len(results.successful) == 3
         await shutdown_broker()
 
 
@@ -201,8 +201,8 @@ class TestAgentRunInsideTask:
 
         result = await process_url_task.original_func(url='http://example.com')
 
-        assert result['url'] == 'http://example.com'
-        assert 'elapsed' in result
+        assert result.url == 'http://example.com'
+        assert result.elapsed is not None
         await shutdown_broker()
 
 
@@ -235,7 +235,7 @@ class TestEndToEndBrokerAgent:
         assert all(c['success'] for c in completed)
         assert all(c['elapsed'] >= 0 for c in completed)
         assert {c['url'] for c in completed} == {'http://a.com', 'http://b.com'}
-        assert len(results['successful']) == 2
+        assert len(results.successful) == 2
         await shutdown_broker()
 
     async def test_broker_lifecycle_clean_shutdown(self, mock_llm_config, clean_broker):
@@ -246,7 +246,7 @@ class TestEndToEndBrokerAgent:
 
         assert yosoi_tasks._semaphore is not None
         assert _tasks_mod._pipeline_config is not None
-        assert _tasks_mod._pipeline_config['contract'] is NewsArticle
+        assert _tasks_mod._pipeline_config.contract is NewsArticle
 
         await shutdown_broker()
 
@@ -270,8 +270,8 @@ class TestEndToEndBrokerAgent:
         urls = [f'http://site{i}.com' for i in range(4)]
         results = await enqueue_urls(urls, dedup_by_domain=False)
 
-        assert len(results['successful']) == 2
-        assert len(results['failed']) == 2
+        assert len(results.successful) == 2
+        assert len(results.failed) == 2
         await shutdown_broker()
 
 

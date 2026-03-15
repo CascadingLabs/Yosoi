@@ -143,7 +143,7 @@ class Contract(BaseModel):
 
         # Step 2.5: List field coercion — normalize to list, split single strings, coerce per-element
         for field_name in _list_field_names:
-            if field_name not in result:
+            if field_name not in result or result[field_name] is None:
                 continue
             raw_extra = cls.model_fields[field_name].json_schema_extra
             extra = raw_extra if isinstance(raw_extra, dict) else {}
@@ -194,6 +194,24 @@ class Contract(BaseModel):
                 else:
                     hints[name] = None
         return hints
+
+    @classmethod
+    def discovery_field_names(cls) -> set[str]:
+        """Return the set of flattened field names used for discovery and cache keys.
+
+        Non-Contract fields keep their original name; nested Contract fields are
+        expanded to ``{parent}_{child}`` keys.  This matches the key format used
+        by snapshots, ``field_descriptions()``, and ``get_selector_overrides()``.
+        """
+        names: set[str] = set()
+        for name, fi in cls.model_fields.items():
+            ann = fi.annotation
+            if isinstance(ann, type) and issubclass(ann, Contract):
+                for child_name in ann.model_fields:
+                    names.add(f'{name}_{child_name}')
+            else:
+                names.add(name)
+        return names
 
     @classmethod
     def to_selector_model(cls) -> type[BaseModel]:

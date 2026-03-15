@@ -69,7 +69,7 @@ class TestLLMTrackerLevelDistribution:
         tracker.record_url('https://a.com', used_llm=True, level_distribution={'css': 3, 'xpath': 1})
         tracker.record_url('https://a.com', used_llm=False, level_distribution={'css': 2})
         stats = tracker.get_stats('a.com')
-        assert stats['level_distribution'] == {'css': 5, 'xpath': 1}
+        assert stats.level_distribution == {'css': 5, 'xpath': 1}
 
 
 class TestLLMTrackerCorruptFile:

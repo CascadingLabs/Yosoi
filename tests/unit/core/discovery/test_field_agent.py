@@ -25,6 +25,50 @@ def field_selectors():
     return FieldSelectors(primary='h1.title', fallback='h1', tertiary=None)
 
 
+# ---------------------------------------------------------------------------
+# _extract_provider_error
+# ---------------------------------------------------------------------------
+
+from yosoi.core.discovery.field_agent import _extract_provider_error
+
+
+class TestExtractProviderError:
+    def test_returns_none_for_plain_exception(self):
+        assert _extract_provider_error(RuntimeError('boom')) is None
+
+    def test_extracts_body_error_message(self):
+        exc = RuntimeError('fail')
+        exc.body = {'error': {'message': 'Rate limit exceeded'}}  # type: ignore[attr-defined]
+        assert _extract_provider_error(exc) == 'Rate limit exceeded'
+
+    def test_walks_exception_chain(self):
+        inner = RuntimeError('inner')
+        inner.body = {'error': {'message': 'Model overloaded'}}  # type: ignore[attr-defined]
+        outer = RuntimeError('outer')
+        outer.__cause__ = inner
+        assert _extract_provider_error(outer) == 'Model overloaded'
+
+    def test_returns_none_for_non_dict_body(self):
+        exc = RuntimeError('fail')
+        exc.body = 'not a dict'  # type: ignore[attr-defined]
+        assert _extract_provider_error(exc) is None
+
+    def test_returns_none_for_empty_error_dict(self):
+        exc = RuntimeError('fail')
+        exc.body = {'error': {}}  # type: ignore[attr-defined]
+        assert _extract_provider_error(exc) is None
+
+    def test_returns_none_for_non_dict_error(self):
+        exc = RuntimeError('fail')
+        exc.body = {'error': 'string error'}  # type: ignore[attr-defined]
+        assert _extract_provider_error(exc) is None
+
+
+# ---------------------------------------------------------------------------
+# FieldDiscoveryAgent
+# ---------------------------------------------------------------------------
+
+
 def test_field_discovery_agent_init(llm_config):
     agent = FieldDiscoveryAgent(llm_config, console=Console(quiet=True))
     assert agent.model_name == 'test-model'
@@ -80,6 +124,24 @@ async def test_discover_field_raises_llm_generation_error_on_exception(llm_confi
     mocker.patch.object(agent._agent, 'run', new=mocker.AsyncMock(side_effect=RuntimeError('LLM exploded')))
 
     with pytest.raises(LLMGenerationError, match='Field discovery failed'):
+        await agent.discover_field(
+            field_name='headline',
+            field_description='Main article title',
+            field_hint=None,
+            discovery_input=discovery_input,
+            target_level=SelectorLevel.CSS,
+        )
+
+
+@pytest.mark.anyio
+async def test_discover_field_error_with_provider_detail(llm_config, discovery_input, mocker):
+    """When provider error has body detail, the detail is included in the LLMGenerationError."""
+    agent = FieldDiscoveryAgent(llm_config, console=Console(quiet=True))
+    exc = RuntimeError('provider fail')
+    exc.body = {'error': {'message': 'Rate limit exceeded'}}  # type: ignore[attr-defined]
+    mocker.patch.object(agent._agent, 'run', new=mocker.AsyncMock(side_effect=exc))
+
+    with pytest.raises(LLMGenerationError, match='Rate limit exceeded'):
         await agent.discover_field(
             field_name='headline',
             field_description='Main article title',

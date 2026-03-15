@@ -332,6 +332,80 @@ async def test_orchestrator_adds_discover_task_for_auto_root(llm_config, mock_st
 
 
 @pytest.mark.anyio
+async def test_gather_exception_is_handled_gracefully(orchestrator, mocker):
+    """When asyncio.gather returns a BaseException, the orchestrator logs and skips it."""
+    call_count = 0
+
+    async def mock_run_field_task(**kwargs):
+        nonlocal call_count
+        call_count += 1
+        name = kwargs['field_name']
+        if name == 'headline':
+            raise RuntimeError('unexpected crash')
+        from yosoi.core.discovery.field_task import FieldTaskResult
+
+        sel = FieldSelectors(primary='h1') if name != 'root' else None
+        return FieldTaskResult(field_name=name, selectors=sel, from_cache=False, escalated_to=None)
+
+    mocker.patch('yosoi.core.discovery.orchestrator.run_field_task', new=mock_run_field_task)
+
+    result = await orchestrator.discover_selectors(_HTML, 'https://example.com')
+    # Should still return partial results (other fields succeeded)
+    assert result is not None
+    assert 'headline' not in result
+
+
+@pytest.mark.anyio
+async def test_escalated_count_tracked(orchestrator, mocker):
+    """Escalated fields are counted in the orchestrator result."""
+    from yosoi.models.selectors import SelectorLevel as SL
+
+    async def mock_run_field_task(**kwargs):
+        from yosoi.core.discovery.field_task import FieldTaskResult
+
+        name = kwargs['field_name']
+        if name == 'headline':
+            return FieldTaskResult(
+                field_name=name, selectors=FieldSelectors(primary='//h1'), from_cache=False, escalated_to=SL.XPATH
+            )
+        sel = FieldSelectors(primary='span') if name != 'root' else None
+        return FieldTaskResult(field_name=name, selectors=sel, from_cache=False, escalated_to=None)
+
+    mocker.patch('yosoi.core.discovery.orchestrator.run_field_task', new=mock_run_field_task)
+
+    result = await orchestrator.discover_selectors(_HTML, 'https://example.com')
+    assert result is not None
+    assert 'headline' in result
+
+
+@pytest.mark.anyio
+async def test_stale_fields_filters_task_specs(orchestrator, mocker):
+    """When stale_fields is provided, only those fields are discovered and save is skipped."""
+    captured_fields: list[str] = []
+
+    async def mock_run_field_task(**kwargs):
+        from yosoi.core.discovery.field_task import FieldTaskResult
+
+        name = kwargs['field_name']
+        captured_fields.append(name)
+        return FieldTaskResult(
+            field_name=name, selectors=FieldSelectors(primary='h1'), from_cache=False, escalated_to=None
+        )
+
+    mocker.patch('yosoi.core.discovery.orchestrator.run_field_task', new=mock_run_field_task)
+    save_spy = mocker.patch.object(orchestrator._storage, 'save_selectors')
+
+    result = await orchestrator.discover_selectors(_HTML, 'https://example.com', stale_fields={'headline'})
+
+    assert result is not None
+    # Only 'headline' should have been processed
+    assert 'headline' in captured_fields
+    assert 'author' not in captured_fields
+    # save_selectors should NOT be called for partial rediscovery
+    save_spy.assert_not_called()
+
+
+@pytest.mark.anyio
 async def test_stale_cache_not_resurrected(orchestrator, mock_storage, mocker):
     """Merged map must use task results only — stale cache entries must not appear."""
     # Pre-populate cache with a stale entry for 'author'

@@ -122,6 +122,13 @@ class TestYosoiConfig:
         with pytest.raises(ValueError, match='No API key found'):
             YosoiConfig(llm=llm)
 
+    def test_no_api_key_required_provider_skips_env_lookup(self):
+        """Providers like ollama need no API key."""
+        llm = LLMConfig(provider='ollama', model_name='llama3')
+        cfg = YosoiConfig(llm=llm)
+        assert cfg.llm.api_key is None
+        assert cfg.llm.provider == 'ollama'
+
     def test_defaults_for_debug_telemetry_logs(self):
         """Default values for debug, telemetry, logs, force."""
         llm = LLMConfig(provider='groq', model_name='test', api_key='key')

@@ -4,6 +4,7 @@ import yosoi as ys
 from yosoi.core.pipeline import Pipeline
 from yosoi.models.contract import Contract
 from yosoi.models.results import FetchResult, FieldVerificationResult, VerificationResult
+from yosoi.storage.tracking import DomainStats
 from yosoi.utils.exceptions import BotDetectionError
 
 # ---------------------------------------------------------------------------
@@ -284,7 +285,7 @@ def test_validate_with_contract_injects_source_url(mocker):
 
 def test_save_and_track_saves_selectors_and_content(mocker):
     stub = _make_pipeline_stub(mocker)
-    stub.tracker.record_url.return_value = {'llm_calls': 1, 'url_count': 1}
+    stub.tracker.record_url.return_value = DomainStats(llm_calls=1, url_count=1)
     Pipeline._save_and_track(
         stub,
         url='https://x.com',
@@ -303,7 +304,7 @@ def test_save_and_track_saves_selectors_and_content(mocker):
 
 def test_save_and_track_skips_content_when_none(mocker):
     stub = _make_pipeline_stub(mocker)
-    stub.tracker.record_url.return_value = {'llm_calls': 1, 'url_count': 1}
+    stub.tracker.record_url.return_value = DomainStats(llm_calls=1, url_count=1)
     Pipeline._save_and_track(
         stub,
         url='https://x.com',
@@ -319,7 +320,7 @@ def test_save_and_track_skips_content_when_none(mocker):
 
 def test_save_and_track_passes_elapsed_to_record_url(mocker):
     stub = _make_pipeline_stub(mocker)
-    stub.tracker.record_url.return_value = {'llm_calls': 1, 'url_count': 1}
+    stub.tracker.record_url.return_value = DomainStats(llm_calls=1, url_count=1)
     Pipeline._save_and_track(
         stub,
         url='https://x.com',
@@ -345,7 +346,7 @@ def test_track_cached_success_calls_record_url(mocker):
     stub._url_start = 100.0
     mocker.patch('yosoi.core.pipeline.time')
     mocker.patch('yosoi.core.pipeline.time.monotonic', return_value=102.5)
-    stub.tracker.record_url.return_value = {'llm_calls': 0, 'url_count': 3}
+    stub.tracker.record_url.return_value = DomainStats(llm_calls=0, url_count=3)
     Pipeline._track_cached_success(stub, 'https://x.com', 'x.com')
     call_args = stub.tracker.record_url.call_args
     assert call_args[0] == ('https://x.com',)
@@ -361,7 +362,7 @@ def test_track_cached_success_calls_record_url(mocker):
 
 def test_print_tracking_stats_shows_efficiency(mocker):
     stub = _make_pipeline_stub(mocker)
-    Pipeline._print_tracking_stats(stub, 'example.com', {'llm_calls': 2, 'url_count': 10})
+    Pipeline._print_tracking_stats(stub, 'example.com', DomainStats(llm_calls=2, url_count=10))
     calls = [str(c) for c in stub.console.print.call_args_list]
     joined = ' '.join(calls)
     assert 'llm_calls' in joined.lower() or '2' in joined or 'LLM' in joined
@@ -369,7 +370,7 @@ def test_print_tracking_stats_shows_efficiency(mocker):
 
 def test_print_tracking_stats_no_efficiency_when_zero_llm(mocker):
     stub = _make_pipeline_stub(mocker)
-    Pipeline._print_tracking_stats(stub, 'example.com', {'llm_calls': 0, 'url_count': 5})
+    Pipeline._print_tracking_stats(stub, 'example.com', DomainStats(llm_calls=0, url_count=5))
     # Should not divide by zero - just check it runs without error
     stub.console.print.assert_called()
 
@@ -452,8 +453,10 @@ async def test_stale_container_triggers_rediscovery(mocker):
         return_value=FetchResult(url='https://x.com', html='<html><body><h1>Title</h1></body></html>')
     )
 
-    # Patch _resolve_root to return a non-None stale container string
-    mocker.patch.object(stub, '_resolve_root', return_value='article.product_pod')
+    # Patch _resolve_root to return a non-None stale container entry
+    mocker.patch.object(
+        stub, '_resolve_root', return_value={'primary': {'type': 'css', 'value': 'article.product_pod'}}
+    )
 
     items, cache_valid = await Pipeline._extract_with_cached(
         stub, 'https://x.com', mock_fetcher, {'title': {'primary': 'h1'}}, False
@@ -667,13 +670,7 @@ async def test_process_url_succeeds_with_cached_selectors(mocker):
     }
     stub.storage.load_selectors.return_value = {'title': {'primary': 'h1'}}
     mocker.patch.object(Pipeline, '_extract_with_cached', return_value=([{'title': 'Book'}], True))
-    stub.tracker.record_url.return_value = {
-        'llm_calls': 0,
-        'url_count': 1,
-        'level_distribution': {},
-        'total_elapsed': 0.0,
-        'partial_rediscovery_count': 0,
-    }
+    stub.tracker.record_url.return_value = DomainStats(url_count=1)
     mocker.patch('yosoi.core.pipeline.logfire')
     await Pipeline.process_url(stub, 'https://x.com')
 
@@ -829,7 +826,7 @@ def test_show_summary_prints_table_with_domains(mocker):
 
 def test_show_llm_stats_with_data(mocker):
     stub = _make_pipeline_stub(mocker)
-    stub.tracker.get_all_stats.return_value = {'example.com': {'llm_calls': 2, 'url_count': 10}}
+    stub.tracker.get_all_stats.return_value = {'example.com': DomainStats(llm_calls=2, url_count=10)}
     Pipeline.show_llm_stats(stub)
     stub.console.print.assert_called()
 
@@ -972,7 +969,7 @@ def test_verify_failed_result_calls_print_verification_failure(mocker):
 def test_save_and_track_calls_record_url_with_used_llm_true(mocker):
     """_save_and_track must pass used_llm=True when called with used_llm=True."""
     stub = _make_pipeline_stub(mocker)
-    stub.tracker.record_url.return_value = {'llm_calls': 1, 'url_count': 1}
+    stub.tracker.record_url.return_value = DomainStats(llm_calls=1, url_count=1)
     Pipeline._save_and_track(
         stub,
         url='https://x.com',
@@ -990,7 +987,7 @@ def test_save_and_track_calls_record_url_with_used_llm_true(mocker):
 def test_save_and_track_calls_record_url_with_used_llm_false(mocker):
     """_save_and_track must pass used_llm=False when called with used_llm=False."""
     stub = _make_pipeline_stub(mocker)
-    stub.tracker.record_url.return_value = {'llm_calls': 0, 'url_count': 1}
+    stub.tracker.record_url.return_value = DomainStats(llm_calls=0, url_count=1)
     Pipeline._save_and_track(
         stub,
         url='https://x.com',
@@ -1008,7 +1005,7 @@ def test_save_and_track_calls_record_url_with_used_llm_false(mocker):
 def test_save_and_track_saves_content_with_output_format(mocker):
     """save_content must be called with the correct output_format."""
     stub = _make_pipeline_stub(mocker)
-    stub.tracker.record_url.return_value = {'llm_calls': 1, 'url_count': 1}
+    stub.tracker.record_url.return_value = DomainStats(llm_calls=1, url_count=1)
     Pipeline._save_and_track(
         stub,
         url='https://x.com',
@@ -1031,7 +1028,7 @@ def test_track_cached_success_calls_record_url_used_llm_false(mocker):
     stub = _make_pipeline_stub(mocker)
     stub._url_start = 100.0
     mocker.patch('yosoi.core.pipeline.time.monotonic', return_value=103.0)
-    stub.tracker.record_url.return_value = {'llm_calls': 0, 'url_count': 1}
+    stub.tracker.record_url.return_value = DomainStats(llm_calls=0, url_count=1)
     Pipeline._track_cached_success(stub, 'https://example.com', 'example.com')
     call_args = stub.tracker.record_url.call_args
     assert call_args[0] == ('https://example.com',)
@@ -1048,7 +1045,7 @@ def test_track_cached_success_calls_record_url_used_llm_false(mocker):
 def test_print_tracking_stats_shows_llm_call_count(mocker):
     """_print_tracking_stats must display llm_calls value."""
     stub = _make_pipeline_stub(mocker)
-    Pipeline._print_tracking_stats(stub, 'x.com', {'llm_calls': 5, 'url_count': 10})
+    Pipeline._print_tracking_stats(stub, 'x.com', DomainStats(llm_calls=5, url_count=10))
     call_args = ' '.join(str(c) for c in stub.console.print.call_args_list)
     assert '5' in call_args
 
@@ -1056,7 +1053,7 @@ def test_print_tracking_stats_shows_llm_call_count(mocker):
 def test_print_tracking_stats_shows_url_count(mocker):
     """_print_tracking_stats must display url_count value."""
     stub = _make_pipeline_stub(mocker)
-    Pipeline._print_tracking_stats(stub, 'x.com', {'llm_calls': 1, 'url_count': 7})
+    Pipeline._print_tracking_stats(stub, 'x.com', DomainStats(llm_calls=1, url_count=7))
     call_args = ' '.join(str(c) for c in stub.console.print.call_args_list)
     assert '7' in call_args
 
@@ -1064,7 +1061,7 @@ def test_print_tracking_stats_shows_url_count(mocker):
 def test_print_tracking_stats_efficiency_calculation(mocker):
     """Efficiency must be url_count / llm_calls."""
     stub = _make_pipeline_stub(mocker)
-    Pipeline._print_tracking_stats(stub, 'x.com', {'llm_calls': 2, 'url_count': 10})
+    Pipeline._print_tracking_stats(stub, 'x.com', DomainStats(llm_calls=2, url_count=10))
     call_args = ' '.join(str(c) for c in stub.console.print.call_args_list)
     # 10/2=5.0 efficiency
     assert '5.0' in call_args
@@ -1074,7 +1071,7 @@ def test_print_tracking_stats_no_efficiency_when_llm_zero(mocker):
     """When llm_calls=0, efficiency section should not appear (no ZeroDivisionError)."""
     stub = _make_pipeline_stub(mocker)
     # Should not raise
-    Pipeline._print_tracking_stats(stub, 'x.com', {'llm_calls': 0, 'url_count': 3})
+    Pipeline._print_tracking_stats(stub, 'x.com', DomainStats(llm_calls=0, url_count=3))
     # console.print was called at least once
     stub.console.print.assert_called()
 
@@ -1082,7 +1079,7 @@ def test_print_tracking_stats_no_efficiency_when_llm_zero(mocker):
 def test_print_tracking_stats_shows_total_elapsed(mocker):
     """_print_tracking_stats must display total_elapsed when present."""
     stub = _make_pipeline_stub(mocker)
-    Pipeline._print_tracking_stats(stub, 'x.com', {'llm_calls': 1, 'url_count': 2, 'total_elapsed': 5.3})
+    Pipeline._print_tracking_stats(stub, 'x.com', DomainStats(llm_calls=1, url_count=2, total_elapsed=5.3))
     call_args = ' '.join(str(c) for c in stub.console.print.call_args_list)
     assert '5.3' in call_args
 
@@ -1307,7 +1304,7 @@ def test_show_summary_shows_domain_count(mocker):
 def test_show_llm_stats_shows_efficiency_when_llm_calls_nonzero(mocker):
     """show_llm_stats must show efficiency when there are LLM calls."""
     stub = _make_pipeline_stub(mocker)
-    stub.tracker.get_all_stats.return_value = {'x.com': {'llm_calls': 4, 'url_count': 20}}
+    stub.tracker.get_all_stats.return_value = {'x.com': DomainStats(llm_calls=4, url_count=20)}
     Pipeline.show_llm_stats(stub)
     call_args = ' '.join(str(c) for c in stub.console.print.call_args_list)
     # 20/4 = 5.0 efficiency
@@ -1318,8 +1315,8 @@ def test_show_llm_stats_sums_all_domains(mocker):
     """show_llm_stats must aggregate stats across all domains."""
     stub = _make_pipeline_stub(mocker)
     stub.tracker.get_all_stats.return_value = {
-        'a.com': {'llm_calls': 2, 'url_count': 10},
-        'b.com': {'llm_calls': 3, 'url_count': 15},
+        'a.com': DomainStats(llm_calls=2, url_count=10),
+        'b.com': DomainStats(llm_calls=3, url_count=15),
     }
     Pipeline.show_llm_stats(stub)
     call_args = ' '.join(str(c) for c in stub.console.print.call_args_list)

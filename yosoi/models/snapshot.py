@@ -51,6 +51,15 @@ def snapshot_to_selector_dict(snap: SelectorSnapshot) -> dict[str, Any]:
     return result
 
 
+def _ensure_utc(dt: datetime | None) -> datetime | None:
+    """Normalize a datetime to timezone-aware UTC."""
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
 def selector_dict_to_snapshot(
     field_data: dict[str, Any],
     discovered_at: datetime | None = None,
@@ -59,13 +68,13 @@ def selector_dict_to_snapshot(
     last_verified_at: datetime | None = None,
 ) -> SelectorSnapshot:
     """Wrap a raw selector dict into a SelectorSnapshot."""
-    ts = discovered_at or datetime.now(timezone.utc)
+    ts = _ensure_utc(discovered_at) or datetime.now(timezone.utc)
     return SelectorSnapshot(
         primary=field_data.get('primary'),
         fallback=field_data.get('fallback'),
         tertiary=field_data.get('tertiary'),
         discovered_at=ts,
-        last_verified_at=last_verified_at,
+        last_verified_at=_ensure_utc(last_verified_at),
         source=source,
         parent_root=parent_root,
     )

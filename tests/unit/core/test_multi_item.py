@@ -7,6 +7,7 @@ import yosoi as ys
 # ---------------------------------------------------------------------------
 from yosoi import Pipeline
 from yosoi.models.results import FetchResult
+from yosoi.storage.tracking import DomainStats
 
 
 class SimpleContract(ys.Contract):
@@ -83,7 +84,7 @@ def test_pop_root_extracts_value_from_new_format():
         'root': {'primary': {'type': 'css', 'value': '.card'}},
     }
     result = Pipeline._pop_root(selectors)
-    assert result == '.card'
+    assert result == {'primary': {'type': 'css', 'value': '.card'}}
     assert 'root' not in selectors
 
 
@@ -98,7 +99,7 @@ def test_pop_root_handles_field_selectors_format():
         'root': {'primary': '.card', 'fallback': None, 'tertiary': None},
     }
     result = Pipeline._pop_root(selectors)
-    assert result == '.card'
+    assert result == {'primary': '.card', 'fallback': None, 'tertiary': None}
     assert 'root' not in selectors
 
 
@@ -107,7 +108,7 @@ def test_pop_root_handles_selector_entry_dict():
         'root': {'primary': {'type': 'css', 'value': '.card'}, 'fallback': None},
     }
     result = Pipeline._pop_root(selectors)
-    assert result == '.card'
+    assert result == {'primary': {'type': 'css', 'value': '.card'}, 'fallback': None}
     assert 'root' not in selectors
 
 
@@ -115,6 +116,20 @@ def test_pop_root_returns_none_for_empty_value():
     selectors = {'root': {'primary': {'type': 'css', 'value': ''}}}
     result = Pipeline._pop_root(selectors)
     assert result is None
+
+
+def test_root_value_extracts_string():
+    entry = {'primary': {'type': 'xpath', 'value': '//div[@class="item"]'}}
+    assert Pipeline._root_value(entry) == '//div[@class="item"]'
+
+
+def test_root_value_handles_string_primary():
+    entry = {'primary': '.card'}
+    assert Pipeline._root_value(entry) == '.card'
+
+
+def test_root_value_returns_none_for_none():
+    assert Pipeline._root_value(None) is None
 
 
 # ---------------------------------------------------------------------------
@@ -138,7 +153,8 @@ def test_resolve_root_prefers_contract_override(mocker):
         'root': {'primary': {'type': 'css', 'value': '.ai-discovered'}},
     }
     result = stub._resolve_root(selectors)
-    assert result == '.product-card'
+    assert Pipeline._root_value(result) == '.product-card'
+    assert result['primary']['type'] == 'css'
     assert 'root' not in selectors
 
 
@@ -149,7 +165,8 @@ def test_resolve_root_uses_ai_discovered(mocker):
         'root': {'primary': {'type': 'css', 'value': '.listing-item'}},
     }
     result = stub._resolve_root(selectors)
-    assert result == '.listing-item'
+    assert result == {'primary': {'type': 'css', 'value': '.listing-item'}}
+    assert Pipeline._root_value(result) == '.listing-item'
     assert 'root' not in selectors
 
 
@@ -235,7 +252,7 @@ def _make_scrape_stub(mocker, contract=None):
     stub.extractor = mocker.MagicMock()
     stub.storage = mocker.MagicMock()
     stub.tracker = mocker.MagicMock()
-    stub.tracker.record_url.return_value = {'llm_calls': 0, 'url_count': 1}
+    stub.tracker.record_url.return_value = DomainStats(llm_calls=0, url_count=1)
     stub.debug = mocker.MagicMock()
     stub.debug_mode = False
     stub.output_formats = ['json']

@@ -11,6 +11,7 @@ from yosoi.models.contract import Contract
 from yosoi.models.results import FieldVerificationResult, VerificationResult
 from yosoi.models.selectors import SelectorLevel
 from yosoi.models.snapshot import CacheVerdict, SelectorSnapshot
+from yosoi.storage.tracking import DomainStats
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -147,13 +148,13 @@ class TestTryCachedGranular:
 
         # Mock fetcher
         mock_fetcher = mocker.AsyncMock()
-        mock_result = mocker.MagicMock()
-        mock_result.success = True
-        mock_result.html = '<html><h1 class="title">Test</h1><span class="price">$10</span></html>'
-        mock_fetcher.fetch.return_value = mock_result
+        html = '<html><h1 class="title">Test</h1><span class="price">$10</span></html>'
 
-        # Mock cleaner
-        stub.cleaner.clean_html.return_value = mock_result.html
+        # Mock _fetch_and_clean_for_cache to bypass real fetch+retry logic
+        stub._fetch_and_clean_for_cache = mocker.AsyncMock(return_value=html)
+
+        # Mock cleaner (still needed by _extract_all_fresh path)
+        stub.cleaner.clean_html.return_value = html
 
         # All fields verify as FRESH
         stub.verifier._verify_field.return_value = FieldVerificationResult(
@@ -165,13 +166,13 @@ class TestTryCachedGranular:
 
         # Mock contract validation
         stub.contract = SimpleContract
-        stub.tracker.record_url.return_value = {
-            'llm_calls': 0,
-            'url_count': 1,
-            'level_distribution': {},
-            'total_elapsed': 0.0,
-            'partial_rediscovery_count': 0,
-        }
+        stub.tracker.record_url.return_value = DomainStats(
+            llm_calls=0,
+            url_count=1,
+            level_distribution={},
+            total_elapsed=0.0,
+            partial_rediscovery_count=0,
+        )
 
         gen = await stub._try_cached('https://example.com', 'example.com', mock_fetcher, False, ['json'])
         assert gen is not None
@@ -190,11 +191,9 @@ class TestTryCachedGranular:
         }
 
         mock_fetcher = mocker.AsyncMock()
-        mock_result = mocker.MagicMock()
-        mock_result.success = True
-        mock_result.html = '<html></html>'
-        mock_fetcher.fetch.return_value = mock_result
-        stub.cleaner.clean_html.return_value = '<html></html>'
+        html = '<html></html>'
+        stub._fetch_and_clean_for_cache = mocker.AsyncMock(return_value=html)
+        stub.cleaner.clean_html.return_value = html
 
         # All fields fail verification
         stub.verifier._verify_field.return_value = FieldVerificationResult(
@@ -213,11 +212,9 @@ class TestTryCachedGranular:
         }
 
         mock_fetcher = mocker.AsyncMock()
-        mock_result = mocker.MagicMock()
-        mock_result.success = True
-        mock_result.html = '<html><h1 class="title">Test</h1></html>'
-        mock_fetcher.fetch.return_value = mock_result
-        stub.cleaner.clean_html.return_value = mock_result.html
+        html = '<html><h1 class="title">Test</h1></html>'
+        stub._fetch_and_clean_for_cache = mocker.AsyncMock(return_value=html)
+        stub.cleaner.clean_html.return_value = html
 
         # title fresh, price stale
         def _verify_field(sel, field_name, field_data, max_level):
@@ -248,13 +245,13 @@ class TestTryCachedGranular:
         # Mock extraction
         stub.extractor.extract_content_with_html.return_value = {'title': 'Test', 'price': '$20'}
 
-        stub.tracker.record_url.return_value = {
-            'llm_calls': 1,
-            'url_count': 1,
-            'level_distribution': {},
-            'total_elapsed': 1.0,
-            'partial_rediscovery_count': 1,
-        }
+        stub.tracker.record_url.return_value = DomainStats(
+            llm_calls=1,
+            url_count=1,
+            level_distribution={},
+            total_elapsed=1.0,
+            partial_rediscovery_count=1,
+        )
 
         gen = await stub._try_cached('https://example.com', 'example.com', mock_fetcher, False, ['json'])
         assert gen is not None

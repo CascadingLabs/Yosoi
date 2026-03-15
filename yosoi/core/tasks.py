@@ -6,9 +6,10 @@ Uses InMemoryBroker with SmartRetryMiddleware for in-process async concurrency.
 import asyncio
 import logging
 from collections.abc import Awaitable, Callable
-from typing import TYPE_CHECKING, TypedDict
+from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
+from pydantic import BaseModel
 from taskiq import InMemoryBroker
 from taskiq.middlewares import SmartRetryMiddleware
 
@@ -24,7 +25,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class PipelineConfig(TypedDict):
+class PipelineConfig(BaseModel, frozen=True):
     """Shape of the module-level pipeline configuration."""
 
     llm_config: LLMConfig | YosoiConfig
@@ -34,19 +35,19 @@ class PipelineConfig(TypedDict):
     selector_level: SelectorLevel
 
 
-class TaskResult(TypedDict):
+class TaskResult(BaseModel, frozen=True):
     """Return type of process_url_task."""
 
     url: str
     elapsed: float
 
 
-class EnqueueResult(TypedDict):
+class EnqueueResult(BaseModel):
     """Return type of enqueue_urls."""
 
-    successful: list[str]
-    failed: list[str]
-    skipped: list[str]
+    successful: list[str] = []
+    failed: list[str] = []
+    skipped: list[str] = []
 
 
 broker = InMemoryBroker().with_middlewares(
@@ -149,11 +150,11 @@ async def process_url_task(
 
     async with sem:
         pipeline = Pipeline(
-            config['llm_config'],
-            contract=config['contract'],
-            output_format=config['output_format'],
+            config.llm_config,
+            contract=config.contract,
+            output_format=config.output_format,
             quiet=True,
-            selector_level=config.get('selector_level', SelectorLevel.CSS),
+            selector_level=config.selector_level,
         )
 
         try:
@@ -166,7 +167,7 @@ async def process_url_task(
                 fetcher_type=fetcher_type,
             )
             elapsed = getattr(pipeline, 'last_elapsed', 0.0)
-            return {'url': url, 'elapsed': elapsed}
+            return TaskResult(url=url, elapsed=elapsed)
         except Exception:
             logger.exception('Task failed for %s', url)
             raise  # taskiq retry middleware fires here
@@ -231,7 +232,7 @@ async def enqueue_urls(
         EnqueueResult with 'successful', 'failed', and 'skipped' URL lists.
 
     """
-    results: EnqueueResult = {'successful': [], 'failed': [], 'skipped': []}
+    results = EnqueueResult()
     dedup = DomainDedup()
 
     # Enqueue all tasks
@@ -244,7 +245,7 @@ async def enqueue_urls(
             domain = urlparse(parse_url).netloc.replace('www.', '')
             if not dedup.should_process(domain):
                 logger.info('Skipping duplicate domain: %s (url: %s)', domain, url)
-                results['skipped'].append(url)
+                results.skipped.append(url)
                 continue
 
         handle = await process_url_task.kiq(
@@ -264,7 +265,7 @@ async def enqueue_urls(
         _collect_single_result(results, handle, url, task_result)
         if on_complete is not None:
             success = task_result is not None and not task_result.is_err
-            elapsed = task_result.return_value.get('elapsed', 0.0) if task_result and success else 0.0
+            elapsed = task_result.return_value.elapsed if task_result and success else 0.0
             await on_complete(url, success, elapsed)
 
     return results
@@ -307,6 +308,6 @@ def _collect_single_result(
 
     """
     if result is None or result.is_err:
-        results['failed'].append(url)
+        results.failed.append(url)
     else:
-        results['successful'].append(url)
+        results.successful.append(url)

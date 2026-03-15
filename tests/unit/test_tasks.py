@@ -51,9 +51,9 @@ class TestBrokerConfig:
 
         await configure_broker(mock_llm_config, contract=NewsArticle, max_workers=3)
         config = get_pipeline_config()
-        assert config['contract'] is NewsArticle
-        assert config['output_format'] == 'json'
-        assert config['max_workers'] == 3
+        assert config.contract is NewsArticle
+        assert config.output_format == 'json'
+        assert config.max_workers == 3
         # Semaphore should be created with the right limit
         assert yosoi_tasks._semaphore is not None
         await shutdown_broker()
@@ -83,8 +83,8 @@ class TestProcessUrlTask:
         # Call the task function directly (not via kiq) for unit testing
         result = await process_url_task.original_func(url='http://example.com', force=True)
 
-        assert result['url'] == 'http://example.com'
-        assert 'elapsed' in result
+        assert result.url == 'http://example.com'
+        assert result.elapsed is not None
         mock_pipeline.process_url.assert_awaited_once()
         await shutdown_broker()
 
@@ -122,9 +122,9 @@ class TestEnqueueUrls:
             dedup_by_domain=False,
         )
 
-        assert 'http://a.com/page1' in results['successful']
-        assert 'http://b.com/page1' in results['successful']
-        assert results['failed'] == []
+        assert 'http://a.com/page1' in results.successful
+        assert 'http://b.com/page1' in results.successful
+        assert results.failed == []
         await shutdown_broker()
 
     async def test_dedup_skips_duplicate_domain(self, mocker, mock_llm_config, clean_broker):
@@ -141,9 +141,9 @@ class TestEnqueueUrls:
             dedup_by_domain=True,
         )
 
-        assert 'http://example.com/page1' in results['successful']
-        assert 'http://example.com/page2' in results['skipped']
-        assert len(results['skipped']) == 1
+        assert 'http://example.com/page1' in results.successful
+        assert 'http://example.com/page2' in results.skipped
+        assert len(results.skipped) == 1
         await shutdown_broker()
 
     async def test_failed_tasks_tracked(self, mocker, mock_llm_config, clean_broker):
@@ -157,8 +157,8 @@ class TestEnqueueUrls:
 
         results = await enqueue_urls(['http://fail.com'], dedup_by_domain=False)
 
-        assert 'http://fail.com' in results['failed']
-        assert results['successful'] == []
+        assert 'http://fail.com' in results.failed
+        assert results.successful == []
         await shutdown_broker()
 
     async def test_dedup_handles_bare_urls(self, mocker, mock_llm_config, clean_broker):
@@ -177,7 +177,7 @@ class TestEnqueueUrls:
         )
 
         # Second bare URL should be deduped, not both processed
-        assert len(results['skipped']) == 1
+        assert len(results.skipped) == 1
         await shutdown_broker()
 
     async def test_broker_task_is_registered(self):

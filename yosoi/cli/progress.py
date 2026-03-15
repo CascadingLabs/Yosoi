@@ -62,7 +62,12 @@ async def run_concurrent(
     max_workers: int = 5,
     selector_level: SelectorLevel | None = None,
 ) -> None:
-    """Run URL processing concurrently via taskiq broker.
+    """Run URL processing concurrently with a rich Live progress table.
+
+    This is the CLI entry point for concurrent mode. It delegates to
+    :meth:`Pipeline.process_urls(workers=N) <yosoi.core.pipeline.Pipeline.process_urls>`
+    which manages the taskiq broker lifecycle. The Live display is driven
+    by the ``on_complete`` callback.
 
     Args:
         yosoi_config: Validated YosoiConfig.
@@ -76,17 +81,9 @@ async def run_concurrent(
         selector_level: Maximum selector strategy level. Defaults to CSS.
 
     """
-    from yosoi.core.tasks import configure_broker, enqueue_urls, shutdown_broker
+    from yosoi.core.pipeline import Pipeline
 
-    await configure_broker(
-        yosoi_config,
-        contract=contract,
-        output_format=output_format,
-        max_workers=max_workers,
-        selector_level=selector_level,
-    )
-    start_time = time.monotonic()
-
+    # Pre-compute initial status for the live display
     url_status: dict[str, tuple[str, float]] = dict.fromkeys(urls, ('Queued', 0.0))
 
     _seen_domains: set[str] = set()
@@ -106,27 +103,20 @@ async def run_concurrent(
         url_status[url] = ('Done' if success else 'Failed', elapsed)
         live.update(_build_progress_table(url_status))
 
-    try:
-        with live:
-            results = await enqueue_urls(
-                urls,
-                force=force,
-                skip_verification=skip_verification,
-                fetcher_type=fetcher_type,
-                on_complete=_on_complete,
-            )
-    finally:
-        await shutdown_broker()
-
-    total_elapsed = time.monotonic() - start_time
-    console.print(
-        f'\n[bold]Results:[/bold] [green]{len(results["successful"])} succeeded[/green], '
-        f'[red]{len(results["failed"])} failed[/red] '
-        f'[dim]({total_elapsed:.1f}s total)[/dim]'
+    pipeline = Pipeline(
+        yosoi_config,
+        contract=contract,
+        output_format=output_format,
+        quiet=True,
+        selector_level=selector_level or SelectorLevel.CSS,
     )
-    if results.get('skipped'):
-        console.print(f'  [dim]{len(results["skipped"])} skipped (duplicate domains)[/dim]')
-    if results['failed']:
-        console.print('[bold red]Failed URLs:[/bold red]')
-        for url in results['failed']:
-            console.print(f'  [red]- {url}[/red]')
+
+    with live:
+        await pipeline.process_urls(
+            urls,
+            force=force,
+            skip_verification=skip_verification,
+            fetcher_type=fetcher_type,
+            workers=max_workers,
+            on_complete=_on_complete,
+        )

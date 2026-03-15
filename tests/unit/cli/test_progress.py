@@ -63,14 +63,14 @@ class TestBuildProgressTable:
 
 
 # ---------------------------------------------------------------------------
-# Coverage: lines 71-124 — run_concurrent URL dedup/skipping logic
+# Coverage: run_concurrent delegates to Pipeline.process_urls(workers=N)
 # ---------------------------------------------------------------------------
 
 
 class TestRunConcurrentUrlDedup:
     @pytest.mark.asyncio
     async def test_duplicate_domains_are_skipped(self, mocker):
-        """URLs with the same domain should be marked as Skipped after the first."""
+        """URLs with the same domain should be marked as Skipped in the Live display."""
         from yosoi.cli.progress import run_concurrent
         from yosoi.models.contract import Contract
 
@@ -79,12 +79,15 @@ class TestRunConcurrentUrlDedup:
 
         mock_config = mocker.MagicMock()
 
-        mock_configure = mocker.patch('yosoi.core.tasks.configure_broker', return_value=None)
-        mock_enqueue = mocker.patch(
-            'yosoi.core.tasks.enqueue_urls',
-            return_value={'successful': ['https://example.com/page1'], 'failed': [], 'skipped': []},
+        mock_pipeline_cls = mocker.patch('yosoi.core.pipeline.Pipeline')
+        mock_pipeline = mock_pipeline_cls.return_value
+        mock_pipeline.process_urls = mocker.AsyncMock(
+            return_value={
+                'successful': ['https://example.com/page1'],
+                'failed': [],
+                'skipped': ['https://example.com/page2'],
+            },
         )
-        mock_shutdown = mocker.patch('yosoi.core.tasks.shutdown_broker', return_value=None)
         mocker.patch('yosoi.cli.progress.Live')
 
         urls = [
@@ -93,9 +96,9 @@ class TestRunConcurrentUrlDedup:
         ]
         await run_concurrent(mock_config, TestContract, urls)
 
-        mock_configure.assert_called_once()
-        mock_enqueue.assert_called_once()
-        mock_shutdown.assert_called_once()
+        mock_pipeline.process_urls.assert_awaited_once()
+        call_kwargs = mock_pipeline.process_urls.call_args[1]
+        assert call_kwargs['workers'] == 5  # default max_workers
 
     @pytest.mark.asyncio
     async def test_different_domains_not_skipped(self, mocker):
@@ -107,12 +110,11 @@ class TestRunConcurrentUrlDedup:
             title: str
 
         mock_config = mocker.MagicMock()
-        mocker.patch('yosoi.core.tasks.configure_broker', return_value=None)
-        mocker.patch(
-            'yosoi.core.tasks.enqueue_urls',
+        mock_pipeline_cls = mocker.patch('yosoi.core.pipeline.Pipeline')
+        mock_pipeline = mock_pipeline_cls.return_value
+        mock_pipeline.process_urls = mocker.AsyncMock(
             return_value={'successful': [], 'failed': [], 'skipped': []},
         )
-        mocker.patch('yosoi.core.tasks.shutdown_broker', return_value=None)
         mocker.patch('yosoi.cli.progress.Live')
 
         urls = ['https://example.com/page1', 'https://other.com/page2']
@@ -128,13 +130,34 @@ class TestRunConcurrentUrlDedup:
             title: str
 
         mock_config = mocker.MagicMock()
-        mocker.patch('yosoi.core.tasks.configure_broker', return_value=None)
-        mocker.patch(
-            'yosoi.core.tasks.enqueue_urls',
+        mock_pipeline_cls = mocker.patch('yosoi.core.pipeline.Pipeline')
+        mock_pipeline = mock_pipeline_cls.return_value
+        mock_pipeline.process_urls = mocker.AsyncMock(
             return_value={'successful': [], 'failed': [], 'skipped': []},
         )
-        mocker.patch('yosoi.core.tasks.shutdown_broker', return_value=None)
         mocker.patch('yosoi.cli.progress.Live')
 
         urls = ['example.com/page1']
         await run_concurrent(mock_config, TestContract3, urls)
+
+    @pytest.mark.asyncio
+    async def test_on_complete_callback_passed_to_pipeline(self, mocker):
+        """run_concurrent passes an on_complete callback to pipeline.process_urls."""
+        from yosoi.cli.progress import run_concurrent
+        from yosoi.models.contract import Contract
+
+        class TestContract4(Contract):
+            title: str
+
+        mock_config = mocker.MagicMock()
+        mock_pipeline_cls = mocker.patch('yosoi.core.pipeline.Pipeline')
+        mock_pipeline = mock_pipeline_cls.return_value
+        mock_pipeline.process_urls = mocker.AsyncMock(
+            return_value={'successful': [], 'failed': [], 'skipped': []},
+        )
+        mocker.patch('yosoi.cli.progress.Live')
+
+        await run_concurrent(mock_config, TestContract4, ['https://a.com'])
+
+        call_kwargs = mock_pipeline.process_urls.call_args[1]
+        assert call_kwargs['on_complete'] is not None

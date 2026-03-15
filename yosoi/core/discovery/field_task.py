@@ -154,7 +154,7 @@ async def run_field_task(
                     )
                     if llm_result is None:
                         # LLM returned NA — not retryable, skip to next level
-                        raise LLMGenerationError(f'NA response for {field_name} at {level.name}')
+                        break
                     discovered = llm_result
 
         except (LLMGenerationError, RetryError):

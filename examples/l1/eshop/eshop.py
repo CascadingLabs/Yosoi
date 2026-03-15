@@ -11,6 +11,10 @@ Case 2 — Auto-discover: no root set
 Case 3 — Nested contract (pure data grouping, no DOM scoping):
     Price fields are grouped into a child contract for type safety.
     Discovery stays flat — AI sees price_amount, price_currency directly.
+
+Case 4 — Concurrent: process multiple category pages with workers.
+    Uses ``pipeline.process_urls(workers=3)`` to scrape several
+    category pages in parallel via the taskiq broker.
 """
 
 import asyncio
@@ -19,6 +23,11 @@ import re
 import yosoi as ys
 
 URL = 'https://qscrape.dev/l1/eshop/catalog/?cat=Forge%20%26%20Smithing'
+CATEGORY_URLS = [
+    'https://qscrape.dev/l1/eshop/catalog/?cat=Forge%20%26%20Smithing',
+    'https://qscrape.dev/l1/eshop/catalog/?cat=Potions%20%26%20Elixirs',
+    'https://qscrape.dev/l1/eshop/catalog/?cat=Arcane%20Tomes',
+]
 MODEL = 'openrouter:stepfun/step-3.5-flash:free'
 
 
@@ -143,10 +152,21 @@ async def run_composed() -> None:
     _print_items('Nested contract', items)
 
 
+async def run_concurrent() -> None:
+    """Case 4 — Process multiple category pages concurrently with workers=3."""
+    print('\n[Case 4] Concurrent workers=3')
+    pipeline = ys.Pipeline(llm_config=MODEL, contract=ProductPinned, output_format='json')
+    results = await pipeline.process_urls(CATEGORY_URLS, workers=3)
+    print(f'  Successful: {len(results["successful"])}')
+    print(f'  Failed:     {len(results["failed"])}')
+    print(f'  Skipped:    {len(results.get("skipped", []))}')
+
+
 async def main() -> None:
     await run_pinned()
     await run_auto()
     await run_composed()
+    await run_concurrent()
 
 
 asyncio.run(main())

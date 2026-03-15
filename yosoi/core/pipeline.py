@@ -5,7 +5,7 @@ Centralized retry logic for bot detection and AI failures.
 
 import logging
 import time
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
 from typing import Any
 from urllib.parse import urlparse
 
@@ -98,6 +98,9 @@ class Pipeline:
             from yosoi.core.discovery.config import provider
 
             llm_config = provider(llm_config)
+
+        # Keep the original config for concurrent mode (taskiq broker needs it)
+        self._llm_config: LLMConfig | YosoiConfig = llm_config
 
         if isinstance(llm_config, YosoiConfig):
             yosoi_cfg = llm_config
@@ -195,8 +198,14 @@ class Pipeline:
         max_fetch_retries: int = 2,
         max_discovery_retries: int = 3,
         output_format: str | list[str] | None = None,
+        workers: int = 1,
+        on_complete: Callable[[str, bool, float], Awaitable[None]] | None = None,
     ) -> dict[str, list[str]]:
         """Process multiple URLs and collect results.
+
+        When ``workers`` > 1 and there are multiple URLs, processing runs
+        concurrently via the taskiq broker.  Otherwise URLs are processed
+        sequentially.
 
         Args:
             urls: List of URLs to process.
@@ -206,17 +215,35 @@ class Pipeline:
             max_fetch_retries: Maximum fetch retry attempts. Defaults to 2.
             max_discovery_retries: Maximum AI discovery retry attempts. Defaults to 3.
             output_format: Format(s) for extracted content. Defaults to None (uses pipeline default).
+            workers: Number of concurrent workers. Defaults to 1 (sequential).
+            on_complete: Optional async callback ``(url, success, elapsed)`` called
+                after each URL finishes. Used by the CLI for live progress display.
 
         Returns:
-            Dictionary with two keys:
+            Dictionary with keys:
                 - 'successful': List of successfully processed URLs
                 - 'failed': List of URLs that failed processing
+                - 'skipped': List of URLs skipped (e.g. duplicate domains, concurrent only)
 
         """
         # Normalise to list, fall back to pipeline default
         _raw = output_format if output_format is not None else self.output_formats
         format_to_use: list[str] = [_raw] if isinstance(_raw, str) else list(_raw)
         force_flag = self.force if force is None else force
+
+        effective_workers = min(workers, len(urls))
+        if effective_workers > 1:
+            return await self._process_urls_concurrent(
+                urls,
+                force=force_flag,
+                skip_verification=skip_verification,
+                fetcher_type=fetcher_type,
+                max_fetch_retries=max_fetch_retries,
+                max_discovery_retries=max_discovery_retries,
+                output_format=format_to_use,
+                max_workers=effective_workers,
+                on_complete=on_complete,
+            )
 
         results: dict[str, list[str]] = {'successful': [], 'failed': []}
 
@@ -225,6 +252,7 @@ class Pipeline:
             for idx, url in enumerate(urls, 1):
                 self.console.print(f'\n[bold blue]Processing URL {idx}/{len(urls)}[/bold blue]')
                 self.logger.info('--- Processing URL %d/%d: %s ---', idx, len(urls), url)
+                url_start = time.monotonic()
 
                 try:
                     await self.process_url(
@@ -237,20 +265,20 @@ class Pipeline:
                         output_format=format_to_use,
                     )
                     results['successful'].append(url)
+                    if on_complete is not None:
+                        await on_complete(url, True, time.monotonic() - url_start)
                 except Exception as e:
                     logfire.error('Error processing URL', url=url, error=str(e))
                     self.logger.exception('Critical error processing %s', url)
                     self.console.print(f'[danger]Error processing {url}: {e}[/danger]')
                     results['failed'].append(url)
+                    if on_complete is not None:
+                        await on_complete(url, False, time.monotonic() - url_start)
 
                 self.console.print()
 
             total_elapsed = time.monotonic() - run_start
-            self.console.print(
-                f'[bold]Done:[/bold] {len(results["successful"])} succeeded, '
-                f'{len(results["failed"])} failed '
-                f'[dim]({total_elapsed:.1f}s total)[/dim]'
-            )
+            self._print_summary(results, total_elapsed)
 
             logfire.info(
                 'Processing complete',
@@ -260,6 +288,84 @@ class Pipeline:
             )
 
         return results
+
+    async def _process_urls_concurrent(
+        self,
+        urls: list[str],
+        force: bool,
+        skip_verification: bool,
+        fetcher_type: str,
+        max_fetch_retries: int,
+        max_discovery_retries: int,
+        output_format: list[str],
+        max_workers: int,
+        on_complete: Callable[[str, bool, float], Awaitable[None]] | None = None,
+    ) -> dict[str, list[str]]:
+        """Process URLs concurrently via the taskiq broker.
+
+        Both the CLI and scripted paths use this method. The optional
+        ``on_complete`` callback lets callers (e.g. CLI Live display)
+        react to each finished URL.
+
+        """
+        from yosoi.core.tasks import configure_broker, enqueue_urls, shutdown_broker
+
+        await configure_broker(
+            self._llm_config,
+            contract=self.contract,
+            output_format=output_format,
+            max_workers=max_workers,
+            selector_level=self.selector_level,
+        )
+
+        run_start = time.monotonic()
+        try:
+            enqueue_result = await enqueue_urls(
+                urls,
+                force=force,
+                skip_verification=skip_verification,
+                fetcher_type=fetcher_type,
+                max_fetch_retries=max_fetch_retries,
+                max_discovery_retries=max_discovery_retries,
+                on_complete=on_complete,
+            )
+        finally:
+            await shutdown_broker()
+
+        total_elapsed = time.monotonic() - run_start
+
+        results: dict[str, list[str]] = {
+            'successful': enqueue_result.successful,
+            'failed': enqueue_result.failed,
+            'skipped': enqueue_result.skipped,
+        }
+
+        self._print_summary(results, total_elapsed)
+
+        logfire.info(
+            'Concurrent processing complete',
+            total=len(urls),
+            successful=len(results['successful']),
+            failed=len(results['failed']),
+            skipped=len(results['skipped']),
+            workers=max_workers,
+        )
+
+        return results
+
+    def _print_summary(self, results: dict[str, list[str]], total_elapsed: float) -> None:
+        """Print a standardised summary of processing results."""
+        self.console.print(
+            f'\n[bold]Results:[/bold] [green]{len(results["successful"])} succeeded[/green], '
+            f'[red]{len(results["failed"])} failed[/red] '
+            f'[dim]({total_elapsed:.1f}s total)[/dim]'
+        )
+        if results.get('skipped'):
+            self.console.print(f'  [dim]{len(results["skipped"])} skipped (duplicate domains)[/dim]')
+        if results['failed']:
+            self.console.print('[bold red]Failed URLs:[/bold red]')
+            for url in results['failed']:
+                self.console.print(f'  [red]- {url}[/red]')
 
     async def scrape(
         self,
@@ -332,14 +438,15 @@ class Pipeline:
                 if not selectors:
                     raise RuntimeError(f'Selector discovery failed for {url}')
 
-                container_selector = self._resolve_root(selectors)
+                root_entry = self._resolve_root(selectors)
+                container_selector = self._root_value(root_entry)
 
                 verified = self._verify(url, cleaned_html, selectors, skip_verification)
                 if not verified:
                     raise RuntimeError(f'Selector verification failed for {url}')
 
                 extracted = self._extract(url, cleaned_html, verified, container_selector)
-                selectors_to_save = self._selectors_with_root(verified, container_selector)
+                selectors_to_save = self._selectors_with_root(verified, root_entry)
 
                 if not extracted:
                     self.console.print('[warning]⚠ Extraction failed, but selectors are valid[/warning]')
@@ -391,8 +498,8 @@ class Pipeline:
     async def _fetch_and_clean_for_cache(self, url: str, fetcher: HTMLFetcher) -> str | None:
         """Fetch + clean HTML for cache verification. Returns None on failure (fail-open)."""
         try:
-            result = await fetcher.fetch(url)
-            if not result.success or result.html is None:
+            result = await self._fetch(url, fetcher)
+            if result is None or result.html is None:
                 self.console.print('[warning]⚠ Could not fetch HTML, skipping extraction[/warning]')
                 return None
         except BotDetectionError:
@@ -426,7 +533,7 @@ class Pipeline:
 
         # Check for new contract fields not in cache
         overridden = set(self.contract.get_selector_overrides())
-        missing = (set(self.contract.model_fields) - overridden) - set(snapshots)
+        missing = (self.contract.discovery_field_names() - overridden) - set(snapshots)
         if missing:
             self.console.print(
                 f'[warning]⚠ New contract fields not in cache: {", ".join(sorted(missing))} — re-discovering[/warning]'
@@ -458,7 +565,8 @@ class Pipeline:
         """All cached selectors verified — extract content."""
         self.console.print(f'[success]✓ All {len(fresh_fields)} cached selectors verified[/success]')
         existing = {name: snapshot_to_selector_dict(snap) for name, snap in snapshots.items()}
-        container_selector = self._resolve_root(existing)
+        root_entry = self._resolve_root(existing)
+        container_selector = self._root_value(root_entry)
         extracted = self._extract(url, cleaned_html, existing, container_selector)
         if extracted:
             items_list: ContentItems = extracted if isinstance(extracted, list) else [extracted]
@@ -537,7 +645,8 @@ class Pipeline:
         new_selectors = await self.discovery.discover_selectors(cleaned_html, url, stale_fields=stale_fields)
         merged = self._merge_and_save_snapshots(url, snapshots, fresh_fields, new_selectors, cleaned_html)
 
-        container_selector = self._resolve_root(merged)
+        root_entry = self._resolve_root(merged)
+        container_selector = self._root_value(root_entry)
         extracted = self._extract(url, cleaned_html, merged, container_selector)
 
         if not extracted:
@@ -604,11 +713,11 @@ class Pipeline:
         return [self._validate_single_item(item, url) for item in items_list]
 
     @staticmethod
-    def _selectors_with_root(verified: SelectorMap, container_selector: str | None) -> SelectorMap:
-        """Re-attach root selector for persistence."""
+    def _selectors_with_root(verified: SelectorMap, root_entry: dict[str, Any] | None) -> SelectorMap:
+        """Re-attach root selector for persistence, preserving the original type."""
         selectors_to_save = dict(verified)
-        if container_selector:
-            selectors_to_save['root'] = {'primary': {'type': 'css', 'value': container_selector}}
+        if root_entry:
+            selectors_to_save['root'] = root_entry
         return selectors_to_save
 
     def _finish(
@@ -896,8 +1005,8 @@ class Pipeline:
         return await self._discover(url, cleaned_html, max_retries)
 
     @staticmethod
-    def _pop_root(selectors: SelectorMap) -> str | None:
-        """Remove and return the ``root`` selector string from a selector map.
+    def _pop_root(selectors: SelectorMap) -> dict[str, Any] | None:
+        """Remove and return the full ``root`` selector entry from a selector map.
 
         Root is stored as ``{'primary': {'type': '...', 'value': '...'}}``.
 
@@ -905,17 +1014,38 @@ class Pipeline:
             selectors: Mutable selector dict (modified in-place).
 
         Returns:
-            The root selector string, or None.
+            The full root entry dict, or None.
 
         """
         root_entry = selectors.pop('root', None)
         if isinstance(root_entry, dict):
             primary = root_entry.get('primary')
             if isinstance(primary, str) and primary:
-                return primary
+                return root_entry
             if isinstance(primary, dict):
                 value = primary.get('value')
-                return value if isinstance(value, str) and value else None
+                return root_entry if isinstance(value, str) and value else None
+        return None
+
+    @staticmethod
+    def _root_value(root_entry: dict[str, Any] | None) -> str | None:
+        """Extract the selector value string from a full root entry.
+
+        Args:
+            root_entry: Full root entry dict, or None.
+
+        Returns:
+            The root selector string, or None.
+
+        """
+        if root_entry is None:
+            return None
+        primary = root_entry.get('primary')
+        if isinstance(primary, str) and primary:
+            return primary
+        if isinstance(primary, dict):
+            value = primary.get('value')
+            return value if isinstance(value, str) and value else None
         return None
 
     def _verify(self, _url: str, html: str, selectors: SelectorMap, skip_verification: bool) -> SelectorMap | None:
@@ -980,7 +1110,7 @@ class Pipeline:
             primary_reason = reasons[0] if reasons else 'all_na'
             self.console.print(f'      [dim]• {field_name}:[/dim] {primary_reason}')
 
-    def _resolve_root(self, selectors: SelectorMap) -> str | None:
+    def _resolve_root(self, selectors: SelectorMap) -> dict[str, Any] | None:
         """Determine the root selector from contract override or AI discovery.
 
         Pops ``root`` from *selectors* as a side-effect so it is not passed
@@ -990,14 +1120,14 @@ class Pipeline:
             selectors: Mutable selector dict (modified in-place).
 
         Returns:
-            Root CSS selector string, or None for single-item pages.
+            Full root entry dict, or None for single-item pages.
 
         """
         # Contract-level override takes precedence
         contract_root = self.contract.get_root()
         if contract_root:
             self._pop_root(selectors)  # discard AI's root if present
-            return contract_root.value
+            return {'primary': contract_root.model_dump()}
         # Otherwise use AI-discovered root
         return self._pop_root(selectors)
 
@@ -1087,16 +1217,18 @@ class Pipeline:
             self.debug.save_debug_html(url, cleaned_html)
 
             # Resolve root selector from cached selectors
-            container_selector = self._resolve_root(existing_selectors)
+            root_entry = self._resolve_root(existing_selectors)
+            container_selector = self._root_value(root_entry)
 
             # Verify container selector before proceeding — a stale container means
             # all content extractions will silently fail, so force re-discovery.
-            if container_selector and not skip_verification:
+            if root_entry and not skip_verification:
                 from parsel import Selector as _PS
 
                 from yosoi.models.selectors import coerce_selector_entry
 
-                _entry = coerce_selector_entry(container_selector)
+                primary = root_entry.get('primary')
+                _entry = coerce_selector_entry(primary) if primary else None
                 if _entry is not None:
                     _ok, _ = self.verifier._test_selector(_PS(text=cleaned_html), _entry)
                     if not _ok:
@@ -1118,12 +1250,12 @@ class Pipeline:
                     if verification.results[name].status == 'verified'
                 }
                 self.console.print(
-                    f'[success]✓ Verified {len(selectors_to_use)}/{len(self.contract.model_fields)} cached selectors[/success]'
+                    f'[success]✓ Verified {len(selectors_to_use)}/{len(self.contract.discovery_field_names())} cached selectors[/success]'
                 )
                 # If any contract fields (excluding overrides) have no cached selector,
                 # fall through to fresh discovery so the new fields get discovered.
                 overridden = set(self.contract.get_selector_overrides())
-                required_fields = set(self.contract.model_fields) - overridden
+                required_fields = self.contract.discovery_field_names() - overridden
                 missing = required_fields - set(selectors_to_use)
                 if missing:
                     self.console.print(
@@ -1284,13 +1416,12 @@ class Pipeline:
 
         """
         self.console.print(f'\n[dim]  - Tracking Stats for {domain}:[/dim]')
-        self.console.print(f'[dim]    -- LLM Calls: {stats["llm_calls"]}[/dim]')
-        self.console.print(f'[dim]    -- URLs Processed: {stats["url_count"]}[/dim]')
-        total_elapsed = stats.get('total_elapsed', 0.0)
-        if total_elapsed:
-            self.console.print(f'[dim]    -- Total Elapsed: {total_elapsed:.1f}s[/dim]')
-        if stats['llm_calls'] > 0:
-            efficiency = stats['url_count'] / stats['llm_calls']
+        self.console.print(f'[dim]    -- LLM Calls: {stats.llm_calls}[/dim]')
+        self.console.print(f'[dim]    -- URLs Processed: {stats.url_count}[/dim]')
+        if stats.total_elapsed:
+            self.console.print(f'[dim]    -- Total Elapsed: {stats.total_elapsed:.1f}s[/dim]')
+        if stats.llm_calls > 0:
+            efficiency = stats.url_count / stats.llm_calls
             self.console.print(f'[dim]     • Efficiency: {efficiency:.1f} URLs per LLM call[/dim]')
         self.console.print()
 
@@ -1323,8 +1454,8 @@ class Pipeline:
         stats = self.tracker.get_all_stats()
 
         # Aggregate stats across all domains
-        total_llm_calls = sum(domain_stats.get('llm_calls', 0) for domain_stats in stats.values())
-        total_urls = sum(domain_stats.get('url_count', 0) for domain_stats in stats.values())
+        total_llm_calls = sum(domain_stats.llm_calls for domain_stats in stats.values())
+        total_urls = sum(domain_stats.url_count for domain_stats in stats.values())
 
         self.console.print('\n[bold cyan]═══ LLM Usage Statistics ═══[/bold cyan]')
         self.console.print(f'[info]Total URLs processed: {total_urls}[/info]')
