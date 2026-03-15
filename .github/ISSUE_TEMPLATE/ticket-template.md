@@ -7,14 +7,10 @@ assignees: ''
 
 ---
 
-## Usecase / Thoughts
-> short blurb on the reasoning and/or use case of this ticket. This is the driving factor of the change.
+<h2>Usecase / Thoughts</h2>
+
 ---
-## Pain Points / Friction
-> What does this ticket aim to solve/avoid/prevent
+<h2> Proposed Plan </h2>
+
 ---
-## Proposed Plan
-> What steps do you need to-do to get to completion
----
-## Technical Notes
-> Anything the implementer should know
+<h2> Technical Notes </h2>

@@ -1,7 +1,8 @@
 import pytest
 
-from yosoi.llm_config import LLMConfig
-from yosoi.models import FieldSelectors, ScrapingConfig
+from yosoi.core.discovery.config import LLMConfig
+from yosoi.models import FieldSelectors
+from yosoi.models.defaults import NewsArticle
 
 
 @pytest.fixture
@@ -36,12 +37,13 @@ def happy_path_html():
 
 @pytest.fixture
 def mock_selectors():
-    return ScrapingConfig(
-        headline=FieldSelectors(primary='h1.title', fallback='h1', tertiary='NA'),
-        author=FieldSelectors(primary='span.author', fallback='.author', tertiary='NA'),
-        date=FieldSelectors(primary='span.date', fallback='.date', tertiary='NA'),
-        body_text=FieldSelectors(primary='article', fallback='body', tertiary='NA'),
-        related_content=FieldSelectors(primary='.related', fallback='aside', tertiary='NA'),
+    selector_model = NewsArticle.to_selector_model()
+    return selector_model(
+        headline=FieldSelectors(primary='h1.title', fallback='h1', tertiary=None),
+        author=FieldSelectors(primary='span.author', fallback='.author', tertiary=None),
+        date=FieldSelectors(primary='span.date', fallback='.date', tertiary=None),
+        body_text=FieldSelectors(primary='article', fallback='body', tertiary=None),
+        related_content=FieldSelectors(primary='.related', fallback='aside', tertiary=None),
     )
 
 
@@ -54,16 +56,14 @@ def pytest_configure(config):
 
 def pytest_collection_modifyitems(config, items):
     """Apply directory-based marks to collected test items."""
+    from pathlib import Path
 
     for item in items:
-        # Get the test file path
         if hasattr(item, 'fspath'):
-            file_path = str(item.fspath)
-
-            # Add marks based on directory
-            if '/tests/integration/' in file_path:
+            parts = Path(item.fspath).parts
+            if 'integration' in parts:
                 item.add_marker(pytest.mark.integration)
-            elif '/tests/unit/' in file_path:
+            elif 'unit' in parts:
                 item.add_marker(pytest.mark.unit)
-            elif '/tests/evals/' in file_path:
+            elif 'evals' in parts:
                 item.add_marker(pytest.mark.eval)

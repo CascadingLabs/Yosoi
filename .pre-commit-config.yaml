@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v6.0.0
+    rev: v5.0.0
     hooks:
       - id: check-yaml
       - id: check-toml
@@ -11,6 +11,8 @@ repos:
       - id: check-merge-conflict
       - id: end-of-file-fixer
       - id: trailing-whitespace
+      - id: check-ast
+      - id: detect-private-key
 
   - repo: https://github.com/citation-file-format/cffconvert
     rev: 054bda51dbe278b3e86f27c890e3f3ac877d616c
@@ -42,18 +44,30 @@ repos:
         exclude: ^old_versions/
         stages: [pre-commit, manual]
 
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.19.1
+  - repo: local
     hooks:
+      - id: vulture
+        name: vulture
+        entry: uv run vulture yosoi vulture_whitelist.py --min-confidence 80
+        language: system
+        types: [python]
+        pass_filenames: false
+        stages: [manual]
+
       - id: mypy
-        stages: [manual] # Heavy lifting moved to CI
-        additional_dependencies:
-          - types-requests
-          - types-beautifulsoup4
-          - pytest
-          - pydantic
-        args: [--config-file=pyproject.toml]
-        files: ^(yosoi|tests)/.*\.py$
+        name: mypy
+        entry: uv run mypy yosoi --cache-dir=/dev/null
+        language: system
+        types: [python]
+        pass_filenames: false
+        stages: [manual]
+
+      - id: no-unittest
+        name: ban unittest imports
+        entry: uv run python scripts/check_no_unittest.py
+        language: system
+        types: [python]
+        stages: [pre-commit, manual]
 
   - repo: https://github.com/astral-sh/uv-pre-commit
     rev: 0.10.0

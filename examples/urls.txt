@@ -1,0 +1,9 @@
+# Example URLs for testing selector discovery
+# One URL per line, comments start with #
+
+# Tech News
+https://qscrape.dev/l1/news/article/?postData=MHH_v1_Kp9rXm2bQsXXXNNNXXXID%3DMHH-017%26HASH%3Dsyv327xx5lcXXXNNNXXXtR7vYw1hF3dGXXXNNNXXX
+https://qscrape.dev/l1/news/article/?postData=MHH_v1_Kp9rXm2bQsXXXNNNXXXID%3DMHH-019%26HASH%3Dkf4bmiee3waXXXNNNXXXtR7vYw1hF3dGXXXNNNXXX
+https://finance.yahoo.com/video/three-big-questions-left-musk-125600891.html
+
+# Add your URLs below:

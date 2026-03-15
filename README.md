@@ -4,6 +4,7 @@
 [![Actions status](https://github.com/CascadingLabs/Yosoi/actions/workflows/CI.yaml/badge.svg)](https://github.com/CascadingLabs/Yosoi/actions)
 [![image](https://img.shields.io/pypi/pyversions/yosoi.svg)](https://pypi.python.org/pypi/yosoi)
 [![image](https://img.shields.io/pypi/v/yosoi.svg)](https://pypi.python.org/pypi/yosoi)
+[![codecov](https://codecov.io/gh/CascadingLabs/Yosoi/graph/badge.svg?token=DFDI574EEA)](https://codecov.io/gh/CascadingLabs/Yosoi)
 <!-- [![image](https://img.shields.io/pypi/l/yosoi.svg)](https://pypi.python.org/pypi/yosoi) -->
 
 # Yosoi - AI-Powered CSS Selector Discover
@@ -40,9 +41,12 @@ uv sync --group dev
 Create a `.env` file (see `env.example`):
 
 ```bash
-# Choose one or both providers
-GROQ_KEY=your_groq_api_key_here           # For Llama 3.3 (faster, recommended)
-GEMINI_KEY=your_gemini_api_key_here       # For Gemini 2.0 Flash
+# Set keys for whichever providers you want to use
+GROQ_KEY=your_groq_api_key_here           # groq/...
+GEMINI_KEY=your_gemini_api_key_here       # gemini/...
+OPENAI_KEY=your_openai_api_key_here       # openai/...
+CEREBRAS_KEY=your_cerebras_api_key_here   # cerebras/...
+OPENROUTER_KEY=your_openrouter_key_here  # openrouter/...
 
 # Optional: Observability
 LOGFIRE_TOKEN=your_logfire_token_here     # For Logfire tracing
@@ -51,16 +55,25 @@ LOGFIRE_TOKEN=your_logfire_token_here     # For Logfire tracing
 **Get API Keys:**
 - Groq (Free): https://console.groq.com/keys
 - Gemini: https://aistudio.google.com/app/apikey
+- OpenRouter (Free tier available): https://openrouter.ai/keys
 - Logfire (Optional): https://logfire.pydantic.dev
+
+> Some Free models from OpenRouter require configuration of your [Privacy Settings](https://openrouter.ai/settings/privacy) to allow training on your data.
 
 ### Basic Usage
 
 ```bash
-# Process a single URL
+# Process a single URL (uses GROQ_KEY or GEMINI_KEY from .env)
 uv run yosoi --url https://example.com/article
 
+# Specify model explicitly with -m provider/model-name
+uv run yosoi -m groq/llama-3.3-70b-versatile --url https://example.com/article
+uv run yosoi -m gemini/gemini-2.0-flash --url https://example.com/article
+uv run yosoi -m openai/gpt-4o --url https://example.com/article
+uv run yosoi -m openrouter/gpt-oss --url https://example.com/article
+
 # Process multiple URLs from a file
-uv run yosoi --file urls.txt
+uv run yosoi -m groq/llama-3.3-70b-versatile --file urls.txt
 
 # Force re-discovery
 uv run yosoi --url https://example.com --force
@@ -96,19 +109,61 @@ Or use JSON format (`urls.json`):
 
 ```
 .
-├── .yosoi/                   # .yosoi helper directory (hidden)
-│   └── selectors/            # Discovered selectors (hidden)
-├── main.py                   # CLI entry point & orchestrator
-├── selector_discovery.py     # AI-powered selector discovery
-├── selector_validator.py     # Selector validation & testing
-├── selector_storage.py       # JSON storage operations
-├── services.py              # Shared services (Logfire config)
-├── models.py                # Pydantic models
-├── pyproject.toml           # Project config & dependencies
-├── .env                     # API keys (create this)
-├── CHEAT_SHEET.md          # Dev tools quick reference
-└── selectors/              # Output directory
-    └── selectors_*.json     # Discovered selectors per domain
+├── .yosoi/                        # Hidden runtime directory
+│   └── selectors/                 # Persisted selector snapshots
+├── yosoi/                         # Main package
+│   ├── __init__.py
+│   ├── __main__.py
+│   ├── cli.py                     # CLI entry point & argument parsing
+│   ├── core/                      # Core pipeline logic
+│   │   ├── pipeline.py            # SelectorDiscoveryPipeline orchestrator
+│   │   ├── cleaning/
+│   │   │   └── cleaner.py         # HTML noise removal
+│   │   ├── discovery/
+│   │   │   ├── agent.py           # pydantic-ai agent definition
+│   │   │   └── config.py          # Model / provider configuration
+│   │   ├── extraction/
+│   │   │   └── extractor.py       # Relevant HTML extraction
+│   │   ├── fetcher/
+│   │   │   ├── base.py            # Abstract fetcher interface
+│   │   │   ├── simple.py          # httpx-based fetcher
+│   │   │   ├── playwright.py      # Playwright fetcher (JS-heavy sites)
+│   │   │   └── smart.py           # Auto-selects fetcher strategy
+│   │   └── verification/
+│   │       └── verifier.py        # CSS selector verification
+│   ├── models/                    # Pydantic data models
+│   │   ├── selectors.py           # SelectorSet & field models
+│   │   └── results.py             # Pipeline result types
+│   ├── storage/                   # Persistence layer
+│   │   ├── persistence.py         # JSON read/write for selectors
+│   │   ├── tracking.py            # Domain-level tracking & stats
+│   │   └── debug.py               # Debug HTML snapshot storage
+│   ├── outputs/                   # Output formatters
+│   │   ├── json.py                # JSON report formatter
+│   │   ├── markdown.py            # Markdown / Rich table output
+│   │   └── utils.py               # Shared output helpers
+│   ├── prompts/                   # LLM prompt templates (markdown)
+│   │   ├── discovery_system.md
+│   │   └── discovery_user.md
+│   └── utils/                     # Shared utilities
+│       ├── exceptions.py          # Custom exception hierarchy
+│       ├── files.py               # File-path helpers
+│       ├── headers.py             # HTTP header rotation
+│       ├── logging.py             # Structured logging setup
+│       ├── prompts.py             # Prompt loader utility
+│       └── retry.py               # Retry / back-off helpers
+├── tests/
+│   ├── conftest.py
+│   ├── integration/
+│   │   ├── test_pipeline.py       # End-to-end pipeline tests
+│   │   └── test_snapshots.py      # Selector snapshot regression tests
+│   └── unit/
+│       ├── test_discovery_bs4.py
+│       ├── test_pipeline.py
+│       └── test_pydantic_flow.py
+├── pyproject.toml                 # Project config & dependencies
+├── env.example                    # API key template
+└── urls.txt                       # Example URL list
 ```
 
 ## How It Works
@@ -132,12 +187,10 @@ AI reads actual HTML structure
   ↓
 Finds real class names & IDs
   ↓
-Returns 3 selectors per field:
+Returns up to 3 selectors per field:
   - Primary (most specific)
   - Fallback (reliable backup)
   - Tertiary (generic)
-  ↓
-Smart fallback if AI fails
 ```
 
 ### Phase 3: Validation
@@ -190,7 +243,7 @@ Selectors are saved as JSON files in the `.yosoi/selectors/` directory:
 Once selectors are discovered, use them with standard BeautifulSoup:
 
 ```python
-from selector_storage import SelectorStorage
+from yosoi.storage.persistence import SelectorStorage
 from bs4 import BeautifulSoup
 import requests
 
@@ -219,7 +272,7 @@ print(f"\nBody:\n{body_text}")
 ### Using as a Library
 
 ```python
-from main import SelectorDiscoveryPipeline
+from yosoi.core.pipeline import SelectorDiscoveryPipeline
 import os
 
 # Initialize with your preferred provider
@@ -242,17 +295,17 @@ pipeline.show_summary()
 
 ## Supported AI Models
 
-### Groq (Recommended)
-- **Model**: `llama-3.3-70b-versatile`
-- **Cost**: Free tier available
-- **Setup**: `GROQ_KEY` in `.env`
+Use `-m provider/model-name` to select any model explicitly. The API key is read from the corresponding environment variable.
 
-### Google Gemini
-- **Model**: `gemini-2.0-flash-exp`
-- **Cost**: Free tier available
-- **Setup**: `GEMINI_KEY` in `.env`
+| Provider | `-m` prefix | Env key | Example model |
+|----------|-------------|---------|---------------|
+| Groq | `groq/` | `GROQ_KEY` | `llama-3.3-70b-versatile` |
+| Google Gemini | `gemini/` | `GEMINI_KEY` | `gemini-2.0-flash` |
+| OpenAI | `openai/` | `OPENAI_KEY` | `gpt-4o` |
+| Cerebras | `cerebras/` | `CEREBRAS_KEY` | `llama-3.3-70b` |
+| OpenRouter | `openrouter/` | `OPENROUTER_KEY` | `gpt-oss` |
 
-The system automatically uses Groq if `GROQ_KEY` is set, otherwise falls back to Gemini.
+If `-m` is not provided, Yosoi auto-detects: uses Groq if `GROQ_KEY` is set, otherwise Gemini.
 
 ## Observability with Logfire
 
@@ -276,9 +329,8 @@ Yosoi integrates with [Logfire](https://logfire.pydantic.dev) for comprehensive 
 
 **AI-Powered** - Uses Groq/Gemini to read HTML and find selectors
 **Cheap** - $0.001 per domain
-**Validated** - Tests each selector before saving
+**Verified** - Tests each selector on the live page before saving
 **Organized** - Clean JSON output per domain
-**Fallback System** - Uses heuristics when AI fails
 **Rich CLI** - Nice terminal output with progress indicators
 **Type-Safe** - Full type hints with mypy checking
 **Observable** - Integrated with Logfire for tracing
@@ -291,8 +343,8 @@ Yosoi integrates with [Logfire](https://logfire.pydantic.dev) for comprehensive 
 **Solution**:
 - Check if site requires JavaScript (use debug mode: `--debug`)
 - Review extracted HTML in `debug_html/` directory
-- Consider using Selenium for JavaScript-heavy sites
-- Fallback heuristics will be used automatically
+- Use the Playwright fetcher for JavaScript-heavy sites (`SmartFetcher` selects it automatically)
+- If the site explicitly fails, re-run with `--force` after verifying the page loads in a browser
 
 ### Selectors Don't Work
 **Cause**: Site structure changed or uses dynamic content

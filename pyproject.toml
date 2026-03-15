@@ -25,38 +25,50 @@ classifiers = [
 dependencies = [
   "beautifulsoup4>=4.12",
   "brotli>=1.1",
+  "click>=8.2.1",
+  "dateparser>=1.3",
+  "httpx>=0.28.1",
   "logfire>=4.16",
   "lxml>=6.0.2",
+  "parsel>=1.9",
   "pydantic>=2",
   "pydantic-ai>=0.0.16",
   "python-dotenv>=1.2.1",
-  "requests>=2.31",
   "rich>=14.2",
+  "rich-click>=1.9.7",
+  "taskiq>=0.12.1",
   "tenacity>=9.1.4",
 ]
 
+optional-dependencies.tabular = [ "openpyxl>=3.1", "pandas>=2", "pyarrow>=14" ]
+urls.Changelog = "https://github.com/CascadingLabs/Yosoi/blob/main/CHANGELOG.md"
+urls.Homepage = "https://cascadinglabs.com/yosoi/"
+urls.Issues = "https://github.com/CascadingLabs/Yosoi/issues"
+urls.Repository = "https://github.com/CascadingLabs/Yosoi"
 scripts.yosoi = "yosoi.cli:main"
-Homepage = "https://https://cascadinglabs.com/yosoi/"
-Repository = "https://github.com/CascadingLabs/Yosoi"
-Issues = "https://github.com/CascadingLabs/Yosoi/issues"
-Changelog = "https://github.com/CascadingLabs/Yosoi/blob/main/CHANGELOG.md"
 
 [dependency-groups]
 dev = [
   "commitizen>=3.13",
   "memray>=1.19.1",
-  "mypy>=1.8",
+  "mypy>=1.13",
   "playwright>=1.58",
   "poethepoet>=0.40",
   "prek>=0.2.25",
+  "ruff>=0.9.7",
   "types-beautifulsoup4>=4.12",
-  "types-requests>=2.31",
+  "types-dateparser>=1.3.0.20260211",
+  "vulture>=2.15",
 ]
 tests = [
   "deepeval>=3.8.4",
   "dirty-equals>=0.11",
+  "mutmut>=3.5",
+  "openpyxl>=3.1",
+  "pandas>=2",
   "poethepoet>=0.40",
   "polyfactory>=3.2",
+  "pyarrow>=14",
   "pytest>=9.0.2",
   "pytest-asyncio>=1.3",
   "pytest-cov>=7",
@@ -105,19 +117,25 @@ format.line-ending = "auto"
 format.skip-magic-trailing-comma = false
 
 lint.select = [
-  "ARG",  # flake8-unused-arguments
-  "B",    # flake8-bugbear
-  "C901", # mccabe complexity
-  "D",    # pydocstyle
-  "E",    # pycodestyle errors
-  "F",    # pyflakes
-  "I",    # isort
-  "PERF", # performance
-  "RET",  # flake8-return
-  "SIM",  # flake8-simplify
-  "TID",  # flake8-tidy-imports
-  "UP",   # pyupgrade
-  "W",    # pycodestyle warnings
+  "ARG",   # flake8-unused-arguments
+  "ASYNC", # flake8-async
+  "B",     # flake8-bugbear
+  "BLE",   # flake8-blind-except (no bare `except Exception`)
+  "C4",    # flake8-comprehensions
+  "C901",  # mccabe complexity
+  "D",     # pydocstyle
+  "E",     # pycodestyle errors
+  "F",     # pyflakes
+  "G",     # flake8-logging-format (lazy % formatting in log calls)
+  "I",     # isort
+  "PERF",  # performance
+  "PT",    # flake8-pytest-style
+  "RET",   # flake8-return
+  "RUF",   # ruff-specific rules
+  "SIM",   # flake8-simplify
+  "TID",   # flake8-tidy-imports
+  "UP",    # pyupgrade
+  "W",     # pycodestyle warnings
 ]
 
 lint.ignore = [
@@ -129,65 +147,82 @@ lint.ignore = [
   "E402",   # module level import not at top of file
   "E501",   # formatter handles line length
   "RET504", # allow implicit return None
+  "RUF001", # ambigious variable name
   "SIM108", # allow if-else instead of ternary
   "W293",   # blank line contains whitespace
 ]
+lint.per-file-ignores."__init__.py" = [ "F401" ]
+lint.per-file-ignores."examples/**/*.py" = [ "BLE", "D" ]
 lint.per-file-ignores."tests/**/*.py" = [
   "ARG001", # unused arguments in test functions
   "ARG002", # unused method arguments in tests
+  "ARG004", # unused static method arguments in tests (coerce stubs)
   "D",      # pydocstyle - no docstrings required for tests
 ]
-lint.mccabe.max-complexity = 13
+lint.per-file-ignores."yosoi/cli/args.py" = [ "ARG002" ] # Click ParamType method overrides require unused params
+lint.per-file-ignores."yosoi/core/cleaning/cleaner.py" = [ "C901" ]
+lint.isort.known-first-party = [ "yosoi" ]
+lint.mccabe.max-complexity = 12
+
+lint.pydocstyle.convention = "google"
 
 [tool.pytest.ini_options]
+testpaths = [ "tests" ]
+asyncio_mode = "auto"
 markers = [
   "eval: mark test as an evaluation test (requires real LLM and is slow)",
 ]
 
+[tool.coverage.report]
+exclude_lines = [
+  "pragma: no cover",
+  "if TYPE_CHECKING:",
+  "def __repr__",
+  "if __name__ == .__main__.",
+  "raise NotImplementedError",
+  "\\.\\.\\.",                 # Protocol method bodies (just `...`)
+]
+show_missing = true
+fail_under = 93
+
+[tool.coverage.run]
+source = [ "yosoi" ]
+omit = [
+  "yosoi/__main__.py",
+  "yosoi/cli/__main__.py",
+  "yosoi/*/__init__.py",
+  "yosoi/*/*/__init__.py",
+]
+
 [tool.mypy]
 python_version = "3.10"
-
-warn_unused_configs = true
-warn_return_any = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-warn_no_return = true
-warn_unreachable = true
-strict_equality = true
-check_untyped_defs = true
-no_implicit_optional = true
-
-# Progressive strictness - enable these when ready
-disallow_untyped_defs = false    # TODO: Enable for full type coverage
-disallow_any_generics = false    # TODO: Enable for stricter generics
-disallow_subclassing_any = false
-disallow_untyped_calls = false
-disallow_incomplete_defs = false
-
-show_error_codes = true
-show_column_numbers = true
-pretty = true
-
+strict = true
 ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = [
-  "scrapegraphai.*",
-  "langchain.*",
-  "langchain_google_genai.*",
-  "langchain_core.*",
-  "langchain_community.*",
-  "dspy.*",
-  "toonify.*",
+warn_unused_ignores = false
+exclude = [
+  "mutants/",
 ]
-ignore_missing_imports = true
+
+[tool.mutmut]
+paths_to_mutate = [ "yosoi/" ]
+tests_dir = [ "tests/unit/" ]
+debug = true
 
 [tool.poe.tasks]
-eval = 'uv run pytest -m "eval"'                                                    # run deepeval tests
-integration = "uv run pytest -m 'integration'"                                      # run integration tests
-unit = "uv run pytest -m 'unit'"                                                    # run unit tests
-ci-test = "uv run pytest -m 'not eval'"
-ci-check = "uv run prek run --all-files --hook-stage manual --show-diff-on-failure"
+eval = 'uv run pytest -m "eval"'                                                                           # run deepeval tests
+integration = "uv run pytest -m 'integration'"                                                             # run integration tests
+unit = "uv run pytest -m 'unit'"                                                                           # run unit tests
+ci-test = "uv run pytest tests/unit/ tests/stubs/ -m 'not eval' --cov=yosoi --cov-branch --cov-report=xml" # unit + stub tests with coverage
+ci-format = "uv run ruff check --fix"
+coverage = "uv run pytest --cov=yosoi --cov-report=term-missing --cov-report=html tests/"
+mutmut-run = "uv run mutmut run"
+mutmut-results = "uv run mutmut results"
+
+[tool.poe.tasks.ci-check]
+sequence = [
+  { cmd = "uv run prek run --all-files --hook-stage manual --show-diff-on-failure" },
+  { ref = "ci-test" },
+]
 
 [tool.gitleaks]
 [[tool.gitleaks.allowlist]]

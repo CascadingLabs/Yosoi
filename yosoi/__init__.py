@@ -1,62 +1,111 @@
-"""Yosoi - AI-Powered Selector Discovery.
+"""Yosoi: AI-powered CSS selector discovery and web scraping."""
 
-Discover once, scrape forever with BeautifulSoup.
-"""
-
-from yosoi.cleaner import HTMLCleaner
-from yosoi.discovery import SelectorDiscovery
-from yosoi.extractor import ContentExtractor
-from yosoi.fetcher import (
-    BotDetectionError,
-    FetchResult,
-    HTMLFetcher,
-    PlaywrightFetcher,
-    SimpleFetcher,
-    SmartFetcher,
-    create_fetcher,
-)
-from yosoi.llm_config import (
-    LLMBuilder,
+from yosoi.core.configs import DebugConfig, TelemetryConfig, YosoiConfig, auto_config
+from yosoi.core.discovery import (
     LLMConfig,
-    MultiModelAgent,
-    create_agent,
-    create_model,
+    alibaba,
+    anthropic,
+    azure,
+    bedrock,
+    cerebras,
+    deepseek,
+    fireworks,
     gemini,
+    github,
+    grok,
     groq,
+    heroku,
+    huggingface,
+    litellm,
+    mistral,
+    moonshotai,
+    nebius,
+    ollama,
     openai,
+    openrouter,
+    ovhcloud,
+    provider,
+    sambanova,
+    together,
+    vercel,
+    vertexai,
+    xai,
 )
-from yosoi.outputs import format_content, save_formatted_content
-from yosoi.retry import get_retryer, log_retry
-from yosoi.storage import SelectorStorage
-from yosoi.tracker import LLMTracker
-from yosoi.utils import init_yosoi
-from yosoi.validator import SelectorValidator
+from yosoi.core.pipeline import Pipeline
+from yosoi.models.contract import Contract
+from yosoi.models.defaults import JobPosting, NewsArticle, Product, Video
+from yosoi.models.selectors import SelectorEntry, css, discover, jsonld, regex, xpath
+from yosoi.types import (
+    Author,
+    BodyText,
+    Datetime,
+    Field,
+    Price,
+    Rating,
+    Title,
+    Url,
+    YosoiType,
+    register_coercion,
+)
+from yosoi.utils.contracts import resolve_contract
+from yosoi.utils.urls import load_urls_from_file
+
+__version__ = '0.1.0'
 
 __all__ = [
-    'HTMLCleaner',
-    'SelectorDiscovery',
-    'ContentExtractor',
-    'SelectorStorage',
-    'SelectorValidator',
-    'LLMTracker',
-    'BotDetectionError',
-    'FetchResult',
-    'HTMLFetcher',
-    'PlaywrightFetcher',
-    'SimpleFetcher',
-    'SmartFetcher',
-    'create_fetcher',
+    'Author',
+    'BodyText',
+    'Contract',
+    'Datetime',
+    'DebugConfig',
+    'Field',
+    'JobPosting',
     'LLMConfig',
-    'LLMBuilder',
-    'MultiModelAgent',
-    'create_model',
-    'create_agent',
-    'groq',
+    'NewsArticle',
+    'Pipeline',
+    'Price',
+    'Rating',
+    'SelectorEntry',
+    'TelemetryConfig',
+    'Title',
+    'Url',
+    'Video',
+    'YosoiConfig',
+    'YosoiType',
+    'alibaba',
+    'anthropic',
+    'auto_config',
+    'azure',
+    'bedrock',
+    'cerebras',
+    'css',
+    'deepseek',
+    'discover',
+    'fireworks',
     'gemini',
+    'github',
+    'grok',
+    'groq',
+    'heroku',
+    'huggingface',
+    'jsonld',
+    'litellm',
+    'load_urls_from_file',
+    'mistral',
+    'moonshotai',
+    'nebius',
+    'ollama',
     'openai',
-    'init_yosoi',
-    'format_content',
-    'save_formatted_content',
-    'get_retryer',
-    'log_retry',
+    'openrouter',
+    'ovhcloud',
+    'provider',
+    'regex',
+    'register_coercion',
+    'resolve_contract',
+    'sambanova',
+    'together',
+    'vercel',
+    'vertexai',
+    'xai',
+    'xpath',
 ]
