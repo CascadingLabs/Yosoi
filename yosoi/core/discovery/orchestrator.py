@@ -180,7 +180,7 @@ class DiscoveryOrchestrator:
         # Check if all non-root fields failed
         non_container = {k: v for k, v in merged.items() if k != 'root'}
         if not non_container:
-            logfire.warn('All field tasks returned None', url=url_context)
+            logfire.warning('All field tasks returned None', url=url_context)
             return None
 
         logfire.info(

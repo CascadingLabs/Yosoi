@@ -31,9 +31,14 @@ and stays that way — no re-registration).
 from __future__ import annotations
 
 import asyncio
+import logging
 from dataclasses import dataclass, field
 
 from yosoi.models.selectors import FieldSelectors
+
+logger = logging.getLogger(__name__)
+
+_MAX_SLOTS = 10_000
 
 
 @dataclass
@@ -137,10 +142,33 @@ class DiscoveryBus:
         """Reset all slots. Call at broker shutdown."""
         self._slots.clear()
 
+    def _prune_done_unlocked(self) -> int:
+        """Remove completed slots without acquiring the lock (must be called under self._lock)."""
+        done_keys = [k for k, s in self._slots.items() if s.done]
+        for k in done_keys:
+            del self._slots[k]
+        return len(done_keys)
+
+    async def prune_done(self) -> int:
+        """Remove completed slots to reclaim memory.
+
+        Returns:
+            Number of slots pruned.
+
+        """
+        async with self._lock:
+            return self._prune_done_unlocked()
+
     async def _acquire(self, key: str) -> bool:
         """Atomically check-and-set under the internal lock."""
         async with self._lock:
             if key not in self._slots:
+                if len(self._slots) >= _MAX_SLOTS:
+                    logger.warning(
+                        'DiscoveryBus slot count reached %d — possible memory leak; pruning done slots',
+                        _MAX_SLOTS,
+                    )
+                    self._prune_done_unlocked()
                 self._slots[key] = _Slot()
                 return True
             return False

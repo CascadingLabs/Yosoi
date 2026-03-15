@@ -47,7 +47,7 @@ def find_available_provider() -> tuple[str, str, str] | None:
 class DebugConfig(BaseModel):
     """Configuration for debug output."""
 
-    save_html: bool = True
+    save_html: bool = False
     html_dir: Path = Field(default_factory=lambda: Path('.yosoi/debug_html'))
 
 
@@ -102,7 +102,7 @@ class YosoiConfig(BaseModel):
         # Try the configured provider's env vars first
         val = _find_env_key(provider)
         if val:
-            self.llm.api_key = val
+            self.llm = self.llm.model_copy(update={'api_key': val})
             return self
 
         # Fallback: try other providers
@@ -117,9 +117,7 @@ class YosoiConfig(BaseModel):
                 fb_provider,
                 fb_model,
             )
-            self.llm.provider = fb_provider
-            self.llm.model_name = fb_model
-            self.llm.api_key = fb_key
+            self.llm = self.llm.model_copy(update={'provider': fb_provider, 'model_name': fb_model, 'api_key': fb_key})
             return self
 
         # Nothing available at all

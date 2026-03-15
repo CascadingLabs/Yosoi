@@ -31,6 +31,8 @@ def _make_pipeline_stub(mocker, contract=None):
     stub.storage = mocker.MagicMock()
     stub.storage.load_snapshots.return_value = None
     stub.tracker = mocker.MagicMock()
+    stub.tracker.record_url = mocker.AsyncMock()
+    stub._client = mocker.AsyncMock()
     stub.debug = mocker.MagicMock()
     stub.debug_mode = False
     stub.output_formats = ['json']
@@ -43,16 +45,17 @@ def _make_pipeline_stub(mocker, contract=None):
     return stub
 
 
-def _mock_async_client(mocker, *, raise_on_head=None):
-    """Patch httpx.AsyncClient for normalize_url tests.
+def _mock_async_client(mocker, stub, *, raise_on_head=None):
+    """Configure stub._client.head for normalize_url tests.
 
     Returns a mock client whose `.head()` either succeeds or raises.
     """
-    mock_client = mocker.AsyncMock()
     if raise_on_head is not None:
-        mock_client.__aenter__.return_value.head.side_effect = raise_on_head
-    mocker.patch('yosoi.core.pipeline.httpx.AsyncClient', return_value=mock_client)
-    return mock_client
+        stub._client.head.side_effect = raise_on_head
+    else:
+        stub._client.head.side_effect = None
+        stub._client.head.return_value = mocker.MagicMock()
+    return stub._client
 
 
 # ---------------------------------------------------------------------------
@@ -72,7 +75,7 @@ async def test_normalize_url_already_http(mocker):
 
 async def test_normalize_url_adds_https_on_success(mocker):
     stub = _make_pipeline_stub(mocker)
-    _mock_async_client(mocker)  # head() succeeds
+    _mock_async_client(mocker, stub)  # head() succeeds
     result = await Pipeline.normalize_url(stub, 'example.com')
     assert result == 'https://example.com'
 
@@ -81,7 +84,7 @@ async def test_normalize_url_falls_back_to_http_on_error(mocker):
     import httpx
 
     stub = _make_pipeline_stub(mocker)
-    _mock_async_client(mocker, raise_on_head=httpx.HTTPError('fail'))
+    _mock_async_client(mocker, stub, raise_on_head=httpx.HTTPError('fail'))
     result = await Pipeline.normalize_url(stub, 'example.com')
     assert result == 'http://example.com'
 
@@ -285,10 +288,10 @@ def test_validate_with_contract_injects_source_url(mocker):
 # ---------------------------------------------------------------------------
 
 
-def test_save_and_track_saves_selectors_and_content(mocker):
+async def test_save_and_track_saves_selectors_and_content(mocker):
     stub = _make_pipeline_stub(mocker)
     stub.tracker.record_url.return_value = DomainStats(llm_calls=1, url_count=1)
-    Pipeline._save_and_track(
+    await Pipeline._save_and_track(
         stub,
         url='https://x.com',
         domain='x.com',
@@ -304,10 +307,10 @@ def test_save_and_track_saves_selectors_and_content(mocker):
     )
 
 
-def test_save_and_track_skips_content_when_none(mocker):
+async def test_save_and_track_skips_content_when_none(mocker):
     stub = _make_pipeline_stub(mocker)
     stub.tracker.record_url.return_value = DomainStats(llm_calls=1, url_count=1)
-    Pipeline._save_and_track(
+    await Pipeline._save_and_track(
         stub,
         url='https://x.com',
         domain='x.com',
@@ -320,10 +323,10 @@ def test_save_and_track_skips_content_when_none(mocker):
     stub.storage.save_content.assert_not_called()
 
 
-def test_save_and_track_passes_elapsed_to_record_url(mocker):
+async def test_save_and_track_passes_elapsed_to_record_url(mocker):
     stub = _make_pipeline_stub(mocker)
     stub.tracker.record_url.return_value = DomainStats(llm_calls=1, url_count=1)
-    Pipeline._save_and_track(
+    await Pipeline._save_and_track(
         stub,
         url='https://x.com',
         domain='x.com',
@@ -343,13 +346,13 @@ def test_save_and_track_passes_elapsed_to_record_url(mocker):
 # ---------------------------------------------------------------------------
 
 
-def test_track_cached_success_calls_record_url(mocker):
+async def test_track_cached_success_calls_record_url(mocker):
     stub = _make_pipeline_stub(mocker)
     stub._url_start = 100.0
     mocker.patch('yosoi.core.pipeline.time')
     mocker.patch('yosoi.core.pipeline.time.monotonic', return_value=102.5)
     stub.tracker.record_url.return_value = DomainStats(llm_calls=0, url_count=3)
-    Pipeline._track_cached_success(stub, 'https://x.com', 'x.com')
+    await Pipeline._track_cached_success(stub, 'https://x.com', 'x.com')
     call_args = stub.tracker.record_url.call_args
     assert call_args[0] == ('https://x.com',)
     assert call_args[1]['used_llm'] is False
@@ -565,23 +568,23 @@ async def test_discover_returns_none_when_all_ai_attempts_fail(mocker):
 
 
 # ---------------------------------------------------------------------------
-# _discover_with_escalation
+# _discover
 # ---------------------------------------------------------------------------
 
 
-async def test_discover_with_escalation_succeeds_at_css(mocker):
+async def test_discover_succeeds_at_css(mocker):
     """When _discover succeeds at CSS, no escalation occurs."""
     stub = _make_pipeline_stub(mocker)
     mocker.patch.object(Pipeline, '_discover', return_value=({'title': {'primary': 'h1'}}, True))
-    selectors, used_llm = await Pipeline._discover_with_escalation(stub, 'https://x.com', '<html/>')
+    selectors, used_llm = await Pipeline._discover(stub, 'https://x.com', '<html/>')
     assert selectors == {'title': {'primary': 'h1'}}
     assert used_llm is True
     # _discover called once only (CSS level)
     Pipeline._discover.assert_called_once()
 
 
-async def test_discover_with_escalation_delegates_to_discover(mocker):
-    """_discover_with_escalation now delegates to _discover once.
+async def test_discover_delegates_to_discover(mocker):
+    """_discover now delegates to _discover once.
 
     Per-field escalation (CSS→XPath→…) is handled inside DiscoveryOrchestrator,
     not in the pipeline-level loop.
@@ -595,33 +598,33 @@ async def test_discover_with_escalation_delegates_to_discover(mocker):
         '_discover',
         return_value=({'title': {'primary': '//h1'}}, True),
     )
-    selectors, used_llm = await Pipeline._discover_with_escalation(stub, 'https://x.com', '<html/>')
+    selectors, used_llm = await Pipeline._discover(stub, 'https://x.com', '<html/>')
     assert selectors is not None
     assert used_llm is True
     # Only one call — orchestrator handles the per-field level loop internally
     Pipeline._discover.assert_called_once()
 
 
-async def test_discover_with_escalation_does_not_retry_beyond_max_level(mocker):
+async def test_discover_does_not_retry_beyond_max_level(mocker):
     """Does not escalate past self.selector_level even if all attempts fail."""
     from yosoi.models.selectors import SelectorLevel
 
     stub = _make_pipeline_stub(mocker)
     stub.selector_level = SelectorLevel.CSS  # only CSS allowed
     mocker.patch.object(Pipeline, '_discover', return_value=(None, False))
-    selectors, _used_llm = await Pipeline._discover_with_escalation(stub, 'https://x.com', '<html/>')
+    selectors, _used_llm = await Pipeline._discover(stub, 'https://x.com', '<html/>')
     assert selectors is None
     Pipeline._discover.assert_called_once()  # no escalation beyond CSS
 
 
-async def test_discover_with_escalation_returns_none_when_all_levels_fail(mocker):
+async def test_discover_returns_none_when_all_levels_fail(mocker):
     """Returns None when every level fails."""
     from yosoi.models.selectors import SelectorLevel
 
     stub = _make_pipeline_stub(mocker)
     stub.selector_level = SelectorLevel.XPATH
     mocker.patch.object(Pipeline, '_discover', return_value=(None, False))
-    selectors, used_llm = await Pipeline._discover_with_escalation(stub, 'https://x.com', '<html/>')
+    selectors, used_llm = await Pipeline._discover(stub, 'https://x.com', '<html/>')
     assert selectors is None
     assert used_llm is False
 
@@ -886,7 +889,7 @@ async def test_normalize_url_https_url_returned_unchanged(mocker):
 async def test_normalize_url_prepends_https_exactly(mocker):
     """Without protocol, must prepend 'https://' (not 'http://')."""
     stub = _make_pipeline_stub(mocker)
-    _mock_async_client(mocker)  # head() succeeds
+    _mock_async_client(mocker, stub)  # head() succeeds
     result = await Pipeline.normalize_url(stub, 'www.example.com')
     assert result == 'https://www.example.com'
 
@@ -896,7 +899,7 @@ async def test_normalize_url_prepends_http_on_https_failure(mocker):
     import httpx
 
     stub = _make_pipeline_stub(mocker)
-    _mock_async_client(mocker, raise_on_head=httpx.HTTPError('fail'))
+    _mock_async_client(mocker, stub, raise_on_head=httpx.HTTPError('fail'))
     result = await Pipeline.normalize_url(stub, 'example.com')
     assert result == 'http://example.com'
 
@@ -968,11 +971,11 @@ def test_verify_failed_result_calls_print_verification_failure(mocker):
 # ---------------------------------------------------------------------------
 
 
-def test_save_and_track_calls_record_url_with_used_llm_true(mocker):
+async def test_save_and_track_calls_record_url_with_used_llm_true(mocker):
     """_save_and_track must pass used_llm=True when called with used_llm=True."""
     stub = _make_pipeline_stub(mocker)
     stub.tracker.record_url.return_value = DomainStats(llm_calls=1, url_count=1)
-    Pipeline._save_and_track(
+    await Pipeline._save_and_track(
         stub,
         url='https://x.com',
         domain='x.com',
@@ -986,11 +989,11 @@ def test_save_and_track_calls_record_url_with_used_llm_true(mocker):
     )
 
 
-def test_save_and_track_calls_record_url_with_used_llm_false(mocker):
+async def test_save_and_track_calls_record_url_with_used_llm_false(mocker):
     """_save_and_track must pass used_llm=False when called with used_llm=False."""
     stub = _make_pipeline_stub(mocker)
     stub.tracker.record_url.return_value = DomainStats(llm_calls=0, url_count=1)
-    Pipeline._save_and_track(
+    await Pipeline._save_and_track(
         stub,
         url='https://x.com',
         domain='x.com',
@@ -1004,11 +1007,11 @@ def test_save_and_track_calls_record_url_with_used_llm_false(mocker):
     )
 
 
-def test_save_and_track_saves_content_with_output_format(mocker):
+async def test_save_and_track_saves_content_with_output_format(mocker):
     """save_content must be called with the correct output_format."""
     stub = _make_pipeline_stub(mocker)
     stub.tracker.record_url.return_value = DomainStats(llm_calls=1, url_count=1)
-    Pipeline._save_and_track(
+    await Pipeline._save_and_track(
         stub,
         url='https://x.com',
         domain='x.com',
@@ -1022,11 +1025,11 @@ def test_save_and_track_saves_content_with_output_format(mocker):
     )
 
 
-def test_save_and_track_passes_contract_sig_to_save_content(mocker):
+async def test_save_and_track_passes_contract_sig_to_save_content(mocker):
     """save_content must receive the pipeline's _contract_sig as contract_sig kwarg."""
     stub = _make_pipeline_stub(mocker)
     stub.tracker.record_url.return_value = DomainStats(llm_calls=1, url_count=1)
-    Pipeline._save_and_track(
+    await Pipeline._save_and_track(
         stub,
         url='https://x.com',
         domain='x.com',
@@ -1044,13 +1047,13 @@ def test_save_and_track_passes_contract_sig_to_save_content(mocker):
 # ---------------------------------------------------------------------------
 
 
-def test_track_cached_success_calls_record_url_used_llm_false(mocker):
+async def test_track_cached_success_calls_record_url_used_llm_false(mocker):
     """_track_cached_success must call record_url with used_llm=False and elapsed."""
     stub = _make_pipeline_stub(mocker)
     stub._url_start = 100.0
     mocker.patch('yosoi.core.pipeline.time.monotonic', return_value=103.0)
     stub.tracker.record_url.return_value = DomainStats(llm_calls=0, url_count=1)
-    Pipeline._track_cached_success(stub, 'https://example.com', 'example.com')
+    await Pipeline._track_cached_success(stub, 'https://example.com', 'example.com')
     call_args = stub.tracker.record_url.call_args
     assert call_args[0] == ('https://example.com',)
     assert call_args[1]['used_llm'] is False

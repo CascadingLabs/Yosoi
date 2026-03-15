@@ -155,7 +155,7 @@ async def _discover_field(
 
         logger.debug('Selector for %s at level %s failed verification', field_name, level.name)
 
-    logfire.warn('Field discovery failed all levels', field=field_name, max_level=max_level.name)
+    logfire.warning('Field discovery failed all levels', field=field_name, max_level=max_level.name)
     return failure
 
 

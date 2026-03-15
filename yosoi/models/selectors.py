@@ -46,15 +46,13 @@ class SelectorEntry(BaseModel):
     model_config = ConfigDict(json_schema_extra=_strip_level)
 
     type: Literal['css', 'xpath', 'regex', 'jsonld'] = 'css'
-    level: SelectorLevel = Field(default=SelectorLevel.CSS, exclude=True)
     value: str
     regex: str | None = None
 
-    @model_validator(mode='after')
-    def _sync_level(self) -> 'SelectorEntry':
-        """Sync level from type after validation."""
-        self.level = SelectorLevel(_STRATEGY_TO_LEVEL[self.type])
-        return self
+    @property
+    def level(self) -> SelectorLevel:
+        """Selector strategy level derived from type."""
+        return SelectorLevel(_STRATEGY_TO_LEVEL[self.type])
 
 
 def css(value: str) -> SelectorEntry:

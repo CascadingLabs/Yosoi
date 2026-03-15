@@ -1,0 +1,33 @@
+#🐇 yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+reviews:
+  auto_apply_labels: true
+  in_progress_fortune: false
+  poem: false
+  path_filters:
+    - "!tests/**"
+    - "!**tests/**"
+    - "!**examples**/"
+    - "!examples/"
+    - "**yosoi/**"
+  auto_review:
+    base_branches:
+      - staging
+      - main
+chat:
+  art: false
+  integrations:
+    jira:
+      usage: disabled
+    linear:
+      usage: disabled
+knowledge_base:
+  code_guidelines:
+    filePatterns:
+      - "**/AGENTS.md"
+  jira:
+    usage: disabled
+  linear:
+    usage: disabled
+  linked_repositories:
+    - repository: CascadingLabs/Yosoi-Docs
+      instructions: Markdown docs for Yosoi

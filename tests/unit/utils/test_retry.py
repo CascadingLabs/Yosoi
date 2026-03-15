@@ -76,9 +76,9 @@ def test_get_retryer_exception_types():
     assert retryer.retry is not None
 
 
-def test_log_retry_calls_logfire_warn(monkeypatch, mocker):
+def test_log_retry_calls_logfire_warning(monkeypatch, mocker):
     logged = []
-    monkeypatch.setattr(logfire, 'warn', lambda msg, **kwargs: logged.append((msg, kwargs)))
+    monkeypatch.setattr(logfire, 'warning', lambda msg, **kwargs: logged.append((msg, kwargs)))
 
     state = mocker.MagicMock()
     state.attempt_number = 2
@@ -93,7 +93,7 @@ def test_log_retry_calls_logfire_warn(monkeypatch, mocker):
 
 def test_log_retry_message_text(monkeypatch, mocker):
     logged = []
-    monkeypatch.setattr(logfire, 'warn', lambda msg, **kwargs: logged.append((msg, kwargs)))
+    monkeypatch.setattr(logfire, 'warning', lambda msg, **kwargs: logged.append((msg, kwargs)))
 
     state = mocker.MagicMock()
     state.attempt_number = 1
@@ -106,7 +106,7 @@ def test_log_retry_message_text(monkeypatch, mocker):
 
 def test_log_retry_none_exception_uses_unknown(monkeypatch, mocker):
     logged = []
-    monkeypatch.setattr(logfire, 'warn', lambda msg, **kwargs: logged.append((msg, kwargs)))
+    monkeypatch.setattr(logfire, 'warning', lambda msg, **kwargs: logged.append((msg, kwargs)))
 
     state = mocker.MagicMock()
     state.attempt_number = 3
@@ -119,7 +119,7 @@ def test_log_retry_none_exception_uses_unknown(monkeypatch, mocker):
 
 def test_log_retry_uses_attempt_number(monkeypatch, mocker):
     logged = []
-    monkeypatch.setattr(logfire, 'warn', lambda msg, **kwargs: logged.append((msg, kwargs)))
+    monkeypatch.setattr(logfire, 'warning', lambda msg, **kwargs: logged.append((msg, kwargs)))
 
     state = mocker.MagicMock()
     state.attempt_number = 7
@@ -152,7 +152,7 @@ def test_get_retryer_wait_max_respected():
 def test_log_retry_error_str_is_str_of_exception(monkeypatch, mocker):
     """error kwarg must be str(exception), not repr or something else."""
     logged = []
-    monkeypatch.setattr(logfire, 'warn', lambda msg, **kwargs: logged.append((msg, kwargs)))
+    monkeypatch.setattr(logfire, 'warning', lambda msg, **kwargs: logged.append((msg, kwargs)))
 
     state = mocker.MagicMock()
     state.attempt_number = 1

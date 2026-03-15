@@ -253,7 +253,7 @@ def _make_scrape_stub(mocker, contract=None):
     stub.extractor = mocker.MagicMock()
     stub.storage = mocker.MagicMock()
     stub.tracker = mocker.MagicMock()
-    stub.tracker.record_url.return_value = DomainStats(llm_calls=0, url_count=1)
+    stub.tracker.record_url = mocker.AsyncMock(return_value=DomainStats(llm_calls=0, url_count=1))
     stub.debug = mocker.MagicMock()
     stub.debug_mode = False
     stub.output_formats = ['json']

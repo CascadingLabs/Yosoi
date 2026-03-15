@@ -25,6 +25,8 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+_domain_locks: dict[str, asyncio.Lock] = {}
+
 
 class PipelineConfig(BaseModel, frozen=True):
     """Shape of the module-level pipeline configuration."""
@@ -160,10 +162,7 @@ async def process_url_task(
         domain = urlparse(url if url.startswith(('http://', 'https://')) else f'https://{url}').netloc.replace(
             'www.', ''
         )
-        if domain not in _domain_locks:
-            _domain_locks[domain] = asyncio.Lock()
-
-        write_lock = _domain_locks[domain]
+        write_lock = _domain_locks.setdefault(domain, asyncio.Lock())
         pipeline = Pipeline(
             config.llm_config,
             contract=config.contract,
@@ -188,9 +187,6 @@ async def process_url_task(
         except Exception:
             logger.exception('Task failed for %s', url)
             raise  # taskiq retry middleware fires here
-
-
-_domain_locks: dict[str, asyncio.Lock] = {}
 
 
 async def enqueue_urls(

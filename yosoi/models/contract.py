@@ -60,6 +60,7 @@ class Contract(BaseModel):
     """Base class for user-defined scraping contracts."""
 
     root: ClassVar[SelectorEntry | None] = None
+    _validators_cls: ClassVar[type | None] = None
 
     def __init_subclass__(cls, **kwargs: Any) -> None:  # pragma: no mutate
         """Register every Contract subclass in the global _CONTRACT_REGISTRY."""
@@ -76,6 +77,12 @@ class Contract(BaseModel):
         - ``list[Contract]`` fields, which are not yet supported (Phase 2).
         """
         super().__pydantic_init_subclass__(**kwargs)
+
+        # Cache Validators class at class definition time to avoid per-call MRO walk
+        cls._validators_cls = next(
+            (klass.__dict__['Validators'] for klass in cls.__mro__ if 'Validators' in klass.__dict__),
+            None,
+        )
 
         # Reject list[Contract] fields — not yet supported
         for name, fi in cls.model_fields.items():
@@ -114,11 +121,8 @@ class Contract(BaseModel):
 
         result = dict(data)
 
-        # Step 1: Apply per-field transforms from nested Validators class
-        validators_cls = next(
-            (klass.__dict__['Validators'] for klass in cls.__mro__ if 'Validators' in klass.__dict__),
-            None,
-        )
+        # Step 1: Apply per-field transforms from nested Validators class (cached at class definition)
+        validators_cls = cls._validators_cls
         if validators_cls is not None:
             for field_name, value in list(result.items()):
                 fn = getattr(validators_cls, field_name, None)

@@ -127,4 +127,4 @@ def log_retry(retry_state: RetryCallState) -> None:
     outcome = retry_state.outcome
     exception = outcome.exception() if outcome is not None else None
     attempt = retry_state.attempt_number
-    logfire.warn('Retrying operation', attempt=attempt, error=str(exception) if exception else 'Unknown error')
+    logfire.warning('Retrying operation', attempt=attempt, error=str(exception) if exception else 'Unknown error')

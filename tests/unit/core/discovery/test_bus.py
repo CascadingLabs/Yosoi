@@ -168,3 +168,78 @@ async def test_clear_resets_slots():
 
     # After clear, the slot is gone — next acquire is leadership again
     assert await scoped.acquire('sig1') is True
+
+
+# ---------------------------------------------------------------------------
+# prune_done()
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.anyio
+async def test_prune_done_removes_completed_slots():
+    bus = DiscoveryBus()
+    scoped = bus.scoped('example.com')
+
+    # Acquire and publish two slots (DONE)
+    await scoped.acquire('sig1')
+    await scoped.publish('sig1', _make_selectors())
+    await scoped.acquire('sig2')
+    await scoped.publish('sig2', _make_selectors())
+
+    # One pending slot
+    await scoped.acquire('sig3')  # PENDING
+
+    pruned = await bus.prune_done()
+    assert pruned == 2
+    # PENDING slot must survive
+    assert 'example.com:sig3' in bus._slots
+
+
+@pytest.mark.anyio
+async def test_prune_done_returns_zero_when_nothing_done():
+    bus = DiscoveryBus()
+    scoped = bus.scoped('example.com')
+    await scoped.acquire('sig1')  # PENDING only
+
+    pruned = await bus.prune_done()
+    assert pruned == 0
+
+
+# ---------------------------------------------------------------------------
+# _wait_for with unknown key (slot is None)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.anyio
+async def test_wait_for_unknown_key_returns_none():
+    bus = DiscoveryBus()
+    scoped = bus.scoped('example.com')
+
+    # Never acquired — slot doesn't exist
+    result = await scoped.wait_for('nonexistent-sig')
+    assert result is None
+
+
+# ---------------------------------------------------------------------------
+# _MAX_SLOTS pruning path
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.anyio
+async def test_max_slots_triggers_prune(monkeypatch):
+    import yosoi.core.discovery.bus as bus_module
+
+    monkeypatch.setattr(bus_module, '_MAX_SLOTS', 2)
+
+    bus = DiscoveryBus()
+    scoped = bus.scoped('example.com')
+
+    # Fill to capacity with DONE slots
+    await scoped.acquire('s1')
+    await scoped.publish('s1', _make_selectors())
+    await scoped.acquire('s2')
+    await scoped.publish('s2', _make_selectors())
+
+    # This acquire should hit the MAX_SLOTS path and prune
+    is_leader = await scoped.acquire('s3')
+    assert is_leader is True

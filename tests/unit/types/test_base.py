@@ -32,6 +32,6 @@ def test_default_coerce_strips_whitespace():
     assert result == 'hello world'
 
 
-def test_default_coerce_none_returns_empty_string():
+def test_default_coerce_none_returns_none():
     result = YosoiType.coerce(None, {})
-    assert result == ''
+    assert result is None

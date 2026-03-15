@@ -645,3 +645,67 @@ def test_load_field_selector_returns_none_for_missing_field(storage):
 def test_load_field_selector_returns_none_for_missing_domain(storage):
     result = storage.load_field_selector('nothere.com', 'headline')
     assert result is None
+
+
+# ---------------------------------------------------------------------------
+# list_domains: corrupt selector file is silently skipped (lines 215-216)
+# ---------------------------------------------------------------------------
+
+
+def test_list_domains_skips_corrupt_json_files(storage):
+    """A malformed selector file must be silently skipped, not raise."""
+    # Write a valid selector so we know one domain shows up
+    selectors = {'title': {'primary': 'h1', 'fallback': None, 'tertiary': None}}
+    storage.save_selectors('https://example.com', selectors)
+
+    # Inject a corrupt file that matches the expected filename pattern
+    corrupt_path = os.path.join(storage.storage_dir, 'selectors_corrupt.json')
+    with open(corrupt_path, 'w') as f:
+        f.write('NOT VALID JSON')
+
+    domains = storage.list_domains()
+    # Corrupt file is skipped; valid domain still returned
+    assert 'example.com' in domains
+    # No crash
+
+
+# ---------------------------------------------------------------------------
+# load_snapshots: no 'snapshots' key returns None (line 266)
+# ---------------------------------------------------------------------------
+
+
+def test_load_snapshots_returns_none_when_no_snapshots_key(storage):
+    """When persisted data has no 'snapshots' key, load_snapshots must return None."""
+    import json
+
+    # Write a legacy-style file with no 'snapshots' key
+    filepath = os.path.join(storage.storage_dir, 'selectors_example_com.json')
+    with open(filepath, 'w') as f:
+        json.dump({'domain': 'example.com', 'fields': {}}, f)
+
+    result = storage.load_snapshots('example.com')
+    assert result is None
+
+
+# ---------------------------------------------------------------------------
+# load_snapshots: invalid snapshot data returns None (lines 271-272)
+# ---------------------------------------------------------------------------
+
+
+def test_load_snapshots_returns_none_for_invalid_snapshot_data(storage):
+    """When snapshot data fails model_validate, load_snapshots must return None."""
+    import json
+
+    # Write a file with 'snapshots' key but with structurally invalid data
+    filepath = os.path.join(storage.storage_dir, 'selectors_bad_com.json')
+    with open(filepath, 'w') as f:
+        json.dump(
+            {
+                'domain': 'bad.com',
+                'snapshots': {'field': 'this_is_not_a_valid_snapshot_object'},
+            },
+            f,
+        )
+
+    result = storage.load_snapshots('bad.com')
+    assert result is None
