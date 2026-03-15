@@ -14,7 +14,7 @@ class CacheVerdict(str, Enum):
 
     FRESH = 'fresh'
     STALE = 'stale'
-    DEGRADED = 'degraded'  # stub: treated as STALE for now
+    DEGRADED = 'degraded'  # stub: treated as STALE for now, FUTURE used for event driven pipeline healing when pipeline_mode != maintenance or offline
 
 
 class SelectorSnapshot(BaseModel):

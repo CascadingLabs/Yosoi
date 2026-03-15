@@ -111,7 +111,11 @@ class SelectorStorage:
         return os.path.exists(filepath)
 
     def save_content(
-        self, url: str, content: dict[str, Any] | list[dict[str, Any]], output_format: str = 'json'
+        self,
+        url: str,
+        content: dict[str, Any] | list[dict[str, Any]],
+        output_format: str = 'json',
+        contract_sig: str | None = None,
     ) -> str:
         """Save extracted content to a file in the specified format.
 
@@ -119,6 +123,7 @@ class SelectorStorage:
             url: URL the content was extracted from
             content: Dictionary of extracted content or list of dicts for multi-item pages
             output_format: Output format ('json' or 'markdown'). Defaults to 'json'.
+            contract_sig: Optional contract signature for stable, unique filenames.
 
         Returns:
             Path to the saved file.
@@ -127,7 +132,7 @@ class SelectorStorage:
         from yosoi.outputs.utils import save_formatted_content
 
         domain = self._extract_domain(url)
-        filepath = self._get_content_filepath(url, output_format)
+        filepath = self._get_content_filepath(url, output_format, contract_sig)
 
         # Use output module to format and save
         save_formatted_content(filepath, url, domain, content, output_format)
@@ -135,17 +140,18 @@ class SelectorStorage:
         print(f'✓ Saved content to: {filepath}')
         return filepath
 
-    def load_content(self, url: str) -> dict[str, Any] | list[dict[str, Any]] | None:
+    def load_content(self, url: str, contract_sig: str | None = None) -> dict[str, Any] | list[dict[str, Any]] | None:
         """Load extracted content from a JSON file.
 
         Args:
             url: URL to load content for
+            contract_sig: Optional contract signature (must match the one used when saving).
 
         Returns:
             Single content dict, list of item dicts for multi-item pages, or None.
 
         """
-        filepath = self._get_content_filepath(url)
+        filepath = self._get_content_filepath(url, contract_sig=contract_sig)
 
         if not os.path.exists(filepath):
             return None
@@ -164,17 +170,18 @@ class SelectorStorage:
             print(f'Error loading content: {e}')
             return None
 
-    def content_exists(self, url: str) -> bool:
+    def content_exists(self, url: str, contract_sig: str | None = None) -> bool:
         """Check if extracted content exists for a URL.
 
         Args:
             url: URL to check
+            contract_sig: Optional contract signature (must match the one used when saving).
 
         Returns:
             True if content file exists for the URL, False otherwise.
 
         """
-        filepath = self._get_content_filepath(url)
+        filepath = self._get_content_filepath(url, contract_sig=contract_sig)
         return os.path.exists(filepath)
 
     def list_domains(self) -> list[str]:
@@ -373,7 +380,7 @@ class SelectorStorage:
         safe_domain = domain.replace('.', '_').replace('/', '_')
         return os.path.join(self.storage_dir, f'selectors_{safe_domain}.json')
 
-    def _get_content_filepath(self, url: str, output_format: str = 'json') -> str:
+    def _get_content_filepath(self, url: str, output_format: str = 'json', contract_sig: str | None = None) -> str:
         """Get filepath for a URL's extracted content.
 
         Accumulating formats (jsonl, csv, xlsx, parquet) share a single results file
@@ -382,6 +389,9 @@ class SelectorStorage:
         Args:
             url: Full URL
             output_format: Output format. Defaults to 'json'.
+            contract_sig: Optional contract signature hash. When provided, filenames
+                embed both the contract signature and a URL hash so multiple URLs with
+                the same path but different query strings produce distinct files.
 
         Returns:
             Full file path for the URL's content file.
@@ -409,12 +419,14 @@ class SelectorStorage:
         if output_format in _ACCUMULATING:
             return os.path.join(domain_dir, f'results.{ext}')
 
-        # Per-URL (json, markdown) — derive filename from URL path
-        if parsed.path and parsed.path != '/':
+        # Per-URL (json, markdown) — derive filename from URL path or contract+hash
+        url_hash = hashlib.md5(url.encode()).hexdigest()[:8]
+        if contract_sig:
+            filename = f'{contract_sig}_{url_hash}.{ext}'
+        elif parsed.path and parsed.path != '/':
             path_parts = parsed.path.strip('/').replace('/', '_')
             filename = f'{path_parts[:100]}.{ext}'
         else:
-            url_hash = hashlib.md5(url.encode()).hexdigest()[:8]
             filename = f'homepage_{url_hash}.{ext}'
 
         return os.path.join(domain_dir, filename)

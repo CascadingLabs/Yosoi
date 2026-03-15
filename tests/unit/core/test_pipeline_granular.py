@@ -41,6 +41,7 @@ def _make_pipeline_stub(mocker, contract=None):
     stub.output_formats = ['json']
     stub.force = False
     stub.selector_level = SelectorLevel.CSS
+    stub._contract_sig = 'test-sig'
     return stub
 
 

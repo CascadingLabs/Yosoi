@@ -451,3 +451,70 @@ def test_coerce_list_field_custom_delimiter():
 
     result = PipeContract.model_validate({'items': 'a|b|c'})
     assert result.items == ['a', 'b', 'c']
+
+
+def test_coerce_list_field_with_non_string_non_list():
+    """Non-string, non-list raw value is wrapped in a list."""
+    from yosoi.models.contract import _coerce_list_field
+
+    # e.g. an integer or None-like value → wrapped in list
+    result = _coerce_list_field(42, {}, None)
+    assert result == [42]
+
+
+def test_coerce_list_field_multi_item_list_passes_through():
+    """Multi-item list input is passed through without splitting."""
+    from yosoi.models.contract import _coerce_list_field
+
+    result = _coerce_list_field(['a', 'b', 'c'], {}, None)
+    assert result == ['a', 'b', 'c']
+
+
+def test_apply_validators_and_coerce_with_non_dict():
+    """_apply_validators_and_coerce passes non-dict data directly to handler."""
+
+    class SimpleC(Contract):
+        title: str
+
+    # Passing an existing instance → model_validate returns it unchanged
+    existing = SimpleC(title='hi')
+    result = SimpleC.model_validate(existing)
+    assert result.title == 'hi'
+
+
+def test_apply_validators_and_coerce_calls_validators_class():
+    """When a nested Validators class defines a field method, it transforms the value."""
+
+    class WithValidators(Contract):
+        name: str
+
+        class Validators:
+            @staticmethod
+            def name(value: str) -> str:
+                return value.upper()
+
+    result = WithValidators.model_validate({'name': 'hello'})
+    assert result.name == 'HELLO'
+
+
+def test_list_fields_returns_inner_types():
+    """list_fields() returns {field_name: inner_type} for list[T] fields."""
+
+    class TagContract(Contract):
+        tags: list[str] = YsField(description='tags')
+        title: str = YsField(description='title')
+
+    lf = TagContract.list_fields()
+    assert 'tags' in lf
+    assert lf['tags'] is str
+    assert 'title' not in lf
+
+
+def test_list_fields_empty_when_no_list_fields():
+    """list_fields() returns {} when no list fields are defined."""
+
+    class FlatC(Contract):
+        title: str
+        price: float
+
+    assert FlatC.list_fields() == {}

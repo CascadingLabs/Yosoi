@@ -36,8 +36,10 @@ def _make_pipeline_stub(mocker, contract=None):
     stub.output_formats = ['json']
     stub.force = False
     from yosoi.models.selectors import SelectorLevel
+    from yosoi.utils.signatures import contract_signature
 
     stub.selector_level = SelectorLevel.CSS
+    stub._contract_sig = contract_signature(stub.contract)
     return stub
 
 
@@ -1015,7 +1017,26 @@ def test_save_and_track_saves_content_with_output_format(mocker):
         used_llm=True,
         output_format=['markdown'],
     )
-    stub.storage.save_content.assert_called_once_with('https://x.com', {'title': 'Book'}, 'markdown')
+    stub.storage.save_content.assert_called_once_with(
+        'https://x.com', {'title': 'Book'}, 'markdown', contract_sig=stub._contract_sig
+    )
+
+
+def test_save_and_track_passes_contract_sig_to_save_content(mocker):
+    """save_content must receive the pipeline's _contract_sig as contract_sig kwarg."""
+    stub = _make_pipeline_stub(mocker)
+    stub.tracker.record_url.return_value = DomainStats(llm_calls=1, url_count=1)
+    Pipeline._save_and_track(
+        stub,
+        url='https://x.com',
+        domain='x.com',
+        verified={'title': {'primary': 'h1'}},
+        extracted={'title': 'Book'},
+        used_llm=True,
+        output_format=['json'],
+    )
+    _, kwargs = stub.storage.save_content.call_args
+    assert kwargs.get('contract_sig') == stub._contract_sig
 
 
 # ---------------------------------------------------------------------------
@@ -1403,3 +1424,72 @@ async def test_discover_ai_success_returns_true_for_used_llm(mocker):
 
     _, used_llm = await Pipeline._discover(stub, 'https://x.com', '<html/>', max_retries=1)
     assert used_llm is True
+
+
+# ---------------------------------------------------------------------------
+# _print_summary
+# ---------------------------------------------------------------------------
+
+
+def test_print_summary_shows_skipped_when_present(mocker):
+    """_print_summary prints skipped count when 'skipped' key exists."""
+    stub = _make_pipeline_stub(mocker)
+    results = {'successful': ['https://a.com'], 'failed': [], 'skipped': ['https://b.com']}
+    Pipeline._print_summary(stub, results, 1.5)
+    all_calls = ' '.join(str(c) for c in stub.console.print.call_args_list)
+    assert 'skip' in all_calls.lower() or '1' in all_calls
+
+
+def test_print_summary_lists_failed_urls(mocker):
+    """_print_summary iterates over failed URLs and prints each one."""
+    stub = _make_pipeline_stub(mocker)
+    results = {'successful': [], 'failed': ['https://x.com', 'https://y.com']}
+    Pipeline._print_summary(stub, results, 2.0)
+    all_calls = ' '.join(str(c) for c in stub.console.print.call_args_list)
+    assert 'https://x.com' in all_calls
+    assert 'https://y.com' in all_calls
+
+
+def test_print_summary_no_skipped_key_no_error(mocker):
+    """_print_summary does not error when 'skipped' key is absent."""
+    stub = _make_pipeline_stub(mocker)
+    results = {'successful': ['https://a.com'], 'failed': []}
+    Pipeline._print_summary(stub, results, 0.5)
+    stub.console.print.assert_called()
+
+
+# ---------------------------------------------------------------------------
+# process_urls — on_complete and on_start callbacks
+# ---------------------------------------------------------------------------
+
+
+async def test_process_urls_calls_on_complete_on_success(mocker):
+    """process_urls calls on_complete(url, True, elapsed) on success."""
+    stub = _make_pipeline_stub(mocker)
+    mocker.patch.object(Pipeline, 'process_url', return_value=None)
+    mocker.patch('yosoi.core.pipeline.logfire')
+
+    completed: list[tuple[str, bool]] = []
+
+    async def on_complete(url: str, success: bool, elapsed: float) -> None:
+        completed.append((url, success))
+
+    await Pipeline.process_urls(stub, ['https://a.com'], on_complete=on_complete)
+    assert len(completed) == 1
+    assert completed[0] == ('https://a.com', True)
+
+
+async def test_process_urls_calls_on_complete_on_failure(mocker):
+    """process_urls calls on_complete(url, False, elapsed) on failure."""
+    stub = _make_pipeline_stub(mocker)
+    mocker.patch.object(Pipeline, 'process_url', side_effect=RuntimeError('boom'))
+    mocker.patch('yosoi.core.pipeline.logfire')
+
+    completed: list[tuple[str, bool]] = []
+
+    async def on_complete(url: str, success: bool, elapsed: float) -> None:
+        completed.append((url, success))
+
+    await Pipeline.process_urls(stub, ['https://fail.com'], on_complete=on_complete)
+    assert len(completed) == 1
+    assert completed[0] == ('https://fail.com', False)

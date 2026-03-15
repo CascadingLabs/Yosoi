@@ -56,7 +56,7 @@ repos:
 
       - id: mypy
         name: mypy
-        entry: uv run mypy yosoi
+        entry: uv run mypy yosoi --cache-dir=/dev/null
         language: system
         types: [python]
         pass_filenames: false
@@ -64,7 +64,7 @@ repos:
 
       - id: no-unittest
         name: ban unittest imports
-        entry: "bash -c 'grep -rn \"import unittest\\|from unittest\" \"$@\" && echo \"Use pytest/pytest-mock instead of unittest\" && exit 1 || exit 0' --"
+        entry: uv run python scripts/check_no_unittest.py
         language: system
         types: [python]
         stages: [pre-commit, manual]

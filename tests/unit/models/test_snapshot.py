@@ -151,3 +151,37 @@ class TestSelectorDictToSnapshot:
         now = datetime.now(timezone.utc)
         snap = selector_dict_to_snapshot({'primary': '.x'}, last_verified_at=now)
         assert snap.last_verified_at == now
+
+
+# ---------------------------------------------------------------------------
+# _ensure_utc
+# ---------------------------------------------------------------------------
+from yosoi.models.snapshot import _ensure_utc
+
+
+class TestEnsureUtc:
+    def test_none_returns_none(self):
+        assert _ensure_utc(None) is None
+
+    def test_naive_datetime_becomes_utc(self):
+        naive = datetime(2025, 6, 1, 12, 0, 0)  # no tzinfo
+        result = _ensure_utc(naive)
+        assert result is not None
+        assert result.tzinfo is not None
+        assert result.tzinfo == timezone.utc
+        assert result.year == 2025
+
+    def test_utc_aware_passthrough(self):
+        utc_dt = datetime(2025, 6, 1, 12, 0, 0, tzinfo=timezone.utc)
+        result = _ensure_utc(utc_dt)
+        assert result == utc_dt
+
+    def test_non_utc_aware_converted_to_utc(self):
+        from datetime import timedelta
+
+        eastern = timezone(timedelta(hours=-5))
+        dt = datetime(2025, 6, 1, 7, 0, 0, tzinfo=eastern)  # 7am EST = 12pm UTC
+        result = _ensure_utc(dt)
+        assert result is not None
+        assert result.tzinfo is not None
+        assert result.hour == 12  # converted to UTC

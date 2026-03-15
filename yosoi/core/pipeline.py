@@ -34,6 +34,7 @@ from yosoi.storage import DebugManager, LLMTracker, SelectorStorage
 from yosoi.storage.tracking import DomainStats
 from yosoi.utils.exceptions import BotDetectionError
 from yosoi.utils.retry import get_async_retryer
+from yosoi.utils.signatures import contract_signature
 
 # Selector dict: field name → {primary, fallback, tertiary} selectors
 # Values may be plain strings, SelectorEntry dicts, or None depending on source
@@ -129,6 +130,7 @@ class Pipeline:
             }
         )
         self.contract = contract
+        self._contract_sig = contract_signature(contract)
         self.console = Console(theme=self.custom_theme, quiet=quiet)
         self.cleaner = HTMLCleaner(console=self.console)
         self.storage = SelectorStorage()
@@ -633,7 +635,7 @@ class Pipeline:
                     yield v
                 save_content: ContentMap | ContentItems = validated if len(validated) > 1 else validated[0]
                 for fmt in format_to_use:
-                    self.storage.save_content(url, save_content, fmt)
+                    self.storage.save_content(url, save_content, fmt, contract_sig=self._contract_sig)
             self._track_cached_success(url, domain)
             self.last_elapsed = time.monotonic() - self._url_start
             self.console.print(f'[dim]  ⏱ {self.last_elapsed:.1f}s elapsed[/dim]')
@@ -675,7 +677,7 @@ class Pipeline:
                 yield v
             save_content: ContentMap | ContentItems = validated if len(validated) > 1 else validated[0]
             for fmt in format_to_use:
-                self.storage.save_content(url, save_content, fmt)
+                self.storage.save_content(url, save_content, fmt, contract_sig=self._contract_sig)
             elapsed = time.monotonic() - self._url_start
             self.last_elapsed = elapsed
             stats = self.tracker.record_url(
@@ -1413,7 +1415,7 @@ class Pipeline:
 
         if extracted:
             for fmt in output_format:
-                self.storage.save_content(url, extracted, fmt)
+                self.storage.save_content(url, extracted, fmt, contract_sig=self._contract_sig)
 
         level_dist = getattr(self, '_last_level_distribution', None)
         stats = self.tracker.record_url(url, used_llm=used_llm, level_distribution=level_dist or None, elapsed=elapsed)

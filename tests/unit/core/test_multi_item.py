@@ -143,6 +143,7 @@ def _make_pipeline_stub(mocker, contract=None):
     stub.contract = contract or SimpleContract
     stub.console = mocker.MagicMock()
     stub.logger = mocker.MagicMock()
+    stub._contract_sig = 'test-sig'
     return stub
 
 
@@ -258,6 +259,7 @@ def _make_scrape_stub(mocker, contract=None):
     stub.output_formats = ['json']
     stub.force = False
     stub.selector_level = SelectorLevel.CSS
+    stub._contract_sig = 'test-sig'
 
     # Stub normalize_url to pass through
     mocker.patch.object(stub, 'normalize_url', new=mocker.AsyncMock(side_effect=lambda u: u))

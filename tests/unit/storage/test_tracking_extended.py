@@ -80,3 +80,70 @@ class TestLLMTrackerCorruptFile:
         tracker = LLMTracker(tracking_file=str(tracking_file))
         data = tracker._load_data()
         assert data == {}
+
+
+class TestLLMTrackerElapsedAndPartial:
+    def test_elapsed_accumulates(self, tracker):
+        """elapsed seconds are summed across record_url calls."""
+        tracker.record_url('https://a.com', elapsed=1.5)
+        tracker.record_url('https://a.com', elapsed=2.5)
+        stats = tracker.get_stats('a.com')
+        assert abs(stats.total_elapsed - 4.0) < 0.01
+
+    def test_partial_rediscovery_count_increments(self, tracker):
+        """partial_discovery=True increments partial_rediscovery_count."""
+        tracker.record_url('https://a.com', partial_discovery=True)
+        tracker.record_url('https://a.com', partial_discovery=True)
+        tracker.record_url('https://a.com', partial_discovery=False)
+        stats = tracker.get_stats('a.com')
+        assert stats.partial_rediscovery_count == 2
+
+    def test_partial_rediscovery_count_default_zero(self, tracker):
+        """partial_discovery defaults to False — count stays 0."""
+        tracker.record_url('https://a.com')
+        stats = tracker.get_stats('a.com')
+        assert stats.partial_rediscovery_count == 0
+
+
+class TestLLMTrackerUrlBasedLookup:
+    def test_get_llm_calls_with_full_url(self, tracker):
+        """get_llm_calls accepts a full URL and extracts domain."""
+        tracker.record_url('https://example.com/page', used_llm=True)
+        # Full URL lookup should work
+        assert tracker.get_llm_calls('https://example.com/page') == 1
+
+    def test_get_url_count_with_full_url(self, tracker):
+        """get_url_count accepts a full URL and extracts domain."""
+        tracker.record_url('https://example.com/page')
+        tracker.record_url('https://example.com/other')
+        assert tracker.get_url_count('https://example.com/page') == 2
+
+    def test_get_all_stats_returns_all_domains(self, tracker):
+        """get_all_stats returns DomainStats for every tracked domain."""
+        tracker.record_url('https://a.com', used_llm=True)
+        tracker.record_url('https://b.com', used_llm=False)
+        all_stats = tracker.get_all_stats()
+        assert 'a.com' in all_stats
+        assert 'b.com' in all_stats
+        assert all_stats['a.com'].llm_calls == 1
+        assert all_stats['b.com'].url_count == 1
+
+    def test_extract_domain_removes_www(self, tracker):
+        """extract_domain strips www. prefix."""
+        assert tracker.extract_domain('https://www.example.com/path') == 'example.com'
+
+    def test_normalize_stats_from_dict(self, tracker):
+        """_normalize_stats converts raw dict to DomainStats."""
+        from yosoi.storage.tracking import DomainStats
+
+        raw = {
+            'llm_calls': 5,
+            'url_count': 10,
+            'level_distribution': {},
+            'total_elapsed': 3.0,
+            'partial_rediscovery_count': 1,
+        }
+        stats = LLMTracker._normalize_stats(raw)
+        assert isinstance(stats, DomainStats)
+        assert stats.llm_calls == 5
+        assert stats.partial_rediscovery_count == 1
