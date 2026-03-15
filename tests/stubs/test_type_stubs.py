@@ -3,9 +3,8 @@
 import subprocess
 import sys
 import textwrap
-from pathlib import Path
 
-SNIPPETS_DIR = Path(__file__).parent / 'snippets'
+from tests.stubs.conftest import SNIPPETS_DIR
 
 
 def _run_mypy(code: str) -> subprocess.CompletedProcess[str]:
@@ -18,7 +17,7 @@ def _run_mypy(code: str) -> subprocess.CompletedProcess[str]:
             [sys.executable, '-m', 'mypy', '--strict', '--no-error-summary', str(snippet_file)],
             capture_output=True,
             text=True,
-            timeout=30,
+            timeout=60,
         )
     finally:
         snippet_file.unlink(missing_ok=True)

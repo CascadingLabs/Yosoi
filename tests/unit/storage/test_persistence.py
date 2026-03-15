@@ -33,7 +33,7 @@ def test_save_selectors_formats_with_primary_fallback_tertiary(storage):
     loaded = storage.load_selectors('example.com')
     assert loaded['title']['primary'] == 'h1'
     assert loaded['title']['fallback'] == 'h2'
-    assert loaded['title']['tertiary'] is None  # default when not provided
+    assert 'tertiary' not in loaded['title']  # omitted when not provided
 
 
 def test_nonexistent_domain_returns_none(storage):
@@ -364,6 +364,58 @@ def test_jsonl_same_domain_same_filepath(storage):
     assert fp1 == fp2
 
 
+# ---------------------------------------------------------------------------
+# Contract signature in filenames
+# ---------------------------------------------------------------------------
+
+
+def test_contract_sig_produces_distinct_files_for_same_path_different_query(storage):
+    """Two URLs with the same path but different query params produce different files."""
+    url_a = 'https://example.com/catalog/?cat=1'
+    url_b = 'https://example.com/catalog/?cat=2'
+    fp_a = storage._get_content_filepath(url_a, 'json', contract_sig='abc123')
+    fp_b = storage._get_content_filepath(url_b, 'json', contract_sig='abc123')
+    assert fp_a != fp_b
+
+
+def test_contract_sig_is_included_in_filename(storage):
+    """The contract signature appears in the filename."""
+    fp = storage._get_content_filepath('https://example.com/page', 'json', contract_sig='mysig')
+    assert 'mysig' in os.path.basename(fp)
+
+
+def test_contract_sig_none_falls_back_to_path_based_naming(storage):
+    """Without a contract_sig, the existing path-based naming is used."""
+    fp = storage._get_content_filepath('https://example.com/article/slug', 'json')
+    basename = os.path.basename(fp)
+    assert 'article' in basename or 'slug' in basename
+    assert basename.endswith('.json')
+
+
+def test_contract_sig_same_sig_same_url_same_file(storage):
+    """Same contract_sig + same URL always returns the same filepath."""
+    url = 'https://example.com/catalog/?cat=1'
+    fp1 = storage._get_content_filepath(url, 'json', contract_sig='abc123')
+    fp2 = storage._get_content_filepath(url, 'json', contract_sig='abc123')
+    assert fp1 == fp2
+
+
+def test_save_content_with_contract_sig(storage, tmp_path):
+    """save_content accepts contract_sig and produces a file with sig in the name."""
+    content = {'title': 'Test'}
+    filepath = storage.save_content('https://example.com/catalog/?cat=5', content, 'json', contract_sig='testsig')
+    assert os.path.exists(filepath)
+    assert 'testsig' in os.path.basename(filepath)
+
+
+def test_content_exists_with_contract_sig(storage):
+    """content_exists uses contract_sig to locate the correct file."""
+    url = 'https://example.com/catalog/?cat=5'
+    assert not storage.content_exists(url, contract_sig='testsig')
+    storage.save_content(url, {'title': 'hi'}, 'json', contract_sig='testsig')
+    assert storage.content_exists(url, contract_sig='testsig')
+
+
 def test_list_domains_only_returns_selector_files(storage):
     """list_domains must only return filenames starting with 'selectors_'."""
     # Save a selector
@@ -482,7 +534,7 @@ def test_load_file_data_returns_data_for_valid_file(storage):
     storage.save_selectors('https://example.com', selectors)
     result = storage._load_file_data('example.com')
     assert result is not None
-    assert 'selectors' in result
+    assert 'snapshots' in result
 
 
 # ---------------------------------------------------------------------------
@@ -565,3 +617,31 @@ def test_extract_domain_valueerror_returns_unknown(storage, mocker):
     mocker.patch('yosoi.storage.persistence.urlparse', side_effect=ValueError('bad url'))
     result = storage._extract_domain('anything')
     assert result == 'unknown'
+
+
+# ---------------------------------------------------------------------------
+# load_field_selector
+# ---------------------------------------------------------------------------
+
+
+def test_load_field_selector_returns_entry_for_existing_field(storage):
+    selectors = {
+        'headline': {'primary': 'h1.title', 'fallback': 'h1', 'tertiary': None},
+        'author': {'primary': '.author', 'fallback': None, 'tertiary': None},
+    }
+    storage.save_selectors('https://example.com/article', selectors)
+    result = storage.load_field_selector('example.com', 'headline')
+    assert result is not None
+    assert result['primary'] == 'h1.title'
+
+
+def test_load_field_selector_returns_none_for_missing_field(storage):
+    selectors = {'headline': {'primary': 'h1', 'fallback': None, 'tertiary': None}}
+    storage.save_selectors('https://example.com', selectors)
+    result = storage.load_field_selector('example.com', 'nonexistent_field')
+    assert result is None
+
+
+def test_load_field_selector_returns_none_for_missing_domain(storage):
+    result = storage.load_field_selector('nothere.com', 'headline')
+    assert result is None

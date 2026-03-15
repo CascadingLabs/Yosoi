@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import re
 from abc import ABC, abstractmethod
-from typing import ClassVar, TypedDict
+from typing import ClassVar
+
+from pydantic import BaseModel
 
 from yosoi.models.results import ContentMetadata, FetchResult
 
 
-class JSDetectionResult(TypedDict):
+class JSDetectionResult(BaseModel, frozen=True):
     """Result of JavaScript framework detection."""
 
     requires_js: bool
@@ -44,8 +46,8 @@ class ContentAnalyzer:
 
         # 2. Detect JavaScript-heavy sites
         js_data = ContentAnalyzer._detect_javascript_heavy(html_lower)
-        metadata.requires_js = bool(js_data['requires_js'])
-        metadata.js_framework = str(js_data['framework']) if js_data['framework'] is not None else None
+        metadata.requires_js = bool(js_data.requires_js)
+        metadata.js_framework = str(js_data.framework) if js_data.framework is not None else None
 
         return metadata
 
@@ -151,7 +153,7 @@ class ContentAnalyzer:
         # Determine if JS is required
         requires_js = (detected_framework is not None and minimal_content) or has_noscript_warning
 
-        return {'requires_js': requires_js, 'framework': detected_framework}
+        return JSDetectionResult(requires_js=requires_js, framework=detected_framework)
 
 
 class HTMLFetcher(ABC):

@@ -1,8 +1,6 @@
-"""Tests for yosoi.cli.progress — _build_progress_table and run_concurrent URL dedup."""
+"""Tests for yosoi.cli.progress — _build_progress_table (compat stub)."""
 
 import time
-
-import pytest
 
 from yosoi.cli.progress import _build_progress_table
 
@@ -60,81 +58,3 @@ class TestBuildProgressTable:
         url_status = {'https://example.com': ('UnknownStatus', 1.0)}
         table = _build_progress_table(url_status)
         assert table.row_count == 1
-
-
-# ---------------------------------------------------------------------------
-# Coverage: lines 71-124 — run_concurrent URL dedup/skipping logic
-# ---------------------------------------------------------------------------
-
-
-class TestRunConcurrentUrlDedup:
-    @pytest.mark.asyncio
-    async def test_duplicate_domains_are_skipped(self, mocker):
-        """URLs with the same domain should be marked as Skipped after the first."""
-        from yosoi.cli.progress import run_concurrent
-        from yosoi.models.contract import Contract
-
-        class TestContract(Contract):
-            title: str
-
-        mock_config = mocker.MagicMock()
-
-        mock_configure = mocker.patch('yosoi.core.tasks.configure_broker', return_value=None)
-        mock_enqueue = mocker.patch(
-            'yosoi.core.tasks.enqueue_urls',
-            return_value={'successful': ['https://example.com/page1'], 'failed': [], 'skipped': []},
-        )
-        mock_shutdown = mocker.patch('yosoi.core.tasks.shutdown_broker', return_value=None)
-        mocker.patch('yosoi.cli.progress.Live')
-
-        urls = [
-            'https://example.com/page1',
-            'https://example.com/page2',  # same domain, should be skipped
-        ]
-        await run_concurrent(mock_config, TestContract, urls)
-
-        mock_configure.assert_called_once()
-        mock_enqueue.assert_called_once()
-        mock_shutdown.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_different_domains_not_skipped(self, mocker):
-        """URLs with different domains should all be Running, not Skipped."""
-        from yosoi.cli.progress import run_concurrent
-        from yosoi.models.contract import Contract
-
-        class TestContract2(Contract):
-            title: str
-
-        mock_config = mocker.MagicMock()
-        mocker.patch('yosoi.core.tasks.configure_broker', return_value=None)
-        mocker.patch(
-            'yosoi.core.tasks.enqueue_urls',
-            return_value={'successful': [], 'failed': [], 'skipped': []},
-        )
-        mocker.patch('yosoi.core.tasks.shutdown_broker', return_value=None)
-        mocker.patch('yosoi.cli.progress.Live')
-
-        urls = ['https://example.com/page1', 'https://other.com/page2']
-        await run_concurrent(mock_config, TestContract2, urls)
-
-    @pytest.mark.asyncio
-    async def test_url_without_scheme_gets_https_prefix(self, mocker):
-        """URLs without http/https prefix get https:// added for domain extraction."""
-        from yosoi.cli.progress import run_concurrent
-        from yosoi.models.contract import Contract
-
-        class TestContract3(Contract):
-            title: str
-
-        mock_config = mocker.MagicMock()
-        mocker.patch('yosoi.core.tasks.configure_broker', return_value=None)
-        mocker.patch(
-            'yosoi.core.tasks.enqueue_urls',
-            return_value={'successful': [], 'failed': [], 'skipped': []},
-        )
-        mocker.patch('yosoi.core.tasks.shutdown_broker', return_value=None)
-        mocker.patch('yosoi.cli.progress.Live')
-
-        urls = ['example.com/page1']
-        await run_concurrent(mock_config, TestContract3, urls)

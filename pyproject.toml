@@ -209,16 +209,20 @@ tests_dir = [ "tests/unit/" ]
 debug = true
 
 [tool.poe.tasks]
-eval = 'uv run pytest -m "eval"'                                                          # run deepeval tests
-integration = "uv run pytest -m 'integration'"                                            # run integration tests
-unit = "uv run pytest -m 'unit'"                                                          # run unit tests
-ci-test = "uv run pytest -m 'not eval' --cov=yosoi --cov-branch --cov-report=xml"
-ci-check = "uv run prek run --all-files --hook-stage manual --show-diff-on-failure"
+eval = 'uv run pytest -m "eval"'                                                                           # run deepeval tests
+integration = "uv run pytest -m 'integration'"                                                             # run integration tests
+unit = "uv run pytest -m 'unit'"                                                                           # run unit tests
+ci-test = "uv run pytest tests/unit/ tests/stubs/ -m 'not eval' --cov=yosoi --cov-branch --cov-report=xml" # unit + stub tests with coverage
 ci-format = "uv run ruff check --fix"
 coverage = "uv run pytest --cov=yosoi --cov-report=term-missing --cov-report=html tests/"
-stub-test = "uv run pytest tests/stubs/ -v"
 mutmut-run = "uv run mutmut run"
 mutmut-results = "uv run mutmut results"
+
+[tool.poe.tasks.ci-check]
+sequence = [
+  { cmd = "uv run prek run --all-files --hook-stage manual --show-diff-on-failure" },
+  { ref = "ci-test" },
+]
 
 [tool.gitleaks]
 [[tool.gitleaks.allowlist]]

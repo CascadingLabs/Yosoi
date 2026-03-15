@@ -11,8 +11,6 @@ Validates that:
 import asyncio
 
 import yosoi.core.tasks as _tasks_mod
-from yosoi.core.discovery.agent import SelectorDiscovery
-from yosoi.core.discovery.yosoi_agent import YosoiAgent
 from yosoi.core.tasks import (
     configure_broker,
     enqueue_urls,
@@ -50,10 +48,10 @@ class TestTaskiqAgentConcurrency:
         mock_pipeline.process_url = mocker.AsyncMock(return_value=True)
 
         urls = [f'http://site{i}.com/article' for i in range(5)]
-        results = await enqueue_urls(urls, dedup_by_domain=False)
+        results = await enqueue_urls(urls)
 
-        assert len(results['successful']) == 5
-        assert results['failed'] == []
+        assert len(results.successful) == 5
+        assert results.failed == []
         assert mock_pipeline.process_url.await_count == 5
         await shutdown_broker()
 
@@ -75,9 +73,9 @@ class TestTaskiqAgentConcurrency:
         mocker.patch('yosoi.core.pipeline.Pipeline', FakePipeline)
 
         urls = ['http://a.com', 'http://b.com', 'http://c.com']
-        results = await enqueue_urls(urls, dedup_by_domain=False)
+        results = await enqueue_urls(urls)
 
-        assert len(results['successful']) == 3
+        assert len(results.successful) == 3
         # Each task should create its own Pipeline instance
         assert len(pipeline_instances) == 3
         # Verify they're distinct objects
@@ -116,9 +114,9 @@ class TestSemaphoreConcurrency:
         mock_pipeline.process_url = _track_concurrency
 
         urls = [f'http://site{i}.com' for i in range(6)]
-        results = await enqueue_urls(urls, dedup_by_domain=False)
+        results = await enqueue_urls(urls)
 
-        assert len(results['successful']) == 6
+        assert len(results.successful) == 6
         assert peak_concurrent <= 2
         await shutdown_broker()
 
@@ -149,11 +147,11 @@ class TestAgentFailureIsolation:
         mock_pipeline.process_url = _selective_failure
 
         urls = ['http://good1.com', 'http://fail.com', 'http://good2.com']
-        results = await enqueue_urls(urls, dedup_by_domain=False)
+        results = await enqueue_urls(urls)
 
-        assert 'http://good1.com' in results['successful']
-        assert 'http://good2.com' in results['successful']
-        assert 'http://fail.com' in results['failed']
+        assert 'http://good1.com' in results.successful
+        assert 'http://good2.com' in results.successful
+        assert 'http://fail.com' in results.failed
         # fail.com is retried (max_retries=2 means up to 2 total attempts), so 2 attempts + 1 each for the two good URLs
         assert call_count == 4
         await shutdown_broker()
@@ -174,9 +172,9 @@ class TestAgentFailureIsolation:
         mock_pipeline.process_url = _variable_latency
 
         urls = ['http://fast1.com', 'http://slow.com', 'http://fast2.com']
-        results = await enqueue_urls(urls, dedup_by_domain=False)
+        results = await enqueue_urls(urls)
 
-        assert len(results['successful']) == 3
+        assert len(results.successful) == 3
         await shutdown_broker()
 
 
@@ -203,52 +201,9 @@ class TestAgentRunInsideTask:
 
         result = await process_url_task.original_func(url='http://example.com')
 
-        assert result['url'] == 'http://example.com'
-        assert 'elapsed' in result
+        assert result.url == 'http://example.com'
+        assert result.elapsed is not None
         await shutdown_broker()
-
-    async def test_discovery_agent_async_run(self, mocker, mock_selectors):
-        """SelectorDiscovery.discover_selectors() calls agent.run() correctly in async context."""
-        mock_agent = mocker.Mock(spec=YosoiAgent)
-        mock_agent._contract = NewsArticle
-        mock_agent.run = mocker.AsyncMock(
-            return_value=mocker.Mock(output=mock_selectors),
-        )
-
-        discovery = SelectorDiscovery(
-            contract=NewsArticle,
-            agent=mock_agent,
-        )
-
-        selectors = await discovery.discover_selectors(FAKE_HTML, url='http://test.com')
-
-        assert selectors is not None
-        assert 'headline' in selectors
-        mock_agent.run.assert_awaited_once()
-
-    async def test_multiple_discovery_agents_concurrent(self, mocker, mock_selectors):
-        """Multiple SelectorDiscovery instances can run concurrently without conflicts."""
-        agents = []
-        discoveries = []
-
-        for _ in range(3):
-            agent = mocker.Mock(spec=YosoiAgent)
-            agent._contract = NewsArticle
-            agent.run = mocker.AsyncMock(
-                return_value=mocker.Mock(output=mock_selectors),
-            )
-            agents.append(agent)
-            discoveries.append(SelectorDiscovery(contract=NewsArticle, agent=agent))
-
-        # Run all discoveries concurrently
-        results = await asyncio.gather(
-            *[d.discover_selectors(FAKE_HTML, url=f'http://site{i}.com') for i, d in enumerate(discoveries)]
-        )
-
-        assert all(r is not None for r in results)
-        assert all('headline' in r for r in results)
-        for agent in agents:
-            agent.run.assert_awaited_once()
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -274,13 +229,13 @@ class TestEndToEndBrokerAgent:
             completed.append({'url': url, 'success': success, 'elapsed': elapsed})
 
         urls = ['http://a.com', 'http://b.com']
-        results = await enqueue_urls(urls, dedup_by_domain=False, on_complete=_on_complete)
+        results = await enqueue_urls(urls, on_complete=_on_complete)
 
         assert len(completed) == 2
         assert all(c['success'] for c in completed)
         assert all(c['elapsed'] >= 0 for c in completed)
         assert {c['url'] for c in completed} == {'http://a.com', 'http://b.com'}
-        assert len(results['successful']) == 2
+        assert len(results.successful) == 2
         await shutdown_broker()
 
     async def test_broker_lifecycle_clean_shutdown(self, mock_llm_config, clean_broker):
@@ -291,7 +246,7 @@ class TestEndToEndBrokerAgent:
 
         assert yosoi_tasks._semaphore is not None
         assert _tasks_mod._pipeline_config is not None
-        assert _tasks_mod._pipeline_config['contract'] is NewsArticle
+        assert _tasks_mod._pipeline_config.contract is NewsArticle
 
         await shutdown_broker()
 
@@ -313,10 +268,10 @@ class TestEndToEndBrokerAgent:
         mock_pipeline.process_url = _alternate
 
         urls = [f'http://site{i}.com' for i in range(4)]
-        results = await enqueue_urls(urls, dedup_by_domain=False)
+        results = await enqueue_urls(urls)
 
-        assert len(results['successful']) == 2
-        assert len(results['failed']) == 2
+        assert len(results.successful) == 2
+        assert len(results.failed) == 2
         await shutdown_broker()
 
 
@@ -343,23 +298,8 @@ class TestEventLoopSafety:
         mock_pipeline.process_url = _capture_loop
 
         urls = [f'http://site{i}.com' for i in range(3)]
-        await enqueue_urls(urls, dedup_by_domain=False)
+        await enqueue_urls(urls)
 
         # All tasks must run in the same loop
         assert len(set(loops_seen)) == 1
         await shutdown_broker()
-
-    async def test_agent_run_is_properly_awaited(self, mocker, mock_selectors):
-        """Ensure agent.run() is awaited, not just called (returns coroutine)."""
-        mock_agent = mocker.Mock(spec=YosoiAgent)
-        mock_agent._contract = NewsArticle
-        mock_agent.run = mocker.AsyncMock(
-            return_value=mocker.Mock(output=mock_selectors),
-        )
-
-        discovery = SelectorDiscovery(contract=NewsArticle, agent=mock_agent)
-        result = await discovery.discover_selectors(FAKE_HTML, url='http://test.com')
-
-        # AsyncMock tracks await calls separately
-        mock_agent.run.assert_awaited_once()
-        assert result is not None

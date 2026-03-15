@@ -8,7 +8,6 @@ import os
 import rich_click as click
 
 from yosoi.cli.args import SchemaParamType
-from yosoi.cli.progress import run_concurrent
 from yosoi.cli.setup import build_yosoi_config, print_fetcher_info
 from yosoi.cli.utils import console, load_urls_from_file
 from yosoi.models.contract import Contract
@@ -181,31 +180,19 @@ def main(
 
     if effective_workers > 1:
         console.print(f'[cyan]ℹ Using {effective_workers} concurrent workers via taskiq[/cyan]')
-        asyncio.run(
-            run_concurrent(
-                yosoi_config,
-                resolved_contract,
-                urls,
-                output_format=output_formats,
-                force=force,
-                skip_verification=skip_verification,
-                fetcher_type=fetcher,
-                max_workers=effective_workers,
-                selector_level=resolved_level,
-            )
+
+    pipeline = Pipeline(
+        yosoi_config,
+        contract=resolved_contract,
+        output_format=output_formats,
+        selector_level=resolved_level,
+    )
+    asyncio.run(
+        pipeline.process_urls(
+            urls,
+            workers=effective_workers,
+            force=force,
+            skip_verification=skip_verification,
+            fetcher_type=fetcher,
         )
-    else:
-        pipeline = Pipeline(
-            yosoi_config,
-            contract=resolved_contract,
-            output_format=output_formats,
-            selector_level=resolved_level,
-        )
-        asyncio.run(
-            pipeline.process_urls(
-                urls,
-                force=force,
-                skip_verification=skip_verification,
-                fetcher_type=fetcher,
-            )
-        )
+    )

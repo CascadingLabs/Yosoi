@@ -1,10 +1,40 @@
 """Yosoi: AI-powered CSS selector discovery and web scraping."""
 
-from yosoi.core.configs import DebugConfig, TelemetryConfig, YosoiConfig
-from yosoi.core.discovery import LLMConfig, YosoiAgent, cerebras, gemini, groq, openai, openrouter, provider
+from yosoi.core.configs import DebugConfig, TelemetryConfig, YosoiConfig, auto_config
+from yosoi.core.discovery import (
+    LLMConfig,
+    alibaba,
+    anthropic,
+    azure,
+    bedrock,
+    cerebras,
+    deepseek,
+    fireworks,
+    gemini,
+    github,
+    grok,
+    groq,
+    heroku,
+    huggingface,
+    litellm,
+    mistral,
+    moonshotai,
+    nebius,
+    ollama,
+    openai,
+    openrouter,
+    ovhcloud,
+    provider,
+    sambanova,
+    together,
+    vercel,
+    vertexai,
+    xai,
+)
 from yosoi.core.pipeline import Pipeline
 from yosoi.models.contract import Contract
 from yosoi.models.defaults import JobPosting, NewsArticle, Product, Video
+from yosoi.models.selectors import SelectorEntry, css, discover, jsonld, regex, xpath
 from yosoi.types import (
     Author,
     BodyText,
@@ -17,6 +47,8 @@ from yosoi.types import (
     YosoiType,
     register_coercion,
 )
+from yosoi.utils.contracts import resolve_contract
+from yosoi.utils.urls import load_urls_from_file
 
 __version__ = '0.1.0'
 
@@ -32,20 +64,48 @@ __all__ = [
     'NewsArticle',
     'Pipeline',
     'Price',
-    'Product',
     'Rating',
+    'SelectorEntry',
     'TelemetryConfig',
     'Title',
     'Url',
     'Video',
-    'YosoiAgent',
     'YosoiConfig',
     'YosoiType',
+    'alibaba',
+    'anthropic',
+    'auto_config',
+    'azure',
+    'bedrock',
     'cerebras',
+    'css',
+    'deepseek',
+    'discover',
+    'fireworks',
     'gemini',
+    'github',
+    'grok',
     'groq',
+    'heroku',
+    'huggingface',
+    'jsonld',
+    'litellm',
+    'load_urls_from_file',
+    'mistral',
+    'moonshotai',
+    'nebius',
+    'ollama',
     'openai',
     'openrouter',
+    'ovhcloud',
     'provider',
+    'regex',
     'register_coercion',
+    'resolve_contract',
+    'sambanova',
+    'together',
+    'vercel',
+    'vertexai',
+    'xai',
+    'xpath',
 ]

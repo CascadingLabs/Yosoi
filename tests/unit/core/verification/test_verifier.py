@@ -639,8 +639,8 @@ def test_pipeline_accepts_selector_level(mocker, tmp_path):
     mocker.patch('yosoi.storage.tracking.get_tracking_path', return_value=tmp_path / 'tracking.json')
     mocker.patch('yosoi.utils.files.is_initialized', return_value=True)
     mocker.patch('yosoi.utils.logging.setup_local_logging', return_value=str(tmp_path / 'test.log'))
-    mocker.patch('yosoi.core.discovery.agent.Agent')
-    mocker.patch('yosoi.core.discovery.agent.create_model')
+    mocker.patch('yosoi.core.discovery.field_agent.create_model')
+    mocker.patch('yosoi.core.discovery.field_agent.Agent')
 
     from yosoi.core.discovery.config import LLMConfig
 

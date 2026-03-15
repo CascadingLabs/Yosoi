@@ -6,13 +6,15 @@ Uses InMemoryBroker with SmartRetryMiddleware for in-process async concurrency.
 import asyncio
 import logging
 from collections.abc import Awaitable, Callable
-from typing import TYPE_CHECKING, TypedDict
+from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
+from pydantic import BaseModel
 from taskiq import InMemoryBroker
 from taskiq.middlewares import SmartRetryMiddleware
 
 from yosoi.core.configs import YosoiConfig
+from yosoi.core.discovery.bus import DiscoveryBus
 from yosoi.core.discovery.config import LLMConfig
 from yosoi.models.contract import Contract
 from yosoi.models.selectors import SelectorLevel
@@ -24,7 +26,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class PipelineConfig(TypedDict):
+class PipelineConfig(BaseModel, frozen=True):
     """Shape of the module-level pipeline configuration."""
 
     llm_config: LLMConfig | YosoiConfig
@@ -34,21 +36,22 @@ class PipelineConfig(TypedDict):
     selector_level: SelectorLevel
 
 
-class TaskResult(TypedDict):
+class TaskResult(BaseModel, frozen=True):
     """Return type of process_url_task."""
 
     url: str
     elapsed: float
 
 
-class EnqueueResult(TypedDict):
+class EnqueueResult(BaseModel):
     """Return type of enqueue_urls."""
 
-    successful: list[str]
-    failed: list[str]
-    skipped: list[str]
+    successful: list[str] = []
+    failed: list[str] = []
+    skipped: list[str] = []
 
 
+# TODO: future support horizontal scaling w/ redis or other message brokers
 broker = InMemoryBroker().with_middlewares(
     SmartRetryMiddleware(
         default_retry_count=3,
@@ -63,6 +66,7 @@ broker = InMemoryBroker().with_middlewares(
 # Module-level state: None until configure_broker() is called.
 _pipeline_config: PipelineConfig | None = None
 _semaphore: asyncio.Semaphore | None = None
+_discovery_bus: DiscoveryBus | None = None
 
 
 async def configure_broker(
@@ -82,7 +86,7 @@ async def configure_broker(
         selector_level: Maximum selector strategy level. Defaults to CSS.
 
     """
-    global _pipeline_config, _semaphore
+    global _pipeline_config, _semaphore, _discovery_bus
     _pipeline_config = PipelineConfig(
         llm_config=llm_config,
         contract=contract,
@@ -91,15 +95,20 @@ async def configure_broker(
         selector_level=selector_level or SelectorLevel.CSS,
     )
     _semaphore = asyncio.Semaphore(max_workers)
+    _discovery_bus = DiscoveryBus()
     await broker.startup()
 
 
 async def shutdown_broker() -> None:
     """Shut down the broker cleanly."""
-    global _pipeline_config, _semaphore
+    global _pipeline_config, _semaphore, _discovery_bus
     await broker.shutdown()
     _pipeline_config = None
     _semaphore = None
+    if _discovery_bus is not None:
+        _discovery_bus.clear()
+    _discovery_bus = None
+    _domain_locks.clear()
 
 
 def get_pipeline_config() -> PipelineConfig:
@@ -148,12 +157,21 @@ async def process_url_task(
     sem = _semaphore or asyncio.Semaphore(5)
 
     async with sem:
+        domain = urlparse(url if url.startswith(('http://', 'https://')) else f'https://{url}').netloc.replace(
+            'www.', ''
+        )
+        if domain not in _domain_locks:
+            _domain_locks[domain] = asyncio.Lock()
+
+        write_lock = _domain_locks[domain]
         pipeline = Pipeline(
-            config['llm_config'],
-            contract=config['contract'],
-            output_format=config['output_format'],
+            config.llm_config,
+            contract=config.contract,
+            output_format=config.output_format,
             quiet=True,
-            selector_level=config.get('selector_level', SelectorLevel.CSS),
+            selector_level=config.selector_level,
+            bus=_discovery_bus,
+            write_lock=write_lock,
         )
 
         try:
@@ -166,42 +184,13 @@ async def process_url_task(
                 fetcher_type=fetcher_type,
             )
             elapsed = getattr(pipeline, 'last_elapsed', 0.0)
-            return {'url': url, 'elapsed': elapsed}
+            return TaskResult(url=url, elapsed=elapsed)
         except Exception:
             logger.exception('Task failed for %s', url)
             raise  # taskiq retry middleware fires here
 
 
-class DomainDedup:
-    """Track which domains have been enqueued to prevent duplicate processing.
-
-    Attributes:
-        _seen: Set of domains already enqueued.
-
-    """
-
-    def __init__(self) -> None:
-        """Initialize with empty set."""
-        self._seen: set[str] = set()
-
-    def should_process(self, domain: str) -> bool:
-        """Check if domain should be processed (not yet seen).
-
-        Args:
-            domain: Domain string to check.
-
-        Returns:
-            True if domain has not been seen before.
-
-        """
-        if domain in self._seen:
-            return False
-        self._seen.add(domain)
-        return True
-
-    def reset(self) -> None:
-        """Clear all tracked domains."""
-        self._seen.clear()
+_domain_locks: dict[str, asyncio.Lock] = {}
 
 
 async def enqueue_urls(
@@ -211,8 +200,8 @@ async def enqueue_urls(
     fetcher_type: str = 'simple',
     max_fetch_retries: int = 2,
     max_discovery_retries: int = 3,
-    dedup_by_domain: bool = True,
     on_complete: Callable[[str, bool, float], Awaitable[None]] | None = None,
+    on_start: Callable[[str], Awaitable[None]] | None = None,
 ) -> EnqueueResult:
     """Enqueue URLs as tasks and collect results.
 
@@ -223,30 +212,24 @@ async def enqueue_urls(
         fetcher_type: Fetcher type to use.
         max_fetch_retries: Max fetch retry attempts.
         max_discovery_retries: Max AI discovery retry attempts.
-        dedup_by_domain: Skip duplicate domains. Defaults to True.
         on_complete: Optional async callback ``(url, success, elapsed)`` called
             when each task finishes. Used by the CLI progress display.
+        on_start: Optional async callback ``(url)`` called just before each
+            task begins processing.
 
     Returns:
         EnqueueResult with 'successful', 'failed', and 'skipped' URL lists.
 
     """
-    results: EnqueueResult = {'successful': [], 'failed': [], 'skipped': []}
-    dedup = DomainDedup()
+    results = EnqueueResult()
 
     # Enqueue all tasks
     handles = []
     enqueued_urls = []
 
     for url in urls:
-        if dedup_by_domain:
-            parse_url = url if url.startswith(('http://', 'https://')) else f'https://{url}'
-            domain = urlparse(parse_url).netloc.replace('www.', '')
-            if not dedup.should_process(domain):
-                logger.info('Skipping duplicate domain: %s (url: %s)', domain, url)
-                results['skipped'].append(url)
-                continue
-
+        if on_start is not None:
+            await on_start(url)
         handle = await process_url_task.kiq(
             url,
             force=force,
@@ -264,7 +247,7 @@ async def enqueue_urls(
         _collect_single_result(results, handle, url, task_result)
         if on_complete is not None:
             success = task_result is not None and not task_result.is_err
-            elapsed = task_result.return_value.get('elapsed', 0.0) if task_result and success else 0.0
+            elapsed = task_result.return_value.elapsed if task_result and success else 0.0
             await on_complete(url, success, elapsed)
 
     return results
@@ -307,6 +290,6 @@ def _collect_single_result(
 
     """
     if result is None or result.is_err:
-        results['failed'].append(url)
+        results.failed.append(url)
     else:
-        results['successful'].append(url)
+        results.successful.append(url)

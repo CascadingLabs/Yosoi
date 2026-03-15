@@ -1,6 +1,6 @@
-"""Tests for FieldSelectors, SelectorEntry, and SelectorLevel models."""
+"""Tests for FieldSelectors, SelectorEntry, SelectorLevel, and factory functions."""
 
-from yosoi.models.selectors import FieldSelectors, SelectorEntry, SelectorLevel
+from yosoi.models.selectors import FieldSelectors, SelectorEntry, SelectorLevel, css, jsonld, regex, xpath
 
 # ---------------------------------------------------------------------------
 # SelectorLevel
@@ -215,3 +215,40 @@ def test_dedup_only_tertiary_duplicates_primary():
     assert fs.fallback is not None
     assert fs.fallback.value == '.unique'
     assert fs.tertiary is None
+
+
+# ---------------------------------------------------------------------------
+# Factory functions
+# ---------------------------------------------------------------------------
+
+
+def test_css_factory_creates_css_entry():
+    entry = css('.product-card')
+    assert isinstance(entry, SelectorEntry)
+    assert entry.type == 'css'
+    assert entry.value == '.product-card'
+    assert entry.level == SelectorLevel.CSS
+
+
+def test_xpath_factory_creates_xpath_entry():
+    entry = xpath('//li[@class="result"]')
+    assert isinstance(entry, SelectorEntry)
+    assert entry.type == 'xpath'
+    assert entry.value == '//li[@class="result"]'
+    assert entry.level == SelectorLevel.XPATH
+
+
+def test_regex_factory_creates_regex_entry():
+    entry = regex(r'\d+\.\d{2}')
+    assert isinstance(entry, SelectorEntry)
+    assert entry.type == 'regex'
+    assert entry.value == r'\d+\.\d{2}'
+    assert entry.level == SelectorLevel.REGEX
+
+
+def test_jsonld_factory_creates_jsonld_entry():
+    entry = jsonld('$.name')
+    assert isinstance(entry, SelectorEntry)
+    assert entry.type == 'jsonld'
+    assert entry.value == '$.name'
+    assert entry.level == SelectorLevel.JSONLD

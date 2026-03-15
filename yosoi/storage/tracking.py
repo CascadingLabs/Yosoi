@@ -5,19 +5,22 @@ Stores everything in a single stats.json file.
 
 import json
 import os
-from typing import TypedDict
+from typing import Any
 from urllib.parse import urlparse
+
+from pydantic import BaseModel
 
 from yosoi.utils.files import get_tracking_path
 
 
-class DomainStats(TypedDict):
+class DomainStats(BaseModel):
     """Per-domain tracking statistics."""
 
-    llm_calls: int
-    url_count: int
-    level_distribution: dict[str, int]
-    total_elapsed: float
+    llm_calls: int = 0
+    url_count: int = 0
+    level_distribution: dict[str, int] = {}
+    total_elapsed: float = 0.0
+    partial_rediscovery_count: int = 0
 
 
 class LLMTracker:
@@ -49,22 +52,29 @@ class LLMTracker:
             with open(self.tracking_file, 'w') as f:
                 json.dump({}, f, indent=2)
 
-    def _load_data(self) -> dict[str, DomainStats]:
-        """Load tracking data from file.
+    @staticmethod
+    def _normalize_stats(entry: DomainStats | dict[str, Any]) -> DomainStats:
+        """Normalize a persisted entry into a DomainStats with safe defaults."""
+        if isinstance(entry, DomainStats):
+            return entry
+        return DomainStats.model_validate(entry)
+
+    def _load_data(self) -> dict[str, Any]:
+        """Load raw tracking data from file.
 
         Returns:
-            Dictionary mapping domain names to their DomainStats.
+            Dictionary mapping domain names to their raw stats dicts.
             Empty dict if file doesn't exist or is invalid.
 
         """
         try:
             with open(self.tracking_file) as f:
-                data: dict[str, DomainStats] = json.load(f)
+                data: dict[str, Any] = json.load(f)
                 return data
         except (OSError, json.JSONDecodeError):
             return {}
 
-    def _save_data(self, data: dict[str, DomainStats]) -> None:
+    def _save_data(self, data: dict[str, Any]) -> None:
         """Save tracking data to file.
 
         Args:
@@ -101,6 +111,7 @@ class LLMTracker:
         used_llm: bool = False,
         level_distribution: dict[str, int] | None = None,
         elapsed: float | None = None,
+        partial_discovery: bool = False,
     ) -> DomainStats:
         """Record that a URL was processed.
 
@@ -109,6 +120,7 @@ class LLMTracker:
             used_llm: Whether LLM was called for this URL. Defaults to False.
             level_distribution: Count of verified fields by selector strategy level. Defaults to None.
             elapsed: Time in seconds spent processing this URL. Defaults to None.
+            partial_discovery: Whether partial (granular) rediscovery was used. Defaults to False.
 
         Returns:
             DomainStats with 'llm_calls', 'url_count', 'level_distribution', 'total_elapsed'.
@@ -118,7 +130,13 @@ class LLMTracker:
         data = self._load_data()
 
         if domain not in data:
-            data[domain] = {'llm_calls': 0, 'url_count': 0, 'level_distribution': {}, 'total_elapsed': 0.0}
+            data[domain] = {
+                'llm_calls': 0,
+                'url_count': 0,
+                'level_distribution': {},
+                'total_elapsed': 0.0,
+                'partial_rediscovery_count': 0,
+            }
 
         data[domain]['url_count'] += 1
 
@@ -134,8 +152,12 @@ class LLMTracker:
             for level, count in level_distribution.items():
                 dist[level] = dist.get(level, 0) + count
 
+        if partial_discovery:
+            data[domain].setdefault('partial_rediscovery_count', 0)
+            data[domain]['partial_rediscovery_count'] += 1
+
         self._save_data(data)
-        return data[domain]
+        return self._normalize_stats(data[domain])
 
     def get_llm_calls(self, url_or_domain: str) -> int:
         """Get LLM call count for a URL or domain.
@@ -148,8 +170,8 @@ class LLMTracker:
 
         """
         domain = self.extract_domain(url_or_domain) if '://' in url_or_domain else url_or_domain
-        stats = self._load_data().get(domain)
-        return stats['llm_calls'] if stats else 0
+        raw = self._load_data().get(domain)
+        return self._normalize_stats(raw).llm_calls if raw else 0
 
     def get_url_count(self, url_or_domain: str) -> int:
         """Get URL count for a URL or domain.
@@ -162,8 +184,8 @@ class LLMTracker:
 
         """
         domain = self.extract_domain(url_or_domain) if '://' in url_or_domain else url_or_domain
-        stats = self._load_data().get(domain)
-        return stats['url_count'] if stats else 0
+        raw = self._load_data().get(domain)
+        return self._normalize_stats(raw).url_count if raw else 0
 
     def get_stats(self, url_or_domain: str) -> DomainStats:
         """Get all stats for a URL or domain.
@@ -177,7 +199,10 @@ class LLMTracker:
         """
         domain = self.extract_domain(url_or_domain) if '://' in url_or_domain else url_or_domain
         data = self._load_data()
-        return data.get(domain, DomainStats(llm_calls=0, url_count=0, level_distribution={}, total_elapsed=0.0))
+        existing = data.get(domain)
+        if existing is None:
+            return DomainStats()
+        return self._normalize_stats(existing)
 
     def get_all_stats(self) -> dict[str, DomainStats]:
         """Get all tracking data.
@@ -186,13 +211,13 @@ class LLMTracker:
             Dictionary mapping domain names to their DomainStats.
 
         """
-        return self._load_data()
+        return {domain: self._normalize_stats(stats) for domain, stats in self._load_data().items()}
 
     def print_stats(self) -> None:
         """Print statistics in a readable format."""
-        data = self._load_data()
+        all_stats = self.get_all_stats()
 
-        if not data:
+        if not all_stats:
             print('\nNo tracking data yet.\n')
             return
 
@@ -201,33 +226,28 @@ class LLMTracker:
         print('=' * 70)
 
         # Calculate totals
-        total_llm_calls = sum(stats['llm_calls'] for stats in data.values())
-        total_urls = sum(stats['url_count'] for stats in data.values())
-
-        total_elapsed = sum(stats.get('total_elapsed', 0.0) for stats in data.values())
+        total_llm_calls = sum(s.llm_calls for s in all_stats.values())
+        total_urls = sum(s.url_count for s in all_stats.values())
+        total_elapsed = sum(s.total_elapsed for s in all_stats.values())
 
         print(f'\nTotal LLM Calls: {total_llm_calls}')
         print(f'Total URLs Processed: {total_urls}')
         print(f'Total Elapsed: {total_elapsed:.1f}s')
-        print(f'Total Domains: {len(data)}')
+        print(f'Total Domains: {len(all_stats)}')
 
         print('\n' + '-' * 70)
         print('PER-DOMAIN BREAKDOWN:')
         print('-' * 70)
 
         # Sort by LLM calls (most calls first)
-        sorted_domains = sorted(data.items(), key=lambda x: x[1]['llm_calls'], reverse=True)
+        sorted_domains = sorted(all_stats.items(), key=lambda x: x[1].llm_calls, reverse=True)
 
         for domain, stats in sorted_domains:
-            llm_calls = stats['llm_calls']
-            url_count = stats['url_count']
-
-            # Calculate efficiency
-            if url_count > 0:
-                efficiency = (url_count / llm_calls) if llm_calls > 0 else url_count
+            if stats.url_count > 0:
+                efficiency = (stats.url_count / stats.llm_calls) if stats.llm_calls > 0 else stats.url_count
                 print(f'\n{domain}')
-                print(f'  LLM Calls: {llm_calls}')
-                print(f'  URLs Processed: {url_count}')
+                print(f'  LLM Calls: {stats.llm_calls}')
+                print(f'  URLs Processed: {stats.url_count}')
                 print(f'  URLs per LLM Call: {efficiency:.1f}')
 
         print('\n' + '=' * 70 + '\n')

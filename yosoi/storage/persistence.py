@@ -1,10 +1,20 @@
 """Handles saving and loading selector data to/from JSON files."""
 
+from __future__ import annotations
+
 import json
 import os
+from datetime import datetime, timezone
 from typing import Any
 from urllib.parse import urlparse
 
+from yosoi.models.snapshot import (
+    CacheVerdict,
+    SelectorSnapshot,
+    SnapshotMap,
+    selector_dict_to_snapshot,
+    snapshot_to_selector_dict,
+)
 from yosoi.utils.files import init_yosoi
 
 
@@ -28,35 +38,35 @@ class SelectorStorage:
         self.storage_dir = str(init_yosoi(storage_dir))
         self.content_dir = str(init_yosoi(content_dir))
 
-    def save_selectors(self, url: str, selectors: dict[str, Any]) -> str:
-        """Save selectors to a JSON file.
+    def save_selectors(self, url: str, selectors: dict[str, Any], *, verified: bool = False) -> str:
+        """Save selectors as snapshot format.
 
-        Selectors are always saved as JSON for machine readability and reuse.
+        Wraps each field's selector dict in a SelectorSnapshot with a
+        ``discovered_at`` timestamp, then writes the SnapshotMap to disk.
 
         Args:
             url: URL the selectors were discovered from
             selectors: Dictionary of validated selectors
+            verified: When True, stamp each snapshot with ``last_verified_at=now``.
 
         Returns:
             Path to the saved file.
 
         """
-        from yosoi.outputs.utils import save_formatted_selectors
-
-        domain = self._extract_domain(url)
-        filepath = self._get_selector_filepath(domain)
-
-        # Format selectors
-        formatted_selectors = self._format_selectors(selectors)
-
-        # Use output module to format and save (always JSON)
-        save_formatted_selectors(filepath, url, domain, formatted_selectors)
-
-        print(f'\n✓ Saved selectors to: {filepath}')
-        return filepath
+        now = datetime.now(timezone.utc)
+        formatted = self._format_selectors(selectors)
+        snapshots: dict[str, SelectorSnapshot] = {}
+        for field_name, field_data in formatted.items():
+            snapshots[field_name] = selector_dict_to_snapshot(
+                field_data, discovered_at=now, last_verified_at=now if verified else None
+            )
+        return self.save_snapshots(url, snapshots)
 
     def load_selectors(self, domain: str) -> dict[str, Any] | None:
-        """Load selectors from a JSON file.
+        """Load selectors from a snapshot file.
+
+        Strips audit metadata — callers receive
+        ``{field: {primary, fallback, tertiary}}`` shape.
 
         Args:
             domain: Domain name (e.g., 'example.com')
@@ -65,20 +75,27 @@ class SelectorStorage:
             Dictionary of selectors, or None if not found or error occurred.
 
         """
-        filepath = self._get_filepath(domain)
-
-        if not os.path.exists(filepath):
+        snapshots = self.load_snapshots(domain)
+        if snapshots is None:
             return None
+        return {name: snapshot_to_selector_dict(snap) for name, snap in snapshots.items()}
 
-        try:
-            with open(filepath, encoding='utf-8') as f:
-                data: dict[str, Any] = json.load(f)
-                # Return just the selectors portion, not the metadata wrapper
-                selectors: dict[str, Any] = data.get('selectors', data)
-                return selectors
-        except (OSError, json.JSONDecodeError, ValueError) as e:
-            print(f'Error loading selectors: {e}')
+    def load_field_selector(self, domain: str, field_name: str) -> dict[str, Any] | None:
+        """Return raw selector dict for a single field, or None if not cached.
+
+        Args:
+            domain: Domain name (e.g., 'example.com')
+            field_name: Field name to look up
+
+        Returns:
+            Dict with primary/fallback/tertiary keys, or None if not found.
+
+        """
+        data = self.load_selectors(domain)
+        if data is None:
             return None
+        entry = data.get(field_name)
+        return entry if isinstance(entry, dict) else None
 
     def selector_exists(self, domain: str) -> bool:
         """Check if selectors exist for a domain.
@@ -94,7 +111,11 @@ class SelectorStorage:
         return os.path.exists(filepath)
 
     def save_content(
-        self, url: str, content: dict[str, Any] | list[dict[str, Any]], output_format: str = 'json'
+        self,
+        url: str,
+        content: dict[str, Any] | list[dict[str, Any]],
+        output_format: str = 'json',
+        contract_sig: str | None = None,
     ) -> str:
         """Save extracted content to a file in the specified format.
 
@@ -102,6 +123,7 @@ class SelectorStorage:
             url: URL the content was extracted from
             content: Dictionary of extracted content or list of dicts for multi-item pages
             output_format: Output format ('json' or 'markdown'). Defaults to 'json'.
+            contract_sig: Optional contract signature for stable, unique filenames.
 
         Returns:
             Path to the saved file.
@@ -110,7 +132,7 @@ class SelectorStorage:
         from yosoi.outputs.utils import save_formatted_content
 
         domain = self._extract_domain(url)
-        filepath = self._get_content_filepath(url, output_format)
+        filepath = self._get_content_filepath(url, output_format, contract_sig)
 
         # Use output module to format and save
         save_formatted_content(filepath, url, domain, content, output_format)
@@ -118,17 +140,18 @@ class SelectorStorage:
         print(f'✓ Saved content to: {filepath}')
         return filepath
 
-    def load_content(self, url: str) -> dict[str, Any] | list[dict[str, Any]] | None:
+    def load_content(self, url: str, contract_sig: str | None = None) -> dict[str, Any] | list[dict[str, Any]] | None:
         """Load extracted content from a JSON file.
 
         Args:
             url: URL to load content for
+            contract_sig: Optional contract signature (must match the one used when saving).
 
         Returns:
             Single content dict, list of item dicts for multi-item pages, or None.
 
         """
-        filepath = self._get_content_filepath(url)
+        filepath = self._get_content_filepath(url, contract_sig=contract_sig)
 
         if not os.path.exists(filepath):
             return None
@@ -147,17 +170,18 @@ class SelectorStorage:
             print(f'Error loading content: {e}')
             return None
 
-    def content_exists(self, url: str) -> bool:
+    def content_exists(self, url: str, contract_sig: str | None = None) -> bool:
         """Check if extracted content exists for a URL.
 
         Args:
             url: URL to check
+            contract_sig: Optional contract signature (must match the one used when saving).
 
         Returns:
             True if content file exists for the URL, False otherwise.
 
         """
-        filepath = self._get_content_filepath(url)
+        filepath = self._get_content_filepath(url, contract_sig=contract_sig)
         return os.path.exists(filepath)
 
     def list_domains(self) -> list[str]:
@@ -194,17 +218,99 @@ class SelectorStorage:
         summary: dict[str, Any] = {'total_domains': len(domains), 'domains': []}
 
         for domain in domains:
-            data = self._load_file_data(domain)
-            if data:
+            snapshots = self.load_snapshots(domain)
+            if snapshots:
+                # Use earliest discovered_at as the domain-level timestamp
+                earliest = min((s.discovered_at for s in snapshots.values()), default=None)
                 summary['domains'].append(
                     {
                         'domain': domain,
-                        'discovered_at': data.get('discovered_at'),
-                        'fields': list(data.get('selectors', {}).keys()),
+                        'discovered_at': earliest.isoformat() if earliest else None,
+                        'fields': list(snapshots.keys()),
                     }
                 )
 
         return summary
+
+    # ------------------------------------------------------------------
+    # Snapshot API (v2)
+    # ------------------------------------------------------------------
+
+    def load_snapshots(self, domain: str) -> dict[str, SelectorSnapshot] | None:
+        """Load full snapshots with audit metadata for a domain.
+
+        Args:
+            domain: Domain name (e.g., 'example.com')
+
+        Returns:
+            Dict mapping field names to SelectorSnapshot, or None if not found.
+
+        """
+        data = self._load_file_data(domain)
+        if data is None:
+            return None
+
+        if 'snapshots' not in data:
+            return None
+
+        try:
+            snap_map = SnapshotMap.model_validate(data)
+            return dict(snap_map.snapshots) if snap_map.snapshots else None
+        except (ValueError, TypeError):
+            return None
+
+    def save_snapshots(self, url: str, snapshots: dict[str, SelectorSnapshot]) -> str:
+        """Write v2 snapshot format to disk.
+
+        Args:
+            url: URL the selectors were discovered from
+            snapshots: Dict mapping field names to SelectorSnapshot
+
+        Returns:
+            Path to the saved file.
+
+        """
+        domain = self._extract_domain(url)
+        filepath = self._get_selector_filepath(domain)
+
+        snap_map = SnapshotMap(url=url, domain=domain, snapshots=snapshots)
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(snap_map.model_dump(mode='json'), f, indent=2, ensure_ascii=False)
+
+        print(f'\n✓ Saved snapshots to: {filepath}')
+        return filepath
+
+    def record_verdict(self, domain: str, field_name: str, verdict: CacheVerdict) -> None:
+        """Update the audit trail for a single field after verification.
+
+        Args:
+            domain: Domain name
+            field_name: Field whose verdict to record
+            verdict: FRESH, STALE, or DEGRADED
+
+        """
+        data = self._load_file_data(domain)
+        if data is None or 'snapshots' not in data:
+            return
+
+        snap_map = SnapshotMap.model_validate(data)
+        snap = snap_map.snapshots.get(field_name)
+        if snap is None:
+            return
+
+        now = datetime.now(timezone.utc)
+        if verdict == CacheVerdict.FRESH:
+            snap.last_verified_at = now
+            snap.failure_count = 0
+        else:  # STALE or DEGRADED
+            snap.last_failed_at = now
+            snap.failure_count += 1
+
+        filepath = self._get_filepath(domain)
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(snap_map.model_dump(mode='json'), f, indent=2, ensure_ascii=False)
 
     def _format_selectors(self, selectors: dict[str, Any]) -> dict[str, dict[str, str | None]]:
         """Format selectors for storage.
@@ -274,7 +380,7 @@ class SelectorStorage:
         safe_domain = domain.replace('.', '_').replace('/', '_')
         return os.path.join(self.storage_dir, f'selectors_{safe_domain}.json')
 
-    def _get_content_filepath(self, url: str, output_format: str = 'json') -> str:
+    def _get_content_filepath(self, url: str, output_format: str = 'json', contract_sig: str | None = None) -> str:
         """Get filepath for a URL's extracted content.
 
         Accumulating formats (jsonl, csv, xlsx, parquet) share a single results file
@@ -283,6 +389,9 @@ class SelectorStorage:
         Args:
             url: Full URL
             output_format: Output format. Defaults to 'json'.
+            contract_sig: Optional contract signature hash. When provided, filenames
+                embed both the contract signature and a URL hash so multiple URLs with
+                the same path but different query strings produce distinct files.
 
         Returns:
             Full file path for the URL's content file.
@@ -310,12 +419,14 @@ class SelectorStorage:
         if output_format in _ACCUMULATING:
             return os.path.join(domain_dir, f'results.{ext}')
 
-        # Per-URL (json, markdown) — derive filename from URL path
-        if parsed.path and parsed.path != '/':
+        # Per-URL (json, markdown) — derive filename from URL path or contract+hash
+        url_hash = hashlib.md5(url.encode()).hexdigest()[:8]
+        if contract_sig:
+            filename = f'{contract_sig}_{url_hash}.{ext}'
+        elif parsed.path and parsed.path != '/':
             path_parts = parsed.path.strip('/').replace('/', '_')
             filename = f'{path_parts[:100]}.{ext}'
         else:
-            url_hash = hashlib.md5(url.encode()).hexdigest()[:8]
             filename = f'homepage_{url_hash}.{ext}'
 
         return os.path.join(domain_dir, filename)

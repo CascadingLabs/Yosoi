@@ -1,7 +1,5 @@
 """Unit tests for multi-item pipeline features."""
 
-from pydantic import ConfigDict
-
 import yosoi as ys
 
 # ---------------------------------------------------------------------------
@@ -9,6 +7,7 @@ import yosoi as ys
 # ---------------------------------------------------------------------------
 from yosoi import Pipeline
 from yosoi.models.results import FetchResult
+from yosoi.storage.tracking import DomainStats
 
 
 class SimpleContract(ys.Contract):
@@ -17,93 +16,124 @@ class SimpleContract(ys.Contract):
 
 
 class ContainerContract(ys.Contract):
-    model_config = ConfigDict(json_schema_extra={'yosoi_container': '.product-card'})
+    root = ys.css('.product-card')
 
     name: str = ys.Title()
     price: str = ys.Field(description='Price')
 
 
 # ---------------------------------------------------------------------------
-# Contract.get_container_selector
+# Contract.get_root / is_grouped
 # ---------------------------------------------------------------------------
 
 
-def test_get_container_selector_returns_none_by_default():
-    assert SimpleContract.get_container_selector() is None
+def test_get_root_returns_none_by_default():
+    assert SimpleContract.get_root() is None
 
 
-def test_get_container_selector_returns_override():
-    assert ContainerContract.get_container_selector() == '.product-card'
+def test_get_root_returns_selector_entry():
+    entry = ContainerContract.get_root()
+    assert entry is not None
+    assert entry.value == '.product-card'
+    assert entry.type == 'css'
 
 
-def test_get_container_selector_ignores_non_string():
-    class BadContainer(ys.Contract):
-        model_config = ConfigDict(json_schema_extra={'yosoi_container': 123})
-
-    assert BadContainer.get_container_selector() is None
+def test_is_grouped_false_by_default():
+    assert SimpleContract.is_grouped() is False
 
 
-def test_get_container_selector_ignores_empty_string():
-    class EmptyContainer(ys.Contract):
-        model_config = ConfigDict(json_schema_extra={'yosoi_container': ''})
+def test_is_grouped_true_when_root_set():
+    assert ContainerContract.is_grouped() is True
 
-    assert EmptyContainer.get_container_selector() is None
+
+def test_get_root_with_xpath():
+    class XPathContract(ys.Contract):
+        root = ys.xpath('//li[@class="result"]')
+        title: str = ys.Title()
+
+    entry = XPathContract.get_root()
+    assert entry is not None
+    assert entry.type == 'xpath'
+    assert entry.value == '//li[@class="result"]'
 
 
 # ---------------------------------------------------------------------------
-# Contract.to_selector_model includes yosoi_container
+# Contract.to_selector_model includes root
 # ---------------------------------------------------------------------------
 
 
-def test_selector_model_includes_yosoi_container():
+def test_selector_model_includes_root():
     SelectorModel = SimpleContract.to_selector_model()
-    assert 'yosoi_container' in SelectorModel.model_fields
+    assert 'root' in SelectorModel.model_fields
 
 
-def test_selector_model_yosoi_container_is_optional():
+def test_selector_model_root_is_optional():
     SelectorModel = SimpleContract.to_selector_model()
-    field = SelectorModel.model_fields['yosoi_container']
+    field = SelectorModel.model_fields['root']
     assert field.default is None
 
 
 # ---------------------------------------------------------------------------
-# Pipeline._pop_container
+# Pipeline._pop_root
 # ---------------------------------------------------------------------------
 
 
-def test_pop_container_extracts_primary_string():
+def test_pop_root_extracts_value_from_new_format():
     selectors = {
         'title': {'primary': 'h1'},
-        'yosoi_container': {'primary': '.card', 'fallback': None, 'tertiary': None},
+        'root': {'primary': {'type': 'css', 'value': '.card'}},
     }
-    result = Pipeline._pop_container(selectors)
-    assert result == '.card'
-    assert 'yosoi_container' not in selectors
+    result = Pipeline._pop_root(selectors)
+    assert result == {'primary': {'type': 'css', 'value': '.card'}}
+    assert 'root' not in selectors
 
 
-def test_pop_container_returns_none_when_absent():
+def test_pop_root_returns_none_when_absent():
     selectors = {'title': {'primary': 'h1'}}
-    result = Pipeline._pop_container(selectors)
+    result = Pipeline._pop_root(selectors)
     assert result is None
 
 
-def test_pop_container_handles_selector_entry_dict():
+def test_pop_root_handles_field_selectors_format():
     selectors = {
-        'yosoi_container': {'primary': {'type': 'css', 'value': '.card'}, 'fallback': None},
+        'root': {'primary': '.card', 'fallback': None, 'tertiary': None},
     }
-    result = Pipeline._pop_container(selectors)
-    assert result == '.card'
-    assert 'yosoi_container' not in selectors
+    result = Pipeline._pop_root(selectors)
+    assert result == {'primary': '.card', 'fallback': None, 'tertiary': None}
+    assert 'root' not in selectors
 
 
-def test_pop_container_returns_none_for_empty_primary():
-    selectors = {'yosoi_container': {'primary': '', 'fallback': None}}
-    result = Pipeline._pop_container(selectors)
+def test_pop_root_handles_selector_entry_dict():
+    selectors = {
+        'root': {'primary': {'type': 'css', 'value': '.card'}, 'fallback': None},
+    }
+    result = Pipeline._pop_root(selectors)
+    assert result == {'primary': {'type': 'css', 'value': '.card'}, 'fallback': None}
+    assert 'root' not in selectors
+
+
+def test_pop_root_returns_none_for_empty_value():
+    selectors = {'root': {'primary': {'type': 'css', 'value': ''}}}
+    result = Pipeline._pop_root(selectors)
     assert result is None
+
+
+def test_root_value_extracts_string():
+    entry = {'primary': {'type': 'xpath', 'value': '//div[@class="item"]'}}
+    assert Pipeline._root_value(entry) == '//div[@class="item"]'
+
+
+def test_root_value_handles_string_primary():
+    entry = {'primary': '.card'}
+    assert Pipeline._root_value(entry) == '.card'
+
+
+def test_root_value_returns_none_for_none():
+    assert Pipeline._root_value(None) is None
 
 
 # ---------------------------------------------------------------------------
-# Pipeline._resolve_container
+# Pipeline._resolve_root
 # ---------------------------------------------------------------------------
 
 
@@ -113,35 +143,38 @@ def _make_pipeline_stub(mocker, contract=None):
     stub.contract = contract or SimpleContract
     stub.console = mocker.MagicMock()
     stub.logger = mocker.MagicMock()
+    stub._contract_sig = 'test-sig'
     return stub
 
 
-def test_resolve_container_prefers_contract_override(mocker):
+def test_resolve_root_prefers_contract_override(mocker):
     stub = _make_pipeline_stub(mocker, ContainerContract)
     selectors = {
         'name': {'primary': 'h2'},
-        'yosoi_container': {'primary': '.ai-discovered'},
+        'root': {'primary': {'type': 'css', 'value': '.ai-discovered'}},
     }
-    result = stub._resolve_container(selectors)
-    assert result == '.product-card'
-    assert 'yosoi_container' not in selectors
+    result = stub._resolve_root(selectors)
+    assert Pipeline._root_value(result) == '.product-card'
+    assert result['primary']['type'] == 'css'
+    assert 'root' not in selectors
 
 
-def test_resolve_container_uses_ai_discovered(mocker):
+def test_resolve_root_uses_ai_discovered(mocker):
     stub = _make_pipeline_stub(mocker, SimpleContract)
     selectors = {
         'title': {'primary': 'h1'},
-        'yosoi_container': {'primary': '.listing-item'},
+        'root': {'primary': {'type': 'css', 'value': '.listing-item'}},
     }
-    result = stub._resolve_container(selectors)
-    assert result == '.listing-item'
-    assert 'yosoi_container' not in selectors
+    result = stub._resolve_root(selectors)
+    assert result == {'primary': {'type': 'css', 'value': '.listing-item'}}
+    assert Pipeline._root_value(result) == '.listing-item'
+    assert 'root' not in selectors
 
 
-def test_resolve_container_returns_none_when_neither(mocker):
+def test_resolve_root_returns_none_when_neither(mocker):
     stub = _make_pipeline_stub(mocker, SimpleContract)
     selectors = {'title': {'primary': 'h1'}}
-    result = stub._resolve_container(selectors)
+    result = stub._resolve_root(selectors)
     assert result is None
 
 
@@ -220,12 +253,13 @@ def _make_scrape_stub(mocker, contract=None):
     stub.extractor = mocker.MagicMock()
     stub.storage = mocker.MagicMock()
     stub.tracker = mocker.MagicMock()
-    stub.tracker.record_url.return_value = {'llm_calls': 0, 'url_count': 1}
+    stub.tracker.record_url.return_value = DomainStats(llm_calls=0, url_count=1)
     stub.debug = mocker.MagicMock()
     stub.debug_mode = False
     stub.output_formats = ['json']
     stub.force = False
     stub.selector_level = SelectorLevel.CSS
+    stub._contract_sig = 'test-sig'
 
     # Stub normalize_url to pass through
     mocker.patch.object(stub, 'normalize_url', new=mocker.AsyncMock(side_effect=lambda u: u))

@@ -7,7 +7,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field, model_validator
 
 from yosoi.core.discovery import LLMConfig
-from yosoi.core.discovery.config import _PROVIDER_ENV_VARS
+from yosoi.core.discovery.config import _PROVIDER_ENV_VARS, NO_API_KEY_REQUIRED_PROVIDERS, _parse_model_string
 
 log = logging.getLogger(__name__)
 
@@ -95,6 +95,10 @@ class YosoiConfig(BaseModel):
             available = ', '.join(_PROVIDER_ENV_VARS.keys())
             raise ValueError(f'Unknown provider {provider!r}. Available: {available}')
 
+        # Providers like ollama (local) and vertexai (GCP auth) need no API key.
+        if provider in NO_API_KEY_REQUIRED_PROVIDERS:
+            return self
+
         # Try the configured provider's env vars first
         val = _find_env_key(provider)
         if val:
@@ -127,3 +131,52 @@ class YosoiConfig(BaseModel):
                     all_vars.append(v)
                     seen.add(v)
         raise ValueError(f'No API key found. Set one of: {", ".join(all_vars)}')
+
+
+def auto_config(model: str | None = None, debug: bool = False) -> YosoiConfig:
+    """Auto-detect LLM provider and build config.
+
+    Resolution order:
+    1. Explicit ``model`` argument (``provider:model-name`` format)
+    2. ``$YOSOI_MODEL`` environment variable
+    3. First provider with an available API key
+    4. Groq default fallback
+
+    Args:
+        model: Model string in ``provider:model-name`` format, or None.
+        debug: Whether to enable debug HTML saving.
+
+    Returns:
+        Validated YosoiConfig.
+
+    Raises:
+        ValueError: On configuration errors (bad model format, no API key, etc.).
+
+    """
+    from dotenv import load_dotenv
+
+    load_dotenv()
+
+    if model:
+        prov, model_name = _parse_model_string(model)
+        llm_config = LLMConfig(provider=prov, model_name=model_name, api_key='')
+    elif yosoi_model := os.getenv('YOSOI_MODEL'):
+        prov, model_name = _parse_model_string(yosoi_model)
+        llm_config = LLMConfig(provider=prov, model_name=model_name, api_key='')
+    else:
+        found = find_available_provider()
+        if found:
+            provider, model_name, _ = found
+            llm_config = LLMConfig(provider=provider, model_name=model_name, api_key='')
+        else:
+            raise ValueError(
+                'No model specified and no API key found. '
+                'Pass a model string (e.g. auto_config(model="groq:llama-3.3-70b-versatile")) '
+                'or set an API key environment variable.'
+            )
+
+    return YosoiConfig(
+        llm=llm_config,
+        debug=DebugConfig(save_html=debug),
+        telemetry=TelemetryConfig(logfire_token=os.getenv('LOGFIRE_TOKEN')),
+    )

@@ -9,5 +9,7 @@ import yosoi.core.tasks as _tasks_mod
 def clean_broker():
     """Ensure broker state is clean before and after each test."""
     _tasks_mod._pipeline_config = None
+    _tasks_mod._domain_locks.clear()
     yield
     _tasks_mod._pipeline_config = None
+    _tasks_mod._domain_locks.clear()

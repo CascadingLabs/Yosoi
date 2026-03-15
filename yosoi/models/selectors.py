@@ -57,6 +57,39 @@ class SelectorEntry(BaseModel):
         return self
 
 
+def css(value: str) -> SelectorEntry:
+    """Create a CSS SelectorEntry."""
+    return SelectorEntry(type='css', value=value)
+
+
+def xpath(value: str) -> SelectorEntry:
+    """Create an XPath SelectorEntry."""
+    return SelectorEntry(type='xpath', value=value)
+
+
+def regex(value: str) -> SelectorEntry:
+    """Create a regex SelectorEntry."""
+    return SelectorEntry(type='regex', value=value)
+
+
+def jsonld(value: str) -> SelectorEntry:
+    """Create a JSON-LD SelectorEntry."""
+    return SelectorEntry(type='jsonld', value=value)
+
+
+_DISCOVER_SENTINEL = 'yosoi:discover'
+
+
+def discover() -> SelectorEntry:
+    """Sentinel: AI will discover the root for this scoped nested contract."""
+    return SelectorEntry(type='css', value=_DISCOVER_SENTINEL)
+
+
+def is_discover_sentinel(entry: SelectorEntry | None) -> bool:
+    """Return True if *entry* is the discover sentinel."""
+    return entry is not None and entry.value == _DISCOVER_SENTINEL
+
+
 def coerce_selector_entry(v: object) -> SelectorEntry | None:
     """Coerce a raw selector value (str, dict, or SelectorEntry) to SelectorEntry.
 

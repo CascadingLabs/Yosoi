@@ -115,8 +115,8 @@ def test_fully_overridden_contract_produces_empty_selector_model():
 
     SelectorModel = AllOverride.to_selector_model()
     assert AllOverride.field_descriptions() == {}
-    # Only yosoi_container remains (always added for multi-item discovery)
-    assert set(SelectorModel.model_fields.keys()) == {'yosoi_container'}
+    # Only root remains (always added for multi-item discovery)
+    assert set(SelectorModel.model_fields.keys()) == {'root'}
 
 
 # ---------------------------------------------------------------------------
@@ -326,3 +326,195 @@ def test_contract_builder_build_validates_data():
     MyContract = Contract.define('ValidContract').name('Name field').build()
     instance = MyContract.model_validate({'name': 'Test'})
     assert instance.name == 'Test'
+
+
+# ---------------------------------------------------------------------------
+# ContractBuilder.with_root
+# ---------------------------------------------------------------------------
+
+
+def test_contract_builder_with_root_sets_root():
+    """with_root() sets the root ClassVar on the built contract."""
+    from yosoi.models.selectors import SelectorEntry, css
+
+    MyContract = Contract.define('RootedContract').title('Title').with_root(css('.item')).build()
+    assert MyContract.root is not None
+    assert isinstance(MyContract.root, SelectorEntry)
+    assert MyContract.root.value == '.item'
+    assert MyContract.root.type == 'css'
+
+
+def test_contract_builder_with_root_is_grouped():
+    """Built contract with root reports is_grouped=True."""
+    from yosoi.models.selectors import css
+
+    MyContract = Contract.define('GroupedContract').title('Title').with_root(css('.row')).build()
+    assert MyContract.is_grouped() is True
+
+
+def test_contract_builder_without_root_not_grouped():
+    """Built contract without root reports is_grouped=False."""
+    MyContract = Contract.define('UngroupedContract').title('Title').build()
+    assert MyContract.is_grouped() is False
+
+
+# ---------------------------------------------------------------------------
+# root ClassVar — not treated as a Pydantic field
+# ---------------------------------------------------------------------------
+
+
+def test_root_classvary_not_in_model_fields():
+    """root is a ClassVar and must not appear in model_fields."""
+
+    class Listed(Contract):
+        root = ys.css('article.item')
+        name: str = ys.Title()
+
+    assert 'root' not in Listed.model_fields
+    assert Listed.root is not None
+
+
+def test_is_grouped_classmethod():
+    """is_grouped() returns True only when root is explicitly set."""
+
+    class WithRoot(Contract):
+        root = ys.css('.card')
+        title: str = ys.Title()
+
+    class WithoutRoot(Contract):
+        title: str = ys.Title()
+
+    assert WithRoot.is_grouped() is True
+    assert WithoutRoot.is_grouped() is False
+
+
+# ---------------------------------------------------------------------------
+# list[T] coercion in _apply_validators_and_coerce
+# ---------------------------------------------------------------------------
+
+
+def test_coerce_list_field_from_list_input():
+    """list[str] + ['a', 'b'] → passes through (Pattern A)."""
+
+    class TagContract(Contract):
+        tags: list[str] = YsField(description='tags')
+
+    result = TagContract.model_validate({'tags': ['a', 'b']})
+    assert result.tags == ['a', 'b']
+
+
+def test_coerce_list_field_splits_string():
+    """list[str] + 'a, b and c' → ['a', 'b', 'c']."""
+
+    class TagContract(Contract):
+        tags: list[str] = YsField(description='tags')
+
+    result = TagContract.model_validate({'tags': 'a, b and c'})
+    assert result.tags == ['a', 'b', 'c']
+
+
+def test_coerce_list_field_splits_single_item_list():
+    """list[str] + ['a, b and c'] → ['a', 'b', 'c'] (Pattern B)."""
+
+    class TagContract(Contract):
+        tags: list[str] = YsField(description='tags')
+
+    result = TagContract.model_validate({'tags': ['a, b and c']})
+    assert result.tags == ['a', 'b', 'c']
+
+
+def test_coerce_list_field_no_split_when_truly_single():
+    """list[str] + ['hello'] → stays ['hello'] when split produces 1 item."""
+
+    class TagContract(Contract):
+        tags: list[str] = YsField(description='tags')
+
+    result = TagContract.model_validate({'tags': ['hello']})
+    assert result.tags == ['hello']
+
+
+def test_coerce_list_field_with_yosoi_type():
+    """list[float] = ys.Price() + ['$1.50', '$2.00'] → [1.5, 2.0]."""
+
+    class PriceList(Contract):
+        prices: list[float] = ys.Price()
+
+    result = PriceList.model_validate({'prices': ['$1.50', '$2.00']})
+    assert result.prices == [1.5, 2.0]
+
+
+def test_coerce_list_field_custom_delimiter():
+    """delimiter=r'\\|' + 'a|b|c' → ['a', 'b', 'c']."""
+
+    class PipeContract(Contract):
+        items: list[str] = YsField(description='items', delimiter=r'\|')
+
+    result = PipeContract.model_validate({'items': 'a|b|c'})
+    assert result.items == ['a', 'b', 'c']
+
+
+def test_coerce_list_field_with_non_string_non_list():
+    """Non-string, non-list raw value is wrapped in a list."""
+    from yosoi.models.contract import _coerce_list_field
+
+    # e.g. an integer or None-like value → wrapped in list
+    result = _coerce_list_field(42, {}, None)
+    assert result == [42]
+
+
+def test_coerce_list_field_multi_item_list_passes_through():
+    """Multi-item list input is passed through without splitting."""
+    from yosoi.models.contract import _coerce_list_field
+
+    result = _coerce_list_field(['a', 'b', 'c'], {}, None)
+    assert result == ['a', 'b', 'c']
+
+
+def test_apply_validators_and_coerce_with_non_dict():
+    """_apply_validators_and_coerce passes non-dict data directly to handler."""
+
+    class SimpleC(Contract):
+        title: str
+
+    # Passing an existing instance → model_validate returns it unchanged
+    existing = SimpleC(title='hi')
+    result = SimpleC.model_validate(existing)
+    assert result.title == 'hi'
+
+
+def test_apply_validators_and_coerce_calls_validators_class():
+    """When a nested Validators class defines a field method, it transforms the value."""
+
+    class WithValidators(Contract):
+        name: str
+
+        class Validators:
+            @staticmethod
+            def name(value: str) -> str:
+                return value.upper()
+
+    result = WithValidators.model_validate({'name': 'hello'})
+    assert result.name == 'HELLO'
+
+
+def test_list_fields_returns_inner_types():
+    """list_fields() returns {field_name: inner_type} for list[T] fields."""
+
+    class TagContract(Contract):
+        tags: list[str] = YsField(description='tags')
+        title: str = YsField(description='title')
+
+    lf = TagContract.list_fields()
+    assert 'tags' in lf
+    assert lf['tags'] is str
+    assert 'title' not in lf
+
+
+def test_list_fields_empty_when_no_list_fields():
+    """list_fields() returns {} when no list fields are defined."""
+
+    class FlatC(Contract):
+        title: str
+        price: float
+
+    assert FlatC.list_fields() == {}

@@ -4,6 +4,7 @@ import yosoi as ys
 from yosoi.core.pipeline import Pipeline
 from yosoi.models.contract import Contract
 from yosoi.models.results import FetchResult, FieldVerificationResult, VerificationResult
+from yosoi.storage.tracking import DomainStats
 from yosoi.utils.exceptions import BotDetectionError
 
 # ---------------------------------------------------------------------------
@@ -28,14 +29,17 @@ def _make_pipeline_stub(mocker, contract=None):
     stub.verifier = mocker.MagicMock()
     stub.extractor = mocker.MagicMock()
     stub.storage = mocker.MagicMock()
+    stub.storage.load_snapshots.return_value = None
     stub.tracker = mocker.MagicMock()
     stub.debug = mocker.MagicMock()
     stub.debug_mode = False
     stub.output_formats = ['json']
     stub.force = False
     from yosoi.models.selectors import SelectorLevel
+    from yosoi.utils.signatures import contract_signature
 
     stub.selector_level = SelectorLevel.CSS
+    stub._contract_sig = contract_signature(stub.contract)
     return stub
 
 
@@ -114,8 +118,8 @@ def test_pipeline_accepts_model_string(mocker):
     mocker.patch('yosoi.storage.tracking.get_tracking_path', return_value='/tmp/tracking.json')
     mocker.patch('yosoi.utils.files.is_initialized', return_value=True)
     mocker.patch('yosoi.utils.logging.setup_local_logging', return_value='/tmp/test.log')
-    mocker.patch('yosoi.core.discovery.agent.Agent')
-    mocker.patch('yosoi.core.discovery.agent.create_model')
+    mocker.patch('yosoi.core.discovery.field_agent.Agent')
+    mocker.patch('yosoi.core.discovery.field_agent.create_model')
 
     p = Pipeline(llm_config='groq:llama-3.3-70b-versatile', contract=SimpleContract)
     assert p.discovery is not None
@@ -283,7 +287,7 @@ def test_validate_with_contract_injects_source_url(mocker):
 
 def test_save_and_track_saves_selectors_and_content(mocker):
     stub = _make_pipeline_stub(mocker)
-    stub.tracker.record_url.return_value = {'llm_calls': 1, 'url_count': 1}
+    stub.tracker.record_url.return_value = DomainStats(llm_calls=1, url_count=1)
     Pipeline._save_and_track(
         stub,
         url='https://x.com',
@@ -302,7 +306,7 @@ def test_save_and_track_saves_selectors_and_content(mocker):
 
 def test_save_and_track_skips_content_when_none(mocker):
     stub = _make_pipeline_stub(mocker)
-    stub.tracker.record_url.return_value = {'llm_calls': 1, 'url_count': 1}
+    stub.tracker.record_url.return_value = DomainStats(llm_calls=1, url_count=1)
     Pipeline._save_and_track(
         stub,
         url='https://x.com',
@@ -318,7 +322,7 @@ def test_save_and_track_skips_content_when_none(mocker):
 
 def test_save_and_track_passes_elapsed_to_record_url(mocker):
     stub = _make_pipeline_stub(mocker)
-    stub.tracker.record_url.return_value = {'llm_calls': 1, 'url_count': 1}
+    stub.tracker.record_url.return_value = DomainStats(llm_calls=1, url_count=1)
     Pipeline._save_and_track(
         stub,
         url='https://x.com',
@@ -344,7 +348,7 @@ def test_track_cached_success_calls_record_url(mocker):
     stub._url_start = 100.0
     mocker.patch('yosoi.core.pipeline.time')
     mocker.patch('yosoi.core.pipeline.time.monotonic', return_value=102.5)
-    stub.tracker.record_url.return_value = {'llm_calls': 0, 'url_count': 3}
+    stub.tracker.record_url.return_value = DomainStats(llm_calls=0, url_count=3)
     Pipeline._track_cached_success(stub, 'https://x.com', 'x.com')
     call_args = stub.tracker.record_url.call_args
     assert call_args[0] == ('https://x.com',)
@@ -360,7 +364,7 @@ def test_track_cached_success_calls_record_url(mocker):
 
 def test_print_tracking_stats_shows_efficiency(mocker):
     stub = _make_pipeline_stub(mocker)
-    Pipeline._print_tracking_stats(stub, 'example.com', {'llm_calls': 2, 'url_count': 10})
+    Pipeline._print_tracking_stats(stub, 'example.com', DomainStats(llm_calls=2, url_count=10))
     calls = [str(c) for c in stub.console.print.call_args_list]
     joined = ' '.join(calls)
     assert 'llm_calls' in joined.lower() or '2' in joined or 'LLM' in joined
@@ -368,7 +372,7 @@ def test_print_tracking_stats_shows_efficiency(mocker):
 
 def test_print_tracking_stats_no_efficiency_when_zero_llm(mocker):
     stub = _make_pipeline_stub(mocker)
-    Pipeline._print_tracking_stats(stub, 'example.com', {'llm_calls': 0, 'url_count': 5})
+    Pipeline._print_tracking_stats(stub, 'example.com', DomainStats(llm_calls=0, url_count=5))
     # Should not divide by zero - just check it runs without error
     stub.console.print.assert_called()
 
@@ -438,6 +442,30 @@ async def test_extract_with_cached_skips_verification_when_flag_set(mocker):
     )
     stub.verifier.verify.assert_not_called()
     assert cache_valid is True
+
+
+async def test_stale_container_triggers_rediscovery(mocker):
+    """Stale container selector must return cache_valid=False, not silently fail."""
+    stub = _make_pipeline_stub(mocker)
+    stub.cleaner.clean_html.return_value = '<html><body><h1>Title</h1></body></html>'
+    stub.verifier._test_selector = mocker.MagicMock(return_value=(False, 'no_elements_found'))
+
+    mock_fetcher = mocker.MagicMock()
+    mock_fetcher.fetch = mocker.AsyncMock(
+        return_value=FetchResult(url='https://x.com', html='<html><body><h1>Title</h1></body></html>')
+    )
+
+    # Patch _resolve_root to return a non-None stale container entry
+    mocker.patch.object(
+        stub, '_resolve_root', return_value={'primary': {'type': 'css', 'value': 'article.product_pod'}}
+    )
+
+    items, cache_valid = await Pipeline._extract_with_cached(
+        stub, 'https://x.com', mock_fetcher, {'title': {'primary': 'h1'}}, False
+    )
+
+    assert cache_valid is False
+    assert items is None
 
 
 # ---------------------------------------------------------------------------
@@ -552,8 +580,12 @@ async def test_discover_with_escalation_succeeds_at_css(mocker):
     Pipeline._discover.assert_called_once()
 
 
-async def test_discover_with_escalation_retries_at_xpath_when_css_fails(mocker):
-    """When CSS discovery fails, escalates to XPATH if selector_level allows it."""
+async def test_discover_with_escalation_delegates_to_discover(mocker):
+    """_discover_with_escalation now delegates to _discover once.
+
+    Per-field escalation (CSS→XPath→…) is handled inside DiscoveryOrchestrator,
+    not in the pipeline-level loop.
+    """
     from yosoi.models.selectors import SelectorLevel
 
     stub = _make_pipeline_stub(mocker)
@@ -561,16 +593,13 @@ async def test_discover_with_escalation_retries_at_xpath_when_css_fails(mocker):
     mocker.patch.object(
         Pipeline,
         '_discover',
-        side_effect=[
-            (None, False),  # CSS fails
-            ({'title': {'primary': '//h1'}}, True),  # XPATH succeeds
-        ],
+        return_value=({'title': {'primary': '//h1'}}, True),
     )
-    selectors, _used_llm = await Pipeline._discover_with_escalation(stub, 'https://x.com', '<html/>')
+    selectors, used_llm = await Pipeline._discover_with_escalation(stub, 'https://x.com', '<html/>')
     assert selectors is not None
-    assert Pipeline._discover.call_count == 2
-    # discovery target_level updated to XPATH before second call
-    assert stub.discovery.target_level == SelectorLevel.XPATH
+    assert used_llm is True
+    # Only one call — orchestrator handles the per-field level loop internally
+    Pipeline._discover.assert_called_once()
 
 
 async def test_discover_with_escalation_does_not_retry_beyond_max_level(mocker):
@@ -629,13 +658,21 @@ async def test_process_url_raises_when_create_fetcher_fails(mocker):
 
 
 async def test_process_url_succeeds_with_cached_selectors(mocker):
+    from datetime import datetime, timezone
+
+    from yosoi.models.snapshot import SelectorSnapshot
+
     stub = _make_pipeline_stub(mocker)
     mocker.patch.object(Pipeline, 'normalize_url', return_value='https://x.com')
     mocker.patch.object(Pipeline, '_extract_domain', return_value='x.com')
     mocker.patch.object(Pipeline, '_create_fetcher', return_value=mocker.MagicMock())
+    now = datetime.now(timezone.utc)
+    stub.storage.load_snapshots.return_value = {
+        'title': SelectorSnapshot(primary={'type': 'css', 'value': 'h1'}, discovered_at=now),
+    }
     stub.storage.load_selectors.return_value = {'title': {'primary': 'h1'}}
     mocker.patch.object(Pipeline, '_extract_with_cached', return_value=([{'title': 'Book'}], True))
-    stub.tracker.record_url.return_value = {'llm_calls': 0, 'url_count': 1}
+    stub.tracker.record_url.return_value = DomainStats(url_count=1)
     mocker.patch('yosoi.core.pipeline.logfire')
     await Pipeline.process_url(stub, 'https://x.com')
 
@@ -791,7 +828,7 @@ def test_show_summary_prints_table_with_domains(mocker):
 
 def test_show_llm_stats_with_data(mocker):
     stub = _make_pipeline_stub(mocker)
-    stub.tracker.get_all_stats.return_value = {'example.com': {'llm_calls': 2, 'url_count': 10}}
+    stub.tracker.get_all_stats.return_value = {'example.com': DomainStats(llm_calls=2, url_count=10)}
     Pipeline.show_llm_stats(stub)
     stub.console.print.assert_called()
 
@@ -934,7 +971,7 @@ def test_verify_failed_result_calls_print_verification_failure(mocker):
 def test_save_and_track_calls_record_url_with_used_llm_true(mocker):
     """_save_and_track must pass used_llm=True when called with used_llm=True."""
     stub = _make_pipeline_stub(mocker)
-    stub.tracker.record_url.return_value = {'llm_calls': 1, 'url_count': 1}
+    stub.tracker.record_url.return_value = DomainStats(llm_calls=1, url_count=1)
     Pipeline._save_and_track(
         stub,
         url='https://x.com',
@@ -952,7 +989,7 @@ def test_save_and_track_calls_record_url_with_used_llm_true(mocker):
 def test_save_and_track_calls_record_url_with_used_llm_false(mocker):
     """_save_and_track must pass used_llm=False when called with used_llm=False."""
     stub = _make_pipeline_stub(mocker)
-    stub.tracker.record_url.return_value = {'llm_calls': 0, 'url_count': 1}
+    stub.tracker.record_url.return_value = DomainStats(llm_calls=0, url_count=1)
     Pipeline._save_and_track(
         stub,
         url='https://x.com',
@@ -970,7 +1007,7 @@ def test_save_and_track_calls_record_url_with_used_llm_false(mocker):
 def test_save_and_track_saves_content_with_output_format(mocker):
     """save_content must be called with the correct output_format."""
     stub = _make_pipeline_stub(mocker)
-    stub.tracker.record_url.return_value = {'llm_calls': 1, 'url_count': 1}
+    stub.tracker.record_url.return_value = DomainStats(llm_calls=1, url_count=1)
     Pipeline._save_and_track(
         stub,
         url='https://x.com',
@@ -980,7 +1017,26 @@ def test_save_and_track_saves_content_with_output_format(mocker):
         used_llm=True,
         output_format=['markdown'],
     )
-    stub.storage.save_content.assert_called_once_with('https://x.com', {'title': 'Book'}, 'markdown')
+    stub.storage.save_content.assert_called_once_with(
+        'https://x.com', {'title': 'Book'}, 'markdown', contract_sig=stub._contract_sig
+    )
+
+
+def test_save_and_track_passes_contract_sig_to_save_content(mocker):
+    """save_content must receive the pipeline's _contract_sig as contract_sig kwarg."""
+    stub = _make_pipeline_stub(mocker)
+    stub.tracker.record_url.return_value = DomainStats(llm_calls=1, url_count=1)
+    Pipeline._save_and_track(
+        stub,
+        url='https://x.com',
+        domain='x.com',
+        verified={'title': {'primary': 'h1'}},
+        extracted={'title': 'Book'},
+        used_llm=True,
+        output_format=['json'],
+    )
+    _, kwargs = stub.storage.save_content.call_args
+    assert kwargs.get('contract_sig') == stub._contract_sig
 
 
 # ---------------------------------------------------------------------------
@@ -993,7 +1049,7 @@ def test_track_cached_success_calls_record_url_used_llm_false(mocker):
     stub = _make_pipeline_stub(mocker)
     stub._url_start = 100.0
     mocker.patch('yosoi.core.pipeline.time.monotonic', return_value=103.0)
-    stub.tracker.record_url.return_value = {'llm_calls': 0, 'url_count': 1}
+    stub.tracker.record_url.return_value = DomainStats(llm_calls=0, url_count=1)
     Pipeline._track_cached_success(stub, 'https://example.com', 'example.com')
     call_args = stub.tracker.record_url.call_args
     assert call_args[0] == ('https://example.com',)
@@ -1010,7 +1066,7 @@ def test_track_cached_success_calls_record_url_used_llm_false(mocker):
 def test_print_tracking_stats_shows_llm_call_count(mocker):
     """_print_tracking_stats must display llm_calls value."""
     stub = _make_pipeline_stub(mocker)
-    Pipeline._print_tracking_stats(stub, 'x.com', {'llm_calls': 5, 'url_count': 10})
+    Pipeline._print_tracking_stats(stub, 'x.com', DomainStats(llm_calls=5, url_count=10))
     call_args = ' '.join(str(c) for c in stub.console.print.call_args_list)
     assert '5' in call_args
 
@@ -1018,7 +1074,7 @@ def test_print_tracking_stats_shows_llm_call_count(mocker):
 def test_print_tracking_stats_shows_url_count(mocker):
     """_print_tracking_stats must display url_count value."""
     stub = _make_pipeline_stub(mocker)
-    Pipeline._print_tracking_stats(stub, 'x.com', {'llm_calls': 1, 'url_count': 7})
+    Pipeline._print_tracking_stats(stub, 'x.com', DomainStats(llm_calls=1, url_count=7))
     call_args = ' '.join(str(c) for c in stub.console.print.call_args_list)
     assert '7' in call_args
 
@@ -1026,7 +1082,7 @@ def test_print_tracking_stats_shows_url_count(mocker):
 def test_print_tracking_stats_efficiency_calculation(mocker):
     """Efficiency must be url_count / llm_calls."""
     stub = _make_pipeline_stub(mocker)
-    Pipeline._print_tracking_stats(stub, 'x.com', {'llm_calls': 2, 'url_count': 10})
+    Pipeline._print_tracking_stats(stub, 'x.com', DomainStats(llm_calls=2, url_count=10))
     call_args = ' '.join(str(c) for c in stub.console.print.call_args_list)
     # 10/2=5.0 efficiency
     assert '5.0' in call_args
@@ -1036,7 +1092,7 @@ def test_print_tracking_stats_no_efficiency_when_llm_zero(mocker):
     """When llm_calls=0, efficiency section should not appear (no ZeroDivisionError)."""
     stub = _make_pipeline_stub(mocker)
     # Should not raise
-    Pipeline._print_tracking_stats(stub, 'x.com', {'llm_calls': 0, 'url_count': 3})
+    Pipeline._print_tracking_stats(stub, 'x.com', DomainStats(llm_calls=0, url_count=3))
     # console.print was called at least once
     stub.console.print.assert_called()
 
@@ -1044,7 +1100,7 @@ def test_print_tracking_stats_no_efficiency_when_llm_zero(mocker):
 def test_print_tracking_stats_shows_total_elapsed(mocker):
     """_print_tracking_stats must display total_elapsed when present."""
     stub = _make_pipeline_stub(mocker)
-    Pipeline._print_tracking_stats(stub, 'x.com', {'llm_calls': 1, 'url_count': 2, 'total_elapsed': 5.3})
+    Pipeline._print_tracking_stats(stub, 'x.com', DomainStats(llm_calls=1, url_count=2, total_elapsed=5.3))
     call_args = ' '.join(str(c) for c in stub.console.print.call_args_list)
     assert '5.3' in call_args
 
@@ -1102,14 +1158,18 @@ async def test_extract_with_cached_returns_items_on_success(mocker):
     mock_fetcher = mocker.MagicMock()
     mock_fetcher.fetch = mocker.AsyncMock(return_value=FetchResult(url='https://x.com', html='<html/>'))
     stub.cleaner.clean_html.return_value = '<html/>'
-    vr = _make_verification_result(True, ['title'])
+    vr = _make_verification_result(True, ['title', 'price'])
     stub.verifier.verify.return_value = vr
-    stub.extractor.extract_content_with_html.return_value = {'title': 'Book'}
+    stub.extractor.extract_content_with_html.return_value = {'title': 'Book', 'price': '9.99'}
     items, cache_valid = await Pipeline._extract_with_cached(
-        stub, 'https://x.com', mock_fetcher, {'title': {'primary': 'h1'}}, False
+        stub,
+        'https://x.com',
+        mock_fetcher,
+        {'title': {'primary': 'h1'}, 'price': {'primary': '.price'}},
+        False,
     )
     assert cache_valid is True
-    assert items == [{'title': 'Book'}]
+    assert items == [{'title': 'Book', 'price': '9.99'}]
 
 
 async def test_extract_with_cached_fail_open_on_exception(mocker):
@@ -1122,6 +1182,55 @@ async def test_extract_with_cached_fail_open_on_exception(mocker):
     )
     assert cache_valid is True
     assert items is None
+
+
+async def test_extract_with_cached_missing_contract_field_triggers_rediscovery(mocker):
+    """Missing non-overridden contract field in verified selectors forces re-discovery."""
+
+    class TwoFieldContract(Contract):
+        title: str = ys.Title()
+        price: float = ys.Price()
+
+    stub = _make_pipeline_stub(mocker, contract=TwoFieldContract)
+    mock_fetcher = mocker.MagicMock()
+    mock_fetcher.fetch = mocker.AsyncMock(return_value=FetchResult(url='https://x.com', html='<html/>'))
+    stub.cleaner.clean_html.return_value = '<html/>'
+    # Verification only passes for 'title'; 'price' is absent from verified selectors
+    vr = _make_verification_result(True, ['title'])
+    stub.verifier.verify.return_value = vr
+
+    items, cache_valid = await Pipeline._extract_with_cached(
+        stub, 'https://x.com', mock_fetcher, {'title': {'primary': 'h1'}}, False
+    )
+
+    assert cache_valid is False
+    assert items is None
+
+
+async def test_extract_with_cached_missing_overridden_field_does_not_trigger_rediscovery(mocker):
+    """Missing field that has a selector override does not trigger re-discovery."""
+    import yosoi as ys
+    from yosoi.types.field import Field as YsField
+
+    class OverriddenContract(Contract):
+        title: str = ys.Title()
+        price: float = YsField(description='Price', selector='p.price')  # type: ignore[assignment]
+
+    stub = _make_pipeline_stub(mocker, contract=OverriddenContract)
+    mock_fetcher = mocker.MagicMock()
+    mock_fetcher.fetch = mocker.AsyncMock(return_value=FetchResult(url='https://x.com', html='<html/>'))
+    stub.cleaner.clean_html.return_value = '<html/>'
+    # Only 'title' verified; 'price' is absent but it's an override — should NOT re-discover
+    vr = _make_verification_result(True, ['title'])
+    stub.verifier.verify.return_value = vr
+    stub.extractor.extract_content_with_html.return_value = {'title': 'Book'}
+
+    items, cache_valid = await Pipeline._extract_with_cached(
+        stub, 'https://x.com', mock_fetcher, {'title': {'primary': 'h1'}}, False
+    )
+
+    assert cache_valid is True
+    assert items == [{'title': 'Book'}]
 
 
 # ---------------------------------------------------------------------------
@@ -1216,7 +1325,7 @@ def test_show_summary_shows_domain_count(mocker):
 def test_show_llm_stats_shows_efficiency_when_llm_calls_nonzero(mocker):
     """show_llm_stats must show efficiency when there are LLM calls."""
     stub = _make_pipeline_stub(mocker)
-    stub.tracker.get_all_stats.return_value = {'x.com': {'llm_calls': 4, 'url_count': 20}}
+    stub.tracker.get_all_stats.return_value = {'x.com': DomainStats(llm_calls=4, url_count=20)}
     Pipeline.show_llm_stats(stub)
     call_args = ' '.join(str(c) for c in stub.console.print.call_args_list)
     # 20/4 = 5.0 efficiency
@@ -1227,8 +1336,8 @@ def test_show_llm_stats_sums_all_domains(mocker):
     """show_llm_stats must aggregate stats across all domains."""
     stub = _make_pipeline_stub(mocker)
     stub.tracker.get_all_stats.return_value = {
-        'a.com': {'llm_calls': 2, 'url_count': 10},
-        'b.com': {'llm_calls': 3, 'url_count': 15},
+        'a.com': DomainStats(llm_calls=2, url_count=10),
+        'b.com': DomainStats(llm_calls=3, url_count=15),
     }
     Pipeline.show_llm_stats(stub)
     call_args = ' '.join(str(c) for c in stub.console.print.call_args_list)
@@ -1315,3 +1424,202 @@ async def test_discover_ai_success_returns_true_for_used_llm(mocker):
 
     _, used_llm = await Pipeline._discover(stub, 'https://x.com', '<html/>', max_retries=1)
     assert used_llm is True
+
+
+# ---------------------------------------------------------------------------
+# _print_summary
+# ---------------------------------------------------------------------------
+
+
+def test_print_summary_shows_skipped_when_present(mocker):
+    """_print_summary prints skipped count when 'skipped' key exists."""
+    stub = _make_pipeline_stub(mocker)
+    results = {'successful': ['https://a.com'], 'failed': [], 'skipped': ['https://b.com']}
+    Pipeline._print_summary(stub, results, 1.5)
+    all_calls = ' '.join(str(c) for c in stub.console.print.call_args_list)
+    assert 'skip' in all_calls.lower() or '1' in all_calls
+
+
+def test_print_summary_lists_failed_urls(mocker):
+    """_print_summary iterates over failed URLs and prints each one."""
+    stub = _make_pipeline_stub(mocker)
+    results = {'successful': [], 'failed': ['https://x.com', 'https://y.com']}
+    Pipeline._print_summary(stub, results, 2.0)
+    all_calls = ' '.join(str(c) for c in stub.console.print.call_args_list)
+    assert 'https://x.com' in all_calls
+    assert 'https://y.com' in all_calls
+
+
+def test_print_summary_no_skipped_key_no_error(mocker):
+    """_print_summary does not error when 'skipped' key is absent."""
+    stub = _make_pipeline_stub(mocker)
+    results = {'successful': ['https://a.com'], 'failed': []}
+    Pipeline._print_summary(stub, results, 0.5)
+    stub.console.print.assert_called()
+
+
+# ---------------------------------------------------------------------------
+# process_urls — on_complete and on_start callbacks
+# ---------------------------------------------------------------------------
+
+
+async def test_process_urls_calls_on_complete_on_success(mocker):
+    """process_urls calls on_complete(url, True, elapsed) on success."""
+    stub = _make_pipeline_stub(mocker)
+    mocker.patch.object(Pipeline, 'process_url', return_value=None)
+    mocker.patch('yosoi.core.pipeline.logfire')
+
+    completed: list[tuple[str, bool]] = []
+
+    async def on_complete(url: str, success: bool, elapsed: float) -> None:
+        completed.append((url, success))
+
+    await Pipeline.process_urls(stub, ['https://a.com'], on_complete=on_complete)
+    assert len(completed) == 1
+    assert completed[0] == ('https://a.com', True)
+
+
+async def test_process_urls_calls_on_complete_on_failure(mocker):
+    """process_urls calls on_complete(url, False, elapsed) on failure."""
+    stub = _make_pipeline_stub(mocker)
+    mocker.patch.object(Pipeline, 'process_url', side_effect=RuntimeError('boom'))
+    mocker.patch('yosoi.core.pipeline.logfire')
+
+    completed: list[tuple[str, bool]] = []
+
+    async def on_complete(url: str, success: bool, elapsed: float) -> None:
+        completed.append((url, success))
+
+    await Pipeline.process_urls(stub, ['https://fail.com'], on_complete=on_complete)
+    assert len(completed) == 1
+    assert completed[0] == ('https://fail.com', False)
+
+
+# ---------------------------------------------------------------------------
+# _build_concurrent_table
+# ---------------------------------------------------------------------------
+
+import time as _time
+
+
+class TestBuildConcurrentTable:
+    def test_empty_status(self):
+        """Empty url_status produces a table with no rows."""
+        from yosoi.core.pipeline import _build_concurrent_table
+
+        table = _build_concurrent_table({})
+        assert table.title == 'Concurrent Processing'
+        assert table.row_count == 0
+
+    def test_queued_status(self):
+        from yosoi.core.pipeline import _build_concurrent_table
+
+        table = _build_concurrent_table({'https://example.com': ('Queued', 0.0)})
+        assert table.row_count == 1
+
+    def test_running_status_with_elapsed(self):
+        from yosoi.core.pipeline import _build_concurrent_table
+
+        now = _time.monotonic()
+        table = _build_concurrent_table({'https://example.com': ('Running', now)})
+        assert table.row_count == 1
+
+    def test_done_status(self):
+        from yosoi.core.pipeline import _build_concurrent_table
+
+        table = _build_concurrent_table({'https://example.com': ('Done', 5.2)})
+        assert table.row_count == 1
+
+    def test_failed_status(self):
+        from yosoi.core.pipeline import _build_concurrent_table
+
+        table = _build_concurrent_table({'https://example.com': ('Failed', 3.0)})
+        assert table.row_count == 1
+
+    def test_skipped_status(self):
+        from yosoi.core.pipeline import _build_concurrent_table
+
+        table = _build_concurrent_table({'https://example.com': ('Skipped', 0.0)})
+        assert table.row_count == 1
+
+    def test_multiple_urls(self):
+        from yosoi.core.pipeline import _build_concurrent_table
+
+        url_status = {
+            'https://a.com': ('Queued', 0.0),
+            'https://b.com': ('Done', 2.0),
+            'https://c.com': ('Failed', 1.0),
+        }
+        table = _build_concurrent_table(url_status)
+        assert table.row_count == 3
+
+    def test_unknown_status_uses_default_style(self):
+        from yosoi.core.pipeline import _build_concurrent_table
+
+        table = _build_concurrent_table({'https://example.com': ('UnknownStatus', 1.0)})
+        assert table.row_count == 1
+
+
+# ---------------------------------------------------------------------------
+# process_urls — auto-live branching
+# ---------------------------------------------------------------------------
+
+import pytest
+
+
+class TestProcessUrlsAutoLive:
+    @pytest.mark.asyncio
+    async def test_workers_gt1_quiet_false_no_callbacks_uses_live(self, mocker):
+        """workers > 1, quiet=False, no callbacks → _process_urls_with_live called."""
+        stub = _make_pipeline_stub(mocker)
+        stub.console.quiet = False
+
+        mock_live_fn = mocker.AsyncMock(return_value={'successful': [], 'failed': [], 'skipped': []})
+        mock_concurrent_fn = mocker.AsyncMock(return_value={'successful': [], 'failed': [], 'skipped': []})
+        mocker.patch.object(Pipeline, '_process_urls_with_live', mock_live_fn)
+        mocker.patch.object(Pipeline, '_process_urls_concurrent', mock_concurrent_fn)
+
+        await Pipeline.process_urls(stub, ['https://a.com', 'https://b.com'], workers=2)
+
+        mock_live_fn.assert_awaited_once()
+        mock_concurrent_fn.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_workers_gt1_quiet_true_uses_concurrent_directly(self, mocker):
+        """workers > 1, quiet=True, no callbacks → _process_urls_concurrent called directly."""
+        stub = _make_pipeline_stub(mocker)
+        stub.console.quiet = True
+
+        mock_concurrent = mocker.AsyncMock(return_value={'successful': [], 'failed': [], 'skipped': []})
+        mocker.patch.object(Pipeline, '_process_urls_concurrent', mock_concurrent)
+        mock_live_fn = mocker.AsyncMock()
+        mocker.patch.object(Pipeline, '_process_urls_with_live', mock_live_fn)
+
+        await Pipeline.process_urls(stub, ['https://a.com', 'https://b.com'], workers=2)
+
+        mock_concurrent.assert_awaited_once()
+        mock_live_fn.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_workers_gt1_on_complete_provided_uses_concurrent_directly(self, mocker):
+        """workers > 1, quiet=False, on_complete given → _process_urls_concurrent called directly."""
+        stub = _make_pipeline_stub(mocker)
+        stub.console.quiet = False
+
+        mock_concurrent = mocker.AsyncMock(return_value={'successful': [], 'failed': [], 'skipped': []})
+        mocker.patch.object(Pipeline, '_process_urls_concurrent', mock_concurrent)
+        mock_live_fn = mocker.AsyncMock()
+        mocker.patch.object(Pipeline, '_process_urls_with_live', mock_live_fn)
+
+        async def dummy_on_complete(url: str, success: bool, elapsed: float) -> None:
+            pass
+
+        await Pipeline.process_urls(
+            stub,
+            ['https://a.com', 'https://b.com'],
+            workers=2,
+            on_complete=dummy_on_complete,
+        )
+
+        mock_concurrent.assert_awaited_once()
+        mock_live_fn.assert_not_awaited()

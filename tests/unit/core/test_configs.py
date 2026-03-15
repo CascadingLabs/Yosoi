@@ -1,4 +1,4 @@
-"""Tests for yosoi.core.configs — YosoiConfig, DebugConfig, TelemetryConfig, find_available_provider."""
+"""Tests for yosoi.core.configs — YosoiConfig, DebugConfig, TelemetryConfig, find_available_provider, auto_config."""
 
 import pytest
 
@@ -6,6 +6,7 @@ from yosoi.core.configs import (
     DebugConfig,
     TelemetryConfig,
     YosoiConfig,
+    auto_config,
     find_available_provider,
 )
 from yosoi.core.discovery.config import LLMConfig
@@ -14,8 +15,26 @@ from yosoi.core.discovery.config import LLMConfig
 @pytest.fixture(autouse=True)
 def _clean_env(monkeypatch):
     """Ensure no provider env keys leak into tests."""
-    for key in ('GROQ_KEY', 'GEMINI_KEY', 'OPENAI_KEY', 'CEREBRAS_KEY', 'OPENROUTER_KEY'):
+    for key in (
+        'GROQ_KEY',
+        'GROQ_API_KEY',
+        'GEMINI_KEY',
+        'GEMINI_API_KEY',
+        'GOOGLE_API_KEY',
+        'OPENAI_KEY',
+        'OPENAI_API_KEY',
+        'CEREBRAS_KEY',
+        'CEREBRAS_API_KEY',
+        'OPENROUTER_KEY',
+        'OPENROUTER_API_KEY',
+        'YOSOI_MODEL',
+        'LOGFIRE_TOKEN',
+    ):
         monkeypatch.delenv(key, raising=False)
+
+    import dotenv
+
+    monkeypatch.setattr(dotenv, 'load_dotenv', lambda: False)
 
 
 # ---------------------------------------------------------------------------
@@ -122,6 +141,13 @@ class TestYosoiConfig:
         with pytest.raises(ValueError, match='No API key found'):
             YosoiConfig(llm=llm)
 
+    def test_no_api_key_required_provider_skips_env_lookup(self):
+        """Providers like ollama need no API key."""
+        llm = LLMConfig(provider='ollama', model_name='llama3')
+        cfg = YosoiConfig(llm=llm)
+        assert cfg.llm.api_key is None
+        assert cfg.llm.provider == 'ollama'
+
     def test_defaults_for_debug_telemetry_logs(self):
         """Default values for debug, telemetry, logs, force."""
         llm = LLMConfig(provider='groq', model_name='test', api_key='key')
@@ -130,3 +156,49 @@ class TestYosoiConfig:
         assert cfg.telemetry.logfire_token is None
         assert cfg.logs is True
         assert cfg.force is False
+
+
+# ---------------------------------------------------------------------------
+# auto_config
+# ---------------------------------------------------------------------------
+
+
+class TestAutoConfig:
+    def test_explicit_model_string(self, monkeypatch):
+        """Explicit model string is used when provided."""
+        monkeypatch.setenv('GROQ_KEY', 'groq-key')
+        cfg = auto_config(model='groq:llama-3.3-70b-versatile')
+        assert cfg.llm.provider == 'groq'
+        assert cfg.llm.model_name == 'llama-3.3-70b-versatile'
+
+    def test_yosoi_model_env_var(self, monkeypatch):
+        """YOSOI_MODEL env var is used when no explicit model."""
+        monkeypatch.setenv('YOSOI_MODEL', 'gemini:gemini-2.0-flash')
+        monkeypatch.setenv('GEMINI_KEY', 'gem-key')
+        cfg = auto_config()
+        assert cfg.llm.provider == 'gemini'
+        assert cfg.llm.model_name == 'gemini-2.0-flash'
+
+    def test_auto_detect_from_env_key(self, monkeypatch):
+        """First provider with an available API key is used."""
+        monkeypatch.setenv('GEMINI_KEY', 'gem-key')
+        cfg = auto_config()
+        assert cfg.llm.provider == 'gemini'
+
+    def test_no_model_no_key_raises(self):
+        """Raises ValueError when no model and no API keys available."""
+        with pytest.raises(ValueError, match='No model specified'):
+            auto_config()
+
+    def test_invalid_model_string_raises(self):
+        """Invalid model string format raises ValueError."""
+        with pytest.raises(ValueError, match='Cannot determine provider'):
+            auto_config(model='invalid-no-provider')
+
+    def test_debug_flag_controls_save_html(self, monkeypatch):
+        """debug=True enables HTML saving, debug=False disables it."""
+        monkeypatch.setenv('GROQ_KEY', 'groq-key')
+        cfg_debug = auto_config(model='groq:test', debug=True)
+        cfg_normal = auto_config(model='groq:test', debug=False)
+        assert cfg_debug.debug.save_html is True
+        assert cfg_normal.debug.save_html is False

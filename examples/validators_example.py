@@ -6,15 +6,10 @@ Two examples — no boilerplate @field_validator needed:
 2. Validators inner class  — per-field transforms defined as plain static methods
 """
 
-import os
-
-from dotenv import load_dotenv
-
 import yosoi as ys
 
-load_dotenv()
-
-config = ys.openrouter('llama-3.3-70b-versatile:free', os.environ['OPENROUTER_KEY'])
+# auto_config() auto-detects provider from YOSOI_MODEL or first available API key.
+config = ys.auto_config()
 
 
 # -- Example 1: Built-in type coercion ----------------------------------------
