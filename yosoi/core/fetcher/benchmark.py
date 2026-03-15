@@ -9,7 +9,6 @@ Run:
 
 import asyncio
 import contextlib
-import json
 import logging
 import os
 import shutil
@@ -253,12 +252,6 @@ async def main():
         'speedup': round(total_a / total_b, 2) if total_b > 0 else None,
     }
 
-    def _write_json() -> None:
-        with open('benchmark_results.json', 'w', encoding='utf-8') as f:
-            json.dump(summary, f, indent=2, ensure_ascii=False)
-
-    await asyncio.to_thread(_write_json)
-
     # --- Cleaned content files ---
     saved = []
     for prefix, results in [('a', results_a), ('b', results_b)]:
@@ -271,7 +264,6 @@ async def main():
     console.print(f'  Approach A total : {total_a}s')
     console.print(f'  Approach B total : {total_b}s')
     console.print(f'  Speedup          : {summary["speedup"]}x')
-    console.print('  Timing saved to  : benchmark_results.json')
     for fname, raw, cleaned in saved:
         reduction = round((1 - cleaned / raw) * 100) if raw > 0 else 0
         console.print(f'  Content : {fname}  ({raw:,} → {cleaned:,} chars, {reduction}% reduction)')
