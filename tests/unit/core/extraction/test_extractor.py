@@ -594,6 +594,67 @@ def test_extract_with_xpath_exception_returns_none():
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# list mode extraction
+# ---------------------------------------------------------------------------
+
+
+def test_list_mode_extracts_all_elements():
+    """Multiple elements matching selector → list of all texts."""
+
+    class AuthorContract(Contract):
+        authors: list[str] = ys.Field(description='authors')
+
+    extractor = _make_extractor(AuthorContract)
+    html = (
+        '<div><span class="author">Alice</span><span class="author">Bob</span><span class="author">Carol</span></div>'
+    )
+    sel = Selector(text=html)
+    result = extractor._extract_with_selector(sel, 'span.author', 'authors')
+    assert result == ['Alice', 'Bob', 'Carol']
+
+
+def test_list_mode_single_element():
+    """Single matching element → single-item list."""
+
+    class AuthorContract(Contract):
+        authors: list[str] = ys.Field(description='authors')
+
+    extractor = _make_extractor(AuthorContract)
+    html = '<div><span class="author">Alice</span></div>'
+    sel = Selector(text=html)
+    result = extractor._extract_with_selector(sel, 'span.author', 'authors')
+    assert result == ['Alice']
+
+
+def test_list_mode_empty_returns_none():
+    """No matching elements → None."""
+
+    class AuthorContract(Contract):
+        authors: list[str] = ys.Field(description='authors')
+
+    extractor = _make_extractor(AuthorContract)
+    html = '<div></div>'
+    sel = Selector(text=html)
+    result = extractor._extract_with_selector(sel, 'span.author', 'authors')
+    assert result is None
+
+
+def test_list_mode_assigned_for_list_annotation():
+    """list[str] field gets _field_modes[name] = 'list'."""
+
+    class TagContract(Contract):
+        tags: list[str] = ys.Field(description='tags')
+
+    extractor = _make_extractor(TagContract)
+    assert extractor._field_modes.get('tags') == 'list'
+
+
+# ---------------------------------------------------------------------------
+# quick_extract
+# ---------------------------------------------------------------------------
+
+
 @pytest.mark.asyncio
 async def test_quick_extract_success(mocker):
     """quick_extract fetches URL and extracts content."""

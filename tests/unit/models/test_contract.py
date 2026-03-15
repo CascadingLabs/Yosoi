@@ -386,3 +386,68 @@ def test_is_grouped_classmethod():
 
     assert WithRoot.is_grouped() is True
     assert WithoutRoot.is_grouped() is False
+
+
+# ---------------------------------------------------------------------------
+# list[T] coercion in _apply_validators_and_coerce
+# ---------------------------------------------------------------------------
+
+
+def test_coerce_list_field_from_list_input():
+    """list[str] + ['a', 'b'] → passes through (Pattern A)."""
+
+    class TagContract(Contract):
+        tags: list[str] = YsField(description='tags')
+
+    result = TagContract.model_validate({'tags': ['a', 'b']})
+    assert result.tags == ['a', 'b']
+
+
+def test_coerce_list_field_splits_string():
+    """list[str] + 'a, b and c' → ['a', 'b', 'c']."""
+
+    class TagContract(Contract):
+        tags: list[str] = YsField(description='tags')
+
+    result = TagContract.model_validate({'tags': 'a, b and c'})
+    assert result.tags == ['a', 'b', 'c']
+
+
+def test_coerce_list_field_splits_single_item_list():
+    """list[str] + ['a, b and c'] → ['a', 'b', 'c'] (Pattern B)."""
+
+    class TagContract(Contract):
+        tags: list[str] = YsField(description='tags')
+
+    result = TagContract.model_validate({'tags': ['a, b and c']})
+    assert result.tags == ['a', 'b', 'c']
+
+
+def test_coerce_list_field_no_split_when_truly_single():
+    """list[str] + ['hello'] → stays ['hello'] when split produces 1 item."""
+
+    class TagContract(Contract):
+        tags: list[str] = YsField(description='tags')
+
+    result = TagContract.model_validate({'tags': ['hello']})
+    assert result.tags == ['hello']
+
+
+def test_coerce_list_field_with_yosoi_type():
+    """list[float] = ys.Price() + ['$1.50', '$2.00'] → [1.5, 2.0]."""
+
+    class PriceList(Contract):
+        prices: list[float] = ys.Price()
+
+    result = PriceList.model_validate({'prices': ['$1.50', '$2.00']})
+    assert result.prices == [1.5, 2.0]
+
+
+def test_coerce_list_field_custom_delimiter():
+    """delimiter=r'\\|' + 'a|b|c' → ['a', 'b', 'c']."""
+
+    class PipeContract(Contract):
+        items: list[str] = YsField(description='items', delimiter=r'\|')
+
+    result = PipeContract.model_validate({'items': 'a|b|c'})
+    assert result.items == ['a', 'b', 'c']

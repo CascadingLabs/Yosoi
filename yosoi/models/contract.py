@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Callable
-from typing import Any, ClassVar
+from typing import Any, ClassVar, get_args, get_origin
 
 import pydantic
 from pydantic import BaseModel, Field, ValidationInfo, model_validator
@@ -18,6 +19,43 @@ from yosoi.types.coerce import dispatch as _coerce_dispatch
 _CONTRACT_REGISTRY: dict[str, type[Contract]] = {}
 
 
+def _unwrap_list_annotation(annotation: object) -> type | None:
+    """If annotation is list[T], return T. Otherwise return None."""
+    if get_origin(annotation) is list:
+        args = get_args(annotation)
+        if args:
+            inner: type = args[0]
+            return inner
+    return None
+
+
+def _coerce_list_field(
+    raw_value: object,
+    extra: dict[str, Any],
+    source_url: str | None,
+) -> list[Any]:
+    """Normalize a raw value to a list, splitting delimited strings and coercing per-element."""
+    yosoi_type = extra.get('yosoi_type')
+    delimiter = extra.get('yosoi_delimiter')
+    pattern = delimiter if isinstance(delimiter, str) else r'\s*[,;]\s*|\s+and\s+'
+
+    if isinstance(raw_value, str):
+        items = [s.strip() for s in re.split(pattern, raw_value) if s.strip()]
+    elif isinstance(raw_value, list):
+        if len(raw_value) == 1 and isinstance(raw_value[0], str):
+            split = [s.strip() for s in re.split(pattern, raw_value[0]) if s.strip()]
+            items = split if len(split) > 1 else raw_value
+        else:
+            items = list(raw_value)
+    else:
+        items = [raw_value]
+
+    if isinstance(yosoi_type, str):
+        items = [_coerce_dispatch(yosoi_type, item, extra, source_url) for item in items]
+
+    return items
+
+
 class Contract(BaseModel):
     """Base class for user-defined scraping contracts."""
 
@@ -30,11 +68,24 @@ class Contract(BaseModel):
 
     @classmethod
     def __pydantic_init_subclass__(cls, **kwargs: Any) -> None:
-        """Fail loudly at class definition time if flat field names collide with nested expansions.
+        """Fail loudly at class definition time for invalid field configurations.
 
         Called by Pydantic after model_fields is fully populated — safe to inspect fields here.
+        Checks:
+        - Flat field names that collide with nested ``{parent}_{child}`` expansions.
+        - ``list[Contract]`` fields, which are not yet supported (Phase 2).
         """
         super().__pydantic_init_subclass__(**kwargs)
+
+        # Reject list[Contract] fields — not yet supported
+        for name, fi in cls.model_fields.items():
+            inner = _unwrap_list_annotation(fi.annotation)
+            if inner is not None and isinstance(inner, type) and issubclass(inner, Contract):
+                raise TypeError(
+                    f'{cls.__name__}: field {name!r} uses list[{inner.__name__}] which is not yet supported. '
+                    f'Use a flat Contract field or wait for list[Contract] support.'
+                )
+
         flat_names = {
             n
             for n, fi in cls.model_fields.items()
@@ -74,10 +125,13 @@ class Contract(BaseModel):
                 if callable(fn):
                     result[field_name] = fn(value)
 
-        # Step 2: Yosoi semantic type coercion
+        # Step 2: Yosoi semantic type coercion (scalar fields only)
         source_url: str | None = info.context.get('source_url') if info.context else None
+        _list_field_names = {
+            n for n in cls.model_fields if _unwrap_list_annotation(cls.model_fields[n].annotation) is not None
+        }
         for field_name, field_info in cls.model_fields.items():
-            if field_name not in result:
+            if field_name not in result or field_name in _list_field_names:
                 continue
             raw_extra = field_info.json_schema_extra
             if not isinstance(raw_extra, dict):
@@ -86,6 +140,14 @@ class Contract(BaseModel):
             if not isinstance(yosoi_type, str):
                 continue
             result[field_name] = _coerce_dispatch(yosoi_type, result[field_name], raw_extra, source_url)
+
+        # Step 2.5: List field coercion — normalize to list, split single strings, coerce per-element
+        for field_name in _list_field_names:
+            if field_name not in result:
+                continue
+            raw_extra = cls.model_fields[field_name].json_schema_extra
+            extra = raw_extra if isinstance(raw_extra, dict) else {}
+            result[field_name] = _coerce_list_field(result[field_name], extra, source_url)
 
         # Step 3: Core pydantic validation
         return handler(result)
@@ -98,6 +160,16 @@ class Contract(BaseModel):
             ann = fi.annotation
             if isinstance(ann, type) and issubclass(ann, Contract):
                 result[name] = ann
+        return result
+
+    @classmethod
+    def list_fields(cls) -> dict[str, type]:
+        """Return {field_name: inner_type} for fields annotated as list[T]."""
+        result: dict[str, type] = {}
+        for name, fi in cls.model_fields.items():
+            inner = _unwrap_list_annotation(fi.annotation)
+            if inner is not None:
+                result[name] = inner
         return result
 
     @classmethod
@@ -236,7 +308,10 @@ class Contract(BaseModel):
                         desc = f'{desc} (co-located with other {name} fields)'
                     result[key] = desc
             else:
-                result[name] = fi.description or name
+                desc = fi.description or name
+                if _unwrap_list_annotation(fi.annotation) is not None:
+                    desc = f'{desc} (multiple expected — find selector matching each individual item, not the wrapper)'
+                result[name] = desc
         return result
 
     @classmethod

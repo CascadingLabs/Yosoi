@@ -5,10 +5,10 @@ from typing import Any, Literal
 from parsel import Selector, SelectorList
 from rich.console import Console
 
-from yosoi.models.contract import Contract
+from yosoi.models.contract import Contract, _unwrap_list_annotation
 from yosoi.models.selectors import SelectorEntry, SelectorLevel, coerce_selector_entry
 
-FieldMode = Literal['body_text', 'related_content', 'text']
+FieldMode = Literal['body_text', 'related_content', 'text', 'list']
 
 
 class ContentExtractor:
@@ -50,6 +50,8 @@ class ContentExtractor:
                         self._field_modes[name] = 'body_text'
                     elif raw_ytype == 'related_content':
                         self._field_modes[name] = 'related_content'
+                    elif name not in self._field_modes and _unwrap_list_annotation(fi.annotation) is not None:
+                        self._field_modes[name] = 'list'
             self.expected_fields = tuple(fields)
             self._nested_prefixes = frozenset(contract.nested_contracts().keys())
         else:
@@ -263,6 +265,11 @@ class ContentExtractor:
                 if text:
                     links.append({'text': text, 'href': href} if href else text)
             return links if links else None
+
+        if mode == 'list':
+            items: list[str] = [' '.join(el.xpath('.//text()').getall()).strip() for el in elements]
+            items = [t for t in items if t]
+            return items if items else None  # type: ignore[return-value]
 
         first_element = elements[0]
         text = ' '.join(first_element.xpath('.//text()').getall()).strip()
