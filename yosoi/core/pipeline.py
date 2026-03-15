@@ -189,6 +189,14 @@ class Pipeline:
             log_file = setup_local_logging()
             self.console.print(f'ℹ Log file: [link=file://{log_file}]file://{log_file}[/link]')
 
+    async def __aenter__(self) -> 'Pipeline':
+        """Enter the async context manager, returning self."""
+        return self
+
+    async def __aexit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
+        """Exit the async context manager, closing the HTTP client."""
+        await self._client.aclose()
+
     async def process_url(
         self,
         url: str,
@@ -1365,7 +1373,7 @@ class Pipeline:
             domain: The domain from which the URL is grabbed
 
         """
-        elapsed = time.monotonic() - self._url_start if hasattr(self, '_url_start') else None
+        elapsed = time.monotonic() - self._url_start
         stats = await self.tracker.record_url(url, used_llm=False, level_distribution=None, elapsed=elapsed)
         self._print_tracking_stats(domain, stats)
 

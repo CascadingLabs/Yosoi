@@ -322,6 +322,4 @@ async def _example_main() -> None:
 
 
 if __name__ == '__main__':
-    import asyncio
-
     asyncio.run(_example_main())

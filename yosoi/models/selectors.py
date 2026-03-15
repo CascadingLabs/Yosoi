@@ -3,7 +3,7 @@
 from enum import IntEnum
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class SelectorLevel(IntEnum):
@@ -49,7 +49,6 @@ class SelectorEntry(BaseModel):
     value: str
     regex: str | None = None
 
-    @computed_field(repr=False)  # type: ignore[misc]
     @property
     def level(self) -> SelectorLevel:
         """Selector strategy level derived from type."""

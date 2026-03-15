@@ -8,7 +8,7 @@ _ZERO_VALUE_WORDS = ('free', 'complimentary', 'gratis')
 
 
 @register_coercion('price', description='A monetary price value', currency_symbol=None, require_decimals=False)
-def Price(v: object, config: CoercionConfig, source_url: str | None = None) -> float | None:
+def Price(v: object, config: CoercionConfig, source_url: str | None = None) -> float:
     """Configure a price field with optional currency and decimal enforcement.
 
     Example::

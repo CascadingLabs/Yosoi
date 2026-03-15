@@ -53,7 +53,12 @@ class YosoiType:
 
     @staticmethod
     def coerce(v: object, config: CoercionConfig, source_url: str | None = None) -> str | None:  # noqa: ARG004
-        """Default coercion: strip whitespace. Override in subclasses."""
+        """Default coercion: strip whitespace, or return None unchanged if v is None.
+
+        When v is None, returns None without modification. Otherwise returns str(v).strip().
+        Subclasses overriding coerce() must preserve this None-passthrough contract
+        (or explicitly document any change) so callers can rely on None being returned intact.
+        """
         return str(v).strip() if v is not None else None
 
 

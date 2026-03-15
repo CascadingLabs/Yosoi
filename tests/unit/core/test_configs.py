@@ -79,10 +79,10 @@ class TestFindAvailableProvider:
 
 class TestDebugConfig:
     def test_defaults(self):
-        """Default values: save_html=False, html_dir=.yosoi/debug."""
+        """Default values: save_html=False, html_dir=.yosoi/debug_html."""
         cfg = DebugConfig()
         assert cfg.save_html is False
-        assert str(cfg.html_dir) == '.yosoi/debug'
+        assert str(cfg.html_dir) == '.yosoi/debug_html'
 
     def test_custom_values(self, tmp_path):
         """Custom values are accepted."""

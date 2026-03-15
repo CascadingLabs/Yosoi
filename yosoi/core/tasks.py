@@ -162,8 +162,7 @@ async def process_url_task(
         domain = urlparse(url if url.startswith(('http://', 'https://')) else f'https://{url}').netloc.replace(
             'www.', ''
         )
-        _domain_locks.setdefault(domain, asyncio.Lock())
-        write_lock = _domain_locks[domain]
+        write_lock = _domain_locks.setdefault(domain, asyncio.Lock())
         pipeline = Pipeline(
             config.llm_config,
             contract=config.contract,
