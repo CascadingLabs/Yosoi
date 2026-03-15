@@ -1147,6 +1147,55 @@ async def test_extract_with_cached_fail_open_on_exception(mocker):
     assert items is None
 
 
+async def test_extract_with_cached_missing_contract_field_triggers_rediscovery(mocker):
+    """Missing non-overridden contract field in verified selectors forces re-discovery."""
+
+    class TwoFieldContract(Contract):
+        title: str = ys.Title()
+        price: float = ys.Price()
+
+    stub = _make_pipeline_stub(mocker, contract=TwoFieldContract)
+    mock_fetcher = mocker.MagicMock()
+    mock_fetcher.fetch = mocker.AsyncMock(return_value=FetchResult(url='https://x.com', html='<html/>'))
+    stub.cleaner.clean_html.return_value = '<html/>'
+    # Verification only passes for 'title'; 'price' is absent from verified selectors
+    vr = _make_verification_result(True, ['title'])
+    stub.verifier.verify.return_value = vr
+
+    items, cache_valid = await Pipeline._extract_with_cached(
+        stub, 'https://x.com', mock_fetcher, {'title': {'primary': 'h1'}}, False
+    )
+
+    assert cache_valid is False
+    assert items is None
+
+
+async def test_extract_with_cached_missing_overridden_field_does_not_trigger_rediscovery(mocker):
+    """Missing field that has a selector override does not trigger re-discovery."""
+    import yosoi as ys
+    from yosoi.types.field import Field as YsField
+
+    class OverriddenContract(Contract):
+        title: str = ys.Title()
+        price: float = YsField(description='Price', selector='p.price')  # type: ignore[assignment]
+
+    stub = _make_pipeline_stub(mocker, contract=OverriddenContract)
+    mock_fetcher = mocker.MagicMock()
+    mock_fetcher.fetch = mocker.AsyncMock(return_value=FetchResult(url='https://x.com', html='<html/>'))
+    stub.cleaner.clean_html.return_value = '<html/>'
+    # Only 'title' verified; 'price' is absent but it's an override — should NOT re-discover
+    vr = _make_verification_result(True, ['title'])
+    stub.verifier.verify.return_value = vr
+    stub.extractor.extract_content_with_html.return_value = {'title': 'Book'}
+
+    items, cache_valid = await Pipeline._extract_with_cached(
+        stub, 'https://x.com', mock_fetcher, {'title': {'primary': 'h1'}}, False
+    )
+
+    assert cache_valid is True
+    assert items == [{'title': 'Book'}]
+
+
 # ---------------------------------------------------------------------------
 # _extract - targeted
 # ---------------------------------------------------------------------------
