@@ -3,14 +3,10 @@
 from __future__ import annotations
 
 import difflib
-from typing import TYPE_CHECKING
 
-import click as _click
 import rich_click as click
+from click.shell_completion import CompletionItem
 from rich_click.utils import OptionGroupDict
-
-if TYPE_CHECKING:
-    from click.shell_completion import CompletionItem
 
 from yosoi.cli.utils import console_err, load_schema, scan_for_contracts
 from yosoi.models.contract import _CONTRACT_REGISTRY, Contract
@@ -59,11 +55,7 @@ class SchemaParamType(click.ParamType):
     def shell_complete(self, ctx: click.Context, param: click.Parameter, incomplete: str) -> list[CompletionItem]:
         """Provide shell completion for built-in, registered, and file-scanned schema names."""
         all_names = set(BUILTIN_SCHEMAS) | set(_CONTRACT_REGISTRY) | set(scan_for_contracts())
-        return [
-            _click.shell_completion.CompletionItem(name)
-            for name in sorted(all_names)
-            if name.lower().startswith(incomplete.lower())
-        ]
+        return [CompletionItem(name) for name in sorted(all_names) if name.lower().startswith(incomplete.lower())]
 
     def convert(self, value: str, param: click.Parameter | None, ctx: click.Context | None) -> type[Contract]:
         """Convert a string value to a Contract class.
