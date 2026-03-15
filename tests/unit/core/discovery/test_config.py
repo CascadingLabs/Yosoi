@@ -3,15 +3,37 @@
 import pytest
 
 from yosoi.core.discovery.config import (
+    NO_API_KEY_REQUIRED_PROVIDERS,
     LLMBuilder,
     LLMConfig,
+    alibaba,
+    anthropic,
+    azure,
+    bedrock,
     cerebras,
     create_model,
+    deepseek,
+    fireworks,
     gemini,
+    github,
+    grok,
     groq,
+    heroku,
+    huggingface,
+    litellm,
+    mistral,
+    moonshotai,
+    nebius,
+    ollama,
     openai,
     openrouter,
+    ovhcloud,
     provider,
+    sambanova,
+    together,
+    vercel,
+    vertexai,
+    xai,
 )
 
 # ---------------------------------------------------------------------------
@@ -311,3 +333,443 @@ class TestCreateAgent:
         cfg = LLMConfig(provider='groq', model_name='llama', api_key='k')
         agent = create_agent(cfg, 'You are helpful')
         assert isinstance(agent, Agent)
+
+
+# ---------------------------------------------------------------------------
+# create_model — new first-class providers
+# ---------------------------------------------------------------------------
+
+
+class TestCreateModelNewFirstClass:
+    def test_anthropic_provider(self):
+        """Anthropic provider creates an AnthropicModel."""
+        cfg = LLMConfig(provider='anthropic', model_name='claude-opus-4-5', api_key='k')
+        model = create_model(cfg)
+        assert 'Anthropic' in type(model).__name__
+
+    def test_claude_alias(self):
+        """'claude' is an alias for anthropic."""
+        cfg = LLMConfig(provider='claude', model_name='claude-opus-4-5', api_key='k')
+        model = create_model(cfg)
+        assert 'Anthropic' in type(model).__name__
+
+    def test_mistral_provider(self):
+        """Mistral provider creates a MistralModel."""
+        cfg = LLMConfig(provider='mistral', model_name='mistral-large-latest', api_key='k')
+        model = create_model(cfg)
+        assert 'Mistral' in type(model).__name__
+
+    def test_xai_provider(self):
+        """xAI provider creates an XaiModel."""
+        cfg = LLMConfig(provider='xai', model_name='grok-3', api_key='k')
+        model = create_model(cfg)
+        assert 'Xai' in type(model).__name__
+
+    def test_bedrock_provider(self):
+        """Bedrock provider creates a BedrockConverseModel (region required)."""
+        cfg = LLMConfig(
+            provider='bedrock',
+            model_name='anthropic.claude-3-5-sonnet',
+            api_key='k',
+            extra_params={'region_name': 'us-east-1'},
+        )
+        model = create_model(cfg)
+        assert 'Bedrock' in type(model).__name__
+
+    def test_aws_alias(self):
+        """'aws' is an alias for bedrock."""
+        cfg = LLMConfig(
+            provider='aws',
+            model_name='anthropic.claude-3-5-sonnet',
+            api_key='k',
+            extra_params={'region_name': 'us-east-1'},
+        )
+        model = create_model(cfg)
+        assert 'Bedrock' in type(model).__name__
+
+    def test_huggingface_provider(self):
+        """HuggingFace provider creates a HuggingFaceModel."""
+        cfg = LLMConfig(provider='huggingface', model_name='Qwen/Qwen3-235B-A22B', api_key='k')
+        model = create_model(cfg)
+        assert 'HuggingFace' in type(model).__name__
+
+    def test_hf_alias(self):
+        """'hf' is an alias for huggingface."""
+        cfg = LLMConfig(provider='hf', model_name='Qwen/Qwen3-235B-A22B', api_key='k')
+        model = create_model(cfg)
+        assert 'HuggingFace' in type(model).__name__
+
+    def test_vertexai_provider(self):
+        """Vertex AI provider creates a GoogleModel (no api_key required) with a deprecation warning."""
+        cfg = LLMConfig(provider='vertexai', model_name='gemini-2.0-flash-001')
+        with pytest.warns(DeprecationWarning, match='vertexai'):
+            model = create_model(cfg)
+        assert 'Google' in type(model).__name__
+
+    def test_google_vertex_alias(self):
+        """'google-vertex' is an alias for vertexai, also emits a deprecation warning."""
+        cfg = LLMConfig(provider='google-vertex', model_name='gemini-2.0-flash-001')
+        with pytest.warns(DeprecationWarning, match='vertexai'):
+            model = create_model(cfg)
+        assert 'Google' in type(model).__name__
+
+
+# ---------------------------------------------------------------------------
+# create_model — new OpenAI-compatible providers
+# ---------------------------------------------------------------------------
+
+
+class TestCreateModelOpenAICompat:
+    """All OpenAI-compatible providers should produce an OpenAIChatModel."""
+
+    def _assert_openai_model(self, provider_name: str, model_name: str = 'test-model') -> None:
+        cfg = LLMConfig(provider=provider_name, model_name=model_name, api_key='k')
+        model = create_model(cfg)
+        assert 'OpenAI' in type(model).__name__, f'{provider_name} should produce an OpenAIChatModel'
+
+    def test_azure(self, monkeypatch):
+        """Azure requires an endpoint and api_version."""
+        monkeypatch.setenv('AZURE_OPENAI_ENDPOINT', 'https://my.openai.azure.com/')
+        monkeypatch.setenv('OPENAI_API_VERSION', '2024-12-01-preview')
+        self._assert_openai_model('azure')
+
+    def test_deepseek(self):
+        self._assert_openai_model('deepseek')
+
+    def test_fireworks(self):
+        self._assert_openai_model('fireworks')
+
+    def test_together(self):
+        self._assert_openai_model('together')
+
+    def test_nebius(self):
+        self._assert_openai_model('nebius')
+
+    def test_moonshotai(self):
+        self._assert_openai_model('moonshotai')
+
+    def test_moonshot_alias(self):
+        self._assert_openai_model('moonshot')
+
+    def test_grok(self):
+        """grok emits a deprecation warning and delegates to xai (XaiModel)."""
+        cfg = LLMConfig(provider='grok', model_name='grok-3', api_key='k')
+        with pytest.warns(DeprecationWarning, match="'grok' is deprecated"):
+            model = create_model(cfg)
+        assert 'Xai' in type(model).__name__
+
+    def test_alibaba(self):
+        self._assert_openai_model('alibaba')
+
+    def test_dashscope_alias(self):
+        self._assert_openai_model('dashscope')
+
+    def test_sambanova(self):
+        self._assert_openai_model('sambanova')
+
+    def test_ovhcloud(self):
+        self._assert_openai_model('ovhcloud')
+
+    def test_ovh_alias(self):
+        self._assert_openai_model('ovh')
+
+    def test_github(self):
+        self._assert_openai_model('github')
+
+    def test_vercel(self):
+        self._assert_openai_model('vercel')
+
+    def test_heroku(self):
+        self._assert_openai_model('heroku')
+
+    def test_litellm(self):
+        self._assert_openai_model('litellm')
+
+    def test_ollama_no_api_key(self):
+        """Ollama is local — no api_key required; base_url supplied via extra_params."""
+        cfg = LLMConfig(provider='ollama', model_name='llama3', extra_params={'base_url': 'http://localhost:11434'})
+        model = create_model(cfg)
+        assert 'OpenAI' in type(model).__name__
+
+
+# ---------------------------------------------------------------------------
+# Special provider behaviour
+# ---------------------------------------------------------------------------
+
+
+class TestSpecialProviderBehaviour:
+    def test_bedrock_extra_params_forwarded(self):
+        """Bedrock passes aws_secret_access_key and region_name from extra_params."""
+        cfg = LLMConfig(
+            provider='bedrock',
+            model_name='anthropic.claude-3-5-sonnet',
+            api_key='access-key-id',
+            extra_params={'aws_secret_access_key': 'secret', 'region_name': 'eu-west-1'},
+        )
+        # Should not raise; provider is constructed without network calls.
+        model = create_model(cfg)
+        assert 'Bedrock' in type(model).__name__
+
+    def test_azure_extra_params_forwarded(self, monkeypatch):
+        """Azure passes azure_endpoint and api_version from extra_params."""
+        monkeypatch.setenv('OPENAI_API_VERSION', '2024-12-01-preview')
+        cfg = LLMConfig(
+            provider='azure',
+            model_name='gpt-4o',
+            api_key='k',
+            extra_params={'azure_endpoint': 'https://my-resource.openai.azure.com/'},
+        )
+        model = create_model(cfg)
+        assert 'OpenAI' in type(model).__name__
+
+    def test_ollama_extra_params_base_url(self):
+        """Ollama accepts a custom base_url via extra_params."""
+        cfg = LLMConfig(
+            provider='ollama',
+            model_name='llama3',
+            extra_params={'base_url': 'http://localhost:11434'},
+        )
+        model = create_model(cfg)
+        assert 'OpenAI' in type(model).__name__
+
+    def test_huggingface_provider_name_extra_param(self):
+        """HuggingFace forwards provider_name from extra_params."""
+        cfg = LLMConfig(
+            provider='huggingface',
+            model_name='Qwen/Qwen3-235B-A22B',
+            api_key='hf_token',
+            extra_params={'provider_name': 'nebius'},
+        )
+        model = create_model(cfg)
+        assert 'HuggingFace' in type(model).__name__
+
+    def test_litellm_api_base_extra_param(self):
+        """LiteLLM forwards api_base from extra_params."""
+        cfg = LLMConfig(
+            provider='litellm',
+            model_name='gpt-4o',
+            api_key='k',
+            extra_params={'api_base': 'http://localhost:4000'},
+        )
+        model = create_model(cfg)
+        assert 'OpenAI' in type(model).__name__
+
+    def test_vertexai_extra_params_project(self):
+        """Vertex AI accepts project_id and region from extra_params."""
+        cfg = LLMConfig(
+            provider='vertexai',
+            model_name='gemini-2.0-flash-001',
+            extra_params={'project_id': 'my-project', 'region': 'us-east1'},
+        )
+        with pytest.warns(DeprecationWarning, match='vertexai'):
+            model = create_model(cfg)
+        assert 'Google' in type(model).__name__
+
+
+# ---------------------------------------------------------------------------
+# NO_API_KEY_REQUIRED_PROVIDERS
+# ---------------------------------------------------------------------------
+
+
+class TestNoApiKeyProviders:
+    def test_ollama_in_set(self):
+        """ollama is in NO_API_KEY_REQUIRED_PROVIDERS."""
+        assert 'ollama' in NO_API_KEY_REQUIRED_PROVIDERS
+
+    def test_vertexai_in_set(self):
+        """vertexai is in NO_API_KEY_REQUIRED_PROVIDERS."""
+        assert 'vertexai' in NO_API_KEY_REQUIRED_PROVIDERS
+
+    def test_google_vertex_alias_in_set(self):
+        """google-vertex is in NO_API_KEY_REQUIRED_PROVIDERS."""
+        assert 'google-vertex' in NO_API_KEY_REQUIRED_PROVIDERS
+
+    def test_ollama_helper_no_api_key(self):
+        """ollama() produces a config with api_key=None."""
+        cfg = ollama('llama3')
+        assert cfg.api_key is None
+
+    def test_vertexai_helper_no_api_key(self):
+        """vertexai() produces a config with api_key=None; model creation warns."""
+        cfg = vertexai('gemini-2.0-flash-001')
+        assert cfg.api_key is None
+        with pytest.warns(DeprecationWarning, match='vertexai'):
+            create_model(cfg)
+
+
+# ---------------------------------------------------------------------------
+# New convenience helpers
+# ---------------------------------------------------------------------------
+
+
+class TestNewConvenienceHelpers:
+    def test_anthropic_helper(self):
+        cfg = anthropic('claude-opus-4-5', 'key')
+        assert cfg.provider == 'anthropic'
+        assert cfg.model_name == 'claude-opus-4-5'
+        assert cfg.api_key == 'key'
+
+    def test_mistral_helper(self):
+        cfg = mistral('mistral-large-latest', 'key')
+        assert cfg.provider == 'mistral'
+        assert cfg.model_name == 'mistral-large-latest'
+
+    def test_xai_helper(self):
+        cfg = xai('grok-3', 'key')
+        assert cfg.provider == 'xai'
+        assert cfg.model_name == 'grok-3'
+
+    def test_bedrock_helper(self):
+        cfg = bedrock('anthropic.claude-3-5-sonnet', 'access-key')
+        assert cfg.provider == 'bedrock'
+        assert cfg.model_name == 'anthropic.claude-3-5-sonnet'
+        assert cfg.api_key == 'access-key'
+
+    def test_huggingface_helper(self):
+        cfg = huggingface('Qwen/Qwen3-235B-A22B', 'hf_token')
+        assert cfg.provider == 'huggingface'
+
+    def test_azure_helper(self):
+        cfg = azure('gpt-4o', 'key')
+        assert cfg.provider == 'azure'
+
+    def test_deepseek_helper(self):
+        cfg = deepseek('deepseek-chat', 'key')
+        assert cfg.provider == 'deepseek'
+
+    def test_ollama_helper(self):
+        cfg = ollama('llama3')
+        assert cfg.provider == 'ollama'
+        assert cfg.model_name == 'llama3'
+
+    def test_fireworks_helper(self):
+        cfg = fireworks('accounts/fireworks/models/llama', 'key')
+        assert cfg.provider == 'fireworks'
+
+    def test_together_helper(self):
+        cfg = together('meta-llama/Llama-3-70b', 'key')
+        assert cfg.provider == 'together'
+
+    def test_nebius_helper(self):
+        cfg = nebius('Qwen/Qwen3-235B-A22B-fast', 'key')
+        assert cfg.provider == 'nebius'
+
+    def test_moonshotai_helper(self):
+        cfg = moonshotai('kimi-k2-0711-preview', 'key')
+        assert cfg.provider == 'moonshotai'
+
+    def test_grok_helper(self):
+        cfg = grok('grok-3', 'key')
+        assert cfg.provider == 'grok'
+
+    def test_alibaba_helper(self):
+        cfg = alibaba('qwen-plus', 'key')
+        assert cfg.provider == 'alibaba'
+
+    def test_sambanova_helper(self):
+        cfg = sambanova('Meta-Llama-3.3-70B-Instruct', 'key')
+        assert cfg.provider == 'sambanova'
+
+    def test_ovhcloud_helper(self):
+        cfg = ovhcloud('mixtral-8x22b', 'key')
+        assert cfg.provider == 'ovhcloud'
+
+    def test_github_helper(self):
+        cfg = github('gpt-4o', 'token')
+        assert cfg.provider == 'github'
+
+    def test_vercel_helper(self):
+        cfg = vercel('gpt-4o', 'key')
+        assert cfg.provider == 'vercel'
+
+    def test_heroku_helper(self):
+        cfg = heroku('claude-3-5-sonnet', 'key')
+        assert cfg.provider == 'heroku'
+
+    def test_litellm_helper(self):
+        cfg = litellm('gpt-4o', 'key')
+        assert cfg.provider == 'litellm'
+
+    def test_vertexai_helper(self):
+        cfg = vertexai('gemini-2.0-flash-001')
+        assert cfg.provider == 'vertexai'
+
+    def test_kwargs_pass_through(self):
+        """Extra kwargs forwarded for all new helpers."""
+        cfg = anthropic('claude-opus-4-5', 'k', temperature=0.5, max_tokens=100)
+        assert cfg.temperature == 0.5
+        assert cfg.max_tokens == 100
+
+
+# ---------------------------------------------------------------------------
+# provider() — new providers via unified string parsing
+# ---------------------------------------------------------------------------
+
+
+class TestProviderNewProviders:
+    def test_anthropic(self):
+        cfg = provider('anthropic:claude-opus-4-5', api_key='k')
+        assert cfg.provider == 'anthropic'
+        assert cfg.model_name == 'claude-opus-4-5'
+
+    def test_mistral(self):
+        cfg = provider('mistral:mistral-large-latest', api_key='k')
+        assert cfg.provider == 'mistral'
+        assert cfg.model_name == 'mistral-large-latest'
+
+    def test_xai(self):
+        cfg = provider('xai:grok-3', api_key='k')
+        assert cfg.provider == 'xai'
+        assert cfg.model_name == 'grok-3'
+
+    def test_bedrock(self):
+        cfg = provider('bedrock:anthropic.claude-3-5-sonnet', api_key='k')
+        assert cfg.provider == 'bedrock'
+        assert cfg.model_name == 'anthropic.claude-3-5-sonnet'
+
+    def test_deepseek(self):
+        cfg = provider('deepseek:deepseek-chat', api_key='k')
+        assert cfg.provider == 'deepseek'
+        assert cfg.model_name == 'deepseek-chat'
+
+    def test_ollama(self):
+        cfg = provider('ollama:llama3')
+        assert cfg.provider == 'ollama'
+        assert cfg.model_name == 'llama3'
+        assert cfg.api_key is None
+
+    def test_fireworks(self):
+        cfg = provider('fireworks:accounts/fireworks/models/llama', api_key='k')
+        assert cfg.provider == 'fireworks'
+        assert cfg.model_name == 'accounts/fireworks/models/llama'
+
+    def test_together(self):
+        cfg = provider('together:meta-llama/Llama-3-70b', api_key='k')
+        assert cfg.provider == 'together'
+        assert cfg.model_name == 'meta-llama/Llama-3-70b'
+
+    def test_grok(self):
+        cfg = provider('grok:grok-3', api_key='k')
+        assert cfg.provider == 'grok'
+        assert cfg.model_name == 'grok-3'
+        with pytest.warns(DeprecationWarning, match="'grok' is deprecated"):
+            create_model(cfg)
+
+    def test_github(self):
+        cfg = provider('github:gpt-4o', api_key='token')
+        assert cfg.provider == 'github'
+        assert cfg.model_name == 'gpt-4o'
+
+    def test_vertexai(self):
+        cfg = provider('vertexai:gemini-2.0-flash-001')
+        assert cfg.provider == 'vertexai'
+        assert cfg.model_name == 'gemini-2.0-flash-001'
+        assert cfg.api_key is None
+        with pytest.warns(DeprecationWarning, match='vertexai'):
+            create_model(cfg)
+
+    def test_bedrock_colon_in_model_name(self):
+        """Bedrock model ARNs with colons are parsed correctly."""
+        cfg = provider('bedrock:anthropic.claude-3-5-sonnet-20241022-v2:0', api_key='k')
+        assert cfg.provider == 'bedrock'
+        assert cfg.model_name == 'anthropic.claude-3-5-sonnet-20241022-v2:0'

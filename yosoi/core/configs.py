@@ -7,7 +7,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field, model_validator
 
 from yosoi.core.discovery import LLMConfig
-from yosoi.core.discovery.config import _PROVIDER_ENV_VARS
+from yosoi.core.discovery.config import _PROVIDER_ENV_VARS, NO_API_KEY_REQUIRED_PROVIDERS
 
 log = logging.getLogger(__name__)
 
@@ -94,6 +94,10 @@ class YosoiConfig(BaseModel):
         if provider not in _PROVIDER_ENV_VARS:
             available = ', '.join(_PROVIDER_ENV_VARS.keys())
             raise ValueError(f'Unknown provider {provider!r}. Available: {available}')
+
+        # Providers like ollama (local) and vertexai (GCP auth) need no API key.
+        if provider in NO_API_KEY_REQUIRED_PROVIDERS:
+            return self
 
         # Try the configured provider's env vars first
         val = _find_env_key(provider)
