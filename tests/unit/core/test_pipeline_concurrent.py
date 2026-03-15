@@ -121,8 +121,8 @@ class TestConcurrentProcessing:
         assert 'http://good.com' in result['successful']
         assert 'http://bad.com' in result['failed']
 
-    async def test_concurrent_deduplicates_domains(self, mocker, pipeline, clean_broker):
-        """Duplicate domains are skipped via dedup_by_domain (default True)."""
+    async def test_concurrent_processes_all_same_domain_urls(self, mocker, pipeline, clean_broker):
+        """All same-domain URLs should be processed (no dedup skipping)."""
         mock_pipeline_cls = mocker.patch('yosoi.core.pipeline.Pipeline')
         mock_pipe = mock_pipeline_cls.return_value
         mock_pipe.process_url = mocker.AsyncMock(return_value=None)
@@ -138,8 +138,8 @@ class TestConcurrentProcessing:
             max_workers=2,
         )
 
-        assert len(result['successful']) == 1
-        assert len(result['skipped']) == 1
+        assert len(result['successful']) == 2
+        assert result['skipped'] == []
 
     async def test_concurrent_shuts_down_broker_on_error(self, mocker, pipeline, clean_broker):
         """Broker is shut down even if enqueue_urls raises."""
@@ -192,8 +192,8 @@ class TestConcurrentProcessing:
         assert call_kwargs['output_format'] == ['json', 'markdown']
         assert call_kwargs['max_workers'] == 4
 
-    async def test_concurrent_returns_skipped_key(self, mocker, pipeline, clean_broker):
-        """Result dict includes 'skipped' key (not present in sequential mode)."""
+    async def test_concurrent_skipped_always_empty(self, mocker, pipeline, clean_broker):
+        """Result dict 'skipped' key is always empty (no domain dedup)."""
         mock_pipeline_cls = mocker.patch('yosoi.core.pipeline.Pipeline')
         mock_pipe = mock_pipeline_cls.return_value
         mock_pipe.process_url = mocker.AsyncMock(return_value=None)
@@ -210,7 +210,36 @@ class TestConcurrentProcessing:
         )
 
         assert 'skipped' in result
-        assert len(result['skipped']) == 1
+        assert result['skipped'] == []
+        assert len(result['successful']) == 3
+
+    async def test_on_start_callback_passed_through(self, mocker, pipeline, clean_broker):
+        """on_start callback is passed to enqueue_urls."""
+        mocker.patch('yosoi.core.tasks.configure_broker', new_callable=mocker.AsyncMock)
+        mocker.patch('yosoi.core.tasks.shutdown_broker', new_callable=mocker.AsyncMock)
+        mock_enqueue = mocker.patch(
+            'yosoi.core.tasks.enqueue_urls',
+            new_callable=mocker.AsyncMock,
+            return_value=EnqueueResult(),
+        )
+
+        async def _on_start(url: str) -> None:
+            pass
+
+        await pipeline._process_urls_concurrent(
+            ['http://a.com'],
+            force=False,
+            skip_verification=False,
+            fetcher_type='simple',
+            max_fetch_retries=2,
+            max_discovery_retries=3,
+            output_format=['json'],
+            max_workers=2,
+            on_start=_on_start,
+        )
+
+        call_kwargs = mock_enqueue.call_args[1]
+        assert call_kwargs['on_start'] is _on_start
 
 
 class TestConcurrentSemaphore:
@@ -282,3 +311,20 @@ class TestEndToEndScripted:
         assert 'http://ok1.com' in result['successful']
         assert 'http://ok2.com' in result['successful']
         assert 'http://fail.com' in result['failed']
+
+    async def test_on_start_threaded_through_process_urls(self, mocker, pipeline, clean_broker):
+        """on_start callback flows from process_urls → _process_urls_concurrent."""
+        mock_concurrent = mocker.patch.object(
+            pipeline,
+            '_process_urls_concurrent',
+            new_callable=mocker.AsyncMock,
+            return_value={'successful': ['http://a.com', 'http://b.com'], 'failed': [], 'skipped': []},
+        )
+
+        async def _on_start(url: str) -> None:
+            pass
+
+        await pipeline.process_urls(['http://a.com', 'http://b.com'], workers=2, on_start=_on_start)
+
+        call_kwargs = mock_concurrent.call_args[1]
+        assert call_kwargs['on_start'] is _on_start

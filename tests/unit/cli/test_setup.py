@@ -1,9 +1,9 @@
-"""Tests for yosoi.cli.setup — setup_llm_config, build_yosoi_config."""
+"""Tests for yosoi.cli.setup — build_yosoi_config (thin CLI wrapper over auto_config)."""
 
 import pytest
 import rich_click as click
 
-from yosoi.cli.setup import build_yosoi_config, setup_llm_config
+from yosoi.cli.setup import build_yosoi_config
 
 
 @pytest.fixture(autouse=True)
@@ -31,59 +31,6 @@ def _clean_env(monkeypatch):
     monkeypatch.setattr(dotenv, 'load_dotenv', lambda: False)
 
 
-class TestSetupLlmConfig:
-    def test_model_arg_with_colon(self):
-        """--model flag with provider:model format works."""
-        cfg = setup_llm_config('groq:llama-3.3-70b')
-        assert cfg.provider == 'groq'
-        assert cfg.model_name == 'llama-3.3-70b'
-        assert cfg.api_key == ''
-
-    def test_model_arg_no_slash_raises(self):
-        """--model flag without separator raises ClickException."""
-        with pytest.raises(click.ClickException, match='provider:model-name'):
-            setup_llm_config('groq-llama')
-
-    def test_auto_detect_provider(self, monkeypatch):
-        """Auto-detects provider from env when no --model."""
-        monkeypatch.setenv('GEMINI_KEY', 'gem-key')
-        cfg = setup_llm_config(None)
-        assert cfg.provider == 'gemini'
-
-    def test_fallback_to_groq_default(self):
-        """Falls back to groq when no env keys."""
-        cfg = setup_llm_config(None)
-        assert cfg.provider == 'groq'
-
-    def test_yosoi_model_env_used_as_default(self, monkeypatch):
-        """YOSOI_MODEL env var is used when no --model flag."""
-        monkeypatch.setenv('YOSOI_MODEL', 'openrouter:mistralai/mistral-7b')
-        cfg = setup_llm_config(None)
-        assert cfg.provider == 'openrouter'
-        assert cfg.model_name == 'mistralai/mistral-7b'
-
-    def test_model_arg_overrides_yosoi_model_env(self, monkeypatch):
-        """--model flag takes precedence over YOSOI_MODEL env var."""
-        monkeypatch.setenv('YOSOI_MODEL', 'openrouter:mistralai/mistral-7b')
-        cfg = setup_llm_config('groq:llama-3.3-70b')
-        assert cfg.provider == 'groq'
-        assert cfg.model_name == 'llama-3.3-70b'
-
-    def test_yosoi_model_invalid_raises(self, monkeypatch):
-        """Invalid YOSOI_MODEL env var raises ClickException."""
-        monkeypatch.setenv('YOSOI_MODEL', 'not-a-valid-model-string')
-        with pytest.raises(click.ClickException, match='YOSOI_MODEL'):
-            setup_llm_config(None)
-
-    def test_yosoi_model_takes_priority_over_auto_detect(self, monkeypatch):
-        """YOSOI_MODEL takes priority over API-key-based auto-detection."""
-        monkeypatch.setenv('YOSOI_MODEL', 'gemini:gemini-2.0-flash')
-        monkeypatch.setenv('GROQ_KEY', 'groq-key')
-        cfg = setup_llm_config(None)
-        assert cfg.provider == 'gemini'
-        assert cfg.model_name == 'gemini-2.0-flash'
-
-
 class TestBuildYosoiConfig:
     def test_successful_build(self, monkeypatch):
         """Builds config successfully when API key is available."""
@@ -100,12 +47,31 @@ class TestBuildYosoiConfig:
 
     def test_no_api_key_raises(self):
         """Missing API key raises ClickException."""
-        with pytest.raises(click.ClickException, match='Configuration Error'):
+        with pytest.raises(click.ClickException):
             build_yosoi_config('groq:llama', debug=False)
 
-    def test_provider_fallback_warning(self, monkeypatch, capsys):
+    def test_provider_fallback_warning(self, monkeypatch):
         """When configured provider lacks key and another is used, warns."""
         monkeypatch.setenv('GEMINI_KEY', 'gem-key')
         cfg = build_yosoi_config('groq:llama', debug=False)
         # Provider should have been swapped
         assert cfg.llm.provider == 'gemini'
+
+    def test_invalid_model_string_raises(self):
+        """Invalid model string raises ClickException."""
+        with pytest.raises(click.ClickException):
+            build_yosoi_config('invalid-no-provider', debug=False)
+
+    def test_auto_detect_from_env(self, monkeypatch):
+        """When no model arg, auto-detects from env key."""
+        monkeypatch.setenv('GEMINI_KEY', 'gem-key')
+        cfg = build_yosoi_config(None, debug=False)
+        assert cfg.llm.provider == 'gemini'
+
+    def test_yosoi_model_env_used(self, monkeypatch):
+        """YOSOI_MODEL env var is used when no explicit model."""
+        monkeypatch.setenv('YOSOI_MODEL', 'gemini:gemini-2.0-flash')
+        monkeypatch.setenv('GEMINI_KEY', 'gem-key')
+        cfg = build_yosoi_config(None, debug=False)
+        assert cfg.llm.provider == 'gemini'
+        assert cfg.llm.model_name == 'gemini-2.0-flash'

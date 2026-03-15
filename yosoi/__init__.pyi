@@ -5,6 +5,7 @@ from typing import Any
 from yosoi.core.configs import DebugConfig as DebugConfig
 from yosoi.core.configs import TelemetryConfig as TelemetryConfig
 from yosoi.core.configs import YosoiConfig as YosoiConfig
+from yosoi.core.configs import auto_config as auto_config
 from yosoi.core.discovery import LLMConfig as LLMConfig
 from yosoi.core.discovery.config import LLMBuilder as LLMBuilder
 from yosoi.core.pipeline import Pipeline as Pipeline
@@ -17,6 +18,8 @@ from yosoi.models.selectors import SelectorEntry as SelectorEntry
 from yosoi.types.base import YosoiType as YosoiType
 from yosoi.types.field import Field as Field
 from yosoi.types.registry import register_coercion as register_coercion
+from yosoi.utils.contracts import resolve_contract as resolve_contract
+from yosoi.utils.urls import load_urls_from_file as load_urls_from_file
 
 def css(value: str) -> SelectorEntry: ...
 def xpath(value: str) -> SelectorEntry: ...

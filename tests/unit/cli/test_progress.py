@@ -1,4 +1,4 @@
-"""Tests for yosoi.cli.progress — _build_progress_table and run_concurrent URL dedup."""
+"""Tests for yosoi.cli.progress — _build_progress_table and run_concurrent."""
 
 import time
 
@@ -67,10 +67,10 @@ class TestBuildProgressTable:
 # ---------------------------------------------------------------------------
 
 
-class TestRunConcurrentUrlDedup:
+class TestRunConcurrent:
     @pytest.mark.asyncio
-    async def test_duplicate_domains_are_skipped(self, mocker):
-        """URLs with the same domain should be marked as Skipped in the Live display."""
+    async def test_all_urls_start_queued(self, mocker):
+        """All URLs should start as Queued (no domain-based pre-skipping)."""
         from yosoi.cli.progress import run_concurrent
         from yosoi.models.contract import Contract
 
@@ -83,26 +83,24 @@ class TestRunConcurrentUrlDedup:
         mock_pipeline = mock_pipeline_cls.return_value
         mock_pipeline.process_urls = mocker.AsyncMock(
             return_value={
-                'successful': ['https://example.com/page1'],
+                'successful': ['https://example.com/page1', 'https://example.com/page2'],
                 'failed': [],
-                'skipped': ['https://example.com/page2'],
+                'skipped': [],
             },
         )
         mocker.patch('yosoi.cli.progress.Live')
 
         urls = [
             'https://example.com/page1',
-            'https://example.com/page2',  # same domain, should be skipped
+            'https://example.com/page2',  # same domain — should NOT be skipped
         ]
         await run_concurrent(mock_config, TestContract, urls)
 
         mock_pipeline.process_urls.assert_awaited_once()
-        call_kwargs = mock_pipeline.process_urls.call_args[1]
-        assert call_kwargs['workers'] == 5  # default max_workers
 
     @pytest.mark.asyncio
-    async def test_different_domains_not_skipped(self, mocker):
-        """URLs with different domains should all be Running, not Skipped."""
+    async def test_on_start_and_on_complete_passed_to_pipeline(self, mocker):
+        """run_concurrent passes both on_start and on_complete callbacks."""
         from yosoi.cli.progress import run_concurrent
         from yosoi.models.contract import Contract
 
@@ -117,12 +115,15 @@ class TestRunConcurrentUrlDedup:
         )
         mocker.patch('yosoi.cli.progress.Live')
 
-        urls = ['https://example.com/page1', 'https://other.com/page2']
-        await run_concurrent(mock_config, TestContract2, urls)
+        await run_concurrent(mock_config, TestContract2, ['https://a.com'])
+
+        call_kwargs = mock_pipeline.process_urls.call_args[1]
+        assert call_kwargs['on_complete'] is not None
+        assert call_kwargs['on_start'] is not None
 
     @pytest.mark.asyncio
-    async def test_url_without_scheme_gets_https_prefix(self, mocker):
-        """URLs without http/https prefix get https:// added for domain extraction."""
+    async def test_different_domains_all_queued(self, mocker):
+        """URLs with different domains should all start as Queued."""
         from yosoi.cli.progress import run_concurrent
         from yosoi.models.contract import Contract
 
@@ -137,27 +138,5 @@ class TestRunConcurrentUrlDedup:
         )
         mocker.patch('yosoi.cli.progress.Live')
 
-        urls = ['example.com/page1']
+        urls = ['https://example.com/page1', 'https://other.com/page2']
         await run_concurrent(mock_config, TestContract3, urls)
-
-    @pytest.mark.asyncio
-    async def test_on_complete_callback_passed_to_pipeline(self, mocker):
-        """run_concurrent passes an on_complete callback to pipeline.process_urls."""
-        from yosoi.cli.progress import run_concurrent
-        from yosoi.models.contract import Contract
-
-        class TestContract4(Contract):
-            title: str
-
-        mock_config = mocker.MagicMock()
-        mock_pipeline_cls = mocker.patch('yosoi.core.pipeline.Pipeline')
-        mock_pipeline = mock_pipeline_cls.return_value
-        mock_pipeline.process_urls = mocker.AsyncMock(
-            return_value={'successful': [], 'failed': [], 'skipped': []},
-        )
-        mocker.patch('yosoi.cli.progress.Live')
-
-        await run_concurrent(mock_config, TestContract4, ['https://a.com'])
-
-        call_kwargs = mock_pipeline.process_urls.call_args[1]
-        assert call_kwargs['on_complete'] is not None

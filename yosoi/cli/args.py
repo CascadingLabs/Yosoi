@@ -73,7 +73,8 @@ class SchemaParamType(click.ParamType):
         2. Case-insensitive match in BUILTIN_SCHEMAS
         3. Exact / case-insensitive match in _CONTRACT_REGISTRY (custom schemas)
         4. Fuzzy match across all known schemas (builtins + registry)
-        5. Dynamic import via ``path:ClassName``
+        5. AST scan of Python files in CWD (exact + fuzzy)
+        6. Dynamic import via ``path:ClassName``
         """
         # 1. Exact match in builtins
         if value in BUILTIN_SCHEMAS:

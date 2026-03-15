@@ -6,22 +6,13 @@ Three examples demonstrating different ways to use contracts with the Pipeline:
 """
 
 import asyncio
-import os
 
-from dotenv import load_dotenv
 from pydantic import field_validator
 
 import yosoi as ys
 
-# Load environment variables
-load_dotenv()
-
-# Configure your LLM (edit as needed)
-config = ys.LLMConfig(
-    provider='groq',
-    model_name='llama-3.3-70b-versatile',
-    api_key=os.environ.get('GROQ_KEY', ''),
-)
+# auto_config() picks up YOSOI_MODEL, then the first env key it finds.
+config = ys.auto_config()
 
 
 # -- Example 1: Static subclass ----------------------------------------------
@@ -42,15 +33,15 @@ class Book(ys.Contract):
         return v
 
 
-def example_1_static_subclass():
+async def example_1_static_subclass():
     """Static contract subclass with field validators."""
     print('\n=== Example 1: Static Contract Subclass (books.toscrape.com) ===')
     pipeline = ys.Pipeline(llm_config=config, contract=Book)
-    asyncio.run(pipeline.process_url('https://books.toscrape.com'))
+    await pipeline.process_url('https://books.toscrape.com')
 
 
 # -- Example 2: ContractBuilder fluent API ------------------------------------
-def example_2_contract_builder():
+async def example_2_contract_builder():
     """ContractBuilder fluent API for defining contracts at runtime."""
     print('\n=== Example 2: ContractBuilder (quotes.toscrape.com) ===')
 
@@ -63,9 +54,9 @@ def example_2_contract_builder():
     )
 
     pipeline = ys.Pipeline(llm_config=config, contract=Quote)
-    asyncio.run(pipeline.process_url('https://quotes.toscrape.com'))
+    await pipeline.process_url('https://quotes.toscrape.com')
 
 
 if __name__ == '__main__':
-    example_1_static_subclass()
-    example_2_contract_builder()
+    asyncio.run(example_1_static_subclass())
+    asyncio.run(example_2_contract_builder())

@@ -1,6 +1,6 @@
 """Yosoi: AI-powered CSS selector discovery and web scraping."""
 
-from yosoi.core.configs import DebugConfig, TelemetryConfig, YosoiConfig
+from yosoi.core.configs import DebugConfig, TelemetryConfig, YosoiConfig, auto_config
 from yosoi.core.discovery import (
     LLMConfig,
     alibaba,
@@ -47,6 +47,8 @@ from yosoi.types import (
     YosoiType,
     register_coercion,
 )
+from yosoi.utils.contracts import resolve_contract
+from yosoi.utils.urls import load_urls_from_file
 
 __version__ = '0.1.0'
 
@@ -62,7 +64,6 @@ __all__ = [
     'NewsArticle',
     'Pipeline',
     'Price',
-    'Product',
     'Rating',
     'SelectorEntry',
     'TelemetryConfig',
@@ -73,6 +74,7 @@ __all__ = [
     'YosoiType',
     'alibaba',
     'anthropic',
+    'auto_config',
     'azure',
     'bedrock',
     'cerebras',
@@ -88,6 +90,7 @@ __all__ = [
     'huggingface',
     'jsonld',
     'litellm',
+    'load_urls_from_file',
     'mistral',
     'moonshotai',
     'nebius',
@@ -98,6 +101,7 @@ __all__ = [
     'provider',
     'regex',
     'register_coercion',
+    'resolve_contract',
     'sambanova',
     'together',
     'vercel',

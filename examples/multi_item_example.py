@@ -24,13 +24,11 @@ Two API entry points:
 """
 
 import asyncio
-import os
-
-from dotenv import load_dotenv
 
 import yosoi as ys
 
-load_dotenv()
+# auto_config() auto-detects from YOSOI_MODEL env var, then first available key.
+config = ys.auto_config()
 
 
 # ============================================================================
@@ -51,7 +49,7 @@ async def example_1_auto_discovery():
     print('\n=== Example 1: Auto-discovered container ===')
 
     pipeline = ys.Pipeline(
-        os.environ.get('YOSOI_MODEL', 'openai:gpt-4o'),
+        config,
         contract=Product,
         output_format='json',  # saved JSON will use {"items": [...]} shape
     )
@@ -79,10 +77,7 @@ async def example_2_pinned_container():
     """Use a contract-level override for the container selector."""
     print('\n=== Example 2: Pinned container via model_config ===')
 
-    pipeline = ys.Pipeline(
-        os.environ.get('YOSOI_MODEL', 'openai:gpt-4o'),
-        contract=ProductPinned,
-    )
+    pipeline = ys.Pipeline(config, contract=ProductPinned)
 
     count = 0
     async for item in pipeline.scrape('https://books.toscrape.com'):
@@ -108,10 +103,7 @@ async def example_3_single_item():
     """scrape on a single-item page yields exactly one item."""
     print('\n=== Example 3: Single-item page (no container) ===')
 
-    pipeline = ys.Pipeline(
-        os.environ.get('YOSOI_MODEL', 'openai:gpt-4o'),
-        contract=BookDetail,
-    )
+    pipeline = ys.Pipeline(config, contract=BookDetail)
 
     async for item in pipeline.scrape('https://books.toscrape.com/catalogue/a-light-in-the-attic_1000/index.html'):
         print(f'  Title: {item.get("title")}')
@@ -137,7 +129,7 @@ async def example_4_process_url():
     print('\n=== Example 4: process_url with auto container ===')
 
     pipeline = ys.Pipeline(
-        os.environ.get('YOSOI_MODEL', 'openai:gpt-4o'),
+        config,
         contract=Product,
         output_format=['json', 'markdown'],  # save both formats
     )
@@ -162,7 +154,7 @@ async def example_5_multi_format():
     print('\n=== Example 5: Multiple output formats ===')
 
     pipeline = ys.Pipeline(
-        os.environ.get('YOSOI_MODEL', 'openai:gpt-4o'),
+        config,
         contract=ProductPinned,
         output_format=['json', 'jsonl', 'csv', 'markdown'],
     )

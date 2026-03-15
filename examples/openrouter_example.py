@@ -10,14 +10,11 @@ Two examples:
 """
 
 import asyncio
-import os
-
-from dotenv import load_dotenv
 
 import yosoi as ys
 
-load_dotenv()
-config = ys.openrouter('meta-llama/llama-3.3-70b-instruct:free', os.environ['OPENROUTER_KEY'])
+# Pin OpenRouter explicitly, or let auto_config() pick whatever key you have set.
+config = ys.auto_config(model='openrouter:meta-llama/llama-3.3-70b-instruct:free')
 
 
 # -- Example 1: Static Contract subclass --------------------------------------
@@ -29,15 +26,15 @@ class Book(ys.Contract):
     rating: str = ys.Rating(hint="Star rating written as a word e.g. 'Three'")
 
 
-def example_1_books():
+async def example_1_books():
     """Scrape books.toscrape.com using a static Contract and OpenRouter."""
     print('\n=== Example 1: Books (books.toscrape.com) via OpenRouter ===')
     pipeline = ys.Pipeline(llm_config=config, contract=Book)
-    asyncio.run(pipeline.process_url('https://books.toscrape.com'))
+    await pipeline.process_url('https://books.toscrape.com')
 
 
 # -- Example 2: ContractBuilder fluent API ------------------------------------
-def example_2_quotes():
+async def example_2_quotes():
     """Scrape quotes.toscrape.com using ContractBuilder and OpenRouter."""
     print('\n=== Example 2: Quotes (quotes.toscrape.com) via OpenRouter ===')
 
@@ -50,9 +47,9 @@ def example_2_quotes():
     )
 
     pipeline = ys.Pipeline(llm_config=config, contract=Quote)
-    asyncio.run(pipeline.process_url('https://quotes.toscrape.com'))
+    await pipeline.process_url('https://quotes.toscrape.com')
 
 
 if __name__ == '__main__':
-    example_1_books()
-    example_2_quotes()
+    asyncio.run(example_1_books())
+    asyncio.run(example_2_quotes())

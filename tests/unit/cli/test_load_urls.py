@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from yosoi.cli.utils import _extract_urls_from_text, load_urls_from_file
+from yosoi.utils.urls import _extract_urls_from_text, load_urls_from_file
 
 
 class TestFileNotFound:
@@ -83,7 +83,7 @@ class TestCsvFormat:
         assert 'https://a.com' in result
 
     def test_csv_missing_pandas_raises_error(self, tmp_path, mocker):
-        mocker.patch('yosoi.cli.utils.HAS_PANDAS', False)
+        mocker.patch('yosoi.utils.urls.HAS_PANDAS', False)
         f = tmp_path / 'urls.csv'
         f.write_text('url\nhttps://a.com\n')
         with pytest.raises(Exception, match='pandas is required'):
@@ -118,7 +118,7 @@ class TestExcelFormat:
         assert 'https://a.com' in result
 
     def test_xlsx_missing_pandas_raises_error(self, tmp_path, mocker):
-        mocker.patch('yosoi.cli.utils.HAS_PANDAS', False)
+        mocker.patch('yosoi.utils.urls.HAS_PANDAS', False)
         f = tmp_path / 'urls.xlsx'
         f.write_bytes(b'fake')
         with pytest.raises(Exception, match='pandas is required'):
@@ -142,7 +142,7 @@ class TestParquetFormat:
         assert 'https://a.com' in result
 
     def test_parquet_missing_pandas_raises_error(self, tmp_path, mocker):
-        mocker.patch('yosoi.cli.utils.HAS_PANDAS', False)
+        mocker.patch('yosoi.utils.urls.HAS_PANDAS', False)
         f = tmp_path / 'urls.parquet'
         f.write_bytes(b'fake')
         with pytest.raises(Exception, match='pandas is required'):

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import time
 from typing import TYPE_CHECKING
-from urllib.parse import urlparse as _urlparse
 
 from rich.live import Live
 
@@ -83,21 +82,13 @@ async def run_concurrent(
     """
     from yosoi.core.pipeline import Pipeline
 
-    # Pre-compute initial status for the live display
     url_status: dict[str, tuple[str, float]] = dict.fromkeys(urls, ('Queued', 0.0))
 
-    _seen_domains: set[str] = set()
-    now = time.monotonic()
-    for u in urls:
-        parse_u = u if u.startswith(('http://', 'https://')) else f'https://{u}'
-        domain = _urlparse(parse_u).netloc.replace('www.', '')
-        if domain in _seen_domains:
-            url_status[u] = ('Skipped', 0.0)
-        else:
-            _seen_domains.add(domain)
-            url_status[u] = ('Running', now)
-
     live = Live(_build_progress_table(url_status), console=console, refresh_per_second=4)
+
+    async def _on_start(url: str) -> None:
+        url_status[url] = ('Running', time.monotonic())
+        live.update(_build_progress_table(url_status))
 
     async def _on_complete(url: str, success: bool, elapsed: float) -> None:
         url_status[url] = ('Done' if success else 'Failed', elapsed)
@@ -119,4 +110,5 @@ async def run_concurrent(
             fetcher_type=fetcher_type,
             workers=max_workers,
             on_complete=_on_complete,
+            on_start=_on_start,
         )

@@ -153,13 +153,17 @@ async def run_composed() -> None:
 
 
 async def run_concurrent() -> None:
-    """Case 4 — Process multiple category pages concurrently with workers=3."""
-    print('\n[Case 4] Concurrent workers=3')
+    """Case 4 — Process multiple category pages concurrently with workers=3.
+
+    All same-domain URLs are now processed (no domain-dedup skips).
+    Per-domain serialization ensures the first URL discovers selectors
+    and siblings hit the snapshot cache.
+    """
+    print('\n[Case 4] Concurrent workers=3 — all same-domain URLs processed')
     pipeline = ys.Pipeline(llm_config=MODEL, contract=ProductPinned, output_format='json')
     results = await pipeline.process_urls(CATEGORY_URLS, workers=3)
     print(f'  Successful: {len(results["successful"])}')
     print(f'  Failed:     {len(results["failed"])}')
-    print(f'  Skipped:    {len(results.get("skipped", []))}')
 
 
 async def main() -> None:

@@ -101,6 +101,7 @@ async def shutdown_broker() -> None:
     await broker.shutdown()
     _pipeline_config = None
     _semaphore = None
+    _domain_locks.clear()
 
 
 def get_pipeline_config() -> PipelineConfig:
@@ -149,60 +150,38 @@ async def process_url_task(
     sem = _semaphore or asyncio.Semaphore(5)
 
     async with sem:
-        pipeline = Pipeline(
-            config.llm_config,
-            contract=config.contract,
-            output_format=config.output_format,
-            quiet=True,
-            selector_level=config.selector_level,
+        domain = urlparse(url if url.startswith(('http://', 'https://')) else f'https://{url}').netloc.replace(
+            'www.', ''
         )
+        if domain not in _domain_locks:
+            _domain_locks[domain] = asyncio.Lock()
 
-        try:
-            await pipeline.process_url(
-                url,
-                force=force,
-                max_fetch_retries=max_fetch_retries,
-                max_discovery_retries=max_discovery_retries,
-                skip_verification=skip_verification,
-                fetcher_type=fetcher_type,
+        async with _domain_locks[domain]:
+            pipeline = Pipeline(
+                config.llm_config,
+                contract=config.contract,
+                output_format=config.output_format,
+                quiet=True,
+                selector_level=config.selector_level,
             )
-            elapsed = getattr(pipeline, 'last_elapsed', 0.0)
-            return TaskResult(url=url, elapsed=elapsed)
-        except Exception:
-            logger.exception('Task failed for %s', url)
-            raise  # taskiq retry middleware fires here
+
+            try:
+                await pipeline.process_url(
+                    url,
+                    force=force,
+                    max_fetch_retries=max_fetch_retries,
+                    max_discovery_retries=max_discovery_retries,
+                    skip_verification=skip_verification,
+                    fetcher_type=fetcher_type,
+                )
+                elapsed = getattr(pipeline, 'last_elapsed', 0.0)
+                return TaskResult(url=url, elapsed=elapsed)
+            except Exception:
+                logger.exception('Task failed for %s', url)
+                raise  # taskiq retry middleware fires here
 
 
-class DomainDedup:
-    """Track which domains have been enqueued to prevent duplicate processing.
-
-    Attributes:
-        _seen: Set of domains already enqueued.
-
-    """
-
-    def __init__(self) -> None:
-        """Initialize with empty set."""
-        self._seen: set[str] = set()
-
-    def should_process(self, domain: str) -> bool:
-        """Check if domain should be processed (not yet seen).
-
-        Args:
-            domain: Domain string to check.
-
-        Returns:
-            True if domain has not been seen before.
-
-        """
-        if domain in self._seen:
-            return False
-        self._seen.add(domain)
-        return True
-
-    def reset(self) -> None:
-        """Clear all tracked domains."""
-        self._seen.clear()
+_domain_locks: dict[str, asyncio.Lock] = {}
 
 
 async def enqueue_urls(
@@ -212,8 +191,8 @@ async def enqueue_urls(
     fetcher_type: str = 'simple',
     max_fetch_retries: int = 2,
     max_discovery_retries: int = 3,
-    dedup_by_domain: bool = True,
     on_complete: Callable[[str, bool, float], Awaitable[None]] | None = None,
+    on_start: Callable[[str], Awaitable[None]] | None = None,
 ) -> EnqueueResult:
     """Enqueue URLs as tasks and collect results.
 
@@ -224,30 +203,24 @@ async def enqueue_urls(
         fetcher_type: Fetcher type to use.
         max_fetch_retries: Max fetch retry attempts.
         max_discovery_retries: Max AI discovery retry attempts.
-        dedup_by_domain: Skip duplicate domains. Defaults to True.
         on_complete: Optional async callback ``(url, success, elapsed)`` called
             when each task finishes. Used by the CLI progress display.
+        on_start: Optional async callback ``(url)`` called just before each
+            task begins processing.
 
     Returns:
         EnqueueResult with 'successful', 'failed', and 'skipped' URL lists.
 
     """
     results = EnqueueResult()
-    dedup = DomainDedup()
 
     # Enqueue all tasks
     handles = []
     enqueued_urls = []
 
     for url in urls:
-        if dedup_by_domain:
-            parse_url = url if url.startswith(('http://', 'https://')) else f'https://{url}'
-            domain = urlparse(parse_url).netloc.replace('www.', '')
-            if not dedup.should_process(domain):
-                logger.info('Skipping duplicate domain: %s (url: %s)', domain, url)
-                results.skipped.append(url)
-                continue
-
+        if on_start is not None:
+            await on_start(url)
         handle = await process_url_task.kiq(
             url,
             force=force,

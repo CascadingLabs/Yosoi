@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 from typing import TYPE_CHECKING
 
 import rich_click as click
@@ -11,60 +10,12 @@ from yosoi.cli.utils import console, console_err
 
 if TYPE_CHECKING:
     from yosoi.core.configs import YosoiConfig
-    from yosoi.core.discovery.config import LLMConfig
-
-
-def setup_llm_config(model_arg: str | None = None) -> LLMConfig:
-    """Set up LLM configuration from -m/--model flag or environment variables.
-
-    Resolution order:
-    1. ``--model`` CLI flag
-    2. ``YOSOI_MODEL`` environment variable (from shell or .env)
-    3. First provider with an available API key (auto-detect)
-    4. Groq default fallback
-
-    Args:
-        model_arg: Model string in ``provider:model-name`` or ``provider/model-name`` format.
-
-    Returns:
-        LLMConfig instance.
-
-    Raises:
-        click.ClickException: If the provider format is invalid.
-
-    """
-    from dotenv import load_dotenv
-
-    from yosoi.core.configs import find_available_provider
-    from yosoi.core.discovery.config import LLMConfig, _parse_model_string
-
-    load_dotenv()
-
-    if model_arg:
-        try:
-            prov, model_name = _parse_model_string(model_arg)
-        except ValueError as e:
-            raise click.ClickException(str(e)) from e
-        return LLMConfig(provider=prov, model_name=model_name, api_key='')
-
-    yosoi_model = os.getenv('YOSOI_MODEL')
-    if yosoi_model:
-        try:
-            prov, model_name = _parse_model_string(yosoi_model)
-        except ValueError as e:
-            raise click.ClickException(f'YOSOI_MODEL env var is invalid: {e}') from e
-        return LLMConfig(provider=prov, model_name=model_name, api_key='')
-
-    found = find_available_provider()
-    if found:
-        provider, model_name, _ = found
-        return LLMConfig(provider=provider, model_name=model_name, api_key='')
-
-    return LLMConfig(provider='groq', model_name='llama-3.3-70b-versatile', api_key='')
 
 
 def build_yosoi_config(model_arg: str | None, debug: bool) -> YosoiConfig:
     """Build a YosoiConfig from CLI args, with provider fallback and user warnings.
+
+    Thin CLI wrapper around :func:`yosoi.core.configs.auto_config`.
 
     Args:
         model_arg: Model string in ``provider:model-name`` format, or None.
@@ -76,21 +27,25 @@ def build_yosoi_config(model_arg: str | None, debug: bool) -> YosoiConfig:
     Raises:
         click.ClickException: On configuration errors.
     """
-    from yosoi.core.configs import DebugConfig, TelemetryConfig, YosoiConfig
+    from yosoi.core.configs import auto_config
 
-    llm_config = setup_llm_config(model_arg)
-    original_provider = llm_config.provider
+    # Capture the requested provider so we can warn about fallbacks
+    original_provider: str | None = None
+    if model_arg:
+        from yosoi.core.discovery.config import _parse_model_string
+
+        try:
+            prov, _ = _parse_model_string(model_arg)
+            original_provider = prov
+        except ValueError:
+            pass
 
     try:
-        yosoi_config = YosoiConfig(
-            llm=llm_config,
-            debug=DebugConfig(save_html=debug),
-            telemetry=TelemetryConfig(logfire_token=os.getenv('LOGFIRE_TOKEN')),
-        )
-    except Exception as e:
-        raise click.ClickException(f'Configuration Error: {e}') from e
+        yosoi_config = auto_config(model=model_arg, debug=debug)
+    except ValueError as e:
+        raise click.ClickException(str(e)) from e
 
-    if yosoi_config.llm.provider != original_provider:
+    if original_provider and yosoi_config.llm.provider != original_provider:
         console_err.print(
             f'[yellow]Warning: {original_provider!r} has no API key — '
             f'fell back to {yosoi_config.llm.provider!r}[/yellow]'

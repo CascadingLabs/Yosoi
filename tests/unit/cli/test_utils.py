@@ -7,13 +7,13 @@ import rich_click as click
 
 from yosoi.cli.utils import (
     _find_contract_classes,
-    _load_urls_from_json,
     _raise_class_not_found,
     _suggest_file,
     load_schema,
     scan_for_contracts,
 )
 from yosoi.models.contract import Contract
+from yosoi.utils.urls import _load_urls_from_json
 
 # ---------------------------------------------------------------------------
 # scan_for_contracts

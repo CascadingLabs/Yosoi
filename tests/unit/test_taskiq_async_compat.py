@@ -48,7 +48,7 @@ class TestTaskiqAgentConcurrency:
         mock_pipeline.process_url = mocker.AsyncMock(return_value=True)
 
         urls = [f'http://site{i}.com/article' for i in range(5)]
-        results = await enqueue_urls(urls, dedup_by_domain=False)
+        results = await enqueue_urls(urls)
 
         assert len(results.successful) == 5
         assert results.failed == []
@@ -73,7 +73,7 @@ class TestTaskiqAgentConcurrency:
         mocker.patch('yosoi.core.pipeline.Pipeline', FakePipeline)
 
         urls = ['http://a.com', 'http://b.com', 'http://c.com']
-        results = await enqueue_urls(urls, dedup_by_domain=False)
+        results = await enqueue_urls(urls)
 
         assert len(results.successful) == 3
         # Each task should create its own Pipeline instance
@@ -114,7 +114,7 @@ class TestSemaphoreConcurrency:
         mock_pipeline.process_url = _track_concurrency
 
         urls = [f'http://site{i}.com' for i in range(6)]
-        results = await enqueue_urls(urls, dedup_by_domain=False)
+        results = await enqueue_urls(urls)
 
         assert len(results.successful) == 6
         assert peak_concurrent <= 2
@@ -147,7 +147,7 @@ class TestAgentFailureIsolation:
         mock_pipeline.process_url = _selective_failure
 
         urls = ['http://good1.com', 'http://fail.com', 'http://good2.com']
-        results = await enqueue_urls(urls, dedup_by_domain=False)
+        results = await enqueue_urls(urls)
 
         assert 'http://good1.com' in results.successful
         assert 'http://good2.com' in results.successful
@@ -172,7 +172,7 @@ class TestAgentFailureIsolation:
         mock_pipeline.process_url = _variable_latency
 
         urls = ['http://fast1.com', 'http://slow.com', 'http://fast2.com']
-        results = await enqueue_urls(urls, dedup_by_domain=False)
+        results = await enqueue_urls(urls)
 
         assert len(results.successful) == 3
         await shutdown_broker()
@@ -229,7 +229,7 @@ class TestEndToEndBrokerAgent:
             completed.append({'url': url, 'success': success, 'elapsed': elapsed})
 
         urls = ['http://a.com', 'http://b.com']
-        results = await enqueue_urls(urls, dedup_by_domain=False, on_complete=_on_complete)
+        results = await enqueue_urls(urls, on_complete=_on_complete)
 
         assert len(completed) == 2
         assert all(c['success'] for c in completed)
@@ -268,7 +268,7 @@ class TestEndToEndBrokerAgent:
         mock_pipeline.process_url = _alternate
 
         urls = [f'http://site{i}.com' for i in range(4)]
-        results = await enqueue_urls(urls, dedup_by_domain=False)
+        results = await enqueue_urls(urls)
 
         assert len(results.successful) == 2
         assert len(results.failed) == 2
@@ -298,7 +298,7 @@ class TestEventLoopSafety:
         mock_pipeline.process_url = _capture_loop
 
         urls = [f'http://site{i}.com' for i in range(3)]
-        await enqueue_urls(urls, dedup_by_domain=False)
+        await enqueue_urls(urls)
 
         # All tasks must run in the same loop
         assert len(set(loops_seen)) == 1

@@ -200,6 +200,7 @@ class Pipeline:
         output_format: str | list[str] | None = None,
         workers: int = 1,
         on_complete: Callable[[str, bool, float], Awaitable[None]] | None = None,
+        on_start: Callable[[str], Awaitable[None]] | None = None,
     ) -> dict[str, list[str]]:
         """Process multiple URLs and collect results.
 
@@ -218,12 +219,14 @@ class Pipeline:
             workers: Number of concurrent workers. Defaults to 1 (sequential).
             on_complete: Optional async callback ``(url, success, elapsed)`` called
                 after each URL finishes. Used by the CLI for live progress display.
+            on_start: Optional async callback ``(url)`` called just before each
+                URL begins processing.
 
         Returns:
             Dictionary with keys:
                 - 'successful': List of successfully processed URLs
                 - 'failed': List of URLs that failed processing
-                - 'skipped': List of URLs skipped (e.g. duplicate domains, concurrent only)
+                - 'skipped': List of URLs skipped (concurrent only)
 
         """
         # Normalise to list, fall back to pipeline default
@@ -243,6 +246,7 @@ class Pipeline:
                 output_format=format_to_use,
                 max_workers=effective_workers,
                 on_complete=on_complete,
+                on_start=on_start,
             )
 
         results: dict[str, list[str]] = {'successful': [], 'failed': []}
@@ -300,12 +304,13 @@ class Pipeline:
         output_format: list[str],
         max_workers: int,
         on_complete: Callable[[str, bool, float], Awaitable[None]] | None = None,
+        on_start: Callable[[str], Awaitable[None]] | None = None,
     ) -> dict[str, list[str]]:
         """Process URLs concurrently via the taskiq broker.
 
         Both the CLI and scripted paths use this method. The optional
-        ``on_complete`` callback lets callers (e.g. CLI Live display)
-        react to each finished URL.
+        ``on_complete`` and ``on_start`` callbacks let callers (e.g.
+        CLI Live display) react to task lifecycle events.
 
         """
         from yosoi.core.tasks import configure_broker, enqueue_urls, shutdown_broker
@@ -328,6 +333,7 @@ class Pipeline:
                 max_fetch_retries=max_fetch_retries,
                 max_discovery_retries=max_discovery_retries,
                 on_complete=on_complete,
+                on_start=on_start,
             )
         finally:
             await shutdown_broker()
@@ -361,7 +367,7 @@ class Pipeline:
             f'[dim]({total_elapsed:.1f}s total)[/dim]'
         )
         if results.get('skipped'):
-            self.console.print(f'  [dim]{len(results["skipped"])} skipped (duplicate domains)[/dim]')
+            self.console.print(f'  [dim]{len(results["skipped"])} skipped[/dim]')
         if results['failed']:
             self.console.print('[bold red]Failed URLs:[/bold red]')
             for url in results['failed']:
