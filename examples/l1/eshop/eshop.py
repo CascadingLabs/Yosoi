@@ -1,4 +1,4 @@
-"""Eshop example: comparing pinned root vs auto-discover.
+"""Eshop example: comparing pinned root vs auto-discover vs nested contracts.
 
 Case 1 — Pinned root: ``root = ys.css('.product-card')``
     We tell Yosoi exactly which element wraps each product.
@@ -7,6 +7,10 @@ Case 1 — Pinned root: ``root = ys.css('.product-card')``
 Case 2 — Auto-discover: no root set
     AI analyses the page and decides the root element itself.
     Useful when you don't know (or don't want to hardcode) the wrapper.
+
+Case 3 — Nested contract (pure data grouping, no DOM scoping):
+    Price fields are grouped into a child contract for type safety.
+    Discovery stays flat — AI sees price_amount, price_currency directly.
 """
 
 import asyncio
@@ -21,6 +25,20 @@ MODEL = 'openrouter:stepfun/step-3.5-flash:free'
 # ---------------------------------------------------------------------------
 # Shared contract definition
 # ---------------------------------------------------------------------------
+
+
+class _PriceDetails(ys.Contract):
+    """Structural nesting — pure data grouping, no DOM scoping needed."""
+
+    amount: float = ys.Price()
+    currency: str = ys.Field(description='Currency name only (e.g. "Gold Sovereigns"), without the numeric amount')
+
+    class Validators:
+        @staticmethod
+        def currency(v: object) -> str:
+            import re
+
+            return re.sub(r'^\d[\d.,\s]*', '', str(v)).strip()
 
 
 class _BaseProduct(ys.Contract):
@@ -73,6 +91,18 @@ class ProductAuto(_BaseProduct):
 
 
 # ---------------------------------------------------------------------------
+# Case 3 — Nested contract (pure data grouping)
+# ---------------------------------------------------------------------------
+
+
+class ProductComposed(_BaseProduct):
+    """Nested price sub-contract — Case 3: no root on child (pure data grouping)."""
+
+    root = ys.css('.product-card')
+    price: _PriceDetails = ys.Field(description='Product price')  # type: ignore[assignment]
+
+
+# ---------------------------------------------------------------------------
 # Runner
 # ---------------------------------------------------------------------------
 
@@ -82,9 +112,12 @@ def _print_items(label: str, items: list) -> None:
     print(f'  {label}  ({len(items)} items)')
     print('=' * 60)
     for i, item in enumerate(items, 1):
+        price = item.get('price')
+        if isinstance(price, dict):
+            price = price.get('amount', '?')
         print(
             f'  #{i:02d}  {item.get("name", "?")[:40]:<40s}'
-            f'  £{item.get("price") or "?":>6}  '
+            f'  £{price or "?":>6}  '
             f'{"✓" if item.get("is_instock") else "✗"} stock'
         )
 
@@ -103,9 +136,17 @@ async def run_auto() -> None:
     _print_items('Auto-discover root', items)
 
 
+async def run_composed() -> None:
+    print('\n[Case 3] Nested contract (price: _PriceDetails)')
+    pipeline = ys.Pipeline(llm_config=MODEL, contract=ProductComposed, output_format='json')
+    items = [item async for item in pipeline.scrape(URL, force=True)]
+    _print_items('Nested contract', items)
+
+
 async def main() -> None:
     await run_pinned()
     await run_auto()
+    await run_composed()
 
 
 asyncio.run(main())

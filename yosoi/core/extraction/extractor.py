@@ -1,6 +1,6 @@
 """Extracts content from web pages using validated selectors."""
 
-from typing import Literal
+from typing import Any, Literal
 
 from parsel import Selector, SelectorList
 from rich.console import Console
@@ -28,19 +28,63 @@ class ContentExtractor:
 
         """
         self.console = console or Console()
-        self.expected_fields: tuple[str, ...] = tuple(contract.model_fields.keys()) if contract is not None else ()
+        self._field_modes: dict[str, FieldMode] = {}
+        self._nested_prefixes: frozenset[str] = frozenset()
+        if contract is not None:
+            fields: list[str] = []
+            for name, fi in contract.model_fields.items():
+                ann = fi.annotation
+                if isinstance(ann, type) and issubclass(ann, Contract):
+                    for child_name, child_fi in ann.model_fields.items():
+                        flat_name = f'{name}_{child_name}'
+                        fields.append(flat_name)
+                        child_extra = child_fi.json_schema_extra
+                        raw_ytype = child_extra.get('yosoi_type') if isinstance(child_extra, dict) else None
+                        if raw_ytype in ('body_text', 'related_content'):
+                            self._field_modes[flat_name] = raw_ytype  # type: ignore[assignment]
+                else:
+                    fields.append(name)
+                    extra = fi.json_schema_extra
+                    raw_ytype = extra.get('yosoi_type') if isinstance(extra, dict) else None
+                    if raw_ytype == 'body_text':
+                        self._field_modes[name] = 'body_text'
+                    elif raw_ytype == 'related_content':
+                        self._field_modes[name] = 'related_content'
+            self.expected_fields = tuple(fields)
+            self._nested_prefixes = frozenset(contract.nested_contracts().keys())
+        else:
+            self.expected_fields = ()
         self._overridden_fields: frozenset[str] = (
             frozenset(contract.get_selector_overrides().keys()) if contract is not None else frozenset()
         )
-        self._field_modes: dict[str, FieldMode] = {}
-        if contract is not None:
-            for name, fi in contract.model_fields.items():
-                extra = fi.json_schema_extra
-                raw_ytype = extra.get('yosoi_type') if isinstance(extra, dict) else None
-                if raw_ytype == 'body_text':
-                    self._field_modes[name] = 'body_text'
-                elif raw_ytype == 'related_content':
-                    self._field_modes[name] = 'related_content'
+
+    @staticmethod
+    def _unflatten(
+        flat: dict[str, Any],
+        nested_prefixes: frozenset[str],
+    ) -> dict[str, Any]:
+        """Reassemble ``{parent}_{child}`` keys into nested dicts.
+
+        Uses *nested_prefixes* (the set of parent field names that map to child
+        contracts) so that literal underscores in non-nested field names are
+        never accidentally split.
+        """
+        if not nested_prefixes:
+            return flat
+        result: dict[str, Any] = {}
+        for key, value in flat.items():
+            matched = False
+            for prefix in nested_prefixes:
+                if key.startswith(f'{prefix}_'):
+                    child = key[len(prefix) + 1 :]
+                    if prefix not in result:
+                        result[prefix] = {}
+                    result[prefix][child] = value
+                    matched = True
+                    break
+            if not matched:
+                result[key] = value
+        return result
 
     def extract_content_with_html(
         self,
@@ -104,7 +148,9 @@ class ContentExtractor:
         extracted_count = len(extracted)
         self.console.print(f'  ↻ Summary: {extracted_count}/{total} fields extracted successfully')
 
-        return extracted if extracted else None
+        if not extracted:
+            return None
+        return self._unflatten(extracted, self._nested_prefixes)
 
     def _resolve(
         self,
@@ -279,7 +325,7 @@ class ContentExtractor:
                         break
 
             if item:
-                items.append(item)
+                items.append(self._unflatten(item, self._nested_prefixes))
 
         self.console.print(f'  ↻ Extracted {len(items)} non-empty items')
         return items if items else None

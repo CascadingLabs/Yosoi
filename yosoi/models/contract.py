@@ -28,6 +28,27 @@ class Contract(BaseModel):
         super().__init_subclass__(**kwargs)  # pragma: no mutate
         _CONTRACT_REGISTRY[cls.__name__] = cls  # pragma: no mutate
 
+    @classmethod
+    def __pydantic_init_subclass__(cls, **kwargs: Any) -> None:
+        """Fail loudly at class definition time if flat field names collide with nested expansions.
+
+        Called by Pydantic after model_fields is fully populated — safe to inspect fields here.
+        """
+        super().__pydantic_init_subclass__(**kwargs)
+        flat_names = {
+            n
+            for n, fi in cls.model_fields.items()
+            if not (isinstance(fi.annotation, type) and issubclass(fi.annotation, Contract))
+        }
+        for parent_name, child_cls in cls.nested_contracts().items():
+            for child_name in child_cls.model_fields:
+                expanded = f'{parent_name}_{child_name}'
+                if expanded in flat_names:
+                    raise TypeError(
+                        f'{cls.__name__}: field {expanded!r} collides with nested expansion '
+                        f'of {parent_name}.{child_name}. Rename either the flat field or the nested field.'
+                    )
+
     @model_validator(mode='wrap')
     @classmethod
     def _apply_validators_and_coerce(
@@ -70,6 +91,39 @@ class Contract(BaseModel):
         return handler(result)
 
     @classmethod
+    def nested_contracts(cls) -> dict[str, type[Contract]]:
+        """Return a mapping of field name → child Contract class for Contract-typed fields."""
+        result: dict[str, type[Contract]] = {}
+        for name, fi in cls.model_fields.items():
+            ann = fi.annotation
+            if isinstance(ann, type) and issubclass(ann, Contract):
+                result[name] = ann
+        return result
+
+    @classmethod
+    def field_hints(cls) -> dict[str, str | None]:
+        """Return yosoi_hint per (flat) field name, expanding nested contracts to {parent}_{child}."""
+        hints: dict[str, str | None] = {}
+        for name, fi in cls.model_fields.items():
+            ann = fi.annotation
+            extra = fi.json_schema_extra
+            if isinstance(ann, type) and issubclass(ann, Contract):
+                for child_name, child_fi in ann.model_fields.items():
+                    child_extra = child_fi.json_schema_extra
+                    if isinstance(child_extra, dict):
+                        raw = child_extra.get('yosoi_hint')
+                        hints[f'{name}_{child_name}'] = str(raw) if raw is not None else None
+                    else:
+                        hints[f'{name}_{child_name}'] = None
+            else:
+                if isinstance(extra, dict):
+                    raw = extra.get('yosoi_hint')
+                    hints[name] = str(raw) if raw is not None else None
+                else:
+                    hints[name] = None
+        return hints
+
+    @classmethod
     def to_selector_model(cls) -> type[BaseModel]:
         """Generate a Pydantic model mapping each contract field to FieldSelectors.
 
@@ -77,6 +131,7 @@ class Contract(BaseModel):
         preserving any descriptions or hints provided in the contract.
         Fields with a ``yosoi_selector`` override are excluded — their selectors are
         provided directly and do not require AI discovery.
+        Nested Contract-typed fields are expanded to flat ``{parent}_{child}`` entries.
         """
         from yosoi.models.selectors import FieldSelectors
 
@@ -86,16 +141,32 @@ class Contract(BaseModel):
             if name in overridden:
                 continue
 
-            # Copy description and yosoi_hint to the selector field
-            extra = field_info.json_schema_extra or {}
-            description = field_info.description or f'Selectors for {name}'
-            hint = extra.get('yosoi_hint') if isinstance(extra, dict) else None
+            ann = field_info.annotation
+            if isinstance(ann, type) and issubclass(ann, Contract):
+                child_overridden = ann.get_selector_overrides()
+                for child_name, child_fi in ann.model_fields.items():
+                    flat_name = f'{name}_{child_name}'
+                    if flat_name in overridden or child_name in child_overridden:
+                        continue
+                    child_extra = child_fi.json_schema_extra or {}
+                    child_desc = child_fi.description or f'Selectors for {flat_name}'
+                    child_hint = child_extra.get('yosoi_hint') if isinstance(child_extra, dict) else None
+                    selector_field = Field(
+                        description=child_desc,
+                        json_schema_extra={'yosoi_hint': child_hint} if child_hint else None,
+                    )
+                    field_defs[flat_name] = (FieldSelectors, selector_field)
+            else:
+                # Copy description and yosoi_hint to the selector field
+                extra = field_info.json_schema_extra or {}
+                description = field_info.description or f'Selectors for {name}'
+                hint = extra.get('yosoi_hint') if isinstance(extra, dict) else None
 
-            selector_field = Field(
-                description=description,
-                json_schema_extra={'yosoi_hint': hint} if hint else None,
-            )
-            field_defs[name] = (FieldSelectors, selector_field)
+                selector_field = Field(
+                    description=description,
+                    json_schema_extra={'yosoi_hint': hint} if hint else None,
+                )
+                field_defs[name] = (FieldSelectors, selector_field)
 
         # Add optional root field for multi-item pages
         field_defs['root'] = (
@@ -119,12 +190,17 @@ class Contract(BaseModel):
         Returns:
             Mapping of field name → selector dict (compatible with ``FieldSelectors``
             structure, e.g. ``{"primary": "h1.title"}``).
+            Nested contract overrides are included as flat ``{parent}_{child}`` keys.
 
         """
         overrides: dict[str, dict[str, str]] = {}
         for name, field_info in cls.model_fields.items():
+            ann = field_info.annotation
             extra = field_info.json_schema_extra
-            if isinstance(extra, dict):
+            if isinstance(ann, type) and issubclass(ann, Contract):
+                for child_name, child_override in ann.get_selector_overrides().items():
+                    overrides[f'{name}_{child_name}'] = child_override
+            elif isinstance(extra, dict):
                 sel = extra.get('yosoi_selector')
                 if isinstance(sel, str) and sel:
                     overrides[name] = {'primary': sel}
@@ -132,9 +208,36 @@ class Contract(BaseModel):
 
     @classmethod
     def field_descriptions(cls) -> dict[str, str]:
-        """Return a mapping of field name to description, excluding selector overrides."""
+        """Return a mapping of field name to description, excluding selector overrides.
+
+        Nested Contract-typed fields are expanded to flat ``{parent}_{child}`` keys.
+        When the child contract has a pinned root, the description includes a scoping hint.
+        When the child has ``root = ys.discover()``, a co-location hint is added.
+        """
+        from yosoi.models.selectors import is_discover_sentinel
+
         overridden = cls.get_selector_overrides()
-        return {name: (fi.description or name) for name, fi in cls.model_fields.items() if name not in overridden}
+        result: dict[str, str] = {}
+        for name, fi in cls.model_fields.items():
+            if name in overridden:
+                continue
+            ann = fi.annotation
+            if isinstance(ann, type) and issubclass(ann, Contract):
+                child_overridden = ann.get_selector_overrides()
+                child_root = ann.root
+                for child_name, child_fi in ann.model_fields.items():
+                    key = f'{name}_{child_name}'
+                    if key in overridden or child_name in child_overridden:
+                        continue
+                    desc = child_fi.description or child_name
+                    if child_root is not None and not is_discover_sentinel(child_root):
+                        desc = f'{desc} (within: {child_root.value})'
+                    elif is_discover_sentinel(child_root):
+                        desc = f'{desc} (co-located with other {name} fields)'
+                    result[key] = desc
+            else:
+                result[name] = fi.description or name
+        return result
 
     @classmethod
     def generate_manifest(cls) -> str:

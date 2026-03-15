@@ -271,6 +271,67 @@ async def test_pinned_root_included_in_orchestrator_save(llm_config, mock_storag
 
 
 @pytest.mark.anyio
+async def test_orchestrator_field_descriptions_flat_nested(llm_config, mock_storage):
+    """field_descriptions() returns flat {parent}_{child} keys for nested contracts."""
+    import yosoi as ys
+
+    class _SubPrice(ys.Contract):
+        amount: float = ys.Price()
+        currency: str = ys.Field(description='Currency symbol')
+
+    class _NestedProduct(ys.Contract):
+        root = ys.css('.product-card')
+        name: str = ys.Title()
+        price: _SubPrice = ys.Field(description='Price info')  # type: ignore[assignment]
+
+    descs = _NestedProduct.field_descriptions()
+    assert 'name' in descs
+    assert 'price_amount' in descs
+    assert 'price_currency' in descs
+    assert 'price' not in descs
+
+
+@pytest.mark.anyio
+async def test_orchestrator_adds_discover_task_for_auto_root(llm_config, mock_storage, mocker):
+    """When a nested child has root = ys.discover(), a {parent}_root task is added."""
+    import yosoi as ys
+
+    class _AutoPrice(ys.Contract):
+        root = ys.discover()
+        amount: float = ys.Price()
+        currency: str = ys.Field(description='Currency symbol')
+
+    class _AutoProduct(ys.Contract):
+        root = ys.css('.product-card')
+        name: str = ys.Title()
+        price: _AutoPrice = ys.Field(description='Price info')  # type: ignore[assignment]
+
+    orch = DiscoveryOrchestrator(
+        contract=_AutoProduct,
+        llm_config=llm_config,
+        storage=mock_storage,
+        console=Console(quiet=True),
+    )
+
+    captured_specs: list[str] = []
+
+    async def mock_run_field_task(**kwargs):
+        from yosoi.core.discovery.field_task import FieldTaskResult
+
+        name = kwargs['field_name']
+        captured_specs.append(name)
+        return FieldTaskResult(
+            field_name=name, selectors=FieldSelectors(primary='h1'), from_cache=False, escalated_to=None
+        )
+
+    mocker.patch('yosoi.core.discovery.orchestrator.run_field_task', new=mock_run_field_task)
+
+    await orch.discover_selectors(_HTML, 'https://example.com')
+
+    assert 'price_root' in captured_specs
+
+
+@pytest.mark.anyio
 async def test_stale_cache_not_resurrected(orchestrator, mock_storage, mocker):
     """Merged map must use task results only — stale cache entries must not appear."""
     # Pre-populate cache with a stale entry for 'author'

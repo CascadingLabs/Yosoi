@@ -136,6 +136,8 @@ class DiscoveryOrchestrator:
                 }
             )
 
+        task_specs.extend(self._nested_discover_task_specs())
+
         # Fan-out: run all field tasks concurrently
         coroutines = [
             run_field_task(
@@ -204,15 +206,26 @@ class DiscoveryOrchestrator:
 
         return merged
 
+    def _nested_discover_task_specs(self) -> list[dict[str, object]]:
+        """Return task specs for nested child contracts that use ``root = ys.discover()``."""
+        from yosoi.models.selectors import is_discover_sentinel
+
+        specs: list[dict[str, object]] = []
+        for parent_name, child_contract in self._contract.nested_contracts().items():
+            if is_discover_sentinel(child_contract.root):
+                specs.append(
+                    {
+                        'field_name': f'{parent_name}_root',
+                        'field_description': f'Scoped container element that wraps all {parent_name} fields',
+                        'field_hint': None,
+                        'is_container': True,
+                    }
+                )
+        return specs
+
     def _collect_hints(self) -> dict[str, str | None]:
-        """Extract yosoi_hint from each contract field."""
-        hints: dict[str, str | None] = {}
-        for name, field_info in self._contract.model_fields.items():
-            extra = field_info.json_schema_extra
-            if isinstance(extra, dict):
-                raw = extra.get('yosoi_hint')
-                hints[name] = str(raw) if raw is not None else None
-        return hints
+        """Extract yosoi_hint from each contract field, expanding nested contracts."""
+        return self._contract.field_hints()
 
     @staticmethod
     def _extract_domain(url: str) -> str:
