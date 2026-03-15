@@ -5,12 +5,11 @@ selectors like ``.product-card h3`` match N items instead of just one.
 
 Three modes for container detection:
 
-1. **Auto-discovery** — The AI discovers `yosoi_container` automatically by
+1. **Auto-discovery** — The AI discovers `root` automatically by
    analysing the page structure. Zero user config needed.
 
-2. **Contract override** — Pin the container selector via ``model_config``
+2. **Contract override** — Pin the container selector via ``root = ys.css(...)``
    when you know the wrapper element in advance (or the AI guesses wrong).
-   Same ``json_schema_extra`` pattern used by ``yosoi_selector``, ``yosoi_hint``, etc.
 
 3. **Single-item fallback** — When there is no container (detail pages),
    ``scrape()`` yields exactly one item and ``process_url()`` behaves
@@ -28,7 +27,6 @@ import asyncio
 import os
 
 from dotenv import load_dotenv
-from pydantic import ConfigDict
 
 import yosoi as ys
 
@@ -41,7 +39,7 @@ load_dotenv()
 
 
 class Product(ys.Contract):
-    """The AI sees repeating `.product-card` elements and returns yosoi_container."""
+    """The AI sees repeating `.product-card` elements and returns a root selector."""
 
     name: str = ys.Title()
     price: float = ys.Price()
@@ -69,9 +67,9 @@ async def example_1_auto_discovery():
 
 
 class ProductPinned(ys.Contract):
-    """Container is hard-coded — AI's yosoi_container is ignored."""
+    """Container is hard-coded — AI's root is ignored."""
 
-    model_config = ConfigDict(json_schema_extra={'yosoi_container': 'article.product_pod'})
+    root = ys.css('article.product_pod')
 
     name: str = ys.Title()
     price: float = ys.Price(hint='Includes £ symbol')

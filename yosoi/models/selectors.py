@@ -57,6 +57,26 @@ class SelectorEntry(BaseModel):
         return self
 
 
+def css(value: str) -> SelectorEntry:
+    """Create a CSS SelectorEntry."""
+    return SelectorEntry(type='css', value=value)
+
+
+def xpath(value: str) -> SelectorEntry:
+    """Create an XPath SelectorEntry."""
+    return SelectorEntry(type='xpath', value=value)
+
+
+def regex(value: str) -> SelectorEntry:
+    """Create a regex SelectorEntry."""
+    return SelectorEntry(type='regex', value=value)
+
+
+def jsonld(value: str) -> SelectorEntry:
+    """Create a JSON-LD SelectorEntry."""
+    return SelectorEntry(type='jsonld', value=value)
+
+
 def coerce_selector_entry(v: object) -> SelectorEntry | None:
     """Coerce a raw selector value (str, dict, or SelectorEntry) to SelectorEntry.
 

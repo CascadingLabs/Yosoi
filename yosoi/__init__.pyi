@@ -13,9 +13,15 @@ from yosoi.models.defaults import JobPosting as JobPosting
 from yosoi.models.defaults import NewsArticle as NewsArticle
 from yosoi.models.defaults import Product as Product
 from yosoi.models.defaults import Video as Video
+from yosoi.models.selectors import SelectorEntry as SelectorEntry
 from yosoi.types.base import YosoiType as YosoiType
 from yosoi.types.field import Field as Field
 from yosoi.types.registry import register_coercion as register_coercion
+
+def css(value: str) -> SelectorEntry: ...
+def xpath(value: str) -> SelectorEntry: ...
+def regex(value: str) -> SelectorEntry: ...
+def jsonld(value: str) -> SelectorEntry: ...
 
 # Semantic type factories — override the dynamic signatures produced by @register_coercion
 # Return Any (not FieldInfo) so assignments like `name: str = ys.Title()` pass type checking,

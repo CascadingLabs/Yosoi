@@ -1,28 +1,32 @@
-# Example Idea
-#
-#
-# 1. show that I can get product contract, with price, in stock (bool), and category :: pretty simple
-# 2. show how to filter/ field validate against is_sponsered
-# show formatting and
-#
+"""Eshop example: comparing pinned root vs auto-discover.
+
+Case 1 — Pinned root: ``root = ys.css('.product-card')``
+    We tell Yosoi exactly which element wraps each product.
+    AI skips root discovery and goes straight to field selectors.
+
+Case 2 — Auto-discover: no root set
+    AI analyses the page and decides the root element itself.
+    Useful when you don't know (or don't want to hardcode) the wrapper.
+"""
 
 import asyncio
 import re
 
 import yosoi as ys
 
-# MODEL_USED = 'meta-llama/llama-3.3-70b-instruct:free'
-# MODEL_USED = 'stepfun/step-3.5-flash:free'
-# MODEL_USED = 'llama-3.3-70b-versatile'
-# why can't I go to defition from this???
-# config = ys.openrouter(MODEL_USED)
-# config = ys.groq(MODEL_USED)
+URL = 'https://qscrape.dev/l1/eshop/catalog/?cat=Forge%20%26%20Smithing'
+MODEL = 'openrouter:stepfun/step-3.5-flash:free'
 
 
-class Product(ys.Contract):
+# ---------------------------------------------------------------------------
+# Shared contract definition
+# ---------------------------------------------------------------------------
+
+
+class _BaseProduct(ys.Contract):
     name: str = ys.Title(description='Product name or title')
     price: float | None = ys.Price(description='Product price (including currency symbol)')
-    rating: float = ys.Rating(description='review score as a number')
+    rating: float = ys.Rating(description='Review score as a number')
     reviews_count: int | None = ys.Field(description='Number of reviews or ratings')
     description: str = ys.BodyText(description='Product description or summary')
     availability: str = ys.Field(description='Stock status (e.g. "In Stock", "Out of Stock")')
@@ -31,7 +35,6 @@ class Product(ys.Contract):
     class Validators:
         @staticmethod
         def rating(v: object) -> float:
-            # Selector returns e.g. "★ ★ ★ ★   ☆   (47)" — count filled stars
             return float(str(v).count('★'))
 
         @staticmethod
@@ -49,53 +52,60 @@ class Product(ys.Contract):
             return not ('out of stock' in text or not text)
 
 
-# pipeline = ys.Pipeline(llm_config=config, contract=Product)
-pipeline = ys.Pipeline(llm_config='openrouter:stepfun/step-3.5-flash:free', contract=Product)
-asyncio.run(pipeline.process_url('https://qscrape.dev/l1/eshop/catalog/?cat=Forge%20%26%20Smithing'))
+# ---------------------------------------------------------------------------
+# Case 1 — Pinned root
+# ---------------------------------------------------------------------------
 
 
-# # ---------------------------------------------------------------------------
-# # Using default contracts: ys.Product, ys.NewsArticle, ys.Video, ys.JobPosting
-# # ---------------------------------------------------------------------------
+class ProductPinned(_BaseProduct):
+    """Root is hard-coded — AI never has to guess the wrapper element."""
+
+    root = ys.css('.product-card')
 
 
-# def main_default() -> None:
-#     """Use ys.Product directly — zero boilerplate."""
-#     pipeline = ys.Pipeline(llm_config=config, contract=ys.Product)
-#     asyncio.run(pipeline.process_url('https://qscrape.dev/l1/eshop/catalog/?cat=Forge%20%26%20Smithing', force=True))
+# ---------------------------------------------------------------------------
+# Case 2 — Auto-discover root
+# ---------------------------------------------------------------------------
 
 
-# def main_subclass() -> None:
-#     """Subclass ys.Product to add extra fields or validators."""
-
-#     class DetailedProduct(ys.Product):
-#         category: str = ys.Field(description='Product category (e.g. "Swords", "Armor")')
-#         in_stock: bool = ys.Field(description='Whether the item is currently in stock')
-
-#         class Validators:
-#             @staticmethod
-#             def category(v: str) -> str:
-#                 return v.strip().title()
-
-#     pipeline = ys.Pipeline(llm_config=config, contract=DetailedProduct)
-#     asyncio.run(pipeline.process_url('https://qscrape.dev/l1/eshop/catalog/?cat=Forge%20%26%20Smithing', force=True))
+class ProductAuto(_BaseProduct):
+    """No root set — AI analyses the page and picks the wrapper itself."""
 
 
-# def main_override() -> None:
-#     """Subclass ys.Product and override an existing field."""
-
-#     class StrictProduct(ys.Product):
-#         # Override: make price required (no None) and add a currency hint
-#         price: float = ys.Price(description='Product price in USD', currency='USD')
-#         # Override: tighten rating to float only
-#         rating: float = ys.Rating(description='Numeric star rating (1-5)')
-
-#     pipeline = ys.Pipeline(llm_config=config, contract=StrictProduct)
-#     asyncio.run(pipeline.process_url('https://qscrape.dev/l1/eshop/catalog/?cat=Forge%20%26%20Smithing', force=True))
+# ---------------------------------------------------------------------------
+# Runner
+# ---------------------------------------------------------------------------
 
 
-# if __name__ == '__main__':
-#     # Pick which example to run:
-#     # main_default()      # use ys.Product as-is
-#     # main_subclass()     # extend with extra fields
-#     main_override()  # override existing fields
+def _print_items(label: str, items: list) -> None:
+    print(f'\n{"=" * 60}')
+    print(f'  {label}  ({len(items)} items)')
+    print('=' * 60)
+    for i, item in enumerate(items, 1):
+        print(
+            f'  #{i:02d}  {item.get("name", "?")[:40]:<40s}'
+            f'  £{item.get("price") or "?":>6}  '
+            f'{"✓" if item.get("is_instock") else "✗"} stock'
+        )
+
+
+async def run_pinned() -> None:
+    print('\n[Case 1] Pinned root = ys.css(".product-card")')
+    pipeline = ys.Pipeline(llm_config=MODEL, contract=ProductPinned, output_format='json')
+    items = [item async for item in pipeline.scrape(URL, force=True)]
+    _print_items('Pinned root', items)
+
+
+async def run_auto() -> None:
+    print('\n[Case 2] Auto-discover root')
+    pipeline = ys.Pipeline(llm_config=MODEL, contract=ProductAuto, output_format='json')
+    items = [item async for item in pipeline.scrape(URL, force=True)]
+    _print_items('Auto-discover root', items)
+
+
+async def main() -> None:
+    await run_pinned()
+    await run_auto()
+
+
+asyncio.run(main())

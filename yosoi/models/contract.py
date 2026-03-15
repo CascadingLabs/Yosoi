@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Any
+from typing import Any, ClassVar
 
 import pydantic
 from pydantic import BaseModel, Field, ValidationInfo, model_validator
 from typing_extensions import Self
 
+from yosoi.models.selectors import SelectorEntry
 from yosoi.types.coerce import dispatch as _coerce_dispatch
 
 # Global registry of all Contract subclasses, populated via __init_subclass__.
@@ -19,6 +20,8 @@ _CONTRACT_REGISTRY: dict[str, type[Contract]] = {}
 
 class Contract(BaseModel):
     """Base class for user-defined scraping contracts."""
+
+    root: ClassVar[SelectorEntry | None] = None
 
     def __init_subclass__(cls, **kwargs: Any) -> None:  # pragma: no mutate
         """Register every Contract subclass in the global _CONTRACT_REGISTRY."""
@@ -94,8 +97,8 @@ class Contract(BaseModel):
             )
             field_defs[name] = (FieldSelectors, selector_field)
 
-        # Add optional yosoi_container field for multi-item pages
-        field_defs['yosoi_container'] = (
+        # Add optional root field for multi-item pages
+        field_defs['root'] = (
             FieldSelectors | None,
             Field(
                 default=None,
@@ -155,20 +158,19 @@ class Contract(BaseModel):
         return '\n'.join(lines)
 
     @classmethod
-    def get_container_selector(cls) -> str | None:
-        """Return the container selector from model_config's json_schema_extra, if set.
+    def get_root(cls) -> SelectorEntry | None:
+        """Return the root selector if explicitly set on the contract class.
 
         Returns:
-            CSS selector string for the repeating container element, or None.
+            SelectorEntry for the repeating container element, or None.
 
         """
-        config = getattr(cls, 'model_config', {})
-        extra = config.get('json_schema_extra')
-        if isinstance(extra, dict):
-            sel = extra.get('yosoi_container')
-            if isinstance(sel, str) and sel:
-                return sel
-        return None
+        return cls.root
+
+    @classmethod
+    def is_grouped(cls) -> bool:
+        """Return True if the contract explicitly configures multi-item mode."""
+        return cls.root is not None
 
     @classmethod
     def define(cls, name: str) -> ContractBuilder:
@@ -183,6 +185,7 @@ class ContractBuilder:
         """Initialize the builder with the contract name."""
         self._name = name
         self._fields: list[tuple[str, type, str]] = []
+        self._root: SelectorEntry | None = None
 
     def __getattr__(self, field_name: str) -> Callable[..., ContractBuilder]:
         """Return an _add function that registers the named field."""
@@ -195,7 +198,15 @@ class ContractBuilder:
 
         return _add
 
+    def with_root(self, selector: SelectorEntry) -> ContractBuilder:
+        """Set the root selector for multi-item mode."""
+        self._root = selector
+        return self
+
     def build(self) -> type[Contract]:
         """Build and return the Contract subclass."""
         field_defs: dict[str, Any] = {name: (ftype, Field(description=desc)) for name, ftype, desc in self._fields}
-        return pydantic.create_model(self._name, __base__=Contract, **field_defs)
+        cls = pydantic.create_model(self._name, __base__=Contract, **field_defs)
+        if self._root is not None:
+            cls.root = self._root  # type: ignore[attr-defined]
+        return cls

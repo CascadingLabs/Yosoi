@@ -122,10 +122,10 @@ class DiscoveryOrchestrator:
             }
             for name, desc in field_descs.items()
         ]
-        if not self._contract.get_container_selector():
+        if not self._contract.get_root():
             task_specs.append(
                 {
-                    'field_name': 'yosoi_container',
+                    'field_name': 'root',
                     'field_description': (
                         'Selector for the repeating wrapper element that contains one complete item '
                         '(e.g., .product-card, article.listing). '
@@ -176,8 +176,13 @@ class DiscoveryOrchestrator:
         for field_name, override_dict in overrides.items():
             merged[field_name] = override_dict
 
-        # Check if all non-container fields failed
-        non_container = {k: v for k, v in merged.items() if k != 'yosoi_container'}
+        # Persist contract-pinned root so the cache is self-contained
+        contract_root = self._contract.get_root()
+        if contract_root:
+            merged['root'] = {'primary': contract_root.model_dump(exclude_none=True)}
+
+        # Check if all non-root fields failed
+        non_container = {k: v for k, v in merged.items() if k != 'root'}
         if not non_container:
             logfire.warn('All field tasks returned None', url=url_context)
             return None

@@ -331,14 +331,14 @@ class Pipeline:
                 if not selectors:
                     raise RuntimeError(f'Selector discovery failed for {url}')
 
-                container_selector = self._resolve_container(selectors)
+                container_selector = self._resolve_root(selectors)
 
                 verified = self._verify(url, cleaned_html, selectors, skip_verification)
                 if not verified:
                     raise RuntimeError(f'Selector verification failed for {url}')
 
                 extracted = self._extract(url, cleaned_html, verified, container_selector)
-                selectors_to_save = self._selectors_with_container(verified, container_selector)
+                selectors_to_save = self._selectors_with_root(verified, container_selector)
 
                 if not extracted:
                     self.console.print('[warning]⚠ Extraction failed, but selectors are valid[/warning]')
@@ -398,11 +398,11 @@ class Pipeline:
         return [self._validate_single_item(item, url) for item in items_list]
 
     @staticmethod
-    def _selectors_with_container(verified: SelectorMap, container_selector: str | None) -> SelectorMap:
-        """Re-attach container selector for persistence."""
+    def _selectors_with_root(verified: SelectorMap, container_selector: str | None) -> SelectorMap:
+        """Re-attach root selector for persistence."""
         selectors_to_save = dict(verified)
         if container_selector:
-            selectors_to_save['yosoi_container'] = {'primary': container_selector}
+            selectors_to_save['root'] = {'primary': {'type': 'css', 'value': container_selector}}
         return selectors_to_save
 
     def _finish(
@@ -690,25 +690,26 @@ class Pipeline:
         return await self._discover(url, cleaned_html, max_retries)
 
     @staticmethod
-    def _pop_container(selectors: SelectorMap) -> str | None:
-        """Remove and return the ``yosoi_container`` selector from a selector map.
+    def _pop_root(selectors: SelectorMap) -> str | None:
+        """Remove and return the ``root`` selector string from a selector map.
+
+        Root is stored as ``{'primary': {'type': '...', 'value': '...'}}``.
 
         Args:
             selectors: Mutable selector dict (modified in-place).
 
         Returns:
-            The primary container CSS selector string, or None.
+            The root selector string, or None.
 
         """
-        container_entry = selectors.pop('yosoi_container', None)
-        if isinstance(container_entry, dict):
-            primary = container_entry.get('primary')
+        root_entry = selectors.pop('root', None)
+        if isinstance(root_entry, dict):
+            primary = root_entry.get('primary')
             if isinstance(primary, str) and primary:
                 return primary
-            # Handle SelectorEntry-style dicts
             if isinstance(primary, dict):
                 value = primary.get('value')
-                return value if isinstance(value, str) else None
+                return value if isinstance(value, str) and value else None
         return None
 
     def _verify(self, _url: str, html: str, selectors: SelectorMap, skip_verification: bool) -> SelectorMap | None:
@@ -773,26 +774,26 @@ class Pipeline:
             primary_reason = reasons[0] if reasons else 'all_na'
             self.console.print(f'      [dim]• {field_name}:[/dim] {primary_reason}')
 
-    def _resolve_container(self, selectors: SelectorMap) -> str | None:
-        """Determine the container selector from contract override or AI discovery.
+    def _resolve_root(self, selectors: SelectorMap) -> str | None:
+        """Determine the root selector from contract override or AI discovery.
 
-        Pops ``yosoi_container`` from *selectors* as a side-effect so it is not passed
+        Pops ``root`` from *selectors* as a side-effect so it is not passed
         to the verifier/extractor as a content field.
 
         Args:
             selectors: Mutable selector dict (modified in-place).
 
         Returns:
-            Container CSS selector string, or None for single-item pages.
+            Root CSS selector string, or None for single-item pages.
 
         """
         # Contract-level override takes precedence
-        contract_container = self.contract.get_container_selector()
-        if contract_container:
-            self._pop_container(selectors)  # discard AI's _container if present
-            return contract_container
-        # Otherwise use AI-discovered _container
-        return self._pop_container(selectors)
+        contract_root = self.contract.get_root()
+        if contract_root:
+            self._pop_root(selectors)  # discard AI's root if present
+            return contract_root.value
+        # Otherwise use AI-discovered root
+        return self._pop_root(selectors)
 
     def _extract(
         self,
@@ -879,8 +880,8 @@ class Pipeline:
             cleaned_html = self.cleaner.clean_html(result.html)
             self.debug.save_debug_html(url, cleaned_html)
 
-            # Resolve container selector from cached selectors
-            container_selector = self._resolve_container(existing_selectors)
+            # Resolve root selector from cached selectors
+            container_selector = self._resolve_root(existing_selectors)
 
             # Verify container selector before proceeding — a stale container means
             # all content extractions will silently fail, so force re-discovery.

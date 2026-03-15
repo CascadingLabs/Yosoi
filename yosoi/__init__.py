@@ -5,6 +5,7 @@ from yosoi.core.discovery import LLMConfig, cerebras, gemini, groq, openai, open
 from yosoi.core.pipeline import Pipeline
 from yosoi.models.contract import Contract
 from yosoi.models.defaults import JobPosting, NewsArticle, Product, Video
+from yosoi.models.selectors import SelectorEntry, css, jsonld, regex, xpath
 from yosoi.types import (
     Author,
     BodyText,
@@ -34,6 +35,7 @@ __all__ = [
     'Price',
     'Product',
     'Rating',
+    'SelectorEntry',
     'TelemetryConfig',
     'Title',
     'Url',
@@ -41,10 +43,14 @@ __all__ = [
     'YosoiConfig',
     'YosoiType',
     'cerebras',
+    'css',
     'gemini',
     'groq',
+    'jsonld',
     'openai',
     'openrouter',
     'provider',
+    'regex',
     'register_coercion',
+    'xpath',
 ]

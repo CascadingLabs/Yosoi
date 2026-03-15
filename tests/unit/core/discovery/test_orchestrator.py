@@ -59,7 +59,7 @@ async def test_discover_selectors_returns_selector_map(orchestrator, mocker):
         'date': FieldSelectors(primary='time.date'),
         'body_text': FieldSelectors(primary='article.body'),
         'related_content': FieldSelectors(primary='div.related'),
-        'yosoi_container': None,
+        'root': None,
     }
 
     async def mock_run_field_task(**kwargs):
@@ -125,7 +125,7 @@ async def test_cached_fields_counted_correctly(orchestrator, mocker):
 
         name = kwargs['field_name']
         is_cache = name == 'headline'
-        sel = FieldSelectors(primary='h1') if name != 'yosoi_container' else None
+        sel = FieldSelectors(primary='h1') if name != 'root' else None
         return FieldTaskResult(field_name=name, selectors=sel, from_cache=is_cache, escalated_to=None)
 
     mocker.patch('yosoi.core.discovery.orchestrator.run_field_task', new=mock_run_field_task)
@@ -178,7 +178,7 @@ async def test_save_selectors_called_with_url(orchestrator, mocker):
         from yosoi.core.discovery.field_task import FieldTaskResult
 
         name = kwargs['field_name']
-        sel = FieldSelectors(primary='h1') if name != 'yosoi_container' else None
+        sel = FieldSelectors(primary='h1') if name != 'root' else None
         return FieldTaskResult(field_name=name, selectors=sel, from_cache=False, escalated_to=None)
 
     mocker.patch('yosoi.core.discovery.orchestrator.run_field_task', new=mock_run_field_task)
@@ -197,7 +197,7 @@ async def test_save_selectors_not_called_without_url(orchestrator, mocker):
         from yosoi.core.discovery.field_task import FieldTaskResult
 
         name = kwargs['field_name']
-        sel = FieldSelectors(primary='h1') if name != 'yosoi_container' else None
+        sel = FieldSelectors(primary='h1') if name != 'root' else None
         return FieldTaskResult(field_name=name, selectors=sel, from_cache=False, escalated_to=None)
 
     mocker.patch('yosoi.core.discovery.orchestrator.run_field_task', new=mock_run_field_task)
@@ -216,7 +216,7 @@ async def test_storage_read_called_once_not_per_field(orchestrator, mocker):
         from yosoi.core.discovery.field_task import FieldTaskResult
 
         name = kwargs['field_name']
-        sel = FieldSelectors(primary='h1') if name != 'yosoi_container' else None
+        sel = FieldSelectors(primary='h1') if name != 'root' else None
         return FieldTaskResult(field_name=name, selectors=sel, from_cache=False, escalated_to=None)
 
     mocker.patch('yosoi.core.discovery.orchestrator.run_field_task', new=mock_run_field_task)
@@ -225,6 +225,49 @@ async def test_storage_read_called_once_not_per_field(orchestrator, mocker):
     await orchestrator.discover_selectors(_HTML, 'https://example.com')
 
     load_spy.assert_called_once()
+
+
+@pytest.mark.anyio
+async def test_pinned_root_included_in_orchestrator_save(llm_config, mock_storage, mocker):
+    """When the contract has a pinned root, the orchestrator must persist it in
+    the cache so the saved selector map is self-contained."""
+    import yosoi as ys
+
+    class ListingContract(Contract):
+        root = ys.css('.product-card')
+        title: str = ys.Title()
+
+    orchestrator = DiscoveryOrchestrator(
+        contract=ListingContract,
+        llm_config=llm_config,
+        storage=mock_storage,
+        console=Console(quiet=True),
+    )
+
+    async def mock_run_field_task(**kwargs):
+        from yosoi.core.discovery.field_task import FieldTaskResult
+
+        name = kwargs['field_name']
+        return FieldTaskResult(
+            field_name=name, selectors=FieldSelectors(primary='h1'), from_cache=False, escalated_to=None
+        )
+
+    mocker.patch('yosoi.core.discovery.orchestrator.run_field_task', new=mock_run_field_task)
+    save_spy = mocker.patch.object(mock_storage, 'save_selectors')
+
+    result = await orchestrator.discover_selectors(_HTML, 'https://example.com')
+
+    assert result is not None
+    # root must be present in FieldSelectors-wrapped format so _format_selectors persists it correctly
+    assert 'root' in result
+    assert result['root']['primary']['type'] == 'css'
+    assert result['root']['primary']['value'] == '.product-card'
+
+    # The map passed to save_selectors must also include root in the same format
+    assert save_spy.called
+    saved_map = save_spy.call_args[0][1]
+    assert 'root' in saved_map
+    assert saved_map['root']['primary']['value'] == '.product-card'
 
 
 @pytest.mark.anyio

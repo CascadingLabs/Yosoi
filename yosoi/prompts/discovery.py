@@ -60,10 +60,10 @@ _HINT_DATA_QA: Final = 'Page uses data-qa/data-cy test attributes — they are s
 
 _CONTAINER_GUIDANCE: Final = (
     'If the page contains multiple repeating items (e.g., product cards, article listings, '
-    'search results), also provide a `yosoi_container` selector for the repeating wrapper element '
+    'search results), also provide a `root` selector for the repeating wrapper element '
     'that contains one complete item. This selector should match each individual item on the '
     'page (e.g., `.product-card`, `article.listing`). '
-    'If the page shows a single item, set `yosoi_container` to null.'
+    'If the page shows a single item, set `root` to null.'
 )
 
 
@@ -116,7 +116,7 @@ def field_instructions(ctx: RunContext['DiscoveryDeps']) -> str:
     if not descriptions:
         return ''
     fields_text = '\n'.join(f'**{name}** — {desc}' for name, desc in descriptions.items())
-    container_guidance = '' if ctx.deps.contract.get_container_selector() else f'\n\n{_CONTAINER_GUIDANCE}'
+    container_guidance = '' if ctx.deps.contract.get_root() else f'\n\n{_CONTAINER_GUIDANCE}'
     return f'Find selectors for these fields:\n{fields_text}\n\n{_FIELD_SELECTOR_GUIDE}{container_guidance}'
 
 

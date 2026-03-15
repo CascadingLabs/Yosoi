@@ -115,8 +115,8 @@ def test_fully_overridden_contract_produces_empty_selector_model():
 
     SelectorModel = AllOverride.to_selector_model()
     assert AllOverride.field_descriptions() == {}
-    # Only yosoi_container remains (always added for multi-item discovery)
-    assert set(SelectorModel.model_fields.keys()) == {'yosoi_container'}
+    # Only root remains (always added for multi-item discovery)
+    assert set(SelectorModel.model_fields.keys()) == {'root'}
 
 
 # ---------------------------------------------------------------------------
@@ -326,3 +326,63 @@ def test_contract_builder_build_validates_data():
     MyContract = Contract.define('ValidContract').name('Name field').build()
     instance = MyContract.model_validate({'name': 'Test'})
     assert instance.name == 'Test'
+
+
+# ---------------------------------------------------------------------------
+# ContractBuilder.with_root
+# ---------------------------------------------------------------------------
+
+
+def test_contract_builder_with_root_sets_root():
+    """with_root() sets the root ClassVar on the built contract."""
+    from yosoi.models.selectors import SelectorEntry, css
+
+    MyContract = Contract.define('RootedContract').title('Title').with_root(css('.item')).build()
+    assert MyContract.root is not None
+    assert isinstance(MyContract.root, SelectorEntry)
+    assert MyContract.root.value == '.item'
+    assert MyContract.root.type == 'css'
+
+
+def test_contract_builder_with_root_is_grouped():
+    """Built contract with root reports is_grouped=True."""
+    from yosoi.models.selectors import css
+
+    MyContract = Contract.define('GroupedContract').title('Title').with_root(css('.row')).build()
+    assert MyContract.is_grouped() is True
+
+
+def test_contract_builder_without_root_not_grouped():
+    """Built contract without root reports is_grouped=False."""
+    MyContract = Contract.define('UngroupedContract').title('Title').build()
+    assert MyContract.is_grouped() is False
+
+
+# ---------------------------------------------------------------------------
+# root ClassVar — not treated as a Pydantic field
+# ---------------------------------------------------------------------------
+
+
+def test_root_classvary_not_in_model_fields():
+    """root is a ClassVar and must not appear in model_fields."""
+
+    class Listed(Contract):
+        root = ys.css('article.item')
+        name: str = ys.Title()
+
+    assert 'root' not in Listed.model_fields
+    assert Listed.root is not None
+
+
+def test_is_grouped_classmethod():
+    """is_grouped() returns True only when root is explicitly set."""
+
+    class WithRoot(Contract):
+        root = ys.css('.card')
+        title: str = ys.Title()
+
+    class WithoutRoot(Contract):
+        title: str = ys.Title()
+
+    assert WithRoot.is_grouped() is True
+    assert WithoutRoot.is_grouped() is False

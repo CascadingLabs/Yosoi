@@ -451,8 +451,8 @@ async def test_stale_container_triggers_rediscovery(mocker):
         return_value=FetchResult(url='https://x.com', html='<html><body><h1>Title</h1></body></html>')
     )
 
-    # Patch _resolve_container to return a non-None stale container string
-    mocker.patch.object(stub, '_resolve_container', return_value='article.product_pod')
+    # Patch _resolve_root to return a non-None stale container string
+    mocker.patch.object(stub, '_resolve_root', return_value='article.product_pod')
 
     items, cache_valid = await Pipeline._extract_with_cached(
         stub, 'https://x.com', mock_fetcher, {'title': {'primary': 'h1'}}, False
@@ -1125,14 +1125,18 @@ async def test_extract_with_cached_returns_items_on_success(mocker):
     mock_fetcher = mocker.MagicMock()
     mock_fetcher.fetch = mocker.AsyncMock(return_value=FetchResult(url='https://x.com', html='<html/>'))
     stub.cleaner.clean_html.return_value = '<html/>'
-    vr = _make_verification_result(True, ['title'])
+    vr = _make_verification_result(True, ['title', 'price'])
     stub.verifier.verify.return_value = vr
-    stub.extractor.extract_content_with_html.return_value = {'title': 'Book'}
+    stub.extractor.extract_content_with_html.return_value = {'title': 'Book', 'price': '9.99'}
     items, cache_valid = await Pipeline._extract_with_cached(
-        stub, 'https://x.com', mock_fetcher, {'title': {'primary': 'h1'}}, False
+        stub,
+        'https://x.com',
+        mock_fetcher,
+        {'title': {'primary': 'h1'}, 'price': {'primary': '.price'}},
+        False,
     )
     assert cache_valid is True
-    assert items == [{'title': 'Book'}]
+    assert items == [{'title': 'Book', 'price': '9.99'}]
 
 
 async def test_extract_with_cached_fail_open_on_exception(mocker):
