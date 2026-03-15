@@ -7,6 +7,7 @@
 #
 
 import asyncio
+import re
 
 import yosoi as ys
 
@@ -25,6 +26,27 @@ class Product(ys.Contract):
     reviews_count: int | None = ys.Field(description='Number of reviews or ratings')
     description: str = ys.BodyText(description='Product description or summary')
     availability: str = ys.Field(description='Stock status (e.g. "In Stock", "Out of Stock")')
+    is_instock: bool | None = ys.Field(description='Whether the product is in stock')
+
+    class Validators:
+        @staticmethod
+        def rating(v: object) -> float:
+            # Selector returns e.g. "★ ★ ★ ★   ☆   (47)" — count filled stars
+            return float(str(v).count('★'))
+
+        @staticmethod
+        def reviews_count(v: object) -> int | None:
+            if v is None:
+                return None
+            m = re.search(r'\d+', str(v))
+            return int(m.group()) if m else None
+
+        @staticmethod
+        def is_instock(v: object) -> bool | None:
+            if v is None:
+                return None
+            text = str(v).strip().lower()
+            return not ('out of stock' in text or not text)
 
 
 # pipeline = ys.Pipeline(llm_config=config, contract=Product)

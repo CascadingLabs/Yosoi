@@ -913,6 +913,16 @@ class Pipeline:
                 self.console.print(
                     f'[success]✓ Verified {len(selectors_to_use)}/{len(self.contract.model_fields)} cached selectors[/success]'
                 )
+                # If any contract fields (excluding overrides) have no cached selector,
+                # fall through to fresh discovery so the new fields get discovered.
+                overridden = set(self.contract.get_selector_overrides())
+                required_fields = set(self.contract.model_fields) - overridden
+                missing = required_fields - set(selectors_to_use)
+                if missing:
+                    self.console.print(
+                        f'[warning]⚠ New contract fields not in cache: {", ".join(sorted(missing))} — re-discovering[/warning]'
+                    )
+                    return None, False
             else:
                 selectors_to_use = existing_selectors
 
