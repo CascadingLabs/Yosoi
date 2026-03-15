@@ -16,8 +16,10 @@ from yosoi.models.selectors import FieldSelectors, SelectorLevel
 from yosoi.prompts.discovery import DiscoveryInput
 from yosoi.utils.exceptions import LLMGenerationError
 from yosoi.utils.retry import get_async_retryer
+from yosoi.utils.signatures import field_signature
 
 if TYPE_CHECKING:
+    from yosoi.core.discovery.bus import ScopedBus
     from yosoi.core.discovery.field_agent import FieldDiscoveryAgent
 
 logger = logging.getLogger(__name__)
@@ -60,7 +62,7 @@ async def _invoke_agent(
     return await agent.discover_field(field_name, field_description, field_hint, discovery_input, level, is_container)
 
 
-async def run_field_task(
+async def _discover_field(
     field_name: str,
     field_description: str,
     field_hint: str | None,
@@ -69,44 +71,14 @@ async def run_field_task(
     agent: FieldDiscoveryAgent,
     cached_entry: dict[str, Any] | None,
     max_level: SelectorLevel,
-    max_retries: int = 3,
-    is_container: bool = False,
-    semaphore: asyncio.Semaphore | None = None,
+    max_retries: int,
+    is_container: bool,
+    semaphore: asyncio.Semaphore | None,
 ) -> FieldTaskResult:
-    """Discover selectors for a single field with cache check, escalation, and inline verification.
-
-    Execution order:
-
-    1. Check cached_entry for existing selector
-    2. If cached and passes inline verification: return immediately
-    3. Otherwise iterate SelectorLevel from CSS up to max_level:
-       a. Retry LLM call up to max_retries times (per level)
-       b. Inline verify the result
-       c. If verified: return with escalation info
-    4. If all levels fail: return FieldTaskResult(selectors=None)
-
-    Retries are applied **per level** -- CSS is retried 3x before escalating to XPath.
-
-    Args:
-        field_name: Name of the field to discover
-        field_description: Human-readable description from the contract
-        field_hint: Optional AI hint from the contract field definition
-        discovery_input: URL and HTML passed to the agent
-        html: Raw HTML for inline verification (same as discovery_input.html)
-        agent: Shared FieldDiscoveryAgent instance
-        cached_entry: Pre-loaded selector dict for this field, or None if not cached.
-            Caller is responsible for loading this -- avoids N redundant file reads.
-        max_level: Maximum SelectorLevel to try
-        max_retries: Retry attempts per level. Defaults to 3.
-        is_container: True when discovering the yosoi_container field
-        semaphore: Optional asyncio.Semaphore to cap concurrent LLM calls
-
-    Returns:
-        FieldTaskResult with selectors=None if all attempts failed.
-
-    """
+    """Cache-check + per-level escalation loop. No bus coordination."""
     verifier = SelectorVerifier()
     parsel_sel = Selector(text=html)
+    failure = FieldTaskResult(field_name=field_name, selectors=None, from_cache=False, escalated_to=None)
 
     # --- 1. Cache check ---
     if cached_entry is not None:
@@ -184,4 +156,88 @@ async def run_field_task(
         logger.debug('Selector for %s at level %s failed verification', field_name, level.name)
 
     logfire.warn('Field discovery failed all levels', field=field_name, max_level=max_level.name)
-    return FieldTaskResult(field_name=field_name, selectors=None, from_cache=False, escalated_to=None)
+    return failure
+
+
+async def run_field_task(
+    field_name: str,
+    field_description: str,
+    field_hint: str | None,
+    discovery_input: DiscoveryInput,
+    html: str,
+    agent: FieldDiscoveryAgent,
+    cached_entry: dict[str, Any] | None,
+    max_level: SelectorLevel,
+    max_retries: int = 3,
+    is_container: bool = False,
+    semaphore: asyncio.Semaphore | None = None,
+    scoped_bus: ScopedBus | None = None,
+    yosoi_type: str | None = None,
+) -> FieldTaskResult:
+    """Discover selectors for a single field with cache check, escalation, and inline verification.
+
+    Execution order:
+
+    1. Check cached_entry for existing selector
+    2. If cached and passes inline verification: return immediately
+    3. Otherwise iterate SelectorLevel from CSS up to max_level:
+       a. Retry LLM call up to max_retries times (per level)
+       b. Inline verify the result
+       c. If verified: return with escalation info
+    4. If all levels fail: return FieldTaskResult(selectors=None)
+
+    Retries are applied **per level** -- CSS is retried 3x before escalating to XPath.
+
+    Args:
+        field_name: Name of the field to discover
+        field_description: Human-readable description from the contract
+        field_hint: Optional AI hint from the contract field definition
+        discovery_input: URL and HTML passed to the agent
+        html: Raw HTML for inline verification (same as discovery_input.html)
+        agent: Shared FieldDiscoveryAgent instance
+        cached_entry: Pre-loaded selector dict for this field, or None if not cached.
+            Caller is responsible for loading this -- avoids N redundant file reads.
+        max_level: Maximum SelectorLevel to try
+        max_retries: Retry attempts per level. Defaults to 3.
+        is_container: True when discovering the yosoi_container field
+        semaphore: Optional asyncio.Semaphore to cap concurrent LLM calls
+        scoped_bus: Optional domain-scoped discovery bus for cross-pipeline sharing.
+        yosoi_type: Semantic type string used in the field signature (e.g. ``'price'``).
+
+    Returns:
+        FieldTaskResult with selectors=None if all attempts failed.
+
+    """
+    # --- Bus coordination ---
+    is_bus_leader = False
+    sig: str = ''
+    if scoped_bus is not None:
+        sig = field_signature(field_name, field_description, field_hint, yosoi_type)
+        is_bus_leader = await scoped_bus.acquire(sig)
+        if not is_bus_leader:
+            cached = await scoped_bus.wait_for(sig)
+            if cached is not None:
+                return FieldTaskResult(field_name=field_name, selectors=cached, from_cache=True, escalated_to=None)
+            # Leader failed → fall through to independent discovery (slot consumed)
+
+    result: FieldTaskResult = FieldTaskResult(
+        field_name=field_name, selectors=None, from_cache=False, escalated_to=None
+    )
+    try:
+        result = await _discover_field(
+            field_name=field_name,
+            field_description=field_description,
+            field_hint=field_hint,
+            discovery_input=discovery_input,
+            html=html,
+            agent=agent,
+            cached_entry=cached_entry,
+            max_level=max_level,
+            max_retries=max_retries,
+            is_container=is_container,
+            semaphore=semaphore,
+        )
+        return result
+    finally:
+        if is_bus_leader:
+            await scoped_bus.publish(sig, result.selectors)  # type: ignore[union-attr]

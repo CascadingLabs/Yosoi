@@ -14,6 +14,7 @@ from taskiq import InMemoryBroker
 from taskiq.middlewares import SmartRetryMiddleware
 
 from yosoi.core.configs import YosoiConfig
+from yosoi.core.discovery.bus import DiscoveryBus
 from yosoi.core.discovery.config import LLMConfig
 from yosoi.models.contract import Contract
 from yosoi.models.selectors import SelectorLevel
@@ -64,6 +65,7 @@ broker = InMemoryBroker().with_middlewares(
 # Module-level state: None until configure_broker() is called.
 _pipeline_config: PipelineConfig | None = None
 _semaphore: asyncio.Semaphore | None = None
+_discovery_bus: DiscoveryBus | None = None
 
 
 async def configure_broker(
@@ -83,7 +85,7 @@ async def configure_broker(
         selector_level: Maximum selector strategy level. Defaults to CSS.
 
     """
-    global _pipeline_config, _semaphore
+    global _pipeline_config, _semaphore, _discovery_bus
     _pipeline_config = PipelineConfig(
         llm_config=llm_config,
         contract=contract,
@@ -92,15 +94,19 @@ async def configure_broker(
         selector_level=selector_level or SelectorLevel.CSS,
     )
     _semaphore = asyncio.Semaphore(max_workers)
+    _discovery_bus = DiscoveryBus()
     await broker.startup()
 
 
 async def shutdown_broker() -> None:
     """Shut down the broker cleanly."""
-    global _pipeline_config, _semaphore
+    global _pipeline_config, _semaphore, _discovery_bus
     await broker.shutdown()
     _pipeline_config = None
     _semaphore = None
+    if _discovery_bus is not None:
+        _discovery_bus.clear()
+    _discovery_bus = None
     _domain_locks.clear()
 
 
@@ -156,29 +162,31 @@ async def process_url_task(
         if domain not in _domain_locks:
             _domain_locks[domain] = asyncio.Lock()
 
-        async with _domain_locks[domain]:
-            pipeline = Pipeline(
-                config.llm_config,
-                contract=config.contract,
-                output_format=config.output_format,
-                quiet=True,
-                selector_level=config.selector_level,
-            )
+        write_lock = _domain_locks[domain]
+        pipeline = Pipeline(
+            config.llm_config,
+            contract=config.contract,
+            output_format=config.output_format,
+            quiet=True,
+            selector_level=config.selector_level,
+            bus=_discovery_bus,
+            write_lock=write_lock,
+        )
 
-            try:
-                await pipeline.process_url(
-                    url,
-                    force=force,
-                    max_fetch_retries=max_fetch_retries,
-                    max_discovery_retries=max_discovery_retries,
-                    skip_verification=skip_verification,
-                    fetcher_type=fetcher_type,
-                )
-                elapsed = getattr(pipeline, 'last_elapsed', 0.0)
-                return TaskResult(url=url, elapsed=elapsed)
-            except Exception:
-                logger.exception('Task failed for %s', url)
-                raise  # taskiq retry middleware fires here
+        try:
+            await pipeline.process_url(
+                url,
+                force=force,
+                max_fetch_retries=max_fetch_retries,
+                max_discovery_retries=max_discovery_retries,
+                skip_verification=skip_verification,
+                fetcher_type=fetcher_type,
+            )
+            elapsed = getattr(pipeline, 'last_elapsed', 0.0)
+            return TaskResult(url=url, elapsed=elapsed)
+        except Exception:
+            logger.exception('Task failed for %s', url)
+            raise  # taskiq retry middleware fires here
 
 
 _domain_locks: dict[str, asyncio.Lock] = {}

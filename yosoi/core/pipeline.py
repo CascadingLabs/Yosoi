@@ -3,6 +3,7 @@
 Centralized retry logic for bot detection and AI failures.
 """
 
+import asyncio
 import logging
 import time
 from collections.abc import AsyncIterator, Awaitable, Callable
@@ -20,6 +21,7 @@ from tenacity import RetryCallState, RetryError
 from yosoi.core.cleaning import HTMLCleaner
 from yosoi.core.configs import YosoiConfig
 from yosoi.core.discovery import DiscoveryOrchestrator, LLMConfig
+from yosoi.core.discovery.bus import DiscoveryBus
 from yosoi.core.extraction import ContentExtractor
 from yosoi.core.fetcher import HTMLFetcher, create_fetcher
 from yosoi.core.verification import SelectorVerifier
@@ -72,6 +74,8 @@ class Pipeline:
         force: bool = False,
         quiet: bool = False,
         selector_level: SelectorLevel = SelectorLevel.CSS,
+        bus: DiscoveryBus | None = None,
+        write_lock: asyncio.Lock | None = None,
     ):
         """Initialize the pipeline with LLM configuration.
 
@@ -89,6 +93,8 @@ class Pipeline:
                    progress display replaces per-task output. Defaults to False.
             selector_level: Maximum selector strategy level for discovery and extraction.
                             Defaults to CSS.
+            bus: Optional shared discovery bus for cross-pipeline field deduplication.
+            write_lock: Optional asyncio.Lock to serialize selector writes for the domain.
 
         """
         self.selector_level = selector_level
@@ -132,6 +138,8 @@ class Pipeline:
             storage=self.storage,
             console=self.console,
             target_level=self.selector_level,
+            bus=bus,
+            write_lock=write_lock,
         )
         self.verifier = SelectorVerifier(console=self.console)
         self.extractor = ContentExtractor(console=self.console, contract=self.contract)

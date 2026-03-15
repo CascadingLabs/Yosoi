@@ -10,6 +10,7 @@ from urllib.parse import urlparse
 import logfire
 from rich.console import Console
 
+from yosoi.core.discovery.bus import DiscoveryBus
 from yosoi.core.discovery.config import LLMConfig
 from yosoi.core.discovery.field_agent import FieldDiscoveryAgent
 from yosoi.core.discovery.field_task import FieldTaskResult, run_field_task
@@ -17,6 +18,7 @@ from yosoi.models.contract import Contract
 from yosoi.models.selectors import SelectorLevel
 from yosoi.prompts.discovery import DiscoveryInput
 from yosoi.storage.persistence import SelectorStorage
+from yosoi.utils.signatures import _get_yosoi_type
 
 # Selector dict: field name → {primary, fallback, tertiary} selectors
 SelectorMap = dict[str, dict[str, Any]]
@@ -52,6 +54,8 @@ class DiscoveryOrchestrator:
         console: Console | None = None,
         target_level: SelectorLevel = SelectorLevel.CSS,
         max_concurrent: int = 5,
+        bus: DiscoveryBus | None = None,
+        write_lock: asyncio.Lock | None = None,
     ):
         """Initialise the orchestrator.
 
@@ -62,6 +66,8 @@ class DiscoveryOrchestrator:
             console: Optional Rich console for output
             target_level: Maximum selector strategy level. Defaults to CSS.
             max_concurrent: Maximum concurrent LLM calls. Defaults to 5.
+            bus: Optional shared discovery bus for cross-pipeline field sharing.
+            write_lock: Optional asyncio.Lock to serialize selector writes for the domain.
 
         """
         self._contract = contract
@@ -69,6 +75,8 @@ class DiscoveryOrchestrator:
         self._target_level = target_level
         self._max_concurrent = max_concurrent
         self._agent = FieldDiscoveryAgent(llm_config, console=console)
+        self._bus = bus
+        self._write_lock = write_lock
         self.console = console or Console()
         self.model_name = llm_config.model_name
         self.provider = llm_config.provider
@@ -119,6 +127,9 @@ class DiscoveryOrchestrator:
 
         task_specs = self._build_task_specs(field_descs, hints, stale_fields)
 
+        # Obtain a domain-scoped bus view shared by all field tasks in this batch
+        scoped_bus = self._bus.scoped(domain) if self._bus is not None else None
+
         # Fan-out: run all field tasks concurrently
         coroutines = [
             run_field_task(
@@ -132,6 +143,8 @@ class DiscoveryOrchestrator:
                 max_level=self._target_level,
                 is_container=bool(spec['is_container']),
                 semaphore=semaphore,
+                scoped_bus=scoped_bus,
+                yosoi_type=_get_yosoi_type(self._contract, str(spec['field_name'])),
             )
             for spec in task_specs
         ]
@@ -184,7 +197,11 @@ class DiscoveryOrchestrator:
         # Single write — avoids read-modify-write races across concurrent tasks
         # Skip save for partial rediscovery (pipeline handles merge + save)
         if url and stale_fields is None:
-            self._storage.save_selectors(url, merged)
+            if self._write_lock is not None:
+                async with self._write_lock:
+                    self._storage.save_selectors(url, merged)
+            else:
+                self._storage.save_selectors(url, merged)
 
         return merged
 
