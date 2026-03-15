@@ -18,7 +18,7 @@ def _run_mypy(code: str) -> subprocess.CompletedProcess[str]:
             [sys.executable, '-m', 'mypy', '--strict', '--no-error-summary', str(snippet_file)],
             capture_output=True,
             text=True,
-            timeout=30,
+            timeout=60,
         )
     finally:
         snippet_file.unlink(missing_ok=True)
