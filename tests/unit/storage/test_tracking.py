@@ -455,3 +455,39 @@ async def test_elapsed_accumulates_without_precision_loss(tracker):
     await tracker.record_url('https://a.com/y', elapsed=2.456)
     data = tracker._load_data()
     assert data['a.com']['total_elapsed'] == pytest.approx(1.123 + 2.456)
+
+
+# ---------------------------------------------------------------------------
+# _normalize_stats dict path (line 61)
+# ---------------------------------------------------------------------------
+
+
+def test_normalize_stats_with_dict_input(tracker):
+    """_normalize_stats must validate a plain dict into DomainStats."""
+    from yosoi.storage.tracking import DomainStats
+
+    raw = {'llm_calls': 5, 'url_count': 10, 'total_elapsed': 3.0}
+    result = tracker._normalize_stats(raw)
+    assert isinstance(result, DomainStats)
+    assert result.llm_calls == 5
+    assert result.url_count == 10
+
+
+def test_normalize_stats_with_domain_stats_passthrough(tracker):
+    """_normalize_stats must return DomainStats unchanged."""
+    from yosoi.storage.tracking import DomainStats
+
+    stats = DomainStats(llm_calls=2, url_count=7)
+    result = tracker._normalize_stats(stats)
+    assert result is stats
+
+
+# ---------------------------------------------------------------------------
+# extract_domain ValueError path (lines 107-108)
+# ---------------------------------------------------------------------------
+
+
+def test_extract_domain_invalid_ipv6_returns_unknown(tracker):
+    """Malformed IPv6 URL must trigger ValueError catch and return 'unknown'."""
+    result = tracker.extract_domain('http://[::1')
+    assert result == 'unknown'
