@@ -125,21 +125,21 @@ def _print_items(label: str, items: list) -> None:
 async def run_pinned() -> None:
     print('\n[Case 1] Pinned root = ys.css(".product-card")')
     pipeline = ys.Pipeline(llm_config=MODEL, contract=ProductPinned, output_format='json')
-    items = [item async for item in pipeline.scrape(URL, force=True)]
+    items = [item async for item in pipeline.scrape(URL, force=False)]
     _print_items('Pinned root', items)
 
 
 async def run_auto() -> None:
     print('\n[Case 2] Auto-discover root')
     pipeline = ys.Pipeline(llm_config=MODEL, contract=ProductAuto, output_format='json')
-    items = [item async for item in pipeline.scrape(URL, force=True)]
+    items = [item async for item in pipeline.scrape(URL, force=False)]
     _print_items('Auto-discover root', items)
 
 
 async def run_composed() -> None:
     print('\n[Case 3] Nested contract (price: _PriceDetails)')
     pipeline = ys.Pipeline(llm_config=MODEL, contract=ProductComposed, output_format='json')
-    items = [item async for item in pipeline.scrape(URL, force=True)]
+    items = [item async for item in pipeline.scrape(URL, force=False)]
     _print_items('Nested contract', items)
 
 

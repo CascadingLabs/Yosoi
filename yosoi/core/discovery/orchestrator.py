@@ -83,12 +83,17 @@ class DiscoveryOrchestrator:
         self._target_level = value
 
     @logfire.instrument('orchestrator_discover_selectors', extract_args=False)
-    async def discover_selectors(self, html: str, url: str | None = None) -> SelectorMap | None:
+    async def discover_selectors(
+        self, html: str, url: str | None = None, *, stale_fields: set[str] | None = None
+    ) -> SelectorMap | None:
         """Discover selectors for all contract fields in parallel.
 
         Args:
             html: Cleaned HTML to analyze
             url: Optional URL for cache domain lookup and saving
+            stale_fields: When not None, only discover these fields (partial
+                rediscovery). The caller is responsible for merging fresh cached
+                selectors with the newly discovered ones and saving.
 
         Returns:
             SelectorMap with discovered selectors, or None if all fields failed.
@@ -112,31 +117,7 @@ class DiscoveryOrchestrator:
         # Load the full domain selector map once — avoids N redundant file reads
         existing = self._storage.load_selectors(domain) or {}
 
-        # Build task specs: contract fields + optional container
-        task_specs: list[dict[str, object]] = [
-            {
-                'field_name': name,
-                'field_description': desc,
-                'field_hint': hints.get(name),
-                'is_container': False,
-            }
-            for name, desc in field_descs.items()
-        ]
-        if not self._contract.get_root():
-            task_specs.append(
-                {
-                    'field_name': 'root',
-                    'field_description': (
-                        'Selector for the repeating wrapper element that contains one complete item '
-                        '(e.g., .product-card, article.listing). '
-                        'Set to null for single-item pages.'
-                    ),
-                    'field_hint': None,
-                    'is_container': True,
-                }
-            )
-
-        task_specs.extend(self._nested_discover_task_specs())
+        task_specs = self._build_task_specs(field_descs, hints, stale_fields)
 
         # Fan-out: run all field tasks concurrently
         coroutines = [
@@ -201,10 +182,45 @@ class DiscoveryOrchestrator:
         )
 
         # Single write — avoids read-modify-write races across concurrent tasks
-        if url:
+        # Skip save for partial rediscovery (pipeline handles merge + save)
+        if url and stale_fields is None:
             self._storage.save_selectors(url, merged)
 
         return merged
+
+    def _build_task_specs(
+        self,
+        field_descs: dict[str, str],
+        hints: dict[str, str | None],
+        stale_fields: set[str] | None,
+    ) -> list[dict[str, object]]:
+        """Build the list of field task specs, optionally filtered to stale fields only."""
+        specs: list[dict[str, object]] = [
+            {
+                'field_name': name,
+                'field_description': desc,
+                'field_hint': hints.get(name),
+                'is_container': False,
+            }
+            for name, desc in field_descs.items()
+        ]
+        if not self._contract.get_root():
+            specs.append(
+                {
+                    'field_name': 'root',
+                    'field_description': (
+                        'Selector for the repeating wrapper element that contains one complete item '
+                        '(e.g., .product-card, article.listing). '
+                        'Set to null for single-item pages.'
+                    ),
+                    'field_hint': None,
+                    'is_container': True,
+                }
+            )
+        specs.extend(self._nested_discover_task_specs())
+        if stale_fields is not None:
+            specs = [s for s in specs if str(s['field_name']) in stale_fields]
+        return specs
 
     def _nested_discover_task_specs(self) -> list[dict[str, object]]:
         """Return task specs for nested child contracts that use ``root = ys.discover()``."""

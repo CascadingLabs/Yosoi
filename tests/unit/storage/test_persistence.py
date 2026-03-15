@@ -33,7 +33,7 @@ def test_save_selectors_formats_with_primary_fallback_tertiary(storage):
     loaded = storage.load_selectors('example.com')
     assert loaded['title']['primary'] == 'h1'
     assert loaded['title']['fallback'] == 'h2'
-    assert loaded['title']['tertiary'] is None  # default when not provided
+    assert 'tertiary' not in loaded['title']  # omitted when not provided
 
 
 def test_nonexistent_domain_returns_none(storage):
@@ -482,7 +482,7 @@ def test_load_file_data_returns_data_for_valid_file(storage):
     storage.save_selectors('https://example.com', selectors)
     result = storage._load_file_data('example.com')
     assert result is not None
-    assert 'selectors' in result
+    assert 'snapshots' in result
 
 
 # ---------------------------------------------------------------------------

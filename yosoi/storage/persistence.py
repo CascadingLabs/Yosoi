@@ -1,10 +1,20 @@
 """Handles saving and loading selector data to/from JSON files."""
 
+from __future__ import annotations
+
 import json
 import os
+from datetime import datetime, timezone
 from typing import Any
 from urllib.parse import urlparse
 
+from yosoi.models.snapshot import (
+    CacheVerdict,
+    SelectorSnapshot,
+    SnapshotMap,
+    selector_dict_to_snapshot,
+    snapshot_to_selector_dict,
+)
 from yosoi.utils.files import init_yosoi
 
 
@@ -28,35 +38,35 @@ class SelectorStorage:
         self.storage_dir = str(init_yosoi(storage_dir))
         self.content_dir = str(init_yosoi(content_dir))
 
-    def save_selectors(self, url: str, selectors: dict[str, Any]) -> str:
-        """Save selectors to a JSON file.
+    def save_selectors(self, url: str, selectors: dict[str, Any], *, verified: bool = False) -> str:
+        """Save selectors as snapshot format.
 
-        Selectors are always saved as JSON for machine readability and reuse.
+        Wraps each field's selector dict in a SelectorSnapshot with a
+        ``discovered_at`` timestamp, then writes the SnapshotMap to disk.
 
         Args:
             url: URL the selectors were discovered from
             selectors: Dictionary of validated selectors
+            verified: When True, stamp each snapshot with ``last_verified_at=now``.
 
         Returns:
             Path to the saved file.
 
         """
-        from yosoi.outputs.utils import save_formatted_selectors
-
-        domain = self._extract_domain(url)
-        filepath = self._get_selector_filepath(domain)
-
-        # Format selectors
-        formatted_selectors = self._format_selectors(selectors)
-
-        # Use output module to format and save (always JSON)
-        save_formatted_selectors(filepath, url, domain, formatted_selectors)
-
-        print(f'\n✓ Saved selectors to: {filepath}')
-        return filepath
+        now = datetime.now(timezone.utc)
+        formatted = self._format_selectors(selectors)
+        snapshots: dict[str, SelectorSnapshot] = {}
+        for field_name, field_data in formatted.items():
+            snapshots[field_name] = selector_dict_to_snapshot(
+                field_data, discovered_at=now, last_verified_at=now if verified else None
+            )
+        return self.save_snapshots(url, snapshots)
 
     def load_selectors(self, domain: str) -> dict[str, Any] | None:
-        """Load selectors from a JSON file.
+        """Load selectors from a snapshot file.
+
+        Strips audit metadata — callers receive
+        ``{field: {primary, fallback, tertiary}}`` shape.
 
         Args:
             domain: Domain name (e.g., 'example.com')
@@ -65,20 +75,10 @@ class SelectorStorage:
             Dictionary of selectors, or None if not found or error occurred.
 
         """
-        filepath = self._get_filepath(domain)
-
-        if not os.path.exists(filepath):
+        snapshots = self.load_snapshots(domain)
+        if snapshots is None:
             return None
-
-        try:
-            with open(filepath, encoding='utf-8') as f:
-                data: dict[str, Any] = json.load(f)
-                # Return just the selectors portion, not the metadata wrapper
-                selectors: dict[str, Any] = data.get('selectors', data)
-                return selectors
-        except (OSError, json.JSONDecodeError, ValueError) as e:
-            print(f'Error loading selectors: {e}')
-            return None
+        return {name: snapshot_to_selector_dict(snap) for name, snap in snapshots.items()}
 
     def load_field_selector(self, domain: str, field_name: str) -> dict[str, Any] | None:
         """Return raw selector dict for a single field, or None if not cached.
@@ -211,17 +211,99 @@ class SelectorStorage:
         summary: dict[str, Any] = {'total_domains': len(domains), 'domains': []}
 
         for domain in domains:
-            data = self._load_file_data(domain)
-            if data:
+            snapshots = self.load_snapshots(domain)
+            if snapshots:
+                # Use earliest discovered_at as the domain-level timestamp
+                earliest = min((s.discovered_at for s in snapshots.values()), default=None)
                 summary['domains'].append(
                     {
                         'domain': domain,
-                        'discovered_at': data.get('discovered_at'),
-                        'fields': list(data.get('selectors', {}).keys()),
+                        'discovered_at': earliest.isoformat() if earliest else None,
+                        'fields': list(snapshots.keys()),
                     }
                 )
 
         return summary
+
+    # ------------------------------------------------------------------
+    # Snapshot API (v2)
+    # ------------------------------------------------------------------
+
+    def load_snapshots(self, domain: str) -> dict[str, SelectorSnapshot] | None:
+        """Load full snapshots with audit metadata for a domain.
+
+        Args:
+            domain: Domain name (e.g., 'example.com')
+
+        Returns:
+            Dict mapping field names to SelectorSnapshot, or None if not found.
+
+        """
+        data = self._load_file_data(domain)
+        if data is None:
+            return None
+
+        if 'snapshots' not in data:
+            return None
+
+        try:
+            snap_map = SnapshotMap.model_validate(data)
+            return dict(snap_map.snapshots) if snap_map.snapshots else None
+        except (ValueError, TypeError):
+            return None
+
+    def save_snapshots(self, url: str, snapshots: dict[str, SelectorSnapshot]) -> str:
+        """Write v2 snapshot format to disk.
+
+        Args:
+            url: URL the selectors were discovered from
+            snapshots: Dict mapping field names to SelectorSnapshot
+
+        Returns:
+            Path to the saved file.
+
+        """
+        domain = self._extract_domain(url)
+        filepath = self._get_selector_filepath(domain)
+
+        snap_map = SnapshotMap(url=url, domain=domain, snapshots=snapshots)
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(snap_map.model_dump(mode='json'), f, indent=2, ensure_ascii=False)
+
+        print(f'\n✓ Saved snapshots to: {filepath}')
+        return filepath
+
+    def record_verdict(self, domain: str, field_name: str, verdict: CacheVerdict) -> None:
+        """Update the audit trail for a single field after verification.
+
+        Args:
+            domain: Domain name
+            field_name: Field whose verdict to record
+            verdict: FRESH, STALE, or DEGRADED
+
+        """
+        data = self._load_file_data(domain)
+        if data is None or 'snapshots' not in data:
+            return
+
+        snap_map = SnapshotMap.model_validate(data)
+        snap = snap_map.snapshots.get(field_name)
+        if snap is None:
+            return
+
+        now = datetime.now(timezone.utc)
+        if verdict == CacheVerdict.FRESH:
+            snap.last_verified_at = now
+            snap.failure_count = 0
+        else:  # STALE or DEGRADED
+            snap.last_failed_at = now
+            snap.failure_count += 1
+
+        filepath = self._get_filepath(domain)
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(snap_map.model_dump(mode='json'), f, indent=2, ensure_ascii=False)
 
     def _format_selectors(self, selectors: dict[str, Any]) -> dict[str, dict[str, str | None]]:
         """Format selectors for storage.

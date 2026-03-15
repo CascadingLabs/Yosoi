@@ -28,6 +28,7 @@ def _make_pipeline_stub(mocker, contract=None):
     stub.verifier = mocker.MagicMock()
     stub.extractor = mocker.MagicMock()
     stub.storage = mocker.MagicMock()
+    stub.storage.load_snapshots.return_value = None
     stub.tracker = mocker.MagicMock()
     stub.debug = mocker.MagicMock()
     stub.debug_mode = False
@@ -652,13 +653,27 @@ async def test_process_url_raises_when_create_fetcher_fails(mocker):
 
 
 async def test_process_url_succeeds_with_cached_selectors(mocker):
+    from datetime import datetime, timezone
+
+    from yosoi.models.snapshot import SelectorSnapshot
+
     stub = _make_pipeline_stub(mocker)
     mocker.patch.object(Pipeline, 'normalize_url', return_value='https://x.com')
     mocker.patch.object(Pipeline, '_extract_domain', return_value='x.com')
     mocker.patch.object(Pipeline, '_create_fetcher', return_value=mocker.MagicMock())
+    now = datetime.now(timezone.utc)
+    stub.storage.load_snapshots.return_value = {
+        'title': SelectorSnapshot(primary={'type': 'css', 'value': 'h1'}, discovered_at=now),
+    }
     stub.storage.load_selectors.return_value = {'title': {'primary': 'h1'}}
     mocker.patch.object(Pipeline, '_extract_with_cached', return_value=([{'title': 'Book'}], True))
-    stub.tracker.record_url.return_value = {'llm_calls': 0, 'url_count': 1}
+    stub.tracker.record_url.return_value = {
+        'llm_calls': 0,
+        'url_count': 1,
+        'level_distribution': {},
+        'total_elapsed': 0.0,
+        'partial_rediscovery_count': 0,
+    }
     mocker.patch('yosoi.core.pipeline.logfire')
     await Pipeline.process_url(stub, 'https://x.com')
 

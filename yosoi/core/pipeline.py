@@ -27,6 +27,7 @@ from yosoi.models import FetchResult
 from yosoi.models.contract import Contract
 from yosoi.models.results import VerificationResult
 from yosoi.models.selectors import SelectorLevel
+from yosoi.models.snapshot import CacheVerdict, SelectorSnapshot, snapshot_to_selector_dict
 from yosoi.storage import DebugManager, LLMTracker, SelectorStorage
 from yosoi.storage.tracking import DomainStats
 from yosoi.utils.exceptions import BotDetectionError
@@ -366,19 +367,144 @@ class Pipeline:
         skip_verification: bool,
         format_to_use: list[str],
     ) -> AsyncIterator[ContentMap] | None:
-        """Attempt cached-selector path. Returns an async generator if cache hit, None otherwise."""
-        existing = self.storage.load_selectors(domain)
-        if not existing:
+        """Attempt cached-selector path with per-field granularity."""
+        snapshots = self.storage.load_snapshots(domain)
+        if not snapshots:
             return None
 
         self.console.print(f'[success]✓ Found cached selectors for {domain}[/success]')
         logfire.info('Using cached selectors', domain=domain, url=url)
 
-        items, cache_valid = await self._extract_with_cached(url, fetcher, existing, skip_verification)
-        if not cache_valid:
-            return None  # fall through to fresh discovery
+        if skip_verification:
+            existing = {name: snapshot_to_selector_dict(snap) for name, snap in snapshots.items()}
+            items, cache_valid = await self._extract_with_cached(url, fetcher, existing, skip_verification)
+            if not cache_valid:
+                return None
+            return self._yield_cached_items(items, url, domain, format_to_use)
 
-        async def _yield_cached() -> AsyncIterator[ContentMap]:
+        cleaned_html = await self._fetch_and_clean_for_cache(url, fetcher)
+        if cleaned_html is None:
+            return self._yield_cached_items(None, url, domain, format_to_use)
+
+        return await self._evaluate_cached_verdicts(url, domain, cleaned_html, snapshots, format_to_use)
+
+    async def _fetch_and_clean_for_cache(self, url: str, fetcher: HTMLFetcher) -> str | None:
+        """Fetch + clean HTML for cache verification. Returns None on failure (fail-open)."""
+        try:
+            result = await fetcher.fetch(url)
+            if not result.success or result.html is None:
+                self.console.print('[warning]⚠ Could not fetch HTML, skipping extraction[/warning]')
+                return None
+        except BotDetectionError:
+            raise
+        except Exception as e:
+            self.logger.exception('Fetch failed during cache verification for %s', url)
+            self.console.print(f'[warning]⚠ Error: {e}, skipping extraction[/warning]')
+            return None
+
+        self.console.print('[step]Cleaning HTML...[/step]')
+        cleaned_html: str = self.cleaner.clean_html(result.html)
+        self.debug.save_debug_html(url, cleaned_html)
+        return cleaned_html
+
+    async def _evaluate_cached_verdicts(
+        self,
+        url: str,
+        domain: str,
+        cleaned_html: str,
+        snapshots: dict[str, SelectorSnapshot],
+        format_to_use: list[str],
+    ) -> AsyncIterator[ContentMap] | None:
+        """Verify cached fields, branch on fresh/stale/partial."""
+        verdicts = self._verify_per_field(cleaned_html, snapshots)
+
+        for field_name, verdict in verdicts.items():
+            self.storage.record_verdict(domain, field_name, verdict)
+
+        stale_fields = {f for f, v in verdicts.items() if v != CacheVerdict.FRESH}
+        fresh_fields = {f for f, v in verdicts.items() if v == CacheVerdict.FRESH}
+
+        # Check for new contract fields not in cache
+        overridden = set(self.contract.get_selector_overrides())
+        missing = (set(self.contract.model_fields) - overridden) - set(snapshots)
+        if missing:
+            self.console.print(
+                f'[warning]⚠ New contract fields not in cache: {", ".join(sorted(missing))} — re-discovering[/warning]'
+            )
+            stale_fields |= missing
+
+        if not stale_fields:
+            return self._extract_all_fresh(url, domain, cleaned_html, snapshots, fresh_fields, format_to_use)
+
+        if not fresh_fields:
+            self.console.print(
+                f'[warning]⚠ All {len(stale_fields)} cached selectors stale — forcing re-discovery[/warning]'
+            )
+            return None
+
+        return await self._partial_rediscovery(
+            url, domain, cleaned_html, snapshots, fresh_fields, stale_fields, format_to_use
+        )
+
+    def _extract_all_fresh(
+        self,
+        url: str,
+        domain: str,
+        cleaned_html: str,
+        snapshots: dict[str, SelectorSnapshot],
+        fresh_fields: set[str],
+        format_to_use: list[str],
+    ) -> AsyncIterator[ContentMap]:
+        """All cached selectors verified — extract content."""
+        self.console.print(f'[success]✓ All {len(fresh_fields)} cached selectors verified[/success]')
+        existing = {name: snapshot_to_selector_dict(snap) for name, snap in snapshots.items()}
+        container_selector = self._resolve_root(existing)
+        extracted = self._extract(url, cleaned_html, existing, container_selector)
+        if extracted:
+            items_list: ContentItems = extracted if isinstance(extracted, list) else [extracted]
+            return self._yield_cached_items(items_list, url, domain, format_to_use)
+        self.console.print('[warning]⚠ Extraction failed with cached selectors[/warning]')
+        return self._yield_cached_items(None, url, domain, format_to_use)
+
+    def _verify_per_field(self, html: str, snapshots: dict[str, SelectorSnapshot]) -> dict[str, CacheVerdict]:
+        """Verify each cached field independently and apply root cascade.
+
+        Args:
+            html: Cleaned HTML to verify against
+            snapshots: Per-field snapshots to verify
+
+        Returns:
+            Dict mapping field names to CacheVerdict.
+
+        """
+        from parsel import Selector as _PS
+
+        sel = _PS(text=html)
+        verdicts: dict[str, CacheVerdict] = {}
+
+        for field_name, snap in snapshots.items():
+            sel_dict = snapshot_to_selector_dict(snap)
+            field_result = self.verifier._verify_field(sel, field_name, sel_dict, self.selector_level)
+            verdicts[field_name] = CacheVerdict.FRESH if field_result.status == 'verified' else CacheVerdict.STALE
+
+        # Root cascade: if root is stale, mark all non-root fields stale
+        if verdicts.get('root') == CacheVerdict.STALE:
+            for name in verdicts:
+                if name != 'root':
+                    verdicts[name] = CacheVerdict.STALE
+
+        return verdicts
+
+    def _yield_cached_items(
+        self,
+        items: ContentItems | None,
+        url: str,
+        domain: str,
+        format_to_use: list[str],
+    ) -> AsyncIterator[ContentMap]:
+        """Wrap cached items into an async generator that tracks and saves."""
+
+        async def _gen() -> AsyncIterator[ContentMap]:
             if items:
                 validated = self._validate_items(items, url)
                 for v in validated:
@@ -390,7 +516,87 @@ class Pipeline:
             self.last_elapsed = time.monotonic() - self._url_start
             self.console.print(f'[dim]  ⏱ {self.last_elapsed:.1f}s elapsed[/dim]')
 
-        return _yield_cached()
+        return _gen()
+
+    async def _partial_rediscovery(
+        self,
+        url: str,
+        domain: str,
+        cleaned_html: str,
+        snapshots: dict[str, SelectorSnapshot],
+        fresh_fields: set[str],
+        stale_fields: set[str],
+        format_to_use: list[str],
+    ) -> AsyncIterator[ContentMap] | None:
+        """Rediscover only stale fields, merge with fresh cache, extract and yield."""
+        self.console.print(
+            f'[info]  ↳ {len(fresh_fields)} fresh, {len(stale_fields)} stale '
+            f'— partial rediscovery for: {", ".join(sorted(stale_fields))}[/info]'
+        )
+
+        new_selectors = await self.discovery.discover_selectors(cleaned_html, url, stale_fields=stale_fields)
+        merged = self._merge_and_save_snapshots(url, snapshots, fresh_fields, new_selectors, cleaned_html)
+
+        container_selector = self._resolve_root(merged)
+        extracted = self._extract(url, cleaned_html, merged, container_selector)
+
+        if not extracted:
+            self.console.print('[warning]⚠ Extraction failed after partial rediscovery[/warning]')
+            return None
+
+        items_list: ContentItems = extracted if isinstance(extracted, list) else [extracted]
+        validated = self._validate_items(items_list, url)
+
+        async def _yield_partial() -> AsyncIterator[ContentMap]:
+            for v in validated:
+                yield v
+            save_content: ContentMap | ContentItems = validated if len(validated) > 1 else validated[0]
+            for fmt in format_to_use:
+                self.storage.save_content(url, save_content, fmt)
+            elapsed = time.monotonic() - self._url_start
+            self.last_elapsed = elapsed
+            stats = self.tracker.record_url(
+                url, used_llm=True, level_distribution=None, elapsed=elapsed, partial_discovery=True
+            )
+            self._print_tracking_stats(domain, stats)
+            self.console.print(f'[dim]  ⏱ {self.last_elapsed:.1f}s elapsed[/dim]')
+
+        return _yield_partial()
+
+    def _merge_and_save_snapshots(
+        self,
+        url: str,
+        snapshots: dict[str, SelectorSnapshot],
+        fresh_fields: set[str],
+        new_selectors: SelectorMap | None,
+        cleaned_html: str,
+    ) -> SelectorMap:
+        """Merge fresh cached selectors with newly discovered, verify new ones, and save."""
+        from datetime import datetime
+        from datetime import timezone as _tz
+
+        from yosoi.models.snapshot import selector_dict_to_snapshot as _to_snap
+
+        merged: SelectorMap = {
+            name: snapshot_to_selector_dict(snap) for name, snap in snapshots.items() if name in fresh_fields
+        }
+        if new_selectors:
+            merged.update(new_selectors)
+            verification = self.verifier.verify(cleaned_html, new_selectors, max_level=self.selector_level)
+            for name, field_result in verification.results.items():
+                if field_result.status != 'verified':
+                    self.console.print(f'[warning]⚠ Rediscovered selector for {name} failed verification[/warning]')
+                    merged.pop(name, None)
+
+        now = datetime.now(_tz.utc)
+        merged_snapshots: dict[str, SelectorSnapshot] = {}
+        for name, sel_dict in merged.items():
+            if name in fresh_fields and name in snapshots:
+                merged_snapshots[name] = snapshots[name]
+            else:
+                merged_snapshots[name] = _to_snap(sel_dict, discovered_at=now, last_verified_at=now)
+        self.storage.save_snapshots(url, merged_snapshots)
+        return merged
 
     def _validate_items(self, extracted: ContentMap | ContentItems, url: str) -> ContentItems:
         """Normalise extraction result to list and validate each item."""
@@ -1057,7 +1263,7 @@ class Pipeline:
 
         """
         # Save selectors (always JSON) and content (user's choice of format)
-        self.storage.save_selectors(url, verified)
+        self.storage.save_selectors(url, verified, verified=True)
 
         if extracted:
             for fmt in output_format:

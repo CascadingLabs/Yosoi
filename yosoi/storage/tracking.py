@@ -18,6 +18,7 @@ class DomainStats(TypedDict):
     url_count: int
     level_distribution: dict[str, int]
     total_elapsed: float
+    partial_rediscovery_count: int
 
 
 class LLMTracker:
@@ -101,6 +102,7 @@ class LLMTracker:
         used_llm: bool = False,
         level_distribution: dict[str, int] | None = None,
         elapsed: float | None = None,
+        partial_discovery: bool = False,
     ) -> DomainStats:
         """Record that a URL was processed.
 
@@ -109,6 +111,7 @@ class LLMTracker:
             used_llm: Whether LLM was called for this URL. Defaults to False.
             level_distribution: Count of verified fields by selector strategy level. Defaults to None.
             elapsed: Time in seconds spent processing this URL. Defaults to None.
+            partial_discovery: Whether partial (granular) rediscovery was used. Defaults to False.
 
         Returns:
             DomainStats with 'llm_calls', 'url_count', 'level_distribution', 'total_elapsed'.
@@ -118,7 +121,13 @@ class LLMTracker:
         data = self._load_data()
 
         if domain not in data:
-            data[domain] = {'llm_calls': 0, 'url_count': 0, 'level_distribution': {}, 'total_elapsed': 0.0}
+            data[domain] = {
+                'llm_calls': 0,
+                'url_count': 0,
+                'level_distribution': {},
+                'total_elapsed': 0.0,
+                'partial_rediscovery_count': 0,
+            }
 
         data[domain]['url_count'] += 1
 
@@ -133,6 +142,10 @@ class LLMTracker:
             dist: dict[str, int] = data[domain].setdefault('level_distribution', {})
             for level, count in level_distribution.items():
                 dist[level] = dist.get(level, 0) + count
+
+        if partial_discovery:
+            data[domain].setdefault('partial_rediscovery_count', 0)
+            data[domain]['partial_rediscovery_count'] += 1
 
         self._save_data(data)
         return data[domain]
@@ -177,7 +190,12 @@ class LLMTracker:
         """
         domain = self.extract_domain(url_or_domain) if '://' in url_or_domain else url_or_domain
         data = self._load_data()
-        return data.get(domain, DomainStats(llm_calls=0, url_count=0, level_distribution={}, total_elapsed=0.0))
+        return data.get(
+            domain,
+            DomainStats(
+                llm_calls=0, url_count=0, level_distribution={}, total_elapsed=0.0, partial_rediscovery_count=0
+            ),
+        )
 
     def get_all_stats(self) -> dict[str, DomainStats]:
         """Get all tracking data.
