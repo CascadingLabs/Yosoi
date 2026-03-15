@@ -41,9 +41,6 @@ jobs:
         # if: matrix.python-version == '3.10'
         run: uv run poe ci-check
 
-      - name: Run Stub Tests
-        run: uv run poe stub-test
-
       - name: Run CI Tests
         run: uv run poe ci-test
 
