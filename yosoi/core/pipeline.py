@@ -13,6 +13,7 @@ from urllib.parse import urlparse
 import httpx
 import logfire
 from rich.console import Console
+from rich.live import Live
 from rich.panel import Panel
 from rich.table import Table
 from rich.theme import Theme
@@ -43,6 +44,28 @@ SelectorMap = dict[str, dict[str, Any]]
 ContentMap = dict[str, str | list[str | dict[str, str]]]
 # Multi-item extraction: list of ContentMap dicts
 ContentItems = list[ContentMap]
+
+_STATUS_STYLES: dict[str, tuple[str, bool]] = {
+    'Queued': ('dim', False),
+    'Running': ('bold yellow', True),
+    'Done': ('bold green', False),
+    'Skipped': ('dim', False),
+    'Failed': ('bold red', False),
+}
+
+
+def _build_concurrent_table(url_status: dict[str, tuple[str, float]]) -> Table:
+    """Build a Rich Table showing per-URL concurrent progress."""
+    table = Table(title='Concurrent Processing', expand=True)
+    table.add_column('#', style='dim', width=4)
+    table.add_column('URL', style='cyan', ratio=3)
+    table.add_column('Status', width=12)
+    table.add_column('Elapsed', style='dim', width=10)
+    for idx, (u, (status, value)) in enumerate(url_status.items(), 1):
+        style, is_running = _STATUS_STYLES.get(status, ('bold red', False))
+        elapsed_str = f'{time.monotonic() - value:.1f}s' if is_running else (f'{value:.1f}s' if value else '—')
+        table.add_row(str(idx), u, f'[{style}]{status}[/{style}]', elapsed_str)
+    return table
 
 
 class Pipeline:
@@ -246,6 +269,17 @@ class Pipeline:
 
         effective_workers = min(workers, len(urls))
         if effective_workers > 1:
+            if not self.console.quiet and on_start is None and on_complete is None:
+                return await self._process_urls_with_live(
+                    urls,
+                    force=force_flag,
+                    skip_verification=skip_verification,
+                    fetcher_type=fetcher_type,
+                    max_fetch_retries=max_fetch_retries,
+                    max_discovery_retries=max_discovery_retries,
+                    output_format=format_to_use,
+                    effective_workers=effective_workers,
+                )
             return await self._process_urls_concurrent(
                 urls,
                 force=force_flag,
@@ -302,6 +336,47 @@ class Pipeline:
             )
 
         return results
+
+    async def _process_urls_with_live(
+        self,
+        urls: list[str],
+        force: bool,
+        skip_verification: bool,
+        fetcher_type: str,
+        max_fetch_retries: int,
+        max_discovery_retries: int,
+        output_format: list[str],
+        effective_workers: int,
+    ) -> dict[str, list[str]]:
+        """Run concurrent processing wrapped in a Rich Live progress table.
+
+        Called automatically from process_urls() when workers > 1,
+        the pipeline is not quiet, and no external callbacks are provided.
+        """
+        url_status: dict[str, tuple[str, float]] = dict.fromkeys(urls, ('Queued', 0.0))
+        live = Live(_build_concurrent_table(url_status), console=self.console, refresh_per_second=4)
+
+        async def _on_start(url: str) -> None:
+            url_status[url] = ('Running', time.monotonic())
+            live.update(_build_concurrent_table(url_status))
+
+        async def _on_complete(url: str, success: bool, elapsed: float) -> None:
+            url_status[url] = ('Done' if success else 'Failed', elapsed)
+            live.update(_build_concurrent_table(url_status))
+
+        with live:
+            return await self._process_urls_concurrent(
+                urls,
+                force=force,
+                skip_verification=skip_verification,
+                fetcher_type=fetcher_type,
+                max_fetch_retries=max_fetch_retries,
+                max_discovery_retries=max_discovery_retries,
+                output_format=output_format,
+                max_workers=effective_workers,
+                on_complete=_on_complete,
+                on_start=_on_start,
+            )
 
     async def _process_urls_concurrent(
         self,

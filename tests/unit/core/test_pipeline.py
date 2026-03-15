@@ -1493,3 +1493,133 @@ async def test_process_urls_calls_on_complete_on_failure(mocker):
     await Pipeline.process_urls(stub, ['https://fail.com'], on_complete=on_complete)
     assert len(completed) == 1
     assert completed[0] == ('https://fail.com', False)
+
+
+# ---------------------------------------------------------------------------
+# _build_concurrent_table
+# ---------------------------------------------------------------------------
+
+import time as _time
+
+
+class TestBuildConcurrentTable:
+    def test_empty_status(self):
+        """Empty url_status produces a table with no rows."""
+        from yosoi.core.pipeline import _build_concurrent_table
+
+        table = _build_concurrent_table({})
+        assert table.title == 'Concurrent Processing'
+        assert table.row_count == 0
+
+    def test_queued_status(self):
+        from yosoi.core.pipeline import _build_concurrent_table
+
+        table = _build_concurrent_table({'https://example.com': ('Queued', 0.0)})
+        assert table.row_count == 1
+
+    def test_running_status_with_elapsed(self):
+        from yosoi.core.pipeline import _build_concurrent_table
+
+        now = _time.monotonic()
+        table = _build_concurrent_table({'https://example.com': ('Running', now)})
+        assert table.row_count == 1
+
+    def test_done_status(self):
+        from yosoi.core.pipeline import _build_concurrent_table
+
+        table = _build_concurrent_table({'https://example.com': ('Done', 5.2)})
+        assert table.row_count == 1
+
+    def test_failed_status(self):
+        from yosoi.core.pipeline import _build_concurrent_table
+
+        table = _build_concurrent_table({'https://example.com': ('Failed', 3.0)})
+        assert table.row_count == 1
+
+    def test_skipped_status(self):
+        from yosoi.core.pipeline import _build_concurrent_table
+
+        table = _build_concurrent_table({'https://example.com': ('Skipped', 0.0)})
+        assert table.row_count == 1
+
+    def test_multiple_urls(self):
+        from yosoi.core.pipeline import _build_concurrent_table
+
+        url_status = {
+            'https://a.com': ('Queued', 0.0),
+            'https://b.com': ('Done', 2.0),
+            'https://c.com': ('Failed', 1.0),
+        }
+        table = _build_concurrent_table(url_status)
+        assert table.row_count == 3
+
+    def test_unknown_status_uses_default_style(self):
+        from yosoi.core.pipeline import _build_concurrent_table
+
+        table = _build_concurrent_table({'https://example.com': ('UnknownStatus', 1.0)})
+        assert table.row_count == 1
+
+
+# ---------------------------------------------------------------------------
+# process_urls — auto-live branching
+# ---------------------------------------------------------------------------
+
+import pytest
+
+
+class TestProcessUrlsAutoLive:
+    @pytest.mark.asyncio
+    async def test_workers_gt1_quiet_false_no_callbacks_uses_live(self, mocker):
+        """workers > 1, quiet=False, no callbacks → _process_urls_with_live called."""
+        stub = _make_pipeline_stub(mocker)
+        stub.console.quiet = False
+
+        mock_live_fn = mocker.AsyncMock(return_value={'successful': [], 'failed': [], 'skipped': []})
+        mock_concurrent_fn = mocker.AsyncMock(return_value={'successful': [], 'failed': [], 'skipped': []})
+        mocker.patch.object(Pipeline, '_process_urls_with_live', mock_live_fn)
+        mocker.patch.object(Pipeline, '_process_urls_concurrent', mock_concurrent_fn)
+
+        await Pipeline.process_urls(stub, ['https://a.com', 'https://b.com'], workers=2)
+
+        mock_live_fn.assert_awaited_once()
+        mock_concurrent_fn.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_workers_gt1_quiet_true_uses_concurrent_directly(self, mocker):
+        """workers > 1, quiet=True, no callbacks → _process_urls_concurrent called directly."""
+        stub = _make_pipeline_stub(mocker)
+        stub.console.quiet = True
+
+        mock_concurrent = mocker.AsyncMock(return_value={'successful': [], 'failed': [], 'skipped': []})
+        mocker.patch.object(Pipeline, '_process_urls_concurrent', mock_concurrent)
+        mock_live_fn = mocker.AsyncMock()
+        mocker.patch.object(Pipeline, '_process_urls_with_live', mock_live_fn)
+
+        await Pipeline.process_urls(stub, ['https://a.com', 'https://b.com'], workers=2)
+
+        mock_concurrent.assert_awaited_once()
+        mock_live_fn.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_workers_gt1_on_complete_provided_uses_concurrent_directly(self, mocker):
+        """workers > 1, quiet=False, on_complete given → _process_urls_concurrent called directly."""
+        stub = _make_pipeline_stub(mocker)
+        stub.console.quiet = False
+
+        mock_concurrent = mocker.AsyncMock(return_value={'successful': [], 'failed': [], 'skipped': []})
+        mocker.patch.object(Pipeline, '_process_urls_concurrent', mock_concurrent)
+        mock_live_fn = mocker.AsyncMock()
+        mocker.patch.object(Pipeline, '_process_urls_with_live', mock_live_fn)
+
+        async def dummy_on_complete(url: str, success: bool, elapsed: float) -> None:
+            pass
+
+        await Pipeline.process_urls(
+            stub,
+            ['https://a.com', 'https://b.com'],
+            workers=2,
+            on_complete=dummy_on_complete,
+        )
+
+        mock_concurrent.assert_awaited_once()
+        mock_live_fn.assert_not_awaited()
