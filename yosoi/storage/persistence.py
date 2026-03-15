@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 from datetime import datetime, timezone
 from typing import Any
 from urllib.parse import urlparse
+
+logger = logging.getLogger(__name__)
 
 from yosoi.models.snapshot import (
     CacheVerdict,
@@ -137,7 +140,7 @@ class SelectorStorage:
         # Use output module to format and save
         save_formatted_content(filepath, url, domain, content, output_format)
 
-        print(f'✓ Saved content to: {filepath}')
+        logger.info('Saved content to: %s', filepath)
         return filepath
 
     def load_content(self, url: str, contract_sig: str | None = None) -> dict[str, Any] | list[dict[str, Any]] | None:
@@ -167,7 +170,7 @@ class SelectorStorage:
                 content: dict[str, Any] = data.get('content', data)
                 return content
         except (OSError, json.JSONDecodeError, ValueError) as e:
-            print(f'Error loading content: {e}')
+            logger.error('Error loading content: %s', e)
             return None
 
     def content_exists(self, url: str, contract_sig: str | None = None) -> bool:
@@ -187,6 +190,10 @@ class SelectorStorage:
     def list_domains(self) -> list[str]:
         """List all domains with saved selectors.
 
+        Reads the ``domain`` field from each snapshot file rather than
+        reversing filename mangling, so domains with underscores round-trip
+        correctly.
+
         Returns:
             Sorted list of domain names with saved selectors.
 
@@ -194,14 +201,19 @@ class SelectorStorage:
         if not os.path.exists(self.storage_dir):
             return []
 
-        files = os.listdir(self.storage_dir)
         domains = []
-
-        for filename in files:
-            if filename.startswith('selectors_') and filename.endswith('.json'):
-                # Extract domain from filename
-                domain = filename[10:-5].replace('_', '.')
-                domains.append(domain)
+        for filename in os.listdir(self.storage_dir):
+            if not (filename.startswith('selectors_') and filename.endswith('.json')):
+                continue
+            filepath = os.path.join(self.storage_dir, filename)
+            try:
+                with open(filepath, encoding='utf-8') as f:
+                    data = json.load(f)
+                domain = data.get('domain')
+                if isinstance(domain, str) and domain:
+                    domains.append(domain)
+            except (OSError, json.JSONDecodeError):
+                pass
 
         return sorted(domains)
 
@@ -279,7 +291,7 @@ class SelectorStorage:
         with open(filepath, 'w', encoding='utf-8') as f:
             json.dump(snap_map.model_dump(mode='json'), f, indent=2, ensure_ascii=False)
 
-        print(f'\n✓ Saved snapshots to: {filepath}')
+        logger.info('Saved snapshots to: %s', filepath)
         return filepath
 
     def record_verdict(self, domain: str, field_name: str, verdict: CacheVerdict) -> None:
@@ -469,5 +481,5 @@ class SelectorStorage:
         with open(output_file, 'w', encoding='utf-8') as f:
             json.dump(summary, f, indent=2, ensure_ascii=False)
 
-        print(f'✓ Exported summary to: {output_file}')
+        logger.info('Exported summary to: %s', output_file)
         return output_file

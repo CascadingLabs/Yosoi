@@ -32,7 +32,7 @@ def Price(v: object, config: CoercionConfig, source_url: str | None = None) -> f
 
     match = re.search(r'\d+[.,\d]*', cleaned)
     if not match:
-        return None
+        raise ValueError(f'No numeric value found in: {v!r}')
 
     num_str = match.group(0)
 

@@ -174,6 +174,9 @@ class Pipeline:
         self.output_formats: list[str] = [output_format] if isinstance(output_format, str) else list(output_format)
         self.force = force
         self.logger = logging.getLogger(__name__)
+        self._url_start: float = 0.0
+        self.last_elapsed: float = 0.0
+        self._client: httpx.AsyncClient = httpx.AsyncClient()
 
         # Auto-initialize .yosoi dir and file logging when used outside the CLI
         has_file_handler = any(isinstance(h, logging.FileHandler) for h in logging.getLogger().handlers)
@@ -523,9 +526,7 @@ class Pipeline:
                 if not cleaned_html:
                     raise RuntimeError(f'HTML cleaning failed for {url}')
 
-                selectors, used_llm = await self._discover_with_escalation(
-                    url, cleaned_html, max_retries=max_discovery_retries
-                )
+                selectors, used_llm = await self._discover(url, cleaned_html, max_retries=max_discovery_retries)
                 if not selectors:
                     raise RuntimeError(f'Selector discovery failed for {url}')
 
@@ -541,7 +542,7 @@ class Pipeline:
 
                 if not extracted:
                     self.console.print('[warning]⚠ Extraction failed, but selectors are valid[/warning]')
-                    self._finish(url, domain, selectors_to_save, None, used_llm, format_to_use)
+                    await self._finish(url, domain, selectors_to_save, None, used_llm, format_to_use)
                     return
 
                 # Validate, yield, and save
@@ -551,7 +552,7 @@ class Pipeline:
                 save_all: ContentMap | ContentItems = (
                     validated_items if len(validated_items) > 1 else validated_items[0]
                 )
-                self._finish(url, domain, selectors_to_save, save_all, used_llm, format_to_use)
+                await self._finish(url, domain, selectors_to_save, save_all, used_llm, format_to_use)
 
     # ============================================================================
     # scrape() helpers
@@ -711,7 +712,7 @@ class Pipeline:
                 save_content: ContentMap | ContentItems = validated if len(validated) > 1 else validated[0]
                 for fmt in format_to_use:
                     self.storage.save_content(url, save_content, fmt, contract_sig=self._contract_sig)
-            self._track_cached_success(url, domain)
+            await self._track_cached_success(url, domain)
             self.last_elapsed = time.monotonic() - self._url_start
             self.console.print(f'[dim]  ⏱ {self.last_elapsed:.1f}s elapsed[/dim]')
 
@@ -755,7 +756,7 @@ class Pipeline:
                 self.storage.save_content(url, save_content, fmt, contract_sig=self._contract_sig)
             elapsed = time.monotonic() - self._url_start
             self.last_elapsed = elapsed
-            stats = self.tracker.record_url(
+            stats = await self.tracker.record_url(
                 url, used_llm=True, level_distribution=None, elapsed=elapsed, partial_discovery=True
             )
             self._print_tracking_stats(domain, stats)
@@ -811,7 +812,7 @@ class Pipeline:
             selectors_to_save['root'] = root_entry
         return selectors_to_save
 
-    def _finish(
+    async def _finish(
         self,
         url: str,
         domain: str,
@@ -823,7 +824,7 @@ class Pipeline:
         """Set elapsed time, save, track, and print timing."""
         elapsed = time.monotonic() - self._url_start
         self.last_elapsed = elapsed
-        self._save_and_track(url, domain, selectors_to_save, content, used_llm, format_to_use, elapsed)
+        await self._save_and_track(url, domain, selectors_to_save, content, used_llm, format_to_use, elapsed)
         self.console.print(f'[dim]  ⏱ {self.last_elapsed:.1f}s elapsed[/dim]')
 
     # ============================================================================
@@ -844,8 +845,7 @@ class Pipeline:
             # Try HTTPS first
             try:
                 test_url = 'https://' + url
-                async with httpx.AsyncClient() as client:
-                    await client.head(test_url, timeout=3, follow_redirects=True)
+                await self._client.head(test_url, timeout=3, follow_redirects=True)
                 return test_url
             except httpx.HTTPError:
                 # Fall back to HTTP
@@ -907,7 +907,7 @@ class Pipeline:
             attempt = retry_state.attempt_number
             if attempt >= 1:
                 self.console.print(f'[warning]Fetch retry attempt {attempt}/{max_retries}...[/warning]')
-                logfire.warn('Retrying fetch', url=url, attempt=attempt)
+                logfire.warning('Retrying fetch', url=url, attempt=attempt)
 
         try:
             retryer = get_async_retryer(
@@ -1028,7 +1028,7 @@ class Pipeline:
             attempt = retry_state.attempt_number
             if attempt >= 1:
                 self.console.print(f'[warning]AI retry attempt {attempt}/{max_retries}...[/warning]')
-                logfire.warn('Retrying AI discovery', url=url, attempt=attempt)
+                logfire.warning('Retrying AI discovery', url=url, attempt=attempt)
 
         # Use AI discovery with retries
         try:
@@ -1078,22 +1078,6 @@ class Pipeline:
         self.console.print(f'[danger]All {max_retries} AI attempts failed[/danger]')
         logfire.error('All AI attempts failed', url=url)
         return None, False
-
-    async def _discover_with_escalation(
-        self, url: str, cleaned_html: str, max_retries: int = 3
-    ) -> tuple[SelectorMap | None, bool]:
-        """Delegate to _discover — per-field escalation is handled by DiscoveryOrchestrator.
-
-        Args:
-            url: URL being processed (for logging).
-            cleaned_html: Pre-cleaned HTML content to analyze.
-            max_retries: Maximum AI retry attempts per field per level. Defaults to 3.
-
-        Returns:
-            Tuple of (selectors, used_llm) — same as _discover.
-
-        """
-        return await self._discover(url, cleaned_html, max_retries)
 
     @staticmethod
     def _pop_root(selectors: SelectorMap) -> dict[str, Any] | None:
@@ -1373,7 +1357,7 @@ class Pipeline:
             self.console.print(f'[warning]⚠ Error: {e}, skipping extraction[/warning]')
             return None, True  # fail-open
 
-    def _track_cached_success(self, url: str, domain: str) -> None:
+    async def _track_cached_success(self, url: str, domain: str) -> None:
         """Track successful use of cached selectors.
 
         Args:
@@ -1382,7 +1366,7 @@ class Pipeline:
 
         """
         elapsed = time.monotonic() - self._url_start if hasattr(self, '_url_start') else None
-        stats = self.tracker.record_url(url, used_llm=False, level_distribution=None, elapsed=elapsed)
+        stats = await self.tracker.record_url(url, used_llm=False, level_distribution=None, elapsed=elapsed)
         self._print_tracking_stats(domain, stats)
 
     def _handle_bot_detection(self, error: BotDetectionError, attempt: int, max_retries: int) -> None:
@@ -1407,7 +1391,7 @@ class Pipeline:
             error.status_code,
             ', '.join(error.indicators),
         )
-        logfire.warn(
+        logfire.warning(
             'Bot detection triggered',
             url=error.url,
             status_code=error.status_code,
@@ -1460,7 +1444,7 @@ class Pipeline:
             self.console.print(f'[warning]⚠ Validation skipped: {e}[/warning]')
             return item
 
-    def _save_and_track(
+    async def _save_and_track(
         self,
         url: str,
         domain: str,
@@ -1493,7 +1477,9 @@ class Pipeline:
                 self.storage.save_content(url, extracted, fmt, contract_sig=self._contract_sig)
 
         level_dist = getattr(self, '_last_level_distribution', None)
-        stats = self.tracker.record_url(url, used_llm=used_llm, level_distribution=level_dist or None, elapsed=elapsed)
+        stats = await self.tracker.record_url(
+            url, used_llm=used_llm, level_distribution=level_dist or None, elapsed=elapsed
+        )
         self._print_tracking_stats(domain, stats)
 
     def _print_tracking_stats(self, domain: str, stats: 'DomainStats') -> None:

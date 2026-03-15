@@ -3,12 +3,13 @@
 Stores everything in a single stats.json file.
 """
 
+import asyncio
 import json
 import os
 from typing import Any
 from urllib.parse import urlparse
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from yosoi.utils.files import get_tracking_path
 
@@ -18,7 +19,7 @@ class DomainStats(BaseModel):
 
     llm_calls: int = 0
     url_count: int = 0
-    level_distribution: dict[str, int] = {}
+    level_distribution: dict[str, int] = Field(default_factory=dict)
     total_elapsed: float = 0.0
     partial_rediscovery_count: int = 0
 
@@ -42,6 +43,7 @@ class LLMTracker:
             self.tracking_file = str(get_tracking_path())
         else:
             self.tracking_file = tracking_file
+        self._lock: asyncio.Lock = asyncio.Lock()
         self._ensure_file_exists()
 
     def _ensure_file_exists(self) -> None:
@@ -105,7 +107,7 @@ class LLMTracker:
         except ValueError:
             return 'unknown'
 
-    def record_url(
+    async def record_url(
         self,
         url: str,
         used_llm: bool = False,
@@ -126,6 +128,18 @@ class LLMTracker:
             DomainStats with 'llm_calls', 'url_count', 'level_distribution', 'total_elapsed'.
 
         """
+        async with self._lock:
+            return self._record_url_locked(url, used_llm, level_distribution, elapsed, partial_discovery)
+
+    def _record_url_locked(
+        self,
+        url: str,
+        used_llm: bool = False,
+        level_distribution: dict[str, int] | None = None,
+        elapsed: float | None = None,
+        partial_discovery: bool = False,
+    ) -> DomainStats:
+        """Execute read-modify-write under the caller's lock."""
         domain = self.extract_domain(url)
         data = self._load_data()
 
@@ -273,7 +287,7 @@ class LLMTracker:
 
 
 # Example usage
-if __name__ == '__main__':
+async def _example_main() -> None:
     tracker = LLMTracker()
 
     # Simulate scraping workflow
@@ -281,27 +295,33 @@ if __name__ == '__main__':
 
     # Article 1 from yahoo.com - need to call LLM
     print('1. First article from yahoo.com (calling LLM)')
-    tracker.record_url('https://finance.yahoo.com/article-1', used_llm=True)
+    await tracker.record_url('https://finance.yahoo.com/article-1', used_llm=True)
     print(f'   LLM calls: {tracker.get_llm_calls("finance.yahoo.com")}')
     print(f'   URL count: {tracker.get_url_count("finance.yahoo.com")}')
 
     # Article 2 from yahoo.com - use existing selectors
     print('\n2. Second article from yahoo.com (using cached selectors)')
-    tracker.record_url('https://finance.yahoo.com/article-2', used_llm=False)
+    await tracker.record_url('https://finance.yahoo.com/article-2', used_llm=False)
     print(f'   LLM calls: {tracker.get_llm_calls("finance.yahoo.com")}')
     print(f'   URL count: {tracker.get_url_count("finance.yahoo.com")}')
 
     # Article 3 from yahoo.com - selectors failed, call LLM again
     print('\n3. Third article from yahoo.com (selectors failed, re-discovery)')
-    tracker.record_url('https://finance.yahoo.com/article-3', used_llm=True)
+    await tracker.record_url('https://finance.yahoo.com/article-3', used_llm=True)
     print(f'   LLM calls: {tracker.get_llm_calls("finance.yahoo.com")}')
     print(f'   URL count: {tracker.get_url_count("finance.yahoo.com")}')
 
     # Article from different domain
     print('\n4. First article from cnn.com (calling LLM)')
-    tracker.record_url('https://www.cnn.com/article-1', used_llm=True)
+    await tracker.record_url('https://www.cnn.com/article-1', used_llm=True)
     print(f'   LLM calls: {tracker.get_llm_calls("cnn.com")}')
     print(f'   URL count: {tracker.get_url_count("cnn.com")}')
 
     # Print summary
     tracker.print_stats()
+
+
+if __name__ == '__main__':
+    import asyncio
+
+    asyncio.run(_example_main())

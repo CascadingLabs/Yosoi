@@ -9,11 +9,19 @@ VALID_HTML = '<html><body>' + 'x' * 200 + '</body></html>'
 
 class TestSimpleFetcherInit:
     def test_default_creates_session(self):
-        """Default init creates an httpx client."""
+        """Client is None before entering context manager (lazy creation)."""
         f = SimpleFetcher()
-        assert f.client is not None
+        assert f.client is None
         assert f.timeout == 30
         assert f.rotate_user_agent is True
+
+    @pytest.mark.asyncio
+    async def test_aenter_creates_client(self):
+        """Entering context manager creates the httpx client when use_session=True."""
+        f = SimpleFetcher(use_session=True)
+        assert f.client is None
+        async with f:
+            assert f.client is not None
 
     def test_no_session(self):
         """use_session=False results in no client."""
@@ -112,7 +120,7 @@ class TestSimpleFetcherFetch:
 
     @pytest.mark.asyncio
     async def test_uses_client_when_available(self, mocker):
-        """When use_session=True, uses the stored client."""
+        """When use_session=True and inside context manager, uses the stored client."""
         f = SimpleFetcher(use_session=True, min_delay=0)
         mock_resp = mocker.MagicMock()
         mock_resp.status_code = 200
@@ -120,21 +128,20 @@ class TestSimpleFetcherFetch:
         mock_resp.content = VALID_HTML.encode()
         mock_resp.headers = {}
 
-        mocker.patch.object(f.client, 'get', return_value=mock_resp)
         mocker.patch.object(f, '_apply_request_delay', return_value=None)
 
-        result = await f.fetch('https://example.com')
-        assert result.html == VALID_HTML
-        f.client.get.assert_called_once()
+        async with f:
+            mocker.patch.object(f.client, 'get', return_value=mock_resp)
+            result = await f.fetch('https://example.com')
+            assert result.html == VALID_HTML
+            f.client.get.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_context_manager_closes_client(self, mocker):
         """Exiting context manager closes the client."""
         f = SimpleFetcher(use_session=True, min_delay=0)
-        mock_aclose = mocker.patch.object(f.client, 'aclose', return_value=None)
-
         async with f:
-            pass
+            mock_aclose = mocker.patch.object(f.client, 'aclose', return_value=None)
 
         mock_aclose.assert_called_once()
 

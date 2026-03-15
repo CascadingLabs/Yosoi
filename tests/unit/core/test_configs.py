@@ -79,10 +79,10 @@ class TestFindAvailableProvider:
 
 class TestDebugConfig:
     def test_defaults(self):
-        """Default values: save_html=True, html_dir=.yosoi/debug_html."""
+        """Default values: save_html=False, html_dir=.yosoi/debug."""
         cfg = DebugConfig()
-        assert cfg.save_html is True
-        assert 'debug_html' in str(cfg.html_dir)
+        assert cfg.save_html is False
+        assert str(cfg.html_dir) == '.yosoi/debug'
 
     def test_custom_values(self, tmp_path):
         """Custom values are accepted."""
@@ -152,7 +152,7 @@ class TestYosoiConfig:
         """Default values for debug, telemetry, logs, force."""
         llm = LLMConfig(provider='groq', model_name='test', api_key='key')
         cfg = YosoiConfig(llm=llm)
-        assert cfg.debug.save_html is True
+        assert cfg.debug.save_html is False
         assert cfg.telemetry.logfire_token is None
         assert cfg.logs is True
         assert cfg.force is False

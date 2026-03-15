@@ -36,6 +36,7 @@ def _make_pipeline_stub(mocker, contract=None):
     stub.extractor = mocker.MagicMock()
     stub.storage = mocker.MagicMock()
     stub.tracker = mocker.MagicMock()
+    stub.tracker.record_url = mocker.AsyncMock()
     stub.debug = mocker.MagicMock()
     stub.debug_mode = False
     stub.output_formats = ['json']

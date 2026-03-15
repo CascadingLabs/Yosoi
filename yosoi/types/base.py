@@ -52,9 +52,9 @@ class YosoiType:
             _registry[cls.type_name] = cls.coerce
 
     @staticmethod
-    def coerce(v: object, config: CoercionConfig, source_url: str | None = None) -> str:  # noqa: ARG004
+    def coerce(v: object, config: CoercionConfig, source_url: str | None = None) -> str | None:  # noqa: ARG004
         """Default coercion: strip whitespace. Override in subclasses."""
-        return str(v).strip() if v is not None else ''
+        return str(v).strip() if v is not None else None
 
 
 __all__ = ['YosoiType', '_registry', 'register_coercion']

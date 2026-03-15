@@ -60,12 +60,8 @@ class SimpleFetcher(HTMLFetcher):
         self.max_delay = max_delay
         self.randomize_headers = randomize_headers
 
-        self.client: httpx.AsyncClient | None
-        # Create client if enabled
-        if self.use_session:
-            self.client = httpx.AsyncClient()
-        else:
-            self.client = None
+        # Client is created lazily in __aenter__ when use_session=True
+        self.client: httpx.AsyncClient | None = None
 
         # Track last request time for delays
         self.last_request_time = 0.0
@@ -192,7 +188,9 @@ class SimpleFetcher(HTMLFetcher):
             )
 
     async def __aenter__(self) -> SimpleFetcher:
-        """Async context manager entry."""
+        """Async context manager entry. Creates the shared client if use_session=True."""
+        if self.use_session and self.client is None:
+            self.client = httpx.AsyncClient()
         return self
 
     async def __aexit__(

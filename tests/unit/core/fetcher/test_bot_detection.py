@@ -372,8 +372,8 @@ def test_handle_bot_detection_calls_logfire_warn(mocker):
     err = BotDetectionError(url='https://x.com', status_code=503, indicators=['HTTP 503'])
     Pipeline._handle_bot_detection(stub, err, attempt=1, max_retries=2)
 
-    mock_logfire.warn.assert_called_once()
-    kwargs = mock_logfire.warn.call_args.kwargs
+    mock_logfire.warning.assert_called_once()
+    kwargs = mock_logfire.warning.call_args.kwargs
     assert kwargs['url'] == 'https://x.com'
     assert kwargs['status_code'] == 503
     assert kwargs['attempt'] == 1
@@ -388,7 +388,7 @@ def test_handle_bot_detection_logfire_includes_indicators(mocker):
     err = BotDetectionError(url='https://x.com', status_code=403, indicators=indicators)
     Pipeline._handle_bot_detection(stub, err, attempt=1, max_retries=2)
 
-    kwargs = mock_logfire.warn.call_args.kwargs
+    kwargs = mock_logfire.warning.call_args.kwargs
     assert kwargs['indicators'] == indicators
 
 
