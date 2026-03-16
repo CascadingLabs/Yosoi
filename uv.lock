@@ -250,6 +250,15 @@ wheels = [
 ]
 
 [[package]]
+name = "asyncio-atexit"
+version = "1.0.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/22/d3/dd2974be3f67c7ec96e0d6ab454429d0372cb7c7bffa3d0ac67a483cb801/asyncio-atexit-1.0.1.tar.gz", hash = "sha256:1d0c71544b8ee2c484d322844ee72c0875dde6f250c0ed5b6993592ab9f7d436", size = 4373, upload-time = "2022-04-26T08:54:16.998Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/65/10/d6abaefa57a52646651fd0383c056280b0853c0106229ece6bb38cd14463/asyncio_atexit-1.0.1-py3-none-any.whl", hash = "sha256:d93d5f7d5633a534abd521ce2896ed0fbe8de170bb1e65ec871d1c20eac9d376", size = 3752, upload-time = "2022-04-26T08:54:15.726Z" },
+]
+
+[[package]]
 name = "attrs"
 version = "25.4.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1040,6 +1049,15 @@ wheels = [
 ]
 
 [[package]]
+name = "emoji"
+version = "2.15.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/a2/78/0d2db9382c92a163d7095fc08efff7800880f830a152cfced40161e7638d/emoji-2.15.0.tar.gz", hash = "sha256:eae4ab7d86456a70a00a985125a03263a5eac54cd55e51d7e184b1ed3b6757e4", size = 615483, upload-time = "2025-09-21T12:13:02.755Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e1/5e/4b5aaaabddfacfe36ba7768817bd1f71a7a810a43705e531f3ae4c690767/emoji-2.15.0-py3-none-any.whl", hash = "sha256:205296793d66a89d88af4688fa57fd6496732eb48917a87175a023c8138995eb", size = 608433, upload-time = "2025-09-21T12:13:01.197Z" },
+]
+
+[[package]]
 name = "et-xmlfile"
 version = "2.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1380,6 +1398,12 @@ sdist = { url = "https://files.pythonhosted.org/packages/e5/7b/adfd75544c415c487
 wheels = [
     { url = "https://files.pythonhosted.org/packages/c4/ab/09169d5a4612a5f92490806649ac8d41e3ec9129c636754575b3553f4ea4/googleapis_common_protos-1.72.0-py3-none-any.whl", hash = "sha256:4299c5a82d5ae1a9702ada957347726b167f9f8d1fc352477702a1e851ff4038", size = 297515, upload-time = "2025-11-06T18:29:13.14Z" },
 ]
+
+[[package]]
+name = "grapheme"
+version = "0.6.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ce/e7/bbaab0d2a33e07c8278910c1d0d8d4f3781293dfbc70b5c38197159046bf/grapheme-0.6.0.tar.gz", hash = "sha256:44c2b9f21bbe77cfb05835fec230bd435954275267fea1858013b102f8603cca", size = 207306, upload-time = "2020-03-07T17:13:55.492Z" }
 
 [[package]]
 name = "greenlet"
@@ -2477,6 +2501,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/ea/5d/38b681d3fce7a266dd9ab73c66959406d565b3e85f21d5e66e1181d93721/more_itertools-10.8.0.tar.gz", hash = "sha256:f638ddf8a1a0d134181275fb5d58b086ead7c6a72429ad725c67503f13ba30bd", size = 137431, upload-time = "2025-09-02T15:23:11.018Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a4/8e/469e5a4a2f5855992e425f3cb33804cc07bf18d48f2db061aec61ce50270/more_itertools-10.8.0-py3-none-any.whl", hash = "sha256:52d4362373dcf7c52546bc4af9a86ee7c4579df9a8dc268be0a2f949d376cc9b", size = 69667, upload-time = "2025-09-02T15:23:09.635Z" },
+]
+
+[[package]]
+name = "mss"
+version = "10.1.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/40/ca/49b67437a8c46d9732c9c274d7b1fc0c181cfe290d699a0c5e94701dfe79/mss-10.1.0.tar.gz", hash = "sha256:7182baf7ee16ca569e2804028b6ab9bcbf6be5c46fc2880840f33b513b9cb4f8", size = 84200, upload-time = "2025-08-16T12:11:00.119Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/23/28/1e3e5cd1d677cca68b26166f704f72e35b1e8b6d5076d8ebeebc4e40a649/mss-10.1.0-py3-none-any.whl", hash = "sha256:9179c110cadfef5dc6dc4a041a0cd161c74c379218648e6640b48c6b5cfe8918", size = 24525, upload-time = "2025-08-16T12:10:59.111Z" },
 ]
 
 [[package]]
@@ -5666,6 +5699,7 @@ dependencies = [
     { name = "rich-click" },
     { name = "taskiq" },
     { name = "tenacity" },
+    { name = "zendriver" },
 ]
 
 [package.optional-dependencies]
@@ -5730,6 +5764,7 @@ requires-dist = [
     { name = "rich-click", specifier = ">=1.9.7" },
     { name = "taskiq", specifier = ">=0.12.1" },
     { name = "tenacity", specifier = ">=9.1.4" },
+    { name = "zendriver", specifier = ">=0.15.3" },
 ]
 provides-extras = ["tabular"]
 
@@ -5764,6 +5799,23 @@ tests = [
     { name = "respx", specifier = ">=0.22" },
     { name = "syrupy", specifier = ">=5.1" },
     { name = "testcontainers", specifier = ">=4.14.1" },
+]
+
+[[package]]
+name = "zendriver"
+version = "0.15.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "asyncio-atexit" },
+    { name = "deprecated" },
+    { name = "emoji" },
+    { name = "grapheme" },
+    { name = "mss" },
+    { name = "websockets" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/bf/c1/3b453f2ca593bff7315ebeadad21f3d018ab26e5011b38356af001df9936/zendriver-0.15.3.tar.gz", hash = "sha256:83c38fe17489370f0c381dfb8b0d4d0bb9f5e7755c5748c99d72bf9886f59eee", size = 437115, upload-time = "2026-03-12T03:40:23.338Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a5/05/138c171511f99c14a9f36a4ca132cf0e76c28308bf48a7d3d611dd9938be/zendriver-0.15.3-py3-none-any.whl", hash = "sha256:509526d16993d5f9486593720ed58c34027bd49d0f915444515aa45dd8a80741", size = 355949, upload-time = "2026-03-12T03:40:24.819Z" },
 ]
 
 [[package]]

@@ -38,6 +38,7 @@ dependencies = [
   "rich-click>=1.9.7",
   "taskiq>=0.12.1",
   "tenacity>=9.1.4",
+  "zendriver>=0.15.3",
 ]
 
 optional-dependencies.tabular = [ "openpyxl>=3.1", "pandas>=2", "pyarrow>=14" ]
