@@ -4787,6 +4787,7 @@ dependencies = [
     { name = "rich-click" },
     { name = "taskiq" },
     { name = "tenacity" },
+    { name = "zendriver" },
 ]
 
 [package.optional-dependencies]
@@ -4858,6 +4859,7 @@ requires-dist = [
     { name = "rich-click", specifier = ">=1.9.7" },
     { name = "taskiq", specifier = ">=0.12.1" },
     { name = "tenacity", specifier = ">=9.1.4" },
+    { name = "zendriver", specifier = ">=0.15.3" },
 ]
 provides-extras = ["tabular"]
 
