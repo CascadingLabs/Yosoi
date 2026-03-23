@@ -49,7 +49,6 @@ scripts.yosoi = "yosoi.cli:main"
 
 [dependency-groups]
 dev = [
-  "commitizen>=3.13",
   "memray>=1.19.1",
   "mypy>=1.13",
   "playwright>=1.58",
@@ -243,24 +242,3 @@ id = "generic-api-key"
 description = "Generic API Key"
 regex = '''(?i)(?:key|api|token|secret|password)[\s]*[=:>]{1}[\s]*['"]?([a-z0-9_\-]{20,})['"]?'''
 entropy = 4.5
-
-[tool.commitizen]
-name = "cz_conventional_commits"
-tag_format = "v$version"
-version_scheme = "semver"
-version_provider = "pep621"      # Reads/updates version in [project] section of pyproject.toml
-update_changelog_on_bump = true
-major_version_zero = true        # Keeps you in 0.x.x (beta) semantics
-
-types = [
-  { value = "feat", name = "feat: A new feature" },
-  { value = "fix", name = "fix: A bug fix" },
-  { value = "docs", name = "docs: Documentation only changes" },
-  { value = "style", name = "style: Formatting (ruff, black, etc)" },
-  { value = "refactor", name = "refactor: Code change that neither fixes a bug nor adds a feature" },
-  { value = "perf", name = "perf: A code change that improves performance" },
-  { value = "test", name = "test: Adding or correcting tests" },
-  { value = "build", name = "build: Changes that affect the build system (uv, pyproject.toml)" },
-  { value = "ci", name = "ci: CI configuration (GitHub Actions)" },
-  { value = "chore", name = "chore: Other changes that don't modify src or test files" },
-]

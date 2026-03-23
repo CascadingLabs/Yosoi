@@ -165,13 +165,13 @@ def test_compress_keeps_data_attributes(cleaner):
     assert 'role' not in span.attrs
 
 
-def test_compress_deduplicates_list_items(cleaner):
-    """List with >3 items should be trimmed to 3."""
+def test_compress_preserves_list_items(cleaner):
+    """Compress pass no longer deduplicates lists (handled by dedup pass)."""
     html = '<html><body><ul>' + ''.join(f'<li>Item {i}</li>' for i in range(6)) + '</ul></body></html>'
     soup = BeautifulSoup(html, 'lxml')
     result = cleaner._compress_html_simple(soup)
     items = result.find('ul').find_all('li')
-    assert len(items) == 3
+    assert len(items) == 6
 
 
 def test_compress_keeps_short_lists_intact(cleaner):
@@ -182,14 +182,14 @@ def test_compress_keeps_short_lists_intact(cleaner):
     assert len(items) == 2
 
 
-def test_compress_deduplicates_table_rows(cleaner):
-    """Table with >5 rows should be trimmed to 5."""
+def test_compress_preserves_table_rows(cleaner):
+    """Compress pass no longer deduplicates tables (handled by dedup pass)."""
     rows = ''.join(f'<tr><td>Row {i}</td></tr>' for i in range(8))
     html = f'<html><body><table>{rows}</table></body></html>'
     soup = BeautifulSoup(html, 'lxml')
     result = cleaner._compress_html_simple(soup)
     tr_count = len(result.find('table').find_all('tr'))
-    assert tr_count == 5
+    assert tr_count == 8
 
 
 def test_compress_removes_html_comments(cleaner):
@@ -290,13 +290,13 @@ def test_collapse_whitespace_returns_string(cleaner):
 # ---------------------------------------------------------------------------
 
 
-def test_compress_deduplicates_list_items_keeps_exactly_3(cleaner):
-    """List with exactly 4 items should be trimmed to exactly 3."""
+def test_compress_preserves_list_items_no_dedup(cleaner):
+    """Compress pass preserves all list items (dedup is a separate pass)."""
     html = '<html><body><ul>' + ''.join(f'<li>Item {i}</li>' for i in range(4)) + '</ul></body></html>'
     soup = BeautifulSoup(html, 'lxml')
     result = cleaner._compress_html_simple(soup)
     items = result.find('ul').find_all('li')
-    assert len(items) == 3
+    assert len(items) == 4
 
 
 def test_compress_list_with_exactly_3_items_untouched(cleaner):
@@ -318,14 +318,14 @@ def test_compress_table_with_exactly_5_rows_untouched(cleaner):
     assert tr_count == 5
 
 
-def test_compress_table_with_6_rows_trimmed_to_5(cleaner):
-    """Table with exactly 6 rows should be trimmed to 5."""
+def test_compress_preserves_table_with_6_rows(cleaner):
+    """Compress no longer deduplicates tables (handled by dedup pass)."""
     rows = ''.join(f'<tr><td>Row {i}</td></tr>' for i in range(6))
     html = f'<html><body><table>{rows}</table></body></html>'
     soup = BeautifulSoup(html, 'lxml')
     result = cleaner._compress_html_simple(soup)
     tr_count = len(result.find('table').find_all('tr'))
-    assert tr_count == 5
+    assert tr_count == 6
 
 
 def test_compress_removes_hidden_attribute_not_kept(cleaner):
@@ -443,6 +443,41 @@ def test_clean_html_removes_related_posts(cleaner):
     assert 'related-posts' not in result
 
 
+def test_clean_html_removes_ad_hyphen_prefix(cleaner):
+    """Elements with ad- prefix in class should be removed."""
+    html = '<html><body><main><p>Content</p><div class="ad-banner">Ad</div></main></body></html>'
+    result = cleaner.clean_html(html)
+    assert 'ad-banner' not in result
+
+
+def test_clean_html_keeps_lead_paragraph(cleaner):
+    """'lead-paragraph' contains 'ad' substring but NOT as a whole word — must be kept."""
+    html = '<html><body><main><p class="lead-paragraph">Important intro</p></main></body></html>'
+    result = cleaner.clean_html(html)
+    assert 'Important intro' in result
+
+
+def test_clean_html_keeps_heading_class(cleaner):
+    """'heading' does not match ad word boundary — must be kept."""
+    html = '<html><body><main><h2 class="heading">Title</h2></main></body></html>'
+    result = cleaner.clean_html(html)
+    assert 'Title' in result
+
+
+def test_clean_html_keeps_padding_class(cleaner):
+    """'pad-4' contains 'ad-' substring but 'ad' is not a whole word — must be kept."""
+    html = '<html><body><main><div class="pad-4"><p>Padded content</p></div></main></body></html>'
+    result = cleaner.clean_html(html)
+    assert 'Padded content' in result
+
+
+def test_clean_html_removes_ad_slot_id(cleaner):
+    """Element with id 'ad-slot' should be removed (ad as word boundary)."""
+    html = '<html><body><main><p>Content</p><div id="ad-slot">Ad here</div></main></body></html>'
+    result = cleaner.clean_html(html)
+    assert 'Ad here' not in result
+
+
 def test_clean_html_removes_widget_class_outside_main(cleaner):
     """Widget outside <main> should be removed."""
     html = '<html><body><div class="widget">Widget</div><main><p>Real</p></main></body></html>'
@@ -487,12 +522,12 @@ def test_cleaner_creates_console_when_none():
 
 
 def test_compress_list_exactly_4_truncated_to_3(cleaner):
-    """List with exactly 4 items must be truncated to 3."""
+    """Compress preserves all list items (dedup is separate pass)."""
     html = '<html><body><ul><li>A</li><li>B</li><li>C</li><li>D</li></ul></body></html>'
     soup = BeautifulSoup(html, 'lxml')
     result = cleaner._compress_html_simple(soup)
     items = result.find('ul').find_all('li')
-    assert len(items) == 3
+    assert len(items) == 4
 
 
 def test_prune_replaces_data_uri_with_exact_placeholder(cleaner):
@@ -687,3 +722,77 @@ def test_clean_html_no_body_main_only_extracts_content(cleaner):
     result = cleaner.clean_html(html)
     assert 'Title' in result
     assert 'text' in result
+
+
+# ---------------------------------------------------------------------------
+# CleaningLevel escalation
+# ---------------------------------------------------------------------------
+
+
+def test_cleaning_level_aggressive_deduplicates():
+    """AGGRESSIVE level should deduplicate siblings."""
+    from yosoi.core.cleaning.cleaner import CleaningLevel
+
+    cleaner = HTMLCleaner(console=Console(quiet=True))
+    html = (
+        '<body><main><div>'
+        + ''.join(f'<div class="card"><span>{i}</span></div>' for i in range(10))
+        + '</div></main></body>'
+    )
+    result = cleaner.clean_html(html, level=CleaningLevel.AGGRESSIVE)
+    # Should have fewer than 10 cards due to dedup
+    soup = BeautifulSoup(result, 'html.parser')
+    assert len(soup.select('.card')) < 10
+
+
+def test_cleaning_level_moderate_skips_dedup():
+    """MODERATE level should preserve all siblings (no dedup/density)."""
+    from yosoi.core.cleaning.cleaner import CleaningLevel
+
+    cleaner = HTMLCleaner(console=Console(quiet=True))
+    html = (
+        '<body><main><div>'
+        + ''.join(f'<div class="card"><span>{i}</span></div>' for i in range(10))
+        + '</div></main></body>'
+    )
+    result = cleaner.clean_html(html, level=CleaningLevel.MODERATE)
+    soup = BeautifulSoup(result, 'html.parser')
+    assert len(soup.select('.card')) == 10
+
+
+def test_cleaning_level_conservative_no_budget():
+    """CONSERVATIVE level should not enforce token budget."""
+    from yosoi.core.cleaning.cleaner import CleaningLevel
+
+    cleaner = HTMLCleaner(console=Console(quiet=True), token_budget=1)  # Tiny budget
+    html = '<body><main><p>' + 'word ' * 500 + '</p></main></body>'
+    result = cleaner.clean_html(html, level=CleaningLevel.CONSERVATIVE)
+    # With budget=1, AGGRESSIVE would truncate heavily; CONSERVATIVE should keep it all
+    assert len(result) > 1000
+
+
+def test_cleaning_level_next_level():
+    """next_level returns the next less-aggressive level."""
+    from yosoi.core.cleaning.cleaner import CleaningLevel
+
+    assert CleaningLevel.AGGRESSIVE.next_level == CleaningLevel.MODERATE
+    assert CleaningLevel.MODERATE.next_level == CleaningLevel.CONSERVATIVE
+    assert CleaningLevel.CONSERVATIVE.next_level is None
+
+
+def test_cleaning_level_moderate_preserves_more_content():
+    """MODERATE should preserve content that AGGRESSIVE removes."""
+    from yosoi.core.cleaning.cleaner import CleaningLevel
+
+    cleaner = HTMLCleaner(console=Console(quiet=True))
+    # HTML with low-density subtree that density pruning would remove
+    html = """<body><main>
+        <div class="content"><p>Main content here</p></div>
+        <div class="spacer">
+            <div><div><div><img src="a.png"/><img src="b.png"/></div></div></div>
+        </div>
+    </main></body>"""
+    aggressive = cleaner.clean_html(html, level=CleaningLevel.AGGRESSIVE)
+    moderate = cleaner.clean_html(html, level=CleaningLevel.MODERATE)
+    # MODERATE output should be at least as large as AGGRESSIVE
+    assert len(moderate) >= len(aggressive)

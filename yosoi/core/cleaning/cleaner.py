@@ -1,5 +1,7 @@
 """Cleans and extracts relevant HTML content for selector discovery and extraction."""
 
+from enum import IntEnum
+
 from bs4 import BeautifulSoup
 from rich.console import Console
 
@@ -14,13 +16,33 @@ from yosoi.core.cleaning.passes.noise import remove_noise
 from yosoi.core.cleaning.whitespace import collapse_whitespace
 
 
+class CleaningLevel(IntEnum):
+    """Escalation levels for HTML cleaning — lower = more aggressive.
+
+    When discovery fails at an aggressive level, the pipeline can retry
+    with a higher (less aggressive) level to preserve more content.
+    """
+
+    AGGRESSIVE = 0
+    MODERATE = 1
+    CONSERVATIVE = 2
+
+    @property
+    def next_level(self) -> 'CleaningLevel | None':
+        """Return the next less-aggressive level, or None if already at max."""
+        try:
+            return CleaningLevel(self.value + 1)
+        except ValueError:
+            return None
+
+
 class HTMLCleaner:
     """Cleans HTML by removing noise and extracting main content.
 
-    Runs a pipeline of composable passes over the HTML tree:
-    noise removal, content extraction, flattening, compression,
-    class stripping, sibling dedup, density pruning, whitespace
-    collapse, and token budget enforcement.
+    Runs a pipeline of composable passes over the HTML tree.
+    Supports escalation levels — when discovery fails, call
+    ``clean_html(html, level=CleaningLevel.MODERATE)`` to retry
+    with less aggressive cleaning and more preserved content.
 
     Attributes:
         console: Rich console instance for formatted output
@@ -40,11 +62,14 @@ class HTMLCleaner:
         self.console = console or Console()
         self.token_budget = token_budget
 
-    def clean_html(self, html: str) -> str:
+    def clean_html(self, html: str, level: CleaningLevel = CleaningLevel.AGGRESSIVE) -> str:
         """Extract and clean the main content area from HTML.
 
         Args:
             html: Raw HTML content to clean
+            level: Cleaning aggression level. AGGRESSIVE (default) applies all
+                   passes; MODERATE skips dedup and density; CONSERVATIVE only
+                   removes scripts/styles and collapses whitespace.
 
         Returns:
             Cleaned HTML string with noise removed and content extracted.
@@ -69,18 +94,23 @@ class HTMLCleaner:
         # Pass 5: Strip utility CSS classes (Tailwind, Bootstrap)
         strip_utility_classes(content_soup)
 
-        # Pass 6: Generalized sibling deduplication
-        deduplicate_siblings(content_soup)
-
-        # Pass 7: Prune low-density subtrees
-        prune_by_density(content_soup)
+        # Pass 6-7: Only run destructive structural passes at AGGRESSIVE level
+        if level <= CleaningLevel.AGGRESSIVE:
+            deduplicate_siblings(content_soup)
+            prune_by_density(content_soup)
 
         # Pass 8: Collapse whitespace
         content_str = collapse_whitespace(str(content_soup))
 
-        # Pass 9: Enforce token budget
-        if self.token_budget > 0:
-            content_str = enforce_budget(content_str, self.token_budget)
+        # Pass 9: Enforce token budget (scale up for less aggressive levels)
+        effective_budget = self.token_budget
+        if level == CleaningLevel.MODERATE:
+            effective_budget = max(self.token_budget, self.token_budget * 2)
+        elif level >= CleaningLevel.CONSERVATIVE:
+            effective_budget = 0  # No budget limit
+
+        if effective_budget > 0:
+            content_str = enforce_budget(content_str, effective_budget)
 
         # Warn if content is large
         WARN_CHARS = 30_000
@@ -90,8 +120,9 @@ class HTMLCleaner:
         # Report savings
         compression_ratio = (1 - len(content_str) / original_size) * 100 if original_size > 0 else 0
         est_tokens = estimate_tokens(content_str)
+        level_label = f' [{level.name}]' if level != CleaningLevel.AGGRESSIVE else ''
         self.console.print(
-            f'  ↻ Using {extraction_method}: '
+            f'  ↻ Using {extraction_method}{level_label}: '
             f'{original_size:,} → {len(content_str):,} chars '
             f'({compression_ratio:.0f}% savings, ~{est_tokens:,} tokens)'
         )

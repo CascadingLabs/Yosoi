@@ -17,8 +17,6 @@ def compress_html(soup: BeautifulSoup) -> BeautifulSoup:
     """
     _remove_comments(soup)
     _strip_attributes(soup)
-    _deduplicate_lists(soup)
-    _deduplicate_tables(soup)
     _remove_hidden(soup)
     _prune_non_semantic(soup)
     return soup
@@ -35,22 +33,6 @@ def _strip_attributes(soup: BeautifulSoup) -> None:
             tag.attrs = {
                 attr: value for attr, value in tag.attrs.items() if attr in KEEP_ATTRIBUTES or attr.startswith('data-')
             }
-
-
-def _deduplicate_lists(soup: BeautifulSoup, keep: int = 3) -> None:
-    for list_tag in soup.find_all(['ul', 'ol']):
-        items = list_tag.find_all('li', recursive=False)
-        if len(items) > keep:
-            for item in items[keep:]:
-                item.decompose()
-
-
-def _deduplicate_tables(soup: BeautifulSoup, keep: int = 5) -> None:
-    for table in soup.find_all('table'):
-        rows = table.find_all('tr')
-        if len(rows) > keep:
-            for row in rows[keep:]:
-                row.decompose()
 
 
 def _remove_hidden(soup: BeautifulSoup) -> None:

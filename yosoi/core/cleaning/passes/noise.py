@@ -1,6 +1,26 @@
 """Remove noise elements that are never useful for selector discovery."""
 
+import re
+
 from bs4 import BeautifulSoup, Tag
+
+# CSS selectors for exact-match ad classes/ids
+_AD_CSS_SELECTORS = [
+    '.advertisement',
+    '.ad',
+    '.related-posts',
+    '.useful-links',
+]
+
+# Word-boundary pattern: matches "ad" as a whole word in class/id values.
+# Catches "ad-banner", "sidebar-ad", "ad_slot" but NOT "lead-paragraph",
+# "head-banner", "pad-4", "road-map", "loading", "breadcrumb".
+_AD_WORD_RE = re.compile(r'(?:^|[-_\s])ad(?:[-_\s]|$)', re.IGNORECASE)
+
+_SIDEBAR_SELECTORS = [
+    '.sidebar',
+    '#sidebar',
+]
 
 
 def remove_noise(soup: BeautifulSoup) -> BeautifulSoup:
@@ -20,11 +40,19 @@ def remove_noise(soup: BeautifulSoup) -> BeautifulSoup:
         The same (mutated) soup object.
 
     """
-    # Step 1: Remove elements that are never useful
+    _remove_never_useful(soup)
+    _remove_site_chrome(soup)
+    _remove_ads(soup)
+    _remove_sidebars(soup)
+    return soup
+
+
+def _remove_never_useful(soup: BeautifulSoup) -> None:
     for tag in soup.find_all(['script', 'style', 'noscript', 'iframe']):
         tag.decompose()
 
-    # Step 2: Remove site-level header, nav, footer (only top-level, not inside main/article)
+
+def _remove_site_chrome(soup: BeautifulSoup) -> None:
     for tag in soup.find_all(['header', 'nav', 'footer']):
         if not isinstance(tag, Tag):
             continue
@@ -32,33 +60,33 @@ def remove_noise(soup: BeautifulSoup) -> BeautifulSoup:
             continue
         tag.decompose()
 
-    # Step 3: Remove sidebars, widgets, ads (only outside main content region)
-    _AD_SELECTORS = [
-        '.advertisement',
-        '.ad',
-        '[class*="ad-"]',
-        '[id*="ad-"]',
-        '.related-posts',
-        '.useful-links',
-    ]
-    _SIDEBAR_SELECTORS = [
-        '.sidebar',
-        '#sidebar',
-    ]
 
-    # Ads are always noise — remove everywhere
-    for selector in _AD_SELECTORS:
+def _remove_ads(soup: BeautifulSoup) -> None:
+    for selector in _AD_CSS_SELECTORS:
         for element in soup.select(selector):
             element.decompose()
+    # Word-boundary matching on class/id
+    for tag in list(soup.find_all(True)):
+        if isinstance(tag, Tag) and tag.parent is not None and _has_ad_word(tag):
+            tag.decompose()
 
-    # Sidebar/widget removal — only if outside <main>/<article>
+
+def _remove_sidebars(soup: BeautifulSoup) -> None:
     for selector in _SIDEBAR_SELECTORS:
         for element in soup.select(selector):
             if isinstance(element, Tag) and _is_inside_content_region(element):
                 continue
             element.decompose()
 
-    return soup
+
+def _has_ad_word(tag: Tag) -> bool:
+    """Return True if any class or the id contains 'ad' as a whole word."""
+    classes = tag.get('class', [])
+    for cls in classes:
+        if _AD_WORD_RE.search(cls):
+            return True
+    tag_id = tag.get('id', '')
+    return isinstance(tag_id, str) and bool(_AD_WORD_RE.search(tag_id))
 
 
 def _is_inside_content_region(tag: Tag) -> bool:

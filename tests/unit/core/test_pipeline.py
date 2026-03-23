@@ -1360,7 +1360,9 @@ def test_clean_calls_cleaner_with_html(mocker):
     stub.cleaner.clean_html.return_value = '<clean/>'
     result_obj = FetchResult(url='https://x.com', html='<dirty/>')
     Pipeline._clean(stub, 'https://x.com', result_obj)
-    stub.cleaner.clean_html.assert_called_once_with('<dirty/>')
+    from yosoi.core.cleaning.cleaner import CleaningLevel
+
+    stub.cleaner.clean_html.assert_called_once_with('<dirty/>', level=CleaningLevel.AGGRESSIVE)
 
 
 def test_clean_saves_debug_html(mocker):

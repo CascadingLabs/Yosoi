@@ -19,7 +19,7 @@ from rich.table import Table
 from rich.theme import Theme
 from tenacity import RetryCallState, RetryError
 
-from yosoi.core.cleaning import HTMLCleaner
+from yosoi.core.cleaning import CleaningLevel, HTMLCleaner
 from yosoi.core.configs import YosoiConfig
 from yosoi.core.discovery import DiscoveryOrchestrator, LLMConfig
 from yosoi.core.discovery.bus import DiscoveryBus
@@ -533,20 +533,12 @@ class Pipeline:
                     raise RuntimeError(f'Failed to fetch {url}')
                 assert result.html is not None, 'result.html should not be None after successful fetch'
 
-                cleaned_html = self._clean(url, result)
-                if not cleaned_html:
-                    raise RuntimeError(f'HTML cleaning failed for {url}')
-
-                selectors, used_llm = await self._discover(url, cleaned_html, max_retries=max_discovery_retries)
-                if not selectors:
-                    raise RuntimeError(f'Selector discovery failed for {url}')
+                cleaned_html, selectors, verified, used_llm = await self._discover_with_escalation(
+                    url, result, max_discovery_retries, skip_verification
+                )
 
                 root_entry = self._resolve_root(selectors)
                 container_selector = self._root_value(root_entry)
-
-                verified = self._verify(url, cleaned_html, selectors, skip_verification)
-                if not verified:
-                    raise RuntimeError(f'Selector verification failed for {url}')
 
                 extracted = self._extract(url, cleaned_html, verified, container_selector)
                 selectors_to_save = self._selectors_with_root(verified, root_entry)
@@ -977,12 +969,14 @@ class Pipeline:
 
         return None
 
-    def _clean(self, url: str, result: FetchResult) -> str | None:
+    def _clean(self, url: str, result: FetchResult, level: CleaningLevel = CleaningLevel.AGGRESSIVE) -> str | None:
         """Clean HTML by removing noise and extracting main content.
 
         Args:
             url: URL being processed (for logging and debug output).
             result: FetchResult containing raw HTML.
+            level: Cleaning aggression level. Higher levels preserve more content
+                   at the cost of more tokens.
 
         Returns:
             Cleaned HTML string, or None if result contains no HTML.
@@ -990,8 +984,9 @@ class Pipeline:
         """
         assert result.html is not None, 'result.html should not be None in _clean'
 
-        self.console.print('[step]Step 1.5: Cleaning HTML...[/step]')
-        cleaned_html = self.cleaner.clean_html(result.html)
+        level_label = f' [{level.name}]' if level != CleaningLevel.AGGRESSIVE else ''
+        self.console.print(f'[step]Step 1.5: Cleaning HTML{level_label}...[/step]')
+        cleaned_html = self.cleaner.clean_html(result.html, level=level)
 
         if not cleaned_html:
             self.console.print('[danger]HTML cleaning produced empty result[/danger]')
@@ -1002,6 +997,62 @@ class Pipeline:
 
         self.console.print(f'[success]Cleaned HTML ready ({len(cleaned_html):,} chars)[/success]')
         return cleaned_html
+
+    async def _discover_with_escalation(
+        self,
+        url: str,
+        result: FetchResult,
+        max_discovery_retries: int,
+        skip_verification: bool,
+    ) -> tuple[str, SelectorMap, SelectorMap, bool]:
+        """Try clean → discover → verify, escalating cleaning level on failure.
+
+        Starts with AGGRESSIVE cleaning (smallest output). If discovery or
+        verification fails, retries with MODERATE (skips dedup/density, 2x budget),
+        then CONSERVATIVE (no budget limit).
+
+        Args:
+            url: URL being processed.
+            result: FetchResult containing raw HTML.
+            max_discovery_retries: Max AI retries per cleaning level.
+            skip_verification: Whether to skip selector verification.
+
+        Returns:
+            Tuple of (cleaned_html, selectors, verified_selectors, used_llm).
+
+        Raises:
+            RuntimeError: If all escalation levels fail.
+
+        """
+        level: CleaningLevel | None = CleaningLevel.AGGRESSIVE
+
+        while level is not None:
+            cleaned_html = self._clean(url, result, level=level)
+            if not cleaned_html:
+                raise RuntimeError(f'HTML cleaning failed for {url}')
+
+            selectors, used_llm = await self._discover(url, cleaned_html, max_retries=max_discovery_retries)
+            if selectors:
+                verified = self._verify(url, cleaned_html, selectors, skip_verification)
+                if verified:
+                    return cleaned_html, selectors, verified, used_llm
+
+            # Escalate to less aggressive cleaning
+            next_level = level.next_level
+            if next_level is not None:
+                self.console.print(
+                    f'[warning]⚠ Discovery/verification failed at {level.name} '
+                    f'— escalating to {next_level.name} cleaning[/warning]'
+                )
+                logfire.warning(
+                    'Escalating cleaning level',
+                    url=url,
+                    from_level=level.name,
+                    to_level=next_level.name,
+                )
+            level = next_level
+
+        raise RuntimeError(f'Selector discovery failed for {url} at all cleaning levels')
 
     async def _discover(self, url: str, cleaned_html: str, max_retries: int = 3) -> tuple[SelectorMap | None, bool]:
         """Discover CSS selectors with AI, using fallback heuristics if needed.
