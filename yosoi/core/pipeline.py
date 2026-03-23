@@ -56,6 +56,14 @@ _STATUS_STYLES: dict[str, tuple[str, bool]] = {
 }
 
 
+# SIM103 — inline the condition
+def _is_na_selector(sel_dict: dict[str, Any]) -> bool:
+    if not isinstance(sel_dict, dict):
+        return False
+    primary = sel_dict.get('primary')
+    return primary == 'NA' or (isinstance(primary, dict) and primary.get('value') == 'NA')
+
+
 def _build_concurrent_table(url_status: dict[str, tuple[str, float]]) -> Table:
     """Build a Rich Table showing per-URL concurrent progress."""
     table = Table(title='Concurrent Processing', expand=True)
@@ -771,9 +779,13 @@ class Pipeline:
         stale_fields = {f for f, v in verdicts.items() if v != CacheVerdict.FRESH}
         fresh_fields = {f for f, v in verdicts.items() if v == CacheVerdict.FRESH}
 
-        # Check for new contract fields not in cache
+        # Check for new contract fields not in cache.
+        # NA sentinels count as "known" — field was tried and doesn't exist on this domain.
         overridden = set(self.contract.get_selector_overrides())
-        missing = (self.contract.discovery_field_names() - overridden) - set(snapshots)
+        known_fields = {
+            name for name, snap in snapshots.items() if not _is_na_selector(snapshot_to_selector_dict(snap))
+        }
+        missing = (self.contract.discovery_field_names() - overridden) - known_fields - set(snapshots)
         if missing:
             self.console.print(
                 f'[warning]⚠ New contract fields not in cache: {", ".join(sorted(missing))} — re-discovering[/warning]'
@@ -848,6 +860,11 @@ class Pipeline:
 
         for field_name, snap in snapshots.items():
             sel_dict = snapshot_to_selector_dict(snap)
+            # NA sentinel = field is known-absent on this domain — treat as FRESH
+            # so partial rediscovery is never triggered for it again.
+            if _is_na_selector(sel_dict):
+                verdicts[field_name] = CacheVerdict.FRESH
+                continue
             field_result = self.verifier._verify_field(sel, field_name, sel_dict, self.selector_level)
             verdicts[field_name] = CacheVerdict.FRESH if field_result.status == 'verified' else CacheVerdict.STALE
 
@@ -915,7 +932,9 @@ class Pipeline:
         )
 
         new_selectors = await self.discovery.discover_selectors(cleaned_html, url, stale_fields=stale_fields)
-        merged = self._merge_and_save_snapshots(url, snapshots, fresh_fields, new_selectors, cleaned_html)
+        # Pass stale_fields so _merge_and_save_snapshots can write NA sentinels
+        # for any fields that failed rediscovery.
+        merged = self._merge_and_save_snapshots(url, snapshots, fresh_fields, new_selectors, cleaned_html, stale_fields)
 
         root_entry = self._resolve_root(merged)
         container_selector = self._root_value(root_entry)
@@ -960,8 +979,14 @@ class Pipeline:
         fresh_fields: set[str],
         new_selectors: SelectorMap | None,
         cleaned_html: str,
+        stale_fields: set[str] | None = None,
     ) -> SelectorMap:
-        """Merge fresh cached selectors with newly discovered, verify new ones, and save."""
+        """Merge fresh cached selectors with newly discovered, verify new ones, and save.
+
+        When stale_fields is provided, any field in stale_fields that ends up
+        with no selector is written as an NA sentinel so that future runs do not
+        re-attempt discovery for it.
+        """
         from datetime import datetime
         from datetime import timezone as _tz
 
@@ -975,6 +1000,9 @@ class Pipeline:
             verification = self.verifier.verify(cleaned_html, new_selectors, max_level=self.selector_level)
             for name, field_result in verification.results.items():
                 if field_result.status != 'verified':
+                    # Keep NA sentinels — they mark known-absent fields, not broken selectors
+                    if _is_na_selector(new_selectors.get(name, {})):
+                        continue
                     self.console.print(f'[warning]⚠ Rediscovered selector for {name} failed verification[/warning]')
                     merged.pop(name, None)
 
@@ -985,6 +1013,16 @@ class Pipeline:
                 merged_snapshots[name] = snapshots[name]
             else:
                 merged_snapshots[name] = _to_snap(sel_dict, discovered_at=now, last_verified_at=now)
+
+        # Write NA sentinels for stale fields that failed rediscovery entirely.
+        # This prevents re-attempting discovery on every subsequent URL for the domain.
+        if stale_fields:
+            for name in stale_fields:
+                if name not in merged_snapshots:
+                    na_dict: dict[str, Any] = {'primary': 'NA'}
+                    merged_snapshots[name] = _to_snap(na_dict, discovered_at=now, last_verified_at=now)
+                    self.logger.debug('Saved NA sentinel for known-absent field: %s', name)
+
         self.storage.save_snapshots(url, merged_snapshots)
         return merged
 
@@ -1288,6 +1326,8 @@ class Pipeline:
         """
         root_entry = selectors.pop('root', None)
         if isinstance(root_entry, dict):
+            if _is_na_selector(root_entry):
+                return None
             primary = root_entry.get('primary')
             if isinstance(primary, str) and primary:
                 return root_entry
@@ -1521,11 +1561,14 @@ class Pipeline:
                 self.console.print(
                     f'[success]✓ Verified {len(selectors_to_use)}/{len(self.contract.discovery_field_names())} cached selectors[/success]'
                 )
-                # If any contract fields (excluding overrides) have no cached selector,
-                # fall through to fresh discovery so the new fields get discovered.
+                # If any contract fields (excluding overrides and NA sentinels) have no
+                # cached selector, fall through to fresh discovery.
                 overridden = set(self.contract.get_selector_overrides())
                 required_fields = self.contract.discovery_field_names() - overridden
-                missing = required_fields - set(selectors_to_use)
+                na_fields = {
+                    name for name, sel in existing_selectors.items() if isinstance(sel, dict) and _is_na_selector(sel)
+                }
+                missing = required_fields - set(selectors_to_use) - na_fields
                 if missing:
                     self.console.print(
                         f'[warning]⚠ New contract fields not in cache: {", ".join(sorted(missing))} — re-discovering[/warning]'
@@ -1611,11 +1654,19 @@ class Pipeline:
         """
         if isinstance(extracted, list):
             validated_items: ContentItems = [self._validate_single_item(item, url) for item in extracted]
-            self.console.print(f'[success]✓ Contract validation applied to {len(validated_items)} items[/success]')
+            failed = sum(1 for v, r in zip(validated_items, extracted, strict=False) if v is r)
+            if failed:
+                self.console.print(
+                    f'[warning]⚠ {failed}/{len(validated_items)} items could not be fully validated[/warning]'
+                )
+            else:
+                self.console.print(f'[success]✓ Contract validation applied to {len(validated_items)} items[/success]')
             return validated_items
 
         validated = self._validate_single_item(extracted, url)
         if validated is not extracted:
+            self.console.print('[warning]⚠ Item could not be fully validated — saved with available fields[/warning]')
+        else:
             self.console.print('[success]✓ Contract validation applied[/success]')
         return validated
 
@@ -1635,7 +1686,6 @@ class Pipeline:
             return instance.model_dump()
         except (ValueError, TypeError) as e:
             self.logger.warning('Contract validation failed, using raw data: %s', e)
-            self.console.print(f'[warning]⚠ Validation skipped: {e}[/warning]')
             return item
 
     async def _save_and_track(

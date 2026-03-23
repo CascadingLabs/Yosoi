@@ -57,10 +57,12 @@ def build_yosoi_config(model_arg: str | None, debug: bool) -> YosoiConfig:
 
 
 def print_fetcher_info(fetcher_type: str) -> None:
-    """Print information about the selected fetcher.
-
-    Args:
-        fetcher_type: Type of fetcher ('simple').
-
-    """
-    console.print('[cyan]ℹ Using Simple fetcher[/cyan] [dim](fast, works for most sites)[/dim]')
+    """Print information about the selected fetcher."""
+    _FETCHER_LABELS: dict[str, tuple[str, str]] = {
+        'simple': ('Simple fetcher', 'fast, works for most sites'),
+        'js': ('JS fetcher', 'Simple → Headless → Headful waterfall'),
+        'headless': ('Headless fetcher', 'headless Chrome via zendriver'),
+        'headful': ('Headful fetcher', 'headful Chrome via zendriver'),
+    }
+    label, hint = _FETCHER_LABELS.get(fetcher_type, (f'{fetcher_type} fetcher', ''))
+    console.print(f'[cyan]ℹ Using {label}[/cyan] [dim]({hint})[/dim]')

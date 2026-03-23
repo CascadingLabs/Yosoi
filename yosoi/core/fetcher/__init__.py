@@ -2,13 +2,15 @@
 
 from yosoi.core.fetcher.base import HTMLFetcher
 from yosoi.core.fetcher.simple import SimpleFetcher
+from yosoi.core.fetcher.waterfall import JSFetcher
+from yosoi.core.fetcher.zendriver import HeadfulFetcher, HeadlessFetcher
 
 
 def create_fetcher(fetcher_type: str = 'simple', **kwargs: object) -> HTMLFetcher:
     """Create an HTML fetcher.
 
     Args:
-        fetcher_type: Type of fetcher ('simple')
+        fetcher_type: Type of fetcher ('simple', 'js', 'headless', 'headful')
         **kwargs: Additional arguments for the fetcher
 
     Returns:
@@ -17,6 +19,9 @@ def create_fetcher(fetcher_type: str = 'simple', **kwargs: object) -> HTMLFetche
     """
     fetchers: dict[str, type[HTMLFetcher]] = {
         'simple': SimpleFetcher,
+        'js': JSFetcher,
+        'headless': HeadlessFetcher,
+        'headful': HeadfulFetcher,
     }
 
     if fetcher_type not in fetchers:
@@ -25,4 +30,4 @@ def create_fetcher(fetcher_type: str = 'simple', **kwargs: object) -> HTMLFetche
     return fetchers[fetcher_type](**kwargs)
 
 
-__all__ = ['HTMLFetcher', 'SimpleFetcher', 'create_fetcher']
+__all__ = ['HTMLFetcher', 'HeadfulFetcher', 'HeadlessFetcher', 'JSFetcher', 'SimpleFetcher', 'create_fetcher']

@@ -150,8 +150,27 @@ class ContentAnalyzer:
             'enable javascript' in html_lower or 'requires javascript' in html_lower
         )
 
-        # Determine if JS is required
-        requires_js = (detected_framework is not None and minimal_content) or has_noscript_warning
+        # 4. Check for JS loading placeholder patterns in visible text
+        _LOADING_PATTERNS = [
+            'loading...',
+            'loading article',
+            'loading content',
+            'please wait',
+        ]
+
+        body_text_lower = ''
+        if body_match:
+            # Strip tags to get visible text only
+            text_only = re.sub(r'<[^>]+>', ' ', body_match.group(1))
+            body_text_lower = ' '.join(text_only.split()).lower()
+
+        has_loading_placeholders = any(p in body_text_lower for p in _LOADING_PATTERNS)
+
+        requires_js = (
+            (detected_framework is not None and minimal_content)
+            or has_noscript_warning
+            or (detected_framework is not None and has_loading_placeholders)
+        )
 
         return JSDetectionResult(requires_js=requires_js, framework=detected_framework)
 
