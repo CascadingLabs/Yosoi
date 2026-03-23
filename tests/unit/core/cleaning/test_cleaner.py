@@ -85,10 +85,19 @@ def test_clean_html_removes_footer(sample_html, cleaner):
     assert soup.find('footer') is None
 
 
-def test_clean_html_removes_sidebars(sample_html, cleaner):
-    result = cleaner.clean_html(sample_html)
-    soup = BeautifulSoup(result, 'html.parser')
-    assert soup.find('aside', class_='sidebar') is None
+def test_clean_html_removes_sidebars_outside_main(cleaner):
+    """Sidebar outside <main> is noise and should be removed."""
+    html = '<html><body><div class="sidebar"><h3>Links</h3></div><main><p>Content</p></main></body></html>'
+    result = cleaner.clean_html(html)
+    assert 'sidebar' not in result
+    assert 'Content' in result
+
+
+def test_clean_html_keeps_sidebar_inside_main(cleaner):
+    """Sidebar inside <main> may be content-bearing (rankings, stats) and should be kept."""
+    html = '<html><body><main><p>Content</p><aside class="sidebar"><h3>Rankings</h3></aside></main></body></html>'
+    result = cleaner.clean_html(html)
+    assert 'Rankings' in result
 
 
 def test_clean_html_removes_ad_class(cleaner):
@@ -434,8 +443,9 @@ def test_clean_html_removes_related_posts(cleaner):
     assert 'related-posts' not in result
 
 
-def test_clean_html_removes_widget_class(cleaner):
-    html = '<html><body><main><p>Real</p><div class="widget">Widget</div></main></body></html>'
+def test_clean_html_removes_widget_class_outside_main(cleaner):
+    """Widget outside <main> should be removed."""
+    html = '<html><body><div class="widget">Widget</div><main><p>Real</p></main></body></html>'
     result = cleaner.clean_html(html)
     assert 'Widget' not in result
 

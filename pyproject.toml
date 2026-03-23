@@ -152,6 +152,7 @@ lint.ignore = [
   "W293",   # blank line contains whitespace
 ]
 lint.per-file-ignores."__init__.py" = [ "F401" ]
+lint.per-file-ignores."benchmarks/**/*.py" = [ "D", "PERF401" ]
 lint.per-file-ignores."examples/**/*.py" = [ "BLE", "D" ]
 lint.per-file-ignores."tests/**/*.py" = [
   "ARG001", # unused arguments in test functions
@@ -217,6 +218,7 @@ ci-format = "uv run ruff check --fix"
 coverage = "uv run pytest --cov=yosoi --cov-report=term-missing --cov-report=html tests/"
 mutmut-run = "uv run mutmut run"
 mutmut-results = "uv run mutmut results"
+bench = "uv run python benchmarks/bench_cleaner.py"
 
 [tool.poe.tasks.ci-check]
 sequence = [

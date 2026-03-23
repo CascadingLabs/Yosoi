@@ -1,27 +1,44 @@
 """Cleans and extracts relevant HTML content for selector discovery and extraction."""
 
-import re
-
-from bs4 import BeautifulSoup, Comment, Tag
+from bs4 import BeautifulSoup
 from rich.console import Console
+
+from yosoi.core.cleaning.passes.budget import enforce_budget, estimate_tokens
+from yosoi.core.cleaning.passes.classes import strip_utility_classes
+from yosoi.core.cleaning.passes.compress import compress_html
+from yosoi.core.cleaning.passes.content import extract_content
+from yosoi.core.cleaning.passes.dedup import deduplicate_siblings
+from yosoi.core.cleaning.passes.density import prune_by_density
+from yosoi.core.cleaning.passes.flatten import flatten_wrappers
+from yosoi.core.cleaning.passes.noise import remove_noise
+from yosoi.core.cleaning.whitespace import collapse_whitespace
 
 
 class HTMLCleaner:
     """Cleans HTML by removing noise and extracting main content.
 
+    Runs a pipeline of composable passes over the HTML tree:
+    noise removal, content extraction, flattening, compression,
+    class stripping, sibling dedup, density pruning, whitespace
+    collapse, and token budget enforcement.
+
     Attributes:
         console: Rich console instance for formatted output
+        token_budget: Maximum estimated token count for the cleaned output
 
     """
 
-    def __init__(self, console: Console | None = None):
+    def __init__(self, console: Console | None = None, token_budget: int = 8000):
         """Initialize the HTML cleaner.
 
         Args:
             console: Rich console instance for formatted output. Defaults to None (creates new Console).
+            token_budget: Maximum estimated tokens in cleaned output. 0 disables budget enforcement.
+                          Defaults to 8000.
 
         """
         self.console = console or Console()
+        self.token_budget = token_budget
 
     def clean_html(self, html: str) -> str:
         """Extract and clean the main content area from HTML.
@@ -35,92 +52,55 @@ class HTMLCleaner:
         """
         soup = BeautifulSoup(html, 'lxml')
 
-        # Step 1: Remove noise that's never useful
-        for tag in soup.find_all(['script', 'style', 'noscript', 'iframe']):
-            tag.decompose()
-
-        # Step 2: Remove header, nav, footer
-        for tag in soup.find_all(['header', 'nav', 'footer']):
-            tag.decompose()
-
-        # Step 3: Remove sidebars, widgets, ads (always enabled)
-        for selector in [
-            '.sidebar',
-            '.widget',
-            '#sidebar',
-            '.advertisement',
-            '.ad',
-            '[class*="ad-"]',
-            '[id*="ad-"]',
-            '.related-posts',
-            '.useful-links',
-        ]:
-            for element in soup.select(selector):
-                element.decompose()
+        # Pass 1: Remove noise (scripts, styles, nav, sidebar, ads)
+        remove_noise(soup)
         self.console.print('  ↻ Removed sidebars/widgets/ads')
 
-        # Step 4: Get body or main content
-        body = soup.find('body')
-        content = None
-        extraction_method = ''
+        # Pass 2: Extract main content region
+        content_soup, extraction_method = extract_content(soup)
+        original_size = len(str(content_soup))
 
-        if body and isinstance(body, Tag):
-            # Check for <main> inside <body> (most specific!)
-            main_in_body = body.find('main')
-            if main_in_body and isinstance(main_in_body, Tag):
-                content = main_in_body
-                extraction_method = '<main> inside <body>'
-            else:
-                content = body
-                extraction_method = '<body>'
-        else:
-            # No <body>, try top-level <main>
-            main = soup.find('main')
-            if main and isinstance(main, Tag):
-                body_in_main = main.find('body')
-                if body_in_main and isinstance(body_in_main, Tag):
-                    content = body_in_main
-                    extraction_method = '<body> inside <main>'
-                else:
-                    content = main
-                    extraction_method = '<main>'
-            else:
-                content = soup
-                extraction_method = 'full HTML'
+        # Pass 3: Flatten meaningless wrapper divs/spans
+        flatten_wrappers(content_soup)
 
-        # Step 5: Compress HTML
-        if content:
-            original_size = len(str(content))
+        # Pass 4: Compress (strip attrs, remove comments, hidden elements, non-semantic bloat)
+        compress_html(content_soup)
 
-            # Apply compression
-            content_soup = BeautifulSoup(str(content), 'lxml')
-            content_soup = self._compress_html_simple(content_soup)
+        # Pass 5: Strip utility CSS classes (Tailwind, Bootstrap)
+        strip_utility_classes(content_soup)
 
-            # Convert to string and collapse whitespace
-            content_str = str(content_soup)
-            content_str = self._collapse_whitespace(content_str)
+        # Pass 6: Generalized sibling deduplication
+        deduplicate_siblings(content_soup)
 
-            # Warn if content is large but pass through untruncated
-            WARN_CHARS = 30_000
-            if len(content_str) > WARN_CHARS:
-                self.console.print(
-                    f'  ⚠ Content is {len(content_str):,} chars (above {WARN_CHARS:,} warning threshold)'
-                )
-            final_str = content_str
+        # Pass 7: Prune low-density subtrees
+        prune_by_density(content_soup)
 
-            # Calculate savings
-            compression_ratio = (1 - len(content_str) / original_size) * 100 if original_size > 0 else 0
+        # Pass 8: Collapse whitespace
+        content_str = collapse_whitespace(str(content_soup))
 
-            self.console.print(
-                f'  ↻ Using {extraction_method}: '
-                f'{original_size:,} → {len(content_str):,} chars '
-                f'({compression_ratio:.0f}% savings)'
-            )
+        # Pass 9: Enforce token budget
+        if self.token_budget > 0:
+            content_str = enforce_budget(content_str, self.token_budget)
 
-            return final_str
+        # Warn if content is large
+        WARN_CHARS = 30_000
+        if len(content_str) > WARN_CHARS:
+            self.console.print(f'  ⚠ Content is {len(content_str):,} chars (above {WARN_CHARS:,} warning threshold)')
 
-        # Fallback
-        return str(self._compress_html_simple(soup))
+        # Report savings
+        compression_ratio = (1 - len(content_str) / original_size) * 100 if original_size > 0 else 0
+        est_tokens = estimate_tokens(content_str)
+        self.console.print(
+            f'  ↻ Using {extraction_method}: '
+            f'{original_size:,} → {len(content_str):,} chars '
+            f'({compression_ratio:.0f}% savings, ~{est_tokens:,} tokens)'
+        )
+
+        return content_str
+
+    # ------------------------------------------------------------------
+    # Backward-compatible wrappers (used by existing tests)
+    # ------------------------------------------------------------------
 
     def _compress_html_simple(self, soup: BeautifulSoup) -> BeautifulSoup:
         """Compress HTML safely for selector discovery.
@@ -132,48 +112,7 @@ class HTMLCleaner:
             Compressed BeautifulSoup parsed HTML.
 
         """
-        # 1. Remove HTML comments
-        for comment in soup.find_all(text=lambda text: isinstance(text, Comment)):
-            comment.extract()
-
-        # 2. Remove attributes not used in CSS selectors
-        KEEP_ATTRIBUTES = {'class', 'id', 'href', 'src', 'datetime', 'alt', 'name', 'type'}
-
-        for tag in soup.find_all(True):
-            if isinstance(tag, Tag) and tag.attrs:
-                tag.attrs = {
-                    attr: value
-                    for attr, value in tag.attrs.items()
-                    if attr in KEEP_ATTRIBUTES or attr.startswith('data-')
-                }
-
-        # 3. Deduplicate list items (keep first 3 as examples)
-        for list_tag in soup.find_all(['ul', 'ol']):
-            items = list_tag.find_all('li', recursive=False)
-            if len(items) > 3:
-                for item in items[3:]:
-                    item.decompose()
-
-        # 4. Deduplicate table rows (keep first 5)
-        for table in soup.find_all('table'):
-            rows = table.find_all('tr')
-            if len(rows) > 5:
-                for row in rows[5:]:
-                    row.decompose()
-
-        # 5. Remove hidden elements
-        for tag in soup.find_all(True):
-            if isinstance(tag, Tag):
-                if tag.get('hidden') is not None:
-                    tag.decompose()
-                    continue
-                if tag.get('aria-hidden') == 'true':
-                    tag.decompose()
-
-        # 6. Remove non-semantic bloat (svg, canvas, base64, empty deep divs)
-        self._prune_non_semantic(soup)
-
-        return soup
+        return compress_html(soup)
 
     def _prune_non_semantic(self, soup: BeautifulSoup) -> BeautifulSoup:
         """Remove non-semantic bloat from parsed HTML.
@@ -188,30 +127,9 @@ class HTMLCleaner:
             The pruned BeautifulSoup object (mutated in-place).
 
         """
-        # Strip <svg> and <canvas> entirely
-        for tag in soup.find_all(['svg', 'canvas']):
-            tag.decompose()
+        from yosoi.core.cleaning.passes.compress import _prune_non_semantic
 
-        # Strip base64 inline image data (src="data:image/...")
-        for tag in soup.find_all(True):
-            if isinstance(tag, Tag):
-                src = tag.get('src', '')
-                if isinstance(src, str) and src.startswith('data:'):
-                    tag['src'] = '[data-uri-removed]'
-
-        # Strip deeply nested anonymous divs/spans (depth > 8, no class/id/data-* attrs, empty text)
-        for tag in reversed(soup.find_all(['div', 'span'])):
-            if not isinstance(tag, Tag):
-                continue
-            has_semantic_attrs = (
-                'class' in tag.attrs or 'id' in tag.attrs or any(k.startswith('data-') for k in tag.attrs)
-            )
-            if has_semantic_attrs:
-                continue
-            depth = sum(1 for _ in tag.parents)
-            if depth > 8 and len(tag.get_text(strip=True)) == 0:
-                tag.decompose()
-
+        _prune_non_semantic(soup)
         return soup
 
     def _collapse_whitespace(self, html: str) -> str:
@@ -224,10 +142,4 @@ class HTMLCleaner:
             Compressed version of the HTML.
 
         """
-        # Multiple spaces → single space
-        html = re.sub(r'[ \t]+', ' ', html)
-        # Multiple newlines → single newline
-        html = re.sub(r'\n+', '\n', html)
-        # Remove leading/trailing whitespace per line
-        lines = [line.strip() for line in html.split('\n') if line.strip()]
-        return '\n'.join(lines)
+        return collapse_whitespace(html)

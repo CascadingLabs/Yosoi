@@ -100,6 +100,7 @@ class Pipeline:
         selector_level: SelectorLevel = SelectorLevel.CSS,
         bus: DiscoveryBus | None = None,
         write_lock: asyncio.Lock | None = None,
+        token_budget: int = 8000,
     ):
         """Initialize the pipeline with LLM configuration.
 
@@ -119,6 +120,8 @@ class Pipeline:
                             Defaults to CSS.
             bus: Optional shared discovery bus for cross-pipeline field deduplication.
             write_lock: Optional asyncio.Lock to serialize selector writes for the domain.
+            token_budget: Maximum estimated tokens in cleaned HTML output.
+                          0 disables budget enforcement. Defaults to 8000.
 
         """
         self.selector_level = selector_level
@@ -155,7 +158,7 @@ class Pipeline:
         self.contract = contract
         self._contract_sig = contract_signature(contract)
         self.console = Console(theme=self.custom_theme, quiet=quiet)
-        self.cleaner = HTMLCleaner(console=self.console)
+        self.cleaner = HTMLCleaner(console=self.console, token_budget=token_budget)
         self.storage = SelectorStorage()
         self.discovery = DiscoveryOrchestrator(
             contract=self.contract,

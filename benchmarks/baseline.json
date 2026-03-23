@@ -1,0 +1,37 @@
+{
+  "qscrape_eshop": {
+    "median_ms_no_budget": 16.952358500000003,
+    "median_ms_full": 16.0262045,
+    "compression_pct": 75.51757676809781,
+    "tokens_no_budget": 881,
+    "tokens_full": 881
+  },
+  "qscrape_news": {
+    "median_ms_no_budget": 20.4889115,
+    "median_ms_full": 22.4324355,
+    "compression_pct": 72.4118762670852,
+    "tokens_no_budget": 2109,
+    "tokens_full": 2109
+  },
+  "qscrape_scoretap": {
+    "median_ms_no_budget": 19.505967,
+    "median_ms_full": 18.265643,
+    "compression_pct": 71.25945945945946,
+    "tokens_no_budget": 1329,
+    "tokens_full": 1329
+  },
+  "qscrape_taxes": {
+    "median_ms_no_budget": 3.027932,
+    "median_ms_full": 2.9562535,
+    "compression_pct": 82.83093053735256,
+    "tokens_no_budget": 98,
+    "tokens_full": 98
+  },
+  "qscrape_taxes_search": {
+    "median_ms_no_budget": 14.7037125,
+    "median_ms_full": 13.526436,
+    "compression_pct": 91.29612887318156,
+    "tokens_no_budget": 529,
+    "tokens_full": 529
+  }
+}
