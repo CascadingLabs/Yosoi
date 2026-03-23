@@ -1,7 +1,7 @@
 """Single-field AI discovery agent wrapping a narrow pydantic-ai Agent."""
 
 import logfire
-from pydantic_ai import Agent
+from pydantic_ai import Agent, NativeOutput, PromptedOutput, ToolOutput
 from rich.console import Console
 
 from yosoi.core.discovery.config import LLMConfig, create_model
@@ -42,6 +42,28 @@ def _extract_provider_error(exc: Exception) -> str | None:
     return None
 
 
+def _resolve_output_type(
+    output_mode: str,
+) -> type[FieldSelectors] | NativeOutput[FieldSelectors] | ToolOutput[FieldSelectors] | PromptedOutput[FieldSelectors]:
+    """Wrap FieldSelectors in the appropriate output mode marker.
+
+    Args:
+        output_mode: One of 'auto', 'native', 'tool', 'prompted'.
+
+    Returns:
+        The output type or a marker-wrapped output type for the PAI Agent.
+
+    """
+    if output_mode == 'native':
+        return NativeOutput(FieldSelectors)
+    if output_mode == 'tool':
+        return ToolOutput(FieldSelectors)
+    if output_mode == 'prompted':
+        return PromptedOutput(FieldSelectors)
+    # 'auto' — bare type, PAI default (tool output)
+    return FieldSelectors
+
+
 class FieldDiscoveryAgent:
     """Discovers selectors for a single contract field via a narrow LLM call.
 
@@ -71,7 +93,7 @@ class FieldDiscoveryAgent:
         self._agent: Agent[FieldDiscoveryDeps, FieldSelectors] = Agent(
             model,
             deps_type=FieldDiscoveryDeps,
-            output_type=FieldSelectors,
+            output_type=_resolve_output_type(llm_config.output_mode),
             output_retries=3,
         )
         self._agent.system_prompt(field_single_base_instructions)

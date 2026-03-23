@@ -50,11 +50,17 @@ class TestLLMConfig:
         assert cfg.api_key == 'key'
 
     def test_defaults(self):
-        """Default temperature, max_tokens, extra_params."""
+        """Default temperature, max_tokens, extra_params, output_mode."""
         cfg = LLMConfig(provider='groq', model_name='test', api_key='k')
         assert cfg.temperature == 0.01
         assert cfg.max_tokens is None
         assert cfg.extra_params is None
+        assert cfg.output_mode == 'auto'
+
+    def test_output_mode_override(self):
+        """output_mode can be set explicitly."""
+        cfg = LLMConfig(provider='groq', model_name='test', api_key='k', output_mode='native')
+        assert cfg.output_mode == 'native'
 
     def test_custom_values(self):
         """Custom temperature, max_tokens, extra_params."""

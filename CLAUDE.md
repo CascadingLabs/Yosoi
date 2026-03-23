@@ -9,5 +9,3 @@ consider poe tasks in pyproject.toml
 we use uv run poe ci-check for static type checking and formatting. Run it before finishing
 
 NEVER use unittest library, ever
-
-Run prek precommit once you are done editing to make sure you correcytly formatted

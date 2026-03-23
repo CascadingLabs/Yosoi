@@ -28,7 +28,11 @@ CATEGORY_URLS = [
     'https://qscrape.dev/l1/eshop/catalog/?cat=Potions%20%26%20Elixirs',
     'https://qscrape.dev/l1/eshop/catalog/?cat=Arcane%20Tomes',
 ]
-MODEL = ''
+MODEL = 'openrouter:stepfun/step-3.5-flash:free'
+# Native structured output — more reliable for providers that support it
+# (OpenAI, Anthropic, Groq, Gemini, etc.). Pass output_mode='native' via
+# ys.provider() or LLMConfig to opt in; default is 'auto' (tool output).
+MODEL_NATIVE = ys.provider(MODEL, output_mode='auto') if MODEL else MODEL
 
 
 # ---------------------------------------------------------------------------
@@ -132,8 +136,8 @@ def _print_items(label: str, items: list) -> None:
 
 
 async def run_pinned() -> None:
-    print('\n[Case 1] Pinned root = ys.css(".product-card")')
-    pipeline = ys.Pipeline(llm_config=MODEL, contract=ProductPinned, output_format='json')
+    print('\n[Case 1] Pinned root = ys.css(".product-card") — native output')
+    pipeline = ys.Pipeline(llm_config=MODEL_NATIVE, contract=ProductPinned, output_format='json')
     items = [item async for item in pipeline.scrape(URL, force=False)]
     _print_items('Pinned root', items)
 
@@ -159,8 +163,8 @@ async def run_concurrent() -> None:
     Per-domain serialization ensures the first URL discovers selectors
     and siblings hit the snapshot cache.
     """
-    print('\n[Case 4] Concurrent workers=3 — all same-domain URLs processed')
-    pipeline = ys.Pipeline(llm_config=MODEL, contract=ProductPinned, output_format='json')
+    print('\n[Case 4] Concurrent workers=3 — native output')
+    pipeline = ys.Pipeline(llm_config=MODEL_NATIVE, contract=ProductPinned, output_format='json')
     results = await pipeline.process_urls(CATEGORY_URLS, workers=3)
     print(f'  Successful: {len(results["successful"])}')
     print(f'  Failed:     {len(results["failed"])}')

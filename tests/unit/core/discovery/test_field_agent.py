@@ -1,10 +1,11 @@
 """Tests for FieldDiscoveryAgent."""
 
 import pytest
+from pydantic_ai import NativeOutput, PromptedOutput, ToolOutput
 from rich.console import Console
 
 from yosoi.core.discovery.config import LLMConfig
-from yosoi.core.discovery.field_agent import FieldDiscoveryAgent
+from yosoi.core.discovery.field_agent import FieldDiscoveryAgent, _resolve_output_type
 from yosoi.models.selectors import FieldSelectors, SelectorLevel
 from yosoi.prompts.discovery import DiscoveryInput
 from yosoi.utils.exceptions import LLMGenerationError
@@ -62,6 +63,29 @@ class TestExtractProviderError:
         exc = RuntimeError('fail')
         exc.body = {'error': 'string error'}  # type: ignore[attr-defined]
         assert _extract_provider_error(exc) is None
+
+
+# ---------------------------------------------------------------------------
+# _resolve_output_type
+# ---------------------------------------------------------------------------
+
+
+class TestResolveOutputType:
+    def test_auto_returns_bare_type(self):
+        result = _resolve_output_type('auto')
+        assert result is FieldSelectors
+
+    def test_native_returns_native_output(self):
+        result = _resolve_output_type('native')
+        assert isinstance(result, NativeOutput)
+
+    def test_tool_returns_tool_output(self):
+        result = _resolve_output_type('tool')
+        assert isinstance(result, ToolOutput)
+
+    def test_prompted_returns_prompted_output(self):
+        result = _resolve_output_type('prompted')
+        assert isinstance(result, PromptedOutput)
 
 
 # ---------------------------------------------------------------------------

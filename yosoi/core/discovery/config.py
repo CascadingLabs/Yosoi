@@ -8,7 +8,7 @@ from __future__ import annotations
 import os
 import warnings
 from collections.abc import Callable
-from typing import Any, Protocol
+from typing import Any, Literal, Protocol
 
 # ============================================================================
 # 1. CONFIG DATACLASSES - Simple configuration objects
@@ -74,6 +74,7 @@ class LLMConfig(BaseModel):
     temperature: float = 0.01
     max_tokens: int | None = None
     extra_params: dict[str, Any] | None = None
+    output_mode: Literal['auto', 'native', 'tool', 'prompted'] = 'auto'
 
 
 # ============================================================================
@@ -489,6 +490,7 @@ class LLMBuilder:
         self._temperature: float = 0.7
         self._max_tokens: int | None = None
         self._extra_params: dict[str, str | int | float | bool] = {}
+        self._output_mode: Literal['auto', 'native', 'tool', 'prompted'] = 'auto'
 
     def provider(self, name: str) -> LLMBuilder:
         """Set the provider (groq, gemini, openai, etc.).
@@ -555,6 +557,19 @@ class LLMBuilder:
         self._max_tokens = tokens
         return self
 
+    def output_mode(self, mode: Literal['auto', 'native', 'tool', 'prompted']) -> LLMBuilder:
+        """Set the structured output mode.
+
+        Args:
+            mode: Output mode ('auto', 'native', 'tool', 'prompted')
+
+        Returns:
+            Self for method chaining.
+
+        """
+        self._output_mode = mode
+        return self
+
     def extra(self, **kwargs: str | int | float | bool) -> LLMBuilder:
         """Add extra provider-specific parameters.
 
@@ -589,6 +604,7 @@ class LLMBuilder:
             temperature=self._temperature,
             max_tokens=self._max_tokens,
             extra_params=self._extra_params if self._extra_params else None,
+            output_mode=self._output_mode,
         )
 
 
