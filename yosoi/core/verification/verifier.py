@@ -197,3 +197,55 @@ class SelectorVerifier:
         except (httpx.HTTPError, ValueError) as exc:
             logger.warning('quick_test failed for selector %r on %r: %s', selector, url, exc)
             return False
+
+    def verify_root(
+        self,
+        html: str,
+        container_selector: str,
+        field_selectors: dict[str, dict[str, any]],
+    ) -> bool:
+        """Check that at least one primary field selector matches inside the container.
+
+        Prevents sidebar/related-content containers from being cached as the page
+        root. If no primary field selector finds content inside the container,
+        it is not a valid root for this page.
+
+        Args:
+            html: Cleaned HTML to test against.
+            container_selector: The CSS selector for the candidate root container.
+            field_selectors: The discovered field selectors (primary/fallback/tertiary dicts).
+
+        Returns:
+            True if at least one primary field selector matches inside the container.
+
+        """
+        sel = Selector(text=html)
+
+        try:
+            containers = sel.css(container_selector)
+        except Exception:  # noqa: BLE001
+            return False
+
+        if not containers:
+            return False
+
+        # Check the first container element — if primary fields match inside it
+        # then it's a valid content container, not a sidebar or widget.
+        first = containers[0]
+        for field_name, field_data in field_selectors.items():
+            if field_name in ('root', 'related_content'):
+                continue
+            primary = field_data.get('primary')
+            if not primary:
+                continue
+            entry = coerce_selector_entry(primary)
+            if entry is None:
+                continue
+            try:
+                matches = first.css(entry.value) if entry.type == 'css' else first.xpath(entry.value)
+                if matches:
+                    return True
+            except Exception:  # noqa: BLE001
+                continue
+
+        return False

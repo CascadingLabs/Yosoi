@@ -5,8 +5,9 @@ Provides two single-tier fetchers backed by a shared Chrome browser:
 - :class:`HeadlessFetcher` — Chrome with no visible window, fast and low overhead.
 - :class:`HeadfulFetcher` — Chrome with a visible window, better bot evasion.
 
-Both share :class:`_SingleTierFetcher` as a private base. Use :mod:`js` for the
-three-tier waterfall that orchestrates these alongside :class:`~yosoi.core.fetcher.simple.SimpleFetcher`.
+Both share :class:`_SingleTierFetcher` as a private base. Use :mod:`waterfall`
+for the three-tier waterfall that orchestrates these alongside
+:class:`~yosoi.core.fetcher.simple.SimpleFetcher`.
 """
 
 from __future__ import annotations
@@ -63,14 +64,20 @@ def _find_chrome() -> str:
 # DOM stability wait
 # ---------------------------------------------------------------------------
 
-_POLL_INTERVAL = 0.2
-_STABLE_CHECKS = 3
+_POLL_INTERVAL = 0.3
+
+# Number of consecutive unchanged polls before we consider the DOM stable.
+_STABLE_CHECKS = 5
+
+# Don't treat a page as stable until it has at least this many characters.
+# Prevents loading stubs / redirect gates from being mistaken for real content.
+_MIN_CONTENT_LENGTH = 5000
 
 
 async def _wait_for_content(tab: object, timeout: float) -> bool:
-    """Poll until the DOM stops changing or the timeout is hit.
+    """Poll until the DOM stops changing and has enough content, or the timeout is hit.
 
-    Returns True if the DOM stabilised, False if we hit the timeout.
+    Returns True if the DOM stabilised with sufficient content, False on timeout.
     """
     deadline = time.time() + timeout
     previous_size = 0
@@ -80,7 +87,8 @@ async def _wait_for_content(tab: object, timeout: float) -> bool:
         size = await tab.evaluate(  # type: ignore[union-attr]
             'document.body ? document.body.innerHTML.length : 0'
         )
-        if size > 0 and size == previous_size:
+        # Only count as stable if the page has enough content to not be a stub.
+        if size > _MIN_CONTENT_LENGTH and size == previous_size:
             stable_count += 1
             if stable_count >= _STABLE_CHECKS:
                 return True
@@ -164,6 +172,14 @@ class _SingleTierFetcher(HTMLFetcher):
             headless=self._headless,
             browser_executable_path=self.browser_executable_path,
         )
+
+        # Pre-warm: open a blank tab so Chrome fully initialises before real
+        # fetches start. Without this the first real tab pays the full browser
+        # startup cost and may catch a loading stub on JS-gated sites.
+        warmup = await self._browser.get('about:blank')
+        with contextlib.suppress(Exception):
+            await warmup.close()
+
         tier = 'headless' if self._headless else 'headful'
         self.logger.info('%s ready (%s)', type(self).__name__, tier)
         return self
@@ -221,7 +237,12 @@ class _SingleTierFetcher(HTMLFetcher):
 
         is_blocked, indicators = self._check_for_bot_detection(html, 200, {})
         if is_blocked:
-            self.logger.warning('Bot detection triggered for %s via %s: %s', url, tier_label, ', '.join(indicators))
+            self.logger.warning(
+                'Bot detection triggered for %s via %s: %s',
+                url,
+                tier_label,
+                ', '.join(indicators),
+            )
             raise BotDetectionError(url, 200, indicators)
 
         metadata = ContentAnalyzer.analyze(html)

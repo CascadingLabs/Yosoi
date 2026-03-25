@@ -27,6 +27,8 @@ import logging
 import time
 from urllib.parse import urlparse
 
+from rich.console import Console
+
 from yosoi.core.fetcher.base import HTMLFetcher
 from yosoi.core.fetcher.simple import SimpleFetcher
 from yosoi.core.fetcher.zendriver import HeadfulFetcher, HeadlessFetcher
@@ -58,8 +60,23 @@ class JSFetcher(HTMLFetcher):
         max_concurrent: int = 5,
         min_content_length: int = 500,
         browser_executable_path: str | None = None,
+        console: Console | None = None,
     ):
-        """Initialise the three-tier JS fetcher."""
+        """Initialise the three-tier JS fetcher.
+
+        Args:
+            timeout: Tab load + DOM stability timeout in seconds.
+            rotate_user_agent: Forwarded to SimpleFetcher for interface compat.
+            use_session: Forwarded to SimpleFetcher for interface compat.
+            min_delay: Minimum pause between requests (seconds).
+            max_delay: Maximum pause between requests (seconds).
+            randomize_headers: Forwarded to SimpleFetcher for interface compat.
+            max_concurrent: Max tabs open at once per Chrome tier.
+            min_content_length: HTML shorter than this triggers Chrome fallback.
+            browser_executable_path: Path to Chrome binary. Auto-detected if None.
+            console: Optional Rich console for progress output.
+
+        """
         self._simple = SimpleFetcher(
             timeout=timeout,
             rotate_user_agent=rotate_user_agent,
@@ -83,6 +100,7 @@ class JSFetcher(HTMLFetcher):
         self._strategy_cache: dict[str, str] = {}
         self._strategy_storage = FetchStrategyStorage()
 
+        self._console = console or Console()
         self.logger = logging.getLogger(__name__)
 
     # ------------------------------------------------------------------
@@ -131,6 +149,7 @@ class JSFetcher(HTMLFetcher):
         if self._strategy_cache.get(domain) != tier:
             self._strategy_cache[domain] = tier
             self._strategy_storage.save(domain, tier)
+            self._console.print(f'[success]  ✓ Fetcher strategy saved: {domain} → {tier}[/success]')
             self.logger.info('Fetch strategy cached: %s -> %s', domain, tier)
 
     # ------------------------------------------------------------------
@@ -138,15 +157,17 @@ class JSFetcher(HTMLFetcher):
     # ------------------------------------------------------------------
 
     async def _ensure_headless(self) -> HeadlessFetcher:
+        """Start headless Chrome lazily on first need."""
         if self._headless is None:
-            self.logger.info('Starting headless Chrome (tier 2)...')
+            self._console.print('[dim]  ↳ Starting headless Chrome...[/dim]')
             self._headless = HeadlessFetcher(**self._chrome_kwargs)
             await self._headless.__aenter__()
         return self._headless
 
     async def _ensure_headful(self) -> HeadfulFetcher:
+        """Start headful Chrome lazily on first need."""
         if self._headful is None:
-            self.logger.info('Starting headful Chrome (tier 3)...')
+            self._console.print('[dim]  ↳ Starting headful Chrome...[/dim]')
             self._headful = HeadfulFetcher(**self._chrome_kwargs)
             await self._headful.__aenter__()
         return self._headful
@@ -169,24 +190,32 @@ class JSFetcher(HTMLFetcher):
 
         Raises:
             BotDetectionError: If bot-detection indicators are found.
+
         """
         start_time = time.time()
         domain = urlparse(url).netloc.replace('www.', '')
         cached_tier = self._preferred_tier(domain)
 
         # ── Fast path: cached tier ───────────────────────────────────────────
+        if cached_tier is not None:
+            self._console.print(
+                f'[dim]  ↳ {domain} — using cached tier [bold]{cached_tier}[/bold] '
+                f'(fetch/fetch_{domain.replace(".", "_")}.json)[/dim]'
+            )
+
         if cached_tier == 'simple':
             result = await self._simple.fetch(url)
             if result.html:
                 return result
-            self.logger.info('Cached simple tier failed for %s — running waterfall', domain)
+            # Cached simple failed — fall through to full waterfall
+            self._console.print(f'[warning]  ✗ Cached simple tier failed for {domain} — re-running waterfall[/warning]')
 
         elif cached_tier == 'headless':
             headless = await self._ensure_headless()
             result = await headless._do_fetch(url, start_time, 'headless')
             if result.html:
                 return result
-            self.logger.info('Cached headless tier failed for %s — trying headful', domain)
+            self._console.print(f'[warning]  ✗ Cached headless tier failed for {domain} — trying headful[/warning]')
             headful = await self._ensure_headful()
             result = await headful._do_fetch(url, start_time, 'headful')
             if result.html:
@@ -199,37 +228,45 @@ class JSFetcher(HTMLFetcher):
 
         # ── Waterfall: no cache for this domain ──────────────────────────────
 
+        self._console.print(f'[dim]  ↳ New domain {domain} — running fetch waterfall to find best tier...[/dim]')
+
         # Tier 1: Simple
+        self._console.print('[dim]    [1/3] Trying simple HTTP...[/dim]')
         result = await self._simple.fetch(url)
+
         if result.html and not result.requires_js:
+            self._console.print('[success]    ✓ Simple fetcher worked[/success]')
             self._record_success(domain, 'simple')
             return result
 
         if result.html and result.requires_js:
-            self.logger.info('JS detected on %s — escalating to headless Chrome', domain)
+            self._console.print('[warning]    ✗ Simple fetcher returned HTML but JS rendering is required[/warning]')
         else:
-            self.logger.info(
-                'Simple fetch failed for %s (%s) — escalating to headless Chrome',
-                domain,
-                result.block_reason or 'unknown',
+            self._console.print(
+                f'[warning]    ✗ Simple fetcher failed ({result.block_reason or "no content"})[/warning]'
             )
 
         # Tier 2: Headless
+        self._console.print('[dim]    [2/3] Trying headless Chrome...[/dim]')
         headless = await self._ensure_headless()
         result = await headless._do_fetch(url, start_time, 'headless')
+
         if result.html:
+            self._console.print('[success]    ✓ Headless Chrome worked[/success]')
             self._record_success(domain, 'headless')
             return result
 
-        self.logger.info(
-            'Headless failed for %s (%s) — escalating to headful Chrome',
-            domain,
-            result.block_reason or 'unknown',
-        )
+        self._console.print(f'[warning]    ✗ Headless Chrome failed ({result.block_reason or "no content"})[/warning]')
 
         # Tier 3: Headful (best effort)
+        self._console.print('[dim]    [3/3] Trying headful Chrome...[/dim]')
         headful = await self._ensure_headful()
         result = await headful._do_fetch(url, start_time, 'headful')
+
         if result.html:
+            self._console.print('[success]    ✓ Headful Chrome worked[/success]')
             self._record_success(domain, 'headful')
+        else:
+            self._console.print(f'[warning]    ✗ All three tiers failed for {domain}[/warning]')
+
         return result
