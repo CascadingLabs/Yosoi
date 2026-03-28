@@ -50,7 +50,12 @@ from yosoi.types import (
 from yosoi.utils.contracts import resolve_contract
 from yosoi.utils.urls import load_urls_from_file
 
-__version__ = '0.1.0'
+from importlib.metadata import version, PackageNotFoundError
+
+try:
+    __version__ = version('yosoi')
+except PackageNotFoundError:
+    __version__ = 'unknown'
 
 __all__ = [
     'Author',

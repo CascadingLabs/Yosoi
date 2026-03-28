@@ -50,6 +50,7 @@ scripts.yosoi = "yosoi.cli:main"
 [dependency-groups]
 dev = [
   "commitizen>=3.13",
+  "griffe>=2.0.0",
   "memray>=1.19.1",
   "mypy>=1.13",
   "playwright>=1.58",
@@ -217,6 +218,7 @@ ci-format = "uv run ruff check --fix"
 coverage = "uv run pytest --cov=yosoi --cov-report=term-missing --cov-report=html tests/"
 mutmut-run = "uv run mutmut run"
 mutmut-results = "uv run mutmut results"
+docs = "uv run python scripts/generate_api_docs.py --output-dir ../CascadingLabsFE/docs/yosoi-docs/reference"   # generate split API reference with GitHub source links
 
 [tool.poe.tasks.ci-check]
 sequence = [
