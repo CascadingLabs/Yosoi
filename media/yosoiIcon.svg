@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 500 500">
+  <rect width="500" height="500" rx="24" fill="#2e3742"/>
+  <rect x="14" y="14" width="472" height="472" rx="18" fill="none" stroke="#c4d4df" stroke-width="4" opacity="0.5"/>
+  <text x="50" y="70" font-family="Futura, 'Century Gothic', 'Avant Garde', sans-serif" font-size="48" font-weight="300" fill="#c4d4df" opacity="0.7">3</text>
+  <text x="250" y="245" font-family="Futura, 'Century Gothic', 'Avant Garde', sans-serif" font-size="220" font-weight="700" fill="#c4d4df" text-anchor="middle" dominant-baseline="central" letter-spacing="-5">Ys</text>
+  <text x="250" y="410" font-family="Futura, 'Century Gothic', 'Avant Garde', sans-serif" font-size="56" font-weight="300" fill="#c4d4df" text-anchor="middle" opacity="0.8">Yosoi</text>
+  <text x="250" y="460" font-family="Futura, 'Century Gothic', 'Avant Garde', sans-serif" font-size="32" font-weight="300" fill="#c4d4df" text-anchor="middle" opacity="0.45">3.000</text>
+</svg>
