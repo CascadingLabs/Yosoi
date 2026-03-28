@@ -71,9 +71,8 @@ def _build_concurrent_table(url_status: dict[str, tuple[str, float]]) -> Table:
 class Pipeline:
     """Main pipeline for discovering and saving CSS selectors with retry logic.
 
-    The main pipeline of YOSOi that goes through all the other python files to
-    fetch the HTML, parse the HTML, have an LLM discover the selectors, and
-    verify and store the selectors.
+    Fetches HTML, cleans it, runs LLM-based selector discovery, then verifies
+    and stores the selectors.
 
     Attributes:
         custom_theme: Rich theme for console output

@@ -7,6 +7,9 @@
 [![codecov](https://codecov.io/gh/CascadingLabs/Yosoi/graph/badge.svg?token=DFDI574EEA)](https://codecov.io/gh/CascadingLabs/Yosoi)
 <!-- [![image](https://img.shields.io/pypi/l/yosoi.svg)](https://pypi.python.org/pypi/yosoi) -->
 
+> [!WARNING]
+> **Yosoi is currently in Alpha.** The API is expected to change significantly. We do not expect a stable API until we are out of Beta.
+
 # Yosoi - AI-Powered CSS Selector Discover
 
 > **Discover CSS selectors once with AI, scrape forever with BeautifulSoup**
