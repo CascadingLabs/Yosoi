@@ -236,10 +236,12 @@ class Pipeline:
             url: URL to process
             force: Force re-discovery even if selectors exist. Defaults to False.
             skip_verification: Skip verification step. Defaults to False.
-            fetcher_type: Type of fetcher ('simple'). Defaults to 'simple'.
+            fetcher_type: Type of fetcher ('simple', 'waterfall', etc.). Defaults to 'simple'.
             max_fetch_retries: Maximum fetch retry attempts. Defaults to 2.
             max_discovery_retries: Maximum AI discovery retry attempts. Defaults to 3.
             output_format: Format(s) for extracted content. Defaults to None (uses pipeline default).
+            fetcher: Optional pre-existing fetcher instance. When provided the fetcher
+                is not closed after this call — the caller owns its lifecycle.
 
         """
         async for _ in self.scrape(
@@ -278,7 +280,7 @@ class Pipeline:
             urls: List of URLs to process.
             force: Force re-discovery even if selectors exist. Defaults to False.
             skip_verification: Skip verification step. Defaults to False.
-            fetcher_type: Type of fetcher ('simple'). Defaults to 'simple'.
+            fetcher_type: Type of fetcher ('simple', 'waterfall', etc.). Defaults to 'simple'.
             max_fetch_retries: Maximum fetch retry attempts. Defaults to 2.
             max_discovery_retries: Maximum AI discovery retry attempts. Defaults to 3.
             output_format: Format(s) for extracted content. Defaults to None (uses pipeline default).
@@ -303,14 +305,9 @@ class Pipeline:
         format_to_use: list[str] = [_raw] if isinstance(_raw, str) else list(_raw)
         force_flag = self.force if force is None else force
 
-        # Eagerly resolve the session id at the top so every span (orchestrator
-        # + per-URL) shares one session_id, even on the concurrent path which
-        # previously skipped the outer wrap.
         sess_id = observability.process_session_id()
 
         effective_workers = min(workers, len(urls))
-        # Outer session wrap: hoisted above the workers branch so both
-        # sequential and concurrent dispatch run inside it.
         with observability.session(sess_id, tags=['yosoi', origin]):
             if effective_workers > 1:
                 if not self.console.quiet and on_start is None and on_complete is None:
@@ -344,7 +341,7 @@ class Pipeline:
             results: dict[str, list[str]] = {'successful': [], 'failed': []}
             run_start = time.monotonic()
 
-            shared_fetcher = self._create_fetcher(fetcher_type)
+            shared_fetcher = self._create_fetcher(fetcher_type, console=self.console, force=force_flag)
             if not shared_fetcher:
                 raise RuntimeError(f'Invalid fetcher type: {fetcher_type}')
 
@@ -460,19 +457,9 @@ class Pipeline:
         """
         from yosoi.core.tasks import configure_broker, enqueue_urls, shutdown_broker
 
-        # Defensive: export the session id to the env so future fork-based
-        # brokers (Redis, AMQP) propagate it across process boundaries.
-        # No-op for today's InMemoryBroker — workers share the parent's
-        # YOSOI_SESSION_ID via in-process state.
         if isinstance(sess_id, str):
             os.environ['YOSOI_SESSION_ID'] = sess_id
 
-        # Detached enqueue span: appears in the exporter so reviewers can see
-        # orchestrator-side dispatch metadata (count, workers, origin), but
-        # does NOT become the active OTel parent — per-URL ``scrape`` spans
-        # remain trace roots. Langfuse's span processor still enriches this
-        # span with session.id from the outer ``observability.session(...)``
-        # propagate_attributes context.
         with observability.detached_span('enqueue', count=len(urls), workers=max_workers, origin=origin):
             await configure_broker(
                 self._llm_config,
@@ -560,8 +547,10 @@ class Pipeline:
             max_fetch_retries: Maximum fetch retry attempts. Defaults to 2.
             max_discovery_retries: Maximum AI discovery retry attempts. Defaults to 3.
             skip_verification: Skip verification step. Defaults to False.
-            fetcher_type: Type of fetcher ('simple'). Defaults to 'simple'.
+            fetcher_type: Type of fetcher ('simple', 'waterfall', etc.). Defaults to 'simple'.
             output_format: Format(s) for saving extracted content.
+            fetcher: Optional pre-existing fetcher. When provided it is used directly
+                and not closed after the call — the caller owns its lifecycle.
 
         Yields:
             ContentMap dicts — one per extracted item.
@@ -575,26 +564,8 @@ class Pipeline:
 
         url = await self.normalize_url(url)
 
-        # Trace title shows the URL so the Langfuse trace list is scannable.
-        # Full URL is also kept on the span attribute for filtering.
         parsed = urlparse(url)
         trace_name = f'scrape {parsed.netloc}{parsed.path or "/"}'
-        # Bind the (sub)domain as the Langfuse user_id so traces aggregate per
-        # site. ExitStack lets us omit the user() frame entirely when the URL
-        # has no host (file://, data:, etc.) rather than passing an empty id.
-        #
-        # Reconciliation B: scrape() always opens its own session() wrap with
-        # tags=['yosoi','script'] so direct callers (script-mode bypassing
-        # process_urls()) get session.id propagation. When called via
-        # process_urls(), the inner session call is harmless — Langfuse SDK
-        # union-merges tag lists across nested propagate_attributes (verified
-        # at langfuse/_client/propagation.py:382-390), so outer
-        # tags=['yosoi','cli'] survive the inner ['yosoi','script'] re-set.
-        # Always re-read the lazy session id rather than trusting a stale
-        # ``self.session_id`` snapshot — the lazy resolver is cached so
-        # re-reading is cheap and guarantees we match whatever the outer
-        # ``process_urls`` wrap is using (e.g. when YOSOI_SESSION_ID was set
-        # after Pipeline.__init__).
         sess_id = observability.process_session_id()
         user_id = observability.normalize_user_id(url)
         with ExitStack() as stack:
@@ -618,13 +589,14 @@ class Pipeline:
             )
             self.logger.info('Processing URL: %s (force=%s, fetcher=%s)', url, force_flag, fetcher_type)
             domain = self._extract_domain(url)
+
             _owns_fetcher = fetcher is None
             if _owns_fetcher:
-                fetcher = self._create_fetcher(fetcher_type)
+                fetcher = self._create_fetcher(fetcher_type, console=self.console, force=force_flag)
                 if not fetcher:
                     raise RuntimeError(f'Invalid fetcher type: {fetcher_type}')
 
-            ctx = fetcher if _owns_fetcher else contextlib.nullcontext(fetcher)
+            ctx = fetcher if _owns_fetcher else nullcontext(fetcher)
 
             async with ctx:
                 # Try using cached selectors if available
@@ -650,7 +622,9 @@ class Pipeline:
                         raise RuntimeError(f'HTML cleaning failed for {url}')
 
                 with observability.span('discover', url=url, cleaned_chars=len(cleaned_html)):
-                    selectors, used_llm = await self._discover(url, cleaned_html, max_retries=max_discovery_retries)
+                    selectors, used_llm = await self._discover(
+                        url, cleaned_html, max_retries=max_discovery_retries, force=force_flag
+                    )
                     if not selectors:
                         raise RuntimeError(f'Selector discovery failed for {url}')
 
@@ -1054,13 +1028,11 @@ class Pipeline:
 
         """
         if not url.startswith(('http://', 'https://')):
-            # Try HTTPS first
             try:
                 test_url = 'https://' + url
                 await self._client.head(test_url, timeout=3, follow_redirects=True)
                 return test_url
             except httpx.HTTPError:
-                # Fall back to HTTP
                 return 'http://' + url
         return url
 
@@ -1081,18 +1053,25 @@ class Pipeline:
         """
         return observability.normalize_user_id(url) or ''
 
-    def _create_fetcher(self, fetcher_type: str) -> HTMLFetcher | None:
+    def _create_fetcher(
+        self, fetcher_type: str, console: Console | None = None, force: bool = False
+    ) -> HTMLFetcher | None:
         """Create HTML fetcher instance.
 
         Args:
             fetcher_type: The type of fetcher to be used to fetch HTMLs
+            console: Optional Rich console passed to fetchers that support it
+            force: Force re-discovery even if selectors exist. Defaults to False.
 
         Returns:
             The fetcher to be used to fetch HTMLs
 
         """
         try:
-            return create_fetcher(fetcher_type)
+            kwargs = {'console': console} if fetcher_type == 'waterfall' and console is not None else {}
+            if fetcher_type == 'waterfall':
+                kwargs['force'] = force
+            return create_fetcher(fetcher_type, **kwargs)
         except ValueError:
             self.console.print(f'[danger]Invalid fetcher type: {fetcher_type}[/danger]')
             return None
@@ -1146,7 +1125,6 @@ class Pipeline:
                             self.console.print(
                                 f'[danger]Fetch failed: {result.block_reason or "Unknown error"}[/danger]'
                             )
-                            # Raise exception to trigger retry
                             raise Exception(f'Fetch failed: {result.block_reason}')
 
                         if result.html is None:
@@ -1163,7 +1141,6 @@ class Pipeline:
                         raise
 
                     except (httpx.HTTPError, OSError, ValueError, RuntimeError) as e:
-                        # Don't re-log if we just raised it ourselves above
                         if str(e) not in [
                             'No HTML content received',
                             f'Fetch failed: {getattr(result, "block_reason", "Unknown")}',
@@ -1203,22 +1180,22 @@ class Pipeline:
             self.console.print('[danger]HTML cleaning produced empty result[/danger]')
             return None
 
-        # Save debug HTML if enabled
         self.debug.save_debug_html(url, cleaned_html)
-
         self.console.print(f'[success]Cleaned HTML ready ({len(cleaned_html):,} chars)[/success]')
         return cleaned_html
 
-    async def _discover(self, url: str, cleaned_html: str, max_retries: int = 3) -> tuple[SelectorMap | None, bool]:
+    async def _discover(
+        self, url: str, cleaned_html: str, max_retries: int = 3, force: bool = False
+    ) -> tuple[SelectorMap | None, bool]:
         """Discover CSS selectors with AI, using fallback heuristics if needed.
 
-        Attempts AI-powered selector discovery with automatic retries. Falls
-        back to heuristic selectors for RSS feeds or JavaScript-heavy sites.
+        Attempts AI-powered selector discovery with automatic retries.
 
         Args:
             url: URL being processed (for logging).
             cleaned_html: Pre-cleaned HTML content to analyze.
             max_retries: Maximum AI retry attempts. Defaults to 3.
+            force: Force re-discovery even if selectors exist. Defaults to False.
 
         Returns:
             Tuple of (selectors, used_llm) where:
@@ -1227,27 +1204,23 @@ class Pipeline:
             - used_llm: True if AI was used, False if using fallback heuristics
 
         """
-        # Collect any manual selector overrides defined on the contract fields
         overrides = self.contract.get_selector_overrides()
         if overrides:
             override_fields = ', '.join(f'`{f}`' for f in overrides)
             self.console.print(f'[info]  ↳ Using selector overrides for: {override_fields}[/info]')
 
-        # If every field has an override, skip AI entirely
         if not self.contract.field_descriptions():
             self.console.print('[step]Step 2: All fields have selector overrides — skipping AI discovery[/step]')
             self.logger.info('Skipping AI discovery — all fields overridden url=%s', url)
             self.debug.save_debug_selectors(url, overrides)
             return overrides, False
 
-        # Use AI discovery with retries
         def before_ai_sleep_log(retry_state: RetryCallState) -> None:
             attempt = retry_state.attempt_number
             if attempt >= 1:
                 self.console.print(f'[warning]AI retry attempt {attempt}/{max_retries}...[/warning]')
                 observability.warning('Retrying AI discovery', url=url, attempt=attempt)
 
-        # Use AI discovery with retries
         try:
             retryer = get_async_retryer(
                 max_attempts=max_retries,
@@ -1264,16 +1237,11 @@ class Pipeline:
                         f'[step]Step 2: AI analyzing HTML (attempt {attempt.retry_state.attempt_number}/{max_retries})...[/step]'
                     )
 
-                    # discover_selectors takes cleaned HTML and returns just selectors
-                    selectors = await self.discovery.discover_selectors(cleaned_html, url)
+                    selectors = await self.discovery.discover_selectors(cleaned_html, url, force=force)
 
                     if selectors:
-                        # Merge manual overrides (overrides take precedence)
                         selectors.update(overrides)
-
                         self.console.print(f'[success]Discovered selectors for {len(selectors)} fields[/success]')
-
-                        # Save debug selectors if enabled
                         self.debug.save_debug_selectors(url, selectors)
 
                         if attempt.retry_state.attempt_number > 1:
@@ -1291,7 +1259,6 @@ class Pipeline:
         except (httpx.HTTPError, OSError, ValueError, RuntimeError):
             pass
 
-        # All attempts failed
         self.console.print(f'[danger]All {max_retries} AI attempts failed[/danger]')
         observability.warning('All AI attempts failed', url=url)
         return None, False
@@ -1299,8 +1266,6 @@ class Pipeline:
     @staticmethod
     def _pop_root(selectors: SelectorMap) -> dict[str, Any] | None:
         """Remove and return the full ``root`` selector entry from a selector map.
-
-        Root is stored as ``{'primary': {'type': '...', 'value': '...'}}``.
 
         Args:
             selectors: Mutable selector dict (modified in-place).
@@ -1415,12 +1380,10 @@ class Pipeline:
             Full root entry dict, or None for single-item pages.
 
         """
-        # Contract-level override takes precedence
         contract_root = self.contract.get_root()
         if contract_root:
-            self._pop_root(selectors)  # discard AI's root if present
+            self._pop_root(selectors)
             return {'primary': contract_root.model_dump()}
-        # Otherwise use AI-discovered root
         return self._pop_root(selectors)
 
     def _extract(
@@ -1502,18 +1465,15 @@ class Pipeline:
 
             if not result.success or result.html is None:
                 self.console.print('[warning]⚠ Could not fetch HTML, skipping extraction[/warning]')
-                return None, True  # fail-open
+                return None, True
 
             self.console.print('[step]Cleaning HTML...[/step]')
             cleaned_html = self.cleaner.clean_html(result.html)
             self.debug.save_debug_html(url, cleaned_html)
 
-            # Resolve root selector from cached selectors
             root_entry = self._resolve_root(existing_selectors)
             container_selector = self._root_value(root_entry)
 
-            # Verify container selector before proceeding — a stale container means
-            # all content extractions will silently fail, so force re-discovery.
             if root_entry and not skip_verification:
                 from parsel import Selector as _PS
 
@@ -1535,7 +1495,7 @@ class Pipeline:
                     self.console.print(
                         '[warning]⚠ Cached selectors failed verification - forcing re-discovery[/warning]'
                     )
-                    return None, False  # fall through to fresh discovery
+                    return None, False
                 selectors_to_use = {
                     name: existing_selectors[name]
                     for name in verification.results
@@ -1544,8 +1504,6 @@ class Pipeline:
                 self.console.print(
                     f'[success]✓ Verified {len(selectors_to_use)}/{len(self.contract.discovery_field_names())} cached selectors[/success]'
                 )
-                # If any contract fields (excluding overrides) have no cached selector,
-                # fall through to fresh discovery so the new fields get discovered.
                 overridden = set(self.contract.get_selector_overrides())
                 required_fields = self.contract.discovery_field_names() - overridden
                 missing = required_fields - set(selectors_to_use)
@@ -1559,20 +1517,19 @@ class Pipeline:
 
             extracted = self._extract(url, cleaned_html, selectors_to_use, container_selector)
             if extracted:
-                # Normalise to list
                 if isinstance(extracted, list):
                     return extracted, True
                 return [extracted], True
 
             self.console.print('[warning]⚠ Extraction failed with cached selectors[/warning]')
-            return None, True  # extraction failed but cache was valid
+            return None, True
 
         except BotDetectionError:
             raise
         except Exception as e:
             self.logger.exception('Cached selector handling failed for %s', url)
             self.console.print(f'[warning]⚠ Error: {e}, skipping extraction[/warning]')
-            return None, True  # fail-open
+            return None, True
 
     async def _track_cached_success(self, url: str, domain: str) -> None:
         """Track successful use of cached selectors.
@@ -1673,9 +1630,6 @@ class Pipeline:
     ) -> None:
         """Save verified selectors, extracted content, and track LLM usage.
 
-        Saves selectors to storage, optionally saves extracted content,
-        records usage statistics, and displays tracking information to console.
-
         Args:
             url: URL that was processed.
             domain: Domain name.
@@ -1686,7 +1640,6 @@ class Pipeline:
             elapsed: Time in seconds spent processing this URL. Defaults to None.
 
         """
-        # Save selectors (always JSON) and content (user's choice of format)
         self.storage.save_selectors(url, verified, verified=True)
 
         if extracted:
@@ -1701,8 +1654,6 @@ class Pipeline:
 
     def _print_tracking_stats(self, domain: str, stats: 'DomainStats') -> None:
         """Print LLM tracking statistics for domain.
-
-        Displays LLM call count, URL count, elapsed time, and efficiency metrics.
 
         Args:
             domain: Domain name being tracked.
@@ -1747,7 +1698,6 @@ class Pipeline:
         """Show LLM usage statistics."""
         stats = self.tracker.get_all_stats()
 
-        # Aggregate stats across all domains
         total_llm_calls = sum(domain_stats.llm_calls for domain_stats in stats.values())
         total_urls = sum(domain_stats.url_count for domain_stats in stats.values())
 

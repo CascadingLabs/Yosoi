@@ -19,7 +19,7 @@ def create_fetcher(fetcher_type: str = 'simple', **kwargs: object) -> HTMLFetche
     """
     fetchers: dict[str, type[HTMLFetcher]] = {
         'simple': SimpleFetcher,
-        'js': JSFetcher,
+        'waterfall': JSFetcher,
         'headless': HeadlessFetcher,
         'headful': HeadfulFetcher,
     }

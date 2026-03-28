@@ -60,7 +60,7 @@ def print_fetcher_info(fetcher_type: str) -> None:
     """Print information about the selected fetcher."""
     _FETCHER_LABELS: dict[str, tuple[str, str]] = {
         'simple': ('Simple fetcher', 'fast, works for most sites'),
-        'js': ('JS fetcher', 'Simple → Headless → Headful waterfall'),
+        'waterfall': ('Waterfall fetcher', 'Simple → Headless → Headful'),
         'headless': ('Headless fetcher', 'headless Chrome via zendriver'),
         'headful': ('Headful fetcher', 'headful Chrome via zendriver'),
     }

@@ -49,6 +49,12 @@ class ContentAnalyzer:
         metadata.requires_js = bool(js_data.requires_js)
         metadata.js_framework = str(js_data.framework) if js_data.framework is not None else None
 
+        # 3. Detect Bot Protection
+        if not metadata.requires_js:
+            metadata.requires_js = ContentAnalyzer._detect_bot_gate(html_lower)
+            if metadata.requires_js:
+                metadata.js_framework = 'bot-gate'
+
         return metadata
 
     @staticmethod
@@ -75,6 +81,54 @@ class ContentAnalyzer:
         start = html_lower[:500]
 
         return any(indicator in start for indicator in rss_indicators)
+
+    @staticmethod
+    def _detect_bot_gate(html_lower: str) -> bool:
+        """Detect bot protection gates that require JS to pass.
+
+        These pages look like valid HTML to the simple fetcher — they have
+        body content, no SPA framework signals, and return HTTP 200 — but
+        the real content only loads after the browser completes a JS challenge.
+
+        Args:
+            html_lower: The HTML of the URL in all lowercase
+
+        Returns:
+            True if the page is a bot protection gate requiring JS
+
+        """
+        _BOT_GATE_PATTERNS = [
+            # Akamai Bot Manager (businesswire, PR Newswire, etc.)
+            'ak_bmsc',
+            'bm_sz',
+            '_abck',
+            'akam-sw',
+            'behavioral-content',
+            'akamai-protected',
+            'akamai_edge',
+            # Cloudflare JS challenge (distinct from the hard blocks in _check_for_bot_detection
+            # which only trigger on 403/429 — these catch the 200-OK JS challenge page)
+            'just a moment',
+            'checking your browser',
+            'cf-browser-verification',
+            'challenge-platform',
+            # Generic JS requirement gates
+            'please enable javascript',
+            'javascript is required',
+            'javascript is disabled',
+            'enable javascript to continue',
+            'requires javascript to function',
+            # DataDome
+            'datadome',
+            # PerimeterX / HUMAN
+            'px-captcha',
+            '_pxParam',
+            # Imperva / Incapsula
+            'incap_ses',
+            'visid_incap',
+            '_utmz',
+        ]
+        return any(pattern in html_lower for pattern in _BOT_GATE_PATTERNS)
 
     @staticmethod
     def _detect_javascript_heavy(html_lower: str) -> JSDetectionResult:

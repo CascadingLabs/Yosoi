@@ -78,9 +78,9 @@ def _collect_urls(url: str | None, file_path: str | None, limit: int | None) -> 
 @click.option(
     '-t',
     '--fetcher',
-    type=click.Choice(['simple', 'js', 'headless', 'headful'], case_sensitive=False),
+    type=click.Choice(['simple', 'waterfall', 'headless', 'headful'], case_sensitive=False),
     default='simple',
-    help='HTML fetcher to use (simple=plain HTTP, js=Simple→Headless→Headful waterfall)',
+    help='HTML fetcher to use (simple=plain HTTP, waterfall=Simple→Headless→Headful waterfall)',
 )
 @click.option(
     '-L',

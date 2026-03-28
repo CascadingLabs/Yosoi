@@ -100,7 +100,12 @@ class DiscoveryOrchestrator:
         return self._max_concurrent
 
     async def discover_selectors(
-        self, html: str, url: str | None = None, *, stale_fields: set[str] | None = None
+        self,
+        html: str,
+        url: str | None = None,
+        *,
+        stale_fields: set[str] | None = None,
+        force: bool = False,
     ) -> SelectorMap | None:
         """Discover selectors for all contract fields in parallel.
 
@@ -110,6 +115,7 @@ class DiscoveryOrchestrator:
             stale_fields: When not None, only discover these fields (partial
                 rediscovery). The caller is responsible for merging fresh cached
                 selectors with the newly discovered ones and saving.
+            force: Force re-discovery even if selectors exist. Defaults to False.
 
         Returns:
             SelectorMap with discovered selectors, or None if all fields failed.
@@ -196,7 +202,7 @@ class DiscoveryOrchestrator:
                 discovery_input=discovery_input,
                 html=html,
                 agent=self._agent,
-                cached_entry=existing.get(str(spec['field_name'])),
+                cached_entry=None if force else existing.get(str(spec['field_name'])),
                 max_level=self._target_level,
                 is_container=bool(spec['is_container']),
                 semaphore=semaphore,
