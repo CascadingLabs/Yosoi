@@ -1,5 +1,7 @@
 """Yosoi: AI-powered CSS selector discovery and web scraping."""
 
+from importlib.metadata import PackageNotFoundError, version
+
 from yosoi.core.configs import DebugConfig, TelemetryConfig, YosoiConfig, auto_config
 from yosoi.core.discovery import (
     LLMConfig,
@@ -34,7 +36,8 @@ from yosoi.core.discovery import (
 from yosoi.core.pipeline import Pipeline
 from yosoi.models.contract import Contract
 from yosoi.models.defaults import JobPosting, NewsArticle, Product, Video
-from yosoi.models.selectors import SelectorEntry, css, discover, jsonld, regex, xpath
+from yosoi.models.selectors import FieldSelectors, SelectorEntry, SelectorLevel, css, discover, jsonld, regex, xpath
+from yosoi.models.snapshot import CacheVerdict, SelectorSnapshot, SnapshotMap
 from yosoi.types import (
     Author,
     BodyText,
@@ -50,8 +53,6 @@ from yosoi.types import (
 from yosoi.utils.contracts import resolve_contract
 from yosoi.utils.urls import load_urls_from_file
 
-from importlib.metadata import version, PackageNotFoundError
-
 try:
     __version__ = version('yosoi')
 except PackageNotFoundError:
@@ -60,10 +61,12 @@ except PackageNotFoundError:
 __all__ = [
     'Author',
     'BodyText',
+    'CacheVerdict',
     'Contract',
     'Datetime',
     'DebugConfig',
     'Field',
+    'FieldSelectors',
     'JobPosting',
     'LLMConfig',
     'NewsArticle',
@@ -71,6 +74,9 @@ __all__ = [
     'Price',
     'Rating',
     'SelectorEntry',
+    'SelectorLevel',
+    'SelectorSnapshot',
+    'SnapshotMap',
     'TelemetryConfig',
     'Title',
     'Url',

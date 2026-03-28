@@ -110,3 +110,5 @@ memray*.bin
 
 mutants
 _check.py
+lighthouserc.desktop.json
+lighthouserc.mobile.json

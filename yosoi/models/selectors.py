@@ -7,7 +7,19 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 
 class SelectorLevel(IntEnum):
-    """Hierarchy of selector strategies from simplest to most complex."""
+    """Hierarchy of selector strategies from simplest to most complex.
+
+    Yosoi tries selectors in ascending level order. CSS is the default and
+    covers most sites. Escalation to higher levels only happens when lower
+    strategies fail inline verification.
+
+    Attributes:
+        CSS: Standard CSS selector (level 1). Preferred for speed and readability.
+        XPATH: XPath expression (level 2). Used when CSS cannot express the required traversal.
+        REGEX: Raw regex against page HTML (level 3). Last resort for unstructured content.
+        JSONLD: JSON-LD path (level 4). Extracts from embedded structured data.
+
+    """
 
     CSS = 1
     XPATH = 2
@@ -34,12 +46,16 @@ def _strip_level(schema: dict[str, Any]) -> None:
 
 
 class SelectorEntry(BaseModel):
-    """A single selector with its strategy and value.
+    """A single selector with its strategy type and value.
+
+    Represents one concrete selector that Yosoi can evaluate against a page.
+    Each entry carries the strategy (CSS, XPath, etc.) alongside the expression
+    string. Bare strings default to CSS selectors.
 
     Attributes:
-        type: Selector strategy type ('css', 'xpath', 'regex', 'jsonld')
-        value: The selector expression
-        regex: Optional regex pattern (only used when type='regex')
+        type: Selector strategy — ``'css'``, ``'xpath'``, ``'regex'``, or ``'jsonld'``. Defaults to ``'css'``.
+        value: The selector expression, e.g. ``'h1.article-title'`` or ``'//h1'``.
+        regex: Optional regex capture pattern. Only used when ``type='regex'``.
 
     """
 
@@ -110,12 +126,17 @@ def coerce_selector_entry(v: object) -> SelectorEntry | None:
 
 
 class FieldSelectors(BaseModel):
-    """Selectors for a single field with fallback options.
+    """Container for primary, fallback, and tertiary selectors for a single contract field.
+
+    During extraction Yosoi tries the primary selector first. If it returns no
+    elements the fallback is tried, then the tertiary. Bare strings passed to
+    any slot are automatically coerced to ``SelectorEntry`` instances, and
+    duplicate values across slots are deduplicated.
 
     Attributes:
-        primary: Most specific selector (uses actual classes/IDs)
-        fallback: Less specific but reliable selector
-        tertiary: Generic selector or None if field doesn't exist
+        primary: Most specific selector — uses actual classes/IDs found on the page.
+        fallback: Less specific but reliable alternative if the primary breaks.
+        tertiary: Generic last-resort selector, or ``None`` if the field cannot be matched.
 
     """
 

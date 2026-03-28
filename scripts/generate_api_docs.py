@@ -196,7 +196,12 @@ def _classify(
 ) -> None:
     """Route a public symbol into the correct section."""
     link = _gh_link(target, repo_url, ref)
-    if name in _TYPE_FACTORIES:
+    if name in _SELECTOR_CACHE_TYPES:
+        if isinstance(target, griffe.Class):
+            sections['Selector Cache'].extend(_format_class(name, target, exclude, link, repo_url, ref))
+        else:
+            sections['Selector Cache'].extend(_simple_entry(name, target, link))
+    elif name in _TYPE_FACTORIES:
         sections['Types'].extend(_simple_entry(name, target, link))
     elif name in _PROVIDER_HELPERS:
         sections['Helpers'].extend(_simple_entry(name, target, link))
@@ -238,6 +243,14 @@ _PROVIDER_HELPERS = {
     'xai',
 }
 _SELECTOR_HELPERS = {'css', 'xpath', 'regex', 'jsonld', 'discover'}
+_SELECTOR_CACHE_TYPES = {
+    'CacheVerdict',
+    'FieldSelectors',
+    'SelectorEntry',
+    'SelectorLevel',
+    'SelectorSnapshot',
+    'SnapshotMap',
+}
 
 # Map section key → (output filename, page title, description template)
 _SECTION_FILES = {
@@ -245,6 +258,11 @@ _SECTION_FILES = {
     'Functions': ('functions.md', 'Functions', 'Function reference for yosoi {version}'),
     'Types': ('types.md', 'Types', 'Type factory reference for yosoi {version}'),
     'Helpers': ('helpers.md', 'Provider Helpers', 'Provider helper reference for yosoi {version}'),
+    'Selector Cache': (
+        'selector-cache.md',
+        'Selector Cache Types',
+        'Selector cache type reference for yosoi {version}',
+    ),
 }
 
 
@@ -262,7 +280,7 @@ def _build_sections(version: str, exclude: set[str], repo_url: str, ref: str) ->
     if not public_names:
         public_names = [n for n in init.members if not n.startswith('_')]
 
-    sections: dict[str, list[str]] = {'Classes': [], 'Functions': [], 'Types': [], 'Helpers': []}
+    sections: dict[str, list[str]] = {'Classes': [], 'Functions': [], 'Types': [], 'Helpers': [], 'Selector Cache': []}
 
     for name in sorted(public_names):
         if name in exclude or name not in pkg.members:
@@ -319,6 +337,7 @@ def generate(version: str, exclude: set[str], repo_url: str, ref: str) -> str:
         ('Functions', 'Functions'),
         ('Types', 'Type Factories'),
         ('Helpers', 'Provider Helpers'),
+        ('Selector Cache', 'Selector Cache Types'),
     ]:
         content = sections[section_key]
         if not content:
