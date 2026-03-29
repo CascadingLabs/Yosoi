@@ -1,0 +1,47 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", "helpers:pinGitHubActionDigests"],
+  "timezone": "America/New_York",
+  "schedule": ["after 5pm on Friday"],
+  "labels": ["dependencies"],
+  "dependencyDashboard": true,
+  "python": {
+    "registryUrls": ["https://pypi.org/simple/"]
+  },
+  "packageRules": [
+    {
+      "description": "Group all GitHub Actions updates into a single PR",
+      "matchManagers": ["github-actions"],
+      "groupName": "github-actions"
+    },
+    {
+      "description": "Group production Python dependency updates",
+      "matchManagers": ["uv"],
+      "matchDepTypes": ["dependencies"],
+      "groupName": "python-production-deps"
+    },
+    {
+      "description": "Group dev dependency updates",
+      "matchManagers": ["uv"],
+      "matchDepTypes": ["dev"],
+      "groupName": "python-dev-deps"
+    },
+    {
+      "description": "Group test dependency updates",
+      "matchManagers": ["uv"],
+      "matchDepTypes": ["tests"],
+      "groupName": "python-test-deps"
+    },
+    {
+      "description": "Group optional (tabular) dependency updates with production",
+      "matchManagers": ["uv"],
+      "matchDepTypes": ["tabular"],
+      "groupName": "python-production-deps"
+    },
+    {
+      "description": "Require Python 3.10+ compatibility for all packages",
+      "matchManagers": ["uv"],
+      "constraintsFiltering": "strict"
+    }
+  ]
+}

@@ -320,6 +320,15 @@ wheels = [
 ]
 
 [[package]]
+name = "boolean-py"
+version = "5.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/c4/cf/85379f13b76f3a69bca86b60237978af17d6aa0bc5998978c3b8cf05abb2/boolean_py-5.0.tar.gz", hash = "sha256:60cbc4bad079753721d32649545505362c754e121570ada4658b852a3a318d95", size = 37047, upload-time = "2025-04-03T10:39:49.734Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e5/ca/78d423b324b8d77900030fa59c4aa9054261ef0925631cd2501dd015b7b7/boolean_py-5.0-py3-none-any.whl", hash = "sha256:ef28a70bd43115208441b53a045d1549e2f0ec6e3d08a9d142cbc41c1938e8d9", size = 26577, upload-time = "2025-04-03T10:39:48.449Z" },
+]
+
+[[package]]
 name = "boto3"
 version = "1.42.78"
 source = { registry = "https://pypi.org/simple" }
@@ -656,14 +665,14 @@ name = "cohere"
 version = "5.21.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "fastavro" },
-    { name = "httpx" },
-    { name = "pydantic" },
-    { name = "pydantic-core" },
-    { name = "requests" },
-    { name = "tokenizers" },
-    { name = "types-requests" },
-    { name = "typing-extensions" },
+    { name = "fastavro", marker = "python_full_version < '3.11' or sys_platform != 'emscripten'" },
+    { name = "httpx", marker = "python_full_version < '3.11' or sys_platform != 'emscripten'" },
+    { name = "pydantic", marker = "python_full_version < '3.11' or sys_platform != 'emscripten'" },
+    { name = "pydantic-core", marker = "python_full_version < '3.11' or sys_platform != 'emscripten'" },
+    { name = "requests", marker = "python_full_version < '3.11' or sys_platform != 'emscripten'" },
+    { name = "tokenizers", marker = "python_full_version < '3.11' or sys_platform != 'emscripten'" },
+    { name = "types-requests", marker = "python_full_version < '3.11' or sys_platform != 'emscripten'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.11' or sys_platform != 'emscripten'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/d2/75/4c346f6e2322e545f8452692304bd4eca15a2a0209ab9af6a0d1a7810b67/cohere-5.21.1.tar.gz", hash = "sha256:e5ade4423b928b01ff2038980e1b62b2a5bb412c8ab83e30882753b810a5509f", size = 191272, upload-time = "2026-03-26T15:09:27.857Z" }
 wheels = [
@@ -2097,6 +2106,18 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/b9/eb/7697f60fbe7042ab4e88f4ee6af496b7f222fffb0a4e3593ef1f29f81652/librt-0.8.1-cp314-cp314t-win32.whl", hash = "sha256:738f08021b3142c2918c03692608baed43bc51144c29e35807682f8070ee2a3a", size = 51328, upload-time = "2026-02-17T16:12:45.148Z" },
     { url = "https://files.pythonhosted.org/packages/7c/72/34bf2eb7a15414a23e5e70ecb9440c1d3179f393d9349338a91e2781c0fb/librt-0.8.1-cp314-cp314t-win_amd64.whl", hash = "sha256:89815a22daf9c51884fb5dbe4f1ef65ee6a146e0b6a8df05f753e2e4a9359bf4", size = 58722, upload-time = "2026-02-17T16:12:46.85Z" },
     { url = "https://files.pythonhosted.org/packages/b2/c8/d148e041732d631fc76036f8b30fae4e77b027a1e95b7a84bb522481a940/librt-0.8.1-cp314-cp314t-win_arm64.whl", hash = "sha256:bf512a71a23504ed08103a13c941f763db13fb11177beb3d9244c98c29fb4a61", size = 48755, upload-time = "2026-02-17T16:12:47.943Z" },
+]
+
+[[package]]
+name = "license-expression"
+version = "30.4.4"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "boolean-py" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/40/71/d89bb0e71b1415453980fd32315f2a037aad9f7f70f695c7cec7035feb13/license_expression-30.4.4.tar.gz", hash = "sha256:73448f0aacd8d0808895bdc4b2c8e01a8d67646e4188f887375398c761f340fd", size = 186402, upload-time = "2025-07-22T11:13:32.17Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/af/40/791891d4c0c4dab4c5e187c17261cedc26285fd41541577f900470a45a4d/license_expression-30.4.4-py3-none-any.whl", hash = "sha256:421788fdcadb41f049d2dc934ce666626265aeccefddd25e162a26f23bcbf8a4", size = 120615, upload-time = "2025-07-22T11:13:31.217Z" },
 ]
 
 [[package]]
@@ -3957,6 +3978,20 @@ crypto = [
 ]
 
 [[package]]
+name = "pylic"
+version = "5.0.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "license-expression" },
+    { name = "toml" },
+    { name = "typer" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/80/80/f9c03d4c6f8e6db67582408dbb4c042dd788435d95e75268af61a27729d3/pylic-5.0.1.tar.gz", hash = "sha256:2948a64298f3f3b3a1ce8b81e0bfc6ee73eeccb5a9a8785c3c5c362d771d7f6a", size = 21966, upload-time = "2025-03-19T21:34:18.697Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6c/bf/dbb14e8e2d72952784570156fa885750eaf81fd03e45c93bf5dc2c1ab97b/pylic-5.0.1-py3-none-any.whl", hash = "sha256:ae9a863acec4df949f005c3f30c78045a204ee19a7e4c652fdf791d72b4b8bad", size = 7412, upload-time = "2025-03-19T21:34:17.537Z" },
+]
+
+[[package]]
 name = "pyperclip"
 version = "1.11.0"
 source = { registry = "https://pypi.org/simple" }
@@ -4973,7 +5008,7 @@ name = "tokenizers"
 version = "0.22.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "huggingface-hub" },
+    { name = "huggingface-hub", marker = "python_full_version < '3.11' or sys_platform != 'emscripten'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/73/6f/f80cfef4a312e1fb34baf7d85c72d4411afde10978d4657f8cdd811d3ccc/tokenizers-0.22.2.tar.gz", hash = "sha256:473b83b915e547aa366d1eee11806deaf419e17be16310ac0a14077f1e28f917", size = 372115, upload-time = "2026-01-05T10:45:15.988Z" }
 wheels = [
@@ -5144,7 +5179,7 @@ name = "types-requests"
 version = "2.33.0.20260327"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "urllib3" },
+    { name = "urllib3", marker = "python_full_version < '3.11' or sys_platform != 'emscripten'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/02/5f/2e3dbae6e21be6ae026563bad96cbf76602d73aa85ea09f13419ddbdabb4/types_requests-2.33.0.20260327.tar.gz", hash = "sha256:f4f74f0b44f059e3db420ff17bd1966e3587cdd34062fe38a23cda97868f8dd8", size = 23804, upload-time = "2026-03-27T04:23:38.737Z" }
 wheels = [
@@ -5686,7 +5721,7 @@ wheels = [
 
 [[package]]
 name = "yosoi"
-version = "0.0.1a14"
+version = "0.0.1a15"
 source = { editable = "." }
 dependencies = [
     { name = "beautifulsoup4" },
@@ -5696,7 +5731,6 @@ dependencies = [
     { name = "httpx" },
     { name = "logfire" },
     { name = "lxml" },
-    { name = "mistralai" },
     { name = "parsel" },
     { name = "pydantic" },
     { name = "pydantic-ai" },
@@ -5724,6 +5758,7 @@ dev = [
     { name = "playwright" },
     { name = "poethepoet" },
     { name = "prek" },
+    { name = "pylic" },
     { name = "ruff" },
     { name = "types-beautifulsoup4" },
     { name = "types-dateparser" },
@@ -5759,7 +5794,6 @@ requires-dist = [
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "logfire", specifier = ">=4.31" },
     { name = "lxml", specifier = ">=6.0.2" },
-    { name = "mistralai", specifier = ">=1.12,<2" },
     { name = "openpyxl", marker = "extra == 'tabular'", specifier = ">=3.1" },
     { name = "pandas", marker = "extra == 'tabular'", specifier = ">=2" },
     { name = "parsel", specifier = ">=1.11" },
@@ -5783,6 +5817,7 @@ dev = [
     { name = "playwright", specifier = ">=1.58" },
     { name = "poethepoet", specifier = ">=0.42" },
     { name = "prek", specifier = ">=0.3.8" },
+    { name = "pylic", specifier = ">=5.0.1" },
     { name = "ruff", specifier = ">=0.15" },
     { name = "types-beautifulsoup4", specifier = ">=4.12" },
     { name = "types-dateparser", specifier = ">=1.4.0.20260328" },

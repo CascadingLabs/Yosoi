@@ -4,7 +4,7 @@ requires = [ "uv-build>=0.1" ]
 
 [project]
 name = "yosoi"
-version = "0.0.1a14"
+version = "0.0.1a15"
 description = "AI-Powered Selector Discovery - Discover once, scrape forever"
 readme = "README.md"
 license = { file = "LICENSE.md" }
@@ -30,7 +30,6 @@ dependencies = [
   "httpx>=0.28.1",
   "logfire>=4.31",
   "lxml>=6.0.2",
-  "mistralai>=1.12,<2",
   "parsel>=1.11",
   "pydantic>=2",
   "pydantic-ai>=1.73",
@@ -57,6 +56,7 @@ dev = [
   "playwright>=1.58",
   "poethepoet>=0.42",
   "prek>=0.3.8",
+  "pylic>=5.0.1",
   "ruff>=0.15",
   "types-beautifulsoup4>=4.12",
   "types-dateparser>=1.4.0.20260328",
@@ -220,6 +220,13 @@ coverage = "uv run pytest --cov=yosoi --cov-report=term-missing --cov-report=htm
 mutmut-run = "uv run mutmut run"
 mutmut-results = "uv run mutmut results"
 docs = "uv run python scripts/generate_api_docs.py --output-dir ../CascadingLabsFE/docs/yosoi-docs/reference" # generate split API reference with GitHub source links
+bump = "uv run cz bump --yes"                                                                                 # auto-detect from conventional commits
+bump-dry = "uv run cz bump --dry-run"                                                                         # preview what the next bump would be
+bump-alpha = "uv run cz bump --increment PATCH --prerelease alpha --yes"                                      # next alpha pre-release (e.g. 0.0.1a15 → 0.0.1a16)
+bump-beta = "uv run cz bump --increment PATCH --prerelease beta --yes"                                        # next beta pre-release (e.g. 0.0.1a15 → 0.0.1b0)
+bump-patch = "uv run cz bump --increment PATCH --yes"                                                         # patch release (e.g. 0.0.1a14 → 0.0.1)
+bump-minor = "uv run cz bump --increment MINOR --yes"                                                         # minor release (e.g. 0.0.1a14 → 0.1.0)
+bump-major = "uv run cz bump --increment MAJOR --yes"                                                         # major release (e.g. 0.0.1a14 → 1.0.0)
 
 [tool.poe.tasks.ci-check]
 sequence = [
@@ -247,11 +254,13 @@ entropy = 4.5
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-tag_format = "v$version"
-version_scheme = "semver"
-version_provider = "pep621"      # Reads/updates version in [project] section of pyproject.toml
+tag_format = "$version"
+version_scheme = "pep440"
+version_provider = "pep621"                       # Reads/updates version in [project] section of pyproject.toml
+version_files = [ "CITATION.cff:^version" ]
 update_changelog_on_bump = true
-major_version_zero = true        # Keeps you in 0.x.x (beta) semantics
+major_version_zero = true                         # Keeps you in 0.x.x (beta) semantics
+post_bump_hooks = [ "bash scripts/post_bump.sh" ]
 
 types = [
   { value = "feat", name = "feat: A new feature" },
