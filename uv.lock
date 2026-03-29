@@ -5651,7 +5651,7 @@ wheels = [
 
 [[package]]
 name = "yosoi"
-version = "0.0.1a11"
+version = "0.0.1a12"
 source = { editable = "." }
 dependencies = [
     { name = "beautifulsoup4" },
@@ -5740,7 +5740,7 @@ provides-extras = ["tabular"]
 [package.metadata.requires-dev]
 dev = [
     { name = "commitizen", specifier = ">=3.13" },
-    { name = "griffe", specifier = ">=2.0.0" },
+    { name = "griffe", specifier = ">=2" },
     { name = "memray", specifier = ">=1.19.1" },
     { name = "mypy", specifier = ">=1.13" },
     { name = "playwright", specifier = ">=1.58" },
