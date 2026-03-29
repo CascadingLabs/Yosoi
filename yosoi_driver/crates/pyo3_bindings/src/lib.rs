@@ -139,6 +139,12 @@ impl PyPage {
 ///
 /// The Mutex is held only for microseconds (take/replace), NOT during
 /// the async CDP operation itself. This eliminates lock contention.
+///
+/// **Cancellation safety**: If the Python future is cancelled (e.g. by
+/// `asyncio.wait_for` timeout) between the `take()` and `replace()`,
+/// the page is permanently lost — subsequent calls will get
+/// `"page is closed"`. This is acceptable because a cancelled CDP
+/// operation leaves the page in an indeterminate state anyway.
 macro_rules! with_page {
     ($self:expr, $py:expr, |$page:ident| $body:expr) => {{
         let inner = Arc::clone(&$self.inner);

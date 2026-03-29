@@ -10,7 +10,7 @@ from yosoi_driver import BrowserPool, PooledTab, BrowserSession, Page
 
 ## `BrowserPool`
 
-Pool of reusable browser tabs spread across one or more Chrome sessions. Provides near-instant tab reuse by recycling tabs (navigating to `about:blank`) instead of closing and reopening them.
+Pool of reusable browser tabs spread across one or more Chrome sessions. Provides near-instant tab reuse by recycling tabs instead of closing and reopening them. No CDP call on release — the next caller's `navigate()` overwrites prior state.
 
 ### Factory
 
@@ -67,12 +67,15 @@ Same as [`Page`](#page) except no `close()` — closing is handled by the pool:
 
 | Method | Returns | Description |
 |--------|---------|-------------|
-| `await navigate(url)` | `None` | Navigate to a URL. |
+| `await goto(url, timeout=30.0)` | `str \| None` | Navigate + wait for network idle in one shot. Returns `"networkIdle"`, `"networkAlmostIdle"`, or `None`. |
+| `await navigate(url)` | `None` | Navigate to a URL (no waiting). |
+| `await wait_for_network_idle(timeout)` | `str \| None` | Wait for network idle. |
 | `await content()` | `str` | Full page HTML. |
 | `await title()` | `str \| None` | Document title. |
 | `await url()` | `str \| None` | Current URL. |
-| `await evaluate_js(expr)` | `str` | Evaluate JS, return JSON string. |
+| `await evaluate_js(expr)` | `object` | Evaluate JS, return native Python type (dict/list/str/int/float/bool/None). |
 | `await screenshot_png()` | `bytes` | Full-page PNG screenshot. |
+| `await pdf_bytes()` | `bytes` | PDF of the page. |
 | `await query_selector(sel)` | `str \| None` | Inner HTML of first match. |
 | `await query_selector_all(sel)` | `list[str]` | Inner HTML of all matches. |
 | `await click_element(sel)` | `None` | Click first matching element. |
@@ -143,8 +146,10 @@ Represents a single browser tab. Created via `BrowserSession.new_page()`.
 
 | Method | Returns | Description |
 |--------|---------|-------------|
-| `await navigate(url)` | `None` | Navigate to a new URL in this tab. |
+| `await goto(url, timeout=30.0)` | `str \| None` | Navigate + wait for network idle in one shot. Returns `"networkIdle"`, `"networkAlmostIdle"`, or `None` on timeout. |
+| `await navigate(url)` | `None` | Navigate to a new URL (no waiting). |
 | `await wait_for_navigation()` | `None` | Block until the current navigation completes. |
+| `await wait_for_network_idle(timeout)` | `str \| None` | Event-driven wait for network idle. |
 
 ### Content
 
@@ -158,7 +163,7 @@ Represents a single browser tab. Created via `BrowserSession.new_page()`.
 
 | Method | Returns | Description |
 |--------|---------|-------------|
-| `await evaluate_js(expression)` | `str` | Evaluate a JS expression and return the result as a **JSON string**. Parse it with `json.loads()`. |
+| `await evaluate_js(expression)` | `object` | Evaluate a JS expression and return the result as a **native Python type** (dict, list, str, int, float, bool, or None). |
 
 ### Media Capture
 

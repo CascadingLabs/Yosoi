@@ -103,9 +103,9 @@ The `BrowserPool` provides near-instant tab reuse by keeping Chrome processes al
 
 ### Lifecycle
 
-1. **Warmup**: Pre-open `tabs_per_browser × browsers` blank tabs, push to the ready queue, and grant semaphore permits.
+1. **Warmup**: Pre-open `tabs_per_browser × browsers` blank tabs, push to the ready queue. Semaphore permits are consumed and re-added one-by-one so partial failures leave the semaphore consistent.
 2. **Acquire**: Decrement semaphore (blocks if all tabs busy), pop a tab from the queue. If `use_count ≥ tab_max_uses`, hard-recycle (close + reopen).
-3. **Release**: Navigate to `about:blank` to clear state, increment `use_count`, push back to the queue, release semaphore permit.
+3. **Release**: Increment `use_count`, push back to the queue, release semaphore permit. No CDP call — the next `acquire()` caller's `navigate(url)` overwrites prior page content, and stealth scripts persist across navigations.
 4. **Eviction** (background): Tabs idle longer than `tab_max_idle_secs` are closed and replaced with fresh ones.
 
 ### Configuration (environment variables)

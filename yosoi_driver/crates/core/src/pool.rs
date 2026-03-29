@@ -1,9 +1,10 @@
 //! `BrowserPool` — a pool of reusable browser tabs backed by long-lived Chrome sessions.
 //!
 //! The pool creates tabs **lazily** on first `acquire()` and recycles them on
-//! `release()`. Tabs are navigated to `about:blank` for reuse rather than closed,
-//! giving near-instant subsequent acquires. Hard recycling (close + reopen)
-//! kicks in after `tab_max_uses`, and idle eviction cleans up stale tabs.
+//! `release()`. Tabs are returned to the ready queue with no CDP call — the
+//! next caller's `navigate(url)` overwrites prior content, giving near-instant
+//! reuse. Hard recycling (close + reopen) kicks in after `tab_max_uses`, and
+//! idle eviction cleans up stale tabs.
 //!
 //! `warmup()` is **optional** — calling it pre-creates tabs for faster first acquires,
 //! but the pool works correctly without it.
@@ -230,7 +231,8 @@ impl BrowserPool {
     /// Optionally pre-open tabs across all sessions and fill the ready queue.
     ///
     /// Tabs are created **in parallel** across sessions, then inserted
-    /// into the ready queue in one batch under a single lock acquisition.
+    /// into the ready queue. Semaphore permits are consumed and re-added
+    /// one-by-one so a partial failure leaves the semaphore consistent.
     ///
     /// This is **optional** — if not called, tabs are created lazily on
     /// first [`acquire()`](Self::acquire).
@@ -254,24 +256,40 @@ impl BrowserPool {
         // Create all tabs in parallel
         let results = futures::future::join_all(futs).await;
 
-        // Lock once, insert all. Consume one semaphore permit per tab (they
-        // were already counted at construction time for lazy growth).
+        // Insert successful tabs one-by-one. Each tab consumes a permit
+        // (marking the slot as "occupied") then immediately gets it back
+        // (marking it as "available in the ready queue"). If a tab failed,
+        // we skip it — the permit stays unconsumed and available for lazy
+        // creation later via acquire().
         let mut ready = self.ready.lock().await;
+        let mut first_err: Option<YosoiError> = None;
         for result in results {
-            let tab = result?;
-            // Consume a permit so the accounting stays consistent:
-            // the semaphore starts at max_tabs, and each queued tab
-            // represents one of those permits being "occupied".
-            let permit = self
-                .semaphore
-                .acquire()
-                .await
-                .map_err(|_| YosoiError::Other("pool semaphore closed".into()))?;
-            permit.forget();
-            ready.push_back(tab);
+            match result {
+                Ok(tab) => {
+                    let permit = self
+                        .semaphore
+                        .acquire()
+                        .await
+                        .map_err(|_| YosoiError::Other("pool semaphore closed".into()))?;
+                    permit.forget();
+                    ready.push_back(tab);
+                    // Immediately re-add: this tab is in the ready queue (available).
+                    self.semaphore.add_permits(1);
+                }
+                Err(e) => {
+                    if first_err.is_none() {
+                        first_err = Some(e);
+                    }
+                    // Skip — the permit stays available for lazy growth.
+                }
+            }
         }
-        // Now add back one permit per queued tab — they're "available".
-        self.semaphore.add_permits(ready.len());
+
+        // If any tabs failed, report the first error but keep the
+        // successfully created tabs in the pool.
+        if let Some(e) = first_err {
+            return Err(e);
+        }
         Ok(())
     }
 
@@ -282,13 +300,17 @@ impl BrowserPool {
     /// total). Blocks only when all tabs are currently in use.
     ///
     /// Tabs that have exceeded `tab_max_uses` are silently hard-recycled.
+    ///
+    /// The semaphore permit is returned on every error path so that
+    /// failures never permanently shrink pool concurrency.
     pub async fn acquire(&self) -> Result<PooledTab> {
         let permit = self
             .semaphore
             .acquire()
             .await
             .map_err(|_| YosoiError::Other("pool semaphore closed".into()))?;
-        // Don't auto-return the permit on drop — release() will add it back.
+        // Don't auto-return the permit on drop — release() will add it back
+        // on the success path. Error paths below must add_permits(1) manually.
         permit.forget();
 
         // Try the ready queue first (fast path: reuse an existing tab)
@@ -300,20 +322,33 @@ impl BrowserPool {
         let tab = match maybe_tab {
             Some(tab) => tab,
             // No idle tab — create one on demand (lazy growth)
-            None => self.create_tab().await?,
+            None => match self.create_tab().await {
+                Ok(tab) => tab,
+                Err(e) => {
+                    self.semaphore.add_permits(1);
+                    return Err(e);
+                }
+            },
         };
 
         // Hard recycle if this tab is worn out
         if tab.use_count >= self.config.tab_max_uses {
             let browser_idx = tab.browser_idx;
             let _ = tab.page.close().await;
-            let page = self.sessions[browser_idx].new_blank_page().await?;
-            return Ok(PooledTab {
-                page,
-                use_count: 0,
-                last_used: Instant::now(),
-                browser_idx,
-            });
+            match self.sessions[browser_idx].new_blank_page().await {
+                Ok(page) => {
+                    return Ok(PooledTab {
+                        page,
+                        use_count: 0,
+                        last_used: Instant::now(),
+                        browser_idx,
+                    });
+                }
+                Err(e) => {
+                    self.semaphore.add_permits(1);
+                    return Err(e);
+                }
+            }
         }
 
         // No about:blank cleanup — the caller's navigate(url) will replace
@@ -324,8 +359,8 @@ impl BrowserPool {
 
     /// Return a tab to the pool after use.
     ///
-    /// Instant return — no CDP round-trip. State cleanup (navigate to
-    /// `about:blank`) is deferred to the next [`acquire()`](Self::acquire).
+    /// Instant return — no CDP round-trip. The next caller's `navigate(url)`
+    /// overwrites prior page content; stealth scripts persist across navigations.
     pub async fn release(&self, mut tab: PooledTab) -> Result<()> {
         tab.use_count += 1;
         tab.last_used = Instant::now();
