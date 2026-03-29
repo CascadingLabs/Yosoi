@@ -1,0 +1,24 @@
+[build-system]
+build-backend = "maturin"
+requires = [ "maturin>=1.7,<2" ]
+
+[project]
+name = "yosoi-driver"
+version = "0.1.0"
+description = "CDP browser automation bindings for Yosoi (Rust + PyO3)"
+license = { text = "MIT OR Apache-2.0" }
+
+requires-python = ">=3.10"
+classifiers = [
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+]
+
+[tool.maturin]
+features = [ "pyo3/extension-module" ]
+manifest-path = "crates/pyo3_bindings/Cargo.toml"
+module-name = "yosoi_driver"

@@ -42,6 +42,12 @@
       "description": "Require Python 3.10+ compatibility for all packages",
       "matchManagers": ["uv"],
       "constraintsFiltering": "strict"
+    },
+    {
+      "description": "Group yosoi_driver Rust/Cargo dependency updates",
+      "matchManagers": ["cargo"],
+      "matchFileNames": ["yosoi_driver/**"],
+      "groupName": "yosoi-driver-rust-deps"
     }
   ]
 }
