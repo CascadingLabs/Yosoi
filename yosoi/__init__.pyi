@@ -14,7 +14,12 @@ from yosoi.models.defaults import JobPosting as JobPosting
 from yosoi.models.defaults import NewsArticle as NewsArticle
 from yosoi.models.defaults import Product as Product
 from yosoi.models.defaults import Video as Video
+from yosoi.models.selectors import FieldSelectors as FieldSelectors
 from yosoi.models.selectors import SelectorEntry as SelectorEntry
+from yosoi.models.selectors import SelectorLevel as SelectorLevel
+from yosoi.models.snapshot import CacheVerdict as CacheVerdict
+from yosoi.models.snapshot import SelectorSnapshot as SelectorSnapshot
+from yosoi.models.snapshot import SnapshotMap as SnapshotMap
 from yosoi.types.base import YosoiType as YosoiType
 from yosoi.types.field import Field as Field
 from yosoi.types.registry import register_coercion as register_coercion
