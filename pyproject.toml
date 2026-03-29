@@ -4,7 +4,7 @@ requires = [ "uv-build>=0.1" ]
 
 [project]
 name = "yosoi"
-version = "0.0.1a15"
+version = "0.0.1a16"
 description = "AI-Powered Selector Discovery - Discover once, scrape forever"
 readme = "README.md"
 license = { file = "LICENSE.md" }
@@ -53,10 +53,10 @@ dev = [
   "griffe>=2",
   "memray>=1.19.2",
   "mypy>=1.19",
+  "pip-licenses>=5.5.5",
   "playwright>=1.58",
   "poethepoet>=0.42",
   "prek>=0.3.8",
-  "pylic>=5.0.1",
   "ruff>=0.15",
   "types-beautifulsoup4>=4.12",
   "types-dateparser>=1.4.0.20260328",
@@ -205,6 +205,16 @@ exclude = [
   "mutants/",
 ]
 
+[tool.pip-licenses]
+from = "mixed"
+ignore-packages = [
+  "yosoi",               # this project
+  "mistralai",           # Apache-2.0 (missing metadata, verified via GitHub)
+  "taskiq-dependencies", # MIT (missing metadata, verified via GitHub)
+]
+allow-only = "Apache Software License;Apache-2.0;Apache-2.0 AND MIT;Apache-2.0 AND CNRI-Python;Apache-2.0 OR BSD-3-Clause;Apache License 2.0;MIT;MIT License;MIT AND PSF-2.0;BSD License;BSD-2-Clause;BSD-3-Clause;BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0;3-Clause BSD License;ISC;ISC License (ISCL);PSF-2.0;Python Software Foundation License;MPL-2.0;MPL-2.0 AND MIT;Mozilla Public License 2.0 (MPL 2.0);The Unlicense (Unlicense);BSD License; GNU General Public License (GPL); Public Domain;Apache Software License; BSD License;Apache Software License; MIT License"
+partial-match = true
+
 [tool.mutmut]
 paths_to_mutate = [ "yosoi/" ]
 tests_dir = [ "tests/unit/" ]
@@ -219,6 +229,7 @@ ci-format = "uv run ruff check --fix"
 coverage = "uv run pytest --cov=yosoi --cov-report=term-missing --cov-report=html tests/"
 mutmut-run = "uv run mutmut run"
 mutmut-results = "uv run mutmut results"
+licenses = "uv run pip-licenses"                                                                              # check dependency licenses
 docs = "uv run python scripts/generate_api_docs.py --output-dir ../CascadingLabsFE/docs/yosoi-docs/reference" # generate split API reference with GitHub source links
 bump = "uv run cz bump --yes"                                                                                 # auto-detect from conventional commits
 bump-dry = "uv run cz bump --dry-run"                                                                         # preview what the next bump would be

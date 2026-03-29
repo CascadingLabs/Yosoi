@@ -8,6 +8,25 @@ on:
       - main
 
 jobs:
+  licenses:
+    name: License Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: "**/pyproject.toml"
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Check dependency licenses
+        run: uv run poe licenses
+
   test:
     name: Test (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
