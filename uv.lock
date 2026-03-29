@@ -5651,7 +5651,7 @@ wheels = [
 
 [[package]]
 name = "yosoi"
-version = "0.0.1a12"
+version = "0.0.1a13"
 source = { editable = "." }
 dependencies = [
     { name = "beautifulsoup4" },

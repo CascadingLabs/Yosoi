@@ -3,7 +3,7 @@ name: Generate & Publish API Docs
 on:
   push:
     tags:
-      - 'v*'
+      - '*'
   workflow_dispatch:
     inputs:
       exclude:
