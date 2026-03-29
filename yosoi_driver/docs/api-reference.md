@@ -3,7 +3,87 @@
 All classes are importable from `yosoi_driver`.
 
 ```python
-from yosoi_driver import BrowserSession, Page
+from yosoi_driver import BrowserPool, PooledTab, BrowserSession, Page
+```
+
+---
+
+## `BrowserPool`
+
+Pool of reusable browser tabs spread across one or more Chrome sessions. Provides near-instant tab reuse by recycling tabs (navigating to `about:blank`) instead of closing and reopening them.
+
+### Factory
+
+```python
+pool = await BrowserPool.from_env()
+```
+
+Reads configuration from environment variables:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `CHROME_WS_URLS` | — | Comma-separated URLs for connect mode. |
+| `BROWSER_COUNT` | `1` | Chrome processes to launch. |
+| `TABS_PER_BROWSER` | `4` | Tabs pre-opened per browser. |
+| `TAB_MAX_USES` | `50` | Hard-recycle threshold. |
+| `TAB_MAX_IDLE_SECS` | `60` | Idle eviction timeout. |
+| `CHROME_NO_SANDBOX` | — | Set `"1"` to disable sandbox. |
+
+### Methods
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `await from_env()` | `BrowserPool` | Class method. Create pool from env vars. |
+| `await warmup()` | `None` | Pre-open tabs. Called automatically by `__aenter__`. |
+| `await acquire()` | `PooledTab` | Check out a tab. Blocks if all tabs are busy. |
+| `await release(tab)` | `None` | Return a tab to the pool. |
+
+### Context Manager
+
+```python
+async with await BrowserPool.from_env() as pool:
+    async with await pool.acquire() as tab:
+        await tab.navigate("https://example.com")
+        html = await tab.content()
+    # tab auto-released here
+# pool closed here
+```
+
+---
+
+## `PooledTab`
+
+A tab checked out from a `BrowserPool`. Exposes the same methods as `Page` (navigate, content, title, etc.) but must not be closed manually — return it to the pool via `release()` or the async context manager.
+
+### Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `use_count` | `int` | How many times this tab has been used (0 on first acquire). |
+
+### Methods
+
+Same as [`Page`](#page) except no `close()` — closing is handled by the pool:
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `await navigate(url)` | `None` | Navigate to a URL. |
+| `await content()` | `str` | Full page HTML. |
+| `await title()` | `str \| None` | Document title. |
+| `await url()` | `str \| None` | Current URL. |
+| `await evaluate_js(expr)` | `str` | Evaluate JS, return JSON string. |
+| `await screenshot_png()` | `bytes` | Full-page PNG screenshot. |
+| `await query_selector(sel)` | `str \| None` | Inner HTML of first match. |
+| `await query_selector_all(sel)` | `list[str]` | Inner HTML of all matches. |
+| `await click_element(sel)` | `None` | Click first matching element. |
+| `await type_into(sel, text)` | `None` | Type into first matching element. |
+| `await set_headers(headers)` | `None` | Set extra HTTP headers. |
+
+### Context Manager
+
+```python
+async with await pool.acquire() as tab:
+    ...  # tab auto-released on exit
 ```
 
 ---

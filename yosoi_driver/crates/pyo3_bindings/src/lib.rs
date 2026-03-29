@@ -10,7 +10,7 @@ use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
 use pyo3::types::PyBytes;
 use tokio::sync::Mutex;
-use yosoi_driver_core::{BrowserMode, BrowserSession, Page, StealthConfig};
+use yosoi_driver_core::{BrowserMode, BrowserPool, BrowserSession, Page, PooledTab, StealthConfig};
 
 // ── Error conversion ────────────────────────────────────────────────────
 
@@ -372,11 +372,246 @@ impl PyBrowserSession {
     }
 }
 
+// ── PyPooledTab ────────────────────────────────────────────────────────
+
+/// A tab checked out from a [`BrowserPool`].
+///
+/// Exposes the same navigation / DOM methods as [`Page`]. When used as an
+/// async context manager the tab is automatically returned to the pool on exit.
+///
+/// Example::
+///
+///     async with pool.acquire() as tab:
+///         await tab.navigate("https://example.com")
+///         html = await tab.content()
+#[pyclass(name = "PooledTab")]
+pub struct PyPooledTab {
+    inner: Arc<Mutex<Option<PooledTab>>>,
+    pool: Arc<BrowserPool>,
+    /// Snapshot of use_count at the moment the tab was acquired.
+    #[pyo3(get)]
+    use_count: u32,
+}
+
+/// Helper macro: run an async op on the page inside the pooled tab.
+macro_rules! with_pooled_page {
+    ($self:expr, $py:expr, |$page:ident| $body:expr) => {{
+        let inner = Arc::clone(&$self.inner);
+        pyo3_async_runtimes::tokio::future_into_py($py, async move {
+            let guard = inner.lock().await;
+            let tab = guard
+                .as_ref()
+                .ok_or_else(|| PyRuntimeError::new_err("tab has been released"))?;
+            let $page = &tab.page;
+            $body.await.map_err(to_py_err)
+        })
+    }};
+}
+
+#[pymethods]
+impl PyPooledTab {
+    fn navigate<'py>(&self, py: Python<'py>, url: String) -> PyResult<Bound<'py, PyAny>> {
+        with_pooled_page!(self, py, |page| page.navigate(&url))
+    }
+
+    fn wait_for_navigation<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+        with_pooled_page!(self, py, |page| page.wait_for_navigation())
+    }
+
+    fn content<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+        with_pooled_page!(self, py, |page| page.content())
+    }
+
+    fn title<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+        with_pooled_page!(self, py, |page| page.title())
+    }
+
+    fn url<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+        with_pooled_page!(self, py, |page| page.url())
+    }
+
+    fn evaluate_js<'py>(&self, py: Python<'py>, expression: String) -> PyResult<Bound<'py, PyAny>> {
+        let inner = Arc::clone(&self.inner);
+        pyo3_async_runtimes::tokio::future_into_py(py, async move {
+            let guard = inner.lock().await;
+            let tab = guard
+                .as_ref()
+                .ok_or_else(|| PyRuntimeError::new_err("tab has been released"))?;
+            let val = tab.page.evaluate_js(&expression).await.map_err(to_py_err)?;
+            Ok(val.to_string())
+        })
+    }
+
+    fn screenshot_png<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+        let inner = Arc::clone(&self.inner);
+        pyo3_async_runtimes::tokio::future_into_py(py, async move {
+            let guard = inner.lock().await;
+            let tab = guard
+                .as_ref()
+                .ok_or_else(|| PyRuntimeError::new_err("tab has been released"))?;
+            let bytes = tab.page.screenshot_png().await.map_err(to_py_err)?;
+            Ok(PyBytesResult(bytes))
+        })
+    }
+
+    fn query_selector<'py>(&self, py: Python<'py>, selector: String) -> PyResult<Bound<'py, PyAny>> {
+        with_pooled_page!(self, py, |page| page.query_selector(&selector))
+    }
+
+    fn query_selector_all<'py>(&self, py: Python<'py>, selector: String) -> PyResult<Bound<'py, PyAny>> {
+        with_pooled_page!(self, py, |page| page.query_selector_all(&selector))
+    }
+
+    fn click_element<'py>(&self, py: Python<'py>, selector: String) -> PyResult<Bound<'py, PyAny>> {
+        with_pooled_page!(self, py, |page| page.click_element(&selector))
+    }
+
+    fn type_into<'py>(&self, py: Python<'py>, selector: String, text: String) -> PyResult<Bound<'py, PyAny>> {
+        with_pooled_page!(self, py, |page| page.type_into(&selector, &text))
+    }
+
+    fn set_headers<'py>(&self, py: Python<'py>, headers: HashMap<String, String>) -> PyResult<Bound<'py, PyAny>> {
+        with_pooled_page!(self, py, |page| page.set_headers(headers))
+    }
+
+    // ── async context manager ───────────────────────────────────────────
+
+    fn __aenter__<'py>(slf: Bound<'py, Self>, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+        let slf_ref = slf.into_any().unbind();
+        pyo3_async_runtimes::tokio::future_into_py(py, async move { Ok(slf_ref) })
+    }
+
+    #[pyo3(signature = (_exc_type=None, _exc_val=None, _exc_tb=None))]
+    fn __aexit__<'py>(
+        &self,
+        py: Python<'py>,
+        _exc_type: Option<Bound<'py, PyAny>>,
+        _exc_val: Option<Bound<'py, PyAny>>,
+        _exc_tb: Option<Bound<'py, PyAny>>,
+    ) -> PyResult<Bound<'py, PyAny>> {
+        let inner = Arc::clone(&self.inner);
+        let pool = Arc::clone(&self.pool);
+        pyo3_async_runtimes::tokio::future_into_py(py, async move {
+            let mut guard = inner.lock().await;
+            if let Some(tab) = guard.take() {
+                let _ = pool.release(tab).await;
+            }
+            Ok(false)
+        })
+    }
+
+    fn __repr__(&self) -> String {
+        format!("PooledTab(use_count={})", self.use_count)
+    }
+}
+
+// ── PyBrowserPool ──────────────────────────────────────────────────────
+
+/// Pool of reusable browser tabs across one or more Chrome sessions.
+///
+/// Supports async context manager protocol (`async with`).
+///
+/// Example::
+///
+///     async with await BrowserPool.from_env() as pool:
+///         async with await pool.acquire() as tab:
+///             await tab.navigate("https://example.com")
+///             html = await tab.content()
+#[pyclass(name = "BrowserPool")]
+pub struct PyBrowserPool {
+    inner: Arc<BrowserPool>,
+}
+
+#[pymethods]
+impl PyBrowserPool {
+    /// Create a pool from environment variables.
+    #[classmethod]
+    fn from_env<'py>(_cls: &Bound<'py, pyo3::types::PyType>, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+        pyo3_async_runtimes::tokio::future_into_py(py, async move {
+            let pool = BrowserPool::from_env().await.map_err(to_py_err)?;
+            Ok(PyBrowserPool {
+                inner: Arc::new(pool),
+            })
+        })
+    }
+
+    /// Pre-open tabs across all sessions.
+    fn warmup<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+        let pool = Arc::clone(&self.inner);
+        pyo3_async_runtimes::tokio::future_into_py(py, async move {
+            pool.warmup().await.map_err(to_py_err)
+        })
+    }
+
+    /// Check out a tab from the pool.
+    fn acquire<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+        let pool = Arc::clone(&self.inner);
+        pyo3_async_runtimes::tokio::future_into_py(py, async move {
+            let tab = pool.acquire().await.map_err(to_py_err)?;
+            let use_count = tab.use_count;
+            Ok(PyPooledTab {
+                inner: Arc::new(Mutex::new(Some(tab))),
+                pool,
+                use_count,
+            })
+        })
+    }
+
+    /// Return a tab to the pool.
+    fn release<'py>(&self, py: Python<'py>, tab: Bound<'py, PyPooledTab>) -> PyResult<Bound<'py, PyAny>> {
+        let pool = Arc::clone(&self.inner);
+        let tab_inner = Arc::clone(&tab.borrow().inner);
+        pyo3_async_runtimes::tokio::future_into_py(py, async move {
+            let mut guard = tab_inner.lock().await;
+            if let Some(pooled_tab) = guard.take() {
+                pool.release(pooled_tab).await.map_err(to_py_err)?;
+            }
+            Ok(())
+        })
+    }
+
+    // ── async context manager ───────────────────────────────────────────
+
+    fn __aenter__<'py>(slf: Bound<'py, Self>, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
+        let pool = Arc::clone(&slf.borrow().inner);
+        let slf_ref = slf.into_any().unbind();
+        pyo3_async_runtimes::tokio::future_into_py(py, async move {
+            pool.warmup().await.map_err(to_py_err)?;
+            Ok(slf_ref)
+        })
+    }
+
+    #[pyo3(signature = (_exc_type=None, _exc_val=None, _exc_tb=None))]
+    fn __aexit__<'py>(
+        &self,
+        py: Python<'py>,
+        _exc_type: Option<Bound<'py, PyAny>>,
+        _exc_val: Option<Bound<'py, PyAny>>,
+        _exc_tb: Option<Bound<'py, PyAny>>,
+    ) -> PyResult<Bound<'py, PyAny>> {
+        let pool = Arc::clone(&self.inner);
+        pyo3_async_runtimes::tokio::future_into_py(py, async move {
+            let _ = pool.close().await;
+            Ok(false)
+        })
+    }
+
+    fn __repr__(&self) -> String {
+        let cfg = self.inner.config();
+        format!(
+            "BrowserPool(browsers={}, tabs_per_browser={})",
+            cfg.browsers, cfg.tabs_per_browser
+        )
+    }
+}
+
 // ── Module ──────────────────────────────────────────────────────────────
 
 #[pymodule]
 fn yosoi_driver(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyBrowserSession>()?;
     m.add_class::<PyPage>()?;
+    m.add_class::<PyBrowserPool>()?;
+    m.add_class::<PyPooledTab>()?;
     Ok(())
 }

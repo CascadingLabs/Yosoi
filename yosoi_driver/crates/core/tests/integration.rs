@@ -4,7 +4,7 @@
 
 use std::collections::HashMap;
 
-use yosoi_driver_core::{BrowserSession, StealthConfig};
+use yosoi_driver_core::{BrowserPool, BrowserSession, PoolConfig, StealthConfig};
 
 /// Helper: launch headless with no-sandbox (required for CI / containers).
 async fn headless_session() -> BrowserSession {
@@ -221,4 +221,151 @@ async fn test_custom_stealth_config() {
 
     page.close().await.ok();
     session.close().await.ok();
+}
+
+// ── Pool tests ─────────────────────────────────────────────────────────
+
+/// Helper: create a pool with the given config, launching headless no-sandbox.
+async fn test_pool(config: PoolConfig) -> BrowserPool {
+    let mut sessions = Vec::with_capacity(config.browsers);
+    for _ in 0..config.browsers {
+        let session = BrowserSession::builder()
+            .headless()
+            .no_sandbox()
+            .launch()
+            .await
+            .expect("failed to launch browser for pool");
+        sessions.push(session);
+    }
+    BrowserPool::new(config, sessions)
+}
+
+#[tokio::test]
+async fn test_pool_basic() {
+    let config = PoolConfig {
+        browsers: 1,
+        tabs_per_browser: 1,
+        tab_max_uses: 50,
+        tab_max_idle_secs: 60,
+    };
+    let pool = test_pool(config).await;
+    pool.warmup().await.expect("warmup failed");
+
+    // First acquire
+    let tab = pool.acquire().await.expect("acquire failed");
+    assert_eq!(tab.use_count, 0);
+    tab.page
+        .navigate("https://example.com")
+        .await
+        .expect("navigate failed");
+    let html = tab.page.content().await.expect("content failed");
+    assert!(html.contains("Example Domain"));
+    pool.release(tab).await.expect("release failed");
+
+    // Second acquire — should get a recycled tab with use_count == 1
+    let tab2 = pool.acquire().await.expect("second acquire failed");
+    assert_eq!(tab2.use_count, 1);
+    pool.release(tab2).await.expect("second release failed");
+
+    pool.close().await.expect("pool close failed");
+}
+
+#[tokio::test]
+async fn test_pool_parallel() {
+    let config = PoolConfig {
+        browsers: 1,
+        tabs_per_browser: 4,
+        tab_max_uses: 50,
+        tab_max_idle_secs: 60,
+    };
+    let pool = test_pool(config).await;
+    pool.warmup().await.expect("warmup failed");
+
+    // Acquire all 4 tabs concurrently
+    let (t1, t2, t3, t4) = tokio::join!(
+        pool.acquire(),
+        pool.acquire(),
+        pool.acquire(),
+        pool.acquire(),
+    );
+    let t1 = t1.expect("acquire 1");
+    let t2 = t2.expect("acquire 2");
+    let t3 = t3.expect("acquire 3");
+    let t4 = t4.expect("acquire 4");
+
+    // Navigate all to example.com
+    for tab in [&t1, &t2, &t3, &t4] {
+        tab.page
+            .navigate("https://example.com")
+            .await
+            .expect("navigate failed");
+        let html = tab.page.content().await.expect("content failed");
+        assert!(html.contains("Example Domain"));
+    }
+
+    // Release all
+    pool.release(t1).await.expect("release 1");
+    pool.release(t2).await.expect("release 2");
+    pool.release(t3).await.expect("release 3");
+    pool.release(t4).await.expect("release 4");
+
+    pool.close().await.expect("pool close failed");
+}
+
+#[tokio::test]
+async fn test_pool_hard_recycle() {
+    let config = PoolConfig {
+        browsers: 1,
+        tabs_per_browser: 1,
+        tab_max_uses: 2,
+        tab_max_idle_secs: 60,
+    };
+    let pool = test_pool(config).await;
+    pool.warmup().await.expect("warmup failed");
+
+    // Use 1
+    let tab = pool.acquire().await.expect("acquire 1");
+    assert_eq!(tab.use_count, 0);
+    pool.release(tab).await.expect("release 1");
+
+    // Use 2
+    let tab = pool.acquire().await.expect("acquire 2");
+    assert_eq!(tab.use_count, 1);
+    pool.release(tab).await.expect("release 2");
+
+    // Use 3 — should trigger hard recycle (use_count was 2, >= tab_max_uses)
+    let tab = pool.acquire().await.expect("acquire 3");
+    assert_eq!(tab.use_count, 0, "tab should have been hard-recycled");
+    pool.release(tab).await.expect("release 3");
+
+    pool.close().await.expect("pool close failed");
+}
+
+#[tokio::test]
+async fn test_pool_idle_eviction() {
+    let config = PoolConfig {
+        browsers: 1,
+        tabs_per_browser: 1,
+        tab_max_uses: 50,
+        tab_max_idle_secs: 1,
+    };
+    let pool = test_pool(config).await;
+    pool.warmup().await.expect("warmup failed");
+
+    // Acquire, use, release
+    let tab = pool.acquire().await.expect("acquire");
+    pool.release(tab).await.expect("release");
+
+    // Wait for idle timeout
+    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+
+    // Evict idle tabs — should replace with fresh ones
+    pool.evict_idle().await.expect("evict_idle failed");
+
+    // Acquire again — should get a fresh tab (use_count reset)
+    let tab = pool.acquire().await.expect("acquire after eviction");
+    assert_eq!(tab.use_count, 0, "evicted tab should be fresh");
+    pool.release(tab).await.expect("release after eviction");
+
+    pool.close().await.expect("pool close failed");
 }

@@ -39,11 +39,15 @@ async def test_browser_fetcher_context_manager():
     assert fetcher._session is None
 
 
-async def test_browser_fetcher_fetch_without_context_raises():
-    """Calling fetch() without entering context manager raises RuntimeError."""
+async def test_browser_fetcher_lazy_pool_init():
+    """Calling fetch() without __aenter__ lazily creates a pool."""
     fetcher = BrowserFetcher(no_sandbox=True)
-    with pytest.raises(RuntimeError, match='not launched'):
-        await fetcher.fetch('https://example.com')
+    assert fetcher._pool is None
+    result = await fetcher.fetch('https://example.com')
+    assert fetcher._pool is not None
+    assert result.html is not None
+    assert 'Example Domain' in result.html
+    await fetcher.close()
 
 
 # ── End-to-end fetch tests ──────────────────────────────────────────────

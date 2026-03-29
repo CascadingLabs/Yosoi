@@ -13,10 +13,11 @@ yosoi_driver/
 │   │   └── src/
 │   │       ├── session.rs # BrowserSession — launch / connect / close
 │   │       ├── page.rs    # Page — navigate, content, JS eval, screenshot, DOM
+│   │       ├── pool.rs    # BrowserPool — tab reuse with semaphore + eviction
 │   │       ├── stealth.rs # StealthConfig — anti-detection patches
 │   │       └── error.rs   # YosoiError enum
 │   └── pyo3_bindings/     # PyO3 0.28 extension module (cdylib)
-│       └── src/lib.rs     # BrowserSession + Page → Python classes
+│       └── src/lib.rs     # BrowserPool, BrowserSession, Page → Python classes
 ├── pyproject.toml         # maturin build config
 ├── build.sh               # Quick build: maturin develop --release
 └── yosoi_driver.pyi       # Python type stubs
@@ -24,11 +25,11 @@ yosoi_driver/
 
 ### How it works
 
-1. **Rust core** (`yosoi_driver_core`) wraps [chromiumoxide](https://github.com/mattsse/chromiumoxide) into a clean async API: `BrowserSession` manages the browser lifecycle, `Page` wraps individual tabs with navigation, JS evaluation, screenshots, and DOM queries.
+1. **Rust core** (`yosoi_driver_core`) wraps [chromiumoxide](https://github.com/mattsse/chromiumoxide) into a clean async API: `BrowserPool` manages a pool of reusable tabs, `BrowserSession` manages individual browser lifecycle, `Page` wraps tabs with navigation, JS evaluation, screenshots, and DOM queries.
 
 2. **PyO3 bindings** bridge Rust async → Python asyncio via [`pyo3-async-runtimes`](https://github.com/PyO3/pyo3-async-runtimes). A shared Tokio runtime handles all CDP I/O; `future_into_py` converts each Rust future into a Python awaitable.
 
-3. **Python integration** — `yosoi.core.fetcher.browser.BrowserFetcher` implements yosoi's `HTMLFetcher` ABC, registered as `create_fetcher('browser')`. It lazy-imports `yosoi_driver` so the main package works without the native extension.
+3. **Python integration** — `yosoi.core.fetcher.browser.BrowserFetcher` implements yosoi's `HTMLFetcher` ABC using `BrowserPool` for tab reuse, registered as `create_fetcher('browser')`. It lazy-imports `yosoi_driver` so the main package works without the native extension.
 
 ### Anti-detection (Stealth)
 
@@ -63,7 +64,45 @@ cd yosoi_driver
 maturin develop --release --manifest-path crates/pyo3_bindings/Cargo.toml
 ```
 
-### Python usage
+### Python — BrowserPool (recommended)
+
+```python
+import asyncio
+from yosoi_driver import BrowserPool
+
+async def main():
+    async with await BrowserPool.from_env() as pool:
+        # Tabs are recycled, not closed — near-instant reuse
+        async with await pool.acquire() as tab:
+            await tab.navigate("https://example.com")
+            print(await tab.title())
+            print(len(await tab.content()))
+
+asyncio.run(main())
+```
+
+### Python — Parallel fetch
+
+```python
+import asyncio
+from yosoi_driver import BrowserPool
+
+async def main():
+    async with await BrowserPool.from_env() as pool:
+        async def fetch(url: str) -> str:
+            async with await pool.acquire() as tab:
+                await tab.navigate(url)
+                return await tab.content()
+
+        urls = ["https://example.com"] * 4
+        results = await asyncio.gather(*[fetch(u) for u in urls])
+        for html in results:
+            print(f"  {len(html)} chars")
+
+asyncio.run(main())
+```
+
+### Python — BrowserSession (low-level)
 
 ```python
 import asyncio
@@ -72,10 +111,7 @@ from yosoi_driver import BrowserSession
 async def main():
     async with BrowserSession(headless=True) as browser:
         page = await browser.new_page("https://example.com")
-        html = await page.content()
-        print(html)
-        title = await page.title()
-        print(f"Title: {title}")
+        print(await page.title())
         await page.close()
 
 asyncio.run(main())
@@ -96,40 +132,82 @@ async def scrape():
 ### Rust usage
 
 ```rust
-use yosoi_driver_core::BrowserSession;
+use yosoi_driver_core::{BrowserPool, PoolConfig, BrowserSession};
 
 #[tokio::main]
 async fn main() -> yosoi_driver_core::Result<()> {
-    let session = BrowserSession::builder()
-        .headless()
-        .no_sandbox()
-        .launch()
-        .await?;
+    // Pool-based (recommended)
+    let pool = BrowserPool::from_env().await?;
+    pool.warmup().await?;
 
+    let tab = pool.acquire().await?;
+    tab.page.navigate("https://example.com").await?;
+    println!("{}", tab.page.content().await?);
+    pool.release(tab).await?;
+    pool.close().await?;
+
+    // Or low-level session
+    let session = BrowserSession::launch_headless().await?;
     let page = session.new_page("https://example.com").await?;
-    let html = page.content().await?;
-    println!("{}", html);
-
+    println!("{}", page.content().await?);
     page.close().await?;
     session.close().await?;
     Ok(())
 }
 ```
 
+### Docker
+
+```bash
+cd docker
+docker compose up -d
+
+# Pool auto-connects to Chrome via CHROME_WS_URLS
+export CHROME_WS_URLS="http://localhost:9222,http://localhost:9223"
+uv run python examples/pool_usage.py
+```
+
 ## API Reference
+
+### `BrowserPool` (Python)
+
+```python
+pool = await BrowserPool.from_env()  # reads env vars
+```
+
+| Env Variable | Default | Description |
+|---|---|---|
+| `CHROME_WS_URLS` | — | Comma-separated URLs (connect mode) |
+| `BROWSER_COUNT` | `1` | Chrome processes to launch |
+| `TABS_PER_BROWSER` | `4` | Tabs per browser |
+| `TAB_MAX_USES` | `50` | Hard-recycle threshold |
+| `TAB_MAX_IDLE_SECS` | `60` | Idle eviction timeout |
+| `CHROME_NO_SANDBOX` | — | Set `"1"` for containers |
+
+**Methods** (all async):
+- `warmup()` — Pre-open tabs (called by `async with`)
+- `acquire() -> PooledTab` — Check out a tab (blocks if all busy)
+- `release(tab)` — Return a tab to the pool
+
+### `PooledTab` (Python)
+
+Same methods as `Page` (navigate, content, title, url, evaluate_js, screenshot_png, query_selector, etc.) plus:
+- `use_count: int` — How many times this tab has been used
+
+Use as async context manager for auto-release: `async with await pool.acquire() as tab:`
 
 ### `BrowserSession` (Python)
 
 ```python
 BrowserSession(
     *,
-    headless: bool = True,       # Headless or visible browser
-    ws_url: str | None = None,   # Connect to existing Chrome (ws:// or http://)
-    stealth: bool = True,        # Enable anti-detection
-    no_sandbox: bool = False,    # Disable Chrome sandbox (containers/CI)
-    proxy: str | None = None,    # Proxy URL (e.g. "http://proxy:8080")
-    chrome_executable: str | None = None,  # Custom Chrome binary path
-    extra_args: list[str] | None = None,   # Additional Chrome flags
+    headless: bool = True,
+    ws_url: str | None = None,
+    stealth: bool = True,
+    no_sandbox: bool = False,
+    proxy: str | None = None,
+    chrome_executable: str | None = None,
+    extra_args: list[str] | None = None,
 )
 ```
 
@@ -157,34 +235,16 @@ BrowserSession(
 - `set_headers(headers: dict[str, str])` — Set extra HTTP headers
 - `close()` — Close this tab
 
-### `BrowserSession` (Rust)
-
-```rust
-// Builder pattern
-BrowserSession::builder()
-    .headless()              // or .headful() or .remote_debug("ws://...")
-    .no_sandbox()
-    .stealth(StealthConfig::chrome_like())
-    .proxy("http://proxy:8080")
-    .chrome_executable("/usr/bin/chromium")
-    .arg("--disable-gpu")
-    .launch()
-    .await?;
-
-// Convenience constructors
-BrowserSession::launch_headless().await?;
-BrowserSession::launch_headful().await?;
-BrowserSession::connect("ws://localhost:9222").await?;
-```
+See [full API reference](docs/api-reference.md) for detailed docs.
 
 ## Testing
 
 ```bash
-# Rust integration tests (must run serially due to Chrome singleton lock)
+# Rust integration tests (serial due to Chrome singleton lock)
 cargo test -p yosoi_driver_core -- --test-threads=1
 
 # Python integration tests (from repo root)
-uv run pytest tests/unit/core/fetcher/test_browser.py -v
+uv run pytest tests/unit/core/fetcher/test_browser.py tests/unit/core/fetcher/test_browser_pool.py -v
 
 # Full yosoi test suite (verify no regressions)
 uv run poe ci-check

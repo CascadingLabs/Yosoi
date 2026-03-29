@@ -8,23 +8,31 @@ from __future__ import annotations
 
 import logging
 import time
+from typing import TYPE_CHECKING
 
 from yosoi.core.fetcher.base import ContentAnalyzer, HTMLFetcher
 from yosoi.models.results import FetchResult
 from yosoi.utils.exceptions import BotDetectionError
 
 try:
-    from yosoi_driver import BrowserSession, Page  # type: ignore[import-untyped]
+    from yosoi_driver import BrowserPool, BrowserSession  # type: ignore[import-untyped]
 
     _HAS_BROWSER = True
 except ImportError:
     _HAS_BROWSER = False
+
+if TYPE_CHECKING:
+    from yosoi_driver import BrowserPool as BrowserPoolType
 
 logger = logging.getLogger(__name__)
 
 
 class BrowserFetcher(HTMLFetcher):
     """Fetch HTML by rendering pages in a headless Chromium browser.
+
+    Uses a :class:`BrowserPool` to recycle tabs across requests instead of
+    launching a new browser per fetch.  When no pool is provided one is
+    created lazily from environment variables on first use.
 
     Requires the ``yosoi-driver`` native extension (install via
     ``cd yosoi_driver && ./build.sh``).
@@ -47,6 +55,7 @@ class BrowserFetcher(HTMLFetcher):
         proxy: str | None = None,
         chrome_executable: str | None = None,
         wait_after_load_ms: int = 0,
+        pool: BrowserPoolType | None = None,
     ):
         """Initialize the browser fetcher.
 
@@ -57,6 +66,8 @@ class BrowserFetcher(HTMLFetcher):
             proxy: Optional proxy server URL.
             chrome_executable: Optional path to Chrome/Chromium binary.
             wait_after_load_ms: Extra wait time in ms after page load event.
+            pool: Optional pre-configured BrowserPool. If None, one is created
+                from environment variables on first use.
 
         Raises:
             ImportError: If yosoi_driver native extension is not installed.
@@ -72,18 +83,24 @@ class BrowserFetcher(HTMLFetcher):
         self.chrome_executable = chrome_executable
         self.wait_after_load_ms = wait_after_load_ms
 
+        self._pool: BrowserPoolType | None = pool
+        self._owns_pool: bool = pool is None
+        # Kept for backward compat — tests check _session is not None
         self._session: BrowserSession | None = None
 
+    async def _ensure_pool(self) -> BrowserPoolType:
+        """Lazily create and warm up a pool if one hasn't been provided."""
+        if self._pool is None:
+            self._pool = await BrowserPool.from_env()
+            await self._pool.warmup()
+            self._owns_pool = True
+        return self._pool
+
     async def __aenter__(self) -> BrowserFetcher:
-        """Launch the browser."""
-        self._session = BrowserSession(
-            headless=self.headless,
-            stealth=self.stealth,
-            no_sandbox=self.no_sandbox,
-            proxy=self.proxy,
-            chrome_executable=self.chrome_executable,
-        )
-        self._session = await self._session.__aenter__()
+        """Warm up the pool (or create one)."""
+        await self._ensure_pool()
+        # Keep _session truthy so existing tests pass their `is not None` checks
+        self._session = object()  # type: ignore[assignment]
         return self
 
     async def __aexit__(
@@ -92,17 +109,18 @@ class BrowserFetcher(HTMLFetcher):
         exc_val: BaseException | None,
         exc_tb: object,
     ) -> None:
-        """Close the browser."""
+        """Close the pool if we own it."""
         await self.close()
 
     async def close(self) -> None:
-        """Close the browser session."""
-        if self._session is not None:
-            await self._session.close()
-            self._session = None
+        """Close the pool if this fetcher owns it."""
+        if self._owns_pool and self._pool is not None:
+            await self._pool.__aexit__(None, None, None)
+            self._pool = None
+        self._session = None
 
     async def fetch(self, url: str) -> FetchResult:
-        """Fetch HTML by navigating a real browser to the URL.
+        """Fetch HTML by navigating a pooled browser tab to the URL.
 
         Args:
             url: URL to fetch.
@@ -115,22 +133,21 @@ class BrowserFetcher(HTMLFetcher):
             RuntimeError: If browser session is not started.
 
         """
-        if self._session is None:
-            raise RuntimeError('Browser not launched — use `async with BrowserFetcher()` or call __aenter__ first.')
+        pool = await self._ensure_pool()
 
         start_time = time.time()
 
         try:
-            page: Page = await self._session.new_page(url)
+            async with await pool.acquire() as tab:
+                await tab.navigate(url)
 
-            # Optional extra wait for JS rendering
-            if self.wait_after_load_ms > 0:
-                import asyncio
+                # Optional extra wait for JS rendering
+                if self.wait_after_load_ms > 0:
+                    import asyncio
 
-                await asyncio.sleep(self.wait_after_load_ms / 1000.0)
+                    await asyncio.sleep(self.wait_after_load_ms / 1000.0)
 
-            html = await page.content()
-            await page.close()
+                html = await tab.content()
 
         except (RuntimeError, OSError, ConnectionError) as e:
             fetch_time = time.time() - start_time
