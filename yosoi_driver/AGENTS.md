@@ -32,8 +32,9 @@ yosoi_driver/
 - Type stubs at `yosoi_driver.pyi`
 
 ## Dependencies (all MIT/Apache-2)
-- `chromiumoxide` 0.7 — CDP client
+- `chromiumoxide` 0.9 — CDP client
 - `tokio` — async runtime
-- `pyo3` 0.23 + `pyo3-async-runtimes` 0.23 — Python bridge
+- `pyo3` 0.28 + `pyo3-async-runtimes` 0.28 — Python bridge
 - `thiserror` — error types
 - `reqwest` — HTTP (for WebSocket URL resolution)
+- Rust edition 2024 / MSRV 1.86
