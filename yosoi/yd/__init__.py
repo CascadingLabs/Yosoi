@@ -11,7 +11,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from yosoi.yd.page import page, pages
-from yosoi.yd.pool import PoolConfig, pool
+from yosoi.yd.pool import PerformanceMode, PoolConfig, Viewport, pool
 from yosoi.yd.session import SessionConfig, session
 
 if TYPE_CHECKING:
@@ -36,9 +36,11 @@ __all__ = [
     'BrowserPool',
     'BrowserSession',
     'Page',
+    'PerformanceMode',
     'PoolConfig',
     'PooledTab',
     'SessionConfig',
+    'Viewport',
     'page',
     'pages',
     'pool',

@@ -120,6 +120,8 @@ impl BrowserPool {
     /// | `TAB_MAX_IDLE_SECS` | Idle eviction timeout | `60` |
     /// | `CHROME_NO_SANDBOX` | Set to `"1"` to pass `--no-sandbox` | — |
     /// | `CHROME_HEADLESS` | Set to `"0"` for headful mode | `1` |
+    /// | `VIEWPORT_WIDTH` | Stealth viewport width | `1920` |
+    /// | `VIEWPORT_HEIGHT` | Stealth viewport height | `1080` |
     pub async fn from_env() -> Result<Self> {
         let tabs_per_browser: usize = env::var("TABS_PER_BROWSER")
             .ok()
@@ -139,6 +141,12 @@ impl BrowserPool {
         let headless = env::var("CHROME_HEADLESS")
             .ok()
             .map_or(true, |v| v != "0");
+        let viewport_width: Option<u32> = env::var("VIEWPORT_WIDTH")
+            .ok()
+            .and_then(|v| v.parse().ok());
+        let viewport_height: Option<u32> = env::var("VIEWPORT_HEIGHT")
+            .ok()
+            .and_then(|v| v.parse().ok());
 
         let sessions = if let Ok(urls) = env::var("CHROME_WS_URLS") {
             // Connect mode: attach to pre-existing Chrome instances **in parallel**
@@ -173,6 +181,13 @@ impl BrowserPool {
                     };
                     if no_sandbox {
                         builder = builder.no_sandbox();
+                    }
+                    if let (Some(w), Some(h)) = (viewport_width, viewport_height) {
+                        builder = builder.viewport(w, h);
+                    } else if let Some(w) = viewport_width {
+                        builder = builder.viewport(w, 1080);
+                    } else if let Some(h) = viewport_height {
+                        builder = builder.viewport(1920, h);
                     }
                     builder.launch()
                 })

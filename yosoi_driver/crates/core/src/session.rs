@@ -108,6 +108,17 @@ impl BrowserSessionBuilder {
         self
     }
 
+    /// Override the stealth viewport dimensions.
+    ///
+    /// This sets the CDP device metrics override that the page reports to
+    /// JavaScript (e.g. `window.innerWidth`). It does NOT resize the Chrome
+    /// window — use [`window_size`](Self::window_size) for that.
+    pub fn viewport(mut self, width: u32, height: u32) -> Self {
+        self.stealth.viewport_width = width;
+        self.stealth.viewport_height = height;
+        self
+    }
+
     /// Build and launch (or connect to) the browser.
     pub async fn launch(self) -> Result<BrowserSession> {
         BrowserSession::connect_or_launch(
@@ -175,6 +186,12 @@ impl BrowserSession {
                 // `--enable-automation` and `--disable-extensions` —
                 // both are instant giveaways to WAFs like Akamai.
                 let mut builder = BrowserConfig::builder().disable_default_args();
+
+                // Each browser instance needs its own user data dir to avoid
+                // SingletonLock conflicts when launching multiple browsers.
+                let user_data_dir = tempfile::tempdir()
+                    .map_err(|e| YosoiError::LaunchFailed(format!("tmpdir: {e}")))?;
+                builder = builder.user_data_dir(user_data_dir.keep());
 
                 if matches!(mode, BrowserMode::Headful) {
                     builder = builder.with_head();
