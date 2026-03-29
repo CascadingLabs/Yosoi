@@ -17,6 +17,15 @@ class PooledTab:
 
     use_count: int
 
+    async def goto(self, url: str, timeout: float = 30.0) -> str | None:
+        """Navigate and wait for network idle in one shot.
+
+        Faster than navigate() + wait_for_network_idle() because the event
+        listener is set up before navigation starts.
+
+        Returns the lifecycle event name or None on timeout.
+        """
+        ...
     async def navigate(self, url: str) -> None: ...
     async def wait_for_navigation(self) -> None: ...
     async def content(self) -> str: ...
@@ -84,6 +93,15 @@ class BrowserPool:
 class Page:
     """A browser page / tab. All methods are async."""
 
+    async def goto(self, url: str, timeout: float = 30.0) -> str | None:
+        """Navigate and wait for network idle in one shot.
+
+        Faster than navigate() + wait_for_network_idle() because the event
+        listener is set up before navigation starts.
+
+        Returns the lifecycle event name or None on timeout.
+        """
+        ...
     async def navigate(self, url: str) -> None: ...
     async def wait_for_navigation(self) -> None: ...
     async def content(self) -> str: ...

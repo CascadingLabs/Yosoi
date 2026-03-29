@@ -112,3 +112,4 @@ mutants
 _check.py
 lighthouserc.desktop.json
 lighthouserc.mobile.json
+node_modules

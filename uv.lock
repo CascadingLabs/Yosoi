@@ -2761,6 +2761,20 @@ wheels = [
 ]
 
 [[package]]
+name = "nodriver"
+version = "0.48.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "deprecated" },
+    { name = "mss" },
+    { name = "websockets" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/25/da/a8ec72015adfe54d377ea54c4058dbfd66ea241270e8dfce4dcd56da5a3e/nodriver-0.48.1.tar.gz", hash = "sha256:4ac8cd88b6af133c26dc157fb78f5ab17462a59b4a0da3304e3af12bbe4b4343", size = 343440, upload-time = "2025-11-09T05:57:25.587Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3f/6f/6f8236b046844004c3eea3068e46467fdfb53872f2fe7974dd3075fe156f/nodriver-0.48.1-py3-none-any.whl", hash = "sha256:d94b49fd6ca831fd2546dee1e39d85baa960f52536f46e1dc7e8dcb38e8d82ba", size = 366358, upload-time = "2025-11-09T05:57:23.964Z" },
+]
+
+[[package]]
 name = "numpy"
 version = "2.2.6"
 source = { registry = "https://pypi.org/simple" }
@@ -5806,6 +5820,7 @@ dev = [
     { name = "griffe" },
     { name = "memray" },
     { name = "mypy" },
+    { name = "nodriver" },
     { name = "pip-licenses" },
     { name = "playwright" },
     { name = "poethepoet" },
@@ -5867,6 +5882,7 @@ dev = [
     { name = "griffe", specifier = ">=2" },
     { name = "memray", specifier = ">=1.19.2" },
     { name = "mypy", specifier = ">=1.19" },
+    { name = "nodriver", specifier = ">=0.48.1" },
     { name = "pip-licenses", specifier = ">=5.5.5" },
     { name = "playwright", specifier = ">=1.58" },
     { name = "poethepoet", specifier = ">=0.42" },

@@ -166,6 +166,25 @@ impl PyPage {
         with_page!(self, py, |page| page.navigate(&url))
     }
 
+    /// Navigate and wait for network idle in one operation.
+    ///
+    /// Faster than calling navigate() then wait_for_network_idle() separately
+    /// because the event listener is set up before navigation starts, so early
+    /// networkIdle events are never missed.
+    #[pyo3(signature = (url, timeout=30.0))]
+    fn goto<'py>(&self, py: Python<'py>, url: String, timeout: f64) -> PyResult<Bound<'py, PyAny>> {
+        let inner = Arc::clone(&self.inner);
+        pyo3_async_runtimes::tokio::future_into_py(py, async move {
+            let page = inner.lock().await.take()
+                .ok_or_else(|| PyRuntimeError::new_err("page is closed"))?;
+            let result = page.goto_and_wait_for_idle(&url, Duration::from_secs_f64(timeout))
+                .await
+                .map_err(to_py_err);
+            inner.lock().await.replace(page);
+            result
+        })
+    }
+
     /// Wait for the current navigation to complete.
     fn wait_for_navigation<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
         with_page!(self, py, |page| page.wait_for_navigation())
@@ -523,6 +542,24 @@ macro_rules! with_pooled_page {
 impl PyPooledTab {
     fn navigate<'py>(&self, py: Python<'py>, url: String) -> PyResult<Bound<'py, PyAny>> {
         with_pooled_page!(self, py, |page| page.navigate(&url))
+    }
+
+    /// Navigate and wait for network idle in one shot.
+    ///
+    /// Faster than calling navigate() then wait_for_network_idle() separately
+    /// because the event listener is set up before navigation starts.
+    #[pyo3(signature = (url, timeout=30.0))]
+    fn goto<'py>(&self, py: Python<'py>, url: String, timeout: f64) -> PyResult<Bound<'py, PyAny>> {
+        let inner = Arc::clone(&self.inner);
+        pyo3_async_runtimes::tokio::future_into_py(py, async move {
+            let tab = inner.lock().await.take()
+                .ok_or_else(|| PyRuntimeError::new_err("tab has been released"))?;
+            let result = tab.page.goto_and_wait_for_idle(&url, Duration::from_secs_f64(timeout))
+                .await
+                .map_err(to_py_err);
+            inner.lock().await.replace(tab);
+            result
+        })
     }
 
     fn wait_for_navigation<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {

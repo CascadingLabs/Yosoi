@@ -316,13 +316,9 @@ impl BrowserPool {
             });
         }
 
-        // Lazy cleanup: navigate reused tabs to about:blank to clear prior state.
-        // This was previously done in release() but is deferred here so that
-        // release() returns instantly without blocking on a CDP round-trip.
-        if tab.use_count > 0 {
-            tab.page.navigate("about:blank").await?;
-        }
-
+        // No about:blank cleanup — the caller's navigate(url) will replace
+        // the prior page content, and stealth scripts persist across navigations.
+        // This saves 50-200ms of CDP round-trip per reused tab.
         Ok(tab)
     }
 

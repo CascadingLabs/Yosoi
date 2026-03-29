@@ -98,13 +98,70 @@ impl Page {
 
     // ── Navigation ──────────────────────────────────────────────────────
 
-    /// Navigate to `url` and wait for the load event.
+    /// Navigate to `url` and wait for the CDP response.
     pub async fn navigate(&self, url: &str) -> Result<()> {
         self.inner
             .goto(url)
             .await
             .map_err(|e| YosoiError::NavigationFailed(e.to_string()))?;
         Ok(())
+    }
+
+    /// Navigate to `url` and wait for network idle in a single operation.
+    ///
+    /// This is faster than calling `navigate()` then `wait_for_network_idle()`
+    /// separately because the lifecycle event listener is set up **before**
+    /// the navigation starts, so early `networkIdle` events are never missed.
+    ///
+    /// Equivalent to Playwright's `page.goto(url, wait_until='networkidle')`.
+    pub async fn goto_and_wait_for_idle(
+        &self,
+        url: &str,
+        timeout: Duration,
+    ) -> Result<Option<String>> {
+        // Subscribe to lifecycle events BEFORE starting navigation
+        let mut events = self
+            .inner
+            .event_listener::<EventLifecycleEvent>()
+            .await
+            .map_err(|e| YosoiError::PageError(e.to_string()))?;
+
+        // Start navigation (non-blocking CDP command)
+        self.inner
+            .goto(url)
+            .await
+            .map_err(|e| YosoiError::NavigationFailed(e.to_string()))?;
+
+        // Now wait for networkIdle from the event stream
+        let deadline = tokio::time::sleep(timeout);
+        tokio::pin!(deadline);
+
+        let mut got_almost_idle = false;
+
+        loop {
+            tokio::select! {
+                biased;
+                maybe_event = events.next() => {
+                    match maybe_event {
+                        Some(event) => {
+                            match event.name.as_str() {
+                                "networkIdle" => return Ok(Some("networkIdle".into())),
+                                "networkAlmostIdle" => { got_almost_idle = true; }
+                                _ => {}
+                            }
+                        }
+                        None => break,
+                    }
+                }
+                () = &mut deadline => break,
+            }
+        }
+
+        if got_almost_idle {
+            Ok(Some("networkAlmostIdle".into()))
+        } else {
+            Ok(None)
+        }
     }
 
     /// Wait for the in-flight navigation to finish.
