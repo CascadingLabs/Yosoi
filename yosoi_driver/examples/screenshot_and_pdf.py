@@ -3,16 +3,14 @@
 import asyncio
 from pathlib import Path
 
-from yosoi_driver import BrowserSession
+from yosoi import yd
 
 OUTPUT_DIR = Path('output')
 
 
 async def _capture() -> None:
     """Open example.com and save a PNG screenshot and PDF export."""
-    async with BrowserSession(headless=True) as session:
-        page = await session.new_page('https://example.com')
-
+    async with yd.page('https://example.com') as page:
         # PNG screenshot
         png_bytes = await page.screenshot_png()
         png_path = OUTPUT_DIR / 'example.png'
@@ -24,8 +22,6 @@ async def _capture() -> None:
         pdf_path = OUTPUT_DIR / 'example.pdf'
         pdf_path.write_bytes(pdf_bytes)
         print(f'PDF saved: {pdf_path} ({len(pdf_bytes)} bytes)')
-
-        await page.close()
 
 
 def main() -> None:

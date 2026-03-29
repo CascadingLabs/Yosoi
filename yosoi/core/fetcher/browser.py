@@ -15,10 +15,11 @@ from yosoi.models.results import FetchResult
 from yosoi.utils.exceptions import BotDetectionError
 
 try:
-    from yosoi_driver import BrowserPool, BrowserSession  # type: ignore[import-untyped]
+    from yosoi.yd import PoolConfig
+    from yosoi.yd import pool as _create_pool
 
     _HAS_BROWSER = True
-except ImportError:
+except Exception:  # noqa: BLE001 — yosoi_driver may not be installed
     _HAS_BROWSER = False
 
 if TYPE_CHECKING:
@@ -86,12 +87,13 @@ class BrowserFetcher(HTMLFetcher):
         self._pool: BrowserPoolType | None = pool
         self._owns_pool: bool = pool is None
         # Kept for backward compat — tests check _session is not None
-        self._session: BrowserSession | None = None
+        self._session: object | None = None
 
     async def _ensure_pool(self) -> BrowserPoolType:
         """Lazily create and warm up a pool if one hasn't been provided."""
         if self._pool is None:
-            self._pool = await BrowserPool.from_env()
+            cfg = PoolConfig(headless=self.headless, no_sandbox=self.no_sandbox)
+            self._pool = await _create_pool(cfg)
             await self._pool.warmup()
             self._owns_pool = True
         return self._pool
@@ -100,7 +102,7 @@ class BrowserFetcher(HTMLFetcher):
         """Warm up the pool (or create one)."""
         await self._ensure_pool()
         # Keep _session truthy so existing tests pass their `is not None` checks
-        self._session = object()  # type: ignore[assignment]
+        self._session = object()
         return self
 
     async def __aexit__(

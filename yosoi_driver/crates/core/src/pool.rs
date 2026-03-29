@@ -106,6 +106,7 @@ impl BrowserPool {
     /// | `TAB_MAX_USES` | Hard recycle threshold | `50` |
     /// | `TAB_MAX_IDLE_SECS` | Idle eviction timeout | `60` |
     /// | `CHROME_NO_SANDBOX` | Set to `"1"` to pass `--no-sandbox` | — |
+    /// | `CHROME_HEADLESS` | Set to `"0"` for headful mode | `1` |
     pub async fn from_env() -> Result<Self> {
         let tabs_per_browser: usize = env::var("TABS_PER_BROWSER")
             .ok()
@@ -122,37 +123,50 @@ impl BrowserPool {
         let no_sandbox = env::var("CHROME_NO_SANDBOX")
             .ok()
             .is_some_and(|v| v == "1");
+        let headless = env::var("CHROME_HEADLESS")
+            .ok()
+            .map_or(true, |v| v != "0");
 
         let sessions = if let Ok(urls) = env::var("CHROME_WS_URLS") {
-            // Connect mode: attach to pre-existing Chrome instances
-            let mut sessions = Vec::new();
-            for url in urls.split(',').map(str::trim).filter(|u| !u.is_empty()) {
-                let session = BrowserSession::connect(url).await?;
-                sessions.push(session);
-            }
-            if sessions.is_empty() {
+            // Connect mode: attach to pre-existing Chrome instances **in parallel**
+            let futs: Vec<_> = urls
+                .split(',')
+                .map(str::trim)
+                .filter(|u| !u.is_empty())
+                .map(|url| BrowserSession::connect(url.to_string()))
+                .collect();
+
+            if futs.is_empty() {
                 return Err(YosoiError::Other(
                     "CHROME_WS_URLS is set but contains no valid URLs".into(),
                 ));
             }
-            sessions
+
+            let results = futures::future::join_all(futs).await;
+            results.into_iter().collect::<Result<Vec<_>>>()?
         } else {
-            // Launch mode: start new Chrome processes
+            // Launch mode: start Chrome processes **in parallel**
             let browser_count: usize = env::var("BROWSER_COUNT")
                 .ok()
                 .and_then(|v| v.parse().ok())
                 .unwrap_or(1);
 
-            let mut sessions = Vec::with_capacity(browser_count);
-            for _ in 0..browser_count {
-                let mut builder = BrowserSession::builder().headless();
-                if no_sandbox {
-                    builder = builder.no_sandbox();
-                }
-                let session = builder.launch().await?;
-                sessions.push(session);
-            }
-            sessions
+            let futs: Vec<_> = (0..browser_count)
+                .map(|_| {
+                    let mut builder = if headless {
+                        BrowserSession::builder().headless()
+                    } else {
+                        BrowserSession::builder().headful()
+                    };
+                    if no_sandbox {
+                        builder = builder.no_sandbox();
+                    }
+                    builder.launch()
+                })
+                .collect();
+
+            let results = futures::future::join_all(futs).await;
+            results.into_iter().collect::<Result<Vec<_>>>()?
         };
 
         let config = PoolConfig {
@@ -167,21 +181,35 @@ impl BrowserPool {
 
     /// Pre-open tabs across all sessions and fill the ready queue.
     ///
+    /// Tabs are created **in parallel** across sessions, then inserted
+    /// into the ready queue in one batch under a single lock acquisition.
+    ///
     /// Must be called once after [`new()`](Self::new) or [`from_env()`](Self::from_env).
     pub async fn warmup(&self) -> Result<()> {
-        let mut ready = self.ready.lock().await;
+        // Build futures for all tabs across all sessions
+        let mut futs = Vec::with_capacity(self.config.browsers * self.config.tabs_per_browser);
         for (idx, session) in self.sessions.iter().enumerate() {
             for _ in 0..self.config.tabs_per_browser {
-                let page = session.new_blank_page().await?;
-                ready.push_back(PooledTab {
-                    page,
-                    use_count: 0,
-                    last_used: Instant::now(),
-                    browser_idx: idx,
+                futs.push(async move {
+                    let page = session.new_blank_page().await?;
+                    Ok::<_, YosoiError>(PooledTab {
+                        page,
+                        use_count: 0,
+                        last_used: Instant::now(),
+                        browser_idx: idx,
+                    })
                 });
             }
         }
-        // Grant permits for all the tabs we just created
+
+        // Create all tabs in parallel
+        let results = futures::future::join_all(futs).await;
+
+        // Lock once, insert all
+        let mut ready = self.ready.lock().await;
+        for result in results {
+            ready.push_back(result?);
+        }
         self.semaphore.add_permits(ready.len());
         Ok(())
     }
@@ -262,19 +290,29 @@ impl BrowserPool {
             evict
         };
 
-        // Close evicted tabs and create replacements
-        for tab in to_evict {
-            let browser_idx = tab.browser_idx;
-            let _ = tab.page.close().await;
-            let page = self.sessions[browser_idx].new_blank_page().await?;
-            let fresh = PooledTab {
-                page,
-                use_count: 0,
-                last_used: Instant::now(),
-                browser_idx,
-            };
-            self.ready.lock().await.push_back(fresh);
-            // No semaphore change — the evicted tab's permit was never taken
+        // Close evicted tabs and create replacements in parallel
+        let futs: Vec<_> = to_evict
+            .into_iter()
+            .map(|tab| {
+                let browser_idx = tab.browser_idx;
+                let session = &self.sessions[browser_idx];
+                async move {
+                    let _ = tab.page.close().await;
+                    let page = session.new_blank_page().await?;
+                    Ok::<_, YosoiError>(PooledTab {
+                        page,
+                        use_count: 0,
+                        last_used: Instant::now(),
+                        browser_idx,
+                    })
+                }
+            })
+            .collect();
+
+        let results = futures::future::join_all(futs).await;
+        let mut ready = self.ready.lock().await;
+        for result in results {
+            ready.push_back(result?);
         }
 
         Ok(())
@@ -293,14 +331,13 @@ impl BrowserPool {
             ready.drain(..).collect()
         };
 
-        for tab in tabs {
-            let _ = tab.page.close().await;
-        }
+        // Close all tabs in parallel
+        let tab_futs: Vec<_> = tabs.into_iter().map(|tab| tab.page.close()).collect();
+        futures::future::join_all(tab_futs).await;
 
-        // Close all browser sessions
-        for session in &self.sessions {
-            let _ = session.close().await;
-        }
+        // Close all browser sessions in parallel
+        let session_futs: Vec<_> = self.sessions.iter().map(|s| s.close()).collect();
+        futures::future::join_all(session_futs).await;
 
         Ok(())
     }

@@ -171,7 +171,10 @@ impl BrowserSession {
                     .map_err(|e| YosoiError::ConnectionFailed(e.to_string()))?
             }
             _ => {
-                let mut builder = BrowserConfig::builder();
+                // Disable chromiumoxide's DEFAULT_ARGS which include
+                // `--enable-automation` and `--disable-extensions` —
+                // both are instant giveaways to WAFs like Akamai.
+                let mut builder = BrowserConfig::builder().disable_default_args();
 
                 if matches!(mode, BrowserMode::Headful) {
                     builder = builder.with_head();
@@ -197,12 +200,47 @@ impl BrowserSession {
                     builder = builder.arg(a);
                 }
 
-                // Disable various Chrome features that leak bot signals
+                // Stealth-first Chrome flags.
+                //
+                // We disabled chromiumoxide's DEFAULT_ARGS above because
+                // they include `--enable-automation` and `--disable-extensions`,
+                // both of which are instant giveaways to Akamai / Cloudflare.
+                //
+                // Below we re-add the safe defaults we still want, plus the
+                // zendriver / nodriver flags that are known to pass real WAFs.
                 builder = builder
+                    // ── Anti-automation core ────────────────────────────
                     .arg("--disable-blink-features=AutomationControlled")
                     .arg("--disable-infobars")
+                    .arg("--disable-features=IsolateOrigins,site-per-process,TranslateUI")
+                    // ── Safe defaults from chromiumoxide we keep ────────
                     .arg("--disable-background-networking")
-                    .arg("--disable-component-update");
+                    .arg("--disable-background-timer-throttling")
+                    .arg("--disable-backgrounding-occluded-windows")
+                    .arg("--disable-breakpad")
+                    .arg("--disable-client-side-phishing-detection")
+                    .arg("--disable-component-extensions-with-background-pages")
+                    .arg("--disable-default-apps")
+                    .arg("--disable-dev-shm-usage")
+                    .arg("--disable-hang-monitor")
+                    .arg("--disable-ipc-flooding-protection")
+                    .arg("--disable-popup-blocking")
+                    .arg("--disable-prompt-on-repost")
+                    .arg("--disable-renderer-backgrounding")
+                    .arg("--disable-sync")
+                    .arg("--force-color-profile=srgb")
+                    .arg("--metrics-recording-only")
+                    .arg("--no-first-run")
+                    .arg("--password-store=basic")
+                    .arg("--use-mock-keychain")
+                    // ── Extra zendriver flags ───────────────────────────
+                    .arg("--no-service-autorun")
+                    .arg("--no-default-browser-check")
+                    .arg("--no-pings")
+                    .arg("--disable-component-update")
+                    .arg("--disable-session-crashed-bubble")
+                    .arg("--disable-search-engine-choice-screen")
+                    .arg("--homepage=about:blank");
 
                 let config = builder
                     .build()

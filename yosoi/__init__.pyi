@@ -1,7 +1,9 @@
 """Type stubs for yosoi public API."""
 
+from types import ModuleType
 from typing import Any
 
+from yosoi import yd as yd
 from yosoi.core.configs import DebugConfig as DebugConfig
 from yosoi.core.configs import TelemetryConfig as TelemetryConfig
 from yosoi.core.configs import YosoiConfig as YosoiConfig
@@ -77,6 +79,8 @@ def together(model_name: str, api_key: str | None = ..., **kwargs: Any) -> LLMCo
 def vercel(model_name: str, api_key: str | None = ..., **kwargs: Any) -> LLMConfig: ...
 def vertexai(model_name: str, **kwargs: Any) -> LLMConfig: ...
 def xai(model_name: str, api_key: str | None = ..., **kwargs: Any) -> LLMConfig: ...
+
+YosoiDriver: ModuleType
 
 __version__: str
 __all__: list[str]

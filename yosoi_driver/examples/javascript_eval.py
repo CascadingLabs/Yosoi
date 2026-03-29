@@ -3,14 +3,12 @@
 import asyncio
 import json
 
-from yosoi_driver import BrowserSession
+from yosoi import yd
 
 
 async def main() -> None:
     """Evaluate various JavaScript expressions in a page context."""
-    async with BrowserSession(headless=True) as session:
-        page = await session.new_page('https://example.com')
-
+    async with yd.page('https://example.com') as page:
         # Simple expression — returns a JSON string
         user_agent = await page.evaluate_js('navigator.userAgent')
         print(f'User agent: {json.loads(user_agent)}')
@@ -26,8 +24,6 @@ async def main() -> None:
         # Modify the DOM via JS
         await page.evaluate_js("document.title = 'Modified by yosoi_driver'")
         print(f'New title: {await page.title()}')
-
-        await page.close()
 
 
 if __name__ == '__main__':

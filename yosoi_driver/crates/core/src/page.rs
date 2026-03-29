@@ -1,17 +1,19 @@
 //! High-level wrapper around a `chromiumoxide::Page`.
 
 use std::collections::HashMap;
+use std::time::Duration;
 
 use chromiumoxide::cdp::browser_protocol::emulation::{
     SetDeviceMetricsOverrideParams, SetUserAgentOverrideParams,
 };
 use chromiumoxide::cdp::browser_protocol::network::{Headers, SetExtraHttpHeadersParams};
 use chromiumoxide::cdp::browser_protocol::page::{
-    AddScriptToEvaluateOnNewDocumentParams, CaptureScreenshotFormat, PrintToPdfParams,
-    SetBypassCspParams,
+    AddScriptToEvaluateOnNewDocumentParams, CaptureScreenshotFormat, EventLifecycleEvent,
+    PrintToPdfParams, SetBypassCspParams,
 };
 use chromiumoxide::page::ScreenshotParams;
 use chromiumoxide::Page as CdpPage;
+use futures::StreamExt;
 
 use crate::error::{Result, YosoiError};
 use crate::stealth::StealthConfig;
@@ -112,6 +114,98 @@ impl Page {
             .await
             .map_err(|e| YosoiError::NavigationFailed(e.to_string()))?;
         Ok(())
+    }
+
+    /// Event-driven wait for the network to become idle.
+    ///
+    /// Subscribes to `Page.lifecycleEvent` and waits for one of these
+    /// events (in priority order):
+    ///
+    /// 1. **`networkIdle`** — 0 in-flight requests for 500 ms (best signal)
+    /// 2. **`networkAlmostIdle`** — ≤ 2 in-flight requests for 500 ms
+    ///    (fallback when analytics / long-polls prevent true idle)
+    ///
+    /// Returns the name of the lifecycle event that resolved the wait
+    /// (`"networkIdle"` or `"networkAlmostIdle"`), or `None` if the
+    /// timeout was reached without either event firing.
+    ///
+    /// This is fully async and event-driven — **no polling**.
+    pub async fn wait_for_network_idle(&self, timeout: Duration) -> Result<Option<String>> {
+        let mut events = self
+            .inner
+            .event_listener::<EventLifecycleEvent>()
+            .await
+            .map_err(|e| YosoiError::PageError(e.to_string()))?;
+
+        let deadline = tokio::time::sleep(timeout);
+        tokio::pin!(deadline);
+
+        // Track the best event we've seen so far
+        let mut got_almost_idle = false;
+
+        loop {
+            tokio::select! {
+                biased;
+                maybe_event = events.next() => {
+                    match maybe_event {
+                        Some(event) => {
+                            match event.name.as_str() {
+                                "networkIdle" => return Ok(Some("networkIdle".into())),
+                                "networkAlmostIdle" => { got_almost_idle = true; }
+                                _ => {} // DOMContentLoaded, load, etc — ignore
+                            }
+                        }
+                        None => break, // stream closed
+                    }
+                }
+                () = &mut deadline => break,
+            }
+        }
+
+        // Timeout reached — return best fallback
+        if got_almost_idle {
+            Ok(Some("networkAlmostIdle".into()))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// **Deprecated** — use [`wait_for_network_idle`] instead.
+    ///
+    /// Polling-based DOM stability check. Kept for backward compatibility
+    /// with code that needs a content-length guard.
+    pub async fn wait_for_stable_dom(
+        &self,
+        timeout: Duration,
+        min_length: usize,
+        stable_checks: u32,
+    ) -> Result<bool> {
+        let deadline = tokio::time::Instant::now() + timeout;
+        let poll_interval = Duration::from_millis(200);
+        let mut previous_size: usize = 0;
+        let mut stable_count: u32 = 0;
+
+        while tokio::time::Instant::now() < deadline {
+            let size: usize = self
+                .evaluate_js("document.body ? document.body.innerHTML.length : 0")
+                .await?
+                .as_u64()
+                .unwrap_or(0) as usize;
+
+            if size >= min_length && size == previous_size {
+                stable_count += 1;
+                if stable_count >= stable_checks {
+                    return Ok(true);
+                }
+            } else {
+                stable_count = 0;
+                previous_size = size;
+            }
+
+            tokio::time::sleep(poll_interval).await;
+        }
+
+        Ok(false)
     }
 
     // ── Content ─────────────────────────────────────────────────────────

@@ -2,7 +2,7 @@
 
 import asyncio
 
-from yosoi_driver import BrowserSession
+from yosoi import yd
 
 FORM_PAGE = """data:text/html,
 <html>
@@ -20,9 +20,7 @@ FORM_PAGE = """data:text/html,
 
 async def main() -> None:
     """Query DOM elements, type into an input, and click a button."""
-    async with BrowserSession(headless=True) as session:
-        page = await session.new_page(FORM_PAGE)
-
+    async with yd.page(FORM_PAGE) as page:
         # Query a single element (returns outer HTML or None)
         heading = await page.query_selector('#greeting')
         print(f'Heading HTML: {heading}')
@@ -42,8 +40,6 @@ async def main() -> None:
         # Missing selectors return None
         missing = await page.query_selector('#does-not-exist')
         print(f'Missing element: {missing}')
-
-        await page.close()
 
 
 if __name__ == '__main__':

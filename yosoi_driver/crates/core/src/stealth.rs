@@ -30,19 +30,28 @@ impl Default for StealthConfig {
 
 impl StealthConfig {
     /// Preset that mimics a real desktop Chrome session.
+    ///
+    /// This follows the zendriver / nodriver philosophy: rely on clean
+    /// Chrome launch flags rather than heavy JS injection.  We do NOT
+    /// override the user-agent (avoids version mismatches with the real
+    /// browser) and we do NOT use chromiumoxide's built-in stealth mode
+    /// (it fires multiple `addScriptToEvaluateOnNewDocument` CDP calls
+    /// that sophisticated WAFs can fingerprint).
+    ///
+    /// Only a minimal JS payload is injected: `navigator.webdriver`
+    /// removal and forced-open shadow DOMs (needed for Cloudflare
+    /// Turnstile interaction).
     pub fn chrome_like() -> Self {
         Self {
-            user_agent: Some(
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) \
-                 AppleWebKit/537.36 (KHTML, like Gecko) \
-                 Chrome/131.0.0.0 Safari/537.36"
-                    .into(),
-            ),
+            // None = keep the browser's real UA, preventing version
+            // mismatches between the UA string and the actual Chrome build.
+            user_agent: None,
             viewport_width: 1920,
             viewport_height: 1080,
             locale: "en-US,en;q=0.9".into(),
             inject_js: Some(Self::default_stealth_js().into()),
-            use_builtin_stealth: true,
+            // Disabled: chromiumoxide's stealth sends detectable CDP patterns.
+            use_builtin_stealth: false,
             bypass_csp: true,
         }
     }
@@ -60,31 +69,32 @@ impl StealthConfig {
         }
     }
 
-    /// Default JS payload that patches common bot-detection signals.
+    /// Minimal JS payload — zendriver-philosophy.
+    ///
+    /// We intentionally keep this light.  Heavy JS patching (plugins,
+    /// mimeTypes, WebGL, permissions) is counter-productive: each
+    /// `addScriptToEvaluateOnNewDocument` CDP call is itself a
+    /// fingerprint, and poorly-matched fakes (e.g. wrong GPU string)
+    /// are worse than the defaults from a real Chrome install.
+    ///
+    /// We only patch the two things that are universally needed:
+    /// 1. `navigator.webdriver` — set by Chrome when run via CDP
+    /// 2. Shadow DOM mode — force open so we can interact with
+    ///    Cloudflare Turnstile and similar challenge iframes.
     fn default_stealth_js() -> &'static str {
         r#"
-// Override navigator.webdriver
-Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
-
-// Fake plugins array
-Object.defineProperty(navigator, 'plugins', {
-    get: () => [1, 2, 3, 4, 5],
+// Remove navigator.webdriver (set to true by CDP automation).
+delete Object.getPrototypeOf(navigator).webdriver;
+Object.defineProperty(navigator, 'webdriver', {
+    get: () => undefined,
+    configurable: true,
 });
 
-// Fake languages
-Object.defineProperty(navigator, 'languages', {
-    get: () => ['en-US', 'en'],
-});
-
-// Spoof chrome runtime
-window.chrome = { runtime: {} };
-
-// Override permissions query
-const originalQuery = window.navigator.permissions.query;
-window.navigator.permissions.query = (parameters) =>
-    parameters.name === 'notifications'
-        ? Promise.resolve({ state: Notification.permission })
-        : originalQuery(parameters);
+// Force shadow DOMs open for challenge iframe interaction.
+Element.prototype._attachShadow = Element.prototype.attachShadow;
+Element.prototype.attachShadow = function(init) {
+    return this._attachShadow({ ...init, mode: 'open' });
+};
 "#
     }
 }

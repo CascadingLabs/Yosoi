@@ -2,14 +2,12 @@
 
 import asyncio
 
-from yosoi_driver import BrowserSession
+from yosoi import yd
 
 
 async def custom_headers() -> None:
     """Inject custom HTTP headers into every request from a page."""
-    async with BrowserSession(headless=True) as session:
-        page = await session.new_page('about:blank')
-
+    async with yd.page('about:blank') as page:
         await page.set_headers(
             {
                 'Accept-Language': 'ja-JP,ja;q=0.9',
@@ -23,8 +21,6 @@ async def custom_headers() -> None:
         print('Response with custom headers:')
         print(content[:500])
 
-        await page.close()
-
 
 async def with_proxy() -> None:
     """Launch a browser that routes traffic through a proxy.
@@ -32,13 +28,8 @@ async def with_proxy() -> None:
     Requires a running proxy (e.g. `mitmproxy` on port 8080).
     Uncomment and adjust the proxy URL to try it out.
     """
-    # async with BrowserSession(
-    #     headless=True,
-    #     proxy="http://127.0.0.1:8080",
-    # ) as session:
-    #     page = await session.new_page("https://httpbin.org/ip")
+    # async with yd.page('https://httpbin.org/ip', proxy='http://127.0.0.1:8080') as page:
     #     print(await page.content())
-    #     await page.close()
     print('Proxy example is commented out — set a real proxy URL to run it.')
 
 

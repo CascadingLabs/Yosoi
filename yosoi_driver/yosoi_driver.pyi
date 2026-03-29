@@ -29,6 +29,17 @@ class PooledTab:
     async def click_element(self, selector: str) -> None: ...
     async def type_into(self, selector: str, text: str) -> None: ...
     async def set_headers(self, headers: dict[str, str]) -> None: ...
+    async def wait_for_stable_dom(
+        self,
+        timeout: float = 10.0,
+        min_length: int = 5000,
+        stable_checks: int = 5,
+    ) -> bool:
+        """Wait until DOM stabilises and exceeds min_length chars.
+
+        Returns True if stabilised within timeout, False otherwise.
+        """
+        ...
     async def __aenter__(self) -> PooledTab: ...
     async def __aexit__(
         self,
@@ -79,6 +90,17 @@ class Page:
     async def click_element(self, selector: str) -> None: ...
     async def type_into(self, selector: str, text: str) -> None: ...
     async def set_headers(self, headers: dict[str, str]) -> None: ...
+    async def wait_for_stable_dom(
+        self,
+        timeout: float = 10.0,
+        min_length: int = 5000,
+        stable_checks: int = 5,
+    ) -> bool:
+        """Wait until DOM stabilises and exceeds min_length chars.
+
+        Returns True if stabilised within timeout, False otherwise.
+        """
+        ...
     async def close(self) -> None: ...
 
 class BrowserSession:

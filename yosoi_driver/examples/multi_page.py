@@ -2,7 +2,7 @@
 
 import asyncio
 
-from yosoi_driver import BrowserSession
+from yosoi import yd
 
 URLS = [
     'https://example.com',
@@ -13,17 +13,11 @@ URLS = [
 
 async def main() -> None:
     """Open multiple tabs concurrently and print their titles."""
-    async with BrowserSession(headless=True) as session:
-        # Open several tabs concurrently
-        pages = await asyncio.gather(*(session.new_page(url) for url in URLS))
-
-        for page in pages:
+    async with yd.pages(*URLS) as opened:
+        for page in opened:
             title = await page.title()
             url = await page.url()
             print(f'  {url}  ->  {title}')
-
-        # Close them all
-        await asyncio.gather(*(p.close() for p in pages))
 
 
 if __name__ == '__main__':

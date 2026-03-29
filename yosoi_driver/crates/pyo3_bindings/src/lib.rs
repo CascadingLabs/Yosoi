@@ -5,6 +5,7 @@
 
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::time::Duration;
 
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
@@ -190,6 +191,56 @@ impl PyPage {
     /// Set extra HTTP headers for all subsequent requests.
     fn set_headers<'py>(&self, py: Python<'py>, headers: HashMap<String, String>) -> PyResult<Bound<'py, PyAny>> {
         with_page!(self, py, |page| page.set_headers(headers))
+    }
+
+    /// Wait until the DOM stabilises and exceeds `min_length` characters.
+    ///
+    /// Returns True if stabilised within timeout, False otherwise.
+    /// Prevents redirect gates / loading stubs from being treated as content.
+    #[pyo3(signature = (timeout=10.0, min_length=5000, stable_checks=5))]
+    fn wait_for_stable_dom<'py>(
+        &self,
+        py: Python<'py>,
+        timeout: f64,
+        min_length: usize,
+        stable_checks: u32,
+    ) -> PyResult<Bound<'py, PyAny>> {
+        let inner = Arc::clone(&self.inner);
+        pyo3_async_runtimes::tokio::future_into_py(py, async move {
+            let guard = inner.lock().await;
+            let page = guard
+                .as_ref()
+                .ok_or_else(|| PyRuntimeError::new_err("page is closed"))?;
+            page.wait_for_stable_dom(
+                Duration::from_secs_f64(timeout),
+                min_length,
+                stable_checks,
+            )
+            .await
+            .map_err(to_py_err)
+        })
+    }
+
+    /// Event-driven wait for network idle. No polling.
+    ///
+    /// Returns the lifecycle event name ("networkIdle" or "networkAlmostIdle")
+    /// or None if the timeout was reached.
+    #[pyo3(signature = (timeout=30.0))]
+    fn wait_for_network_idle<'py>(
+        &self,
+        py: Python<'py>,
+        timeout: f64,
+    ) -> PyResult<Bound<'py, PyAny>> {
+        let inner = Arc::clone(&self.inner);
+        pyo3_async_runtimes::tokio::future_into_py(py, async move {
+            let guard = inner.lock().await;
+            let page = guard
+                .as_ref()
+                .ok_or_else(|| PyRuntimeError::new_err("page is closed"))?;
+            page.wait_for_network_idle(Duration::from_secs_f64(timeout))
+                .await
+                .map_err(to_py_err)
+        })
     }
 
     /// Close this page / tab.
@@ -472,6 +523,34 @@ impl PyPooledTab {
 
     fn set_headers<'py>(&self, py: Python<'py>, headers: HashMap<String, String>) -> PyResult<Bound<'py, PyAny>> {
         with_pooled_page!(self, py, |page| page.set_headers(headers))
+    }
+
+    /// Wait until the DOM stabilises and exceeds `min_length` characters.
+    ///
+    /// Returns True if stabilised within timeout, False otherwise.
+    #[pyo3(signature = (timeout=10.0, min_length=5000, stable_checks=5))]
+    fn wait_for_stable_dom<'py>(
+        &self,
+        py: Python<'py>,
+        timeout: f64,
+        min_length: usize,
+        stable_checks: u32,
+    ) -> PyResult<Bound<'py, PyAny>> {
+        let inner = Arc::clone(&self.inner);
+        pyo3_async_runtimes::tokio::future_into_py(py, async move {
+            let guard = inner.lock().await;
+            let tab = guard
+                .as_ref()
+                .ok_or_else(|| PyRuntimeError::new_err("tab has been released"))?;
+            tab.page
+                .wait_for_stable_dom(
+                    Duration::from_secs_f64(timeout),
+                    min_length,
+                    stable_checks,
+                )
+                .await
+                .map_err(to_py_err)
+        })
     }
 
     // ── async context manager ───────────────────────────────────────────

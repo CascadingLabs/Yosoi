@@ -9,24 +9,16 @@ Then run this script to attach to it.
 
 import asyncio
 
-from yosoi_driver import BrowserSession
+from yosoi import yd
 
 
 async def main() -> None:
     """Connect to Chrome on port 9222 and fetch a page title."""
-    session = BrowserSession(
+    async with yd.page(
+        'https://example.com',
         ws_url='http://127.0.0.1:9222',  # HTTP endpoint or ws:// URL both work
-        stealth=True,
-    )
-    await session.launch()
-
-    print(f'Connected to Chrome {await session.version()}')
-
-    page = await session.new_page('https://example.com')
-    print(f'Title: {await page.title()}')
-
-    await page.close()
-    await session.close()
+    ) as page:
+        print(f'Title: {await page.title()}')
 
 
 if __name__ == '__main__':

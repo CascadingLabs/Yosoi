@@ -2,7 +2,10 @@
 
 from importlib.metadata import PackageNotFoundError, version
 
+from yosoi import yd
 from yosoi.core.configs import DebugConfig, TelemetryConfig, YosoiConfig, auto_config
+
+YosoiDriver = yd
 from yosoi.core.discovery import (
     LLMConfig,
     alibaba,
@@ -82,6 +85,7 @@ __all__ = [
     'Url',
     'Video',
     'YosoiConfig',
+    'YosoiDriver',
     'YosoiType',
     'alibaba',
     'anthropic',
@@ -119,4 +123,5 @@ __all__ = [
     'vertexai',
     'xai',
     'xpath',
+    'yd',
 ]

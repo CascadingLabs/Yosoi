@@ -11,7 +11,7 @@ Stealth mode (enabled by default) patches common bot-detection signals:
 import asyncio
 import json
 
-from yosoi_driver import BrowserSession
+from yosoi import yd
 
 DETECTION_JS = """
 JSON.stringify({
@@ -24,26 +24,24 @@ JSON.stringify({
 """
 
 
-async def check_fingerprint(label: str, session: BrowserSession) -> None:
-    """Print bot-detection fingerprint signals for the given session."""
-    page = await session.new_page('https://example.com')
-    raw = await page.evaluate_js(DETECTION_JS)
+async def check_fingerprint(label: str, page: object) -> None:
+    """Print bot-detection fingerprint signals for the given page."""
+    raw = await page.evaluate_js(DETECTION_JS)  # type: ignore[attr-defined]
     fingerprint = json.loads(json.loads(raw))
     print(f'\n[{label}]')
     for key, value in fingerprint.items():
         print(f'  {key}: {value}')
-    await page.close()
 
 
 async def main() -> None:
     """Compare fingerprints with stealth enabled vs disabled."""
     # Stealth ON (default)
-    async with BrowserSession(headless=True, stealth=True) as stealth:
-        await check_fingerprint('stealth=True', stealth)
+    async with yd.page('https://example.com', stealth=True) as page:
+        await check_fingerprint('stealth=True', page)
 
     # Stealth OFF
-    async with BrowserSession(headless=True, stealth=False) as bare:
-        await check_fingerprint('stealth=False', bare)
+    async with yd.page('https://example.com', stealth=False) as page:
+        await check_fingerprint('stealth=False', page)
 
 
 if __name__ == '__main__':

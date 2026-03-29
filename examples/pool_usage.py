@@ -8,7 +8,7 @@ from __future__ import annotations
 import asyncio
 import time
 
-from yosoi_driver import BrowserPool
+from yosoi import yd
 
 URLS = [
     'https://example.com',
@@ -21,7 +21,7 @@ async def pattern_one_shot() -> None:
     """Pattern 1: One-shot fetch via pool."""
     t0 = time.perf_counter()
 
-    async with await BrowserPool.from_env() as pool, await pool.acquire() as tab:
+    async with await yd.pool() as pool, await pool.acquire() as tab:
         await tab.navigate('https://example.com')
         title = await tab.title()
         print(f'  Title: {title}')
@@ -34,7 +34,7 @@ async def pattern_parallel() -> None:
     """Pattern 2: Parallel fetch through the pool."""
     t0 = time.perf_counter()
 
-    async with await BrowserPool.from_env() as pool:
+    async with await yd.pool() as pool:
 
         async def fetch(url: str) -> str:
             async with await pool.acquire() as tab:
@@ -53,7 +53,7 @@ async def pattern_long_lived() -> None:
     """Pattern 3: Long-lived session with a dedicated tab."""
     t0 = time.perf_counter()
 
-    async with await BrowserPool.from_env() as pool, await pool.acquire() as tab:
+    async with await yd.pool() as pool, await pool.acquire() as tab:
         # Navigate to first page
         await tab.navigate('https://example.com')
         title1 = await tab.title()

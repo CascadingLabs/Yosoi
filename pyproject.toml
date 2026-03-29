@@ -57,10 +57,12 @@ dev = [
   "playwright>=1.58",
   "poethepoet>=0.42",
   "prek>=0.3.8",
+  "psutil>=7.2.2",
   "ruff>=0.15",
   "types-beautifulsoup4>=4.12",
   "types-dateparser>=1.4.0.20260328",
   "vulture>=2.16",
+  "zendriver>=0.15.3",
 ]
 tests = [
   "deepeval>=3.9",
