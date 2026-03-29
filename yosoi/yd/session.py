@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, Field
 
+from yosoi.yd._import import require_driver
+
 if TYPE_CHECKING:
     from yosoi_driver import BrowserSession
 
@@ -57,11 +59,8 @@ def session(config: SessionConfig | None = None, **kwargs: Any) -> BrowserSessio
         ImportError: If ``yosoi_driver`` is not installed.
 
     """
-    try:
-        from yosoi_driver import BrowserSession as _BrowserSession
-    except ImportError:
-        raise ImportError('yosoi_driver is not installed. Build it with: cd yosoi_driver && ./build.sh') from None
-
+    _driver = require_driver()
+    _BrowserSession: type[BrowserSession] = _driver.BrowserSession
     cfg = config or SessionConfig(**kwargs)
     return _BrowserSession(
         headless=cfg.headless,

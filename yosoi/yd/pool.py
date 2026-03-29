@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import os
-from collections.abc import Generator
-from contextlib import contextmanager
+from collections.abc import AsyncIterator, Generator
+from contextlib import asynccontextmanager, contextmanager
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, Field
+
+from yosoi.yd._import import require_driver
 
 if TYPE_CHECKING:
     from yosoi_driver import BrowserPool
@@ -78,11 +80,11 @@ class PoolConfig(BaseModel, frozen=True):
         from yosoi import yd
 
         # Quick: performance mode preset
-        async with await yd.pool(mode='balanced') as p:
+        async with yd.pool(mode='balanced') as p:
             ...
 
         # Fine-grained control
-        async with await yd.pool(
+        async with yd.pool(
             mode='lite',
             tabs_per_browser=2,                       # override lite's default of 1
             viewport=yd.Viewport(width=1024, height=768),  # custom viewport
@@ -153,23 +155,46 @@ class PoolConfig(BaseModel, frozen=True):
                     os.environ[k] = v
 
 
-async def pool(config: PoolConfig | None = None, **kwargs: Any) -> BrowserPool:
-    """Create a ``BrowserPool`` from Pydantic config.
+async def create_pool(config: PoolConfig | None = None, **kwargs: Any) -> BrowserPool:
+    """Create a raw ``BrowserPool`` from Pydantic config.
 
-    Use as an async context manager::
+    Returns the pool object directly — caller is responsible for entering
+    and exiting its async context.  Prefer :func:`pool` for typical usage.
+
+    Args:
+        config: Optional :class:`PoolConfig`. If *None*, one is built from
+            ``**kwargs``.
+        **kwargs: Forwarded to :class:`PoolConfig` when *config* is not given.
+
+    Returns:
+        A :class:`~yosoi_driver.BrowserPool` (not yet entered).
+
+    """
+    _driver = require_driver()
+    _BrowserPool: type[BrowserPool] = _driver.BrowserPool
+    cfg = config or PoolConfig(**kwargs)
+    with cfg._apply_env():
+        return await _BrowserPool.from_env()
+
+
+@asynccontextmanager
+async def pool(config: PoolConfig | None = None, **kwargs: Any) -> AsyncIterator[BrowserPool]:
+    """Create and enter a ``BrowserPool`` as an async context manager.
+
+    Example::
 
         from yosoi import yd
 
         # Performance mode presets
-        async with await yd.pool(mode='full') as p:       # server
+        async with yd.pool(mode='full') as p:       # server
             ...
-        async with await yd.pool(mode='balanced') as p:    # desktop
+        async with yd.pool(mode='balanced') as p:    # desktop
             ...
-        async with await yd.pool(mode='lite') as p:        # embedded/CI
+        async with yd.pool(mode='lite') as p:        # embedded/CI
             ...
 
         # Fine-grained
-        async with await yd.pool(
+        async with yd.pool(
             mode='full',
             viewport=yd.Viewport(width=1440, height=900),
         ) as p:
@@ -183,18 +208,10 @@ async def pool(config: PoolConfig | None = None, **kwargs: Any) -> BrowserPool:
             are used.
         **kwargs: Forwarded to :class:`PoolConfig` when *config* is not given.
 
-    Returns:
-        A :class:`~yosoi_driver.BrowserPool` ready for ``async with``.
-
-    Raises:
-        ImportError: If ``yosoi_driver`` is not installed.
+    Yields:
+        A :class:`~yosoi_driver.BrowserPool` that is cleaned up on exit.
 
     """
-    try:
-        from yosoi_driver import BrowserPool as _BrowserPool
-    except ImportError:
-        raise ImportError('yosoi_driver is not installed. Build it with: cd yosoi_driver && ./build.sh') from None
-
-    cfg = config or PoolConfig(**kwargs)
-    with cfg._apply_env():
-        return await _BrowserPool.from_env()
+    p = await create_pool(config=config, **kwargs)
+    async with p as entered:
+        yield entered

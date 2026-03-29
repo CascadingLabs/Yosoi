@@ -16,7 +16,7 @@ from yosoi.utils.exceptions import BotDetectionError
 
 try:
     from yosoi.yd import PoolConfig
-    from yosoi.yd import pool as _create_pool
+    from yosoi.yd import create_pool as _create_pool
 
     _HAS_BROWSER = True
 except Exception:  # noqa: BLE001 — yosoi_driver may not be installed
@@ -86,8 +86,6 @@ class BrowserFetcher(HTMLFetcher):
 
         self._pool: BrowserPoolType | None = pool
         self._owns_pool: bool = pool is None
-        # Kept for backward compat — tests check _session is not None
-        self._session: object | None = None
 
     async def _ensure_pool(self) -> BrowserPoolType:
         """Lazily create and warm up a pool if one hasn't been provided."""
@@ -101,8 +99,6 @@ class BrowserFetcher(HTMLFetcher):
     async def __aenter__(self) -> BrowserFetcher:
         """Warm up the pool (or create one)."""
         await self._ensure_pool()
-        # Keep _session truthy so existing tests pass their `is not None` checks
-        self._session = object()
         return self
 
     async def __aexit__(
@@ -119,7 +115,6 @@ class BrowserFetcher(HTMLFetcher):
         if self._owns_pool and self._pool is not None:
             await self._pool.__aexit__(None, None, None)
             self._pool = None
-        self._session = None
 
     async def fetch(self, url: str) -> FetchResult:
         """Fetch HTML by navigating a pooled browser tab to the URL.

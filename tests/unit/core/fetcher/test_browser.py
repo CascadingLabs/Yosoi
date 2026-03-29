@@ -35,8 +35,8 @@ def test_create_fetcher_unknown_type_lists_browser():
 async def test_browser_fetcher_context_manager():
     """BrowserFetcher can be used as an async context manager."""
     async with BrowserFetcher(no_sandbox=True) as fetcher:
-        assert fetcher._session is not None
-    assert fetcher._session is None
+        assert fetcher._pool is not None
+    assert fetcher._pool is None
 
 
 async def test_browser_fetcher_lazy_pool_init():

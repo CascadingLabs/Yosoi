@@ -89,7 +89,7 @@ async def main() -> None:
 
     t0 = time.perf_counter()
 
-    async with await yd.pool() as pool, await pool.acquire() as tab:
+    async with yd.pool() as pool, await pool.acquire() as tab:
         await tab.navigate(TARGET_URL)
 
         # Wait for DOM to stabilise (min 5 000 chars, 5 consecutive polls)

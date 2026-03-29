@@ -90,14 +90,14 @@ For WAF-protected sites (Akamai, Cloudflare), **headful mode is required**. Head
 from yosoi import yd
 
 # For WAF-protected sites — use headful
-async with await yd.pool(headless=False) as pool:
+async with yd.pool(headless=False) as pool:
     async with await pool.acquire() as tab:
         await tab.navigate("https://waf-protected-site.com")
         await tab.wait_for_stable_dom(timeout=15.0)
         html = await tab.content()
 
 # For unprotected sites — headless is fine and faster
-async with await yd.pool() as pool:
+async with yd.pool() as pool:
     async with await pool.acquire() as tab:
         await tab.navigate("https://example.com")
         html = await tab.content()

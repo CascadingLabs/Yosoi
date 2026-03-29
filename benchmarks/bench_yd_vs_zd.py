@@ -146,7 +146,7 @@ async def bench_yd(url: str, runs: int, parallel: int, mode: str, *, headless: b
     py_rss_before = _rss_mb()
 
     t0 = time.perf_counter()
-    pool_ctx = await yd.pool(cfg)
+    pool_ctx = await yd.create_pool(cfg)
     pool = await pool_ctx.__aenter__()
     r.cold_start = time.perf_counter() - t0
 

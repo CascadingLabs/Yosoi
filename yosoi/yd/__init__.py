@@ -10,8 +10,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from yosoi.yd._import import get_driver_attr
 from yosoi.yd.page import page, pages
-from yosoi.yd.pool import PerformanceMode, PoolConfig, Viewport, pool
+from yosoi.yd.pool import PerformanceMode, PoolConfig, Viewport, create_pool, pool
 from yosoi.yd.session import SessionConfig, session
 
 if TYPE_CHECKING:
@@ -24,11 +25,7 @@ _DRIVER_TYPES = frozenset({'BrowserPool', 'BrowserSession', 'Page', 'PooledTab'}
 
 def __getattr__(name: str) -> object:
     if name in _DRIVER_TYPES:
-        try:
-            import yosoi_driver
-        except ImportError:
-            raise ImportError('yosoi_driver is not installed. Build it with: cd yosoi_driver && ./build.sh') from None
-        return getattr(yosoi_driver, name)
+        return get_driver_attr(name)
     raise AttributeError(f"module 'yosoi.yd' has no attribute {name!r}")
 
 
@@ -41,6 +38,7 @@ __all__ = [
     'PooledTab',
     'SessionConfig',
     'Viewport',
+    'create_pool',
     'page',
     'pages',
     'pool',
