@@ -16,7 +16,6 @@ uv sync --group dev
 
 # Install pre-commit hooks
 uv run pre-commit install
-uv run pre-commit install --hook-type commit-msg
 
 # Run all checks
 uv run pre-commit run --all-files
@@ -29,7 +28,6 @@ uv run pre-commit run --all-files
 | **Ruff** | Linting & Formatting | `uv run ruff check .` |
 | **Mypy** | Type Checking | `uv run mypy .` |
 | **Pre-commit** | Git Hooks | `uv run pre-commit run --all-files` |
-| **Commitizen** | Conventional Commits | `uv run cz commit` |
 
 See [CHEAT_SHEET.md](CHEAT_SHEET.md) for detailed commands.
 
@@ -38,14 +36,19 @@ See [CHEAT_SHEET.md](CHEAT_SHEET.md) for detailed commands.
 Use conventional commits:
 
 ```bash
-# Interactive commit
-uv run cz commit
-
-# Manual commit (must follow format)
 git commit -m "feat: add new selector discovery feature"
 git commit -m "fix: handle missing author tags"
 git commit -m "docs: update README with examples"
 ```
+
+## Pull Request Guidelines
+
+When opening a PR, please include:
+
+1. **Intent** — what the PR does and why.
+2. **Changes** — a summary of what was changed.
+3. **GenAI usage** — if you used AI to write any of the code, include the prompts you used.
+4. **Risks** — any risks or side effects this PR might introduce.
 
 **Commit Types:**
 - `feat`: New feature

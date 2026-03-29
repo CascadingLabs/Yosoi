@@ -10,7 +10,18 @@ from pydantic import AwareDatetime, BaseModel, Field
 
 
 class CacheVerdict(str, Enum):
-    """Result of verifying a cached selector against current HTML."""
+    """Result of verifying a cached selector against the current page HTML.
+
+    On each scrape Yosoi tests every cached selector against the live page
+    before deciding whether to call the LLM. The verdict determines what
+    happens next for that field.
+
+    Attributes:
+        FRESH: Selector still matches the page — extract directly, no LLM call needed.
+        STALE: Selector no longer matches any elements — triggers re-discovery for this field.
+        DEGRADED: Selector matches but quality has dropped — flagged for future re-discovery.
+
+    """
 
     FRESH = 'fresh'
     STALE = 'stale'
@@ -18,7 +29,25 @@ class CacheVerdict(str, Enum):
 
 
 class SelectorSnapshot(BaseModel):
-    """Per-field selector data with audit metadata."""
+    """Per-field selector data with audit metadata.
+
+    Each field in a cache file is stored as a ``SelectorSnapshot``. It holds up
+    to three selector candidates (primary, fallback, tertiary) plus timestamps
+    that track when the selector was discovered, last verified, and last failed.
+    The ``failure_count`` drives automatic staleness detection.
+
+    Attributes:
+        primary: Most specific selector value. Can be a CSS string, a dict (for XPath/regex entries), or ``None``.
+        fallback: Less specific alternative selector, or ``None``.
+        tertiary: Generic last-resort selector, or ``None``.
+        discovered_at: UTC timestamp of when the selector was first discovered or pinned.
+        last_verified_at: UTC timestamp of the most recent successful verification against live HTML.
+        last_failed_at: UTC timestamp of the most recent verification failure, or ``None`` if never failed.
+        failure_count: Number of consecutive verification failures. Reset to 0 on success.
+        source: How the selector was obtained — ``'discovered'`` (LLM), ``'pinned'`` (contract), or ``'override'`` (manual edit).
+        parent_root: Optional parent CSS selector for nested/scoped items within multi-item pages.
+
+    """
 
     primary: str | dict[str, Any] | None = None
     fallback: str | dict[str, Any] | None = None
@@ -32,7 +61,19 @@ class SelectorSnapshot(BaseModel):
 
 
 class SnapshotMap(BaseModel):
-    """Top-level cache file with per-field snapshots."""
+    """Top-level model for a domain's selector cache file.
+
+    Each domain scraped by Yosoi gets one JSON cache file
+    (e.g. ``selectors_example_com.json``). ``SnapshotMap`` is the Pydantic
+    model that validates and serialises that file. It maps field names to
+    their ``SelectorSnapshot`` entries.
+
+    Attributes:
+        url: The source URL this cache was built from.
+        domain: The domain name (e.g. ``'example.com'``).
+        snapshots: Mapping of contract field names to their cached ``SelectorSnapshot``.
+
+    """
 
     url: str
     domain: str

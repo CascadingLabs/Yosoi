@@ -50,6 +50,7 @@ scripts.yosoi = "yosoi.cli:main"
 [dependency-groups]
 dev = [
   "commitizen>=3.13",
+  "griffe>=2",
   "memray>=1.19.1",
   "mypy>=1.13",
   "playwright>=1.58",
@@ -209,14 +210,15 @@ tests_dir = [ "tests/unit/" ]
 debug = true
 
 [tool.poe.tasks]
-eval = 'uv run pytest -m "eval"'                                                                           # run deepeval tests
-integration = "uv run pytest -m 'integration'"                                                             # run integration tests
-unit = "uv run pytest -m 'unit'"                                                                           # run unit tests
-ci-test = "uv run pytest tests/unit/ tests/stubs/ -m 'not eval' --cov=yosoi --cov-branch --cov-report=xml" # unit + stub tests with coverage
+eval = 'uv run pytest -m "eval"'                                                                              # run deepeval tests
+integration = "uv run pytest -m 'integration'"                                                                # run integration tests
+unit = "uv run pytest -m 'unit'"                                                                              # run unit tests
+ci-test = "uv run pytest tests/unit/ tests/stubs/ -m 'not eval' --cov=yosoi --cov-branch --cov-report=xml"    # unit + stub tests with coverage
 ci-format = "uv run ruff check --fix"
 coverage = "uv run pytest --cov=yosoi --cov-report=term-missing --cov-report=html tests/"
 mutmut-run = "uv run mutmut run"
 mutmut-results = "uv run mutmut results"
+docs = "uv run python scripts/generate_api_docs.py --output-dir ../CascadingLabsFE/docs/yosoi-docs/reference" # generate split API reference with GitHub source links
 
 [tool.poe.tasks.ci-check]
 sequence = [

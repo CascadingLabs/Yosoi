@@ -282,9 +282,8 @@ class Contract(BaseModel):
         """Return selector overrides defined on fields via ``yosoi_selector``.
 
         Returns:
-            Mapping of field name → selector dict (compatible with ``FieldSelectors``
-            structure, e.g. ``{"primary": "h1.title"}``).
-            Nested contract overrides are included as flat ``{parent}_{child}`` keys.
+            Mapping of field name to selector dict (e.g. ``{"primary": "h1.title"}``).
+            Nested contract overrides use flat ``{parent}_{child}`` keys.
 
         """
         overrides: dict[str, dict[str, str]] = {}
