@@ -1,6 +1,6 @@
-"""Tests for the BrowserFetcher (yosoi_driver CDP integration).
+"""Tests for the BrowserFetcher (void_crawl CDP integration).
 
-These tests require a real Chromium binary and the yosoi_driver native extension.
+These tests require a real Chromium binary and the void_crawl native extension.
 They exercise the full fetch pipeline: launch browser → navigate → extract HTML.
 """
 
@@ -90,8 +90,8 @@ async def test_fetch_invalid_url_returns_error():
 
 
 async def test_browser_session_direct():
-    """Test yosoi_driver.BrowserSession directly for page operations."""
-    from yosoi_driver import BrowserSession
+    """Test void_crawl.BrowserSession directly for page operations."""
+    from void_crawl import BrowserSession
 
     async with BrowserSession(headless=True, no_sandbox=True) as browser:
         page = await browser.new_page('https://example.com')
@@ -122,7 +122,7 @@ async def test_browser_session_direct():
 
 async def test_browser_session_navigate():
     """Test navigating to a second URL within the same page."""
-    from yosoi_driver import BrowserSession
+    from void_crawl import BrowserSession
 
     async with BrowserSession(headless=True, no_sandbox=True) as browser:
         page = await browser.new_page('https://example.com')
@@ -137,7 +137,7 @@ async def test_browser_session_navigate():
 
 async def test_browser_session_no_stealth():
     """Test launching without stealth mode."""
-    from yosoi_driver import BrowserSession
+    from void_crawl import BrowserSession
 
     async with BrowserSession(headless=True, no_sandbox=True, stealth=False) as browser:
         page = await browser.new_page('https://example.com')

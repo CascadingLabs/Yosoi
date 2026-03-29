@@ -2,10 +2,10 @@
 
 from importlib.metadata import PackageNotFoundError, version
 
-from yosoi import yd
+from yosoi import vc
 from yosoi.core.configs import DebugConfig, TelemetryConfig, YosoiConfig, auto_config
 
-YosoiDriver = yd
+VoidCrawl = vc
 from yosoi.core.discovery import (
     LLMConfig,
     alibaba,
@@ -84,8 +84,8 @@ __all__ = [
     'Title',
     'Url',
     'Video',
+    'VoidCrawl',
     'YosoiConfig',
-    'YosoiDriver',
     'YosoiType',
     'alibaba',
     'anthropic',
@@ -119,9 +119,9 @@ __all__ = [
     'resolve_contract',
     'sambanova',
     'together',
+    'vc',
     'vercel',
     'vertexai',
     'xai',
     'xpath',
-    'yd',
 ]

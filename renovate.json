@@ -44,10 +44,10 @@
       "constraintsFiltering": "strict"
     },
     {
-      "description": "Group yosoi_driver Rust/Cargo dependency updates",
+      "description": "Group void_crawl Rust/Cargo dependency updates",
       "matchManagers": ["cargo"],
-      "matchFileNames": ["yosoi_driver/**"],
-      "groupName": "yosoi-driver-rust-deps"
+      "matchFileNames": ["void_crawl/**"],
+      "groupName": "void-crawl-rust-deps"
     }
   ]
 }

@@ -15,14 +15,14 @@ RUN pip install --no-cache-dir maturin
 WORKDIR /build
 
 # Copy workspace files
-COPY yosoi_driver/Cargo.toml yosoi_driver/Cargo.toml
-COPY yosoi_driver/crates/ yosoi_driver/crates/
-COPY yosoi_driver/pyproject.toml yosoi_driver/pyproject.toml
-COPY yosoi_driver/LICENSE.md yosoi_driver/LICENSE.md
-COPY yosoi_driver/yosoi_driver.pyi yosoi_driver/yosoi_driver.pyi
+COPY void_crawl/Cargo.toml void_crawl/Cargo.toml
+COPY void_crawl/crates/ void_crawl/crates/
+COPY void_crawl/pyproject.toml void_crawl/pyproject.toml
+COPY void_crawl/LICENSE.md void_crawl/LICENSE.md
+COPY void_crawl/void_crawl.pyi void_crawl/void_crawl.pyi
 
 # Build the wheel
-RUN cd yosoi_driver && \
+RUN cd void_crawl && \
     maturin build --release --manifest-path crates/pyo3_bindings/Cargo.toml -o /wheels
 
 # ── Stage 2: Runtime image ──────────────────────────────────────────────

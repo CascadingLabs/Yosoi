@@ -1,0 +1,18 @@
+[package]
+name = "void_crawl"
+version = "0.0.1-beta.1"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "PyO3 bindings for void_crawl_core"
+
+[lib]
+name = "void_crawl"
+crate-type = ["cdylib"]
+
+[dependencies]
+void_crawl_core = { path = "../core" }
+pyo3 = { version = "0.28", features = ["extension-module"] }
+pyo3-async-runtimes = { version = "0.28", features = ["tokio-runtime"] }
+tokio = { version = "1", features = ["sync"] }
+serde_json = "1"

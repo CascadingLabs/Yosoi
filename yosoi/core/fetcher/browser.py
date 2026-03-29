@@ -1,7 +1,7 @@
-"""Browser-based HTML fetcher using yosoi_driver (Rust CDP bindings).
+"""Browser-based HTML fetcher using void_crawl (Rust CDP bindings).
 
 Renders JavaScript-heavy pages by controlling a real Chromium instance.
-Falls back gracefully with a clear error if yosoi_driver is not installed.
+Falls back gracefully with a clear error if void_crawl is not installed.
 """
 
 from __future__ import annotations
@@ -15,15 +15,15 @@ from yosoi.models.results import FetchResult
 from yosoi.utils.exceptions import BotDetectionError
 
 try:
-    from yosoi.yd import PoolConfig
-    from yosoi.yd import create_pool as _create_pool
+    from yosoi.vc import PoolConfig
+    from yosoi.vc import create_pool as _create_pool
 
     _HAS_BROWSER = True
-except Exception:  # noqa: BLE001 — yosoi_driver may not be installed
+except Exception:  # noqa: BLE001 — void_crawl may not be installed
     _HAS_BROWSER = False
 
 if TYPE_CHECKING:
-    from yosoi_driver import BrowserPool as BrowserPoolType
+    from void_crawl import BrowserPool as BrowserPoolType
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ class BrowserFetcher(HTMLFetcher):
     created lazily from environment variables on first use.
 
     Requires the ``yosoi-driver`` native extension (install via
-    ``cd yosoi_driver && ./build.sh``).
+    ``cd void_crawl && ./build.sh``).
 
     Attributes:
         headless: Whether to run the browser headless.
@@ -71,11 +71,11 @@ class BrowserFetcher(HTMLFetcher):
                 from environment variables on first use.
 
         Raises:
-            ImportError: If yosoi_driver native extension is not installed.
+            ImportError: If void_crawl native extension is not installed.
 
         """
         if not _HAS_BROWSER:
-            raise ImportError('yosoi_driver is not installed. Build it with: cd yosoi_driver && ./build.sh')
+            raise ImportError('void_crawl is not installed. Build it with: cd void_crawl && ./build.sh')
 
         self.headless = headless
         self.stealth = stealth

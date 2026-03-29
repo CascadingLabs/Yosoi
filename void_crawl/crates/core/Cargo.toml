@@ -1,0 +1,17 @@
+[package]
+name = "void_crawl_core"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "CDP browser automation core for Yosoi"
+
+[dependencies]
+chromiumoxide = { version = "0.9", default-features = false }
+tokio = { version = "1", features = ["full"] }
+futures = "0.3"
+thiserror = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
+tempfile = "3"

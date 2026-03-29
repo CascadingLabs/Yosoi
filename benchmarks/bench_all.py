@@ -1,4 +1,4 @@
-"""Benchmark: yd vs Playwright vs Puppeteer vs zendriver vs nodriver.
+"""Benchmark: vc vs Playwright vs Puppeteer vs zendriver vs nodriver.
 
 Measures per engine:
   - Cold start latency (browser launch -> first page ready)
@@ -7,14 +7,14 @@ Measures per engine:
   - Chrome RSS during sequential vs parallel phases
   - Memory efficiency (MB per 100K chars of fetched content)
 
-yd uses fully event-driven CDP lifecycle events (zero sleeps, zero polling).
+vc uses fully event-driven CDP lifecycle events (zero sleeps, zero polling).
 Other engines use their native wait strategies for a fair comparison.
 
 Run:
   uv run python benchmarks/bench_all.py
   uv run python benchmarks/bench_all.py --runs 3 --parallel 3
-  uv run python benchmarks/bench_all.py --engines yd,playwright
-  uv run python benchmarks/bench_all.py --yd-mode balanced --headless
+  uv run python benchmarks/bench_all.py --engines vc,playwright
+  uv run python benchmarks/bench_all.py --vc-mode balanced --headless
 """
 
 from __future__ import annotations
@@ -36,7 +36,7 @@ URL = 'https://en.wikipedia.org/wiki/Web_scraping'
 
 MIN_CONTENT_LEN = 10_000
 
-ALL_ENGINES = ['yd', 'yd-docker', 'playwright', 'puppeteer', 'zendriver', 'nodriver']
+ALL_ENGINES = ['vc', 'vc-docker', 'playwright', 'puppeteer', 'zendriver', 'nodriver']
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────
@@ -135,19 +135,19 @@ class Result:
 # ── YD benchmark ─────────────────────────────────────────────────────────
 
 
-async def bench_yd(url: str, runs: int, parallel: int, mode: str, *, headless: bool = False) -> Result:
-    """Run yd benchmark with given performance mode."""
-    from yosoi import yd
+async def bench_vc(url: str, runs: int, parallel: int, mode: str, *, headless: bool = False) -> Result:
+    """Run vc benchmark with given performance mode."""
+    from yosoi import vc
 
-    cfg = yd.PoolConfig(mode=mode, headless=headless, tabs_per_browser=max(parallel, 1))
+    cfg = vc.PoolConfig(mode=mode, headless=headless, tabs_per_browser=max(parallel, 1))
     vp = cfg.effective_viewport
-    label = f'yd {mode} ({vp.width}x{vp.height}, {cfg.effective_browsers}b x {cfg.effective_tabs_per_browser}t)'
+    label = f'vc{mode} ({vp.width}x{vp.height}, {cfg.effective_browsers}b x {cfg.effective_tabs_per_browser}t)'
     r = Result(label)
     gc.collect()
     py_rss_before = _rss_mb()
 
     t0 = time.perf_counter()
-    pool_ctx = await yd.create_pool(cfg)
+    pool_ctx = await vc.create_pool(cfg)
     pool = await pool_ctx.__aenter__()
     r.cold_start = time.perf_counter() - t0
 
@@ -171,10 +171,10 @@ async def bench_yd(url: str, runs: int, parallel: int, mode: str, *, headless: b
                 r.blocked += 1
             r.seq_chrome_rss_peak = max(r.seq_chrome_rss_peak, _all_chrome_rss_mb())
             status = 'BLOCKED' if blocked else f'{length:,} chars'
-            print(f'  yd/{mode} [{i + 1}/{runs}]: {elapsed:.2f}s  {status}  ({event})')
+            print(f'  vc/{mode} [{i + 1}/{runs}]: {elapsed:.2f}s  {status}  ({event})')
 
         if parallel > 1:
-            print(f'  yd/{mode} parallel [{parallel} tabs]...')
+            print(f'  vc/{mode} parallel [{parallel} tabs]...')
             t2 = time.perf_counter()
             results = await asyncio.gather(*[_yd_fetch(pool) for _ in range(parallel)])
             r.parallel_time = time.perf_counter() - t2
@@ -532,19 +532,19 @@ def _detect_gpu_profile() -> str:
     return 'cpu'
 
 
-async def bench_yd_docker(
+async def bench_vc_docker(
     url: str,
     runs: int,
     parallel: int,
     *,
     headless: bool = False,
 ) -> Result:
-    """Run yd benchmark against Chrome running headful inside Docker with GPU + Sway + VNC."""
-    import yosoi_driver
+    """Run vc benchmark against Chrome running headful inside Docker with GPU + Sway + VNC."""
+    import void_crawl
 
     compose_file = str(Path(__file__).parent.parent / 'docker' / 'docker-compose.headful.yml')
     gpu_profile = _detect_gpu_profile()
-    label = f'yd docker-headful ({gpu_profile} GPU, sway+wayvnc)'
+    label = f'vcdocker-headful ({gpu_profile} GPU, sway+wayvnc)'
 
     r = Result(label)
     gc.collect()
@@ -560,11 +560,11 @@ async def bench_yd_docker(
     r.cold_start = time.perf_counter() - t0
     print(f'  Docker container ready in {r.cold_start:.2f}s')
 
-    # Connect yd pool to the Docker Chrome instances
+    # Connect vc pool to the Docker Chrome instances
     os.environ['CHROME_WS_URLS'] = ','.join(ws_urls)
     os.environ['TABS_PER_BROWSER'] = str(max(parallel, 2))
 
-    pool_cls = yosoi_driver.BrowserPool
+    pool_cls = void_crawl.BrowserPool
     pool_ctx = await pool_cls.from_env()
     pool = await pool_ctx.__aenter__()
 
@@ -587,10 +587,10 @@ async def bench_yd_docker(
                 r.blocked += 1
             r.seq_chrome_rss_peak = max(r.seq_chrome_rss_peak, _all_chrome_rss_mb())
             status = 'BLOCKED' if blocked else f'{length:,} chars'
-            print(f'  yd-docker [{i + 1}/{runs}]: {elapsed:.2f}s  {status}  ({event})')
+            print(f'  vc-docker [{i + 1}/{runs}]: {elapsed:.2f}s  {status}  ({event})')
 
         if parallel > 1:
-            print(f'  yd-docker parallel [{parallel} tabs]...')
+            print(f'  vc-docker parallel [{parallel} tabs]...')
             t2 = time.perf_counter()
             results = await asyncio.gather(*[_fetch(pool) for _ in range(parallel)])
             r.parallel_time = time.perf_counter() - t2
@@ -619,30 +619,30 @@ async def bench_yd_docker(
 # ── Comparison ───────────────────────────────────────────────────────────
 
 
-def _print_comparison(yd_r: Result, other: Result) -> None:
-    """Print head-to-head comparison between yd and another engine."""
+def _print_comparison(vc_r: Result, other: Result) -> None:
+    """Print head-to-head comparison between vc and another engine."""
     print(f'\n  vs {other.name}:')
 
-    yd_avg = statistics.mean(yd_r.single_fetches) if yd_r.single_fetches else 0
+    yd_avg = statistics.mean(vc_r.single_fetches) if vc_r.single_fetches else 0
     other_avg = statistics.mean(other.single_fetches) if other.single_fetches else 0
     if yd_avg and other_avg:
-        faster = 'yd' if yd_avg < other_avg else other.name.split()[0]
+        faster = 'vc' if yd_avg < other_avg else other.name.split()[0]
         ratio = max(yd_avg, other_avg) / min(yd_avg, other_avg)
         print(f'    Single fetch:    {faster} is {ratio:.1f}x faster')
 
-    if yd_r.parallel_time and other.parallel_time:
-        faster = 'yd' if yd_r.parallel_time < other.parallel_time else other.name.split()[0]
-        ratio = max(yd_r.parallel_time, other.parallel_time) / min(yd_r.parallel_time, other.parallel_time)
+    if vc_r.parallel_time and other.parallel_time:
+        faster = 'vc' if vc_r.parallel_time < other.parallel_time else other.name.split()[0]
+        ratio = max(vc_r.parallel_time, other.parallel_time) / min(vc_r.parallel_time, other.parallel_time)
         print(f'    Parallel fetch:  {faster} is {ratio:.1f}x faster')
 
-    if yd_r.cold_start and other.cold_start:
-        faster = 'yd' if yd_r.cold_start < other.cold_start else other.name.split()[0]
-        ratio = max(yd_r.cold_start, other.cold_start) / min(yd_r.cold_start, other.cold_start)
+    if vc_r.cold_start and other.cold_start:
+        faster = 'vc' if vc_r.cold_start < other.cold_start else other.name.split()[0]
+        ratio = max(vc_r.cold_start, other.cold_start) / min(vc_r.cold_start, other.cold_start)
         print(f'    Cold start:      {faster} is {ratio:.1f}x faster')
 
-    if yd_r.chrome_rss_peak and other.chrome_rss_peak:
-        lighter = 'yd' if yd_r.chrome_rss_peak < other.chrome_rss_peak else other.name.split()[0]
-        diff = abs(yd_r.chrome_rss_peak - other.chrome_rss_peak)
+    if vc_r.chrome_rss_peak and other.chrome_rss_peak:
+        lighter = 'vc' if vc_r.chrome_rss_peak < other.chrome_rss_peak else other.name.split()[0]
+        diff = abs(vc_r.chrome_rss_peak - other.chrome_rss_peak)
         print(f'    Chrome RSS:      {lighter} uses {diff:.0f} MB less')
 
 
@@ -653,24 +653,24 @@ async def _run_engines(
     engines: list[str],
     args: argparse.Namespace,
 ) -> tuple[list[Result], list[Result]]:
-    """Execute each requested engine benchmark and return (all_results, yd_results)."""
+    """Execute each requested engine benchmark and return (all_results, vc_results)."""
     all_results: list[Result] = []
-    yd_results: list[Result] = []
+    vc_results: list[Result] = []
 
-    if 'yd' in engines:
-        yd_modes = ['full', 'balanced', 'lite'] if args.yd_mode == 'all' else [args.yd_mode]
-        for mode in yd_modes:
-            print(f'--- yd/{mode} {"─" * 45}')
-            result = await bench_yd(args.url, args.runs, args.parallel, mode, headless=args.headless)
-            yd_results.append(result)
+    if 'vc' in engines:
+        vc_modes = ['full', 'balanced', 'lite'] if args.vc_mode == 'all' else [args.vc_mode]
+        for mode in vc_modes:
+            print(f'--- vc/{mode} {"─" * 45}')
+            result = await bench_vc(args.url, args.runs, args.parallel, mode, headless=args.headless)
+            vc_results.append(result)
             all_results.append(result)
             gc.collect()
             await asyncio.sleep(1)
 
-    if 'yd-docker' in engines:
-        print(f'\n--- yd-docker {"─" * 43}')
-        result = await bench_yd_docker(args.url, args.runs, args.parallel, headless=args.headless)
-        yd_results.append(result)
+    if 'vc-docker' in engines:
+        print(f'\n--- vc-docker {"─" * 43}')
+        result = await bench_vc_docker(args.url, args.runs, args.parallel, headless=args.headless)
+        vc_results.append(result)
         all_results.append(result)
         gc.collect()
         await asyncio.sleep(1)
@@ -702,12 +702,12 @@ async def _run_engines(
         all_results.append(result)
         gc.collect()
 
-    return all_results, yd_results
+    return all_results, vc_results
 
 
 async def main() -> None:
     """Parse args, run benchmarks, and print results."""
-    parser = argparse.ArgumentParser(description='Benchmark yd vs all browser automation tools')
+    parser = argparse.ArgumentParser(description='Benchmark vc vs all browser automation tools')
     parser.add_argument('--url', default=URL, help='Target URL')
     parser.add_argument('--runs', type=int, default=2, help='Sequential fetch runs per engine')
     parser.add_argument('--parallel', type=int, default=2, help='Parallel tab count')
@@ -717,10 +717,10 @@ async def main() -> None:
         help=f'Comma-separated engines to benchmark (default: {",".join(ALL_ENGINES)})',
     )
     parser.add_argument(
-        '--yd-mode',
+        '--vc-mode',
         choices=['full', 'balanced', 'lite', 'all'],
         default='balanced',
-        help='yd performance mode (default: balanced)',
+        help='vc performance mode (default: balanced)',
     )
     parser.add_argument('--headless', action='store_true', help='Run browsers in headless mode')
     args = parser.parse_args()
@@ -737,22 +737,22 @@ async def main() -> None:
     if baseline_chrome > 0:
         print(f'Note: {baseline_chrome:.0f} MB of existing Chrome processes detected\n')
 
-    all_results, yd_results = await _run_engines(engines, args)
+    all_results, vc_results = await _run_engines(engines, args)
 
     # ── Results ───────────────────────────────────────────────────
     for r in all_results:
         print(r.summary())
 
-    # ── Head-to-head: yd vs each other engine ─────────────────────
-    others = [r for r in all_results if r not in yd_results]
-    if yd_results and others:
+    # ── Head-to-head: vc vs each other engine ─────────────────────
+    others = [r for r in all_results if r not in vc_results]
+    if vc_results and others:
         print(f'\n{"=" * 60}')
         print('  HEAD-TO-HEAD')
         print('=' * 60)
-        for yd_r in yd_results:
-            print(f'\n  {yd_r.name}')
+        for vc_r in vc_results:
+            print(f'\n  {vc_r.name}')
             for other in others:
-                _print_comparison(yd_r, other)
+                _print_comparison(vc_r, other)
 
     print()
 

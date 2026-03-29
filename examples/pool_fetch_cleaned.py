@@ -17,7 +17,7 @@ import re
 import sys
 import time
 
-from yosoi import yd
+from yosoi import vc
 
 TARGET_URL = sys.argv[1] if len(sys.argv) > 1 else 'https://blog.google/technology/ai/'
 
@@ -89,7 +89,7 @@ async def main() -> None:
 
     t0 = time.perf_counter()
 
-    async with yd.pool() as pool, await pool.acquire() as tab:
+    async with vc.pool() as pool, await pool.acquire() as tab:
         await tab.navigate(TARGET_URL)
 
         # Wait for DOM to stabilise (min 5 000 chars, 5 consecutive polls)

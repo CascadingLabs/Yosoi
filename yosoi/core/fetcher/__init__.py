@@ -16,7 +16,7 @@ def create_fetcher(fetcher_type: str = 'simple', **kwargs: object) -> HTMLFetche
 
     Raises:
         ValueError: If fetcher_type is unknown.
-        ImportError: If 'browser' is requested but yosoi_driver is not installed.
+        ImportError: If 'browser' is requested but void_crawl is not installed.
 
     """
     fetchers: dict[str, type[HTMLFetcher]] = {

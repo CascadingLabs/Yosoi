@@ -69,12 +69,12 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
-  yosoi-driver:
-    name: yosoi_driver (Rust)
+  void-crawl:
+    name: void_crawl (Rust)
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: yosoi_driver
+        working-directory: void_crawl
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
@@ -88,12 +88,12 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            yosoi_driver/target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('yosoi_driver/**/Cargo.toml') }}
+            void_crawl/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('void_crawl/**/Cargo.toml') }}
           restore-keys: ${{ runner.os }}-cargo-
 
       - name: Check (compile)
         run: cargo check --workspace
 
       - name: Run tests (serial — Chrome singleton lock)
-        run: cargo test -p yosoi_driver_core -- --test-threads=1
+        run: cargo test -p void_crawl_core -- --test-threads=1

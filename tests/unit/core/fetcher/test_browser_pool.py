@@ -1,6 +1,6 @@
-"""Tests for BrowserPool-backed fetching (yosoi_driver pool integration).
+"""Tests for BrowserPool-backed fetching (void_crawl pool integration).
 
-These tests require a real Chromium binary and the yosoi_driver native extension.
+These tests require a real Chromium binary and the void_crawl native extension.
 They exercise the pool lifecycle: warmup → acquire → navigate → release.
 """
 
@@ -21,7 +21,7 @@ pytestmark = pytest.mark.integration
 
 async def test_pool_fetch_single():
     """Acquire a single tab from the pool and fetch a page."""
-    from yosoi_driver import BrowserPool
+    from void_crawl import BrowserPool
 
     pool = await BrowserPool.from_env()
     async with pool, await pool.acquire() as tab:
@@ -32,7 +32,7 @@ async def test_pool_fetch_single():
 
 async def test_pool_fetch_parallel():
     """Fetch multiple pages concurrently through the pool."""
-    from yosoi_driver import BrowserPool
+    from void_crawl import BrowserPool
 
     async def pool_fetch(p: BrowserPool, url: str) -> str:
         async with await p.acquire() as tab:
@@ -56,7 +56,7 @@ async def test_pool_fetch_parallel():
 
 async def test_pool_tab_recycled(monkeypatch: pytest.MonkeyPatch):
     """Tabs returned to the pool increment their use_count."""
-    from yosoi_driver import BrowserPool
+    from void_crawl import BrowserPool
 
     # Force a single tab so we're guaranteed to get the same one back
     monkeypatch.setenv('TABS_PER_BROWSER', '1')
