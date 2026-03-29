@@ -53,7 +53,7 @@ impl Page {
                     .accept_language(&cfg.locale)
                     .platform("Win32")
                     .build()
-                    .map_err(|e| YosoiError::PageError(e))?;
+                    .map_err(YosoiError::PageError)?;
                 self.inner
                     .execute(params)
                     .await
@@ -180,18 +180,23 @@ impl Page {
     // ── DOM Queries ─────────────────────────────────────────────────────
 
     /// Run `document.querySelector(selector)` and return the inner HTML.
-    /// Returns `None` if no element matches.
+    /// Returns `None` if no element matches. Void elements (e.g. `<input>`)
+    /// return `Some("")`.
     pub async fn query_selector(&self, selector: &str) -> Result<Option<String>> {
         match self.inner.find_element(selector).await {
-            Ok(el) => el
-                .inner_html()
-                .await
-                .map_err(|e| YosoiError::PageError(e.to_string())),
+            Ok(el) => {
+                let html = el
+                    .inner_html()
+                    .await
+                    .map_err(|e| YosoiError::PageError(e.to_string()))?;
+                Ok(Some(html.unwrap_or_default()))
+            }
             Err(_) => Ok(None),
         }
     }
 
     /// Run `document.querySelectorAll(selector)` and return inner HTML of each.
+    /// One entry is returned per matched element; void elements yield `""`.
     pub async fn query_selector_all(&self, selector: &str) -> Result<Vec<String>> {
         let elements = self
             .inner
@@ -201,8 +206,9 @@ impl Page {
 
         let mut results = Vec::with_capacity(elements.len());
         for el in elements {
-            if let Ok(Some(html)) = el.inner_html().await {
-                results.push(html);
+            match el.inner_html().await {
+                Ok(html) => results.push(html.unwrap_or_default()),
+                Err(_) => results.push(String::new()),
             }
         }
         Ok(results)
@@ -224,12 +230,17 @@ impl Page {
     }
 
     /// Type text into the first element matching `selector`.
+    ///
+    /// Focuses the element first so that key events are directed to it.
     pub async fn type_into(&self, selector: &str, text: &str) -> Result<()> {
         let el = self
             .inner
             .find_element(selector)
             .await
             .map_err(|e| YosoiError::ElementNotFound(e.to_string()))?;
+        el.focus()
+            .await
+            .map_err(|e| YosoiError::PageError(e.to_string()))?;
         el.type_str(text)
             .await
             .map_err(|e| YosoiError::PageError(e.to_string()))?;

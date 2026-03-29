@@ -12,20 +12,15 @@ use crate::page::Page;
 use crate::stealth::StealthConfig;
 
 /// How the browser should be acquired.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub enum BrowserMode {
     /// Launch a new headless browser.
+    #[default]
     Headless,
     /// Launch a new browser with a visible window.
     Headful,
     /// Connect to an already-running Chrome via its WebSocket debugger URL.
     RemoteDebug { ws_url: String },
-}
-
-impl Default for BrowserMode {
-    fn default() -> Self {
-        Self::Headless
-    }
 }
 
 /// Builder for `BrowserSession`.
@@ -229,21 +224,37 @@ impl BrowserSession {
     }
 
     /// Open a new tab, apply stealth settings, and navigate to `url`.
+    ///
+    /// Stealth is applied on a blank page *before* navigation so that
+    /// `addScriptToEvaluateOnNewDocument` scripts fire during the real
+    /// page load — not after it.
     pub async fn new_page(&self, url: &str) -> Result<Page> {
-        let browser = self.browser.lock().await;
-        let cdp_page = browser
-            .new_page(url)
-            .await
-            .map_err(|e| YosoiError::PageError(e.to_string()))?;
+        let page = {
+            let browser = self.browser.lock().await;
+            let cdp_page = browser
+                .new_page("about:blank")
+                .await
+                .map_err(|e| YosoiError::PageError(e.to_string()))?;
+            Page::new(cdp_page)
+        }; // browser lock released before navigation
 
-        let page = Page::new(cdp_page);
         page.apply_stealth(&self.stealth).await?;
+        page.navigate(url).await?;
         Ok(page)
     }
 
     /// Open a blank tab with stealth applied (no navigation).
     pub async fn new_blank_page(&self) -> Result<Page> {
-        self.new_page("about:blank").await
+        let page = {
+            let browser = self.browser.lock().await;
+            let cdp_page = browser
+                .new_page("about:blank")
+                .await
+                .map_err(|e| YosoiError::PageError(e.to_string()))?;
+            Page::new(cdp_page)
+        };
+        page.apply_stealth(&self.stealth).await?;
+        Ok(page)
     }
 
     /// List all open pages.

@@ -71,15 +71,15 @@ async def test_fetch_returns_metadata():
     assert result.metadata.content_length > 0
 
 
-async def test_fetch_invalid_url_returns_error_page():
-    """Fetching an unreachable URL returns Chrome's error page (DNS error), not a crash."""
+async def test_fetch_invalid_url_returns_error():
+    """Fetching an unreachable URL returns a clean error, not a crash."""
     async with BrowserFetcher(no_sandbox=True) as fetcher:
         result = await fetcher.fetch('https://this-domain-does-not-exist-1234567.com')
 
-    # Chrome renders its own error page for DNS failures rather than throwing.
-    # The HTML will contain Chrome's "can't be reached" error page.
-    assert result.html is not None
-    assert 'DNS' in result.html or "can't be reached" in result.html
+    # Navigation to a non-existent domain fails with a DNS resolution error.
+    assert result.html is None
+    assert result.block_reason is not None
+    assert 'ERR_NAME_NOT_RESOLVED' in result.block_reason or 'navigation failed' in result.block_reason
 
 
 # ── BrowserSession direct tests ──────────────────────────────────────────

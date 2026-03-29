@@ -8,6 +8,7 @@ use std::sync::Arc;
 
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
+use pyo3::types::PyBytes;
 use tokio::sync::Mutex;
 use yosoi_driver_core::{BrowserMode, BrowserSession, Page, StealthConfig};
 
@@ -15,6 +16,57 @@ use yosoi_driver_core::{BrowserMode, BrowserSession, Page, StealthConfig};
 
 fn to_py_err(e: yosoi_driver_core::YosoiError) -> PyErr {
     PyRuntimeError::new_err(e.to_string())
+}
+
+/// Wrapper so `Vec<u8>` converts to Python `bytes` instead of `list[int]`.
+struct PyBytesResult(Vec<u8>);
+
+impl<'py> IntoPyObject<'py> for PyBytesResult {
+    type Target = PyBytes;
+    type Output = Bound<'py, PyBytes>;
+    type Error = std::convert::Infallible;
+
+    fn into_pyobject(self, py: Python<'py>) -> std::result::Result<Self::Output, Self::Error> {
+        Ok(PyBytes::new(py, &self.0))
+    }
+}
+
+// ── Shared launch logic ─────────────────────────────────────────────────
+
+async fn do_launch(
+    inner: Arc<Mutex<Option<BrowserSession>>>,
+    mode: BrowserMode,
+    stealth_enabled: bool,
+    no_sandbox: bool,
+    proxy: Option<String>,
+    chrome_executable: Option<String>,
+    extra_args: Vec<String>,
+) -> PyResult<()> {
+    let stealth = if stealth_enabled {
+        StealthConfig::chrome_like()
+    } else {
+        StealthConfig::none()
+    };
+
+    let mut builder = BrowserSession::builder().mode(mode).stealth(stealth);
+
+    if no_sandbox {
+        builder = builder.no_sandbox();
+    }
+    if let Some(p) = proxy {
+        builder = builder.proxy(p);
+    }
+    if let Some(exe) = chrome_executable {
+        builder = builder.chrome_executable(exe);
+    }
+    for arg in extra_args {
+        builder = builder.arg(arg);
+    }
+
+    let session = builder.launch().await.map_err(to_py_err)?;
+    let mut guard = inner.lock().await;
+    *guard = Some(session);
+    Ok(())
 }
 
 // ── PyPage ──────────────────────────────────────────────────────────────
@@ -35,7 +87,7 @@ impl PyPage {
     }
 }
 
-/// Helper to run an async op on the inner page. Returns PyRuntimeError if page was closed.
+/// Run an async op on the inner page. Returns PyRuntimeError if page was closed.
 macro_rules! with_page {
     ($self:expr, $py:expr, |$page:ident| $body:expr) => {{
         let inner = Arc::clone(&$self.inner);
@@ -53,14 +105,7 @@ macro_rules! with_page {
 impl PyPage {
     /// Navigate to a URL.
     fn navigate<'py>(&self, py: Python<'py>, url: String) -> PyResult<Bound<'py, PyAny>> {
-        let inner = Arc::clone(&self.inner);
-        pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            let guard = inner.lock().await;
-            let page = guard
-                .as_ref()
-                .ok_or_else(|| PyRuntimeError::new_err("page is closed"))?;
-            page.navigate(&url).await.map_err(to_py_err)
-        })
+        with_page!(self, py, |page| page.navigate(&url))
     }
 
     /// Wait for the current navigation to complete.
@@ -92,12 +137,11 @@ impl PyPage {
                 .as_ref()
                 .ok_or_else(|| PyRuntimeError::new_err("page is closed"))?;
             let val = page.evaluate_js(&expression).await.map_err(to_py_err)?;
-            // Return as JSON string — Python side can json.loads() if needed
             Ok(val.to_string())
         })
     }
 
-    /// Take a PNG screenshot, returned as bytes.
+    /// Take a PNG screenshot, returned as Python bytes.
     fn screenshot_png<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
         let inner = Arc::clone(&self.inner);
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
@@ -106,11 +150,11 @@ impl PyPage {
                 .as_ref()
                 .ok_or_else(|| PyRuntimeError::new_err("page is closed"))?;
             let bytes = page.screenshot_png().await.map_err(to_py_err)?;
-            Ok(bytes)
+            Ok(PyBytesResult(bytes))
         })
     }
 
-    /// Generate a PDF, returned as bytes.
+    /// Generate a PDF, returned as Python bytes.
     fn pdf_bytes<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
         let inner = Arc::clone(&self.inner);
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
@@ -119,85 +163,33 @@ impl PyPage {
                 .as_ref()
                 .ok_or_else(|| PyRuntimeError::new_err("page is closed"))?;
             let bytes = page.pdf_bytes().await.map_err(to_py_err)?;
-            Ok(bytes)
+            Ok(PyBytesResult(bytes))
         })
     }
 
     /// Query for an element by CSS selector, return its inner HTML or None.
-    fn query_selector<'py>(
-        &self,
-        py: Python<'py>,
-        selector: String,
-    ) -> PyResult<Bound<'py, PyAny>> {
-        let inner = Arc::clone(&self.inner);
-        pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            let guard = inner.lock().await;
-            let page = guard
-                .as_ref()
-                .ok_or_else(|| PyRuntimeError::new_err("page is closed"))?;
-            page.query_selector(&selector).await.map_err(to_py_err)
-        })
+    fn query_selector<'py>(&self, py: Python<'py>, selector: String) -> PyResult<Bound<'py, PyAny>> {
+        with_page!(self, py, |page| page.query_selector(&selector))
     }
 
     /// Query for all matching elements, return list of inner HTML strings.
-    fn query_selector_all<'py>(
-        &self,
-        py: Python<'py>,
-        selector: String,
-    ) -> PyResult<Bound<'py, PyAny>> {
-        let inner = Arc::clone(&self.inner);
-        pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            let guard = inner.lock().await;
-            let page = guard
-                .as_ref()
-                .ok_or_else(|| PyRuntimeError::new_err("page is closed"))?;
-            page.query_selector_all(&selector).await.map_err(to_py_err)
-        })
+    fn query_selector_all<'py>(&self, py: Python<'py>, selector: String) -> PyResult<Bound<'py, PyAny>> {
+        with_page!(self, py, |page| page.query_selector_all(&selector))
     }
 
     /// Click on the first element matching a CSS selector.
-    fn click_element<'py>(
-        &self,
-        py: Python<'py>,
-        selector: String,
-    ) -> PyResult<Bound<'py, PyAny>> {
-        let inner = Arc::clone(&self.inner);
-        pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            let guard = inner.lock().await;
-            let page = guard
-                .as_ref()
-                .ok_or_else(|| PyRuntimeError::new_err("page is closed"))?;
-            page.click_element(&selector).await.map_err(to_py_err)
-        })
+    fn click_element<'py>(&self, py: Python<'py>, selector: String) -> PyResult<Bound<'py, PyAny>> {
+        with_page!(self, py, |page| page.click_element(&selector))
     }
 
     /// Type text into the first element matching a CSS selector.
-    fn type_into<'py>(
-        &self,
-        py: Python<'py>,
-        selector: String,
-        text: String,
-    ) -> PyResult<Bound<'py, PyAny>> {
-        let inner = Arc::clone(&self.inner);
-        pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            let guard = inner.lock().await;
-            let page = guard
-                .as_ref()
-                .ok_or_else(|| PyRuntimeError::new_err("page is closed"))?;
-            page.type_into(&selector, &text).await.map_err(to_py_err)
-        })
+    fn type_into<'py>(&self, py: Python<'py>, selector: String, text: String) -> PyResult<Bound<'py, PyAny>> {
+        with_page!(self, py, |page| page.type_into(&selector, &text))
     }
 
     /// Set extra HTTP headers for all subsequent requests.
     fn set_headers<'py>(&self, py: Python<'py>, headers: HashMap<String, String>) -> PyResult<Bound<'py, PyAny>> {
-        let inner = Arc::clone(&self.inner);
-        pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            let guard = inner.lock().await;
-            let page = guard
-                .as_ref()
-                .ok_or_else(|| PyRuntimeError::new_err("page is closed"))?;
-            page.set_headers(headers).await.map_err(to_py_err)
-        })
+        with_page!(self, py, |page| page.set_headers(headers))
     }
 
     /// Close this page / tab.
@@ -288,31 +280,7 @@ impl PyBrowserSession {
         let extra_args = self.extra_args.clone();
 
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            let stealth = if stealth_enabled {
-                StealthConfig::chrome_like()
-            } else {
-                StealthConfig::none()
-            };
-
-            let mut builder = BrowserSession::builder().mode(mode).stealth(stealth);
-
-            if no_sandbox {
-                builder = builder.no_sandbox();
-            }
-            if let Some(p) = proxy {
-                builder = builder.proxy(p);
-            }
-            if let Some(exe) = chrome_executable {
-                builder = builder.chrome_executable(exe);
-            }
-            for arg in extra_args {
-                builder = builder.arg(arg);
-            }
-
-            let session = builder.launch().await.map_err(to_py_err)?;
-            let mut guard = inner.lock().await;
-            *guard = Some(session);
-            Ok(())
+            do_launch(inner, mode, stealth_enabled, no_sandbox, proxy, chrome_executable, extra_args).await
         })
     }
 
@@ -346,10 +314,9 @@ impl PyBrowserSession {
         let inner = Arc::clone(&self.inner);
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
             let mut guard = inner.lock().await;
-            if let Some(session) = guard.as_ref() {
+            if let Some(session) = guard.take() {
                 session.close().await.map_err(to_py_err)?;
             }
-            *guard = None;
             Ok(())
         })
     }
@@ -357,45 +324,22 @@ impl PyBrowserSession {
     // ── async context manager ───────────────────────────────────────────
 
     fn __aenter__<'py>(slf: Bound<'py, Self>, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
-        let inner = {
+        let (inner, mode, stealth_enabled, no_sandbox, proxy, chrome_executable, extra_args) = {
             let this = slf.borrow();
-            Arc::clone(&this.inner)
+            (
+                Arc::clone(&this.inner),
+                this.mode.clone(),
+                this.stealth_enabled,
+                this.no_sandbox,
+                this.proxy.clone(),
+                this.chrome_executable.clone(),
+                this.extra_args.clone(),
+            )
         };
-        let mode = slf.borrow().mode.clone();
-        let stealth_enabled = slf.borrow().stealth_enabled;
-        let no_sandbox = slf.borrow().no_sandbox;
-        let proxy = slf.borrow().proxy.clone();
-        let chrome_executable = slf.borrow().chrome_executable.clone();
-        let extra_args = slf.borrow().extra_args.clone();
-
-        let slf_ref: Py<PyAny> = slf.into_any().unbind();
+        let slf_ref = slf.into_any().unbind();
 
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            let stealth = if stealth_enabled {
-                StealthConfig::chrome_like()
-            } else {
-                StealthConfig::none()
-            };
-
-            let mut builder = BrowserSession::builder().mode(mode).stealth(stealth);
-
-            if no_sandbox {
-                builder = builder.no_sandbox();
-            }
-            if let Some(p) = proxy {
-                builder = builder.proxy(p);
-            }
-            if let Some(exe) = chrome_executable {
-                builder = builder.chrome_executable(exe);
-            }
-            for arg in extra_args {
-                builder = builder.arg(arg);
-            }
-
-            let session = builder.launch().await.map_err(to_py_err)?;
-            let mut guard = inner.lock().await;
-            *guard = Some(session);
-
+            do_launch(inner, mode, stealth_enabled, no_sandbox, proxy, chrome_executable, extra_args).await?;
             Ok(slf_ref)
         })
     }
@@ -411,10 +355,9 @@ impl PyBrowserSession {
         let inner = Arc::clone(&self.inner);
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
             let mut guard = inner.lock().await;
-            if let Some(session) = guard.as_ref() {
+            if let Some(session) = guard.take() {
                 let _ = session.close().await;
             }
-            *guard = None;
             Ok(false) // don't suppress exceptions
         })
     }
