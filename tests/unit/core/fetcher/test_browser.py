@@ -110,7 +110,7 @@ async def test_browser_session_direct():
 
         # JS evaluation
         js_result = await page.evaluate_js('1 + 1')
-        assert js_result == '2'
+        assert js_result == 2
 
         # Query selector
         h1_html = await page.query_selector('h1')

@@ -292,20 +292,30 @@ impl Page {
     /// Run `document.querySelectorAll(selector)` and return inner HTML of each.
     /// One entry is returned per matched element; void elements yield `""`.
     pub async fn query_selector_all(&self, selector: &str) -> Result<Vec<String>> {
-        let elements = self
+        // Single JS eval returns all innerHTML at once — avoids N serial CDP
+        // round-trips (one per element) that the old find_elements approach needed.
+        let js = format!(
+            "[...document.querySelectorAll({:?})].map(e => e.innerHTML)",
+            selector
+        );
+        let val: serde_json::Value = self
             .inner
-            .find_elements(selector)
+            .evaluate_expression(js)
             .await
+            .map_err(|e| YosoiError::PageError(e.to_string()))?
+            .into_value()
             .map_err(|e| YosoiError::PageError(e.to_string()))?;
 
-        let mut results = Vec::with_capacity(elements.len());
-        for el in elements {
-            match el.inner_html().await {
-                Ok(html) => results.push(html.unwrap_or_default()),
-                Err(_) => results.push(String::new()),
-            }
+        match val {
+            serde_json::Value::Array(arr) => Ok(arr
+                .into_iter()
+                .map(|v| match v {
+                    serde_json::Value::String(s) => s,
+                    other => other.to_string(),
+                })
+                .collect()),
+            _ => Ok(Vec::new()),
         }
-        Ok(results)
     }
 
     // ── Interaction ─────────────────────────────────────────────────────

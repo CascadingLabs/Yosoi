@@ -306,9 +306,7 @@ impl BrowserPool {
         // Hard recycle if this tab is worn out
         if tab.use_count >= self.config.tab_max_uses {
             let browser_idx = tab.browser_idx;
-            // Close the old tab (consumes `page`)
             let _ = tab.page.close().await;
-            // Open a fresh replacement
             let page = self.sessions[browser_idx].new_blank_page().await?;
             return Ok(PooledTab {
                 page,
@@ -318,15 +316,21 @@ impl BrowserPool {
             });
         }
 
+        // Lazy cleanup: navigate reused tabs to about:blank to clear prior state.
+        // This was previously done in release() but is deferred here so that
+        // release() returns instantly without blocking on a CDP round-trip.
+        if tab.use_count > 0 {
+            tab.page.navigate("about:blank").await?;
+        }
+
         Ok(tab)
     }
 
     /// Return a tab to the pool after use.
     ///
-    /// Navigates the tab to `about:blank` to clear state, then pushes it
-    /// back into the ready queue.
+    /// Instant return — no CDP round-trip. State cleanup (navigate to
+    /// `about:blank`) is deferred to the next [`acquire()`](Self::acquire).
     pub async fn release(&self, mut tab: PooledTab) -> Result<()> {
-        tab.page.navigate("about:blank").await?;
         tab.use_count += 1;
         tab.last_used = Instant::now();
 

@@ -9,7 +9,7 @@ use std::time::Duration;
 
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
-use pyo3::types::PyBytes;
+use pyo3::types::{PyBytes, PyDict, PyList};
 use tokio::sync::Mutex;
 use yosoi_driver_core::{BrowserMode, BrowserPool, BrowserSession, Page, PooledTab, StealthConfig};
 
@@ -22,6 +22,11 @@ fn to_py_err(e: yosoi_driver_core::YosoiError) -> PyErr {
 /// Wrapper so `Vec<u8>` converts to Python `bytes` instead of `list[int]`.
 struct PyBytesResult(Vec<u8>);
 
+/// Wrapper for direct `serde_json::Value` → Python object conversion.
+///
+/// Avoids the double-serialization of `val.to_string()` → `PyString`.
+struct PyJsonValue(serde_json::Value);
+
 impl<'py> IntoPyObject<'py> for PyBytesResult {
     type Target = PyBytes;
     type Output = Bound<'py, PyBytes>;
@@ -29,6 +34,48 @@ impl<'py> IntoPyObject<'py> for PyBytesResult {
 
     fn into_pyobject(self, py: Python<'py>) -> std::result::Result<Self::Output, Self::Error> {
         Ok(PyBytes::new(py, &self.0))
+    }
+}
+
+impl<'py> IntoPyObject<'py> for PyJsonValue {
+    type Target = PyAny;
+    type Output = Bound<'py, PyAny>;
+    type Error = PyErr;
+
+    fn into_pyobject(self, py: Python<'py>) -> PyResult<Self::Output> {
+        json_to_py(py, self.0)
+    }
+}
+
+/// Convert `serde_json::Value` directly to a Python object.
+fn json_to_py<'py>(py: Python<'py>, val: serde_json::Value) -> PyResult<Bound<'py, PyAny>> {
+    match val {
+        serde_json::Value::Null => Ok(py.None().into_bound(py)),
+        serde_json::Value::Bool(b) => Ok(b.into_pyobject(py)?.to_owned().into_any()),
+        serde_json::Value::Number(n) => {
+            if let Some(i) = n.as_i64() {
+                Ok(i.into_pyobject(py)?.into_any())
+            } else if let Some(f) = n.as_f64() {
+                Ok(f.into_pyobject(py)?.into_any())
+            } else {
+                Ok(py.None().into_bound(py))
+            }
+        }
+        serde_json::Value::String(s) => Ok(s.into_pyobject(py)?.into_any()),
+        serde_json::Value::Array(arr) => {
+            let list = PyList::empty(py);
+            for item in arr {
+                list.append(json_to_py(py, item)?)?;
+            }
+            Ok(list.into_any())
+        }
+        serde_json::Value::Object(map) => {
+            let dict = PyDict::new(py);
+            for (k, v) in map {
+                dict.set_item(k, json_to_py(py, v)?)?;
+            }
+            Ok(dict.into_any())
+        }
     }
 }
 
@@ -88,16 +135,26 @@ impl PyPage {
     }
 }
 
-/// Run an async op on the inner page. Returns PyRuntimeError if page was closed.
+/// Run an async op on the inner page using take-work-replace pattern.
+///
+/// The Mutex is held only for microseconds (take/replace), NOT during
+/// the async CDP operation itself. This eliminates lock contention.
 macro_rules! with_page {
     ($self:expr, $py:expr, |$page:ident| $body:expr) => {{
         let inner = Arc::clone(&$self.inner);
         pyo3_async_runtimes::tokio::future_into_py($py, async move {
-            let guard = inner.lock().await;
-            let $page = guard
-                .as_ref()
+            // Take page out — µs lock hold
+            let page = inner.lock().await
+                .take()
                 .ok_or_else(|| PyRuntimeError::new_err("page is closed"))?;
-            $body.await.map_err(to_py_err)
+            // Work without holding the lock
+            let result = {
+                let $page = &page;
+                $body.await.map_err(to_py_err)
+            };
+            // Put page back — µs lock hold
+            inner.lock().await.replace(page);
+            result
         })
     }};
 }
@@ -129,16 +186,17 @@ impl PyPage {
         with_page!(self, py, |page| page.url())
     }
 
-    /// Evaluate a JavaScript expression and return the result as a string (JSON).
+    /// Evaluate a JavaScript expression and return the result as a native Python object.
+    ///
+    /// JSON objects → dict, arrays → list, strings → str, numbers → int/float, etc.
     fn evaluate_js<'py>(&self, py: Python<'py>, expression: String) -> PyResult<Bound<'py, PyAny>> {
         let inner = Arc::clone(&self.inner);
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            let guard = inner.lock().await;
-            let page = guard
-                .as_ref()
+            let page = inner.lock().await.take()
                 .ok_or_else(|| PyRuntimeError::new_err("page is closed"))?;
-            let val = page.evaluate_js(&expression).await.map_err(to_py_err)?;
-            Ok(val.to_string())
+            let result = page.evaluate_js(&expression).await.map_err(to_py_err);
+            inner.lock().await.replace(page);
+            Ok(PyJsonValue(result?))
         })
     }
 
@@ -146,12 +204,11 @@ impl PyPage {
     fn screenshot_png<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
         let inner = Arc::clone(&self.inner);
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            let guard = inner.lock().await;
-            let page = guard
-                .as_ref()
+            let page = inner.lock().await.take()
                 .ok_or_else(|| PyRuntimeError::new_err("page is closed"))?;
-            let bytes = page.screenshot_png().await.map_err(to_py_err)?;
-            Ok(PyBytesResult(bytes))
+            let result = page.screenshot_png().await.map_err(to_py_err);
+            inner.lock().await.replace(page);
+            Ok(PyBytesResult(result?))
         })
     }
 
@@ -159,12 +216,11 @@ impl PyPage {
     fn pdf_bytes<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
         let inner = Arc::clone(&self.inner);
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            let guard = inner.lock().await;
-            let page = guard
-                .as_ref()
+            let page = inner.lock().await.take()
                 .ok_or_else(|| PyRuntimeError::new_err("page is closed"))?;
-            let bytes = page.pdf_bytes().await.map_err(to_py_err)?;
-            Ok(PyBytesResult(bytes))
+            let result = page.pdf_bytes().await.map_err(to_py_err);
+            inner.lock().await.replace(page);
+            Ok(PyBytesResult(result?))
         })
     }
 
@@ -207,17 +263,17 @@ impl PyPage {
     ) -> PyResult<Bound<'py, PyAny>> {
         let inner = Arc::clone(&self.inner);
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            let guard = inner.lock().await;
-            let page = guard
-                .as_ref()
+            let page = inner.lock().await.take()
                 .ok_or_else(|| PyRuntimeError::new_err("page is closed"))?;
-            page.wait_for_stable_dom(
+            let result = page.wait_for_stable_dom(
                 Duration::from_secs_f64(timeout),
                 min_length,
                 stable_checks,
             )
             .await
-            .map_err(to_py_err)
+            .map_err(to_py_err);
+            inner.lock().await.replace(page);
+            result
         })
     }
 
@@ -233,13 +289,13 @@ impl PyPage {
     ) -> PyResult<Bound<'py, PyAny>> {
         let inner = Arc::clone(&self.inner);
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            let guard = inner.lock().await;
-            let page = guard
-                .as_ref()
+            let page = inner.lock().await.take()
                 .ok_or_else(|| PyRuntimeError::new_err("page is closed"))?;
-            page.wait_for_network_idle(Duration::from_secs_f64(timeout))
+            let result = page.wait_for_network_idle(Duration::from_secs_f64(timeout))
                 .await
-                .map_err(to_py_err)
+                .map_err(to_py_err);
+            inner.lock().await.replace(page);
+            result
         })
     }
 
@@ -445,16 +501,20 @@ pub struct PyPooledTab {
 }
 
 /// Helper macro: run an async op on the page inside the pooled tab.
+/// Uses take-work-replace to minimize lock hold time.
 macro_rules! with_pooled_page {
     ($self:expr, $py:expr, |$page:ident| $body:expr) => {{
         let inner = Arc::clone(&$self.inner);
         pyo3_async_runtimes::tokio::future_into_py($py, async move {
-            let guard = inner.lock().await;
-            let tab = guard
-                .as_ref()
+            let tab = inner.lock().await
+                .take()
                 .ok_or_else(|| PyRuntimeError::new_err("tab has been released"))?;
-            let $page = &tab.page;
-            $body.await.map_err(to_py_err)
+            let result = {
+                let $page = &tab.page;
+                $body.await.map_err(to_py_err)
+            };
+            inner.lock().await.replace(tab);
+            result
         })
     }};
 }
@@ -484,24 +544,22 @@ impl PyPooledTab {
     fn evaluate_js<'py>(&self, py: Python<'py>, expression: String) -> PyResult<Bound<'py, PyAny>> {
         let inner = Arc::clone(&self.inner);
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            let guard = inner.lock().await;
-            let tab = guard
-                .as_ref()
+            let tab = inner.lock().await.take()
                 .ok_or_else(|| PyRuntimeError::new_err("tab has been released"))?;
-            let val = tab.page.evaluate_js(&expression).await.map_err(to_py_err)?;
-            Ok(val.to_string())
+            let result = tab.page.evaluate_js(&expression).await.map_err(to_py_err);
+            inner.lock().await.replace(tab);
+            Ok(PyJsonValue(result?))
         })
     }
 
     fn screenshot_png<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
         let inner = Arc::clone(&self.inner);
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            let guard = inner.lock().await;
-            let tab = guard
-                .as_ref()
+            let tab = inner.lock().await.take()
                 .ok_or_else(|| PyRuntimeError::new_err("tab has been released"))?;
-            let bytes = tab.page.screenshot_png().await.map_err(to_py_err)?;
-            Ok(PyBytesResult(bytes))
+            let result = tab.page.screenshot_png().await.map_err(to_py_err);
+            inner.lock().await.replace(tab);
+            Ok(PyBytesResult(result?))
         })
     }
 
@@ -538,18 +596,18 @@ impl PyPooledTab {
     ) -> PyResult<Bound<'py, PyAny>> {
         let inner = Arc::clone(&self.inner);
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            let guard = inner.lock().await;
-            let tab = guard
-                .as_ref()
+            let tab = inner.lock().await.take()
                 .ok_or_else(|| PyRuntimeError::new_err("tab has been released"))?;
-            tab.page
+            let result = tab.page
                 .wait_for_stable_dom(
                     Duration::from_secs_f64(timeout),
                     min_length,
                     stable_checks,
                 )
                 .await
-                .map_err(to_py_err)
+                .map_err(to_py_err);
+            inner.lock().await.replace(tab);
+            result
         })
     }
 
@@ -565,14 +623,14 @@ impl PyPooledTab {
     ) -> PyResult<Bound<'py, PyAny>> {
         let inner = Arc::clone(&self.inner);
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            let guard = inner.lock().await;
-            let tab = guard
-                .as_ref()
+            let tab = inner.lock().await.take()
                 .ok_or_else(|| PyRuntimeError::new_err("tab has been released"))?;
-            tab.page
+            let result = tab.page
                 .wait_for_network_idle(Duration::from_secs_f64(timeout))
                 .await
-                .map_err(to_py_err)
+                .map_err(to_py_err);
+            inner.lock().await.replace(tab);
+            result
         })
     }
 
