@@ -1,0 +1,138 @@
+# ── Stage 1: Build the Rust extension ────────────────────────────────────
+# Use debian:sid-slim as builder too so the Python ABI matches runtime.
+FROM debian:sid-slim AS builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl build-essential pkg-config libssl-dev \
+    python3 python3-dev python3-venv python3-pip && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install Rust
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+# Install maturin
+RUN pip install --no-cache-dir --break-system-packages maturin
+
+WORKDIR /build
+
+# Copy workspace files
+COPY yosoi_driver/Cargo.toml yosoi_driver/Cargo.toml
+COPY yosoi_driver/crates/ yosoi_driver/crates/
+COPY yosoi_driver/pyproject.toml yosoi_driver/pyproject.toml
+COPY yosoi_driver/LICENSE.md yosoi_driver/LICENSE.md
+COPY yosoi_driver/yosoi_driver.pyi yosoi_driver/yosoi_driver.pyi
+
+# Build the wheel (uses system Python which matches runtime stage)
+RUN cd yosoi_driver && \
+    maturin build --release --manifest-path crates/pyo3_bindings/Cargo.toml -o /wheels
+
+# ── Stage 2: Runtime — Sway + wayvnc + Chrome headful + GPU drivers ─────
+FROM debian:sid-slim
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# ── GPU drivers for all vendors + Sway + wayvnc + Chrome deps ───────────
+# Install sway + wayvnc first — let apt resolve the Mesa dependency tree
+# without us pinning conflicting versions.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    sway swaybg wayvnc \
+    && rm -rf /var/lib/apt/lists/*
+
+# GPU drivers (AMD/Intel via Mesa, NVIDIA EGL injected at runtime)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    mesa-vulkan-drivers \
+    && rm -rf /var/lib/apt/lists/*
+
+# Python + Chrome deps + infra
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 python3-venv python3-pip \
+    fonts-liberation \
+    libnss3 \
+    libatk-bridge2.0-0 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxrandr2 \
+    libasound2t64 \
+    libpangocairo-1.0-0 \
+    libgtk-3-0t64 \
+    libxkbcommon0 \
+    supervisor \
+    curl \
+    ca-certificates \
+    gnupg \
+    procps \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── Install Google Chrome stable ─────────────────────────────────────────
+RUN curl -fsSL https://dl.google.com/linux/linux_signing_key.pub \
+      | gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg && \
+    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] \
+      http://dl.google.com/linux/chrome/deb/ stable main" \
+      > /etc/apt/sources.list.d/google-chrome.list && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends google-chrome-stable && \
+    rm -rf /var/lib/apt/lists/*
+
+# ── Install noVNC (browser-based VNC client) ───────────────────────────────
+# noVNC lets you view Chrome at http://localhost:6080 in any browser.
+# No VNC client software needed — just open the URL.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    novnc python3-websockify && \
+    rm -rf /var/lib/apt/lists/* && \
+    ln -sf /usr/share/novnc/vnc.html /usr/share/novnc/index.html
+
+# ── Install uv ───────────────────────────────────────────────────────────
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+WORKDIR /app
+
+# Install Python dependencies
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-dev --no-install-project --python python3
+
+# Install the pre-built Rust extension
+COPY --from=builder /wheels/*.whl /tmp/wheels/
+RUN uv pip install /tmp/wheels/*.whl && rm -rf /tmp/wheels
+
+# Copy application code
+COPY yosoi/ yosoi/
+
+# ── Sway + supervisord configs ───────────────────────────────────────────
+COPY docker/config/sway-headful /etc/sway/config
+COPY docker/config/supervisord-headful.conf /etc/supervisor/conf.d/supervisord.conf
+COPY docker/entrypoint-headful.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+# Create runtime dirs
+RUN mkdir -p /tmp/xdg-runtime /tmp/chrome-profile-1 /tmp/chrome-profile-2
+
+# ── Environment ──────────────────────────────────────────────────────────
+ENV XDG_RUNTIME_DIR=/tmp/xdg-runtime \
+    WLR_BACKENDS=headless \
+    WLR_LIBINPUT_NO_DEVICES=1 \
+    WLR_NO_HARDWARE_CURSORS=1 \
+    LIBSEAT_BACKEND=noop \
+    XDG_SESSION_TYPE=wayland \
+    # CDP ports (avoid conflicts with native Chrome on 9222/9223)
+    CDP_PORT_1=19222 \
+    CDP_PORT_2=19223 \
+    # yd pool config
+    CHROME_WS_URLS="http://localhost:19222,http://localhost:19223" \
+    BROWSER_COUNT=2 \
+    TABS_PER_BROWSER=4 \
+    TAB_MAX_USES=50 \
+    TAB_MAX_IDLE_SECS=60 \
+    CHROME_NO_SANDBOX=1 \
+    # VNC defaults
+    VNC_PORT=5900 \
+    NOVNC_PORT=6080 \
+    VNC_WIDTH=1920 \
+    VNC_HEIGHT=1080
+
+EXPOSE 19222 19223 5900 6080
+
+HEALTHCHECK --interval=10s --timeout=5s --start-period=15s --retries=3 \
+    CMD curl -sf http://localhost:19222/json/version && curl -sf http://localhost:19223/json/version
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

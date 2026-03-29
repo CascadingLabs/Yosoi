@@ -1,0 +1,21 @@
+# Minimal Sway config for headful Chrome inside a container.
+# No keybindings, decorations, or desktop features needed —
+# this just provides a Wayland compositor for Chrome to render into.
+
+# Virtual output sized to VNC resolution (set by entrypoint)
+output HEADLESS-1 resolution 1920x1080
+
+# No titlebars, no borders — Chrome is the only window
+default_border none
+default_floating_border none
+titlebar_border_thickness 0
+titlebar_padding 0 0
+
+# Dark background so VNC shows something sane before Chrome starts
+output * bg #1a1a2e solid_color
+
+# Fullscreen any new window automatically
+for_window [app_id=".*"] fullscreen enable
+
+# No idle/screen lock
+exec_always swaymsg output HEADLESS-1 dpms on

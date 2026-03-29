@@ -1,0 +1,95 @@
+# Headful Chrome with Sway + wayvnc + GPU acceleration.
+#
+# Usage (one-click):
+#   docker compose -f docker/docker-compose.headful.yml --profile amd up --build
+#   docker compose -f docker/docker-compose.headful.yml --profile nvidia up --build
+#   docker compose -f docker/docker-compose.headful.yml --profile intel up --build
+#   docker compose -f docker/docker-compose.headful.yml --profile cpu up --build
+#
+# Then connect a VNC client to localhost:5900
+# CDP endpoints at localhost:19222 and localhost:19223
+#
+# Override resolution:
+#   VNC_WIDTH=2560 VNC_HEIGHT=1440 docker compose ...
+
+x-common: &common
+  build:
+    context: ..
+    dockerfile: docker/Dockerfile.headful
+  environment:
+    CDP_PORT_1: "19222"
+    CDP_PORT_2: "19223"
+    CHROME_WS_URLS: "http://localhost:19222,http://localhost:19223"
+    BROWSER_COUNT: "2"
+    TABS_PER_BROWSER: "4"
+    TAB_MAX_USES: "50"
+    TAB_MAX_IDLE_SECS: "60"
+    CHROME_NO_SANDBOX: "1"
+    VNC_PORT: "5900"
+    NOVNC_PORT: "6080"
+    VNC_WIDTH: "${VNC_WIDTH:-1920}"
+    VNC_HEIGHT: "${VNC_HEIGHT:-1080}"
+  # Host networking so Chrome's localhost:19222 is directly accessible.
+  # Chrome ignores --remote-debugging-address in recent versions,
+  # always binding to 127.0.0.1 — host networking works around this.
+  network_mode: host
+  shm_size: "2gb"
+  healthcheck:
+    test: >
+      curl -sf http://localhost:19222/json/version &&
+      curl -sf http://localhost:19223/json/version
+    interval: 10s
+    timeout: 5s
+    start_period: 15s
+    retries: 3
+
+services:
+  # ── AMD (iGPU + discrete) ────────────────────────────────────────────
+  yosoi-amd:
+    <<: *common
+    profiles: ["amd"]
+    devices:
+      - /dev/dri:/dev/dri
+
+  # ── NVIDIA ───────────────────────────────────────────────────────────
+  # Requires: nvidia-container-toolkit installed on host
+  # Requires: nvidia-drm.modeset=1 kernel param on host
+  yosoi-nvidia:
+    <<: *common
+    profiles: ["nvidia"]
+    devices:
+      - /dev/dri:/dev/dri
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  # ── Intel (iGPU) ────────────────────────────────────────────────────
+  yosoi-intel:
+    <<: *common
+    profiles: ["intel"]
+    devices:
+      - /dev/dri:/dev/dri
+
+  # ── CPU-only (no GPU, software rendering) ───────────────────────────
+  yosoi-cpu:
+    <<: *common
+    profiles: ["cpu"]
+    environment:
+      CDP_PORT_1: "19222"
+      CDP_PORT_2: "19223"
+      CHROME_WS_URLS: "http://localhost:19222,http://localhost:19223"
+      BROWSER_COUNT: "2"
+      TABS_PER_BROWSER: "4"
+      TAB_MAX_USES: "50"
+      TAB_MAX_IDLE_SECS: "60"
+      CHROME_NO_SANDBOX: "1"
+      VNC_PORT: "5900"
+      NOVNC_PORT: "6080"
+      VNC_WIDTH: "${VNC_WIDTH:-1920}"
+      VNC_HEIGHT: "${VNC_HEIGHT:-1080}"
+      WLR_RENDERER: "pixman"
+      WLR_RENDERER_ALLOW_SOFTWARE: "1"

@@ -156,7 +156,7 @@ async fn main() -> yosoi_driver_core::Result<()> {
 }
 ```
 
-### Docker
+### Docker (headless)
 
 ```bash
 cd docker
@@ -166,6 +166,27 @@ docker compose up -d
 export CHROME_WS_URLS="http://localhost:9222,http://localhost:9223"
 uv run python examples/pool_usage.py
 ```
+
+### Docker headful (GPU + VNC)
+
+Run Chrome with a real GUI inside Docker. Uses Sway as a Wayland compositor
+and wayvnc to stream the display. Your GPU is passed through for hardware
+rendering. Connect a VNC client to `localhost:5900` to watch Chrome work.
+
+```bash
+# One-click — auto-detects GPU (AMD/Intel/NVIDIA)
+./docker/run-headful.sh
+
+# Then connect to the Docker Chrome from Python:
+CHROME_WS_URLS="http://localhost:19222,http://localhost:19223" \
+  uv run python yosoi_driver/examples/docker_headful.py
+
+# Watch Chrome live in your browser:
+#   Open http://localhost:6080 and click Connect
+#   (Or use a VNC client on localhost:5900)
+```
+
+See [docs/docker-headful.md](docs/docker-headful.md) for the full guide.
 
 ## API Reference
 
@@ -220,12 +241,14 @@ BrowserSession(
 ### `Page` (Python)
 
 **Methods** (all async):
-- `navigate(url: str)` — Navigate to a new URL
+- `goto(url: str, timeout: float = 30.0) -> str | None` — Navigate + wait for network idle in one shot. Returns `"networkIdle"`, `"networkAlmostIdle"`, or `None` on timeout
+- `navigate(url: str)` — Navigate to a new URL (no waiting)
 - `wait_for_navigation()` — Wait for current navigation to complete
+- `wait_for_network_idle(timeout: float = 30.0) -> str | None` — Event-driven wait for network idle
 - `content() -> str` — Full page HTML
 - `title() -> str | None` — Page title
 - `url() -> str | None` — Current URL
-- `evaluate_js(expression: str) -> str` — Evaluate JS, returns JSON string
+- `evaluate_js(expression: str) -> object` — Evaluate JS, returns native Python types (dict/list/str/int/float/bool/None)
 - `screenshot_png() -> bytes` — Full-page PNG screenshot
 - `pdf_bytes() -> bytes` — PDF of the page
 - `query_selector(selector: str) -> str | None` — Inner HTML of first match

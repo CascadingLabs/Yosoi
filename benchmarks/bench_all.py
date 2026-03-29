@@ -36,7 +36,7 @@ URL = 'https://en.wikipedia.org/wiki/Web_scraping'
 
 MIN_CONTENT_LEN = 10_000
 
-ALL_ENGINES = ['yd', 'playwright', 'puppeteer', 'zendriver', 'nodriver']
+ALL_ENGINES = ['yd', 'yd-docker', 'playwright', 'puppeteer', 'zendriver', 'nodriver']
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────
@@ -453,6 +453,169 @@ async def bench_nodriver(url: str, runs: int, parallel: int, *, headless: bool =
     return r
 
 
+# ── YD Docker headful benchmark ──────────────────────────────────────────
+
+
+async def _docker_compose_up(compose_file: str, profile: str) -> None:
+    """Start docker compose and wait for Chrome to be ready."""
+    proc = await asyncio.create_subprocess_exec(
+        'docker',
+        'compose',
+        '-f',
+        compose_file,
+        '--profile',
+        profile,
+        'up',
+        '-d',
+        '--build',
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    _, stderr = await proc.communicate()
+    if proc.returncode != 0:
+        raise RuntimeError(f'docker compose up failed: {stderr.decode()}')
+
+
+async def _docker_compose_down(compose_file: str, profile: str) -> None:
+    """Tear down the docker compose stack."""
+    proc = await asyncio.create_subprocess_exec(
+        'docker',
+        'compose',
+        '-f',
+        compose_file,
+        '--profile',
+        profile,
+        'down',
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    await proc.communicate()
+
+
+async def _wait_for_chrome_in_docker(ws_urls: list[str], timeout: float = 60) -> None:
+    """Poll Chrome CDP endpoints inside docker until they respond."""
+    deadline = time.time() + timeout
+    for ws_url in ws_urls:
+        version_url = f'{ws_url}/json/version'
+        while time.time() < deadline:
+            try:
+                proc = await asyncio.create_subprocess_exec(
+                    'curl',
+                    '-sf',
+                    version_url,
+                    stdout=asyncio.subprocess.DEVNULL,
+                    stderr=asyncio.subprocess.DEVNULL,
+                )
+                ret = await proc.wait()
+                if ret == 0:
+                    break
+            except OSError:
+                pass
+            await asyncio.sleep(0.5)
+        else:
+            raise TimeoutError(f'Chrome at {ws_url} not ready after {timeout}s')
+
+
+def _detect_gpu_profile() -> str:
+    """Auto-detect the GPU profile matching run-headful.sh logic."""
+    render_node = Path('/sys/class/drm/renderD128/device/driver')
+    if render_node.exists():
+        driver = render_node.resolve().name
+        if driver == 'amdgpu':
+            return 'amd'
+        if driver in ('i915', 'xe'):
+            return 'intel'
+        if driver == 'nvidia':
+            return 'nvidia'
+    if Path('/dev/nvidia0').exists():
+        return 'nvidia'
+    return 'cpu'
+
+
+async def bench_yd_docker(
+    url: str,
+    runs: int,
+    parallel: int,
+    *,
+    headless: bool = False,
+) -> Result:
+    """Run yd benchmark against Chrome running headful inside Docker with GPU + Sway + VNC."""
+    import yosoi_driver
+
+    compose_file = str(Path(__file__).parent.parent / 'docker' / 'docker-compose.headful.yml')
+    gpu_profile = _detect_gpu_profile()
+    label = f'yd docker-headful ({gpu_profile} GPU, sway+wayvnc)'
+
+    r = Result(label)
+    gc.collect()
+    py_rss_before = _rss_mb()
+
+    # Start Docker container
+    t0 = time.perf_counter()
+    print(f'  Starting Docker container (profile={gpu_profile})...')
+    await _docker_compose_up(compose_file, gpu_profile)
+
+    ws_urls = ['http://localhost:19222', 'http://localhost:19223']
+    await _wait_for_chrome_in_docker(ws_urls)
+    r.cold_start = time.perf_counter() - t0
+    print(f'  Docker container ready in {r.cold_start:.2f}s')
+
+    # Connect yd pool to the Docker Chrome instances
+    os.environ['CHROME_WS_URLS'] = ','.join(ws_urls)
+    os.environ['TABS_PER_BROWSER'] = str(max(parallel, 2))
+
+    pool_cls = yosoi_driver.BrowserPool
+    pool_ctx = await pool_cls.from_env()
+    pool = await pool_ctx.__aenter__()
+
+    async def _fetch(pool_ref: object) -> tuple[int, float, bool, str]:
+        t = time.perf_counter()
+        async with await pool_ref.acquire() as tab:  # type: ignore[union-attr]
+            event = await tab.goto(url, timeout=30.0)
+            html = await tab.content()
+        elapsed = time.perf_counter() - t
+        blocked = not event or 'Access Denied' in html or len(html) < MIN_CONTENT_LEN
+        return len(html), elapsed, blocked, event or 'timeout'
+
+    try:
+        for i in range(runs):
+            length, elapsed, blocked, event = await _fetch(pool)
+            r.single_fetches.append(elapsed)
+            r.html_lengths.append(length)
+            r.wait_events.append(event)
+            if blocked:
+                r.blocked += 1
+            r.seq_chrome_rss_peak = max(r.seq_chrome_rss_peak, _all_chrome_rss_mb())
+            status = 'BLOCKED' if blocked else f'{length:,} chars'
+            print(f'  yd-docker [{i + 1}/{runs}]: {elapsed:.2f}s  {status}  ({event})')
+
+        if parallel > 1:
+            print(f'  yd-docker parallel [{parallel} tabs]...')
+            t2 = time.perf_counter()
+            results = await asyncio.gather(*[_fetch(pool) for _ in range(parallel)])
+            r.parallel_time = time.perf_counter() - t2
+            r.parallel_count = parallel
+            for length, elapsed, blocked, event in results:
+                r.html_lengths.append(length)
+                r.wait_events.append(event)
+                if blocked:
+                    r.blocked += 1
+                status = 'BLOCKED' if blocked else f'{length:,} chars'
+                print(f'    tab: {elapsed:.2f}s  {status}  ({event})')
+            r.par_chrome_rss_peak = _all_chrome_rss_mb()
+    finally:
+        await pool_ctx.__aexit__(None, None, None)
+        # Clean env vars
+        os.environ.pop('CHROME_WS_URLS', None)
+        os.environ.pop('TABS_PER_BROWSER', None)
+        # Tear down Docker
+        print('  Tearing down Docker container...')
+        await _docker_compose_down(compose_file, gpu_profile)
+
+    r.python_rss_delta = _rss_mb() - py_rss_before
+    return r
+
+
 # ── Comparison ───────────────────────────────────────────────────────────
 
 
@@ -484,6 +647,62 @@ def _print_comparison(yd_r: Result, other: Result) -> None:
 
 
 # ── Main ─────────────────────────────────────────────────────────────────
+
+
+async def _run_engines(
+    engines: list[str],
+    args: argparse.Namespace,
+) -> tuple[list[Result], list[Result]]:
+    """Execute each requested engine benchmark and return (all_results, yd_results)."""
+    all_results: list[Result] = []
+    yd_results: list[Result] = []
+
+    if 'yd' in engines:
+        yd_modes = ['full', 'balanced', 'lite'] if args.yd_mode == 'all' else [args.yd_mode]
+        for mode in yd_modes:
+            print(f'--- yd/{mode} {"─" * 45}')
+            result = await bench_yd(args.url, args.runs, args.parallel, mode, headless=args.headless)
+            yd_results.append(result)
+            all_results.append(result)
+            gc.collect()
+            await asyncio.sleep(1)
+
+    if 'yd-docker' in engines:
+        print(f'\n--- yd-docker {"─" * 43}')
+        result = await bench_yd_docker(args.url, args.runs, args.parallel, headless=args.headless)
+        yd_results.append(result)
+        all_results.append(result)
+        gc.collect()
+        await asyncio.sleep(1)
+
+    if 'playwright' in engines:
+        print(f'\n--- playwright {"─" * 42}')
+        result = await bench_playwright(args.url, args.runs, args.parallel, headless=args.headless)
+        all_results.append(result)
+        gc.collect()
+        await asyncio.sleep(1)
+
+    if 'puppeteer' in engines:
+        print(f'\n--- puppeteer {"─" * 43}')
+        result = await bench_puppeteer(args.url, args.runs, args.parallel, headless=args.headless)
+        all_results.append(result)
+        gc.collect()
+        await asyncio.sleep(1)
+
+    if 'zendriver' in engines:
+        print(f'\n--- zendriver {"─" * 43}')
+        result = await bench_zendriver(args.url, args.runs, args.parallel, headless=args.headless)
+        all_results.append(result)
+        gc.collect()
+        await asyncio.sleep(1)
+
+    if 'nodriver' in engines:
+        print(f'\n--- nodriver {"─" * 44}')
+        result = await bench_nodriver(args.url, args.runs, args.parallel, headless=args.headless)
+        all_results.append(result)
+        gc.collect()
+
+    return all_results, yd_results
 
 
 async def main() -> None:
@@ -518,50 +737,7 @@ async def main() -> None:
     if baseline_chrome > 0:
         print(f'Note: {baseline_chrome:.0f} MB of existing Chrome processes detected\n')
 
-    all_results: list[Result] = []
-    yd_results: list[Result] = []
-
-    # ── yd benchmarks ─────────────────────────────────────────────
-    if 'yd' in engines:
-        yd_modes = ['full', 'balanced', 'lite'] if args.yd_mode == 'all' else [args.yd_mode]
-        for mode in yd_modes:
-            print(f'--- yd/{mode} {"─" * 45}')
-            result = await bench_yd(args.url, args.runs, args.parallel, mode, headless=args.headless)
-            yd_results.append(result)
-            all_results.append(result)
-            gc.collect()
-            await asyncio.sleep(1)  # let Chrome processes settle for RSS measurement
-
-    # ── Playwright ────────────────────────────────────────────────
-    if 'playwright' in engines:
-        print(f'\n--- playwright {"─" * 42}')
-        result = await bench_playwright(args.url, args.runs, args.parallel, headless=args.headless)
-        all_results.append(result)
-        gc.collect()
-        await asyncio.sleep(1)
-
-    # ── Puppeteer ─────────────────────────────────────────────────
-    if 'puppeteer' in engines:
-        print(f'\n--- puppeteer {"─" * 43}')
-        result = await bench_puppeteer(args.url, args.runs, args.parallel, headless=args.headless)
-        all_results.append(result)
-        gc.collect()
-        await asyncio.sleep(1)
-
-    # ── Zendriver ─────────────────────────────────────────────────
-    if 'zendriver' in engines:
-        print(f'\n--- zendriver {"─" * 43}')
-        result = await bench_zendriver(args.url, args.runs, args.parallel, headless=args.headless)
-        all_results.append(result)
-        gc.collect()
-        await asyncio.sleep(1)
-
-    # ── Nodriver ──────────────────────────────────────────────────
-    if 'nodriver' in engines:
-        print(f'\n--- nodriver {"─" * 44}')
-        result = await bench_nodriver(args.url, args.runs, args.parallel, headless=args.headless)
-        all_results.append(result)
-        gc.collect()
+    all_results, yd_results = await _run_engines(engines, args)
 
     # ── Results ───────────────────────────────────────────────────
     for r in all_results:
