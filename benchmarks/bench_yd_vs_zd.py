@@ -2,10 +2,13 @@
 
 Measures:
   - Cold start latency (browser launch → first page ready)
-  - Single-page fetch latency (navigate + DOM stable)
+  - Single-page fetch latency (navigate + wait)
   - Parallel fetch throughput (N concurrent tabs)
-  - Peak memory (RSS) of the browser process tree
-  - Python-side memory (process RSS delta)
+  - Chrome RSS during sequential vs parallel phases
+  - Memory efficiency (MB per 100K chars of fetched content)
+
+yd uses fully event-driven CDP lifecycle events (zero sleeps, zero polling).
+zendriver uses its native polling approach for a fair comparison.
 
 Run:
   uv run python benchmarks/bench_yd_vs_zd.py
@@ -32,6 +35,9 @@ URL = (
     '--ResearchAndMarkets.com/'
 )
 
+MIN_CONTENT_LEN = 10_000
+
+
 # ── Helpers ──────────────────────────────────────────────────────────────
 
 
@@ -40,47 +46,58 @@ def _rss_mb() -> float:
     return psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024
 
 
-def _chrome_rss_mb() -> float:
-    """Total RSS of all chrome/chromium child processes in MB."""
-    total = 0.0
-    me = psutil.Process(os.getpid())
-    for child in me.children(recursive=True):
-        try:
-            name = child.name().lower()
-            if 'chrom' in name:
-                total += child.memory_info().rss / 1024 / 1024
-        except (psutil.NoSuchProcess, psutil.AccessDenied):
-            pass
-    return total
+def _chrome_proc_rss(proc: psutil.Process) -> float:
+    """Return RSS in MB for a single process, or 0 on error."""
+    try:
+        if 'chrom' in (proc.info['name'] or '').lower():
+            return proc.info['memory_info'].rss / 1024 / 1024
+    except (psutil.NoSuchProcess, psutil.AccessDenied):
+        pass
+    return 0.0
 
 
 def _all_chrome_rss_mb() -> float:
     """Total RSS of ALL chrome/chromium processes on the system in MB."""
-    total = 0.0
-    for proc in psutil.process_iter(['name', 'memory_info']):
-        try:
-            if 'chrom' in (proc.info['name'] or '').lower():
-                total += proc.info['memory_info'].rss / 1024 / 1024
-        except (psutil.NoSuchProcess, psutil.AccessDenied):
-            pass
-    return total
+    return sum(_chrome_proc_rss(p) for p in psutil.process_iter(['name', 'memory_info']))
 
 
 class Result:
     """Collected metrics for one benchmark run."""
 
     def __init__(self, name: str) -> None:
+        """Initialise empty result container for *name*."""
         self.name = name
         self.cold_start: float = 0.0
         self.single_fetches: list[float] = []
         self.parallel_time: float = 0.0
         self.parallel_count: int = 0
-        self.chrome_rss_peak: float = 0.0
+        self.seq_chrome_rss_peak: float = 0.0
+        self.par_chrome_rss_peak: float = 0.0
         self.python_rss_delta: float = 0.0
         self.html_lengths: list[int] = []
         self.blocked: int = 0
+        self.wait_events: list[str] = []
+
+    @property
+    def chrome_rss_peak(self) -> float:
+        """Peak Chrome RSS across both sequential and parallel phases."""
+        return max(self.seq_chrome_rss_peak, self.par_chrome_rss_peak)
+
+    @property
+    def total_content_chars(self) -> int:
+        """Total characters across all fetched pages."""
+        return sum(self.html_lengths)
+
+    @property
+    def mem_efficiency(self) -> float:
+        """MB per 100K chars of content. Lower = better."""
+        total_100k = self.total_content_chars / 100_000
+        if total_100k == 0:
+            return 0.0
+        return self.chrome_rss_peak / total_100k
 
     def summary(self) -> str:
+        """Format a human-readable summary of all collected metrics."""
         lines = [f'\n{"=" * 60}', f'  {self.name}', '=' * 60]
         lines.append(f'  Cold start (launch → ready):  {self.cold_start:.2f}s')
         if self.single_fetches:
@@ -93,7 +110,10 @@ class Result:
                 f'{self.parallel_time:.2f}s total, '
                 f'{self.parallel_time / self.parallel_count:.2f}s/page avg'
             )
-        lines.append(f'  Chrome RSS peak:              {self.chrome_rss_peak:.0f} MB')
+        lines.append(f'  Chrome RSS (sequential):      {self.seq_chrome_rss_peak:.0f} MB')
+        if self.par_chrome_rss_peak > 0:
+            lines.append(f'  Chrome RSS (parallel):        {self.par_chrome_rss_peak:.0f} MB')
+        lines.append(f'  Memory efficiency:            {self.mem_efficiency:.1f} MB / 100K chars')
         lines.append(f'  Python RSS delta:             {self.python_rss_delta:+.1f} MB')
         if self.html_lengths:
             lines.append(
@@ -103,6 +123,11 @@ class Result:
             )
         if self.blocked:
             lines.append(f'  Blocked fetches:              {self.blocked}')
+        if self.wait_events:
+            from collections import Counter
+
+            counts = Counter(self.wait_events)
+            lines.append(f'  Wait events:                  {dict(counts)}')
         return '\n'.join(lines)
 
 
@@ -110,63 +135,58 @@ class Result:
 
 
 async def bench_yd(url: str, runs: int, parallel: int) -> Result:
+    """Run yd benchmark: event-driven CDP lifecycle waits, zero polling."""
     from yosoi import yd
 
     r = Result('yd (Rust/chromiumoxide pool)')
     gc.collect()
     py_rss_before = _rss_mb()
 
-    # Min content to distinguish real page from Akamai challenge stubs
-    min_len = 10_000
-
-    # Cold start
+    # Cold start — browser launch only, no warmup (tabs created lazily)
     t0 = time.perf_counter()
     pool_ctx = await yd.pool(headless=False, tabs_per_browser=max(parallel, 1))
-    # Use __aenter__/__aexit__ for proper lifecycle
     pool = await pool_ctx.__aenter__()
     r.cold_start = time.perf_counter() - t0
 
-    async def _yd_fetch_one(pool_ref: object) -> tuple[int, float, bool]:
-        """Fetch one page, handling WAF challenge redirects gracefully."""
+    async def _yd_fetch(pool_ref: object) -> tuple[int, float, bool, str]:
+        """Event-driven fetch. Zero sleeps, zero polling."""
         t = time.perf_counter()
         async with await pool_ref.acquire() as tab:  # type: ignore[union-attr]
             await tab.navigate(url)
-            try:
-                stabilised = await tab.wait_for_stable_dom(timeout=25.0, min_length=min_len)
-            except RuntimeError:
-                # WAF challenge may redirect and invalidate JS context.
-                # Fall back to a fixed wait then grab whatever content is there.
-                await asyncio.sleep(8)
-                stabilised = False
+            event = await tab.wait_for_network_idle(timeout=30.0)
             html = await tab.content()
         elapsed = time.perf_counter() - t
-        blocked = not stabilised or 'Access Denied' in html or len(html) < min_len
-        return len(html), elapsed, blocked
+        blocked = not event or 'Access Denied' in html or len(html) < MIN_CONTENT_LEN
+        return len(html), elapsed, blocked, event or 'timeout'
 
     try:
-        # Single-page fetches
+        # Sequential fetches
         for i in range(runs):
-            length, elapsed, blocked = await _yd_fetch_one(pool)
+            length, elapsed, blocked, event = await _yd_fetch(pool)
             r.single_fetches.append(elapsed)
+            r.html_lengths.append(length)
+            r.wait_events.append(event)
             if blocked:
                 r.blocked += 1
-            r.html_lengths.append(length)
-            r.chrome_rss_peak = max(r.chrome_rss_peak, _all_chrome_rss_mb())
-            print(f'  yd single [{i + 1}/{runs}]: {elapsed:.2f}s  {"BLOCKED" if blocked else f"{length:,} chars"}')
+            r.seq_chrome_rss_peak = max(r.seq_chrome_rss_peak, _all_chrome_rss_mb())
+            status = 'BLOCKED' if blocked else f'{length:,} chars'
+            print(f'  yd [{i + 1}/{runs}]: {elapsed:.2f}s  {status}  ({event})')
 
         # Parallel fetches
         if parallel > 1:
             print(f'  yd parallel [{parallel} tabs]...')
             t2 = time.perf_counter()
-            results = await asyncio.gather(*[_yd_fetch_one(pool) for _ in range(parallel)])
+            results = await asyncio.gather(*[_yd_fetch(pool) for _ in range(parallel)])
             r.parallel_time = time.perf_counter() - t2
             r.parallel_count = parallel
-            for length, elapsed, blocked in results:
+            for length, elapsed, blocked, event in results:
                 r.html_lengths.append(length)
+                r.wait_events.append(event)
                 if blocked:
                     r.blocked += 1
-                print(f'    tab: {elapsed:.2f}s  {"BLOCKED" if blocked else f"{length:,} chars"}')
-            r.chrome_rss_peak = max(r.chrome_rss_peak, _all_chrome_rss_mb())
+                status = 'BLOCKED' if blocked else f'{length:,} chars'
+                print(f'    tab: {elapsed:.2f}s  {status}  ({event})')
+            r.par_chrome_rss_peak = _all_chrome_rss_mb()
     finally:
         await pool_ctx.__aexit__(None, None, None)
 
@@ -178,6 +198,7 @@ async def bench_yd(url: str, runs: int, parallel: int) -> Result:
 
 
 async def bench_zd(url: str, runs: int, parallel: int) -> Result:
+    """Run zendriver benchmark: native polling-based DOM stability waits."""
     import zendriver as zd
 
     r = Result('zendriver (Python/nodriver)')
@@ -189,16 +210,16 @@ async def bench_zd(url: str, runs: int, parallel: int) -> Result:
     browser = await zd.start(headless=False)
     r.cold_start = time.perf_counter() - t0
 
-    async def _zd_fetch_tab(tab_url: str) -> tuple[str | None, float, bool]:
+    async def _zd_fetch(tab_url: str) -> tuple[int, float, bool]:
         t = time.perf_counter()
         tab = await browser.get(tab_url, new_tab=True)
         await tab.wait_for_ready_state('complete', timeout=20)
-        # DOM stability polling (same algorithm as yd)
+        # zendriver's native approach: poll DOM stability
         deadline = time.time() + 25
         prev, stable = 0, 0
         while time.time() < deadline:
             size = await tab.evaluate('document.body ? document.body.innerHTML.length : 0')
-            if size > 10000 and size == prev:
+            if size > MIN_CONTENT_LEN and size == prev:
                 stable += 1
                 if stable >= 5:
                     break
@@ -208,37 +229,38 @@ async def bench_zd(url: str, runs: int, parallel: int) -> Result:
             await asyncio.sleep(0.3)
         html = await tab.evaluate('document.body.innerHTML')
         elapsed = time.perf_counter() - t
-        blocked = not html or 'Access Denied' in str(html) or len(html) < 10000
+        length = len(html) if html else 0
+        blocked = not html or 'Access Denied' in str(html) or length < MIN_CONTENT_LEN
         with contextlib.suppress(Exception):
             await tab.close()
-        return html, elapsed, blocked
+        return length, elapsed, blocked
 
     try:
-        # Single-page fetches
+        # Sequential fetches
         for i in range(runs):
-            html, elapsed, blocked = await _zd_fetch_tab(url)
+            length, elapsed, blocked = await _zd_fetch(url)
             r.single_fetches.append(elapsed)
-            length = len(html) if html else 0
             r.html_lengths.append(length)
             if blocked:
                 r.blocked += 1
-            r.chrome_rss_peak = max(r.chrome_rss_peak, _all_chrome_rss_mb())
-            print(f'  zd single [{i + 1}/{runs}]: {elapsed:.2f}s  {"BLOCKED" if blocked else f"{length:,} chars"}')
+            r.seq_chrome_rss_peak = max(r.seq_chrome_rss_peak, _all_chrome_rss_mb())
+            status = 'BLOCKED' if blocked else f'{length:,} chars'
+            print(f'  zd [{i + 1}/{runs}]: {elapsed:.2f}s  {status}')
 
         # Parallel fetches
         if parallel > 1:
             print(f'  zd parallel [{parallel} tabs]...')
             t2 = time.perf_counter()
-            results = await asyncio.gather(*[_zd_fetch_tab(url) for _ in range(parallel)])
+            results = await asyncio.gather(*[_zd_fetch(url) for _ in range(parallel)])
             r.parallel_time = time.perf_counter() - t2
             r.parallel_count = parallel
-            for html, elapsed, blocked in results:
-                length = len(html) if html else 0
+            for length, elapsed, blocked in results:
                 r.html_lengths.append(length)
                 if blocked:
                     r.blocked += 1
-                print(f'    tab: {elapsed:.2f}s  {"BLOCKED" if blocked else f"{length:,} chars"}')
-            r.chrome_rss_peak = max(r.chrome_rss_peak, _all_chrome_rss_mb())
+                status = 'BLOCKED' if blocked else f'{length:,} chars'
+                print(f'    tab: {elapsed:.2f}s  {status}')
+            r.par_chrome_rss_peak = _all_chrome_rss_mb()
     finally:
         with contextlib.suppress(Exception):
             await browser.stop()
@@ -247,44 +269,16 @@ async def bench_zd(url: str, runs: int, parallel: int) -> Result:
     return r
 
 
-# ── Main ─────────────────────────────────────────────────────────────────
+# ── Comparison ───────────────────────────────────────────────────────────
 
 
-async def main() -> None:
-    parser = argparse.ArgumentParser(description='Benchmark yd vs zendriver')
-    parser.add_argument('--url', default=URL, help='Target URL')
-    parser.add_argument('--runs', type=int, default=3, help='Sequential fetch runs per engine')
-    parser.add_argument('--parallel', type=int, default=3, help='Parallel tab count')
-    args = parser.parse_args()
-
-    print(f'URL:      {args.url}')
-    print(f'Runs:     {args.runs} sequential + {args.parallel} parallel')
-    print(f'System:   {psutil.virtual_memory().total / 1024**3:.1f} GB RAM, {psutil.cpu_count()} CPUs')
-    print()
-
-    # Kill stale chrome processes to get a clean baseline
-    baseline_chrome = _all_chrome_rss_mb()
-    if baseline_chrome > 0:
-        print(f'Note: {baseline_chrome:.0f} MB of existing Chrome processes detected\n')
-
-    print('─── yd (Rust pool) ────────────────────────────────────')
-    yd_result = await bench_yd(args.url, args.runs, args.parallel)
-
-    # Brief pause between engines to let OS reclaim memory
-    gc.collect()
-    await asyncio.sleep(2)
-
-    print('\n─── zendriver ─────────────────────────────────────────')
-    zd_result = await bench_zd(args.url, args.runs, args.parallel)
-
-    # ── Comparison ────────────────────────────────────────────────
-    print(yd_result.summary())
-    print(zd_result.summary())
-
+def _print_comparison(yd_result: Result, zd_result: Result) -> None:
+    """Print head-to-head comparison between yd and zd results."""
     print(f'\n{"=" * 60}')
     print('  HEAD-TO-HEAD')
     print('=' * 60)
 
+    # Latency
     yd_avg = statistics.mean(yd_result.single_fetches) if yd_result.single_fetches else 0
     zd_avg = statistics.mean(zd_result.single_fetches) if zd_result.single_fetches else 0
     if yd_avg and zd_avg:
@@ -299,16 +293,77 @@ async def main() -> None:
         )
         print(f'  Parallel fetch:  {faster} is {ratio:.1f}x faster')
 
+    # Cold start
     faster = 'yd' if yd_result.cold_start < zd_result.cold_start else 'zd'
     ratio = max(yd_result.cold_start, zd_result.cold_start) / min(yd_result.cold_start, zd_result.cold_start)
     print(f'  Cold start:      {faster} is {ratio:.1f}x faster')
 
+    # Memory efficiency (MB per 100K chars)
+    if yd_result.mem_efficiency and zd_result.mem_efficiency:
+        better = 'yd' if yd_result.mem_efficiency < zd_result.mem_efficiency else 'zd'
+        ratio = max(yd_result.mem_efficiency, zd_result.mem_efficiency) / min(
+            yd_result.mem_efficiency, zd_result.mem_efficiency
+        )
+        print(f'  Mem efficiency:  {better} is {ratio:.1f}x better (MB/100K chars)')
+
+    # Content completeness
+    yd_avg_html = statistics.mean(yd_result.html_lengths) if yd_result.html_lengths else 0
+    zd_avg_html = statistics.mean(zd_result.html_lengths) if zd_result.html_lengths else 0
+    if yd_avg_html and zd_avg_html:
+        more = 'yd' if yd_avg_html > zd_avg_html else 'zd'
+        ratio = max(yd_avg_html, zd_avg_html) / min(yd_avg_html, zd_avg_html)
+        print(f'  Content:         {more} fetches {ratio:.1f}x more HTML')
+
+    # Raw memory
     if yd_result.chrome_rss_peak and zd_result.chrome_rss_peak:
         lighter = 'yd' if yd_result.chrome_rss_peak < zd_result.chrome_rss_peak else 'zd'
         diff = abs(yd_result.chrome_rss_peak - zd_result.chrome_rss_peak)
-        print(f'  Chrome memory:   {lighter} uses {diff:.0f} MB less')
+        print(f'  Chrome RSS:      {lighter} uses {diff:.0f} MB less (raw)')
 
     print()
+
+
+# ── Main ─────────────────────────────────────────────────────────────────
+
+
+async def main() -> None:
+    """Parse args, run benchmarks, and print results."""
+    parser = argparse.ArgumentParser(description='Benchmark yd vs zendriver')
+    parser.add_argument('--url', default=URL, help='Target URL')
+    parser.add_argument('--runs', type=int, default=3, help='Sequential fetch runs per engine')
+    parser.add_argument('--parallel', type=int, default=3, help='Parallel tab count')
+    parser.add_argument('--yd-only', action='store_true', help='Only run yd benchmark')
+    parser.add_argument('--zd-only', action='store_true', help='Only run zendriver benchmark')
+    args = parser.parse_args()
+
+    print(f'URL:      {args.url}')
+    print(f'Runs:     {args.runs} sequential + {args.parallel} parallel')
+    print(f'System:   {psutil.virtual_memory().total / 1024**3:.1f} GB RAM, {psutil.cpu_count()} CPUs')
+    print()
+
+    baseline_chrome = _all_chrome_rss_mb()
+    if baseline_chrome > 0:
+        print(f'Note: {baseline_chrome:.0f} MB of existing Chrome processes detected\n')
+
+    yd_result = None
+    zd_result = None
+
+    if not args.zd_only:
+        print('─── yd (Rust pool, event-driven) ──────────────────────')
+        yd_result = await bench_yd(args.url, args.runs, args.parallel)
+
+    if not args.yd_only:
+        if yd_result:
+            gc.collect()
+        print('\n─── zendriver (Python, polling) ────────────────────────')
+        zd_result = await bench_zd(args.url, args.runs, args.parallel)
+
+    if yd_result:
+        print(yd_result.summary())
+    if zd_result:
+        print(zd_result.summary())
+    if yd_result and zd_result:
+        _print_comparison(yd_result, zd_result)
 
 
 if __name__ == '__main__':

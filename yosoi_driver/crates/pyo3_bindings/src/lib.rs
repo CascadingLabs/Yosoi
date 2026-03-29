@@ -553,6 +553,29 @@ impl PyPooledTab {
         })
     }
 
+    /// Event-driven wait for network idle. No polling.
+    ///
+    /// Returns the lifecycle event name ("networkIdle" or "networkAlmostIdle")
+    /// or None if the timeout was reached.
+    #[pyo3(signature = (timeout=30.0))]
+    fn wait_for_network_idle<'py>(
+        &self,
+        py: Python<'py>,
+        timeout: f64,
+    ) -> PyResult<Bound<'py, PyAny>> {
+        let inner = Arc::clone(&self.inner);
+        pyo3_async_runtimes::tokio::future_into_py(py, async move {
+            let guard = inner.lock().await;
+            let tab = guard
+                .as_ref()
+                .ok_or_else(|| PyRuntimeError::new_err("tab has been released"))?;
+            tab.page
+                .wait_for_network_idle(Duration::from_secs_f64(timeout))
+                .await
+                .map_err(to_py_err)
+        })
+    }
+
     // ── async context manager ───────────────────────────────────────────
 
     fn __aenter__<'py>(slf: Bound<'py, Self>, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
@@ -652,12 +675,9 @@ impl PyBrowserPool {
     // ── async context manager ───────────────────────────────────────────
 
     fn __aenter__<'py>(slf: Bound<'py, Self>, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
-        let pool = Arc::clone(&slf.borrow().inner);
         let slf_ref = slf.into_any().unbind();
-        pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            pool.warmup().await.map_err(to_py_err)?;
-            Ok(slf_ref)
-        })
+        // No warmup — tabs are created lazily on first acquire().
+        pyo3_async_runtimes::tokio::future_into_py(py, async move { Ok(slf_ref) })
     }
 
     #[pyo3(signature = (_exc_type=None, _exc_val=None, _exc_tb=None))]

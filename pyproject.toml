@@ -95,6 +95,7 @@ source-exclude = [
   "tests/**",
   "docs/**",
   "examples/**",
+  "benchmarks/**",
   "**/*.pyc",
   "**/__pycache__",
   ".venv/**",

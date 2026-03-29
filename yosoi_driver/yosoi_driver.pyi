@@ -40,6 +40,13 @@ class PooledTab:
         Returns True if stabilised within timeout, False otherwise.
         """
         ...
+    async def wait_for_network_idle(self, timeout: float = 30.0) -> str | None:
+        """Event-driven wait for network idle. No polling.
+
+        Returns the lifecycle event name ("networkIdle" or "networkAlmostIdle")
+        or None if the timeout was reached.
+        """
+        ...
     async def __aenter__(self) -> PooledTab: ...
     async def __aexit__(
         self,
@@ -99,6 +106,13 @@ class Page:
         """Wait until DOM stabilises and exceeds min_length chars.
 
         Returns True if stabilised within timeout, False otherwise.
+        """
+        ...
+    async def wait_for_network_idle(self, timeout: float = 30.0) -> str | None:
+        """Event-driven wait for network idle. No polling.
+
+        Returns the lifecycle event name ("networkIdle" or "networkAlmostIdle")
+        or None if the timeout was reached.
         """
         ...
     async def close(self) -> None: ...

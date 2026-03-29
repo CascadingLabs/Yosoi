@@ -1,12 +1,16 @@
 //! `BrowserPool` — a pool of reusable browser tabs backed by long-lived Chrome sessions.
 //!
-//! The pool pre-opens tabs across one or more `BrowserSession` instances and hands them
-//! out via `acquire()` / `release()`. Tabs are recycled (navigated to `about:blank`)
-//! rather than closed, giving near-instant reuse. Hard recycling (close + reopen)
+//! The pool creates tabs **lazily** on first `acquire()` and recycles them on
+//! `release()`. Tabs are navigated to `about:blank` for reuse rather than closed,
+//! giving near-instant subsequent acquires. Hard recycling (close + reopen)
 //! kicks in after `tab_max_uses`, and idle eviction cleans up stale tabs.
+//!
+//! `warmup()` is **optional** — calling it pre-creates tabs for faster first acquires,
+//! but the pool works correctly without it.
 
 use std::collections::VecDeque;
 use std::env;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
@@ -21,7 +25,7 @@ use crate::session::BrowserSession;
 pub struct PoolConfig {
     /// Number of Chrome processes (sessions) in the pool.
     pub browsers: usize,
-    /// Number of idle tabs pre-opened per browser session.
+    /// Maximum concurrent tabs per browser session.
     pub tabs_per_browser: usize,
     /// Close and reopen a tab after this many uses.
     pub tab_max_uses: u32,
@@ -57,6 +61,9 @@ pub struct PooledTab {
 
 /// A pool of reusable browser tabs spread across one or more Chrome sessions.
 ///
+/// Tabs are created lazily on first `acquire()`. Call [`warmup()`](Self::warmup)
+/// to optionally pre-create tabs for faster first acquires.
+///
 /// # Usage
 ///
 /// ```rust,no_run
@@ -64,7 +71,7 @@ pub struct PooledTab {
 /// use yosoi_driver_core::pool::BrowserPool;
 ///
 /// let pool = BrowserPool::from_env().await?;
-/// pool.warmup().await?;
+/// // warmup() is optional — tabs are created on demand
 ///
 /// let tab = pool.acquire().await?;
 /// tab.page.navigate("https://example.com").await?;
@@ -80,19 +87,25 @@ pub struct BrowserPool {
     ready: Mutex<VecDeque<PooledTab>>,
     semaphore: Arc<Semaphore>,
     config: PoolConfig,
+    /// Round-robin counter for distributing new tabs across sessions.
+    next_session: AtomicUsize,
 }
 
 impl BrowserPool {
     /// Create a new pool from pre-built sessions and config.
     ///
-    /// Call [`warmup()`](Self::warmup) after construction to pre-open tabs.
+    /// The pool starts with **no tabs** — they are created lazily on
+    /// [`acquire()`](Self::acquire) or optionally pre-created via
+    /// [`warmup()`](Self::warmup).
     pub fn new(config: PoolConfig, sessions: Vec<BrowserSession>) -> Self {
         let total_tabs = config.browsers * config.tabs_per_browser;
         Self {
             sessions,
             ready: Mutex::new(VecDeque::with_capacity(total_tabs)),
-            semaphore: Arc::new(Semaphore::new(0)), // permits added by warmup()
+            // Permits = max concurrency. Tabs created lazily within this limit.
+            semaphore: Arc::new(Semaphore::new(total_tabs)),
             config,
+            next_session: AtomicUsize::new(0),
         }
     }
 
@@ -102,7 +115,7 @@ impl BrowserPool {
     /// |---|---|---|
     /// | `CHROME_WS_URLS` | Comma-separated `ws://` or `http://` URLs (connect mode) | — |
     /// | `BROWSER_COUNT` | Number of Chrome processes to launch | `1` |
-    /// | `TABS_PER_BROWSER` | Pre-opened tabs per browser | `4` |
+    /// | `TABS_PER_BROWSER` | Max concurrent tabs per browser | `4` |
     /// | `TAB_MAX_USES` | Hard recycle threshold | `50` |
     /// | `TAB_MAX_IDLE_SECS` | Idle eviction timeout | `60` |
     /// | `CHROME_NO_SANDBOX` | Set to `"1"` to pass `--no-sandbox` | — |
@@ -179,12 +192,33 @@ impl BrowserPool {
         Ok(Self::new(config, sessions))
     }
 
-    /// Pre-open tabs across all sessions and fill the ready queue.
+    /// Pick the next session index (round-robin).
+    fn next_browser_idx(&self) -> usize {
+        if self.sessions.len() == 1 {
+            return 0;
+        }
+        self.next_session.fetch_add(1, Ordering::Relaxed) % self.sessions.len()
+    }
+
+    /// Create a fresh tab on a round-robin browser session.
+    async fn create_tab(&self) -> Result<PooledTab> {
+        let idx = self.next_browser_idx();
+        let page = self.sessions[idx].new_blank_page().await?;
+        Ok(PooledTab {
+            page,
+            use_count: 0,
+            last_used: Instant::now(),
+            browser_idx: idx,
+        })
+    }
+
+    /// Optionally pre-open tabs across all sessions and fill the ready queue.
     ///
     /// Tabs are created **in parallel** across sessions, then inserted
     /// into the ready queue in one batch under a single lock acquisition.
     ///
-    /// Must be called once after [`new()`](Self::new) or [`from_env()`](Self::from_env).
+    /// This is **optional** — if not called, tabs are created lazily on
+    /// first [`acquire()`](Self::acquire).
     pub async fn warmup(&self) -> Result<()> {
         // Build futures for all tabs across all sessions
         let mut futs = Vec::with_capacity(self.config.browsers * self.config.tabs_per_browser);
@@ -205,19 +239,34 @@ impl BrowserPool {
         // Create all tabs in parallel
         let results = futures::future::join_all(futs).await;
 
-        // Lock once, insert all
+        // Lock once, insert all. Consume one semaphore permit per tab (they
+        // were already counted at construction time for lazy growth).
         let mut ready = self.ready.lock().await;
         for result in results {
-            ready.push_back(result?);
+            let tab = result?;
+            // Consume a permit so the accounting stays consistent:
+            // the semaphore starts at max_tabs, and each queued tab
+            // represents one of those permits being "occupied".
+            let permit = self
+                .semaphore
+                .acquire()
+                .await
+                .map_err(|_| YosoiError::Other("pool semaphore closed".into()))?;
+            permit.forget();
+            ready.push_back(tab);
         }
+        // Now add back one permit per queued tab — they're "available".
         self.semaphore.add_permits(ready.len());
         Ok(())
     }
 
     /// Check out a tab from the pool.
     ///
-    /// Blocks if all tabs are currently in use. If the tab has exceeded
-    /// `tab_max_uses`, it is silently hard-recycled (closed and reopened).
+    /// If an idle tab is available, it is returned immediately. Otherwise,
+    /// a new tab is created on demand (up to `tabs_per_browser * browsers`
+    /// total). Blocks only when all tabs are currently in use.
+    ///
+    /// Tabs that have exceeded `tab_max_uses` are silently hard-recycled.
     pub async fn acquire(&self) -> Result<PooledTab> {
         let permit = self
             .semaphore
@@ -227,11 +276,16 @@ impl BrowserPool {
         // Don't auto-return the permit on drop — release() will add it back.
         permit.forget();
 
-        let tab = {
+        // Try the ready queue first (fast path: reuse an existing tab)
+        let maybe_tab = {
             let mut ready = self.ready.lock().await;
-            ready
-                .pop_front()
-                .ok_or_else(|| YosoiError::Other("ready queue empty despite semaphore permit".into()))?
+            ready.pop_front()
+        };
+
+        let tab = match maybe_tab {
+            Some(tab) => tab,
+            // No idle tab — create one on demand (lazy growth)
+            None => self.create_tab().await?,
         };
 
         // Hard recycle if this tab is worn out

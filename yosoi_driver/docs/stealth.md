@@ -137,6 +137,27 @@ async with BrowserSession(stealth=False) as session:
 # The minimal patches have negligible overhead
 ```
 
+## A Note on CDP `networkIdle` Events
+
+Chrome's CDP exposes `Page.lifecycleEvent` events that fire in sequence during page load:
+
+```
+DOMContentLoaded → load → networkAlmostIdle → networkIdle
+```
+
+`networkIdle` fires when the browser has had **zero in-flight network requests for 500ms**. This sounds like the perfect "page is ready" signal, but it is **unreliable for SPAs and modern web apps** because:
+
+- **WebSocket connections** (chat, real-time data) keep the network permanently active.
+- **Server-Sent Events (SSE)** and long-polling hold open persistent HTTP connections.
+- **Analytics and telemetry** (Google Analytics, Segment, etc.) fire periodic beacons that reset the 500ms idle window.
+- **Lazy-loaded content** triggers new requests as the page renders, creating a moving target.
+
+On these sites, `networkIdle` may **never fire** — or fire only after an unpredictable delay — making it useless as a reliable readiness signal. `networkAlmostIdle` (≤ 2 in-flight requests for 500ms) is a better fallback but still suffers from the same class of problems with persistent connections.
+
+For now, yosoi_driver uses **DOM stability polling** (`wait_for_stable_dom`) as the primary readiness check: it measures `document.body.innerHTML.length` over consecutive polls and considers the page ready when the size stabilizes above a minimum threshold. This is more robust for real-world scraping targets than event-driven approaches that assume the network will go quiet.
+
+> **Future direction**: An event-driven approach using CDP lifecycle events could reduce latency for simple static sites. If implemented, it should be used as an optimization hint with DOM stability as the fallback — never as the sole readiness mechanism.
+
 ## Real-World Results
 
 Tested against Akamai WAF (BusinessWire) — the same site that blocks Playwright, Selenium, and even chromiumoxide with heavy stealth patches:
