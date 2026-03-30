@@ -42,12 +42,6 @@
       "description": "Require Python 3.10+ compatibility for all packages",
       "matchManagers": ["uv"],
       "constraintsFiltering": "strict"
-    },
-    {
-      "description": "Group void_crawl Rust/Cargo dependency updates",
-      "matchManagers": ["cargo"],
-      "matchFileNames": ["void_crawl/**"],
-      "groupName": "void-crawl-rust-deps"
     }
   ]
 }

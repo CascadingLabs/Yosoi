@@ -31,6 +31,36 @@ Give Yosoi a URL, domain, or group of URLs, and it uses AI to automatically disc
 uv add yosoi
 ```
 
+## Browser Fetcher (JavaScript-heavy pages)
+
+Yosoi supports a browser-based HTML fetcher powered by [void_crawl](https://github.com/CascadingLabs/Void-Crawl) — a Rust-native CDP client that renders JavaScript-heavy pages via Chrome DevTools Protocol.
+
+Install `void_crawl` from the [Void-Crawl repo](https://github.com/CascadingLabs/Void-Crawl) (requires Rust ≥ 1.86, maturin ≥ 1.7, Chrome/Chromium), then use it via the `create_fetcher` API or the `yosoi.vc` convenience module:
+
+```python
+# Fetcher interface
+from yosoi.core.fetcher import create_fetcher
+
+async def scrape():
+    fetcher = create_fetcher("browser", no_sandbox=True)
+    async with fetcher:
+        result = await fetcher.fetch("https://example.com")
+        print(result.html)
+```
+
+```python
+# vc convenience module — pool-based (recommended)
+from yosoi import vc
+
+async def scrape():
+    async with vc.pool() as pool:
+        async with await pool.acquire() as tab:
+            await tab.navigate("https://example.com")
+            html = await tab.content()
+```
+
+See [`examples/pool_usage.py`](examples/pool_usage.py) and [`examples/pool_fetch_cleaned.py`](examples/pool_fetch_cleaned.py) for full working examples.
+
 ## Quick Start
 
 ### API Key

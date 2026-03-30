@@ -68,32 +68,3 @@ jobs:
         uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-
-  void-crawl:
-    name: void_crawl (Rust)
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: void_crawl
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache Cargo registry & build
-        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            void_crawl/target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('void_crawl/**/Cargo.toml') }}
-          restore-keys: ${{ runner.os }}-cargo-
-
-      - name: Check (compile)
-        run: cargo check --workspace
-
-      - name: Run tests (serial — Chrome singleton lock)
-        run: cargo test -p void_crawl_core -- --test-threads=1
