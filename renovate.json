@@ -5,41 +5,50 @@
   "schedule": ["after 5pm on Friday"],
   "labels": ["dependencies"],
   "dependencyDashboard": true,
-  "python": {
-    "registryUrls": ["https://pypi.org/simple/"]
-  },
   "packageRules": [
     {
-      "description": "Group all GitHub Actions updates into a single PR",
+      "description": "Group GitHub Actions updates",
       "matchManagers": ["github-actions"],
       "groupName": "github-actions"
     },
     {
-      "description": "Group production Python dependency updates",
+      "description": "Group npm production dependency updates",
+      "matchManagers": ["bun"],
+      "matchDepTypes": ["dependencies"],
+      "groupName": "bun-production-deps"
+    },
+    {
+      "description": "Group npm dev dependency updates",
+      "matchManagers": ["bun"],
+      "matchDepTypes": ["devDependencies"],
+      "groupName": "bun-dev-deps"
+    },
+    {
+      "description": "Group Python production dependency updates",
       "matchManagers": ["uv"],
       "matchDepTypes": ["dependencies"],
-      "groupName": "python-production-deps"
+      "groupName": "uv-production-deps"
     },
     {
-      "description": "Group dev dependency updates",
+      "description": "Group Python dev dependency updates",
       "matchManagers": ["uv"],
       "matchDepTypes": ["dev"],
-      "groupName": "python-dev-deps"
+      "groupName": "uv-dev-deps"
     },
     {
-      "description": "Group test dependency updates",
+      "description": "Group Python test dependency updates",
       "matchManagers": ["uv"],
       "matchDepTypes": ["tests"],
-      "groupName": "python-test-deps"
+      "groupName": "uv-test-deps"
     },
     {
-      "description": "Group optional (tabular) dependency updates with production",
+      "description": "Group optional dependency updates with production",
       "matchManagers": ["uv"],
       "matchDepTypes": ["tabular"],
-      "groupName": "python-production-deps"
+      "groupName": "uv-production-deps"
     },
     {
-      "description": "Require Python 3.10+ compatibility for all packages",
+      "description": "Require Python 3.10+ compatibility",
       "matchManagers": ["uv"],
       "constraintsFiltering": "strict"
     }

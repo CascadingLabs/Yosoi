@@ -1,9 +1,9 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 /**
  * Puppeteer benchmark helper — called by bench_all.py via subprocess.
  *
  * Outputs JSON lines to stdout with timing and content metrics.
- * Usage: node benchmarks/bench_puppeteer.mjs <url> <runs> <parallel> [--headless]
+ * Usage: bun benchmarks/bench_puppeteer.mjs <url> <runs> <parallel> [--headless]
  */
 
 import puppeteer from 'puppeteer';

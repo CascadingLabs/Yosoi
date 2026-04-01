@@ -259,9 +259,9 @@ async def bench_playwright(url: str, runs: int, parallel: int, *, headless: bool
 
 
 async def bench_puppeteer(url: str, runs: int, parallel: int, *, headless: bool = False) -> Result:
-    """Run Puppeteer benchmark via Node.js subprocess."""
+    """Run Puppeteer benchmark via Bun subprocess."""
     script = Path(__file__).parent / 'bench_puppeteer.mjs'
-    cmd = ['node', str(script), url, str(runs), str(parallel)]
+    cmd = ['bun', str(script), url, str(runs), str(parallel)]
     if headless:
         cmd.append('--headless')
 
