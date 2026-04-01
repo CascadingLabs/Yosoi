@@ -1,4 +1,4 @@
-.# ==========================================
+# ==========================================
 # Yosoi Project Specific
 # ==========================================
 .yosoi/
@@ -6,11 +6,18 @@ primary-sources.json
 test_batch.py
 .batch_progress.json
 used-urls.json
+mutants
+_check.py
+lighthouserc.desktop.json
+lighthouserc.mobile.json
+node_modules
 
-# Task tracking
-.todo.md
+# ==========================================
+# Task Tracking
+# ==========================================
 todo.md
 TODO.md
+.todo.md
 
 # ==========================================
 # Environments & Secrets
@@ -86,6 +93,11 @@ profile/
 *~
 
 # ==========================================
+# Claude Code
+# ==========================================
+.claude/settings.local.json
+
+# ==========================================
 # OS & System
 # ==========================================
 .DS_Store
@@ -94,22 +106,4 @@ profile/
 .Spotlight-V100
 .Trashes
 ehthumbs.db
-Thumbs.dbenv
-.venv
-.todo.md
-todo.md
-TODO.md
-__pycache__
-primary-sources.json
-test_batch.py
-.batch_progress.json
-used-urls.json
-.yosoi/
-memray*.bin
-.claude/settings.local.json
-
-mutants
-_check.py
-lighthouserc.desktop.json
-lighthouserc.mobile.json
-node_modules
+Thumbs.db
