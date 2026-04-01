@@ -1,0 +1,73 @@
+name: Bug Report
+description: Report a bug or unexpected behavior
+labels: ["bug"]
+body:
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Initial Checks
+      options:
+        - label: I'm using the latest version of Yosoi
+          required: true
+        - label: I've searched existing issues before opening this one
+          required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: |
+        A clear description of the bug. Include what happened and what you expected to happen.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: |
+        Provide a minimal, reproducible example. Include the command you ran and the HTML structure if relevant.
+        The easier it is to reproduce, the faster we can fix it.
+      placeholder: |
+        1. Run `uv run yosoi --url ...`
+        2. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error Output / Logs
+      description: |
+        Paste the full error message or relevant log output.
+        Logs are saved in `.yosoi/logs/`. Include the relevant log file content if possible.
+      render: shell
+    validations:
+      required: false
+
+  - type: input
+    id: version
+    attributes:
+      label: Yosoi Version
+      description: Check with `uv run yosoi --version` or `uv pip show yosoi`
+      placeholder: e.g., 0.3.0
+    validations:
+      required: true
+
+  - type: input
+    id: python-version
+    attributes:
+      label: Python Version
+      description: Check with `uv run python --version`
+      placeholder: e.g., Python 3.12.6
+    validations:
+      required: true
+
+  - type: input
+    id: platform
+    attributes:
+      label: Platform
+      description: What OS and architecture are you using? (see `uname -orsm`)
+      placeholder: e.g., Linux 6.x x86_64, macOS 15 arm64, Windows 11 x86_64
+    validations:
+      required: true

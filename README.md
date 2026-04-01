@@ -1,17 +1,23 @@
 <p align="center">
   <a href="https://cascadinglabs.com/yosoi">
-    <img src="media/yosoiIcon.svg" alt="Yosoi" width="200">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="media/logo-dark.svg">
+      <source media="(prefers-color-scheme: light)" srcset="media/logo-light.svg">
+      <img src="media/logo-dark.svg" alt="Yosoi" width="200">
+    </picture>
   </a>
 </p>
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.18713573.svg)](https://doi.org/10.5281/zenodo.18713573)
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Actions status](https://github.com/CascadingLabs/Yosoi/actions/workflows/CI.yaml/badge.svg)](https://github.com/CascadingLabs/Yosoi/actions)
-[![image](https://img.shields.io/pypi/pyversions/yosoi.svg)](https://pypi.python.org/pypi/yosoi)
-[![image](https://img.shields.io/pypi/v/yosoi.svg)](https://pypi.python.org/pypi/yosoi)
-[![codecov](https://codecov.io/gh/CascadingLabs/Yosoi/graph/badge.svg?token=DFDI574EEA)](https://codecov.io/gh/CascadingLabs/Yosoi)
-[![docs](https://img.shields.io/badge/docs-cascadinglabs.com%2Fyosoi-blue)](https://cascadinglabs.com/yosoi)
- <!--[![image](https://img.shields.io/pypi/l/yosoi.svg)](https://pypi.python.org/pypi/yosoi) -->
+<p align="center">
+  <a href="https://discord.gg/YreV3CzxsE"><img src="https://img.shields.io/badge/Discord-Join-c4d4df?labelColor=2e3742&logo=discord&logoColor=white" alt="Discord"></a>
+  <a href="https://opensource.org/licenses/Apache-2.0"><img src="https://img.shields.io/badge/License-Apache_2.0-c4d4df?labelColor=2e3742" alt="License"></a>
+  <a href="https://github.com/CascadingLabs/Yosoi/actions"><img src="https://img.shields.io/github/actions/workflow/status/CascadingLabs/Yosoi/CI.yaml?label=CI&labelColor=2e3742&color=c4d4df" alt="CI"></a>
+  <a href="https://pypi.python.org/pypi/yosoi"><img src="https://img.shields.io/pypi/v/yosoi?labelColor=2e3742&color=c4d4df" alt="PyPI"></a>
+  <a href="https://pypi.python.org/pypi/yosoi"><img src="https://img.shields.io/pypi/pyversions/yosoi?labelColor=2e3742&color=c4d4df" alt="Python versions"></a>
+  <a href="https://codecov.io/gh/CascadingLabs/Yosoi"><img src="https://img.shields.io/codecov/c/gh/CascadingLabs/Yosoi?token=DFDI574EEA&labelColor=2e3742&color=c4d4df" alt="codecov"></a>
+  <a href="https://doi.org/10.5281/zenodo.18713573"><img src="https://img.shields.io/badge/DOI-10.5281%2Fzenodo.18713573-c4d4df?labelColor=2e3742" alt="DOI"></a>
+  <a href="https://cascadinglabs.com/yosoi"><img src="https://img.shields.io/badge/docs-cascadinglabs.com%2Fyosoi-c4d4df?labelColor=2e3742" alt="docs"></a>
+</p>
 
 
 
@@ -30,6 +36,36 @@ Give Yosoi a URL, domain, or group of URLs, and it uses AI to automatically disc
 # Install yosoi using uv
 uv add yosoi
 ```
+
+## Browser Fetcher (JavaScript-heavy pages)
+
+Yosoi supports a browser-based HTML fetcher powered by [void_crawl](https://github.com/CascadingLabs/Void-Crawl) — a Rust-native CDP client that renders JavaScript-heavy pages via Chrome DevTools Protocol.
+
+Install `void_crawl` from the [Void-Crawl repo](https://github.com/CascadingLabs/Void-Crawl) (requires Rust ≥ 1.86, maturin ≥ 1.7, Chrome/Chromium), then use it via the `create_fetcher` API or the `yosoi.vc` convenience module:
+
+```python
+# Fetcher interface
+from yosoi.core.fetcher import create_fetcher
+
+async def scrape():
+    fetcher = create_fetcher("browser", no_sandbox=True)
+    async with fetcher:
+        result = await fetcher.fetch("https://example.com")
+        print(result.html)
+```
+
+```python
+# vc convenience module — pool-based (recommended)
+from yosoi import vc
+
+async def scrape():
+    async with vc.pool() as pool:
+        async with await pool.acquire() as tab:
+            await tab.navigate("https://example.com")
+            html = await tab.content()
+```
+
+See [`examples/pool_usage.py`](examples/pool_usage.py) and [`examples/pool_fetch_cleaned.py`](examples/pool_fetch_cleaned.py) for full working examples.
 
 ## Quick Start
 

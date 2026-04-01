@@ -1,0 +1,46 @@
+name: Ticket
+description: Internal planning ticket for tracked work
+labels: ["ticket"]
+body:
+  - type: textarea
+    id: usecase
+    attributes:
+      label: Use Case / Motivation
+      description: |
+        What problem does this solve or what goal does it serve? Why is this work needed now?
+    validations:
+      required: true
+
+  - type: textarea
+    id: plan
+    attributes:
+      label: Proposed Plan
+      description: |
+        Outline the approach. Break it into steps if possible.
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: technical-notes
+    attributes:
+      label: Technical Notes
+      description: |
+        Implementation details, constraints, dependencies, or anything the implementer should know.
+    validations:
+      required: false
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: |
+        How do we know this is done? List concrete, verifiable conditions.
+      placeholder: |
+        - [ ] ...
+        - [ ] ...
+    validations:
+      required: false

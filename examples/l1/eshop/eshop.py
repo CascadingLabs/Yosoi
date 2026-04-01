@@ -28,7 +28,7 @@ CATEGORY_URLS = [
     'https://qscrape.dev/l1/eshop/catalog/?cat=Potions%20%26%20Elixirs',
     'https://qscrape.dev/l1/eshop/catalog/?cat=Arcane%20Tomes',
 ]
-MODEL = 'openrouter:stepfun/step-3.5-flash:free'
+MODEL = 'openrouter:openai/gpt-5.4-mini'
 
 
 # ---------------------------------------------------------------------------

@@ -1,0 +1,48 @@
+<svg width="100%" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="logo-title logo-desc">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&amp;display=swap');
+    </style>
+  </defs>
+  <title id="logo-title">Yosoi Logo</title>
+  <desc id="logo-desc">Yosoi logo — periodic table tile with symbol Ys on a slate background</desc>
+
+  <!-- Background -->
+  <rect x="0" y="0" width="500" height="500" fill="#2e3742"/>
+
+  <!-- Outer border -->
+  <rect x="22" y="22" width="456" height="456" rx="28" fill="none" stroke="#8fa3b3" stroke-width="3.5"/>
+  <!-- Inner border inset -->
+  <rect x="34" y="34" width="432" height="432" rx="20" fill="none" stroke="#8fa3b3" stroke-width="1" opacity="0.35"/>
+
+  <!-- Atomic number top-left -->
+  <text x="58" y="82"
+    font-family="Inter, system-ui, sans-serif"
+    font-size="26" font-weight="700"
+    fill="#c4d4df" opacity="0.8"
+  >3</text>
+
+  <!-- Float top-right -->
+  <text x="442" y="82"
+    font-family="Inter, system-ui, sans-serif"
+    font-size="26" font-weight="700"
+    fill="#c4d4df" opacity="0.8"
+    text-anchor="end"
+  >812.25</text>
+
+  <!-- Symbol -->
+  <text x="250" y="310"
+    font-family="Inter, system-ui, sans-serif"
+    font-size="200" font-weight="800"
+    fill="#c4d4df" opacity="0.95"
+    text-anchor="middle"
+  >Ys</text>
+
+  <!-- Element name -->
+  <text x="250" y="382"
+    font-family="Inter, system-ui, sans-serif"
+    font-size="28" font-weight="400"
+    fill="#c4d4df" opacity="0.75"
+    text-anchor="middle" letter-spacing="3"
+  >Yosoi</text>
+</svg>

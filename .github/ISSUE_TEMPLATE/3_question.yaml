@@ -1,0 +1,24 @@
+name: Question
+description: Ask a question about Yosoi
+labels: ["question"]
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: |
+        Describe your question in detail. Include:
+        - What you're trying to accomplish
+        - What you've already tried
+        - Any relevant code snippets or configuration
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: |
+        Any extra context that might help: versions, environment details, links to docs you've already read.
+    validations:
+      required: false
