@@ -1,17 +1,32 @@
+"""Demo: Pydantic AI prompt rendering and schema generation.
+
+Shows how Yosoi's discovery agent constructs prompts and what JSON
+schema is sent to the LLM for structured output.  Uses TestModel so
+no API key or network access is needed.
+"""
+
 import json
 
 from pydantic import Field
-from pydantic_ai import capture_run_messages
+from pydantic_ai import Agent, capture_run_messages
 from pydantic_ai.models.test import TestModel
 
-from yosoi.core.discovery.yosoi_agent import YosoiAgent
 from yosoi.models.contract import Contract
-from yosoi.prompts.discovery import DiscoveryInput
+from yosoi.models.selectors import FieldSelectors, SelectorLevel
+from yosoi.prompts.discovery import (
+    DiscoveryInput,
+    FieldDiscoveryDeps,
+    build_user_prompt,
+    field_single_base_instructions,
+    field_single_field_instructions,
+    field_single_level_instructions,
+    field_single_page_hints,
+)
 from yosoi.types.price import Price
 from yosoi.types.url import Url
 
 
-# Define a complex contract to show off integration
+# Define a contract to show off the schema integration
 class ShoppingContract(Contract):
     """A contract for e-commerce scraping."""
 
@@ -20,24 +35,38 @@ class ShoppingContract(Contract):
     official_url: str = Url(require_https=True, hint="The link to the manufacturer's website")
 
 
-def main():
+async def main() -> None:
     print('--- Pydantic AI Prompt Rendering Demo ---')
 
-    # 1. Setup the Agent — output type is derived from the contract automatically
+    # 1. Build a FieldDiscoveryAgent-style Agent with TestModel
     model = TestModel()
-    system_prompt = 'You are a web scraping expert. Find CSS selectors for the requested fields.'
-    agent = YosoiAgent(model, contract=ShoppingContract, system_prompt=system_prompt)
+    agent: Agent[FieldDiscoveryDeps, FieldSelectors] = Agent(
+        model,
+        deps_type=FieldDiscoveryDeps,
+        output_type=FieldSelectors,
+    )
+    agent.system_prompt(field_single_base_instructions)
+    agent.system_prompt(field_single_field_instructions)
+    agent.system_prompt(field_single_level_instructions)
+    agent.system_prompt(field_single_page_hints)
 
-    # 2. Build a typed DiscoveryInput and capture the run
+    # 2. Build typed inputs and capture the run
     discovery_input = DiscoveryInput(
         url='https://example.com/product',
         html="<div class='product'><h1 id='name'>Coffee Maker</h1><span class='price'>$49.99</span></div>",
+    )
+    deps = FieldDiscoveryDeps(
+        field_name='price',
+        field_description='The product price',
+        field_hint='Look for the large price text',
+        input=discovery_input,
+        target_level=SelectorLevel.CSS,
     )
 
     import contextlib
 
     with capture_run_messages() as messages, contextlib.suppress(Exception):
-        agent.run_sync(discovery_input)
+        await agent.run(build_user_prompt(discovery_input), deps=deps)
 
     # 3. Display the rendered messages
     for i, msg in enumerate(messages):
@@ -47,10 +76,12 @@ def main():
                 print(f'Content:\n{part.content}')
 
     # 4. Display the JSON Schema that Pydantic AI sends to the model
-    print('\n--- Model Output Schema ---')
+    print('\n--- Contract Selector Model Schema ---')
     schema = ShoppingContract.to_selector_model().model_json_schema()
     print(json.dumps(schema, indent=2))
 
 
 if __name__ == '__main__':
-    main()
+    import asyncio
+
+    asyncio.run(main())

@@ -1,5 +1,3 @@
-
-
 Apache License
 Version 2.0, January 2004
 http://www.apache.org/licenses/
@@ -53,7 +51,7 @@ You may add Your own copyright statement to Your modifications and may provide a
 
 END OF TERMS AND CONDITIONS
 
-Copyright [yyyy] [name of copyright owner]
+Copyright 2026 Cascading Labs
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

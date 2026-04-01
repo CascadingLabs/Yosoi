@@ -1,59 +1,114 @@
-Thank you for your interest in contributing to Yosoi! Below you'll find information about our development process and tools.
+# Contributing to Yosoi
 
-## Developing Yosoi
-<TODO>
-## Code Style
-<TODO>
-## Development Tools
+Thanks for your interest in contributing to Yosoi! This guide covers how to get set up and what we expect from pull requests.
 
-Yosoi includes a complete development toolchain:
+## Objectives
 
-### Setup Dev Environment
+Yosoi is an AI-powered tool that discovers resilient selectors for web scraping. The core philosophy is "Discover once, scrape forever." Contributions that improve selector discovery accuracy, add new LLM provider support, improve validation, or expand test coverage are welcome.
+
+## Clone & Setup
 
 ```bash
-# Install with dev dependencies
-uv sync --group dev
-
-# Install pre-commit hooks
-uv run pre-commit install
-
-# Run all checks
-uv run pre-commit run --all-files
+git clone https://github.com/CascadingLabs/Yosoi.git
+cd Yosoi
+uv sync --all-groups
 ```
 
-### Available Tools
+**Prerequisites:**
+
+| Tool | Version | Install |
+|------|---------|---------|
+| Python | >= 3.10 | System or [mise](https://mise.jdx.dev) |
+| uv | Latest | `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
+
+### Install pre-commit hooks
+
+```bash
+uvx prek install
+```
+
+[Prek](https://github.com/thesuperzapper/prek) is a Rust-based pre-commit runner that executes git hooks automatically on every `git commit`, catching issues before they reach CI. It reads the same `.pre-commit-config.yaml` format. In this repo the hooks run ruff (lint + format), mypy, check for secrets via gitleaks, and enforce conventional commit messages via commitizen. To run all hooks manually:
+
+```bash
+uvx prek run --all-files
+```
+
+### Run tests
+
+```bash
+uv run poe ci-test
+```
+
+### Full CI check
+
+```bash
+uv run poe ci-check
+```
+
+## Linting & Formatting
+
+We use [Ruff](https://docs.astral.sh/ruff/) for linting and formatting, and [Mypy](https://mypy.readthedocs.io/) for type checking. Config lives in `pyproject.toml`.
+
+**Key rules:**
+
+- Single quotes, 120-char line length
+- Comprehensive rule set (ARG, ASYNC, B, C4, C901, D, E, F, I, PERF, PT, RET, RUF, SIM, UP, and more)
+- Google-style docstrings
+- Per-file ignores for tests, examples, and `__init__.py`
+- Strict mypy with Python 3.10 target
+
+### Commands
 
 | Tool | Purpose | Command |
 |------|---------|---------|
-| **Ruff** | Linting & Formatting | `uv run ruff check .` |
-| **Mypy** | Type Checking | `uv run mypy .` |
-| **Pre-commit** | Git Hooks | `uv run pre-commit run --all-files` |
+| Ruff lint | Linting | `uv run ruff check .` |
+| Ruff format | Formatting | `uv run ruff format .` |
+| Mypy | Type checking | `uv run mypy .` |
+| Prek | All hooks | `uvx prek run --all-files` |
 
-See [CHEAT_SHEET.md](CHEAT_SHEET.md) for detailed commands.
+CI runs ruff, mypy, and tests on every push and PR. Your PR must pass all checks.
 
-### Commit Guidelines
+## Issues
 
-Use conventional commits:
+We use [GitHub issue forms](https://github.com/CascadingLabs/Yosoi/issues/new/choose) for all issues. Pick the template that fits:
 
-```bash
-git commit -m "feat: add new selector discovery feature"
-git commit -m "fix: handle missing author tags"
-git commit -m "docs: update README with examples"
+- **Bug Report** -something is broken or behaving unexpectedly.
+- **Feature Request** -suggest a new feature or improvement.
+- **Question** -ask a question about usage or internals.
+- **Ticket** -internal planning ticket for tracked work.
+
+Blank issues are disabled -please use a template so we have the context we need to help.
+
+## Pull Request Rules
+
+1. **Branch from `main`** -create a feature branch (`feat/...`, `fix/...`, `docs/...`).
+2. **Keep PRs focused** -one logical change per PR.
+3. **Pass CI** -lint, type check, and tests must all pass.
+4. **Use the PR template** -every PR auto-fills a template. Fill in all sections:
+   - **Intent** -what the PR does and why.
+   - **Changes** -a summary of what was changed.
+   - **GenAI usage** -check the box and describe how AI was used, if applicable. All AI-generated code must be reviewed line-by-line.
+   - **Risks** -any risks or side effects this PR might introduce.
+5. **Link an issue** -reference the issue your PR addresses with `Closes #<number>`.
+
+### Commit Conventions
+
+We use [Conventional Commits](https://www.conventionalcommits.org/) enforced by [Commitizen](https://commitizen-tools.github.io/commitizen/):
+
+```
+feat: add new selector discovery feature
+fix: handle missing author tags
+docs: update README with examples
+test: add integration tests for HTML parser
 ```
 
-## Pull Request Guidelines
+## Code Style
 
-When opening a PR, please include:
+- Never use `unittest` -always `pytest`
+- Use `tenacity` for retries -never `time.sleep()` in loops
+- Always use `uv run` to execute commands -never bare `python` or `pip`
+- Maintain strong typing throughout -mypy strict mode is enforced
 
-1. **Intent** — what the PR does and why.
-2. **Changes** — a summary of what was changed.
-3. **GenAI usage** — if you used AI to write any of the code, include the prompts you used.
-4. **Risks** — any risks or side effects this PR might introduce.
+## License
 
-**Commit Types:**
-- `feat`: New feature
-- `fix`: Bug fix
-- `docs`: Documentation only
-- `refactor`: Code refactoring
-- `test`: Adding tests
-- `chore`: Maintenance
+Contributions are licensed under Apache-2.0, matching the project.

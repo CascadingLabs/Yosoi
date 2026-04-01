@@ -21,7 +21,6 @@ classifiers = [
   "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
   "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-
 dependencies = [
   "beautifulsoup4>=4.14",
   "brotli>=1.2",
@@ -39,7 +38,6 @@ dependencies = [
   "taskiq>=0.12.1",
   "tenacity>=9.1.4",
 ]
-
 optional-dependencies.tabular = [ "openpyxl>=3.1", "pandas>=2", "pyarrow>=14" ]
 urls.Changelog = "https://github.com/CascadingLabs/Yosoi/blob/main/CHANGELOG.md"
 urls.Homepage = "https://cascadinglabs.com/yosoi/"
@@ -53,14 +51,17 @@ dev = [
   "griffe>=2",
   "memray>=1.19.2",
   "mypy>=1.19",
+  "nodriver>=0.48.1",
   "pip-licenses>=5.5.5",
   "playwright>=1.58",
   "poethepoet>=0.42",
   "prek>=0.3.8",
+  "psutil>=7.2.2",
   "ruff>=0.15",
   "types-beautifulsoup4>=4.12",
   "types-dateparser>=1.4.0.20260328",
   "vulture>=2.16",
+  "zendriver>=0.15.3",
 ]
 tests = [
   "deepeval>=3.9",
@@ -84,15 +85,13 @@ tests = [
 
 [tool.uv]
 package = true
-
-[tool.uv.build-backend]
-module-name = "yosoi"
-module-root = ""      # This tells uv the package is in the root, not src/
-
-source-exclude = [
+build-backend.module-name = "yosoi"
+build-backend.module-root = "" # This tells uv the package is in the root, not src/
+build-backend.source-exclude = [
   "tests/**",
   "docs/**",
   "examples/**",
+  "benchmarks/**",
   "**/*.pyc",
   "**/__pycache__",
   ".venv/**",
@@ -113,11 +112,9 @@ source-exclude = [
 target-version = "py310"
 line-length = 120
 indent-width = 4
-
 format.quote-style = "single"
 format.line-ending = "auto"
 format.skip-magic-trailing-comma = false
-
 lint.select = [
   "ARG",   # flake8-unused-arguments
   "ASYNC", # flake8-async
@@ -139,7 +136,6 @@ lint.select = [
   "UP",    # pyupgrade
   "W",     # pycodestyle warnings
 ]
-
 lint.ignore = [
   "ARG001", # unused args are common in dynamic APIs
   "B008",   # allow function calls in defaults when intentional
@@ -165,36 +161,33 @@ lint.per-file-ignores."yosoi/cli/args.py" = [ "ARG002" ] # Click ParamType metho
 lint.per-file-ignores."yosoi/core/cleaning/cleaner.py" = [ "C901" ]
 lint.isort.known-first-party = [ "yosoi" ]
 lint.mccabe.max-complexity = 12
-
 lint.pydocstyle.convention = "google"
 
-[tool.pytest.ini_options]
-testpaths = [ "tests" ]
-asyncio_mode = "auto"
-markers = [
+[tool.pytest]
+ini_options.testpaths = [ "tests" ]
+ini_options.asyncio_mode = "auto"
+ini_options.markers = [
   "eval: mark test as an evaluation test (requires real LLM and is slow)",
 ]
 
-[tool.coverage.report]
-exclude_lines = [
-  "pragma: no cover",
-  "if TYPE_CHECKING:",
-  "def __repr__",
-  "if __name__ == .__main__.",
-  "raise NotImplementedError",
-  "\\.\\.\\.",                 # Protocol method bodies (just `...`)
-]
-show_missing = true
-fail_under = 93
-
-[tool.coverage.run]
-source = [ "yosoi" ]
-omit = [
+[tool.coverage]
+run.omit = [
+  "yosoi/*/*/__init__.py",
+  "yosoi/*/__init__.py",
   "yosoi/__main__.py",
   "yosoi/cli/__main__.py",
-  "yosoi/*/__init__.py",
-  "yosoi/*/*/__init__.py",
 ]
+run.source = [ "yosoi" ]
+report.exclude_lines = [
+  "\\.\\.\\.",                 # Protocol method bodies (just `...`)
+  "def __repr__",
+  "if __name__ == .__main__.",
+  "if TYPE_CHECKING:",
+  "pragma: no cover",
+  "raise NotImplementedError",
+]
+report.fail_under = 93
+report.show_missing = true
 
 [tool.mypy]
 python_version = "3.10"
@@ -212,7 +205,13 @@ ignore-packages = [
   "mistralai",           # Apache-2.0 (missing metadata, verified via GitHub)
   "taskiq-dependencies", # MIT (missing metadata, verified via GitHub)
 ]
-allow-only = "Apache Software License;Apache-2.0;Apache-2.0 AND MIT;Apache-2.0 AND CNRI-Python;Apache-2.0 OR BSD-3-Clause;Apache License 2.0;MIT;MIT License;MIT AND PSF-2.0;BSD License;BSD-2-Clause;BSD-3-Clause;BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0;3-Clause BSD License;ISC;ISC License (ISCL);PSF-2.0;Python Software Foundation License;MPL-2.0;MPL-2.0 AND MIT;Mozilla Public License 2.0 (MPL 2.0);The Unlicense (Unlicense);BSD License; GNU General Public License (GPL); Public Domain;Apache Software License; BSD License;Apache Software License; MIT License"
+allow-only = """\
+  Apache Software License;Apache-2.0;Apache-2.0 AND MIT;Apache-2.0 AND CNRI-Python;Apache-2.0 OR BSD-3-Clause;Apache \
+  License 2.0;MIT;MIT License;MIT AND PSF-2.0;BSD License;BSD-2-Clause;BSD-3-Clause;BSD-3-Clause AND 0BSD AND MIT AND \
+  Zlib AND CC0-1.0;3-Clause BSD License;ISC;ISC License (ISCL);PSF-2.0;Python Software Foundation \
+  License;MPL-2.0;MPL-2.0 AND MIT;Mozilla Public License 2.0 (MPL 2.0);The Unlicense (Unlicense);BSD License; GNU \
+  General Public License (GPL); Public Domain;Apache Software License; BSD License;Apache Software License; MIT License\
+  """
 partial-match = true
 
 [tool.mutmut]
@@ -220,59 +219,32 @@ paths_to_mutate = [ "yosoi/" ]
 tests_dir = [ "tests/unit/" ]
 debug = true
 
-[tool.poe.tasks]
-eval = 'uv run pytest -m "eval"'                                                                              # run deepeval tests
-integration = "uv run pytest -m 'integration'"                                                                # run integration tests
-unit = "uv run pytest -m 'unit'"                                                                              # run unit tests
-ci-test = "uv run pytest tests/unit/ tests/stubs/ -m 'not eval' --cov=yosoi --cov-branch --cov-report=xml"    # unit + stub tests with coverage
-ci-format = "uv run ruff check --fix"
-coverage = "uv run pytest --cov=yosoi --cov-report=term-missing --cov-report=html tests/"
-mutmut-run = "uv run mutmut run"
-mutmut-results = "uv run mutmut results"
-licenses = "uv run pip-licenses"                                                                              # check dependency licenses
-docs = "uv run python scripts/generate_api_docs.py --output-dir ../CascadingLabsFE/docs/yosoi-docs/reference" # generate split API reference with GitHub source links
-bump = "uv run cz bump --yes"                                                                                 # auto-detect from conventional commits
-bump-dry = "uv run cz bump --dry-run"                                                                         # preview what the next bump would be
-bump-alpha = "uv run cz bump --increment PATCH --prerelease alpha --yes"                                      # next alpha pre-release (e.g. 0.0.1a15 → 0.0.1a16)
-bump-beta = "uv run cz bump --increment PATCH --prerelease beta --yes"                                        # next beta pre-release (e.g. 0.0.1a15 → 0.0.1b0)
-bump-patch = "uv run cz bump --increment PATCH --yes"                                                         # patch release (e.g. 0.0.1a14 → 0.0.1)
-bump-minor = "uv run cz bump --increment MINOR --yes"                                                         # minor release (e.g. 0.0.1a14 → 0.1.0)
-bump-major = "uv run cz bump --increment MAJOR --yes"                                                         # major release (e.g. 0.0.1a14 → 1.0.0)
-
-[tool.poe.tasks.ci-check]
-sequence = [
-  { cmd = "uv run prek run --all-files --hook-stage manual --show-diff-on-failure" },
-  { ref = "ci-test" },
-]
-
 [tool.gitleaks]
 [[tool.gitleaks.allowlist]]
 paths = [
-  '''.*\.md$''',
+  ".*\\.md$",
 ]
 regexes = [
-  '''llama-3\.3-70b-versatile''', # Model name, not a secret
-  '''gemini-2\.0-flash-exp''',    # Model name, not a secret
+  "llama-3\\.3-70b-versatile", # Model name, not a secret
+  "gemini-2\\.0-flash-exp",    # Model name, not a secret
 ]
 
 # Configuration for Gitleaks moved to pyproject.toml
-
 [[tool.gitleaks.rules]]
 id = "generic-api-key"
 description = "Generic API Key"
-regex = '''(?i)(?:key|api|token|secret|password)[\s]*[=:>]{1}[\s]*['"]?([a-z0-9_\-]{20,})['"]?'''
+regex = "(?i)(?:key|api|token|secret|password)[\\s]*[=:>]{1}[\\s]*['\"]?([a-z0-9_\\-]{20,})['\"]?"
 entropy = 4.5
 
 [tool.commitizen]
 name = "cz_conventional_commits"
 tag_format = "$version"
 version_scheme = "pep440"
-version_provider = "pep621"                       # Reads/updates version in [project] section of pyproject.toml
+version_provider = "pep621" # Reads/updates version in [project] section of pyproject.toml
 version_files = [ "CITATION.cff:^version" ]
 update_changelog_on_bump = true
-major_version_zero = true                         # Keeps you in 0.x.x (beta) semantics
+major_version_zero = true # Keeps you in 0.x.x (beta) semantics
 post_bump_hooks = [ "bash scripts/post_bump.sh" ]
-
 types = [
   { value = "feat", name = "feat: A new feature" },
   { value = "fix", name = "fix: A bug fix" },
@@ -284,4 +256,27 @@ types = [
   { value = "build", name = "build: Changes that affect the build system (uv, pyproject.toml)" },
   { value = "ci", name = "ci: CI configuration (GitHub Actions)" },
   { value = "chore", name = "chore: Other changes that don't modify src or test files" },
+]
+
+[tool.poe]
+tasks.eval = 'uv run pytest -m "eval"' # run deepeval tests
+tasks.integration = "uv run pytest -m 'integration'" # run integration tests
+tasks.unit = "uv run pytest -m 'unit'" # run unit tests
+tasks.ci-test = "uv run pytest tests/unit/ tests/stubs/ -m 'not eval' --cov=yosoi --cov-branch --cov-report=xml" # unit + stub tests with coverage
+tasks.ci-format = "uv run ruff check --fix"
+tasks.coverage = "uv run pytest --cov=yosoi --cov-report=term-missing --cov-report=html tests/"
+tasks.mutmut-run = "uv run mutmut run"
+tasks.mutmut-results = "uv run mutmut results"
+tasks.licenses = "uv run pip-licenses" # check dependency licenses
+tasks.docs = "uv run python scripts/generate_api_docs.py --output-dir ../CascadingLabsFE/docs/yosoi-docs/reference" # generate split API reference with GitHub source links
+tasks.bump = "uv run cz bump --yes" # auto-detect from conventional commits
+tasks.bump-dry = "uv run cz bump --dry-run" # preview what the next bump would be
+tasks.bump-alpha = "uv run cz bump --increment PATCH --prerelease alpha --yes" # next alpha pre-release (e.g. 0.0.1a15 → 0.0.1a16)
+tasks.bump-beta = "uv run cz bump --increment PATCH --prerelease beta --yes" # next beta pre-release (e.g. 0.0.1a15 → 0.0.1b0)
+tasks.bump-patch = "uv run cz bump --increment PATCH --yes" # patch release (e.g. 0.0.1a14 → 0.0.1)
+tasks.bump-minor = "uv run cz bump --increment MINOR --yes" # minor release (e.g. 0.0.1a14 → 0.1.0)
+tasks.bump-major = "uv run cz bump --increment MAJOR --yes" # major release (e.g. 0.0.1a14 → 1.0.0)
+tasks.ci-check.sequence = [
+  { cmd = "uv run prek run --all-files --hook-stage manual --show-diff-on-failure" },
+  { ref = "ci-test" },
 ]
