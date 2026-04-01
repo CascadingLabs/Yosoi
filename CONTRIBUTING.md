@@ -68,16 +68,28 @@ We use [Ruff](https://docs.astral.sh/ruff/) for linting and formatting, and [Myp
 
 CI runs ruff, mypy, and tests on every push and PR. Your PR must pass all checks.
 
+## Issues
+
+We use [GitHub issue forms](https://github.com/CascadingLabs/Yosoi/issues/new/choose) for all issues. Pick the template that fits:
+
+- **Bug Report** -something is broken or behaving unexpectedly.
+- **Feature Request** -suggest a new feature or improvement.
+- **Question** -ask a question about usage or internals.
+- **Ticket** -internal planning ticket for tracked work.
+
+Blank issues are disabled -please use a template so we have the context we need to help.
+
 ## Pull Request Rules
 
-1. **Branch from `main`** — create a feature branch (`feat/...`, `fix/...`, `docs/...`).
-2. **Keep PRs focused** — one logical change per PR.
-3. **Pass CI** — lint, type check, and tests must all pass.
-4. **Describe your changes** — every PR should include:
-   - **Intent** — what the PR does and why.
-   - **Changes** — a summary of what was changed.
-   - **GenAI usage** — if you used AI to write any of the code, include the prompts you used.
-   - **Risks** — any risks or side effects this PR might introduce.
+1. **Branch from `main`** -create a feature branch (`feat/...`, `fix/...`, `docs/...`).
+2. **Keep PRs focused** -one logical change per PR.
+3. **Pass CI** -lint, type check, and tests must all pass.
+4. **Use the PR template** -every PR auto-fills a template. Fill in all sections:
+   - **Intent** -what the PR does and why.
+   - **Changes** -a summary of what was changed.
+   - **GenAI usage** -check the box and describe how AI was used, if applicable. All AI-generated code must be reviewed line-by-line.
+   - **Risks** -any risks or side effects this PR might introduce.
+5. **Link an issue** -reference the issue your PR addresses with `Closes #<number>`.
 
 ### Commit Conventions
 
@@ -92,10 +104,10 @@ test: add integration tests for HTML parser
 
 ## Code Style
 
-- Never use `unittest` — always `pytest`
-- Use `tenacity` for retries — never `time.sleep()` in loops
-- Always use `uv run` to execute commands — never bare `python` or `pip`
-- Maintain strong typing throughout — mypy strict mode is enforced
+- Never use `unittest` -always `pytest`
+- Use `tenacity` for retries -never `time.sleep()` in loops
+- Always use `uv run` to execute commands -never bare `python` or `pip`
+- Maintain strong typing throughout -mypy strict mode is enforced
 
 ## License
 
