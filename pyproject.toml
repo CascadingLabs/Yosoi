@@ -196,9 +196,7 @@ ignore_missing_imports = true
 warn_unused_ignores = false
 exclude = [
   "mutants/",
-  "void_crawl/",
 ]
-overrides = [ { module = "void_crawl", follow_imports = "skip" } ]
 
 [tool.pip-licenses]
 from = "mixed"

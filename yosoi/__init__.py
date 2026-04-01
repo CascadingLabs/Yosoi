@@ -2,10 +2,7 @@
 
 from importlib.metadata import PackageNotFoundError, version
 
-from yosoi import vc
 from yosoi.core.configs import DebugConfig, TelemetryConfig, YosoiConfig, auto_config
-
-VoidCrawl = vc
 from yosoi.core.discovery import (
     LLMConfig,
     alibaba,
@@ -84,7 +81,6 @@ __all__ = [
     'Title',
     'Url',
     'Video',
-    'VoidCrawl',
     'YosoiConfig',
     'YosoiType',
     'alibaba',
@@ -119,7 +115,6 @@ __all__ = [
     'resolve_contract',
     'sambanova',
     'together',
-    'vc',
     'vercel',
     'vertexai',
     'xai',
