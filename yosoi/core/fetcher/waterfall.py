@@ -27,11 +27,12 @@ import logging
 import time
 from urllib.parse import urlparse
 
+import httpx
 from rich.console import Console
 
 from yosoi.core.fetcher.base import HTMLFetcher
 from yosoi.core.fetcher.simple import SimpleFetcher
-from yosoi.core.fetcher.zendriver import HeadfulFetcher, HeadlessFetcher
+from yosoi.core.fetcher.voiddriver import HeadfulFetcher, HeadlessFetcher
 from yosoi.models.results import FetchResult
 from yosoi.storage.strategy import FetchStrategyStorage
 from yosoi.utils.exceptions import BotDetectionError
@@ -160,6 +161,52 @@ class JSFetcher(HTMLFetcher):
     # Lazy Chrome tier startup
     # ------------------------------------------------------------------
 
+    async def _probe_requires_js(self, url: str) -> bool:
+        """HEAD probe to detect JS-rendered pages before committing to a full fetch.
+
+        Checks response headers and content-length for signals that the page
+        is a SPA or dynamically rendered — without downloading the body at all.
+        """
+        try:
+            async with httpx.AsyncClient() as client:
+                r = await client.head(
+                    url,
+                    timeout=5.0,
+                    follow_redirects=True,
+                    headers={'User-Agent': 'Mozilla/5.0'},
+                )
+
+            headers = {k.lower(): v.lower() for k, v in r.headers.items()}
+
+            # Hard block / bot gate status codes → Chrome required
+            if r.status_code in (403, 429, 503):
+                return True
+
+            # Thin content-length on an HTML page = likely a shell with no body
+            content_length = int(headers.get('content-length', -1))
+            if 0 < content_length < 5_000:
+                return True
+
+            # Explicit framework headers
+            powered_by = headers.get('x-powered-by', '')
+            if any(fw in powered_by for fw in ('next.js', 'nuxt', 'gatsby', 'angular')):
+                return True
+
+            # Some CDNs advertise SSR/SPA origin behaviour
+            server = headers.get('server', '')
+            if 'vercel' in server or 'netlify' in server:
+                return True
+
+            # No content-length at all + chunked transfer often means streaming SSR
+            transfer = headers.get('transfer-encoding', '')
+            content_type = headers.get('content-type', '')
+            return 'chunked' in transfer and 'html' in content_type and 'content-length' not in headers
+
+            return False
+
+        except (httpx.HTTPError, OSError, ValueError):
+            return False  # probe failed — let the waterfall decide naturally
+
     async def _ensure_headless(self) -> HeadlessFetcher:
         """Start headless Chrome lazily on first need."""
         if self._headless is None:
@@ -234,6 +281,11 @@ class JSFetcher(HTMLFetcher):
         """
         if cached_tier == 'simple':
             try:
+                if await self._probe_requires_js(url):
+                    self._console.print(
+                        f'[warning]  ✗ HEAD probe overrides cached simple tier for {domain} — escalating[/warning]'
+                    )
+                    return None
                 result = await self._simple.fetch(url)
                 if result.html and not result.requires_js:
                     return result
@@ -282,27 +334,29 @@ class JSFetcher(HTMLFetcher):
             if all three tiers failed.
 
         """
-        self._console.print(f'[dim]  ↳ New domain {domain} — running fetch waterfall to find best tier...[/dim]')
+        requires_js = await self._probe_requires_js(url)
 
-        # Tier 1: Simple
-        self._console.print('[dim]    [1/3] Trying simple HTTP...[/dim]')
-        result: FetchResult | None = None
-        try:
-            result = await self._simple.fetch(url)
-        except BotDetectionError:
-            self._console.print('[warning]    ✗ Simple fetcher blocked by bot protection[/warning]')
+        if requires_js:
+            self._console.print('[dim]    [1/3] HEAD probe detected JS-rendered page — skipping simple HTTP[/dim]')
+        else:
+            self._console.print('[dim]    [1/3] Trying simple HTTP...[/dim]')
+            result: FetchResult | None = None
+            try:
+                result = await self._simple.fetch(url)
+            except BotDetectionError:
+                self._console.print('[warning]    ✗ Simple fetcher blocked by bot protection[/warning]')
 
-        if result and result.html and not result.requires_js:
-            self._console.print('[success]    ✓ Simple fetcher worked[/success]')
-            self._record_success(domain, 'simple')
-            return result
+            if result and result.html and not result.requires_js:
+                self._console.print('[success]    ✓ Simple fetcher worked[/success]')
+                self._record_success(domain, 'simple')
+                return result
 
-        if result and result.html and result.requires_js:
-            self._console.print('[warning]    ✗ Simple fetcher returned bot gate — JS required[/warning]')
-        elif result:
-            self._console.print(
-                f'[warning]    ✗ Simple fetcher failed ({result.block_reason or "no content"})[/warning]'
-            )
+            if result and result.html and result.requires_js:
+                self._console.print('[warning]    ✗ Simple fetcher returned bot gate — JS required[/warning]')
+            elif result:
+                self._console.print(
+                    f'[warning]    ✗ Simple fetcher failed ({result.block_reason or "no content"})[/warning]'
+                )
 
         # Tier 2: Headless
         self._console.print('[dim]    [2/3] Trying headless Chrome...[/dim]')

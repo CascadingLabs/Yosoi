@@ -133,7 +133,7 @@ class HTMLCleaner:
 
         """
         # 1. Remove HTML comments
-        for comment in soup.find_all(text=lambda text: isinstance(text, Comment)):
+        for comment in soup.find_all(string=lambda text: isinstance(text, Comment)):
             comment.extract()
 
         # 2. Remove attributes not used in CSS selectors

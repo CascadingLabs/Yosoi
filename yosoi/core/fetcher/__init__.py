@@ -2,32 +2,28 @@
 
 from yosoi.core.fetcher.base import HTMLFetcher
 from yosoi.core.fetcher.simple import SimpleFetcher
-from yosoi.core.fetcher.waterfall import JSFetcher
-from yosoi.core.fetcher.zendriver import HeadfulFetcher, HeadlessFetcher
 
 
 def create_fetcher(fetcher_type: str = 'simple', **kwargs: object) -> HTMLFetcher:
-    """Create an HTML fetcher.
+    """Create an HTML fetcher."""
+    if fetcher_type == 'simple':
+        return SimpleFetcher(**kwargs)
 
-    Args:
-        fetcher_type: Type of fetcher ('simple', 'js', 'headless', 'headful')
-        **kwargs: Additional arguments for the fetcher
+    # Browser fetchers: import lazily so voidcrawl is not required at startup
+    if fetcher_type == 'waterfall':
+        from yosoi.core.fetcher.waterfall import JSFetcher
 
-    Returns:
-        HTMLFetcher instance
+        return JSFetcher(**kwargs)
+    if fetcher_type == 'headless':
+        from yosoi.core.fetcher.voiddriver import HeadlessFetcher
 
-    """
-    fetchers: dict[str, type[HTMLFetcher]] = {
-        'simple': SimpleFetcher,
-        'waterfall': JSFetcher,
-        'headless': HeadlessFetcher,
-        'headful': HeadfulFetcher,
-    }
+        return HeadlessFetcher(**kwargs)
+    if fetcher_type == 'headful':
+        from yosoi.core.fetcher.voiddriver import HeadfulFetcher
 
-    if fetcher_type not in fetchers:
-        raise ValueError(f'Unknown fetcher type: {fetcher_type}. Choose from: {list(fetchers.keys())}')
+        return HeadfulFetcher(**kwargs)
 
-    return fetchers[fetcher_type](**kwargs)
+    raise ValueError(f'Unknown fetcher type: {fetcher_type!r}. Choose from: simple, waterfall, headless, headful')
 
 
-__all__ = ['HTMLFetcher', 'HeadfulFetcher', 'HeadlessFetcher', 'JSFetcher', 'SimpleFetcher', 'create_fetcher']
+__all__ = ['HTMLFetcher', 'SimpleFetcher', 'create_fetcher']

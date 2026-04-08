@@ -23,39 +23,49 @@ class ContentAnalyzer:
 
     @staticmethod
     def analyze(html: str) -> ContentMetadata:
-        """Analyze HTML content and return metadata.
-
-        Args:
-            html: The HTML of the URL
-
-        Returns:
-            The metadata of the HTML from the URL
-
-        """
+        """Analyze HTML content and return metadata."""
         metadata = ContentMetadata()
         metadata.content_length = len(html)
-
-        # Convert to lowercase for case-insensitive checks
         html_lower = html.lower()
 
-        # 1. Check if it's RSS/XML
         metadata.is_rss = ContentAnalyzer._detect_rss(html_lower)
         if metadata.is_rss:
             metadata.content_type = 'rss'
             return metadata
 
-        # 2. Detect JavaScript-heavy sites
         js_data = ContentAnalyzer._detect_javascript_heavy(html_lower)
         metadata.requires_js = bool(js_data.requires_js)
         metadata.js_framework = str(js_data.framework) if js_data.framework is not None else None
 
-        # 3. Detect Bot Protection
         if not metadata.requires_js:
             metadata.requires_js = ContentAnalyzer._detect_bot_gate(html_lower)
             if metadata.requires_js:
                 metadata.js_framework = 'bot-gate'
 
+        # Final fallback: text-ratio check catches JS shells that have no
+        # recognisable framework signatures but render almost no visible text
+        if not metadata.requires_js:
+            metadata.requires_js = ContentAnalyzer._detect_js_shell(html)
+            if metadata.requires_js:
+                metadata.js_framework = 'js-shell'
+
         return metadata
+
+    @staticmethod
+    def _detect_js_shell(html: str) -> bool:
+        """Detect JS-rendered shells by visible text ratio.
+
+        A page with lots of HTML but almost no readable text is almost
+        certainly a client-side rendered shell waiting for JS to populate it.
+        """
+        from bs4 import BeautifulSoup
+
+        soup = BeautifulSoup(html[:50_000], 'lxml')
+        for tag in soup(['script', 'style', 'noscript']):
+            tag.decompose()
+        text = soup.get_text(separator=' ', strip=True)
+        text_ratio = len(text) / max(len(html), 1)
+        return len(text) < 500 or text_ratio < 0.02
 
     @staticmethod
     def _detect_rss(html_lower: str) -> bool:
