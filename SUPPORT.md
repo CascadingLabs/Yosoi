@@ -17,6 +17,10 @@ Use GitHub Issues for bug reports and feature requests on a specific project. Be
 
 Please do **not** use issues for general questions — Discord is faster for that.
 
+## Email
+
+For general questions, partnerships, or other inquiries, email us at [contact@cascadinglabs.com](mailto:contact@cascadinglabs.com).
+
 ## Security Issues
 
 If you've found a security vulnerability, do not open a public issue. See our [Security Policy](SECURITY.md) instead.

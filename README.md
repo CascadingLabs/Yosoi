@@ -104,3 +104,7 @@ If you use **yosoi** in your research or projects, please cite it using the meta
 <p align="center">
     <img src="media/citationExample.png" alt="Citation" width="800">
 </p>
+
+## Contact
+
+[contact@cascadinglabs.com](mailto:contact@cascadinglabs.com)
