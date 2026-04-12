@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+import logging
 import time
 
+logger = logging.getLogger(__name__)
+
 from yosoi.core.fetcher.base import ContentAnalyzer, HTMLFetcher
+from yosoi.core.fetcher.dom_fsm import DOMProber
 from yosoi.models.results import FetchResult
 from yosoi.utils.exceptions import BotDetectionError
 
@@ -45,6 +49,7 @@ class _VoidCrawlFetcher(HTMLFetcher):
         config = PoolConfig(
             browsers=1,
             tabs_per_browser=self.max_concurrent,
+            tab_max_idle_secs=300,
             browser=BrowserConfig(
                 headless=self._headless,
                 stealth=True,
@@ -69,10 +74,18 @@ class _VoidCrawlFetcher(HTMLFetcher):
         start = time.time()
         return await self._do_fetch(url, start, 'fetch')
 
-    async def _do_fetch(self, url: str, start_time: float, _tier: str) -> FetchResult:
+    async def _do_fetch(
+        self,
+        url: str,
+        start_time: float,
+        _tier: str,
+    ) -> FetchResult:
         async with self._pool.acquire() as tab:
             await tab.goto(url, timeout=float(self.timeout))
-            html = await tab.content()
+
+            # TODO: Make a A3Node that makes a DOM explorer for a url/domain
+            probe_result = await DOMProber().run(tab)
+            html = probe_result.html  # already captured inside run()
 
         if not html or len(html) < self.min_content_length:
             return FetchResult(

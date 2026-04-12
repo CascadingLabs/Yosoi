@@ -248,12 +248,13 @@ class JSFetcher(HTMLFetcher):
         domain = urlparse(url).netloc.replace('www.', '')
         cached_tier = None if self._force else self._preferred_tier(domain)
 
+        # TODO: Make an A3Node caller to get the cached DOM explorer for a url/domain
+
         if cached_tier is not None:
             self._console.print(f'[dim]  ↳ {domain} — using cached tier [bold]{cached_tier}[/bold][/dim]')
             cached_result = await self._fetch_cached_tier(url, domain, cached_tier, start_time)
             if cached_result is not None:
                 return cached_result
-            # Cached tier failed or gated — fall through to full waterfall
 
         return await self._fetch_waterfall(url, domain, start_time)
 
@@ -307,7 +308,7 @@ class JSFetcher(HTMLFetcher):
                 self._console.print(f'[warning]  ✗ Cached headless tier failed for {domain} — trying headful[/warning]')
             except BotDetectionError:
                 self._console.print(
-                    f'[warning]  ✗ Cached headless tier blocked for {domain} — trying headful[/warning]'
+                    f'[warning]  ✗ Cached headless tier blocked for {domain} — re-running waterfall[/warning]'
                 )
             headful = await self._ensure_headful()
             result = await headful._do_fetch(url, start_time, 'headful')
