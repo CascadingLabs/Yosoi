@@ -5,6 +5,8 @@ from __future__ import annotations
 import logging
 import time
 
+from rich.console import Console
+
 logger = logging.getLogger(__name__)
 
 from yosoi.core.fetcher.base import ContentAnalyzer, HTMLFetcher
@@ -35,12 +37,14 @@ class _VoidCrawlFetcher(HTMLFetcher):
         max_concurrent: int = 5,
         min_content_length: int = 500,
         no_sandbox: bool = False,
+        console: Console | None = None,
         **_kwargs,
     ):
         self.timeout = timeout
         self.max_concurrent = max_concurrent
         self.min_content_length = min_content_length
         self.no_sandbox = no_sandbox
+        self._console = console or Console()
         self._pool = None
         self._pool_ctx = None
 
@@ -84,7 +88,7 @@ class _VoidCrawlFetcher(HTMLFetcher):
             await tab.goto(url, timeout=float(self.timeout))
 
             # TODO: Make a A3Node that makes a DOM explorer for a url/domain
-            probe_result = await DOMProber().run(tab)
+            probe_result = await DOMProber(console=self._console).run(tab)
             html = probe_result.html  # already captured inside run()
 
         if not html or len(html) < self.min_content_length:

@@ -38,6 +38,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
+from rich.console import Console
+
 logger = logging.getLogger(__name__)
 
 
@@ -237,12 +239,14 @@ class DOMProber:
         settle_timeout: float = 8.0,
         scroll_pause: float = 2.0,
         content_selector: str | None = None,
+        console: Console | None = None,
     ) -> None:
         """Initialise the prober with tuning parameters."""
         self._max_cycles = max_cycles
         self._settle_timeout = settle_timeout
         self._scroll_pause = scroll_pause
         self._content_selector = content_selector or self._DEFAULT_CONTENT_SELECTOR
+        self._console = console or Console()
 
     async def run(self, tab: Any) -> ProbeResult:
         """Drive a page to READY state using heuristic detect-act cycles.
@@ -261,6 +265,7 @@ class DOMProber:
 
         # ── Phase 1: initial settle ───────────────────────────────────────
         logger.debug('DOMProber: initial settle')
+        self._console.print('[dim]  ↻ DOM prober: initial settle...[/dim]')
         try:
             await tab.wait_for_stable_dom(
                 timeout=self._settle_timeout,
@@ -272,6 +277,7 @@ class DOMProber:
 
         content_start = await self._count_content(tab)
         logger.info('DOMProber: starting content count = %d', content_start)
+        self._console.print(f'[dim]  ↻ DOM prober: {content_start} items found initially[/dim]')
 
         # ── Phase 2: detect-act loop ──────────────────────────────────────
         prev_count = content_start
@@ -285,6 +291,9 @@ class DOMProber:
                 break
 
             logger.info('DOMProber: found trigger %r (%s)', trigger.label, trigger.kind.value)
+            self._console.print(
+                f'[dim]  ↻ DOM prober: cycle {cycle + 1} — found trigger [{trigger.kind.value}] {trigger.label!r}[/dim]'
+            )
             trigger_kinds.add(trigger.kind)
 
             act_start = time.perf_counter()
@@ -304,6 +313,9 @@ class DOMProber:
                 new_count,
                 new_count - prev_count,
                 act_elapsed,
+            )
+            self._console.print(
+                f'[dim]  ↻ DOM prober: cycle {cycle + 1} complete — {prev_count} → {new_count} items (+{new_count - prev_count})[/dim]'
             )
 
             acts.append(
@@ -339,6 +351,9 @@ class DOMProber:
             content_final,
             len(acts),
             elapsed_ms,
+        )
+        self._console.print(
+            f'[success]  ↻ DOM prober: READY — {content_start} → {content_final} items in {elapsed_ms:.0f}ms[/success]'
         )
 
         return ProbeResult(

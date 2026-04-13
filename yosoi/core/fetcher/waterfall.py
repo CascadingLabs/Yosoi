@@ -89,14 +89,6 @@ class JSFetcher(HTMLFetcher):
             max_delay=max_delay,
             randomize_headers=randomize_headers,
         )
-        self._chrome_kwargs: dict = {
-            'timeout': timeout,
-            'min_delay': min_delay,
-            'max_delay': max_delay,
-            'max_concurrent': max_concurrent,
-            'min_content_length': min_content_length,
-            'browser_executable_path': browser_executable_path,
-        }
         self._headless: HeadlessFetcher | None = None
         self._headful: HeadfulFetcher | None = None
 
@@ -107,6 +99,16 @@ class JSFetcher(HTMLFetcher):
         self._console = console or Console()
         self.logger = logging.getLogger(__name__)
         self._force = force
+
+        self._chrome_kwargs: dict = {
+            'timeout': timeout,
+            'min_delay': min_delay,
+            'max_delay': max_delay,
+            'max_concurrent': max_concurrent,
+            'min_content_length': min_content_length,
+            'browser_executable_path': browser_executable_path,
+            'console': self._console,
+        }
 
     # ------------------------------------------------------------------
     # Context manager
