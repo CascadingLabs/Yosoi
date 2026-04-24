@@ -4,7 +4,10 @@
 
 **Please do not report security vulnerabilities through public GitHub issues.**
 
-If you discover a security vulnerability in any Cascading Labs project, report it privately via our [Discord server](https://discord.gg/w6bVujKphH). Reach out to a maintainer directly in a private message.
+If you discover a security vulnerability in any Cascading Labs project, report it privately by either:
+
+- Emailing [contact@cascadinglabs.com](mailto:contact@cascadinglabs.com), or
+- Messaging a maintainer directly on our [Discord server](https://discord.gg/w6bVujKphH).
 
 Include as much of the following as you can:
 
