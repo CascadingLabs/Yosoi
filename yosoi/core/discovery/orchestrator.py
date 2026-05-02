@@ -7,7 +7,6 @@ import logging
 from typing import Any
 from urllib.parse import urlparse
 
-import logfire
 from rich.console import Console
 
 from yosoi.core.discovery.bus import DiscoveryBus
@@ -18,6 +17,7 @@ from yosoi.models.contract import Contract
 from yosoi.models.selectors import SelectorLevel
 from yosoi.prompts.discovery import DiscoveryInput
 from yosoi.storage.persistence import SelectorStorage
+from yosoi.utils import observability as obs
 from yosoi.utils.signatures import _get_yosoi_type
 
 # Selector dict: field name → {primary, fallback, tertiary} selectors
@@ -90,7 +90,6 @@ class DiscoveryOrchestrator:
     def target_level(self, value: SelectorLevel) -> None:
         self._target_level = value
 
-    @logfire.instrument('orchestrator_discover_selectors', extract_args=False)
     async def discover_selectors(
         self, html: str, url: str | None = None, *, stale_fields: set[str] | None = None
     ) -> SelectorMap | None:
@@ -117,8 +116,34 @@ class DiscoveryOrchestrator:
 
         # If every field has an override, skip AI entirely
         if not field_descs:
-            logfire.info('Skipping AI discovery — all fields overridden', url=url_context)
+            logger.info('Skipping AI discovery — all fields overridden (url=%s)', url_context)
             return {k: dict(v) for k, v in overrides.items()} if overrides else None
+
+        with obs.span('orchestrator_discover_selectors', url=url_context):
+            return await self._discover_selectors_impl(
+                html=html,
+                url=url,
+                url_context=url_context,
+                domain=domain,
+                discovery_input=discovery_input,
+                hints=hints,
+                overrides=overrides,
+                stale_fields=stale_fields,
+            )
+
+    async def _discover_selectors_impl(
+        self,
+        *,
+        html: str,
+        url: str | None,
+        url_context: str,
+        domain: str,
+        discovery_input: DiscoveryInput,
+        hints: dict[str, str | None],
+        overrides: dict[str, dict[str, Any]],
+        stale_fields: set[str] | None,
+    ) -> SelectorMap | None:
+        field_descs = self._contract.field_descriptions()
 
         semaphore = asyncio.Semaphore(self._max_concurrent)
 
@@ -180,15 +205,15 @@ class DiscoveryOrchestrator:
         # Check if all non-root fields failed
         non_container = {k: v for k, v in merged.items() if k != 'root'}
         if not non_container:
-            logfire.warning('All field tasks returned None', url=url_context)
+            obs.warning('All field tasks returned None', url=url_context)
             return None
 
-        logfire.info(
-            'Orchestrator discovery complete',
-            url=url_context,
-            total=len(merged),
-            cached=cached_count,
-            escalated=escalated_count,
+        logger.info(
+            'Orchestrator discovery complete url=%s total=%d cached=%d escalated=%d',
+            url_context,
+            len(merged),
+            cached_count,
+            escalated_count,
         )
         self.console.print(
             f'[success]Discovered selectors for {len(non_container)} fields (cached={cached_count})[/success]'

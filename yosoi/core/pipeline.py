@@ -11,7 +11,6 @@ from typing import Any
 from urllib.parse import urlparse
 
 import httpx
-import logfire
 from rich.console import Console
 from rich.live import Live
 from rich.panel import Panel
@@ -33,6 +32,7 @@ from yosoi.models.selectors import SelectorLevel
 from yosoi.models.snapshot import CacheVerdict, SelectorSnapshot, snapshot_to_selector_dict
 from yosoi.storage import DebugManager, LLMTracker, SelectorStorage
 from yosoi.storage.tracking import DomainStats
+from yosoi.utils import observability
 from yosoi.utils.exceptions import BotDetectionError
 from yosoi.utils.retry import get_async_retryer
 from yosoi.utils.signatures import contract_signature
@@ -136,11 +136,19 @@ class Pipeline:
             llm_config = yosoi_cfg.llm
             debug_mode = yosoi_cfg.debug.save_html
             force = yosoi_cfg.force
-            if yosoi_cfg.telemetry.logfire_token:
-                import logfire as _logfire
+            observability.configure(yosoi_cfg.telemetry)
+        else:
+            import os
 
-                _logfire.configure(token=yosoi_cfg.telemetry.logfire_token)
-                _logfire.instrument_pydantic()
+            from yosoi.core.configs import TelemetryConfig
+
+            observability.configure(
+                TelemetryConfig(
+                    langfuse_public_key=os.getenv('LANGFUSE_PUBLIC_KEY'),
+                    langfuse_secret_key=os.getenv('LANGFUSE_SECRET_KEY'),
+                    langfuse_host=os.getenv('LANGFUSE_BASE_URL') or os.getenv('LANGFUSE_HOST'),
+                )
+            )
 
         self.custom_theme = Theme(
             {
@@ -176,6 +184,12 @@ class Pipeline:
         self._url_start: float = 0.0
         self.last_elapsed: float = 0.0
         self._client: httpx.AsyncClient = httpx.AsyncClient()
+
+        # One Langfuse session per Pipeline instance — every trace this
+        # pipeline produces gets grouped under this id.
+        import uuid
+
+        self.session_id: str = f'yosoi-{uuid.uuid4().hex[:12]}'
 
         # Auto-initialize .yosoi dir and file logging when used outside the CLI
         has_file_handler = any(isinstance(h, logging.FileHandler) for h in logging.getLogger().handlers)
@@ -306,7 +320,8 @@ class Pipeline:
         results: dict[str, list[str]] = {'successful': [], 'failed': []}
 
         run_start = time.monotonic()
-        with logfire.span('process_urls', total_urls=len(urls)):
+        sess_id = getattr(self, 'session_id', '') or 'yosoi-unset'
+        with observability.session(sess_id), observability.span('process_urls', total_urls=len(urls)):
             for idx, url in enumerate(urls, 1):
                 self.console.print(f'\n[bold blue]Processing URL {idx}/{len(urls)}[/bold blue]')
                 self.logger.info('--- Processing URL %d/%d: %s ---', idx, len(urls), url)
@@ -326,7 +341,7 @@ class Pipeline:
                     if on_complete is not None:
                         await on_complete(url, True, time.monotonic() - url_start)
                 except Exception as e:
-                    logfire.error('Error processing URL', url=url, error=str(e))
+                    observability.warning('Error processing URL', url=url, error=str(e))
                     self.logger.exception('Critical error processing %s', url)
                     self.console.print(f'[danger]Error processing {url}: {e}[/danger]')
                     results['failed'].append(url)
@@ -338,13 +353,14 @@ class Pipeline:
             total_elapsed = time.monotonic() - run_start
             self._print_summary(results, total_elapsed)
 
-            logfire.info(
-                'Processing complete',
-                total=len(urls),
-                successful=len(results['successful']),
-                failed=len(results['failed']),
+            self.logger.info(
+                'Processing complete total=%d successful=%d failed=%d',
+                len(urls),
+                len(results['successful']),
+                len(results['failed']),
             )
 
+        observability.flush()
         return results
 
     async def _process_urls_with_live(
@@ -443,15 +459,16 @@ class Pipeline:
 
         self._print_summary(results, total_elapsed)
 
-        logfire.info(
-            'Concurrent processing complete',
-            total=len(urls),
-            successful=len(results['successful']),
-            failed=len(results['failed']),
-            skipped=len(results['skipped']),
-            workers=max_workers,
+        self.logger.info(
+            'Concurrent processing complete total=%d successful=%d failed=%d skipped=%d workers=%d',
+            len(urls),
+            len(results['successful']),
+            len(results['failed']),
+            len(results['skipped']),
+            max_workers,
         )
 
+        observability.flush()
         return results
 
     def _print_summary(self, results: dict[str, list[str]], total_elapsed: float) -> None:
@@ -507,7 +524,11 @@ class Pipeline:
 
         url = await self.normalize_url(url)
 
-        with logfire.span('scrape', url=url, force=force_flag, fetcher_type=fetcher_type):
+        sess_id = getattr(self, 'session_id', '') or 'yosoi-unset'
+        with (
+            observability.session(sess_id),
+            observability.span('scrape', url=url, force=force_flag, fetcher_type=fetcher_type),
+        ):
             self.logger.info('Processing URL: %s (force=%s, fetcher=%s)', url, force_flag, fetcher_type)
             domain = self._extract_domain(url)
             fetcher = self._create_fetcher(fetcher_type)
@@ -579,7 +600,7 @@ class Pipeline:
             return None
 
         self.console.print(f'[success]✓ Found cached selectors for {domain}[/success]')
-        logfire.info('Using cached selectors', domain=domain, url=url)
+        self.logger.info('Using cached selectors domain=%s url=%s', domain, url)
 
         if skip_verification:
             existing = {name: snapshot_to_selector_dict(snap) for name, snap in snapshots.items()}
@@ -914,7 +935,7 @@ class Pipeline:
             attempt = retry_state.attempt_number
             if attempt >= 1:
                 self.console.print(f'[warning]Fetch retry attempt {attempt}/{max_retries}...[/warning]')
-                logfire.warning('Retrying fetch', url=url, attempt=attempt)
+                observability.warning('Retrying fetch', url=url, attempt=attempt)
 
         try:
             retryer = get_async_retryer(
@@ -960,7 +981,7 @@ class Pipeline:
                         ]:
                             self.console.print(f'[danger]Unexpected error: {e}[/danger]')
                             self.logger.exception('Fetch error for %s', url)
-                            logfire.error(
+                            observability.warning(
                                 'Fetch error', url=url, error=str(e), attempt=attempt.retry_state.attempt_number
                             )
                         raise
@@ -1026,7 +1047,7 @@ class Pipeline:
         # If every field has an override, skip AI entirely
         if not self.contract.field_descriptions():
             self.console.print('[step]Step 2: All fields have selector overrides — skipping AI discovery[/step]')
-            logfire.info('Skipping AI discovery — all fields overridden', url=url)
+            self.logger.info('Skipping AI discovery — all fields overridden url=%s', url)
             self.debug.save_debug_selectors(url, overrides)
             return overrides, False
 
@@ -1035,7 +1056,7 @@ class Pipeline:
             attempt = retry_state.attempt_number
             if attempt >= 1:
                 self.console.print(f'[warning]AI retry attempt {attempt}/{max_retries}...[/warning]')
-                logfire.warning('Retrying AI discovery', url=url, attempt=attempt)
+                observability.warning('Retrying AI discovery', url=url, attempt=attempt)
 
         # Use AI discovery with retries
         try:
@@ -1083,7 +1104,7 @@ class Pipeline:
 
         # All attempts failed
         self.console.print(f'[danger]All {max_retries} AI attempts failed[/danger]')
-        logfire.error('All AI attempts failed', url=url)
+        observability.warning('All AI attempts failed', url=url)
         return None, False
 
     @staticmethod
@@ -1398,11 +1419,11 @@ class Pipeline:
             error.status_code,
             ', '.join(error.indicators),
         )
-        logfire.warning(
+        observability.warning(
             'Bot detection triggered',
             url=error.url,
             status_code=error.status_code,
-            indicators=error.indicators,
+            indicators=','.join(error.indicators),
             attempt=attempt,
             max_retries=max_retries,
         )

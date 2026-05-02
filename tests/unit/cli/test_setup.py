@@ -21,7 +21,10 @@ def _clean_env(monkeypatch):
         'CEREBRAS_API_KEY',
         'OPENROUTER_KEY',
         'OPENROUTER_API_KEY',
-        'LOGFIRE_TOKEN',
+        'LANGFUSE_PUBLIC_KEY',
+        'LANGFUSE_SECRET_KEY',
+        'LANGFUSE_HOST',
+        'LANGFUSE_BASE_URL',
         'YOSOI_MODEL',
     ):
         monkeypatch.delenv(key, raising=False)

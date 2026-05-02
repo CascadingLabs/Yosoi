@@ -42,5 +42,5 @@ The `yosoi/` package is organized into several sub-packages to maintain a clean 
 - **Import Strategy**: Prefer absolute imports from the `yosoi` root.
 - **Clean API**: Use `yosoi/__init__.py` to export the primary `Pipeline` and `LLMConfig`.
 - **Statelessness**: Favor stateless core components that receive state via arguments.
-- **Observability**: Instrument all major operations with `logfire`.
+- **Observability**: Instrument major operations via `yosoi.utils.observability` (Langfuse-backed; pydantic-ai Agents emit OTel spans natively). Use `obs.span(...)` for non-LLM regions and `obs.warning(...)` for retry/error events. No-ops without Langfuse keys.
 - **Output**: Use `rich` for all terminal UI elements.

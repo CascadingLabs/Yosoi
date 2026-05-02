@@ -1,6 +1,7 @@
 """Single-field AI discovery agent wrapping a narrow pydantic-ai Agent."""
 
-import logfire
+import logging
+
 from pydantic_ai import Agent
 from rich.console import Console
 
@@ -15,7 +16,10 @@ from yosoi.prompts.discovery import (
     field_single_level_instructions,
     field_single_page_hints,
 )
+from yosoi.utils import observability as obs
 from yosoi.utils.exceptions import LLMGenerationError
+
+_logger = logging.getLogger(__name__)
 
 
 def _extract_provider_error(exc: Exception) -> str | None:
@@ -73,13 +77,13 @@ class FieldDiscoveryAgent:
             deps_type=FieldDiscoveryDeps,
             output_type=FieldSelectors,
             output_retries=3,
+            instrument=obs.instrumentation_settings(),
         )
         self._agent.system_prompt(field_single_base_instructions)
         self._agent.system_prompt(field_single_field_instructions)
         self._agent.system_prompt(field_single_level_instructions)
         self._agent.system_prompt(field_single_page_hints)
 
-    @logfire.instrument('field_discover', extract_args=False)
     async def discover_field(
         self,
         field_name: str,
@@ -115,26 +119,29 @@ class FieldDiscoveryAgent:
             is_container=is_container,
         )
 
-        try:
-            result = await self._agent.run(build_user_prompt(discovery_input), deps=deps)
-            field_selectors: FieldSelectors = result.output
+        with obs.span('field_discover', field=field_name):
+            try:
+                result = await self._agent.run(build_user_prompt(discovery_input), deps=deps)
+                field_selectors: FieldSelectors = result.output
 
-            # Treat primary value of NA as not found
-            if field_selectors.primary.value.upper() == 'NA':
-                logfire.info('Field discovery returned NA', field=field_name)
-                return None
+                if field_selectors.primary.value.upper() == 'NA':
+                    _logger.info('Field discovery returned NA', extra={'field': field_name})
+                    return None
 
-            logfire.info('Field selectors found', field=field_name)
-            return field_selectors
+                _logger.info('Field selectors found', extra={'field': field_name})
+                return field_selectors
 
-        except Exception as e:
-            error_msg = str(e)
-            detail = _extract_provider_error(e)
+            except Exception as e:
+                error_msg = str(e)
+                detail = _extract_provider_error(e)
 
-            if detail:
-                self.console.print(f'[danger]  ✗ {field_name}: {detail}[/danger]')
-            else:
-                self.console.print(f'[danger]  ✗ {field_name}: {e}[/danger]')
+                if detail:
+                    self.console.print(f'[danger]  ✗ {field_name}: {detail}[/danger]')
+                else:
+                    self.console.print(f'[danger]  ✗ {field_name}: {e}[/danger]')
 
-            logfire.error('Field discovery failed', field=field_name, error=error_msg, provider=self.provider)
-            raise LLMGenerationError(f'Field discovery failed for {field_name}: {detail or error_msg}') from e
+                _logger.error(
+                    'Field discovery failed',
+                    extra={'field': field_name, 'error': error_msg, 'provider': self.provider},
+                )
+                raise LLMGenerationError(f'Field discovery failed for {field_name}: {detail or error_msg}') from e

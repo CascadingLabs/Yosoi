@@ -473,7 +473,7 @@ def test_ensure_tracking_migrates_root_file(mocker, tmp_path):
     mock_span = mocker.MagicMock()
     mock_span.__enter__ = mocker.MagicMock(return_value=mock_span)
     mock_span.__exit__ = mocker.MagicMock(return_value=False)
-    mocker.patch('yosoi.utils.files.logfire.span', return_value=mock_span)
+    mocker.patch('yosoi.utils.files.obs.span', return_value=mock_span)
 
     ensure_tracking_file(yosoi_dir)
 

@@ -53,7 +53,8 @@ for attempt in Retrying(
 
 ## Logging & Observability
 - **Local Logs**: Every run generates a log file in `.yosoi/logs/`. These logs contain detailed debug information and full tracebacks.
-- **Logfire**: Used for cloud-based observability if `LOGFIRE_TOKEN` is set.
+- **Langfuse**: OSS, self-hostable LLM observability. Set `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY` (and optional `LANGFUSE_BASE_URL`, default cloud) to enable.
+  Run a local stack: `docker compose -f docker-compose.langfuse.yml up -d`, then visit `http://localhost:3000` to create a project and copy the keys.
 - **Console**: Keeping it minimal and stylish for human eyes.
 
 ## Interaction Guidelines
