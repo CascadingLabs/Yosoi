@@ -147,6 +147,72 @@ async def test_scrape_emits_pinned_span_tree(pipeline_stub, span_exporter, mocke
         f'expected user_id+tags=[shop.example.com] in calls: {captured}'
     )
 
+    # P3 — root span carries the Langfuse trace-input attribute.
+    import json as _json
+
+    raw_input = root.attributes.get('langfuse.observation.input')
+    assert raw_input is not None, 'root span missing langfuse.observation.input'
+    payload_in = _json.loads(raw_input)
+    assert payload_in['url'] == CANNED_URL
+    assert payload_in['contract']['name'] == _SimpleContract.__name__
+    assert isinstance(payload_in['contract']['fields'], dict)
+
+    # P3 — root span carries the Langfuse trace-output attribute on success.
+    raw_output = root.attributes.get('langfuse.observation.output')
+    assert raw_output is not None, 'root span missing langfuse.observation.output'
+    payload_out = _json.loads(raw_output)
+    assert payload_out['path'] == 'fresh'
+    assert isinstance(payload_out['selectors'], dict)
+    assert payload_out['extracted_count'] == 1
+    assert payload_out['extracted_sample'] == EXTRACTED
+
+
+# ────────────────────────────────────────────────────────────────────
+# Reconciliation B — direct scrape() (script-mode, no process_urls wrap)
+# must still propagate session_id with tags=['yosoi','script'].
+# ────────────────────────────────────────────────────────────────────
+
+
+@pytest.mark.usefixtures('_active_observability')
+async def test_direct_scrape_emits_session_with_script_tag(pipeline_stub, span_exporter, mocker, monkeypatch):
+    """Test 6 — calling Pipeline.scrape() directly (no outer process_urls wrap)
+    still opens an ``observability.session(...)`` propagation with
+    ``tags=['yosoi','script']`` so the URL trace gets a session id."""
+    monkeypatch.setenv('YOSOI_SESSION_ID', 'direct-scrape-sess')
+    obs.reset_for_tests()
+    # Re-active the patched _instance after reset.
+    from opentelemetry import trace as _trace
+
+    fake = mocker.MagicMock()
+    fake.tracer = _trace.get_tracer('yosoi-direct-scrape-test')
+    mocker.patch.object(obs.LangfuseClient, '_instance', fake)
+
+    captured: list[dict] = []
+    mocker.patch('langfuse.propagate_attributes', _capturing_propagate(captured))
+    mocker.patch.object(Pipeline, 'normalize_url', return_value=CANNED_URL)
+    mocker.patch.object(
+        Pipeline,
+        '_create_fetcher',
+        return_value=mocker.MagicMock(__aenter__=mocker.AsyncMock(), __aexit__=mocker.AsyncMock()),
+    )
+    mocker.patch.object(Pipeline, '_fetch', return_value=FetchResult(url=CANNED_URL, html=CANNED_HTML, status_code=200))
+    mocker.patch.object(Pipeline, '_clean', return_value=CLEANED_HTML)
+    mocker.patch.object(Pipeline, '_discover', return_value=(DISCOVERED_SELECTORS, True))
+    mocker.patch.object(Pipeline, '_resolve_root', return_value=None)
+    mocker.patch.object(Pipeline, '_root_value', return_value=None)
+    mocker.patch.object(Pipeline, '_verify', return_value=DISCOVERED_SELECTORS)
+    mocker.patch.object(Pipeline, '_extract', return_value=EXTRACTED)
+    mocker.patch.object(Pipeline, '_validate_items', return_value=[EXTRACTED])
+    mocker.patch.object(Pipeline, '_finish', new=mocker.AsyncMock())
+
+    await _drain(Pipeline.scrape(pipeline_stub, CANNED_URL))
+
+    sess_calls = [c for c in captured if c.get('session_id') == 'direct-scrape-sess']
+    assert sess_calls, f'direct scrape() must open a session() wrap with the resolved id; got: {captured}'
+    assert any(c.get('tags') == ['yosoi', 'script'] for c in sess_calls), (
+        f'expected tags=["yosoi","script"] on the session call; got: {sess_calls}'
+    )
+
 
 # ────────────────────────────────────────────────────────────────────
 # A2.2 — Pipeline-level: real DiscoveryOrchestrator + Agent.override(TestModel)

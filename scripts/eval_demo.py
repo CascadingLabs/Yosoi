@@ -53,25 +53,23 @@ def _single_trace_demo() -> str:
 async def _concurrent_demo() -> str:
     """Real Pipeline + workers=2 + 4 URLs across 2 (sub)domains under TestModel.
 
-    Stubs fetcher and discovery so the demo doesn't hit the network or call
-    a real LLM. The point is to verify session/user propagation across the
-    concurrent dispatch path in live Langfuse data, not to actually scrape.
+    Stubs ONLY the fetcher (no network) and lets the real ``DiscoveryOrchestrator``
+    + ``FieldDiscoveryAgent`` run with ``Agent.override(model=TestModel())``
+    swapping in a deterministic fake LLM. This causes pydantic-ai's
+    instrumentation to emit ``agent run`` and ``chat <model>`` spans visible
+    in localhost Langfuse — the visibility gap Phase 3 was meant to close.
     """
     from pydantic_ai import Agent
+    from pydantic_ai.models.test import TestModel
 
     from yosoi.core import pipeline as _pipeline_mod
-    from yosoi.core.discovery import orchestrator as _orch_mod
     from yosoi.core.discovery.config import LLMConfig
     from yosoi.core.pipeline import Pipeline
     from yosoi.models.defaults import NewsArticle
     from yosoi.models.results import ContentMetadata, FetchResult
     from yosoi.utils import observability as obs
 
-    # Pin the session id BEFORE any Pipeline construction so process_session_id()
-    # resolves to it lazily. Honour an env-provided value so callers can re-run
-    # with a fresh session id.
     sess_id = os.environ.setdefault('YOSOI_SESSION_ID', 'eval-demo-concurrent-session')
-
     Agent.instrument_all()
 
     llm_config = LLMConfig(
@@ -81,14 +79,11 @@ async def _concurrent_demo() -> str:
         temperature=0.0,
     )
 
-    canned_html = '<html><body><h1 class="title">demo</h1><span class="author">a</span><span class="date">2026-01-01</span><article>x</article><div class="related"><a>x</a></div></body></html>'
-    discovered_map = {
-        'headline': {'primary': {'strategy': 'css', 'level': 1, 'value': 'h1.title'}},
-        'author': {'primary': {'strategy': 'css', 'level': 1, 'value': 'span.author'}},
-        'date': {'primary': {'strategy': 'css', 'level': 1, 'value': 'span.date'}},
-        'body_text': {'primary': {'strategy': 'css', 'level': 1, 'value': 'article'}},
-        'related_content': {'primary': {'strategy': 'css', 'level': 1, 'value': '.related'}},
-    }
+    canned_html = (
+        '<html><body><h1 class="title">demo</h1><span class="author">a</span>'
+        '<span class="date">2026-01-01</span><article>x</article>'
+        '<div class="related"><a>x</a></div></body></html>'
+    )
 
     class _FakeFetcher:
         async def fetch(self, _url: str) -> FetchResult:
@@ -105,15 +100,8 @@ async def _concurrent_demo() -> str:
         async def __aexit__(self, *_a: object) -> None:
             return None
 
-    async def _fake_discover(*_args: object, **_kwargs: object) -> dict:
-        return discovered_map
-
-    # Manual stubs in place of unittest.mock — script doesn't depend on the
-    # pytest-mock plugin, and the project bans `unittest` imports outright.
     original_create_fetcher = _pipeline_mod.create_fetcher
-    original_discover = _orch_mod.DiscoveryOrchestrator.discover_selectors
     _pipeline_mod.create_fetcher = lambda *_a, **_kw: _FakeFetcher()  # type: ignore[assignment]
-    _orch_mod.DiscoveryOrchestrator.discover_selectors = _fake_discover  # type: ignore[assignment]
 
     pipeline = Pipeline(llm_config, contract=NewsArticle, quiet=True)
 
@@ -124,12 +112,15 @@ async def _concurrent_demo() -> str:
         'https://b.example.com/2',
     ]
 
+    inner_agent = pipeline.discovery._agent._agent
     try:
-        with propagate_attributes(tags=['yosoi', 'eval', 'regression']):
+        with (
+            inner_agent.override(model=TestModel()),
+            propagate_attributes(tags=['yosoi', 'eval', 'regression']),
+        ):
             await pipeline.process_urls(urls, workers=2, force=True, origin='script')
     finally:
         _pipeline_mod.create_fetcher = original_create_fetcher  # type: ignore[assignment]
-        _orch_mod.DiscoveryOrchestrator.discover_selectors = original_discover  # type: ignore[assignment]
 
     obs.flush()
     return sess_id

@@ -453,37 +453,37 @@ class Pipeline:
         if isinstance(sess_id, str):
             os.environ['YOSOI_SESSION_ID'] = sess_id
 
-        # Note: no orchestrator-level span here. We rely on the per-URL
-        # ``scrape`` spans being the trace roots (one trace per URL — see
-        # the docs "trace = per URL" model). An orchestrator span here would
-        # become the active OTel parent and collapse all workers into one
-        # trace. The session_id + tags propagate via the outer
-        # ``observability.session(...)`` wrap (no span, just OTel baggage),
-        # so per-URL traces still inherit them at ingestion.
-        await configure_broker(
-            self._llm_config,
-            contract=self.contract,
-            output_format=output_format,
-            max_workers=max_workers,
-            selector_level=self.selector_level,
-        )
-
-        run_start = time.monotonic()
-        try:
-            enqueue_result = await enqueue_urls(
-                urls,
-                force=force,
-                skip_verification=skip_verification,
-                fetcher_type=fetcher_type,
-                max_fetch_retries=max_fetch_retries,
-                max_discovery_retries=max_discovery_retries,
-                on_complete=on_complete,
-                on_start=on_start,
-                sess_id=sess_id,
-                origin=origin,
+        # Detached enqueue span: appears in the exporter so reviewers can see
+        # orchestrator-side dispatch metadata (count, workers, origin), but
+        # does NOT become the active OTel parent — per-URL ``scrape`` spans
+        # remain trace roots. Langfuse's span processor still enriches this
+        # span with session.id from the outer ``observability.session(...)``
+        # propagate_attributes context.
+        with observability.detached_span('enqueue', count=len(urls), workers=max_workers, origin=origin):
+            await configure_broker(
+                self._llm_config,
+                contract=self.contract,
+                output_format=output_format,
+                max_workers=max_workers,
+                selector_level=self.selector_level,
             )
-        finally:
-            await shutdown_broker()
+
+            run_start = time.monotonic()
+            try:
+                enqueue_result = await enqueue_urls(
+                    urls,
+                    force=force,
+                    skip_verification=skip_verification,
+                    fetcher_type=fetcher_type,
+                    max_fetch_retries=max_fetch_retries,
+                    max_discovery_retries=max_discovery_retries,
+                    on_complete=on_complete,
+                    on_start=on_start,
+                    sess_id=sess_id,
+                    origin=origin,
+                )
+            finally:
+                await shutdown_broker()
 
         total_elapsed = time.monotonic() - run_start
 
@@ -567,15 +567,40 @@ class Pipeline:
         # Bind the (sub)domain as the Langfuse user_id so traces aggregate per
         # site. ExitStack lets us omit the user() frame entirely when the URL
         # has no host (file://, data:, etc.) rather than passing an empty id.
-        # Note: no session() wrap here — the outer process_urls() owns the
-        # session. Direct callers of scrape() (script-mode without process_urls)
-        # rely on Pipeline.__init__'s lazy process_session_id() landing on the
-        # spans via the Langfuse SDK's span enrichment.
+        #
+        # Reconciliation B: scrape() always opens its own session() wrap with
+        # tags=['yosoi','script'] so direct callers (script-mode bypassing
+        # process_urls()) get session.id propagation. When called via
+        # process_urls(), the inner session call is harmless — Langfuse SDK
+        # union-merges tag lists across nested propagate_attributes (verified
+        # at langfuse/_client/propagation.py:382-390), so outer
+        # tags=['yosoi','cli'] survive the inner ['yosoi','script'] re-set.
+        # Always re-read the lazy session id rather than trusting a stale
+        # ``self.session_id`` snapshot — the lazy resolver is cached so
+        # re-reading is cheap and guarantees we match whatever the outer
+        # ``process_urls`` wrap is using (e.g. when YOSOI_SESSION_ID was set
+        # after Pipeline.__init__).
+        sess_id = observability.process_session_id()
         user_id = observability.normalize_user_id(url)
         with ExitStack() as stack:
+            stack.enter_context(observability.session(sess_id, tags=['yosoi', 'script']))
             if user_id is not None:
                 stack.enter_context(observability.user(user_id, tags=[user_id]))
-            stack.enter_context(observability.span(trace_name, url=url, force=force_flag, fetcher_type=fetcher_type))
+            root_span = stack.enter_context(
+                observability.span(trace_name, url=url, force=force_flag, fetcher_type=fetcher_type)
+            )
+            observability.set_trace_input(
+                root_span,
+                {
+                    'url': url,
+                    'contract': {
+                        'name': self.contract.__name__,
+                        'fields': self.contract.field_descriptions(),
+                        'overrides': self.contract.get_selector_overrides(),
+                        'discovery_field_names': sorted(self.contract.discovery_field_names()),
+                    },
+                },
+            )
             self.logger.info('Processing URL: %s (force=%s, fetcher=%s)', url, force_flag, fetcher_type)
             domain = self._extract_domain(url)
             fetcher = self._create_fetcher(fetcher_type)
@@ -585,7 +610,9 @@ class Pipeline:
             async with fetcher:
                 # Try using cached selectors if available
                 if not force_flag:
-                    cache_gen = await self._try_cached(url, domain, fetcher, skip_verification, format_to_use)
+                    cache_gen = await self._try_cached(
+                        url, domain, fetcher, skip_verification, format_to_use, root_span=root_span
+                    )
                     if cache_gen is not None:
                         async for item in cache_gen:
                             yield item
@@ -623,6 +650,15 @@ class Pipeline:
                 if not extracted:
                     self.console.print('[warning]⚠ Extraction failed, but selectors are valid[/warning]')
                     await self._finish(url, domain, selectors_to_save, None, used_llm, format_to_use)
+                    observability.set_trace_output(
+                        root_span,
+                        {
+                            'path': 'fresh-no-extract',
+                            'selectors': selectors_to_save,
+                            'extracted_count': 0,
+                            'extracted_sample': None,
+                        },
+                    )
                     return
 
                 # Validate, yield, and save
@@ -637,6 +673,15 @@ class Pipeline:
                 )
                 with observability.span('save', url=url, items=len(validated_items)):
                     await self._finish(url, domain, selectors_to_save, save_all, used_llm, format_to_use)
+                observability.set_trace_output(
+                    root_span,
+                    {
+                        'path': 'fresh',
+                        'selectors': selectors_to_save,
+                        'extracted_count': len(validated_items),
+                        'extracted_sample': validated_items[0] if validated_items else None,
+                    },
+                )
 
     # ============================================================================
     # scrape() helpers
@@ -649,6 +694,8 @@ class Pipeline:
         fetcher: HTMLFetcher,
         skip_verification: bool,
         format_to_use: list[str],
+        *,
+        root_span: Any | None = None,
     ) -> AsyncIterator[ContentMap] | None:
         """Attempt cached-selector path with per-field granularity."""
         snapshots = self.storage.load_snapshots(domain)
@@ -663,13 +710,20 @@ class Pipeline:
             items, cache_valid = await self._extract_with_cached(url, fetcher, existing, skip_verification)
             if not cache_valid:
                 return None
-            return self._yield_cached_items(items, url, domain, format_to_use)
+            return self._yield_cached_items(
+                items, url, domain, format_to_use, root_span=root_span, selectors_payload=existing
+            )
 
         cleaned_html = await self._fetch_and_clean_for_cache(url, fetcher)
         if cleaned_html is None:
-            return self._yield_cached_items(None, url, domain, format_to_use)
+            existing_for_payload = {name: snapshot_to_selector_dict(snap) for name, snap in snapshots.items()}
+            return self._yield_cached_items(
+                None, url, domain, format_to_use, root_span=root_span, selectors_payload=existing_for_payload
+            )
 
-        return await self._evaluate_cached_verdicts(url, domain, cleaned_html, snapshots, format_to_use)
+        return await self._evaluate_cached_verdicts(
+            url, domain, cleaned_html, snapshots, format_to_use, root_span=root_span
+        )
 
     async def _fetch_and_clean_for_cache(self, url: str, fetcher: HTMLFetcher) -> str | None:
         """Fetch + clean HTML for cache verification. Returns None on failure (fail-open)."""
@@ -699,6 +753,8 @@ class Pipeline:
         cleaned_html: str,
         snapshots: dict[str, SelectorSnapshot],
         format_to_use: list[str],
+        *,
+        root_span: Any | None = None,
     ) -> AsyncIterator[ContentMap] | None:
         """Verify cached fields, branch on fresh/stale/partial."""
         with observability.span('verify', url=url, mode='per_field_cache', fields=len(snapshots)):
@@ -720,7 +776,9 @@ class Pipeline:
             stale_fields |= missing
 
         if not stale_fields:
-            return self._extract_all_fresh(url, domain, cleaned_html, snapshots, fresh_fields, format_to_use)
+            return self._extract_all_fresh(
+                url, domain, cleaned_html, snapshots, fresh_fields, format_to_use, root_span=root_span
+            )
 
         if not fresh_fields:
             self.console.print(
@@ -729,7 +787,14 @@ class Pipeline:
             return None
 
         return await self._partial_rediscovery(
-            url, domain, cleaned_html, snapshots, fresh_fields, stale_fields, format_to_use
+            url,
+            domain,
+            cleaned_html,
+            snapshots,
+            fresh_fields,
+            stale_fields,
+            format_to_use,
+            root_span=root_span,
         )
 
     def _extract_all_fresh(
@@ -740,6 +805,8 @@ class Pipeline:
         snapshots: dict[str, SelectorSnapshot],
         fresh_fields: set[str],
         format_to_use: list[str],
+        *,
+        root_span: Any | None = None,
     ) -> AsyncIterator[ContentMap]:
         """All cached selectors verified — extract content."""
         self.console.print(f'[success]✓ All {len(fresh_fields)} cached selectors verified[/success]')
@@ -750,9 +817,13 @@ class Pipeline:
             extracted = self._extract(url, cleaned_html, existing, container_selector)
         if extracted:
             items_list: ContentItems = extracted if isinstance(extracted, list) else [extracted]
-            return self._yield_cached_items(items_list, url, domain, format_to_use)
+            return self._yield_cached_items(
+                items_list, url, domain, format_to_use, root_span=root_span, selectors_payload=existing
+            )
         self.console.print('[warning]⚠ Extraction failed with cached selectors[/warning]')
-        return self._yield_cached_items(None, url, domain, format_to_use)
+        return self._yield_cached_items(
+            None, url, domain, format_to_use, root_span=root_span, selectors_payload=existing
+        )
 
     def _verify_per_field(self, html: str, snapshots: dict[str, SelectorSnapshot]) -> dict[str, CacheVerdict]:
         """Verify each cached field independently and apply root cascade.
@@ -789,12 +860,17 @@ class Pipeline:
         url: str,
         domain: str,
         format_to_use: list[str],
+        *,
+        root_span: Any | None = None,
+        selectors_payload: SelectorMap | None = None,
     ) -> AsyncIterator[ContentMap]:
         """Wrap cached items into an async generator that tracks and saves."""
 
         async def _gen() -> AsyncIterator[ContentMap]:
+            validated_for_output: ContentItems | None = None
             if items:
                 validated = self._validate_items(items, url)
+                validated_for_output = validated
                 for v in validated:
                     yield v
                 save_content: ContentMap | ContentItems = validated if len(validated) > 1 else validated[0]
@@ -803,6 +879,15 @@ class Pipeline:
             await self._track_cached_success(url, domain)
             self.last_elapsed = time.monotonic() - self._url_start
             self.console.print(f'[dim]  ⏱ {self.last_elapsed:.1f}s elapsed[/dim]')
+            observability.set_trace_output(
+                root_span,
+                {
+                    'path': 'cache-fresh',
+                    'selectors': selectors_payload or {},
+                    'extracted_count': len(validated_for_output) if validated_for_output else 0,
+                    'extracted_sample': validated_for_output[0] if validated_for_output else None,
+                },
+            )
 
         return _gen()
 
@@ -815,6 +900,8 @@ class Pipeline:
         fresh_fields: set[str],
         stale_fields: set[str],
         format_to_use: list[str],
+        *,
+        root_span: Any | None = None,
     ) -> AsyncIterator[ContentMap] | None:
         """Rediscover only stale fields, merge with fresh cache, extract and yield."""
         self.console.print(
@@ -849,6 +936,15 @@ class Pipeline:
             )
             self._print_tracking_stats(domain, stats)
             self.console.print(f'[dim]  ⏱ {self.last_elapsed:.1f}s elapsed[/dim]')
+            observability.set_trace_output(
+                root_span,
+                {
+                    'path': 'cache-partial',
+                    'selectors': merged,
+                    'extracted_count': len(validated),
+                    'extracted_sample': validated[0] if validated else None,
+                },
+            )
 
         return _yield_partial()
 

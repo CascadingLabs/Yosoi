@@ -21,6 +21,7 @@ Usage::
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import uuid
@@ -132,6 +133,36 @@ def span(name: str, **attrs: Any) -> Iterator[Any]:
 
 
 @contextmanager
+def detached_span(name: str, **attrs: Any) -> Iterator[Any]:
+    """Emit a span without attaching it to the current OTel context.
+
+    Unlike :func:`span` (which uses ``start_as_current_span`` and becomes the
+    parent of any subsequent span), this uses ``start_span`` so the span is
+    recorded by the exporter but does NOT become the OTel parent. Used at the
+    orchestrator level to emit observability metadata (e.g. ``enqueue``)
+    without collapsing per-URL worker traces under one parent.
+
+    Langfuse's :class:`LangfuseSpanProcessor.on_start` still enriches the
+    detached span with ``session.id`` from the surrounding
+    ``propagate_attributes`` context, so it appears under the right session
+    in the UI even though it is parentless.
+
+    No-op when telemetry is off.
+    """
+    c = client()
+    if c is None:
+        yield None
+        return
+    s = c.tracer.start_span(name)
+    try:
+        for k, v in attrs.items():
+            s.set_attribute(k, v)
+        yield s
+    finally:
+        s.end()
+
+
+@contextmanager
 def session(session_id: str, **attrs: Any) -> Iterator[None]:
     """Group every span produced inside this block under one Langfuse session.
 
@@ -218,6 +249,38 @@ def flush() -> None:
     if c is None:
         return
     c.sdk.flush()
+
+
+def _serialize_for_langfuse(payload: Any) -> str:
+    """JSON-encode payload for Langfuse I/O attributes.
+
+    Uses ``default=str`` so Pydantic models, datetimes, and other non-JSON
+    types serialize without raising.
+    """
+    return json.dumps(payload, default=str, ensure_ascii=False)
+
+
+def set_trace_input(span: Any | None, payload: Any) -> None:
+    """Set the trace-level input panel on the per-URL root span.
+
+    No-op when telemetry is off or *span* is ``None`` (e.g. :func:`span`
+    yielded ``None`` because :func:`client` is ``None``). Sets
+    ``langfuse.observation.input`` — Langfuse 4.x server-side enrichment
+    lifts this onto the trace input header in the UI.
+    """
+    if span is None or client() is None:
+        return
+    span.set_attribute('langfuse.observation.input', _serialize_for_langfuse(payload))
+
+
+def set_trace_output(span: Any | None, payload: Any) -> None:
+    """Set the trace-level output panel on the per-URL root span.
+
+    No-op rules same as :func:`set_trace_input`.
+    """
+    if span is None or client() is None:
+        return
+    span.set_attribute('langfuse.observation.output', _serialize_for_langfuse(payload))
 
 
 def reset_for_tests() -> None:

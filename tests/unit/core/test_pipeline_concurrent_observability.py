@@ -183,14 +183,16 @@ async def test_auto_generated_session_id_is_stable_across_dispatch(monkeypatch, 
 
 
 @pytest.mark.usefixtures('_broker_clean', '_active_obs')
-async def test_per_url_traces_are_root_spans_under_concurrent_dispatch(monkeypatch, span_exporter, mocker):
-    """Test 3 — concurrent dispatch produces ONE trace per URL.
+async def test_enqueue_span_emitted_alongside_per_url_root_traces(monkeypatch, span_exporter, mocker):
+    """Test 3 — concurrent dispatch emits the orchestrator-side ``enqueue``
+    span AND keeps per-URL ``scrape`` spans as trace roots.
 
-    The orchestrator deliberately does NOT open a parent span around the
-    broker dispatch — doing so would make every worker's ``scrape`` span a
-    child of that orchestrator span and collapse N URLs into a single trace.
-    The "trace = per URL" model from the docs requires per-URL ``scrape``
-    spans to be trace roots (parent=None).
+    The ``enqueue`` span is created via :func:`observability.detached_span`
+    (uses ``tracer.start_span`` rather than ``start_as_current_span``), so it
+    is recorded by the exporter without becoming the active OTel parent.
+    Worker ``scrape`` spans therefore stay at ``parent is None`` — preserving
+    the "trace = per URL" model — while the enqueue metadata still appears in
+    the trace exporter under the orchestrator's session id.
     """
     monkeypatch.setenv('YOSOI_SESSION_ID', 'per-url-trace-sess')
 
@@ -201,6 +203,14 @@ async def test_per_url_traces_are_root_spans_under_concurrent_dispatch(monkeypat
     await Pipeline.process_urls(stub, urls, workers=2, origin='cli')
 
     spans = span_exporter.get_finished_spans()
+
+    enqueue_spans = [s for s in spans if s.name == 'enqueue']
+    assert len(enqueue_spans) == 1, f'expected exactly one "enqueue" span, got names: {[s.name for s in spans]}'
+    enq = enqueue_spans[0]
+    assert enq.attributes.get('count') == 2
+    assert enq.attributes.get('workers') == 2
+    assert enq.attributes.get('origin') == 'cli'
+
     scrape_spans = [s for s in spans if s.name.startswith('scrape ')]
     assert len(scrape_spans) == 2, f'expected 2 "scrape …" spans, got: {[s.name for s in spans]}'
     # Each scrape span is a root span (no parent) — required for per-URL traces.
