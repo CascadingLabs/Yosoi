@@ -18,6 +18,9 @@ node_modules
 todo.md
 TODO.md
 .todo.md
+plan.md
+PLAN.md
+.plan.md
 
 # ==========================================
 # Environments & Secrets
