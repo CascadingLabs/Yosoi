@@ -119,7 +119,7 @@ class FieldDiscoveryAgent:
             is_container=is_container,
         )
 
-        with obs.span('field_discover', field=field_name):
+        with obs.span(f'field_agent[{field_name}]', field=field_name, source='agent'):
             try:
                 result = await self._agent.run(build_user_prompt(discovery_input), deps=deps)
                 field_selectors: FieldSelectors = result.output

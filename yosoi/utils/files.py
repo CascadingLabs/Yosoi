@@ -4,8 +4,6 @@ import logging
 import shutil
 from pathlib import Path
 
-from yosoi.utils import observability as obs
-
 _logger = logging.getLogger(__name__)
 
 
@@ -67,18 +65,16 @@ def ensure_tracking_file(yosoi_dir: Path) -> None:
         return
 
     if root_tracking.exists():
-        with obs.span('tracking.migrate.root', source=str(root_tracking), destination=str(tracking_file)):
-            try:
-                shutil.move(str(root_tracking), str(tracking_file))
-            except Exception:
-                _logger.exception('Failed to migrate root tracking')
-                raise
+        try:
+            shutil.move(str(root_tracking), str(tracking_file))
+        except Exception:
+            _logger.exception('Failed to migrate root tracking')
+            raise
     else:
-        with obs.span('tracking.create.new', path=str(tracking_file)):
-            import json
+        import json
 
-            with open(tracking_file, 'w') as f:
-                json.dump({}, f, indent=2)
+        with open(tracking_file, 'w') as f:
+            json.dump({}, f, indent=2)
 
 
 def is_initialized() -> bool:

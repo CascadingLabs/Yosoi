@@ -87,12 +87,13 @@ async def _discover_field(
             verify_result = verifier._verify_field(parsel_sel, field_name, cached_selectors, max_level)
             if verify_result.status == 'verified':
                 logger.info('Cache hit for field %s', field_name)
-                return FieldTaskResult(
-                    field_name=field_name,
-                    selectors=cached_selectors,
-                    from_cache=True,
-                    escalated_to=None,
-                )
+                with obs.span(f'cache_hit[{field_name}]', field=field_name, source='cache'):
+                    return FieldTaskResult(
+                        field_name=field_name,
+                        selectors=cached_selectors,
+                        from_cache=True,
+                        escalated_to=None,
+                    )
             logger.debug('Cached selector for %s failed verification, re-discovering', field_name)
         except (ValueError, TypeError):
             logger.debug('Cached selector for %s is invalid, re-discovering', field_name)
