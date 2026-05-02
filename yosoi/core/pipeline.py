@@ -133,11 +133,15 @@ class Pipeline:
         # Keep the original config for concurrent mode (taskiq broker needs it)
         self._llm_config: LLMConfig | YosoiConfig = llm_config
 
+        # Default discovery fan-out — overridden below when YosoiConfig is passed.
+        max_concurrent_discovery: int = 5
+
         if isinstance(llm_config, YosoiConfig):
             yosoi_cfg = llm_config
             llm_config = yosoi_cfg.llm
             debug_mode = yosoi_cfg.debug.save_html
             force = yosoi_cfg.force
+            max_concurrent_discovery = yosoi_cfg.discovery.max_concurrent
             observability.configure(yosoi_cfg.telemetry)
         else:
             import os
@@ -172,6 +176,7 @@ class Pipeline:
             storage=self.storage,
             console=self.console,
             target_level=self.selector_level,
+            max_concurrent=max_concurrent_discovery,
             bus=bus,
             write_lock=write_lock,
         )

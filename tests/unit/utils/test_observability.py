@@ -94,6 +94,26 @@ def test_process_session_id_honours_env_var(monkeypatch):
     assert obs.process_session_id() == 'override-abc'
 
 
+def test_cross_session_fresh_import_simulation(monkeypatch):
+    """Replaces the punted Phase 4 subprocess test (B4.2/B4.3).
+
+    Each subprocess starts with a fresh ``observability`` import. The
+    first call to ``process_session_id()`` reads ``YOSOI_SESSION_ID``
+    once, caches it, and serves it to every subsequent caller.
+    Simulate that contract via reset_for_tests() (== fresh import) +
+    monkeypatch.setenv (== env var present at process start) +
+    process_session_id() (== first Pipeline construction).
+    """
+    monkeypatch.setenv('YOSOI_SESSION_ID', 'cross-session-foo')
+    obs.reset_for_tests()
+    # First resolution caches.
+    first = obs.process_session_id()
+    assert first == 'cross-session-foo'
+    # Subsequent calls return the cached value, even if the env var is changed.
+    monkeypatch.setenv('YOSOI_SESSION_ID', 'something-else')
+    assert obs.process_session_id() == 'cross-session-foo'
+
+
 def test_reset_for_tests_clears_singleton_and_session_id(monkeypatch):
     monkeypatch.delenv('YOSOI_SESSION_ID', raising=False)
     cfg = TelemetryConfig(

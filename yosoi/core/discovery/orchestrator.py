@@ -90,6 +90,16 @@ class DiscoveryOrchestrator:
     def target_level(self, value: SelectorLevel) -> None:
         self._target_level = value
 
+    @property
+    def max_concurrent(self) -> int:
+        """Cap on per-field LLM calls fanned out concurrently inside one URL.
+
+        Backed by ``asyncio.Semaphore(max_concurrent)`` around the per-field
+        ``asyncio.gather``. Default 5; configurable via
+        :class:`yosoi.core.configs.DiscoveryConfig`.
+        """
+        return self._max_concurrent
+
     async def discover_selectors(
         self, html: str, url: str | None = None, *, stale_fields: set[str] | None = None
     ) -> SelectorMap | None:
@@ -117,9 +127,29 @@ class DiscoveryOrchestrator:
         # If every field has an override, skip AI entirely
         if not field_descs:
             logger.info('Skipping AI discovery — all fields overridden (url=%s)', url_context)
+            with obs.span(
+                'orchestrator_discover_selectors',
+                url=url_context,
+                field_count=0,
+                max_concurrent=0,
+                bypass='all_overrides',
+            ):
+                pass
             return {k: dict(v) for k, v in overrides.items()} if overrides else None
 
-        with obs.span('orchestrator_discover_selectors', url=url_context):
+        # Compute the actual fan-out width: stale_fields filter (partial
+        # rediscovery) shrinks it; otherwise it's len(field_descs) plus any
+        # contract-level container/nested specs added by _build_task_specs.
+        # Build specs once here so the span attribute matches reality.
+        task_specs = self._build_task_specs(field_descs, hints, stale_fields)
+        field_count = len(task_specs)
+
+        with obs.span(
+            'orchestrator_discover_selectors',
+            url=url_context,
+            field_count=field_count,
+            max_concurrent=self._max_concurrent,
+        ):
             return await self._discover_selectors_impl(
                 html=html,
                 url=url,

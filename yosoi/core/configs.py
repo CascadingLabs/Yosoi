@@ -64,14 +64,27 @@ class TelemetryConfig(BaseModel):
     langfuse_host: str | None = None
 
 
+class DiscoveryConfig(BaseModel):
+    """Configuration for the per-URL field-discovery fan-out.
+
+    Caps how many per-field LLM calls run concurrently inside one URL via
+    ``asyncio.gather`` + ``asyncio.Semaphore``. Increase for higher throughput
+    on small contracts; decrease if you're hitting LLM rate limits or want
+    more deterministic ordering.
+    """
+
+    max_concurrent: int = Field(default=5, ge=1, le=50)
+
+
 class YosoiConfig(BaseModel):
-    """Top-level Yosoi configuration bundling LLM, debug, and telemetry settings.
+    """Top-level Yosoi configuration bundling LLM, debug, telemetry, and discovery settings.
 
     Example::
 
         config = YosoiConfig(
             llm=ys.groq('llama-3.3-70b-versatile', api_key),
             debug=DebugConfig(save_html=False),
+            discovery=DiscoveryConfig(max_concurrent=3),
         )
         pipeline = Pipeline(config, contract=MyContract)
 
@@ -80,6 +93,7 @@ class YosoiConfig(BaseModel):
     llm: LLMConfig
     debug: DebugConfig = Field(default_factory=DebugConfig)
     telemetry: TelemetryConfig = Field(default_factory=TelemetryConfig)
+    discovery: DiscoveryConfig = Field(default_factory=DiscoveryConfig)
     logs: bool = True
     force: bool = False
 
