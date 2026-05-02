@@ -33,7 +33,7 @@ _option_groups: list[OptionGroupDict] = [
     },
     {
         'name': 'Advanced',
-        'options': ['--force', '--debug', '--skip-verification', '--log-level'],
+        'options': ['--force', '--debug', '--skip-verification', '--log-level', '--session-id'],
     },
 ]
 # Register for both the function name ('main') and the entry-point name ('yosoi')

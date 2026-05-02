@@ -28,6 +28,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from threading import Lock
 from typing import TYPE_CHECKING, Any
+from urllib.parse import urlparse
 
 from langfuse import Langfuse
 from opentelemetry import trace
@@ -38,15 +39,22 @@ if TYPE_CHECKING:
 _logger = logging.getLogger(__name__)
 _lock = Lock()
 
-# One session per process invocation (CLI run / script). Every Pipeline
-# created inside the same process shares this id, so all of its scrapes
-# group under one Langfuse session. Override via YOSOI_SESSION_ID for
-# resumed runs or external orchestration.
-_PROCESS_SESSION_ID: str = os.getenv('YOSOI_SESSION_ID') or f'yosoi-{uuid.uuid4().hex[:12]}'
+# One session per process invocation (CLI run / script). Resolved lazily on
+# first access so that callers (e.g. the CLI ``--session-id`` flag) can set
+# ``YOSOI_SESSION_ID`` after this module has been imported but before any
+# Pipeline is constructed. Override via ``YOSOI_SESSION_ID`` for resumed runs
+# or external orchestration.
+_PROCESS_SESSION_ID: str | None = None
 
 
 def process_session_id() -> str:
-    """Return the session id shared by all pipelines in this process."""
+    """Return the session id shared by all pipelines in this process.
+
+    Resolved on first call; subsequent calls return the cached value.
+    """
+    global _PROCESS_SESSION_ID
+    if _PROCESS_SESSION_ID is None:
+        _PROCESS_SESSION_ID = os.getenv('YOSOI_SESSION_ID') or f'yosoi-{uuid.uuid4().hex[:12]}'
     return _PROCESS_SESSION_ID
 
 
@@ -138,6 +146,58 @@ def session(session_id: str, **attrs: Any) -> Iterator[None]:
         yield
 
 
+@contextmanager
+def user(user_id: str, **attrs: Any) -> Iterator[None]:
+    """Bind ``user_id`` (and any extra tags / metadata) to spans created inside this block.
+
+    Used to associate a per-URL trace with the (sub)domain it belongs to,
+    so the Langfuse UI can filter by user and aggregate per-site behaviour.
+    Nests inside :func:`session` — outer session_id stays in scope.
+    No-op when telemetry is off.
+    """
+    c = client()
+    if c is None:
+        yield
+        return
+    from langfuse import propagate_attributes
+
+    with propagate_attributes(user_id=user_id, **attrs):
+        yield
+
+
+def normalize_user_id(url: str) -> str | None:
+    """Normalize a URL to a stable Langfuse ``user_id`` string.
+
+    Rules:
+      * Lowercase the host.
+      * Strip exactly **one** leading ``www.`` (e.g. ``www.www.example.com`` →
+        ``www.example.com``). Recursive stripping mangles real hostnames like
+        ``www.foo.com`` where the ``www`` is the canonical site label.
+      * Strip port (``example.com:8080`` → ``example.com``).
+      * Strip userinfo (``user:pw@example.com`` → ``example.com``).
+      * Keep IDN / punycode unchanged — Langfuse handles unicode user_ids and
+        re-encoding would split traces between the two forms.
+
+    Returns ``None`` for URLs without a host (``file://``, ``data:…``, schemes
+    with empty netloc). Callers skip the :func:`user` wrap on ``None``.
+
+    Args:
+        url: URL string. Accepts bare hostnames; missing scheme is fine.
+
+    Returns:
+        Normalized host, or ``None`` if the URL has no host.
+
+    """
+    parsed = urlparse(url)
+    host = parsed.hostname
+    if not host:
+        return None
+    host = host.lower()
+    if host.startswith('www.') and len(host) > 4:
+        host = host[4:]
+    return host
+
+
 def warning(msg: str, **attrs: Any) -> None:
     """Emit a warning to stdlib logging and (if active) the current span."""
     _logger.warning(msg, extra=attrs)
@@ -158,5 +218,7 @@ def flush() -> None:
 
 
 def reset_for_tests() -> None:
-    """Reset the singleton. Test-only."""
+    """Reset the singleton and the lazy session id. Test-only."""
+    global _PROCESS_SESSION_ID
     LangfuseClient._instance = None
+    _PROCESS_SESSION_ID = None
