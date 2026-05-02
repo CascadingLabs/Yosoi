@@ -135,17 +135,79 @@ async def test_scrape_emits_pinned_span_tree(pipeline_stub, span_exporter, mocke
         f'unexpected={child_names - EXPECTED_CHILD_SPANS}'
     )
 
-    # propagate_attributes must have been called with user_id=shop.example.com
-    # AND with session_id=test-session-xyz (we set it on the stub).
+    # propagate_attributes must have been called with user_id=shop.example.com.
+    # session_id propagation is owned by Pipeline.process_urls (the outer wrap),
+    # not Pipeline.scrape — see test_pipeline_concurrent_observability for that.
     user_calls = [c for c in captured if 'user_id' in c]
-    session_calls = [c for c in captured if 'session_id' in c]
     assert any(c['user_id'] == 'shop.example.com' for c in user_calls), (
         f'expected user_id=shop.example.com in propagate_attributes calls, got: {captured}'
-    )
-    assert any(c['session_id'] == 'test-session-xyz' for c in session_calls), (
-        f'expected session_id=test-session-xyz in propagate_attributes calls, got: {captured}'
     )
     # The user_id call must also carry the matching tag for filtering.
     assert any(c.get('user_id') == 'shop.example.com' and c.get('tags') == ['shop.example.com'] for c in captured), (
         f'expected user_id+tags=[shop.example.com] in calls: {captured}'
     )
+
+
+# ────────────────────────────────────────────────────────────────────
+# A2.2 — Pipeline-level: real DiscoveryOrchestrator + Agent.override(TestModel)
+# Asserts agent spans (from pydantic-ai instrumentation) nest correctly under
+# the discover stage span.
+# ────────────────────────────────────────────────────────────────────
+
+
+@pytest.mark.usefixtures('_active_observability')
+async def test_agent_span_nests_under_discover(span_exporter, mocker):
+    """Real DiscoveryOrchestrator with TestModel: agent span parent === discover span."""
+    from pydantic_ai import Agent
+    from pydantic_ai.models.test import TestModel
+
+    from yosoi.core.discovery.orchestrator import DiscoveryOrchestrator
+
+    Agent.instrument_all()
+
+    storage = mocker.MagicMock()
+    # Use a real provider with a fake key so create_model() succeeds; the
+    # Agent.override(model=TestModel()) below swaps it out before any LLM call.
+    from yosoi.core.discovery.config import LLMConfig
+
+    llm_config = LLMConfig(provider='groq', model_name='llama-3.3-70b-versatile', api_key='test-key', temperature=0.0)
+    orch = DiscoveryOrchestrator(
+        contract=_SimpleContract,
+        llm_config=llm_config,
+        storage=storage,
+    )
+
+    # Swap the underlying pydantic-ai agent's model to TestModel for deterministic output.
+    with orch._agent._agent.override(model=TestModel()), obs.span('discover', url=CANNED_URL):
+        await orch.discover_selectors(CLEANED_HTML, url=CANNED_URL)
+
+    spans = span_exporter.get_finished_spans()
+    by_name = {s.name: s for s in spans}
+
+    discover = by_name.get('discover')
+    assert discover is not None, f'expected "discover" span, got {list(by_name)}'
+
+    # orchestrator_discover_selectors nests inside discover.
+    orch_span = by_name.get('orchestrator_discover_selectors')
+    assert orch_span is not None
+    assert orch_span.parent is not None
+    assert orch_span.parent.span_id == discover.context.span_id
+
+    # At least one agent run span exists; its parent chain ultimately leads to discover.
+    agent_spans = [s for s in spans if s.name == 'agent run']
+    assert len(agent_spans) >= 1, f'expected >=1 "agent run" span, got: {list(by_name)}'
+
+    # Walk the parent chain from the agent span up; one of the ancestors must be 'discover'.
+    def _ancestor_ids(span):
+        ids = []
+        cur = span
+        while cur is not None and cur.parent is not None:
+            ids.append(cur.parent.span_id)
+            cur = next((s for s in spans if s.context.span_id == cur.parent.span_id), None)
+        return ids
+
+    for agent_span in agent_spans:
+        ancestors = _ancestor_ids(agent_span)
+        assert discover.context.span_id in ancestors, (
+            f'agent span parent chain {ancestors!r} does not include discover {discover.context.span_id!r}'
+        )

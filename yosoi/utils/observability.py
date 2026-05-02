@@ -51,10 +51,13 @@ def process_session_id() -> str:
     """Return the session id shared by all pipelines in this process.
 
     Resolved on first call; subsequent calls return the cached value.
+    Double-checked locking guards against concurrent first-call races.
     """
     global _PROCESS_SESSION_ID
     if _PROCESS_SESSION_ID is None:
-        _PROCESS_SESSION_ID = os.getenv('YOSOI_SESSION_ID') or f'yosoi-{uuid.uuid4().hex[:12]}'
+        with _lock:
+            if _PROCESS_SESSION_ID is None:
+                _PROCESS_SESSION_ID = os.getenv('YOSOI_SESSION_ID') or f'yosoi-{uuid.uuid4().hex[:12]}'
     return _PROCESS_SESSION_ID
 
 
