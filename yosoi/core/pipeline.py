@@ -7,7 +7,8 @@ import asyncio
 import logging
 import time
 from collections.abc import AsyncIterator, Awaitable, Callable
-from typing import Any
+from contextlib import ExitStack
+from typing import Any, Literal
 from urllib.parse import urlparse
 
 import httpx
@@ -257,6 +258,7 @@ class Pipeline:
         workers: int = 1,
         on_complete: Callable[[str, bool, float], Awaitable[None]] | None = None,
         on_start: Callable[[str], Awaitable[None]] | None = None,
+        origin: Literal['cli', 'script'] = 'script',
     ) -> dict[str, list[str]]:
         """Process multiple URLs and collect results.
 
@@ -277,6 +279,9 @@ class Pipeline:
                 after each URL finishes. Used by the CLI for live progress display.
             on_start: Optional async callback ``(url)`` called just before each
                 URL begins processing.
+            origin: ``'cli'`` when invoked from the ``yosoi`` CLI, ``'script'`` for
+                Python-API callers (the default). Used as a Langfuse session tag so
+                the UI can split CLI runs from scripted pipelines.
 
         Returns:
             Dictionary with keys:
@@ -322,7 +327,7 @@ class Pipeline:
         sess_id = getattr(self, 'session_id', '') or 'yosoi-unset'
         # Session-only wrap (no outer span): each URL's scrape() starts its
         # own root span so Langfuse renders one trace per URL.
-        with observability.session(sess_id):
+        with observability.session(sess_id, tags=['yosoi', origin]):
             for idx, url in enumerate(urls, 1):
                 self.console.print(f'\n[bold blue]Processing URL {idx}/{len(urls)}[/bold blue]')
                 self.logger.info('--- Processing URL %d/%d: %s ---', idx, len(urls), url)
@@ -530,10 +535,15 @@ class Pipeline:
         # Full URL is also kept on the span attribute for filtering.
         parsed = urlparse(url)
         trace_name = f'scrape {parsed.netloc}{parsed.path or "/"}'
-        with (
-            observability.session(sess_id),
-            observability.span(trace_name, url=url, force=force_flag, fetcher_type=fetcher_type),
-        ):
+        # Bind the (sub)domain as the Langfuse user_id so traces aggregate per
+        # site. ExitStack lets us omit the user() frame entirely when the URL
+        # has no host (file://, data:, etc.) rather than passing an empty id.
+        user_id = observability.normalize_user_id(url)
+        with ExitStack() as stack:
+            stack.enter_context(observability.session(sess_id))
+            if user_id is not None:
+                stack.enter_context(observability.user(user_id, tags=[user_id]))
+            stack.enter_context(observability.span(trace_name, url=url, force=force_flag, fetcher_type=fetcher_type))
             self.logger.info('Processing URL: %s (force=%s, fetcher=%s)', url, force_flag, fetcher_type)
             domain = self._extract_domain(url)
             fetcher = self._create_fetcher(fetcher_type)
@@ -899,16 +909,21 @@ class Pipeline:
         return url
 
     def _extract_domain(self, url: str) -> str:
-        """Extract domain from URL.
+        """Extract the (sub)domain from URL.
+
+        Thin delegator over :func:`yosoi.utils.observability.normalize_user_id`
+        so storage and observability never split: the value used as the
+        Langfuse ``user_id`` is the same value used as the storage domain.
 
         Args:
-            url: The URL that is being fetched
+            url: The URL that is being fetched.
 
         Returns:
-            The domain of the URL
+            Normalized host (lowercased, single leading ``www.`` stripped,
+            port and userinfo removed), or empty string for URLs without a host.
 
         """
-        return urlparse(url).netloc.replace('www.', '')
+        return observability.normalize_user_id(url) or ''
 
     def _create_fetcher(self, fetcher_type: str) -> HTMLFetcher | None:
         """Create HTML fetcher instance.

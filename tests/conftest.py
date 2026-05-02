@@ -1,8 +1,36 @@
 import pytest
+from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 
 from yosoi.core.discovery.config import LLMConfig
 from yosoi.models import FieldSelectors
 from yosoi.models.defaults import NewsArticle
+
+# Single session-scoped exporter: register one TracerProvider for the whole
+# test session, then clear() between tests. Avoids set_tracer_provider's
+# "provider already set, ignoring" warning and is faster than per-test setup.
+# Tests that need to inspect emitted spans take the `span_exporter` fixture.
+_SPAN_EXPORTER = InMemorySpanExporter()
+
+
+@pytest.fixture(scope='session', autouse=True)
+def _install_test_tracer_provider():
+    provider = TracerProvider()
+    provider.add_span_processor(SimpleSpanProcessor(_SPAN_EXPORTER))
+    trace.set_tracer_provider(provider)
+    return provider
+
+
+@pytest.fixture
+def span_exporter():
+    """Return the in-memory OTel span exporter, cleared for this test."""
+    _SPAN_EXPORTER.clear()
+    yield _SPAN_EXPORTER
+    from yosoi.utils import observability
+
+    observability.reset_for_tests()
 
 
 @pytest.fixture

@@ -34,6 +34,21 @@ def _resolve_output_formats(flag_values: tuple[str, ...]) -> list[str]:
     return list(dict.fromkeys(normalised)) or ['json']
 
 
+def _collect_urls(url: str | None, file_path: str | None, limit: int | None) -> list[str]:
+    """Build the URL list from --url / --file / --limit flags."""
+    urls: list[str] = []
+    if url:
+        urls.append(url)
+    if file_path:
+        urls.extend(load_urls_from_file(file_path))
+    if not urls:
+        raise click.UsageError('No URLs provided. Use --url <url> or --file <file>')
+    if limit:
+        urls = urls[:limit]
+        console.print(f'[cyan]ℹ Limiting to first {limit} URLs[/cyan]')
+    return urls
+
+
 @click.command()
 @click.pass_context
 @click.option(
@@ -90,6 +105,15 @@ def _resolve_output_formats(flag_values: tuple[str, ...]) -> list[str]:
     default='css',
     help='Maximum selector strategy level (default: css)',
 )
+@click.option(
+    '--session-id',
+    'session_id',
+    default=None,
+    metavar='ID',
+    help='Override the Langfuse session id for this run (sets YOSOI_SESSION_ID). '
+    'Use this to group multiple CLI invocations under one logical session for '
+    'external orchestration. Default: auto-generated per process.',
+)
 def main(
     ctx: click.Context,
     model: str | None,
@@ -106,6 +130,7 @@ def main(
     contract: type[Contract] | None,
     workers: int,
     selector_level: str,
+    session_id: str | None,
 ) -> None:
     """Discover selectors from web pages using AI.
 
@@ -125,6 +150,13 @@ def main(
 
     yosoi -s
     """
+    # Surface the override via the env var so any subprocess (e.g. taskiq
+    # workers) inherits the same session id. observability resolves
+    # _PROCESS_SESSION_ID lazily on first Pipeline construction, so as long
+    # as we set this before instantiating Pipeline below, the override wins.
+    if session_id is not None:
+        os.environ['YOSOI_SESSION_ID'] = session_id
+
     from yosoi import Pipeline
     from yosoi.utils.files import init_yosoi, is_initialized
     from yosoi.utils.logging import setup_local_logging
@@ -149,20 +181,7 @@ def main(
         pipeline.show_summary()
         return
 
-    urls: list[str] = []
-
-    if url:
-        urls.append(url)
-
-    if file_path:
-        urls.extend(load_urls_from_file(file_path))
-
-    if not urls:
-        raise click.UsageError('No URLs provided. Use --url <url> or --file <file>')
-
-    if limit:
-        urls = urls[:limit]
-        console.print(f'[cyan]ℹ Limiting to first {limit} URLs[/cyan]')
+    urls = _collect_urls(url, file_path, limit)
 
     if debug:
         console.print('[cyan]ℹ Debug mode enabled[/cyan] [dim]- extracted HTML will be saved to .yosoi/debug/[/dim]')
@@ -194,5 +213,6 @@ def main(
             force=force,
             skip_verification=skip_verification,
             fetcher_type=fetcher,
+            origin='cli',
         )
     )
