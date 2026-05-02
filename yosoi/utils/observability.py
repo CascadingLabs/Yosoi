@@ -51,6 +51,15 @@ _PROCESS_SESSION_ID: str | None = None
 def process_session_id() -> str:
     """Return the session id shared by all pipelines in this process.
 
+    Auto-generated form is a canonical UUID4 (e.g.
+    ``3f4a9c2e-8b1d-4f7c-9e2a-5b6c7d8e9f01``) so the id joins cleanly across
+    Postgres / ClickHouse / external services without prefix stripping. Origin
+    labelling ('yosoi', 'cli'|'script') lives on session tags, not the id.
+
+    Override via ``YOSOI_SESSION_ID`` for resumed runs or external orchestration
+    — overrides accept any string (not just UUIDs), so users can pass
+    human-meaningful labels like ``batch-2026-05-02`` when they want them.
+
     Resolved on first call; subsequent calls return the cached value.
     Double-checked locking guards against concurrent first-call races.
     """
@@ -58,7 +67,7 @@ def process_session_id() -> str:
     if _PROCESS_SESSION_ID is None:
         with _lock:
             if _PROCESS_SESSION_ID is None:
-                _PROCESS_SESSION_ID = os.getenv('YOSOI_SESSION_ID') or f'yosoi-{uuid.uuid4().hex[:12]}'
+                _PROCESS_SESSION_ID = os.getenv('YOSOI_SESSION_ID') or str(uuid.uuid4())
     return _PROCESS_SESSION_ID
 
 
