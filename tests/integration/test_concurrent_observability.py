@@ -118,6 +118,14 @@ async def test_concurrent_session_propagation_via_real_broker(
     spans = span_exporter.get_finished_spans()
     assert spans, 'no spans were emitted by the concurrent dispatch'
 
+    # Orchestrator-side enqueue span exists exactly once (detached_span: emitted
+    # but does NOT become parent of worker scrape spans).
+    enqueue_spans = [s for s in spans if s.name == 'enqueue']
+    assert len(enqueue_spans) == 1, f'expected exactly one "enqueue" span, got: {[s.name for s in spans]}'
+    enq = enqueue_spans[0]
+    assert enq.attributes.get('count') == len(urls)
+    assert enq.attributes.get('workers') == 2
+
     # Per-URL trace spans: one per URL, named 'scrape <netloc><path>'.
     scrape_spans = [s for s in spans if s.name.startswith('scrape ')]
     assert len(scrape_spans) == len(urls), f'expected {len(urls)} scrape spans, got: {[s.name for s in scrape_spans]}'
@@ -135,3 +143,7 @@ async def test_concurrent_session_propagation_via_real_broker(
     assert len(trace_ids) == len(urls), (
         f'expected {len(urls)} distinct trace_ids (one per URL), got {len(trace_ids)}: {trace_ids}'
     )
+
+    # The enqueue span's trace id must NOT match any scrape span's — it's a
+    # standalone trace root, proving detached_span did not parent the workers.
+    assert enq.context.trace_id not in trace_ids

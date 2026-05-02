@@ -250,3 +250,71 @@ def test_normalize_user_id(url, expected):
 def test_normalize_user_id_subdomain_distinct_from_apex():
     """shop.example.com must not collide with example.com — the whole point of per-subdomain user_ids."""
     assert obs.normalize_user_id('https://shop.example.com') != obs.normalize_user_id('https://example.com')
+
+
+# ────────────────────────────────────────────────────────────────────
+# P3 — set_trace_input / set_trace_output helpers
+# ────────────────────────────────────────────────────────────────────
+
+
+def test_set_trace_input_noop_when_client_off(mocker):
+    obs.reset_for_tests()
+    fake_span = mocker.MagicMock()
+    obs.set_trace_input(fake_span, {'x': 1})
+    fake_span.set_attribute.assert_not_called()
+
+
+def test_set_trace_output_noop_when_client_off(mocker):
+    obs.reset_for_tests()
+    fake_span = mocker.MagicMock()
+    obs.set_trace_output(fake_span, {'x': 1})
+    fake_span.set_attribute.assert_not_called()
+
+
+@pytest.mark.usefixtures('_fake_active_client')
+def test_set_trace_input_noop_when_span_none():
+    obs.set_trace_input(None, {'x': 1})  # must not raise
+
+
+@pytest.mark.usefixtures('_fake_active_client')
+def test_set_trace_output_noop_when_span_none():
+    obs.set_trace_output(None, {'x': 1})  # must not raise
+
+
+@pytest.mark.usefixtures('_fake_active_client')
+def test_set_trace_input_active_sets_observation_input(mocker):
+    import json
+
+    fake_span = mocker.MagicMock()
+    obs.set_trace_input(fake_span, {'url': 'https://x', 'n': 1})
+    fake_span.set_attribute.assert_called_once()
+    key, val = fake_span.set_attribute.call_args.args
+    assert key == 'langfuse.observation.input'
+    assert json.loads(val) == {'url': 'https://x', 'n': 1}
+
+
+@pytest.mark.usefixtures('_fake_active_client')
+def test_set_trace_output_active_sets_observation_output(mocker):
+    import json
+
+    fake_span = mocker.MagicMock()
+    obs.set_trace_output(fake_span, {'path': 'fresh', 'extracted_count': 3})
+    fake_span.set_attribute.assert_called_once()
+    key, val = fake_span.set_attribute.call_args.args
+    assert key == 'langfuse.observation.output'
+    assert json.loads(val) == {'path': 'fresh', 'extracted_count': 3}
+
+
+@pytest.mark.usefixtures('_fake_active_client')
+def test_set_trace_input_serializes_non_json_types(mocker):
+    """default=str fallback must keep Pydantic-like / arbitrary objects from raising."""
+    import json
+    from datetime import datetime
+
+    fake_span = mocker.MagicMock()
+    payload = {'when': datetime(2026, 1, 1), 'obj': object()}
+    obs.set_trace_input(fake_span, payload)
+    _, val = fake_span.set_attribute.call_args.args
+    decoded = json.loads(val)
+    assert isinstance(decoded['when'], str)
+    assert decoded['when'].startswith('2026-01-01')
