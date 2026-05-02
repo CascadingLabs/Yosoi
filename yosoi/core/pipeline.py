@@ -5,6 +5,7 @@ Centralized retry logic for bot detection and AI failures.
 
 import asyncio
 import logging
+import os
 import time
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import ExitStack
@@ -295,10 +296,30 @@ class Pipeline:
         format_to_use: list[str] = [_raw] if isinstance(_raw, str) else list(_raw)
         force_flag = self.force if force is None else force
 
+        # Eagerly resolve the session id at the top so every span (orchestrator
+        # + per-URL) shares one session_id, even on the concurrent path which
+        # previously skipped the outer wrap.
+        sess_id = observability.process_session_id()
+
         effective_workers = min(workers, len(urls))
-        if effective_workers > 1:
-            if not self.console.quiet and on_start is None and on_complete is None:
-                return await self._process_urls_with_live(
+        # Outer session wrap: hoisted above the workers branch so both
+        # sequential and concurrent dispatch run inside it.
+        with observability.session(sess_id, tags=['yosoi', origin]):
+            if effective_workers > 1:
+                if not self.console.quiet and on_start is None and on_complete is None:
+                    return await self._process_urls_with_live(
+                        urls,
+                        force=force_flag,
+                        skip_verification=skip_verification,
+                        fetcher_type=fetcher_type,
+                        max_fetch_retries=max_fetch_retries,
+                        max_discovery_retries=max_discovery_retries,
+                        output_format=format_to_use,
+                        effective_workers=effective_workers,
+                        sess_id=sess_id,
+                        origin=origin,
+                    )
+                return await self._process_urls_concurrent(
                     urls,
                     force=force_flag,
                     skip_verification=skip_verification,
@@ -306,28 +327,15 @@ class Pipeline:
                     max_fetch_retries=max_fetch_retries,
                     max_discovery_retries=max_discovery_retries,
                     output_format=format_to_use,
-                    effective_workers=effective_workers,
+                    max_workers=effective_workers,
+                    on_complete=on_complete,
+                    on_start=on_start,
+                    sess_id=sess_id,
+                    origin=origin,
                 )
-            return await self._process_urls_concurrent(
-                urls,
-                force=force_flag,
-                skip_verification=skip_verification,
-                fetcher_type=fetcher_type,
-                max_fetch_retries=max_fetch_retries,
-                max_discovery_retries=max_discovery_retries,
-                output_format=format_to_use,
-                max_workers=effective_workers,
-                on_complete=on_complete,
-                on_start=on_start,
-            )
 
-        results: dict[str, list[str]] = {'successful': [], 'failed': []}
-
-        run_start = time.monotonic()
-        sess_id = getattr(self, 'session_id', '') or 'yosoi-unset'
-        # Session-only wrap (no outer span): each URL's scrape() starts its
-        # own root span so Langfuse renders one trace per URL.
-        with observability.session(sess_id, tags=['yosoi', origin]):
+            results: dict[str, list[str]] = {'successful': [], 'failed': []}
+            run_start = time.monotonic()
             for idx, url in enumerate(urls, 1):
                 self.console.print(f'\n[bold blue]Processing URL {idx}/{len(urls)}[/bold blue]')
                 self.logger.info('--- Processing URL %d/%d: %s ---', idx, len(urls), url)
@@ -379,6 +387,8 @@ class Pipeline:
         max_discovery_retries: int,
         output_format: list[str],
         effective_workers: int,
+        sess_id: str | None = None,
+        origin: Literal['cli', 'script'] = 'script',
     ) -> dict[str, list[str]]:
         """Run concurrent processing wrapped in a Rich Live progress table.
 
@@ -408,6 +418,8 @@ class Pipeline:
                 max_workers=effective_workers,
                 on_complete=_on_complete,
                 on_start=_on_start,
+                sess_id=sess_id,
+                origin=origin,
             )
 
     async def _process_urls_concurrent(
@@ -420,6 +432,8 @@ class Pipeline:
         max_discovery_retries: int,
         output_format: list[str],
         max_workers: int,
+        sess_id: str | None = None,
+        origin: Literal['cli', 'script'] = 'script',
         on_complete: Callable[[str, bool, float], Awaitable[None]] | None = None,
         on_start: Callable[[str], Awaitable[None]] | None = None,
     ) -> dict[str, list[str]]:
@@ -432,6 +446,20 @@ class Pipeline:
         """
         from yosoi.core.tasks import configure_broker, enqueue_urls, shutdown_broker
 
+        # Defensive: export the session id to the env so future fork-based
+        # brokers (Redis, AMQP) propagate it across process boundaries.
+        # No-op for today's InMemoryBroker — workers share the parent's
+        # YOSOI_SESSION_ID via in-process state.
+        if isinstance(sess_id, str):
+            os.environ['YOSOI_SESSION_ID'] = sess_id
+
+        # Note: no orchestrator-level span here. We rely on the per-URL
+        # ``scrape`` spans being the trace roots (one trace per URL — see
+        # the docs "trace = per URL" model). An orchestrator span here would
+        # become the active OTel parent and collapse all workers into one
+        # trace. The session_id + tags propagate via the outer
+        # ``observability.session(...)`` wrap (no span, just OTel baggage),
+        # so per-URL traces still inherit them at ingestion.
         await configure_broker(
             self._llm_config,
             contract=self.contract,
@@ -451,6 +479,8 @@ class Pipeline:
                 max_discovery_retries=max_discovery_retries,
                 on_complete=on_complete,
                 on_start=on_start,
+                sess_id=sess_id,
+                origin=origin,
             )
         finally:
             await shutdown_broker()
@@ -530,7 +560,6 @@ class Pipeline:
 
         url = await self.normalize_url(url)
 
-        sess_id = getattr(self, 'session_id', '') or 'yosoi-unset'
         # Trace title shows the URL so the Langfuse trace list is scannable.
         # Full URL is also kept on the span attribute for filtering.
         parsed = urlparse(url)
@@ -538,9 +567,12 @@ class Pipeline:
         # Bind the (sub)domain as the Langfuse user_id so traces aggregate per
         # site. ExitStack lets us omit the user() frame entirely when the URL
         # has no host (file://, data:, etc.) rather than passing an empty id.
+        # Note: no session() wrap here — the outer process_urls() owns the
+        # session. Direct callers of scrape() (script-mode without process_urls)
+        # rely on Pipeline.__init__'s lazy process_session_id() landing on the
+        # spans via the Langfuse SDK's span enrichment.
         user_id = observability.normalize_user_id(url)
         with ExitStack() as stack:
-            stack.enter_context(observability.session(sess_id))
             if user_id is not None:
                 stack.enter_context(observability.user(user_id, tags=[user_id]))
             stack.enter_context(observability.span(trace_name, url=url, force=force_flag, fetcher_type=fetcher_type))

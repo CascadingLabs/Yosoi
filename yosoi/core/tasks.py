@@ -6,8 +6,7 @@ Uses InMemoryBroker with SmartRetryMiddleware for in-process async concurrency.
 import asyncio
 import logging
 from collections.abc import Awaitable, Callable
-from typing import TYPE_CHECKING
-from urllib.parse import urlparse
+from typing import TYPE_CHECKING, Literal
 
 from pydantic import BaseModel
 from taskiq import InMemoryBroker
@@ -18,6 +17,7 @@ from yosoi.core.discovery.bus import DiscoveryBus
 from yosoi.core.discovery.config import LLMConfig
 from yosoi.models.contract import Contract
 from yosoi.models.selectors import SelectorLevel
+from yosoi.utils import observability
 
 if TYPE_CHECKING:
     from taskiq.result import TaskiqResult
@@ -136,10 +136,17 @@ async def process_url_task(
     fetcher_type: str = 'simple',
     max_fetch_retries: int = 2,
     max_discovery_retries: int = 3,
+    sess_id: str | None = None,
+    origin: Literal['cli', 'script'] = 'script',
+    domain: str | None = None,
 ) -> TaskResult:
     """Process a single URL as a taskiq task.
 
     Creates a fresh Pipeline instance per task to avoid shared mutable state.
+    Worker opens its own ``observability.session`` + ``observability.user``
+    blocks so traces emitted in the worker carry the orchestrator's session_id
+    and the per-URL user_id even when the broker boundary breaks OTel context
+    propagation (e.g. a future Redis broker; no-op for InMemoryBroker).
 
     Args:
         url: URL to process.
@@ -148,45 +155,60 @@ async def process_url_task(
         fetcher_type: Fetcher type to use.
         max_fetch_retries: Max fetch retry attempts.
         max_discovery_retries: Max AI discovery retry attempts.
+        sess_id: Orchestrator-resolved session id; reopened by the worker so
+            OTel context survives the broker boundary.
+        origin: Where the orchestrator was invoked from (``'cli'`` or ``'script'``).
+        domain: (sub)domain pre-computed by the orchestrator via
+            :func:`observability.normalize_user_id`. Worker does NOT recompute —
+            same source-of-truth as Pipeline._extract_domain.
 
     Returns:
-        TaskResult with 'url', 'success', and 'elapsed'.
+        TaskResult with 'url' and 'elapsed'.
 
     """
+    from contextlib import ExitStack
+
     from yosoi.core.pipeline import Pipeline
 
     config = get_pipeline_config()
     sem = _semaphore or asyncio.Semaphore(5)
 
     async with sem:
-        domain = urlparse(url if url.startswith(('http://', 'https://')) else f'https://{url}').netloc.replace(
-            'www.', ''
-        )
-        write_lock = _domain_locks.setdefault(domain, asyncio.Lock())
-        pipeline = Pipeline(
-            config.llm_config,
-            contract=config.contract,
-            output_format=config.output_format,
-            quiet=True,
-            selector_level=config.selector_level,
-            bus=_discovery_bus,
-            write_lock=write_lock,
-        )
+        with ExitStack() as stack:
+            if sess_id is not None:
+                stack.enter_context(observability.session(sess_id, tags=['yosoi', origin]))
+            if domain is not None:
+                stack.enter_context(observability.user(domain, tags=[domain]))
 
-        try:
-            await pipeline.process_url(
-                url,
-                force=force,
-                max_fetch_retries=max_fetch_retries,
-                max_discovery_retries=max_discovery_retries,
-                skip_verification=skip_verification,
-                fetcher_type=fetcher_type,
+            domain_for_lock = domain or ''
+            write_lock = _domain_locks.setdefault(domain_for_lock, asyncio.Lock())
+            pipeline = Pipeline(
+                config.llm_config,
+                contract=config.contract,
+                output_format=config.output_format,
+                quiet=True,
+                selector_level=config.selector_level,
+                bus=_discovery_bus,
+                write_lock=write_lock,
             )
-            elapsed = getattr(pipeline, 'last_elapsed', 0.0)
-            return TaskResult(url=url, elapsed=elapsed)
-        except Exception:
-            logger.exception('Task failed for %s', url)
-            raise  # taskiq retry middleware fires here
+
+            try:
+                await pipeline.process_url(
+                    url,
+                    force=force,
+                    max_fetch_retries=max_fetch_retries,
+                    max_discovery_retries=max_discovery_retries,
+                    skip_verification=skip_verification,
+                    fetcher_type=fetcher_type,
+                )
+                elapsed = getattr(pipeline, 'last_elapsed', 0.0)
+                return TaskResult(url=url, elapsed=elapsed)
+            except Exception:
+                logger.exception('Task failed for %s', url)
+                raise  # taskiq retry middleware fires here
+
+    # Unreachable — both branches above either return or raise.
+    raise RuntimeError('unreachable')
 
 
 async def enqueue_urls(
@@ -198,6 +220,8 @@ async def enqueue_urls(
     max_discovery_retries: int = 3,
     on_complete: Callable[[str, bool, float], Awaitable[None]] | None = None,
     on_start: Callable[[str], Awaitable[None]] | None = None,
+    sess_id: str | None = None,
+    origin: Literal['cli', 'script'] = 'script',
 ) -> EnqueueResult:
     """Enqueue URLs as tasks and collect results.
 
@@ -212,6 +236,9 @@ async def enqueue_urls(
             when each task finishes. Used by the CLI progress display.
         on_start: Optional async callback ``(url)`` called just before each
             task begins processing.
+        sess_id: Orchestrator's session id, threaded through to each worker
+            so traces share one session across the broker boundary.
+        origin: ``'cli'`` or ``'script'`` — propagated as a worker session tag.
 
     Returns:
         EnqueueResult with 'successful', 'failed', and 'skipped' URL lists.
@@ -226,6 +253,11 @@ async def enqueue_urls(
     for url in urls:
         if on_start is not None:
             await on_start(url)
+        # Compute the domain in the orchestrator (single source of truth) so
+        # the worker doesn't recompute it from the URL with potentially
+        # divergent normalisation rules.
+        url_for_lookup = url if url.startswith(('http://', 'https://')) else f'https://{url}'
+        domain = observability.normalize_user_id(url_for_lookup)
         handle = await process_url_task.kiq(
             url,
             force=force,
@@ -233,6 +265,9 @@ async def enqueue_urls(
             fetcher_type=fetcher_type,
             max_fetch_retries=max_fetch_retries,
             max_discovery_retries=max_discovery_retries,
+            sess_id=sess_id,
+            origin=origin,
+            domain=domain,
         )
         handles.append(handle)
         enqueued_urls.append(url)

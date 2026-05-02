@@ -94,7 +94,8 @@ class TestProcessUrlTask:
         mock_pipeline = mock_pipeline_cls.return_value
         mock_pipeline.process_url = mocker.AsyncMock(return_value=None)
 
-        await process_url_task.original_func(url='http://example.com/page1')
+        # Orchestrator passes domain explicitly; worker no longer recomputes.
+        await process_url_task.original_func(url='http://example.com/page1', domain='example.com')
         assert 'example.com' in _domain_locks
         await shutdown_broker()
 
