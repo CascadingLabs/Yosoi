@@ -80,12 +80,17 @@ def test_instrumentation_settings_true_when_configured():
 
 
 def test_process_session_id_stable_across_calls(monkeypatch):
+    import uuid as _uuid
+
     monkeypatch.delenv('YOSOI_SESSION_ID', raising=False)
     obs.reset_for_tests()
     first = obs.process_session_id()
     second = obs.process_session_id()
     assert first == second
-    assert first.startswith('yosoi-')
+    # Canonical UUID4 — joins cleanly across DBs / services without prefix stripping.
+    parsed = _uuid.UUID(first)
+    assert parsed.version == 4
+    assert str(parsed) == first
 
 
 def test_process_session_id_honours_env_var(monkeypatch):
