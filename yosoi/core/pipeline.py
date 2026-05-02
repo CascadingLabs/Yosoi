@@ -185,11 +185,10 @@ class Pipeline:
         self.last_elapsed: float = 0.0
         self._client: httpx.AsyncClient = httpx.AsyncClient()
 
-        # One Langfuse session per Pipeline instance — every trace this
-        # pipeline produces gets grouped under this id.
-        import uuid
-
-        self.session_id: str = f'yosoi-{uuid.uuid4().hex[:12]}'
+        # Process-scoped Langfuse session — every Pipeline in this CLI/script
+        # invocation shares the same id, so each pipeline call shows up as a
+        # separate trace under one session.
+        self.session_id: str = observability.process_session_id()
 
         # Auto-initialize .yosoi dir and file logging when used outside the CLI
         has_file_handler = any(isinstance(h, logging.FileHandler) for h in logging.getLogger().handlers)
@@ -321,7 +320,9 @@ class Pipeline:
 
         run_start = time.monotonic()
         sess_id = getattr(self, 'session_id', '') or 'yosoi-unset'
-        with observability.session(sess_id), observability.span('process_urls', total_urls=len(urls)):
+        # Session-only wrap (no outer span): each URL's scrape() starts its
+        # own root span so Langfuse renders one trace per URL.
+        with observability.session(sess_id):
             for idx, url in enumerate(urls, 1):
                 self.console.print(f'\n[bold blue]Processing URL {idx}/{len(urls)}[/bold blue]')
                 self.logger.info('--- Processing URL %d/%d: %s ---', idx, len(urls), url)
@@ -525,9 +526,13 @@ class Pipeline:
         url = await self.normalize_url(url)
 
         sess_id = getattr(self, 'session_id', '') or 'yosoi-unset'
+        # Trace title shows the URL so the Langfuse trace list is scannable.
+        # Full URL is also kept on the span attribute for filtering.
+        parsed = urlparse(url)
+        trace_name = f'scrape {parsed.netloc}{parsed.path or "/"}'
         with (
             observability.session(sess_id),
-            observability.span('scrape', url=url, force=force_flag, fetcher_type=fetcher_type),
+            observability.span(trace_name, url=url, force=force_flag, fetcher_type=fetcher_type),
         ):
             self.logger.info('Processing URL: %s (force=%s, fetcher=%s)', url, force_flag, fetcher_type)
             domain = self._extract_domain(url)
@@ -544,28 +549,33 @@ class Pipeline:
                             yield item
                         return
 
-                # Fresh discovery path
-                result = await self._fetch(url, fetcher, max_retries=max_fetch_retries)
-                if not result:
-                    raise RuntimeError(f'Failed to fetch {url}')
-                assert result.html is not None, 'result.html should not be None after successful fetch'
+                # Fresh discovery path — each stage gets a structured span
+                with observability.span('fetch', url=url, max_retries=max_fetch_retries):
+                    result = await self._fetch(url, fetcher, max_retries=max_fetch_retries)
+                    if not result:
+                        raise RuntimeError(f'Failed to fetch {url}')
+                    assert result.html is not None, 'result.html should not be None after successful fetch'
 
-                cleaned_html = self._clean(url, result)
-                if not cleaned_html:
-                    raise RuntimeError(f'HTML cleaning failed for {url}')
+                with observability.span('clean', url=url, raw_chars=len(result.html)):
+                    cleaned_html = self._clean(url, result)
+                    if not cleaned_html:
+                        raise RuntimeError(f'HTML cleaning failed for {url}')
 
-                selectors, used_llm = await self._discover(url, cleaned_html, max_retries=max_discovery_retries)
-                if not selectors:
-                    raise RuntimeError(f'Selector discovery failed for {url}')
+                with observability.span('discover', url=url, cleaned_chars=len(cleaned_html)):
+                    selectors, used_llm = await self._discover(url, cleaned_html, max_retries=max_discovery_retries)
+                    if not selectors:
+                        raise RuntimeError(f'Selector discovery failed for {url}')
 
                 root_entry = self._resolve_root(selectors)
                 container_selector = self._root_value(root_entry)
 
-                verified = self._verify(url, cleaned_html, selectors, skip_verification)
-                if not verified:
-                    raise RuntimeError(f'Selector verification failed for {url}')
+                with observability.span('verify', url=url, skip=skip_verification, fields=len(selectors)):
+                    verified = self._verify(url, cleaned_html, selectors, skip_verification)
+                    if not verified:
+                        raise RuntimeError(f'Selector verification failed for {url}')
 
-                extracted = self._extract(url, cleaned_html, verified, container_selector)
+                with observability.span('extract', url=url, container=container_selector or 'single'):
+                    extracted = self._extract(url, cleaned_html, verified, container_selector)
                 selectors_to_save = self._selectors_with_root(verified, root_entry)
 
                 if not extracted:
@@ -574,13 +584,17 @@ class Pipeline:
                     return
 
                 # Validate, yield, and save
-                validated_items = self._validate_items(extracted, url)
+                with observability.span(
+                    'validate', url=url, items=len(extracted) if isinstance(extracted, list) else 1
+                ):
+                    validated_items = self._validate_items(extracted, url)
                 for vi in validated_items:
                     yield vi
                 save_all: ContentMap | ContentItems = (
                     validated_items if len(validated_items) > 1 else validated_items[0]
                 )
-                await self._finish(url, domain, selectors_to_save, save_all, used_llm, format_to_use)
+                with observability.span('save', url=url, items=len(validated_items)):
+                    await self._finish(url, domain, selectors_to_save, save_all, used_llm, format_to_use)
 
     # ============================================================================
     # scrape() helpers
@@ -617,20 +631,22 @@ class Pipeline:
 
     async def _fetch_and_clean_for_cache(self, url: str, fetcher: HTMLFetcher) -> str | None:
         """Fetch + clean HTML for cache verification. Returns None on failure (fail-open)."""
-        try:
-            result = await self._fetch(url, fetcher)
-            if result is None or result.html is None:
-                self.console.print('[warning]⚠ Could not fetch HTML, skipping extraction[/warning]')
+        with observability.span('fetch', url=url, mode='cache_verify'):
+            try:
+                result = await self._fetch(url, fetcher)
+                if result is None or result.html is None:
+                    self.console.print('[warning]⚠ Could not fetch HTML, skipping extraction[/warning]')
+                    return None
+            except BotDetectionError:
+                raise
+            except Exception as e:
+                self.logger.exception('Fetch failed during cache verification for %s', url)
+                self.console.print(f'[warning]⚠ Error: {e}, skipping extraction[/warning]')
                 return None
-        except BotDetectionError:
-            raise
-        except Exception as e:
-            self.logger.exception('Fetch failed during cache verification for %s', url)
-            self.console.print(f'[warning]⚠ Error: {e}, skipping extraction[/warning]')
-            return None
 
         self.console.print('[step]Cleaning HTML...[/step]')
-        cleaned_html: str = self.cleaner.clean_html(result.html)
+        with observability.span('clean', url=url, raw_chars=len(result.html), mode='cache_verify'):
+            cleaned_html: str = self.cleaner.clean_html(result.html)
         self.debug.save_debug_html(url, cleaned_html)
         return cleaned_html
 
@@ -643,7 +659,8 @@ class Pipeline:
         format_to_use: list[str],
     ) -> AsyncIterator[ContentMap] | None:
         """Verify cached fields, branch on fresh/stale/partial."""
-        verdicts = self._verify_per_field(cleaned_html, snapshots)
+        with observability.span('verify', url=url, mode='per_field_cache', fields=len(snapshots)):
+            verdicts = self._verify_per_field(cleaned_html, snapshots)
 
         for field_name, verdict in verdicts.items():
             self.storage.record_verdict(domain, field_name, verdict)
@@ -687,7 +704,8 @@ class Pipeline:
         existing = {name: snapshot_to_selector_dict(snap) for name, snap in snapshots.items()}
         root_entry = self._resolve_root(existing)
         container_selector = self._root_value(root_entry)
-        extracted = self._extract(url, cleaned_html, existing, container_selector)
+        with observability.span('extract', url=url, mode='cache', container=container_selector or 'single'):
+            extracted = self._extract(url, cleaned_html, existing, container_selector)
         if extracted:
             items_list: ContentItems = extracted if isinstance(extracted, list) else [extracted]
             return self._yield_cached_items(items_list, url, domain, format_to_use)

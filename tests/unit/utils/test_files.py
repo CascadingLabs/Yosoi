@@ -463,17 +463,12 @@ def test_get_logs_path_returns_exact_path(monkeypatch, tmp_path):
 # ---------------------------------------------------------------------------
 
 
-def test_ensure_tracking_migrates_root_file(mocker, tmp_path):
+def test_ensure_tracking_migrates_root_file(tmp_path):
     """ensure_tracking_file moves <root>/stats.json → .yosoi/stats.json."""
     yosoi_dir = tmp_path / '.yosoi'
     yosoi_dir.mkdir()
     root_tracking = tmp_path / 'stats.json'
     root_tracking.write_text('{"root": true}')
-
-    mock_span = mocker.MagicMock()
-    mock_span.__enter__ = mocker.MagicMock(return_value=mock_span)
-    mock_span.__exit__ = mocker.MagicMock(return_value=False)
-    mocker.patch('yosoi.utils.files.obs.span', return_value=mock_span)
 
     ensure_tracking_file(yosoi_dir)
 

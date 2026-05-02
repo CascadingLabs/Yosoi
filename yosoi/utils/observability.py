@@ -22,6 +22,8 @@ Usage::
 from __future__ import annotations
 
 import logging
+import os
+import uuid
 from collections.abc import Iterator
 from contextlib import contextmanager
 from threading import Lock
@@ -35,6 +37,17 @@ if TYPE_CHECKING:
 
 _logger = logging.getLogger(__name__)
 _lock = Lock()
+
+# One session per process invocation (CLI run / script). Every Pipeline
+# created inside the same process shares this id, so all of its scrapes
+# group under one Langfuse session. Override via YOSOI_SESSION_ID for
+# resumed runs or external orchestration.
+_PROCESS_SESSION_ID: str = os.getenv('YOSOI_SESSION_ID') or f'yosoi-{uuid.uuid4().hex[:12]}'
+
+
+def process_session_id() -> str:
+    """Return the session id shared by all pipelines in this process."""
+    return _PROCESS_SESSION_ID
 
 
 class LangfuseClient:
@@ -54,6 +67,9 @@ class LangfuseClient:
             public_key=cfg.langfuse_public_key,
             secret_key=cfg.langfuse_secret_key,
             host=cfg.langfuse_host,
+            # Default Langfuse filter only exports spans from known LLM
+            # instrumentation scopes; allow our `yosoi` tracer spans too.
+            should_export_span=lambda _s: True,
         )
         from pydantic_ai.agent import Agent
 
