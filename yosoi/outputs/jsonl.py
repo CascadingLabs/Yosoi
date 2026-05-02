@@ -4,10 +4,9 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
-import logfire
+from yosoi.utils import observability as obs
 
 
-@logfire.instrument('yosoi.format_jsonl')
 def format_jsonl(url: str, domain: str, content: dict[str, object]) -> str:
     """Format a single record as a JSONL line (no trailing newline).
 
@@ -20,15 +19,16 @@ def format_jsonl(url: str, domain: str, content: dict[str, object]) -> str:
         JSON-serialized string for one record.
 
     """
-    _RESERVED = {'url', 'domain', 'extracted_at'}
-    safe_content = {k: v for k, v in content.items() if k not in _RESERVED}
-    record = {
-        'url': url,
-        'domain': domain,
-        'extracted_at': datetime.now(timezone.utc).isoformat(),
-        **safe_content,
-    }
-    return json.dumps(record, ensure_ascii=False)
+    with obs.span('yosoi.format_jsonl', url=url, domain=domain):
+        _RESERVED = {'url', 'domain', 'extracted_at'}
+        safe_content = {k: v for k, v in content.items() if k not in _RESERVED}
+        record = {
+            'url': url,
+            'domain': domain,
+            'extracted_at': datetime.now(timezone.utc).isoformat(),
+            **safe_content,
+        }
+        return json.dumps(record, ensure_ascii=False)
 
 
 def save_jsonl(filepath: str, url: str, domain: str, content: dict[str, object]) -> None:

@@ -28,7 +28,10 @@ def _clean_env(monkeypatch):
         'OPENROUTER_KEY',
         'OPENROUTER_API_KEY',
         'YOSOI_MODEL',
-        'LOGFIRE_TOKEN',
+        'LANGFUSE_PUBLIC_KEY',
+        'LANGFUSE_SECRET_KEY',
+        'LANGFUSE_HOST',
+        'LANGFUSE_BASE_URL',
     ):
         monkeypatch.delenv(key, raising=False)
 
@@ -92,14 +95,22 @@ class TestDebugConfig:
 
 class TestTelemetryConfig:
     def test_defaults(self):
-        """Default logfire_token is None."""
+        """All Langfuse fields default to None."""
         cfg = TelemetryConfig()
-        assert cfg.logfire_token is None
+        assert cfg.langfuse_public_key is None
+        assert cfg.langfuse_secret_key is None
+        assert cfg.langfuse_host is None
 
-    def test_custom_token(self):
-        """Custom token is accepted."""
-        cfg = TelemetryConfig(logfire_token='tok-123')
-        assert cfg.logfire_token == 'tok-123'
+    def test_custom_keys(self):
+        """Custom keys + host are accepted."""
+        cfg = TelemetryConfig(
+            langfuse_public_key='pk-1',
+            langfuse_secret_key='sk-1',
+            langfuse_host='http://localhost:3000',
+        )
+        assert cfg.langfuse_public_key == 'pk-1'
+        assert cfg.langfuse_secret_key == 'sk-1'
+        assert cfg.langfuse_host == 'http://localhost:3000'
 
 
 # ---------------------------------------------------------------------------
@@ -153,7 +164,9 @@ class TestYosoiConfig:
         llm = LLMConfig(provider='groq', model_name='test', api_key='key')
         cfg = YosoiConfig(llm=llm)
         assert cfg.debug.save_html is False
-        assert cfg.telemetry.logfire_token is None
+        assert cfg.telemetry.langfuse_public_key is None
+        assert cfg.telemetry.langfuse_secret_key is None
+        assert cfg.telemetry.langfuse_host is None
         assert cfg.logs is True
         assert cfg.force is False
 

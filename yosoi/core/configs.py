@@ -52,9 +52,16 @@ class DebugConfig(BaseModel):
 
 
 class TelemetryConfig(BaseModel):
-    """Configuration for observability / telemetry."""
+    """Configuration for observability / telemetry.
 
-    logfire_token: str | None = None
+    Langfuse is enabled when both ``langfuse_public_key`` and
+    ``langfuse_secret_key`` are set. ``langfuse_host`` is optional and
+    defaults to Langfuse Cloud.
+    """
+
+    langfuse_public_key: str | None = None
+    langfuse_secret_key: str | None = None
+    langfuse_host: str | None = None
 
 
 class YosoiConfig(BaseModel):
@@ -176,5 +183,9 @@ def auto_config(model: str | None = None, debug: bool = False) -> YosoiConfig:
     return YosoiConfig(
         llm=llm_config,
         debug=DebugConfig(save_html=debug),
-        telemetry=TelemetryConfig(logfire_token=os.getenv('LOGFIRE_TOKEN')),
+        telemetry=TelemetryConfig(
+            langfuse_public_key=os.getenv('LANGFUSE_PUBLIC_KEY'),
+            langfuse_secret_key=os.getenv('LANGFUSE_SECRET_KEY'),
+            langfuse_host=os.getenv('LANGFUSE_BASE_URL') or os.getenv('LANGFUSE_HOST'),
+        ),
     )

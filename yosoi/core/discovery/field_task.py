@@ -7,13 +7,13 @@ import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
-import logfire
 from parsel import Selector
 from tenacity import RetryError
 
 from yosoi.core.verification.verifier import SelectorVerifier
 from yosoi.models.selectors import FieldSelectors, SelectorLevel
 from yosoi.prompts.discovery import DiscoveryInput
+from yosoi.utils import observability as obs
 from yosoi.utils.exceptions import LLMGenerationError
 from yosoi.utils.retry import get_async_retryer
 from yosoi.utils.signatures import field_signature
@@ -86,7 +86,7 @@ async def _discover_field(
             cached_selectors = FieldSelectors.model_validate(cached_entry)
             verify_result = verifier._verify_field(parsel_sel, field_name, cached_selectors, max_level)
             if verify_result.status == 'verified':
-                logfire.info('Cache hit for field', field=field_name)
+                logger.info('Cache hit for field %s', field_name)
                 return FieldTaskResult(
                     field_name=field_name,
                     selectors=cached_selectors,
@@ -140,11 +140,11 @@ async def _discover_field(
         verify_result = verifier._verify_field(parsel_sel, field_name, discovered, max_level)
         if verify_result.status == 'verified':
             escalated = level if level > SelectorLevel.CSS else None
-            logfire.info(
-                'Field discovered',
-                field=field_name,
-                level=level.name,
-                escalated=escalated is not None,
+            logger.info(
+                'Field discovered field=%s level=%s escalated=%s',
+                field_name,
+                level.name,
+                escalated is not None,
             )
             return FieldTaskResult(
                 field_name=field_name,
@@ -155,7 +155,7 @@ async def _discover_field(
 
         logger.debug('Selector for %s at level %s failed verification', field_name, level.name)
 
-    logfire.warning('Field discovery failed all levels', field=field_name, max_level=max_level.name)
+    obs.warning('Field discovery failed all levels', field=field_name, max_level=max_level.name)
     return failure
 
 

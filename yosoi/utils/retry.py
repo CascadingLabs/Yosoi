@@ -6,7 +6,6 @@ Provides a centralized way to create retry configurations using tenacity.
 from collections.abc import Callable
 from typing import Any
 
-import logfire
 from tenacity import (
     AsyncRetrying,
     BaseRetrying,
@@ -118,13 +117,15 @@ def get_async_retryer(
 def log_retry(retry_state: RetryCallState) -> None:
     """Default logging callback for retries.
 
-    Logs a warning with logfire.
+    Logs a warning via stdlib logging and (when active) the current OTel span.
 
     Args:
         retry_state: The tenacity retry state object.
 
     """
+    from yosoi.utils import observability as obs
+
     outcome = retry_state.outcome
     exception = outcome.exception() if outcome is not None else None
     attempt = retry_state.attempt_number
-    logfire.warning('Retrying operation', attempt=attempt, error=str(exception) if exception else 'Unknown error')
+    obs.warning('Retrying operation', attempt=attempt, error=str(exception) if exception else 'Unknown error')

@@ -643,7 +643,7 @@ async def test_process_url_raises_when_fetch_fails(mocker):
     mocker.patch.object(Pipeline, '_create_fetcher', return_value=mocker.MagicMock())
     stub.storage.load_selectors.return_value = None
     mocker.patch.object(Pipeline, '_fetch', return_value=None)
-    mocker.patch('yosoi.core.pipeline.logfire')
+    mocker.patch('yosoi.core.pipeline.observability')
     with pytest.raises(RuntimeError):
         await Pipeline.process_url(stub, 'https://x.com')
 
@@ -655,7 +655,7 @@ async def test_process_url_raises_when_create_fetcher_fails(mocker):
     mocker.patch.object(Pipeline, 'normalize_url', return_value='https://x.com')
     mocker.patch.object(Pipeline, '_extract_domain', return_value='x.com')
     mocker.patch.object(Pipeline, '_create_fetcher', return_value=None)
-    mocker.patch('yosoi.core.pipeline.logfire')
+    mocker.patch('yosoi.core.pipeline.observability')
     with pytest.raises(RuntimeError):
         await Pipeline.process_url(stub, 'https://x.com')
 
@@ -676,7 +676,7 @@ async def test_process_url_succeeds_with_cached_selectors(mocker):
     stub.storage.load_selectors.return_value = {'title': {'primary': 'h1'}}
     mocker.patch.object(Pipeline, '_extract_with_cached', return_value=([{'title': 'Book'}], True))
     stub.tracker.record_url.return_value = DomainStats(url_count=1)
-    mocker.patch('yosoi.core.pipeline.logfire')
+    mocker.patch('yosoi.core.pipeline.observability')
     await Pipeline.process_url(stub, 'https://x.com')
 
 
@@ -694,7 +694,7 @@ async def test_process_url_full_success_path(mocker):
     mocker.patch.object(Pipeline, '_extract', return_value={'title': 'Book'})
     mocker.patch.object(Pipeline, '_validate_with_contract', return_value={'title': 'Book'})
     mocker.patch.object(Pipeline, '_save_and_track')
-    mocker.patch('yosoi.core.pipeline.logfire')
+    mocker.patch('yosoi.core.pipeline.observability')
     await Pipeline.process_url(stub, 'https://x.com')
 
 
@@ -711,7 +711,7 @@ async def test_process_url_succeeds_even_when_extraction_fails(mocker):
     mocker.patch.object(Pipeline, '_verify', return_value={'title': {'primary': 'h1'}})
     mocker.patch.object(Pipeline, '_extract', return_value=None)
     mocker.patch.object(Pipeline, '_save_and_track')
-    mocker.patch('yosoi.core.pipeline.logfire')
+    mocker.patch('yosoi.core.pipeline.observability')
     await Pipeline.process_url(stub, 'https://x.com')
 
 
@@ -726,7 +726,7 @@ async def test_process_url_raises_when_clean_fails(mocker):
     stub.storage.load_selectors.return_value = None
     mocker.patch.object(Pipeline, '_fetch', return_value=fetch_result)
     mocker.patch.object(Pipeline, '_clean', return_value=None)
-    mocker.patch('yosoi.core.pipeline.logfire')
+    mocker.patch('yosoi.core.pipeline.observability')
     with pytest.raises(RuntimeError):
         await Pipeline.process_url(stub, 'https://x.com')
 
@@ -743,7 +743,7 @@ async def test_process_url_raises_when_discover_fails(mocker):
     mocker.patch.object(Pipeline, '_fetch', return_value=fetch_result)
     mocker.patch.object(Pipeline, '_clean', return_value='<clean/>')
     mocker.patch.object(Pipeline, '_discover', return_value=(None, False))
-    mocker.patch('yosoi.core.pipeline.logfire')
+    mocker.patch('yosoi.core.pipeline.observability')
     with pytest.raises(RuntimeError):
         await Pipeline.process_url(stub, 'https://x.com')
 
@@ -761,7 +761,7 @@ async def test_process_url_raises_when_verify_fails(mocker):
     mocker.patch.object(Pipeline, '_clean', return_value='<clean/>')
     mocker.patch.object(Pipeline, '_discover', return_value=({'title': {'primary': 'h1'}}, True))
     mocker.patch.object(Pipeline, '_verify', return_value=None)
-    mocker.patch('yosoi.core.pipeline.logfire')
+    mocker.patch('yosoi.core.pipeline.observability')
     with pytest.raises(RuntimeError):
         await Pipeline.process_url(stub, 'https://x.com')
 
@@ -774,7 +774,7 @@ async def test_process_url_raises_when_verify_fails(mocker):
 async def test_process_urls_collects_results(mocker):
     stub = _make_pipeline_stub(mocker)
     mocker.patch.object(Pipeline, 'process_url', side_effect=[None, RuntimeError('fail')])
-    mocker.patch('yosoi.core.pipeline.logfire')
+    mocker.patch('yosoi.core.pipeline.observability')
     results = await Pipeline.process_urls(stub, ['https://a.com', 'https://b.com'])
     assert 'https://a.com' in results['successful']
     assert 'https://b.com' in results['failed']
@@ -783,7 +783,7 @@ async def test_process_urls_collects_results(mocker):
 async def test_process_urls_catches_exceptions(mocker):
     stub = _make_pipeline_stub(mocker)
     mocker.patch.object(Pipeline, 'process_url', side_effect=RuntimeError('boom'))
-    mocker.patch('yosoi.core.pipeline.logfire')
+    mocker.patch('yosoi.core.pipeline.observability')
     results = await Pipeline.process_urls(stub, ['https://a.com'])
     assert 'https://a.com' in results['failed']
 
@@ -798,7 +798,7 @@ async def test_process_urls_uses_pipeline_force_flag(mocker):
         return True
 
     mocker.patch.object(Pipeline, 'process_url', side_effect=capture_call)
-    mocker.patch('yosoi.core.pipeline.logfire')
+    mocker.patch('yosoi.core.pipeline.observability')
     await Pipeline.process_urls(stub, ['https://a.com'])
     # process_urls passes force_flag = self.force
     assert len(calls) == 1
@@ -860,7 +860,7 @@ async def test_process_url_respects_explicit_force_override(mocker):
     mocker.patch.object(Pipeline, '_create_fetcher', return_value=mock_fetcher)
     stub.storage.load_selectors.return_value = {'title': {'primary': 'h1'}}
     mocker.patch.object(Pipeline, '_fetch', return_value=None)
-    mocker.patch('yosoi.core.pipeline.logfire')
+    mocker.patch('yosoi.core.pipeline.observability')
     with pytest.raises(RuntimeError):
         await Pipeline.process_url(stub, 'https://x.com', force=True)
     # load_selectors should NOT be called because force=True bypasses cache
@@ -1298,7 +1298,7 @@ async def test_process_url_uses_pipeline_format_when_output_format_none(mocker):
     mocker.patch.object(Pipeline, '_create_fetcher', return_value=mocker.MagicMock())
     stub.storage.load_selectors.return_value = None
     mock_fetch = mocker.patch.object(Pipeline, '_fetch', return_value=None)
-    mocker.patch('yosoi.core.pipeline.logfire')
+    mocker.patch('yosoi.core.pipeline.observability')
     with pytest.raises(RuntimeError):
         await Pipeline.process_url(stub, 'https://x.com', output_format=None)
     # _fetch was called, meaning the pipeline reached the fetch step
@@ -1470,7 +1470,7 @@ async def test_process_urls_calls_on_complete_on_success(mocker):
     """process_urls calls on_complete(url, True, elapsed) on success."""
     stub = _make_pipeline_stub(mocker)
     mocker.patch.object(Pipeline, 'process_url', return_value=None)
-    mocker.patch('yosoi.core.pipeline.logfire')
+    mocker.patch('yosoi.core.pipeline.observability')
 
     completed: list[tuple[str, bool]] = []
 
@@ -1486,7 +1486,7 @@ async def test_process_urls_calls_on_complete_on_failure(mocker):
     """process_urls calls on_complete(url, False, elapsed) on failure."""
     stub = _make_pipeline_stub(mocker)
     mocker.patch.object(Pipeline, 'process_url', side_effect=RuntimeError('boom'))
-    mocker.patch('yosoi.core.pipeline.logfire')
+    mocker.patch('yosoi.core.pipeline.observability')
 
     completed: list[tuple[str, bool]] = []
 
