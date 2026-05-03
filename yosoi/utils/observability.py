@@ -32,6 +32,7 @@ from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
 
 from langfuse import Langfuse
+from opentelemetry import context as otel_context
 from opentelemetry import trace
 
 if TYPE_CHECKING:
@@ -39,6 +40,7 @@ if TYPE_CHECKING:
 
 _logger = logging.getLogger(__name__)
 _lock = Lock()
+_configure_called = False
 
 # One session per process invocation (CLI run / script). Resolved lazily on
 # first access so that callers (e.g. the CLI ``--session-id`` flag) can set
@@ -104,11 +106,20 @@ class LangfuseClient:
 
 
 def configure(cfg: TelemetryConfig) -> None:
-    """Initialize the Langfuse client. Idempotent; no-op without keys."""
-    if not (cfg.langfuse_public_key and cfg.langfuse_secret_key):
-        _logger.warning('Langfuse not initialized — set LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY to enable')
-        return
+    """Initialize the Langfuse client. Idempotent; no-op without keys.
+
+    Repeat calls (e.g. ``Pipeline()`` re-instantiated per queued URL) short-circuit
+    on the first-call sentinel so we never re-run ``Agent.instrument_all()`` or
+    re-emit the missing-keys warning under concurrent worker construction.
+    """
+    global _configure_called
     with _lock:
+        if _configure_called:
+            return
+        _configure_called = True
+        if not (cfg.langfuse_public_key and cfg.langfuse_secret_key):
+            _logger.warning('Langfuse not initialized — set LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY to enable')
+            return
         if LangfuseClient._instance is None:
             LangfuseClient._instance = LangfuseClient(cfg)
 
@@ -162,7 +173,10 @@ def detached_span(name: str, **attrs: Any) -> Iterator[Any]:
     if c is None:
         yield None
         return
-    s = c.tracer.start_span(name)
+    # Clear the current span from the context so the new span becomes a true
+    # root (parentless) span while preserving baggage and other context values.
+    detached_ctx = trace.set_span_in_context(trace.INVALID_SPAN, otel_context.get_current())
+    s = c.tracer.start_span(name, context=detached_ctx)
     try:
         for k, v in attrs.items():
             s.set_attribute(k, v)
@@ -294,6 +308,7 @@ def set_trace_output(span: Any | None, payload: Any) -> None:
 
 def reset_for_tests() -> None:
     """Reset the singleton and the lazy session id. Test-only."""
-    global _PROCESS_SESSION_ID
+    global _PROCESS_SESSION_ID, _configure_called
     LangfuseClient._instance = None
     _PROCESS_SESSION_ID = None
+    _configure_called = False

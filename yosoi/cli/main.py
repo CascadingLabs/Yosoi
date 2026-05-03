@@ -43,7 +43,9 @@ def _collect_urls(url: str | None, file_path: str | None, limit: int | None) -> 
         urls.extend(load_urls_from_file(file_path))
     if not urls:
         raise click.UsageError('No URLs provided. Use --url <url> or --file <file>')
-    if limit:
+    if limit is not None:
+        if limit < 1:
+            raise click.BadParameter('--limit must be >= 1')
         urls = urls[:limit]
         console.print(f'[cyan]ℹ Limiting to first {limit} URLs[/cyan]')
     return urls
