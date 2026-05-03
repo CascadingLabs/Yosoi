@@ -183,12 +183,16 @@ async def test_orchestrator_span_bypass_when_all_fields_overridden(span_exporter
     from yosoi.types import Field as YsField
 
     # Use yosoi.types.Field(selector=...) to set the override correctly.
+    # ``root`` is also fixed so _build_task_specs() returns []; an undeclared
+    # root would still produce a discoverable container task and (correctly)
+    # prevent the bypass.
     contract = type(
         '_AllOverrideContract',
         (Contract,),
         {
             '__annotations__': {'title': str},
             'title': YsField(description='Title', selector='h1.title'),
+            'root': 'body',
         },
     )
     orch = _make_orchestrator(contract, llm_config_fixture, max_concurrent=5, mocker=mocker)

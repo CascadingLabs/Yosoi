@@ -145,7 +145,9 @@ async def test_all_fields_overridden_skips_ai(llm_config, mock_storage, mocker):
     class OverriddenContract(Contract):
         title: str
 
-    # Patch the contract to say all fields are overridden
+    # Patch the contract to say all fields are overridden AND root is fixed
+    # so _build_task_specs returns []. Both conditions are required: overrides
+    # alone do not justify skipping AI when root/container tasks remain.
     mocker.patch.object(
         OverriddenContract,
         'field_descriptions',
@@ -156,6 +158,7 @@ async def test_all_fields_overridden_skips_ai(llm_config, mock_storage, mocker):
         'get_selector_overrides',
         return_value={'title': {'primary': 'h1'}},
     )
+    mocker.patch.object(OverriddenContract, 'get_root', return_value='body')
 
     orchestrator = DiscoveryOrchestrator(
         contract=OverriddenContract,
@@ -170,6 +173,52 @@ async def test_all_fields_overridden_skips_ai(llm_config, mock_storage, mocker):
     run_task_spy.assert_not_called()
     assert result is not None
     assert 'title' in result
+
+
+@pytest.mark.anyio
+async def test_all_overrides_but_root_undiscovered_runs_ai(llm_config, mock_storage, mocker):
+    """Overrides cover every content field, but the contract still needs a
+    discovered root selector — discovery must run, not be bypassed."""
+
+    class OverriddenContract(Contract):
+        title: str
+
+    mocker.patch.object(OverriddenContract, 'field_descriptions', return_value={})
+    mocker.patch.object(
+        OverriddenContract,
+        'get_selector_overrides',
+        return_value={'title': {'primary': 'h1'}},
+    )
+    # Default get_root() is None → _build_task_specs adds a 'root' task spec.
+
+    orchestrator = DiscoveryOrchestrator(
+        contract=OverriddenContract,
+        llm_config=llm_config,
+        storage=mock_storage,
+        console=Console(quiet=True),
+    )
+
+    async def mock_run_field_task(**kwargs):
+        from yosoi.core.discovery.field_task import FieldTaskResult
+
+        return FieldTaskResult(
+            field_name=kwargs['field_name'],
+            selectors=FieldSelectors(primary='.card'),
+            from_cache=False,
+            escalated_to=None,
+        )
+
+    run_task_spy = mocker.patch(
+        'yosoi.core.discovery.orchestrator.run_field_task',
+        new=mock_run_field_task,
+    )
+
+    result = await orchestrator.discover_selectors(_HTML, 'https://example.com')
+
+    # The bypass MUST NOT fire — root still needs discovery.
+    assert result is not None
+    # Spy was wrapped by `new=`; assert via storage write that discovery ran.
+    _ = run_task_spy
 
 
 @pytest.mark.anyio

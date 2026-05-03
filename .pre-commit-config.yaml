@@ -84,7 +84,7 @@ repos:
         args: ["-c", "pyproject.toml", "-v"]
 
   - repo: https://github.com/tox-dev/pyproject-fmt
-    rev: v2.12.1
+    rev: v2.21.1
     hooks:
       - id: pyproject-fmt
         stages: [pre-commit]

@@ -256,7 +256,11 @@ async def enqueue_urls(
         # Compute the domain in the orchestrator (single source of truth) so
         # the worker doesn't recompute it from the URL with potentially
         # divergent normalisation rules.
-        url_for_lookup = url if url.startswith(('http://', 'https://')) else f'https://{url}'
+        # Only prepend ``https://`` to bare hostnames; URLs with any scheme
+        # (e.g. ``file://``, ``data:``) are passed through so they hit
+        # ``normalize_user_id``'s netloc-required path and return None rather
+        # than fabricating a host like ``file``.
+        url_for_lookup = url if '://' in url else f'https://{url}'
         domain = observability.normalize_user_id(url_for_lookup)
         handle = await process_url_task.kiq(
             url,

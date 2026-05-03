@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 import logging
 from typing import Any
-from urllib.parse import urlparse
 
 from rich.console import Console
 
@@ -117,16 +116,26 @@ class DiscoveryOrchestrator:
 
         """
         url_context = url or 'the provided page'
-        domain = self._extract_domain(url) if url else 'unknown'
+        # Use the same normalisation the Pipeline / enqueue path uses so the
+        # cache lookup, tracing user_id, and per-domain locking all share one
+        # bucket (no port/userinfo/casing splits).
+        domain = (obs.normalize_user_id(url) if url else None) or 'unknown'
         discovery_input = DiscoveryInput(url=url_context, html=html)
 
         field_descs = self._contract.field_descriptions()
         hints = self._collect_hints()
         overrides = self._contract.get_selector_overrides()
 
-        # If every field has an override, skip AI entirely
-        if not field_descs:
-            logger.info('Skipping AI discovery — all fields overridden (url=%s)', url_context)
+        # Build specs first so the bypass check sees root/nested container
+        # tasks: a contract that overrides every content field can still depend
+        # on a discovered root or container selector.
+        task_specs = self._build_task_specs(field_descs, hints, stale_fields)
+        field_count = len(task_specs)
+
+        # Only skip AI when there is genuinely nothing left to discover
+        # (every content field overridden AND no root/nested container task).
+        if not task_specs:
+            logger.info('Skipping AI discovery — nothing left to discover (url=%s)', url_context)
             with obs.span(
                 'orchestrator_discover_selectors',
                 url=url_context,
@@ -136,13 +145,6 @@ class DiscoveryOrchestrator:
             ):
                 pass
             return {k: dict(v) for k, v in overrides.items()} if overrides else None
-
-        # Compute the actual fan-out width: stale_fields filter (partial
-        # rediscovery) shrinks it; otherwise it's len(field_descs) plus any
-        # contract-level container/nested specs added by _build_task_specs.
-        # Build specs once here so the span attribute matches reality.
-        task_specs = self._build_task_specs(field_descs, hints, stale_fields)
-        field_count = len(task_specs)
 
         with obs.span(
             'orchestrator_discover_selectors',
@@ -314,8 +316,3 @@ class DiscoveryOrchestrator:
     def _collect_hints(self) -> dict[str, str | None]:
         """Extract yosoi_hint from each contract field, expanding nested contracts."""
         return self._contract.field_hints()
-
-    @staticmethod
-    def _extract_domain(url: str) -> str:
-        """Extract bare domain from URL."""
-        return urlparse(url).netloc.replace('www.', '')
