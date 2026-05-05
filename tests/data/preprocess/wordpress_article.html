@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+<meta charset="UTF-8">
+<title>Why Async Python Matters &mdash; Acme Engineering Blog</title>
+<!-- Yoast SEO 21.0 -->
+<meta name="description" content="A short tour of asyncio, why it landed in the standard library, and where it fits in modern Python.">
+<link rel="canonical" href="https://blog.example.com/2026/05/why-async-python-matters/">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","headline":"Why Async Python Matters","datePublished":"2026-05-01","author":{"@type":"Person","name":"Andrew B."},"publisher":{"@type":"Organization","name":"Acme Engineering"},"mainEntityOfPage":"https://blog.example.com/2026/05/why-async-python-matters/"}
+</script>
+<style>.entry-content{font-family:Georgia,serif;line-height:1.7} .entry-meta{color:#666}</style>
+<script src="https://blog.example.com/wp-includes/js/jquery/jquery.min.js"></script>
+<script src="https://blog.example.com/wp-content/plugins/akismet/akismet.js"></script>
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){})(window,document,'script','dataLayer','GTM-XXXXX');</script>
+<!-- End Google Tag Manager -->
+</head>
+<body class="single single-post post-32144 single-format-standard">
+<!-- Header navigation -->
+<header class="site-header" style="background:#0a0a0a;color:white;padding:16px 0">
+<nav class="site-nav" style="max-width:960px;margin:0 auto;padding:0 16px">
+<a class="site-title" href="/" style="font-size:20px;font-weight:700;color:white;text-decoration:none">Acme Engineering</a>
+<ul style="display:inline;margin-left:32px;list-style:none">
+<li style="display:inline;margin-right:16px"><a href="/category/python/" style="color:#aaa">Python</a></li>
+<li style="display:inline;margin-right:16px"><a href="/category/distributed/" style="color:#aaa">Distributed</a></li>
+<li style="display:inline"><a href="/category/security/" style="color:#aaa">Security</a></li>
+</ul>
+</nav>
+</header>
+<main id="primary" class="site-main" style="max-width:720px;margin:0 auto;padding:48px 16px">
+<article id="post-32144" class="post-32144 type-post status-publish format-standard">
+<header class="entry-header">
+<h1 class="entry-title" style="font-size:32px;line-height:1.2;margin:0 0 16px">Why Async Python Matters</h1>
+<div class="entry-meta" style="font-size:14px;color:#666;margin-bottom:24px">
+<span class="byline">By <a class="author-name" href="/author/andrew/">Andrew B.</a></span>
+<span class="posted-on" style="margin-left:12px"><time class="entry-date published" datetime="2026-05-01T09:00:00-07:00">May 1, 2026</time></span>
+</div>
+</header>
+<div class="entry-content">
+<p>Python's <code>asyncio</code> module has been part of the standard library for over a decade, and it has shaped how high-concurrency Python services are built.</p>
+<p>For workloads that are network-bound &mdash; talking to databases, caches, or external HTTP services &mdash; an event-loop-based concurrency model can be dramatically more efficient than threads.</p>
+<p>This post walks through three common patterns: structured concurrency with <code>asyncio.TaskGroup</code>, fan-out with <code>gather</code>, and bounded concurrency with <code>Semaphore</code>.</p>
+<h2 style="font-size:24px;margin:32px 0 16px">Structured concurrency</h2>
+<p>The 3.11 release introduced <code>TaskGroup</code>, which gives you a context manager that owns its child tasks and propagates exceptions cleanly when any of them fail.</p>
+<pre><code class="language-python">async with asyncio.TaskGroup() as tg:
+    tg.create_task(fetch(url1))
+    tg.create_task(fetch(url2))
+</code></pre>
+<h2 style="font-size:24px;margin:32px 0 16px">When threads still win</h2>
+<p>If your workload is CPU-bound, async won't help. The GIL still serializes Python bytecode, and you're better off with <code>multiprocessing</code> or a process pool executor.</p>
+</div>
+<footer class="entry-footer" style="margin-top:48px;padding-top:24px;border-top:1px solid #eee">
+<p>Tags: <a href="/tag/python/">python</a>, <a href="/tag/asyncio/">asyncio</a>, <a href="/tag/concurrency/">concurrency</a></p>
+</footer>
+</article>
+<aside class="related-posts" style="margin-top:64px">
+<h3 style="font-size:18px">You might also like</h3>
+<ul>
+<li><a href="/2026/04/structured-logging/">Structured Logging in Production</a></li>
+<li><a href="/2026/03/grpc-vs-rest/">gRPC vs. REST: Picking the Right Tool</a></li>
+</ul>
+</aside>
+</main>
+<footer class="site-footer" style="background:#f5f5f5;padding:32px 16px;text-align:center;color:#666;margin-top:64px">
+<p>&copy; 2026 Acme Engineering. <a href="/privacy">Privacy</a> &middot; <a href="/terms">Terms</a></p>
+</footer>
+<script>jQuery(function($){})</script>
+<!-- /Google Tag Manager -->
+</body>
+</html>

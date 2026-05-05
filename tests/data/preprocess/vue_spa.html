@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title data-v-1234567>Vue SPA — Product Listing</title>
+<style>.v-app{font-family:Roboto,sans-serif} .v-card{padding:16px}</style>
+<script src="/assets/vendor.abc123.js"></script>
+<script src="/assets/app.def456.js"></script>
+<!-- vue-meta -->
+</head>
+<body>
+<!-- Mounted by Vue -->
+<div id="app" data-v-app data-v-7d3a9f8b style="min-height:100vh">
+  <header data-v-7d3a9f8b style="background:#fff;border-bottom:1px solid #eee">
+    <nav data-v-7d3a9f8b @click="onNavClick" :class="{ active: open }">
+      <a href="/" data-v-7d3a9f8b style="color:#1976d2;text-decoration:none">Home</a>
+      <a href="/products" data-v-7d3a9f8b @click="trackClick">Products</a>
+      <a href="/about" data-v-7d3a9f8b>About</a>
+    </nav>
+  </header>
+  <main data-v-7d3a9f8b style="padding:24px">
+    <h1 data-v-7d3a9f8b class="title" style="font-size:32px;font-weight:600">Featured Products</h1>
+    <section class="grid" data-v-7d3a9f8b style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+      <article class="card" data-v-7d3a9f8b data-v-card-1 style="border:1px solid #ddd;border-radius:8px">
+        <img src="/img/p1.webp" alt="Headphones" data-v-7d3a9f8b style="width:100%;height:200px;object-fit:cover" onerror="this.src='/img/fallback.png'">
+        <h2 data-v-7d3a9f8b style="font-size:18px;margin:12px">Wireless Headphones</h2>
+        <p class="price" data-v-7d3a9f8b style="color:#d32f2f;font-weight:700">$129.99</p>
+        <button data-v-7d3a9f8b @click="addToCart(1)" :disabled="loading" style="background:#1976d2;color:white;padding:8px 16px">Add to cart</button>
+      </article>
+      <article class="card" data-v-7d3a9f8b data-v-card-2 style="border:1px solid #ddd;border-radius:8px">
+        <img src="/img/p2.webp" alt="Speaker" data-v-7d3a9f8b style="width:100%;height:200px;object-fit:cover">
+        <h2 data-v-7d3a9f8b style="font-size:18px;margin:12px">Bluetooth Speaker</h2>
+        <p class="price" data-v-7d3a9f8b style="color:#d32f2f;font-weight:700">$79.99</p>
+        <button data-v-7d3a9f8b @click="addToCart(2)" :disabled="loading" style="background:#1976d2;color:white;padding:8px 16px">Add to cart</button>
+      </article>
+      <article class="card" data-v-7d3a9f8b data-v-card-3 style="border:1px solid #ddd;border-radius:8px">
+        <img src="/img/p3.webp" alt="Earbuds" data-v-7d3a9f8b style="width:100%;height:200px;object-fit:cover">
+        <h2 data-v-7d3a9f8b style="font-size:18px;margin:12px">Wireless Earbuds</h2>
+        <p class="price" data-v-7d3a9f8b style="color:#d32f2f;font-weight:700">$59.99</p>
+        <button data-v-7d3a9f8b @click="addToCart(3)" :disabled="loading" style="background:#1976d2;color:white;padding:8px 16px">Add to cart</button>
+      </article>
+    </section>
+  </main>
+  <footer data-v-7d3a9f8b style="margin-top:48px;padding:24px;background:#f5f5f5">
+    <p data-v-7d3a9f8b style="color:#666;font-size:14px">&copy; 2026 Example Co.</p>
+  </footer>
+</div>
+<script>window.__VUE_HMR_RUNTIME__={}</script>
+</body>
+</html>

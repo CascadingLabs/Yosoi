@@ -21,6 +21,7 @@ from rich.theme import Theme
 from tenacity import RetryCallState, RetryError
 
 from yosoi.core.cleaning import HTMLCleaner
+from yosoi.core.cleaning.preprocess import HTMLPreprocessor
 from yosoi.core.configs import YosoiConfig
 from yosoi.core.discovery import DiscoveryOrchestrator, LLMConfig
 from yosoi.core.discovery.bus import DiscoveryBus
@@ -135,6 +136,9 @@ class Pipeline:
 
         # Default discovery fan-out — overridden below when YosoiConfig is passed.
         max_concurrent_discovery: int = 5
+        # CAS-18 spike feature flag — only flips on when the caller passes a
+        # YosoiConfig with ``use_experimental_preprocess=True``.
+        use_experimental_preprocess: bool = False
 
         if isinstance(llm_config, YosoiConfig):
             yosoi_cfg = llm_config
@@ -142,6 +146,7 @@ class Pipeline:
             debug_mode = yosoi_cfg.debug.save_html
             force = yosoi_cfg.force
             max_concurrent_discovery = yosoi_cfg.discovery.max_concurrent
+            use_experimental_preprocess = yosoi_cfg.use_experimental_preprocess
             observability.configure(yosoi_cfg.telemetry)
         else:
             import os
@@ -169,6 +174,8 @@ class Pipeline:
         self._contract_sig = contract_signature(contract)
         self.console = Console(theme=self.custom_theme, quiet=quiet)
         self.cleaner = HTMLCleaner(console=self.console)
+        self.use_experimental_preprocess = use_experimental_preprocess
+        self.preprocessor: HTMLPreprocessor | None = HTMLPreprocessor() if use_experimental_preprocess else None
         self.storage = SelectorStorage()
         self.discovery = DiscoveryOrchestrator(
             contract=self.contract,
@@ -1161,7 +1168,17 @@ class Pipeline:
         return None
 
     def _clean(self, url: str, result: FetchResult) -> str | None:
-        """Clean HTML by removing noise and extracting main content.
+        """Produce LLM-ready HTML, picking the cleaning path by feature flag.
+
+        With ``use_experimental_preprocess`` off (default), the existing
+        BeautifulSoup-based :class:`HTMLCleaner` runs — full content
+        extraction + aggressive script/style/svg removal.
+
+        With the flag on, the CAS-18 :class:`HTMLPreprocessor` runs *instead*
+        of cleaner. Preprocess is intentionally more conservative: it keeps
+        JSON-LD, navs, footers, and the full document tree because the
+        spike's premise is that better-preserved structure yields better
+        selector discovery while still cutting tokens >= 30%.
 
         Args:
             url: URL being processed (for logging and debug output).
@@ -1169,12 +1186,15 @@ class Pipeline:
 
         Returns:
             Cleaned HTML string, or None if result contains no HTML.
-
         """
         assert result.html is not None, 'result.html should not be None in _clean'
 
         self.console.print('[step]Step 1.5: Cleaning HTML...[/step]')
-        cleaned_html = self.cleaner.clean_html(result.html)
+        cleaned_html = (
+            self._preprocess(url, result.html)
+            if self.preprocessor is not None
+            else self.cleaner.clean_html(result.html)
+        )
 
         if not cleaned_html:
             self.console.print('[danger]HTML cleaning produced empty result[/danger]')
@@ -1185,6 +1205,33 @@ class Pipeline:
 
         self.console.print(f'[success]Cleaned HTML ready ({len(cleaned_html):,} chars)[/success]')
         return cleaned_html
+
+    def _preprocess(self, url: str, raw_html: str) -> str:
+        """Run the CAS-18 preprocessor on raw HTML and emit a Langfuse span.
+
+        Span attributes mirror the spike spec: ``tokens_in``, ``tokens_out``,
+        ``tier_applied``, ``transform_count`` plus ``reduction_ratio`` so the
+        success criterion (median ratio < 0.7) is observable on production
+        traces, not just unit tests.
+        """
+        assert self.preprocessor is not None, '_preprocess called with no preprocessor'
+        with observability.span(
+            'preprocess',
+            url=url,
+            input_chars=len(raw_html),
+        ) as span:
+            result = self.preprocessor.preprocess(raw_html)
+            if span is not None:
+                span.set_attribute('tokens_in', result.tokens_in)
+                span.set_attribute('tokens_out', result.tokens_out)
+                span.set_attribute('tier_applied', result.tier_applied)
+                span.set_attribute('transform_count', result.transform_count)
+                span.set_attribute('reduction_ratio', result.reduction_ratio)
+        self.console.print(
+            f'  ↻ Preprocess: {result.tokens_in} → {result.tokens_out} tokens '
+            f'(ratio {result.reduction_ratio:.2f}, {result.transform_count} transforms)'
+        )
+        return result.html
 
     async def _discover(self, url: str, cleaned_html: str, max_retries: int = 3) -> tuple[SelectorMap | None, bool]:
         """Discover CSS selectors with AI, using fallback heuristics if needed.

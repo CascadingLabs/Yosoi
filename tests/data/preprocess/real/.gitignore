@@ -1,0 +1,6 @@
+# Real-page snapshots fetched by scripts/fetch_preprocess_snapshots.py.
+# Most upstream sites are copyrighted; we don't commit their HTML.
+# Keep the directory in git but ignore HTML files.
+*.html
+!.gitignore
+!.gitkeep

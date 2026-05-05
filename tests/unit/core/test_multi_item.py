@@ -247,6 +247,7 @@ def _make_scrape_stub(mocker, contract=None):
     stub.console = mocker.MagicMock()
     stub.logger = mocker.MagicMock()
     stub.cleaner = mocker.MagicMock()
+    stub.preprocessor = None  # CAS-18 spike flag is off in unit tests by default
     stub.discovery = mocker.MagicMock()
     stub.discovery.discover_selectors = mocker.AsyncMock()
     stub.verifier = mocker.MagicMock()

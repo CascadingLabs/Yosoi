@@ -96,6 +96,13 @@ class YosoiConfig(BaseModel):
     discovery: DiscoveryConfig = Field(default_factory=DiscoveryConfig)
     logs: bool = True
     force: bool = False
+    use_experimental_preprocess: bool = Field(
+        default=False,
+        description=(
+            'Enable spike CAS-18 page-level preprocessor (tier-1 + tier-2 transforms) '
+            'after the existing HTMLCleaner. Off by default; tracked under the spike.'
+        ),
+    )
 
     @model_validator(mode='after')
     def validate_api_key_env(self) -> 'YosoiConfig':
