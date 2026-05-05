@@ -10,7 +10,7 @@ from rich.console import Console
 logger = logging.getLogger(__name__)
 
 from yosoi.core.fetcher.base import ContentAnalyzer, HTMLFetcher
-from yosoi.core.fetcher.dom_fsm import DOMProber
+from yosoi.core.fetcher.dom import DOMLoader
 from yosoi.models.results import FetchResult
 from yosoi.utils.exceptions import BotDetectionError
 
@@ -88,7 +88,7 @@ class _VoidCrawlFetcher(HTMLFetcher):
             await tab.goto(url, timeout=float(self.timeout))
 
             # TODO: Make a A3Node that makes a DOM explorer for a url/domain
-            probe_result = await DOMProber(console=self._console).run(tab)
+            probe_result = await DOMLoader(console=self._console).run(tab)
             html = probe_result.html  # already captured inside run()
 
         if not html or len(html) < self.min_content_length:
