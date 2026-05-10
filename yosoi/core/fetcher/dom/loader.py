@@ -1,13 +1,11 @@
 """DOM content loader — orchestration and stabilization.
 
-Drives a page to fully-loaded state by working through trigger types in
-priority order. For each trigger found, an inner loop exhausts it before
-the outer loop restarts from the top. When a full pass finds nothing, the
-page is done.
+Drives a page to fully-loaded state using a behavior tree. The tree
+restarts after any SUCCESS (something happened) and stops when every
+node returns FAILURE (nothing left to do).
 
-Stabilization is defined here: the page is stable when the MutationObserver
-reports DOM silence for quiet_ms milliseconds, or when a hard timeout is
-reached.
+Stabilization is defined as DOM silence for quiet_ms milliseconds,
+detected by an injected MutationObserver.
 """
 
 from __future__ import annotations
@@ -19,14 +17,10 @@ from typing import Any
 
 from rich.console import Console
 
-from yosoi.core.fetcher.dom.actions import WaitForDOMStable, build_flow
 from yosoi.core.fetcher.dom.catalogues import CONTENT_SELECTOR
-from yosoi.core.fetcher.dom.probes import (
-    TRIGGER_PRIORITY,
-    TriggerKind,
-    count_content,
-    probe,
-)
+from yosoi.core.fetcher.dom.probes import count_content
+from yosoi.core.fetcher.dom.tree.default import build_default_tree
+from yosoi.core.fetcher.dom.tree.nodes import Status
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +33,7 @@ class LoadResult:
     content_start: int
     content_final: int
     elapsed_ms: float
-    trigger_kinds: set[TriggerKind] = field(default_factory=set)
+    action_log: list[dict[str, Any]] = field(default_factory=list)
     html: str | None = None
 
     @property
@@ -49,120 +43,85 @@ class LoadResult:
 
 
 class DOMLoader:
-    """Loads all content from a page using a priority-ordered trigger loop.
+    """Loads all content from a page using a behavior tree.
 
-    The page is considered stable when no meaningful DOM mutations have
-    occurred for quiet_ms milliseconds. Obstacles (cookies, popups) are
-    cleared first, then content triggers (load more, pagination, scroll)
-    are exhausted in priority order.
+    The tree clears obstacles first, then exhausts content triggers in
+    priority order. It restarts after any action succeeds and stops when
+    everything returns FAILURE.
 
     Args:
-        max_outer_cycles: Maximum outer loop restarts before giving up.
+        max_cycles: Maximum tree restarts before giving up.
         quiet_ms: Milliseconds of DOM silence that counts as stable.
-        max_inner_cycles: Maximum acts per trigger type before moving on.
-        max_scroll_cycles: Hard cap on infinite scroll iterations.
+        max_click_cycles: Maximum clicks per trigger before giving up.
+        max_scroll_cycles: Maximum scroll iterations before giving up.
         content_selector: CSS selector for counting loaded items.
         console: Optional Rich console for progress output.
     """
 
     def __init__(
         self,
-        max_outer_cycles: int = 10,
+        max_cycles: int = 20,
         quiet_ms: int = 800,
-        max_inner_cycles: int = 50,
+        max_click_cycles: int = 50,
         max_scroll_cycles: int = 10,
-        content_selector: str | None = None,
+        content_selector: str = CONTENT_SELECTOR,
         console: Console | None = None,
     ) -> None:
         """Initialise the DOMLoader with tuning parameters."""
-        self._max_outer = max_outer_cycles
-        self._max_inner = max_inner_cycles
-        self._max_scroll = max_scroll_cycles
-        self._content_selector = content_selector or CONTENT_SELECTOR
+        self._max_cycles = max_cycles
+        self._quiet_ms = quiet_ms
+        self._max_click_cycles = max_click_cycles
+        self._max_scroll_cycles = max_scroll_cycles
+        self._content_selector = content_selector
         self._console = console or Console()
-        self._stable = WaitForDOMStable(quiet_ms=quiet_ms)
 
     async def run(self, tab: Any) -> LoadResult:
         """Drive the page to fully-loaded state.
 
-        Outer loop iterates trigger types in priority order. When a trigger
-        is found, the inner loop exhausts it, then the outer loop restarts
-        from the top. Stops when a full pass finds no triggers.
+        Builds a fresh behavior tree per run (nodes are stateful).
+        Ticks the tree repeatedly until it returns FAILURE.
         """
         start = time.perf_counter()
-        trigger_kinds: set[TriggerKind] = set()
 
-        # Wait for initial page load before doing anything
-        await self._wait_stable(tab)
+        tree, logs = build_default_tree(
+            quiet_ms=self._quiet_ms,
+            content_selector=self._content_selector,
+            max_click_cycles=self._max_click_cycles,
+            max_scroll_cycles=self._max_scroll_cycles,
+        )
+
+        # Initial stabilization before probing
+        await tab.wait_for_network_idle(timeout=5.0)
         content_start = await count_content(tab, self._content_selector)
         self._log(f'{content_start} items found initially')
 
-        exhausted: set[TriggerKind] = set()
-
-        for outer in range(self._max_outer):
-            found_any = False
-            current_count = await count_content(tab, self._content_selector)
-
-            for kind in TRIGGER_PRIORITY:
-                if kind in exhausted:
-                    continue
-
-                trigger = await probe(tab, kind, content_count=current_count)
-                if trigger is None:
-                    continue
-
-                found_any = True
-                trigger_kinds.add(kind)
-                self._log(f'[{kind.value}] found: {trigger.label!r}')
-
-                inner_limit = self._max_scroll if kind == TriggerKind.INFINITE_SCROLL else self._max_inner
-
-                for _ in range(inner_limit):
-                    prev = await count_content(tab, self._content_selector)
-                    flow = build_flow(trigger, self._stable)
-                    if flow is None:
-                        exhausted.add(kind)
-                        break
-                    await flow.run(tab)
-                    new = await count_content(tab, self._content_selector)
-                    self._log(f'  [{kind.value}] {prev} → {new} items')
-                    if new <= prev:
-                        self._log(f'  [{kind.value}] no growth — exhausted')
-                        exhausted.add(kind)
-                        break
-                    next_trigger = await probe(tab, kind, content_count=new)
-                    if next_trigger is None:
-                        self._log(f'  [{kind.value}] trigger gone — exhausted')
-                        exhausted.add(kind)
-                        break
-
+        for _ in range(self._max_cycles):
+            result = await tree.tick(tab)
+            if result == Status.FAILURE:
+                self._log('Nothing left to do — done')
                 break
-
-            if not found_any:
-                self._log(f'No triggers found in pass {outer + 1} — done')
-                break
+            # SUCCESS means something happened — log and restart
+            current = await count_content(tab, self._content_selector)
+            self._log(f'{current} items after action')
 
         html = await self._capture_html(tab)
         content_final = await count_content(tab, self._content_selector)
         elapsed_ms = (time.perf_counter() - start) * 1000
         self._log(f'{content_start} → {content_final} items in {elapsed_ms:.0f}ms')
 
+        action_log = [{'kind': log.kind, 'cycles': log.cycles} for log in logs if log.cycles > 0]
+
         return LoadResult(
             success=True,
             content_start=content_start,
             content_final=content_final,
             elapsed_ms=elapsed_ms,
-            trigger_kinds=trigger_kinds,
+            action_log=action_log,
             html=html,
         )
 
-    async def _wait_stable(self, tab: Any) -> None:
-        """Run the DOM stability check synchronously via Flow."""
-        from voidcrawl.actions import Flow
-
-        await Flow([self._stable]).run(tab)
-
     async def _capture_html(self, tab: Any) -> str | None:
+        """Capture full page HTML after loading is complete."""
         try:
             return await tab.content()
         except (RuntimeError, OSError, ValueError) as exc:
@@ -170,5 +129,6 @@ class DOMLoader:
             return None
 
     def _log(self, message: str) -> None:
+        """Print a progress message."""
         self._console.print(f'[dim]  ↻ DOMLoader: {message}[/dim]')
         logger.info('DOMLoader: %s', message)
