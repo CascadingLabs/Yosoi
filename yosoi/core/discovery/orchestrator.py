@@ -167,6 +167,7 @@ class DiscoveryOrchestrator:
                 hints=hints,
                 overrides=overrides,
                 stale_fields=stale_fields,
+                force=force,
             )
 
     async def _discover_selectors_impl(
@@ -180,6 +181,7 @@ class DiscoveryOrchestrator:
         hints: dict[str, str | None],
         overrides: dict[str, dict[str, Any]],
         stale_fields: set[str] | None,
+        force: bool = False,
     ) -> SelectorMap | None:
         field_descs = self._contract.field_descriptions()
 
