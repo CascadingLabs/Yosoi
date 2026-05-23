@@ -23,10 +23,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
+from dotenv import load_dotenv
 from opencode_server import ensure_opencode_server
 from pydantic import field_validator
 
 import yosoi as ys
+
+load_dotenv()
 
 
 class Book(ys.Contract):
