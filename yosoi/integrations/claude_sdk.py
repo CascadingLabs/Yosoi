@@ -15,8 +15,8 @@ from pydantic_ai.profiles import ModelProfile
 from pydantic_ai.settings import ModelSettings
 from pydantic_ai.usage import RequestUsage
 
-from yosoi.integrations.messages import flatten_messages
-from yosoi.integrations.usage import build_request_usage
+from yosoi.integrations.utils.messages import flatten_messages
+from yosoi.integrations.utils.usage import build_request_usage
 from yosoi.utils import observability as obs
 
 
@@ -78,7 +78,7 @@ def _usage_from_result(usage: dict[str, Any] | None) -> RequestUsage:
     The SDK surfaces Anthropic's usage shape:
     ``{input_tokens, output_tokens, cache_creation_input_tokens,
     cache_read_input_tokens}``. Returns a zeroed ``RequestUsage`` when the SDK
-    reports no usage. See :mod:`yosoi.integrations.usage` for why this matters.
+    reports no usage. See :mod:`yosoi.integrations.utils.usage` for why this matters.
     """
     if not isinstance(usage, dict):
         return RequestUsage()
