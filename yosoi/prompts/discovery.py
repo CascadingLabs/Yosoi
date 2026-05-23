@@ -25,7 +25,15 @@ _FIELD_SELECTOR_GUIDE: Final = """\
 For each field provide:
 - primary: Most specific selector using actual classes/IDs from the HTML
 - fallback: Less specific but reliable selector
-- tertiary: Generic selector or null if field does not exist"""
+- tertiary: Generic selector or null if field does not exist
+
+If the value lives in an ATTRIBUTE rather than visible text, target the
+attribute with a CSS `::attr(name)` pseudo-element so extraction returns the
+attribute string. Common cases: a rating encoded in a class
+(`p.star-rating::attr(class)`), a machine date (`time::attr(datetime)`), a
+price in microdata (`meta[itemprop="price"]::attr(content)`), or an input's
+`value`. Use `::attr(...)` whenever the matched element carries no useful
+text node."""
 
 _LEVEL_CSS_ONLY: Final = 'Use CSS selectors only (e.g. .class-name, #id, h1 > span).'
 
@@ -64,6 +72,16 @@ _CONTAINER_GUIDANCE: Final = (
     'that contains one complete item. This selector should match each individual item on the '
     'page (e.g., `.product-card`, `article.listing`). '
     'If the page shows a single item, set `root` to null.'
+)
+
+_MULTI_ITEM_FIELD_GUIDANCE: Final = (
+    'IMPORTANT — repeating-item scoping: if the HTML contains multiple repeating items '
+    '(product cards, listings, search results, table rows), this field belongs to ONE item, '
+    'so your selector MUST match the value *inside a single repeating item* and resolve once '
+    'per item. Do NOT target page-level chrome such as the page title/heading (e.g. a top-level '
+    '<h1>), site header, breadcrumbs, or navigation — even when the field is named "title" or '
+    '"heading", prefer the per-item element (e.g. the card\'s own heading link) over a page-wide '
+    'heading. When in doubt, scope the selector under the repeating item wrapper.'
 )
 
 
@@ -189,6 +207,12 @@ def field_single_field_instructions(ctx: RunContext['FieldDiscoveryDeps']) -> st
     )
     if deps.is_container:
         text += f'\n\n{_CONTAINER_GUIDANCE}'
+    else:
+        # Content fields are discovered in parallel with `root`, so they can't
+        # see the container selector. Tell them to scope within a single
+        # repeating item so ambiguous fields (e.g. title vs. page heading)
+        # don't latch onto page-level chrome.
+        text += f'\n\n{_MULTI_ITEM_FIELD_GUIDANCE}'
     return text
 
 

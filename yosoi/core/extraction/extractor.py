@@ -11,6 +11,21 @@ from yosoi.models.selectors import SelectorEntry, SelectorLevel, coerce_selector
 FieldMode = Literal['body_text', 'related_content', 'text', 'list']
 
 
+def _node_text(el: Selector) -> str:
+    """Return the text value of a matched node.
+
+    A CSS ``::attr(name)``/``::text`` pseudo-element or an XPath ``/@attr``
+    selection resolves to a string node (``el.root`` is a ``str``) — its value
+    is already the thing we want, so return it directly. Anything else is an
+    element, so gather its descendant text. Without this, attribute-encoded
+    values (e.g. ``<p class="star-rating Three">``) extract as empty because
+    the element carries no text node.
+    """
+    if isinstance(el.root, str):
+        return (el.get() or '').strip()
+    return ' '.join(el.xpath('.//text()').getall()).strip()
+
+
 class ContentExtractor:
     """Extracts content from HTML using validated selectors.
 
@@ -253,26 +268,26 @@ class ContentExtractor:
         mode = self._field_modes.get(field_name) or (field_name if field_name in _KNOWN_MODES else 'text')
 
         if mode == 'body_text':
-            paragraphs = [' '.join(el.xpath('.//text()').getall()).strip() for el in elements]
+            paragraphs = [_node_text(el) for el in elements]
             paragraphs = [p for p in paragraphs if p]
             return '\n\n'.join(paragraphs) if paragraphs else None
 
         if mode == 'related_content':
             links: list[str | dict[str, str]] = []
             for el in elements:
-                text = ' '.join(el.xpath('.//text()').getall()).strip()
-                href = el.attrib.get('href', '')
+                text = _node_text(el)
+                # Attribute/text selections (el.root is a str) have no .attrib.
+                href = el.attrib.get('href', '') if not isinstance(el.root, str) else ''
                 if text:
                     links.append({'text': text, 'href': href} if href else text)
             return links if links else None
 
         if mode == 'list':
-            items: list[str] = [' '.join(el.xpath('.//text()').getall()).strip() for el in elements]
+            items: list[str] = [_node_text(el) for el in elements]
             items = [t for t in items if t]
             return items if items else None  # type: ignore[return-value]
 
-        first_element = elements[0]
-        text = ' '.join(first_element.xpath('.//text()').getall()).strip()
+        text = _node_text(elements[0])
         return text if text else None
 
     def extract_items(
