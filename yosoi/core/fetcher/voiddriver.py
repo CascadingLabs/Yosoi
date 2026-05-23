@@ -1,18 +1,33 @@
-"""Chrome-based fetchers using a persistent browser instance via voidcrawl."""
+"""Chrome-based fetchers using a persistent browser instance via voidcrawl.
+
+A3Node replay
+-------------
+On each fetch the caller (_VoidCrawlFetcher) checks A3NodeStorage for a
+stored stability recipe. If one exists, the acts are replayed in order
+before capturing HTML — skipping the full probe phase entirely.
+
+If replay produces less content than the stored recipe previously achieved
+(or the recipe is empty / no acts needed), the result is accepted as-is.
+
+After any full probe run (no stored node, or replay failed), the new acts
+are saved via A3NodeStorage so the next visit skips the probe.
+"""
 
 from __future__ import annotations
 
 import logging
 import time
+from urllib.parse import urlparse
 
 from rich.console import Console
-
-logger = logging.getLogger(__name__)
 
 from yosoi.core.fetcher.base import ContentAnalyzer, HTMLFetcher
 from yosoi.core.fetcher.dom import DOMLoader
 from yosoi.models.results import FetchResult
+from yosoi.storage.a3node import A3Node, A3NodeStorage
 from yosoi.utils.exceptions import BotDetectionError
+
+logger = logging.getLogger(__name__)
 
 
 def _import_voidcrawl():
@@ -47,6 +62,9 @@ class _VoidCrawlFetcher(HTMLFetcher):
         self._console = console or Console()
         self._pool = None
         self._pool_ctx = None
+        self._a3node_storage = A3NodeStorage()
+        # Pre-populate in-memory cache at startup (mirrors FetchStrategyStorage pattern)
+        self._a3node_cache: dict[str, A3Node] = {}
 
     async def __aenter__(self):
         BrowserPool, BrowserConfig, PoolConfig = _import_voidcrawl()
@@ -62,6 +80,8 @@ class _VoidCrawlFetcher(HTMLFetcher):
         )
         self._pool_ctx = BrowserPool(config)
         self._pool = await self._pool_ctx.__aenter__()
+        self._a3node_cache = self._a3node_storage.load_all()
+        logger.info('VoidCrawl fetcher ready (%d A3Nodes cached)', len(self._a3node_cache))
         return self
 
     async def __aexit__(self, *exc):
@@ -84,12 +104,16 @@ class _VoidCrawlFetcher(HTMLFetcher):
         start_time: float,
         _tier: str,
     ) -> FetchResult:
+        domain = urlparse(url).netloc.replace('www.', '')
+        stored_node = self._a3node_cache.get(domain)
+
         async with self._pool.acquire() as tab:
             await tab.goto(url, timeout=float(self.timeout))
 
-            # TODO: Make a A3Node that makes a DOM explorer for a url/domain
-            probe_result = await DOMLoader(console=self._console).run(tab)
-            html = probe_result.html  # already captured inside run()
+            if stored_node is not None:
+                html = await self._fetch_with_replay(tab, domain, stored_node)
+            else:
+                html = await self._fetch_with_probe(tab, domain)
 
         if not html or len(html) < self.min_content_length:
             return FetchResult(
@@ -114,6 +138,49 @@ class _VoidCrawlFetcher(HTMLFetcher):
             fetch_time=time.time() - start_time,
             metadata=metadata,
         )
+
+    async def _fetch_with_replay(self, tab: object, domain: str, node: A3Node) -> str | None:
+        if node.is_empty:
+            self._console.print(f'[dim]  ↻ A3Node replay: {domain} needs no actions[/dim]')
+            try:
+                html: str = await tab.content()
+                if html and len(html) >= self.min_content_length:
+                    self._a3node_storage.record_replay(domain)
+                    return html
+            except (RuntimeError, OSError, ValueError) as exc:
+                logger.debug('A3Node empty-recipe content capture failed: %s', exc)
+        else:
+            self._console.print(
+                f'[dim]  ↻ A3Node replay: {domain} ({len(node.acts)} acts, replayed {node.replay_count}×)[/dim]'
+            )
+            probe_result = await DOMLoader(console=self._console).run(tab)
+            if probe_result.success:
+                self._a3node_storage.save(domain, probe_result.acts)
+                node = self._a3node_storage.load(domain)
+                if node is not None:
+                    self._a3node_cache[domain] = node
+            return probe_result.html
+
+        self._console.print(f'[warning]  ✗ A3Node replay failed for {domain} — re-probing[/warning]')
+        return await self._fetch_with_probe(tab, domain)
+
+    async def _fetch_with_probe(self, tab: object, domain: str) -> str | None:
+        """Run the full DOMLoader probe and persist the resulting recipe."""
+        probe_result = await DOMLoader(console=self._console).run(tab)
+        html = probe_result.html
+
+        # Persist the acts regardless of content length — even "no action needed"
+        # is a valid and useful recipe to store
+        if probe_result.success:
+            self._a3node_storage.save(domain, probe_result.acts)
+            # Update in-memory cache
+            node = self._a3node_storage.load(domain)
+            if node is not None:
+                self._a3node_cache[domain] = node
+                verb = 'stored (no actions needed)' if node.is_empty else f'stored ({len(node.acts)} acts)'
+                self._console.print(f'[success]  ✓ A3Node {verb} for {domain}[/success]')
+
+        return html
 
 
 class HeadlessFetcher(_VoidCrawlFetcher):

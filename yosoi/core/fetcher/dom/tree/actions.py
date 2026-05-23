@@ -12,6 +12,8 @@ import logging
 from dataclasses import dataclass
 from typing import Any
 
+from voidcrawl.actions import Flow, ScrollTo
+
 from yosoi.core.fetcher.dom.flows import WaitForDOMStable, build_flow
 from yosoi.core.fetcher.dom.probes import count_content
 from yosoi.core.fetcher.dom.tree.conditions import HasTrigger
@@ -64,6 +66,9 @@ class ClickTrigger(Node):
     Paired with a HasTrigger condition — calls exhaust() on it when
     the trigger is done so the tree skips it on subsequent restarts.
 
+    A final WaitForDOMStable runs after the last cycle completes so
+    all newly rendered content is present before the caller reads HTML.
+
     Attributes:
         log: ActionLog recording how many cycles were completed.
     """
@@ -99,6 +104,7 @@ class ClickTrigger(Node):
             flow = build_flow(trigger, self._stable)
             if flow is None:
                 self._condition.exhaust()
+                await Flow([self._stable]).run(tab)
                 return Status.FAILURE
 
             await flow.run(tab)
@@ -109,6 +115,8 @@ class ClickTrigger(Node):
 
             if new <= prev:
                 self._condition.exhaust()
+                # Final settle — content stopped growing, wait for last render
+                await Flow([self._stable]).run(tab)
                 return Status.SUCCESS
 
             # Check if trigger is still present
@@ -117,10 +125,14 @@ class ClickTrigger(Node):
             next_trigger = await probe(tab, trigger.kind, content_count=new)
             if next_trigger is None:
                 self._condition.exhaust()
+                # Final settle — trigger gone, wait for last render
+                await Flow([self._stable]).run(tab)
                 return Status.SUCCESS
             trigger = next_trigger
 
         self._condition.exhaust()
+        # Final settle — max cycles reached, wait for last render
+        await Flow([self._stable]).run(tab)
         return Status.SUCCESS
 
 
@@ -153,8 +165,6 @@ class Scroll(Node):
 
     async def tick(self, tab: Any) -> Status:
         """Scroll to bottom in a loop until content stops growing."""
-        from voidcrawl.actions import Flow, ScrollTo
-
         content_selector = self._condition._content_selector
 
         for _ in range(self._max_cycles):
@@ -167,9 +177,13 @@ class Scroll(Node):
 
             if new <= prev:
                 self._condition.exhaust()
+                # Final settle — content stopped growing, wait for last render
+                await Flow([ScrollTo(x=0, y=999_999), self._stable]).run(tab)
                 return Status.SUCCESS
 
         self._condition.exhaust()
+        # Final settle — max cycles reached, wait for last render
+        await Flow([ScrollTo(x=0, y=999_999), self._stable]).run(tab)
         return Status.SUCCESS
 
 

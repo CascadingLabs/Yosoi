@@ -609,76 +609,152 @@ class Pipeline:
                             yield item
                         return
 
-                # Fresh discovery path — each stage gets a structured span
-                with observability.span('fetch', url=url, max_retries=max_fetch_retries):
-                    result = await self._fetch(url, fetcher, max_retries=max_fetch_retries)
-                    if not result:
-                        raise RuntimeError(f'Failed to fetch {url}')
-                    assert result.html is not None, 'result.html should not be None after successful fetch'
-
-                with observability.span('clean', url=url, raw_chars=len(result.html)):
-                    cleaned_html = self._clean(url, result)
-                    if not cleaned_html:
-                        raise RuntimeError(f'HTML cleaning failed for {url}')
-
-                with observability.span('discover', url=url, cleaned_chars=len(cleaned_html)):
-                    selectors, used_llm = await self._discover(
-                        url, cleaned_html, max_retries=max_discovery_retries, force=force_flag
-                    )
-                    if not selectors:
-                        raise RuntimeError(f'Selector discovery failed for {url}')
-
-                root_entry = self._resolve_root(selectors)
-                container_selector = self._root_value(root_entry)
-
-                with observability.span('verify', url=url, skip=skip_verification, fields=len(selectors)):
-                    verified = self._verify(url, cleaned_html, selectors, skip_verification)
-                    if not verified:
-                        raise RuntimeError(f'Selector verification failed for {url}')
-
-                with observability.span('extract', url=url, container=container_selector or 'single'):
-                    extracted = self._extract(url, cleaned_html, verified, container_selector)
-                selectors_to_save = self._selectors_with_root(verified, root_entry)
-
-                if not extracted:
-                    self.console.print('[warning]⚠ Extraction failed, but selectors are valid[/warning]')
-                    await self._finish(url, domain, selectors_to_save, None, used_llm, format_to_use)
-                    observability.set_trace_output(
-                        root_span,
-                        {
-                            'path': 'fresh-no-extract',
-                            'selectors': selectors_to_save,
-                            'extracted_count': 0,
-                            'extracted_sample': None,
-                        },
-                    )
-                    return
-
-                # Validate, yield, and save
-                with observability.span(
-                    'validate', url=url, items=len(extracted) if isinstance(extracted, list) else 1
+                # Fresh discovery path
+                async for item in self._scrape_fresh(
+                    url=url,
+                    domain=domain,
+                    fetcher=fetcher,
+                    force_flag=force_flag,
+                    max_fetch_retries=max_fetch_retries,
+                    max_discovery_retries=max_discovery_retries,
+                    skip_verification=skip_verification,
+                    format_to_use=format_to_use,
+                    root_span=root_span,
                 ):
-                    validated_items = self._validate_items(extracted, url)
-                for vi in validated_items:
-                    yield vi
-                save_all: ContentMap | ContentItems = (
-                    validated_items if len(validated_items) > 1 else validated_items[0]
-                )
-                with observability.span('save', url=url, items=len(validated_items)):
-                    await self._finish(url, domain, selectors_to_save, save_all, used_llm, format_to_use)
-                observability.set_trace_output(
-                    root_span,
-                    {
-                        'path': 'fresh',
-                        'selectors': selectors_to_save,
-                        'extracted_count': len(validated_items),
-                        'extracted_sample': validated_items[0] if validated_items else None,
-                    },
-                )
+                    yield item
+
+    async def _scrape_fresh(
+        self,
+        url: str,
+        domain: str,
+        fetcher: HTMLFetcher,
+        force_flag: bool,
+        max_fetch_retries: int,
+        max_discovery_retries: int,
+        skip_verification: bool,
+        format_to_use: list[str],
+        root_span: Any | None,
+    ) -> AsyncIterator[ContentMap]:
+        """Fresh discovery path — fetch, clean, discover, verify, extract, save.
+
+        Separated from scrape() to keep complexity under the C901 limit.
+        Uses raw HTML for extraction so the cleaner's deduplication does not
+        truncate content; cleaned HTML is used only for LLM discovery and
+        selector verification where token reduction matters.
+
+        Args:
+            url: Normalised URL to process.
+            domain: Extracted domain string.
+            fetcher: Active HTML fetcher instance.
+            force_flag: Whether to force re-discovery.
+            max_fetch_retries: Maximum fetch retry attempts.
+            max_discovery_retries: Maximum AI discovery retry attempts.
+            skip_verification: Skip verification step.
+            format_to_use: Output format list.
+            root_span: Active observability span, or None.
+
+        Yields:
+            ContentMap dicts — one per extracted item.
+
+        """
+        with observability.span('fetch', url=url, max_retries=max_fetch_retries):
+            result = await self._fetch(url, fetcher, max_retries=max_fetch_retries)
+            if not result:
+                raise RuntimeError(f'Failed to fetch {url}')
+            assert result.html is not None, 'result.html should not be None after successful fetch'
+
+        with observability.span('clean', url=url, raw_chars=len(result.html)):
+            cleaned_html = self._clean(url, result)
+            if not cleaned_html:
+                raise RuntimeError(f'HTML cleaning failed for {url}')
+
+        with observability.span('discover', url=url, cleaned_chars=len(cleaned_html)):
+            selectors, used_llm = await self._discover(
+                url, cleaned_html, max_retries=max_discovery_retries, force=force_flag
+            )
+            if not selectors:
+                raise RuntimeError(f'Selector discovery failed for {url}')
+
+        root_entry = self._resolve_root(selectors)
+        container_selector = self._root_value(root_entry)
+
+        with observability.span('verify', url=url, skip=skip_verification, fields=len(selectors)):
+            verified = self._verify(url, cleaned_html, selectors, skip_verification)
+            if not verified:
+                raise RuntimeError(f'Selector verification failed for {url}')
+
+        with observability.span('extract', url=url, container=container_selector or 'single'):
+            extracted = self._extract(url, result.html, verified, container_selector)
+
+        selectors_to_save = self._selectors_with_root(verified, root_entry)
+
+        if not extracted:
+            self.console.print('[warning]⚠ Extraction failed, but selectors are valid[/warning]')
+            await self._finish(url, domain, selectors_to_save, None, used_llm, format_to_use)
+            observability.set_trace_output(
+                root_span,
+                {
+                    'path': 'fresh-no-extract',
+                    'selectors': selectors_to_save,
+                    'extracted_count': 0,
+                    'extracted_sample': None,
+                },
+            )
+            return
+
+        with observability.span('validate', url=url, items=len(extracted) if isinstance(extracted, list) else 1):
+            validated_items = self._validate_items(extracted, url)
+
+        for vi in validated_items:
+            yield vi
+
+        save_all: ContentMap | ContentItems = validated_items if len(validated_items) > 1 else validated_items[0]
+        with observability.span('save', url=url, items=len(validated_items)):
+            await self._finish(url, domain, selectors_to_save, save_all, used_llm, format_to_use)
+
+        observability.set_trace_output(
+            root_span,
+            {
+                'path': 'fresh',
+                'selectors': selectors_to_save,
+                'extracted_count': len(validated_items),
+                'extracted_sample': validated_items[0] if validated_items else None,
+            },
+        )
 
     # ============================================================================
     # scrape() helpers
     # ============================================================================
+
+    async def _fetch_and_clean_for_cache(self, url: str, fetcher: HTMLFetcher) -> tuple[str, str] | None:
+        """Fetch HTML for cache verification. Returns (raw_html, cleaned_html) or None on failure (fail-open)."""
+        with observability.span('fetch', url=url, mode='cache_verify'):
+            try:
+                result = await self._fetch(url, fetcher)
+                if result is None or result.html is None:
+                    self.console.print('[warning]⚠ Could not fetch HTML, skipping extraction[/warning]')
+                    return None
+            except BotDetectionError:
+                raise
+            except Exception as e:
+                self.logger.exception('Fetch failed during cache verification for %s', url)
+                self.console.print(f'[warning]⚠ Error: {e}, skipping extraction[/warning]')
+                return None
+
+        self.console.print('[step]Cleaning HTML...[/step]')
+        with observability.span('clean', url=url, raw_chars=len(result.html), mode='cache_verify'):
+            cleaned_html: str = self.cleaner.clean_html(result.html)
+
+        # Too short to be a real page — likely a loading stub or redirect gate.
+        # Fail-open so cached selectors are used without triggering re-discovery.
+        if len(cleaned_html) < 1000:
+            self.console.print(
+                '[warning]⚠ Fetched HTML too short for verification — using cached selectors as-is[/warning]'
+            )
+            return None
+
+        self.debug.save_debug_html(url, cleaned_html)
+        return result.html, cleaned_html  # raw for extraction, cleaned for verification
 
     async def _try_cached(
         self,
@@ -707,51 +783,23 @@ class Pipeline:
                 items, url, domain, format_to_use, root_span=root_span, selectors_payload=existing
             )
 
-        cleaned_html = await self._fetch_and_clean_for_cache(url, fetcher)
-        if cleaned_html is None:
+        fetch_result = await self._fetch_and_clean_for_cache(url, fetcher)
+        if fetch_result is None:
             existing_for_payload = {name: snapshot_to_selector_dict(snap) for name, snap in snapshots.items()}
             return self._yield_cached_items(
                 None, url, domain, format_to_use, root_span=root_span, selectors_payload=existing_for_payload
             )
 
+        raw_html, cleaned_html = fetch_result
         return await self._evaluate_cached_verdicts(
-            url, domain, cleaned_html, snapshots, format_to_use, root_span=root_span
+            url, domain, raw_html, cleaned_html, snapshots, format_to_use, root_span=root_span
         )
-
-    async def _fetch_and_clean_for_cache(self, url: str, fetcher: HTMLFetcher) -> str | None:
-        """Fetch + clean HTML for cache verification. Returns None on failure (fail-open)."""
-        with observability.span('fetch', url=url, mode='cache_verify'):
-            try:
-                result = await self._fetch(url, fetcher)
-                if result is None or result.html is None:
-                    self.console.print('[warning]⚠ Could not fetch HTML, skipping extraction[/warning]')
-                    return None
-            except BotDetectionError:
-                raise
-            except Exception as e:
-                self.logger.exception('Fetch failed during cache verification for %s', url)
-                self.console.print(f'[warning]⚠ Error: {e}, skipping extraction[/warning]')
-                return None
-
-        self.console.print('[step]Cleaning HTML...[/step]')
-        with observability.span('clean', url=url, raw_chars=len(result.html), mode='cache_verify'):
-            cleaned_html: str = self.cleaner.clean_html(result.html)
-
-        # Too short to be a real page — likely a loading stub or redirect gate.
-        # Fail-open so cached selectors are used without triggering re-discovery.
-        if len(cleaned_html) < 1000:
-            self.console.print(
-                '[warning]⚠ Fetched HTML too short for verification — using cached selectors as-is[/warning]'
-            )
-            return None
-
-        self.debug.save_debug_html(url, cleaned_html)
-        return cleaned_html
 
     async def _evaluate_cached_verdicts(
         self,
         url: str,
         domain: str,
+        raw_html: str,
         cleaned_html: str,
         snapshots: dict[str, SelectorSnapshot],
         format_to_use: list[str],
@@ -779,7 +827,7 @@ class Pipeline:
 
         if not stale_fields:
             return self._extract_all_fresh(
-                url, domain, cleaned_html, snapshots, fresh_fields, format_to_use, root_span=root_span
+                url, domain, raw_html, cleaned_html, snapshots, fresh_fields, format_to_use, root_span=root_span
             )
 
         if not fresh_fields:
@@ -791,6 +839,7 @@ class Pipeline:
         return await self._partial_rediscovery(
             url,
             domain,
+            raw_html,
             cleaned_html,
             snapshots,
             fresh_fields,
@@ -803,7 +852,7 @@ class Pipeline:
         self,
         url: str,
         domain: str,
-        cleaned_html: str,
+        raw_html: str,
         snapshots: dict[str, SelectorSnapshot],
         fresh_fields: set[str],
         format_to_use: list[str],
@@ -816,7 +865,7 @@ class Pipeline:
         root_entry = self._resolve_root(existing)
         container_selector = self._root_value(root_entry)
         with observability.span('extract', url=url, mode='cache', container=container_selector or 'single'):
-            extracted = self._extract(url, cleaned_html, existing, container_selector)
+            extracted = self._extract(url, raw_html, existing, container_selector)
         if extracted:
             items_list: ContentItems = extracted if isinstance(extracted, list) else [extracted]
             return self._yield_cached_items(
@@ -826,6 +875,64 @@ class Pipeline:
         return self._yield_cached_items(
             None, url, domain, format_to_use, root_span=root_span, selectors_payload=existing
         )
+
+    async def _partial_rediscovery(
+        self,
+        url: str,
+        domain: str,
+        raw_html: str,
+        cleaned_html: str,
+        snapshots: dict[str, SelectorSnapshot],
+        fresh_fields: set[str],
+        stale_fields: set[str],
+        format_to_use: list[str],
+        *,
+        root_span: Any | None = None,
+    ) -> AsyncIterator[ContentMap] | None:
+        """Rediscover only stale fields, merge with fresh cache, extract and yield."""
+        self.console.print(
+            f'[info]  ↳ {len(fresh_fields)} fresh, {len(stale_fields)} stale '
+            f'— partial rediscovery for: {", ".join(sorted(stale_fields))}[/info]'
+        )
+
+        new_selectors = await self.discovery.discover_selectors(cleaned_html, url, stale_fields=stale_fields)
+        merged = self._merge_and_save_snapshots(url, snapshots, fresh_fields, new_selectors, cleaned_html)
+
+        root_entry = self._resolve_root(merged)
+        container_selector = self._root_value(root_entry)
+        extracted = self._extract(url, raw_html, merged, container_selector)
+
+        if not extracted:
+            self.console.print('[warning]⚠ Extraction failed after partial rediscovery[/warning]')
+            return None
+
+        items_list: ContentItems = extracted if isinstance(extracted, list) else [extracted]
+        validated = self._validate_items(items_list, url)
+
+        async def _yield_partial() -> AsyncIterator[ContentMap]:
+            for v in validated:
+                yield v
+            save_content: ContentMap | ContentItems = validated if len(validated) > 1 else validated[0]
+            for fmt in format_to_use:
+                self.storage.save_content(url, save_content, fmt, contract_sig=self._contract_sig)
+            elapsed = time.monotonic() - self._url_start
+            self.last_elapsed = elapsed
+            stats = await self.tracker.record_url(
+                url, used_llm=True, level_distribution=None, elapsed=elapsed, partial_discovery=True
+            )
+            self._print_tracking_stats(domain, stats)
+            self.console.print(f'[dim]  ⏱ {self.last_elapsed:.1f}s elapsed[/dim]')
+            observability.set_trace_output(
+                root_span,
+                {
+                    'path': 'cache-partial',
+                    'selectors': merged,
+                    'extracted_count': len(validated),
+                    'extracted_sample': validated[0] if validated else None,
+                },
+            )
+
+        return _yield_partial()
 
     def _verify_per_field(self, html: str, snapshots: dict[str, SelectorSnapshot]) -> dict[str, CacheVerdict]:
         """Verify each cached field independently and apply root cascade.
@@ -892,63 +999,6 @@ class Pipeline:
             )
 
         return _gen()
-
-    async def _partial_rediscovery(
-        self,
-        url: str,
-        domain: str,
-        cleaned_html: str,
-        snapshots: dict[str, SelectorSnapshot],
-        fresh_fields: set[str],
-        stale_fields: set[str],
-        format_to_use: list[str],
-        *,
-        root_span: Any | None = None,
-    ) -> AsyncIterator[ContentMap] | None:
-        """Rediscover only stale fields, merge with fresh cache, extract and yield."""
-        self.console.print(
-            f'[info]  ↳ {len(fresh_fields)} fresh, {len(stale_fields)} stale '
-            f'— partial rediscovery for: {", ".join(sorted(stale_fields))}[/info]'
-        )
-
-        new_selectors = await self.discovery.discover_selectors(cleaned_html, url, stale_fields=stale_fields)
-        merged = self._merge_and_save_snapshots(url, snapshots, fresh_fields, new_selectors, cleaned_html)
-
-        root_entry = self._resolve_root(merged)
-        container_selector = self._root_value(root_entry)
-        extracted = self._extract(url, cleaned_html, merged, container_selector)
-
-        if not extracted:
-            self.console.print('[warning]⚠ Extraction failed after partial rediscovery[/warning]')
-            return None
-
-        items_list: ContentItems = extracted if isinstance(extracted, list) else [extracted]
-        validated = self._validate_items(items_list, url)
-
-        async def _yield_partial() -> AsyncIterator[ContentMap]:
-            for v in validated:
-                yield v
-            save_content: ContentMap | ContentItems = validated if len(validated) > 1 else validated[0]
-            for fmt in format_to_use:
-                self.storage.save_content(url, save_content, fmt, contract_sig=self._contract_sig)
-            elapsed = time.monotonic() - self._url_start
-            self.last_elapsed = elapsed
-            stats = await self.tracker.record_url(
-                url, used_llm=True, level_distribution=None, elapsed=elapsed, partial_discovery=True
-            )
-            self._print_tracking_stats(domain, stats)
-            self.console.print(f'[dim]  ⏱ {self.last_elapsed:.1f}s elapsed[/dim]')
-            observability.set_trace_output(
-                root_span,
-                {
-                    'path': 'cache-partial',
-                    'selectors': merged,
-                    'extracted_count': len(validated),
-                    'extracted_sample': validated[0] if validated else None,
-                },
-            )
-
-        return _yield_partial()
 
     def _merge_and_save_snapshots(
         self,
