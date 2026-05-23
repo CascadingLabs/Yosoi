@@ -85,13 +85,31 @@ def scrape_sync(
     url: str,
     contract: type[Contract] | str,
     model: YosoiConfig | LLMConfig | str | None = None,
-    **kwargs: object,
+    *,
+    force: bool = False,
+    skip_verification: bool = False,
+    fetcher_type: str = 'simple',
+    selector_level: SelectorLevel = SelectorLevel.CSS,
+    save_formats: Sequence[str] = (),
+    quiet: bool = True,
 ) -> list[ContentMap]:
     """Synchronous wrapper around :func:`scrape`."""
     try:
         asyncio.get_running_loop()
     except RuntimeError:
-        return asyncio.run(scrape(url, contract, model, **kwargs))
+        return asyncio.run(
+            scrape(
+                url,
+                contract,
+                model,
+                force=force,
+                skip_verification=skip_verification,
+                fetcher_type=fetcher_type,
+                selector_level=selector_level,
+                save_formats=save_formats,
+                quiet=quiet,
+            )
+        )
     raise RuntimeError('scrape_sync() cannot run inside an active event loop; await scrape() instead.')
 
 
