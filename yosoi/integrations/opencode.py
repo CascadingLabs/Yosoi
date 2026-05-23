@@ -30,7 +30,7 @@ class OpenCodeModel(Model):
         """Initialize the transport with OpenCode provider, model, and server settings."""
         self._provider_id = provider_id
         self._model_id = model_id
-        self._base_url = base_url or os.getenv('OPENCODE_BASE_URL', 'http://localhost:4096')
+        self._base_url: str = base_url or os.getenv('OPENCODE_BASE_URL') or 'http://localhost:4096'
         self._profile = ModelProfile(
             supports_tools=False,
             supports_json_schema_output=True,

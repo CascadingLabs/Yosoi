@@ -7,7 +7,7 @@ import os
 import time
 from contextlib import aclosing
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, cast
 
 from pydantic_ai.messages import ModelMessage, ModelResponse, TextPart
 from pydantic_ai.models import Model, ModelRequestParameters
@@ -91,10 +91,11 @@ async def _call_sdk(*, system_prompt: str, user_prompt: str, model: str, output_
     log(f'query start format={"json_schema" if output_format else "text"}')
     chunks: list[str] = []
     structured: object | None = None
-    async with aclosing(query(prompt=user_prompt, options=options)) as stream:
+    async with aclosing(cast(Any, query(prompt=user_prompt, options=options))) as stream:
         async for message in stream:
-            if isinstance(getattr(message, 'content', None), list):
-                for block in message.content:
+            content = getattr(message, 'content', None)
+            if isinstance(content, list):
+                for block in content:
                     text = getattr(block, 'text', None)
                     if isinstance(text, str):
                         chunks.append(text)
