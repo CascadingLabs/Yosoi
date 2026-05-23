@@ -2,7 +2,7 @@
 
 from pydantic_ai.usage import RequestUsage
 
-from yosoi.integrations.usage import build_request_usage
+from yosoi.integrations.utils.usage import build_request_usage
 
 
 def test_maps_all_buckets_and_reasoning_rides_in_details():
