@@ -2,6 +2,7 @@
 
 from importlib.metadata import PackageNotFoundError, version
 
+from yosoi.api import scrape, scrape_many, scrape_sync
 from yosoi.core.configs import DebugConfig, TelemetryConfig, YosoiConfig, auto_config
 from yosoi.core.discovery import (
     LLMConfig,
@@ -10,6 +11,7 @@ from yosoi.core.discovery import (
     azure,
     bedrock,
     cerebras,
+    claude_sdk,
     deepseek,
     fireworks,
     gemini,
@@ -24,6 +26,7 @@ from yosoi.core.discovery import (
     nebius,
     ollama,
     openai,
+    opencode,
     openrouter,
     ovhcloud,
     provider,
@@ -34,6 +37,7 @@ from yosoi.core.discovery import (
     xai,
 )
 from yosoi.core.pipeline import Pipeline
+from yosoi.integrations import ClaudeSDKModel, OpenCodeModel
 from yosoi.models.contract import Contract
 from yosoi.models.defaults import JobPosting, NewsArticle, Product, Video
 from yosoi.models.selectors import FieldSelectors, SelectorEntry, SelectorLevel, css, discover, jsonld, regex, xpath
@@ -62,6 +66,7 @@ __all__ = [
     'Author',
     'BodyText',
     'CacheVerdict',
+    'ClaudeSDKModel',
     'Contract',
     'Datetime',
     'DebugConfig',
@@ -70,6 +75,7 @@ __all__ = [
     'JobPosting',
     'LLMConfig',
     'NewsArticle',
+    'OpenCodeModel',
     'Pipeline',
     'Price',
     'Rating',
@@ -89,6 +95,7 @@ __all__ = [
     'azure',
     'bedrock',
     'cerebras',
+    'claude_sdk',
     'css',
     'deepseek',
     'discover',
@@ -107,6 +114,7 @@ __all__ = [
     'nebius',
     'ollama',
     'openai',
+    'opencode',
     'openrouter',
     'ovhcloud',
     'provider',
@@ -114,6 +122,9 @@ __all__ = [
     'register_coercion',
     'resolve_contract',
     'sambanova',
+    'scrape',
+    'scrape_many',
+    'scrape_sync',
     'together',
     'vercel',
     'vertexai',
