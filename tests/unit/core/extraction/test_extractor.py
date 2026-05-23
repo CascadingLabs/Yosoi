@@ -686,3 +686,37 @@ async def test_quick_extract_returns_none_on_http_error(mocker):
 
     result = await extractor.quick_extract('https://example.com', 'h1')
     assert result is None
+
+
+# ---------------------------------------------------------------------------
+# attribute / text-node selections (::attr, ::text) - regression
+#
+# Before the fix, _extract_from_elements always ran `.//text()`, so a value
+# encoded in an attribute (e.g. books.toscrape's `class="star-rating Three"`)
+# extracted as empty even with a correct `::attr(...)` selector.
+# ---------------------------------------------------------------------------
+
+
+def test_attr_selector_extracts_class_attribute():
+    extractor = _make_extractor()
+    html = '<article><p class="star-rating Three"></p></article>'
+    sel = Selector(text=html)
+    result = extractor._extract_with_selector(sel, 'p.star-rating::attr(class)', 'rating')
+    assert result == 'star-rating Three'
+
+
+def test_attr_selector_grabs_machine_value_over_visible_text():
+    extractor = _make_extractor()
+    html = '<time datetime="2026-05-23">May 23</time>'
+    sel = Selector(text=html)
+    # Plain element selector still yields the visible text...
+    assert extractor._extract_with_selector(sel, 'time', 'date') == 'May 23'
+    # ...while ::attr reaches the machine-readable attribute.
+    assert extractor._extract_with_selector(sel, 'time::attr(datetime)', 'date') == '2026-05-23'
+
+
+def test_text_pseudo_selector_returns_text_node():
+    extractor = _make_extractor()
+    html = '<p class="x">Hello<span>World</span></p>'
+    sel = Selector(text=html)
+    assert extractor._extract_with_selector(sel, 'p.x::text', 'f') == 'Hello'
