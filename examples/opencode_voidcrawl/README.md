@@ -44,25 +44,30 @@ Override the model with `OC_MODEL` (default `gpt-5.3-codex`). Set
 but then ensure *that* server was launched from a dir whose `opencode.json` wires
 voidcrawl.
 
-## `maps_teleport.py` — geolocation teleport, A3Node-replayable, AX-tree selectors
+## `maps_teleport.py` — canonical ReplayPlan, executed + verified, no LLM
 
 The same query ("guitar shops near me") run in three cities where the city is set
-**only** by teleporting the browser's geolocation (CAS-45). The fixed
-teleport→navigate→scroll recipe runs in-script over the **PyO3 binding** (no LLM in
-the browsing loop), and extraction uses **accessibility-tree selectors**
-(`yosoi.core.fetcher.dom.ax.extract_records`, CAS-27) instead of CSS.
+**only** by teleporting the browser's geolocation (CAS-45). The flow is the canonical
+**ReplayPlan** (`yosoi.models.replay`, CAS-13/27): a sequence of A3Node parts
+(`teleport → navigate ×2 → scroll-until`) built from reusable helpers, then **executed
+and verified by rerun** (`replay_runtime`) — each node's `assert` is checked, giving a
+`VerifyReport` quality score. Extraction uses **AX role+name selectors**
+(`yosoi.core.fetcher.dom.ax.extract_records`). Zero LLM at runtime.
 
-The whole flow is captured as an **A3Node** (`a3node.py`, CAS-13): the locked-in act
-sequence + the AX extraction recipe, saved per-domain. The first run locks it in; every
-run after **replays it deterministically** — no agent, no LLM, no re-discovery. Each act
-carries an optional `assert_min` postcondition (the third "A"); a failed assert means the
-page changed and the node should be re-discovered. The acts can equally be captured from
-the MCP agent's tool calls (`recipe.py`) — agent discovers once, A3Node locks it in, PyO3
-replays forever.
+The same plan an MCP agent emits (`replay_runtime.plan_from_tool_parts`, fed by the
+hybrid capture in `browse_and_save.py`) is what runs here — agent discovers once, the
+plan is locked in, PyO3 replays forever.
+
+**Settling is event-driven** (the A3 "Assess"): a node waits until its precondition
+holds (feed present = prior step loaded), terminal on timeout — the SPA's network never
+idles, so readiness is gated on structure. The one exception is `navigate`: Maps resolves
+the teleported geolocation with **no DOM signal**, so a fixed dwell is the deliberate
+small-sleep fallback for when structure can't observe readiness.
 
 ```sh
-uv run python examples/opencode_voidcrawl/maps_teleport.py   # run 1: "locking in 4 acts"
-uv run python examples/opencode_voidcrawl/maps_teleport.py   # run 2: "replaying (replay_count=1)"
+uv run python examples/opencode_voidcrawl/maps_teleport.py
+# New York: Moe's Guitars (5.0) · Los Angeles: International House of Music · Chicago: Reckless Records
+# each: 20 shops, verify 100%
 ```
 
 Why AX over CSS here: each result is `role="article"` with the shop name as its
