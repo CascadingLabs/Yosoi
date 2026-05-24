@@ -1,0 +1,15 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "voidcrawl": {
+      "type": "local",
+      "command": ["voidcrawl-mcp"],
+      "enabled": true,
+      "environment": {
+        "BROWSER_COUNT": "1",
+        "TABS_PER_BROWSER": "2",
+        "CHROME_HEADLESS": "1"
+      }
+    }
+  }
+}

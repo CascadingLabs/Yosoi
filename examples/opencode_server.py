@@ -30,9 +30,19 @@ _LISTEN_RE = re.compile(r'listening on (http://\S+)')
 class OpenCodeServer:
     """Async context manager that spawns and reaps an `opencode serve` process."""
 
-    def __init__(self, *, hostname: str = '127.0.0.1', startup_timeout: float = 30.0) -> None:
+    def __init__(
+        self,
+        *,
+        hostname: str = '127.0.0.1',
+        startup_timeout: float = 30.0,
+        cwd: str | None = None,
+    ) -> None:
         self._hostname = hostname
         self._startup_timeout = startup_timeout
+        # opencode resolves project config (incl. its `mcp` servers) from the
+        # working directory upward — point cwd at a dir whose opencode.json wires
+        # the MCP servers you want the spawned server to expose.
+        self._cwd = cwd
         self._proc: asyncio.subprocess.Process | None = None
         self.base_url: str | None = None
 
@@ -47,6 +57,7 @@ class OpenCodeServer:
             self._hostname,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT,
+            cwd=self._cwd,
         )
         try:
             self.base_url = await asyncio.wait_for(self._read_url(), timeout=self._startup_timeout)
@@ -81,14 +92,21 @@ class OpenCodeServer:
 
 
 @asynccontextmanager
-async def ensure_opencode_server() -> AsyncIterator[None]:
-    """Ensure OPENCODE_BASE_URL points at a usable OpenCode server in this block."""
+async def ensure_opencode_server(*, cwd: str | None = None) -> AsyncIterator[None]:
+    """Ensure OPENCODE_BASE_URL points at a usable OpenCode server in this block.
+
+    Args:
+        cwd: Working directory for the spawned server, so it loads that dir's
+            opencode.json (and its `mcp` servers). Ignored when OPENCODE_BASE_URL
+            is already set (we attach to that server as-is).
+
+    """
     if os.getenv('OPENCODE_BASE_URL'):
         yield
         return
 
     old_base_url = os.environ.get('OPENCODE_BASE_URL')
-    async with OpenCodeServer() as base_url:
+    async with OpenCodeServer(cwd=cwd) as base_url:
         os.environ['OPENCODE_BASE_URL'] = base_url
         try:
             yield

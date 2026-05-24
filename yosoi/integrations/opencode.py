@@ -28,16 +28,39 @@ class OpenCodeModel(Model):
         provider_id: str = 'openai',
         model_id: str = 'gpt-5-codex',
         base_url: str | None = None,
+        enable_tools: bool = False,
     ) -> None:
-        """Initialize the transport with OpenCode provider, model, and server settings."""
+        """Initialize the transport with OpenCode provider, model, and server settings.
+
+        Args:
+            provider_id: OpenCode provider id (e.g. 'openai').
+            model_id: OpenCode model id (e.g. 'gpt-5.3-codex').
+            base_url: OpenCode server URL; falls back to $OPENCODE_BASE_URL then localhost.
+            enable_tools: When False (default) this is a pure text/JSON extractor —
+                tools are suppressed so pydantic-ai owns the (tool-less) loop, which is
+                what selector discovery wants. When True, the loop is handed to OpenCode:
+                it may call its own built-in + configured MCP tools (e.g. voidcrawl). The
+                tool calls it makes are exposed via ``last_tool_parts`` for logging/replay.
+
+        """
         self._provider_id = provider_id
         self._model_id = model_id
         self._base_url: str = base_url or os.getenv('OPENCODE_BASE_URL') or 'http://localhost:4096'
+        self._enable_tools = enable_tools
+        # Raw parts/info from the most recent request — only meaningful with
+        # enable_tools, where OpenCode runs the agent loop and reports its steps.
+        self.last_parts: list[dict[str, Any]] = []
+        self.last_info: dict[str, Any] = {}
         self._profile = ModelProfile(
             supports_tools=False,
             supports_json_schema_output=True,
             default_structured_output_mode='native',
         )
+
+    @property
+    def last_tool_parts(self) -> list[dict[str, Any]]:
+        """Tool parts from the most recent request (what the agent called)."""
+        return [p for p in self.last_parts if p.get('type') == 'tool']
 
     @property
     def model_name(self) -> str:
@@ -91,8 +114,11 @@ class OpenCodeModel(Model):
             'model': {'providerID': self._provider_id, 'modelID': self._model_id},
             'system': system_prompt or '',
             'parts': [{'type': 'text', 'text': user_prompt}],
-            'tools': {},
         }
+        # `tools: {}` disables OpenCode's tool loop (the extractor default). Omit it
+        # to let OpenCode call its built-in + MCP tools and own the loop itself.
+        if not self._enable_tools:
+            body['tools'] = {}
         if output_format is not None:
             body['format'] = output_format
 
@@ -115,6 +141,9 @@ class OpenCodeModel(Model):
                     resp.raise_for_status()
                     data = resp.json()
                     info = data.get('info', {})
+                    # Expose the agent loop's steps/tools for logging + replay capture.
+                    self.last_parts = data.get('parts', [])
+                    self.last_info = info
                     usage = _usage_from_info(info)
 
                     if output_format is not None and isinstance(info.get('structured'), dict):

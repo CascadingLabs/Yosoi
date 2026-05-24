@@ -63,3 +63,36 @@ async def test_request_populates_usage_from_server_response():
 
     assert response.usage.input_tokens == 150
     assert response.usage.output_tokens == 50
+
+
+@respx.mock
+async def test_default_suppresses_tools_enable_tools_frees_them():
+    """The extractor default disables OpenCode's tools (`tools: {}`); enable_tools omits
+    the key so OpenCode runs its own (incl. MCP) tool loop."""
+    import json
+
+    respx.post(f'{_BASE_URL}/session').mock(return_value=httpx.Response(200, json={'id': 'ses_test'}))
+    route = respx.post(f'{_BASE_URL}/session/ses_test/message').mock(
+        return_value=httpx.Response(200, json={'info': {}, 'parts': [{'type': 'text', 'text': 'ok'}]})
+    )
+
+    await OpenCodeModel(base_url=_BASE_URL).request([], None, ModelRequestParameters())
+    assert json.loads(route.calls.last.request.content)['tools'] == {}
+
+    await OpenCodeModel(base_url=_BASE_URL, enable_tools=True).request([], None, ModelRequestParameters())
+    assert 'tools' not in json.loads(route.calls.last.request.content)
+
+
+@respx.mock
+async def test_enable_tools_exposes_tool_parts():
+    """With enable_tools, the agent loop's tool parts are surfaced via last_tool_parts."""
+    respx.post(f'{_BASE_URL}/session').mock(return_value=httpx.Response(200, json={'id': 'ses_test'}))
+    tool_part = {'type': 'tool', 'tool': 'voidcrawl_click_by_role', 'state': {'status': 'completed'}}
+    respx.post(f'{_BASE_URL}/session/ses_test/message').mock(
+        return_value=httpx.Response(200, json={'info': {}, 'parts': [tool_part, {'type': 'text', 'text': 'done'}]})
+    )
+
+    model = OpenCodeModel(base_url=_BASE_URL, enable_tools=True)
+    await model.request([], None, ModelRequestParameters())
+
+    assert model.last_tool_parts == [tool_part]
