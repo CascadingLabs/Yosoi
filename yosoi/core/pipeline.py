@@ -26,6 +26,7 @@ from yosoi.core.discovery import DiscoveryOrchestrator, LLMConfig
 from yosoi.core.discovery.bus import DiscoveryBus
 from yosoi.core.extraction import ContentExtractor
 from yosoi.core.fetcher import HTMLFetcher, create_fetcher
+from yosoi.core.fetcher.waterfall import JSFetcher
 from yosoi.core.verification import SelectorVerifier
 from yosoi.models import FetchResult
 from yosoi.models.contract import Contract
@@ -341,7 +342,7 @@ class Pipeline:
             results: dict[str, list[str]] = {'successful': [], 'failed': []}
             run_start = time.monotonic()
 
-            shared_fetcher = self._create_fetcher(fetcher_type, console=self.console, force=force_flag)
+            shared_fetcher = self._create_fetcher(fetcher_type, console=self.console)
             if not shared_fetcher:
                 raise RuntimeError(f'Invalid fetcher type: {fetcher_type}')
 
@@ -592,7 +593,7 @@ class Pipeline:
 
             _owns_fetcher = fetcher is None
             if _owns_fetcher:
-                fetcher = self._create_fetcher(fetcher_type, console=self.console, force=force_flag)
+                fetcher = self._create_fetcher(fetcher_type, console=self.console)
                 if not fetcher:
                     raise RuntimeError(f'Invalid fetcher type: {fetcher_type}')
 
@@ -713,6 +714,7 @@ class Pipeline:
         save_all: ContentMap | ContentItems = validated_items if len(validated_items) > 1 else validated_items[0]
         with observability.span('save', url=url, items=len(validated_items)):
             await self._finish(url, domain, selectors_to_save, save_all, used_llm, format_to_use)
+        self._record_fetch_strategy_selector_level(fetcher, domain)
 
         observability.set_trace_output(
             root_span,
@@ -782,25 +784,43 @@ class Pipeline:
             if not cache_valid:
                 return None
             return self._yield_cached_items(
-                items, url, domain, format_to_use, root_span=root_span, selectors_payload=existing
+                items,
+                url,
+                domain,
+                format_to_use,
+                root_span=root_span,
+                selectors_payload=existing,
             )
 
         fetch_result = await self._fetch_and_clean_for_cache(url, fetcher)
         if fetch_result is None:
             existing_for_payload = {name: snapshot_to_selector_dict(snap) for name, snap in snapshots.items()}
             return self._yield_cached_items(
-                None, url, domain, format_to_use, root_span=root_span, selectors_payload=existing_for_payload
+                None,
+                url,
+                domain,
+                format_to_use,
+                root_span=root_span,
+                selectors_payload=existing_for_payload,
             )
 
         raw_html, cleaned_html = fetch_result
         return await self._evaluate_cached_verdicts(
-            url, domain, raw_html, cleaned_html, snapshots, format_to_use, root_span=root_span
+            url,
+            domain,
+            fetcher,
+            raw_html,
+            cleaned_html,
+            snapshots,
+            format_to_use,
+            root_span=root_span,
         )
 
     async def _evaluate_cached_verdicts(
         self,
         url: str,
         domain: str,
+        fetcher: HTMLFetcher,
         raw_html: str,
         cleaned_html: str,
         snapshots: dict[str, SelectorSnapshot],
@@ -829,7 +849,7 @@ class Pipeline:
 
         if not stale_fields:
             return self._extract_all_fresh(
-                url, domain, raw_html, snapshots, fresh_fields, format_to_use, root_span=root_span
+                url, domain, fetcher, raw_html, snapshots, fresh_fields, format_to_use, root_span=root_span
             )
 
         if not fresh_fields:
@@ -843,6 +863,7 @@ class Pipeline:
             domain,
             raw_html,
             cleaned_html,
+            fetcher,
             snapshots,
             fresh_fields,
             stale_fields,
@@ -854,6 +875,7 @@ class Pipeline:
         self,
         url: str,
         domain: str,
+        fetcher: HTMLFetcher,
         raw_html: str,
         snapshots: dict[str, SelectorSnapshot],
         fresh_fields: set[str],
@@ -871,11 +893,17 @@ class Pipeline:
         if extracted:
             items_list: ContentItems = extracted if isinstance(extracted, list) else [extracted]
             return self._yield_cached_items(
-                items_list, url, domain, format_to_use, root_span=root_span, selectors_payload=existing
+                items_list,
+                url,
+                domain,
+                format_to_use,
+                fetcher=fetcher,
+                root_span=root_span,
+                selectors_payload=existing,
             )
         self.console.print('[warning]⚠ Extraction failed with cached selectors[/warning]')
         return self._yield_cached_items(
-            None, url, domain, format_to_use, root_span=root_span, selectors_payload=existing
+            None, url, domain, format_to_use, fetcher=fetcher, root_span=root_span, selectors_payload=existing
         )
 
     async def _partial_rediscovery(
@@ -884,6 +912,7 @@ class Pipeline:
         domain: str,
         raw_html: str,
         cleaned_html: str,
+        fetcher: HTMLFetcher,
         snapshots: dict[str, SelectorSnapshot],
         fresh_fields: set[str],
         stale_fields: set[str],
@@ -917,6 +946,7 @@ class Pipeline:
             save_content: ContentMap | ContentItems = validated if len(validated) > 1 else validated[0]
             for fmt in format_to_use:
                 self.storage.save_content(url, save_content, fmt, contract_sig=self._contract_sig)
+            self._record_fetch_strategy_selector_level(fetcher, domain)
             elapsed = time.monotonic() - self._url_start
             self.last_elapsed = elapsed
             stats = await self.tracker.record_url(
@@ -951,11 +981,14 @@ class Pipeline:
 
         sel = _PS(text=html)
         verdicts: dict[str, CacheVerdict] = {}
+        field_levels: dict[str, str] = {}
 
         for field_name, snap in snapshots.items():
             sel_dict = snapshot_to_selector_dict(snap)
             field_result = self.verifier._verify_field(sel, field_name, sel_dict, self.selector_level)
             verdicts[field_name] = CacheVerdict.FRESH if field_result.status == 'verified' else CacheVerdict.STALE
+            if field_result.status == 'verified' and field_result.selector_level:
+                field_levels[field_name] = field_result.selector_level
 
         # Root cascade: if root is stale, mark all non-root fields stale
         if verdicts.get('root') == CacheVerdict.STALE:
@@ -963,6 +996,12 @@ class Pipeline:
                 if name != 'root':
                     verdicts[name] = CacheVerdict.STALE
 
+        level_distribution: dict[str, int] = {}
+        for field_name, level in field_levels.items():
+            if verdicts[field_name] == CacheVerdict.FRESH:
+                level_distribution[level] = level_distribution.get(level, 0) + 1
+
+        self._last_level_distribution = level_distribution
         return verdicts
 
     def _yield_cached_items(
@@ -972,6 +1011,7 @@ class Pipeline:
         domain: str,
         format_to_use: list[str],
         *,
+        fetcher: HTMLFetcher | None = None,
         root_span: Any | None = None,
         selectors_payload: SelectorMap | None = None,
     ) -> AsyncIterator[ContentMap]:
@@ -987,6 +1027,8 @@ class Pipeline:
                 save_content: ContentMap | ContentItems = validated if len(validated) > 1 else validated[0]
                 for fmt in format_to_use:
                     self.storage.save_content(url, save_content, fmt, contract_sig=self._contract_sig)
+            if fetcher is not None:
+                self._record_fetch_strategy_selector_level(fetcher, domain)
             await self._track_cached_success(url, domain)
             self.last_elapsed = time.monotonic() - self._url_start
             self.console.print(f'[dim]  ⏱ {self.last_elapsed:.1f}s elapsed[/dim]')
@@ -1022,6 +1064,10 @@ class Pipeline:
         if new_selectors:
             merged.update(new_selectors)
             verification = self.verifier.verify(cleaned_html, new_selectors, max_level=self.selector_level)
+            level_distribution = getattr(self, '_last_level_distribution', {}).copy()
+            for level, count in verification.level_distribution.items():
+                level_distribution[level] = level_distribution.get(level, 0) + count
+            self._last_level_distribution = level_distribution
             for name, field_result in verification.results.items():
                 if field_result.status != 'verified':
                     self.console.print(f'[warning]⚠ Rediscovered selector for {name} failed verification[/warning]')
@@ -1105,15 +1151,12 @@ class Pipeline:
         """
         return observability.normalize_user_id(url) or ''
 
-    def _create_fetcher(
-        self, fetcher_type: str, console: Console | None = None, force: bool = False
-    ) -> HTMLFetcher | None:
+    def _create_fetcher(self, fetcher_type: str, console: Console | None = None) -> HTMLFetcher | None:
         """Create HTML fetcher instance.
 
         Args:
             fetcher_type: The type of fetcher to be used to fetch HTMLs
             console: Optional Rich console passed to fetchers that support it
-            force: Force re-discovery even if selectors exist. Defaults to False.
 
         Returns:
             The fetcher to be used to fetch HTMLs
@@ -1121,8 +1164,6 @@ class Pipeline:
         """
         try:
             kwargs: dict[str, Any] = {'console': console} if fetcher_type == 'waterfall' and console is not None else {}
-            if fetcher_type == 'waterfall':
-                kwargs['force'] = force
             return create_fetcher(fetcher_type, **kwargs)
         except ValueError:
             self.console.print(f'[danger]Invalid fetcher type: {fetcher_type}[/danger]')
@@ -1394,6 +1435,18 @@ class Pipeline:
             self._print_partial_failure(result)
 
         return verified
+
+    def _record_fetch_strategy_selector_level(self, fetcher: HTMLFetcher, domain: str) -> None:
+        """Cache the highest selector level that worked with the domain loading strategy."""
+        if not isinstance(fetcher, JSFetcher):
+            return
+        level_dist = getattr(self, '_last_level_distribution', None)
+        if not level_dist:
+            return
+        order = ['css', 'xpath', 'regex', 'jsonld']
+        highest = next((level for level in reversed(order) if level_dist.get(level)), None)
+        if highest is not None:
+            fetcher.update_selector_level(domain, highest)
 
     def _print_verification_failure(self, result: VerificationResult) -> None:
         """Print detailed failure summary when all selectors fail."""

@@ -35,7 +35,7 @@ from yosoi.core.fetcher.base import HTMLFetcher
 from yosoi.core.fetcher.simple import SimpleFetcher
 from yosoi.core.fetcher.voiddriver import HeadfulFetcher, HeadlessFetcher
 from yosoi.models.results import FetchResult
-from yosoi.storage.strategy import FetchStrategyStorage
+from yosoi.storage.strategy import FetchStrategy, FetchStrategyStorage
 from yosoi.utils.exceptions import BotDetectionError
 
 
@@ -97,7 +97,7 @@ class JSFetcher(HTMLFetcher):
         self._headful: HeadfulFetcher | None = None
 
         # In-memory cache populated from disk on __aenter__
-        self._strategy_cache: dict[str, str] = {}
+        self._strategy_cache: dict[str, FetchStrategy] = {}
         self._strategy_storage = FetchStrategyStorage()
 
         self._console = console or Console()
@@ -122,7 +122,7 @@ class JSFetcher(HTMLFetcher):
     async def __aenter__(self) -> JSFetcher:
         """Start the simple fetcher eagerly; Chrome tiers start lazily."""
         await self._simple.__aenter__()
-        self._strategy_cache = self._strategy_storage.load_all()
+        self._strategy_cache = self._strategy_storage.load_all_strategies()
         self.logger.info(
             'JSFetcher ready (simple tier active, %d domain strategies cached)',
             len(self._strategy_cache),
@@ -152,17 +152,30 @@ class JSFetcher(HTMLFetcher):
     # Strategy cache helpers
     # ------------------------------------------------------------------
 
-    def _preferred_tier(self, domain: str) -> str | None:
-        """Return the cached tier for *domain*, or None if unknown."""
+    def _preferred_strategy(self, domain: str) -> FetchStrategy | None:
+        """Return the cached strategy for *domain*, or None if unknown."""
         return self._strategy_cache.get(domain)
 
     def _record_success(self, domain: str, tier: str) -> None:
         """Save the winning tier for *domain* if it changed."""
-        if self._strategy_cache.get(domain) != tier:
-            self._strategy_cache[domain] = tier
+        current = self._strategy_cache.get(domain)
+        if current is None or current.fetcher != tier:
+            self._strategy_cache[domain] = FetchStrategy(fetcher=tier)
             self._strategy_storage.save(domain, tier)
             self._console.print(f'[success]  ✓ Fetcher strategy saved: {domain} → {tier}[/success]')
             self.logger.info('Fetch strategy cached: %s -> %s', domain, tier)
+
+    def update_selector_level(self, domain: str, selector_level: str) -> None:
+        """Persist the selector escalation level that worked for this domain."""
+        current = self._strategy_cache.get(domain)
+        if current is None:
+            return
+        if current.selector_level == selector_level:
+            return
+        updated = FetchStrategy(fetcher=current.fetcher, selector_level=selector_level)
+        self._strategy_cache[domain] = updated
+        self._strategy_storage.save(domain, current.fetcher, selector_level=selector_level)
+        self._console.print(f'[dim]  ↳ Selector level cached: {domain} → {selector_level}[/dim]')
 
     # ------------------------------------------------------------------
     # Lazy Chrome tier startup
@@ -255,13 +268,16 @@ class JSFetcher(HTMLFetcher):
         """
         start_time = time.time()
         domain = urlparse(url).netloc.replace('www.', '')
-        cached_tier = None if self._force else self._preferred_tier(domain)
+        cached_strategy = None if self._force else self._preferred_strategy(domain)
 
         # TODO: Make an A3Node caller to get the cached DOM explorer for a url/domain
 
-        if cached_tier is not None:
-            self._console.print(f'[dim]  ↳ {domain} — using cached tier [bold]{cached_tier}[/bold][/dim]')
-            cached_result = await self._fetch_cached_tier(url, domain, cached_tier, start_time)
+        if cached_strategy is not None:
+            level_msg = f', selector level {cached_strategy.selector_level}' if cached_strategy.selector_level else ''
+            self._console.print(
+                f'[dim]  ↳ {domain} — using cached tier [bold]{cached_strategy.fetcher}[/bold]{level_msg}[/dim]'
+            )
+            cached_result = await self._fetch_cached_tier(url, domain, cached_strategy.fetcher, start_time)
             if cached_result is not None:
                 return cached_result
 
