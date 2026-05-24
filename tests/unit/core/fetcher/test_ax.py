@@ -6,7 +6,7 @@ from typing import Any
 
 import pytest
 
-from yosoi.core.fetcher.dom.ax import AxTarget, find_target, snapshot
+from yosoi.core.fetcher.dom.ax import AxField, AxTarget, extract_records, find_target, snapshot
 from yosoi.core.fetcher.dom.flows import ClickByRole
 from yosoi.core.fetcher.dom.probes import TriggerKind, probe
 
@@ -128,3 +128,57 @@ async def test_click_by_role_action_uses_tab_api(mocker) -> None:
     await ClickByRole('button', 'Load more', 2).run(tab)
 
     tab.click_by_role.assert_awaited_once_with('button', 'Load more', 2)
+
+
+# ── extract_records (AX read-side) ───────────────────────────────────────────
+
+
+def _ax(node_id: str, role: str, name: str, *, children: tuple[str, ...] = (), ignored: bool = False) -> dict[str, Any]:
+    return {
+        'nodeId': node_id,
+        'childIds': list(children),
+        'ignored': ignored,
+        'role': {'type': 'role', 'value': role},
+        'name': {'type': 'computedString', 'value': name},
+    }
+
+
+def test_extract_records_groups_fields_per_card_and_skips_prefix() -> None:
+    nodes = [
+        _ax('1', 'article', "Moe's Guitars", children=('2', '3')),
+        _ax('2', 'link', "Moe's Guitars"),
+        _ax('3', 'image', '5.0 stars 109 Reviews'),
+        _ax('4', 'article', 'Guitar Center', children=('5', '6')),
+        _ax('5', 'link', 'Guitar Center'),
+        _ax('6', 'image', '4.4 stars 2,980 Reviews'),
+        _ax('7', 'article', 'Ad · Sponsored', children=('8',)),  # dropped by skip prefix
+        _ax('8', 'image', '4.0 stars 10 Reviews'),
+    ]
+    fields = [
+        AxField('rating', role='image', pattern=r'([\d.]+)\s*stars'),
+        AxField('reviews', role='image', pattern=r'stars?\s+([\d,]+)\s*Reviews'),
+    ]
+    recs = extract_records(nodes, card_role='article', fields=fields, skip_name_prefixes=('Ad ·',))
+    assert recs == [
+        {'name': "Moe's Guitars", 'rating': '5.0', 'reviews': '109'},
+        {'name': 'Guitar Center', 'rating': '4.4', 'reviews': '2,980'},
+    ]
+
+
+def test_extract_records_scopes_fields_to_own_card_via_childids() -> None:
+    nodes = [
+        _ax('1', 'article', 'A', children=('2',)),
+        _ax('2', 'image', '4.9 stars 10 Reviews'),
+        _ax('3', 'article', 'B', children=('4',)),
+        _ax('4', 'image', '3.1 stars 5 Reviews'),
+    ]
+    recs = extract_records(
+        nodes, card_role='article', fields=[AxField('rating', role='image', pattern=r'([\d.]+)\s*stars')]
+    )
+    assert [r['rating'] for r in recs] == ['4.9', '3.1']
+
+
+def test_extract_records_missing_field_is_none() -> None:
+    nodes = [_ax('1', 'article', 'Solo', children=('2',)), _ax('2', 'link', 'Solo')]
+    recs = extract_records(nodes, card_role='article', fields=[AxField('rating', role='image', pattern=r'([\d.]+)')])
+    assert recs == [{'name': 'Solo', 'rating': None}]

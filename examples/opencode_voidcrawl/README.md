@@ -49,8 +49,8 @@ voidcrawl.
 The same query ("guitar shops near me") run in three cities where the city is set
 **only** by teleporting the browser's geolocation (CAS-45). The fixed
 teleport→navigate→scroll recipe runs in-script over the **PyO3 binding** (no LLM in
-the browsing loop), and extraction uses **accessibility-tree selectors** (`ax_extract.py`,
-CAS-27) instead of CSS.
+the browsing loop), and extraction uses **accessibility-tree selectors**
+(`yosoi.core.fetcher.dom.ax.extract_records`, CAS-27) instead of CSS.
 
 The whole flow is captured as an **A3Node** (`a3node.py`, CAS-13): the locked-in act
 sequence + the AX extraction recipe, saved per-domain. The first run locks it in; every

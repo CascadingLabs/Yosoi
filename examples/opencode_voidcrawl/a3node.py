@@ -20,7 +20,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Literal
 
-from ax_extract import AxField, extract_cards
+from yosoi.core.fetcher.dom.ax import AxField, extract_records
 
 Geo = tuple[float, float, str | None, str | None]  # lat, lon, timezone, locale
 
@@ -159,7 +159,7 @@ async def _scroll(page: Any, feed: str, item: str, target: int) -> int:
 
 def extract(node: A3Node, ax_nodes: list[dict[str, Any]]) -> list[dict[str, str | None]]:
     """Replay the AX extraction recipe over a captured accessibility tree."""
-    return extract_cards(
+    return extract_records(
         ax_nodes,
         card_role=node.extract.card_role,
         fields=node.extract.ax_fields(),
