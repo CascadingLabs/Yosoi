@@ -330,7 +330,7 @@ async def test_scrape_cached_verification_failure_falls_through(mocker):
     mocker.patch.object(stub, '_create_fetcher', return_value=mock_fetcher)
 
     # 3. CLEANER: clean_html is SYNC
-    stub.cleaner.clean_html.return_value = '<h1>Hello</h1>'
+    stub.cleaner.clean_html.return_value = '<h1>Hello</h1>' + ' ' * 1000
 
     # 4. VERIFIER (Cached Path): _verify_field is SYNC
     # Called inside Pipeline._verify_per_field
