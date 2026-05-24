@@ -58,6 +58,9 @@ class ContentAnalyzer:
         A page with lots of HTML but almost no readable text is almost
         certainly a client-side rendered shell waiting for JS to populate it.
         """
+        # TODO: watch for false positives — markup-heavy / image-only pages with little
+        # visible text can trip this and over-escalate to Chrome. Tune thresholds against
+        # the bake-off harness (CAS-44) before relying on it broadly.
         from bs4 import BeautifulSoup
 
         soup = BeautifulSoup(html[:50_000], 'lxml')
@@ -187,6 +190,10 @@ class ContentAnalyzer:
                 'svelte',
                 '__svelte',
             ],
+            'astro': [
+                '<astro-island',
+                'data-fw=',
+            ],
         }
 
         detected_framework = None
@@ -229,11 +236,15 @@ class ContentAnalyzer:
             body_text_lower = ' '.join(text_only.split()).lower()
 
         has_loading_placeholders = any(p in body_text_lower for p in _LOADING_PATTERNS)
+        has_unhydrated_islands = '<astro-island' in html_lower and 'data-fw=' in html_lower
+        if has_unhydrated_islands:
+            detected_framework = 'astro'
 
         requires_js = (
             (detected_framework is not None and minimal_content)
             or has_noscript_warning
             or (detected_framework is not None and has_loading_placeholders)
+            or has_unhydrated_islands
         )
 
         return JSDetectionResult(requires_js=requires_js, framework=detected_framework)

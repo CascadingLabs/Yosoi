@@ -121,6 +121,9 @@ async def probe_load_more(tab: Any) -> DetectedTrigger | None:
     """Detect a load-more / show-more button by text content."""
     try:
         snippets = await tab.query_selector_all('button, a[role="button"], [type="button"]')
+        # FIXME: verify query_selector_all returns text, not element handles. If it returns
+        # handles, `.lower()` raises and the except below swallows it — silently disabling
+        # load-more detection. Same pattern in probe_pagination. Use the explicit text API.
         for snippet in snippets:
             lower = (snippet or '').lower()
             for text in LOAD_MORE_TEXTS:

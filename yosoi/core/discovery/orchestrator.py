@@ -298,6 +298,10 @@ class DiscoveryOrchestrator:
         # Note: sentinels are NOT included in the returned merged map — callers see only
         # fields that were actually discovered.
         all_attempted = {str(spec['field_name']) for spec in task_specs}
+        # FIXME: write path is incomplete. This computes the sentinel set but nothing ever
+        # persists `primary: 'NA'` to the cache, so the reader (field_task.py "known absent"
+        # check) can never fire — dead today. Also, storing on `self` is unsafe if one
+        # orchestrator is reused across the concurrent worker path. Persist the sentinels.
         self._na_sentinels = {field_name for field_name in all_attempted if field_name not in merged}
 
         return merged, cached_count, escalated_count

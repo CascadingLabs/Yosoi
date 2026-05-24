@@ -2,6 +2,9 @@
 
 Pure data — no logic. Import from here rather than defining inline so
 patterns are easy to extend without touching any logic files.
+
+FUTURE: teach the discovery agent to propose or generate these catalogues,
+using this module as examples instead of relying on hand-maintained lists.
 """
 
 # ---------------------------------------------------------------------------
