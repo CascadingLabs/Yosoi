@@ -25,13 +25,14 @@ from yosoi.models.replay import (
     Assertion,
     NodeResult,
     ReplayPlan,
-    Selector,
+    SelectorEntry,
     VerifyReport,
     click,
     css,
     navigate,
     role,
     teleport,
+    visual,
 )
 
 _PREFIX = 'voidcrawl_'
@@ -86,7 +87,7 @@ def _node_for(name: str, inp: dict[str, Any]) -> A3Node | None:
     if name == 'click':
         return click(css(inp.get('selector', '')))
     if name == 'click_visual_coords':
-        return click(Selector(by='visual', x=inp.get('x'), y=inp.get('y')))
+        return click(visual(inp['x'], inp['y']))
     if name == 'wait_for_network_idle':
         return A3Node(act=Act(op='wait'))
     return None  # session_open/close, ax_tree, title, extract, eval_js, screenshot, ...
@@ -174,14 +175,14 @@ async def _run_click(node: A3Node, page: Any) -> None:
         raise last
 
 
-async def _attempt_click(sel: Selector, page: Any) -> Exception | None:
+async def _attempt_click(sel: SelectorEntry, page: Any) -> Exception | None:
     """Try one selector; return the exception on failure, or None on success."""
     try:
-        if sel.by == 'role':
+        if sel.type == 'role':
             await page.click_by_role(sel.role, sel.name or '', sel.nth)
-        elif sel.by == 'css':
+        elif sel.type in ('css', 'xpath'):
             await page.click_element(sel.value)
-        elif sel.by == 'visual':
+        elif sel.type == 'visual':
             await page.dispatch_mouse_event('click', sel.x, sel.y)
     except (RuntimeError, OSError, ValueError, AttributeError) as exc:
         return exc

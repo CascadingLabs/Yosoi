@@ -1,15 +1,16 @@
-"""Google Maps geolocation-teleport scrape — canonical ReplayPlan, executed + verified.
+"""Google Maps geolocation-teleport scrape — canonical ReplayPlan, unified selectors, no LLM.
 
-The same query ("guitar shops near me") in three cities, where the city is set only
-by **teleporting** the browser's geolocation (CAS-45). The flow is expressed as a
-canonical `ReplayPlan` (yosoi.models.replay) — a sequence of A3Node parts
-(teleport -> navigate x2 -> scroll-until) built from reusable helpers — then **executed
-and verified by rerun** (replay_runtime): each node's `assert` is checked, yielding a
-`VerifyReport` quality score. Extraction uses AX role+name selectors (CAS-27).
+The same query ("guitar shops near me") in three cities, where the city is set only by
+**teleporting** the browser's geolocation (CAS-45). The flow is a canonical `ReplayPlan`
+(yosoi.models.replay) — A3Node parts (teleport -> navigate x2 -> scroll-until) — then
+**executed and verified by rerun** (replay_runtime), yielding a `VerifyReport` score.
 
-This supersedes the earlier bespoke a3node.py: the plan is now the canonical schema,
-and the same plan an MCP agent emits (replay_runtime.plan_from_tool_parts) is what
-runs here. The plan is persisted and reloaded across runs.
+Extraction reuses Yosoi's selector + type machinery, with no regex on the recipe:
+each field is a `FieldSelectors` cascade of `SelectorEntry` (here `role('image')`, the
+AX selector) and a Yosoi coercion `type` that turns the matched node's text into the
+value — `rating` via the built-in Rating coercer, `reviews` via a small coercer whose
+regex lives in the *type*, not the recipe. The selector finds the node; the type reads
+the value. Zero LLM at runtime.
 
     uv run python examples/opencode_voidcrawl/maps_teleport.py   # voidcrawl>=0.3.2 + Chromium
 """
@@ -18,25 +19,31 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from pydantic import BaseModel
 from replay_runtime import execute_plan, load_plan, save_plan
 from voidcrawl import BrowserConfig, BrowserSession
 
-from yosoi.core.fetcher.dom.ax import AxField, extract_records
+from yosoi.core.fetcher.dom.ax import extract_records
 from yosoi.models.replay import (
     ExtractField,
     ExtractRecipe,
+    FieldSelectors,
     ReplayPlan,
     css,
     navigate,
+    role,
     scroll_until,
     selector_present,
     teleport,
     url_contains,
 )
+from yosoi.types import rating as _rating  # noqa: F401  registers the built-in 'rating' coercer
+from yosoi.types.registry import CoercionConfig, _registry, register_coercion
 
 HERE = Path(__file__).parent
 PLAN_DIR = HERE / '.yosoi' / 'plans'
@@ -64,16 +71,29 @@ CITIES = [
     City('Chicago', 41.8781, -87.6298, 'America/Chicago'),
 ]
 
+
+@register_coercion('reviews', description='Review count parsed from a "… N Reviews" label')
+def Reviews(v: object, config: CoercionConfig, source_url: str | None = None) -> int | None:
+    """Coerce 'N Reviews' -> int. The regex lives in the TYPE (like Rating), not the recipe."""
+    m = re.search(r'([\d,]+)\s*Reviews', str(v), re.IGNORECASE)
+    return int(m.group(1).replace(',', '')) if m else None
+
+
+# Each field: a SelectorEntry cascade + a Yosoi coercion type. The selector targets the
+# right NODE by role + accessible-name substring (`role('image', 'stars')` picks the
+# rating image, not the shop photo) — a selector concern, like click_by_role. The TYPE
+# then reads the value from that node's text. No regex on the recipe.
+_RATING_IMG = role('image', 'stars')
 _EXTRACT = ExtractRecipe(
     card_role='article',
     fields=[
-        ExtractField(key='rating', role='image', pattern=r'([\d.]+)\s*stars'),
-        ExtractField(key='reviews', role='image', pattern=r'stars?\s+([\d,]+)\s*Reviews'),
         ExtractField(
-            key='address',
-            role='StaticText',
-            pattern=r'\d{1,6}\s+\w.*\b(?:St|Ave|Avenue|Blvd|Rd|Road|Dr|Drive|Ln|Lane|Way|Pl|Pkwy|Hwy|Street|Ct|Sq|Fl)\b',
+            key='rating',
+            type='rating',
+            config={'as_float': True, 'scale': 5},
+            selectors=FieldSelectors(primary=_RATING_IMG),
         ),
+        ExtractField(key='reviews', type='reviews', selectors=FieldSelectors(primary=_RATING_IMG)),
     ],
     skip_prefixes=['Ad ·'],
 )
@@ -83,7 +103,6 @@ class GuitarShop(BaseModel):
     name: str
     rating: float | None = None
     reviews: int | None = None
-    address: str | None = None
 
 
 def build_plan(city: City) -> ReplayPlan:
@@ -102,28 +121,22 @@ def build_plan(city: City) -> ReplayPlan:
         target=TARGET_KEY,
         task='guitar shops near me',
         source='scripted',
-        nodes=[
-            teleport(city.lat, city.lon, city.tz, city.locale),
-            navigate(MAPS_URL),  # prime
-            read,
-            scroll,
-        ],
+        nodes=[teleport(city.lat, city.lon, city.tz, city.locale), navigate(MAPS_URL), read, scroll],
         extract=_EXTRACT,
     )
 
 
-def _to_shop(rec: dict[str, str | None]) -> GuitarShop:
-    r, rv = rec.get('rating'), rec.get('reviews')
-    return GuitarShop(
-        name=rec.get('name') or '',
-        rating=float(r) if r else None,
-        reviews=int(rv.replace(',', '')) if rv else None,
-        address=rec.get('address'),
-    )
-
-
-def _ax_fields(recipe: ExtractRecipe) -> list[AxField]:
-    return [AxField(f.key, role=f.role, pattern=f.pattern) for f in recipe.fields]
+def _coerce(recipe: ExtractRecipe, rec: dict[str, str | None]) -> GuitarShop:
+    """Selector found the node text; the field's Yosoi type turns it into the value."""
+    out: dict[str, Any] = {'name': rec.get('name') or ''}
+    for f in recipe.fields:
+        raw = rec.get(f.key)
+        coercer = _registry.get(f.type)
+        try:
+            out[f.key] = coercer(raw, dict(f.config)) if (raw and coercer) else None
+        except (ValueError, TypeError):
+            out[f.key] = None
+    return GuitarShop(**out)
 
 
 async def scrape_city(city: City, cfg: BrowserConfig) -> tuple[float, list[GuitarShop]]:
@@ -137,10 +150,10 @@ async def scrape_city(city: City, cfg: BrowserConfig) -> tuple[float, list[Guita
         records = extract_records(
             ax_nodes,
             card_role=recipe.card_role,
-            fields=_ax_fields(recipe),
+            fields={f.key: f.selectors for f in recipe.fields},
             skip_name_prefixes=tuple(recipe.skip_prefixes),
         )
-        return report.score, [_to_shop(r) for r in records[:TARGET]]
+        return report.score, [_coerce(recipe, r) for r in records[:TARGET]]
     raise RuntimeError('BrowserSession exited without yielding a page')  # unreachable
 
 
@@ -164,7 +177,7 @@ async def main() -> None:
         plan.replay_count += 1
     path = save_plan(plan, PLAN_DIR)
 
-    print('\n=== results (teleport drives the city; AX extraction; verified replay) ===', flush=True)
+    print('\n=== results (teleport drives the city; AX selectors + type coercion; verified) ===', flush=True)
     for city in CITIES:
         score, shops = results[city.name]
         (OUT_DIR / f'{city.name.lower().replace(" ", "_")}.json').write_text(
@@ -173,7 +186,7 @@ async def main() -> None:
         top = shops[0] if shops else None
         line = f'  {city.name:12s}: {len(shops):2d} shops  (verify {score:.0%})'
         if top:
-            line += f'  e.g. {top.name!r} ({top.rating}★, {top.reviews}) {top.address or ""}'
+            line += f'  e.g. {top.name!r} ({top.rating}★, {top.reviews} reviews)'
         print(line, flush=True)
     print(f'\n  plan -> {path}   per-city JSON -> {OUT_DIR}', flush=True)
 

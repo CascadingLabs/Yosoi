@@ -11,7 +11,7 @@ from yosoi.models.replay import (
     Assertion,
     NodeResult,
     ReplayPlan,
-    Selector,
+    SelectorEntry,
     StepAnnotation,
     VerifyReport,
     click,
@@ -22,19 +22,26 @@ from yosoi.models.replay import (
     role,
     scroll_until,
     teleport,
+    visual,
 )
 
 
-def test_selector_role_requires_role() -> None:
+def test_selector_entry_validates_per_type() -> None:
     with pytest.raises(ValidationError):
-        Selector(by='role')
+        SelectorEntry(type='role')  # needs role
     with pytest.raises(ValidationError):
-        Selector(by='css')  # needs value
+        SelectorEntry(type='css')  # needs a non-empty value
     with pytest.raises(ValidationError):
-        Selector(by='visual', x=1.0)  # needs y too
-    assert role('button', 'Load more').describe() == "role='button' name='Load more'"
-    assert css('.more').describe() == "css='.more'"
-    assert Selector(by='visual', x=10, y=20).describe() == 'visual=(10.0,20.0)'
+        SelectorEntry(type='visual', x=1.0)  # needs y too
+    assert role('button', 'Load more').role == 'button'
+    assert css('.more').value == '.more'
+    assert visual(10, 20).type == 'visual'
+
+
+def test_selectorentry_identity_distinguishes_role_from_value() -> None:
+    # role selectors have empty value; identity must use role/name, not value.
+    assert role('button', 'A').key() != role('button', 'B').key()
+    assert css('.x').key() != css('.y').key()
 
 
 def test_builders_compose_a3node_primitive() -> None:
@@ -49,7 +56,7 @@ def test_builders_compose_a3node_primitive() -> None:
 
     # fallback cascade preserved in order
     c = click(role('button', 'Load more'), css('.more'), expect=min_count(20))
-    assert [t.by for t in c.act.targets] == ['role', 'css']
+    assert [t.type for t in c.act.targets] == ['role', 'css']
     assert c.expect == min_count(20)
 
     sc = scroll_until('div[role="feed"]', 'a.hfpxzc', 20)

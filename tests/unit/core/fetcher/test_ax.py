@@ -6,9 +6,10 @@ from typing import Any
 
 import pytest
 
-from yosoi.core.fetcher.dom.ax import AxField, AxTarget, extract_records, find_target, snapshot
+from yosoi.core.fetcher.dom.ax import AxTarget, extract_records, find_target, snapshot
 from yosoi.core.fetcher.dom.flows import ClickByRole
 from yosoi.core.fetcher.dom.probes import TriggerKind, probe
+from yosoi.models.selectors import FieldSelectors, role
 
 
 def _node(
@@ -154,14 +155,12 @@ def test_extract_records_groups_fields_per_card_and_skips_prefix() -> None:
         _ax('7', 'article', 'Ad · Sponsored', children=('8',)),  # dropped by skip prefix
         _ax('8', 'image', '4.0 stars 10 Reviews'),
     ]
-    fields = [
-        AxField('rating', role='image', pattern=r'([\d.]+)\s*stars'),
-        AxField('reviews', role='image', pattern=r'stars?\s+([\d,]+)\s*Reviews'),
-    ]
+    # role selector returns the node's raw text; value parsing is the caller's coercion type.
+    fields = {'rating': FieldSelectors(primary=role('image'))}
     recs = extract_records(nodes, card_role='article', fields=fields, skip_name_prefixes=('Ad ·',))
     assert recs == [
-        {'name': "Moe's Guitars", 'rating': '5.0', 'reviews': '109'},
-        {'name': 'Guitar Center', 'rating': '4.4', 'reviews': '2,980'},
+        {'name': "Moe's Guitars", 'rating': '5.0 stars 109 Reviews'},
+        {'name': 'Guitar Center', 'rating': '4.4 stars 2,980 Reviews'},
     ]
 
 
@@ -172,13 +171,11 @@ def test_extract_records_scopes_fields_to_own_card_via_childids() -> None:
         _ax('3', 'article', 'B', children=('4',)),
         _ax('4', 'image', '3.1 stars 5 Reviews'),
     ]
-    recs = extract_records(
-        nodes, card_role='article', fields=[AxField('rating', role='image', pattern=r'([\d.]+)\s*stars')]
-    )
-    assert [r['rating'] for r in recs] == ['4.9', '3.1']
+    recs = extract_records(nodes, card_role='article', fields={'rating': FieldSelectors(primary=role('image'))})
+    assert [r['rating'] for r in recs] == ['4.9 stars 10 Reviews', '3.1 stars 5 Reviews']
 
 
 def test_extract_records_missing_field_is_none() -> None:
     nodes = [_ax('1', 'article', 'Solo', children=('2',)), _ax('2', 'link', 'Solo')]
-    recs = extract_records(nodes, card_role='article', fields=[AxField('rating', role='image', pattern=r'([\d.]+)')])
+    recs = extract_records(nodes, card_role='article', fields={'rating': FieldSelectors(primary=role('image'))})
     assert recs == [{'name': 'Solo', 'rating': None}]

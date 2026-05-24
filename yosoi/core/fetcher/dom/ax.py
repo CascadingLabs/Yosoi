@@ -7,10 +7,11 @@ pure functions so most coverage can run without a browser.
 
 from __future__ import annotations
 
-import re
 from collections.abc import Iterator
 from dataclasses import dataclass
 from typing import Any
+
+from yosoi.models.selectors import FieldSelectors
 
 INTERACTIVE_ROLES = frozenset(
     {
@@ -118,24 +119,6 @@ def find_target(
 # ---------------------------------------------------------------------------
 
 
-@dataclass(frozen=True)
-class AxField:
-    """A field read from within a card's subtree, addressed by AX role + name pattern.
-
-    The accessible name of the first descendant matching ``role`` (and ``pattern``,
-    if given) is the value. A capture group in ``pattern`` returns that group;
-    otherwise the whole accessible name is returned.
-    """
-
-    key: str
-    role: str
-    pattern: str | None = None
-
-    def regex(self) -> re.Pattern[str] | None:
-        """Compile `pattern` (case-insensitive), or None when no pattern is set."""
-        return re.compile(self.pattern, re.IGNORECASE) if self.pattern else None
-
-
 def descendants(node: dict[str, Any], by_id: dict[str, dict[str, Any]]) -> Iterator[dict[str, Any]]:
     """Walk a node's subtree via ``childIds`` (so fields are scoped to their own card)."""
     stack = list(node.get('childIds', []))
@@ -154,15 +137,16 @@ def extract_records(
     nodes: list[dict[str, Any]],
     *,
     card_role: str,
-    fields: list[AxField],
+    fields: dict[str, FieldSelectors],
     skip_name_prefixes: tuple[str, ...] = (),
 ) -> list[dict[str, str | None]]:
-    """Extract one record per ``card_role`` node: its accessible name + each field.
+    """One record per ``card_role`` node: its accessible name + each field's raw text.
 
-    The read-side of CAS-27: address repeating records (e.g. Maps results as
-    ``role="article"``) by role + accessible name rather than churny CSS classes.
-    Fields are scoped per-card by walking ``childIds``. Cards whose name starts with
-    any ``skip_name_prefixes`` (e.g. ``"Ad ·"``) are dropped.
+    The read-side of CAS-27, on the unified selector model: each field is a
+    ``FieldSelectors`` cascade; its `role` entries resolve a descendant by AX role
+    (+ accessible-name substring, if set) and return that node's text. Value *parsing*
+    (e.g. "4.4 stars" -> 4.4) is the caller's Yosoi coercion type, not done here.
+    Fields are scoped per-card via ``childIds``; ``skip_name_prefixes`` drops ads.
     """
     by_id = {n['nodeId']: n for n in nodes if 'nodeId' in n}
     records: list[dict[str, str | None]] = []
@@ -174,23 +158,28 @@ def extract_records(
             continue
         descs = list(descendants(node, by_id))
         record: dict[str, str | None] = {'name': name}
-        for f in fields:
-            record[f.key] = _field_value(f, descs)
+        for key, selectors in fields.items():
+            record[key] = _resolve_field(selectors, descs)
         records.append(record)
     return records
 
 
-def _field_value(f: AxField, descs: list[dict[str, Any]]) -> str | None:
-    rx = f.regex()
-    for d in descs:
-        if value_of(d, 'role') != f.role:
+def _resolve_field(selectors: FieldSelectors, descs: list[dict[str, Any]]) -> str | None:
+    """Try the cascade; a `role` entry returns the first matching descendant's text.
+
+    css/xpath entries can't be resolved against the AX tree alone, so they are
+    skipped here (the cascade continues) — they'd resolve on the DOM/parsel path.
+    """
+    for _, entry in selectors.as_entries():
+        if entry is None or entry.type != 'role':
             continue
-        dn = value_of(d, 'name')
-        if not dn:
-            continue
-        if rx is None:
-            return dn
-        m = rx.search(dn)
-        if m:
-            return m.group(1) if m.groups() else dn
+        for d in descs:
+            if value_of(d, 'role') != entry.role:
+                continue
+            text = value_of(d, 'name')
+            if not text:
+                continue
+            if entry.name and entry.name.lower() not in text.lower():
+                continue
+            return text
     return None

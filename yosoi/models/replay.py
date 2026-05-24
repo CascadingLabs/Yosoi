@@ -1,23 +1,22 @@
-"""Canonical replay schema, built on one primitive: the **A3Node** (Assess/Act/Assert).
+"""Canonical replay schema, built on one primitive (A3Node) and one selector model.
 
-We align on the primitive, not the structure. An `A3Node` is the atomic, self-verifying
-unit of a durable browse:
+We align on the primitive *and* reuse the selector model — there's no second
+selector vocabulary. An `A3Node` is the atomic, self-verifying unit:
 
   * **Assess**  — an optional precondition that must hold before acting.
-  * **Act**     — the action, whose `targets` are an ordered selector *fallback cascade*
-                  (durable AX `role` first, then css/xpath/visual).
-  * **Assert**  — an optional postcondition (`expect`); this is the verify signal. A
-                  repeating node (`repeat=True`) ticks the act until `expect` holds.
+  * **Act**     — the action; its `targets` are an ordered `SelectorEntry` *fallback
+                  cascade* (AX `role` -> css -> visual), the same `SelectorEntry`
+                  used for extraction and discovery elsewhere in Yosoi.
+  * **Assert**  — an optional postcondition (`expect`); the verify signal. A repeating
+                  node (`repeat=True`) ticks the act until `expect` holds.
 
-Because the primitive carries its own assess/assert, it can be verified in isolation
-(rerun → did `expect` hold? → pass/fail → quality score), exactly how Yosoi verifies
-CSS selectors against a page. The *composition* over A3Nodes is intentionally thin —
-a flat sequence today (`ReplayPlan.nodes`), a behavior tree later — and can change
-without touching the primitive.
+Extraction reuses Yosoi's selector machinery too: a field is a `FieldSelectors`
+cascade (primary/fallback/tertiary of `SelectorEntry`), and the *value* comes from the
+field's Yosoi coercion `type` (Rating, Price, Title, …) — not a bespoke regex on the
+recipe. The selector finds the node; the type extracts the value.
 
-Emission contract (decided: *hybrid*): nodes' acts are reconstructed from the MCP
-tool-call transcript (ground truth); the agent then emits `StepAnnotation`s
-(intent + assert per node) via `ANNOTATION_PROMPT`, merged on by index.
+Composition over nodes (`ReplayPlan.nodes`) is intentionally flat for now and can
+become a behavior tree later without touching the primitive.
 """
 
 from __future__ import annotations
@@ -25,37 +24,37 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field
 
+from yosoi.models.selectors import FieldSelectors, SelectorEntry, css, role, visual
 
-class Selector(BaseModel):
-    """A durable element selector. Prefer `by="role"` (AX role + accessible name)."""
-
-    by: Literal['role', 'css', 'xpath', 'visual'] = 'role'
-    role: str | None = None
-    name: str | None = None
-    nth: int = 0
-    value: str | None = None  # CSS/XPath expression
-    x: float | None = None  # visual coords (CSS pixels)
-    y: float | None = None
-
-    @model_validator(mode='after')
-    def _require_fields(self) -> Selector:
-        if self.by == 'role' and not self.role:
-            raise ValueError("role selector requires 'role'")
-        if self.by in ('css', 'xpath') and not self.value:
-            raise ValueError(f"{self.by} selector requires 'value'")
-        if self.by == 'visual' and (self.x is None or self.y is None):
-            raise ValueError("visual selector requires 'x' and 'y'")
-        return self
-
-    def describe(self) -> str:
-        """One-line human-readable summary of the selector."""
-        if self.by == 'role':
-            return f'role={self.role!r} name={self.name!r}' + (f' #{self.nth}' if self.nth else '')
-        if self.by == 'visual':
-            return f'visual=({self.x},{self.y})'
-        return f'{self.by}={self.value!r}'
+__all__ = [  # noqa: RUF022 — grouped by concern, not alphabetical
+    'Act',
+    'A3Node',
+    'Assertion',
+    'ExtractField',
+    'ExtractRecipe',
+    'ReplayPlan',
+    'StepAnnotation',
+    'AgentAnnotations',
+    'NodeResult',
+    'VerifyReport',
+    'merge_annotations',
+    'ANNOTATION_PROMPT',
+    'min_count',
+    'selector_present',
+    'url_contains',
+    'navigate',
+    'teleport',
+    'click',
+    'scroll_until',
+    # re-exported unified selector vocabulary
+    'SelectorEntry',
+    'FieldSelectors',
+    'css',
+    'role',
+    'visual',
+]
 
 
 class Assertion(BaseModel):
@@ -64,14 +63,14 @@ class Assertion(BaseModel):
     kind: Literal['min_count', 'selector_present', 'url_contains', 'text_present']
     count: int | None = None
     text: str | None = None
-    selector: Selector | None = None
+    selector: SelectorEntry | None = None
 
 
 class Act(BaseModel):
-    """What to do. For click/type, `targets` is an ordered fallback cascade."""
+    """What to do. For click/type, `targets` is an ordered SelectorEntry cascade."""
 
     op: Literal['navigate', 'click', 'type', 'scroll', 'teleport', 'wait']
-    targets: list[Selector] = Field(default_factory=list)  # role -> css -> visual
+    targets: list[SelectorEntry] = Field(default_factory=list)  # role -> css -> visual
     url: str | None = None
     text: str | None = None
     feed: str | None = None
@@ -85,8 +84,8 @@ class Act(BaseModel):
 class A3Node(BaseModel):
     """The primitive: Assess -> Act -> Assert, verifiable in isolation.
 
-    `repeat=True` ticks `act` until `expect` holds (up to `max_iters`) — that is the
-    only "control flow" the primitive needs; richer composition lives above it.
+    `repeat=True` ticks `act` until `expect` holds (up to `max_iters`) — the only
+    control flow the primitive needs; richer composition lives above it.
     """
 
     act: Act
@@ -98,15 +97,20 @@ class A3Node(BaseModel):
 
 
 class ExtractField(BaseModel):
-    """An extracted field, addressed by AX role + name pattern (see dom/ax.AxField)."""
+    """One extracted field: a selector cascade + the Yosoi coercion type for its value.
+
+    No regex on the recipe — `selectors` finds the node, `type` (a registered Yosoi
+    coercion like 'rating'/'title'/'price') turns its text into the value.
+    """
 
     key: str
-    role: str
-    pattern: str | None = None
+    type: str = 'text'
+    selectors: FieldSelectors
+    config: dict[str, object] = Field(default_factory=dict)  # forwarded to the coercer (e.g. as_float)
 
 
 class ExtractRecipe(BaseModel):
-    """How to read records off the final page via AX role + name."""
+    """How to read records off the final page: a card selector + typed fields."""
 
     card_role: str
     fields: list[ExtractField] = Field(default_factory=list)
@@ -133,7 +137,7 @@ def min_count(n: int) -> Assertion:
     return Assertion(kind='min_count', count=n)
 
 
-def selector_present(sel: Selector) -> Assertion:
+def selector_present(sel: SelectorEntry) -> Assertion:
     """Assert an element matching `sel` is present."""
     return Assertion(kind='selector_present', selector=sel)
 
@@ -141,16 +145,6 @@ def selector_present(sel: Selector) -> Assertion:
 def url_contains(text: str) -> Assertion:
     """Assert the current URL contains `text`."""
     return Assertion(kind='url_contains', text=text)
-
-
-def role(role_: str, name: str, nth: int = 0) -> Selector:
-    """Build an AX role+name selector (the durable default)."""
-    return Selector(by='role', role=role_, name=name, nth=nth)
-
-
-def css(value: str) -> Selector:
-    """Build a CSS-selector fallback."""
-    return Selector(by='css', value=value)
 
 
 def navigate(url: str, *, expect: Assertion | None = None) -> A3Node:
@@ -163,7 +157,7 @@ def teleport(lat: float, lon: float, tz: str | None = None, locale: str | None =
     return A3Node(act=Act(op='teleport', lat=lat, lon=lon, timezone=tz, locale=locale))
 
 
-def click(*targets: Selector, expect: Assertion | None = None, intent: str | None = None) -> A3Node:
+def click(*targets: SelectorEntry, expect: Assertion | None = None, intent: str | None = None) -> A3Node:
     """A click with an ordered fallback cascade (first target that lands wins)."""
     return A3Node(act=Act(op='click', targets=list(targets)), expect=expect, intent=intent)
 

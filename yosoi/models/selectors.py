@@ -25,9 +25,11 @@ class SelectorLevel(IntEnum):
     XPATH = 2
     REGEX = 3
     JSONLD = 4
+    ROLE = 5
+    VISUAL = 6
 
 
-_STRATEGY_TO_LEVEL: dict[str, int] = {'css': 1, 'xpath': 2, 'regex': 3, 'jsonld': 4}
+_STRATEGY_TO_LEVEL: dict[str, int] = {'css': 1, 'xpath': 2, 'regex': 3, 'jsonld': 4, 'role': 5, 'visual': 6}
 
 
 def _strip_level(schema: dict[str, Any]) -> None:
@@ -53,27 +55,70 @@ class SelectorEntry(BaseModel):
     string. Bare strings default to CSS selectors.
 
     Attributes:
-        type: Selector strategy — ``'css'``, ``'xpath'``, ``'regex'``, or ``'jsonld'``. Defaults to ``'css'``.
-        value: The selector expression, e.g. ``'h1.article-title'`` or ``'//h1'``.
+        type: Selector strategy — ``'css'``, ``'xpath'``, ``'regex'``, ``'jsonld'``,
+            ``'role'`` (accessibility role+name), or ``'visual'`` (pixel coords). Defaults to ``'css'``.
+        value: The selector expression, e.g. ``'h1.article-title'`` or ``'//h1'`` (css/xpath/regex/jsonld).
         regex: Optional regex capture pattern. Only used when ``type='regex'``.
+        role: ARIA role, for ``type='role'`` (the AX-tree selector, CAS-27).
+        name: Accessible name, for ``type='role'`` — exact for actions, optional for extraction.
+        nth: Disambiguates duplicate role+name matches.
+        x, y: CSS-pixel coordinates, for ``type='visual'``.
 
     """
 
     model_config = ConfigDict(json_schema_extra=_strip_level)
 
-    type: Literal['css', 'xpath', 'regex', 'jsonld'] = 'css'
-    value: str
+    type: Literal['css', 'xpath', 'regex', 'jsonld', 'role', 'visual'] = 'css'
+    value: str = ''  # css/xpath/regex/jsonld expression; empty for role/visual
     regex: str | None = None
+    role: str | None = None
+    name: str | None = None
+    nth: int = 0
+    x: float | None = None
+    y: float | None = None
+
+    @model_validator(mode='after')
+    def _require_per_type(self) -> 'SelectorEntry':
+        """Each strategy needs its own fields; keeps role/visual from masquerading as css."""
+        if self.type in ('css', 'xpath', 'regex', 'jsonld') and not self.value:
+            raise ValueError(f'{self.type} selector requires a non-empty value')
+        if self.type == 'role' and not self.role:
+            raise ValueError("role selector requires 'role'")
+        if self.type == 'visual' and (self.x is None or self.y is None):
+            raise ValueError("visual selector requires 'x' and 'y'")
+        return self
 
     @property
     def level(self) -> SelectorLevel:
         """Selector strategy level derived from type."""
         return SelectorLevel(_STRATEGY_TO_LEVEL[self.type])
 
+    def key(self) -> tuple[str, str, str, int]:
+        """Identity for dedup — value alone is empty for role/visual, so include role/name/coords."""
+        if self.type == 'role':
+            return ('role', self.role or '', self.name or '', self.nth)
+        if self.type == 'visual':
+            return ('visual', f'{self.x},{self.y}', '', 0)
+        return (self.type, self.value, '', 0)
+
 
 def css(value: str) -> SelectorEntry:
     """Create a CSS SelectorEntry."""
     return SelectorEntry(type='css', value=value)
+
+
+def role(role: str, name: str | None = None, nth: int = 0) -> SelectorEntry:
+    """Create an accessibility role+name SelectorEntry (CAS-27).
+
+    `name` is an exact accessible name for actions (click_by_role); leave it None
+    for extraction, where the role alone locates the node within a card.
+    """
+    return SelectorEntry(type='role', role=role, name=name, nth=nth)
+
+
+def visual(x: float, y: float) -> SelectorEntry:
+    """Create a visual (CSS-pixel coordinate) SelectorEntry — the click escape hatch."""
+    return SelectorEntry(type='visual', x=x, y=y)
 
 
 def xpath(value: str) -> SelectorEntry:
@@ -165,13 +210,13 @@ class FieldSelectors(BaseModel):
     @model_validator(mode='after')
     def _deduplicate(self) -> 'FieldSelectors':
         """Remove fallback/tertiary if their value duplicates any earlier level."""
-        if self.fallback and self.fallback.value == self.primary.value:
+        if self.fallback and self.fallback.key() == self.primary.key():
             self.fallback = None
         if self.tertiary:
-            seen = {self.primary.value}
+            seen = {self.primary.key()}
             if self.fallback:
-                seen.add(self.fallback.value)
-            if self.tertiary.value in seen:
+                seen.add(self.fallback.key())
+            if self.tertiary.key() in seen:
                 self.tertiary = None
         return self
 
