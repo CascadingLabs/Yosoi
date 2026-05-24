@@ -1,22 +1,17 @@
-"""Google Maps geolocation-teleport scrape — A3Node-replayable, AX-tree selectors.
+"""Google Maps geolocation-teleport scrape — canonical ReplayPlan, executed + verified.
 
-The use case: the *same* query ("guitar shops near me") in three cities, where the
-city is set purely by **teleporting** the browser's geolocation (CAS-45).
+The same query ("guitar shops near me") in three cities, where the city is set only
+by **teleporting** the browser's geolocation (CAS-45). The flow is expressed as a
+canonical `ReplayPlan` (yosoi.models.replay) — a sequence of A3Node parts
+(teleport -> navigate x2 -> scroll-until) built from reusable helpers — then **executed
+and verified by rerun** (replay_runtime): each node's `assert` is checked, yielding a
+`VerifyReport` quality score. Extraction uses AX role+name selectors (CAS-27).
 
-The whole flow is captured as an **A3Node** (CAS-13) — the locked-in action sequence
-(teleport → navigate x2 → scroll the feed to >= TARGET) plus an **accessibility-tree
-extraction recipe** (CAS-27: card role="article", rating from a descendant
-role="image" named "4.4 stars 2,980 Reviews"). The first run locks it in and saves it
-per-domain; every run after that **replays it deterministically** over the PyO3
-binding — no agent, no LLM, no re-discovery. A failed `assert_min` on the scroll act
-means the page changed and the node should be re-discovered.
+This supersedes the earlier bespoke a3node.py: the plan is now the canonical schema,
+and the same plan an MCP agent emits (replay_runtime.plan_from_tool_parts) is what
+runs here. The plan is persisted and reloaded across runs.
 
-Where the actions come from: hand-authored here, but the same A3Node acts can be
-captured from the MCP agent's tool calls (see recipe.py / browse_and_save.py) — the
-agent discovers once, A3Node locks it in, PyO3 replays forever.
-
-Run twice to see it: first run "locks in", second run "replays (replay_count=1)".
-    uv run python examples/opencode_voidcrawl/maps_teleport.py   # needs voidcrawl>=0.3.2 + Chromium
+    uv run python examples/opencode_voidcrawl/maps_teleport.py   # voidcrawl>=0.3.2 + Chromium
 """
 
 from __future__ import annotations
@@ -24,22 +19,34 @@ from __future__ import annotations
 import asyncio
 import json
 from dataclasses import dataclass
-from datetime import datetime
 from pathlib import Path
 
-from a3node import A3AssertError, A3Node, Act, ExtractRecipe, extract, replay_acts
 from pydantic import BaseModel
+from replay_runtime import execute_plan, load_plan, save_plan
 from voidcrawl import BrowserConfig, BrowserSession
 
-HERE = Path(__file__).parent
-A3_DIR = HERE / '.yosoi' / 'a3nodes'
-OUT_DIR = HERE / '.yosoi' / 'maps'
-DOMAIN = 'google.com/maps'
+from yosoi.core.fetcher.dom.ax import AxField, extract_records
+from yosoi.models.replay import (
+    ExtractField,
+    ExtractRecipe,
+    ReplayPlan,
+    css,
+    navigate,
+    scroll_until,
+    selector_present,
+    teleport,
+    url_contains,
+)
 
-# "near me" so Maps resolves location from navigator.geolocation (which teleport
-# overrides) rather than the IP-based map viewport.
+HERE = Path(__file__).parent
+PLAN_DIR = HERE / '.yosoi' / 'plans'
+OUT_DIR = HERE / '.yosoi' / 'maps'
+TARGET_KEY = 'google.com/maps'
+
 MAPS_URL = 'https://www.google.com/maps/search/guitar+shops+near+me/'
-TARGET = 20  # force enough results that the feed must be scrolled (lazy-loaded)
+TARGET = 20
+_FEED = 'div[role="feed"]'
+_ITEM = 'a.hfpxzc'
 
 
 @dataclass(frozen=True)
@@ -57,6 +64,20 @@ CITIES = [
     City('Chicago', 41.8781, -87.6298, 'America/Chicago'),
 ]
 
+_EXTRACT = ExtractRecipe(
+    card_role='article',
+    fields=[
+        ExtractField(key='rating', role='image', pattern=r'([\d.]+)\s*stars'),
+        ExtractField(key='reviews', role='image', pattern=r'stars?\s+([\d,]+)\s*Reviews'),
+        ExtractField(
+            key='address',
+            role='StaticText',
+            pattern=r'\d{1,6}\s+\w.*\b(?:St|Ave|Avenue|Blvd|Rd|Road|Dr|Drive|Ln|Lane|Way|Pl|Pkwy|Hwy|Street|Ct|Sq|Fl)\b',
+        ),
+    ],
+    skip_prefixes=['Ad ·'],
+)
+
 
 class GuitarShop(BaseModel):
     name: str
@@ -65,51 +86,61 @@ class GuitarShop(BaseModel):
     address: str | None = None
 
 
-def maps_a3node() -> A3Node:
-    """The locked-in Maps flow: teleport → navigate x2 → scroll → AX extract.
+def build_plan(city: City) -> ReplayPlan:
+    """The canonical replay plan for one city — teleport coords baked into the node.
 
-    Hand-authored here, but shaped exactly like what `recipe.acts_from_tool_parts`
-    produces from an MCP agent's tool calls — the discover-once-then-lock-in path.
+    Settling is event-driven: the read-navigate and scroll nodes `assess` that the
+    results feed is present (the prior step finished loading) instead of sleeping —
+    the SPA's network never idles, so readiness is gated on the structure.
     """
-    return A3Node(
-        domain=DOMAIN,
+    feed_present = selector_present(css(_FEED))
+    read = navigate(MAPS_URL, expect=url_contains('/maps/'))  # read
+    read.assess = feed_present  # wait for the prime load before re-navigating
+    scroll = scroll_until(_FEED, _ITEM, TARGET)
+    scroll.assess = feed_present  # wait for the read load before scrolling
+    return ReplayPlan(
+        target=TARGET_KEY,
         task='guitar shops near me',
-        acts=[
-            Act(op='teleport'),  # geo supplied per city at replay
-            Act(op='navigate', url=MAPS_URL),  # prime: Maps resolves location on first load
-            Act(op='navigate', url=MAPS_URL),  # read: applies the teleported location
-            Act(op='scroll', feed='div[role="feed"]', item='a.hfpxzc', target=TARGET, assert_min=12),
+        source='scripted',
+        nodes=[
+            teleport(city.lat, city.lon, city.tz, city.locale),
+            navigate(MAPS_URL),  # prime
+            read,
+            scroll,
         ],
-        extract=ExtractRecipe(
-            card_role='article',
-            fields=[
-                {'key': 'rating', 'role': 'image', 'pattern': r'([\d.]+)\s*stars'},
-                {'key': 'reviews', 'role': 'image', 'pattern': r'stars?\s+([\d,]+)\s*Reviews'},
-                {
-                    'key': 'address',
-                    'role': 'StaticText',
-                    'pattern': r'\d{1,6}\s+\w.*\b(?:St|Ave|Avenue|Blvd|Rd|Road|Dr|Drive|Ln|Lane|Way|Pl|Pkwy|Hwy|Street|Ct|Sq|Fl)\b',
-                },
-            ],
-            skip_prefixes=['Ad ·'],
-        ),
+        extract=_EXTRACT,
     )
 
 
 def _to_shop(rec: dict[str, str | None]) -> GuitarShop:
     r, rv = rec.get('rating'), rec.get('reviews')
-    rating = float(r) if r else None
-    reviews = int(rv.replace(',', '')) if rv else None
-    return GuitarShop(name=rec.get('name') or '', rating=rating, reviews=reviews, address=rec.get('address'))
+    return GuitarShop(
+        name=rec.get('name') or '',
+        rating=float(r) if r else None,
+        reviews=int(rv.replace(',', '')) if rv else None,
+        address=rec.get('address'),
+    )
 
 
-async def scrape_city(node: A3Node, city: City, cfg: BrowserConfig) -> list[GuitarShop]:
-    """Replay the A3Node in a FRESH session for *city* (teleport needs a clean session)."""
+def _ax_fields(recipe: ExtractRecipe) -> list[AxField]:
+    return [AxField(f.key, role=f.role, pattern=f.pattern) for f in recipe.fields]
+
+
+async def scrape_city(city: City, cfg: BrowserConfig) -> tuple[float, list[GuitarShop]]:
+    """Execute the plan in a FRESH session (teleport needs a clean one), then extract."""
+    plan = build_plan(city)
     async with BrowserSession(cfg) as browser:
         page = await browser.new_page('about:blank')  # blank first so teleport applies pre-nav
-        await replay_acts(node, page, geo=(city.lat, city.lon, city.tz, city.locale))
+        report = await execute_plan(plan, page)
         ax_nodes = await page.get_full_ax_tree()
-        return [_to_shop(r) for r in extract(node, ax_nodes)[:TARGET]]
+        recipe = plan.extract or _EXTRACT
+        records = extract_records(
+            ax_nodes,
+            card_role=recipe.card_role,
+            fields=_ax_fields(recipe),
+            skip_name_prefixes=tuple(recipe.skip_prefixes),
+        )
+        return report.score, [_to_shop(r) for r in records[:TARGET]]
     raise RuntimeError('BrowserSession exited without yielding a page')  # unreachable
 
 
@@ -117,49 +148,34 @@ async def main() -> None:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     cfg = BrowserConfig(headless=True, stealth=True, no_sandbox=True)
 
-    node = A3Node.load(DOMAIN, A3_DIR)
-    first_run = node is None
-    if node is None:
-        node = maps_a3node()
-        print(f'no A3Node for {DOMAIN} — locking in {len(node.acts)} acts (first run)', flush=True)
-    else:
-        print(
-            f'replaying A3Node for {DOMAIN} (replay_count={node.replay_count}, locked in {node.discovered_at[:19]})',
-            flush=True,
-        )
+    existing = load_plan(TARGET_KEY, PLAN_DIR)
+    print(f'plan for {TARGET_KEY}: {"reloaded" if existing else "building fresh"}', flush=True)
 
-    results: dict[str, list[GuitarShop]] = {}
-    try:
-        for city in CITIES:
-            print(f'=== {city.name} (teleport {city.lat},{city.lon}) ===', flush=True)
-            results[city.name] = await scrape_city(node, city, cfg)
-            print(f'  -> {len(results[city.name])} shops', flush=True)
-    except A3AssertError as e:
-        print(f'  A3 assert failed: {e}', flush=True)
-        print('  (in a full system this triggers MCP re-discovery of the acts)', flush=True)
-        raise
-
-    # Lock-in / replay bookkeeping (mirrors yosoi A3NodeStorage.replay_count).
-    if not first_run:
-        node.replay_count += 1
-    node.last_replayed_at = datetime.now().isoformat()
-    node.save(A3_DIR)
-
-    print('\n=== results (teleport drives the city; extracted via AX role+name) ===', flush=True)
+    results: dict[str, tuple[float, list[GuitarShop]]] = {}
     for city in CITIES:
-        shops = results[city.name]
+        print(f'=== {city.name} (teleport {city.lat},{city.lon}) ===', flush=True)
+        score, shops = await scrape_city(city, cfg)
+        results[city.name] = (score, shops)
+        print(f'  verify score={score:.2f}  shops={len(shops)}', flush=True)
+
+    # Persist the representative plan (structure is identical; teleport coords are input).
+    plan = existing or build_plan(CITIES[0])
+    if existing:
+        plan.replay_count += 1
+    path = save_plan(plan, PLAN_DIR)
+
+    print('\n=== results (teleport drives the city; AX extraction; verified replay) ===', flush=True)
+    for city in CITIES:
+        score, shops = results[city.name]
         (OUT_DIR / f'{city.name.lower().replace(" ", "_")}.json').write_text(
             json.dumps([s.model_dump() for s in shops], indent=2), encoding='utf-8'
         )
         top = shops[0] if shops else None
-        line = f'  {city.name:12s}: {len(shops):2d} shops'
+        line = f'  {city.name:12s}: {len(shops):2d} shops  (verify {score:.0%})'
         if top:
-            line += f'  e.g. {top.name!r} ({top.rating}★, {top.reviews} reviews) {top.address or ""}'
+            line += f'  e.g. {top.name!r} ({top.rating}★, {top.reviews}) {top.address or ""}'
         print(line, flush=True)
-
-    verb = 'locked in & saved' if first_run else f'replayed (replay_count={node.replay_count})'
-    print(f'\n  A3Node {verb} -> {A3Node._path(DOMAIN, A3_DIR)}', flush=True)
-    print(f'  per-city JSON -> {OUT_DIR}', flush=True)
+    print(f'\n  plan -> {path}   per-city JSON -> {OUT_DIR}', flush=True)
 
 
 if __name__ == '__main__':
