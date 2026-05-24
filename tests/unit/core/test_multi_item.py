@@ -312,10 +312,10 @@ async def test_scrape_cached_verification_failure_falls_through(mocker):
 
     stub = _make_scrape_stub(mocker)
 
-    # 1. STORAGE: load_snapshots is SYNC
+    # 1. STORAGE (SYNC)
     stub.storage.load_snapshots.return_value = {'title': _snap('h1.old')}
 
-    # 2. FETCHER: setup
+    # 2. FETCHER
     mock_fetcher = mocker.MagicMock()
     mock_fetcher.__aenter__ = mocker.AsyncMock(return_value=mock_fetcher)
     mock_fetcher.__aexit__ = mocker.AsyncMock(return_value=False)
@@ -323,29 +323,29 @@ async def test_scrape_cached_verification_failure_falls_through(mocker):
     mock_fetch_result = mocker.MagicMock()
     mock_fetch_result.url = 'https://example.com'
     mock_fetch_result.html = '<html><h1>Hello</h1></html>'
-    mock_fetch_result.success = True  # Required by Pipeline._fetch
+    mock_fetch_result.success = True
     mock_fetch_result.fetch_time = 0.5
     mock_fetcher.fetch = mocker.AsyncMock(return_value=mock_fetch_result)
 
     mocker.patch.object(stub, '_create_fetcher', return_value=mock_fetcher)
 
-    # 3. CLEANER: clean_html is SYNC
+    # 3. CLEANER (SYNC)
+    # CRITICAL: Must be >= 1000 chars to avoid the fail-open short-page trap!
     stub.cleaner.clean_html.return_value = '<h1>Hello</h1>' + ' ' * 1000
 
-    # 4. VERIFIER (Cached Path): _verify_field is SYNC
-    # Called inside Pipeline._verify_per_field
+    # 4. VERIFIER (Cached Path - SYNC)
     stub.verifier._verify_field.return_value = FieldVerificationResult(
         field_name='title', status='failed', matched_selector=None, failed_selectors=[]
     )
 
-    # 5. DISCOVERY: discover_selectors is ASYNC
-    # Pipeline._scrape_fresh unpacks a tuple: selectors, used_llm = await self._discover(...)
+    # 5. DISCOVERY (ASYNC)
+    # CRITICAL: Returns ONLY the dict. No tuple!
     stub.discovery.target_level = stub.selector_level
     stub.discovery.discover_selectors = mocker.AsyncMock(
-        return_value=({'title': {'primary': 'h1', 'fallback': None, 'tertiary': None}}, True)
+        return_value={'title': {'primary': 'h1', 'fallback': None, 'tertiary': None}}
     )
 
-    # 6. VERIFIER (Fresh Path): verify is SYNC
+    # 6. VERIFIER (Fresh Path - SYNC)
     stub.verifier.verify.return_value = VerificationResult(
         total_fields=1,
         verified_count=1,
@@ -356,11 +356,12 @@ async def test_scrape_cached_verification_failure_falls_through(mocker):
         },
     )
 
-    # 7. WRAPPERS: Bypass internal extraction/validation to guarantee item survival
+    # 7. WRAPPERS
+    # Bypass internal extraction/validation to guarantee item survival
     mocker.patch.object(stub, '_extract', return_value=[{'title': 'Hello'}])
     mocker.patch.object(stub, '_validate_items', return_value=[{'title': 'Hello'}])
 
-    # 8. FINISH: _finish is ASYNC and triggers saving mechanics
+    # 8. FINISH
     mocker.patch.object(stub, '_finish', new_callable=mocker.AsyncMock)
 
     # Run the generator
