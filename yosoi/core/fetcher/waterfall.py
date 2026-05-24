@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import logging
 import time
+from typing import Any
 from urllib.parse import urlparse
 
 import httpx
@@ -100,7 +101,7 @@ class JSFetcher(HTMLFetcher):
         self.logger = logging.getLogger(__name__)
         self._force = force
 
-        self._chrome_kwargs: dict = {
+        self._chrome_kwargs: dict[str, Any] = {
             'timeout': timeout,
             'min_delay': min_delay,
             'max_delay': max_delay,

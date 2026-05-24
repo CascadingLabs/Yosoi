@@ -1,10 +1,14 @@
+"""HTML fetcher factory."""
+
+from typing import Any
+
 """Fetcher factory and exports."""
 
 from yosoi.core.fetcher.base import HTMLFetcher
 from yosoi.core.fetcher.simple import SimpleFetcher
 
 
-def create_fetcher(fetcher_type: str = 'simple', **kwargs: object) -> HTMLFetcher:
+def create_fetcher(fetcher_type: str = 'simple', **kwargs: Any) -> HTMLFetcher:
     """Create an HTML fetcher."""
     if fetcher_type == 'simple':
         return SimpleFetcher(**kwargs)

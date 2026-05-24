@@ -324,15 +324,9 @@ async def test_scrape_cached_verification_failure_falls_through(mocker):
 
     stub.cleaner.clean_html.return_value = '<h1>Hello</h1>'
 
-    # Cached verification fails
-    stub.verifier.verify.return_value = VerificationResult(
-        total_fields=1,
-        verified_count=0,
-        results={
-            'title': FieldVerificationResult(
-                field_name='title', status='failed', matched_selector=None, failed_selectors=[]
-            )
-        },
+    # Cached per-field verification fails (pipeline uses _verify_field not verify)
+    stub.verifier._verify_field.return_value = FieldVerificationResult(
+        field_name='title', status='failed', matched_selector=None, failed_selectors=[]
     )
 
     # Fresh discovery returns new selectors
@@ -341,29 +335,16 @@ async def test_scrape_cached_verification_failure_falls_through(mocker):
         return_value={'title': {'primary': 'h1', 'fallback': None, 'tertiary': None}}
     )
 
-    # After the first (cached) verification fails, the second (fresh) succeeds
-    def verify_side_effect(html, selectors, max_level=None):
-        if 'h1.old' in str(selectors):
-            return VerificationResult(
-                total_fields=1,
-                verified_count=0,
-                results={
-                    'title': FieldVerificationResult(
-                        field_name='title', status='failed', matched_selector=None, failed_selectors=[]
-                    )
-                },
+    # After stale verdict, fresh verification succeeds
+    stub.verifier.verify.return_value = VerificationResult(
+        total_fields=1,
+        verified_count=1,
+        results={
+            'title': FieldVerificationResult(
+                field_name='title', status='verified', matched_selector='h1', failed_selectors=[]
             )
-        return VerificationResult(
-            total_fields=1,
-            verified_count=1,
-            results={
-                'title': FieldVerificationResult(
-                    field_name='title', status='verified', matched_selector='h1', failed_selectors=[]
-                )
-            },
-        )
-
-    stub.verifier.verify.side_effect = verify_side_effect
+        },
+    )
 
     stub.extractor.extract_content_with_html.return_value = {'title': 'Hello'}
 

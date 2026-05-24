@@ -1,6 +1,7 @@
 """Verifies that CSS selectors match elements in HTML."""
 
 import logging
+from typing import Any
 
 from parsel import Selector
 from rich.console import Console
@@ -202,7 +203,7 @@ class SelectorVerifier:
         self,
         html: str,
         container_selector: str,
-        field_selectors: dict[str, dict[str, any]],
+        field_selectors: dict[str, dict[str, Any]],
     ) -> bool:
         """Check that at least one primary field selector matches inside the container.
 

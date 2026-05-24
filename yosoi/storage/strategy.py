@@ -100,7 +100,7 @@ class FetchStrategyStorage:
                 data = json.load(f)
             fetcher = data.get('fetcher')
             if fetcher in VALID_FETCHERS:
-                return fetcher
+                return str(fetcher)
             logger.warning('Invalid fetcher value %r in cache for %s', fetcher, domain)
             return None
         except (OSError, json.JSONDecodeError) as e:

@@ -596,6 +596,8 @@ class Pipeline:
                 if not fetcher:
                     raise RuntimeError(f'Invalid fetcher type: {fetcher_type}')
 
+            if fetcher is None:
+                raise RuntimeError('No fetcher available')
             ctx = fetcher if _owns_fetcher else nullcontext(fetcher)
 
             async with ctx:
@@ -1118,7 +1120,7 @@ class Pipeline:
 
         """
         try:
-            kwargs = {'console': console} if fetcher_type == 'waterfall' and console is not None else {}
+            kwargs: dict[str, Any] = {'console': console} if fetcher_type == 'waterfall' and console is not None else {}
             if fetcher_type == 'waterfall':
                 kwargs['force'] = force
             return create_fetcher(fetcher_type, **kwargs)

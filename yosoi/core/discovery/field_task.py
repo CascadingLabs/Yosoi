@@ -84,7 +84,7 @@ async def _discover_field(
     if cached_entry is not None:
         # NA sentinel — field was tried before and doesn't exist on this domain
         if cached_entry.get('primary') == 'NA':
-            logfire.info('Field known absent from cache', field=field_name)
+            logger.info('Field known absent from cache: %s', field_name)
             return failure
 
         try:
