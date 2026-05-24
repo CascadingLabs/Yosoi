@@ -827,7 +827,7 @@ class Pipeline:
 
         if not stale_fields:
             return self._extract_all_fresh(
-                url, domain, raw_html, cleaned_html, snapshots, fresh_fields, format_to_use, root_span=root_span
+                url, domain, raw_html, snapshots, fresh_fields, format_to_use, root_span=root_span
             )
 
         if not fresh_fields:
