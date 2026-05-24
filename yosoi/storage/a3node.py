@@ -32,6 +32,7 @@ import logging
 import os
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Any
 
 from yosoi.utils.files import init_yosoi
 
@@ -56,9 +57,9 @@ class ActRecord:
         return {'kind': self.kind, 'cycles': self.cycles}
 
     @classmethod
-    def from_dict(cls, d: dict[str, object]) -> ActRecord:
+    def from_dict(cls, d: dict[str, Any]) -> ActRecord:
         """Deserialise from a plain dict."""
-        return cls(kind=str(d['kind']), cycles=int(d['cycles']))  # type: ignore[arg-type]
+        return cls(kind=str(d['kind']), cycles=int(d['cycles']))
 
 
 class A3NodeStorage:
@@ -149,8 +150,8 @@ class A3NodeStorage:
                 domain=str(raw['domain']),
                 acts=acts,
                 discovered_at=str(raw.get('discovered_at', '')),
-                replay_count=int(raw.get('replay_count', 0)),  # type: ignore[arg-type]
-                last_replayed_at=raw.get('last_replayed_at'),  # type: ignore[arg-type]
+                replay_count=int(raw.get('replay_count', 0)),
+                last_replayed_at=raw.get('last_replayed_at'),
             )
         except (KeyError, TypeError, ValueError) as e:
             logger.warning('Corrupt A3Node for %s — ignoring: %s', domain, e)
@@ -169,7 +170,7 @@ class A3NodeStorage:
         raw = self._load_raw(domain)
         if raw is None:
             return
-        raw['replay_count'] = int(raw.get('replay_count', 0)) + 1  # type: ignore[arg-type]
+        raw['replay_count'] = int(raw.get('replay_count', 0)) + 1
         raw['last_replayed_at'] = datetime.now().isoformat()
         filepath = self._filepath(domain)
         try:
@@ -242,7 +243,7 @@ class A3NodeStorage:
         safe = domain.replace('.', '_').replace('/', '_').replace(':', '_')
         return os.path.join(self._dir, f'a3node_{safe}.json')
 
-    def _load_raw(self, domain: str) -> dict[str, object] | None:
+    def _load_raw(self, domain: str) -> dict[str, Any] | None:
         filepath = self._filepath(domain)
         if not os.path.exists(filepath):
             return None

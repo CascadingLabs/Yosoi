@@ -190,6 +190,6 @@ class Scroll(Node):
 class Skip(Node):
     """Always succeeds — used as a fallback when no other action is possible."""
 
-    async def tick(self) -> Status:
+    async def tick(self, _tab: Any) -> Status:
         """Return SUCCESS immediately."""
         return Status.SUCCESS

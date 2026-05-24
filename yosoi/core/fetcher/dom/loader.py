@@ -145,7 +145,7 @@ class DOMLoader:
     async def _capture_html(self, tab: Any) -> str | None:
         """Capture full page HTML after loading is complete."""
         try:
-            return await tab.content()
+            return str(await tab.content())
         except (RuntimeError, OSError, ValueError) as exc:
             logger.warning('failed to capture HTML: %s', exc)
             return None

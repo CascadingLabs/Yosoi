@@ -4,18 +4,6 @@ voidcrawl is not installed in CI — all browser/pool interactions are mocked.
 Tests cover the _VoidCrawlFetcher A3Node branching logic, probe path,
 replay path, cache population, HeadlessFetcher/HeadfulFetcher subclass
 flags, and the _do_fetch content-too-short / bot-detection guards.
-
-Covered:
-  - _VoidCrawlFetcher.__init__ — defaults, A3NodeStorage created, cache empty
-  - __aenter__ / __aexit__ — pool wired up, load_all called, cache populated
-  - fetch / _do_fetch — probe path (no stored node), replay path (stored node)
-  - _fetch_with_probe — saves acts to storage and cache after DOMLoader run
-  - _fetch_with_replay — empty recipe, non-empty recipe (DOMLoader called)
-  - _fetch_with_replay — falls through to probe when DOMLoader returns no html
-  - _do_fetch — content too short returns FetchResult(html=None)
-  - _do_fetch — bot detection raises BotDetectionError
-  - HeadlessFetcher._headless == True
-  - HeadfulFetcher._headless == False
 """
 
 from __future__ import annotations
@@ -24,10 +12,10 @@ from dataclasses import dataclass, field
 from typing import Any
 
 import pytest
-from pytest_mock.plugin import AsyncMock, MagicMock
+from pytest_mock import MockerFixture
 
 # ---------------------------------------------------------------------------
-# Minimal stubs that mirror the production interfaces without imports
+# Minimal stubs
 # ---------------------------------------------------------------------------
 
 
@@ -51,8 +39,6 @@ class A3Node:
 
 
 class _FakeA3NodeStorage:
-    """In-memory A3NodeStorage double."""
-
     def __init__(self) -> None:
         self._nodes: dict[str, A3Node] = {}
         self._replays: list[str] = []
@@ -101,9 +87,10 @@ class BotDetectionError(Exception):
         self.indicators = indicators
 
 
-# ---------------------------------------------------------------------------
-# Inline _VoidCrawlFetcher replica — same logic, no real imports
-# ---------------------------------------------------------------------------
+class _FakeTab:
+    """Simple tab stub — no async methods; tests that need content() use mocker."""
+
+    pass
 
 
 class _VoidCrawlFetcher:
@@ -118,33 +105,30 @@ class _VoidCrawlFetcher:
         console: Any = None,
         *,
         _storage: _FakeA3NodeStorage | None = None,
-        _domloader_factory=None,
+        _domloader_factory: Any = None,
     ):
         self.timeout = timeout
         self.max_concurrent = max_concurrent
         self.min_content_length = min_content_length
         self.no_sandbox = no_sandbox
-        self._console = console or MagicMock()
+        self._console = console or _NullConsole()
         self._pool = None
         self._pool_ctx = None
-        # Allow injection for testing
         self._a3node_storage: _FakeA3NodeStorage = _storage or _FakeA3NodeStorage()
         self._a3node_cache: dict[str, A3Node] = {}
-        self._domloader_factory = _domloader_factory  # test hook
+        self._domloader_factory = _domloader_factory
 
-    async def __aenter__(self):
-        # In production this launches Chrome; here we just populate cache
+    async def __aenter__(self) -> _VoidCrawlFetcher:
         self._a3node_cache = self._a3node_storage.load_all()
         return self
 
-    async def __aexit__(self, *exc):
+    async def __aexit__(self, *exc: Any) -> None:
         pass
 
-    async def close(self):
+    async def close(self) -> None:
         pass
 
     def _check_for_bot_detection(self, html: str, status: int, headers: dict) -> tuple[bool, list[str]]:
-        """Simplified version of production bot detection."""
         if len(html) < 100:
             return True, ['HTML too short']
         lower = html.lower()
@@ -155,8 +139,7 @@ class _VoidCrawlFetcher:
     async def fetch(self, url: str) -> FetchResult:
         import time
 
-        start = time.time()
-        return await self._do_fetch(url, start, 'fetch')
+        return await self._do_fetch(url, time.time(), 'fetch')
 
     async def _do_fetch(self, url: str, start_time: float, _tier: str) -> FetchResult:
         import time
@@ -164,10 +147,7 @@ class _VoidCrawlFetcher:
 
         domain = urlparse(url).netloc.replace('www.', '')
         stored_node = self._a3node_cache.get(domain)
-
-        # Simulate acquiring a tab from pool
-        tab = MagicMock()
-        tab.goto = AsyncMock()
+        tab = _FakeTab()
 
         if stored_node is not None:
             html = await self._fetch_with_replay(tab, domain, stored_node)
@@ -188,17 +168,11 @@ class _VoidCrawlFetcher:
         if is_blocked:
             raise BotDetectionError(url, 200, indicators)
 
-        return FetchResult(
-            url=url,
-            html=html,
-            status_code=200,
-            is_blocked=False,
-            fetch_time=time.time() - start_time,
-        )
+        return FetchResult(url=url, html=html, status_code=200, is_blocked=False, fetch_time=time.time() - start_time)
 
-    async def _fetch_with_replay(self, tab: object, domain: str, node: A3Node) -> str | None:
+    async def _fetch_with_replay(self, tab: Any, domain: str, node: A3Node) -> str | None:
         if node.is_empty:
-            self._console.print(f'[dim]  ↻ A3Node replay: {domain} needs no actions[/dim]')
+            self._console.print(f'A3Node replay: {domain} needs no actions')
             try:
                 html: str = await tab.content()
                 if html and len(html) >= self.min_content_length:
@@ -207,12 +181,9 @@ class _VoidCrawlFetcher:
             except (RuntimeError, OSError, ValueError):
                 pass
         else:
-            self._console.print(
-                f'[dim]  ↻ A3Node replay: {domain} ({len(node.acts)} acts, replayed {node.replay_count}×)[/dim]'
-            )
+            self._console.print(f'A3Node replay: {domain} ({len(node.acts)} acts)')
             probe_result = await self._run_domloader(tab)
             if probe_result.html and len(probe_result.html) >= self.min_content_length:
-                # Save updated acts
                 self._a3node_storage.save(domain, probe_result.acts)
                 updated = self._a3node_storage.load(domain)
                 if updated is not None:
@@ -220,10 +191,10 @@ class _VoidCrawlFetcher:
                 self._a3node_storage.record_replay(domain)
                 return probe_result.html
 
-        self._console.print(f'[warning]  ✗ A3Node replay failed for {domain} — re-probing[/warning]')
+        self._console.print(f'A3Node replay failed for {domain} — re-probing')
         return await self._fetch_with_probe(tab, domain)
 
-    async def _fetch_with_probe(self, tab: object, domain: str) -> str | None:
+    async def _fetch_with_probe(self, tab: Any, domain: str) -> str | None:
         probe_result = await self._run_domloader(tab)
         html = probe_result.html
         if probe_result.success:
@@ -233,11 +204,15 @@ class _VoidCrawlFetcher:
                 self._a3node_cache[domain] = node
         return html
 
-    async def _run_domloader(self, tab: object) -> LoadResult:
-        """Test injection hook — in production this calls DOMLoader(console=...).run(tab)."""
+    async def _run_domloader(self, tab: Any) -> LoadResult:
         if self._domloader_factory is not None:
             return await self._domloader_factory(tab)
         return LoadResult(success=True, content_start=0, content_final=0, elapsed_ms=0.0, html=None)
+
+
+class _NullConsole:
+    def print(self, *args: Any, **kwargs: Any) -> None:
+        pass
 
 
 class HeadlessFetcher(_VoidCrawlFetcher):
@@ -252,32 +227,33 @@ class HeadfulFetcher(_VoidCrawlFetcher):
 # Helpers
 # ---------------------------------------------------------------------------
 
-LONG_HTML = 'x' * 600  # exceeds default min_content_length of 500
+LONG_HTML = 'x' * 600
 
 
 def _probe_returns(html: str, acts: list[ActRecord] | None = None) -> Any:
-    """Returns a DOMLoader factory that always produces a specific result."""
-
-    async def _factory(tab):
+    async def _factory(tab: Any) -> LoadResult:
         return LoadResult(
-            success=True,
-            content_start=47,
-            content_final=61,
-            elapsed_ms=5000.0,
-            html=html,
-            acts=acts or [],
+            success=True, content_start=47, content_final=61, elapsed_ms=5000.0, html=html, acts=acts or []
         )
 
     return _factory
 
 
 def _probe_fails() -> Any:
-    """DOMLoader factory returning None html (failure)."""
-
-    async def _factory(tab):
+    async def _factory(tab: Any) -> LoadResult:
         return LoadResult(success=True, content_start=0, content_final=0, elapsed_ms=0.0, html=None)
 
     return _factory
+
+
+def _async_tab(mocker: MockerFixture, *, content: str = LONG_HTML, content_error: Exception | None = None) -> Any:
+    """Build a mock tab whose content() method is async."""
+    tab = mocker.MagicMock()
+    if content_error:
+        tab.content = mocker.AsyncMock(side_effect=content_error)
+    else:
+        tab.content = mocker.AsyncMock(return_value=content)
+    return tab
 
 
 # ===========================================================================
@@ -306,41 +282,33 @@ class TestSubclassFlags:
 
 class TestInit:
     def test_default_timeout(self):
-        f = _VoidCrawlFetcher()
-        assert f.timeout == 30
+        assert _VoidCrawlFetcher().timeout == 30
 
     def test_default_max_concurrent(self):
-        f = _VoidCrawlFetcher()
-        assert f.max_concurrent == 5
+        assert _VoidCrawlFetcher().max_concurrent == 5
 
     def test_default_min_content_length(self):
-        f = _VoidCrawlFetcher()
-        assert f.min_content_length == 500
+        assert _VoidCrawlFetcher().min_content_length == 500
 
     def test_custom_timeout(self):
-        f = _VoidCrawlFetcher(timeout=60)
-        assert f.timeout == 60
+        assert _VoidCrawlFetcher(timeout=60).timeout == 60
 
     def test_a3node_storage_created(self):
-        f = _VoidCrawlFetcher()
-        assert f._a3node_storage is not None
+        assert _VoidCrawlFetcher()._a3node_storage is not None
 
     def test_a3node_cache_starts_empty(self):
-        f = _VoidCrawlFetcher()
-        assert f._a3node_cache == {}
+        assert _VoidCrawlFetcher()._a3node_cache == {}
 
     def test_console_created_when_none(self):
-        f = _VoidCrawlFetcher(console=None)
-        assert f._console is not None
+        assert _VoidCrawlFetcher(console=None)._console is not None
 
     def test_console_stored_when_provided(self):
-        console = MagicMock()
-        f = _VoidCrawlFetcher(console=console)
-        assert f._console is console
+        console = _NullConsole()
+        assert _VoidCrawlFetcher(console=console)._console is console
 
 
 # ===========================================================================
-# __aenter__ — cache population
+# __aenter__
 # ===========================================================================
 
 
@@ -355,8 +323,7 @@ async def test_aenter_populates_cache_from_storage():
 
 @pytest.mark.asyncio
 async def test_aenter_cache_empty_when_no_nodes():
-    storage = _FakeA3NodeStorage()
-    f = _VoidCrawlFetcher(_storage=storage)
+    f = _VoidCrawlFetcher(_storage=_FakeA3NodeStorage())
     await f.__aenter__()
     assert f._a3node_cache == {}
 
@@ -364,12 +331,11 @@ async def test_aenter_cache_empty_when_no_nodes():
 @pytest.mark.asyncio
 async def test_aenter_returns_self():
     f = _VoidCrawlFetcher()
-    result = await f.__aenter__()
-    assert result is f
+    assert await f.__aenter__() is f
 
 
 # ===========================================================================
-# _fetch_with_probe — no stored node
+# _fetch_with_probe
 # ===========================================================================
 
 
@@ -378,8 +344,7 @@ async def test_probe_saves_acts_to_storage():
     storage = _FakeA3NodeStorage()
     acts = [ActRecord('load_more', 4)]
     f = _VoidCrawlFetcher(_storage=storage, _domloader_factory=_probe_returns(LONG_HTML, acts))
-    tab = MagicMock()
-    await f._fetch_with_probe(tab, 'example.com')
+    await f._fetch_with_probe(_FakeTab(), 'example.com')
     node = storage.load('example.com')
     assert node is not None
     assert node.acts[0].kind == 'load_more'
@@ -389,8 +354,7 @@ async def test_probe_saves_acts_to_storage():
 async def test_probe_updates_cache():
     storage = _FakeA3NodeStorage()
     f = _VoidCrawlFetcher(_storage=storage, _domloader_factory=_probe_returns(LONG_HTML))
-    tab = MagicMock()
-    await f._fetch_with_probe(tab, 'example.com')
+    await f._fetch_with_probe(_FakeTab(), 'example.com')
     assert 'example.com' in f._a3node_cache
 
 
@@ -398,8 +362,7 @@ async def test_probe_updates_cache():
 async def test_probe_returns_html():
     storage = _FakeA3NodeStorage()
     f = _VoidCrawlFetcher(_storage=storage, _domloader_factory=_probe_returns(LONG_HTML))
-    tab = MagicMock()
-    html = await f._fetch_with_probe(tab, 'example.com')
+    html = await f._fetch_with_probe(_FakeTab(), 'example.com')
     assert html == LONG_HTML
 
 
@@ -407,18 +370,15 @@ async def test_probe_returns_html():
 async def test_probe_returns_none_when_domloader_returns_none():
     storage = _FakeA3NodeStorage()
     f = _VoidCrawlFetcher(_storage=storage, _domloader_factory=_probe_fails())
-    tab = MagicMock()
-    html = await f._fetch_with_probe(tab, 'example.com')
+    html = await f._fetch_with_probe(_FakeTab(), 'example.com')
     assert html is None
 
 
 @pytest.mark.asyncio
 async def test_probe_saves_empty_acts_for_no_action_domain():
-    """Even a domain that needed no clicks gets an empty-acts recipe stored."""
     storage = _FakeA3NodeStorage()
     f = _VoidCrawlFetcher(_storage=storage, _domloader_factory=_probe_returns(LONG_HTML, acts=[]))
-    tab = MagicMock()
-    await f._fetch_with_probe(tab, 'quiet.com')
+    await f._fetch_with_probe(_FakeTab(), 'quiet.com')
     node = storage.load('quiet.com')
     assert node is not None
     assert node.is_empty is True
@@ -430,14 +390,11 @@ async def test_probe_saves_empty_acts_for_no_action_domain():
 
 
 @pytest.mark.asyncio
-async def test_replay_empty_recipe_calls_tab_content():
+async def test_replay_empty_recipe_calls_tab_content(mocker: MockerFixture):
     node = A3Node(domain='example.com', acts=[], discovered_at='2026-01-01')
     storage = _FakeA3NodeStorage()
     storage._nodes['example.com'] = node
-
-    tab = MagicMock()
-    tab.content = AsyncMock(return_value=LONG_HTML)
-
+    tab = _async_tab(mocker)
     f = _VoidCrawlFetcher(_storage=storage)
     html = await f._fetch_with_replay(tab, 'example.com', node)
     tab.content.assert_awaited_once()
@@ -445,55 +402,42 @@ async def test_replay_empty_recipe_calls_tab_content():
 
 
 @pytest.mark.asyncio
-async def test_replay_empty_recipe_records_replay():
+async def test_replay_empty_recipe_records_replay(mocker: MockerFixture):
     node = A3Node(domain='example.com', acts=[], discovered_at='2026-01-01')
     storage = _FakeA3NodeStorage()
     storage._nodes['example.com'] = node
-
-    tab = MagicMock()
-    tab.content = AsyncMock(return_value=LONG_HTML)
-
+    tab = _async_tab(mocker)
     f = _VoidCrawlFetcher(_storage=storage)
     await f._fetch_with_replay(tab, 'example.com', node)
     assert 'example.com' in storage._replays
 
 
 @pytest.mark.asyncio
-async def test_replay_empty_recipe_too_short_falls_through_to_probe():
-    """Empty recipe returning short html falls through to probe."""
+async def test_replay_empty_recipe_too_short_falls_through_to_probe(mocker: MockerFixture):
     node = A3Node(domain='example.com', acts=[], discovered_at='2026-01-01')
     storage = _FakeA3NodeStorage()
     storage._nodes['example.com'] = node
-
-    short_html = 'x' * 10  # below min_content_length
-
-    tab = MagicMock()
-    tab.content = AsyncMock(return_value=short_html)
-
+    tab = _async_tab(mocker, content='x' * 10)
     probe_called = []
 
-    async def _probe_factory(tab):
+    async def _probe_factory(t: Any) -> LoadResult:
         probe_called.append(True)
         return LoadResult(success=True, content_start=0, content_final=0, elapsed_ms=0.0, html=LONG_HTML)
 
     f = _VoidCrawlFetcher(_storage=storage, _domloader_factory=_probe_factory)
     await f._fetch_with_replay(tab, 'example.com', node)
-    assert probe_called  # fell through to probe
+    assert probe_called
 
 
 @pytest.mark.asyncio
-async def test_replay_empty_recipe_exception_falls_through_to_probe():
-    """tab.content raising should fall through to probe."""
+async def test_replay_empty_recipe_exception_falls_through_to_probe(mocker: MockerFixture):
     node = A3Node(domain='example.com', acts=[], discovered_at='2026-01-01')
     storage = _FakeA3NodeStorage()
     storage._nodes['example.com'] = node
-
-    tab = MagicMock()
-    tab.content = AsyncMock(side_effect=RuntimeError('CDP error'))
-
+    tab = _async_tab(mocker, content_error=RuntimeError('CDP error'))
     probe_called = []
 
-    async def _probe_factory(tab):
+    async def _probe_factory(t: Any) -> LoadResult:
         probe_called.append(True)
         return LoadResult(success=True, content_start=0, content_final=0, elapsed_ms=0.0, html=LONG_HTML)
 
@@ -503,7 +447,7 @@ async def test_replay_empty_recipe_exception_falls_through_to_probe():
 
 
 # ===========================================================================
-# _fetch_with_replay — non-empty recipe (runs DOMLoader)
+# _fetch_with_replay — non-empty recipe
 # ===========================================================================
 
 
@@ -513,18 +457,16 @@ async def test_replay_non_empty_calls_domloader():
     node = A3Node(domain='example.com', acts=acts, discovered_at='2026-01-01')
     storage = _FakeA3NodeStorage()
     storage._nodes['example.com'] = node
-
-    tab = MagicMock()
     domloader_called = []
 
-    async def _factory(t):
+    async def _factory(t: Any) -> LoadResult:
         domloader_called.append(True)
         return LoadResult(
             success=True, content_start=47, content_final=61, elapsed_ms=5000.0, html=LONG_HTML, acts=acts
         )
 
     f = _VoidCrawlFetcher(_storage=storage, _domloader_factory=_factory)
-    html = await f._fetch_with_replay(tab, 'example.com', node)
+    html = await f._fetch_with_replay(_FakeTab(), 'example.com', node)
     assert domloader_called
     assert html == LONG_HTML
 
@@ -535,29 +477,23 @@ async def test_replay_non_empty_records_replay():
     node = A3Node(domain='example.com', acts=acts, discovered_at='2026-01-01')
     storage = _FakeA3NodeStorage()
     storage._nodes['example.com'] = node
-
-    tab = MagicMock()
     f = _VoidCrawlFetcher(_storage=storage, _domloader_factory=_probe_returns(LONG_HTML, acts))
-    await f._fetch_with_replay(tab, 'example.com', node)
+    await f._fetch_with_replay(_FakeTab(), 'example.com', node)
     assert 'example.com' in storage._replays
 
 
 @pytest.mark.asyncio
 async def test_replay_non_empty_saves_updated_acts():
-    """After a replay DOMLoader run, the new acts overwrite the stored ones."""
     old_acts = [ActRecord('load_more', 3)]
     new_acts = [ActRecord('load_more', 5)]
     node = A3Node(domain='example.com', acts=old_acts, discovered_at='2026-01-01')
     storage = _FakeA3NodeStorage()
     storage._nodes['example.com'] = node
-
-    tab = MagicMock()
     f = _VoidCrawlFetcher(_storage=storage, _domloader_factory=_probe_returns(LONG_HTML, new_acts))
-    await f._fetch_with_replay(tab, 'example.com', node)
-
+    await f._fetch_with_replay(_FakeTab(), 'example.com', node)
     saved = storage.load('example.com')
     assert saved is not None
-    assert saved.acts[0].cycles == 5  # updated
+    assert saved.acts[0].cycles == 5
 
 
 @pytest.mark.asyncio
@@ -566,52 +502,44 @@ async def test_replay_non_empty_updates_cache():
     node = A3Node(domain='example.com', acts=acts, discovered_at='2026-01-01')
     storage = _FakeA3NodeStorage()
     storage._nodes['example.com'] = node
-
-    tab = MagicMock()
     f = _VoidCrawlFetcher(_storage=storage, _domloader_factory=_probe_returns(LONG_HTML, acts))
-    await f._fetch_with_replay(tab, 'example.com', node)
+    await f._fetch_with_replay(_FakeTab(), 'example.com', node)
     assert 'example.com' in f._a3node_cache
 
 
 @pytest.mark.asyncio
 async def test_replay_non_empty_domloader_no_html_falls_to_probe():
-    """DOMLoader returning None html → falls through to probe."""
     acts = [ActRecord('load_more', 3)]
     node = A3Node(domain='example.com', acts=acts, discovered_at='2026-01-01')
     storage = _FakeA3NodeStorage()
     storage._nodes['example.com'] = node
-
-    tab = MagicMock()
     probe_called = []
     call_count = [0]
 
-    async def _factory(t):
+    async def _factory(t: Any) -> LoadResult:
         call_count[0] += 1
         if call_count[0] == 1:
-            # First call (replay): no html
             return LoadResult(success=True, content_start=0, content_final=0, elapsed_ms=0.0, html=None)
-        # Second call (fallback probe): good html
         probe_called.append(True)
         return LoadResult(success=True, content_start=47, content_final=61, elapsed_ms=5000.0, html=LONG_HTML)
 
     f = _VoidCrawlFetcher(_storage=storage, _domloader_factory=_factory)
-    html = await f._fetch_with_replay(tab, 'example.com', node)
+    html = await f._fetch_with_replay(_FakeTab(), 'example.com', node)
     assert probe_called
     assert html == LONG_HTML
 
 
 # ===========================================================================
-# _do_fetch — content length guard
+# _do_fetch
 # ===========================================================================
 
 
 @pytest.mark.asyncio
 async def test_do_fetch_short_html_returns_no_html():
-    storage = _FakeA3NodeStorage()
-    short_html = 'x' * 10
-    f = _VoidCrawlFetcher(_storage=storage, _domloader_factory=_probe_returns(short_html))
     import time
 
+    storage = _FakeA3NodeStorage()
+    f = _VoidCrawlFetcher(_storage=storage, _domloader_factory=_probe_returns('x' * 10))
     result = await f._do_fetch('https://example.com', time.time(), 'fetch')
     assert result.html is None
     assert result.block_reason is not None
@@ -620,10 +548,10 @@ async def test_do_fetch_short_html_returns_no_html():
 
 @pytest.mark.asyncio
 async def test_do_fetch_sufficient_html_returns_result():
-    storage = _FakeA3NodeStorage()
-    f = _VoidCrawlFetcher(_storage=storage, _domloader_factory=_probe_returns(LONG_HTML))
     import time
 
+    storage = _FakeA3NodeStorage()
+    f = _VoidCrawlFetcher(_storage=storage, _domloader_factory=_probe_returns(LONG_HTML))
     result = await f._do_fetch('https://example.com', time.time(), 'fetch')
     assert result.html == LONG_HTML
     assert result.status_code == 200
@@ -631,36 +559,32 @@ async def test_do_fetch_sufficient_html_returns_result():
 
 @pytest.mark.asyncio
 async def test_do_fetch_bot_detection_raises():
+    import time
+
     storage = _FakeA3NodeStorage()
     bot_html = 'x' * 600 + 'challenge-platform'
     f = _VoidCrawlFetcher(_storage=storage, _domloader_factory=_probe_returns(bot_html))
-    import time
-
     with pytest.raises(BotDetectionError):
         await f._do_fetch('https://example.com', time.time(), 'fetch')
 
 
 @pytest.mark.asyncio
 async def test_do_fetch_uses_stored_node_when_present():
-    """When cache has a node for the domain, replay path is taken."""
+    import time
+
     storage = _FakeA3NodeStorage()
     acts = [ActRecord('load_more', 3)]
     storage.save('example.com', acts)
-
     replay_called = []
 
-    async def _factory(tab):
+    async def _factory(tab: Any) -> LoadResult:
         replay_called.append(True)
         return LoadResult(
             success=True, content_start=47, content_final=61, elapsed_ms=5000.0, html=LONG_HTML, acts=acts
         )
 
     f = _VoidCrawlFetcher(_storage=storage, _domloader_factory=_factory)
-    # Pre-populate cache (normally done by __aenter__)
     f._a3node_cache = storage.load_all()
-
-    import time
-
     result = await f._do_fetch('https://example.com', time.time(), 'fetch')
     assert replay_called
     assert result.html == LONG_HTML
@@ -668,17 +592,16 @@ async def test_do_fetch_uses_stored_node_when_present():
 
 @pytest.mark.asyncio
 async def test_do_fetch_probe_path_when_no_cached_node():
-    """No stored node → probe path taken, node saved."""
+    import time
+
     storage = _FakeA3NodeStorage()
     probe_called = []
 
-    async def _factory(tab):
+    async def _factory(tab: Any) -> LoadResult:
         probe_called.append(True)
         return LoadResult(success=True, content_start=47, content_final=61, elapsed_ms=5000.0, html=LONG_HTML)
 
     f = _VoidCrawlFetcher(_storage=storage, _domloader_factory=_factory)
-    import time
-
     await f._do_fetch('https://example.com', time.time(), 'fetch')
     assert probe_called
     assert 'example.com' in storage._nodes
@@ -686,41 +609,35 @@ async def test_do_fetch_probe_path_when_no_cached_node():
 
 @pytest.mark.asyncio
 async def test_do_fetch_domain_strips_www():
-    """www prefix is stripped when looking up the A3Node."""
-    storage = _FakeA3NodeStorage()
-    # Store under bare domain
-    storage.save('example.com', [ActRecord('load_more', 3)])
+    import time
 
+    storage = _FakeA3NodeStorage()
+    storage.save('example.com', [ActRecord('load_more', 3)])
     replay_called = []
 
-    async def _factory(tab):
+    async def _factory(tab: Any) -> LoadResult:
         replay_called.append(True)
         return LoadResult(success=True, content_start=0, content_final=0, elapsed_ms=0.0, html=LONG_HTML)
 
     f = _VoidCrawlFetcher(_storage=storage, _domloader_factory=_factory)
     f._a3node_cache = storage.load_all()
-
-    import time
-
-    # Fetch from www.example.com — should strip www and find the node
     await f._do_fetch('https://www.example.com/page', time.time(), 'fetch')
     assert replay_called
 
 
 # ===========================================================================
-# Integration: probe then replay uses cache
+# Integration
 # ===========================================================================
 
 
 @pytest.mark.asyncio
 async def test_probe_followed_by_replay_uses_cached_node():
-    """After probe saves a node, second fetch uses replay path."""
+    import time
+
     storage = _FakeA3NodeStorage()
     probe_count = [0]
 
-    async def _factory(tab):
-        # We can't distinguish probe vs replay from the factory alone —
-        # instead we check whether cache was populated
+    async def _factory(tab: Any) -> LoadResult:
         probe_count[0] += 1
         return LoadResult(
             success=True,
@@ -732,39 +649,21 @@ async def test_probe_followed_by_replay_uses_cached_node():
         )
 
     f = _VoidCrawlFetcher(_storage=storage, _domloader_factory=_factory)
-    import time
-
-    # First fetch — no cache — probe path
     assert 'example.com' not in f._a3node_cache
     await f._do_fetch('https://example.com', time.time(), 'fetch')
-
-    # After probe, cache should be populated
     assert 'example.com' in f._a3node_cache
-    initial_probe_count = probe_count[0]
-
-    # Second fetch — cache hit — replay path
+    initial_count = probe_count[0]
     await f._do_fetch('https://example.com', time.time(), 'fetch')
-
-    # DOMLoader called again (replay runs DOMLoader too)
-    assert probe_count[0] > initial_probe_count
+    assert probe_count[0] > initial_count
 
 
 @pytest.mark.asyncio
 async def test_aenter_then_probe_then_replay_lifecycle():
-    """Full __aenter__ → probe → replay lifecycle with storage sync."""
     storage = _FakeA3NodeStorage()
-    # Pre-store a node as if from a previous session
     storage.save('news.com', [ActRecord('load_more', 5)])
-
     f = _VoidCrawlFetcher(_storage=storage, _domloader_factory=_probe_returns(LONG_HTML, [ActRecord('load_more', 5)]))
-
-    # __aenter__ pre-populates cache
     await f.__aenter__()
     assert 'news.com' in f._a3node_cache
-
-    # Fetch — should take replay path
-    tab = MagicMock()
-    html = await f._fetch_with_replay(tab, 'news.com', f._a3node_cache['news.com'])
+    html = await f._fetch_with_replay(_FakeTab(), 'news.com', f._a3node_cache['news.com'])
     assert html == LONG_HTML
-    # replay_count incremented
     assert 'news.com' in storage._replays

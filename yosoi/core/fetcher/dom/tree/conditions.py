@@ -11,6 +11,7 @@ import logging
 from typing import Any
 
 from yosoi.core.fetcher.dom.probes import (
+    DetectedTrigger,
     TriggerKind,
     count_content,
     probe,
@@ -86,7 +87,7 @@ class HasTrigger(Node):
         self._kind = kind
         self._content_selector = content_selector
         self._exhausted = False
-        self.last_trigger = None
+        self.last_trigger: DetectedTrigger | None = None
 
     async def tick(self, tab: Any) -> Status:
         """Return SUCCESS if the trigger is present and not exhausted."""

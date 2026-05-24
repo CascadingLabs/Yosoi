@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import logging
 import time
+from typing import Any
 from urllib.parse import urlparse
 
 from rich.console import Console
@@ -30,7 +31,7 @@ from yosoi.utils.exceptions import BotDetectionError
 logger = logging.getLogger(__name__)
 
 
-def _import_voidcrawl():
+def _import_voidcrawl() -> tuple[Any, Any, Any]:
     try:
         from voidcrawl import BrowserConfig, BrowserPool, PoolConfig
 
@@ -53,20 +54,20 @@ class _VoidCrawlFetcher(HTMLFetcher):
         min_content_length: int = 500,
         no_sandbox: bool = False,
         console: Console | None = None,
-        **_kwargs,
-    ):
+        **_kwargs: Any,
+    ) -> None:
         self.timeout = timeout
         self.max_concurrent = max_concurrent
         self.min_content_length = min_content_length
         self.no_sandbox = no_sandbox
         self._console = console or Console()
-        self._pool = None
-        self._pool_ctx = None
+        self._pool: Any = None
+        self._pool_ctx: Any = None
         self._a3node_storage = A3NodeStorage()
         # Pre-populate in-memory cache at startup (mirrors FetchStrategyStorage pattern)
         self._a3node_cache: dict[str, A3Node] = {}
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> _VoidCrawlFetcher:
         BrowserPool, BrowserConfig, PoolConfig = _import_voidcrawl()
         config = PoolConfig(
             browsers=1,
@@ -84,12 +85,12 @@ class _VoidCrawlFetcher(HTMLFetcher):
         logger.info('VoidCrawl fetcher ready (%d A3Nodes cached)', len(self._a3node_cache))
         return self
 
-    async def __aexit__(self, *exc):
+    async def __aexit__(self, *exc: Any) -> None:
         if self._pool is not None:
             await self._pool_ctx.__aexit__(*exc)
             self._pool = None
 
-    async def close(self):
+    async def close(self) -> None:
         if self._pool is not None:
             await self._pool_ctx.__aexit__(None, None, None)
             self._pool = None
@@ -139,7 +140,7 @@ class _VoidCrawlFetcher(HTMLFetcher):
             metadata=metadata,
         )
 
-    async def _fetch_with_replay(self, tab: object, domain: str, node: A3Node) -> str | None:
+    async def _fetch_with_replay(self, tab: Any, domain: str, node: A3Node) -> str | None:
         if node.is_empty:
             self._console.print(f'[dim]  ↻ A3Node replay: {domain} needs no actions[/dim]')
             try:
@@ -156,9 +157,9 @@ class _VoidCrawlFetcher(HTMLFetcher):
             probe_result = await DOMLoader(console=self._console).run(tab)
             if probe_result.success:
                 self._a3node_storage.save(domain, probe_result.acts)
-                node = self._a3node_storage.load(domain)
-                if node is not None:
-                    self._a3node_cache[domain] = node
+                _updated = self._a3node_storage.load(domain)
+                if _updated is not None:
+                    self._a3node_cache[domain] = _updated
             return probe_result.html
 
         self._console.print(f'[warning]  ✗ A3Node replay failed for {domain} — re-probing[/warning]')
