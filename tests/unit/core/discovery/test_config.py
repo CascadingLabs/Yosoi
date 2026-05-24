@@ -11,6 +11,7 @@ from yosoi.core.discovery.config import (
     azure,
     bedrock,
     cerebras,
+    claude_sdk,
     create_model,
     deepseek,
     fireworks,
@@ -26,6 +27,7 @@ from yosoi.core.discovery.config import (
     nebius,
     ollama,
     openai,
+    opencode,
     openrouter,
     ovhcloud,
     provider,
@@ -413,6 +415,26 @@ class TestCreateModelNewFirstClass:
             model = create_model(cfg)
         assert 'Google' in type(model).__name__
 
+    def test_claude_sdk_provider(self):
+        """Claude SDK provider creates the packaged SDK model."""
+        cfg = LLMConfig(provider='claude-sdk', model_name='claude-opus-4-7')
+        model = create_model(cfg)
+        assert type(model).__name__ == 'ClaudeSDKModel'
+        assert model.model_name == 'claude-opus-4-7'
+
+    def test_opencode_provider_default_provider_id(self):
+        """OpenCode provider creates the packaged OpenCode model."""
+        cfg = LLMConfig(provider='opencode', model_name='gpt-5-codex')
+        model = create_model(cfg)
+        assert type(model).__name__ == 'OpenCodeModel'
+        assert model.model_name == 'openai:gpt-5-codex'
+
+    def test_opencode_provider_parses_provider_model_name(self):
+        """OpenCode model strings may include provider-id/model-id."""
+        cfg = LLMConfig(provider='opencode', model_name='anthropic/claude-opus-4-7')
+        model = create_model(cfg)
+        assert model.model_name == 'anthropic:claude-opus-4-7'
+
 
 # ---------------------------------------------------------------------------
 # create_model — new OpenAI-compatible providers
@@ -584,6 +606,14 @@ class TestNoApiKeyProviders:
         """google-vertex is in NO_API_KEY_REQUIRED_PROVIDERS."""
         assert 'google-vertex' in NO_API_KEY_REQUIRED_PROVIDERS
 
+    def test_claude_sdk_in_set(self):
+        """claude-sdk is in NO_API_KEY_REQUIRED_PROVIDERS."""
+        assert 'claude-sdk' in NO_API_KEY_REQUIRED_PROVIDERS
+
+    def test_opencode_in_set(self):
+        """opencode is in NO_API_KEY_REQUIRED_PROVIDERS."""
+        assert 'opencode' in NO_API_KEY_REQUIRED_PROVIDERS
+
     def test_ollama_helper_no_api_key(self):
         """ollama() produces a config with api_key=None."""
         cfg = ollama('llama3')
@@ -690,6 +720,18 @@ class TestNewConvenienceHelpers:
         cfg = litellm('gpt-4o', 'key')
         assert cfg.provider == 'litellm'
 
+    def test_claude_sdk_helper(self):
+        cfg = claude_sdk('claude-opus-4-7')
+        assert cfg.provider == 'claude-sdk'
+        assert cfg.model_name == 'claude-opus-4-7'
+        assert cfg.api_key is None
+
+    def test_opencode_helper(self):
+        cfg = opencode('openai/gpt-5-codex')
+        assert cfg.provider == 'opencode'
+        assert cfg.model_name == 'openai/gpt-5-codex'
+        assert cfg.api_key is None
+
     def test_vertexai_helper(self):
         cfg = vertexai('gemini-2.0-flash-001')
         assert cfg.provider == 'vertexai'
@@ -767,6 +809,18 @@ class TestProviderNewProviders:
         assert cfg.api_key is None
         with pytest.warns(DeprecationWarning, match='vertexai'):
             create_model(cfg)
+
+    def test_claude_sdk(self):
+        cfg = provider('claude-sdk:claude-opus-4-7')
+        assert cfg.provider == 'claude-sdk'
+        assert cfg.model_name == 'claude-opus-4-7'
+        assert cfg.api_key is None
+
+    def test_opencode(self):
+        cfg = provider('opencode:openai/gpt-5-codex')
+        assert cfg.provider == 'opencode'
+        assert cfg.model_name == 'openai/gpt-5-codex'
+        assert cfg.api_key is None
 
     def test_bedrock_colon_in_model_name(self):
         """Bedrock model ARNs with colons are parsed correctly."""

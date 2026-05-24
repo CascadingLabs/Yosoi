@@ -121,7 +121,9 @@ class LLMProvider(Protocol):
 # ============================================================================
 
 # Providers that don't require an API key (local or GCP auth-based).
-NO_API_KEY_REQUIRED_PROVIDERS: frozenset[str] = frozenset({'ollama', 'vertexai', 'google-vertex'})
+NO_API_KEY_REQUIRED_PROVIDERS: frozenset[str] = frozenset(
+    {'ollama', 'vertexai', 'google-vertex', 'claude-sdk', 'opencode'}
+)
 
 
 def _provider_kwargs(config: LLMConfig) -> dict[str, Any]:
@@ -367,6 +369,34 @@ def create_litellm_model(config: LLMConfig) -> OpenAIChatModel:
     return OpenAIChatModel(config.model_name, provider=prov)
 
 
+def create_claude_sdk_model(config: LLMConfig) -> Model:
+    """Create a Claude Agent SDK model from configuration."""
+    from yosoi.integrations.claude_sdk import ClaudeSDKModel
+
+    return ClaudeSDKModel(model_name=config.model_name)
+
+
+def create_opencode_model(config: LLMConfig) -> Model:
+    """Create an OpenCode-backed model from configuration."""
+    from yosoi.integrations.opencode import OpenCodeModel
+
+    provider_id = 'openai'
+    model_id = config.model_name
+    if '/' in config.model_name:
+        provider_id, model_id = config.model_name.split('/', 1)
+    base_url: object | None = None
+    if config.extra_params:
+        provider_id = str(config.extra_params.get('provider_id', provider_id))
+        model_id = str(config.extra_params.get('model_id', model_id))
+        base_url = config.extra_params.get('base_url')
+
+    return OpenCodeModel(
+        provider_id=provider_id,
+        model_id=model_id,
+        base_url=str(base_url) if base_url is not None else None,
+    )
+
+
 # ============================================================================
 # 4. MAIN FACTORY - Central creation point
 # ============================================================================
@@ -410,6 +440,8 @@ PROVIDER_FACTORIES: dict[str, Callable[[LLMConfig], Model]] = {
     'vercel': create_vercel_model,
     'heroku': create_heroku_model,
     'litellm': create_litellm_model,
+    'claude-sdk': create_claude_sdk_model,
+    'opencode': create_opencode_model,
 }
 
 
@@ -632,6 +664,8 @@ _PROVIDER_ENV_VARS: dict[str, list[str]] = {
     'vercel': ['AI_SDK_KEY', 'VERCEL_API_KEY'],
     'heroku': ['HEROKU_INFERENCE_KEY'],
     'litellm': ['LITELLM_API_KEY'],
+    'claude-sdk': [],
+    'opencode': [],
 }
 
 
@@ -1081,6 +1115,16 @@ def litellm(model_name: str, api_key: str | None = None, **kwargs: Any) -> LLMCo
 
     """
     return LLMConfig(provider='litellm', model_name=model_name, api_key=_resolve_api_key('litellm', api_key), **kwargs)
+
+
+def claude_sdk(model_name: str = 'claude-opus-4-7', **kwargs: Any) -> LLMConfig:
+    """Quick config for the Claude Agent SDK transport."""
+    return LLMConfig(provider='claude-sdk', model_name=model_name, api_key=None, **kwargs)
+
+
+def opencode(model_name: str = 'openai/gpt-5-codex', **kwargs: Any) -> LLMConfig:
+    """Quick config for a running OpenCode server transport."""
+    return LLMConfig(provider='opencode', model_name=model_name, api_key=None, **kwargs)
 
 
 # ============================================================================

@@ -24,6 +24,7 @@ classifiers = [
 dependencies = [
   "beautifulsoup4>=4.14",
   "brotli>=1.2",
+  "claude-agent-sdk>=0.2.87",
   "click>=8.3",
   "dateparser>=1.4",
   "httpx>=0.28.1",
