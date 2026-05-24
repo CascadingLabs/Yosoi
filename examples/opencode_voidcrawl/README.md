@@ -44,7 +44,30 @@ Override the model with `OC_MODEL` (default `gpt-5.3-codex`). Set
 but then ensure *that* server was launched from a dir whose `opencode.json` wires
 voidcrawl.
 
+## `maps_teleport.py` — geolocation teleport, scripted PyO3 + discover-once
+
+A different split, chosen for determinism: the same query ("guitar shops near me")
+run in three cities where the city is set **only** by teleporting the browser's
+geolocation (CAS-45). The fixed teleport→navigate→scroll recipe runs in-script over
+the **PyO3 binding** (no LLM in the browsing loop); the LLM (OpenCode) discovers the
+result-card selectors **once** on city 1, then they're replayed deterministically
+(parsel) across the rest — "discover once, scrape forever".
+
+Two things the script gets right that are easy to miss:
+- **Fresh `BrowserSession` per city.** A recycled pool tab keeps the prior page's
+  resolved location, so cities bleed together. Teleport docs require a fresh session.
+- **"near me" query.** Maps only consults `navigator.geolocation` (what teleport
+  overrides) for "near me"; a plain query centers on the IP-based viewport.
+
+```sh
+uv run python examples/opencode_voidcrawl/maps_teleport.py
+# -> New York: Rudy's Music Soho…  Los Angeles: Old Style Guitar Shop…  Chicago: Reckless Records…
+```
+
+Needs `voidcrawl>=0.3.2` (teleport landed in the 0.3.x PyO3 binding; 0.2.3 has no
+`set_geolocation`). No MCP server needed — this path uses the library directly.
+
 ## Tickets (followed loosely)
 
 CAS-28 / CAS-30 (OpenCode as a pydantic-ai Model) · CAS-43 (voidcrawl MCP) ·
-CAS-27 (AX-tree selectors) · CAS-13 (A3Node replay).
+CAS-45 (teleport / emulation) · CAS-27 (AX-tree selectors) · CAS-13 (A3Node replay).

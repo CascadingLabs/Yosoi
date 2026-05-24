@@ -40,7 +40,7 @@ dependencies = [
   "rich-click>=1.9.7",
   "taskiq>=0.12.1",
   "tenacity>=9.1.4",
-  "voidcrawl>=0.2.3",
+  "voidcrawl>=0.3.2",
 ]
 optional-dependencies.tabular = [ "openpyxl>=3.1", "pandas>=2", "pyarrow>=14" ]
 urls.Changelog = "https://github.com/CascadingLabs/Yosoi/blob/main/CHANGELOG.md"
