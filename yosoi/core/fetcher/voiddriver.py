@@ -54,6 +54,7 @@ class _VoidCrawlFetcher(HTMLFetcher):
         min_content_length: int = 500,
         no_sandbox: bool = False,
         console: Console | None = None,
+        experimental_a3node: bool = False,
         **_kwargs: Any,
     ) -> None:
         # FIXME: browser_executable_path is passed in via JSFetcher._chrome_kwargs but
@@ -65,10 +66,10 @@ class _VoidCrawlFetcher(HTMLFetcher):
         self.min_content_length = min_content_length
         self.no_sandbox = no_sandbox
         self._console = console or Console()
+        self._experimental_a3node = experimental_a3node
         self._pool: Any = None
         self._pool_ctx: Any = None
-        self._a3node_storage = A3NodeStorage()
-        # Pre-populate in-memory cache at startup (mirrors FetchStrategyStorage pattern)
+        self._a3node_storage = A3NodeStorage() if experimental_a3node else None
         self._a3node_cache: dict[str, A3Node] = {}
 
     async def __aenter__(self) -> _VoidCrawlFetcher:
@@ -85,8 +86,13 @@ class _VoidCrawlFetcher(HTMLFetcher):
         )
         self._pool_ctx = BrowserPool(config)
         self._pool = await self._pool_ctx.__aenter__()
-        self._a3node_cache = self._a3node_storage.load_all()
-        logger.info('VoidCrawl fetcher ready (%d A3Nodes cached)', len(self._a3node_cache))
+        if self._a3node_storage is not None:
+            self._a3node_cache = self._a3node_storage.load_all()
+            self._console.print(f'[dim]  ↻ A3Node cache enabled ({len(self._a3node_cache)} recipes cached)[/dim]')
+            logger.info('VoidCrawl fetcher ready (%d A3Nodes cached)', len(self._a3node_cache))
+        else:
+            self._console.print('[dim]  ↻ A3Node cache disabled — running DOMLoader fresh[/dim]')
+            logger.info('VoidCrawl fetcher ready (A3Node disabled)')
         return self
 
     async def __aexit__(self, *exc: Any) -> None:
@@ -110,7 +116,7 @@ class _VoidCrawlFetcher(HTMLFetcher):
         _tier: str,
     ) -> FetchResult:
         domain = urlparse(url).netloc.replace('www.', '')
-        stored_node = self._a3node_cache.get(domain)
+        stored_node = self._a3node_cache.get(domain) if self._experimental_a3node else None
 
         async with self._pool.acquire() as tab:
             await tab.goto(url, timeout=float(self.timeout))
@@ -151,6 +157,9 @@ class _VoidCrawlFetcher(HTMLFetcher):
         # called on the empty-recipe path, so replay_count/battle_tested never advance for
         # real recipes and the "replayed N times" log below is misleading. Trim it or wire
         # up replay once VoidCrawl exposes reliable AX-tree trigger detection.
+        if self._a3node_storage is None:
+            return await self._fetch_with_probe(tab, domain)
+
         if node.is_empty:
             self._console.print(f'[dim]  ↻ A3Node replay: {domain} needs no actions[/dim]')
             try:
@@ -182,7 +191,7 @@ class _VoidCrawlFetcher(HTMLFetcher):
 
         # Persist the acts regardless of content length — even "no action needed"
         # is a valid and useful recipe to store
-        if probe_result.success:
+        if self._a3node_storage is not None and probe_result.success:
             self._a3node_storage.save(domain, probe_result.acts)
             # Update in-memory cache
             node = self._a3node_storage.load(domain)

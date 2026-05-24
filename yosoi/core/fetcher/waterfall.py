@@ -65,6 +65,7 @@ class JSFetcher(HTMLFetcher):
         browser_executable_path: str | None = None,
         console: Console | None = None,
         force: bool = False,
+        experimental_a3node: bool = False,
     ):
         """Initialise the three-tier JS fetcher.
 
@@ -80,6 +81,8 @@ class JSFetcher(HTMLFetcher):
             browser_executable_path: Path to Chrome binary. Auto-detected if None.
             console: Optional Rich console for progress output.
             force: Skip fetcher strategy cache and re-run full waterfall. Defaults to False.
+            experimental_a3node: Opt into experimental A3Node persistence/replay.
+                Disabled by default so browser rendering always uses a fresh DOMLoader run.
 
         """
         self._simple = SimpleFetcher(
@@ -109,6 +112,7 @@ class JSFetcher(HTMLFetcher):
             'min_content_length': min_content_length,
             'browser_executable_path': browser_executable_path,
             'console': self._console,
+            'experimental_a3node': experimental_a3node,
         }
 
     # ------------------------------------------------------------------

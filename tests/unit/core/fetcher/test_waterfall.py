@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from yosoi.core.fetcher.base import ContentAnalyzer
+from yosoi.core.fetcher.voiddriver import _VoidCrawlFetcher
 from yosoi.core.fetcher.waterfall import JSFetcher
 from yosoi.models.results import FetchResult
 
@@ -38,3 +39,17 @@ async def test_waterfall_escalates_astro_shell_instead_of_caching_simple(mocker)
     assert result.html == '<html><body><article>rendered</article></body></html>'
     assert fetcher._strategy_cache == {'qscrape.dev': 'headless'}
     fetcher._strategy_storage.save.assert_called_once_with('qscrape.dev', 'headless')
+
+
+def test_a3node_is_disabled_by_default_on_browser_fetcher():
+    fetcher = _VoidCrawlFetcher()
+
+    assert fetcher._experimental_a3node is False
+    assert fetcher._a3node_storage is None
+    assert fetcher._a3node_cache == {}
+
+
+def test_jsfetcher_passes_explicit_a3node_opt_in_to_chrome_tiers():
+    fetcher = JSFetcher(experimental_a3node=True)
+
+    assert fetcher._chrome_kwargs['experimental_a3node'] is True
