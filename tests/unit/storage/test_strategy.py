@@ -35,6 +35,13 @@ class TestSave:
         storage.save('example.com', 'headful')
         assert storage.load('example.com') == 'headful'
 
+    def test_save_selector_level(self, storage):
+        storage.save('example.com', 'headless', selector_level='xpath')
+        strategy = storage.load_strategy('example.com')
+        assert strategy is not None
+        assert strategy.fetcher == 'headless'
+        assert strategy.selector_level == 'xpath'
+
     def test_save_invalid_fetcher_returns_early(self, storage):
         storage.save('example.com', 'invalid_tier')
         assert storage.load('example.com') is None
@@ -72,6 +79,15 @@ class TestLoad:
     def test_load_returns_saved_tier(self, storage):
         storage.save('example.com', 'headless')
         assert storage.load('example.com') == 'headless'
+
+    def test_load_strategy_supports_legacy_file_without_selector_level(self, storage):
+        fp = storage._filepath('legacy.com')
+        with open(fp, 'w') as f:
+            json.dump({'domain': 'legacy.com', 'fetcher': 'headless'}, f)
+        strategy = storage.load_strategy('legacy.com')
+        assert strategy is not None
+        assert strategy.fetcher == 'headless'
+        assert strategy.selector_level is None
 
     def test_load_returns_none_for_corrupt_json(self, storage):
         fp = storage._filepath('bad.com')
@@ -113,6 +129,15 @@ class TestLoadAll:
         storage.save('b.com', 'headful')
         result = storage.load_all()
         assert result == {'a.com': 'simple', 'b.com': 'headful'}
+
+    def test_load_all_strategies_returns_selector_levels(self, storage):
+        storage.save('a.com', 'simple')
+        storage.save('b.com', 'headful', selector_level='xpath')
+        result = storage.load_all_strategies()
+        assert result['a.com'].fetcher == 'simple'
+        assert result['a.com'].selector_level is None
+        assert result['b.com'].fetcher == 'headful'
+        assert result['b.com'].selector_level == 'xpath'
 
     def test_load_all_skips_non_fetch_prefixed_files(self, storage, tmp_path):
         other = tmp_path / 'fetch' / 'other_file.json'

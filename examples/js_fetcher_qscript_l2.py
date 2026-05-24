@@ -12,6 +12,7 @@ Run:
 Optional:
     QSCRIPT_URL="https://qscrape.dev/l2/news/?id=MHH-001" \
     YOSOI_MODEL=groq:llama-3.3-70b-versatile \
+    YOSOI_FORCE=1 \
     uv run python examples/js_fetcher_qscript_l2.py
 """
 
@@ -24,16 +25,19 @@ import os
 import yosoi as ys
 
 QSCRIPT_URL = os.getenv('QSCRIPT_URL', 'https://qscrape.dev/l2/news/?id=MHH-001')
+FORCE_SELECTORS = os.getenv('YOSOI_FORCE', '').lower() in {'1', 'true', 'yes'}
 
 
 class QscrapeL2NewsArticle(ys.Contract):
     """Article data from a JS-rendered qscrape.dev L2 page."""
 
+    root = ys.css('div[data-fw="react"] [data-component="news-article-detail"]')
+
     headline: str = ys.Title(description='Main article headline')
     author: str = ys.Author(description='Article author or byline')
     date: str = ys.Datetime(description='Article publication date')
     body_text: str = ys.BodyText(description='Full article body text, excluding navigation and related links')
-    related_content: str = ys.Field(description='Related article links or sidebar recommendations')
+    related_content: list[str] = ys.Field(description='Related article links or sidebar recommendations')
 
 
 async def main() -> None:
@@ -44,7 +48,7 @@ async def main() -> None:
         QSCRIPT_URL,
         QscrapeL2NewsArticle,
         model=config,
-        force=True,
+        force=FORCE_SELECTORS,
         fetcher_type='waterfall',
         selector_level=ys.SelectorLevel.XPATH,
         save_formats=('json',),

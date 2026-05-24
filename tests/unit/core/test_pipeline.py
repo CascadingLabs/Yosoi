@@ -146,7 +146,27 @@ def test_create_fetcher_invalid_type_returns_none(mocker):
     mocker.patch('yosoi.core.pipeline.create_fetcher', side_effect=ValueError('bad'))
     result = Pipeline._create_fetcher(stub, 'nonexistent')
     assert result is None
-    stub.console.print.assert_called()
+
+
+def test_create_waterfall_fetcher_passes_console_only(mocker):
+    stub = _make_pipeline_stub(mocker)
+    create_fetcher = mocker.patch('yosoi.core.pipeline.create_fetcher', return_value=mocker.MagicMock())
+
+    Pipeline._create_fetcher(stub, 'waterfall', console=stub.console)
+
+    create_fetcher.assert_called_once_with('waterfall', console=stub.console)
+
+
+def test_record_fetch_strategy_selector_level_uses_highest_verified_level(mocker):
+    from yosoi.core.fetcher.waterfall import JSFetcher
+
+    stub = _make_pipeline_stub(mocker)
+    stub._last_level_distribution = {'css': 2, 'xpath': 1}
+    fetcher = mocker.Mock(spec=JSFetcher)
+
+    Pipeline._record_fetch_strategy_selector_level(stub, fetcher, 'qscrape.dev')
+
+    fetcher.update_selector_level.assert_called_once_with('qscrape.dev', 'xpath')
 
 
 # ---------------------------------------------------------------------------

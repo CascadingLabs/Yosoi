@@ -37,7 +37,8 @@ async def test_waterfall_escalates_astro_shell_instead_of_caching_simple(mocker)
     result = await fetcher._fetch_waterfall('https://qscrape.dev/l2/news/?id=MHH-001', 'qscrape.dev', 1.0)
 
     assert result.html == '<html><body><article>rendered</article></body></html>'
-    assert fetcher._strategy_cache == {'qscrape.dev': 'headless'}
+    assert fetcher._strategy_cache['qscrape.dev'].fetcher == 'headless'
+    assert fetcher._strategy_cache['qscrape.dev'].selector_level is None
     fetcher._strategy_storage.save.assert_called_once_with('qscrape.dev', 'headless')
 
 
@@ -53,3 +54,15 @@ def test_jsfetcher_passes_explicit_a3node_opt_in_to_chrome_tiers():
     fetcher = JSFetcher(experimental_a3node=True)
 
     assert fetcher._chrome_kwargs['experimental_a3node'] is True
+
+
+def test_update_selector_level_preserves_cached_fetcher(mocker):
+    fetcher = JSFetcher()
+    fetcher._strategy_storage = mocker.Mock()
+    fetcher._record_success('qscrape.dev', 'headless')
+
+    fetcher.update_selector_level('qscrape.dev', 'xpath')
+
+    assert fetcher._strategy_cache['qscrape.dev'].fetcher == 'headless'
+    assert fetcher._strategy_cache['qscrape.dev'].selector_level == 'xpath'
+    fetcher._strategy_storage.save.assert_any_call('qscrape.dev', 'headless', selector_level='xpath')
