@@ -7,6 +7,7 @@ import yosoi as ys
 # ---------------------------------------------------------------------------
 from yosoi import Pipeline
 from yosoi.models.results import FetchResult
+from yosoi.models.snapshot import SelectorSnapshot
 from yosoi.storage.tracking import DomainStats
 
 
@@ -238,6 +239,12 @@ def test_extract_falls_back_to_single_when_no_container(mocker):
 # ---------------------------------------------------------------------------
 
 
+def _snap(primary: str) -> SelectorSnapshot:
+    from datetime import datetime, timezone
+
+    return SelectorSnapshot(primary=primary, discovered_at=datetime.now(timezone.utc))
+
+
 def _make_scrape_stub(mocker, contract=None):
     """Create a Pipeline stub wired up for scrape() integration tests."""
     from yosoi.models.selectors import SelectorLevel
@@ -275,7 +282,7 @@ async def test_scrape_cached_fail_open_yields_nothing(mocker):
     """When cached selectors exist but fetch fails, scrape() yields nothing
     and process_url() returns True (fail-open)."""
     stub = _make_scrape_stub(mocker)
-    stub.storage.load_selectors.return_value = {'title': {'primary': 'h1'}}
+    stub.storage.load_snapshots.return_value = {'title': _snap('h1')}
 
     # Fetcher whose fetch() returns a failed result
     mock_fetcher = mocker.MagicMock()
@@ -304,7 +311,7 @@ async def test_scrape_cached_verification_failure_falls_through(mocker):
     from yosoi.models.results import FieldVerificationResult, VerificationResult
 
     stub = _make_scrape_stub(mocker)
-    stub.storage.load_selectors.return_value = {'title': {'primary': 'h1.old'}}
+    stub.storage.load_snapshots.return_value = {'title': _snap('h1.old')}
 
     # Fetcher returns valid HTML
     mock_fetcher = mocker.MagicMock()
@@ -381,7 +388,7 @@ async def test_scrape_force_skips_cache(mocker):
     from yosoi.models.results import FieldVerificationResult, VerificationResult
 
     stub = _make_scrape_stub(mocker)
-    stub.storage.load_selectors.return_value = {'title': {'primary': 'h1.cached'}}
+    stub.storage.load_snapshots.return_value = {'title': _snap('h1.cached')}
 
     mock_fetcher = mocker.MagicMock()
     mock_fetcher.__aenter__ = mocker.AsyncMock(return_value=mock_fetcher)
@@ -415,7 +422,7 @@ async def test_scrape_force_skips_cache(mocker):
     assert items[0]['title'] == 'Fresh'
 
     # load_selectors should NOT have been consulted (force skips cache)
-    stub.storage.load_selectors.assert_not_called()
+    stub.storage.load_snapshots.assert_not_called()
     # AI discovery was called
     assert stub.discovery.discover_selectors.call_count == 1
 
@@ -428,7 +435,7 @@ async def test_scrape_force_skips_cache(mocker):
 async def test_scrape_sets_last_elapsed(mocker):
     """After scrape() completes, last_elapsed is a positive float."""
     stub = _make_scrape_stub(mocker)
-    stub.storage.load_selectors.return_value = None  # no cache
+    stub.storage.load_snapshots.return_value = None  # no cache
 
     mock_fetcher = mocker.MagicMock()
     mock_fetcher.__aenter__ = mocker.AsyncMock(return_value=mock_fetcher)

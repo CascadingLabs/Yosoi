@@ -44,7 +44,7 @@ class ContentAnalyzer:
 
         # Final fallback: text-ratio check catches JS shells that have no
         # recognisable framework signatures but render almost no visible text
-        if not metadata.requires_js:
+        if not metadata.requires_js and metadata.js_framework is None:
             metadata.requires_js = ContentAnalyzer._detect_js_shell(html)
             if metadata.requires_js:
                 metadata.js_framework = 'js-shell'
@@ -65,7 +65,7 @@ class ContentAnalyzer:
             tag.decompose()
         text = soup.get_text(separator=' ', strip=True)
         text_ratio = len(text) / max(len(html), 1)
-        return len(text) < 500 or text_ratio < 0.02
+        return len(html) > 5000 and (len(text) < 500 or text_ratio < 0.02)
 
     @staticmethod
     def _detect_rss(html_lower: str) -> bool:

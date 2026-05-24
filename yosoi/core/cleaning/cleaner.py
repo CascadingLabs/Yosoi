@@ -147,14 +147,21 @@ class HTMLCleaner:
                     if attr in KEEP_ATTRIBUTES or attr.startswith('data-')
                 }
 
-        # 3. Deduplicate table rows (keep first 5)
+        # 3. Deduplicate list items (keep first 3)
+        for lst in soup.find_all(['ul', 'ol']):
+            items = lst.find_all('li', recursive=False)
+            if len(items) > 3:
+                for item in items[3:]:
+                    item.decompose()
+
+        # 4. Deduplicate table rows (keep first 5)
         for table in soup.find_all('table'):
             rows = table.find_all('tr')
             if len(rows) > 5:
                 for row in rows[5:]:
                     row.decompose()
 
-        # 4. Remove hidden elements
+        # 5. Remove hidden elements
         for tag in soup.find_all(True):
             if isinstance(tag, Tag):
                 if tag.get('hidden') is not None:

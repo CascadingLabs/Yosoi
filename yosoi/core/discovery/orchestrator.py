@@ -293,12 +293,12 @@ class DiscoveryOrchestrator:
         for field_name, override_dict in overrides.items():
             merged[field_name] = override_dict
 
-        # Write NA sentinels for fields that were attempted but failed entirely.
+        # Write NA sentinels to storage for fields that were attempted but failed entirely.
         # This prevents repeated LLM calls for fields that don't exist on this domain.
+        # Note: sentinels are NOT included in the returned merged map — callers see only
+        # fields that were actually discovered.
         all_attempted = {str(spec['field_name']) for spec in task_specs}
-        for field_name in all_attempted:
-            if field_name not in merged:
-                merged[field_name] = {'primary': 'NA'}
+        self._na_sentinels = {field_name for field_name in all_attempted if field_name not in merged}
 
         return merged, cached_count, escalated_count
 
