@@ -56,6 +56,10 @@ class _VoidCrawlFetcher(HTMLFetcher):
         console: Console | None = None,
         **_kwargs: Any,
     ) -> None:
+        # FIXME: browser_executable_path is passed in via JSFetcher._chrome_kwargs but
+        # lands in **_kwargs and is silently dropped — __aenter__ never threads it into
+        # BrowserConfig, so a custom Chrome binary is a no-op. Accept it explicitly and
+        # forward to BrowserConfig, or remove it from JSFetcher so it doesn't look wired.
         self.timeout = timeout
         self.max_concurrent = max_concurrent
         self.min_content_length = min_content_length
@@ -141,6 +145,12 @@ class _VoidCrawlFetcher(HTMLFetcher):
         )
 
     async def _fetch_with_replay(self, tab: Any, domain: str, node: A3Node) -> str | None:
+        # FUTURE (A3Node WIP — next cycle): this does not actually replay `node.acts`; the
+        # non-empty branch just re-runs the full DOMLoader probe. Consequences until real
+        # replay lands: (1) no speed gain from a stored recipe, (2) record_replay() is only
+        # called on the empty-recipe path, so replay_count/battle_tested never advance for
+        # real recipes and the "replayed N times" log below is misleading. Trim it or wire
+        # up replay once VoidCrawl exposes reliable AX-tree trigger detection.
         if node.is_empty:
             self._console.print(f'[dim]  ↻ A3Node replay: {domain} needs no actions[/dim]')
             try:

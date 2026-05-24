@@ -125,6 +125,10 @@ class JsAction(JsActionNode):
     def __init__(self, code: str) -> None:
         """Initialise with raw JavaScript code string."""
         self.code = code
+        # FIXME: this mutates the *class* attribute `js`, so every JsAction instance shares
+        # it and the last one constructed wins. Under concurrent tabs (pool allows up to
+        # max_concurrent) one tab's flow can execute another tab's JS. Store `js` on the
+        # instance (self.js = inline_js(code)) instead of on the class.
         type(self).js = inline_js(code)
 
     def params(self) -> dict[str, Any]:

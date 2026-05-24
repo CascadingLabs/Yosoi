@@ -43,6 +43,8 @@ class ClickClose(Node):
     async def tick(self, tab: Any) -> Status:
         """Click the first close button found."""
         try:
+            # FUTURE: generalize these close/dismiss selectors into a configurable
+            # overlay catalogue instead of keeping site-shape guesses inline.
             for sel in (
                 '[role="dialog"] [aria-label*="close" i]',
                 '[role="dialog"] button[class*="close"]',
@@ -99,6 +101,8 @@ class ClickTrigger(Node):
 
         content_selector = self._condition._content_selector
 
+        # FUTURE: add a contract/config-level max-items primitive. Count-growth
+        # alone can over-click near-infinite feeds such as X or Yahoo Finance.
         for _ in range(self._max_cycles):
             prev = await count_content(tab, content_selector)
             flow = build_flow(trigger, self._stable)

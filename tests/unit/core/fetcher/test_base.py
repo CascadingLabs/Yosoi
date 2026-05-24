@@ -67,6 +67,25 @@ class TestContentAnalyzer:
         meta = ContentAnalyzer.analyze(html)
         assert meta.js_framework == 'svelte'
 
+    def test_astro_island_shell_requires_js(self):
+        """Astro island placeholders require browser rendering."""
+        html = '<html><body><main><div data-fw="react"><astro-island></astro-island></div></main></body></html>'
+        meta = ContentAnalyzer.analyze(html)
+        assert meta.js_framework == 'astro'
+        assert meta.requires_js is True
+
+    def test_astro_island_shell_overrides_other_framework_markers(self):
+        """Astro placeholders require rendering even when another framework marker appears first."""
+        html = (
+            '<html><body><main>'
+            '<div class="svelte-widget">static shell</div>'
+            '<div data-fw="svelte"><astro-island></astro-island></div>'
+            '</main></body></html>'
+        )
+        meta = ContentAnalyzer.analyze(html)
+        assert meta.js_framework == 'astro'
+        assert meta.requires_js is True
+
     def test_js_required_when_framework_and_minimal_content(self):
         """requires_js is True when framework detected AND body content is minimal."""
         html = '<html><body><div id="__next"><script>app.render()</script></div></body></html>'
