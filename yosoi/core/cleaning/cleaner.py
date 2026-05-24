@@ -133,7 +133,7 @@ class HTMLCleaner:
 
         """
         # 1. Remove HTML comments
-        for comment in soup.find_all(text=lambda text: isinstance(text, Comment)):
+        for comment in soup.find_all(string=lambda text: isinstance(text, Comment)):
             comment.extract()
 
         # 2. Remove attributes not used in CSS selectors
@@ -147,9 +147,9 @@ class HTMLCleaner:
                     if attr in KEEP_ATTRIBUTES or attr.startswith('data-')
                 }
 
-        # 3. Deduplicate list items (keep first 3 as examples)
-        for list_tag in soup.find_all(['ul', 'ol']):
-            items = list_tag.find_all('li', recursive=False)
+        # 3. Deduplicate list items (keep first 3)
+        for lst in soup.find_all(['ul', 'ol']):
+            items = lst.find_all('li', recursive=False)
             if len(items) > 3:
                 for item in items[3:]:
                     item.decompose()
@@ -170,7 +170,7 @@ class HTMLCleaner:
                 if tag.get('aria-hidden') == 'true':
                     tag.decompose()
 
-        # 6. Remove non-semantic bloat (svg, canvas, base64, empty deep divs)
+        # 5. Remove non-semantic bloat (svg, canvas, base64, empty deep divs)
         self._prune_non_semantic(soup)
 
         return soup

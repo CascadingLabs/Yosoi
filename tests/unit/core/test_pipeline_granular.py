@@ -79,6 +79,29 @@ class TestVerifyPerField:
         assert verdicts['title'] == CacheVerdict.FRESH
         assert verdicts['price'] == CacheVerdict.FRESH
 
+    def test_records_verified_selector_level_distribution(self, mocker):
+        stub = _make_pipeline_stub(mocker)
+        snapshots = {
+            'title': _make_snapshot('h1.title'),
+            'price': _make_snapshot('//span[@class="price"]', primary={'type': 'xpath', 'value': '//span'}),
+        }
+
+        def _verify_field(sel, field_name, field_data, max_level):
+            selector_level = 'xpath' if field_name == 'price' else 'css'
+            return FieldVerificationResult(
+                field_name=field_name,
+                status='verified',
+                working_level='primary',
+                selector='x',
+                selector_level=selector_level,
+            )
+
+        stub.verifier._verify_field.side_effect = _verify_field
+
+        stub._verify_per_field('<html></html>', snapshots)
+
+        assert stub._last_level_distribution == {'css': 1, 'xpath': 1}
+
     def test_one_stale(self, mocker):
         stub = _make_pipeline_stub(mocker)
         snapshots = {
@@ -113,7 +136,7 @@ class TestVerifyPerField:
             if field_name == 'root':
                 return FieldVerificationResult(field_name='root', status='failed', failed_selectors=[])
             return FieldVerificationResult(
-                field_name=field_name, status='verified', working_level='primary', selector='x'
+                field_name=field_name, status='verified', working_level='primary', selector='x', selector_level='css'
             )
 
         stub.verifier._verify_field.side_effect = _verify_field
@@ -123,6 +146,7 @@ class TestVerifyPerField:
         assert verdicts['root'] == CacheVerdict.STALE
         assert verdicts['title'] == CacheVerdict.STALE
         assert verdicts['price'] == CacheVerdict.STALE
+        assert stub._last_level_distribution == {}
 
 
 # ---------------------------------------------------------------------------
@@ -142,6 +166,8 @@ class TestTryCachedGranular:
 
     async def test_all_fresh_extracts_without_discovery(self, stub, mocker):
         """When all fields verify FRESH, no discovery should be called."""
+        from yosoi.core.fetcher.waterfall import JSFetcher
+
         stub._url_start = time.monotonic()
         stub.storage.load_snapshots.return_value = {
             'title': _make_snapshot('h1.title'),
@@ -149,18 +175,18 @@ class TestTryCachedGranular:
         }
 
         # Mock fetcher
-        mock_fetcher = mocker.AsyncMock()
+        mock_fetcher = mocker.Mock(spec=JSFetcher)
         html = '<html><h1 class="title">Test</h1><span class="price">$10</span></html>'
 
         # Mock _fetch_and_clean_for_cache to bypass real fetch+retry logic
-        stub._fetch_and_clean_for_cache = mocker.AsyncMock(return_value=html)
+        stub._fetch_and_clean_for_cache = mocker.AsyncMock(return_value=(html, html))
 
         # Mock cleaner (still needed by _extract_all_fresh path)
         stub.cleaner.clean_html.return_value = html
 
         # All fields verify as FRESH
         stub.verifier._verify_field.return_value = FieldVerificationResult(
-            field_name='any', status='verified', working_level='primary', selector='x'
+            field_name='any', status='verified', working_level='primary', selector='x', selector_level='css'
         )
 
         # Mock extraction
@@ -184,6 +210,7 @@ class TestTryCachedGranular:
 
         # Discovery should NOT be called
         stub.discovery.discover_selectors.assert_not_called()
+        mock_fetcher.update_selector_level.assert_called_once_with('example.com', 'css')
 
     async def test_all_stale_returns_none(self, stub, mocker):
         """When all fields are stale, should return None for full discovery."""
@@ -194,7 +221,7 @@ class TestTryCachedGranular:
 
         mock_fetcher = mocker.AsyncMock()
         html = '<html></html>'
-        stub._fetch_and_clean_for_cache = mocker.AsyncMock(return_value=html)
+        stub._fetch_and_clean_for_cache = mocker.AsyncMock(return_value=(html, html))
         stub.cleaner.clean_html.return_value = html
 
         # All fields fail verification
@@ -215,7 +242,7 @@ class TestTryCachedGranular:
 
         mock_fetcher = mocker.AsyncMock()
         html = '<html><h1 class="title">Test</h1></html>'
-        stub._fetch_and_clean_for_cache = mocker.AsyncMock(return_value=html)
+        stub._fetch_and_clean_for_cache = mocker.AsyncMock(return_value=(html, html))
         stub.cleaner.clean_html.return_value = html
 
         # title fresh, price stale

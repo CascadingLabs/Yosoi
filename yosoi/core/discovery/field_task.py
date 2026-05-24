@@ -82,6 +82,11 @@ async def _discover_field(
 
     # --- 1. Cache check ---
     if cached_entry is not None:
+        # NA sentinel — field was tried before and doesn't exist on this domain
+        if cached_entry.get('primary') == 'NA':
+            logger.info('Field known absent from cache: %s', field_name)
+            return failure
+
         try:
             cached_selectors = FieldSelectors.model_validate(cached_entry)
             verify_result = verifier._verify_field(parsel_sel, field_name, cached_selectors, max_level)

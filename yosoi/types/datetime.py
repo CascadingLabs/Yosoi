@@ -33,6 +33,10 @@ def Datetime(v: object, config: CoercionConfig, source_url: str | None = None) -
             raw = raw[len(prefix) :].strip()
             break
 
+    # Split on · separator (e.g. "Author · date") and take last segment
+    if '·' in raw:
+        raw = raw.split('·')[-1].strip()
+
     settings: dict[str, object] = {'RETURN_AS_TIMEZONE_AWARE': True}
     if assume_utc:
         settings['TIMEZONE'] = 'UTC'

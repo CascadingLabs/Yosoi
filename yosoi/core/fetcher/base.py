@@ -23,33 +23,52 @@ class ContentAnalyzer:
 
     @staticmethod
     def analyze(html: str) -> ContentMetadata:
-        """Analyze HTML content and return metadata.
-
-        Args:
-            html: The HTML of the URL
-
-        Returns:
-            The metadata of the HTML from the URL
-
-        """
+        """Analyze HTML content and return metadata."""
         metadata = ContentMetadata()
         metadata.content_length = len(html)
-
-        # Convert to lowercase for case-insensitive checks
         html_lower = html.lower()
 
-        # 1. Check if it's RSS/XML
         metadata.is_rss = ContentAnalyzer._detect_rss(html_lower)
         if metadata.is_rss:
             metadata.content_type = 'rss'
             return metadata
 
-        # 2. Detect JavaScript-heavy sites
         js_data = ContentAnalyzer._detect_javascript_heavy(html_lower)
         metadata.requires_js = bool(js_data.requires_js)
         metadata.js_framework = str(js_data.framework) if js_data.framework is not None else None
 
+        if not metadata.requires_js:
+            metadata.requires_js = ContentAnalyzer._detect_bot_gate(html_lower)
+            if metadata.requires_js:
+                metadata.js_framework = 'bot-gate'
+
+        # Final fallback: text-ratio check catches JS shells that have no
+        # recognisable framework signatures but render almost no visible text
+        if not metadata.requires_js and metadata.js_framework is None:
+            metadata.requires_js = ContentAnalyzer._detect_js_shell(html)
+            if metadata.requires_js:
+                metadata.js_framework = 'js-shell'
+
         return metadata
+
+    @staticmethod
+    def _detect_js_shell(html: str) -> bool:
+        """Detect JS-rendered shells by visible text ratio.
+
+        A page with lots of HTML but almost no readable text is almost
+        certainly a client-side rendered shell waiting for JS to populate it.
+        """
+        # TODO: watch for false positives — markup-heavy / image-only pages with little
+        # visible text can trip this and over-escalate to Chrome. Tune thresholds against
+        # the bake-off harness (CAS-44) before relying on it broadly.
+        from bs4 import BeautifulSoup
+
+        soup = BeautifulSoup(html[:50_000], 'lxml')
+        for tag in soup(['script', 'style', 'noscript']):
+            tag.decompose()
+        text = soup.get_text(separator=' ', strip=True)
+        text_ratio = len(text) / max(len(html), 1)
+        return len(html) > 5000 and (len(text) < 500 or text_ratio < 0.02)
 
     @staticmethod
     def _detect_rss(html_lower: str) -> bool:
@@ -75,6 +94,54 @@ class ContentAnalyzer:
         start = html_lower[:500]
 
         return any(indicator in start for indicator in rss_indicators)
+
+    @staticmethod
+    def _detect_bot_gate(html_lower: str) -> bool:
+        """Detect bot protection gates that require JS to pass.
+
+        These pages look like valid HTML to the simple fetcher — they have
+        body content, no SPA framework signals, and return HTTP 200 — but
+        the real content only loads after the browser completes a JS challenge.
+
+        Args:
+            html_lower: The HTML of the URL in all lowercase
+
+        Returns:
+            True if the page is a bot protection gate requiring JS
+
+        """
+        _BOT_GATE_PATTERNS = [
+            # Akamai Bot Manager (businesswire, PR Newswire, etc.)
+            'ak_bmsc',
+            'bm_sz',
+            '_abck',
+            'akam-sw',
+            'behavioral-content',
+            'akamai-protected',
+            'akamai_edge',
+            # Cloudflare JS challenge (distinct from the hard blocks in _check_for_bot_detection
+            # which only trigger on 403/429 — these catch the 200-OK JS challenge page)
+            'just a moment',
+            'checking your browser',
+            'cf-browser-verification',
+            'challenge-platform',
+            # Generic JS requirement gates
+            'please enable javascript',
+            'javascript is required',
+            'javascript is disabled',
+            'enable javascript to continue',
+            'requires javascript to function',
+            # DataDome
+            'datadome',
+            # PerimeterX / HUMAN
+            'px-captcha',
+            '_pxParam',
+            # Imperva / Incapsula
+            'incap_ses',
+            'visid_incap',
+            '_utmz',
+        ]
+        return any(pattern in html_lower for pattern in _BOT_GATE_PATTERNS)
 
     @staticmethod
     def _detect_javascript_heavy(html_lower: str) -> JSDetectionResult:
@@ -123,6 +190,10 @@ class ContentAnalyzer:
                 'svelte',
                 '__svelte',
             ],
+            'astro': [
+                '<astro-island',
+                'data-fw=',
+            ],
         }
 
         detected_framework = None
@@ -150,8 +221,31 @@ class ContentAnalyzer:
             'enable javascript' in html_lower or 'requires javascript' in html_lower
         )
 
-        # Determine if JS is required
-        requires_js = (detected_framework is not None and minimal_content) or has_noscript_warning
+        # 4. Check for JS loading placeholder patterns in visible text
+        _LOADING_PATTERNS = [
+            'loading...',
+            'loading article',
+            'loading content',
+            'please wait',
+        ]
+
+        body_text_lower = ''
+        if body_match:
+            # Strip tags to get visible text only
+            text_only = re.sub(r'<[^>]+>', ' ', body_match.group(1))
+            body_text_lower = ' '.join(text_only.split()).lower()
+
+        has_loading_placeholders = any(p in body_text_lower for p in _LOADING_PATTERNS)
+        has_unhydrated_islands = '<astro-island' in html_lower and 'data-fw=' in html_lower
+        if has_unhydrated_islands:
+            detected_framework = 'astro'
+
+        requires_js = (
+            (detected_framework is not None and minimal_content)
+            or has_noscript_warning
+            or (detected_framework is not None and has_loading_placeholders)
+            or has_unhydrated_islands
+        )
 
         return JSDetectionResult(requires_js=requires_js, framework=detected_framework)
 
