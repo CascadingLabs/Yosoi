@@ -310,65 +310,57 @@ async def test_scrape_cached_verification_failure_falls_through(mocker):
     the fresh discovery path."""
     from yosoi.models.results import FieldVerificationResult, VerificationResult
 
-    # Assuming FetchResult needs to be imported, or use a mock if it's already in your file
-    # from yosoi.models.results import FetchResult
-
     stub = _make_scrape_stub(mocker)
 
-    # 1. Async mock for storage
-    stub.storage.load_snapshots = mocker.AsyncMock(return_value={'title': _snap('h1.old')})
+    # 1. STORAGE: load_snapshots is SYNC
+    stub.storage.load_snapshots.return_value = {'title': _snap('h1.old')}
 
-    # 2. Fetcher setup
+    # 2. FETCHER: setup
     mock_fetcher = mocker.MagicMock()
     mock_fetcher.__aenter__ = mocker.AsyncMock(return_value=mock_fetcher)
     mock_fetcher.__aexit__ = mocker.AsyncMock(return_value=False)
 
-    # Use a generic mock object for FetchResult if you don't want to import it
     mock_fetch_result = mocker.MagicMock()
     mock_fetch_result.url = 'https://example.com'
     mock_fetch_result.html = '<html><h1>Hello</h1></html>'
+    mock_fetch_result.success = True  # Required by Pipeline._fetch
+    mock_fetch_result.fetch_time = 0.5
     mock_fetcher.fetch = mocker.AsyncMock(return_value=mock_fetch_result)
 
     mocker.patch.object(stub, '_create_fetcher', return_value=mock_fetcher)
 
-    # 3. Pipeline step mocks
+    # 3. CLEANER: clean_html is SYNC
     stub.cleaner.clean_html.return_value = '<h1>Hello</h1>'
 
-    # Cached per-field verification fails
-    stub.verifier._verify_field = mocker.AsyncMock(
-        return_value=FieldVerificationResult(
-            field_name='title', status='failed', matched_selector=None, failed_selectors=[]
-        )
+    # 4. VERIFIER (Cached Path): _verify_field is SYNC
+    # Called inside Pipeline._verify_per_field
+    stub.verifier._verify_field.return_value = FieldVerificationResult(
+        field_name='title', status='failed', matched_selector=None, failed_selectors=[]
     )
 
-    # Fresh discovery returns new selectors
+    # 5. DISCOVERY: discover_selectors is ASYNC
+    # Pipeline._scrape_fresh unpacks a tuple: selectors, used_llm = await self._discover(...)
     stub.discovery.target_level = stub.selector_level
     stub.discovery.discover_selectors = mocker.AsyncMock(
-        return_value=(
-            {'title': {'primary': 'h1', 'fallback': None, 'tertiary': None}},
-            True,
-        )  # Note: _discover expects a tuple (selectors, used_llm)
+        return_value=({'title': {'primary': 'h1', 'fallback': None, 'tertiary': None}}, True)
     )
 
-    # After stale verdict, fresh verification succeeds
-    stub.verifier.verify = mocker.AsyncMock(
-        return_value=VerificationResult(
-            total_fields=1,
-            verified_count=1,
-            results={
-                'title': FieldVerificationResult(
-                    field_name='title', status='verified', matched_selector='h1', failed_selectors=[]
-                )
-            },
-        )
+    # 6. VERIFIER (Fresh Path): verify is SYNC
+    stub.verifier.verify.return_value = VerificationResult(
+        total_fields=1,
+        verified_count=1,
+        results={
+            'title': FieldVerificationResult(
+                field_name='title', status='verified', matched_selector='h1', failed_selectors=[]
+            )
+        },
     )
 
-    # --- THE CRITICAL FIXES ---
-    # Mock the internal wrappers directly to guarantee the item survives extraction and validation
+    # 7. WRAPPERS: Bypass internal extraction/validation to guarantee item survival
     mocker.patch.object(stub, '_extract', return_value=[{'title': 'Hello'}])
     mocker.patch.object(stub, '_validate_items', return_value=[{'title': 'Hello'}])
 
-    # _finish is async and saves the data. We must mock it so the test doesn't crash during the save step
+    # 8. FINISH: _finish is ASYNC and triggers saving mechanics
     mocker.patch.object(stub, '_finish', new_callable=mocker.AsyncMock)
 
     # Run the generator
