@@ -44,13 +44,26 @@ Override the model with `OC_MODEL` (default `gpt-5.3-codex`). Set
 but then ensure *that* server was launched from a dir whose `opencode.json` wires
 voidcrawl.
 
-## `maps_teleport.py` — geolocation teleport, scripted PyO3 + AX-tree selectors
+## `maps_teleport.py` — geolocation teleport, A3Node-replayable, AX-tree selectors
 
 The same query ("guitar shops near me") run in three cities where the city is set
 **only** by teleporting the browser's geolocation (CAS-45). The fixed
 teleport→navigate→scroll recipe runs in-script over the **PyO3 binding** (no LLM in
 the browsing loop), and extraction uses **accessibility-tree selectors** (`ax_extract.py`,
 CAS-27) instead of CSS.
+
+The whole flow is captured as an **A3Node** (`a3node.py`, CAS-13): the locked-in act
+sequence + the AX extraction recipe, saved per-domain. The first run locks it in; every
+run after **replays it deterministically** — no agent, no LLM, no re-discovery. Each act
+carries an optional `assert_min` postcondition (the third "A"); a failed assert means the
+page changed and the node should be re-discovered. The acts can equally be captured from
+the MCP agent's tool calls (`recipe.py`) — agent discovers once, A3Node locks it in, PyO3
+replays forever.
+
+```sh
+uv run python examples/opencode_voidcrawl/maps_teleport.py   # run 1: "locking in 4 acts"
+uv run python examples/opencode_voidcrawl/maps_teleport.py   # run 2: "replaying (replay_count=1)"
+```
 
 Why AX over CSS here: each result is `role="article"` with the shop name as its
 accessible name, and the rating is a descendant `role="image"` named

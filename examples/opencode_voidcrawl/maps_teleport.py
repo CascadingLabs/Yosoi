@@ -1,24 +1,22 @@
-"""Google Maps geolocation-teleport scrape — scripted PyO3 + accessibility-tree selectors.
+"""Google Maps geolocation-teleport scrape — A3Node-replayable, AX-tree selectors.
 
 The use case: the *same* query ("guitar shops near me") in three cities, where the
-city is set purely by **teleporting** the browser's geolocation (CAS-45) — so Maps'
-"near me" resolution, not the query text, drives the results.
+city is set purely by **teleporting** the browser's geolocation (CAS-45).
 
-Two deliberate choices:
+The whole flow is captured as an **A3Node** (CAS-13) — the locked-in action sequence
+(teleport → navigate x2 → scroll the feed to >= TARGET) plus an **accessibility-tree
+extraction recipe** (CAS-27: card role="article", rating from a descendant
+role="image" named "4.4 stars 2,980 Reviews"). The first run locks it in and saves it
+per-domain; every run after that **replays it deterministically** over the PyO3
+binding — no agent, no LLM, no re-discovery. A failed `assert_min` on the scroll act
+means the page changed and the node should be re-discovered.
 
-  * Scripted PyO3 for the fixed mechanics (teleport -> navigate x2 -> scroll the feed
-    to >= TARGET). No LLM in the browsing loop, fully reproducible.
-  * **Accessibility-tree selectors** for extraction (CAS-27), not CSS. Each result is
-    role="article" with the shop name as its accessible name; the rating is a
-    descendant role="image" named "4.4 stars 2,980 Reviews". Those roles + names are
-    stable and human-readable, where Maps' obfuscated classes (a.hfpxzc, MW4etd) churn.
-    Because the AX semantics are clear, no LLM discovery is needed here at all — the
-    AX "selector" is a tiny, readable recipe (see ax_extract.AxField). For a site with
-    murkier semantics, the same recipe could be discovered once from the compact AX
-    outline (cheaper to read than HTML) — that's the discover-once path on AX.
+Where the actions come from: hand-authored here, but the same A3Node acts can be
+captured from the MCP agent's tool calls (see recipe.py / browse_and_save.py) — the
+agent discovers once, A3Node locks it in, PyO3 replays forever.
 
-Run (needs voidcrawl >= 0.3.2 PyO3 + Chromium; no OpenCode/MCP needed):
-    uv run python examples/opencode_voidcrawl/maps_teleport.py
+Run twice to see it: first run "locks in", second run "replays (replay_count=1)".
+    uv run python examples/opencode_voidcrawl/maps_teleport.py   # needs voidcrawl>=0.3.2 + Chromium
 """
 
 from __future__ import annotations
@@ -26,13 +24,17 @@ from __future__ import annotations
 import asyncio
 import json
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 
-from ax_extract import AxField, extract_cards
+from a3node import A3AssertError, A3Node, Act, ExtractRecipe, extract, replay_acts
 from pydantic import BaseModel
 from voidcrawl import BrowserConfig, BrowserSession
 
 HERE = Path(__file__).parent
+A3_DIR = HERE / '.yosoi' / 'a3nodes'
+OUT_DIR = HERE / '.yosoi' / 'maps'
+DOMAIN = 'google.com/maps'
 
 # "near me" so Maps resolves location from navigator.geolocation (which teleport
 # overrides) rather than the IP-based map viewport.
@@ -63,18 +65,35 @@ class GuitarShop(BaseModel):
     address: str | None = None
 
 
-# ── accessibility-tree selectors (CAS-27) ───────────────────────────────────
-# Each card is an `article`; these fields are read from within its subtree by role.
-_CARD_ROLE = 'article'
-_FIELDS = [
-    AxField('rating', role='image', pattern=r'([\d.]+)\s*stars'),
-    AxField('reviews', role='image', pattern=r'stars?\s+([\d,]+)\s*Reviews'),
-    AxField(
-        'address',
-        role='StaticText',
-        pattern=r'\d{1,6}\s+\w.*\b(?:St|Ave|Avenue|Blvd|Rd|Road|Dr|Drive|Ln|Lane|Way|Pl|Pkwy|Hwy|Street|Ct|Sq|Fl)\b',
-    ),
-]
+def maps_a3node() -> A3Node:
+    """The locked-in Maps flow: teleport → navigate x2 → scroll → AX extract.
+
+    Hand-authored here, but shaped exactly like what `recipe.acts_from_tool_parts`
+    produces from an MCP agent's tool calls — the discover-once-then-lock-in path.
+    """
+    return A3Node(
+        domain=DOMAIN,
+        task='guitar shops near me',
+        acts=[
+            Act(op='teleport'),  # geo supplied per city at replay
+            Act(op='navigate', url=MAPS_URL),  # prime: Maps resolves location on first load
+            Act(op='navigate', url=MAPS_URL),  # read: applies the teleported location
+            Act(op='scroll', feed='div[role="feed"]', item='a.hfpxzc', target=TARGET, assert_min=12),
+        ],
+        extract=ExtractRecipe(
+            card_role='article',
+            fields=[
+                {'key': 'rating', 'role': 'image', 'pattern': r'([\d.]+)\s*stars'},
+                {'key': 'reviews', 'role': 'image', 'pattern': r'stars?\s+([\d,]+)\s*Reviews'},
+                {
+                    'key': 'address',
+                    'role': 'StaticText',
+                    'pattern': r'\d{1,6}\s+\w.*\b(?:St|Ave|Avenue|Blvd|Rd|Road|Dr|Drive|Ln|Lane|Way|Pl|Pkwy|Hwy|Street|Ct|Sq|Fl)\b',
+                },
+            ],
+            skip_prefixes=['Ad ·'],
+        ),
+    )
 
 
 def _to_shop(rec: dict[str, str | None]) -> GuitarShop:
@@ -84,58 +103,52 @@ def _to_shop(rec: dict[str, str | None]) -> GuitarShop:
     return GuitarShop(name=rec.get('name') or '', rating=rating, reviews=reviews, address=rec.get('address'))
 
 
-# ── scripted PyO3 browsing (deterministic) + AX extraction ──────────────────
-
-
-async def scrape_city(city: City, cfg: BrowserConfig, target: int = TARGET) -> list[GuitarShop]:
-    """Teleport to *city* in a FRESH session, scroll Maps to >= target, extract via AX.
-
-    A fresh session per location is required (per the teleport docs): a recycled tab
-    carries the prior page's resolved location, so cities would bleed into each other.
-    """
+async def scrape_city(node: A3Node, city: City, cfg: BrowserConfig) -> list[GuitarShop]:
+    """Replay the A3Node in a FRESH session for *city* (teleport needs a clean session)."""
     async with BrowserSession(cfg) as browser:
-        page = await browser.new_page('about:blank')  # blank first so we can teleport pre-nav
-        await page.set_geolocation(city.lat, city.lon, 50.0)
-        await page.set_timezone(city.tz)
-        await page.set_locale(city.locale)
-        await page.navigate(MAPS_URL)  # prime: Maps resolves location on first load
-        await asyncio.sleep(2.5)
-        await page.navigate(MAPS_URL)  # read: applies the teleported location
-        await asyncio.sleep(3.5)
-        for _ in range(15):
-            raw = await page.evaluate_js(
-                '(()=>{const f=document.querySelector(\'div[role="feed"]\');'
-                'if(!f)return -1;f.scrollTop=f.scrollHeight;'
-                "return f.querySelectorAll('a.hfpxzc').length;})()"
-            )
-            count = raw if isinstance(raw, int) else -1
-            print(f'  [{city.name}] scrolled -> {count} results', flush=True)
-            if count >= target:
-                break
-            await asyncio.sleep(1.3)
-        nodes = await page.get_full_ax_tree()
-        cards = extract_cards(nodes, card_role=_CARD_ROLE, fields=_FIELDS, skip_name_prefixes=('Ad ·',))
-        return [_to_shop(r) for r in cards[:target]]
+        page = await browser.new_page('about:blank')  # blank first so teleport applies pre-nav
+        await replay_acts(node, page, geo=(city.lat, city.lon, city.tz, city.locale))
+        ax_nodes = await page.get_full_ax_tree()
+        return [_to_shop(r) for r in extract(node, ax_nodes)[:TARGET]]
     raise RuntimeError('BrowserSession exited without yielding a page')  # unreachable
 
 
-# ── orchestration (the script does as much as possible) ─────────────────────
-
-
 async def main() -> None:
-    out_dir = HERE / '.yosoi' / 'maps'
-    out_dir.mkdir(parents=True, exist_ok=True)
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
     cfg = BrowserConfig(headless=True, stealth=True, no_sandbox=True)
 
+    node = A3Node.load(DOMAIN, A3_DIR)
+    first_run = node is None
+    if node is None:
+        node = maps_a3node()
+        print(f'no A3Node for {DOMAIN} — locking in {len(node.acts)} acts (first run)', flush=True)
+    else:
+        print(
+            f'replaying A3Node for {DOMAIN} (replay_count={node.replay_count}, locked in {node.discovered_at[:19]})',
+            flush=True,
+        )
+
     results: dict[str, list[GuitarShop]] = {}
-    for city in CITIES:
-        print(f'=== {city.name} (teleport {city.lat},{city.lon}) ===', flush=True)
-        results[city.name] = await scrape_city(city, cfg)
+    try:
+        for city in CITIES:
+            print(f'=== {city.name} (teleport {city.lat},{city.lon}) ===', flush=True)
+            results[city.name] = await scrape_city(node, city, cfg)
+            print(f'  -> {len(results[city.name])} shops', flush=True)
+    except A3AssertError as e:
+        print(f'  A3 assert failed: {e}', flush=True)
+        print('  (in a full system this triggers MCP re-discovery of the acts)', flush=True)
+        raise
+
+    # Lock-in / replay bookkeeping (mirrors yosoi A3NodeStorage.replay_count).
+    if not first_run:
+        node.replay_count += 1
+    node.last_replayed_at = datetime.now().isoformat()
+    node.save(A3_DIR)
 
     print('\n=== results (teleport drives the city; extracted via AX role+name) ===', flush=True)
     for city in CITIES:
         shops = results[city.name]
-        (out_dir / f'{city.name.lower().replace(" ", "_")}.json').write_text(
+        (OUT_DIR / f'{city.name.lower().replace(" ", "_")}.json').write_text(
             json.dumps([s.model_dump() for s in shops], indent=2), encoding='utf-8'
         )
         top = shops[0] if shops else None
@@ -143,7 +156,10 @@ async def main() -> None:
         if top:
             line += f'  e.g. {top.name!r} ({top.rating}★, {top.reviews} reviews) {top.address or ""}'
         print(line, flush=True)
-    print(f'\n  per-city JSON -> {out_dir}', flush=True)
+
+    verb = 'locked in & saved' if first_run else f'replayed (replay_count={node.replay_count})'
+    print(f'\n  A3Node {verb} -> {A3Node._path(DOMAIN, A3_DIR)}', flush=True)
+    print(f'  per-city JSON -> {OUT_DIR}', flush=True)
 
 
 if __name__ == '__main__':
