@@ -68,3 +68,5 @@ def print_fetcher_info(fetcher_type: str) -> None:
     }
     label, hint = _FETCHER_LABELS.get(fetcher_type, (f'{fetcher_type} fetcher', ''))
     console.print(f'[cyan]ℹ Using {label}[/cyan] [dim]({hint})[/dim]')
+    if fetcher_type in {'waterfall', 'headless', 'headful'}:
+        console.print('[cyan]ℹ A3Node cache:[/cyan] [dim]disabled by default; browser DOMLoader runs fresh[/dim]')
