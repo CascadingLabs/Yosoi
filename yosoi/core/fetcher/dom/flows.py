@@ -12,7 +12,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from voidcrawl.actions import ClickElement, Flow, JsActionNode, ScrollTo, inline_js
+from voidcrawl.actions import ActionNode, ClickElement, Flow, JsActionNode, ScrollTo, inline_js
 
 from yosoi.core.fetcher.dom.catalogues import (
     CLICK_BY_TEXT_JS,
@@ -97,6 +97,13 @@ def build_flow(trigger: DetectedTrigger, stable: WaitForDOMStable) -> Flow | Non
         A Flow ready to run, or None.
     """
     try:
+        if trigger.ax_target is not None and trigger.kind != TriggerKind.INFINITE_SCROLL:
+            return (
+                Flow()
+                .add(ClickByRole(trigger.ax_target.role, trigger.ax_target.name, trigger.ax_target.nth))
+                .add(stable)
+            )
+
         if trigger.kind == TriggerKind.INFINITE_SCROLL:
             return Flow().add(ScrollTo(x=0, y=_SCROLL_BOTTOM_Y)).add(stable)
 
@@ -134,3 +141,21 @@ class JsAction(JsActionNode):
     def params(self) -> dict[str, Any]:
         """Return only the code string, excluding the non-serialisable JsSource."""
         return {'code': self.code}
+
+
+class ClickByRole(ActionNode):
+    """Click an element by accessibility role/name when VoidCrawl supports it."""
+
+    def __init__(self, role: str, name: str, nth: int = 0) -> None:
+        """Initialise with an accessibility target."""
+        self.role = role
+        self.name = name
+        self.nth = nth
+
+    async def run(self, tab: Any) -> object:
+        """Execute the role/name click through VoidCrawl's tab API."""
+        click_by_role = getattr(tab, 'click_by_role', None)
+        if click_by_role is None:
+            msg = 'tab does not support click_by_role'
+            raise RuntimeError(msg)
+        return await click_by_role(self.role, self.name, self.nth)

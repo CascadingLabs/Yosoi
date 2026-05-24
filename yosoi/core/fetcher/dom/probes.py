@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any
 
+from yosoi.core.fetcher.dom.ax import AxTarget, find_target, snapshot
 from yosoi.core.fetcher.dom.catalogues import (
     ACCORDION_SELECTORS,
     AGE_GATE_SELECTORS,
@@ -72,6 +73,7 @@ class DetectedTrigger:
     kind: TriggerKind
     selector: str
     label: str
+    ax_target: AxTarget | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -119,6 +121,10 @@ async def probe_age_gate(tab: Any) -> DetectedTrigger | None:
 
 async def probe_load_more(tab: Any) -> DetectedTrigger | None:
     """Detect a load-more / show-more button by text content."""
+    ax = await probe_ax_target(tab, roles={'button'}, names=LOAD_MORE_TEXTS)
+    if ax is not None:
+        return DetectedTrigger(TriggerKind.LOAD_MORE, 'button', ax.name.lower(), ax)
+
     try:
         snippets = await tab.query_selector_all('button, a[role="button"], [type="button"]')
         # FIXME: verify query_selector_all returns text, not element handles. If it returns
@@ -136,6 +142,10 @@ async def probe_load_more(tab: Any) -> DetectedTrigger | None:
 
 async def probe_accordion(tab: Any) -> DetectedTrigger | None:
     """Detect a collapsed accordion section."""
+    ax = await probe_ax_target(tab, roles={'button'}, names=('expand', 'show details', 'details', 'more info'))
+    if ax is not None:
+        return DetectedTrigger(TriggerKind.ACCORDION, '[aria-expanded="false"]', ax.name.lower(), ax)
+
     try:
         for sel in ACCORDION_SELECTORS:
             if await tab.query_selector(sel):
@@ -147,6 +157,10 @@ async def probe_accordion(tab: Any) -> DetectedTrigger | None:
 
 async def probe_tab(tab: Any) -> DetectedTrigger | None:
     """Detect an unselected tab panel hiding content."""
+    ax = await probe_ax_target(tab, roles={'tab'}, names=('',))
+    if ax is not None:
+        return DetectedTrigger(TriggerKind.TAB, TAB_SELECTOR, ax.name.lower(), ax)
+
     try:
         if await tab.query_selector(TAB_SELECTOR):
             return DetectedTrigger(TriggerKind.TAB, TAB_SELECTOR, 'activate tab')
@@ -157,6 +171,10 @@ async def probe_tab(tab: Any) -> DetectedTrigger | None:
 
 async def probe_pagination(tab: Any) -> DetectedTrigger | None:
     """Detect a next-page link via known selectors then text matching."""
+    ax = await probe_ax_target(tab, roles={'link', 'button'}, names=NEXT_PAGE_TEXTS, exact=True)
+    if ax is not None:
+        return DetectedTrigger(TriggerKind.PAGINATION, 'a[href]', ax.name.lower(), ax)
+
     try:
         for sel in PAGINATION_SELECTORS:
             if await tab.query_selector(sel):
@@ -189,6 +207,35 @@ async def count_content(tab: Any, selector: str = CONTENT_SELECTOR) -> int:
         return len(await tab.query_selector_all(selector))
     except (RuntimeError, OSError, ValueError):
         return 0
+
+
+async def probe_ax_target(
+    tab: Any,
+    *,
+    roles: set[str],
+    names: tuple[str, ...],
+    exact: bool = False,
+) -> AxTarget | None:
+    """Find a matching interactive target from VoidCrawl's AX tree.
+
+    AX probing is opportunistic. Older VoidCrawl versions or non-browser test
+    doubles may not expose ``get_full_ax_tree``; those callers simply fall back
+    to the existing DOM probes.
+    """
+    get_full_ax_tree = getattr(tab, 'get_full_ax_tree', None)
+    if get_full_ax_tree is None:
+        return None
+    try:
+        raw_nodes = await get_full_ax_tree(depth=None)
+    except (RuntimeError, OSError, TypeError, ValueError) as exc:
+        logger.debug('AX probe failed: %s', exc)
+        return None
+    if not isinstance(raw_nodes, list):
+        return None
+    nodes = [node for node in raw_nodes if isinstance(node, dict)]
+    if not nodes:
+        return None
+    return find_target(snapshot(nodes), roles=roles, names=names, exact=exact)
 
 
 # ---------------------------------------------------------------------------
