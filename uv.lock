@@ -5157,6 +5157,7 @@ tabular = [
 [package.dev-dependencies]
 dev = [
     { name = "commitizen" },
+    { name = "coverage" },
     { name = "griffe" },
     { name = "memray" },
     { name = "mypy" },
@@ -5168,6 +5169,9 @@ dev = [
     { name = "psutil" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
+    { name = "pytest-cov" },
+    { name = "pytest-mock" },
+    { name = "respx" },
     { name = "ruff" },
     { name = "types-beautifulsoup4" },
     { name = "types-dateparser" },
@@ -5224,6 +5228,7 @@ provides-extras = ["tabular"]
 [package.metadata.requires-dev]
 dev = [
     { name = "commitizen", specifier = ">=4.13" },
+    { name = "coverage", specifier = ">=7.13.5" },
     { name = "griffe", specifier = ">=2" },
     { name = "memray", specifier = ">=1.19.2" },
     { name = "mypy", specifier = ">=1.19" },
@@ -5234,7 +5239,10 @@ dev = [
     { name = "prek", specifier = ">=0.3.8" },
     { name = "psutil", specifier = ">=7.2.2" },
     { name = "pytest", specifier = ">=9.0.2" },
-    { name = "pytest-asyncio", specifier = ">=1.3.0" },
+    { name = "pytest-asyncio", specifier = ">=1.3" },
+    { name = "pytest-cov", specifier = ">=7.1.0" },
+    { name = "pytest-mock", specifier = ">=3.15.1" },
+    { name = "respx", specifier = ">=0.22.0" },
     { name = "ruff", specifier = ">=0.15" },
     { name = "types-beautifulsoup4", specifier = ">=4.12" },
     { name = "types-dateparser", specifier = ">=1.4.0.20260328" },
