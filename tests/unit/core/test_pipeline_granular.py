@@ -153,7 +153,7 @@ class TestTryCachedGranular:
         html = '<html><h1 class="title">Test</h1><span class="price">$10</span></html>'
 
         # Mock _fetch_and_clean_for_cache to bypass real fetch+retry logic
-        stub._fetch_and_clean_for_cache = mocker.AsyncMock(return_value=html)
+        stub._fetch_and_clean_for_cache = mocker.AsyncMock(return_value=(html, html))
 
         # Mock cleaner (still needed by _extract_all_fresh path)
         stub.cleaner.clean_html.return_value = html
@@ -194,7 +194,7 @@ class TestTryCachedGranular:
 
         mock_fetcher = mocker.AsyncMock()
         html = '<html></html>'
-        stub._fetch_and_clean_for_cache = mocker.AsyncMock(return_value=html)
+        stub._fetch_and_clean_for_cache = mocker.AsyncMock(return_value=(html, html))
         stub.cleaner.clean_html.return_value = html
 
         # All fields fail verification
@@ -215,7 +215,7 @@ class TestTryCachedGranular:
 
         mock_fetcher = mocker.AsyncMock()
         html = '<html><h1 class="title">Test</h1></html>'
-        stub._fetch_and_clean_for_cache = mocker.AsyncMock(return_value=html)
+        stub._fetch_and_clean_for_cache = mocker.AsyncMock(return_value=(html, html))
         stub.cleaner.clean_html.return_value = html
 
         # title fresh, price stale
