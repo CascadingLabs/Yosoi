@@ -116,3 +116,18 @@ node polls `strong[data-order-id]` as the success assert.
 This is the strongest generalization datapoint yet: the same primitive (A3Node + unified
 selectors + verify) drives a stateful, transactional, AX-blind site end to end — not just
 read-only scraping.
+
+### Recording for marketing (`record_checkout.py`)
+
+Replays the checkout node-by-node, injects a fixed on-page debug HUD after each step
+(`● REC · voidcrawl replay · step k/N: <action> [OK]`, removed before the next action so
+it never blocks a click), screenshots each frame, and stitches them with ffmpeg into a GIF
++ MP4 (`.yosoi/video/`, gitignored). `HEADFUL=1` watches it live on a machine with a display.
+
+**voidcrawl has no native video/screencast API** — `Page` exposes only `screenshot` /
+`screenshot_png` (stills); there's no screencast/record method on any class, nor in the Rust
+crates. CDP `Page.startScreencast` (and Chrome video recording) could back a native
+`Page.record()` debug API — a worthwhile VoidCrawl feature; until then, screenshot→ffmpeg is
+the path. ffmpeg gotcha: full-page screenshots vary in height per step, so frames are
+normalised onto a uniform even canvas before the palette filtergraph (which errors on mixed
+sizes); the GIF is derived from the uniform MP4.
