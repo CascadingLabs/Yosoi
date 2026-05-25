@@ -153,6 +153,25 @@ async def _act(node: A3Node, page: Any) -> None:
         await _run_scroll(node, page)
     elif act.op == 'click':
         await _run_click(node, page)
+    elif act.op == 'type':
+        await _run_type(node, page)
+
+
+async def _run_type(node: A3Node, page: Any) -> None:
+    """Type into a css/xpath target. Sets value on ALL matches via the native setter +
+    input/change events — robust to duplicated DOM and framework-controlled inputs
+    (a plain .value assignment won't register with React/Solid)."""
+    sel = next((t for t in node.act.targets if t.type in ('css', 'xpath')), None)
+    if sel is None:
+        return
+    text = node.act.text or ''
+    js = (
+        '(()=>{const set=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,"value").set;let k=0;'
+        f'document.querySelectorAll({json.dumps(sel.value)}).forEach(el=>{{set.call(el,{json.dumps(text)});'
+        'el.dispatchEvent(new Event("input",{bubbles:true}));el.dispatchEvent(new Event("change",{bubbles:true}));k++;});'
+        'return k;})()'
+    )
+    await page.evaluate_js(js)
 
 
 async def _run_scroll(node: A3Node, page: Any) -> None:

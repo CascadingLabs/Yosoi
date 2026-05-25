@@ -48,6 +48,7 @@ __all__ = [  # noqa: RUF022 — grouped by concern, not alphabetical
     'teleport',
     'click',
     'scroll_until',
+    'fill',
     # re-exported unified selector vocabulary
     'SelectorEntry',
     'FieldSelectors',
@@ -167,6 +168,11 @@ def scroll_until(feed: str, item: str, n: int, *, max_iters: int = 15, intent: s
     return A3Node(
         act=Act(op='scroll', feed=feed, item=item), expect=min_count(n), repeat=True, max_iters=max_iters, intent=intent
     )
+
+
+def fill(selector: str, text: str, *, intent: str | None = None) -> A3Node:
+    """A type node: set `text` into the css `selector` (an extraction-style css target)."""
+    return A3Node(act=Act(op='type', targets=[css(selector)], text=text), intent=intent)
 
 
 # ── hybrid emission: agent output + merge ────────────────────────────────────

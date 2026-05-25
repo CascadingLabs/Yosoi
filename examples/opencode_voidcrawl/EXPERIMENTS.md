@@ -90,3 +90,29 @@ The verify score is the oracle; the study maps the deterministic↔LLM frontier:
 Open questions this should answer: at what interaction depth / contract size does pure
 replay break? Is a 0-shot LLM enough to heal, or does it need priors? Do learned plans
 make future discovery cheaper?
+
+## Cross-domain transaction — qscrape eshop full checkout (`eshop_checkout.py`)
+
+A structurally different site and a much harder task: buy a product **under 100 GS** and
+**check out fully** on `qscrape.dev/l2/eshop/` (a mock sandbox; mock card/address). Three
+recon subagents mapped it; the e2e agent placed a mock order; the recipe was locked into a
+`ReplayPlan` and replayed through our executor.
+
+**Result: 16/16 nodes, verify 100%, order confirmed (`VM-312-505836`), zero LLM.** The flow:
+deep-link a `<100 GS` product (`?sku=VM-MIN-001`, Standard Iron Pickaxe 14.50 GS) → Add to
+Cart → cart → Proceed to Checkout → fill 10 form fields → Place Order → assert
+`strong[data-order-id]`.
+
+**Why it matters — the inverse of Maps.** The eshop is **AX-blind** where Maps was AX-rich:
+the product grid and form inputs have no names/ids/labels (the `<main>` AX subtree is empty),
+so the durable handles are **css/data-attrs** (`article[data-sku]`, `input[data-label="…"]`);
+only the named **buttons** surface in AX. The plan therefore mixes **`role` selectors for
+buttons and `css` for fields in one `SelectorEntry`** — validating the unified model from both
+ends. Added a robust **`type` op**: sets value on *all* matches via the native setter + input/
+change events, handling the site's **duplicated DOM** (off-screen + visible copies) and
+framework-**controlled inputs** in one shot. Settling stayed event-driven; the final `wait`
+node polls `strong[data-order-id]` as the success assert.
+
+This is the strongest generalization datapoint yet: the same primitive (A3Node + unified
+selectors + verify) drives a stateful, transactional, AX-blind site end to end — not just
+read-only scraping.
