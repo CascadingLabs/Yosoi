@@ -64,10 +64,17 @@ plan has drifted and needs re-discovery. The LLM's job shrinks from "every run" 
 
 The verify score is the oracle; the study maps the deterministic↔LLM frontier:
 
-1. **0-shot LLM heal on controlled breaks** *(building now)* — corrupt a selector
-   (wrong-name / wrong-role / too-generic) so extraction drops, hand OpenCode **only the
-   compact AX outline of one card**, ask 0-shot for the repaired role+name, re-extract,
-   measure recovery. One browse; all cells in-memory on captured AX nodes.
+1. **0-shot LLM heal on controlled breaks** *(done — `heal_study.py`)* — corrupt a
+   selector (wrong-name / wrong-role / too-generic) so extraction drops, hand OpenCode
+   **only the compact AX outline of one card**, ask 0-shot for the repaired role+name,
+   re-extract, measure recovery. One browse; all cells in-memory on captured AX nodes.
+   **Result:** baseline 21/21; all three breaks healed to 21/21 0-shot (LLM returned
+   `role='image' name='stars'` every time). **Confound:** the truncated outline sample
+   happened to be an ad card (no rating node visible), yet the model still answered —
+   so it leaned partly on its *own Maps prior knowledge*, not just the outline. The
+   clean transfer test (step 3) therefore needs a site the model doesn't know, or an
+   anonymised outline, to separate "the AX outline is sufficient" from "the model
+   already knows this site".
 2. **Modulation matrix** — sweep depth × contract-size × site; read `VerifyReport.score`
    per cell to plot where replay holds vs needs an LLM.
 3. **Prior transfer** — when the LLM heals, inject previously-learned A3Nodes/selectors as

@@ -16,7 +16,11 @@ from __future__ import annotations
 
 import asyncio
 import os
+import sys
+from pathlib import Path
 from typing import Any
+
+sys.path.insert(0, str(Path(__file__).parent.parent))  # examples/ — for opencode_server
 
 import maps_teleport  # noqa: F401  registers the 'rating' coercer on import
 from maps_teleport import CITIES, build_plan
