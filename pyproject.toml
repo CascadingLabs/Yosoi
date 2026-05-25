@@ -4,7 +4,7 @@ requires = [ "uv-build>=0.1" ]
 
 [project]
 name = "yosoi"
-version = "0.0.1a16"
+version = "0.0.1a17"
 description = "AI-Powered Selector Discovery - Discover once, scrape forever"
 readme = "README.md"
 license = { file = "LICENSE.md" }
@@ -285,7 +285,7 @@ tasks.licenses = "uv run pip-licenses"  # check dependency licenses
 tasks.docs = "uv run python scripts/generate_api_docs.py --output-dir ../CascadingLabsFE/docs/yosoi-docs/reference"  # generate split API reference with GitHub source links
 tasks.bump = "uv run cz bump --yes"  # auto-detect from conventional commits
 tasks.bump-dry = "uv run cz bump --dry-run"  # preview what the next bump would be
-tasks.bump-alpha = "uv run cz bump --increment PATCH --prerelease alpha --yes"  # next alpha pre-release (e.g. 0.0.1a15 → 0.0.1a16)
+tasks.bump-alpha = "uv run cz bump --increment PATCH --prerelease alpha --yes"  # next alpha pre-release (e.g. 0.0.1a15 → 0.0.1a17)
 tasks.bump-beta = "uv run cz bump --increment PATCH --prerelease beta --yes"  # next beta pre-release (e.g. 0.0.1a15 → 0.0.1b0)
 tasks.bump-patch = "uv run cz bump --increment PATCH --yes"  # patch release (e.g. 0.0.1a14 → 0.0.1)
 tasks.bump-minor = "uv run cz bump --increment MINOR --yes"  # minor release (e.g. 0.0.1a14 → 0.1.0)
