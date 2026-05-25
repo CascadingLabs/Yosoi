@@ -216,7 +216,7 @@ class DiscoveryOrchestrator:
 
         raw_results: list[FieldTaskResult | BaseException] = await asyncio.gather(*coroutines, return_exceptions=True)
 
-        merged, cached_count, escalated_count = self._merge_results(raw_results, overrides, task_specs)
+        merged, cached_count, escalated_count = self._merge_results(raw_results, overrides)
 
         # Persist contract-pinned root so the cache is self-contained
         contract_root = self._contract.get_root()
@@ -255,19 +255,15 @@ class DiscoveryOrchestrator:
         self,
         raw_results: list[FieldTaskResult | BaseException],
         overrides: dict[str, dict[str, Any]],
-        task_specs: list[dict[str, object]],
     ) -> tuple[SelectorMap, int, int]:
         """Merge field task results into a selector map.
 
-        Combines successful field discoveries, logs unexpected exceptions,
-        applies manual overrides, and writes NA sentinels for fields that
-        failed so they are not re-attempted on future runs.
+        Combines successful field discoveries, logs unexpected exceptions, and
+        applies manual overrides.
 
         Args:
             raw_results: Raw asyncio.gather output — mix of FieldTaskResult and exceptions.
             overrides: Manual selector overrides from the contract (always take precedence).
-            task_specs: The task specs used to build the coroutines, used to determine
-                which fields were attempted so NA sentinels can be written for failures.
 
         Returns:
             Tuple of (merged selector map, cached field count, escalated field count).
@@ -292,17 +288,6 @@ class DiscoveryOrchestrator:
         # Overrides always take precedence
         for field_name, override_dict in overrides.items():
             merged[field_name] = override_dict
-
-        # Write NA sentinels to storage for fields that were attempted but failed entirely.
-        # This prevents repeated LLM calls for fields that don't exist on this domain.
-        # Note: sentinels are NOT included in the returned merged map — callers see only
-        # fields that were actually discovered.
-        all_attempted = {str(spec['field_name']) for spec in task_specs}
-        # FIXME: write path is incomplete. This computes the sentinel set but nothing ever
-        # persists `primary: 'NA'` to the cache, so the reader (field_task.py "known absent"
-        # check) can never fire — dead today. Also, storing on `self` is unsafe if one
-        # orchestrator is reused across the concurrent worker path. Persist the sentinels.
-        self._na_sentinels = {field_name for field_name in all_attempted if field_name not in merged}
 
         return merged, cached_count, escalated_count
 

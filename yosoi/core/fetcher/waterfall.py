@@ -220,11 +220,9 @@ class JSFetcher(HTMLFetcher):
             # No content-length at all + chunked transfer often means streaming SSR
             transfer = headers.get('transfer-encoding', '')
             content_type = headers.get('content-type', '')
+            # Final heuristic: chunked HTML with no content-length is often streaming SSR.
+            # This already returns False when unmatched, so it doubles as the default.
             return 'chunked' in transfer and 'html' in content_type and 'content-length' not in headers
-
-            # FIXME: dead code — unreachable after the return above. Remove it, or if a
-            # default-False fall-through was intended, restructure the chunked check.
-            return False
 
         except (httpx.HTTPError, OSError, ValueError):
             return False  # probe failed — let the waterfall decide naturally

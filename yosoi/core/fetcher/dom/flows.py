@@ -132,11 +132,10 @@ class JsAction(JsActionNode):
     def __init__(self, code: str) -> None:
         """Initialise with raw JavaScript code string."""
         self.code = code
-        # FIXME: this mutates the *class* attribute `js`, so every JsAction instance shares
-        # it and the last one constructed wins. Under concurrent tabs (pool allows up to
-        # max_concurrent) one tab's flow can execute another tab's JS. Store `js` on the
-        # instance (self.js = inline_js(code)) instead of on the class.
-        type(self).js = inline_js(code)
+        # Instance attribute, not the class attribute: a class-level assignment is shared by
+        # every JsAction, so under the concurrent tab pool one tab's flow could execute
+        # another tab's JS. `JsActionNode.run` reads `self.js`, so the instance attr wins.
+        self.js = inline_js(code)
 
     def params(self) -> dict[str, Any]:
         """Return only the code string, excluding the non-serialisable JsSource."""
