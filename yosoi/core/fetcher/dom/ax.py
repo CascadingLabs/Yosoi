@@ -164,6 +164,15 @@ def extract_records(
     return records
 
 
+def extract_one(nodes: list[dict[str, Any]], *, fields: dict[str, FieldSelectors]) -> dict[str, str | None]:
+    """Resolve each field against the WHOLE tree — one record, not repeating cards.
+
+    For single-record pages like a detail panel, where each field's `role` selector
+    (+ accessible-name substring) locates its node anywhere in the tree.
+    """
+    return {key: _resolve_field(selectors, nodes) for key, selectors in fields.items()}
+
+
 def _resolve_field(selectors: FieldSelectors, descs: list[dict[str, Any]]) -> str | None:
     """Try the cascade; a `role` entry returns the first matching descendant's text.
 

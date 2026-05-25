@@ -6,7 +6,7 @@ from typing import Any
 
 import pytest
 
-from yosoi.core.fetcher.dom.ax import AxTarget, extract_records, find_target, snapshot
+from yosoi.core.fetcher.dom.ax import AxTarget, extract_one, extract_records, find_target, snapshot
 from yosoi.core.fetcher.dom.flows import ClickByRole
 from yosoi.core.fetcher.dom.probes import TriggerKind, probe
 from yosoi.models.selectors import FieldSelectors, role
@@ -179,3 +179,16 @@ def test_extract_records_missing_field_is_none() -> None:
     nodes = [_ax('1', 'article', 'Solo', children=('2',)), _ax('2', 'link', 'Solo')]
     recs = extract_records(nodes, card_role='article', fields={'rating': FieldSelectors(primary=role('image'))})
     assert recs == [{'name': 'Solo', 'rating': None}]
+
+
+def test_extract_one_resolves_against_whole_tree() -> None:
+    # single-record page (e.g. a detail panel): fields resolve anywhere, by role + name.
+    nodes = [_ax('1', 'button', 'Phone: (212) 555-1212'), _ax('2', 'link', 'Website: example.com')]
+    rec = extract_one(
+        nodes,
+        fields={
+            'phone': FieldSelectors(primary=role('button', 'Phone:')),
+            'website': FieldSelectors(primary=role('link', 'Website:')),
+        },
+    )
+    assert rec == {'phone': 'Phone: (212) 555-1212', 'website': 'Website: example.com'}
