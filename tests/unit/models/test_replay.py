@@ -10,15 +10,18 @@ from yosoi.models.replay import (
     AgentAnnotations,
     Assertion,
     NodeResult,
+    Parallel,
     ReplayPlan,
     SelectorEntry,
     StepAnnotation,
     VerifyReport,
     click,
     css,
+    fill,
     merge_annotations,
     min_count,
     navigate,
+    parallel,
     role,
     scroll_until,
     teleport,
@@ -98,6 +101,21 @@ def test_replay_plan_round_trips() -> None:
     again = ReplayPlan.model_validate_json(plan.model_dump_json())
     assert again.nodes[1].repeat is True
     assert again.source == 'mcp-agent'
+
+
+def test_parallel_group_and_dwell_round_trip() -> None:
+    plan = ReplayPlan(
+        target='x',
+        task='t',
+        nodes=[navigate('https://x.test', dwell=2.0), parallel(fill('input#a', '1'), fill('input#b', '2'))],
+    )
+    again = ReplayPlan.model_validate_json(plan.model_dump_json())
+    n0 = again.nodes[0]
+    assert isinstance(n0, A3Node)  # A3Node arm (structural smart union)
+    assert n0.dwell == 2.0
+    n1 = again.nodes[1]
+    assert isinstance(n1, Parallel)  # Parallel arm — distinguished by having `nodes`
+    assert len(n1.nodes) == 2
 
 
 def test_verify_report_scores_pass_rate() -> None:

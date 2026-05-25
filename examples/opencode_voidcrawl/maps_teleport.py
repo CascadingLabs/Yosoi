@@ -113,7 +113,10 @@ def build_plan(city: City) -> ReplayPlan:
     the SPA's network never idles, so readiness is gated on the structure.
     """
     feed_present = selector_present(css(_FEED))
-    read = navigate(MAPS_URL, expect=url_contains('/maps/'))  # read
+    # `dwell` (not a sleep-everywhere): geolocation resolution has NO DOM signal, so the
+    # prime/read loads each need an explicit settle for Maps to apply the teleport.
+    prime = navigate(MAPS_URL, dwell=3.0)  # prime: let Maps resolve the teleported location
+    read = navigate(MAPS_URL, expect=url_contains('/maps/'), dwell=3.0)  # read: applies it
     read.assess = feed_present  # wait for the prime load before re-navigating
     scroll = scroll_until(_FEED, _ITEM, TARGET)
     scroll.assess = feed_present  # wait for the read load before scrolling
@@ -121,7 +124,7 @@ def build_plan(city: City) -> ReplayPlan:
         target=TARGET_KEY,
         task='guitar shops near me',
         source='scripted',
-        nodes=[teleport(city.lat, city.lon, city.tz, city.locale), navigate(MAPS_URL), read, scroll],
+        nodes=[teleport(city.lat, city.lon, city.tz, city.locale), prime, read, scroll],
         extract=_EXTRACT,
     )
 

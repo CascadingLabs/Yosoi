@@ -31,6 +31,7 @@ from yosoi.models.selectors import FieldSelectors, SelectorEntry, css, role, vis
 __all__ = [  # noqa: RUF022 — grouped by concern, not alphabetical
     'Act',
     'A3Node',
+    'Parallel',
     'Assertion',
     'ExtractField',
     'ExtractRecipe',
@@ -49,6 +50,7 @@ __all__ = [  # noqa: RUF022 — grouped by concern, not alphabetical
     'click',
     'scroll_until',
     'fill',
+    'parallel',
     # re-exported unified selector vocabulary
     'SelectorEntry',
     'FieldSelectors',
@@ -90,10 +92,28 @@ class A3Node(BaseModel):
     """
 
     act: Act
-    assess: Assertion | None = None  # precondition
+    assess: Assertion | None = None  # precondition — readiness is gated on this (polled), not a sleep
     expect: Assertion | None = None  # postcondition (the 'assert')
     repeat: bool = False
     max_iters: int = 1
+    # Explicit fixed wait AFTER the act, for the rare case with no DOM signal to assert
+    # on (e.g. Maps resolving teleported geolocation). Default 0 = none; prefer `assess`.
+    dwell: float = 0.0
+    intent: str | None = None
+
+
+class Parallel(BaseModel):
+    """A fan-out group: its `nodes` are independent and run concurrently.
+
+    The first real composition above the primitive. Use it for steps with no
+    inter-dependency (e.g. N independent form fields) so they don't each pay a
+    sequential settle — the group asserts readiness once (`assess`), then fans out.
+    Distinguished from A3Node structurally (it has `nodes`, not `act`), so plans
+    round-trip without a discriminator.
+    """
+
+    nodes: list[A3Node]
+    assess: Assertion | None = None  # group precondition, checked once before fan-out
     intent: str | None = None
 
 
@@ -119,11 +139,11 @@ class ExtractRecipe(BaseModel):
 
 
 class ReplayPlan(BaseModel):
-    """Persistable replay artifact: a (currently flat) composition of A3Nodes."""
+    """Persistable replay artifact: a sequence of A3Nodes and/or Parallel fan-out groups."""
 
     target: str
     task: str
-    nodes: list[A3Node]
+    nodes: list[A3Node | Parallel]
     extract: ExtractRecipe | None = None
     source: Literal['mcp-agent', 'scripted', 'hand'] = 'scripted'
     discovered_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
@@ -148,9 +168,9 @@ def url_contains(text: str) -> Assertion:
     return Assertion(kind='url_contains', text=text)
 
 
-def navigate(url: str, *, expect: Assertion | None = None) -> A3Node:
-    """A navigate node."""
-    return A3Node(act=Act(op='navigate', url=url), expect=expect)
+def navigate(url: str, *, expect: Assertion | None = None, dwell: float = 0.0) -> A3Node:
+    """A navigate node. `dwell` only for no-DOM-signal settling (e.g. geo); prefer asserts."""
+    return A3Node(act=Act(op='navigate', url=url), expect=expect, dwell=dwell)
 
 
 def teleport(lat: float, lon: float, tz: str | None = None, locale: str | None = None) -> A3Node:
@@ -173,6 +193,11 @@ def scroll_until(feed: str, item: str, n: int, *, max_iters: int = 15, intent: s
 def fill(selector: str, text: str, *, intent: str | None = None) -> A3Node:
     """A type node: set `text` into the css `selector` (an extraction-style css target)."""
     return A3Node(act=Act(op='type', targets=[css(selector)], text=text), intent=intent)
+
+
+def parallel(*nodes: A3Node, intent: str | None = None) -> Parallel:
+    """Group independent nodes to run concurrently (fan-out)."""
+    return Parallel(nodes=list(nodes), intent=intent)
 
 
 # ── hybrid emission: agent output + merge ────────────────────────────────────

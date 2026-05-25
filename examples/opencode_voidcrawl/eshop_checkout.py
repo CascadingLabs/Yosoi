@@ -17,7 +17,7 @@ import asyncio
 from replay_runtime import execute_plan
 from voidcrawl import BrowserConfig, BrowserSession
 
-from yosoi.models.replay import A3Node, Act, ReplayPlan, click, css, fill, navigate, role, selector_present
+from yosoi.models.replay import A3Node, Act, Parallel, ReplayPlan, click, css, fill, navigate, role, selector_present
 
 # Standard Iron Pickaxe — 14.50 GS (< 100), in stock. Deep-link the detail view.
 _SKU_URL = 'https://qscrape.dev/l2/eshop/?sku=VM-MIN-001'
@@ -36,15 +36,36 @@ _FIELDS: list[tuple[str, str]] = [
 ]
 
 
+def _gated_click(name: str, intent: str) -> A3Node:
+    """Click a button, gated on that button being present (assertion-driven settle)."""
+    node = click(role('button', name), intent=intent)
+    node.assess = selector_present(role('button', name))
+    return node
+
+
+def _gated_fill(label: str, value: str) -> A3Node:
+    """Fill a field, gated on that field's input being present."""
+    node = fill(f'input[data-label="{label}"]', value, intent=f'fill {label}')
+    node.assess = selector_present(css(f'input[data-label="{label}"]'))
+    return node
+
+
 def build_checkout_plan() -> ReplayPlan:
-    """The locked-in checkout flow: role for buttons, css(data-label) for fields."""
-    nodes = [
-        navigate(_SKU_URL),
-        click(role('button', 'Add to Cart'), intent='add the <100 GS item to the cart'),
-        click(role('button', 'Cart (1)'), intent='open the cart'),
-        click(role('button', 'Proceed to Checkout'), intent='go to the checkout form'),
-        *[fill(f'input[data-label="{label}"]', value, intent=f'fill {label}') for label, value in _FIELDS],
-        click(role('button', 'Place Order'), intent='submit the order'),
+    """The locked-in checkout flow: role for buttons, css(data-label) for fields.
+
+    Settling is purely assertion-driven — every node waits on its own precondition
+    (the button/field it needs), no sleeps. Fills are sequential here; the fan-out
+    variant lives in fanout_checkout.py.
+    """
+    nodes: list[A3Node | Parallel] = [
+        # dwell: SPA hydration has no DOM signal — the button is in the AX tree before its
+        # click handler is wired, so a presence gate alone would click a dead button.
+        navigate(_SKU_URL, dwell=2.5),
+        _gated_click('Add to Cart', 'add the <100 GS item to the cart'),
+        _gated_click('Cart (1)', 'open the cart'),
+        _gated_click('Proceed to Checkout', 'go to the checkout form'),
+        *[_gated_fill(label, value) for label, value in _FIELDS],
+        _gated_click('Place Order', 'submit the order'),
         A3Node(act=Act(op='wait'), assess=_ORDER_OK, expect=_ORDER_OK, intent='await order confirmation'),
     ]
     return ReplayPlan(

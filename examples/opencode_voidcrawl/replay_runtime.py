@@ -7,9 +7,14 @@ settles; promote to the package once stable. Three pieces close the loop:
   * execute:  execute_plan() — run each node, trying its selector fallback cascade
   * verify:   each node's `expect` is checked after it runs -> VerifyReport (pass rate)
 
-Assumptions (see module-level discussion in the chat that produced this):
-  - navigate settles with a fixed sleep; Maps' network never idles.
-  - min_count counts the scroll node's own act.item (a schema refinement is noted).
+Settling model:
+  - Readiness is assertion-driven: a node waits for its `assess` precondition to hold
+    (the network never idles on an SPA, so we gate on structure, not time). No assess
+    means proceed immediately — no arbitrary sleep.
+  - The one fixed wait is an explicit per-node `dwell`, for the rare no-DOM-signal case
+    (Maps geolocation; SPA hydration that wires a handler with no observable marker).
+  - execute_plan is fail_fast by default: a linear plan can't recover from a missed
+    precondition, so it stops at the first failure rather than burning settle timeouts.
 """
 
 from __future__ import annotations
@@ -24,6 +29,7 @@ from yosoi.models.replay import (
     Act,
     Assertion,
     NodeResult,
+    Parallel,
     ReplayPlan,
     SelectorEntry,
     VerifyReport,
@@ -36,19 +42,12 @@ from yosoi.models.replay import (
 )
 
 _PREFIX = 'voidcrawl_'
-# Settling is event-driven, not network-based: a node waits until its `assess`
-# precondition holds (the previous step settled enough to proceed), polling at
-# `_SETTLE_POLL` up to `_SETTLE_TIMEOUT` — past that the node is terminal. Nodes
-# with no assess fall back to a small fixed sleep.
-_SETTLE_POLL = 0.4
-_SETTLE_TIMEOUT = 20.0
-_NO_ASSESS_SLEEP = 1.0
-# A navigate needs a fixed dwell after it: an SPA like Maps resolves geolocation
-# asynchronously with NO DOM signal, so "feed present" alone fires before the
-# teleported location is applied. This is the deliberate small-sleep fallback for
-# the case where structure can't tell us readiness; the NEXT node's `assess` still
-# gates structural readiness on top.
-_NAV_DWELL = 3.0
+# Settling is purely assertion-driven: a node waits until its `assess` precondition
+# holds (polled at `_SETTLE_POLL` up to `_SETTLE_TIMEOUT`, then terminal). A node with
+# NO assess proceeds immediately — no arbitrary sleep. The one fixed wait is an
+# explicit per-node `dwell`, for the rare no-DOM-signal case (e.g. Maps geolocation).
+_SETTLE_POLL = 0.3
+_SETTLE_TIMEOUT = 8.0  # a precondition that isn't met in ~8s is treated as terminal (fail fast)
 
 
 # ── capture: MCP tool parts -> A3Nodes (ground truth) ────────────────────────
@@ -61,7 +60,7 @@ def plan_from_tool_parts(tool_parts: list[dict[str, Any]], *, target: str, task:
     that the agent corrected never enters the plan). Read-only / lifecycle tools
     (session_open/close, ax_tree, title, extract, screenshot) are skipped.
     """
-    nodes: list[A3Node] = []
+    nodes: list[A3Node | Parallel] = []
     for part in tool_parts:
         if part.get('type') != 'tool':
             continue
@@ -96,39 +95,68 @@ def _node_for(name: str, inp: dict[str, Any]) -> A3Node | None:
 # ── execute + verify ─────────────────────────────────────────────────────────
 
 
-async def execute_plan(plan: ReplayPlan, page: Any) -> VerifyReport:
-    """Run every node in order; record whether each node's `expect` held."""
+async def execute_plan(plan: ReplayPlan, page: Any, *, fail_fast: bool = True) -> VerifyReport:
+    """Run the plan in order. A3Nodes run sequentially; a Parallel group fans out.
+
+    fail_fast (default): stop at the first failed node — a linear plan can't recover
+    from a missed precondition, so plowing on just burns settle timeouts. The remaining
+    nodes are reported as skipped so the report still shows where it stopped.
+    """
     results: list[NodeResult] = []
-    for i, node in enumerate(plan.nodes):
-        results.append(await run_node(i, node, page))
+    i = 0
+    stopped = False
+    for item in plan.nodes:
+        count = len(item.nodes) if isinstance(item, Parallel) else 1
+        if stopped:
+            results.extend(
+                NodeResult(index=i + k, op='skipped', passed=False, detail='skipped (prior node failed)')
+                for k in range(count)
+            )
+            i += count
+            continue
+        if isinstance(item, Parallel):
+            if not await _settle_assert(item.assess, page):  # group precondition, checked once
+                results.append(NodeResult(index=i, op='parallel', passed=False, detail='group assess never held'))
+                stopped = fail_fast
+                i += 1
+                continue
+            fanned = await asyncio.gather(*(run_node(i + k, child, page) for k, child in enumerate(item.nodes)))
+            results.extend(fanned)
+            i += count
+        else:
+            result = await run_node(i, item, page)
+            results.append(result)
+            stopped = fail_fast and not result.passed
+            i += 1
     return VerifyReport(results=results)
 
 
 async def run_node(index: int, node: A3Node, page: Any) -> NodeResult:
-    """Settle (assess) -> act (fallback cascade) -> assert (expect)."""
+    """Settle (assess) -> act (fallback cascade) -> [dwell] -> assert (expect)."""
     op = node.act.op
-    if not await _settle(node, page):
+    if not await _settle_assert(node.assess, page):
         return NodeResult(index=index, op=op, passed=False, detail='assess never held (terminal)')
     try:
         await _act(node, page)
     except (RuntimeError, OSError, ValueError) as exc:
         return NodeResult(index=index, op=op, passed=False, detail=f'act failed: {exc}')
+    if node.dwell:  # explicit no-DOM-signal wait (e.g. geo); 0 by default
+        await asyncio.sleep(node.dwell)
     passed, detail = await _check(node.expect, node, page)
     return NodeResult(index=index, op=op, passed=passed, detail=detail)
 
 
-async def _settle(node: A3Node, page: Any) -> bool:
-    """Event-driven readiness: wait until this node's `assess` holds, else terminal.
+async def _settle_assert(assertion: Assertion | None, page: Any) -> bool:
+    """Assertion-driven readiness: poll until `assertion` holds, else terminal.
 
-    The network never idles on an SPA, so we gate on the structure: a node is ready
-    when its precondition is satisfiable. No assess -> a small fixed-sleep fallback.
+    No assertion -> ready immediately (no arbitrary sleep). The network never idles on
+    an SPA, so readiness is gated on the structure (the assertion), not time.
     """
-    if node.assess is None:
-        await asyncio.sleep(_NO_ASSESS_SLEEP)
+    if assertion is None:
         return True
     waited = 0.0
     while waited < _SETTLE_TIMEOUT:
-        ok, _ = await _check(node.assess, node, page)
+        ok, _ = await _check(assertion, None, page)
         if ok:
             return True
         await asyncio.sleep(_SETTLE_POLL)
@@ -145,10 +173,9 @@ async def _act(node: A3Node, page: Any) -> None:
         if act.locale:
             await page.set_locale(act.locale)
     elif act.op == 'navigate':
-        await page.navigate(act.url or 'about:blank')
-        await asyncio.sleep(_NAV_DWELL)  # geo resolution has no DOM signal; dwell (see _NAV_DWELL)
+        await page.navigate(act.url or 'about:blank')  # settling is the next step's assess (or node.dwell)
     elif act.op == 'wait':
-        await asyncio.sleep(_NO_ASSESS_SLEEP)
+        pass  # a pure gate: its `assess` does the waiting, the act is a no-op
     elif act.op == 'scroll':
         await _run_scroll(node, page)
     elif act.op == 'click':
@@ -218,13 +245,18 @@ async def _count(page: Any, feed: str | None, item: str) -> int:
     return raw if isinstance(raw, int) else -1
 
 
-async def _check(a: Assertion | None, node: A3Node, page: Any) -> tuple[bool, str | None]:
-    """Evaluate an assertion (used as both `assess` precondition and `expect` post)."""
+async def _check(a: Assertion | None, node: A3Node | None, page: Any) -> tuple[bool, str | None]:
+    """Evaluate an assertion (used as both `assess` precondition and `expect` post).
+
+    `node` is the owning A3Node when available (for min_count's feed/item context); it
+    is None when checking a Parallel group's or a poll's standalone assertion.
+    """
     if a is None:
         return True, None
     if a.kind == 'min_count':
-        item = a.selector.value if (a.selector and a.selector.value) else node.act.item
-        count = await _count(page, node.act.feed, item or '')
+        item = a.selector.value if (a.selector and a.selector.value) else (node.act.item if node else None)
+        feed = node.act.feed if node else None
+        count = await _count(page, feed, item or '')
         ok = count >= (a.count or 0)
         return ok, None if ok else f'{count} < {a.count}'
     if a.kind == 'url_contains':
@@ -236,9 +268,23 @@ async def _check(a: Assertion | None, node: A3Node, page: Any) -> tuple[bool, st
         ok = (a.text or '') in content
         return ok, None if ok else f'{a.text!r} not on page'
     if a.kind == 'selector_present' and a.selector:
-        present = await page.query_selector(a.selector.value)
-        return bool(present), None if present else 'selector absent'
+        present = await _selector_present(a.selector, page)
+        return present, None if present else 'selector absent'
     return True, None
+
+
+async def _selector_present(sel: SelectorEntry, page: Any) -> bool:
+    """Presence check that honours the selector kind: role -> AX query, else css.
+
+    css uses evaluate_js, NOT page.query_selector: the latter returns the matched
+    element's text (empty -> falsy) for an <input>, so a present-but-empty field would
+    read as absent. existence is `querySelector(...) !== null`.
+    """
+    if sel.type == 'role':
+        nodes = await page.query_ax_tree(role=sel.role, name=sel.name)
+        return bool(nodes)
+    present = await page.evaluate_js(f'document.querySelector({json.dumps(sel.value)})!==null')
+    return bool(present)
 
 
 # ── persistence (canonical ReplayPlan JSON, per target) ──────────────────────
