@@ -77,9 +77,15 @@ The verify score is the oracle; the study maps the deterministic↔LLM frontier:
    already knows this site".
 2. **Modulation matrix** — sweep depth × contract-size × site; read `VerifyReport.score`
    per cell to plot where replay holds vs needs an LLM.
-3. **Prior transfer** — when the LLM heals, inject previously-learned A3Nodes/selectors as
-   few-shot priors; measure whether they raise heal rate / cut shots vs cold 0-shot.
-   Hypothesis: the `card → fields-by-role` pattern transfers across sites.
+3. **Prior transfer, same-domain** *(done — `transfer_study.py`)* — cold 0-shot vs
+   primed (a learned `card-outline → role='image' name='stars'` example as one few-shot),
+   across a strong (gpt-5.3-codex) and weak (gpt-5.4-mini) model, with a deliberately
+   *vague* field description. **Result: all four cells 21/21** — even weak+vague+cold
+   healed perfectly; the prior added nothing. **Finding:** on a well-labelled same-domain
+   site there is *no headroom* — the AX outline alone is sufficient for 0-shot heal, so
+   learned priors are redundant. Transfer value can only appear where cold *fails*: a
+   site the model hasn't memorised and/or genuinely ambiguous structure (no telegraphing
+   names). That's the cross-domain regime — the next place to look.
 
 Open questions this should answer: at what interaction depth / contract size does pure
 replay break? Is a 0-shot LLM enough to heal, or does it need priors? Do learned plans
