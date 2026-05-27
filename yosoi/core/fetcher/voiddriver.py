@@ -53,18 +53,16 @@ class _VoidCrawlFetcher(HTMLFetcher):
         max_concurrent: int = 5,
         min_content_length: int = 500,
         no_sandbox: bool = False,
+        browser_executable_path: str | None = None,
         console: Console | None = None,
         experimental_a3node: bool = False,
         **_kwargs: Any,
     ) -> None:
-        # FIXME: browser_executable_path is passed in via JSFetcher._chrome_kwargs but
-        # lands in **_kwargs and is silently dropped — __aenter__ never threads it into
-        # BrowserConfig, so a custom Chrome binary is a no-op. Accept it explicitly and
-        # forward to BrowserConfig, or remove it from JSFetcher so it doesn't look wired.
         self.timeout = timeout
         self.max_concurrent = max_concurrent
         self.min_content_length = min_content_length
         self.no_sandbox = no_sandbox
+        self.browser_executable_path = browser_executable_path
         self._console = console or Console()
         self._experimental_a3node = experimental_a3node
         self._pool: Any = None
@@ -82,6 +80,7 @@ class _VoidCrawlFetcher(HTMLFetcher):
                 headless=self._headless,
                 stealth=True,
                 no_sandbox=self.no_sandbox,
+                chrome_executable=self.browser_executable_path,
             ),
         )
         self._pool_ctx = BrowserPool(config)

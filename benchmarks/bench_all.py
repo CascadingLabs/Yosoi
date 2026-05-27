@@ -1,4 +1,4 @@
-"""Benchmark: vc vs Playwright vs Puppeteer vs zendriver vs nodriver.
+"""Benchmark: vc vs Puppeteer vs zendriver vs nodriver.
 
 Measures per engine:
   - Cold start latency (browser launch -> first page ready)
@@ -13,7 +13,7 @@ Other engines use their native wait strategies for a fair comparison.
 Run:
   uv run python benchmarks/bench_all.py
   uv run python benchmarks/bench_all.py --runs 3 --parallel 3
-  uv run python benchmarks/bench_all.py --engines vc,playwright
+  uv run python benchmarks/bench_all.py --engines vc,puppeteer
   uv run python benchmarks/bench_all.py --vc-mode balanced --headless
 """
 
@@ -36,7 +36,7 @@ URL = 'https://en.wikipedia.org/wiki/Web_scraping'
 
 MIN_CONTENT_LEN = 10_000
 
-ALL_ENGINES = ['vc', 'vc-docker', 'playwright', 'puppeteer', 'zendriver', 'nodriver']
+ALL_ENGINES = ['vc', 'vc-docker', 'puppeteer', 'zendriver', 'nodriver']
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────
@@ -189,67 +189,6 @@ async def bench_vc(url: str, runs: int, parallel: int, mode: str, *, headless: b
             r.par_chrome_rss_peak = _all_chrome_rss_mb()
     finally:
         await pool_ctx.__aexit__(None, None, None)
-
-    r.python_rss_delta = _rss_mb() - py_rss_before
-    return r
-
-
-# ── Playwright benchmark ────────────────────────────────────────────────
-
-
-async def bench_playwright(url: str, runs: int, parallel: int, *, headless: bool = False) -> Result:
-    """Run Playwright benchmark with networkidle wait strategy."""
-    from playwright.async_api import async_playwright
-
-    r = Result('playwright (Python)')
-    gc.collect()
-    py_rss_before = _rss_mb()
-
-    t0 = time.perf_counter()
-    pw = await async_playwright().start()
-    browser = await pw.chromium.launch(headless=headless)
-    context = await browser.new_context()
-    r.cold_start = time.perf_counter() - t0
-
-    async def _pw_fetch() -> tuple[int, float, bool]:
-        t = time.perf_counter()
-        page = await context.new_page()
-        await page.goto(url, wait_until='networkidle', timeout=30000)
-        html = await page.content()
-        await page.close()
-        elapsed = time.perf_counter() - t
-        length = len(html)
-        blocked = 'Access Denied' in html or length < MIN_CONTENT_LEN
-        return length, elapsed, blocked
-
-    try:
-        for i in range(runs):
-            length, elapsed, blocked = await _pw_fetch()
-            r.single_fetches.append(elapsed)
-            r.html_lengths.append(length)
-            if blocked:
-                r.blocked += 1
-            r.seq_chrome_rss_peak = max(r.seq_chrome_rss_peak, _all_chrome_rss_mb())
-            status = 'BLOCKED' if blocked else f'{length:,} chars'
-            print(f'  playwright [{i + 1}/{runs}]: {elapsed:.2f}s  {status}')
-
-        if parallel > 1:
-            print(f'  playwright parallel [{parallel} tabs]...')
-            t2 = time.perf_counter()
-            results = await asyncio.gather(*[_pw_fetch() for _ in range(parallel)])
-            r.parallel_time = time.perf_counter() - t2
-            r.parallel_count = parallel
-            for length, elapsed, blocked in results:
-                r.html_lengths.append(length)
-                if blocked:
-                    r.blocked += 1
-                status = 'BLOCKED' if blocked else f'{length:,} chars'
-                print(f'    tab: {elapsed:.2f}s  {status}')
-            r.par_chrome_rss_peak = _all_chrome_rss_mb()
-    finally:
-        await context.close()
-        await browser.close()
-        await pw.stop()
 
     r.python_rss_delta = _rss_mb() - py_rss_before
     return r
@@ -671,13 +610,6 @@ async def _run_engines(
         print(f'\n--- vc-docker {"─" * 43}')
         result = await bench_vc_docker(args.url, args.runs, args.parallel, headless=args.headless)
         vc_results.append(result)
-        all_results.append(result)
-        gc.collect()
-        await asyncio.sleep(1)
-
-    if 'playwright' in engines:
-        print(f'\n--- playwright {"─" * 42}')
-        result = await bench_playwright(args.url, args.runs, args.parallel, headless=args.headless)
         all_results.append(result)
         gc.collect()
         await asyncio.sleep(1)

@@ -421,7 +421,7 @@ def test_handle_bot_detection_prints_abort_when_exhausted(mocker):
     err = BotDetectionError(url='https://x.com', status_code=403, indicators=['cloudflare'])
     Pipeline._handle_bot_detection(stub, err, attempt=2, max_retries=2)
     calls = [str(c) for c in stub.console.print.call_args_list]
-    assert any('ABORTING' in c or 'playwright' in c.lower() for c in calls)
+    assert any('ABORTING' in c or 'voidcrawl' in c.lower() for c in calls)
 
 
 # ---------------------------------------------------------------------------

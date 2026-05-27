@@ -12,8 +12,9 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from voidcrawl.actions import ClickElement, Flow, JsActionNode, ScrollTo, inline_js
+from voidcrawl.actions import ActionNode, ClickElement, Flow, JsActionNode, ScrollTo, inline_js
 
+from yosoi.core.fetcher.dom.ax import AxTarget
 from yosoi.core.fetcher.dom.catalogues import (
     CLICK_BY_TEXT_JS,
     CLICK_LINK_BY_TEXT_JS,
@@ -97,6 +98,10 @@ def build_flow(trigger: DetectedTrigger, stable: WaitForDOMStable) -> Flow | Non
         A Flow ready to run, or None.
     """
     try:
+        if trigger.ax_target is not None:
+            target = trigger.ax_target
+            return Flow().add(ClickByRole(target.role, target.name, target.nth)).add(stable)
+
         if trigger.kind == TriggerKind.INFINITE_SCROLL:
             return Flow().add(ScrollTo(x=0, y=_SCROLL_BOTTOM_Y)).add(stable)
 
@@ -125,12 +130,24 @@ class JsAction(JsActionNode):
     def __init__(self, code: str) -> None:
         """Initialise with raw JavaScript code string."""
         self.code = code
-        # FIXME: this mutates the *class* attribute `js`, so every JsAction instance shares
-        # it and the last one constructed wins. Under concurrent tabs (pool allows up to
-        # max_concurrent) one tab's flow can execute another tab's JS. Store `js` on the
-        # instance (self.js = inline_js(code)) instead of on the class.
-        type(self).js = inline_js(code)
+        self.js = inline_js(code)
 
     def params(self) -> dict[str, Any]:
         """Return only the code string, excluding the non-serialisable JsSource."""
         return {'code': self.code}
+
+
+class ClickByRole(ActionNode):
+    """VoidCrawl action that clicks a browser-computed AX target."""
+
+    def __init__(self, role: str, name: str, nth: int = 0) -> None:
+        """Initialise with role/name/nth values from an AX snapshot."""
+        self.target = AxTarget(role=role, name=name, nth=nth)
+
+    async def run(self, tab: Any) -> None:
+        """Click the matching AX target through the tab role API."""
+        await tab.click_by_role(self.target.role, self.target.name, self.target.nth)
+
+    def params(self) -> dict[str, Any]:
+        """Return serialisable action parameters for debug traces."""
+        return {'role': self.target.role, 'name': self.target.name, 'nth': self.target.nth}
