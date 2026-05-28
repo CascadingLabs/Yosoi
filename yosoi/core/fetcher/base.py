@@ -58,7 +58,7 @@ class ContentAnalyzer:
         A page with lots of HTML but almost no readable text is almost
         certainly a client-side rendered shell waiting for JS to populate it.
         """
-        # TODO: watch for false positives — markup-heavy / image-only pages with little
+        # FUTURE: watch for false positives — markup-heavy / image-only pages with little
         # visible text can trip this and over-escalate to Chrome. Tune thresholds against
         # the bake-off harness (CAS-44) before relying on it broadly.
         from bs4 import BeautifulSoup
@@ -156,7 +156,7 @@ class ContentAnalyzer:
         These sites won't work with simple HTML fetching because:
         - Content is rendered client-side
         - No meaningful HTML in initial response
-        - Need Playwright/Selenium
+        - Need browser rendering through VoidCrawl
 
         """
         # 1. Check for JS framework signatures

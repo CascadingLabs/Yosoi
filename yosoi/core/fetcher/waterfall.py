@@ -222,10 +222,6 @@ class JSFetcher(HTMLFetcher):
             content_type = headers.get('content-type', '')
             return 'chunked' in transfer and 'html' in content_type and 'content-length' not in headers
 
-            # FIXME: dead code — unreachable after the return above. Remove it, or if a
-            # default-False fall-through was intended, restructure the chunked check.
-            return False
-
         except (httpx.HTTPError, OSError, ValueError):
             return False  # probe failed — let the waterfall decide naturally
 
@@ -269,8 +265,6 @@ class JSFetcher(HTMLFetcher):
         start_time = time.time()
         domain = urlparse(url).netloc.replace('www.', '')
         cached_strategy = None if self._force else self._preferred_strategy(domain)
-
-        # TODO: Make an A3Node caller to get the cached DOM explorer for a url/domain
 
         if cached_strategy is not None:
             level_msg = f', selector level {cached_strategy.selector_level}' if cached_strategy.selector_level else ''

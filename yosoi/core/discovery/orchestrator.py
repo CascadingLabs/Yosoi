@@ -216,17 +216,27 @@ class DiscoveryOrchestrator:
 
         raw_results: list[FieldTaskResult | BaseException] = await asyncio.gather(*coroutines, return_exceptions=True)
 
-        merged, cached_count, escalated_count = self._merge_results(raw_results, overrides, task_specs)
+        merged, cached_count, escalated_count, absent_fields = self._merge_results(raw_results, overrides, task_specs)
 
         # Persist contract-pinned root so the cache is self-contained
         contract_root = self._contract.get_root()
         if contract_root:
             merged['root'] = {'primary': contract_root.model_dump(exclude_none=True)}
 
+        persisted = dict(merged)
+        for field_name in absent_fields:
+            persisted[field_name] = {'primary': 'NA'}
+
         # Check if all non-root fields failed
         non_container = {k: v for k, v in merged.items() if k != 'root'}
         if not non_container:
             obs.warning('All field tasks returned None', url=url_context)
+            if url and stale_fields is None and persisted:
+                if self._write_lock is not None:
+                    async with self._write_lock:
+                        self._storage.save_selectors(url, persisted)
+                else:
+                    self._storage.save_selectors(url, persisted)
             return None
 
         logger.info(
@@ -245,9 +255,9 @@ class DiscoveryOrchestrator:
         if url and stale_fields is None:
             if self._write_lock is not None:
                 async with self._write_lock:
-                    self._storage.save_selectors(url, merged)
+                    self._storage.save_selectors(url, persisted)
             else:
-                self._storage.save_selectors(url, merged)
+                self._storage.save_selectors(url, persisted)
 
         return merged
 
@@ -256,7 +266,7 @@ class DiscoveryOrchestrator:
         raw_results: list[FieldTaskResult | BaseException],
         overrides: dict[str, dict[str, Any]],
         task_specs: list[dict[str, object]],
-    ) -> tuple[SelectorMap, int, int]:
+    ) -> tuple[SelectorMap, int, int, set[str]]:
         """Merge field task results into a selector map.
 
         Combines successful field discoveries, logs unexpected exceptions,
@@ -270,7 +280,7 @@ class DiscoveryOrchestrator:
                 which fields were attempted so NA sentinels can be written for failures.
 
         Returns:
-            Tuple of (merged selector map, cached field count, escalated field count).
+            Tuple of (merged selector map, cached field count, escalated field count, absent field names).
 
         """
         merged: SelectorMap = {}
@@ -293,18 +303,10 @@ class DiscoveryOrchestrator:
         for field_name, override_dict in overrides.items():
             merged[field_name] = override_dict
 
-        # Write NA sentinels to storage for fields that were attempted but failed entirely.
-        # This prevents repeated LLM calls for fields that don't exist on this domain.
-        # Note: sentinels are NOT included in the returned merged map — callers see only
-        # fields that were actually discovered.
         all_attempted = {str(spec['field_name']) for spec in task_specs}
-        # FIXME: write path is incomplete. This computes the sentinel set but nothing ever
-        # persists `primary: 'NA'` to the cache, so the reader (field_task.py "known absent"
-        # check) can never fire — dead today. Also, storing on `self` is unsafe if one
-        # orchestrator is reused across the concurrent worker path. Persist the sentinels.
-        self._na_sentinels = {field_name for field_name in all_attempted if field_name not in merged}
+        absent_fields = {field_name for field_name in all_attempted if field_name not in merged}
 
-        return merged, cached_count, escalated_count
+        return merged, cached_count, escalated_count, absent_fields
 
     def _build_task_specs(
         self,

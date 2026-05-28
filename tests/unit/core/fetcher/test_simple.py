@@ -244,4 +244,4 @@ class TestCreateFetcher:
         from yosoi.core.fetcher import create_fetcher
 
         with pytest.raises(ValueError, match='Unknown fetcher type'):
-            create_fetcher('playwright')
+            create_fetcher('browser')

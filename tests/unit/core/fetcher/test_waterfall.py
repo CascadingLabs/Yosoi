@@ -50,6 +50,12 @@ def test_a3node_is_disabled_by_default_on_browser_fetcher():
     assert fetcher._a3node_cache == {}
 
 
+def test_browser_executable_path_is_retained_for_browser_config():
+    fetcher = _VoidCrawlFetcher(browser_executable_path='/opt/chrome')
+
+    assert fetcher.browser_executable_path == '/opt/chrome'
+
+
 def test_jsfetcher_passes_explicit_a3node_opt_in_to_chrome_tiers():
     fetcher = JSFetcher(experimental_a3node=True)
 

@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any
 
+from yosoi.core.fetcher.dom.ax import AxSnapshot, AxTarget, find_target, snapshot
 from yosoi.core.fetcher.dom.catalogues import (
     ACCORDION_SELECTORS,
     AGE_GATE_SELECTORS,
@@ -72,6 +73,33 @@ class DetectedTrigger:
     kind: TriggerKind
     selector: str
     label: str
+    ax_target: AxTarget | None = None
+
+
+async def _ax_snapshot(tab: Any) -> AxSnapshot | None:
+    """Return a compact AX snapshot when the tab exposes browser CDP access."""
+    try:
+        get_full_ax_tree = tab.get_full_ax_tree
+    except AttributeError:
+        return None
+
+    try:
+        nodes = await get_full_ax_tree()
+    except (RuntimeError, OSError, ValueError, TypeError) as exc:
+        logger.debug('AX tree probe failed: %s', exc)
+        return None
+    return snapshot(nodes)
+
+
+def _snippet_text(snippet: object) -> str:
+    """Extract comparable text from a query result without assuming a handle shape."""
+    if isinstance(snippet, str):
+        return snippet
+    for attr in ('text', 'text_content', 'inner_text'):
+        value = getattr(snippet, attr, None)
+        if isinstance(value, str):
+            return value
+    return str(snippet) if snippet is not None else ''
 
 
 # ---------------------------------------------------------------------------
@@ -119,13 +147,16 @@ async def probe_age_gate(tab: Any) -> DetectedTrigger | None:
 
 async def probe_load_more(tab: Any) -> DetectedTrigger | None:
     """Detect a load-more / show-more button by text content."""
+    snap = await _ax_snapshot(tab)
+    if snap is not None:
+        target = find_target(snap, roles={'button'}, names=tuple(LOAD_MORE_TEXTS))
+        if target is not None:
+            return DetectedTrigger(TriggerKind.LOAD_MORE, 'ax:button', target.name, ax_target=target)
+
     try:
         snippets = await tab.query_selector_all('button, a[role="button"], [type="button"]')
-        # FIXME: verify query_selector_all returns text, not element handles. If it returns
-        # handles, `.lower()` raises and the except below swallows it — silently disabling
-        # load-more detection. Same pattern in probe_pagination. Use the explicit text API.
         for snippet in snippets:
-            lower = (snippet or '').lower()
+            lower = _snippet_text(snippet).lower()
             for text in LOAD_MORE_TEXTS:
                 if text in lower:
                     return DetectedTrigger(TriggerKind.LOAD_MORE, 'button', text)
@@ -157,13 +188,19 @@ async def probe_tab(tab: Any) -> DetectedTrigger | None:
 
 async def probe_pagination(tab: Any) -> DetectedTrigger | None:
     """Detect a next-page link via known selectors then text matching."""
+    snap = await _ax_snapshot(tab)
+    if snap is not None:
+        target = find_target(snap, roles={'link'}, names=tuple(NEXT_PAGE_TEXTS), exact=True)
+        if target is not None:
+            return DetectedTrigger(TriggerKind.PAGINATION, 'ax:link', target.name, ax_target=target)
+
     try:
         for sel in PAGINATION_SELECTORS:
             if await tab.query_selector(sel):
                 return DetectedTrigger(TriggerKind.PAGINATION, sel, 'next page')
         snippets = await tab.query_selector_all('a[href]')
         for snippet in snippets:
-            lower = (snippet or '').lower().strip()
+            lower = _snippet_text(snippet).lower().strip()
             if any(lower == t or f'>{t}<' in lower for t in NEXT_PAGE_TEXTS):
                 return DetectedTrigger(TriggerKind.PAGINATION, 'a[href]', lower)
     except (RuntimeError, OSError, ValueError) as exc:

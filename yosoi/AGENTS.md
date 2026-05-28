@@ -8,8 +8,8 @@ The `yosoi/` package is organized into several sub-packages to maintain a clean 
 - **`fetcher/`**: Multi-layered fetcher system.
     - `base.py`: Base classes and content detection.
     - `simple.py`: Standard HTTP requests.
-    - `playwright.py`: Browser-based extraction.
-    - `smart.py`: Waterfall strategy (simple -> playwright).
+    - `voiddriver.py`: VoidCrawl-backed browser extraction.
+    - `waterfall.py`: Waterfall strategy (simple -> VoidCrawl browser fetchers).
 - **`discovery/`**: AI-powered selector discovery.
     - `agent.py`: Pydantic AI agent implementation.
     - `config.py`: LLM provider configurations (Groq, Gemini, OpenAI).
@@ -44,3 +44,4 @@ The `yosoi/` package is organized into several sub-packages to maintain a clean 
 - **Statelessness**: Favor stateless core components that receive state via arguments.
 - **Observability**: Instrument major operations via `yosoi.utils.observability` (Langfuse-backed; pydantic-ai Agents emit OTel spans natively). Use `obs.span(...)` for non-LLM regions and `obs.warning(...)` for retry/error events. No-ops without Langfuse keys.
 - **Output**: Use `rich` for all terminal UI elements.
+- **Browser Automation**: Do not use Playwright in Yosoi code, tests, examples, or smoke scripts. Use VoidCrawl and Yosoi's fetcher wrappers for rendered browser behavior.

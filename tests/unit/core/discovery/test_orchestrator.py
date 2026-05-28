@@ -119,6 +119,29 @@ async def test_discover_selectors_partial_results_preserved(orchestrator, mocker
 
 
 @pytest.mark.anyio
+async def test_failed_fields_are_persisted_as_na_sentinels(orchestrator, mocker):
+    async def mock_run_field_task(**kwargs):
+        from yosoi.core.discovery.field_task import FieldTaskResult
+
+        name = kwargs['field_name']
+        if name == 'headline':
+            return FieldTaskResult(
+                field_name=name, selectors=FieldSelectors(primary='h1.title'), from_cache=False, escalated_to=None
+            )
+        return FieldTaskResult(field_name=name, selectors=None, from_cache=False, escalated_to=None)
+
+    mocker.patch('yosoi.core.discovery.orchestrator.run_field_task', new=mock_run_field_task)
+    save_spy = mocker.patch.object(orchestrator._storage, 'save_selectors')
+
+    result = await orchestrator.discover_selectors(_HTML, 'https://example.com')
+
+    assert result is not None
+    saved = save_spy.call_args.args[1]
+    assert saved['headline']['primary'] == {'type': 'css', 'value': 'h1.title'}
+    assert saved['author'] == {'primary': 'NA'}
+
+
+@pytest.mark.anyio
 async def test_cached_fields_counted_correctly(orchestrator, mocker):
     async def mock_run_field_task(**kwargs):
         from yosoi.core.discovery.field_task import FieldTaskResult

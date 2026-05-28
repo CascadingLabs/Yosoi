@@ -53,7 +53,7 @@ class EnqueueResult(BaseModel):
     skipped: list[str] = []
 
 
-# TODO: future support horizontal scaling w/ redis or other message brokers
+# FUTURE: support horizontal scaling w/ redis or other message brokers
 broker = InMemoryBroker().with_middlewares(
     SmartRetryMiddleware(
         default_retry_count=3,

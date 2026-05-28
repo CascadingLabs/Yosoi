@@ -61,10 +61,8 @@ def print_fetcher_info(fetcher_type: str) -> None:
     _FETCHER_LABELS: dict[str, tuple[str, str]] = {
         'simple': ('Simple fetcher', 'fast, works for most sites'),
         'waterfall': ('Waterfall fetcher', 'Simple → Headless → Headful'),
-        # TODO: stale label — browser fetchers moved from zendriver to voidcrawl (zendriver
-        # was dropped from deps). Update the hint text to say "via voidcrawl".
-        'headless': ('Headless fetcher', 'headless Chrome via zendriver'),
-        'headful': ('Headful fetcher', 'headful Chrome via zendriver'),
+        'headless': ('Headless fetcher', 'headless Chrome via VoidCrawl'),
+        'headful': ('Headful fetcher', 'headful Chrome via VoidCrawl'),
     }
     label, hint = _FETCHER_LABELS.get(fetcher_type, (f'{fetcher_type} fetcher', ''))
     console.print(f'[cyan]ℹ Using {label}[/cyan] [dim]({hint})[/dim]')

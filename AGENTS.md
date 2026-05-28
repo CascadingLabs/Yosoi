@@ -43,6 +43,11 @@ for attempt in Retrying(
 4. **Type Safety**: Maintain strong typing. Use `mypy` to verify.
 5. **Retry Logic**: Use `tenacity` for all retry patterns. Never implement custom retry loops with `for` or `while`.
 
+## Browser Automation Boundary
+- **DO NOT use Playwright** in Yosoi implementation code, tests, examples, or smoke scripts.
+- **DO use VoidCrawl** and Yosoi's wrappers around it (`JSFetcher`, `HeadlessFetcher`, `HeadfulFetcher`, `DOMLoader`) for rendered browser behavior.
+- If VoidCrawl does not expose a needed browser/CDP capability yet, surface that as a VoidCrawl/Yosoi wrapper gap rather than introducing Playwright as a side path.
+
 ## Repository Structure
 - `yosoi/`: The core python package.
 - `tests/`: Integration and unit tests.
