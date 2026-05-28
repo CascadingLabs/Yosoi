@@ -17,9 +17,7 @@ import yosoi as ys
 from yosoi.core.pipeline import Pipeline
 from yosoi.models.contract import Contract
 from yosoi.models.results import FetchResult
-from yosoi.models.selectors import SelectorLevel
 from yosoi.utils import observability as obs
-from yosoi.utils.signatures import contract_signature
 
 CANNED_URL = 'https://shop.example.com/x'
 CANNED_HTML = '<html><body><h1>book</h1><span class="price">$10</span></body></html>'
@@ -49,36 +47,20 @@ def _capturing_propagate(captured: list[dict]):
 
 @pytest.fixture
 def pipeline_stub(mocker):
-    """Pipeline instance with all heavy collaborators mocked."""
-    stub = Pipeline.__new__(Pipeline)
-    stub.contract = _SimpleContract
-    stub.console = mocker.MagicMock()
-    stub.logger = mocker.MagicMock()
-    stub.cleaner = mocker.MagicMock()
-    stub.cleaner.clean_html.return_value = CLEANED_HTML
-    stub.discovery = mocker.MagicMock()
-    stub.discovery.discover_selectors = mocker.AsyncMock(return_value=DISCOVERED_SELECTORS)
-    stub.verifier = mocker.MagicMock()
-    stub.extractor = mocker.MagicMock()
-    stub.storage = mocker.MagicMock()
-    stub.storage.load_snapshots.return_value = None
-    stub.storage.load_selectors.return_value = None
-    stub.tracker = mocker.MagicMock()
-    stub.tracker.record_url = mocker.AsyncMock()
-    stub._client = mocker.AsyncMock()
-    stub.debug = mocker.MagicMock()
-    stub.debug_mode = False
-    stub.output_formats = ['json']
-    stub.force = False
-    stub.selector_level = SelectorLevel.CSS
-    stub._contract_sig = contract_signature(stub.contract)
-    stub.session_id = 'test-session-xyz'
-    stub._url_start = 0.0
-    # action-plan hook requires an unwrapped LLMConfig handle; the hook itself
-    # never fires here because _fetch is mocked.
-    from yosoi.core.discovery.config import LLMConfig
+    """Pipeline instance with all heavy collaborators mocked + observability extras."""
+    from tests.unit.core.conftest import make_pipeline_stub
 
-    stub._inner_llm_config = LLMConfig(provider='test', model_name='test-model', api_key='fake')
+    stub = make_pipeline_stub(
+        mocker,
+        contract=_SimpleContract,
+        session_id='test-session-xyz',
+        observability_storage=True,
+    )
+    # The observability path also expects clean_html() + discover_selectors()
+    # to return canned values; the shared helper doesn't know about these
+    # module-level constants, so wire them here.
+    stub.cleaner.clean_html.return_value = CLEANED_HTML
+    stub.discovery.discover_selectors = mocker.AsyncMock(return_value=DISCOVERED_SELECTORS)
     return stub
 
 

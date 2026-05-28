@@ -138,14 +138,7 @@ def test_root_value_returns_none_for_none():
 # ---------------------------------------------------------------------------
 
 
-def _make_pipeline_stub(mocker, contract=None):
-    """Create a minimal Pipeline instance without calling __init__."""
-    stub = Pipeline.__new__(Pipeline)
-    stub.contract = contract or SimpleContract
-    stub.console = mocker.MagicMock()
-    stub.logger = mocker.MagicMock()
-    stub._contract_sig = 'test-sig'
-    return stub
+from tests.unit.core.conftest import make_minimal_pipeline_stub as _make_pipeline_stub
 
 
 def test_resolve_root_prefers_contract_override(mocker):
@@ -246,37 +239,15 @@ def _snap(primary: str) -> SelectorSnapshot:
 
 
 def _make_scrape_stub(mocker, contract=None):
-    """Create a Pipeline stub wired up for scrape() integration tests."""
-    from yosoi.models.selectors import SelectorLevel
+    """Pipeline stub for scrape() integration tests (normalize_url passthrough + DomainStats tracker)."""
+    from tests.unit.core.conftest import make_pipeline_stub
 
-    stub = Pipeline.__new__(Pipeline)
-    stub.contract = contract or SimpleContract
-    stub.console = mocker.MagicMock()
-    stub.logger = mocker.MagicMock()
-    stub.cleaner = mocker.MagicMock()
-    stub.discovery = mocker.MagicMock()
-    stub.discovery.discover_selectors = mocker.AsyncMock()
-    stub.verifier = mocker.MagicMock()
-    stub.extractor = mocker.MagicMock()
-    stub.storage = mocker.MagicMock()
-    stub.tracker = mocker.MagicMock()
-    stub.tracker.record_url = mocker.AsyncMock(return_value=DomainStats(llm_calls=0, url_count=1))
-    stub.debug = mocker.MagicMock()
-    stub.debug_mode = False
-    stub.output_formats = ['json']
-    stub.force = False
-    stub.selector_level = SelectorLevel.CSS
-    stub._contract_sig = 'test-sig'
-    # The action-plan hook the Pipeline builds uses _inner_llm_config to
-    # construct a per-call agent. Tests mock _fetch directly so the agent is
-    # never invoked, but the attribute still has to exist.
-    from yosoi.core.discovery.config import LLMConfig
-
-    stub._inner_llm_config = LLMConfig(provider='test', model_name='test-model', api_key='fake')
-
-    # Stub normalize_url to pass through
-    mocker.patch.object(stub, 'normalize_url', new=mocker.AsyncMock(side_effect=lambda u: u))
-    return stub
+    return make_pipeline_stub(
+        mocker,
+        contract=contract or SimpleContract,
+        with_normalize_url=True,
+        record_url_stats=DomainStats(llm_calls=0, url_count=1),
+    )
 
 
 # ---------------------------------------------------------------------------

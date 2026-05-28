@@ -17,39 +17,7 @@ class SimpleContract(Contract):
     price: float = ys.Price()
 
 
-def _make_pipeline_stub(mocker, contract=None):
-    """Create a minimal Pipeline instance without calling __init__."""
-    stub = Pipeline.__new__(Pipeline)
-    stub.contract = contract or SimpleContract
-    stub.console = mocker.MagicMock()
-    stub.logger = mocker.MagicMock()
-    stub.cleaner = mocker.MagicMock()
-    stub.discovery = mocker.MagicMock()
-    stub.discovery.discover_selectors = mocker.AsyncMock()
-    stub.verifier = mocker.MagicMock()
-    stub.extractor = mocker.MagicMock()
-    stub.storage = mocker.MagicMock()
-    stub.storage.load_snapshots.return_value = None
-    stub.tracker = mocker.MagicMock()
-    stub.tracker.record_url = mocker.AsyncMock()
-    stub._client = mocker.AsyncMock()
-    stub.debug = mocker.MagicMock()
-    stub.debug_mode = False
-    stub.output_formats = ['json']
-    stub.force = False
-    from yosoi.models.selectors import SelectorLevel
-    from yosoi.utils.signatures import contract_signature
-
-    stub.selector_level = SelectorLevel.CSS
-    stub._contract_sig = contract_signature(stub.contract)
-    # The action-plan hook needs an unwrapped LLMConfig handle. Tests use a
-    # bare-bones stub so we synthesise a placeholder — _build_prepare_page
-    # only needs it to read; the agent is never actually called by these
-    # tests (they mock _fetch directly).
-    from yosoi.core.discovery.config import LLMConfig
-
-    stub._inner_llm_config = LLMConfig(provider='test', model_name='test-model', api_key='fake')
-    return stub
+from tests.unit.core.conftest import make_pipeline_stub as _make_pipeline_stub
 
 
 def _mock_async_client(mocker, stub, *, raise_on_head=None):

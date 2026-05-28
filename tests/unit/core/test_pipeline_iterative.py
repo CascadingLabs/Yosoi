@@ -27,28 +27,10 @@ class _SimpleContract(ys.Contract):
 
 
 def _make_stub(mocker: Any) -> Any:
-    """Pipeline stub with the bare attrs needed by _iterate_until_clean + sibling methods."""
-    from yosoi.core.discovery.config import LLMConfig
-    from yosoi.models.selectors import SelectorLevel
+    """Pipeline stub with the bare attrs needed by ``_iterate_until_clean``."""
+    from tests.unit.core.conftest import make_pipeline_stub
 
-    stub = Pipeline.__new__(Pipeline)
-    stub.contract = _SimpleContract
-    stub.console = mocker.MagicMock()
-    stub.logger = mocker.MagicMock()
-    stub.cleaner = mocker.MagicMock()
-    stub.discovery = mocker.MagicMock()
-    stub.verifier = mocker.MagicMock()
-    stub.extractor = mocker.MagicMock()
-    stub.storage = mocker.MagicMock()
-    stub.tracker = mocker.MagicMock()
-    stub.debug = mocker.MagicMock()
-    stub.debug_mode = False
-    stub.output_formats = ['json']
-    stub.force = False
-    stub.selector_level = SelectorLevel.CSS
-    stub._contract_sig = 'test-sig'
-    stub._inner_llm_config = LLMConfig(provider='test', model_name='test-model', api_key='fake')
-    return stub
+    return make_pipeline_stub(mocker, contract=_SimpleContract)
 
 
 @pytest.mark.asyncio

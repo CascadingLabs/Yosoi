@@ -27,16 +27,11 @@ class _SimpleContract(ys.Contract):
 
 
 def _make_pipeline_stub(mocker):
-    from yosoi.core.discovery.config import LLMConfig
-    from yosoi.models.selectors import SelectorLevel
+    """Action-plan tests only touch ``_derive_action_intent`` + ``_build_prepare_page``.
+    The shared full stub is overkill but cheap — keep tests simple."""
+    from tests.unit.core.conftest import make_pipeline_stub
 
-    stub = Pipeline.__new__(Pipeline)
-    stub.contract = _SimpleContract
-    stub.console = mocker.MagicMock()
-    stub.logger = mocker.MagicMock()
-    stub.selector_level = SelectorLevel.CSS
-    stub._inner_llm_config = LLMConfig(provider='test', model_name='test-model', api_key='fake')
-    return stub
+    return make_pipeline_stub(mocker, contract=_SimpleContract)
 
 
 def test_derive_intent_mentions_contract_name_and_fields(mocker):
