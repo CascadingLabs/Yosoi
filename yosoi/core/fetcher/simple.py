@@ -41,6 +41,7 @@ class SimpleFetcher(HTMLFetcher):
         min_delay: float = 0.5,
         max_delay: float = 2.0,
         randomize_headers: bool = True,
+        user_agent: str | None = None,
     ):
         """Intialize the simple fetcher.
 
@@ -51,6 +52,7 @@ class SimpleFetcher(HTMLFetcher):
             min_delay: Minimum time to pause between fetches
             max_delay: Maximum time to pause between fetches
             randomize_headers: If True then will randomize the headers used to fetch
+            user_agent: Fixed UA to use instead of per-request UA rotation
 
         """
         self.timeout = timeout
@@ -59,6 +61,7 @@ class SimpleFetcher(HTMLFetcher):
         self.min_delay = min_delay
         self.max_delay = max_delay
         self.randomize_headers = randomize_headers
+        self.user_agent = user_agent
 
         # Client is created lazily in __aenter__ when use_session=True
         self.client: httpx.AsyncClient | None = None
@@ -86,7 +89,7 @@ class SimpleFetcher(HTMLFetcher):
 
         """
         if self.randomize_headers:
-            user_agent = UserAgentRotator.get_random() if self.rotate_user_agent else None
+            user_agent = self.user_agent or (UserAgentRotator.get_random() if self.rotate_user_agent else None)
             return HeaderGenerator.generate_headers(user_agent=user_agent)
         # Fallback to static headers
         return {

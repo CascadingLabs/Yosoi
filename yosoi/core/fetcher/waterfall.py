@@ -66,6 +66,8 @@ class JSFetcher(HTMLFetcher):
         console: Console | None = None,
         force: bool = False,
         experimental_a3node: bool = False,
+        voidcrawl_user_agent: str | None = None,
+        voidcrawl_accept_language: str | None = None,
     ):
         """Initialise the three-tier JS fetcher.
 
@@ -83,6 +85,9 @@ class JSFetcher(HTMLFetcher):
             force: Skip fetcher strategy cache and re-run full waterfall. Defaults to False.
             experimental_a3node: Opt into experimental A3Node persistence/replay.
                 Disabled by default so browser rendering always uses a fresh DOMLoader run.
+            voidcrawl_user_agent: Optional browser UA override. When omitted,
+                VoidCrawl owns UA and matching Client Hints.
+            voidcrawl_accept_language: Optional browser Accept-Language override.
 
         """
         self._simple = SimpleFetcher(
@@ -113,6 +118,8 @@ class JSFetcher(HTMLFetcher):
             'browser_executable_path': browser_executable_path,
             'console': self._console,
             'experimental_a3node': experimental_a3node,
+            'user_agent': voidcrawl_user_agent,
+            'accept_language': voidcrawl_accept_language,
         }
 
     # ------------------------------------------------------------------

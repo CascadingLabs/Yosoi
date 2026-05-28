@@ -80,6 +80,7 @@ def pytest_configure(config):
     config.addinivalue_line('markers', 'integration: marks tests as integration tests')
     config.addinivalue_line('markers', 'unit: marks tests as unit tests')
     config.addinivalue_line('markers', 'eval: marks tests as evaluation tests')
+    config.addinivalue_line('markers', 'smoke: marks opt-in live smoke tests')
 
 
 def pytest_collection_modifyitems(config, items):
@@ -95,3 +96,5 @@ def pytest_collection_modifyitems(config, items):
                 item.add_marker(pytest.mark.unit)
             elif 'evals' in parts:
                 item.add_marker(pytest.mark.eval)
+            elif 'smoke' in parts:
+                item.add_marker(pytest.mark.smoke)

@@ -22,6 +22,7 @@ This project uses a **Tiered Testing Architecture** to balance speed, cost, and 
 | **1** | **Unit & Logic** | `tests/unit` | Verify schema validation and prompt construction. | **Deterministic** (`TestModel`) | Free |
 | **2** | **Simulated Integration** | `tests/integration` | Verify internal service coordination and I/O logic without real web traffic. | **Mocked** (`respx`, `mocker`) | Free |
 | **3** | **Quality Evals** | `tests/evals` | Verify the intelligence and accuracy of the AI on real-world data (not live web). | **Real** (Groq/Gemini) | $$$ |
+| **4** | **Live Smoke** | `tests/smoke` | Verify end-to-end browser wiring against selected live bot-check targets. | **None** | Network |
 
 ---
 
@@ -166,7 +167,8 @@ Tests are automatically marked based on their directory location in `tests/conft
 
 - `tests/unit/` → `@pytest.mark.unit`
 - `tests/integration/` → `@pytest.mark.integration`
-- `tests/evals/` → `@pytest.mark.evals`
+- `tests/evals/` → `@pytest.mark.eval`
+- `tests/smoke/` → `@pytest.mark.smoke`
 
 ## How to run
 
@@ -176,6 +178,7 @@ We use poe tasks from pyproject.toml for running tests. Ensure you are in the co
 uv run poe evals
 uv run poe integration
 uv run poe unit
+YOSOI_LIVE_SMOKE=1 uv run pytest -m smoke
 ```
 
 ---
