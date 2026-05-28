@@ -37,6 +37,7 @@ from yosoi.core.discovery.config import (
     xai,
 )
 from yosoi.core.discovery.field_agent import FieldDiscoveryAgent
+from yosoi.core.discovery.mcp_orchestrator import MCPDiscoveryOrchestrator
 from yosoi.core.discovery.orchestrator import DiscoveryOrchestrator
 
 __all__ = [
@@ -45,6 +46,7 @@ __all__ = [
     'FieldDiscoveryAgent',
     'LLMBuilder',
     'LLMConfig',
+    'MCPDiscoveryOrchestrator',
     'alibaba',
     'anthropic',
     'azure',

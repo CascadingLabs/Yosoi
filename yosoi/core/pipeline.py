@@ -22,7 +22,12 @@ from tenacity import RetryCallState, RetryError
 
 from yosoi.core.cleaning import HTMLCleaner
 from yosoi.core.configs import YosoiConfig
-from yosoi.core.discovery import ActionPlanDiscoveryAgent, DiscoveryOrchestrator, LLMConfig
+from yosoi.core.discovery import (
+    ActionPlanDiscoveryAgent,
+    DiscoveryOrchestrator,
+    LLMConfig,
+    MCPDiscoveryOrchestrator,
+)
 from yosoi.core.discovery.bus import DiscoveryBus
 from yosoi.core.extraction import ContentExtractor
 from yosoi.core.fetcher import HTMLFetcher, create_fetcher
@@ -104,6 +109,7 @@ class Pipeline:
         selector_level: SelectorLevel = SelectorLevel.CSS,
         bus: DiscoveryBus | None = None,
         write_lock: asyncio.Lock | None = None,
+        discovery_mode: Literal['static', 'mcp'] = 'static',
     ):
         """Initialize the pipeline with LLM configuration.
 
@@ -123,6 +129,11 @@ class Pipeline:
                             Defaults to CSS.
             bus: Optional shared discovery bus for cross-pipeline field deduplication.
             write_lock: Optional asyncio.Lock to serialize selector writes for the domain.
+            discovery_mode: ``'static'`` (default) uses the cleaned-HTML LLM
+                agent; ``'mcp'`` drives an OpenCode + voidcrawl-MCP agent
+                that tries selectors against the live page. MCP mode produces
+                the same SelectorMap shape so the rest of the Pipeline is
+                unchanged. MCP mode requires an OpenCode-shaped LLMConfig.
 
         """
         self.selector_level = selector_level
@@ -177,16 +188,29 @@ class Pipeline:
         self.console = Console(theme=self.custom_theme, quiet=quiet)
         self.cleaner = HTMLCleaner(console=self.console)
         self.storage = SelectorStorage()
-        self.discovery = DiscoveryOrchestrator(
-            contract=self.contract,
-            llm_config=llm_config,
-            storage=self.storage,
-            console=self.console,
-            target_level=self.selector_level,
-            max_concurrent=max_concurrent_discovery,
-            bus=bus,
-            write_lock=write_lock,
-        )
+        # Discovery dispatch: 'static' uses the cleaned-HTML LLM agent path;
+        # 'mcp' uses the interactive OpenCode + voidcrawl-MCP agent loop
+        # (CAS-79). Both produce the same SelectorMap shape so verify ->
+        # extract -> save downstream is mode-agnostic.
+        self._discovery_mode = discovery_mode
+        self.discovery: DiscoveryOrchestrator | MCPDiscoveryOrchestrator
+        if discovery_mode == 'mcp':
+            self.discovery = MCPDiscoveryOrchestrator(
+                contract=self.contract,
+                llm_config=llm_config,
+                console=self.console,
+            )
+        else:
+            self.discovery = DiscoveryOrchestrator(
+                contract=self.contract,
+                llm_config=llm_config,
+                storage=self.storage,
+                console=self.console,
+                target_level=self.selector_level,
+                max_concurrent=max_concurrent_discovery,
+                bus=bus,
+                write_lock=write_lock,
+            )
         self.verifier = SelectorVerifier(console=self.console)
         self.extractor = ContentExtractor(console=self.console, contract=self.contract)
         self.tracker = LLMTracker()
