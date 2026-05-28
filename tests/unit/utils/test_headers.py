@@ -26,6 +26,12 @@ class TestUserAgentRotator:
         """The UA pool contains multiple agents."""
         assert len(UserAgentRotator.USER_AGENTS) > 5
 
+    def test_get_chrome_is_recent_chrome(self):
+        """get_chrome returns a current Chrome UA."""
+        ua = UserAgentRotator.get_chrome()
+        assert 'Chrome/14' in ua
+        assert 'Edg' not in ua
+
 
 class TestHeaderGenerator:
     def test_generate_headers_has_required_keys(self):
@@ -43,7 +49,7 @@ class TestHeaderGenerator:
 
     def test_chrome_ua_gets_sec_fetch_headers(self):
         """Chrome user agent gets Sec-Fetch headers."""
-        chrome_ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36'
+        chrome_ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/148.0.0.0 Safari/537.36'
         headers = HeaderGenerator.generate_headers(user_agent=chrome_ua)
         assert 'Sec-Fetch-Dest' in headers
         assert headers['Sec-Fetch-Site'] == 'none'

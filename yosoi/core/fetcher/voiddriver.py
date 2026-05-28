@@ -56,6 +56,8 @@ class _VoidCrawlFetcher(HTMLFetcher):
         browser_executable_path: str | None = None,
         console: Console | None = None,
         experimental_a3node: bool = False,
+        user_agent: str | None = None,
+        accept_language: str | None = None,
         **_kwargs: Any,
     ) -> None:
         self.timeout = timeout
@@ -65,6 +67,8 @@ class _VoidCrawlFetcher(HTMLFetcher):
         self.browser_executable_path = browser_executable_path
         self._console = console or Console()
         self._experimental_a3node = experimental_a3node
+        self._user_agent = user_agent
+        self._accept_language = accept_language
         self._pool: Any = None
         self._pool_ctx: Any = None
         self._a3node_storage = A3NodeStorage() if experimental_a3node else None
@@ -76,12 +80,7 @@ class _VoidCrawlFetcher(HTMLFetcher):
             browsers=1,
             tabs_per_browser=self.max_concurrent,
             tab_max_idle_secs=300,
-            browser=BrowserConfig(
-                headless=self._headless,
-                stealth=True,
-                no_sandbox=self.no_sandbox,
-                chrome_executable=self.browser_executable_path,
-            ),
+            browser=BrowserConfig(**self._browser_config_kwargs(BrowserConfig)),
         )
         self._pool_ctx = BrowserPool(config)
         self._pool = await self._pool_ctx.__aenter__()
@@ -93,6 +92,25 @@ class _VoidCrawlFetcher(HTMLFetcher):
             self._console.print('[dim]  ↻ A3Node cache disabled — running DOMLoader fresh[/dim]')
             logger.info('VoidCrawl fetcher ready (A3Node disabled)')
         return self
+
+    def _browser_config_kwargs(self, BrowserConfig: Any) -> dict[str, Any]:
+        """Build BrowserConfig kwargs, only overriding UA when requested."""
+        kwargs: dict[str, Any] = {
+            'headless': self._headless,
+            'stealth': True,
+            'no_sandbox': self.no_sandbox,
+            'chrome_executable': self.browser_executable_path,
+        }
+        fields = getattr(BrowserConfig, 'model_fields', None)
+        if fields is None:
+            fields = getattr(BrowserConfig, '__fields__', {})
+        if self._user_agent is not None and 'user_agent' in fields:
+            kwargs['user_agent'] = self._user_agent
+        if self._accept_language is not None and 'locale' in fields:
+            kwargs['locale'] = self._accept_language
+        elif self._accept_language is not None and 'accept_language' in fields:
+            kwargs['accept_language'] = self._accept_language
+        return kwargs
 
     async def __aexit__(self, *exc: Any) -> None:
         if self._pool is not None:

@@ -186,6 +186,7 @@ ini_options.testpaths = [ "tests" ]
 ini_options.asyncio_mode = "auto"
 ini_options.markers = [
   "eval: mark test as an evaluation test (requires real LLM and is slow)",
+  "smoke: mark test as an opt-in live smoke test",
 ]
 
 [tool.coverage]
