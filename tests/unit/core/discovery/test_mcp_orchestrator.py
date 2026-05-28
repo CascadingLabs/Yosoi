@@ -216,6 +216,52 @@ async def test_discover_selectors_wraps_agent_errors_in_llm_generation_error(moc
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# Action-plan latching (transcript distillation side-effect)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_last_action_plan_is_reset_to_none_at_start_of_each_run(mocker) -> None:
+    """A new discover_selectors run must clear any stale plan from a prior run —
+    callers (Pipeline._persist_mcp_action_plan) read the latch right after,
+    so a leftover value would persist wrong data into the cache."""
+    from yosoi.core.discovery import mcp_orchestrator as mod
+    from yosoi.models.replay import ReplayPlan
+
+    canned = MCPDiscoveryResult(
+        field_selectors={
+            'title': FieldFinding(selector=SelectorEntry(type='css', value='h1'), sample_value='t'),
+        },
+    )
+
+    class _FakeRun:
+        def __init__(self, output):
+            self.output = output
+
+    class _FakeAgent:
+        def __init__(self, *a, **kw):
+            pass
+
+        async def run(self, *a, **kw):
+            return _FakeRun(canned)
+
+    mocker.patch.object(mod, 'OpenCodeModel', create=True)
+    mocker.patch.object(mod, 'Agent', _FakeAgent)
+    # Ensure no SSE capture (no OPENCODE_BASE_URL) so the latch stays None
+    # after the run unless we manually plant one.
+    import os as _os
+
+    _os.environ.pop('OPENCODE_BASE_URL', None)
+
+    orch = mod.MCPDiscoveryOrchestrator(contract=_RedditPost, llm_config=_opencode_config())
+    # Plant a stale plan to prove the next run clears it.
+    orch.last_action_plan = ReplayPlan(target='stale/Old', task='stale', source='scripted', nodes=[])
+
+    await orch.discover_selectors(url='https://x.example')
+    assert orch.last_action_plan is None  # cleared on entry; no SSE → never set again
+
+
 @pytest.mark.asyncio
 async def test_mcp_output_shape_matches_static_orchestrator(mocker) -> None:
     """Both orchestrators promise the same SelectorMap shape:

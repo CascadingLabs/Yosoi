@@ -69,7 +69,10 @@ class DiscoveryOrchestrator:
             write_lock: Optional asyncio.Lock to serialize selector writes for the domain.
 
         """
+        from yosoi.utils.signatures import contract_signature
+
         self._contract = contract
+        self._contract_sig = contract_signature(contract)
         self._storage = storage
         self._target_level = target_level
         self._max_concurrent = max_concurrent
@@ -197,7 +200,7 @@ class DiscoveryOrchestrator:
         semaphore = asyncio.Semaphore(self._max_concurrent)
 
         # Load the full domain selector map once — avoids N redundant file reads
-        existing = self._storage.load_selectors(domain) or {}
+        existing = self._storage.load_selectors(domain, contract_sig=self._contract_sig) or {}
 
         task_specs = self._build_task_specs(field_descs, hints, stale_fields)
 
@@ -260,9 +263,9 @@ class DiscoveryOrchestrator:
         if url and stale_fields is None:
             if self._write_lock is not None:
                 async with self._write_lock:
-                    self._storage.save_selectors(url, merged)
+                    self._storage.save_selectors(url, merged, contract_sig=self._contract_sig)
             else:
-                self._storage.save_selectors(url, merged)
+                self._storage.save_selectors(url, merged, contract_sig=self._contract_sig)
 
         return merged
 

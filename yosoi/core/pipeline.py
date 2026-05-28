@@ -835,7 +835,7 @@ class Pipeline:
         root_span: Any | None = None,
     ) -> AsyncIterator[ContentMap] | None:
         """Attempt cached-selector path with per-field granularity."""
-        snapshots = self.storage.load_snapshots(domain)
+        snapshots = self.storage.load_snapshots(domain, contract_sig=self._contract_sig)
         if not snapshots:
             return None
 
@@ -897,7 +897,7 @@ class Pipeline:
             verdicts = self._verify_per_field(cleaned_html, snapshots)
 
         for field_name, verdict in verdicts.items():
-            self.storage.record_verdict(domain, field_name, verdict)
+            self.storage.record_verdict(domain, field_name, verdict, contract_sig=self._contract_sig)
 
         stale_fields = {f for f, v in verdicts.items() if v != CacheVerdict.FRESH}
         fresh_fields = {f for f, v in verdicts.items() if v == CacheVerdict.FRESH}
@@ -1144,7 +1144,7 @@ class Pipeline:
                 merged_snapshots[name] = snapshots[name]
             else:
                 merged_snapshots[name] = _to_snap(sel_dict, discovered_at=now, last_verified_at=now)
-        self.storage.save_snapshots(url, merged_snapshots)
+        self.storage.save_snapshots(url, merged_snapshots, contract_sig=self._contract_sig)
         return merged
 
     def _validate_items(self, extracted: ContentMap | ContentItems, url: str) -> ContentItems:
@@ -1329,6 +1329,43 @@ class Pipeline:
             f'selector_absent on the trigger family). If the page already '
             f'shows everything, return an empty plan.'
         )
+
+    def _persist_mcp_action_plan(self, url: str) -> None:
+        """If MCP discovery just produced an action plan, persist it for replay.
+
+        The MCPDiscoveryOrchestrator latches a ReplayPlan on
+        ``last_action_plan`` after each ``discover_selectors`` run, distilled
+        from the agent's voidcrawl tool transcript. We save it under the same
+        ``(domain, contract)`` key the ActionPlanDiscoveryAgent uses so the
+        replay path can consume it transparently — the prepare-page hook on
+        subsequent runs sees the cached plan and skips the LLM entirely.
+
+        No-op when:
+          * discovery_mode is 'static' (orchestrator has no such attribute or
+            the attribute is not a real ReplayPlan), or
+          * the agent's transcript yielded no replayable actions.
+
+        Defensive: any failure here is a logged warning, NEVER an exception —
+        the user's selectors are the primary product; a plan-save failure
+        must not mask discovery success or trip the retry loop.
+        """
+        from yosoi.models.replay import ReplayPlan
+
+        plan = getattr(self.discovery, 'last_action_plan', None)
+        if not isinstance(plan, ReplayPlan) or not plan.nodes:
+            return
+        from urllib.parse import urlparse
+
+        domain = urlparse(url).netloc.removeprefix('www.') or 'unknown'
+        target_key = f'{domain}/{self.contract.__name__}'
+        try:
+            ActionPlanStorage().save(plan)
+            self.console.print(
+                f'[success]  ✓ MCP action plan: persisted {len(plan.nodes)} node(s) for '
+                f'{target_key} (cached for replay)[/success]'
+            )
+        except Exception as exc:  # noqa: BLE001 — see docstring
+            self.console.print(f'[warning]  ✗ MCP action plan: persist failed for {target_key}: {exc}[/warning]')
 
     def _build_prepare_page(self, url: str) -> PreparePageHook | None:
         """Build the post-navigate hook that runs an LLM-discovered action plan.
@@ -1563,6 +1600,14 @@ class Pipeline:
                         selectors.update(overrides)
                         self.console.print(f'[success]Discovered selectors for {len(selectors)} fields[/success]')
                         self.debug.save_debug_selectors(url, selectors)
+
+                        # MCP discovery side-effect: the agent's tool transcript
+                        # may have produced an action plan (navigate + click
+                        # steps the agent walked to reach a usable state).
+                        # Persist it via ActionPlanStorage so subsequent runs
+                        # replay without LLM activity — same cache surface the
+                        # ActionPlanDiscoveryAgent already populates.
+                        self._persist_mcp_action_plan(url)
 
                         if attempt.retry_state.attempt_number > 1:
                             self.console.print(
@@ -1972,7 +2017,7 @@ class Pipeline:
             elapsed: Time in seconds spent processing this URL. Defaults to None.
 
         """
-        self.storage.save_selectors(url, verified, verified=True)
+        self.storage.save_selectors(url, verified, verified=True, contract_sig=self._contract_sig)
 
         if extracted:
             for fmt in output_format:

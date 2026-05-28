@@ -33,21 +33,23 @@ Selector strategies (the `type` field on each selector). Pick by THIS rule, in o
 RULE 1 — Card carries the value as one of its OWN HTML attributes → use `attr`.
 ──────────────────────────────────────────────────────────────────────────────
 
-If the card element (the repeating wrapper itself) carries the value as an
-HTML attribute on its OPENING TAG, you MUST emit `attr` — do NOT emit a CSS
-selector that targets the card. A CSS selector returns the card's full text
-content, which is wrong.
+Use this ONLY when the rule's three-step check passes against the actual HTML
+you've been given. RULE 1 is the strongest pattern when it applies AND a
+common over-reach when it doesn't.
 
-How to spot the pattern in the HTML you've been given:
+THREE-STEP CHECK (do this BEFORE emitting `attr`):
+  1. Find the card element's OPENING TAG in the HTML.
+  2. Read off its attribute NAMES (the words on the LEFT of the `=` signs).
+  3. Pick the attribute name that matches the contract field. If NO attribute
+     on the card matches, RULE 1 does NOT apply — drop to RULE 3 or 4.
 
-  * The tag is a "custom element" — its name contains a hyphen, e.g. any tag
-    that isn't a standard HTML5 element (div/span/article/a/...).
-  * Look at the opening tag's attributes. If an attribute name matches (or
-    closely matches) the field name from the contract, that attribute IS the
-    value. Read it directly.
+If you skip step 2 and guess an attribute name that "sounds right", you will
+emit a selector that extracts None at runtime. A CSS CLASS that happens to
+have the same name as the field (e.g. `<span class="rank">`) is NOT an
+attribute — `class` is the attribute name; `rank` is just a class value.
 
-Generic worked example (the actual attribute and tag names will differ on
-THIS page — work them out from the HTML you have):
+When the check DOES pass, the rule is unambiguous. Custom elements (tag names
+containing a hyphen) almost always carry data this way:
 
   Suppose the HTML contains a card like:
     <some-card-tag
@@ -62,46 +64,65 @@ THIS page — work them out from the HTML you have):
     author → {"type": "attr", "value": "author-attr"}
     count  → {"type": "attr", "value": "count-attr"}
 
-  ❌ ANTI-PATTERN — what you might be tempted to emit, all WRONG:
+  ❌ ANTI-PATTERNS — all WRONG:
     count: {"type": "css", "value": "some-card-tag"}            # returns whole card text
     count: {"type": "css", "value": "some-card-tag::attr(...)"} # not a real CSS pseudo
     title: {"type": "css", "value": "a[href^='/foo/']"}         # returns link TEXT, not the title
+    score: {"type": "attr", "value": "rank"}                    # `rank` is a CSS class, NOT an attribute on the card
+    score: {"type": "attr", "value": "score"}                   # only if `score="..."` actually appears on the card's opening tag
 
 Heuristic for field-name → attr-name (try in this order against the actual
-attributes you see on the card in the HTML you've been given):
+attribute NAMES you saw in step 2 above):
   1. field name AS-IS                   (e.g. `score` → `score`)
   2. kebab-cased                        (e.g. `comment_count` → `comment-count`)
   3. with common suffixes               (e.g. `title` → `post-title`, `item-title`)
   4. prefixed with `data-`              (e.g. `price` → `data-price`)
   5. anything else with the same semantic meaning that's actually present
 
-You MUST verify the attribute exists on the card BEFORE emitting `attr`. If
-no attribute on the card matches the field, drop to RULE 3 or 4.
-
 ──────────────────────────────────────────────────────────────────────────────
-RULE 2 — Value lives OUTSIDE the card's subtree but has a stable id template
-         → use `global_id`.
+RULE 2 — Value lives at an id that's TEMPLATABLE from the card's identity
+         attribute → use `global_id`.
 ──────────────────────────────────────────────────────────────────────────────
 
-Sometimes lazy-loaded or slot-reassigned content is grafted into a sibling's
-light DOM. The card has an identity attribute (the value of an attribute like
-`id`, `thingid`, `record-id`); the content node lives at an element whose own
-`id` is built from that identity plus a fixed suffix or prefix. A scoped CSS
-query inside the card MISSES it.
+The pattern: the card has an attribute carrying an identifier (commonly
+``id``, ``thingid``, ``record-id``, ``data-id``, ``data-post-id``, ...), and
+the target element's own ``id`` is built from that identifier plus a fixed
+prefix or suffix. The target may be:
 
-Generic shape (the attribute name and id pattern will differ on THIS page):
+  (a) OUTSIDE the card's subtree entirely (slot reassignment, lazy-loaded
+      content grafted into a sibling), or
+  (b) in an adjacent / sibling row that scoped descendant CSS can't cleanly
+      reach (table-based layouts where one logical record spans two `<tr>`s).
 
-  Suppose the HTML contains:
+Both cases share the SAME shape and the SAME correct answer — `global_id`
+templates over the card's identity attribute.
+
+Generic shape:
+
+  Card opening tag has some identifier attribute:
     <some-card identity-attr="abc">...</some-card>
+  Target element with related id:
     <div id="abc-content-suffix">The actual body text here.</div>
+  Or, equivalently, in an adjacent row:
+    <tr id="abc">title row</tr>
+    <tr><span id="metric_abc">42</span></tr>
 
-  And the contract field is `body`. Then:
-    body → {"type": "global_id", "value": "{id}-content-suffix",
-            "identity": "identity-attr"}
+  For the body / metric field:
+    body  → {"type": "global_id", "value": "{id}-content-suffix",
+             "identity": "identity-attr"}
+    metric → {"type": "global_id", "value": "metric_{id}", "identity": "id"}
 
-  The extractor resolves `{id}` from the card's `identity-attr`, then runs
-  `document.getElementById("abc-content-suffix")`. Pure CSS cannot express
-  this from inside the card — global_id is the only correct answer.
+How to spot the pattern (look at the HTML before guessing):
+
+  * The card has an attribute whose VALUE is a short id-like token (e.g.
+    "48307887", "t3_abc", "abc").
+  * Another element on the page has an ``id`` ATTRIBUTE that contains that
+    same token plus a fixed prefix and/or suffix.
+  * Multiple repeating cards show the SAME structural relationship — same
+    prefix/suffix, just the identity token varies.
+
+Pure descendant CSS cannot reach (a) at all, and cannot cleanly reach (b)
+across sibling rows. `global_id` is the right answer for both.
 
 ──────────────────────────────────────────────────────────────────────────────
 RULE 3 — Value is visible text inside a descendant element → use `css`/`xpath`.
@@ -156,6 +177,19 @@ _HINT_JSON_LD: Final = (
 )
 
 _HINT_DATA_QA: Final = 'Page uses data-qa/data-cy test attributes — they are stable selector targets.'
+
+_HINT_GLOBAL_ID_TPL: Final = (
+    'GLOBAL_ID CANDIDATE DETECTED: this page has multiple elements whose ids share '
+    'a common prefix followed by a varying suffix — exactly the pattern RULE 2 '
+    '(`global_id`) is for. Concrete examples found on the page: {examples}. '
+    'For each contract field whose data lives in one of these "{prefix}<token>" '
+    'elements, you SHOULD emit `global_id`, e.g. '
+    '`{{"type": "global_id", "value": "{prefix}{{id}}", "identity": "id"}}`. '
+    'The card whose `id` token feeds the template is typically the repeating '
+    'record element (e.g. a `<tr>` in HN, a `<shreddit-comment>` on reddit). '
+    'Do NOT try to reach these via descendant CSS — they are NOT under the card '
+    'in the DOM tree (sibling rows or grafted nodes).'
+)
 
 _CONTAINER_GUIDANCE: Final = (
     'If the page contains multiple repeating items (e.g., product cards, article listings, '
@@ -251,8 +285,92 @@ def page_hints(ctx: RunContext['DiscoveryDeps']) -> str:
         hints.append(_HINT_JSON_LD)
     if 'data-qa' in html or 'data-cy' in html:
         hints.append(_HINT_DATA_QA)
+    global_id_hint = _detect_global_id_pattern(html)
+    if global_id_hint is not None:
+        hints.append(global_id_hint)
 
     return '\n'.join(hints)
+
+
+# ---------------------------------------------------------------------------
+# global_id pattern detector — mechanical, surfaces RULE 2 candidates
+# ---------------------------------------------------------------------------
+
+# Match id values shaped `<head><sep><tail>` where head and tail are word-ish.
+# We catch BOTH shared-head and shared-tail patterns:
+#   * HN: `score_48307887` (head="score", tail varies per story) — shared head
+#   * reddit comments: `t1_abc-post-rtjson-content` (head varies, tail shared) —
+#                      shared tail
+_ID_TEMPLATE_RE = __import__('re').compile(
+    # Head: first alphanumeric token (no `-` so we don't greedily eat past the
+    # FIRST separator). Tail: anything word-or-dash that follows.
+    r'\bid\s*=\s*["\']([a-zA-Z]\w{0,30})([_\-:])([\w][\w-]{2,60})["\']'
+)
+_GENERIC_TOKENS: frozenset[str] = frozenset(
+    {'main', 'page', 'site', 'app', 'header', 'footer', 'nav', 'sidebar', 'content', 'wrapper', 'root'}
+)
+
+
+def _detect_global_id_pattern(html: str) -> str | None:
+    """Return a hint when the HTML contains a global_id-shaped id pattern.
+
+    Two shapes both qualify:
+
+      * **shared head**: many ids share the same prefix word + separator with a
+        varying suffix token (HN: ``score_48307887``, ``score_48308912``, ...).
+        Template: ``score_{id}`` keyed off the card's ``id``.
+
+      * **shared tail**: many ids share the same suffix with a varying head
+        token (reddit: ``t1_abc-post-rtjson-content``,
+        ``t1_xyz-post-rtjson-content``). Template: ``{id}-post-rtjson-content``
+        keyed off the card's identity attribute.
+
+    Either way, surfaces the template + concrete examples so the LLM can
+    pattern-match instead of having to discover the relationship unaided.
+    """
+    if 'id=' not in html:
+        return None
+
+    head_groups: dict[tuple[str, str], list[str]] = {}
+    tail_groups: dict[tuple[str, str], list[str]] = {}
+    for match in _ID_TEMPLATE_RE.finditer(html):
+        head, sep, tail = match.group(1), match.group(2), match.group(3)
+        if head.lower() in _GENERIC_TOKENS or tail.lower() in _GENERIC_TOKENS:
+            continue
+        head_groups.setdefault((head, sep), []).append(tail)
+        tail_groups.setdefault((tail, sep), []).append(head)
+
+    best_head = _pick_best_group(head_groups)
+    best_tail = _pick_best_group(tail_groups)
+
+    # Prefer whichever group has more distinct examples; head wins on tie because
+    # the typical id-anchor pattern (HN style) is more common than slot grafts.
+    if best_head is None and best_tail is None:
+        return None
+    if best_head is not None and (best_tail is None or len(best_head[2]) >= len(best_tail[2])):
+        head, sep, tails = best_head
+        template_prefix = f'{head}{sep}'
+        sample_ids = ', '.join(f'"{template_prefix}{t}"' for t in tails[:3])
+        template_value = f'{template_prefix}{{id}}'
+    else:
+        assert best_tail is not None
+        tail, sep, heads = best_tail
+        template_prefix = f'{{id}}{sep}{tail}'
+        sample_ids = ', '.join(f'"{h}{sep}{tail}"' for h in heads[:3])
+        template_value = template_prefix
+    return _HINT_GLOBAL_ID_TPL.format(prefix=template_value, examples=sample_ids)
+
+
+def _pick_best_group(groups: dict[tuple[str, str], list[str]]) -> tuple[str, str, list[str]] | None:
+    """Pick the (key, sep, tokens) with the most distinct varying parts (>=2)."""
+    best: tuple[str, str, list[str]] | None = None
+    for (key, sep), tokens in groups.items():
+        unique_tokens = sorted(set(tokens))
+        if len(unique_tokens) < 2:
+            continue
+        if best is None or len(unique_tokens) > len(best[2]):
+            best = (key, sep, unique_tokens)
+    return best
 
 
 # ---------------------------------------------------------------------------
@@ -333,6 +451,9 @@ def field_single_page_hints(ctx: RunContext['FieldDiscoveryDeps']) -> str:
         hints.append(_HINT_JSON_LD)
     if 'data-qa' in html or 'data-cy' in html:
         hints.append(_HINT_DATA_QA)
+    global_id_hint = _detect_global_id_pattern(html)
+    if global_id_hint is not None:
+        hints.append(global_id_hint)
 
     return '\n'.join(hints)
 

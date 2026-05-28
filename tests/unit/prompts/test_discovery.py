@@ -113,6 +113,44 @@ class TestPageHints:
         result = page_hints(_make_ctx(deps, mocker))
         assert result == ''
 
+    def test_global_id_hint_fires_on_shared_head_pattern(self, deps, mocker):
+        """HN-shape: same head + sep, varying tail (`score_N`)."""
+        html = (
+            '<tr id="48307887"></tr><tr><span id="score_48307887">N</span></tr>'
+            '<tr id="48307888"></tr><tr><span id="score_48307888">M</span></tr>'
+        )
+        deps.input = DiscoveryInput(url='https://x.com', html=html)
+        result = page_hints(_make_ctx(deps, mocker))
+        assert 'GLOBAL_ID CANDIDATE' in result
+        assert 'score_' in result  # the detected prefix
+        assert 'score_48307887' in result  # the concrete example
+
+    def test_global_id_hint_fires_on_shared_tail_pattern(self, deps, mocker):
+        """Reddit-shape: varying head, same sep + tail (`{id}-post-rtjson-content`)."""
+        html = (
+            '<shreddit-comment thingid="t1_abc"></shreddit-comment>'
+            '<div id="t1_abc-post-rtjson-content">body</div>'
+            '<shreddit-comment thingid="t1_xyz"></shreddit-comment>'
+            '<div id="t1_xyz-post-rtjson-content">other</div>'
+        )
+        deps.input = DiscoveryInput(url='https://x.com', html=html)
+        result = page_hints(_make_ctx(deps, mocker))
+        assert 'GLOBAL_ID CANDIDATE' in result
+
+    def test_global_id_hint_silent_without_template_pattern(self, deps, mocker):
+        """Just two distinct ids with no shared head/tail = nothing to suggest."""
+        html = '<div id="foo">x</div><div id="bar">y</div>'
+        deps.input = DiscoveryInput(url='https://x.com', html=html)
+        result = page_hints(_make_ctx(deps, mocker))
+        assert 'GLOBAL_ID CANDIDATE' not in result
+
+    def test_global_id_hint_skips_generic_word_prefixes(self, deps, mocker):
+        """Common UI words (`main`, `header`, `nav`) are noisy false positives — skip them."""
+        html = '<div id="main_left"></div><div id="main_right"></div><div id="main_top"></div>'
+        deps.input = DiscoveryInput(url='https://x.com', html=html)
+        result = page_hints(_make_ctx(deps, mocker))
+        assert 'GLOBAL_ID CANDIDATE' not in result
+
 
 class TestBuildUserPrompt:
     def test_returns_json(self, discovery_input):

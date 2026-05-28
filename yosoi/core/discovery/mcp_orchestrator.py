@@ -31,16 +31,23 @@ module ships selector discovery first.
 
 from __future__ import annotations
 
+import asyncio
+import contextlib
+import json
 import logging
+import os
 from dataclasses import dataclass
 from typing import Any
 
+import httpx
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
 from rich.console import Console
 
 from yosoi.core.discovery.config import LLMConfig
+from yosoi.core.discovery.transcript import plan_from_tool_parts
 from yosoi.models.contract import Contract
+from yosoi.models.replay import ReplayPlan
 from yosoi.models.selectors import SelectorEntry
 from yosoi.prompts.mcp_discovery import (
     MCP_CONTRACT_INSTRUCTIONS_TMPL,
@@ -162,6 +169,11 @@ class MCPDiscoveryOrchestrator:
         self.model_name = llm_config.model_name
         self.provider = llm_config.provider
         self._agent: Agent[_OrchestratorDeps, MCPDiscoveryResult] = self._build_agent()
+        # Latched after each discover_selectors run so callers (Pipeline) can
+        # pick up the action plan distilled from the agent's tool transcript.
+        # None when transcript capture was disabled or the agent emitted no
+        # replayable tool calls.
+        self.last_action_plan: ReplayPlan | None = None
 
     # ------------------------------------------------------------------
     # Public
@@ -169,8 +181,8 @@ class MCPDiscoveryOrchestrator:
 
     async def discover_selectors(
         self,
-        url: str,
         html: str | None = None,  # noqa: ARG002 — accepted for orchestrator-interface parity; MCP path navigates live
+        url: str | None = None,
         *,
         stale_fields: set[str] | None = None,
         force: bool = False,  # noqa: ARG002 — MCP path always re-discovers; cache short-circuiting lives upstream
@@ -200,6 +212,12 @@ class MCPDiscoveryOrchestrator:
         field_descs = self._contract.field_descriptions()
         if not field_descs:
             return None
+        if not url:
+            # The MCP agent must know which page to navigate to. Without the URL
+            # it cannot start. Don't silently no-op — fail loudly.
+            raise LLMGenerationError(
+                'MCPDiscoveryOrchestrator.discover_selectors requires url=... — the agent navigates the live page'
+            )
         deps = _OrchestratorDeps(
             contract_name=self._contract.__name__,
             url=url,
@@ -211,12 +229,27 @@ class MCPDiscoveryOrchestrator:
             n_fields=len(field_descs),
             field_lines=build_field_lines(field_descs),
         )
+        # Reset the action-plan latch BEFORE running so callers always see the
+        # plan from THIS run (not a stale leftover from a prior invocation).
+        self.last_action_plan = None
+        target_key = f'{_domain_from_url(url)}/{self._contract.__name__}'
+
         with obs.span(
             'mcp_orchestrator_discover',
             url=url,
             contract=deps.contract_name,
             field_count=len(field_descs),
         ):
+            base_url = os.environ.get('OPENCODE_BASE_URL')
+            tool_parts: list[dict[str, Any]] = []
+            sse_stop = asyncio.Event()
+            sse_task: asyncio.Task[None] | None = None
+            if base_url:
+                # Tail OpenCode's /event stream during the agent run to capture
+                # every successful voidcrawl_* tool call. Best-effort: a stream
+                # failure logs but does NOT fail discovery — the selectors are
+                # the primary product; the replay plan is a bonus.
+                sse_task = asyncio.create_task(_capture_tool_parts(base_url, sse_stop, tool_parts))
             try:
                 result = await self._agent.run(user_prompt, deps=deps)
             except Exception as exc:
@@ -225,6 +258,28 @@ class MCPDiscoveryOrchestrator:
                     extra={'contract': deps.contract_name, 'url': url, 'provider': self.provider},
                 )
                 raise LLMGenerationError(f'MCP discovery failed for {url!r}: {exc}') from exc
+            finally:
+                if sse_task is not None:
+                    # Give the stream a moment to drain trailing tool events,
+                    # then stop it cleanly. Best-effort: ignore any teardown
+                    # errors so they don't mask discovery failures.
+                    await asyncio.sleep(0.5)
+                    sse_stop.set()
+                    sse_task.cancel()
+                    with contextlib.suppress(asyncio.CancelledError, Exception):
+                        await sse_task
+
+        if tool_parts:
+            try:
+                plan = plan_from_tool_parts(
+                    tool_parts,
+                    target=target_key,
+                    task=f'discovered via MCP for {self._contract.__name__}',
+                )
+                if plan.nodes:
+                    self.last_action_plan = plan
+            except (ValueError, KeyError) as exc:  # malformed transcript → log + drop
+                _logger.warning('Tool-transcript distillation failed: %s', exc)
 
         return self._to_selector_map(result.output, stale_fields)
 
@@ -282,3 +337,60 @@ class MCPDiscoveryOrchestrator:
         if result.root_selector is not None:
             out['root'] = {'primary': result.root_selector.model_dump(exclude_none=True)}
         return out or None
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+
+def _domain_from_url(url: str) -> str:
+    from urllib.parse import urlparse
+
+    netloc = urlparse(url).netloc
+    return netloc.removeprefix('www.') if netloc.startswith('www.') else netloc or 'unknown'
+
+
+async def _capture_tool_parts(
+    base_url: str,
+    stop: asyncio.Event,
+    collected: list[dict[str, Any]],
+) -> None:
+    """Tail OpenCode's ``/event`` SSE stream and collect completed tool parts.
+
+    Mirrors the capture loop in ``examples/opencode_voidcrawl/browse_and_save.py``
+    but trimmed to just the parts we need for ReplayPlan distillation — no
+    per-step usage / reasoning logging. Best-effort: any HTTP / stream failure
+    is silently caught so a flaky SSE feed doesn't break the agent run.
+    """
+    seen: set[tuple[str, str]] = set()
+    try:
+        async with (
+            httpx.AsyncClient(base_url=base_url, timeout=None) as client,
+            client.stream('GET', '/event') as resp,
+        ):
+            async for line in resp.aiter_lines():
+                if stop.is_set():
+                    return
+                if not line.startswith('data:'):
+                    continue
+                try:
+                    evt = json.loads(line[5:].strip())
+                except json.JSONDecodeError:
+                    continue
+                if evt.get('type') != 'message.part.updated':
+                    continue
+                part = (evt.get('properties') or {}).get('part') or {}
+                if part.get('type') != 'tool':
+                    continue
+                state = part.get('state') or {}
+                status = state.get('status', '')
+                if status != 'completed':
+                    continue
+                key = (part.get('callID', ''), status)
+                if key in seen:
+                    continue
+                seen.add(key)
+                collected.append(part)
+    except (httpx.HTTPError, asyncio.CancelledError):
+        return
