@@ -4,6 +4,7 @@ import os
 
 import pytest
 
+from yosoi.models.snapshot import SelectorSnapshot, SnapshotStatus
 from yosoi.storage.persistence import SelectorStorage
 
 
@@ -109,6 +110,19 @@ def test_get_summary_domain_has_fields(storage):
     domain_info = summary['domains'][0]
     assert 'fields' in domain_info
     assert 'title' in domain_info['fields']
+
+
+def test_get_summary_includes_snapshot_health_counts(storage):
+    snapshots = {
+        'title': SelectorSnapshot(primary='h1', discovered_at='2026-01-01T00:00:00Z'),
+        'author': SelectorSnapshot(discovered_at='2026-01-01T00:00:00Z', status=SnapshotStatus.ABSENT),
+    }
+    storage.save_snapshots('https://example.com', snapshots)
+
+    domain_info = storage.get_summary()['domains'][0]
+
+    assert domain_info['health']['active'] == 1
+    assert domain_info['health']['absent'] == 1
 
 
 def test_get_summary_domain_has_domain_key(storage):

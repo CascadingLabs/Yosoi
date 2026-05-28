@@ -779,7 +779,7 @@ class Pipeline:
         self.logger.info('Using cached selectors domain=%s url=%s', domain, url)
 
         if skip_verification:
-            existing = {name: snapshot_to_selector_dict(snap) for name, snap in snapshots.items()}
+            existing = {name: data for name, snap in snapshots.items() if (data := snapshot_to_selector_dict(snap))}
             items, cache_valid = await self._extract_with_cached(url, fetcher, existing, skip_verification)
             if not cache_valid:
                 return None
@@ -794,7 +794,9 @@ class Pipeline:
 
         fetch_result = await self._fetch_and_clean_for_cache(url, fetcher)
         if fetch_result is None:
-            existing_for_payload = {name: snapshot_to_selector_dict(snap) for name, snap in snapshots.items()}
+            existing_for_payload = {
+                name: data for name, snap in snapshots.items() if (data := snapshot_to_selector_dict(snap))
+            }
             return self._yield_cached_items(
                 None,
                 url,
@@ -885,7 +887,7 @@ class Pipeline:
     ) -> AsyncIterator[ContentMap]:
         """All cached selectors verified — extract content."""
         self.console.print(f'[success]✓ All {len(fresh_fields)} cached selectors verified[/success]')
-        existing = {name: snapshot_to_selector_dict(snap) for name, snap in snapshots.items()}
+        existing = {name: data for name, snap in snapshots.items() if (data := snapshot_to_selector_dict(snap))}
         root_entry = self._resolve_root(existing)
         container_selector = self._root_value(root_entry)
         with observability.span('extract', url=url, mode='cache', container=container_selector or 'single'):
@@ -984,6 +986,9 @@ class Pipeline:
         field_levels: dict[str, str] = {}
 
         for field_name, snap in snapshots.items():
+            if not snap.is_active:
+                verdicts[field_name] = CacheVerdict.FRESH
+                continue
             sel_dict = snapshot_to_selector_dict(snap)
             field_result = self.verifier._verify_field(sel, field_name, sel_dict, self.selector_level)
             verdicts[field_name] = CacheVerdict.FRESH if field_result.status == 'verified' else CacheVerdict.STALE
@@ -1059,7 +1064,9 @@ class Pipeline:
         from yosoi.models.snapshot import selector_dict_to_snapshot as _to_snap
 
         merged: SelectorMap = {
-            name: snapshot_to_selector_dict(snap) for name, snap in snapshots.items() if name in fresh_fields
+            name: data
+            for name, snap in snapshots.items()
+            if name in fresh_fields and (data := snapshot_to_selector_dict(snap))
         }
         if new_selectors:
             merged.update(new_selectors)

@@ -119,7 +119,7 @@ async def test_discover_selectors_partial_results_preserved(orchestrator, mocker
 
 
 @pytest.mark.anyio
-async def test_failed_fields_are_persisted_as_na_sentinels(orchestrator, mocker):
+async def test_failed_fields_are_persisted_as_absent_snapshots(orchestrator, mocker):
     async def mock_run_field_task(**kwargs):
         from yosoi.core.discovery.field_task import FieldTaskResult
 
@@ -131,14 +131,15 @@ async def test_failed_fields_are_persisted_as_na_sentinels(orchestrator, mocker)
         return FieldTaskResult(field_name=name, selectors=None, from_cache=False, escalated_to=None)
 
     mocker.patch('yosoi.core.discovery.orchestrator.run_field_task', new=mock_run_field_task)
-    save_spy = mocker.patch.object(orchestrator._storage, 'save_selectors')
+    save_spy = mocker.patch.object(orchestrator._storage, 'save_snapshots')
 
     result = await orchestrator.discover_selectors(_HTML, 'https://example.com')
 
     assert result is not None
     saved = save_spy.call_args.args[1]
-    assert saved['headline']['primary'] == {'type': 'css', 'value': 'h1.title'}
-    assert saved['author'] == {'primary': 'NA'}
+    assert saved['headline'].primary == {'type': 'css', 'value': 'h1.title'}
+    assert saved['author'].status == 'absent'
+    assert saved['author'].primary is None
 
 
 @pytest.mark.anyio
@@ -254,7 +255,7 @@ async def test_save_selectors_called_with_url(orchestrator, mocker):
         return FieldTaskResult(field_name=name, selectors=sel, from_cache=False, escalated_to=None)
 
     mocker.patch('yosoi.core.discovery.orchestrator.run_field_task', new=mock_run_field_task)
-    save_spy = mocker.patch.object(orchestrator._storage, 'save_selectors')
+    save_spy = mocker.patch.object(orchestrator._storage, 'save_snapshots')
 
     await orchestrator.discover_selectors(_HTML, 'https://example.com/article')
 
@@ -282,7 +283,7 @@ async def test_save_selectors_not_called_without_url(orchestrator, mocker):
 
 @pytest.mark.anyio
 async def test_storage_read_called_once_not_per_field(orchestrator, mocker):
-    """load_selectors must be called exactly once, not N times (one per field)."""
+    """load_snapshots must be called exactly once, not N times (one per field)."""
 
     async def mock_run_field_task(**kwargs):
         from yosoi.core.discovery.field_task import FieldTaskResult
@@ -292,7 +293,7 @@ async def test_storage_read_called_once_not_per_field(orchestrator, mocker):
         return FieldTaskResult(field_name=name, selectors=sel, from_cache=False, escalated_to=None)
 
     mocker.patch('yosoi.core.discovery.orchestrator.run_field_task', new=mock_run_field_task)
-    load_spy = mocker.patch.object(orchestrator._storage, 'load_selectors', return_value={})
+    load_spy = mocker.patch.object(orchestrator._storage, 'load_snapshots', return_value={})
 
     await orchestrator.discover_selectors(_HTML, 'https://example.com')
 
@@ -325,7 +326,7 @@ async def test_pinned_root_included_in_orchestrator_save(llm_config, mock_storag
         )
 
     mocker.patch('yosoi.core.discovery.orchestrator.run_field_task', new=mock_run_field_task)
-    save_spy = mocker.patch.object(mock_storage, 'save_selectors')
+    save_spy = mocker.patch.object(mock_storage, 'save_snapshots')
 
     result = await orchestrator.discover_selectors(_HTML, 'https://example.com')
 
@@ -335,11 +336,11 @@ async def test_pinned_root_included_in_orchestrator_save(llm_config, mock_storag
     assert result['root']['primary']['type'] == 'css'
     assert result['root']['primary']['value'] == '.product-card'
 
-    # The map passed to save_selectors must also include root in the same format
+    # The snapshots passed to save_snapshots must also include root in the same format
     assert save_spy.called
     saved_map = save_spy.call_args[0][1]
     assert 'root' in saved_map
-    assert saved_map['root']['primary']['value'] == '.product-card'
+    assert saved_map['root'].primary['value'] == '.product-card'
 
 
 @pytest.mark.anyio

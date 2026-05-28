@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Literal
 
-from pydantic import AwareDatetime, BaseModel, Field
+from pydantic import AwareDatetime, BaseModel, Field, model_validator
 
 
 class CacheVerdict(str, Enum):
@@ -26,6 +26,15 @@ class CacheVerdict(str, Enum):
     FRESH = 'fresh'
     STALE = 'stale'
     DEGRADED = 'degraded'  # stub: treated as STALE for now, FUTURE used for event driven pipeline healing when pipeline_mode != maintenance or offline
+
+
+class SnapshotStatus(str, Enum):
+    """Operational health state for a cached field snapshot."""
+
+    ACTIVE = 'active'
+    ABSENT = 'absent'
+    DISCOVERY_FAILED = 'discovery_failed'
+    VERIFICATION_FAILED = 'verification_failed'
 
 
 class SelectorSnapshot(BaseModel):
@@ -58,6 +67,28 @@ class SelectorSnapshot(BaseModel):
     failure_count: int = 0
     source: Literal['discovered', 'pinned', 'override'] = 'discovered'
     parent_root: str | None = None
+    status: SnapshotStatus = SnapshotStatus.ACTIVE
+    status_reason: str | None = None
+
+    @model_validator(mode='before')
+    @classmethod
+    def _migrate_legacy_absent_sentinel(cls, data: Any) -> Any:
+        """Map legacy ``primary: "NA"`` cache entries to explicit absent status."""
+        if not isinstance(data, dict) or data.get('primary') != 'NA':
+            return data
+
+        migrated = dict(data)
+        migrated['primary'] = None
+        migrated['fallback'] = None
+        migrated['tertiary'] = None
+        migrated.setdefault('status', SnapshotStatus.ABSENT)
+        migrated.setdefault('status_reason', 'legacy primary=NA sentinel')
+        return migrated
+
+    @property
+    def is_active(self) -> bool:
+        """Whether this snapshot contains selector payload that should be used."""
+        return self.status == SnapshotStatus.ACTIVE
 
 
 class SnapshotMap(BaseModel):
@@ -82,6 +113,8 @@ class SnapshotMap(BaseModel):
 
 def snapshot_to_selector_dict(snap: SelectorSnapshot) -> dict[str, Any]:
     """Extract just the primary/fallback/tertiary selector data from a snapshot."""
+    if not snap.is_active:
+        return {}
     result: dict[str, Any] = {}
     if snap.primary is not None:
         result['primary'] = snap.primary
@@ -89,6 +122,15 @@ def snapshot_to_selector_dict(snap: SelectorSnapshot) -> dict[str, Any]:
         result['fallback'] = snap.fallback
     if snap.tertiary is not None:
         result['tertiary'] = snap.tertiary
+    return result
+
+
+def snapshot_to_cache_entry(snap: SelectorSnapshot) -> dict[str, Any]:
+    """Return selector payload plus snapshot health for field-task cache checks."""
+    result = snapshot_to_selector_dict(snap)
+    result['status'] = snap.status
+    if snap.status_reason is not None:
+        result['status_reason'] = snap.status_reason
     return result
 
 
@@ -110,12 +152,15 @@ def selector_dict_to_snapshot(
 ) -> SelectorSnapshot:
     """Wrap a raw selector dict into a SelectorSnapshot."""
     ts = _ensure_utc(discovered_at) or datetime.now(timezone.utc)
+    status = SnapshotStatus.ABSENT if field_data.get('primary') == 'NA' else SnapshotStatus.ACTIVE
     return SelectorSnapshot(
-        primary=field_data.get('primary'),
-        fallback=field_data.get('fallback'),
-        tertiary=field_data.get('tertiary'),
+        primary=None if status != SnapshotStatus.ACTIVE else field_data.get('primary'),
+        fallback=None if status != SnapshotStatus.ACTIVE else field_data.get('fallback'),
+        tertiary=None if status != SnapshotStatus.ACTIVE else field_data.get('tertiary'),
         discovered_at=ts,
         last_verified_at=_ensure_utc(last_verified_at),
         source=source,
         parent_root=parent_root,
+        status=status,
+        status_reason='legacy primary=NA sentinel' if status == SnapshotStatus.ABSENT else None,
     )
