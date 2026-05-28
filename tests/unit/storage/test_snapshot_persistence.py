@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-from yosoi.models.snapshot import CacheVerdict, SelectorSnapshot
+from yosoi.models.snapshot import CacheVerdict, SelectorSnapshot, SnapshotStatus
 from yosoi.storage.persistence import SelectorStorage
 
 
@@ -46,6 +46,23 @@ class TestSaveLoadSnapshots:
     def test_load_nonexistent_returns_none(self, storage):
         assert storage.load_snapshots('nonexistent.com') is None
 
+    def test_legacy_na_primary_loads_as_absent_snapshot(self, storage):
+        now = datetime.now(timezone.utc)
+        snapshots = {
+            'author': SelectorSnapshot(
+                primary='NA',
+                discovered_at=now,
+            ),
+        }
+
+        storage.save_snapshots('https://example.com/item', snapshots)
+        loaded = storage.load_snapshots('example.com')
+
+        assert loaded is not None
+        assert loaded['author'].status == SnapshotStatus.ABSENT
+        assert loaded['author'].primary is None
+        assert storage.load_selectors('example.com') == {}
+
 
 class TestSaveLoadSelectors:
     def test_save_selectors_writes_snapshot_format(self, storage):
@@ -59,6 +76,15 @@ class TestSaveLoadSelectors:
         assert snapshots is not None
         assert 'title' in snapshots
         assert snapshots['title'].primary == 'h1.title'
+
+    def test_save_selectors_migrates_legacy_absent_sentinel(self, storage):
+        storage.save_selectors('https://example.com/article', {'author': {'primary': 'NA'}})
+
+        snapshots = storage.load_snapshots('example.com')
+
+        assert snapshots is not None
+        assert snapshots['author'].status == SnapshotStatus.ABSENT
+        assert snapshots['author'].primary is None
 
     def test_load_selectors_strips_audit_metadata(self, storage):
         now = datetime.now(timezone.utc)
@@ -75,6 +101,17 @@ class TestSaveLoadSelectors:
         assert 'title' in loaded
         assert loaded['title'] == {'primary': {'type': 'css', 'value': 'h1.title'}}
         assert 'discovered_at' not in loaded['title']
+
+    def test_load_selectors_omits_explicit_absent_snapshots(self, storage):
+        now = datetime.now(timezone.utc)
+        snapshots = {
+            'title': SelectorSnapshot(primary='h1', discovered_at=now),
+            'author': SelectorSnapshot(discovered_at=now, status=SnapshotStatus.ABSENT),
+        }
+
+        storage.save_snapshots('https://example.com/page', snapshots)
+
+        assert storage.load_selectors('example.com') == {'title': {'primary': 'h1'}}
 
     def test_load_selectors_nonexistent_returns_none(self, storage):
         assert storage.load_selectors('nothing.com') is None

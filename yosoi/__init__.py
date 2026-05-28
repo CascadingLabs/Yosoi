@@ -41,7 +41,7 @@ from yosoi.integrations import ClaudeSDKModel, OpenCodeModel
 from yosoi.models.contract import Contract
 from yosoi.models.defaults import JobPosting, NewsArticle, Product, Video
 from yosoi.models.selectors import FieldSelectors, SelectorEntry, SelectorLevel, css, discover, jsonld, regex, xpath
-from yosoi.models.snapshot import CacheVerdict, SelectorSnapshot, SnapshotMap
+from yosoi.models.snapshot import CacheVerdict, SelectorSnapshot, SnapshotMap, SnapshotStatus
 from yosoi.types import (
     Author,
     BodyText,
@@ -83,6 +83,7 @@ __all__ = [
     'SelectorLevel',
     'SelectorSnapshot',
     'SnapshotMap',
+    'SnapshotStatus',
     'TelemetryConfig',
     'Title',
     'Url',

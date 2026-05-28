@@ -10,7 +10,7 @@ from yosoi.core.pipeline import Pipeline
 from yosoi.models.contract import Contract
 from yosoi.models.results import FieldVerificationResult, VerificationResult
 from yosoi.models.selectors import SelectorLevel
-from yosoi.models.snapshot import CacheVerdict, SelectorSnapshot
+from yosoi.models.snapshot import CacheVerdict, SelectorSnapshot, SnapshotStatus
 from yosoi.storage.tracking import DomainStats
 
 # ---------------------------------------------------------------------------
@@ -147,6 +147,27 @@ class TestVerifyPerField:
         assert verdicts['title'] == CacheVerdict.STALE
         assert verdicts['price'] == CacheVerdict.STALE
         assert stub._last_level_distribution == {}
+
+    def test_absent_snapshot_is_not_verified_or_marked_stale(self, mocker):
+        stub = _make_pipeline_stub(mocker)
+        snapshots = {
+            'title': _make_snapshot('h1.title'),
+            'author': SelectorSnapshot(
+                discovered_at=datetime.now(timezone.utc),
+                status=SnapshotStatus.ABSENT,
+                status_reason='not present on this domain',
+            ),
+        }
+
+        stub.verifier._verify_field.return_value = FieldVerificationResult(
+            field_name='title', status='verified', working_level='primary', selector='h1.title'
+        )
+
+        verdicts = stub._verify_per_field('<html><h1 class="title">X</h1></html>', snapshots)
+
+        assert verdicts['title'] == CacheVerdict.FRESH
+        assert verdicts['author'] == CacheVerdict.FRESH
+        stub.verifier._verify_field.assert_called_once()
 
 
 # ---------------------------------------------------------------------------

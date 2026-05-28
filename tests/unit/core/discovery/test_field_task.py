@@ -6,6 +6,7 @@ import pytest
 
 from yosoi.core.discovery.field_task import FieldTaskResult, run_field_task
 from yosoi.models.selectors import FieldSelectors, SelectorLevel
+from yosoi.models.snapshot import SnapshotStatus
 from yosoi.prompts.discovery import DiscoveryInput
 from yosoi.utils.exceptions import LLMGenerationError
 
@@ -221,6 +222,26 @@ async def test_invalid_cached_entry_triggers_rediscovery(mock_agent):
     assert result.from_cache is False
     assert result.selectors is not None
     mock_agent.discover_field.assert_called()
+
+
+@pytest.mark.anyio
+async def test_absent_cache_status_skips_discovery(mock_agent):
+    cached_entry = {'status': SnapshotStatus.ABSENT, 'status_reason': 'not on this domain'}
+
+    result = await run_field_task(
+        field_name='headline',
+        field_description='Article title',
+        field_hint=None,
+        discovery_input=_DISCOVERY_INPUT,
+        html=_HTML,
+        agent=mock_agent,
+        cached_entry=cached_entry,
+        max_level=SelectorLevel.CSS,
+    )
+
+    assert result.selectors is None
+    assert result.from_cache is False
+    mock_agent.discover_field.assert_not_called()
 
 
 @pytest.mark.anyio

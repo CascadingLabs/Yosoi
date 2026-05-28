@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from datetime import datetime, timezone
 from typing import Any
 
 from rich.console import Console
@@ -14,6 +15,7 @@ from yosoi.core.discovery.field_agent import FieldDiscoveryAgent
 from yosoi.core.discovery.field_task import FieldTaskResult, run_field_task
 from yosoi.models.contract import Contract
 from yosoi.models.selectors import SelectorLevel
+from yosoi.models.snapshot import SelectorSnapshot, SnapshotStatus, selector_dict_to_snapshot
 from yosoi.prompts.discovery import DiscoveryInput
 from yosoi.storage.persistence import SelectorStorage
 from yosoi.utils import observability as obs
@@ -187,8 +189,13 @@ class DiscoveryOrchestrator:
 
         semaphore = asyncio.Semaphore(self._max_concurrent)
 
-        # Load the full domain selector map once — avoids N redundant file reads
-        existing = self._storage.load_selectors(domain) or {}
+        # Load the full domain selector map once — avoids N redundant file reads.
+        # Keep snapshot health metadata so absent/failed fields are not mistaken
+        # for malformed selector payloads.
+        snapshots = self._storage.load_snapshots(domain) or {}
+        from yosoi.models.snapshot import snapshot_to_cache_entry
+
+        existing = {name: snapshot_to_cache_entry(snapshot) for name, snapshot in snapshots.items()}
 
         task_specs = self._build_task_specs(field_descs, hints, stale_fields)
 
@@ -223,20 +230,20 @@ class DiscoveryOrchestrator:
         if contract_root:
             merged['root'] = {'primary': contract_root.model_dump(exclude_none=True)}
 
-        persisted = dict(merged)
-        for field_name in absent_fields:
-            persisted[field_name] = {'primary': 'NA'}
+        persisted_snapshots: dict[str, SelectorSnapshot] | None = None
+        if url and stale_fields is None:
+            persisted_snapshots = self._build_persisted_snapshots(merged, absent_fields)
 
         # Check if all non-root fields failed
         non_container = {k: v for k, v in merged.items() if k != 'root'}
         if not non_container:
             obs.warning('All field tasks returned None', url=url_context)
-            if url and stale_fields is None and persisted:
+            if url and stale_fields is None and persisted_snapshots:
                 if self._write_lock is not None:
                     async with self._write_lock:
-                        self._storage.save_selectors(url, persisted)
+                        self._storage.save_snapshots(url, persisted_snapshots)
                 else:
-                    self._storage.save_selectors(url, persisted)
+                    self._storage.save_snapshots(url, persisted_snapshots)
             return None
 
         logger.info(
@@ -252,14 +259,29 @@ class DiscoveryOrchestrator:
 
         # Single write — avoids read-modify-write races across concurrent tasks
         # Skip save for partial rediscovery (pipeline handles merge + save)
-        if url and stale_fields is None:
+        if url and stale_fields is None and persisted_snapshots is not None:
             if self._write_lock is not None:
                 async with self._write_lock:
-                    self._storage.save_selectors(url, persisted)
+                    self._storage.save_snapshots(url, persisted_snapshots)
             else:
-                self._storage.save_selectors(url, persisted)
+                self._storage.save_snapshots(url, persisted_snapshots)
 
         return merged
+
+    def _build_persisted_snapshots(self, merged: SelectorMap, absent_fields: set[str]) -> dict[str, SelectorSnapshot]:
+        """Build explicit-health snapshots for the final domain cache write."""
+        now = datetime.now(timezone.utc)
+        snapshots = {
+            field_name: selector_dict_to_snapshot(field_data, discovered_at=now)
+            for field_name, field_data in merged.items()
+        }
+        for field_name in absent_fields:
+            snapshots[field_name] = SelectorSnapshot(
+                discovered_at=now,
+                status=SnapshotStatus.ABSENT,
+                status_reason='field discovery returned no verified selector',
+            )
+        return snapshots
 
     def _merge_results(
         self,
