@@ -23,8 +23,8 @@ class RedditPost(ys.Contract):
 
     title: str = ys.Title()
     author: str = ys.Author()
-    score: int | None = ys.Field(description='upvote count')
-    comment_count: int | None = ys.Field(description='comment count')
+    score: int | None = ys.Count()
+    comment_count: int | None = ys.Count()
     permalink: str = ys.Url()
 
 
@@ -128,6 +128,67 @@ def test_url_field_bare_domain_passes() -> None:
 
 
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Count fields — numeric shape probe + length cap
+# ---------------------------------------------------------------------------
+
+
+def test_count_field_with_numeric_value_passes() -> None:
+    v = SemanticValidator(RedditPost)
+    issues = v.validate(
+        {'title': 'A title', 'author': 'u/x', 'permalink': '/r/x/abc', 'score': '278', 'comment_count': '9'}
+    )
+    scores = [i for i in issues if i.field == 'score']
+    comments = [i for i in issues if i.field == 'comment_count']
+    assert scores == []
+    assert comments == []
+
+
+def test_count_field_with_si_suffix_passes() -> None:
+    """The SI-suffix shape (4.2K) starts with digits so the numeric-prefix probe accepts it."""
+    v = SemanticValidator(RedditPost)
+    issues = v.validate(
+        {'title': 'A title', 'author': 'u/x', 'permalink': '/r/x/abc', 'score': '4.2K', 'comment_count': '1,234'}
+    )
+    assert [i for i in issues if i.field in ('score', 'comment_count')] == []
+
+
+def test_count_field_with_full_card_text_is_flagged() -> None:
+    """The exact regression: shreddit-post CSS selector returns the whole card text,
+    coercion to Count would fail downstream, but the validator catches it FIRST."""
+    v = SemanticValidator(RedditPost)
+    garbage = 'Facebook deleted 15m hate speech posts, 18m pieces of terrorist...'
+    issues = v.validate(
+        {
+            'title': 'A title',
+            'author': 'u/x',
+            'permalink': '/r/x/abc',
+            'score': garbage,
+            'comment_count': garbage,
+        }
+    )
+    score_issues = [i for i in issues if i.field == 'score']
+    assert len(score_issues) == 1
+    # Either too-long OR non-numeric — both reasons are valid for this regression.
+    assert (
+        'max 50' in score_issues[0].reason
+        or 'does not look numeric' in score_issues[0].reason
+        or 'equals other fields' in score_issues[0].reason
+    )
+
+
+def test_count_field_with_non_numeric_text_is_flagged() -> None:
+    """A short non-numeric value (passes the length cap) must still be flagged by the
+    type-shape probe — the LLM picked the wrong attribute."""
+    v = SemanticValidator(RedditPost)
+    issues = v.validate(
+        {'title': 'A title', 'author': 'u/x', 'permalink': '/r/x/abc', 'score': 'Hot', 'comment_count': '5'}
+    )
+    score_issues = [i for i in issues if i.field == 'score']
+    assert len(score_issues) == 1
+    assert 'does not look numeric' in score_issues[0].reason
+
+
 # Cross-field distinctness (catches "all three CSS selectors matched same card")
 # ---------------------------------------------------------------------------
 

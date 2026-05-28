@@ -3,6 +3,7 @@
 from yosoi.types.author import Author
 from yosoi.types.base import YosoiType
 from yosoi.types.body_text import BodyText
+from yosoi.types.count import Count
 from yosoi.types.datetime import Datetime
 from yosoi.types.field import Field
 from yosoi.types.price import Price
@@ -15,6 +16,7 @@ from yosoi.types.url import Url
 __all__ = [
     'Author',
     'BodyText',
+    'Count',
     'Datetime',
     'Field',
     'Price',

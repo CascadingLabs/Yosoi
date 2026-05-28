@@ -43,6 +43,7 @@ _MAX_LEN_BY_TYPE: dict[str | None, int] = {
     'url': 500,
     'price': 50,
     'rating': 50,
+    'count': 50,  # raw text — '4,200', '4.2K', '9 comments' all fit comfortably
     'datetime': 100,
     'body_text': 50_000,  # bodies are legitimately long; cap protects against runaway extractions
     'related_content': 5_000,
@@ -160,7 +161,7 @@ class SemanticValidator:
             )
 
         # Type-specific shape probes.
-        if ytype in ('rating', 'price'):
+        if ytype in ('rating', 'price', 'count'):
             if not _looks_numeric(raw):
                 return FieldIssue(
                     field,

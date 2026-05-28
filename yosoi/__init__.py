@@ -56,6 +56,7 @@ from yosoi.models.snapshot import CacheVerdict, SelectorSnapshot, SnapshotMap
 from yosoi.types import (
     Author,
     BodyText,
+    Count,
     Datetime,
     Field,
     Price,
@@ -79,6 +80,7 @@ __all__ = [
     'CacheVerdict',
     'ClaudeSDKModel',
     'Contract',
+    'Count',
     'Datetime',
     'DebugConfig',
     'Field',

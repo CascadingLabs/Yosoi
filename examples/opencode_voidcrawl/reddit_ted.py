@@ -51,8 +51,8 @@ class RedditPost(ys.Contract):
 
     title: str = ys.Title(description='Post title — the post card heading')
     author: str = ys.Author(description='Post author handle (e.g. "u/someone")')
-    score: int | None = ys.Field(description='Post score / upvote count (integer)')
-    comment_count: int | None = ys.Field(description='Number of comments on the post (integer)')
+    score: int | None = ys.Count(description='Post score / upvote count')
+    comment_count: int | None = ys.Count(description='Number of comments on the post')
     permalink: str = ys.Url(description='Relative or absolute permalink URL to the post')
 
 
