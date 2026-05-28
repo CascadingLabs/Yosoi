@@ -1,38 +1,41 @@
-"""Run + verify a canonical ReplayPlan over voidcrawl, and capture one from MCP parts.
+"""Example-side helpers for the ReplayPlan executor.
 
-EXPERIMENTAL — lives in the example while the executor's voidcrawl-call mapping
-settles; promote to the package once stable. Three pieces close the loop:
+The runtime itself (``execute_plan`` / ``run_node`` and the act/check dispatch
+machinery) was promoted to ``yosoi.core.replay.runtime`` in the package, so
+this module now hosts only the **example-specific** pieces:
 
-  * capture:  plan_from_tool_parts() — MCP tool-call transcript (ground truth) -> A3Nodes
-  * execute:  execute_plan() — run each node, trying its selector fallback cascade
-  * verify:   each node's `expect` is checked after it runs -> VerifyReport (pass rate)
+  * ``plan_from_tool_parts`` — capture an MCP agent's voidcrawl tool-call
+    transcript and turn it into a ReplayPlan (ground truth from a live agent).
+  * ``open_page`` — voidcrawl ``BrowserSession`` + ``new_page`` lifecycle with
+    guaranteed teardown. Used by every example here.
+  * ``extract_records_dom`` — DOM-side recipe extractor used by examples that
+    were authored before the unified ``ContentExtractor`` path (Phase E will
+    delete the remaining ExtractRecipe consumers and this function with them).
+  * ``save_plan`` / ``load_plan`` — JSON persistence for hand-authored example
+    plans (the LLM-discovered cache uses ``yosoi.storage.action_plan`` instead).
 
-Settling model:
-  - Readiness is assertion-driven: a node waits for its `assess` precondition to hold
-    (the network never idles on an SPA, so we gate on structure, not time). No assess
-    means proceed immediately — no arbitrary sleep.
-  - The one fixed wait is an explicit per-node `dwell`, for the rare no-DOM-signal case
-    (Maps geolocation; SPA hydration that wires a handler with no observable marker).
-  - execute_plan is fail_fast by default: a linear plan can't recover from a missed
-    precondition, so it stops at the first failure rather than burning settle timeouts.
+``execute_plan`` and ``run_node`` are re-exported for backward compatibility
+with examples that import them from here.
 """
 
 from __future__ import annotations
 
-import asyncio
+import contextlib
 import json
+from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import Any
 
+from voidcrawl import BrowserConfig, BrowserSession, VoidCrawlError
+
+# Re-exported from the package — examples can still `from replay_runtime import execute_plan`.
+from yosoi.core.replay.runtime import execute_plan, run_node
 from yosoi.models.replay import (
     A3Node,
     Act,
-    Assertion,
-    NodeResult,
+    ExtractRecipe,
     Parallel,
     ReplayPlan,
-    SelectorEntry,
-    VerifyReport,
     click,
     css,
     navigate,
@@ -41,13 +44,17 @@ from yosoi.models.replay import (
     visual,
 )
 
+__all__ = [
+    'execute_plan',
+    'extract_records_dom',
+    'load_plan',
+    'open_page',
+    'plan_from_tool_parts',
+    'run_node',
+    'save_plan',
+]
+
 _PREFIX = 'voidcrawl_'
-# Settling is purely assertion-driven: a node waits until its `assess` precondition
-# holds (polled at `_SETTLE_POLL` up to `_SETTLE_TIMEOUT`, then terminal). A node with
-# NO assess proceeds immediately — no arbitrary sleep. The one fixed wait is an
-# explicit per-node `dwell`, for the rare no-DOM-signal case (e.g. Maps geolocation).
-_SETTLE_POLL = 0.3
-_SETTLE_TIMEOUT = 8.0  # a precondition that isn't met in ~8s is treated as terminal (fail fast)
 
 
 # ── capture: MCP tool parts -> A3Nodes (ground truth) ────────────────────────
@@ -92,199 +99,96 @@ def _node_for(name: str, inp: dict[str, Any]) -> A3Node | None:
     return None  # session_open/close, ax_tree, title, extract, eval_js, screenshot, ...
 
 
-# ── execute + verify ─────────────────────────────────────────────────────────
+# ── DOM-side extraction (legacy ExtractRecipe consumer — will be deleted in Phase E) ─
 
 
-async def execute_plan(plan: ReplayPlan, page: Any, *, fail_fast: bool = True) -> VerifyReport:
-    """Run the plan in order. A3Nodes run sequentially; a Parallel group fans out.
+async def extract_records_dom(page: Any, recipe: ExtractRecipe) -> list[dict[str, str | None]]:
+    """Resolve an ExtractRecipe against the DOM — dispatch on each selector's TYPE.
 
-    fail_fast (default): stop at the first failed node — a linear plan can't recover
-    from a missed precondition, so plowing on just burns settle timeouts. The remaining
-    nodes are reported as skipped so the report still shows where it stopped.
+    Each entry in a field's selector cascade tells the executor BOTH where to
+    look and how to read:
+
+      * ``css`` / ``xpath``  — scoped query inside the card, return innerText.
+      * ``attr`` (value=name) — read ``card.getAttribute(value)``.
+      * ``global_id`` (value=template, identity=attr) — interpolate the card's
+        identity attr into the template's ``{id}`` slot, then look up by
+        ``document.getElementById(resolved)``.
+
+    Dispatch is keyed off SelectorEntry.type, which is exactly what the LLM
+    discovery agent emits via the unified ``to_selector_model`` schema.
     """
-    results: list[NodeResult] = []
-    i = 0
-    stopped = False
-    for item in plan.nodes:
-        count = len(item.nodes) if isinstance(item, Parallel) else 1
-        if stopped:
-            results.extend(
-                NodeResult(index=i + k, op='skipped', passed=False, detail='skipped (prior node failed)')
-                for k in range(count)
-            )
-            i += count
-            continue
-        if isinstance(item, Parallel):
-            if not await _settle_assert(item.assess, page):  # group precondition, checked once
-                results.append(NodeResult(index=i, op='parallel', passed=False, detail='group assess never held'))
-                stopped = fail_fast
-                i += 1
-                continue
-            fanned = await asyncio.gather(*(run_node(i + k, child, page) for k, child in enumerate(item.nodes)))
-            results.extend(fanned)
-            i += count
-        else:
-            result = await run_node(i, item, page)
-            results.append(result)
-            stopped = fail_fast and not result.passed
-            i += 1
-    return VerifyReport(results=results)
+    if recipe.card is None:
+        raise ValueError('extract_records_dom requires recipe.card (a SelectorEntry); for AX, use extract_records')
+    field_payload = [
+        {
+            'key': f.key,
+            'selectors': [
+                {'type': e.type, 'value': e.value, 'identity': e.identity}
+                for _, e in f.selectors.as_entries()
+                if e and e.type in ('css', 'xpath', 'attr', 'global_id')
+            ],
+        }
+        for f in recipe.fields
+    ]
+    payload = {
+        'card': recipe.card.value,
+        'fields': field_payload,
+        'skip_prefixes': list(recipe.skip_prefixes),
+    }
+    raw = await page.evaluate_js(_EXTRACT_RECORDS_JS.replace('__PAYLOAD__', json.dumps(payload)))
+    return raw if isinstance(raw, list) else []
 
 
-async def run_node(index: int, node: A3Node, page: Any) -> NodeResult:
-    """Settle (assess) -> act (fallback cascade) -> [dwell] -> assert (expect)."""
-    op = node.act.op
-    if not await _settle_assert(node.assess, page):
-        return NodeResult(index=index, op=op, passed=False, detail='assess never held (terminal)')
-    try:
-        await _act(node, page)
-    except (RuntimeError, OSError, ValueError) as exc:
-        return NodeResult(index=index, op=op, passed=False, detail=f'act failed: {exc}')
-    if node.dwell:  # explicit no-DOM-signal wait (e.g. geo); 0 by default
-        await asyncio.sleep(node.dwell)
-    passed, detail = await _check(node.expect, node, page)
-    return NodeResult(index=index, op=op, passed=passed, detail=detail)
+_EXTRACT_RECORDS_JS = """((cfg) => {
+  const cards = document.querySelectorAll(cfg.card);
+  const skip = cfg.skip_prefixes || [];
+  const out = [];
+  const text = (el) => el ? (el.innerText || '').trim() || null : null;
+  const readOne = (card, sel) => {
+    if (sel.type === 'attr') return card.getAttribute(sel.value);
+    if (sel.type === 'global_id') {
+      const key = card.getAttribute(sel.identity || 'id');
+      if (!key) return null;
+      const resolved = sel.value.replace('{id}', key);
+      return text(document.getElementById(resolved));
+    }
+    const el = card.querySelector(sel.value);
+    return text(el);
+  };
+  for (const card of cards) {
+    const rec = {};
+    let dropped = false;
+    for (const f of cfg.fields) {
+      let value = null;
+      for (const sel of f.selectors) {
+        value = readOne(card, sel);
+        if (value) break;
+      }
+      rec[f.key] = value;
+    }
+    if (cfg.fields.length && skip.length) {
+      const lead = rec[cfg.fields[0].key] || '';
+      if (skip.some(p => lead.startsWith(p))) dropped = true;
+    }
+    if (!dropped) out.push(rec);
+  }
+  return out;
+})(__PAYLOAD__)"""
 
 
-async def _settle_assert(assertion: Assertion | None, page: Any) -> bool:
-    """Assertion-driven readiness: poll until `assertion` holds, else terminal.
-
-    No assertion -> ready immediately (no arbitrary sleep). The network never idles on
-    an SPA, so readiness is gated on the structure (the assertion), not time.
-    """
-    if assertion is None:
-        return True
-    waited = 0.0
-    while waited < _SETTLE_TIMEOUT:
-        ok, _ = await _check(assertion, None, page)
-        if ok:
-            return True
-        await asyncio.sleep(_SETTLE_POLL)
-        waited += _SETTLE_POLL
-    return False
+# ── lifecycle (guaranteed teardown — no leaked tabs/sessions) ────────────────
 
 
-async def _act(node: A3Node, page: Any) -> None:
-    act = node.act
-    if act.op == 'teleport':
-        await page.set_geolocation(act.lat, act.lon, 50.0)
-        if act.timezone:
-            await page.set_timezone(act.timezone)
-        if act.locale:
-            await page.set_locale(act.locale)
-    elif act.op == 'navigate':
-        await page.navigate(act.url or 'about:blank')  # settling is the next step's assess (or node.dwell)
-    elif act.op == 'wait':
-        pass  # a pure gate: its `assess` does the waiting, the act is a no-op
-    elif act.op == 'scroll':
-        await _run_scroll(node, page)
-    elif act.op == 'click':
-        await _run_click(node, page)
-    elif act.op == 'type':
-        await _run_type(node, page)
-
-
-async def _run_type(node: A3Node, page: Any) -> None:
-    """Type into a css/xpath target. Sets value on ALL matches via the native setter +
-    input/change events — robust to duplicated DOM and framework-controlled inputs
-    (a plain .value assignment won't register with React/Solid)."""
-    sel = next((t for t in node.act.targets if t.type in ('css', 'xpath')), None)
-    if sel is None:
-        return
-    text = node.act.text or ''
-    js = (
-        '(()=>{const set=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,"value").set;let k=0;'
-        f'document.querySelectorAll({json.dumps(sel.value)}).forEach(el=>{{set.call(el,{json.dumps(text)});'
-        'el.dispatchEvent(new Event("input",{bubbles:true}));el.dispatchEvent(new Event("change",{bubbles:true}));k++;});'
-        'return k;})()'
-    )
-    await page.evaluate_js(js)
-
-
-async def _run_scroll(node: A3Node, page: Any) -> None:
-    target = node.expect.count if (node.expect and node.expect.count) else 0
-    for _ in range(node.max_iters):
-        count = await _count(page, node.act.feed, node.act.item or '')
-        if count >= target:
-            return
-        await asyncio.sleep(1.3)
-
-
-async def _run_click(node: A3Node, page: Any) -> None:
-    """Try each target in order — durable role first, then css, then visual."""
-    last: Exception | None = None
-    for sel in node.act.targets:
-        last = await _attempt_click(sel, page)
-        if last is None:
-            return
-    if last is not None:
-        raise last
-
-
-async def _attempt_click(sel: SelectorEntry, page: Any) -> Exception | None:
-    """Try one selector; return the exception on failure, or None on success."""
-    try:
-        if sel.type == 'role':
-            await page.click_by_role(sel.role, sel.name or '', sel.nth)
-        elif sel.type in ('css', 'xpath'):
-            await page.click_element(sel.value)
-        elif sel.type == 'visual':
-            await page.dispatch_mouse_event('click', sel.x, sel.y)
-    except (RuntimeError, OSError, ValueError, AttributeError) as exc:
-        return exc
-    return None
-
-
-async def _count(page: Any, feed: str | None, item: str) -> int:
-    scope = f'document.querySelector({json.dumps(feed)})' if feed else 'document'
-    raw = await page.evaluate_js(
-        f'(()=>{{const s={scope};if(!s)return -1;'
-        f'(s.scrollTop!==undefined)&&(s.scrollTop=s.scrollHeight);'
-        f'return s.querySelectorAll({json.dumps(item)}).length;}})()'
-    )
-    return raw if isinstance(raw, int) else -1
-
-
-async def _check(a: Assertion | None, node: A3Node | None, page: Any) -> tuple[bool, str | None]:
-    """Evaluate an assertion (used as both `assess` precondition and `expect` post).
-
-    `node` is the owning A3Node when available (for min_count's feed/item context); it
-    is None when checking a Parallel group's or a poll's standalone assertion.
-    """
-    if a is None:
-        return True, None
-    if a.kind == 'min_count':
-        item = a.selector.value if (a.selector and a.selector.value) else (node.act.item if node else None)
-        feed = node.act.feed if node else None
-        count = await _count(page, feed, item or '')
-        ok = count >= (a.count or 0)
-        return ok, None if ok else f'{count} < {a.count}'
-    if a.kind == 'url_contains':
-        href = str(await page.evaluate_js('location.href'))
-        ok = (a.text or '') in href
-        return ok, None if ok else f'{a.text!r} not in url'
-    if a.kind == 'text_present':
-        content = str(await page.content())
-        ok = (a.text or '') in content
-        return ok, None if ok else f'{a.text!r} not on page'
-    if a.kind == 'selector_present' and a.selector:
-        present = await _selector_present(a.selector, page)
-        return present, None if present else 'selector absent'
-    return True, None
-
-
-async def _selector_present(sel: SelectorEntry, page: Any) -> bool:
-    """Presence check that honours the selector kind: role -> AX query, else css.
-
-    css uses evaluate_js, NOT page.query_selector: the latter returns the matched
-    element's text (empty -> falsy) for an <input>, so a present-but-empty field would
-    read as absent. existence is `querySelector(...) !== null`.
-    """
-    if sel.type == 'role':
-        nodes = await page.query_ax_tree(role=sel.role, name=sel.name)
-        return bool(nodes)
-    present = await page.evaluate_js(f'document.querySelector({json.dumps(sel.value)})!==null')
-    return bool(present)
+@contextlib.asynccontextmanager
+async def open_page(cfg: BrowserConfig, url: str = 'about:blank') -> AsyncIterator[Any]:
+    """Yield a fresh page (tab), closing the tab AND the session on every path."""
+    async with BrowserSession(cfg) as browser:
+        page = await browser.new_page(url)
+        try:
+            yield page
+        finally:
+            with contextlib.suppress(VoidCrawlError, RuntimeError, OSError):
+                await page.close()
 
 
 # ── persistence (canonical ReplayPlan JSON, per target) ──────────────────────

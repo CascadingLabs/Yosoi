@@ -4,11 +4,19 @@ from __future__ import annotations
 
 import re
 from abc import ABC, abstractmethod
-from typing import ClassVar
+from collections.abc import Awaitable, Callable
+from typing import Any, ClassVar
 
 from pydantic import BaseModel
 
 from yosoi.models.results import ContentMetadata, FetchResult
+
+# A post-navigate hook invoked by browser-backed fetchers with the live page
+# object after navigation succeeds and before HTML capture. The Pipeline uses
+# this to drive an LLM-discovered (and cached) A3Node action plan so the page
+# reaches its fully-loaded state before extraction sees it. Simple/HTTP-only
+# fetchers ignore the hook — they have no page object to hand over.
+PreparePageHook = Callable[[Any], Awaitable[None]]
 
 
 class JSDetectionResult(BaseModel, frozen=True):
@@ -273,18 +281,23 @@ class HTMLFetcher(ABC):
         await self.close()
 
     @abstractmethod
-    async def fetch(self, url: str) -> FetchResult:
+    async def fetch(self, url: str, *, prepare_page: PreparePageHook | None = None) -> FetchResult:
         """Fetch HTML from a URL.
 
         Args:
-            url: URL to fetch
+            url: URL to fetch.
+            prepare_page: Optional async hook invoked with the live page object
+                AFTER navigation and BEFORE HTML capture. Browser-backed fetchers
+                use this to run a discovered (and cached) A3Node action plan that
+                drives the page to its fully-loaded state. HTTP-only fetchers
+                must accept the kwarg for interface uniformity but ignore it —
+                they have no page handle to surrender.
 
         Returns:
-            FetchResult with HTML, metadata, and status
+            FetchResult with HTML, metadata, and status.
 
         Raises:
-            BotDetectionError: If bot detection is triggered
-
+            BotDetectionError: If bot detection is triggered.
         """
         pass
 

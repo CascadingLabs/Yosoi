@@ -25,8 +25,8 @@ from pathlib import Path
 from typing import Any
 
 from pydantic import BaseModel
-from replay_runtime import execute_plan, load_plan, save_plan
-from voidcrawl import BrowserConfig, BrowserSession
+from replay_runtime import execute_plan, load_plan, open_page, save_plan
+from voidcrawl import BrowserConfig
 
 from yosoi.core.fetcher.dom.ax import extract_records
 from yosoi.models.replay import (
@@ -35,12 +35,14 @@ from yosoi.models.replay import (
     FieldSelectors,
     ReplayPlan,
     css,
+    min_count,
     navigate,
     role,
     scroll_until,
     selector_present,
     teleport,
     url_contains,
+    wait,
 )
 from yosoi.types import rating as _rating  # noqa: F401  registers the built-in 'rating' coercer
 from yosoi.types.registry import CoercionConfig, _registry, register_coercion
@@ -105,26 +107,36 @@ class GuitarShop(BaseModel):
     reviews: int | None = None
 
 
+_RESULTS_BASELINE = 8  # a populated feed; the scroll node then drives it up to TARGET
+_GEO_SETTLE = 3.0  # see the wait node below — the ONE fixed pause in the whole system
+
+
 def build_plan(city: City) -> ReplayPlan:
     """The canonical replay plan for one city — teleport coords baked into the node.
 
-    Settling is event-driven: the read-navigate and scroll nodes `assess` that the
-    results feed is present (the prior step finished loading) instead of sleeping —
-    the SPA's network never idles, so readiness is gated on the structure.
+    Almost entirely event-driven, with ONE deliberate exception. Geolocation has no DOM
+    *event*: Maps requests the position internally (a few seconds into the prime load) with
+    no observable effect, and voidcrawl exposes no init-script hook to instrument that call.
+    So a single fixed `wait` sits between prime and read to let Maps acquire the position —
+    the one irreducible pause. Everything else is gated on signals: prime waits for results,
+    and read+scroll wait on `url_contains('@<deg>')`, the teleport's verifiable *effect* on
+    the URL. That gate doubles as geo-correctness verification — it fails loudly if the
+    teleport didn't apply (instead of silently scraping stale IP-location results).
     """
     feed_present = selector_present(css(_FEED))
-    # `dwell` (not a sleep-everywhere): geolocation resolution has NO DOM signal, so the
-    # prime/read loads each need an explicit settle for Maps to apply the teleport.
-    prime = navigate(MAPS_URL, dwell=3.0)  # prime: let Maps resolve the teleported location
-    read = navigate(MAPS_URL, expect=url_contains('/maps/'), dwell=3.0)  # read: applies it
+    results_ready = min_count(_RESULTS_BASELINE, css(_ITEM))
+    geo_resolved = url_contains(f'@{int(city.lat)}')  # the teleport's verifiable effect on the URL
+    prime = navigate(MAPS_URL, expect=results_ready)  # prime: trigger the geolocation request + load
+    settle_geo = wait(_GEO_SETTLE, intent='let Maps acquire the teleported position (no DOM signal)')
+    read = navigate(MAPS_URL, expect=geo_resolved)  # read: re-centre on the resolved position
     read.assess = feed_present  # wait for the prime load before re-navigating
     scroll = scroll_until(_FEED, _ITEM, TARGET)
-    scroll.assess = feed_present  # wait for the read load before scrolling
+    scroll.assess = geo_resolved  # only scroll once the map has actually re-centred (geo-correct)
     return ReplayPlan(
         target=TARGET_KEY,
         task='guitar shops near me',
         source='scripted',
-        nodes=[teleport(city.lat, city.lon, city.tz, city.locale), prime, read, scroll],
+        nodes=[teleport(city.lat, city.lon, city.tz, city.locale), prime, settle_geo, read, scroll],
         extract=_EXTRACT,
     )
 
@@ -145,8 +157,7 @@ def _coerce(recipe: ExtractRecipe, rec: dict[str, str | None]) -> GuitarShop:
 async def scrape_city(city: City, cfg: BrowserConfig) -> tuple[float, list[GuitarShop]]:
     """Execute the plan in a FRESH session (teleport needs a clean one), then extract."""
     plan = build_plan(city)
-    async with BrowserSession(cfg) as browser:
-        page = await browser.new_page('about:blank')  # blank first so teleport applies pre-nav
+    async with open_page(cfg) as page:  # blank first so teleport applies pre-nav; teardown guaranteed
         report = await execute_plan(plan, page)
         ax_nodes = await page.get_full_ax_tree()
         recipe = plan.extract or _EXTRACT
@@ -157,7 +168,6 @@ async def scrape_city(city: City, cfg: BrowserConfig) -> tuple[float, list[Guita
             skip_name_prefixes=tuple(recipe.skip_prefixes),
         )
         return report.score, [_coerce(recipe, r) for r in records[:TARGET]]
-    raise RuntimeError('BrowserSession exited without yielding a page')  # unreachable
 
 
 async def main() -> None:

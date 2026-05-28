@@ -22,7 +22,9 @@ class _Simple:
 
 
 class _Headless:
-    async def _do_fetch(self, url: str, start_time: float, tier: str) -> FetchResult:
+    # Accept prepare_page=None to match the real _VoidCrawlFetcher._do_fetch
+    # signature; the fake never invokes it because there is no live page.
+    async def _do_fetch(self, url: str, start_time: float, tier: str, *, prepare_page=None) -> FetchResult:
         return FetchResult(url=url, html='<html><body><article>rendered</article></body></html>', fetch_time=start_time)
 
 

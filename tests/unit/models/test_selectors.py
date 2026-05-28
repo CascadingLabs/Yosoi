@@ -1,6 +1,18 @@
 """Tests for FieldSelectors, SelectorEntry, SelectorLevel, and factory functions."""
 
-from yosoi.models.selectors import FieldSelectors, SelectorEntry, SelectorLevel, css, jsonld, regex, xpath
+import pytest
+
+from yosoi.models.selectors import (
+    FieldSelectors,
+    SelectorEntry,
+    SelectorLevel,
+    attr,
+    css,
+    global_id,
+    jsonld,
+    regex,
+    xpath,
+)
 
 # ---------------------------------------------------------------------------
 # SelectorLevel
@@ -252,3 +264,62 @@ def test_jsonld_factory_creates_jsonld_entry():
     assert entry.type == 'jsonld'
     assert entry.value == '$.name'
     assert entry.level == SelectorLevel.JSONLD
+
+
+# ---------------------------------------------------------------------------
+# attr / global_id — new selector kinds for reading data off the card itself
+# ---------------------------------------------------------------------------
+
+
+def test_attr_factory_creates_attr_entry():
+    entry = attr('post-title')
+    assert isinstance(entry, SelectorEntry)
+    assert entry.type == 'attr'
+    assert entry.value == 'post-title'
+    # attr is a CSS-level read variant — not an escalation above CSS, so the
+    # default `selector_level=CSS` gate must not skip it.
+    assert entry.level == SelectorLevel.CSS
+
+
+def test_attr_requires_value():
+    with pytest.raises(ValueError, match='attr selector requires a non-empty value'):
+        SelectorEntry(type='attr', value='')
+
+
+def test_global_id_factory_uses_default_identity():
+    entry = global_id('{id}-rtjson-content')
+    assert entry.type == 'global_id'
+    assert entry.value == '{id}-rtjson-content'
+    assert entry.identity == 'id'
+    # Same rationale as attr — global_id is a document-wide DOM read at CSS level.
+    assert entry.level == SelectorLevel.CSS
+
+
+def test_global_id_factory_custom_identity():
+    entry = global_id('{id}-post-rtjson-content', identity='thingid')
+    assert entry.identity == 'thingid'
+
+
+def test_global_id_requires_template_marker():
+    with pytest.raises(ValueError, match='global_id selector requires'):
+        SelectorEntry(type='global_id', value='static-id')
+
+
+def test_global_id_key_includes_identity():
+    a = global_id('{id}-x', identity='thingid')
+    b = global_id('{id}-x', identity='id')
+    # Different identity attrs → different dedup keys
+    assert a.key() != b.key()
+
+
+def test_field_selectors_attr_and_global_id_cascade():
+    fs = FieldSelectors(
+        primary=global_id('{id}-post-rtjson-content', identity='thingid'),
+        fallback=css('div[id$="-post-rtjson-content"]'),
+    )
+    assert fs.primary.type == 'global_id'
+    assert fs.fallback is not None
+    assert fs.fallback.type == 'css'
+    # All three (global_id, css, attr) live at CSS level — no escalation, so
+    # max_level stays CSS even with new selector kinds in the cascade.
+    assert fs.max_level == SelectorLevel.CSS

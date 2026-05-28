@@ -1,13 +1,12 @@
-"""Fan-out experiment: fill the N independent checkout fields concurrently.
+"""Fan-out experiment (SHELVED): fill the N independent checkout fields concurrently.
 
-The 10 form fields are independent, so a Parallel group asserts the form is present
-ONCE and fans the fills out concurrently (asyncio.gather), vs the sequential plan
-where each fill is its own gated node. Times both; both must still place the order.
-
-Note the subtlety: now that settling is assertion-driven (no arbitrary 1s/fill), the
-sequential fills are already fast — the first waits for the form, the rest find their
-field immediately. So fan-out's win here is expected to be modest; it pays off where
-steps have real per-step latency, not instant local writes. This run measures that.
+FINDING — concurrency is shelved because the fundamental isn't there: voidcrawl's Page
+has a single, serial CDP command channel, so firing N evaluate_js calls at one tab via
+asyncio.gather collides — measured 9/10 RuntimeError, only the first write lands. The 10
+form fields are logically independent, but they all write into ONE tab, so they cannot be
+parallelized at the protocol layer. Real fan-out would need N tabs (separate channels),
+which is meaningless for a single shared form. The parallel run here therefore FAILS by
+design; it is kept as the artifact that demonstrates why. Sequential is the correct path.
 
     uv run python examples/opencode_voidcrawl/fanout_checkout.py
 """
@@ -19,10 +18,10 @@ import time
 from typing import Any
 
 from eshop_checkout import _FIELDS, _ORDER_OK, _SKU_URL, _gated_click, _gated_fill
-from replay_runtime import execute_plan
-from voidcrawl import BrowserConfig, BrowserSession
+from replay_runtime import execute_plan, open_page
+from voidcrawl import BrowserConfig
 
-from yosoi.models.replay import A3Node, Act, ReplayPlan, css, fill, navigate, parallel, selector_present
+from yosoi.models.replay import A3Node, ReplayPlan, css, fill, navigate, parallel, role, selector_present
 
 
 def _bare_fill(label: str, value: str) -> A3Node:
@@ -41,13 +40,12 @@ def build_plan(*, fan_out: bool) -> ReplayPlan:
         task=f'checkout (fan_out={fan_out})',
         source='scripted',
         nodes=[
-            navigate(_SKU_URL, dwell=2.5),  # SPA hydration has no DOM signal
-            _gated_click('Add to Cart', 'add'),
-            _gated_click('Cart (1)', 'open cart'),
-            _gated_click('Proceed to Checkout', 'checkout'),
+            navigate(_SKU_URL, expect=selector_present(role('button', 'Add to Cart'))),
+            _gated_click('Add to Cart', 'add', selector_present(role('button', 'Cart (1)'))),
+            _gated_click('Cart (1)', 'open cart', selector_present(role('button', 'Proceed to Checkout'))),
+            _gated_click('Proceed to Checkout', 'checkout', selector_present(css('input[data-label="First name"]'))),
             *fill_part,
-            _gated_click('Place Order', 'place order'),
-            A3Node(act=Act(op='wait'), assess=_ORDER_OK, expect=_ORDER_OK, intent='confirm'),
+            _gated_click('Place Order', 'place order', _ORDER_OK),
         ],
     )
 
@@ -56,8 +54,7 @@ async def _run(*, fan_out: bool) -> tuple[float, float, str | None]:
     cfg = BrowserConfig(headless=True, stealth=True, no_sandbox=True)
     plan = build_plan(fan_out=fan_out)
     t0 = time.monotonic()
-    async with BrowserSession(cfg) as browser:
-        page = await browser.new_page('about:blank')
+    async with open_page(cfg) as page:
         report = await execute_plan(plan, page)
         order = await page.evaluate_js("document.querySelector('strong[data-order-id]')?.getAttribute('data-order-id')")
     return time.monotonic() - t0, report.score, (str(order) if order else None)

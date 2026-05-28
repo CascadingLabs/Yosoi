@@ -267,6 +267,12 @@ def _make_scrape_stub(mocker, contract=None):
     stub.force = False
     stub.selector_level = SelectorLevel.CSS
     stub._contract_sig = 'test-sig'
+    # The action-plan hook the Pipeline builds uses _inner_llm_config to
+    # construct a per-call agent. Tests mock _fetch directly so the agent is
+    # never invoked, but the attribute still has to exist.
+    from yosoi.core.discovery.config import LLMConfig
+
+    stub._inner_llm_config = LLMConfig(provider='test', model_name='test-model', api_key='fake')
 
     # Stub normalize_url to pass through
     mocker.patch.object(stub, 'normalize_url', new=mocker.AsyncMock(side_effect=lambda u: u))

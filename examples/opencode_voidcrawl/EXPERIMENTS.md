@@ -117,6 +117,57 @@ This is the strongest generalization datapoint yet: the same primitive (A3Node +
 selectors + verify) drives a stateful, transactional, AX-blind site end to end — not just
 read-only scraping.
 
+## Antibot + infinite pagination — reddit r/ted top-3 + every public comment (`reddit_ted.py`)
+
+The hardest target the primitive has touched: a Cloudflare-fronted, JS-gated, custom-
+elements SPA (new reddit / shreddit), and a task that needs **scrolling-equivalent
+pagination** (load every comment under each post) — not just a feed scroll.
+
+**Result: top 3 posts of r/ted (all-time), all 32 public comments fully loaded, verify
+100% across the listing plan and all three per-post plans. Stable across runs. Zero LLM.**
+
+The flow: one `ReplayPlan` opens `/r/ted/top/?t=all` and the listing extractor pulls
+the top-3 `<shreddit-post>` permalinks (and `comment-count`); a per-post plan then
+opens each permalink and runs `click_until('faceplate-partial[src*=more-comments] button',
+expect=min_count(N, shreddit-comment))` — the new pagination primitive — to drive the
+comment tree to the post's authoritative count.
+
+**What this generalization datapoint adds:**
+
+- **antibot is free**: voidcrawl stealth carries the JS-challenge transparently — the
+  navigate `expect` (post selector present) is what tells us the challenge resolved.
+  No per-run plumbing in the plan.
+- **sort-by-URL collapses the click**: reddit accepts `/top/?t=all`, so the "sort to
+  top" step disappears into the navigate node — fewer brittle clicks for the same effect.
+- **`click_until` is the load-more twin of `scroll_until`**: same shape (`repeat=True` +
+  expect-driven termination + bounded `max_iters`), different op. Implementing this
+  meant honouring `repeat=True` for non-scroll ops in the executor too — the docstring
+  said the primitive ticks act until expect holds, but only scroll obeyed; now any op
+  does. Pagination becomes a single A3Node, not a new control-flow construct.
+- **JS-click for css**: CDP `dispatchMouseEvent` silently no-ops on a custom-element
+  handler when the target is offscreen or sticky-overlaid (reddit's `faceplate-partial`
+  listens for *any* click in its subtree but the coords land elsewhere). The executor
+  now `scrollIntoView` + JS `.click()` for css selectors; role/visual keep CDP
+  semantics where trusted-event behaviour actually matters.
+- **DOM-side extraction, AX-blind**: shreddit elements are AX-blind (the `<main>`
+  subtree shows only StaticText / generic nodes); the durable handles are **css +
+  custom-element attributes** (`shreddit-post[permalink]`, `shreddit-comment[thingid]`,
+  `[author]`, `[depth]`, `[parentid]`). Same unified `SelectorEntry` story, third
+  cell on the AX-rich ↔ AX-blind axis (Maps rich · eshop blind buttons-AX · reddit
+  blind everything).
+- **Verify count as oracle**: each per-post plan's `expect=min_count(N, shreddit-comment)`
+  uses the *listing's* `comment-count` attribute as N — a cross-page invariant. If
+  reddit's pagination changes shape, the verify drops and tells us exactly which post
+  is short — and by how many.
+
+```sh
+uv run python examples/opencode_voidcrawl/reddit_ted.py
+# listing: 100% (1/1)
+# t3_fejc9o: 9/9 comments  verify 100%
+# t3_f1y61t: 10/10 comments  verify 100%
+# t3_cakn06: 13/13 comments  verify 100%   (this one needs the offscreen load-more)
+```
+
 ### Recording for marketing (`record_checkout.py`)
 
 Replays the checkout node-by-node, injects a fixed on-page debug HUD after each step

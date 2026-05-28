@@ -22,7 +22,7 @@ from urllib.parse import urlparse
 
 from rich.console import Console
 
-from yosoi.core.fetcher.base import ContentAnalyzer, HTMLFetcher
+from yosoi.core.fetcher.base import ContentAnalyzer, HTMLFetcher, PreparePageHook
 from yosoi.core.fetcher.dom import DOMLoader
 from yosoi.models.results import FetchResult
 from yosoi.storage.a3node import A3Node, A3NodeStorage
@@ -105,15 +105,17 @@ class _VoidCrawlFetcher(HTMLFetcher):
             await self._pool_ctx.__aexit__(None, None, None)
             self._pool = None
 
-    async def fetch(self, url: str) -> FetchResult:
+    async def fetch(self, url: str, *, prepare_page: PreparePageHook | None = None) -> FetchResult:
         start = time.time()
-        return await self._do_fetch(url, start, 'fetch')
+        return await self._do_fetch(url, start, 'fetch', prepare_page=prepare_page)
 
     async def _do_fetch(
         self,
         url: str,
         start_time: float,
         _tier: str,
+        *,
+        prepare_page: PreparePageHook | None = None,
     ) -> FetchResult:
         domain = urlparse(url).netloc.replace('www.', '')
         stored_node = self._a3node_cache.get(domain) if self._experimental_a3node else None
@@ -121,7 +123,18 @@ class _VoidCrawlFetcher(HTMLFetcher):
         async with self._pool.acquire() as tab:
             await tab.goto(url, timeout=float(self.timeout))
 
-            if stored_node is not None:
+            if prepare_page is not None:
+                # The LLM-discovered (and cached) action plan path. When the
+                # caller supplies this hook it OWNS readiness — we skip the
+                # heuristic DOMLoader probe. The hook handles its own settling
+                # (execute_plan polls assess/expect event-driven), so we just
+                # capture the resulting DOM once it returns.
+                try:
+                    await prepare_page(tab)
+                except (RuntimeError, OSError, ValueError) as exc:
+                    logger.warning('prepare_page hook failed for %s: %s', domain, exc)
+                html = await tab.content()
+            elif stored_node is not None:
                 html = await self._fetch_with_replay(tab, domain, stored_node)
             else:
                 html = await self._fetch_with_probe(tab, domain)

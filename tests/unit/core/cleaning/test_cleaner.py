@@ -156,6 +156,41 @@ def test_compress_keeps_data_attributes(cleaner):
     assert 'role' not in span.attrs
 
 
+def test_compress_preserves_all_attributes_on_custom_elements(cleaner):
+    """Custom elements (tag names with `-`) almost always carry their data as
+    attributes — reddit's `<shreddit-post post-title=… score=… author=…
+    comment-count=…>`, `<product-card data-price=…>`, etc. The discovery LLM
+    looks at the cleaned HTML to decide WHICH attribute to emit in an
+    `attr(...)` selector; stripping the attribute names would defeat the
+    typed `attr` selector kind. So we keep them ALL on custom elements,
+    while standard tags still get the restricted allowlist."""
+    html = (
+        '<html><body>'
+        '<shreddit-post post-title="A post" author="u/x" score="278" '
+        'comment-count="9" permalink="/r/x/abc" thingid="t3_abc">child</shreddit-post>'
+        # Standard tag with same arbitrary attrs — these should be stripped.
+        '<div post-title="X" score="0">noise</div>'
+        '</body></html>'
+    )
+    soup = BeautifulSoup(html, 'lxml')
+    result = cleaner._compress_html_simple(soup)
+
+    post = result.find('shreddit-post')
+    assert post is not None
+    # Every attribute on the custom element survives.
+    assert post.attrs.get('post-title') == 'A post'
+    assert post.attrs.get('author') == 'u/x'
+    assert post.attrs.get('score') == '278'
+    assert post.attrs.get('comment-count') == '9'
+    assert post.attrs.get('permalink') == '/r/x/abc'
+    assert post.attrs.get('thingid') == 't3_abc'
+
+    # Same attribute names on a standard <div> get stripped (the keep-list applies).
+    div = result.find('div')
+    assert 'post-title' not in div.attrs
+    assert 'score' not in div.attrs
+
+
 def test_compress_deduplicates_list_items(cleaner):
     """List with >3 items should be trimmed to 3."""
     html = '<html><body><ul>' + ''.join(f'<li>Item {i}</li>' for i in range(6)) + '</ul></body></html>'

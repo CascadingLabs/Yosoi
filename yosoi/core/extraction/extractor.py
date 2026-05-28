@@ -178,8 +178,21 @@ class ContentExtractor:
     ) -> str | list[str | dict[str, str]] | None:
         """Resolve content for a single SelectorEntry, respecting max_level.
 
+        Dispatch on `entry.type`:
+          * ``css``/``xpath`` — scoped query on `sel`, return text per field mode.
+          * ``attr`` — read an HTML attribute off `sel`'s root element. The card
+            IS the source, no descendant query needed. Used by custom elements
+            that expose data via attributes (reddit's ``<shreddit-post ...>``).
+          * ``global_id`` — interpolate `sel`'s identity attr into the template,
+            then do a document-wide id lookup. XPath ``//`` is document-relative
+            regardless of context, so the lookup escapes the scope cleanly.
+            Used when content is grafted into a sibling's subtree via slot
+            reassignment (reddit lazy comment bodies).
+          * ``regex``/``jsonld`` — unsupported here, fail closed.
+
         Args:
-            sel: Parsel Selector for the parsed HTML
+            sel: Parsel Selector for the parsed HTML (whole-page in single-item
+                mode, the container element in multi-item mode).
             entry: Selector entry with strategy and value
             field_name: Name of the field (determines extraction strategy)
             max_level: Entries with level > max_level are skipped
@@ -192,6 +205,20 @@ class ContentExtractor:
             return None
         if entry.type == 'xpath':
             return self._extract_with_xpath_selector(sel, entry.value, field_name)
+        if entry.type == 'attr':
+            val = sel.attrib.get(entry.value)
+            return val.strip() if isinstance(val, str) and val.strip() else None
+        if entry.type == 'global_id':
+            key = sel.attrib.get(entry.identity or 'id')
+            if not isinstance(key, str) or not key:
+                return None
+            resolved = entry.value.replace('{id}', key)
+            # XPath `//` is anchored to the document root; the variable binding
+            # avoids any interpolation hazard from special chars in resolved ids.
+            elements = sel.xpath('//*[@id=$id]', id=resolved)
+            if not elements:
+                return None
+            return self._extract_from_elements(elements, field_name)
         if entry.type in ('regex', 'jsonld'):
             return None  # unsupported strategies fail closed
         return self._extract_with_selector(sel, entry.value, field_name)

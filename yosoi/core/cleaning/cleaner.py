@@ -136,16 +136,26 @@ class HTMLCleaner:
         for comment in soup.find_all(string=lambda text: isinstance(text, Comment)):
             comment.extract()
 
-        # 2. Remove attributes not used in CSS selectors
+        # 2. Remove attributes not used in CSS selectors — EXCEPT on custom
+        # elements (tag names containing `-`), where attributes are usually the
+        # data payload itself (reddit's `<shreddit-post post-title=… score=…
+        # author=… comment-count=… permalink=…>`, `<product-card data-price=…>`,
+        # etc.). Stripping them would defeat the typed `attr` selector kind:
+        # the discovery LLM looks at this cleaned HTML to decide WHICH attribute
+        # name to emit, so the attribute name must survive cleaning. The raw
+        # HTML used at extraction time still has these attributes either way.
         KEEP_ATTRIBUTES = {'class', 'id', 'href', 'src', 'datetime', 'alt', 'name', 'type'}
 
         for tag in soup.find_all(True):
-            if isinstance(tag, Tag) and tag.attrs:
-                tag.attrs = {
-                    attr: value
-                    for attr, value in tag.attrs.items()
-                    if attr in KEEP_ATTRIBUTES or attr.startswith('data-')
-                }
+            if not isinstance(tag, Tag) or not tag.attrs:
+                continue
+            is_custom_element = '-' in (tag.name or '')
+            if is_custom_element:
+                # Keep every attribute on custom elements — they're the data.
+                continue
+            tag.attrs = {
+                attr: value for attr, value in tag.attrs.items() if attr in KEEP_ATTRIBUTES or attr.startswith('data-')
+            }
 
         # 3. Deduplicate list items (keep first 3)
         for lst in soup.find_all(['ul', 'ol']):

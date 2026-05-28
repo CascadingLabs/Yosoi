@@ -42,6 +42,13 @@ def _make_pipeline_stub(mocker, contract=None):
 
     stub.selector_level = SelectorLevel.CSS
     stub._contract_sig = contract_signature(stub.contract)
+    # The action-plan hook needs an unwrapped LLMConfig handle. Tests use a
+    # bare-bones stub so we synthesise a placeholder — _build_prepare_page
+    # only needs it to read; the agent is never actually called by these
+    # tests (they mock _fetch directly).
+    from yosoi.core.discovery.config import LLMConfig
+
+    stub._inner_llm_config = LLMConfig(provider='test', model_name='test-model', api_key='fake')
     return stub
 
 

@@ -175,12 +175,16 @@ class TestFieldSingleFieldInstructions:
     def test_container_guidance_when_is_container(self, field_deps, mocker):
         field_deps.is_container = True
         result = field_single_field_instructions(_make_field_ctx(field_deps, mocker))
-        assert 'repeating wrapper' in result
+        # The container block instructs the LLM how to set the `root` selector
+        # (or null) — that's the marker unique to the container path. The
+        # phrase "repeating wrapper" appears in the regular rubric as a
+        # clarifying parenthetical for "card", so we can't use it here.
+        assert 'set `root` to null' in result
 
     def test_no_container_guidance_when_not_container(self, field_deps, mocker):
         field_deps.is_container = False
         result = field_single_field_instructions(_make_field_ctx(field_deps, mocker))
-        assert 'repeating wrapper' not in result
+        assert 'set `root` to null' not in result
 
 
 class TestFieldSingleLevelInstructions:

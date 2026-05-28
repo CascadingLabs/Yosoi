@@ -630,6 +630,73 @@ async def test_quick_test_http_error(mocker):
     assert result is False
 
 
+# ---------------------------------------------------------------------------
+# attr / global_id verification — the document-level checks that prove the
+# new selector kinds can fire at extraction time, without needing a card.
+# ---------------------------------------------------------------------------
+
+
+def test_verifier_attr_passes_when_attribute_present(verifier):
+    """Any element with the named attribute proves the read mechanism will fire."""
+    from yosoi.models.selectors import attr
+
+    html = '<html><body><shreddit-post post-title="hi" score="3"></shreddit-post></body></html>'
+    sel = Selector(text=html)
+    success, reason = verifier._test_selector(sel, attr('post-title'))
+    assert success is True
+    assert reason == 'found'
+
+
+def test_verifier_attr_fails_when_attribute_absent(verifier):
+    from yosoi.models.selectors import attr
+
+    html = '<html><body><div class="x"></div></body></html>'
+    sel = Selector(text=html)
+    success, _ = verifier._test_selector(sel, attr('post-title'))
+    assert success is False
+
+
+def test_verifier_global_id_passes_with_matching_id_pattern(verifier):
+    """At least one id contains every literal piece of the template → verify pass."""
+    from yosoi.models.selectors import global_id
+
+    html = (
+        '<html><body>'
+        '<shreddit-comment thingid="t1_abc"></shreddit-comment>'
+        '<div id="t1_abc-post-rtjson-content">body</div>'
+        '</body></html>'
+    )
+    sel = Selector(text=html)
+    entry = global_id('{id}-post-rtjson-content', identity='thingid')
+    success, reason = verifier._test_selector(sel, entry)
+    assert success is True
+    assert reason == 'found'
+
+
+def test_verifier_global_id_fails_when_template_pieces_absent(verifier):
+    """No id contains the template's literal piece → verify fail (cache won't be polluted)."""
+    from yosoi.models.selectors import global_id
+
+    html = '<html><body><div id="unrelated">x</div></body></html>'
+    sel = Selector(text=html)
+    entry = global_id('{id}-post-rtjson-content', identity='thingid')
+    success, _ = verifier._test_selector(sel, entry)
+    assert success is False
+
+
+def test_verifier_global_id_with_only_id_marker_passes_when_any_id_exists(verifier):
+    """Edge case: a template that's just `{id}` (degenerate but valid) passes if any
+    element has an id at all."""
+    from yosoi.models.selectors import SelectorEntry
+
+    html = '<html><body><div id="anything">x</div></body></html>'
+    sel = Selector(text=html)
+    # `{id}` is the entire template — no literal pieces
+    entry = SelectorEntry(type='global_id', value='{id}', identity='id')
+    success, _ = verifier._test_selector(sel, entry)
+    assert success is True
+
+
 def test_pipeline_accepts_selector_level(mocker, tmp_path):
     from yosoi.core.pipeline import Pipeline
     from yosoi.models.defaults import NewsArticle

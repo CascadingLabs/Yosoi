@@ -12,6 +12,7 @@ from yosoi.prompts.discovery import (
     FieldDiscoveryDeps,
     build_user_prompt,
     field_single_base_instructions,
+    field_single_feedback_instructions,
     field_single_field_instructions,
     field_single_level_instructions,
     field_single_page_hints,
@@ -83,6 +84,9 @@ class FieldDiscoveryAgent:
         self._agent.system_prompt(field_single_field_instructions)
         self._agent.system_prompt(field_single_level_instructions)
         self._agent.system_prompt(field_single_page_hints)
+        # Feedback is appended last so it sits closest to the user prompt — when
+        # set, the LLM sees the previous-attempt diagnosis just before the HTML.
+        self._agent.system_prompt(field_single_feedback_instructions)
 
     async def discover_field(
         self,
@@ -92,6 +96,7 @@ class FieldDiscoveryAgent:
         discovery_input: DiscoveryInput,
         target_level: SelectorLevel,
         is_container: bool = False,
+        feedback: str | None = None,
     ) -> FieldSelectors | None:
         """Ask the LLM to find selectors for a single field.
 
@@ -102,6 +107,12 @@ class FieldDiscoveryAgent:
             discovery_input: URL and HTML input for the agent
             target_level: Maximum selector strategy level allowed
             is_container: True when discovering the yosoi_container selector
+            feedback: Optional grounded failure diagnosis from a prior attempt
+                (typically built by :func:`yosoi.core.verification.semantic
+                .render_feedback`). When set, the agent's system prompt
+                surfaces "Previous attempt failed because: …" so the LLM can
+                pivot — e.g. emit ``attr('score')`` instead of the broad
+                ``shreddit-post`` CSS selector that returned full-card text.
 
         Returns:
             FieldSelectors with discovered selectors, or None if LLM returned NA.
@@ -117,6 +128,7 @@ class FieldDiscoveryAgent:
             input=discovery_input,
             target_level=target_level,
             is_container=is_container,
+            feedback=feedback,
         )
 
         with obs.span(f'field_agent[{field_name}]', field=field_name, source='agent'):

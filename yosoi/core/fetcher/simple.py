@@ -9,7 +9,7 @@ import time
 
 import httpx
 
-from yosoi.core.fetcher.base import ContentAnalyzer, HTMLFetcher
+from yosoi.core.fetcher.base import ContentAnalyzer, HTMLFetcher, PreparePageHook
 from yosoi.models.results import FetchResult
 from yosoi.utils.exceptions import BotDetectionError
 from yosoi.utils.headers import HeaderGenerator, UserAgentRotator
@@ -99,16 +99,19 @@ class SimpleFetcher(HTMLFetcher):
             'Upgrade-Insecure-Requests': '1',
         }
 
-    async def fetch(self, url: str) -> FetchResult:
+    async def fetch(self, url: str, *, prepare_page: PreparePageHook | None = None) -> FetchResult:
         """Fetch HTML using enhanced HTTP request with anti-bot measures.
 
         Args:
-            url: The URL that is being fetched
+            url: The URL that is being fetched.
+            prepare_page: Ignored — SimpleFetcher has no live page object to
+                hand to a post-navigate hook. Accepted only for interface
+                uniformity with browser-backed fetchers.
 
         Returns:
             The fetched results like the HTML, URL, if it is blocked, etc.
-
         """
+        _ = prepare_page  # explicit no-op: HTTP fetcher has no page to prepare
         start_time = time.time()
 
         # Apply delay to avoid rate limiting

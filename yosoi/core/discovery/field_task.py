@@ -52,14 +52,21 @@ async def _invoke_agent(
     level: SelectorLevel,
     is_container: bool,
     semaphore: asyncio.Semaphore | None,
+    feedback: str | None = None,
 ) -> FieldSelectors | None:
-    """Invoke the field discovery agent, optionally throttled by a semaphore."""
+    """Invoke the field discovery agent, optionally throttled by a semaphore.
+
+    ``feedback`` carries a diagnosis from a prior failed attempt for this field
+    (see ``SemanticValidator`` / ``render_feedback``) so the LLM can self-correct.
+    """
     if semaphore is not None:
         async with semaphore:
             return await agent.discover_field(
-                field_name, field_description, field_hint, discovery_input, level, is_container
+                field_name, field_description, field_hint, discovery_input, level, is_container, feedback=feedback
             )
-    return await agent.discover_field(field_name, field_description, field_hint, discovery_input, level, is_container)
+    return await agent.discover_field(
+        field_name, field_description, field_hint, discovery_input, level, is_container, feedback=feedback
+    )
 
 
 async def _discover_field(
@@ -74,6 +81,7 @@ async def _discover_field(
     max_retries: int,
     is_container: bool,
     semaphore: asyncio.Semaphore | None,
+    feedback: str | None = None,
 ) -> FieldTaskResult:
     """Cache-check + per-level escalation loop. No bus coordination."""
     verifier = SelectorVerifier()
@@ -124,6 +132,7 @@ async def _discover_field(
                         level,
                         is_container,
                         semaphore,
+                        feedback=feedback,
                     )
                     if llm_result is None:
                         # LLM returned NA — not retryable, skip to next level
@@ -174,6 +183,7 @@ async def run_field_task(
     semaphore: asyncio.Semaphore | None = None,
     scoped_bus: ScopedBus | None = None,
     yosoi_type: str | None = None,
+    feedback: str | None = None,
 ) -> FieldTaskResult:
     """Discover selectors for a single field with cache check, escalation, and inline verification.
 
@@ -204,6 +214,9 @@ async def run_field_task(
         semaphore: Optional asyncio.Semaphore to cap concurrent LLM calls
         scoped_bus: Optional domain-scoped discovery bus for cross-pipeline sharing.
         yosoi_type: Semantic type string used in the field signature (e.g. ``'price'``).
+        feedback: Optional diagnosis from a prior failed attempt; surfaced in
+            the agent's prompt so the LLM can self-correct. Bypasses the cache
+            short-circuit (the cache is what we're repairing).
 
     Returns:
         FieldTaskResult with selectors=None if all attempts failed.
@@ -232,11 +245,15 @@ async def run_field_task(
             discovery_input=discovery_input,
             html=html,
             agent=agent,
-            cached_entry=cached_entry,
+            # When feedback is set we're explicitly re-discovering BECAUSE the
+            # cached/previous selector failed semantic validation. Bypass the
+            # cache short-circuit so the LLM does fresh work.
+            cached_entry=None if feedback else cached_entry,
             max_level=max_level,
             max_retries=max_retries,
             is_container=is_container,
             semaphore=semaphore,
+            feedback=feedback,
         )
         return result
     finally:

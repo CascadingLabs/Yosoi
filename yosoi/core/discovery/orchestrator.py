@@ -106,6 +106,7 @@ class DiscoveryOrchestrator:
         *,
         stale_fields: set[str] | None = None,
         force: bool = False,
+        feedback: dict[str, str] | None = None,
     ) -> SelectorMap | None:
         """Discover selectors for all contract fields in parallel.
 
@@ -116,6 +117,12 @@ class DiscoveryOrchestrator:
                 rediscovery). The caller is responsible for merging fresh cached
                 selectors with the newly discovered ones and saving.
             force: Force re-discovery even if selectors exist. Defaults to False.
+            feedback: Optional per-field grounded failure messages from a prior
+                semantic-validation pass (see :mod:`yosoi.core.verification
+                .semantic`). When a field's message is set, the discovery
+                agent's prompt surfaces it verbatim so the LLM can self-correct
+                — typically pivoting from a too-broad CSS selector to an
+                ``attr``/``global_id`` selector that targets the right node.
 
         Returns:
             SelectorMap with discovered selectors, or None if all fields failed.
@@ -168,6 +175,7 @@ class DiscoveryOrchestrator:
                 overrides=overrides,
                 stale_fields=stale_fields,
                 force=force,
+                feedback=feedback,
             )
 
     async def _discover_selectors_impl(
@@ -182,6 +190,7 @@ class DiscoveryOrchestrator:
         overrides: dict[str, dict[str, Any]],
         stale_fields: set[str] | None,
         force: bool = False,
+        feedback: dict[str, str] | None = None,
     ) -> SelectorMap | None:
         field_descs = self._contract.field_descriptions()
 
@@ -195,7 +204,10 @@ class DiscoveryOrchestrator:
         # Obtain a domain-scoped bus view shared by all field tasks in this batch
         scoped_bus = self._bus.scoped(domain) if self._bus is not None else None
 
-        # Fan-out: run all field tasks concurrently
+        # Fan-out: run all field tasks concurrently. When `feedback` is set
+        # for a field, also force-bypass the cache for that field — the cached
+        # selector is the one we just failed validation on.
+        feedback_map = feedback or {}
         coroutines = [
             run_field_task(
                 field_name=str(spec['field_name']),
@@ -204,12 +216,15 @@ class DiscoveryOrchestrator:
                 discovery_input=discovery_input,
                 html=html,
                 agent=self._agent,
-                cached_entry=None if force else existing.get(str(spec['field_name'])),
+                cached_entry=(
+                    None if force or str(spec['field_name']) in feedback_map else existing.get(str(spec['field_name']))
+                ),
                 max_level=self._target_level,
                 is_container=bool(spec['is_container']),
                 semaphore=semaphore,
                 scoped_bus=scoped_bus,
                 yosoi_type=_get_yosoi_type(self._contract, str(spec['field_name'])),
+                feedback=feedback_map.get(str(spec['field_name'])),
             )
             for spec in task_specs
         ]

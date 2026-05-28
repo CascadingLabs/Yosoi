@@ -22,21 +22,23 @@ from tenacity import RetryCallState, RetryError
 
 from yosoi.core.cleaning import HTMLCleaner
 from yosoi.core.configs import YosoiConfig
-from yosoi.core.discovery import DiscoveryOrchestrator, LLMConfig
+from yosoi.core.discovery import ActionPlanDiscoveryAgent, DiscoveryOrchestrator, LLMConfig
 from yosoi.core.discovery.bus import DiscoveryBus
 from yosoi.core.extraction import ContentExtractor
 from yosoi.core.fetcher import HTMLFetcher, create_fetcher
+from yosoi.core.fetcher.base import PreparePageHook
 from yosoi.core.fetcher.waterfall import JSFetcher
-from yosoi.core.verification import SelectorVerifier
+from yosoi.core.replay.runtime import execute_plan as _execute_action_plan
+from yosoi.core.verification import SelectorVerifier, SemanticValidator, render_feedback
 from yosoi.models import FetchResult
 from yosoi.models.contract import Contract
 from yosoi.models.results import VerificationResult
 from yosoi.models.selectors import SelectorLevel
 from yosoi.models.snapshot import CacheVerdict, SelectorSnapshot, snapshot_to_selector_dict
-from yosoi.storage import DebugManager, LLMTracker, SelectorStorage
+from yosoi.storage import ActionPlanStorage, DebugManager, LLMTracker, SelectorStorage
 from yosoi.storage.tracking import DomainStats
 from yosoi.utils import observability
-from yosoi.utils.exceptions import BotDetectionError
+from yosoi.utils.exceptions import BotDetectionError, LLMGenerationError
 from yosoi.utils.retry import get_async_retryer
 from yosoi.utils.signatures import contract_signature
 
@@ -166,6 +168,10 @@ class Pipeline:
                 'step': 'bold blue',
             }
         )
+        # Pure LLMConfig handle (unwrapped from YosoiConfig above) — used by
+        # downstream agents that don't need the wrapper config (e.g.
+        # ActionPlanDiscoveryAgent built lazily for the post-navigate hook).
+        self._inner_llm_config: LLMConfig = llm_config
         self.contract = contract
         self._contract_sig = contract_signature(contract)
         self.console = Console(theme=self.custom_theme, quiet=quiet)
@@ -660,8 +666,15 @@ class Pipeline:
             ContentMap dicts — one per extracted item.
 
         """
+        # Build the post-navigate hook — drives a cached / LLM-discovered action
+        # plan for this (domain, contract) BEFORE HTML capture, so discovery sees
+        # the fully-loaded DOM (load-more triggers expanded, lazy comments
+        # rendered, etc.). Browser-backed fetchers honour the hook; SimpleFetcher
+        # ignores it. First call: agent discovers + persists. Subsequent calls:
+        # pure replay from ActionPlanStorage.
+        prepare_page = self._build_prepare_page(url)
         with observability.span('fetch', url=url, max_retries=max_fetch_retries):
-            result = await self._fetch(url, fetcher, max_retries=max_fetch_retries)
+            result = await self._fetch(url, fetcher, max_retries=max_fetch_retries, prepare_page=prepare_page)
             if not result:
                 raise RuntimeError(f'Failed to fetch {url}')
             assert result.html is not None, 'result.html should not be None after successful fetch'
@@ -688,6 +701,25 @@ class Pipeline:
 
         with observability.span('extract', url=url, container=container_selector or 'single'):
             extracted = self._extract(url, result.html, verified, container_selector)
+
+        # Iterative semantic validation + feedback-driven re-discovery. The
+        # structural verifier above only checks "does this selector match"; the
+        # semantic validator checks "does the extracted value LOOK like the
+        # field it claims to be" (per-type shape probes + cross-field
+        # distinctness). On failure we re-discover ONLY the failing fields with
+        # a grounded diagnosis so the LLM can pivot from a too-broad CSS
+        # selector to `attr(...)` / `global_id(...)`. Bounded by
+        # max_discovery_retries; cached selectors short-circuit verified fields.
+        verified, extracted = await self._iterate_until_clean(
+            url=url,
+            cleaned_html=cleaned_html,
+            raw_html=result.html,
+            verified=verified,
+            extracted=extracted,
+            container_selector=container_selector,
+            max_retries=max_discovery_retries,
+            skip_verification=skip_verification,
+        )
 
         selectors_to_save = self._selectors_with_root(verified, root_entry)
 
@@ -731,10 +763,18 @@ class Pipeline:
     # ============================================================================
 
     async def _fetch_and_clean_for_cache(self, url: str, fetcher: HTMLFetcher) -> tuple[str, str] | None:
-        """Fetch HTML for cache verification. Returns (raw_html, cleaned_html) or None on failure (fail-open)."""
+        """Fetch HTML for cache verification. Returns (raw_html, cleaned_html) or None on failure (fail-open).
+
+        Threads the same ``prepare_page`` hook through that the fresh-discovery
+        path uses, so cache verification sees the FULLY-LOADED rendered HTML
+        (cached action plan replayed). Without this, the heuristic DOMLoader
+        probe returns the un-expanded page, every cached selector fails its
+        structural test, and the cache is wrongly invalidated on every run.
+        """
+        prepare_page = self._build_prepare_page(url)
         with observability.span('fetch', url=url, mode='cache_verify'):
             try:
-                result = await self._fetch(url, fetcher)
+                result = await self._fetch(url, fetcher, prepare_page=prepare_page)
                 if result is None or result.html is None:
                     self.console.print('[warning]⚠ Could not fetch HTML, skipping extraction[/warning]')
                     return None
@@ -1096,6 +1136,83 @@ class Pipeline:
             selectors_to_save['root'] = root_entry
         return selectors_to_save
 
+    async def _iterate_until_clean(
+        self,
+        *,
+        url: str,
+        cleaned_html: str,
+        raw_html: str,
+        verified: SelectorMap,
+        extracted: ContentMap | ContentItems | None,
+        container_selector: str | None,
+        max_retries: int,
+        skip_verification: bool,
+    ) -> tuple[SelectorMap, ContentMap | ContentItems | None]:
+        """Re-run discovery + extract for fields that fail semantic validation.
+
+        The structural verifier passes when a selector matches *something*.
+        That's not enough on attribute-rich custom-element pages: a CSS selector
+        targeting the card matches every card AND "verifies", but extracts
+        full-card text instead of the per-field value the contract asked for.
+        This loop catches that with type-aware semantic checks (length caps,
+        URL/numeric shape probes, cross-field distinctness) and re-discovers
+        ONLY the failing fields with a grounded feedback message so the LLM can
+        pivot to `attr(...)` / `global_id(...)` selectors.
+
+        Bounded by ``max_retries`` (defaults to ``max_discovery_retries`` from
+        the pipeline). When ``extracted`` is None or has zero items we exit
+        immediately — semantic validation needs at least one record to grade.
+        """
+        if not extracted:
+            return verified, extracted
+        validator = SemanticValidator(self.contract)
+        for retry in range(max_retries):
+            sample = extracted[0] if isinstance(extracted, list) else extracted
+            if not isinstance(sample, dict):
+                return verified, extracted
+            issues = validator.validate(sample)
+            if not issues:
+                return verified, extracted
+            failed_fields = {issue.field for issue in issues}
+            self.console.print(
+                f'[warning]⚠ Semantic validation flagged {len(issues)} field(s) '
+                f'(retry {retry + 1}/{max_retries}): {sorted(failed_fields)}[/warning]'
+            )
+            for issue in issues:
+                preview = (issue.raw_value or '')[:60].replace('\n', ' ')
+                self.console.print(f'    - {issue.field}: {issue.reason}  raw={preview!r}')
+            feedback = render_feedback(issues, verified)
+            with observability.span('rediscover', url=url, retry=retry + 1, fields=sorted(failed_fields)):
+                partial = await self.discovery.discover_selectors(
+                    html=cleaned_html,
+                    url=url,
+                    stale_fields=failed_fields,
+                    force=True,
+                    feedback=feedback,
+                )
+            if not partial:
+                self.console.print('[warning]  ✗ Re-discovery returned nothing; keeping previous selectors[/warning]')
+                return verified, extracted
+            # Merge: overlay newly discovered field selectors onto the verified
+            # map. The orchestrator already returned ONLY the requested fields
+            # in partial (plus root if it was in stale_fields).
+            merged: SelectorMap = dict(verified)
+            for field_name, sel in partial.items():
+                if field_name in failed_fields:
+                    merged[field_name] = sel
+            with observability.span('verify', url=url, retry=retry + 1, fields=len(merged)):
+                reverified = self._verify(url, cleaned_html, merged, skip_verification)
+                if not reverified:
+                    self.console.print('[warning]  ✗ Re-verify failed; keeping previous selectors[/warning]')
+                    return verified, extracted
+            verified = reverified
+            with observability.span('extract', url=url, retry=retry + 1, container=container_selector or 'single'):
+                extracted = self._extract(url, raw_html, verified, container_selector)
+            if not extracted:
+                self.console.print('[warning]  ✗ Re-extract returned nothing[/warning]')
+                return verified, extracted
+        return verified, extracted
+
     async def _finish(
         self,
         url: str,
@@ -1169,7 +1286,90 @@ class Pipeline:
             self.console.print(f'[danger]Invalid fetcher type: {fetcher_type}[/danger]')
             return None
 
-    async def _fetch(self, url: str, fetcher: HTMLFetcher, max_retries: int = 2) -> FetchResult | None:
+    def _derive_action_intent(self) -> str:
+        """Build a one-sentence intent for the action-plan agent from the contract shape.
+
+        The intent is generic on purpose: the LLM looks at the actual rendered
+        HTML to decide whether load-more / pagination triggers are present, so
+        we don't try to second-guess the page structure here. For pages that
+        need no actions (eagerly rendered single-item, or fully expanded
+        multi-item), the agent's correct answer is the empty plan.
+        """
+        fields = self.contract.field_descriptions()
+        field_summary = ', '.join(fields.keys()) or '(no fields)'
+        return (
+            f'Drive the page to its fully-loaded state for extracting '
+            f'{self.contract.__name__} records (fields: {field_summary}). '
+            f'If load-more / show-more / pagination triggers exist for these '
+            f'records, click them until no more remain (terminate via '
+            f'selector_absent on the trigger family). If the page already '
+            f'shows everything, return an empty plan.'
+        )
+
+    def _build_prepare_page(self, url: str) -> PreparePageHook | None:
+        """Build the post-navigate hook that runs an LLM-discovered action plan.
+
+        Cache-then-discover semantics:
+          1. Look up a cached :class:`ReplayPlan` keyed by ``(domain, contract)``.
+             If found, execute it via the package replay runtime and return.
+          2. On cache miss, capture the rendered HTML and ask
+             :class:`ActionPlanDiscoveryAgent` for a plan. Persist it (so the
+             next call is a pure replay), then execute it.
+
+        Returns the hook even when the contract is "simple" (no obvious lazy
+        signals) — the LLM is responsible for emitting the empty plan when the
+        page needs no actions, and we cache that decision too so subsequent
+        runs are free.
+        """
+        from urllib.parse import urlparse
+
+        domain = urlparse(url).netloc.replace('www.', '')
+        target_key = f'{domain}/{self.contract.__name__}'
+        storage = ActionPlanStorage()
+        intent = self._derive_action_intent()
+        llm_cfg = self._inner_llm_config
+        console = self.console
+
+        async def prepare_page(tab: Any) -> None:
+            plan = storage.load(target_key)
+            if plan is not None:
+                if plan.nodes:
+                    console.print(
+                        f'[dim]  ↻ action plan: replaying {len(plan.nodes)} cached node(s) for {target_key}[/dim]'
+                    )
+                    report = await _execute_action_plan(plan, tab)
+                    console.print(f'[dim]  ↻ action plan: verify {report.score:.0%}[/dim]')
+                return
+            # Cache miss — render once, discover via LLM, persist, execute.
+            try:
+                html = await tab.content()
+            except (RuntimeError, OSError, ValueError) as exc:
+                console.print(f'[warning]  ✗ action plan: could not capture HTML for discovery: {exc}[/warning]')
+                return
+            agent = ActionPlanDiscoveryAgent(llm_cfg, console=console)
+            try:
+                plan = await agent.discover_plan(target=target_key, intent=intent, html=html)
+            except LLMGenerationError as exc:
+                console.print(f'[warning]  ✗ action plan discovery failed for {target_key}: {exc}[/warning]')
+                return
+            storage.save(plan)
+            console.print(
+                f'[success]  ✓ action plan: discovered {len(plan.nodes)} node(s) for '
+                f'{target_key} (cached for replay)[/success]'
+            )
+            if plan.nodes:
+                await _execute_action_plan(plan, tab)
+
+        return prepare_page
+
+    async def _fetch(
+        self,
+        url: str,
+        fetcher: HTMLFetcher,
+        max_retries: int = 2,
+        *,
+        prepare_page: PreparePageHook | None = None,
+    ) -> FetchResult | None:
         """Fetch HTML with automatic retry logic for bot detection.
 
         Attempts to fetch HTML with automatic retries when bot detection is
@@ -1179,6 +1379,10 @@ class Pipeline:
             url: The URL that is being fetched.
             fetcher: HTML fetcher instance to use.
             max_retries: Maximum retry attempts. Defaults to 2.
+            prepare_page: Optional post-navigate hook threaded through to
+                browser-backed fetchers. Used to run a cached or discovered
+                action plan that drives the page to a fully-loaded state
+                before HTML capture.
 
         Returns:
             FetchResult if fetch succeeds within retry limit, None if all
@@ -1187,7 +1391,6 @@ class Pipeline:
         Note:
             Bot detection errors are caught and retried. Other exceptions
             are caught and logged, returning None rather than raising.
-
         """
         self.console.print(Panel(f'Processing: {url}', style='bold blue'))
         self.console.print('[step]Step 1: Fetching HTML...[/step]')
@@ -1212,7 +1415,7 @@ class Pipeline:
                 with attempt:
                     result = None
                     try:
-                        result = await fetcher.fetch(url)
+                        result = await fetcher.fetch(url, prepare_page=prepare_page)
 
                         if not result.success:
                             self.console.print(

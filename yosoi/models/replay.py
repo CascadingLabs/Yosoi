@@ -26,7 +26,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from yosoi.models.selectors import FieldSelectors, SelectorEntry, css, role, visual
+from yosoi.models.selectors import FieldSelectors, SelectorEntry, attr, css, global_id, role, visual
 
 __all__ = [  # noqa: RUF022 — grouped by concern, not alphabetical
     'Act',
@@ -44,12 +44,15 @@ __all__ = [  # noqa: RUF022 — grouped by concern, not alphabetical
     'ANNOTATION_PROMPT',
     'min_count',
     'selector_present',
+    'selector_absent',
     'url_contains',
     'navigate',
     'teleport',
     'click',
+    'click_until',
     'scroll_until',
     'fill',
+    'wait',
     'parallel',
     # re-exported unified selector vocabulary
     'SelectorEntry',
@@ -57,13 +60,15 @@ __all__ = [  # noqa: RUF022 — grouped by concern, not alphabetical
     'css',
     'role',
     'visual',
+    'attr',
+    'global_id',
 ]
 
 
 class Assertion(BaseModel):
     """A condition used as an assess (pre) or assert (post) — the verify signal."""
 
-    kind: Literal['min_count', 'selector_present', 'url_contains', 'text_present']
+    kind: Literal['min_count', 'selector_present', 'selector_absent', 'url_contains', 'text_present']
     count: int | None = None
     text: str | None = None
     selector: SelectorEntry | None = None
@@ -82,23 +87,25 @@ class Act(BaseModel):
     lon: float | None = None
     timezone: str | None = None
     locale: str | None = None
+    # Fixed pause for a 'wait' op, ONLY for a state change with no observable signal
+    # (e.g. Maps acquiring the teleported geolocation). Everything else is event-driven.
+    seconds: float | None = None
 
 
 class A3Node(BaseModel):
     """The primitive: Assess -> Act -> Assert, verifiable in isolation.
 
-    `repeat=True` ticks `act` until `expect` holds (up to `max_iters`) — the only
-    control flow the primitive needs; richer composition lives above it.
+    Both `assess` (precondition) and `expect` (postcondition) are *event-driven*: the
+    executor polls each until it holds, never sleeps. An act is thus verified by its
+    effect — there is no fixed wait. `repeat=True` ticks `act` until `expect` holds (up
+    to `max_iters`) — the only control flow the primitive needs.
     """
 
     act: Act
     assess: Assertion | None = None  # precondition — readiness is gated on this (polled), not a sleep
-    expect: Assertion | None = None  # postcondition (the 'assert')
+    expect: Assertion | None = None  # postcondition (the 'assert') — the act's verified effect, polled
     repeat: bool = False
     max_iters: int = 1
-    # Explicit fixed wait AFTER the act, for the rare case with no DOM signal to assert
-    # on (e.g. Maps resolving teleported geolocation). Default 0 = none; prefer `assess`.
-    dwell: float = 0.0
     intent: str | None = None
 
 
@@ -131,9 +138,18 @@ class ExtractField(BaseModel):
 
 
 class ExtractRecipe(BaseModel):
-    """How to read records off the final page: a card selector + typed fields."""
+    """How to read records off the final page: a card selector + typed fields.
 
-    card_role: str
+    A recipe can target the AX tree (`card_role` — the AX-rich path used by Maps), or
+    the DOM (`card` — any `SelectorEntry`, used for AX-blind / aggregating sites like
+    reddit, where deep replies collapse into 'Comment thread level N' wrappers and per-
+    card 1:1 AX alignment is lost). When both are set, the DOM `card` selector wins —
+    it is the more specific instruction. An agent can emit either shape; the unified
+    SelectorEntry model is the same vocabulary either way.
+    """
+
+    card_role: str | None = None  # AX path — card is an AX node with this role
+    card: SelectorEntry | None = None  # DOM path — card is any css/xpath SelectorEntry
     fields: list[ExtractField] = Field(default_factory=list)
     skip_prefixes: list[str] = Field(default_factory=list)
 
@@ -153,9 +169,9 @@ class ReplayPlan(BaseModel):
 # ── reusable parts (builders) ────────────────────────────────────────────────
 
 
-def min_count(n: int) -> Assertion:
-    """Assert at least `n` items are present."""
-    return Assertion(kind='min_count', count=n)
+def min_count(n: int, sel: SelectorEntry | None = None) -> Assertion:
+    """Assert at least `n` items are present — matching `sel`, else the node's act.item."""
+    return Assertion(kind='min_count', count=n, selector=sel)
 
 
 def selector_present(sel: SelectorEntry) -> Assertion:
@@ -163,14 +179,26 @@ def selector_present(sel: SelectorEntry) -> Assertion:
     return Assertion(kind='selector_present', selector=sel)
 
 
+def selector_absent(sel: SelectorEntry) -> Assertion:
+    """Assert no element matching `sel` is present — the structural 'done' for lazy pagination.
+
+    The natural twin of `selector_present`: where present says "this exists, the act
+    landed", absent says "this is gone, there is no more". The canonical use is the
+    termination of a `click_until` over a load-more trigger: stop when no more triggers
+    remain, not when some downstream count appears to be reached (which can pass on
+    not-yet-hydrated skeleton elements).
+    """
+    return Assertion(kind='selector_absent', selector=sel)
+
+
 def url_contains(text: str) -> Assertion:
     """Assert the current URL contains `text`."""
     return Assertion(kind='url_contains', text=text)
 
 
-def navigate(url: str, *, expect: Assertion | None = None, dwell: float = 0.0) -> A3Node:
-    """A navigate node. `dwell` only for no-DOM-signal settling (e.g. geo); prefer asserts."""
-    return A3Node(act=Act(op='navigate', url=url), expect=expect, dwell=dwell)
+def navigate(url: str, *, expect: Assertion | None = None) -> A3Node:
+    """A navigate node. `expect` is the event-driven readiness signal (e.g. results present)."""
+    return A3Node(act=Act(op='navigate', url=url), expect=expect)
 
 
 def teleport(lat: float, lon: float, tz: str | None = None, locale: str | None = None) -> A3Node:
@@ -183,6 +211,18 @@ def click(*targets: SelectorEntry, expect: Assertion | None = None, intent: str 
     return A3Node(act=Act(op='click', targets=list(targets)), expect=expect, intent=intent)
 
 
+def click_until(*targets: SelectorEntry, expect: Assertion, max_iters: int = 20, intent: str | None = None) -> A3Node:
+    """Repeating click — tick until `expect` holds (e.g. paginated 'load more' triggers).
+
+    Each tick clicks the first matching element of the cascade; the act is allowed to
+    fail silently when the trigger is gone (no more partials to expand), at which point
+    the next `expect` check is decisive. Pairs with `min_count` to load lazy feeds.
+    """
+    return A3Node(
+        act=Act(op='click', targets=list(targets)), expect=expect, repeat=True, max_iters=max_iters, intent=intent
+    )
+
+
 def scroll_until(feed: str, item: str, n: int, *, max_iters: int = 15, intent: str | None = None) -> A3Node:
     """A repeating scroll node: tick until at least `n` `item`s are in `feed`."""
     return A3Node(
@@ -193,6 +233,16 @@ def scroll_until(feed: str, item: str, n: int, *, max_iters: int = 15, intent: s
 def fill(selector: str, text: str, *, intent: str | None = None) -> A3Node:
     """A type node: set `text` into the css `selector` (an extraction-style css target)."""
     return A3Node(act=Act(op='type', targets=[css(selector)], text=text), intent=intent)
+
+
+def wait(seconds: float, *, expect: Assertion | None = None, intent: str | None = None) -> A3Node:
+    """A fixed pause — the ONE escape hatch from event-driven settling.
+
+    For a state change with no observable signal (e.g. Maps acquiring a teleported
+    geolocation, which its app requests internally with no DOM effect). Use sparingly;
+    prefer `assess`/`expect`.
+    """
+    return A3Node(act=Act(op='wait', seconds=seconds), expect=expect, intent=intent)
 
 
 def parallel(*nodes: A3Node, intent: str | None = None) -> Parallel:

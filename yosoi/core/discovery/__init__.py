@@ -1,5 +1,6 @@
 """Agent and configuration for selector discovery."""
 
+from yosoi.core.discovery.action_plan_agent import ActionPlanDiscoveryAgent
 from yosoi.core.discovery.config import (
     LLMBuilder,
     LLMConfig,
@@ -39,6 +40,7 @@ from yosoi.core.discovery.field_agent import FieldDiscoveryAgent
 from yosoi.core.discovery.orchestrator import DiscoveryOrchestrator
 
 __all__ = [
+    'ActionPlanDiscoveryAgent',
     'DiscoveryOrchestrator',
     'FieldDiscoveryAgent',
     'LLMBuilder',

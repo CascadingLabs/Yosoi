@@ -74,6 +74,11 @@ def pipeline_stub(mocker):
     stub._contract_sig = contract_signature(stub.contract)
     stub.session_id = 'test-session-xyz'
     stub._url_start = 0.0
+    # action-plan hook requires an unwrapped LLMConfig handle; the hook itself
+    # never fires here because _fetch is mocked.
+    from yosoi.core.discovery.config import LLMConfig
+
+    stub._inner_llm_config = LLMConfig(provider='test', model_name='test-model', api_key='fake')
     return stub
 
 

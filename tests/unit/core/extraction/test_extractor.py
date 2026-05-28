@@ -556,6 +556,92 @@ def test_resolve_jsonld_strategy_returns_none():
     assert result is None
 
 
+def test_resolve_attr_reads_attribute_off_container():
+    """attr selector reads the named attribute off the scope's root element."""
+    from yosoi.models.selectors import SelectorLevel, attr
+
+    extractor = _make_extractor()
+    html = (
+        '<html><body>'
+        '<shreddit-post post-title="A reddit-style post" author="u/someone" score="42"></shreddit-post>'
+        '<shreddit-post post-title="Second post" author="u/other" score="3"></shreddit-post>'
+        '</body></html>'
+    )
+    doc = Selector(text=html)
+    cards = doc.css('shreddit-post')
+    assert len(cards) == 2
+
+    result = extractor._resolve(cards[0], attr('post-title'), 'title', SelectorLevel.CSS)
+    assert result == 'A reddit-style post'
+
+    score = extractor._resolve(cards[1], attr('score'), 'score', SelectorLevel.CSS)
+    assert score == '3'
+
+
+def test_resolve_attr_returns_none_when_attribute_missing():
+    from yosoi.models.selectors import SelectorLevel, attr
+
+    extractor = _make_extractor()
+    html = '<shreddit-post post-title="A post"></shreddit-post>'
+    card = Selector(text=html).css('shreddit-post')[0]
+    result = extractor._resolve(card, attr('missing-attr'), 'title', SelectorLevel.CSS)
+    assert result is None
+
+
+def test_resolve_global_id_resolves_document_wide_lookup():
+    """global_id substitutes the card's identity attr into the id template,
+    then looks up the resulting id ANYWHERE in the document (escaping the
+    card's subtree — mirrors reddit's slot-reassigned comment bodies)."""
+    from yosoi.models.selectors import SelectorLevel, global_id
+
+    extractor = _make_extractor()
+    # The body lives OUTSIDE the comment card — slot reassignment grafted it
+    # into a sibling. A card-scoped query misses it; document.getElementById
+    # (here: XPath //*[@id=...] from the doc root) finds it.
+    html = (
+        '<html><body>'
+        '<shreddit-comment thingid="t1_abc"></shreddit-comment>'
+        '<div id="t1_abc-post-rtjson-content">grafted body text</div>'
+        '<shreddit-comment thingid="t1_def"></shreddit-comment>'
+        '<div id="t1_def-post-rtjson-content">other body</div>'
+        '</body></html>'
+    )
+    doc = Selector(text=html)
+    cards = doc.css('shreddit-comment')
+    entry = global_id('{id}-post-rtjson-content', identity='thingid')
+
+    body0 = extractor._resolve(cards[0], entry, 'body', SelectorLevel.CSS)
+    assert body0 == 'grafted body text'
+
+    body1 = extractor._resolve(cards[1], entry, 'body', SelectorLevel.CSS)
+    assert body1 == 'other body'
+
+
+def test_resolve_global_id_returns_none_when_identity_missing():
+    """No `thingid` on the card → no substitution possible → return None."""
+    from yosoi.models.selectors import SelectorLevel, global_id
+
+    extractor = _make_extractor()
+    html = '<shreddit-comment></shreddit-comment><div id="anything-post-rtjson-content">x</div>'
+    card = Selector(text=html).css('shreddit-comment')[0]
+    result = extractor._resolve(
+        card, global_id('{id}-post-rtjson-content', identity='thingid'), 'body', SelectorLevel.CSS
+    )
+    assert result is None
+
+
+def test_resolve_attr_and_global_id_allowed_under_css_only_max_level():
+    """attr/global_id are CSS-level reads — must not be skipped by `max_level=CSS`."""
+    from yosoi.models.selectors import SelectorLevel, attr, global_id
+
+    extractor = _make_extractor()
+    html = '<shreddit-post post-title="t" thingid="t1_z"></shreddit-post><div id="t1_z-content">body</div>'
+    card = Selector(text=html).css('shreddit-post')[0]
+    # If the level gate skipped these, both would be None.
+    assert extractor._resolve(card, attr('post-title'), 'title', SelectorLevel.CSS) == 't'
+    assert extractor._resolve(card, global_id('{id}-content', identity='thingid'), 'body', SelectorLevel.CSS) == 'body'
+
+
 # ---------------------------------------------------------------------------
 # Coverage: lines 190, 192-194 — xpath extraction exception handling
 # ---------------------------------------------------------------------------

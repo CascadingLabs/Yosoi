@@ -16,6 +16,7 @@ from yosoi.models.replay import (
     StepAnnotation,
     VerifyReport,
     click,
+    click_until,
     css,
     fill,
     merge_annotations,
@@ -24,8 +25,10 @@ from yosoi.models.replay import (
     parallel,
     role,
     scroll_until,
+    selector_absent,
     teleport,
     visual,
+    wait,
 )
 
 
@@ -103,19 +106,70 @@ def test_replay_plan_round_trips() -> None:
     assert again.source == 'mcp-agent'
 
 
-def test_parallel_group_and_dwell_round_trip() -> None:
+def test_parallel_group_round_trip() -> None:
     plan = ReplayPlan(
         target='x',
         task='t',
-        nodes=[navigate('https://x.test', dwell=2.0), parallel(fill('input#a', '1'), fill('input#b', '2'))],
+        nodes=[navigate('https://x.test'), parallel(fill('input#a', '1'), fill('input#b', '2'))],
     )
     again = ReplayPlan.model_validate_json(plan.model_dump_json())
     n0 = again.nodes[0]
     assert isinstance(n0, A3Node)  # A3Node arm (structural smart union)
-    assert n0.dwell == 2.0
+    assert n0.act.op == 'navigate'
     n1 = again.nodes[1]
     assert isinstance(n1, Parallel)  # Parallel arm — distinguished by having `nodes`
     assert len(n1.nodes) == 2
+
+
+def test_wait_node_carries_fixed_seconds() -> None:
+    w = wait(3.0, intent='let geo settle')
+    assert w.act.op == 'wait'
+    assert w.act.seconds == 3.0
+    again = A3Node.model_validate_json(w.model_dump_json())
+    assert again.act.seconds == 3.0
+
+
+def test_selector_absent_is_the_twin_of_selector_present() -> None:
+    """`selector_absent` is the structural 'done' condition — termination for lazy
+    pagination when 'count' would falsely pass on skeleton placeholders."""
+    sel = css('faceplate-partial[src*="more-comments"]')
+    a = selector_absent(sel)
+    assert a.kind == 'selector_absent'
+    assert a.selector == sel
+    again = Assertion.model_validate_json(a.model_dump_json())
+    assert again.kind == 'selector_absent'
+    assert again.selector == sel
+
+
+def test_click_until_is_a_repeating_click_node() -> None:
+    """click_until is the load-more / pagination twin of scroll_until: repeat=True,
+    same fallback cascade as click, and an expect that drives termination."""
+    target = min_count(13, css('shreddit-comment'))
+    node = click_until(
+        css('faceplate-partial[src*="more-comments"] button'),
+        expect=target,
+        max_iters=30,
+        intent='expand all collapsed threads',
+    )
+    assert node.act.op == 'click'
+    assert node.repeat is True
+    assert node.max_iters == 30
+    assert node.expect == target
+    assert node.intent == 'expand all collapsed threads'
+    again = A3Node.model_validate_json(node.model_dump_json())
+    assert again.repeat is True
+    assert again.max_iters == 30
+    assert again.expect == target
+
+
+def test_min_count_carries_optional_selector() -> None:
+    bare = min_count(20)
+    assert bare.count == 20
+    assert bare.selector is None
+    scoped = min_count(8, css('a.hfpxzc'))
+    assert scoped.count == 8
+    assert scoped.selector is not None
+    assert scoped.selector.value == 'a.hfpxzc'
 
 
 def test_verify_report_scores_pass_rate() -> None:

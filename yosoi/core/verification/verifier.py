@@ -152,7 +152,31 @@ class SelectorVerifier:
             return False, 'unsupported_strategy'
 
         try:
-            elements = sel.xpath(value) if strategy == 'xpath' else sel.css(value)
+            if strategy == 'attr':
+                # `attr` reads `card.getAttribute(value)`. Verification: at least
+                # one element in the document carries this attribute, proving the
+                # read mechanism will fire at extraction time. local-name() lookup
+                # dodges any CSS-selector misuse (e.g. attr names with hyphens).
+                elements = sel.xpath('//*[@*[local-name()=$n]]', n=value)
+            elif strategy == 'global_id':
+                # `global_id` resolves a template at extraction time; we can't
+                # verify the FULL resolved id without a card. Approximate: check
+                # that at least one element exists whose id contains every
+                # literal piece of the template (everything that isn't `{id}`).
+                pieces = [p for p in value.split('{id}') if p]
+                if not pieces:
+                    elements = sel.xpath('//*[@id]')
+                else:
+                    parts: list[str] = []
+                    bindings: dict[str, str] = {}
+                    for i, piece in enumerate(pieces):
+                        var = f'p{i}'
+                        parts.append(f'contains(@id, ${var})')
+                        bindings[var] = piece
+                    expr = f'//*[{" and ".join(parts)}]'
+                    elements = sel.xpath(expr, **bindings)  # type: ignore[arg-type]
+            else:
+                elements = sel.xpath(value) if strategy == 'xpath' else sel.css(value)
             if elements:
                 return True, 'found'
             return False, 'no_elements_found'

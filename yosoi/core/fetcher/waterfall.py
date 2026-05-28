@@ -31,7 +31,7 @@ from urllib.parse import urlparse
 import httpx
 from rich.console import Console
 
-from yosoi.core.fetcher.base import HTMLFetcher
+from yosoi.core.fetcher.base import HTMLFetcher, PreparePageHook
 from yosoi.core.fetcher.simple import SimpleFetcher
 from yosoi.core.fetcher.voiddriver import HeadfulFetcher, HeadlessFetcher
 from yosoi.models.results import FetchResult
@@ -251,7 +251,7 @@ class JSFetcher(HTMLFetcher):
     # Public fetch interface
     # ------------------------------------------------------------------
 
-    async def fetch(self, url: str) -> FetchResult:
+    async def fetch(self, url: str, *, prepare_page: PreparePageHook | None = None) -> FetchResult:
         """Fetch a page using the Simple → Headless → Headful waterfall.
 
         If a winning tier is cached for this domain it is used directly.
@@ -259,27 +259,37 @@ class JSFetcher(HTMLFetcher):
 
         Args:
             url: The URL to fetch.
-
-        Returns:
-            FetchResult with rendered HTML and metadata on success.
-
+            prepare_page: Optional post-navigate hook (see HTMLFetcher.fetch).
+                Threaded through to whichever browser tier actually runs the
+                fetch. The simple HTTP tier ignores it; the headless/headful
+                Chrome tiers honour it. When set on a page whose cached tier
+                is "simple", the page is escalated to headless so the hook
+                has a real page object to drive — a side-channel guarantee
+                that LLM-discovered action plans can run.
         """
         start_time = time.time()
         domain = urlparse(url).netloc.replace('www.', '')
         cached_strategy = None if self._force else self._preferred_strategy(domain)
 
-        # TODO: Make an A3Node caller to get the cached DOM explorer for a url/domain
+        # When the caller wants a post-navigate hook, the simple HTTP tier
+        # can't service it (no page object) — bypass any cached simple-tier
+        # winner and start at headless. The hook is the user's signal that
+        # the page needs interaction before extraction, so HTTP is wrong.
+        if prepare_page is not None and cached_strategy is not None and cached_strategy.fetcher == 'simple':
+            cached_strategy = None
 
         if cached_strategy is not None:
             level_msg = f', selector level {cached_strategy.selector_level}' if cached_strategy.selector_level else ''
             self._console.print(
                 f'[dim]  ↳ {domain} — using cached tier [bold]{cached_strategy.fetcher}[/bold]{level_msg}[/dim]'
             )
-            cached_result = await self._fetch_cached_tier(url, domain, cached_strategy.fetcher, start_time)
+            cached_result = await self._fetch_cached_tier(
+                url, domain, cached_strategy.fetcher, start_time, prepare_page=prepare_page
+            )
             if cached_result is not None:
                 return cached_result
 
-        return await self._fetch_waterfall(url, domain, start_time)
+        return await self._fetch_waterfall(url, domain, start_time, prepare_page=prepare_page)
 
     async def _fetch_cached_tier(
         self,
@@ -287,6 +297,8 @@ class JSFetcher(HTMLFetcher):
         domain: str,
         cached_tier: str,
         start_time: float,
+        *,
+        prepare_page: PreparePageHook | None = None,
     ) -> FetchResult | None:
         """Attempt fetch using the cached winning tier for this domain.
 
@@ -298,6 +310,10 @@ class JSFetcher(HTMLFetcher):
             domain: Extracted domain name.
             cached_tier: Previously cached tier name ('simple', 'headless', 'headful').
             start_time: Monotonic start time for fetch timing.
+            prepare_page: Optional post-navigate hook (see HTMLFetcher.fetch).
+                Threaded into the browser tiers when honoured; the simple tier
+                ignores it (caller-side bypass prevents reaching here with a
+                hook + simple cached tier).
 
         Returns:
             FetchResult on success, or None if the cached tier should be bypassed.
@@ -310,6 +326,9 @@ class JSFetcher(HTMLFetcher):
                         f'[warning]  ✗ HEAD probe overrides cached simple tier for {domain} — escalating[/warning]'
                     )
                     return None
+                # prepare_page is irrelevant for the simple tier (no page object);
+                # the caller-side bypass already prevented us from getting here
+                # when a hook is supplied, but we don't pass it either way.
                 result = await self._simple.fetch(url)
                 if result.html and not result.requires_js:
                     return result
@@ -325,7 +344,7 @@ class JSFetcher(HTMLFetcher):
         if cached_tier == 'headless':
             try:
                 headless = await self._ensure_headless()
-                result = await headless._do_fetch(url, start_time, 'headless')
+                result = await headless._do_fetch(url, start_time, 'headless', prepare_page=prepare_page)
                 if result.html:
                     return result
                 self._console.print(f'[warning]  ✗ Cached headless tier failed for {domain} — trying headful[/warning]')
@@ -334,34 +353,48 @@ class JSFetcher(HTMLFetcher):
                     f'[warning]  ✗ Cached headless tier blocked for {domain} — re-running waterfall[/warning]'
                 )
             headful = await self._ensure_headful()
-            result = await headful._do_fetch(url, start_time, 'headful')
+            result = await headful._do_fetch(url, start_time, 'headful', prepare_page=prepare_page)
             if result.html:
                 self._record_success(domain, 'headful')
             return result
 
         if cached_tier == 'headful':
             headful = await self._ensure_headful()
-            return await headful._do_fetch(url, start_time, 'headful')
+            return await headful._do_fetch(url, start_time, 'headful', prepare_page=prepare_page)
 
         return None
 
-    async def _fetch_waterfall(self, url: str, domain: str, start_time: float) -> FetchResult:
+    async def _fetch_waterfall(
+        self,
+        url: str,
+        domain: str,
+        start_time: float,
+        *,
+        prepare_page: PreparePageHook | None = None,
+    ) -> FetchResult:
         """Run the full Simple → Headless → Headful waterfall for a new domain.
 
         Args:
             url: The URL to fetch.
             domain: Extracted domain name.
             start_time: Monotonic start time for fetch timing.
+            prepare_page: Optional post-navigate hook. When provided, the simple
+                HTTP tier is skipped entirely — it cannot run page interaction
+                — and the waterfall starts at headless.
 
         Returns:
             FetchResult from whichever tier succeeded, or an empty result
             if all three tiers failed.
-
         """
-        requires_js = await self._probe_requires_js(url)
+        requires_js = await self._probe_requires_js(url) or prepare_page is not None
 
         if requires_js:
-            self._console.print('[dim]    [1/3] HEAD probe detected JS-rendered page — skipping simple HTTP[/dim]')
+            reason = (
+                'caller supplied prepare_page hook'
+                if prepare_page is not None
+                else 'HEAD probe detected JS-rendered page'
+            )
+            self._console.print(f'[dim]    [1/3] {reason} — skipping simple HTTP[/dim]')
         else:
             self._console.print('[dim]    [1/3] Trying simple HTTP...[/dim]')
             result: FetchResult | None = None
@@ -386,7 +419,7 @@ class JSFetcher(HTMLFetcher):
         self._console.print('[dim]    [2/3] Trying headless Chrome...[/dim]')
         try:
             headless = await self._ensure_headless()
-            result = await headless._do_fetch(url, start_time, 'headless')
+            result = await headless._do_fetch(url, start_time, 'headless', prepare_page=prepare_page)
             if result.html:
                 self._console.print('[success]    ✓ Headless Chrome worked[/success]')
                 self._record_success(domain, 'headless')
@@ -400,7 +433,7 @@ class JSFetcher(HTMLFetcher):
         # Tier 3: Headful (best effort)
         self._console.print('[dim]    [3/3] Trying headful Chrome...[/dim]')
         headful = await self._ensure_headful()
-        result = await headful._do_fetch(url, start_time, 'headful')
+        result = await headful._do_fetch(url, start_time, 'headful', prepare_page=prepare_page)
 
         if result.html:
             self._console.print('[success]    ✓ Headful Chrome worked[/success]')

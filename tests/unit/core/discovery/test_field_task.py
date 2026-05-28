@@ -111,7 +111,7 @@ async def test_na_response_from_agent_skips_to_next_level(mocker):
     call_count = 0
 
     async def mock_discover(
-        field_name, field_description, field_hint, discovery_input, target_level, is_container=False
+        field_name, field_description, field_hint, discovery_input, target_level, is_container=False, feedback=None
     ):
         nonlocal call_count
         call_count += 1
@@ -142,7 +142,7 @@ async def test_escalated_level_recorded_in_result(mocker):
     agent = mocker.MagicMock()
 
     async def mock_discover(
-        field_name, field_description, field_hint, discovery_input, target_level, is_container=False
+        field_name, field_description, field_hint, discovery_input, target_level, is_container=False, feedback=None
     ):
         if target_level == SelectorLevel.CSS:
             raise LLMGenerationError('CSS fails')

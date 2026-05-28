@@ -40,7 +40,18 @@ from yosoi.core.pipeline import Pipeline
 from yosoi.integrations import ClaudeSDKModel, OpenCodeModel
 from yosoi.models.contract import Contract
 from yosoi.models.defaults import JobPosting, NewsArticle, Product, Video
-from yosoi.models.selectors import FieldSelectors, SelectorEntry, SelectorLevel, css, discover, jsonld, regex, xpath
+from yosoi.models.selectors import (
+    FieldSelectors,
+    SelectorEntry,
+    SelectorLevel,
+    attr,
+    css,
+    discover,
+    global_id,
+    jsonld,
+    regex,
+    xpath,
+)
 from yosoi.models.snapshot import CacheVerdict, SelectorSnapshot, SnapshotMap
 from yosoi.types import (
     Author,
@@ -91,6 +102,7 @@ __all__ = [
     'YosoiType',
     'alibaba',
     'anthropic',
+    'attr',
     'auto_config',
     'azure',
     'bedrock',
@@ -102,6 +114,7 @@ __all__ = [
     'fireworks',
     'gemini',
     'github',
+    'global_id',
     'grok',
     'groq',
     'heroku',
