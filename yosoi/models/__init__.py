@@ -10,7 +10,7 @@ from yosoi.models.results import (
     VerificationResult,
 )
 from yosoi.models.selectors import FieldSelectors, SelectorEntry, SelectorLevel
-from yosoi.models.snapshot import CacheVerdict, SelectorSnapshot, SnapshotMap
+from yosoi.models.snapshot import CacheVerdict, SelectorSnapshot, SnapshotMap, SnapshotStatus
 
 __all__ = [
     'CacheVerdict',
@@ -26,5 +26,6 @@ __all__ = [
     'SelectorLevel',
     'SelectorSnapshot',
     'SnapshotMap',
+    'SnapshotStatus',
     'VerificationResult',
 ]

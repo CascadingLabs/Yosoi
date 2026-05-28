@@ -15,6 +15,7 @@ from yosoi.models.snapshot import (
     CacheVerdict,
     SelectorSnapshot,
     SnapshotMap,
+    SnapshotStatus,
     selector_dict_to_snapshot,
     snapshot_to_selector_dict,
 )
@@ -81,7 +82,7 @@ class SelectorStorage:
         snapshots = self.load_snapshots(domain)
         if snapshots is None:
             return None
-        return {name: snapshot_to_selector_dict(snap) for name, snap in snapshots.items()}
+        return {name: data for name, snap in snapshots.items() if (data := snapshot_to_selector_dict(snap))}
 
     def load_field_selector(self, domain: str, field_name: str) -> dict[str, Any] | None:
         """Return raw selector dict for a single field, or None if not cached.
@@ -234,11 +235,15 @@ class SelectorStorage:
             if snapshots:
                 # Use earliest discovered_at as the domain-level timestamp
                 earliest = min((s.discovered_at for s in snapshots.values()), default=None)
+                health_counts = {status.value: 0 for status in SnapshotStatus}
+                for snap in snapshots.values():
+                    health_counts[snap.status.value] += 1
                 summary['domains'].append(
                     {
                         'domain': domain,
                         'discovered_at': earliest.isoformat() if earliest else None,
                         'fields': list(snapshots.keys()),
+                        'health': health_counts,
                     }
                 )
 

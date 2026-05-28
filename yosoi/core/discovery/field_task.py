@@ -12,6 +12,7 @@ from tenacity import RetryError
 
 from yosoi.core.verification.verifier import SelectorVerifier
 from yosoi.models.selectors import FieldSelectors, SelectorLevel
+from yosoi.models.snapshot import SnapshotStatus
 from yosoi.prompts.discovery import DiscoveryInput
 from yosoi.utils import observability as obs
 from yosoi.utils.exceptions import LLMGenerationError
@@ -82,9 +83,20 @@ async def _discover_field(
 
     # --- 1. Cache check ---
     if cached_entry is not None:
-        # NA sentinel — field was tried before and doesn't exist on this domain
-        if cached_entry.get('primary') == 'NA':
-            logger.info('Field known absent from cache: %s', field_name)
+        status = cached_entry.get('status')
+        if (
+            status
+            in {
+                SnapshotStatus.ABSENT,
+                SnapshotStatus.ABSENT.value,
+                SnapshotStatus.DISCOVERY_FAILED,
+                SnapshotStatus.DISCOVERY_FAILED.value,
+                SnapshotStatus.VERIFICATION_FAILED,
+                SnapshotStatus.VERIFICATION_FAILED.value,
+            }
+            or cached_entry.get('primary') == 'NA'
+        ):
+            logger.info('Field cache is inactive: %s status=%s', field_name, status)
             return failure
 
         try:
