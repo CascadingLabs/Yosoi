@@ -22,6 +22,7 @@ classifiers = [
   "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
+  "aiofiles>=25.1",
   "beautifulsoup4>=4.14",
   "brotli>=1.2",
   "claude-agent-sdk>=0.2.87",
@@ -67,6 +68,7 @@ dev = [
   "pytest-mock>=3.15.1",
   "respx>=0.22",
   "ruff>=0.15",
+  "types-aiofiles>=25.1.0.20260518",
   "types-beautifulsoup4>=4.12",
   "types-dateparser>=1.4.0.20260328",
   "vulture>=2.16",
@@ -159,10 +161,12 @@ lint.ignore = [
 lint.per-file-ignores."__init__.py" = [ "F401" ]
 lint.per-file-ignores."examples/**/*.py" = [ "BLE", "D" ]
 lint.per-file-ignores."tests/**/*.py" = [
-  "ARG001", # unused arguments in test functions
-  "ARG002", # unused method arguments in tests
-  "ARG004", # unused static method arguments in tests (coerce stubs)
-  "D",      # pydocstyle - no docstrings required for tests
+  "ARG001",   # unused arguments in test functions
+  "ARG002",   # unused method arguments in tests
+  "ARG004",   # unused static method arguments in tests (coerce stubs)
+  "ASYNC230", # tests legitimately do blocking file I/O for setup/assertions inside async tests
+  "ASYNC240", # tests legitimately use os.path/pathlib for setup/assertions inside async tests
+  "D",        # pydocstyle - no docstrings required for tests
 ]
 lint.per-file-ignores."yosoi/cli/args.py" = [ "ARG002" ]  # Click ParamType method overrides require unused params
 lint.per-file-ignores."yosoi/core/cleaning/cleaner.py" = [ "C901" ]

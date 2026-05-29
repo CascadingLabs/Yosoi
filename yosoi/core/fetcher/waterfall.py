@@ -129,7 +129,7 @@ class JSFetcher(HTMLFetcher):
     async def __aenter__(self) -> JSFetcher:
         """Start the simple fetcher eagerly; Chrome tiers start lazily."""
         await self._simple.__aenter__()
-        self._strategy_cache = self._strategy_storage.load_all_strategies()
+        self._strategy_cache = await self._strategy_storage.load_all_strategies()
         self.logger.info(
             'JSFetcher ready (simple tier active, %d domain strategies cached)',
             len(self._strategy_cache),
@@ -163,16 +163,16 @@ class JSFetcher(HTMLFetcher):
         """Return the cached strategy for *domain*, or None if unknown."""
         return self._strategy_cache.get(domain)
 
-    def _record_success(self, domain: str, tier: str) -> None:
+    async def _record_success(self, domain: str, tier: str) -> None:
         """Save the winning tier for *domain* if it changed."""
         current = self._strategy_cache.get(domain)
         if current is None or current.fetcher != tier:
             self._strategy_cache[domain] = FetchStrategy(fetcher=tier)
-            self._strategy_storage.save(domain, tier)
+            await self._strategy_storage.save(domain, tier)
             self._console.print(f'[success]  ✓ Fetcher strategy saved: {domain} → {tier}[/success]')
             self.logger.info('Fetch strategy cached: %s -> %s', domain, tier)
 
-    def update_selector_level(self, domain: str, selector_level: str) -> None:
+    async def update_selector_level(self, domain: str, selector_level: str) -> None:
         """Persist the selector escalation level that worked for this domain."""
         current = self._strategy_cache.get(domain)
         if current is None:
@@ -181,7 +181,7 @@ class JSFetcher(HTMLFetcher):
             return
         updated = FetchStrategy(fetcher=current.fetcher, selector_level=selector_level)
         self._strategy_cache[domain] = updated
-        self._strategy_storage.save(domain, current.fetcher, selector_level=selector_level)
+        await self._strategy_storage.save(domain, current.fetcher, selector_level=selector_level)
         self._console.print(f'[dim]  ↳ Selector level cached: {domain} → {selector_level}[/dim]')
 
     # ------------------------------------------------------------------
@@ -339,7 +339,7 @@ class JSFetcher(HTMLFetcher):
             headful = await self._ensure_headful()
             result = await headful._do_fetch(url, start_time, 'headful')
             if result.html:
-                self._record_success(domain, 'headful')
+                await self._record_success(domain, 'headful')
             return result
 
         if cached_tier == 'headful':
@@ -375,7 +375,7 @@ class JSFetcher(HTMLFetcher):
 
             if result and result.html and not result.requires_js:
                 self._console.print('[success]    ✓ Simple fetcher worked[/success]')
-                self._record_success(domain, 'simple')
+                await self._record_success(domain, 'simple')
                 return result
 
             if result and result.html and result.requires_js:
@@ -392,7 +392,7 @@ class JSFetcher(HTMLFetcher):
             result = await headless._do_fetch(url, start_time, 'headless')
             if result.html:
                 self._console.print('[success]    ✓ Headless Chrome worked[/success]')
-                self._record_success(domain, 'headless')
+                await self._record_success(domain, 'headless')
                 return result
             self._console.print(
                 f'[warning]    ✗ Headless Chrome failed ({result.block_reason or "no content"})[/warning]'
@@ -407,7 +407,7 @@ class JSFetcher(HTMLFetcher):
 
         if result.html:
             self._console.print('[success]    ✓ Headful Chrome worked[/success]')
-            self._record_success(domain, 'headful')
+            await self._record_success(domain, 'headful')
         else:
             self._console.print(f'[warning]    ✗ All three tiers failed for {domain}[/warning]')
 

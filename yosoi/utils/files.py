@@ -1,10 +1,130 @@
 """Utility functions for file and directory management in Yosoi."""
 
+import contextlib
+import json
 import logging
+import os
 import shutil
+import tempfile
 from pathlib import Path
+from typing import Any
+
+import aiofiles
+import aiofiles.os
 
 _logger = logging.getLogger(__name__)
+
+
+def atomic_write_text(path: str | Path, text: str, *, encoding: str = 'utf-8') -> None:
+    """Atomically write *text* to *path*.
+
+    Writes to a temporary file in the same directory, flushes and fsyncs it,
+    then ``os.replace``s it onto the target. Because ``os.replace`` is atomic
+    on POSIX (and Windows for same-volume moves), a concurrent reader, crash,
+    or kill mid-write can never observe a truncated or partially written file:
+    it sees either the old contents or the complete new contents.
+
+    Args:
+        path: Destination file path.
+        text: Full file contents to write.
+        encoding: Text encoding. Defaults to 'utf-8'.
+
+    """
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    # Temp file must live on the same filesystem as the target for os.replace
+    # to be atomic, so create it in the destination directory.
+    fd, tmp_name = tempfile.mkstemp(dir=str(path.parent), prefix=f'.{path.name}.', suffix='.tmp')
+    try:
+        with os.fdopen(fd, 'w', encoding=encoding) as f:
+            f.write(text)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp_name, str(path))
+    except BaseException:
+        # Never leave a stray temp file behind on failure.
+        with contextlib.suppress(OSError):
+            os.unlink(tmp_name)
+        raise
+
+
+def atomic_write_json(
+    path: str | Path,
+    data: Any,
+    *,
+    indent: int | None = 2,
+    ensure_ascii: bool = True,
+) -> None:
+    """Atomically serialise *data* to JSON at *path*.
+
+    Thin wrapper over :func:`atomic_write_text` so all JSON persistence shares
+    the crash-safe write path. See :func:`atomic_write_text` for guarantees.
+
+    Args:
+        path: Destination file path.
+        data: JSON-serialisable object.
+        indent: ``json.dump`` indent. Defaults to 2.
+        ensure_ascii: ``json.dump`` ensure_ascii. Defaults to True.
+
+    """
+    atomic_write_text(path, json.dumps(data, indent=indent, ensure_ascii=ensure_ascii))
+
+
+async def atomic_write_text_async(path: str | Path, text: str, *, encoding: str = 'utf-8') -> None:
+    """Async, crash-safe write of *text* to *path*.
+
+    The async counterpart of :func:`atomic_write_text`: the file body is
+    written with ``aiofiles`` (off the event loop) and swapped into place with
+    ``aiofiles.os.replace``, which is atomic on POSIX. A concurrent reader or a
+    crash can never observe a torn file — only the old or the complete new
+    contents.
+
+    Note: like the original sync storage writes, this does not ``fsync`` the
+    file (``aiofiles.os`` exposes no async fsync), so durability ordering after
+    a hard power loss is unchanged; the atomic-visibility guarantee comes from
+    the rename, not from fsync.
+
+    Args:
+        path: Destination file path.
+        text: Full file contents to write.
+        encoding: Text encoding. Defaults to 'utf-8'.
+
+    """
+    path = Path(path)
+    await aiofiles.os.makedirs(str(path.parent), exist_ok=True)
+    # mkstemp is a single fast syscall; the expensive write happens via aiofiles.
+    fd, tmp_name = tempfile.mkstemp(dir=str(path.parent), prefix=f'.{path.name}.', suffix='.tmp')
+    os.close(fd)
+    try:
+        async with aiofiles.open(tmp_name, 'w', encoding=encoding) as f:
+            await f.write(text)
+            await f.flush()
+        await aiofiles.os.replace(tmp_name, str(path))
+    except BaseException:
+        with contextlib.suppress(OSError):
+            await aiofiles.os.remove(tmp_name)
+        raise
+
+
+async def atomic_write_json_async(
+    path: str | Path,
+    data: Any,
+    *,
+    indent: int | None = 2,
+    ensure_ascii: bool = True,
+) -> None:
+    """Async, crash-safe JSON serialisation to *path*.
+
+    Thin wrapper over :func:`atomic_write_text_async`. See it for guarantees.
+
+    Args:
+        path: Destination file path.
+        data: JSON-serialisable object.
+        indent: ``json.dumps`` indent. Defaults to 2.
+        ensure_ascii: ``json.dumps`` ensure_ascii. Defaults to True.
+
+    """
+    await atomic_write_text_async(path, json.dumps(data, indent=indent, ensure_ascii=ensure_ascii))
 
 
 def get_project_root() -> Path:
@@ -71,10 +191,7 @@ def ensure_tracking_file(yosoi_dir: Path) -> None:
             _logger.exception('Failed to migrate root tracking')
             raise
     else:
-        import json
-
-        with open(tracking_file, 'w') as f:
-            json.dump({}, f, indent=2)
+        atomic_write_json(tracking_file, {})
 
 
 def is_initialized() -> bool:

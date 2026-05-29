@@ -259,9 +259,16 @@ def _make_scrape_stub(mocker, contract=None):
     stub.verifier = mocker.MagicMock()
     stub.extractor = mocker.MagicMock()
     stub.storage = mocker.MagicMock()
+    stub.storage.load_snapshots = mocker.AsyncMock()
+    stub.storage.save_snapshots = mocker.AsyncMock()
+    stub.storage.save_selectors = mocker.AsyncMock()
+    stub.storage.save_content = mocker.AsyncMock()
+    stub.storage.record_verdict = mocker.AsyncMock()
     stub.tracker = mocker.MagicMock()
     stub.tracker.record_url = mocker.AsyncMock(return_value=DomainStats(llm_calls=0, url_count=1))
     stub.debug = mocker.MagicMock()
+    stub.debug.save_debug_html = mocker.AsyncMock()
+    stub.debug.save_debug_selectors = mocker.AsyncMock()
     stub.debug_mode = False
     stub.output_formats = ['json']
     stub.force = False

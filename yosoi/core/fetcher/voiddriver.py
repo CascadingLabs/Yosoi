@@ -85,7 +85,7 @@ class _VoidCrawlFetcher(HTMLFetcher):
         self._pool_ctx = BrowserPool(config)
         self._pool = await self._pool_ctx.__aenter__()
         if self._a3node_storage is not None:
-            self._a3node_cache = self._a3node_storage.load_all()
+            self._a3node_cache = await self._a3node_storage.load_all()
             self._console.print(f'[dim]  ↻ A3Node cache enabled ({len(self._a3node_cache)} recipes cached)[/dim]')
             logger.info('VoidCrawl fetcher ready (%d A3Nodes cached)', len(self._a3node_cache))
         else:
@@ -182,7 +182,7 @@ class _VoidCrawlFetcher(HTMLFetcher):
             try:
                 html: str = await tab.content()
                 if html and len(html) >= self.min_content_length:
-                    self._a3node_storage.record_replay(domain)
+                    await self._a3node_storage.record_replay(domain)
                     return html
             except (RuntimeError, OSError, ValueError) as exc:
                 logger.debug('A3Node empty-recipe content capture failed: %s', exc)
@@ -192,8 +192,8 @@ class _VoidCrawlFetcher(HTMLFetcher):
             )
             probe_result = await DOMLoader(console=self._console).run(tab)
             if probe_result.success:
-                self._a3node_storage.save(domain, probe_result.acts)
-                _updated = self._a3node_storage.load(domain)
+                await self._a3node_storage.save(domain, probe_result.acts)
+                _updated = await self._a3node_storage.load(domain)
                 if _updated is not None:
                     self._a3node_cache[domain] = _updated
             return probe_result.html
@@ -209,9 +209,9 @@ class _VoidCrawlFetcher(HTMLFetcher):
         # Persist the acts regardless of content length — even "no action needed"
         # is a valid and useful recipe to store
         if self._a3node_storage is not None and probe_result.success:
-            self._a3node_storage.save(domain, probe_result.acts)
+            await self._a3node_storage.save(domain, probe_result.acts)
             # Update in-memory cache
-            node = self._a3node_storage.load(domain)
+            node = await self._a3node_storage.load(domain)
             if node is not None:
                 self._a3node_cache[domain] = node
                 verb = 'stored (no actions needed)' if node.is_empty else f'stored ({len(node.acts)} acts)'

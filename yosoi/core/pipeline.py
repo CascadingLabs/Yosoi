@@ -679,7 +679,7 @@ class Pipeline:
             assert result.html is not None, 'result.html should not be None after successful fetch'
 
         with observability.span('clean', url=url, raw_chars=len(result.html)):
-            cleaned_html = self._clean(url, result)
+            cleaned_html = await self._clean(url, result)
             if not cleaned_html:
                 raise RuntimeError(f'HTML cleaning failed for {url}')
 
@@ -726,7 +726,7 @@ class Pipeline:
         save_all: ContentMap | ContentItems = validated_items if len(validated_items) > 1 else validated_items[0]
         with observability.span('save', url=url, items=len(validated_items)):
             await self._finish(url, domain, selectors_to_save, save_all, used_llm, format_to_use)
-        self._record_fetch_strategy_selector_level(fetcher, domain)
+        await self._record_fetch_strategy_selector_level(fetcher, domain)
 
         observability.set_trace_output(
             root_span,
@@ -769,7 +769,7 @@ class Pipeline:
             )
             return None
 
-        self.debug.save_debug_html(url, cleaned_html)
+        await self.debug.save_debug_html(url, cleaned_html)
         return result.html, cleaned_html  # raw for extraction, cleaned for verification
 
     async def _try_cached(
@@ -783,7 +783,7 @@ class Pipeline:
         root_span: Any | None = None,
     ) -> AsyncIterator[ContentMap] | None:
         """Attempt cached-selector path with per-field granularity."""
-        snapshots = self.storage.load_snapshots(domain)
+        snapshots = await self.storage.load_snapshots(domain)
         if not snapshots:
             return None
 
@@ -847,7 +847,7 @@ class Pipeline:
             verdicts = self._verify_per_field(cleaned_html, snapshots)
 
         for field_name, verdict in verdicts.items():
-            self.storage.record_verdict(domain, field_name, verdict)
+            await self.storage.record_verdict(domain, field_name, verdict)
 
         stale_fields = {f for f, v in verdicts.items() if v != CacheVerdict.FRESH}
         fresh_fields = {f for f, v in verdicts.items() if v == CacheVerdict.FRESH}
@@ -941,7 +941,7 @@ class Pipeline:
         )
 
         new_selectors = await self.discovery.discover_selectors(cleaned_html, url, stale_fields=stale_fields)
-        merged = self._merge_and_save_snapshots(url, snapshots, fresh_fields, new_selectors, cleaned_html)
+        merged = await self._merge_and_save_snapshots(url, snapshots, fresh_fields, new_selectors, cleaned_html)
 
         root_entry = self._resolve_root(merged)
         container_selector = self._root_value(root_entry)
@@ -959,8 +959,8 @@ class Pipeline:
                 yield v
             save_content: ContentMap | ContentItems = validated if len(validated) > 1 else validated[0]
             for fmt in format_to_use:
-                self.storage.save_content(url, save_content, fmt, contract_sig=self._contract_sig)
-            self._record_fetch_strategy_selector_level(fetcher, domain)
+                await self.storage.save_content(url, save_content, fmt, contract_sig=self._contract_sig)
+            await self._record_fetch_strategy_selector_level(fetcher, domain)
             elapsed = time.monotonic() - self._url_start
             self.last_elapsed = elapsed
             stats = await self.tracker.record_url(
@@ -1043,9 +1043,9 @@ class Pipeline:
                     yield v
                 save_content: ContentMap | ContentItems = validated if len(validated) > 1 else validated[0]
                 for fmt in format_to_use:
-                    self.storage.save_content(url, save_content, fmt, contract_sig=self._contract_sig)
+                    await self.storage.save_content(url, save_content, fmt, contract_sig=self._contract_sig)
             if fetcher is not None:
-                self._record_fetch_strategy_selector_level(fetcher, domain)
+                await self._record_fetch_strategy_selector_level(fetcher, domain)
             await self._track_cached_success(url, domain)
             self.last_elapsed = time.monotonic() - self._url_start
             self.console.print(f'[dim]  ⏱ {self.last_elapsed:.1f}s elapsed[/dim]')
@@ -1061,7 +1061,7 @@ class Pipeline:
 
         return _gen()
 
-    def _merge_and_save_snapshots(
+    async def _merge_and_save_snapshots(
         self,
         url: str,
         snapshots: dict[str, SelectorSnapshot],
@@ -1099,7 +1099,7 @@ class Pipeline:
                 merged_snapshots[name] = snapshots[name]
             else:
                 merged_snapshots[name] = _to_snap(sel_dict, discovered_at=now, last_verified_at=now)
-        self.storage.save_snapshots(url, merged_snapshots)
+        await self.storage.save_snapshots(url, merged_snapshots)
         return merged
 
     def _validate_items(self, extracted: ContentMap | ContentItems, url: str) -> ContentItems:
@@ -1272,7 +1272,7 @@ class Pipeline:
 
         return None
 
-    def _clean(self, url: str, result: FetchResult) -> str | None:
+    async def _clean(self, url: str, result: FetchResult) -> str | None:
         """Clean HTML by removing noise and extracting main content.
 
         Args:
@@ -1292,7 +1292,7 @@ class Pipeline:
             self.console.print('[danger]HTML cleaning produced empty result[/danger]')
             return None
 
-        self.debug.save_debug_html(url, cleaned_html)
+        await self.debug.save_debug_html(url, cleaned_html)
         self.console.print(f'[success]Cleaned HTML ready ({len(cleaned_html):,} chars)[/success]')
         return cleaned_html
 
@@ -1324,7 +1324,7 @@ class Pipeline:
         if not self.contract.field_descriptions():
             self.console.print('[step]Step 2: All fields have selector overrides — skipping AI discovery[/step]')
             self.logger.info('Skipping AI discovery — all fields overridden url=%s', url)
-            self.debug.save_debug_selectors(url, overrides)
+            await self.debug.save_debug_selectors(url, overrides)
             return overrides, False
 
         def before_ai_sleep_log(retry_state: RetryCallState) -> None:
@@ -1354,7 +1354,7 @@ class Pipeline:
                     if selectors:
                         selectors.update(overrides)
                         self.console.print(f'[success]Discovered selectors for {len(selectors)} fields[/success]')
-                        self.debug.save_debug_selectors(url, selectors)
+                        await self.debug.save_debug_selectors(url, selectors)
 
                         if attempt.retry_state.attempt_number > 1:
                             self.console.print(
@@ -1455,7 +1455,7 @@ class Pipeline:
 
         return verified
 
-    def _record_fetch_strategy_selector_level(self, fetcher: HTMLFetcher, domain: str) -> None:
+    async def _record_fetch_strategy_selector_level(self, fetcher: HTMLFetcher, domain: str) -> None:
         """Cache the highest selector level that worked with the domain loading strategy."""
         if not isinstance(fetcher, JSFetcher):
             return
@@ -1465,7 +1465,7 @@ class Pipeline:
         order = ['css', 'xpath', 'regex', 'jsonld']
         highest = next((level for level in reversed(order) if level_dist.get(level)), None)
         if highest is not None:
-            fetcher.update_selector_level(domain, highest)
+            await fetcher.update_selector_level(domain, highest)
 
     def _print_verification_failure(self, result: VerificationResult) -> None:
         """Print detailed failure summary when all selectors fail."""
@@ -1593,7 +1593,7 @@ class Pipeline:
 
             self.console.print('[step]Cleaning HTML...[/step]')
             cleaned_html = self.cleaner.clean_html(result.html)
-            self.debug.save_debug_html(url, cleaned_html)
+            await self.debug.save_debug_html(url, cleaned_html)
 
             root_entry = self._resolve_root(existing_selectors)
             container_selector = self._root_value(root_entry)
@@ -1764,11 +1764,11 @@ class Pipeline:
             elapsed: Time in seconds spent processing this URL. Defaults to None.
 
         """
-        self.storage.save_selectors(url, verified, verified=True)
+        await self.storage.save_selectors(url, verified, verified=True)
 
         if extracted:
             for fmt in output_format:
-                self.storage.save_content(url, extracted, fmt, contract_sig=self._contract_sig)
+                await self.storage.save_content(url, extracted, fmt, contract_sig=self._contract_sig)
 
         level_dist = getattr(self, '_last_level_distribution', None)
         stats = await self.tracker.record_url(
@@ -1798,9 +1798,9 @@ class Pipeline:
     # Display methods
     # ============================================================================
 
-    def show_summary(self) -> None:
+    async def show_summary(self) -> None:
         """Show summary of all saved selectors."""
-        domains = self.storage.list_domains()
+        domains = await self.storage.list_domains()
 
         if not domains:
             self.console.print('[warning]No selectors found in storage[/warning]')
@@ -1811,16 +1811,16 @@ class Pipeline:
         table.add_column('Fields', style='green')
 
         for domain in domains:
-            selectors = self.storage.load_selectors(domain)
+            selectors = await self.storage.load_selectors(domain)
             if selectors:
                 table.add_row(domain, str(len(selectors)))
 
         self.console.print(table)
         self.console.print(f'\n[success]Total domains: {len(domains)}[/success]')
 
-    def show_llm_stats(self) -> None:
+    async def show_llm_stats(self) -> None:
         """Show LLM usage statistics."""
-        stats = self.tracker.get_all_stats()
+        stats = await self.tracker.get_all_stats()
 
         total_llm_calls = sum(domain_stats.llm_calls for domain_stats in stats.values())
         total_urls = sum(domain_stats.url_count for domain_stats in stats.values())

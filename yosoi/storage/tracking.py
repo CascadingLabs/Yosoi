@@ -9,9 +9,10 @@ import os
 from typing import Any
 from urllib.parse import urlparse
 
+import aiofiles
 from pydantic import BaseModel, Field
 
-from yosoi.utils.files import get_tracking_path
+from yosoi.utils.files import atomic_write_json, atomic_write_json_async, get_tracking_path
 
 
 class DomainStats(BaseModel):
@@ -47,12 +48,13 @@ class LLMTracker:
         self._ensure_file_exists()
 
     def _ensure_file_exists(self) -> None:
-        """Create tracking file if it doesn't exist."""
+        """Create tracking file if it doesn't exist.
+
+        Runs from ``__init__`` (a sync context), so it uses the synchronous
+        atomic writer rather than the async one.
+        """
         if not os.path.exists(self.tracking_file):
-            # Ensure directory exists
-            os.makedirs(os.path.dirname(self.tracking_file), exist_ok=True)
-            with open(self.tracking_file, 'w') as f:
-                json.dump({}, f, indent=2)
+            atomic_write_json(self.tracking_file, {})
 
     @staticmethod
     def _normalize_stats(entry: DomainStats | dict[str, Any]) -> DomainStats:
@@ -61,7 +63,7 @@ class LLMTracker:
             return entry
         return DomainStats.model_validate(entry)
 
-    def _load_data(self) -> dict[str, Any]:
+    async def _load_data(self) -> dict[str, Any]:
         """Load raw tracking data from file.
 
         Returns:
@@ -70,21 +72,20 @@ class LLMTracker:
 
         """
         try:
-            with open(self.tracking_file) as f:
-                data: dict[str, Any] = json.load(f)
+            async with aiofiles.open(self.tracking_file) as f:
+                data: dict[str, Any] = json.loads(await f.read())
                 return data
         except (OSError, json.JSONDecodeError):
             return {}
 
-    def _save_data(self, data: dict[str, Any]) -> None:
+    async def _save_data(self, data: dict[str, Any]) -> None:
         """Save tracking data to file.
 
         Args:
             data: Dictionary of tracking data to save
 
         """
-        with open(self.tracking_file, 'w') as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
+        await atomic_write_json_async(self.tracking_file, data, ensure_ascii=False)
 
     def extract_domain(self, url: str) -> str:
         """Extract domain from URL.
@@ -129,9 +130,9 @@ class LLMTracker:
 
         """
         async with self._lock:
-            return self._record_url_locked(url, used_llm, level_distribution, elapsed, partial_discovery)
+            return await self._record_url_locked(url, used_llm, level_distribution, elapsed, partial_discovery)
 
-    def _record_url_locked(
+    async def _record_url_locked(
         self,
         url: str,
         used_llm: bool = False,
@@ -141,7 +142,7 @@ class LLMTracker:
     ) -> DomainStats:
         """Execute read-modify-write under the caller's lock."""
         domain = self.extract_domain(url)
-        data = self._load_data()
+        data = await self._load_data()
 
         if domain not in data:
             data[domain] = {
@@ -170,10 +171,10 @@ class LLMTracker:
             data[domain].setdefault('partial_rediscovery_count', 0)
             data[domain]['partial_rediscovery_count'] += 1
 
-        self._save_data(data)
+        await self._save_data(data)
         return self._normalize_stats(data[domain])
 
-    def get_llm_calls(self, url_or_domain: str) -> int:
+    async def get_llm_calls(self, url_or_domain: str) -> int:
         """Get LLM call count for a URL or domain.
 
         Args:
@@ -184,10 +185,10 @@ class LLMTracker:
 
         """
         domain = self.extract_domain(url_or_domain) if '://' in url_or_domain else url_or_domain
-        raw = self._load_data().get(domain)
+        raw = (await self._load_data()).get(domain)
         return self._normalize_stats(raw).llm_calls if raw else 0
 
-    def get_url_count(self, url_or_domain: str) -> int:
+    async def get_url_count(self, url_or_domain: str) -> int:
         """Get URL count for a URL or domain.
 
         Args:
@@ -198,10 +199,10 @@ class LLMTracker:
 
         """
         domain = self.extract_domain(url_or_domain) if '://' in url_or_domain else url_or_domain
-        raw = self._load_data().get(domain)
+        raw = (await self._load_data()).get(domain)
         return self._normalize_stats(raw).url_count if raw else 0
 
-    def get_stats(self, url_or_domain: str) -> DomainStats:
+    async def get_stats(self, url_or_domain: str) -> DomainStats:
         """Get all stats for a URL or domain.
 
         Args:
@@ -212,24 +213,24 @@ class LLMTracker:
 
         """
         domain = self.extract_domain(url_or_domain) if '://' in url_or_domain else url_or_domain
-        data = self._load_data()
+        data = await self._load_data()
         existing = data.get(domain)
         if existing is None:
             return DomainStats()
         return self._normalize_stats(existing)
 
-    def get_all_stats(self) -> dict[str, DomainStats]:
+    async def get_all_stats(self) -> dict[str, DomainStats]:
         """Get all tracking data.
 
         Returns:
             Dictionary mapping domain names to their DomainStats.
 
         """
-        return {domain: self._normalize_stats(stats) for domain, stats in self._load_data().items()}
+        return {domain: self._normalize_stats(stats) for domain, stats in (await self._load_data()).items()}
 
-    def print_stats(self) -> None:
+    async def print_stats(self) -> None:
         """Print statistics in a readable format."""
-        all_stats = self.get_all_stats()
+        all_stats = await self.get_all_stats()
 
         if not all_stats:
             print('\nNo tracking data yet.\n')
@@ -266,7 +267,7 @@ class LLMTracker:
 
         print('\n' + '=' * 70 + '\n')
 
-    def reset(self, domain: str | None = None) -> None:
+    async def reset(self, domain: str | None = None) -> None:
         """Reset tracking data.
 
         Args:
@@ -274,15 +275,15 @@ class LLMTracker:
 
         """
         if domain:
-            data = self._load_data()
+            data = await self._load_data()
             if domain in data:
                 del data[domain]
-                self._save_data(data)
+                await self._save_data(data)
                 print(f'✓ Reset tracking for {domain}')
             else:
                 print(f'No tracking data for {domain}')
         else:
-            self._save_data({})
+            await self._save_data({})
             print('✓ Reset all tracking data')
 
 
@@ -296,29 +297,29 @@ async def _example_main() -> None:
     # Article 1 from yahoo.com - need to call LLM
     print('1. First article from yahoo.com (calling LLM)')
     await tracker.record_url('https://finance.yahoo.com/article-1', used_llm=True)
-    print(f'   LLM calls: {tracker.get_llm_calls("finance.yahoo.com")}')
-    print(f'   URL count: {tracker.get_url_count("finance.yahoo.com")}')
+    print(f'   LLM calls: {await tracker.get_llm_calls("finance.yahoo.com")}')
+    print(f'   URL count: {await tracker.get_url_count("finance.yahoo.com")}')
 
     # Article 2 from yahoo.com - use existing selectors
     print('\n2. Second article from yahoo.com (using cached selectors)')
     await tracker.record_url('https://finance.yahoo.com/article-2', used_llm=False)
-    print(f'   LLM calls: {tracker.get_llm_calls("finance.yahoo.com")}')
-    print(f'   URL count: {tracker.get_url_count("finance.yahoo.com")}')
+    print(f'   LLM calls: {await tracker.get_llm_calls("finance.yahoo.com")}')
+    print(f'   URL count: {await tracker.get_url_count("finance.yahoo.com")}')
 
     # Article 3 from yahoo.com - selectors failed, call LLM again
     print('\n3. Third article from yahoo.com (selectors failed, re-discovery)')
     await tracker.record_url('https://finance.yahoo.com/article-3', used_llm=True)
-    print(f'   LLM calls: {tracker.get_llm_calls("finance.yahoo.com")}')
-    print(f'   URL count: {tracker.get_url_count("finance.yahoo.com")}')
+    print(f'   LLM calls: {await tracker.get_llm_calls("finance.yahoo.com")}')
+    print(f'   URL count: {await tracker.get_url_count("finance.yahoo.com")}')
 
     # Article from different domain
     print('\n4. First article from cnn.com (calling LLM)')
     await tracker.record_url('https://www.cnn.com/article-1', used_llm=True)
-    print(f'   LLM calls: {tracker.get_llm_calls("cnn.com")}')
-    print(f'   URL count: {tracker.get_url_count("cnn.com")}')
+    print(f'   LLM calls: {await tracker.get_llm_calls("cnn.com")}')
+    print(f'   URL count: {await tracker.get_url_count("cnn.com")}')
 
     # Print summary
-    tracker.print_stats()
+    await tracker.print_stats()
 
 
 if __name__ == '__main__':

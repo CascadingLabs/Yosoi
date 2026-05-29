@@ -19,7 +19,7 @@ def storage(tmp_path, mocker):
 
 
 class TestSaveLoadSnapshots:
-    def test_round_trip(self, storage):
+    async def test_round_trip(self, storage):
         now = datetime.now(timezone.utc)
         snapshots = {
             'title': SelectorSnapshot(
@@ -34,8 +34,8 @@ class TestSaveLoadSnapshots:
             ),
         }
 
-        storage.save_snapshots('https://example.com/item', snapshots)
-        loaded = storage.load_snapshots('example.com')
+        await storage.save_snapshots('https://example.com/item', snapshots)
+        loaded = await storage.load_snapshots('example.com')
 
         assert loaded is not None
         assert 'title' in loaded
@@ -43,10 +43,10 @@ class TestSaveLoadSnapshots:
         assert loaded['title'].primary == {'type': 'css', 'value': 'h1.title'}
         assert loaded['price'].failure_count == 1
 
-    def test_load_nonexistent_returns_none(self, storage):
-        assert storage.load_snapshots('nonexistent.com') is None
+    async def test_load_nonexistent_returns_none(self, storage):
+        assert await storage.load_snapshots('nonexistent.com') is None
 
-    def test_legacy_na_primary_loads_as_absent_snapshot(self, storage):
+    async def test_legacy_na_primary_loads_as_absent_snapshot(self, storage):
         now = datetime.now(timezone.utc)
         snapshots = {
             'author': SelectorSnapshot(
@@ -55,38 +55,38 @@ class TestSaveLoadSnapshots:
             ),
         }
 
-        storage.save_snapshots('https://example.com/item', snapshots)
-        loaded = storage.load_snapshots('example.com')
+        await storage.save_snapshots('https://example.com/item', snapshots)
+        loaded = await storage.load_snapshots('example.com')
 
         assert loaded is not None
         assert loaded['author'].status == SnapshotStatus.ABSENT
         assert loaded['author'].primary is None
-        assert storage.load_selectors('example.com') == {}
+        assert await storage.load_selectors('example.com') == {}
 
 
 class TestSaveLoadSelectors:
-    def test_save_selectors_writes_snapshot_format(self, storage):
+    async def test_save_selectors_writes_snapshot_format(self, storage):
         selectors = {
             'title': {'primary': 'h1.title', 'fallback': 'h1', 'tertiary': None},
         }
-        storage.save_selectors('https://example.com/article', selectors)
+        await storage.save_selectors('https://example.com/article', selectors)
 
         # Should be readable as snapshots
-        snapshots = storage.load_snapshots('example.com')
+        snapshots = await storage.load_snapshots('example.com')
         assert snapshots is not None
         assert 'title' in snapshots
         assert snapshots['title'].primary == 'h1.title'
 
-    def test_save_selectors_migrates_legacy_absent_sentinel(self, storage):
-        storage.save_selectors('https://example.com/article', {'author': {'primary': 'NA'}})
+    async def test_save_selectors_migrates_legacy_absent_sentinel(self, storage):
+        await storage.save_selectors('https://example.com/article', {'author': {'primary': 'NA'}})
 
-        snapshots = storage.load_snapshots('example.com')
+        snapshots = await storage.load_snapshots('example.com')
 
         assert snapshots is not None
         assert snapshots['author'].status == SnapshotStatus.ABSENT
         assert snapshots['author'].primary is None
 
-    def test_load_selectors_strips_audit_metadata(self, storage):
+    async def test_load_selectors_strips_audit_metadata(self, storage):
         now = datetime.now(timezone.utc)
         snapshots = {
             'title': SelectorSnapshot(
@@ -94,31 +94,31 @@ class TestSaveLoadSelectors:
                 discovered_at=now,
             ),
         }
-        storage.save_snapshots('https://example.com/page', snapshots)
+        await storage.save_snapshots('https://example.com/page', snapshots)
 
-        loaded = storage.load_selectors('example.com')
+        loaded = await storage.load_selectors('example.com')
         assert loaded is not None
         assert 'title' in loaded
         assert loaded['title'] == {'primary': {'type': 'css', 'value': 'h1.title'}}
         assert 'discovered_at' not in loaded['title']
 
-    def test_load_selectors_omits_explicit_absent_snapshots(self, storage):
+    async def test_load_selectors_omits_explicit_absent_snapshots(self, storage):
         now = datetime.now(timezone.utc)
         snapshots = {
             'title': SelectorSnapshot(primary='h1', discovered_at=now),
             'author': SelectorSnapshot(discovered_at=now, status=SnapshotStatus.ABSENT),
         }
 
-        storage.save_snapshots('https://example.com/page', snapshots)
+        await storage.save_snapshots('https://example.com/page', snapshots)
 
-        assert storage.load_selectors('example.com') == {'title': {'primary': 'h1'}}
+        assert await storage.load_selectors('example.com') == {'title': {'primary': 'h1'}}
 
-    def test_load_selectors_nonexistent_returns_none(self, storage):
-        assert storage.load_selectors('nothing.com') is None
+    async def test_load_selectors_nonexistent_returns_none(self, storage):
+        assert await storage.load_selectors('nothing.com') is None
 
 
 class TestRecordVerdict:
-    def test_fresh_resets_failure_count(self, storage):
+    async def test_fresh_resets_failure_count(self, storage):
         now = datetime.now(timezone.utc)
         snapshots = {
             'title': SelectorSnapshot(
@@ -128,16 +128,16 @@ class TestRecordVerdict:
                 last_failed_at=now,
             ),
         }
-        storage.save_snapshots('https://example.com', snapshots)
+        await storage.save_snapshots('https://example.com', snapshots)
 
-        storage.record_verdict('example.com', 'title', CacheVerdict.FRESH)
+        await storage.record_verdict('example.com', 'title', CacheVerdict.FRESH)
 
-        reloaded = storage.load_snapshots('example.com')
+        reloaded = await storage.load_snapshots('example.com')
         assert reloaded is not None
         assert reloaded['title'].failure_count == 0
         assert reloaded['title'].last_verified_at is not None
 
-    def test_stale_increments_failure_count(self, storage):
+    async def test_stale_increments_failure_count(self, storage):
         now = datetime.now(timezone.utc)
         snapshots = {
             'price': SelectorSnapshot(
@@ -146,44 +146,44 @@ class TestRecordVerdict:
                 failure_count=1,
             ),
         }
-        storage.save_snapshots('https://shop.com', snapshots)
+        await storage.save_snapshots('https://shop.com', snapshots)
 
-        storage.record_verdict('shop.com', 'price', CacheVerdict.STALE)
+        await storage.record_verdict('shop.com', 'price', CacheVerdict.STALE)
 
-        reloaded = storage.load_snapshots('shop.com')
+        reloaded = await storage.load_snapshots('shop.com')
         assert reloaded is not None
         assert reloaded['price'].failure_count == 2
         assert reloaded['price'].last_failed_at is not None
 
-    def test_noop_for_missing_domain(self, storage):
-        storage.record_verdict('nonexistent.com', 'title', CacheVerdict.FRESH)
+    async def test_noop_for_missing_domain(self, storage):
+        await storage.record_verdict('nonexistent.com', 'title', CacheVerdict.FRESH)
 
-    def test_noop_for_missing_field(self, storage):
+    async def test_noop_for_missing_field(self, storage):
         now = datetime.now(timezone.utc)
         snapshots = {'title': SelectorSnapshot(primary={'type': 'css', 'value': 'h1'}, discovered_at=now)}
-        storage.save_snapshots('https://example.com', snapshots)
-        storage.record_verdict('example.com', 'nonexistent', CacheVerdict.STALE)
+        await storage.save_snapshots('https://example.com', snapshots)
+        await storage.record_verdict('example.com', 'nonexistent', CacheVerdict.STALE)
 
 
 class TestSaveSelectorsVerified:
-    def test_verified_stamps_last_verified_at(self, storage):
+    async def test_verified_stamps_last_verified_at(self, storage):
         selectors = {
             'title': {'primary': 'h1.title', 'fallback': 'h1', 'tertiary': None},
             'price': {'primary': '.price', 'fallback': None, 'tertiary': None},
         }
-        storage.save_selectors('https://example.com/item', selectors, verified=True)
+        await storage.save_selectors('https://example.com/item', selectors, verified=True)
 
-        snapshots = storage.load_snapshots('example.com')
+        snapshots = await storage.load_snapshots('example.com')
         assert snapshots is not None
         for name in ('title', 'price'):
             snap = snapshots[name]
             assert snap.last_verified_at is not None
             assert snap.last_verified_at == snap.discovered_at
 
-    def test_unverified_leaves_last_verified_at_none(self, storage):
+    async def test_unverified_leaves_last_verified_at_none(self, storage):
         selectors = {'title': {'primary': 'h1', 'fallback': None, 'tertiary': None}}
-        storage.save_selectors('https://example.com/page', selectors)
+        await storage.save_selectors('https://example.com/page', selectors)
 
-        snapshots = storage.load_snapshots('example.com')
+        snapshots = await storage.load_snapshots('example.com')
         assert snapshots is not None
         assert snapshots['title'].last_verified_at is None

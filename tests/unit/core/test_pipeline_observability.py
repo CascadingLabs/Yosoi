@@ -61,12 +61,17 @@ def pipeline_stub(mocker):
     stub.verifier = mocker.MagicMock()
     stub.extractor = mocker.MagicMock()
     stub.storage = mocker.MagicMock()
-    stub.storage.load_snapshots.return_value = None
-    stub.storage.load_selectors.return_value = None
+    stub.storage.load_snapshots = mocker.AsyncMock(return_value=None)
+    stub.storage.load_selectors = mocker.AsyncMock(return_value=None)
+    stub.storage.save_snapshots = mocker.AsyncMock()
+    stub.storage.save_content = mocker.AsyncMock()
+    stub.storage.record_verdict = mocker.AsyncMock()
     stub.tracker = mocker.MagicMock()
     stub.tracker.record_url = mocker.AsyncMock()
     stub._client = mocker.AsyncMock()
     stub.debug = mocker.MagicMock()
+    stub.debug.save_debug_html = mocker.AsyncMock()
+    stub.debug.save_debug_selectors = mocker.AsyncMock()
     stub.debug_mode = False
     stub.output_formats = ['json']
     stub.force = False
@@ -232,6 +237,9 @@ async def test_agent_span_nests_under_discover(span_exporter, mocker):
     Agent.instrument_all()
 
     storage = mocker.MagicMock()
+    storage.load_snapshots = mocker.AsyncMock(return_value=None)
+    storage.save_snapshots = mocker.AsyncMock()
+    storage.save_selectors = mocker.AsyncMock()
     # Use a real provider with a fake key so create_model() succeeds; the
     # Agent.override(model=TestModel()) below swaps it out before any LLM call.
     from yosoi.core.discovery.config import LLMConfig

@@ -25,7 +25,10 @@ import os
 from dataclasses import dataclass
 from datetime import datetime
 
-from yosoi.utils.files import init_yosoi
+import aiofiles
+import aiofiles.os
+
+from yosoi.utils.files import atomic_write_json_async, init_yosoi
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +71,7 @@ class FetchStrategyStorage:
     # Public API
     # ------------------------------------------------------------------
 
-    def save(self, domain: str, fetcher: str, selector_level: str | None = None) -> None:
+    async def save(self, domain: str, fetcher: str, selector_level: str | None = None) -> None:
         """Persist the winning fetcher tier for *domain*.
 
         Args:
@@ -92,13 +95,12 @@ class FetchStrategyStorage:
             'discovered_at': datetime.now().isoformat(),
         }
         try:
-            with open(filepath, 'w', encoding='utf-8') as f:
-                json.dump(data, f, indent=2)
+            await atomic_write_json_async(filepath, data)
             logger.debug('Saved fetch strategy: %s -> %s', domain, fetcher)
         except OSError as e:
             logger.warning('Could not save fetch strategy for %s: %s', domain, e)
 
-    def load_strategy(self, domain: str) -> FetchStrategy | None:
+    async def load_strategy(self, domain: str) -> FetchStrategy | None:
         """Return the cached fetcher tier for *domain*, or None if unknown.
 
         Args:
@@ -109,11 +111,11 @@ class FetchStrategyStorage:
 
         """
         filepath = self._filepath(domain)
-        if not os.path.exists(filepath):
+        if not await aiofiles.os.path.exists(filepath):
             return None
         try:
-            with open(filepath, encoding='utf-8') as f:
-                data = json.load(f)
+            async with aiofiles.open(filepath, encoding='utf-8') as f:
+                data = json.loads(await f.read())
             fetcher = data.get('fetcher')
             if fetcher in VALID_FETCHERS:
                 selector_level = data.get('selector_level')
@@ -125,12 +127,12 @@ class FetchStrategyStorage:
             logger.warning('Could not read fetch strategy for %s: %s', domain, e)
             return None
 
-    def load(self, domain: str) -> str | None:
+    async def load(self, domain: str) -> str | None:
         """Return the cached fetcher tier for *domain*, or None if unknown."""
-        strategy = self.load_strategy(domain)
+        strategy = await self.load_strategy(domain)
         return strategy.fetcher if strategy is not None else None
 
-    def load_all_strategies(self) -> dict[str, FetchStrategy]:
+    async def load_all_strategies(self) -> dict[str, FetchStrategy]:
         """Load every cached strategy into a domain → fetcher mapping.
 
         Called once on JSFetcher startup to pre-populate the in-memory cache.
@@ -140,15 +142,15 @@ class FetchStrategyStorage:
 
         """
         result: dict[str, FetchStrategy] = {}
-        if not os.path.exists(self._dir):
+        if not await aiofiles.os.path.exists(self._dir):
             return result
-        for filename in os.listdir(self._dir):
+        for filename in await aiofiles.os.listdir(self._dir):
             if not (filename.startswith('fetch_') and filename.endswith('.json')):
                 continue
             filepath = os.path.join(self._dir, filename)
             try:
-                with open(filepath, encoding='utf-8') as f:
-                    data = json.load(f)
+                async with aiofiles.open(filepath, encoding='utf-8') as f:
+                    data = json.loads(await f.read())
                 domain = data.get('domain')
                 fetcher = data.get('fetcher')
                 if domain and fetcher in VALID_FETCHERS:
@@ -161,13 +163,13 @@ class FetchStrategyStorage:
             logger.info('Loaded fetch strategy cache (%d domains)', len(result))
         return result
 
-    def load_all(self) -> dict[str, str]:
+    async def load_all(self) -> dict[str, str]:
         """Load every cached fetcher tier into a domain → tier mapping."""
-        return {domain: strategy.fetcher for domain, strategy in self.load_all_strategies().items()}
+        return {domain: strategy.fetcher for domain, strategy in (await self.load_all_strategies()).items()}
 
-    def list_domains(self) -> list[str]:
+    async def list_domains(self) -> list[str]:
         """Return all domains with a cached strategy, sorted alphabetically."""
-        return sorted(self.load_all().keys())
+        return sorted((await self.load_all()).keys())
 
     # ------------------------------------------------------------------
     # Internal helpers

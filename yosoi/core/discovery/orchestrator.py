@@ -192,7 +192,7 @@ class DiscoveryOrchestrator:
         # Load the full domain selector map once — avoids N redundant file reads.
         # Keep snapshot health metadata so absent/failed fields are not mistaken
         # for malformed selector payloads.
-        snapshots = self._storage.load_snapshots(domain) or {}
+        snapshots = await self._storage.load_snapshots(domain) or {}
         from yosoi.models.snapshot import snapshot_to_cache_entry
 
         existing = {name: snapshot_to_cache_entry(snapshot) for name, snapshot in snapshots.items()}
@@ -241,9 +241,9 @@ class DiscoveryOrchestrator:
             if url and stale_fields is None and persisted_snapshots:
                 if self._write_lock is not None:
                     async with self._write_lock:
-                        self._storage.save_snapshots(url, persisted_snapshots)
+                        await self._storage.save_snapshots(url, persisted_snapshots)
                 else:
-                    self._storage.save_snapshots(url, persisted_snapshots)
+                    await self._storage.save_snapshots(url, persisted_snapshots)
             return None
 
         logger.info(
@@ -262,9 +262,9 @@ class DiscoveryOrchestrator:
         if url and stale_fields is None and persisted_snapshots is not None:
             if self._write_lock is not None:
                 async with self._write_lock:
-                    self._storage.save_snapshots(url, persisted_snapshots)
+                    await self._storage.save_snapshots(url, persisted_snapshots)
             else:
-                self._storage.save_snapshots(url, persisted_snapshots)
+                await self._storage.save_snapshots(url, persisted_snapshots)
 
         return merged
 

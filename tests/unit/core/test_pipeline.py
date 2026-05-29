@@ -31,11 +31,30 @@ def _make_pipeline_stub(mocker, contract=None):
     stub.verifier = mocker.MagicMock()
     stub.extractor = mocker.MagicMock()
     stub.storage = mocker.MagicMock()
+    for m in (
+        'save_selectors',
+        'load_selectors',
+        'load_field_selector',
+        'selector_exists',
+        'save_content',
+        'load_content',
+        'content_exists',
+        'list_domains',
+        'get_summary',
+        'load_snapshots',
+        'save_snapshots',
+        'record_verdict',
+        'export_summary',
+    ):
+        setattr(stub.storage, m, mocker.AsyncMock())
     stub.storage.load_snapshots.return_value = None
     stub.tracker = mocker.MagicMock()
     stub.tracker.record_url = mocker.AsyncMock()
+    stub.tracker.get_all_stats = mocker.AsyncMock()
     stub._client = mocker.AsyncMock()
     stub.debug = mocker.MagicMock()
+    stub.debug.save_debug_html = mocker.AsyncMock()
+    stub.debug.save_debug_selectors = mocker.AsyncMock()
     stub.debug_mode = False
     stub.output_formats = ['json']
     stub.force = False
@@ -170,14 +189,14 @@ def test_create_waterfall_fetcher_passes_console_only(mocker):
     create_fetcher.assert_called_once_with('waterfall', console=stub.console)
 
 
-def test_record_fetch_strategy_selector_level_uses_highest_verified_level(mocker):
+async def test_record_fetch_strategy_selector_level_uses_highest_verified_level(mocker):
     from yosoi.core.fetcher.waterfall import JSFetcher
 
     stub = _make_pipeline_stub(mocker)
     stub._last_level_distribution = {'css': 2, 'xpath': 1}
     fetcher = mocker.Mock(spec=JSFetcher)
 
-    Pipeline._record_fetch_strategy_selector_level(stub, fetcher, 'qscrape.dev')
+    await Pipeline._record_fetch_strategy_selector_level(stub, fetcher, 'qscrape.dev')
 
     fetcher.update_selector_level.assert_called_once_with('qscrape.dev', 'xpath')
 
@@ -187,20 +206,20 @@ def test_record_fetch_strategy_selector_level_uses_highest_verified_level(mocker
 # ---------------------------------------------------------------------------
 
 
-def test_clean_returns_cleaned_html(mocker):
+async def test_clean_returns_cleaned_html(mocker):
     stub = _make_pipeline_stub(mocker)
     stub.cleaner.clean_html.return_value = '<html><body>Clean</body></html>'
     result_obj = FetchResult(url='https://x.com', html='<html>Dirty</html>')
-    result = Pipeline._clean(stub, 'https://x.com', result_obj)
+    result = await Pipeline._clean(stub, 'https://x.com', result_obj)
     assert result == '<html><body>Clean</body></html>'
     stub.debug.save_debug_html.assert_called_once()
 
 
-def test_clean_returns_none_when_cleaner_returns_empty(mocker):
+async def test_clean_returns_none_when_cleaner_returns_empty(mocker):
     stub = _make_pipeline_stub(mocker)
     stub.cleaner.clean_html.return_value = ''
     result_obj = FetchResult(url='https://x.com', html='<html>x</html>')
-    result = Pipeline._clean(stub, 'https://x.com', result_obj)
+    result = await Pipeline._clean(stub, 'https://x.com', result_obj)
     assert result is None
 
 
@@ -555,7 +574,7 @@ async def test_discover_returns_overrides_when_no_fields_need_discovery(mocker):
     stub.contract = OverrideContract
     stub.contract.get_selector_overrides = mocker.MagicMock(return_value={'title': {'primary': '.title'}})
     stub.contract.field_descriptions = mocker.MagicMock(return_value={})
-    stub.debug.save_debug_selectors = mocker.MagicMock()
+    stub.debug.save_debug_selectors = mocker.AsyncMock()
 
     selectors, used_llm = await Pipeline._discover(stub, 'https://x.com', '<html/>', max_retries=1)
     assert selectors == {'title': {'primary': '.title'}}
@@ -568,7 +587,7 @@ async def test_discover_returns_selectors_on_ai_success(mocker):
     stub.contract.get_selector_overrides = mocker.MagicMock(return_value={})
     stub.contract.field_descriptions = mocker.MagicMock(return_value={'title': 'The title'})
     stub.discovery.discover_selectors = mocker.AsyncMock(return_value={'title': {'primary': 'h1'}})
-    stub.debug.save_debug_selectors = mocker.MagicMock()
+    stub.debug.save_debug_selectors = mocker.AsyncMock()
 
     from tenacity import AsyncRetrying, stop_after_attempt, wait_none
 
@@ -842,18 +861,18 @@ async def test_process_urls_uses_pipeline_force_flag(mocker):
 # ---------------------------------------------------------------------------
 
 
-def test_show_summary_prints_warning_when_no_domains(mocker):
+async def test_show_summary_prints_warning_when_no_domains(mocker):
     stub = _make_pipeline_stub(mocker)
     stub.storage.list_domains.return_value = []
-    Pipeline.show_summary(stub)
+    await Pipeline.show_summary(stub)
     stub.console.print.assert_called()
 
 
-def test_show_summary_prints_table_with_domains(mocker):
+async def test_show_summary_prints_table_with_domains(mocker):
     stub = _make_pipeline_stub(mocker)
     stub.storage.list_domains.return_value = ['example.com']
     stub.storage.load_selectors.return_value = {'title': {'primary': 'h1'}}
-    Pipeline.show_summary(stub)
+    await Pipeline.show_summary(stub)
     stub.console.print.assert_called()
 
 
@@ -862,17 +881,17 @@ def test_show_summary_prints_table_with_domains(mocker):
 # ---------------------------------------------------------------------------
 
 
-def test_show_llm_stats_with_data(mocker):
+async def test_show_llm_stats_with_data(mocker):
     stub = _make_pipeline_stub(mocker)
     stub.tracker.get_all_stats.return_value = {'example.com': DomainStats(llm_calls=2, url_count=10)}
-    Pipeline.show_llm_stats(stub)
+    await Pipeline.show_llm_stats(stub)
     stub.console.print.assert_called()
 
 
-def test_show_llm_stats_no_calls(mocker):
+async def test_show_llm_stats_no_calls(mocker):
     stub = _make_pipeline_stub(mocker)
     stub.tracker.get_all_stats.return_value = {}
-    Pipeline.show_llm_stats(stub)
+    await Pipeline.show_llm_stats(stub)
     stub.console.print.assert_called()
 
 
@@ -1343,12 +1362,12 @@ async def test_process_url_uses_pipeline_format_when_output_format_none(mocker):
 # ---------------------------------------------------------------------------
 
 
-def test_show_summary_shows_domain_count(mocker):
+async def test_show_summary_shows_domain_count(mocker):
     """show_summary must print total domain count."""
     stub = _make_pipeline_stub(mocker)
     stub.storage.list_domains.return_value = ['a.com', 'b.com']
     stub.storage.load_selectors.return_value = {'title': {'primary': 'h1'}}
-    Pipeline.show_summary(stub)
+    await Pipeline.show_summary(stub)
     call_args = ' '.join(str(c) for c in stub.console.print.call_args_list)
     assert '2' in call_args
 
@@ -1358,24 +1377,24 @@ def test_show_summary_shows_domain_count(mocker):
 # ---------------------------------------------------------------------------
 
 
-def test_show_llm_stats_shows_efficiency_when_llm_calls_nonzero(mocker):
+async def test_show_llm_stats_shows_efficiency_when_llm_calls_nonzero(mocker):
     """show_llm_stats must show efficiency when there are LLM calls."""
     stub = _make_pipeline_stub(mocker)
     stub.tracker.get_all_stats.return_value = {'x.com': DomainStats(llm_calls=4, url_count=20)}
-    Pipeline.show_llm_stats(stub)
+    await Pipeline.show_llm_stats(stub)
     call_args = ' '.join(str(c) for c in stub.console.print.call_args_list)
     # 20/4 = 5.0 efficiency
     assert '5.0' in call_args
 
 
-def test_show_llm_stats_sums_all_domains(mocker):
+async def test_show_llm_stats_sums_all_domains(mocker):
     """show_llm_stats must aggregate stats across all domains."""
     stub = _make_pipeline_stub(mocker)
     stub.tracker.get_all_stats.return_value = {
         'a.com': DomainStats(llm_calls=2, url_count=10),
         'b.com': DomainStats(llm_calls=3, url_count=15),
     }
-    Pipeline.show_llm_stats(stub)
+    await Pipeline.show_llm_stats(stub)
     call_args = ' '.join(str(c) for c in stub.console.print.call_args_list)
     # Total: llm_calls=5, url_count=25
     assert '5' in call_args
@@ -1387,21 +1406,21 @@ def test_show_llm_stats_sums_all_domains(mocker):
 # ---------------------------------------------------------------------------
 
 
-def test_clean_calls_cleaner_with_html(mocker):
+async def test_clean_calls_cleaner_with_html(mocker):
     """_clean must call cleaner.clean_html with result.html."""
     stub = _make_pipeline_stub(mocker)
     stub.cleaner.clean_html.return_value = '<clean/>'
     result_obj = FetchResult(url='https://x.com', html='<dirty/>')
-    Pipeline._clean(stub, 'https://x.com', result_obj)
+    await Pipeline._clean(stub, 'https://x.com', result_obj)
     stub.cleaner.clean_html.assert_called_once_with('<dirty/>')
 
 
-def test_clean_saves_debug_html(mocker):
+async def test_clean_saves_debug_html(mocker):
     """_clean must call debug.save_debug_html with url and cleaned html."""
     stub = _make_pipeline_stub(mocker)
     stub.cleaner.clean_html.return_value = '<clean/>'
     result_obj = FetchResult(url='https://x.com', html='<dirty/>')
-    Pipeline._clean(stub, 'https://x.com', result_obj)
+    await Pipeline._clean(stub, 'https://x.com', result_obj)
     stub.debug.save_debug_html.assert_called_once_with('https://x.com', '<clean/>')
 
 
@@ -1416,7 +1435,7 @@ async def test_discover_merges_overrides_with_ai_selectors(mocker):
     stub.contract.get_selector_overrides = mocker.MagicMock(return_value={'author': {'primary': '.author'}})
     stub.contract.field_descriptions = mocker.MagicMock(return_value={'title': 'The title'})
     stub.discovery.discover_selectors = mocker.AsyncMock(return_value={'title': {'primary': 'h1'}})
-    stub.debug.save_debug_selectors = mocker.MagicMock()
+    stub.debug.save_debug_selectors = mocker.AsyncMock()
 
     from tenacity import AsyncRetrying, stop_after_attempt, wait_none
 
@@ -1437,7 +1456,7 @@ async def test_discover_all_override_returns_false_for_used_llm(mocker):
     stub = _make_pipeline_stub(mocker)
     stub.contract.get_selector_overrides = mocker.MagicMock(return_value={'title': {'primary': '.t'}})
     stub.contract.field_descriptions = mocker.MagicMock(return_value={})
-    stub.debug.save_debug_selectors = mocker.MagicMock()
+    stub.debug.save_debug_selectors = mocker.AsyncMock()
 
     _selectors, used_llm = await Pipeline._discover(stub, 'https://x.com', '<html/>', max_retries=1)
     assert used_llm is False
@@ -1449,7 +1468,7 @@ async def test_discover_ai_success_returns_true_for_used_llm(mocker):
     stub.contract.get_selector_overrides = mocker.MagicMock(return_value={})
     stub.contract.field_descriptions = mocker.MagicMock(return_value={'title': 'The title'})
     stub.discovery.discover_selectors = mocker.AsyncMock(return_value={'title': {'primary': 'h1'}})
-    stub.debug.save_debug_selectors = mocker.MagicMock()
+    stub.debug.save_debug_selectors = mocker.AsyncMock()
 
     from tenacity import AsyncRetrying, stop_after_attempt, wait_none
 

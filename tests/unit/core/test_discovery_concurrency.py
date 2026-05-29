@@ -62,7 +62,9 @@ def _make_orchestrator(
     contract: type[Contract], llm_config: LLMConfig, max_concurrent: int, mocker
 ) -> DiscoveryOrchestrator:
     storage = mocker.MagicMock()
-    storage.load_selectors.return_value = {}
+    storage.load_selectors = mocker.AsyncMock(return_value={})
+    storage.load_snapshots = mocker.AsyncMock(return_value={})
+    storage.save_snapshots = mocker.AsyncMock()
     return DiscoveryOrchestrator(
         contract=contract,
         llm_config=llm_config,

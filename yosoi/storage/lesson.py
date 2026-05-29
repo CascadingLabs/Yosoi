@@ -6,8 +6,11 @@ import json
 import logging
 import os
 
+import aiofiles
+import aiofiles.os
+
 from yosoi.models.replay import DiscoveryLesson, LessonKey, ReplayStatus, utc_now
-from yosoi.utils.files import init_yosoi
+from yosoi.utils.files import atomic_write_json_async, init_yosoi
 
 logger = logging.getLogger(__name__)
 
@@ -24,38 +27,36 @@ class LessonStorage:
         """Initialise storage under ``.yosoi/lessons``."""
         self._dir = str(init_yosoi(storage_dir))
 
-    def save(self, lesson: DiscoveryLesson) -> str:
+    async def save(self, lesson: DiscoveryLesson) -> str:
         """Persist a discovery lesson and return the file path."""
         filepath = self._filepath(lesson.key)
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
-        with open(filepath, 'w', encoding='utf-8') as f:
-            json.dump(lesson.model_dump(mode='json'), f, indent=2, ensure_ascii=False)
+        await atomic_write_json_async(filepath, lesson.model_dump(mode='json'), ensure_ascii=False)
         logger.info('Saved discovery lesson to: %s', filepath)
         return filepath
 
-    def load(self, key: LessonKey) -> DiscoveryLesson | None:
+    async def load(self, key: LessonKey) -> DiscoveryLesson | None:
         """Load a lesson by key, or return None if absent/corrupt."""
         filepath = self._filepath(key)
-        if not os.path.exists(filepath):
+        if not await aiofiles.os.path.exists(filepath):
             return None
         try:
-            with open(filepath, encoding='utf-8') as f:
-                data = json.load(f)
+            async with aiofiles.open(filepath, encoding='utf-8') as f:
+                data = json.loads(await f.read())
             return DiscoveryLesson.model_validate(data)
         except (OSError, json.JSONDecodeError, ValueError, TypeError) as exc:
             logger.warning('Could not load discovery lesson %s: %s', key.storage_key, exc)
             return None
 
-    def load_active(self, key: LessonKey) -> DiscoveryLesson | None:
+    async def load_active(self, key: LessonKey) -> DiscoveryLesson | None:
         """Load an active lesson that still meets its validation threshold."""
-        lesson = self.load(key)
+        lesson = await self.load(key)
         if lesson is None or not lesson.is_active:
             return None
         return lesson
 
-    def record_replay(self, key: LessonKey, *, verified: bool) -> None:
+    async def record_replay(self, key: LessonKey, *, verified: bool) -> None:
         """Update replay counters after executing a lesson."""
-        lesson = self.load(key)
+        lesson = await self.load(key)
         if lesson is None:
             return
 
@@ -68,24 +69,24 @@ class LessonStorage:
         else:
             lesson.stats.failure_count += 1
             lesson.stats.last_failed_at = now
-        self.save(lesson)
+        await self.save(lesson)
 
-    def mark_stale(self, key: LessonKey, reason: str) -> None:
+    async def mark_stale(self, key: LessonKey, reason: str) -> None:
         """Mark a lesson stale so replay-first execution will not use it."""
-        lesson = self.load(key)
+        lesson = await self.load(key)
         if lesson is None:
             return
         lesson.status = ReplayStatus.STALE
         lesson.status_reason = reason
         lesson.stats.last_failed_at = utc_now()
-        self.save(lesson)
+        await self.save(lesson)
 
-    def delete(self, key: LessonKey) -> bool:
+    async def delete(self, key: LessonKey) -> bool:
         """Delete a lesson by key."""
         filepath = self._filepath(key)
-        if not os.path.exists(filepath):
+        if not await aiofiles.os.path.exists(filepath):
             return False
-        os.remove(filepath)
+        await aiofiles.os.remove(filepath)
         return True
 
     def _filepath(self, key: LessonKey) -> str:

@@ -78,15 +78,15 @@ class RecordingStorage:
     peak_writes_in_flight: int = 0
     saved_fields: list[list[str]] = field(default_factory=list)
 
-    def load_snapshots(self, _domain: str) -> dict[str, SelectorSnapshot] | None:
+    async def load_snapshots(self, _domain: str) -> dict[str, SelectorSnapshot] | None:
         self.read_count += 1
         return None
 
-    def load_selectors(self, _domain: str) -> dict[str, Any] | None:
+    async def load_selectors(self, _domain: str) -> dict[str, Any] | None:
         self.read_count += 1
         return None
 
-    def save_snapshots(self, _url: str, snapshots: dict[str, SelectorSnapshot]) -> str:
+    async def save_snapshots(self, _url: str, snapshots: dict[str, SelectorSnapshot]) -> str:
         self.write_count += 1
         self.writes_in_flight += 1
         self.peak_writes_in_flight = max(self.peak_writes_in_flight, self.writes_in_flight)

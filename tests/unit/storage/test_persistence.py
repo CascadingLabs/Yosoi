@@ -18,27 +18,27 @@ def storage(tmp_path, mocker):
     return SelectorStorage()
 
 
-def test_save_and_load_selectors(storage):
+async def test_save_and_load_selectors(storage):
     selectors = {
         'headline': {'primary': 'h1.title', 'fallback': 'h1', 'tertiary': 'NA'},
     }
-    storage.save_selectors('https://example.com/article', selectors)
-    loaded = storage.load_selectors('example.com')
+    await storage.save_selectors('https://example.com/article', selectors)
+    loaded = await storage.load_selectors('example.com')
     assert loaded is not None
     assert loaded['headline']['primary'] == 'h1.title'
 
 
-def test_save_selectors_formats_with_primary_fallback_tertiary(storage):
+async def test_save_selectors_formats_with_primary_fallback_tertiary(storage):
     selectors = {'title': {'primary': 'h1', 'fallback': 'h2'}}
-    storage.save_selectors('https://example.com', selectors)
-    loaded = storage.load_selectors('example.com')
+    await storage.save_selectors('https://example.com', selectors)
+    loaded = await storage.load_selectors('example.com')
     assert loaded['title']['primary'] == 'h1'
     assert loaded['title']['fallback'] == 'h2'
     assert 'tertiary' not in loaded['title']  # omitted when not provided
 
 
-def test_nonexistent_domain_returns_none(storage):
-    result = storage.load_selectors('nonexistent.com')
+async def test_nonexistent_domain_returns_none(storage):
+    result = await storage.load_selectors('nonexistent.com')
     assert result is None
 
 
@@ -58,84 +58,84 @@ def test_domain_extraction_handles_invalid_url(storage):
     assert isinstance(domain, str)
 
 
-def test_selector_exists_after_save(storage):
+async def test_selector_exists_after_save(storage):
     selectors = {'title': {'primary': 'h1', 'fallback': 'NA', 'tertiary': 'NA'}}
-    storage.save_selectors('https://test.com', selectors)
-    assert storage.selector_exists('test.com') is True
+    await storage.save_selectors('https://test.com', selectors)
+    assert await storage.selector_exists('test.com') is True
 
 
-def test_selector_not_exists(storage):
-    assert storage.selector_exists('nothere.com') is False
+async def test_selector_not_exists(storage):
+    assert await storage.selector_exists('nothere.com') is False
 
 
-def test_list_domains_empty(storage):
-    assert storage.list_domains() == []
+async def test_list_domains_empty(storage):
+    assert await storage.list_domains() == []
 
 
-def test_list_domains_after_save(storage):
+async def test_list_domains_after_save(storage):
     selectors = {'title': {'primary': 'h1', 'fallback': 'NA', 'tertiary': 'NA'}}
-    storage.save_selectors('https://alpha.com', selectors)
-    storage.save_selectors('https://beta.com', selectors)
-    domains = storage.list_domains()
+    await storage.save_selectors('https://alpha.com', selectors)
+    await storage.save_selectors('https://beta.com', selectors)
+    domains = await storage.list_domains()
     assert 'alpha.com' in domains
     assert 'beta.com' in domains
 
 
-def test_list_domains_returns_sorted(storage):
+async def test_list_domains_returns_sorted(storage):
     selectors = {'title': {'primary': 'h1', 'fallback': 'NA', 'tertiary': 'NA'}}
-    storage.save_selectors('https://zzz.com', selectors)
-    storage.save_selectors('https://aaa.com', selectors)
-    domains = storage.list_domains()
+    await storage.save_selectors('https://zzz.com', selectors)
+    await storage.save_selectors('https://aaa.com', selectors)
+    domains = await storage.list_domains()
     assert domains == sorted(domains)
 
 
-def test_get_summary_total_domains(storage):
+async def test_get_summary_total_domains(storage):
     selectors = {'title': {'primary': 'h1', 'fallback': 'NA', 'tertiary': 'NA'}}
-    storage.save_selectors('https://example.com', selectors)
-    summary = storage.get_summary()
+    await storage.save_selectors('https://example.com', selectors)
+    summary = await storage.get_summary()
     assert summary['total_domains'] == 1
     assert len(summary['domains']) == 1
 
 
-def test_get_summary_empty(storage):
-    summary = storage.get_summary()
+async def test_get_summary_empty(storage):
+    summary = await storage.get_summary()
     assert summary['total_domains'] == 0
     assert summary['domains'] == []
 
 
-def test_get_summary_domain_has_fields(storage):
+async def test_get_summary_domain_has_fields(storage):
     selectors = {'title': {'primary': 'h1', 'fallback': 'NA', 'tertiary': 'NA'}}
-    storage.save_selectors('https://example.com', selectors)
-    summary = storage.get_summary()
+    await storage.save_selectors('https://example.com', selectors)
+    summary = await storage.get_summary()
     domain_info = summary['domains'][0]
     assert 'fields' in domain_info
     assert 'title' in domain_info['fields']
 
 
-def test_get_summary_includes_snapshot_health_counts(storage):
+async def test_get_summary_includes_snapshot_health_counts(storage):
     snapshots = {
         'title': SelectorSnapshot(primary='h1', discovered_at='2026-01-01T00:00:00Z'),
         'author': SelectorSnapshot(discovered_at='2026-01-01T00:00:00Z', status=SnapshotStatus.ABSENT),
     }
-    storage.save_snapshots('https://example.com', snapshots)
+    await storage.save_snapshots('https://example.com', snapshots)
 
-    domain_info = storage.get_summary()['domains'][0]
+    domain_info = (await storage.get_summary())['domains'][0]
 
     assert domain_info['health']['active'] == 1
     assert domain_info['health']['absent'] == 1
 
 
-def test_get_summary_domain_has_domain_key(storage):
+async def test_get_summary_domain_has_domain_key(storage):
     selectors = {'title': {'primary': 'h1', 'fallback': 'NA', 'tertiary': 'NA'}}
-    storage.save_selectors('https://example.com', selectors)
-    summary = storage.get_summary()
+    await storage.save_selectors('https://example.com', selectors)
+    summary = await storage.get_summary()
     domain_info = summary['domains'][0]
     assert 'domain' in domain_info
     assert domain_info['domain'] == 'example.com'
 
 
-def test_load_selectors_returns_none_for_missing(storage):
-    assert storage.load_selectors('missing.com') is None
+async def test_load_selectors_returns_none_for_missing(storage):
+    assert await storage.load_selectors('missing.com') is None
 
 
 def test_format_selectors_uses_none_for_missing_fallback(storage):
@@ -153,35 +153,35 @@ def test_format_selectors_uses_provided_values(storage):
     assert formatted['title']['tertiary'] == 'h3'
 
 
-def test_save_content_creates_file(storage, tmp_path):
+async def test_save_content_creates_file(storage, tmp_path):
     content = {'title': 'Hello', 'body': 'World'}
-    filepath = storage.save_content('https://example.com/page', content, 'json')
+    filepath = await storage.save_content('https://example.com/page', content, 'json')
     assert os.path.exists(filepath)
 
 
-def test_save_content_returns_filepath(storage):
+async def test_save_content_returns_filepath(storage):
     content = {'title': 'Test'}
-    result = storage.save_content('https://example.com/article', content, 'json')
+    result = await storage.save_content('https://example.com/article', content, 'json')
     assert isinstance(result, str)
     assert len(result) > 0
 
 
-def test_load_content_after_save(storage):
+async def test_load_content_after_save(storage):
     content = {'title': 'My Article', 'body': 'Content here'}
-    storage.save_content('https://example.com/article', content, 'json')
-    loaded = storage.load_content('https://example.com/article')
+    await storage.save_content('https://example.com/article', content, 'json')
+    loaded = await storage.load_content('https://example.com/article')
     assert loaded is not None
     assert loaded['title'] == 'My Article'
 
 
-def test_content_exists_after_save(storage):
+async def test_content_exists_after_save(storage):
     content = {'title': 'Test'}
-    storage.save_content('https://example.com/test-page', content)
-    assert storage.content_exists('https://example.com/test-page') is True
+    await storage.save_content('https://example.com/test-page', content)
+    assert await storage.content_exists('https://example.com/test-page') is True
 
 
-def test_content_not_exists_before_save(storage):
-    assert storage.content_exists('https://example.com/never-saved') is False
+async def test_content_not_exists_before_save(storage):
+    assert await storage.content_exists('https://example.com/never-saved') is False
 
 
 def test_get_content_filepath_uses_hash_for_homepage(storage):
@@ -297,46 +297,46 @@ def test_format_selectors_preserves_all_three_levels(storage):
     assert 'tertiary' in formatted['title']
 
 
-def test_load_selectors_returns_selectors_key(storage):
+async def test_load_selectors_returns_selectors_key(storage):
     """load_selectors must return the 'selectors' value from JSON, not the full dict."""
     selectors = {'headline': {'primary': 'h1', 'fallback': 'NA', 'tertiary': 'NA'}}
-    storage.save_selectors('https://example.com', selectors)
-    loaded = storage.load_selectors('example.com')
+    await storage.save_selectors('https://example.com', selectors)
+    loaded = await storage.load_selectors('example.com')
     assert loaded is not None
     # Should not have 'url', 'domain', 'discovered_at' keys (only selectors content)
     assert 'url' not in loaded
     assert 'domain' not in loaded
 
 
-def test_load_content_returns_content_key(storage):
+async def test_load_content_returns_content_key(storage):
     """load_content must return the 'content' value from JSON, not the full dict."""
     content = {'title': 'Test Article'}
-    storage.save_content('https://example.com/article', content, 'json')
-    loaded = storage.load_content('https://example.com/article')
+    await storage.save_content('https://example.com/article', content, 'json')
+    loaded = await storage.load_content('https://example.com/article')
     assert loaded is not None
     # Should not have 'url', 'domain', 'extracted_at' keys
     assert 'url' not in loaded
     assert 'domain' not in loaded
 
 
-def test_get_summary_has_total_domains_key(storage):
+async def test_get_summary_has_total_domains_key(storage):
     """get_summary must return dict with 'total_domains' key."""
-    summary = storage.get_summary()
+    summary = await storage.get_summary()
     assert 'total_domains' in summary
 
 
-def test_get_summary_has_domains_list_key(storage):
+async def test_get_summary_has_domains_list_key(storage):
     """get_summary must return dict with 'domains' list key."""
-    summary = storage.get_summary()
+    summary = await storage.get_summary()
     assert 'domains' in summary
     assert isinstance(summary['domains'], list)
 
 
-def test_get_summary_domains_have_discovered_at(storage):
+async def test_get_summary_domains_have_discovered_at(storage):
     """Each domain in summary must have 'discovered_at' key."""
     selectors = {'title': {'primary': 'h1', 'fallback': 'NA', 'tertiary': 'NA'}}
-    storage.save_selectors('https://example.com', selectors)
-    summary = storage.get_summary()
+    await storage.save_selectors('https://example.com', selectors)
+    summary = await storage.get_summary()
     domain_info = summary['domains'][0]
     assert 'discovered_at' in domain_info
 
@@ -414,32 +414,32 @@ def test_contract_sig_same_sig_same_url_same_file(storage):
     assert fp1 == fp2
 
 
-def test_save_content_with_contract_sig(storage, tmp_path):
+async def test_save_content_with_contract_sig(storage, tmp_path):
     """save_content accepts contract_sig and produces a file with sig in the name."""
     content = {'title': 'Test'}
-    filepath = storage.save_content('https://example.com/catalog/?cat=5', content, 'json', contract_sig='testsig')
+    filepath = await storage.save_content('https://example.com/catalog/?cat=5', content, 'json', contract_sig='testsig')
     assert os.path.exists(filepath)
     assert 'testsig' in os.path.basename(filepath)
 
 
-def test_content_exists_with_contract_sig(storage):
+async def test_content_exists_with_contract_sig(storage):
     """content_exists uses contract_sig to locate the correct file."""
     url = 'https://example.com/catalog/?cat=5'
-    assert not storage.content_exists(url, contract_sig='testsig')
-    storage.save_content(url, {'title': 'hi'}, 'json', contract_sig='testsig')
-    assert storage.content_exists(url, contract_sig='testsig')
+    assert not await storage.content_exists(url, contract_sig='testsig')
+    await storage.save_content(url, {'title': 'hi'}, 'json', contract_sig='testsig')
+    assert await storage.content_exists(url, contract_sig='testsig')
 
 
-def test_list_domains_only_returns_selector_files(storage):
+async def test_list_domains_only_returns_selector_files(storage):
     """list_domains must only return filenames starting with 'selectors_'."""
     # Save a selector
     selectors = {'title': {'primary': 'h1', 'fallback': 'NA', 'tertiary': 'NA'}}
-    storage.save_selectors('https://example.com', selectors)
+    await storage.save_selectors('https://example.com', selectors)
     # Create a non-selector file
     import pathlib
 
     pathlib.Path(storage.storage_dir, 'other_file.json').write_text('{}')
-    domains = storage.list_domains()
+    domains = await storage.list_domains()
     # Should not include 'other'
     assert 'other' not in domains
     assert 'example.com' in domains
@@ -450,14 +450,14 @@ def test_list_domains_only_returns_selector_files(storage):
 # ---------------------------------------------------------------------------
 
 
-def test_load_selectors_reads_selectors_key_from_file(storage):
+async def test_load_selectors_reads_selectors_key_from_file(storage):
     """load_selectors returns the 'selectors' sub-dict from the JSON file."""
     selectors = {
         'title': {'primary': 'h1', 'fallback': 'h2', 'tertiary': 'NA'},
         'price': {'primary': '.price', 'fallback': 'NA', 'tertiary': 'NA'},
     }
-    storage.save_selectors('https://example.com', selectors)
-    loaded = storage.load_selectors('example.com')
+    await storage.save_selectors('https://example.com', selectors)
+    loaded = await storage.load_selectors('example.com')
     assert loaded is not None
     assert 'title' in loaded
     assert 'price' in loaded
@@ -469,9 +469,9 @@ def test_load_selectors_reads_selectors_key_from_file(storage):
 # ---------------------------------------------------------------------------
 
 
-def test_load_content_returns_none_for_missing_file(storage):
+async def test_load_content_returns_none_for_missing_file(storage):
     """load_content returns None when the file does not exist."""
-    result = storage.load_content('https://nonexistent.com/page')
+    result = await storage.load_content('https://nonexistent.com/page')
     assert result is None
 
 
@@ -480,14 +480,14 @@ def test_load_content_returns_none_for_missing_file(storage):
 # ---------------------------------------------------------------------------
 
 
-def test_load_content_returns_none_for_corrupt_file(storage):
+async def test_load_content_returns_none_for_corrupt_file(storage):
     """load_content returns None for a corrupt JSON file."""
     import pathlib
 
     filepath = storage._get_content_filepath('https://example.com/article')
     pathlib.Path(filepath).parent.mkdir(parents=True, exist_ok=True)
     pathlib.Path(filepath).write_text('NOT VALID JSON')
-    result = storage.load_content('https://example.com/article')
+    result = await storage.load_content('https://example.com/article')
     assert result is None
 
 
@@ -496,7 +496,7 @@ def test_load_content_returns_none_for_corrupt_file(storage):
 # ---------------------------------------------------------------------------
 
 
-def test_list_domains_nonexistent_storage_dir(tmp_path, mocker):
+async def test_list_domains_nonexistent_storage_dir(tmp_path, mocker):
     """list_domains returns empty list when storage_dir doesn't exist."""
     selector_dir = tmp_path / 'nonexistent_selectors'
     content_dir = tmp_path / 'content'
@@ -505,7 +505,7 @@ def test_list_domains_nonexistent_storage_dir(tmp_path, mocker):
     s = SelectorStorage()
     # storage_dir points to a non-existent path
     s.storage_dir = str(tmp_path / 'does_not_exist')
-    result = s.list_domains()
+    result = await s.list_domains()
     assert result == []
 
 
@@ -526,27 +526,27 @@ def test_extract_domain_empty_netloc_returns_empty_string(storage):
 # ---------------------------------------------------------------------------
 
 
-def test_load_file_data_returns_none_for_missing_file(storage):
+async def test_load_file_data_returns_none_for_missing_file(storage):
     """_load_file_data returns None when the file doesn't exist."""
-    result = storage._load_file_data('nonexistent.com')
+    result = await storage._load_file_data('nonexistent.com')
     assert result is None
 
 
-def test_load_file_data_returns_none_for_corrupt_file(storage):
+async def test_load_file_data_returns_none_for_corrupt_file(storage):
     """_load_file_data returns None for a corrupt JSON file."""
     import pathlib
 
     filepath = storage._get_filepath('corrupt.com')
     pathlib.Path(filepath).write_text('NOT VALID JSON')
-    result = storage._load_file_data('corrupt.com')
+    result = await storage._load_file_data('corrupt.com')
     assert result is None
 
 
-def test_load_file_data_returns_data_for_valid_file(storage):
+async def test_load_file_data_returns_data_for_valid_file(storage):
     """_load_file_data returns the JSON content for a valid file."""
     selectors = {'title': {'primary': 'h1', 'fallback': 'NA', 'tertiary': 'NA'}}
-    storage.save_selectors('https://example.com', selectors)
-    result = storage._load_file_data('example.com')
+    await storage.save_selectors('https://example.com', selectors)
+    result = await storage._load_file_data('example.com')
     assert result is not None
     assert 'snapshots' in result
 
@@ -556,12 +556,12 @@ def test_load_file_data_returns_data_for_valid_file(storage):
 # ---------------------------------------------------------------------------
 
 
-def test_export_summary_creates_file(storage, tmp_path):
+async def test_export_summary_creates_file(storage, tmp_path):
     """export_summary creates a JSON file with the summary."""
     selectors = {'title': {'primary': 'h1', 'fallback': 'NA', 'tertiary': 'NA'}}
-    storage.save_selectors('https://example.com', selectors)
+    await storage.save_selectors('https://example.com', selectors)
     output_file = str(tmp_path / 'summary.json')
-    result = storage.export_summary(output_file)
+    result = await storage.export_summary(output_file)
     assert result == output_file
     assert os.path.exists(output_file)
 
@@ -573,10 +573,10 @@ def test_export_summary_creates_file(storage, tmp_path):
     assert data['total_domains'] == 1
 
 
-def test_export_summary_empty(storage, tmp_path):
+async def test_export_summary_empty(storage, tmp_path):
     """export_summary works with no saved selectors."""
     output_file = str(tmp_path / 'empty_summary.json')
-    storage.export_summary(output_file)
+    await storage.export_summary(output_file)
     assert os.path.exists(output_file)
 
     import json
@@ -591,13 +591,13 @@ def test_export_summary_empty(storage, tmp_path):
 # ---------------------------------------------------------------------------
 
 
-def test_load_selectors_corrupt_json_returns_none(storage):
+async def test_load_selectors_corrupt_json_returns_none(storage):
     """load_selectors returns None for a file containing invalid JSON."""
     import pathlib
 
     filepath = storage._get_filepath('corrupt.com')
     pathlib.Path(filepath).write_text('NOT JSON')
-    result = storage.load_selectors('corrupt.com')
+    result = await storage.load_selectors('corrupt.com')
     assert result is None
 
 
@@ -606,7 +606,7 @@ def test_load_selectors_corrupt_json_returns_none(storage):
 # ---------------------------------------------------------------------------
 
 
-def test_load_content_multi_item_format(storage):
+async def test_load_content_multi_item_format(storage):
     """load_content returns list of dicts for multi-item 'items' format."""
     import json
     import pathlib
@@ -615,7 +615,7 @@ def test_load_content_multi_item_format(storage):
     pathlib.Path(filepath).parent.mkdir(parents=True, exist_ok=True)
     data = {'items': [{'title': 'A'}, {'title': 'B'}]}
     pathlib.Path(filepath).write_text(json.dumps(data))
-    loaded = storage.load_content('https://example.com/multi')
+    loaded = await storage.load_content('https://example.com/multi')
     assert isinstance(loaded, list)
     assert len(loaded) == 2
     assert loaded[0]['title'] == 'A'
@@ -638,26 +638,26 @@ def test_extract_domain_valueerror_returns_unknown(storage, mocker):
 # ---------------------------------------------------------------------------
 
 
-def test_load_field_selector_returns_entry_for_existing_field(storage):
+async def test_load_field_selector_returns_entry_for_existing_field(storage):
     selectors = {
         'headline': {'primary': 'h1.title', 'fallback': 'h1', 'tertiary': None},
         'author': {'primary': '.author', 'fallback': None, 'tertiary': None},
     }
-    storage.save_selectors('https://example.com/article', selectors)
-    result = storage.load_field_selector('example.com', 'headline')
+    await storage.save_selectors('https://example.com/article', selectors)
+    result = await storage.load_field_selector('example.com', 'headline')
     assert result is not None
     assert result['primary'] == 'h1.title'
 
 
-def test_load_field_selector_returns_none_for_missing_field(storage):
+async def test_load_field_selector_returns_none_for_missing_field(storage):
     selectors = {'headline': {'primary': 'h1', 'fallback': None, 'tertiary': None}}
-    storage.save_selectors('https://example.com', selectors)
-    result = storage.load_field_selector('example.com', 'nonexistent_field')
+    await storage.save_selectors('https://example.com', selectors)
+    result = await storage.load_field_selector('example.com', 'nonexistent_field')
     assert result is None
 
 
-def test_load_field_selector_returns_none_for_missing_domain(storage):
-    result = storage.load_field_selector('nothere.com', 'headline')
+async def test_load_field_selector_returns_none_for_missing_domain(storage):
+    result = await storage.load_field_selector('nothere.com', 'headline')
     assert result is None
 
 
@@ -666,18 +666,18 @@ def test_load_field_selector_returns_none_for_missing_domain(storage):
 # ---------------------------------------------------------------------------
 
 
-def test_list_domains_skips_corrupt_json_files(storage):
+async def test_list_domains_skips_corrupt_json_files(storage):
     """A malformed selector file must be silently skipped, not raise."""
     # Write a valid selector so we know one domain shows up
     selectors = {'title': {'primary': 'h1', 'fallback': None, 'tertiary': None}}
-    storage.save_selectors('https://example.com', selectors)
+    await storage.save_selectors('https://example.com', selectors)
 
     # Inject a corrupt file that matches the expected filename pattern
     corrupt_path = os.path.join(storage.storage_dir, 'selectors_corrupt.json')
     with open(corrupt_path, 'w') as f:
         f.write('NOT VALID JSON')
 
-    domains = storage.list_domains()
+    domains = await storage.list_domains()
     # Corrupt file is skipped; valid domain still returned
     assert 'example.com' in domains
     # No crash
@@ -688,7 +688,7 @@ def test_list_domains_skips_corrupt_json_files(storage):
 # ---------------------------------------------------------------------------
 
 
-def test_load_snapshots_returns_none_when_no_snapshots_key(storage):
+async def test_load_snapshots_returns_none_when_no_snapshots_key(storage):
     """When persisted data has no 'snapshots' key, load_snapshots must return None."""
     import json
 
@@ -697,7 +697,7 @@ def test_load_snapshots_returns_none_when_no_snapshots_key(storage):
     with open(filepath, 'w') as f:
         json.dump({'domain': 'example.com', 'fields': {}}, f)
 
-    result = storage.load_snapshots('example.com')
+    result = await storage.load_snapshots('example.com')
     assert result is None
 
 
@@ -706,7 +706,7 @@ def test_load_snapshots_returns_none_when_no_snapshots_key(storage):
 # ---------------------------------------------------------------------------
 
 
-def test_load_snapshots_returns_none_for_invalid_snapshot_data(storage):
+async def test_load_snapshots_returns_none_for_invalid_snapshot_data(storage):
     """When snapshot data fails model_validate, load_snapshots must return None."""
     import json
 
@@ -721,5 +721,5 @@ def test_load_snapshots_returns_none_for_invalid_snapshot_data(storage):
             f,
         )
 
-    result = storage.load_snapshots('bad.com')
+    result = await storage.load_snapshots('bad.com')
     assert result is None

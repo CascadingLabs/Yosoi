@@ -191,7 +191,7 @@ def main(
 
     if summary:
         pipeline = Pipeline(yosoi_config, contract=resolved_contract, output_format=output_formats)
-        pipeline.show_summary()
+        asyncio.run(pipeline.show_summary())
         return
 
     urls = _collect_urls(url, file_path, limit)
