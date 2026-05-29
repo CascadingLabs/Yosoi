@@ -647,3 +647,46 @@ def test_pipeline_accepts_selector_level(mocker, tmp_path):
     cfg = LLMConfig(provider='test', model_name='test-model', api_key='fake')
     pipeline = Pipeline(cfg, contract=NewsArticle, selector_level=SelectorLevel.XPATH)
     assert pipeline.selector_level == SelectorLevel.XPATH
+
+
+# ---------------------------------------------------------------------------
+# verify_root — container validity (prevents caching sidebars as root)
+# ---------------------------------------------------------------------------
+
+
+class TestVerifyRoot:
+    _HTML = (
+        '<html><body>'
+        '<div class="card"><h1 class="title">A</h1><a href="/p">link</a></div>'
+        '<div class="card"><h1 class="title">B</h1></div>'
+        '<aside class="side"><span class="ad">buy</span></aside>'
+        '</body></html>'
+    )
+
+    def test_true_when_primary_field_matches_inside_container(self, verifier):
+        ok = verifier.verify_root(self._HTML, 'div.card', {'title': {'primary': 'h1.title'}})
+        assert ok is True
+
+    def test_false_when_no_containers_match(self, verifier):
+        assert verifier.verify_root(self._HTML, 'div.nonexistent', {'title': {'primary': 'h1.title'}}) is False
+
+    def test_false_when_no_field_matches_inside_container(self, verifier):
+        # The 'side' container holds none of the content fields → not a valid root.
+        assert verifier.verify_root(self._HTML, 'aside.side', {'title': {'primary': 'h1.title'}}) is False
+
+    def test_invalid_container_selector_returns_false(self, verifier):
+        # :has() with an attribute arg is unparseable by cssselect → caught → False.
+        assert verifier.verify_root(self._HTML, 'div:has(h1[class])', {'title': {'primary': 'h1.title'}}) is False
+
+    def test_skips_root_related_and_empty_entries(self, verifier):
+        selectors = {
+            'root': {'primary': 'div.card'},  # skipped
+            'related_content': {'primary': 'a'},  # skipped
+            'missing': {'primary': None},  # no primary → continue
+            'title': {'primary': 'h1.title'},  # the one that validates
+        }
+        assert verifier.verify_root(self._HTML, 'div.card', selectors) is True
+
+    def test_xpath_primary_matches_inside_container(self, verifier):
+        entry = {'title': {'primary': {'type': 'xpath', 'value': './/h1[@class="title"]'}}}
+        assert verifier.verify_root(self._HTML, 'div.card', entry) is True
