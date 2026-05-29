@@ -1,0 +1,50 @@
+# Local Postgres + MongoDB for developing and testing yosoi content sinks.
+#
+#   docker compose -f docker-compose.sinks.yml up -d
+#
+# Then point the sink integration tests at the running stack (otherwise they
+# fall back to ephemeral testcontainers, which is slower per run):
+#
+#   export YOSOI_TEST_POSTGRES_DSN='postgresql://yosoi:yosoi@localhost:5433/yosoi'
+#   export YOSOI_TEST_MONGO_URI='mongodb://localhost:27018'
+#   uv run pytest tests/integration/sinks/
+#
+# Host ports default to non-default values (5433 / 27018) to avoid clashing with
+# a local Postgres/Mongo install or the docker-compose.langfuse.yml stack. If
+# those are taken too, override them (and the DSNs above to match):
+#   YOSOI_PG_PORT=5455 YOSOI_MONGO_PORT=27044 docker compose -f docker-compose.sinks.yml up -d
+# Credentials below are dev-only — do NOT deploy as-is.
+services:
+  sinks-postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: yosoi
+      POSTGRES_PASSWORD: yosoi # CHANGEME for anything but local dev
+      POSTGRES_DB: yosoi
+    ports:
+      - "${YOSOI_PG_PORT:-5433}:5432"
+    volumes:
+      - sinks-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U yosoi -d yosoi"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  sinks-mongo:
+    image: mongo:7
+    restart: unless-stopped
+    ports:
+      - "${YOSOI_MONGO_PORT:-27018}:27017"
+    volumes:
+      - sinks-mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  sinks-postgres-data:
+  sinks-mongo-data:
