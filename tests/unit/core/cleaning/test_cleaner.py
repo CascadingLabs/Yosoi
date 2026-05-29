@@ -126,7 +126,9 @@ def test_clean_html_returns_string(sample_html, cleaner):
 # ---------------------------------------------------------------------------
 
 
-def test_compress_removes_non_css_attributes(cleaner):
+def test_compress_removes_only_noise_attributes(cleaner):
+    # Opt-in removal: inline style and JS event handlers are stripped; everything
+    # else (class, data-*, and any other attribute) is kept.
     html = '<html><body><div class="foo" style="color:red" onclick="bad()" data-val="keep">text</div></body></html>'
     soup = BeautifulSoup(html, 'lxml')
     result = cleaner._compress_html_simple(soup)
@@ -137,23 +139,43 @@ def test_compress_removes_non_css_attributes(cleaner):
     assert 'style' not in div.attrs
 
 
-def test_compress_keeps_id_href_src(cleaner):
-    html = '<html><body><a id="link" href="/page" title="ignore">text</a></body></html>'
+def test_compress_keeps_id_href_and_other_attributes(cleaner):
+    # title is no longer dropped — only known-noise attributes are.
+    html = '<html><body><a id="link" href="/page" title="keep">text</a></body></html>'
     soup = BeautifulSoup(html, 'lxml')
     result = cleaner._compress_html_simple(soup)
     a = result.find('a')
     assert 'id' in a.attrs
     assert 'href' in a.attrs
-    assert 'title' not in a.attrs
+    assert 'title' in a.attrs
 
 
-def test_compress_keeps_data_attributes(cleaner):
+def test_compress_keeps_data_and_role_attributes(cleaner):
+    # role is a valuable selector/accessibility target and must survive cleaning.
     html = '<html><body><span data-price="9.99" role="price">text</span></body></html>'
     soup = BeautifulSoup(html, 'lxml')
     result = cleaner._compress_html_simple(soup)
     span = result.find('span')
     assert 'data-price' in span.attrs
-    assert 'role' not in span.attrs
+    assert 'role' in span.attrs
+
+
+def test_compress_keeps_bare_custom_element_attributes(cleaner):
+    # Regression: web components stash structured data in bare attributes
+    # (e.g. Reddit's <shreddit-comment depth="2" score="42" permalink="/r/...">).
+    # An allowlist used to silently drop these, leaving discovery no clean target.
+    html = (
+        '<html><body>'
+        '<shreddit-comment depth="2" score="42" permalink="/r/x/c1/" author="alice" thingid="t1_abc">'
+        'hi</shreddit-comment>'
+        '</body></html>'
+    )
+    soup = BeautifulSoup(html, 'lxml')
+    result = cleaner._compress_html_simple(soup)
+    node = result.find('shreddit-comment')
+    assert node is not None
+    for attr in ('depth', 'score', 'permalink', 'author', 'thingid'):
+        assert attr in node.attrs, f'{attr} was stripped'
 
 
 def test_compress_deduplicates_list_items(cleaner):
@@ -319,15 +341,24 @@ def test_compress_table_with_6_rows_trimmed_to_5(cleaner):
     assert tr_count == 5
 
 
-def test_compress_removes_hidden_attribute_not_kept(cleaner):
-    """The 'hidden' attribute is not in KEEP_ATTRIBUTES and should be stripped from div."""
-    html = '<html><body><div hidden class="x">Content</div></body></html>'
+def test_compress_hidden_parent_with_hidden_child_does_not_crash(cleaner):
+    """Regression: decomposing a hidden parent must not crash on its (now stale)
+    hidden descendants still present in the static node list."""
+    html = '<html><body><div hidden><span hidden>x</span><p hidden>y</p></div><div class="ok">keep</div></body></html>'
+    soup = BeautifulSoup(html, 'lxml')
+    result = cleaner._compress_html_simple(soup)  # must not raise
+    assert result.find('div', class_='ok') is not None
+
+
+def test_compress_removes_hidden_element(cleaner):
+    """Opt-in removal keeps the 'hidden' attribute, so the hidden-element pass now
+    correctly prunes the element (previously the attr was stripped first, leaking
+    hidden content into the cleaned HTML)."""
+    html = '<html><body><div hidden class="x">Hidden</div><div class="y">Shown</div></body></html>'
     soup = BeautifulSoup(html, 'lxml')
     result = cleaner._compress_html_simple(soup)
-    div = result.find('div')
-    assert div is not None
-    # 'hidden' attr is not in KEEP_ATTRIBUTES, so it gets stripped
-    assert 'hidden' not in div.attrs
+    assert result.find('div', class_='x') is None
+    assert result.find('div', class_='y') is not None
 
 
 def test_compress_removes_aria_hidden_attribute(cleaner):
@@ -367,12 +398,13 @@ def test_compress_keeps_attribute_href(cleaner):
 
 
 def test_compress_keeps_src_attribute(cleaner):
-    html = '<html><body><img src="image.png" loading="lazy"/></body></html>'
+    html = '<html><body><img src="image.png" loading="lazy" onerror="bad()"/></body></html>'
     soup = BeautifulSoup(html, 'lxml')
     result = cleaner._compress_html_simple(soup)
     img = result.find('img')
     assert 'src' in img.attrs
-    assert 'loading' not in img.attrs
+    assert 'loading' in img.attrs  # opt-in removal: only noise (event handlers) is dropped
+    assert 'onerror' not in img.attrs
 
 
 def test_compress_keeps_datetime_attribute(cleaner):
@@ -529,17 +561,17 @@ def test_collapse_whitespace_strips_line_edges(cleaner):
     assert result == 'hello'
 
 
-def test_keep_attributes_set_contains_class_id_href_src(cleaner):
-    """The KEEP_ATTRIBUTES set must contain class, id, href, src at minimum."""
-    html = '<html><body><a class="link" id="myid" href="/page" src="img.png" onclick="bad()" title="remove">text</a></body></html>'
+def test_selector_attributes_survive_cleaning(cleaner):
+    """Selector-worthy attributes survive; only event handlers are dropped."""
+    html = '<html><body><a class="link" id="myid" href="/page" src="img.png" onclick="bad()" title="keep">text</a></body></html>'
     soup = BeautifulSoup(html, 'lxml')
     result = cleaner._compress_html_simple(soup)
     a = result.find('a')
     assert 'class' in a.attrs
     assert 'id' in a.attrs
     assert 'href' in a.attrs
+    assert 'title' in a.attrs  # kept under opt-in removal
     assert 'onclick' not in a.attrs
-    assert 'title' not in a.attrs
 
 
 # ---------------------------------------------------------------------------

@@ -44,9 +44,9 @@ FETCHER_TYPE = os.getenv('YOSOI_REDDIT_FETCHER', 'headless')
 
 
 # Comment/uncomment exactly one provider while iterating.
-MODEL = ys.claude_sdk(os.getenv('CLAUDE_SDK_MODEL', 'claude-sonnet-4-5'))
+# MODEL = ys.claude_sdk(os.getenv('CLAUDE_SDK_MODEL', 'claude-sonnet-4-5'))
 # MODEL = ys.opencode(os.getenv('OPENCODE_MODEL', 'openai/gpt-5-codex-mini'))
-# MODEL = ys.openrouter(os.getenv('OPENROUTER_MODEL', 'openai/gpt-5-mini'))
+MODEL = ys.openrouter(os.getenv('OPENROUTER_MODEL', 'openai/gpt-5-mini'))
 
 
 class RedditPost(ys.Contract):
@@ -127,7 +127,7 @@ async def _scrape_contract(contract: type[ys.Contract]) -> list[ys.ContentMap]:
             item
             async for item in pipeline.scrape(
                 URL,
-                force=True,
+                force=False,
                 skip_verification=False,
                 fetcher_type=FETCHER_TYPE,
                 output_format=['json'],

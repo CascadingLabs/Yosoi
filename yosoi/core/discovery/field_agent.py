@@ -2,7 +2,7 @@
 
 import logging
 
-from pydantic_ai import Agent
+from pydantic_ai import Agent, ModelRetry, RunContext
 from rich.console import Console
 
 from yosoi.core.discovery.config import LLMConfig, create_model
@@ -10,7 +10,8 @@ from yosoi.models.selectors import FieldSelectors, SelectorLevel
 from yosoi.prompts.discovery import (
     DiscoveryInput,
     FieldDiscoveryDeps,
-    build_user_prompt,
+    FieldFeedback,
+    build_field_user_prompt,
     field_single_base_instructions,
     field_single_field_instructions,
     field_single_level_instructions,
@@ -20,6 +21,29 @@ from yosoi.utils import observability as obs
 from yosoi.utils.exceptions import LLMGenerationError
 
 _logger = logging.getLogger(__name__)
+
+
+def _reject_forbidden_selectors(ctx: RunContext[FieldDiscoveryDeps], output: FieldSelectors) -> FieldSelectors:
+    """Output validator: force a retry if the LLM repeats an already-failed selector.
+
+    On a semantic-validation retry, ``deps.forbidden_selectors`` holds the
+    selector(s) that previously extracted the wrong kind of value. Returning one
+    of them again raises :class:`ModelRetry`, so pydantic-ai re-prompts the model
+    within the same run (bounded by ``output_retries``). ``NA`` is always allowed
+    — it is a valid "field not present" answer, not a selector.
+    """
+    forbidden = ctx.deps.forbidden_selectors
+    if not forbidden:
+        return output
+    primary = output.primary.value
+    if primary.upper() == 'NA':
+        return output
+    if primary in forbidden:
+        raise ModelRetry(
+            f'The selector {primary!r} was already tried for `{ctx.deps.field_name}` and '
+            f'extracted the wrong value. Return a different selector that targets only this field.'
+        )
+    return output
 
 
 def _extract_provider_error(exc: Exception) -> str | None:
@@ -83,6 +107,7 @@ class FieldDiscoveryAgent:
         self._agent.system_prompt(field_single_field_instructions)
         self._agent.system_prompt(field_single_level_instructions)
         self._agent.system_prompt(field_single_page_hints)
+        self._agent.output_validator(_reject_forbidden_selectors)
 
     async def discover_field(
         self,
@@ -92,6 +117,7 @@ class FieldDiscoveryAgent:
         discovery_input: DiscoveryInput,
         target_level: SelectorLevel,
         is_container: bool = False,
+        feedback: FieldFeedback | None = None,
     ) -> FieldSelectors | None:
         """Ask the LLM to find selectors for a single field.
 
@@ -102,6 +128,10 @@ class FieldDiscoveryAgent:
             discovery_input: URL and HTML input for the agent
             target_level: Maximum selector strategy level allowed
             is_container: True when discovering the yosoi_container selector
+            feedback: Optional :class:`FieldFeedback` from a semantic-validation
+                retry. Its message is prepended to the prompt and its
+                ``failed_selectors`` are enforced via the output validator so
+                they cannot be returned again.
 
         Returns:
             FieldSelectors with discovered selectors, or None if LLM returned NA.
@@ -117,11 +147,13 @@ class FieldDiscoveryAgent:
             input=discovery_input,
             target_level=target_level,
             is_container=is_container,
+            forbidden_selectors=feedback.failed_selectors if feedback else (),
         )
 
         with obs.span(f'field_agent[{field_name}]', field=field_name, source='agent'):
             try:
-                result = await self._agent.run(build_user_prompt(discovery_input), deps=deps)
+                message = feedback.message if feedback else None
+                result = await self._agent.run(build_field_user_prompt(discovery_input, message), deps=deps)
                 field_selectors: FieldSelectors = result.output
 
                 if field_selectors.primary.value.upper() == 'NA':

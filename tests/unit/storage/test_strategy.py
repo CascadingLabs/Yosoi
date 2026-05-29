@@ -42,6 +42,19 @@ class TestSave:
         assert strategy.fetcher == 'headless'
         assert strategy.selector_level == 'xpath'
 
+    async def test_save_invalid_selector_level_is_dropped(self, storage):
+        await storage.save('example.com', 'headless', selector_level='not_a_level')
+        strategy = await storage.load_strategy('example.com')
+        assert strategy is not None
+        assert strategy.fetcher == 'headless'
+        # Unknown selector level is discarded rather than persisted.
+        assert strategy.selector_level is None
+
+    async def test_save_invalid_selector_level_logs_warning(self, storage, mocker):
+        mock_warn = mocker.patch('yosoi.storage.strategy.logger.warning')
+        await storage.save('example.com', 'headless', selector_level='not_a_level')
+        mock_warn.assert_called_once()
+
     async def test_save_invalid_fetcher_returns_early(self, storage):
         await storage.save('example.com', 'invalid_tier')
         assert await storage.load('example.com') is None

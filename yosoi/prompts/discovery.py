@@ -169,6 +169,22 @@ def page_hints(ctx: RunContext['DiscoveryDeps']) -> str:
 # ---------------------------------------------------------------------------
 
 
+@dataclass(frozen=True)
+class FieldFeedback:
+    """Corrective feedback for a semantic-validation discovery retry.
+
+    Attributes:
+        message: Human-readable explanation of why the previous selector was
+            wrong, prepended to the user prompt.
+        failed_selectors: Selector value strings already tried for this field.
+            Enforced by an output validator so the LLM cannot return them again.
+
+    """
+
+    message: str
+    failed_selectors: tuple[str, ...] = ()
+
+
 @dataclass
 class FieldDiscoveryDeps:
     """Runtime context for single-field selector discovery.
@@ -180,6 +196,8 @@ class FieldDiscoveryDeps:
         input: Typed discovery input containing url and html
         target_level: Maximum selector strategy level allowed
         is_container: True if discovering the yosoi_container selector
+        forbidden_selectors: Selector values that already failed and must not be
+            returned again (enforced via a pydantic-ai output validator).
 
     """
 
@@ -189,6 +207,7 @@ class FieldDiscoveryDeps:
     input: DiscoveryInput
     target_level: SelectorLevel = field(default=SelectorLevel.CSS)
     is_container: bool = False
+    forbidden_selectors: tuple[str, ...] = ()
 
 
 def field_single_base_instructions(ctx: RunContext['FieldDiscoveryDeps']) -> str:
@@ -250,3 +269,22 @@ def field_single_page_hints(ctx: RunContext['FieldDiscoveryDeps']) -> str:
 def build_user_prompt(discovery_input: DiscoveryInput) -> str:
     """Build the user prompt for the deps-based agent (system prompts handle context)."""
     return discovery_input.model_dump_json()
+
+
+def build_field_user_prompt(discovery_input: DiscoveryInput, feedback: str | None = None) -> str:
+    """Build the single-field user prompt, optionally prefixed with retry feedback.
+
+    When ``feedback`` is provided, a "Previous attempt failed because" block is
+    prepended so the LLM can correct a selector that structurally verified but
+    extracted the wrong kind of value (see CAS-78 / ``SemanticValidator``).
+    """
+    base = build_user_prompt(discovery_input)
+    if not feedback:
+        return base
+    return (
+        'Previous attempt failed because:\n'
+        f'{feedback}\n\n'
+        'Find a better selector for the field described above that fixes this. '
+        'Do not repeat the selector that failed.\n\n'
+        f'{base}'
+    )

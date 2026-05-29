@@ -23,6 +23,10 @@ def _make_pipeline_stub(mocker, contract=None):
     """Create a minimal Pipeline instance without calling __init__."""
     stub = Pipeline.__new__(Pipeline)
     stub.contract = contract or SimpleContract
+    from yosoi.core.verification import SemanticValidator, field_rules_for_contract
+
+    stub.semantic_validator = SemanticValidator()
+    stub._field_rules = field_rules_for_contract(stub.contract)
     stub.console = mocker.MagicMock()
     stub.logger = mocker.MagicMock()
     stub.cleaner = mocker.MagicMock()

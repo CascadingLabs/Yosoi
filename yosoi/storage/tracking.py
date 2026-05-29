@@ -288,7 +288,7 @@ class LLMTracker:
 
 
 # Example usage
-async def _example_main() -> None:
+async def _example_main() -> None:  # pragma: no cover
     tracker = LLMTracker()
 
     # Simulate scraping workflow

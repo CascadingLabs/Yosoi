@@ -81,6 +81,25 @@ class TestRealA3NodeStorage:
     async def test_record_replay_noop_for_unknown_domain(self, real_storage):
         await real_storage.record_replay('nonexistent.com')  # should not raise
 
+    async def test_record_replay_oserror_does_not_raise(self, real_storage, mocker):
+        await real_storage.save('example.com', _acts('load_more'))
+        mocker.patch(
+            'yosoi.storage.a3node.atomic_write_json_async',
+            side_effect=OSError('disk full'),
+        )
+        # OSError on write is swallowed and logged.
+        await real_storage.record_replay('example.com')  # should not raise
+
+    async def test_record_replay_oserror_logs_warning(self, real_storage, mocker):
+        await real_storage.save('example.com', _acts('load_more'))
+        mocker.patch(
+            'yosoi.storage.a3node.atomic_write_json_async',
+            side_effect=OSError('disk full'),
+        )
+        mock_warn = mocker.patch('yosoi.storage.a3node.logger.warning')
+        await real_storage.record_replay('example.com')
+        mock_warn.assert_called_once()
+
     async def test_delete_returns_true_and_removes_file(self, real_storage):
         await real_storage.save('example.com', _acts('load_more'))
         assert await real_storage.delete('example.com') is True
@@ -88,6 +107,15 @@ class TestRealA3NodeStorage:
 
     async def test_delete_returns_false_for_nonexistent(self, real_storage):
         assert await real_storage.delete('nonexistent.com') is False
+
+    async def test_delete_oserror_returns_false(self, real_storage, mocker):
+        await real_storage.save('example.com', _acts('load_more'))
+        mocker.patch(
+            'yosoi.storage.a3node.aiofiles.os.remove',
+            side_effect=OSError('permission denied'),
+        )
+        # Failure to remove is swallowed and reported as False.
+        assert await real_storage.delete('example.com') is False
 
     async def test_list_domains_empty(self, real_storage):
         assert await real_storage.list_domains() == []
@@ -110,6 +138,30 @@ class TestRealA3NodeStorage:
         domains = await real_storage.list_domains()
         assert 'good.com' in domains
         assert 'bad.com' not in domains
+
+    async def test_list_domains_returns_empty_when_dir_missing(self, real_storage):
+        real_storage._dir = '/nonexistent/path/that/does/not/exist'
+        assert await real_storage.list_domains() == []
+
+    async def test_list_domains_skips_files_with_missing_domain_key(self, real_storage, tmp_path):
+        await real_storage.save('good.com', _acts('load_more'))
+        # Valid a3node-prefixed JSON but no usable 'domain' value — must be skipped.
+        empty_domain = tmp_path / 'a3nodes' / 'a3node_empty.json'
+        empty_domain.write_text(json.dumps({'domain': '', 'acts': []}))
+        no_domain = tmp_path / 'a3nodes' / 'a3node_none.json'
+        no_domain.write_text(json.dumps({'acts': []}))
+        domains = await real_storage.list_domains()
+        assert domains == ['good.com']
+
+    async def test_load_all_skips_unloadable_nodes(self, real_storage, tmp_path):
+        await real_storage.save('good.com', _acts('load_more'))
+        # A file that list_domains accepts (has a domain) but load() rejects as
+        # corrupt because 'acts' is not iterable into ActRecords.
+        bad = tmp_path / 'a3nodes' / 'a3node_broken_com.json'
+        bad.write_text(json.dumps({'domain': 'broken.com', 'acts': [{'kind': 'x'}]}))
+        result = await real_storage.load_all()
+        assert 'good.com' in result
+        assert 'broken.com' not in result
 
     async def test_load_all_returns_all_nodes(self, real_storage):
         await real_storage.save('a.com', _acts('load_more'))

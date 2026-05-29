@@ -27,12 +27,18 @@ from yosoi.core.discovery.bus import DiscoveryBus
 from yosoi.core.extraction import ContentExtractor
 from yosoi.core.fetcher import HTMLFetcher, create_fetcher
 from yosoi.core.fetcher.waterfall import JSFetcher
-from yosoi.core.verification import SelectorVerifier
+from yosoi.core.verification import (
+    FieldSemanticIssue,
+    SelectorVerifier,
+    SemanticValidator,
+    field_rules_for_contract,
+)
 from yosoi.models import FetchResult
 from yosoi.models.contract import Contract
 from yosoi.models.results import VerificationResult
 from yosoi.models.selectors import SelectorLevel
 from yosoi.models.snapshot import CacheVerdict, SelectorSnapshot, snapshot_to_selector_dict
+from yosoi.prompts.discovery import FieldFeedback
 from yosoi.storage import DebugManager, LLMTracker, SelectorStorage
 from yosoi.storage.tracking import DomainStats
 from yosoi.utils import observability
@@ -194,6 +200,8 @@ class Pipeline:
             write_lock=write_lock,
         )
         self.verifier = SelectorVerifier(console=self.console)
+        self.semantic_validator = SemanticValidator()
+        self._field_rules = field_rules_for_contract(self.contract)
         self.extractor = ContentExtractor(console=self.console, contract=self.contract)
         self.tracker = LLMTracker()
         self.debug_mode = debug_mode
@@ -700,6 +708,18 @@ class Pipeline:
 
         with observability.span('extract', url=url, container=container_selector or 'single'):
             extracted = self._extract(url, result.html, verified, container_selector)
+
+        if extracted:
+            with observability.span('semantic_refine', url=url):
+                extracted, verified = await self._semantic_refine(
+                    url,
+                    cleaned_html,
+                    result.html,
+                    verified,
+                    container_selector,
+                    extracted,
+                    max_discovery_retries,
+                )
 
         selectors_to_save = self._selectors_with_root(verified, root_entry)
 
@@ -1551,6 +1571,104 @@ class Pipeline:
 
         self.console.print(f'[success]Extracted content from {len(extracted)} fields successfully[/success]')
         return extracted
+
+    @staticmethod
+    def _selector_values(entry: dict[str, Any] | None) -> tuple[str, ...]:
+        """Collect the non-empty primary/fallback/tertiary selector strings from an entry.
+
+        These are the selectors already tried (and found semantically wrong) for a
+        field; they are forbidden on the corrective re-discovery so the LLM cannot
+        return one of them again.
+        """
+        if not isinstance(entry, dict):
+            return ()
+        values: list[str] = []
+        for key in ('primary', 'fallback', 'tertiary'):
+            candidate = entry.get(key)
+            if isinstance(candidate, str) and candidate:
+                values.append(candidate)
+            elif isinstance(candidate, dict):
+                value = candidate.get('value')
+                if isinstance(value, str) and value:
+                    values.append(value)
+        return tuple(dict.fromkeys(values))  # dedupe, preserve order
+
+    def _semantic_issues(self, extracted: ContentMap | ContentItems) -> list[FieldSemanticIssue]:
+        """Run the type-aware semantic validator on a representative extracted item.
+
+        For multi-item pages every item shares the same selectors, so the first
+        non-empty item is representative of a systematically wrong selector.
+        """
+        if isinstance(extracted, list):
+            item = next((i for i in extracted if i), None)
+            if item is None:
+                return []
+        else:
+            item = extracted
+        return self.semantic_validator.validate(item, self._field_rules)
+
+    async def _semantic_refine(
+        self,
+        url: str,
+        cleaned_html: str,
+        raw_html: str,
+        verified: SelectorMap,
+        container_selector: str | None,
+        extracted: ContentMap | ContentItems,
+        max_retries: int,
+    ) -> tuple[ContentMap | ContentItems, SelectorMap]:
+        """Re-discover fields whose extracted values fail type-aware semantic checks.
+
+        Structural verification only proves a selector matches *something*; this
+        loop catches values of the wrong shape (e.g. a numeric ``score`` that came
+        back as whole-card text), feeds the failure back to the LLM as a hint, and
+        re-discovers only the offending fields. Bounded by ``max_retries``. Passing
+        fields keep their selectors. See CAS-78.
+
+        Returns:
+            The (possibly improved) extraction result and verified selector map.
+
+        """
+        for attempt in range(max_retries):
+            issues = self._semantic_issues(extracted)
+            if not issues:
+                return extracted, verified
+
+            feedback = {
+                issue.field: FieldFeedback(
+                    message=issue.as_feedback(),
+                    failed_selectors=self._selector_values(verified.get(issue.field)),
+                )
+                for issue in issues
+            }
+            failing = set(feedback)
+            self.console.print(
+                f'[warning]⚠ Semantic check flagged {", ".join(sorted(failing))} — '
+                f're-discovering (attempt {attempt + 1}/{max_retries})[/warning]'
+            )
+
+            fresh = await self.discovery.discover_selectors(
+                cleaned_html, url, stale_fields=failing, feedback=feedback, force=True
+            )
+            if not fresh:
+                break
+
+            reverified = self._verify(url, cleaned_html, fresh, skip_verification=False)
+            improved = {k: v for k, v in (reverified or {}).items() if k != 'root'}
+            if not improved:
+                break
+
+            verified.update(improved)
+            re_extracted = self._extract(url, raw_html, verified, container_selector)
+            if not re_extracted:
+                break
+            extracted = re_extracted
+
+        remaining = self._semantic_issues(extracted)
+        if remaining:
+            fields = ', '.join(sorted({issue.field for issue in remaining}))
+            self.console.print(f'[warning]⚠ Semantic issues remain after {max_retries} retries: {fields}[/warning]')
+        return extracted, verified
 
     async def _extract_with_cached(
         self,

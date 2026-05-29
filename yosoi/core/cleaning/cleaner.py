@@ -5,6 +5,21 @@ import re
 from bs4 import BeautifulSoup, Comment, Tag
 from rich.console import Console
 
+# Attributes stripped during cleaning. This is a deny-list: everything not named
+# here is kept, so we never silently lose a selector-worthy attribute (e.g. the
+# bare depth/score/permalink attributes on Reddit's <shreddit-comment>). Only
+# attributes that are never useful as selectors and bloat the token budget go
+# here: inline styles and JS event handlers (any ``on*`` attribute).
+_DROP_ATTRIBUTES = {'style'}
+
+
+def _keep_attribute(attr: str) -> bool:
+    """Return True unless the attribute is known noise (inline style / event handler)."""
+    lowered = attr.lower()
+    if lowered in _DROP_ATTRIBUTES:
+        return False
+    return not lowered.startswith('on')
+
 
 class HTMLCleaner:
     """Cleans HTML by removing noise and extracting main content.
@@ -136,16 +151,18 @@ class HTMLCleaner:
         for comment in soup.find_all(string=lambda text: isinstance(text, Comment)):
             comment.extract()
 
-        # 2. Remove attributes not used in CSS selectors
-        KEEP_ATTRIBUTES = {'class', 'id', 'href', 'src', 'datetime', 'alt', 'name', 'type'}
-
+        # 2. Strip only known-noise attributes (opt-in removal, not opt-in keeping).
+        #
+        # A keep-allowlist silently discards selector-worthy attributes we never
+        # anticipated — the classic failure mode. Reddit, for example, stashes
+        # depth/score/permalink/author as *bare* attributes on <shreddit-comment>;
+        # an allowlist drops them and discovery can never target them. So we keep
+        # every attribute by default and remove only attributes that are never
+        # useful as selectors and bloat the token budget: inline styles and
+        # JS event handlers.
         for tag in soup.find_all(True):
             if isinstance(tag, Tag) and tag.attrs:
-                tag.attrs = {
-                    attr: value
-                    for attr, value in tag.attrs.items()
-                    if attr in KEEP_ATTRIBUTES or attr.startswith('data-')
-                }
+                tag.attrs = {attr: value for attr, value in tag.attrs.items() if _keep_attribute(attr)}
 
         # 3. Deduplicate list items (keep first 3)
         for lst in soup.find_all(['ul', 'ol']):
@@ -161,14 +178,15 @@ class HTMLCleaner:
                 for row in rows[5:]:
                     row.decompose()
 
-        # 5. Remove hidden elements
+        # 5. Remove hidden elements.
+        # find_all returns a static list, so a tag may already have been removed
+        # as a descendant of an earlier-decomposed parent; skip those (their
+        # attrs are None after decompose) to avoid touching a stale node.
         for tag in soup.find_all(True):
-            if isinstance(tag, Tag):
-                if tag.get('hidden') is not None:
-                    tag.decompose()
-                    continue
-                if tag.get('aria-hidden') == 'true':
-                    tag.decompose()
+            if not isinstance(tag, Tag) or tag.decomposed:
+                continue
+            if tag.get('hidden') is not None or tag.get('aria-hidden') == 'true':
+                tag.decompose()
 
         # 5. Remove non-semantic bloat (svg, canvas, base64, empty deep divs)
         self._prune_non_semantic(soup)

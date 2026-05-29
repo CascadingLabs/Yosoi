@@ -35,6 +35,10 @@ DISCOVERED = {'title': {'primary': 'h1'}}
 def _make_pipeline_stub(mocker):
     stub = Pipeline.__new__(Pipeline)
     stub.contract = _TinyContract
+    from yosoi.core.verification import SemanticValidator, field_rules_for_contract
+
+    stub.semantic_validator = SemanticValidator()
+    stub._field_rules = field_rules_for_contract(stub.contract)
     stub.console = mocker.MagicMock(quiet=True)
     stub.logger = mocker.MagicMock()
     stub.cleaner = mocker.MagicMock()

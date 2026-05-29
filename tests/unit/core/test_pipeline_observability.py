@@ -29,7 +29,7 @@ EXTRACTED = {'title': 'book', 'price': '$10'}
 
 # Expected span set for the fresh-discovery path of the canned input above.
 # Pinned explicitly per plan B3: a vague subset is rejected.
-EXPECTED_CHILD_SPANS = {'fetch', 'clean', 'discover', 'verify', 'extract', 'validate', 'save'}
+EXPECTED_CHILD_SPANS = {'fetch', 'clean', 'discover', 'verify', 'extract', 'semantic_refine', 'validate', 'save'}
 EXPECTED_ROOT_SPAN = 'scrape shop.example.com/x'
 
 
@@ -52,6 +52,10 @@ def pipeline_stub(mocker):
     """Pipeline instance with all heavy collaborators mocked."""
     stub = Pipeline.__new__(Pipeline)
     stub.contract = _SimpleContract
+    from yosoi.core.verification import SemanticValidator, field_rules_for_contract
+
+    stub.semantic_validator = SemanticValidator()
+    stub._field_rules = field_rules_for_contract(stub.contract)
     stub.console = mocker.MagicMock()
     stub.logger = mocker.MagicMock()
     stub.cleaner = mocker.MagicMock()

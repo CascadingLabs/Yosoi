@@ -58,6 +58,45 @@ class TestLessonStorage:
 
         assert await storage.load_active(lesson.key) is None
 
+    async def test_load_active_returns_active_lesson(self, storage):
+        lesson = _lesson()
+        await storage.save(lesson)
+
+        loaded = await storage.load_active(lesson.key)
+
+        assert loaded is not None
+        assert loaded.key == lesson.key
+        assert loaded.is_active is True
+
+    async def test_load_active_missing_returns_none(self, storage):
+        key = LessonKey(domain='missing.com', contract_signature='sig')
+        assert await storage.load_active(key) is None
+
+    async def test_load_corrupt_file_returns_none(self, storage):
+        lesson = _lesson()
+        filepath = storage._filepath(lesson.key)
+        with open(filepath, 'w', encoding='utf-8') as f:
+            f.write('}{ not valid json at all')
+
+        assert await storage.load(lesson.key) is None
+
+    async def test_record_replay_noop_when_absent(self, storage):
+        key = LessonKey(domain='missing.com', contract_signature='sig')
+
+        # Lesson does not exist — should be a no-op that returns None.
+        assert await storage.record_replay(key, verified=True) is None
+        assert await storage.load(key) is None
+
+    async def test_mark_stale_noop_when_absent(self, storage):
+        key = LessonKey(domain='missing.com', contract_signature='sig')
+
+        assert await storage.mark_stale(key, 'gone') is None
+        assert await storage.load(key) is None
+
+    async def test_delete_missing_returns_false(self, storage):
+        key = LessonKey(domain='missing.com', contract_signature='sig')
+        assert await storage.delete(key) is False
+
     async def test_record_replay_verified_updates_counters(self, storage):
         lesson = _lesson()
         await storage.save(lesson)

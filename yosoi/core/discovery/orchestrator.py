@@ -16,7 +16,7 @@ from yosoi.core.discovery.field_task import FieldTaskResult, run_field_task
 from yosoi.models.contract import Contract
 from yosoi.models.selectors import SelectorLevel
 from yosoi.models.snapshot import SelectorSnapshot, SnapshotStatus, selector_dict_to_snapshot
-from yosoi.prompts.discovery import DiscoveryInput
+from yosoi.prompts.discovery import DiscoveryInput, FieldFeedback
 from yosoi.storage.persistence import SelectorStorage
 from yosoi.utils import observability as obs
 from yosoi.utils.signatures import _get_yosoi_type
@@ -107,6 +107,7 @@ class DiscoveryOrchestrator:
         url: str | None = None,
         *,
         stale_fields: set[str] | None = None,
+        feedback: dict[str, FieldFeedback] | None = None,
         force: bool = False,
     ) -> SelectorMap | None:
         """Discover selectors for all contract fields in parallel.
@@ -117,6 +118,9 @@ class DiscoveryOrchestrator:
             stale_fields: When not None, only discover these fields (partial
                 rediscovery). The caller is responsible for merging fresh cached
                 selectors with the newly discovered ones and saving.
+            feedback: Optional per-field message describing why a previous
+                attempt's selector was semantically wrong. Forwarded to the LLM
+                prompt for those fields (semantic-validation retry).
             force: Force re-discovery even if selectors exist. Defaults to False.
 
         Returns:
@@ -169,6 +173,7 @@ class DiscoveryOrchestrator:
                 hints=hints,
                 overrides=overrides,
                 stale_fields=stale_fields,
+                feedback=feedback,
                 force=force,
             )
 
@@ -183,6 +188,7 @@ class DiscoveryOrchestrator:
         hints: dict[str, str | None],
         overrides: dict[str, dict[str, Any]],
         stale_fields: set[str] | None,
+        feedback: dict[str, FieldFeedback] | None = None,
         force: bool = False,
     ) -> SelectorMap | None:
         field_descs = self._contract.field_descriptions()
@@ -217,6 +223,7 @@ class DiscoveryOrchestrator:
                 semaphore=semaphore,
                 scoped_bus=scoped_bus,
                 yosoi_type=_get_yosoi_type(self._contract, str(spec['field_name'])),
+                feedback=(feedback or {}).get(str(spec['field_name'])),
             )
             for spec in task_specs
         ]
