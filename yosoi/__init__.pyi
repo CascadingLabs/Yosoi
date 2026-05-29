@@ -23,6 +23,11 @@ from yosoi.models.snapshot import CacheVerdict as CacheVerdict
 from yosoi.models.snapshot import SelectorSnapshot as SelectorSnapshot
 from yosoi.models.snapshot import SnapshotMap as SnapshotMap
 from yosoi.models.snapshot import SnapshotStatus as SnapshotStatus
+from yosoi.sinks import ContentRecord as ContentRecord
+from yosoi.sinks import ContentSink as ContentSink
+from yosoi.sinks import MongoSink as MongoSink
+from yosoi.sinks import PostgresSink as PostgresSink
+from yosoi.sinks import SqliteSink as SqliteSink
 from yosoi.types.base import YosoiType as YosoiType
 from yosoi.types.field import Field as Field
 from yosoi.types.registry import register_coercion as register_coercion

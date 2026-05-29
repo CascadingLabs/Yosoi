@@ -42,6 +42,7 @@ from yosoi.models.contract import Contract
 from yosoi.models.defaults import JobPosting, NewsArticle, Product, Video
 from yosoi.models.selectors import FieldSelectors, SelectorEntry, SelectorLevel, css, discover, jsonld, regex, xpath
 from yosoi.models.snapshot import CacheVerdict, SelectorSnapshot, SnapshotMap, SnapshotStatus
+from yosoi.sinks import ContentRecord, ContentSink, MongoSink, PostgresSink, SqliteSink
 from yosoi.types import (
     Author,
     BodyText,
@@ -67,6 +68,8 @@ __all__ = [
     'BodyText',
     'CacheVerdict',
     'ClaudeSDKModel',
+    'ContentRecord',
+    'ContentSink',
     'Contract',
     'Datetime',
     'DebugConfig',
@@ -74,9 +77,11 @@ __all__ = [
     'FieldSelectors',
     'JobPosting',
     'LLMConfig',
+    'MongoSink',
     'NewsArticle',
     'OpenCodeModel',
     'Pipeline',
+    'PostgresSink',
     'Price',
     'Rating',
     'SelectorEntry',
@@ -84,6 +89,7 @@ __all__ = [
     'SelectorSnapshot',
     'SnapshotMap',
     'SnapshotStatus',
+    'SqliteSink',
     'TelemetryConfig',
     'Title',
     'Url',
