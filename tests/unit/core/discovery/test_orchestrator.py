@@ -482,7 +482,7 @@ async def test_stale_fields_filters_task_specs(orchestrator, mocker):
 async def test_stale_cache_not_resurrected(orchestrator, mock_storage, mocker):
     """Merged map must use task results only — stale cache entries must not appear."""
     # Pre-populate cache with a stale entry for 'author'
-    mock_storage.save_selectors('https://example.com', {'author': {'primary': '.stale-author'}})
+    await mock_storage.save_selectors('https://example.com', {'author': {'primary': '.stale-author'}})
 
     async def mock_run_field_task(**kwargs):
         from yosoi.core.discovery.field_task import FieldTaskResult
