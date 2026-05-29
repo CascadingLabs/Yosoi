@@ -108,6 +108,12 @@ def _collect_urls(url: str | None, file_path: str | None, limit: int | None) -> 
     help='Maximum selector strategy level (default: css)',
 )
 @click.option(
+    '--discovery-mode',
+    type=click.Choice(['static', 'mcp'], case_sensitive=False),
+    default=os.getenv('YOSOI_DISCOVERY_MODE', 'static'),
+    help='Selector discovery path. static is current default; mcp fails fast until CAS-79 runtime wiring lands.',
+)
+@click.option(
     '--session-id',
     'session_id',
     default=None,
@@ -132,6 +138,7 @@ def main(
     contract: type[Contract] | None,
     workers: int,
     selector_level: str,
+    discovery_mode: str,
     session_id: str | None,
 ) -> None:
     """Discover selectors from web pages using AI.
@@ -172,11 +179,15 @@ def main(
     output_formats = _resolve_output_formats(output)
     resolved_contract = contract if contract else NewsArticle
     resolved_level = _LEVEL_MAP[selector_level.lower()]
+    resolved_discovery_mode = discovery_mode.lower()
 
     console.print(f'[cyan]ℹ Log file:[/cyan] [link=file://{log_file}]{log_file}[/link]')
 
     if selector_level != 'css':
         console.print(f'[cyan]ℹ Selector level:[/cyan] [bold]{selector_level}[/bold]')
+
+    if resolved_discovery_mode != 'static':
+        console.print(f'[cyan]ℹ Discovery mode:[/cyan] [bold]{resolved_discovery_mode}[/bold]')
 
     if summary:
         pipeline = Pipeline(yosoi_config, contract=resolved_contract, output_format=output_formats)
@@ -207,6 +218,7 @@ def main(
         contract=resolved_contract,
         output_format=output_formats,
         selector_level=resolved_level,
+        discovery_mode=resolved_discovery_mode,  # type: ignore[arg-type]
     )
     asyncio.run(
         pipeline.process_urls(

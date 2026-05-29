@@ -18,6 +18,10 @@ class SelectorLevel(IntEnum):
         XPATH: XPath expression (level 2). Used when CSS cannot express the required traversal.
         REGEX: Raw regex against page HTML (level 3). Last resort for unstructured content.
         JSONLD: JSON-LD path (level 4). Extracts from embedded structured data.
+        ATTR: Attribute-addressed selector (level 5). Names the target attribute explicitly.
+        GLOBAL_ID: ID-template selector (level 6). Resolves related nodes by shared ID tokens.
+        ROLE: Accessibility-tree role/name selector (level 7). Stable target for rendered UIs.
+        VISUAL: Coordinate/visual target (level 8). Degraded replay-only fallback.
 
     """
 
@@ -25,9 +29,24 @@ class SelectorLevel(IntEnum):
     XPATH = 2
     REGEX = 3
     JSONLD = 4
+    ATTR = 5
+    GLOBAL_ID = 6
+    ROLE = 7
+    VISUAL = 8
 
 
-_STRATEGY_TO_LEVEL: dict[str, int] = {'css': 1, 'xpath': 2, 'regex': 3, 'jsonld': 4}
+SelectorKind = Literal['css', 'xpath', 'regex', 'jsonld', 'attr', 'global_id', 'role', 'visual']
+
+_STRATEGY_TO_LEVEL: dict[str, int] = {
+    'css': 1,
+    'xpath': 2,
+    'regex': 3,
+    'jsonld': 4,
+    'attr': 5,
+    'global_id': 6,
+    'role': 7,
+    'visual': 8,
+}
 
 
 def _strip_level(schema: dict[str, Any]) -> None:
@@ -53,22 +72,52 @@ class SelectorEntry(BaseModel):
     string. Bare strings default to CSS selectors.
 
     Attributes:
-        type: Selector strategy — ``'css'``, ``'xpath'``, ``'regex'``, or ``'jsonld'``. Defaults to ``'css'``.
+        type: Selector strategy — ``'css'``, ``'xpath'``, ``'regex'``,
+            ``'jsonld'``, ``'attr'``, ``'global_id'``, ``'role'``, or
+            ``'visual'``. Defaults to ``'css'``.
         value: The selector expression, e.g. ``'h1.article-title'`` or ``'//h1'``.
         regex: Optional regex capture pattern. Only used when ``type='regex'``.
+        name: Optional role accessible-name substring or attribute/global-id token.
+        nth: Optional zero-based occurrence index for role/visual targets.
+        x: Optional visual target x-coordinate.
+        y: Optional visual target y-coordinate.
 
     """
 
     model_config = ConfigDict(json_schema_extra=_strip_level)
 
-    type: Literal['css', 'xpath', 'regex', 'jsonld'] = 'css'
-    value: str
+    type: SelectorKind = 'css'
+    value: str = ''
     regex: str | None = None
+    name: str | None = None
+    nth: int | None = None
+    x: float | None = None
+    y: float | None = None
+
+    @model_validator(mode='after')
+    def _validate_payload(self) -> 'SelectorEntry':
+        """Require enough payload to evaluate each selector kind."""
+        if self.type == 'visual':
+            if self.x is None or self.y is None:
+                raise ValueError('visual selectors require x and y')
+            return self
+
+        if not self.value:
+            raise ValueError(f'{self.type} selectors require value')
+
+        if self.type in {'attr', 'global_id', 'role'} and not self.name:
+            raise ValueError(f'{self.type} selectors require name')
+
+        return self
 
     @property
     def level(self) -> SelectorLevel:
         """Selector strategy level derived from type."""
         return SelectorLevel(_STRATEGY_TO_LEVEL[self.type])
+
+    def key(self) -> tuple[object, ...]:
+        """Return a stable identity tuple for deduping action/extraction targets."""
+        return (self.type, self.value, self.name, self.nth, self.x, self.y, self.regex)
 
 
 def css(value: str) -> SelectorEntry:
@@ -89,6 +138,26 @@ def regex(value: str) -> SelectorEntry:
 def jsonld(value: str) -> SelectorEntry:
     """Create a JSON-LD SelectorEntry."""
     return SelectorEntry(type='jsonld', value=value)
+
+
+def attr(value: str, name: str) -> SelectorEntry:
+    """Create an attribute-addressed SelectorEntry."""
+    return SelectorEntry(type='attr', value=value, name=name)
+
+
+def global_id(value: str, name: str) -> SelectorEntry:
+    """Create an ID-template SelectorEntry."""
+    return SelectorEntry(type='global_id', value=value, name=name)
+
+
+def role(value: str, name: str, nth: int = 0) -> SelectorEntry:
+    """Create an accessibility-tree role/name SelectorEntry."""
+    return SelectorEntry(type='role', value=value, name=name, nth=nth)
+
+
+def visual(x: float, y: float, value: str = '') -> SelectorEntry:
+    """Create a degraded visual target SelectorEntry."""
+    return SelectorEntry(type='visual', value=value, x=x, y=y)
 
 
 _DISCOVER_SENTINEL = 'yosoi:discover'
@@ -165,13 +234,13 @@ class FieldSelectors(BaseModel):
     @model_validator(mode='after')
     def _deduplicate(self) -> 'FieldSelectors':
         """Remove fallback/tertiary if their value duplicates any earlier level."""
-        if self.fallback and self.fallback.value == self.primary.value:
+        if self.fallback and self.fallback.key() == self.primary.key():
             self.fallback = None
         if self.tertiary:
-            seen = {self.primary.value}
+            seen = {self.primary.key()}
             if self.fallback:
-                seen.add(self.fallback.value)
-            if self.tertiary.value in seen:
+                seen.add(self.fallback.key())
+            if self.tertiary.key() in seen:
                 self.tertiary = None
         return self
 

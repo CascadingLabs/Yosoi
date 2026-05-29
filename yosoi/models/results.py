@@ -5,6 +5,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from yosoi.models.selectors import SelectorKind
+
 
 @dataclass
 class ContentMetadata:
@@ -121,9 +123,7 @@ class FieldVerificationResult(BaseModel):
     status: Literal['verified', 'failed'] = Field(description='Verification status')
     working_level: str | None = Field(default=None, description='Which level worked')
     selector: str | None = Field(default=None, description='Selector that worked')
-    selector_level: Literal['css', 'xpath', 'regex', 'jsonld'] | None = Field(
-        default=None, description='Strategy level that worked (css/xpath/regex/jsonld)'
-    )
+    selector_level: SelectorKind | None = Field(default=None, description='Strategy level that worked')
     failed_selectors: list[SelectorFailure] = Field(default_factory=list, description='Failed selectors with reasons')
 
 

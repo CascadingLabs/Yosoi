@@ -1,5 +1,7 @@
 """Unit tests for Pipeline methods."""
 
+import pytest
+
 import yosoi as ys
 from yosoi.core.pipeline import Pipeline
 from yosoi.models.contract import Contract
@@ -126,6 +128,17 @@ def test_pipeline_accepts_model_string(mocker):
 
     p = Pipeline(llm_config='groq:llama-3.3-70b-versatile', contract=SimpleContract)
     assert p.discovery is not None
+
+
+def test_pipeline_mcp_mode_fails_fast_until_runtime_lands(mocker):
+    """The config flag exists, but runtime must not silently fall back to static discovery."""
+    mocker.patch('yosoi.storage.persistence.init_yosoi')
+    mocker.patch('yosoi.storage.tracking.get_tracking_path', return_value='/tmp/tracking.json')
+    mocker.patch('yosoi.utils.files.is_initialized', return_value=True)
+    mocker.patch('yosoi.utils.logging.setup_local_logging', return_value='/tmp/test.log')
+
+    with pytest.raises(NotImplementedError, match='MCP discovery mode is configured'):
+        Pipeline(llm_config='groq:llama-3.3-70b-versatile', contract=SimpleContract, discovery_mode='mcp')
 
 
 # ---------------------------------------------------------------------------
@@ -1586,8 +1599,6 @@ class TestBuildConcurrentTable:
 # ---------------------------------------------------------------------------
 # process_urls — auto-live branching
 # ---------------------------------------------------------------------------
-
-import pytest
 
 
 class TestProcessUrlsAutoLive:

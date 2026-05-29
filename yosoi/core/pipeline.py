@@ -100,6 +100,7 @@ class Pipeline:
         force: bool = False,
         quiet: bool = False,
         selector_level: SelectorLevel = SelectorLevel.CSS,
+        discovery_mode: Literal['static', 'mcp'] | None = None,
         bus: DiscoveryBus | None = None,
         write_lock: asyncio.Lock | None = None,
     ):
@@ -119,11 +120,15 @@ class Pipeline:
                    progress display replaces per-task output. Defaults to False.
             selector_level: Maximum selector strategy level for discovery and extraction.
                             Defaults to CSS.
+            discovery_mode: Selector discovery path. ``'static'`` uses the
+                            existing cleaned-HTML fan-out. ``'mcp'`` is reserved
+                            for the MCP lesson path and currently fails fast.
             bus: Optional shared discovery bus for cross-pipeline field deduplication.
             write_lock: Optional asyncio.Lock to serialize selector writes for the domain.
 
         """
         self.selector_level = selector_level
+        resolved_discovery_mode = discovery_mode or os.getenv('YOSOI_DISCOVERY_MODE') or 'static'
 
         # Auto-resolve model strings → LLMConfig
         if isinstance(llm_config, str):
@@ -143,10 +148,9 @@ class Pipeline:
             debug_mode = yosoi_cfg.debug.save_html
             force = yosoi_cfg.force
             max_concurrent_discovery = yosoi_cfg.discovery.max_concurrent
+            resolved_discovery_mode = discovery_mode or os.getenv('YOSOI_DISCOVERY_MODE') or yosoi_cfg.discovery.mode
             observability.configure(yosoi_cfg.telemetry)
         else:
-            import os
-
             from yosoi.core.configs import TelemetryConfig
 
             observability.configure(
@@ -168,6 +172,14 @@ class Pipeline:
         )
         self.contract = contract
         self._contract_sig = contract_signature(contract)
+        if resolved_discovery_mode not in {'static', 'mcp'}:
+            raise ValueError("discovery_mode must be 'static' or 'mcp'")
+        self.discovery_mode: Literal['static', 'mcp'] = resolved_discovery_mode  # type: ignore[assignment]
+        if self.discovery_mode == 'mcp':
+            raise NotImplementedError(
+                'MCP discovery mode is configured but not wired yet. '
+                "Use discovery_mode='static' while the CAS-79 MCP lesson path is being implemented."
+            )
         self.console = Console(theme=self.custom_theme, quiet=quiet)
         self.cleaner = HTMLCleaner(console=self.console)
         self.storage = SelectorStorage()

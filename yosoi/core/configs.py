@@ -3,6 +3,7 @@
 import logging
 import os
 from pathlib import Path
+from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -74,6 +75,11 @@ class DiscoveryConfig(BaseModel):
     """
 
     max_concurrent: int = Field(default=5, ge=1, le=50)
+    mode: Literal['static', 'mcp'] = 'static'
+    mcp_unavailable: Literal['fail'] = 'fail'
+    lesson_cache: bool = True
+    replay_verify_threshold: float = Field(default=1.0, ge=0.0, le=1.0)
+    static_mode_warning: bool = True
 
 
 class YosoiConfig(BaseModel):
