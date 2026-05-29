@@ -184,13 +184,14 @@ def test_create_fetcher_invalid_type_returns_none(mocker):
     assert result is None
 
 
-def test_create_waterfall_fetcher_passes_console_only(mocker):
+def test_create_waterfall_fetcher_passes_console_and_a3node(mocker):
     stub = _make_pipeline_stub(mocker)
+    stub._experimental_a3node = False
     create_fetcher = mocker.patch('yosoi.core.pipeline.create_fetcher', return_value=mocker.MagicMock())
 
     Pipeline._create_fetcher(stub, 'waterfall', console=stub.console)
 
-    create_fetcher.assert_called_once_with('waterfall', console=stub.console)
+    create_fetcher.assert_called_once_with('waterfall', console=stub.console, experimental_a3node=False)
 
 
 async def test_record_fetch_strategy_selector_level_uses_highest_verified_level(mocker):

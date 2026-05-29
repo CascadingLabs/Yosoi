@@ -168,12 +168,14 @@ class _VoidCrawlFetcher(HTMLFetcher):
         )
 
     async def _fetch_with_replay(self, tab: Any, domain: str, node: A3Node) -> str | None:
-        # FUTURE (A3Node WIP — next cycle): this does not actually replay `node.acts`; the
-        # non-empty branch just re-runs the full DOMLoader probe. Consequences until real
-        # replay lands: (1) no speed gain from a stored recipe, (2) record_replay() is only
-        # called on the empty-recipe path, so replay_count/battle_tested never advance for
-        # real recipes and the "replayed N times" log below is misleading. Trim it or wire
-        # up replay once VoidCrawl exposes reliable AX-tree trigger detection.
+        """Replay a stored A3Node recipe, falling back to a full probe on failure.
+
+        Empty recipe → the page needed no actions, so just capture the current
+        HTML. Non-empty recipe → re-execute the stored acts directly via
+        ``DOMLoader.replay`` (no behavior-tree search, no LLM). Either way, a
+        successful replay records the replay so ``replay_count``/``battle_tested``
+        advance; an insufficient result re-probes and re-saves the fresh recipe.
+        """
         if self._a3node_storage is None:
             return await self._fetch_with_probe(tab, domain)
 
@@ -190,15 +192,12 @@ class _VoidCrawlFetcher(HTMLFetcher):
             self._console.print(
                 f'[dim]  ↻ A3Node replay: {domain} ({len(node.acts)} acts, replayed {node.replay_count}×)[/dim]'
             )
-            probe_result = await DOMLoader(console=self._console).run(tab)
-            if probe_result.success:
-                await self._a3node_storage.save(domain, probe_result.acts)
-                _updated = await self._a3node_storage.load(domain)
-                if _updated is not None:
-                    self._a3node_cache[domain] = _updated
-            return probe_result.html
+            result = await DOMLoader(console=self._console).replay(tab, node.acts)
+            if result.success and result.html and len(result.html) >= self.min_content_length:
+                await self._a3node_storage.record_replay(domain)
+                return result.html
 
-        self._console.print(f'[warning]  ✗ A3Node replay failed for {domain} — re-probing[/warning]')
+        self._console.print(f'[warning]  ✗ A3Node replay fell short for {domain} — re-probing[/warning]')
         return await self._fetch_with_probe(tab, domain)
 
     async def _fetch_with_probe(self, tab: object, domain: str) -> str | None:

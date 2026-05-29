@@ -122,6 +122,7 @@ async def _scrape_contract(contract: type[ys.Contract]) -> list[ys.ContentMap]:
         output_format=['json'],
         selector_level=ys.SelectorLevel.CSS,
         discovery_mode='static',
+        experimental_a3node=True,
     ) as pipeline:
         return [
             item

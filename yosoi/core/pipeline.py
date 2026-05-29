@@ -109,6 +109,7 @@ class Pipeline:
         discovery_mode: Literal['static', 'mcp'] | None = None,
         bus: DiscoveryBus | None = None,
         write_lock: asyncio.Lock | None = None,
+        experimental_a3node: bool = False,
     ):
         """Initialize the pipeline with LLM configuration.
 
@@ -131,9 +132,14 @@ class Pipeline:
                             for the MCP lesson path and currently fails fast.
             bus: Optional shared discovery bus for cross-pipeline field deduplication.
             write_lock: Optional asyncio.Lock to serialize selector writes for the domain.
+            experimental_a3node: Opt into A3Node DOM-stability recipe persistence and
+                replay on browser fetchers (headless/headful/waterfall). When enabled,
+                the first visit records the action recipe and later visits replay it
+                directly, skipping the probe. Defaults to False.
 
         """
         self.selector_level = selector_level
+        self._experimental_a3node = experimental_a3node
         resolved_discovery_mode = discovery_mode or os.getenv('YOSOI_DISCOVERY_MODE') or 'static'
 
         # Auto-resolve model strings → LLMConfig
@@ -1202,7 +1208,13 @@ class Pipeline:
 
         """
         try:
-            kwargs: dict[str, Any] = {'console': console} if fetcher_type == 'waterfall' and console is not None else {}
+            kwargs: dict[str, Any] = {}
+            # Browser fetchers accept a shared console and the A3Node opt-in;
+            # the simple fetcher takes neither.
+            if fetcher_type in ('waterfall', 'headless', 'headful'):
+                if console is not None:
+                    kwargs['console'] = console
+                kwargs['experimental_a3node'] = self._experimental_a3node
             return create_fetcher(fetcher_type, **kwargs)
         except ValueError:
             self.console.print(f'[danger]Invalid fetcher type: {fetcher_type}[/danger]')
