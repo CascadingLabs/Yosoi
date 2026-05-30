@@ -10,16 +10,21 @@ from typing import Any, Final
 # ---------------------------------------------------------------------------
 
 PRE_PROBE_JS: Final = """
-(() => ({
-  script_srcs:  [...document.querySelectorAll('script[src]')].map(e => e.src),
-  iframe_srcs:  [...document.querySelectorAll('iframe[src]')].map(e => e.src),
-  window_keys:  Object.keys(window).filter(k =>
-    /chat|bot|widget|agent|alita|intercom|drift|zendesk|tidio|freshchat|hubspot|ada|tawk|crisp|livechat|liveagent|olark|brevo|chaport|helpcrunch|userlike|gorgias|support|help|message|notify/i.test(k)
-  ),
-  cookie_names: document.cookie.split(';').map(c => c.trim().split('=')[0]).filter(Boolean),
-  meta_names:   [...document.querySelectorAll('meta[name],meta[property]')]
-                  .map(e => e.name || e.getAttribute('property')),
-}))()
+(() => {
+  // Non-standard window globals: strip built-in browser APIs so the LLM sees
+  // only third-party injections.  No vendor allowlist — the LLM already knows
+  // what Intercom, $zopim, __alita__, tawk_API, drift, etc. are.
+  const _builtinRe = /^(on[a-z]|webkit|moz|ms[A-Z]|_|document|window|location|navigator|history|screen|performance|crypto|indexedDB|sessionStorage|localStorage|caches|console|fetch|alert|atob|btoa|blur|close|confirm|focus|open|print|prompt|scroll|stop|clearTimeout|clearInterval|setTimeout|setInterval|requestAnimationFrame|cancelAnimationFrame|queueMicrotask|structuredClone|postMessage|getComputedStyle|getSelection|matchMedia|createImageBitmap|addEventListener|removeEventListener|dispatchEvent)$/;
+  const window_keys = Object.keys(window).filter(k => !_builtinRe.test(k));
+  return {
+    script_srcs:  [...document.querySelectorAll('script[src]')].map(e => e.src),
+    iframe_srcs:  [...document.querySelectorAll('iframe[src]')].map(e => e.src),
+    window_keys,
+    cookie_names: document.cookie.split(';').map(c => c.trim().split('=')[0]).filter(Boolean),
+    meta_names:   [...document.querySelectorAll('meta[name],meta[property]')]
+                    .map(e => e.name || e.getAttribute('property')),
+  };
+})()
 """.strip()
 
 # ---------------------------------------------------------------------------
@@ -44,29 +49,33 @@ Rules:
 _PATTERNS: Final = """\
 ## Canonical extraction patterns (few-shot examples)
 
+These examples teach the *shape* of each technique, not which vendors to look
+for. Read the field name + live DOM context, then pick the matching shape and
+fill it with the actual values you see in the context — do not copy the
+placeholder names or hosts below.
+
 ### 1 — Script src detection
-Field: "is alita-embed.js loaded"
-Context: script_srcs contains "https://cdn.alitahealth.ai/alita-embed.js"
-JS: (() => [...document.querySelectorAll('script[src]')].some(e => e.src.includes('alita-embed')))()
+Field: "is <some library> loaded"
+Context: script_srcs contains a URL ending in "<name>.js"
+JS: (() => [...document.querySelectorAll('script[src]')].some(e => e.src.includes('<name>')))()
 
 ### 2 — Window global detection
-Field: "is Intercom widget initialized"
-Context: window_keys contains ["Intercom", "intercomSettings"]
-JS: (() => ('Intercom' in window && typeof window.Intercom === 'function'))()
+Field: "is <some widget> initialized"
+Context: window_keys contains "<GlobalName>"
+JS: (() => ('<GlobalName>' in window && typeof window['<GlobalName>'] === 'function'))()
 
-### 3 — iframe attribute extraction
-Field: "alita org ID from iframe"
-Context: iframe_srcs contains "https://hub.alitahealth.ai/agent/?uuid=abc&org=xyz"
-JS: (() => { const f = document.querySelector('iframe[src*="hub.alitahealth.ai"]'); return f ? new URL(f.src).searchParams.get('org') : null; })()
+### 3 — iframe attribute / URL-param extraction
+Field: "<param> from embedded iframe"
+Context: iframe_srcs contains a URL like "https://host.example.com/embed?<param>=xyz"
+JS: (() => { const f = document.querySelector('iframe[src*="host.example.com"]'); return f ? new URL(f.src).searchParams.get('<param>') : null; })()
 
 ### 4 — DOM presence and visibility
-Field: "is chat widget visible"
-Context: window_keys contains ["$zopim", "zE"]
-JS: (() => { const el = document.querySelector('#chat-widget,[data-widget="chat"],.zopim'); return !!el && el.offsetParent !== null; })()
+Field: "is <some element> visible"
+Context: a candidate selector for it (derive the selector from the live DOM)
+JS: (() => { const el = document.querySelector('<selector>'); return !!el && el.offsetParent !== null; })()
 
 ### 5 — Performance resource list
 Field: "third-party script URLs loaded at runtime"
-Context: window_keys contains ["ga", "gtag"]
 JS: (() => performance.getEntriesByType('resource').filter(e => e.initiatorType === 'script').map(e => e.name))()
 
 ### 6 — Structured data extraction
@@ -74,10 +83,10 @@ Field: "structured data type from JSON-LD"
 Context: page has <script type="application/ld+json">
 JS: (() => { try { const s = document.querySelector('script[type="application/ld+json"]'); return s ? JSON.parse(s.textContent)['@type'] : null; } catch(e) { return null; } })()
 
-### 7 — Competitor detection returning names
-Field: "competitor chat widgets present"
-Context: script_srcs contains "https://widget.intercom.io/widget/abc"
-JS: (() => { const srcs = [...document.querySelectorAll('script[src],iframe[src]')].map(e=>e.src||e.getAttribute('src')||''); const found=[]; if(srcs.some(s=>s.includes('intercom'))) found.push('Intercom'); if(srcs.some(s=>s.includes('drift.com'))) found.push('Drift'); if(srcs.some(s=>s.includes('zendesk'))) found.push('Zendesk'); return found; })()
+### 7 — Enumerate matches by host, returning names
+Field: "which third-party <category> are present"
+Context: script_srcs / iframe_srcs contain several third-party URLs
+JS: (() => { const srcs = [...document.querySelectorAll('script[src],iframe[src]')].map(e=>e.src||e.getAttribute('src')||''); const host = u => { try { return new URL(u).hostname.replace(/^www\\.|\\.(com|net|io|ai|co)$/g,''); } catch(e) { return ''; } }; return [...new Set(srcs.map(host).filter(Boolean))]; })()
 """
 
 _ITERATION_NOTE: Final = """\

@@ -11,6 +11,7 @@ from rich.console import Console
 from tenacity import AsyncRetrying, RetryError, retry_if_exception_type, stop_after_attempt, wait_none
 
 from yosoi.core.discovery.config import LLMConfig, create_model
+from yosoi.core.replay.runtime import _eval as _tab_eval
 from yosoi.prompts.js_discovery import (
     PRE_PROBE_JS,
     SYSTEM_PROMPT,
@@ -152,7 +153,7 @@ class JsDiscoveryOrchestrator:
     async def _pre_probe(self, tab: Any) -> dict[str, Any] | None:
         """Run the pre-probe eval to collect live DOM context."""
         try:
-            result = await tab.eval_js(PRE_PROBE_JS)
+            result = await _tab_eval(tab, PRE_PROBE_JS)
             if isinstance(result, dict):
                 return result
             logger.warning('JS discovery pre-probe returned non-dict: %r', result)
@@ -250,7 +251,7 @@ class JsDiscoveryOrchestrator:
 
         """
         try:
-            output = await tab.eval_js(script)
+            output = await _tab_eval(tab, script)
             if output is None:
                 return False, 'null'
             return True, _repr(output)
