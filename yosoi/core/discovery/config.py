@@ -244,34 +244,33 @@ def create_bedrock_model(config: LLMConfig) -> BedrockConverseModel:
 
 
 def create_vertexai_model(config: LLMConfig) -> GoogleModel:
-    """Create a Google Vertex AI model from configuration.
+    """Create a Google Vertex AI (Google Cloud) model from configuration.
 
     Uses application default credentials (``GOOGLE_APPLICATION_CREDENTIALS``)
     or supply ``service_account_file``, ``project_id``, ``region`` via
     ``extra_params``.
-
-    .. deprecated::
-        ``GoogleVertexProvider`` is deprecated by pydantic-ai. This provider
-        continues to work but may be removed in a future release. Watch
-        https://ai.pydantic.dev/models/google/ for the replacement API.
     """
     try:
-        from pydantic_ai.providers.google_vertex import GoogleVertexProvider
+        from pydantic_ai.providers.google_cloud import GoogleCloudProvider
     except ImportError as exc:
         raise _provider_extra_error('vertexai', 'vertexai', exc) from exc
-    warnings.warn(
-        "The 'vertexai'/'google-vertex' provider uses GoogleVertexProvider which is deprecated "
-        'by pydantic-ai. It still works, but watch https://ai.pydantic.dev/models/google/ '
-        'for the official replacement.',
-        DeprecationWarning,
-        stacklevel=3,
-    )
-    kwargs: dict[str, Any] = {}
-    for field in ('service_account_file', 'project_id', 'region'):
-        if config.extra_params and field in config.extra_params:
-            kwargs[field] = config.extra_params[field]
-    prov = GoogleVertexProvider(**kwargs)
-    return GoogleModel(config.model_name, provider=prov)  # type: ignore[arg-type]
+    # GoogleCloudProvider replaced the deprecated GoogleVertexProvider and renamed
+    # its params: project_id -> project, region -> location. It also takes a
+    # Credentials object rather than a service-account file path, so load the file
+    # here. Preserve GoogleVertexProvider's historical 'us-central1' region default.
+    extra = config.extra_params or {}
+    kwargs: dict[str, Any] = {'location': extra.get('region', 'us-central1')}
+    if 'project_id' in extra:
+        kwargs['project'] = extra['project_id']
+    if 'service_account_file' in extra:
+        from google.oauth2 import service_account
+
+        # google-auth ships no type stubs, so this call is untyped under strict mypy.
+        kwargs['credentials'] = service_account.Credentials.from_service_account_file(  # type: ignore[no-untyped-call]
+            extra['service_account_file']
+        )
+    prov = GoogleCloudProvider(**kwargs)
+    return GoogleModel(config.model_name, provider=prov)
 
 
 # --- OpenAI-compatible providers ---

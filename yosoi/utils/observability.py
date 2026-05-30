@@ -10,7 +10,7 @@ Usage::
     from yosoi.utils import observability as obs
 
     obs.configure(yosoi_cfg.telemetry)            # idempotent, no-op without keys
-    settings = obs.instrumentation_settings()     # pass to Agent(instrument=...)
+    caps = obs.agent_capabilities()               # pass to Agent(capabilities=...)
 
     with obs.span('process_urls', total=10):
         ...
@@ -34,8 +34,11 @@ from urllib.parse import urlparse
 from langfuse import Langfuse
 from opentelemetry import context as otel_context
 from opentelemetry import trace
+from pydantic_ai.capabilities import Instrumentation
 
 if TYPE_CHECKING:
+    from pydantic_ai.capabilities import AgentCapability
+
     from yosoi.core.configs import TelemetryConfig
 
 _logger = logging.getLogger(__name__)
@@ -129,14 +132,18 @@ def client() -> LangfuseClient | None:
     return LangfuseClient._instance
 
 
-def instrumentation_settings() -> bool:
-    """Return True when Langfuse is active so Agents emit spans, else False.
+def agent_capabilities() -> list[AgentCapability[Any]]:
+    """Return the pydantic-ai capabilities that wire Agents into telemetry.
 
-    Once :func:`configure` runs successfully, ``Agent.instrument_all()`` has
-    already wired pydantic-ai to the global TracerProvider that Langfuse
-    installed, so passing ``instrument=True`` is sufficient.
+    Yields ``[Instrumentation()]`` when Langfuse is active so Agents emit spans,
+    else ``[]``. Once :func:`configure` runs successfully, it has already wired
+    pydantic-ai to the global TracerProvider that Langfuse installed, so the
+    default :class:`Instrumentation` capability picks it up. Pass the result to
+    ``Agent(capabilities=...)``.
     """
-    return client() is not None
+    if client() is None:
+        return []
+    return [Instrumentation()]
 
 
 @contextmanager

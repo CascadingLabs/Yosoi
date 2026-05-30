@@ -100,8 +100,8 @@ class FieldDiscoveryAgent:
             model,
             deps_type=FieldDiscoveryDeps,
             output_type=FieldSelectors,
-            output_retries=3,
-            instrument=obs.instrumentation_settings(),
+            retries={'output': 3},
+            capabilities=obs.agent_capabilities(),
         )
         self._agent.system_prompt(field_single_base_instructions)
         self._agent.system_prompt(field_single_field_instructions)

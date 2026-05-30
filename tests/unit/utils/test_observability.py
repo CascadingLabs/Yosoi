@@ -18,7 +18,7 @@ def reset_singleton():
 def test_configure_noop_without_keys():
     obs.configure(TelemetryConfig())
     assert obs.client() is None
-    assert obs.instrumentation_settings() is False
+    assert obs.agent_capabilities() == []
 
 
 def test_configure_noop_with_only_public_key():
@@ -63,7 +63,9 @@ def test_configure_is_idempotent():
     assert obs.client() is first
 
 
-def test_instrumentation_settings_true_when_configured():
+def test_agent_capabilities_instrumented_when_configured():
+    from pydantic_ai.capabilities import Instrumentation
+
     obs.configure(
         TelemetryConfig(
             langfuse_public_key='pk-test',
@@ -71,7 +73,9 @@ def test_instrumentation_settings_true_when_configured():
             langfuse_host='http://localhost:3000',
         )
     )
-    assert obs.instrumentation_settings() is True
+    caps = obs.agent_capabilities()
+    assert len(caps) == 1
+    assert isinstance(caps[0], Instrumentation)
 
 
 # ────────────────────────────────────────────────────────────────────

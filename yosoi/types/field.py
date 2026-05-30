@@ -77,7 +77,12 @@ def Field(
     Returns:
         A pydantic FieldInfo with Yosoi-specific metadata in json_schema_extra.
 
+    Raises:
+        TypeError: If the removed ``hint`` argument is passed. Use ``description``.
+
     """
+    if 'hint' in kwargs:
+        raise TypeError('ys.Field(hint=...) was removed; pass per-field LLM guidance via description= instead')
     extra: dict[str, Any] = dict(kwargs.pop('json_schema_extra', {}) or {})
     if frozen:
         extra['yosoi_frozen'] = True

@@ -89,7 +89,7 @@ class JsDiscoveryOrchestrator:
             deps_type=JsDiscoveryDeps,
             output_type=str,
             system_prompt=SYSTEM_PROMPT,
-            instrument=obs.instrumentation_settings(),
+            capabilities=obs.agent_capabilities(),
         )
 
     async def discover(

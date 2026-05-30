@@ -3,6 +3,7 @@
 import pytest
 
 import yosoi as ys
+from yosoi.core.discovery import MCPDiscoveryOrchestrator
 from yosoi.core.pipeline import Pipeline
 from yosoi.models.contract import Contract
 from yosoi.models.results import FetchResult, FieldVerificationResult, VerificationResult
@@ -153,15 +154,20 @@ def test_pipeline_accepts_model_string(mocker):
     assert p.discovery is not None
 
 
-def test_pipeline_mcp_mode_fails_fast_until_runtime_lands(mocker):
-    """The config flag exists, but runtime must not silently fall back to static discovery."""
+def test_pipeline_mcp_mode_wires_mcp_orchestrator(mocker):
+    """MCP mode wires the live-browser orchestrator instead of the static fan-out."""
     mocker.patch('yosoi.storage.persistence.init_yosoi')
     mocker.patch('yosoi.storage.tracking.get_tracking_path', return_value='/tmp/tracking.json')
     mocker.patch('yosoi.utils.files.is_initialized', return_value=True)
     mocker.patch('yosoi.utils.logging.setup_local_logging', return_value='/tmp/test.log')
+    # Avoid spawning a real MCP agent (model + voidcrawl server) at construction.
+    mock_agent = mocker.patch('yosoi.core.discovery.mcp_orchestrator.MCPDiscoveryAgent')
 
-    with pytest.raises(NotImplementedError, match='MCP discovery mode is configured'):
-        Pipeline(llm_config='groq:llama-3.3-70b-versatile', contract=SimpleContract, discovery_mode='mcp')
+    p = Pipeline(llm_config='groq:llama-3.3-70b-versatile', contract=SimpleContract, discovery_mode='mcp')
+
+    assert isinstance(p.discovery, MCPDiscoveryOrchestrator)
+    assert p.discovery_mode == 'mcp'
+    mock_agent.assert_called_once()
 
 
 # ---------------------------------------------------------------------------

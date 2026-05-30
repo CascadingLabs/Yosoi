@@ -22,7 +22,7 @@ from tenacity import RetryCallState, RetryError
 
 from yosoi.core.cleaning import HTMLCleaner
 from yosoi.core.configs import YosoiConfig
-from yosoi.core.discovery import DiscoveryOrchestrator, LLMConfig
+from yosoi.core.discovery import DiscoveryOrchestrator, LLMConfig, MCPDiscoveryOrchestrator
 from yosoi.core.discovery.bus import DiscoveryBus
 from yosoi.core.extraction import ContentExtractor
 from yosoi.core.fetcher import HTMLFetcher, create_fetcher
@@ -154,6 +154,8 @@ class Pipeline:
 
         # Default discovery fan-out — overridden below when YosoiConfig is passed.
         max_concurrent_discovery: int = 5
+        # Minimum lesson validation pass-ratio for MCP discovery (overridden by config).
+        replay_verify_threshold: float = 1.0
 
         if isinstance(llm_config, YosoiConfig):
             yosoi_cfg = llm_config
@@ -161,6 +163,7 @@ class Pipeline:
             debug_mode = yosoi_cfg.debug.save_html
             force = yosoi_cfg.force
             max_concurrent_discovery = yosoi_cfg.discovery.max_concurrent
+            replay_verify_threshold = yosoi_cfg.discovery.replay_verify_threshold
             resolved_discovery_mode = discovery_mode or os.getenv('YOSOI_DISCOVERY_MODE') or yosoi_cfg.discovery.mode
             observability.configure(yosoi_cfg.telemetry)
         else:
@@ -188,25 +191,32 @@ class Pipeline:
         if resolved_discovery_mode not in {'static', 'mcp'}:
             raise ValueError("discovery_mode must be 'static' or 'mcp'")
         self.discovery_mode: Literal['static', 'mcp'] = resolved_discovery_mode  # type: ignore[assignment]
-        if self.discovery_mode == 'mcp':
-            raise NotImplementedError(
-                'MCP discovery mode is configured but not wired yet. '
-                "Use discovery_mode='static' while the CAS-79 MCP lesson path is being implemented."
-            )
         self.console = Console(theme=self.custom_theme, quiet=quiet)
         self.cleaner = HTMLCleaner(console=self.console)
         self.storage = SelectorStorage()
         self.js_storage = JsScriptStorage()
-        self.discovery = DiscoveryOrchestrator(
-            contract=self.contract,
-            llm_config=llm_config,
-            storage=self.storage,
-            console=self.console,
-            target_level=self.selector_level,
-            max_concurrent=max_concurrent_discovery,
-            bus=bus,
-            write_lock=write_lock,
-        )
+        self.discovery: DiscoveryOrchestrator | MCPDiscoveryOrchestrator
+        if self.discovery_mode == 'mcp':
+            # MCP discovery drives a live browser via the voidcrawl MCP toolset and
+            # persists a replay-first lesson. It produces the same SelectorMap shape
+            # as the static fan-out, so the rest of the pipeline is unchanged.
+            self.discovery = MCPDiscoveryOrchestrator(
+                contract=self.contract,
+                llm_config=llm_config,
+                console=self.console,
+                verify_threshold=replay_verify_threshold,
+            )
+        else:
+            self.discovery = DiscoveryOrchestrator(
+                contract=self.contract,
+                llm_config=llm_config,
+                storage=self.storage,
+                console=self.console,
+                target_level=self.selector_level,
+                max_concurrent=max_concurrent_discovery,
+                bus=bus,
+                write_lock=write_lock,
+            )
         self._js_discovery_orchestrator: Any = None  # created lazily on first discovery call
         self.verifier = SelectorVerifier(console=self.console)
         self.semantic_validator = SemanticValidator()

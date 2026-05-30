@@ -25,6 +25,14 @@ class ClaudeSDKModel(Model):
 
     def __init__(self, *, model_name: str = 'claude-opus-4-7') -> None:
         """Initialize the transport with a Claude model name."""
+        # pydantic-ai's base Model expects subclasses to set ``_provider``; this
+        # transport has no pydantic-ai Provider object, so None. Without it,
+        # entering an Agent as an async context manager (required to start MCP
+        # toolsets) raises AttributeError in Model.__aenter__.
+        # Base Model annotates ``_provider`` non-optional, but the ``provider``
+        # property and Model.__aenter__ both handle None — which is correct for a
+        # transport with no pydantic-ai Provider object.
+        self._provider = None  # type: ignore[assignment]
         self._model_name = model_name
         self._profile = ModelProfile(
             supports_tools=False,

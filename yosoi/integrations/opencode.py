@@ -30,6 +30,14 @@ class OpenCodeModel(Model):
         base_url: str | None = None,
     ) -> None:
         """Initialize the transport with OpenCode provider, model, and server settings."""
+        # pydantic-ai's base Model expects subclasses to set ``_provider``; this
+        # transport has no pydantic-ai Provider object, so None. Without it,
+        # entering an Agent as an async context manager (required to start MCP
+        # toolsets) raises AttributeError in Model.__aenter__.
+        # Base Model annotates ``_provider`` non-optional, but the ``provider``
+        # property and Model.__aenter__ both handle None — which is correct for a
+        # transport with no pydantic-ai Provider object.
+        self._provider = None  # type: ignore[assignment]
         self._provider_id = provider_id
         self._model_id = model_id
         self._base_url: str = base_url or os.getenv('OPENCODE_BASE_URL') or 'http://localhost:4096'
