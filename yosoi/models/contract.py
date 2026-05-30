@@ -215,29 +215,6 @@ class Contract(BaseModel):
         return result
 
     @classmethod
-    def field_hints(cls) -> dict[str, str | None]:
-        """Return yosoi_hint per (flat) field name, expanding nested contracts to {parent}_{child}."""
-        hints: dict[str, str | None] = {}
-        for name, fi in cls.model_fields.items():
-            ann = fi.annotation
-            extra = fi.json_schema_extra
-            if isinstance(ann, type) and issubclass(ann, Contract):
-                for child_name, child_fi in ann.model_fields.items():
-                    child_extra = child_fi.json_schema_extra
-                    if isinstance(child_extra, dict):
-                        raw = child_extra.get('yosoi_hint')
-                        hints[f'{name}_{child_name}'] = str(raw) if raw is not None else None
-                    else:
-                        hints[f'{name}_{child_name}'] = None
-            else:
-                if isinstance(extra, dict):
-                    raw = extra.get('yosoi_hint')
-                    hints[name] = str(raw) if raw is not None else None
-                else:
-                    hints[name] = None
-        return hints
-
-    @classmethod
     def discovery_field_names(cls) -> set[str]:
         """Return the set of flattened field names used for discovery and cache keys.
 
@@ -284,25 +261,12 @@ class Contract(BaseModel):
                     flat_name = f'{name}_{child_name}'
                     if flat_name in overridden or child_name in child_overridden:
                         continue
-                    child_extra = child_fi.json_schema_extra or {}
                     child_desc = child_fi.description or f'Selectors for {flat_name}'
-                    child_hint = child_extra.get('yosoi_hint') if isinstance(child_extra, dict) else None
-                    selector_field = Field(
-                        description=child_desc,
-                        json_schema_extra={'yosoi_hint': child_hint} if child_hint else None,
-                    )
-                    field_defs[flat_name] = (FieldSelectors, selector_field)
+                    field_defs[flat_name] = (FieldSelectors, Field(description=child_desc))
             else:
-                # Copy description and yosoi_hint to the selector field
-                extra = field_info.json_schema_extra or {}
+                # Copy the field description onto the selector field
                 description = field_info.description or f'Selectors for {name}'
-                hint = extra.get('yosoi_hint') if isinstance(extra, dict) else None
-
-                selector_field = Field(
-                    description=description,
-                    json_schema_extra={'yosoi_hint': hint} if hint else None,
-                )
-                field_defs[name] = (FieldSelectors, selector_field)
+                field_defs[name] = (FieldSelectors, Field(description=description))
 
         # Add optional root field for multi-item pages
         field_defs['root'] = (
@@ -384,19 +348,19 @@ class Contract(BaseModel):
         lines = [f'# {cls.__name__} Contract Manifest\n']
         if cls.__doc__:
             lines.append(f'> {cls.__doc__.strip()}\n')
-        lines.append('| Field | Semantic Type | Required | Config | AI Hint | Selector Override |')
-        lines.append('|-------|---------------|----------|--------|---------|-------------------|')
-        _SKIP_KEYS = ('yosoi_type', 'yosoi_hint', 'yosoi_frozen', 'yosoi_selector')
+        lines.append('| Field | Semantic Type | Required | Config | Description | Selector Override |')
+        lines.append('|-------|---------------|----------|--------|-------------|-------------------|')
+        _SKIP_KEYS = ('yosoi_type', 'yosoi_frozen', 'yosoi_selector')
         for name, field_info in cls.model_fields.items():
             raw_extra = field_info.json_schema_extra
             extra: dict[str, Any] = raw_extra if isinstance(raw_extra, dict) else {}
             yosoi_type = extra.get('yosoi_type', 'text')
-            hint = extra.get('yosoi_hint', field_info.description or '—')
+            description = field_info.description or '—'
             required = 'Yes' if field_info.is_required() else 'No'
             config_items = {k: v for k, v in extra.items() if k not in _SKIP_KEYS}
             config_str = ', '.join(f'{k}={v!r}' for k, v in config_items.items()) or '—'
             override = f'`{extra["yosoi_selector"]}`' if extra.get('yosoi_selector') else '—'
-            lines.append(f'| `{name}` | `{yosoi_type}` | {required} | {config_str} | {hint} | {override} |')
+            lines.append(f'| `{name}` | `{yosoi_type}` | {required} | {config_str} | {description} | {override} |')
         return '\n'.join(lines)
 
     @classmethod

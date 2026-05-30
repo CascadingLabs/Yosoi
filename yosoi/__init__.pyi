@@ -24,7 +24,6 @@ from yosoi.models.snapshot import CacheVerdict as CacheVerdict
 from yosoi.models.snapshot import SelectorSnapshot as SelectorSnapshot
 from yosoi.models.snapshot import SnapshotMap as SnapshotMap
 from yosoi.models.snapshot import SnapshotStatus as SnapshotStatus
-from yosoi.types.base import YosoiType as YosoiType
 from yosoi.types.field import Field as Field
 from yosoi.types.field import js as js
 from yosoi.types.registry import register_coercion as register_coercion

@@ -14,7 +14,7 @@ from yosoi.types.price import Price
 class SampleContract(Contract):
     """Sample contract with custom types and hints."""
 
-    item_price: float = Price(currency_symbol='£', hint='Look for GBP symbol')
+    item_price: float = Price(currency_symbol='£', description='Look for GBP symbol')
     name: str = Field(description='The name of the item')
 
 
@@ -38,13 +38,11 @@ class BookContract(Contract):
 
 
 def test_selector_model_metadata_preservation():
-    """Verify that to_selector_model preserves descriptions and hints."""
+    """Verify that to_selector_model preserves field descriptions."""
     SelectorModel = SampleContract.to_selector_model()
 
     price_field = SelectorModel.model_fields['item_price']
-    extra = price_field.json_schema_extra
-    assert isinstance(extra, dict)
-    assert extra.get('yosoi_hint') == 'Look for GBP symbol'
+    assert price_field.description == 'Look for GBP symbol'
 
     name_field = SelectorModel.model_fields['name']
     assert name_field.description == 'The name of the item'
@@ -66,8 +64,8 @@ def test_pydantic_ai_schema_rendering():
     price_properties = schema['properties']['item_price']
     assert '$ref' in price_properties
 
-    # yosoi_hint carries the hint; description is the default from the type
-    assert schema['properties']['item_price']['yosoi_hint'] == 'Look for GBP symbol'
+    # The field description flows through to the selector schema.
+    assert schema['properties']['item_price']['description'] == 'Look for GBP symbol'
     assert schema['properties']['name']['description'] == 'The name of the item'
 
 
@@ -550,7 +548,7 @@ def test_action_fields_excluded_from_field_descriptions():
     """field_descriptions() excludes action fields."""
 
     class TechContract(Contract):
-        title: str = ys.Title(hint='Main title')
+        title: str = ys.Title(description='Main title')
         signals: dict = ys.js('(() => ({}))()', default=None)  # type: ignore[assignment]
 
     descs = TechContract.field_descriptions()

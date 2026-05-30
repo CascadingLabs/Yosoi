@@ -2,9 +2,9 @@
 
 ``HTMLCleaner.clean_html`` runs on every fetch before extraction. It is the
 single biggest pure-compute step on the replay path: it parses the full DOM
-twice with lxml, strips noise, dedups list/table runs, and collapses
-whitespace. Cost scales with raw HTML size, so we sweep L1 (article) and L2
-(catalog) shapes across sizes to catch both per-byte regressions and
+once with lxml, mutates it in place to strip noise, dedups list/table runs, and
+collapses whitespace. Cost scales with raw HTML size, so we sweep L1 (article)
+and L2 (catalog) shapes across sizes to catch both per-byte regressions and
 super-linear blowups in the pruning passes.
 """
 

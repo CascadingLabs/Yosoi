@@ -1,10 +1,26 @@
 """Unit tests for HTMLCleaner."""
 
+import lxml.html
 import pytest
-from bs4 import BeautifulSoup, Tag
 from rich.console import Console
 
 from yosoi.core.cleaning.cleaner import HTMLCleaner
+
+
+def parse(html: str) -> lxml.html.HtmlElement:
+    """Parse a full HTML document the way the cleaner does."""
+    return lxml.html.document_fromstring(html)
+
+
+def to_str(element: lxml.html.HtmlElement) -> str:
+    """Serialise an lxml element back to a string."""
+    return lxml.html.tostring(element, encoding='unicode')
+
+
+def css_one(element: lxml.html.HtmlElement, selector: str) -> lxml.html.HtmlElement | None:
+    """Return the first element matching *selector*, or None (parallels bs4 find)."""
+    found = element.cssselect(selector)
+    return found[0] if found else None
 
 
 @pytest.fixture
@@ -69,26 +85,26 @@ def test_clean_html_removes_styles(sample_html, cleaner):
 
 def test_clean_html_removes_nav(sample_html, cleaner):
     result = cleaner.clean_html(sample_html)
-    soup = BeautifulSoup(result, 'html.parser')
-    assert soup.find('nav') is None
+    tree = lxml.html.fromstring(result)
+    assert tree.find('.//nav') is None
 
 
 def test_clean_html_removes_header(sample_html, cleaner):
     result = cleaner.clean_html(sample_html)
-    soup = BeautifulSoup(result, 'html.parser')
-    assert soup.find('header') is None
+    tree = lxml.html.fromstring(result)
+    assert tree.find('.//header') is None
 
 
 def test_clean_html_removes_footer(sample_html, cleaner):
     result = cleaner.clean_html(sample_html)
-    soup = BeautifulSoup(result, 'html.parser')
-    assert soup.find('footer') is None
+    tree = lxml.html.fromstring(result)
+    assert tree.find('.//footer') is None
 
 
 def test_clean_html_removes_sidebars(sample_html, cleaner):
     result = cleaner.clean_html(sample_html)
-    soup = BeautifulSoup(result, 'html.parser')
-    assert soup.find('aside', class_='sidebar') is None
+    tree = lxml.html.fromstring(result)
+    assert css_one(tree, 'aside.sidebar') is None
 
 
 def test_clean_html_removes_ad_class(cleaner):
@@ -130,34 +146,31 @@ def test_compress_removes_only_noise_attributes(cleaner):
     # Opt-in removal: inline style and JS event handlers are stripped; everything
     # else (class, data-*, and any other attribute) is kept.
     html = '<html><body><div class="foo" style="color:red" onclick="bad()" data-val="keep">text</div></body></html>'
-    soup = BeautifulSoup(html, 'lxml')
-    result = cleaner._compress_html_simple(soup)
-    div = result.find('div')
-    assert 'class' in div.attrs
-    assert 'data-val' in div.attrs
-    assert 'onclick' not in div.attrs
-    assert 'style' not in div.attrs
+    result = cleaner._compress_html_simple(parse(html))
+    div = result.find('.//div')
+    assert 'class' in div.attrib
+    assert 'data-val' in div.attrib
+    assert 'onclick' not in div.attrib
+    assert 'style' not in div.attrib
 
 
 def test_compress_keeps_id_href_and_other_attributes(cleaner):
     # title is no longer dropped — only known-noise attributes are.
     html = '<html><body><a id="link" href="/page" title="keep">text</a></body></html>'
-    soup = BeautifulSoup(html, 'lxml')
-    result = cleaner._compress_html_simple(soup)
-    a = result.find('a')
-    assert 'id' in a.attrs
-    assert 'href' in a.attrs
-    assert 'title' in a.attrs
+    result = cleaner._compress_html_simple(parse(html))
+    a = result.find('.//a')
+    assert 'id' in a.attrib
+    assert 'href' in a.attrib
+    assert 'title' in a.attrib
 
 
 def test_compress_keeps_data_and_role_attributes(cleaner):
     # role is a valuable selector/accessibility target and must survive cleaning.
     html = '<html><body><span data-price="9.99" role="price">text</span></body></html>'
-    soup = BeautifulSoup(html, 'lxml')
-    result = cleaner._compress_html_simple(soup)
-    span = result.find('span')
-    assert 'data-price' in span.attrs
-    assert 'role' in span.attrs
+    result = cleaner._compress_html_simple(parse(html))
+    span = result.find('.//span')
+    assert 'data-price' in span.attrib
+    assert 'role' in span.attrib
 
 
 def test_compress_keeps_bare_custom_element_attributes(cleaner):
@@ -170,28 +183,25 @@ def test_compress_keeps_bare_custom_element_attributes(cleaner):
         'hi</shreddit-comment>'
         '</body></html>'
     )
-    soup = BeautifulSoup(html, 'lxml')
-    result = cleaner._compress_html_simple(soup)
-    node = result.find('shreddit-comment')
+    result = cleaner._compress_html_simple(parse(html))
+    node = result.find('.//shreddit-comment')
     assert node is not None
     for attr in ('depth', 'score', 'permalink', 'author', 'thingid'):
-        assert attr in node.attrs, f'{attr} was stripped'
+        assert attr in node.attrib, f'{attr} was stripped'
 
 
 def test_compress_deduplicates_list_items(cleaner):
     """List with >3 items should be trimmed to 3."""
     html = '<html><body><ul>' + ''.join(f'<li>Item {i}</li>' for i in range(6)) + '</ul></body></html>'
-    soup = BeautifulSoup(html, 'lxml')
-    result = cleaner._compress_html_simple(soup)
-    items = result.find('ul').find_all('li')
+    result = cleaner._compress_html_simple(parse(html))
+    items = result.find('.//ul').findall('li')
     assert len(items) == 3
 
 
 def test_compress_keeps_short_lists_intact(cleaner):
     html = '<html><body><ul><li>A</li><li>B</li></ul></body></html>'
-    soup = BeautifulSoup(html, 'lxml')
-    result = cleaner._compress_html_simple(soup)
-    items = result.find('ul').find_all('li')
+    result = cleaner._compress_html_simple(parse(html))
+    items = result.find('.//ul').findall('li')
     assert len(items) == 2
 
 
@@ -199,25 +209,22 @@ def test_compress_deduplicates_table_rows(cleaner):
     """Table with >5 rows should be trimmed to 5."""
     rows = ''.join(f'<tr><td>Row {i}</td></tr>' for i in range(8))
     html = f'<html><body><table>{rows}</table></body></html>'
-    soup = BeautifulSoup(html, 'lxml')
-    result = cleaner._compress_html_simple(soup)
-    tr_count = len(result.find('table').find_all('tr'))
+    result = cleaner._compress_html_simple(parse(html))
+    tr_count = len(result.find('.//table').xpath('.//tr'))
     assert tr_count == 5
 
 
 def test_compress_removes_html_comments(cleaner):
     html = '<html><body><!-- secret comment --><p>Real content</p></body></html>'
-    soup = BeautifulSoup(html, 'lxml')
-    result = cleaner._compress_html_simple(soup)
-    assert 'secret comment' not in str(result)
-    assert 'Real content' in str(result)
+    result = cleaner._compress_html_simple(parse(html))
+    assert 'secret comment' not in to_str(result)
+    assert 'Real content' in to_str(result)
 
 
 def test_compress_visible_elements_kept(cleaner):
     html = '<html><body><div class="content"><p>Visible</p></div></body></html>'
-    soup = BeautifulSoup(html, 'lxml')
-    result = cleaner._compress_html_simple(soup)
-    assert 'Visible' in str(result)
+    result = cleaner._compress_html_simple(parse(html))
+    assert 'Visible' in to_str(result)
 
 
 # ---------------------------------------------------------------------------
@@ -227,40 +234,35 @@ def test_compress_visible_elements_kept(cleaner):
 
 def test_prune_removes_svg(cleaner):
     html = '<html><body><svg><path d="M0"/></svg><p>Keep me</p></body></html>'
-    soup = BeautifulSoup(html, 'lxml')
-    result = cleaner._prune_non_semantic(soup)
-    assert result.find('svg') is None
-    assert 'Keep me' in str(result)
+    result = cleaner._prune_non_semantic(parse(html))
+    assert result.find('.//svg') is None
+    assert 'Keep me' in to_str(result)
 
 
 def test_prune_removes_canvas(cleaner):
     html = '<html><body><canvas id="c"></canvas><p>Keep</p></body></html>'
-    soup = BeautifulSoup(html, 'lxml')
-    result = cleaner._prune_non_semantic(soup)
-    assert result.find('canvas') is None
+    result = cleaner._prune_non_semantic(parse(html))
+    assert result.find('.//canvas') is None
 
 
 def test_prune_replaces_base64_src(cleaner):
     html = '<html><body><img src="data:image/png;base64,ABC"/></body></html>'
-    soup = BeautifulSoup(html, 'lxml')
-    result = cleaner._prune_non_semantic(soup)
-    img = result.find('img')
-    assert img['src'] == '[data-uri-removed]'
+    result = cleaner._prune_non_semantic(parse(html))
+    img = result.find('.//img')
+    assert img.get('src') == '[data-uri-removed]'
 
 
 def test_prune_keeps_normal_img_src(cleaner):
     html = '<html><body><img src="https://example.com/img.png"/></body></html>'
-    soup = BeautifulSoup(html, 'lxml')
-    result = cleaner._prune_non_semantic(soup)
-    img = result.find('img')
-    assert 'example.com' in img['src']
+    result = cleaner._prune_non_semantic(parse(html))
+    img = result.find('.//img')
+    assert 'example.com' in img.get('src')
 
 
 def test_prune_keeps_div_with_class(cleaner):
     html = '<html><body><div class="product"><p>Keep this</p></div></body></html>'
-    soup = BeautifulSoup(html, 'lxml')
-    result = cleaner._prune_non_semantic(soup)
-    assert result.find('div', class_='product') is not None
+    result = cleaner._prune_non_semantic(parse(html))
+    assert css_one(result, 'div.product') is not None
 
 
 # ---------------------------------------------------------------------------
@@ -306,18 +308,16 @@ def test_collapse_whitespace_returns_string(cleaner):
 def test_compress_deduplicates_list_items_keeps_exactly_3(cleaner):
     """List with exactly 4 items should be trimmed to exactly 3."""
     html = '<html><body><ul>' + ''.join(f'<li>Item {i}</li>' for i in range(4)) + '</ul></body></html>'
-    soup = BeautifulSoup(html, 'lxml')
-    result = cleaner._compress_html_simple(soup)
-    items = result.find('ul').find_all('li')
+    result = cleaner._compress_html_simple(parse(html))
+    items = result.find('.//ul').findall('li')
     assert len(items) == 3
 
 
 def test_compress_list_with_exactly_3_items_untouched(cleaner):
     """List with exactly 3 items should NOT be truncated."""
     html = '<html><body><ul><li>A</li><li>B</li><li>C</li></ul></body></html>'
-    soup = BeautifulSoup(html, 'lxml')
-    result = cleaner._compress_html_simple(soup)
-    items = result.find('ul').find_all('li')
+    result = cleaner._compress_html_simple(parse(html))
+    items = result.find('.//ul').findall('li')
     assert len(items) == 3
 
 
@@ -325,9 +325,8 @@ def test_compress_table_with_exactly_5_rows_untouched(cleaner):
     """Table with exactly 5 rows should NOT be truncated."""
     rows = ''.join(f'<tr><td>Row {i}</td></tr>' for i in range(5))
     html = f'<html><body><table>{rows}</table></body></html>'
-    soup = BeautifulSoup(html, 'lxml')
-    result = cleaner._compress_html_simple(soup)
-    tr_count = len(result.find('table').find_all('tr'))
+    result = cleaner._compress_html_simple(parse(html))
+    tr_count = len(result.find('.//table').xpath('.//tr'))
     assert tr_count == 5
 
 
@@ -335,9 +334,8 @@ def test_compress_table_with_6_rows_trimmed_to_5(cleaner):
     """Table with exactly 6 rows should be trimmed to 5."""
     rows = ''.join(f'<tr><td>Row {i}</td></tr>' for i in range(6))
     html = f'<html><body><table>{rows}</table></body></html>'
-    soup = BeautifulSoup(html, 'lxml')
-    result = cleaner._compress_html_simple(soup)
-    tr_count = len(result.find('table').find_all('tr'))
+    result = cleaner._compress_html_simple(parse(html))
+    tr_count = len(result.find('.//table').xpath('.//tr'))
     assert tr_count == 5
 
 
@@ -345,9 +343,8 @@ def test_compress_hidden_parent_with_hidden_child_does_not_crash(cleaner):
     """Regression: decomposing a hidden parent must not crash on its (now stale)
     hidden descendants still present in the static node list."""
     html = '<html><body><div hidden><span hidden>x</span><p hidden>y</p></div><div class="ok">keep</div></body></html>'
-    soup = BeautifulSoup(html, 'lxml')
-    result = cleaner._compress_html_simple(soup)  # must not raise
-    assert result.find('div', class_='ok') is not None
+    result = cleaner._compress_html_simple(parse(html))  # must not raise
+    assert css_one(result, 'div.ok') is not None
 
 
 def test_compress_removes_hidden_element(cleaner):
@@ -355,73 +352,64 @@ def test_compress_removes_hidden_element(cleaner):
     correctly prunes the element (previously the attr was stripped first, leaking
     hidden content into the cleaned HTML)."""
     html = '<html><body><div hidden class="x">Hidden</div><div class="y">Shown</div></body></html>'
-    soup = BeautifulSoup(html, 'lxml')
-    result = cleaner._compress_html_simple(soup)
-    assert result.find('div', class_='x') is None
-    assert result.find('div', class_='y') is not None
+    result = cleaner._compress_html_simple(parse(html))
+    assert css_one(result, 'div.x') is None
+    assert css_one(result, 'div.y') is not None
 
 
 def test_compress_removes_aria_hidden_attribute(cleaner):
-    """aria-hidden attr is not kept; element itself only removed if aria-hidden=true before stripping."""
+    """aria-hidden=true elements are removed entirely by the hidden-element pass."""
     html = '<html><body><div class="x" aria-hidden="true">Content</div></body></html>'
-    soup = BeautifulSoup(html, 'lxml')
-    # In compressed html, aria-hidden attribute check happens before attribute stripping in flow
-    # But the cleaner first strips attrs then checks hidden; so we just verify aria-hidden stripped
-    result = cleaner._compress_html_simple(soup)
-    div = result.find('div', class_='x')
+    result = cleaner._compress_html_simple(parse(html))
+    div = css_one(result, 'div.x')
+    # aria-hidden="true" → element removed; if anything survives it must not keep the attr
     if div is not None:
-        assert 'aria-hidden' not in div.attrs
+        assert 'aria-hidden' not in div.attrib
 
 
 def test_prune_keeps_div_with_id(cleaner):
     html = '<html><body><div id="content"><p>Keep this</p></div></body></html>'
-    soup = BeautifulSoup(html, 'lxml')
-    result = cleaner._prune_non_semantic(soup)
-    assert result.find('div', id='content') is not None
+    result = cleaner._prune_non_semantic(parse(html))
+    assert css_one(result, 'div#content') is not None
 
 
 def test_prune_keeps_div_with_data_attr(cleaner):
     html = '<html><body><div data-id="123"><p>Keep</p></div></body></html>'
-    soup = BeautifulSoup(html, 'lxml')
-    result = cleaner._prune_non_semantic(soup)
+    result = cleaner._prune_non_semantic(parse(html))
     # div with data attribute should be kept
-    assert result.find('div') is not None
+    assert result.find('.//div') is not None
 
 
 def test_compress_keeps_attribute_href(cleaner):
     html = '<html><body><a href="/path" onclick="bad()">link</a></body></html>'
-    soup = BeautifulSoup(html, 'lxml')
-    result = cleaner._compress_html_simple(soup)
-    a = result.find('a')
-    assert 'href' in a.attrs
-    assert 'onclick' not in a.attrs
+    result = cleaner._compress_html_simple(parse(html))
+    a = result.find('.//a')
+    assert 'href' in a.attrib
+    assert 'onclick' not in a.attrib
 
 
 def test_compress_keeps_src_attribute(cleaner):
     html = '<html><body><img src="image.png" loading="lazy" onerror="bad()"/></body></html>'
-    soup = BeautifulSoup(html, 'lxml')
-    result = cleaner._compress_html_simple(soup)
-    img = result.find('img')
-    assert 'src' in img.attrs
-    assert 'loading' in img.attrs  # opt-in removal: only noise (event handlers) is dropped
-    assert 'onerror' not in img.attrs
+    result = cleaner._compress_html_simple(parse(html))
+    img = result.find('.//img')
+    assert 'src' in img.attrib
+    assert 'loading' in img.attrib  # opt-in removal: only noise (event handlers) is dropped
+    assert 'onerror' not in img.attrib
 
 
 def test_compress_keeps_datetime_attribute(cleaner):
     html = '<html><body><time datetime="2024-01-01" style="color:red">Jan 1</time></body></html>'
-    soup = BeautifulSoup(html, 'lxml')
-    result = cleaner._compress_html_simple(soup)
-    time_tag = result.find('time')
-    assert 'datetime' in time_tag.attrs
-    assert 'style' not in time_tag.attrs
+    result = cleaner._compress_html_simple(parse(html))
+    time_tag = result.find('.//time')
+    assert 'datetime' in time_tag.attrib
+    assert 'style' not in time_tag.attrib
 
 
 def test_compress_keeps_type_attribute(cleaner):
     html = '<html><body><input type="text" placeholder="Enter"/></body></html>'
-    soup = BeautifulSoup(html, 'lxml')
-    result = cleaner._compress_html_simple(soup)
-    inp = result.find('input')
-    assert 'type' in inp.attrs
+    result = cleaner._compress_html_simple(parse(html))
+    inp = result.find('.//input')
+    assert 'type' in inp.attrib
 
 
 def test_collapse_whitespace_collapses_tabs(cleaner):
@@ -511,28 +499,25 @@ def test_cleaner_creates_console_when_none():
 def test_compress_list_exactly_4_truncated_to_3(cleaner):
     """List with exactly 4 items must be truncated to 3."""
     html = '<html><body><ul><li>A</li><li>B</li><li>C</li><li>D</li></ul></body></html>'
-    soup = BeautifulSoup(html, 'lxml')
-    result = cleaner._compress_html_simple(soup)
-    items = result.find('ul').find_all('li')
+    result = cleaner._compress_html_simple(parse(html))
+    items = result.find('.//ul').findall('li')
     assert len(items) == 3
 
 
 def test_prune_replaces_data_uri_with_exact_placeholder(cleaner):
     """data: src must be replaced with '[data-uri-removed]'."""
     html = '<html><body><img src="data:image/png;base64,XYZ"/></body></html>'
-    soup = BeautifulSoup(html, 'lxml')
-    result = cleaner._prune_non_semantic(soup)
-    img = result.find('img')
-    assert img['src'] == '[data-uri-removed]'
+    result = cleaner._prune_non_semantic(parse(html))
+    img = result.find('.//img')
+    assert img.get('src') == '[data-uri-removed]'
 
 
 def test_prune_does_not_remove_non_data_src(cleaner):
     """Non-data: src attributes must not be modified."""
     html = '<html><body><img src="https://example.com/image.jpg"/></body></html>'
-    soup = BeautifulSoup(html, 'lxml')
-    result = cleaner._prune_non_semantic(soup)
-    img = result.find('img')
-    assert img['src'] == 'https://example.com/image.jpg'
+    result = cleaner._prune_non_semantic(parse(html))
+    img = result.find('.//img')
+    assert img.get('src') == 'https://example.com/image.jpg'
 
 
 def test_collapse_whitespace_multiple_spaces_become_one(cleaner):
@@ -564,18 +549,17 @@ def test_collapse_whitespace_strips_line_edges(cleaner):
 def test_selector_attributes_survive_cleaning(cleaner):
     """Selector-worthy attributes survive; only event handlers are dropped."""
     html = '<html><body><a class="link" id="myid" href="/page" src="img.png" onclick="bad()" title="keep">text</a></body></html>'
-    soup = BeautifulSoup(html, 'lxml')
-    result = cleaner._compress_html_simple(soup)
-    a = result.find('a')
-    assert 'class' in a.attrs
-    assert 'id' in a.attrs
-    assert 'href' in a.attrs
-    assert 'title' in a.attrs  # kept under opt-in removal
-    assert 'onclick' not in a.attrs
+    result = cleaner._compress_html_simple(parse(html))
+    a = result.find('.//a')
+    assert 'class' in a.attrib
+    assert 'id' in a.attrib
+    assert 'href' in a.attrib
+    assert 'title' in a.attrib  # kept under opt-in removal
+    assert 'onclick' not in a.attrib
 
 
 # ---------------------------------------------------------------------------
-# Coverage: lines 78-89 — <main> without <body>, fallback to full HTML
+# Coverage: <main> without <body>, fallback to full HTML
 # ---------------------------------------------------------------------------
 
 
@@ -596,41 +580,34 @@ def test_clean_html_no_body_no_main_falls_back_to_full_html(cleaner):
 
 def test_clean_html_main_with_body_inside(cleaner):
     """When HTML has <main> wrapping a <body> (weird but possible), extract <body> inside <main>."""
-    # lxml normalizes this, but we can test the path by constructing soup directly
-    # In practice, lxml will restructure this, so just test that <main> alone path works
+    # lxml normalizes this, but we can test that the <main> path works
     html = '<main><article><h1>Article Title</h1></article></main>'
     result = cleaner.clean_html(html)
     assert 'Article Title' in result
 
 
 # ---------------------------------------------------------------------------
-# Coverage: lines 168-169, 171 — hidden and aria-hidden removal
+# Coverage: hidden and aria-hidden removal
 # ---------------------------------------------------------------------------
 
 
 def test_compress_hidden_and_aria_hidden_step5_iterates(cleaner):
-    """Step 5 iterates all tags checking for hidden/aria-hidden.
-
-    Note: Step 2 strips these attributes before step 5, making the inner
-    conditions dead code. This test verifies step 5 iteration runs without error.
-    """
+    """The hidden-element pass iterates all tags checking for hidden/aria-hidden."""
     html = '<html><body><div data-visible="yes">Content</div><p>More</p></body></html>'
-    soup = BeautifulSoup(html, 'lxml')
-    result = cleaner._compress_html_simple(soup)
-    assert 'Content' in str(result)
-    assert 'More' in str(result)
+    result = cleaner._compress_html_simple(parse(html))
+    assert 'Content' in to_str(result)
+    assert 'More' in to_str(result)
 
 
 def test_compress_keeps_aria_hidden_false_elements(cleaner):
     """Elements with aria-hidden='false' should NOT be decomposed."""
     html = '<html><body><span aria-hidden="false">Visible to SR</span></body></html>'
-    soup = BeautifulSoup(html, 'lxml')
-    result = cleaner._compress_html_simple(soup)
-    assert 'Visible to SR' in str(result)
+    result = cleaner._compress_html_simple(parse(html))
+    assert 'Visible to SR' in to_str(result)
 
 
 # ---------------------------------------------------------------------------
-# Coverage: lines 205, 211-213 — deeply nested empty anonymous divs/spans
+# Coverage: deeply nested empty anonymous divs/spans
 # ---------------------------------------------------------------------------
 
 
@@ -638,19 +615,17 @@ def test_prune_removes_deeply_nested_empty_anonymous_div(cleaner):
     """Anonymous div at depth > 8 with no text should be decomposed."""
     # Build HTML with deep nesting (> 8 levels)
     html = '<html><body><div class="a"><div class="b"><div class="c"><div class="d"><div class="e"><div class="f"><div class="g"><div class="h"><div></div></div></div></div></div></div></div></div></body></html>'
-    soup = BeautifulSoup(html, 'lxml')
-    result = cleaner._prune_non_semantic(soup)
-    # The innermost anonymous empty div should be removed
-    # Count all divs without class/id/data-* at depth > 8
+    result = cleaner._prune_non_semantic(parse(html))
+    # The innermost anonymous empty div should be removed: no anonymous, empty,
+    # deeply-nested div/span should remain.
     anonymous_empties = [
         tag
-        for tag in result.find_all(['div', 'span'])
-        if isinstance(tag, Tag)
-        and 'class' not in tag.attrs
-        and 'id' not in tag.attrs
-        and not any(k.startswith('data-') for k in tag.attrs)
-        and sum(1 for _ in tag.parents) > 8
-        and len(tag.get_text(strip=True)) == 0
+        for tag in result.xpath('.//div | .//span')
+        if 'class' not in tag.attrib
+        and 'id' not in tag.attrib
+        and not any(k.startswith('data-') for k in tag.attrib)
+        and sum(1 for _ in tag.iterancestors()) > 8
+        and len(tag.text_content().strip()) == 0
     ]
     assert len(anonymous_empties) == 0
 
@@ -658,19 +633,17 @@ def test_prune_removes_deeply_nested_empty_anonymous_div(cleaner):
 def test_prune_keeps_shallow_anonymous_div(cleaner):
     """Anonymous div at depth <= 8 should be kept even if empty."""
     html = '<html><body><div></div></body></html>'
-    soup = BeautifulSoup(html, 'lxml')
-    result = cleaner._prune_non_semantic(soup)
+    result = cleaner._prune_non_semantic(parse(html))
     # Shallow anonymous empty div should still exist
-    divs = result.find_all('div')
+    divs = result.xpath('.//div')
     assert len(divs) >= 1
 
 
 def test_prune_keeps_deep_div_with_text(cleaner):
     """Deeply nested anonymous div with text content should be kept."""
     html = '<html><body><div class="a"><div class="b"><div class="c"><div class="d"><div class="e"><div class="f"><div class="g"><div class="h"><div>Has text</div></div></div></div></div></div></div></div></body></html>'
-    soup = BeautifulSoup(html, 'lxml')
-    result = cleaner._prune_non_semantic(soup)
-    assert 'Has text' in str(result)
+    result = cleaner._prune_non_semantic(parse(html))
+    assert 'Has text' in to_str(result)
 
 
 # ---------------------------------------------------------------------------
@@ -679,28 +652,17 @@ def test_prune_keeps_deep_div_with_text(cleaner):
 
 
 def test_compress_decomposes_hidden_element(cleaner):
-    """Element with hidden attribute is decomposed in step 5.
-
-    We call _compress_html_simple on soup where hidden attr is preserved
-    through step 2 by also giving it a data- prefix variant won't help,
-    but the iteration itself covers the branch.
-    """
-    # Construct soup manually so hidden attr survives step 2 attr-stripping
-    # by injecting it after the fact isn't needed — the iteration loop (line 165-166)
-    # is executed regardless. What matters for coverage is that step 5 iterates.
+    """The hidden-element pass iterates all tags; visible siblings survive."""
     html = '<html><body><div hidden="">secret</div><p>visible</p></body></html>'
-    soup = BeautifulSoup(html, 'lxml')
-    result = cleaner._compress_html_simple(soup)
-    # hidden attr stripped by step 2, but step 5 still iterates all tags
-    assert 'visible' in str(result)
+    result = cleaner._compress_html_simple(parse(html))
+    assert 'visible' in to_str(result)
 
 
 def test_compress_decomposes_aria_hidden_true_element(cleaner):
-    """Element with aria-hidden='true' is decomposed in step 5."""
+    """Element with aria-hidden='true' is decomposed; visible siblings survive."""
     html = '<html><body><span aria-hidden="true">icon</span><p>real</p></body></html>'
-    soup = BeautifulSoup(html, 'lxml')
-    result = cleaner._compress_html_simple(soup)
-    assert 'real' in str(result)
+    result = cleaner._compress_html_simple(parse(html))
+    assert 'real' in to_str(result)
 
 
 def test_clean_html_no_body_main_only_extracts_content(cleaner):
@@ -712,15 +674,15 @@ def test_clean_html_no_body_main_only_extracts_content(cleaner):
 
 
 def test_compress_decomposes_deeply_nested_empty_anonymous_divs(cleaner):
-    """_compress_html_simple removes empty anonymous divs deeper than 8 levels (line 223)."""
-    # 9 nested empty anonymous divs — innermost reaches depth 11 > 8 threshold
+    """_compress_html_simple removes empty anonymous divs deeper than 8 levels."""
+    # 9 nested empty anonymous divs — innermost reaches depth > 8 threshold
     nested = '<div>' * 9 + '</div>' * 9
     html = f'<html><body><p>important content</p>{nested}</body></html>'
-    soup = BeautifulSoup(html, 'lxml')
+    tree = parse(html)
 
-    before_count = len(soup.find_all('div'))
-    result = cleaner._compress_html_simple(soup)
-    after_count = len(result.find_all('div'))
+    before_count = len(tree.xpath('.//div'))
+    result = cleaner._compress_html_simple(tree)
+    after_count = len(result.xpath('.//div'))
 
     assert after_count < before_count  # deeply nested empty anonymous divs were stripped
-    assert 'important content' in str(result)
+    assert 'important content' in to_str(result)

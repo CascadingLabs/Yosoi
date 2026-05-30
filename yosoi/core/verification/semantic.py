@@ -199,7 +199,7 @@ def _rule_for(yosoi_type: str | None, annotation: object) -> SemanticRule | None
 def field_rules_for_contract(contract: type[Contract]) -> dict[str, SemanticRule]:
     """Build a {flat field name -> SemanticRule} map for a contract.
 
-    Mirrors the flattening used by :meth:`Contract.field_hints` /
+    Mirrors the flattening used by :meth:`Contract.field_descriptions` /
     :meth:`Contract.discovery_field_names`: nested ``Contract`` fields expand to
     ``{parent}_{child}`` keys. Fields with neither a declared semantic type nor a
     numeric annotation are omitted (not validated).

@@ -28,7 +28,6 @@ async def test_cache_hit_returns_cached_selectors(mock_agent):
     result = await run_field_task(
         field_name='headline',
         field_description='Article title',
-        field_hint=None,
         discovery_input=_DISCOVERY_INPUT,
         html=_HTML,
         agent=mock_agent,
@@ -47,7 +46,6 @@ async def test_cache_miss_calls_agent(mock_agent):
     result = await run_field_task(
         field_name='headline',
         field_description='Article title',
-        field_hint=None,
         discovery_input=_DISCOVERY_INPUT,
         html=_HTML,
         agent=mock_agent,
@@ -72,7 +70,6 @@ async def test_failed_cache_escalates_to_discovery(mock_agent):
     result = await run_field_task(
         field_name='headline',
         field_description='Article title',
-        field_hint=None,
         discovery_input=_DISCOVERY_INPUT,
         html=_HTML,
         agent=mock_agent,
@@ -93,7 +90,6 @@ async def test_all_levels_fail_returns_none_selectors(mock_agent):
     result = await run_field_task(
         field_name='headline',
         field_description='Article title',
-        field_hint=None,
         discovery_input=_DISCOVERY_INPUT,
         html=_HTML,
         agent=mock_agent,
@@ -112,7 +108,7 @@ async def test_na_response_from_agent_skips_to_next_level(mocker):
     call_count = 0
 
     async def mock_discover(
-        field_name, field_description, field_hint, discovery_input, target_level, is_container=False, feedback=None
+        field_name, field_description, discovery_input, target_level, is_container=False, feedback=None
     ):
         nonlocal call_count
         call_count += 1
@@ -125,7 +121,6 @@ async def test_na_response_from_agent_skips_to_next_level(mocker):
     await run_field_task(
         field_name='headline',
         field_description='Article title',
-        field_hint=None,
         discovery_input=_DISCOVERY_INPUT,
         html=_HTML,
         agent=agent,
@@ -143,7 +138,7 @@ async def test_escalated_level_recorded_in_result(mocker):
     agent = mocker.MagicMock()
 
     async def mock_discover(
-        field_name, field_description, field_hint, discovery_input, target_level, is_container=False, feedback=None
+        field_name, field_description, discovery_input, target_level, is_container=False, feedback=None
     ):
         if target_level == SelectorLevel.CSS:
             raise LLMGenerationError('CSS fails')
@@ -154,7 +149,6 @@ async def test_escalated_level_recorded_in_result(mocker):
     result = await run_field_task(
         field_name='headline',
         field_description='Article title',
-        field_hint=None,
         discovery_input=_DISCOVERY_INPUT,
         html=_HTML,
         agent=agent,
@@ -172,7 +166,6 @@ async def test_css_success_has_no_escalation(mock_agent):
     result = await run_field_task(
         field_name='headline',
         field_description='Article title',
-        field_hint=None,
         discovery_input=_DISCOVERY_INPUT,
         html=_HTML,
         agent=mock_agent,
@@ -191,7 +184,6 @@ async def test_semaphore_is_respected(mock_agent):
     result = await run_field_task(
         field_name='headline',
         field_description='Article title',
-        field_hint=None,
         discovery_input=_DISCOVERY_INPUT,
         html=_HTML,
         agent=mock_agent,
@@ -211,7 +203,6 @@ async def test_invalid_cached_entry_triggers_rediscovery(mock_agent):
     result = await run_field_task(
         field_name='headline',
         field_description='Article title',
-        field_hint=None,
         discovery_input=_DISCOVERY_INPUT,
         html=_HTML,
         agent=mock_agent,
@@ -231,7 +222,6 @@ async def test_absent_cache_status_skips_discovery(mock_agent):
     result = await run_field_task(
         field_name='headline',
         field_description='Article title',
-        field_hint=None,
         discovery_input=_DISCOVERY_INPUT,
         html=_HTML,
         agent=mock_agent,
@@ -285,7 +275,6 @@ async def test_feedback_true_disables_bus(mock_agent):
     await run_field_task(
         field_name='headline',
         field_description='Article title',
-        field_hint=None,
         discovery_input=_DISCOVERY_INPUT,
         html=_HTML,
         agent=mock_agent,
@@ -315,7 +304,6 @@ async def test_bus_follower_returns_cached_result_from_bus(mock_agent):
     result = await run_field_task(
         field_name='headline',
         field_description='Article title',
-        field_hint=None,
         discovery_input=_DISCOVERY_INPUT,
         html=_HTML,
         agent=mock_agent,
@@ -353,7 +341,6 @@ async def test_bus_leader_publishes_result_in_finally(mock_agent):
     result = await run_field_task(
         field_name='headline',
         field_description='Article title',
-        field_hint=None,
         discovery_input=_DISCOVERY_INPUT,
         html=_HTML,
         agent=mock_agent,

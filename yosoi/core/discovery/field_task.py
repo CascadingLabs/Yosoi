@@ -48,7 +48,6 @@ async def _invoke_agent(
     agent: FieldDiscoveryAgent,
     field_name: str,
     field_description: str,
-    field_hint: str | None,
     discovery_input: DiscoveryInput,
     level: SelectorLevel,
     is_container: bool,
@@ -59,17 +58,14 @@ async def _invoke_agent(
     if semaphore is not None:
         async with semaphore:
             return await agent.discover_field(
-                field_name, field_description, field_hint, discovery_input, level, is_container, feedback
+                field_name, field_description, discovery_input, level, is_container, feedback
             )
-    return await agent.discover_field(
-        field_name, field_description, field_hint, discovery_input, level, is_container, feedback
-    )
+    return await agent.discover_field(field_name, field_description, discovery_input, level, is_container, feedback)
 
 
 async def _discover_field(
     field_name: str,
     field_description: str,
-    field_hint: str | None,
     discovery_input: DiscoveryInput,
     html: str,
     agent: FieldDiscoveryAgent,
@@ -140,7 +136,6 @@ async def _discover_field(
                         agent,
                         field_name,
                         field_description,
-                        field_hint,
                         discovery_input,
                         level,
                         is_container,
@@ -185,7 +180,6 @@ async def _discover_field(
 async def run_field_task(
     field_name: str,
     field_description: str,
-    field_hint: str | None,
     discovery_input: DiscoveryInput,
     html: str,
     agent: FieldDiscoveryAgent,
@@ -215,7 +209,6 @@ async def run_field_task(
     Args:
         field_name: Name of the field to discover
         field_description: Human-readable description from the contract
-        field_hint: Optional AI hint from the contract field definition
         discovery_input: URL and HTML passed to the agent
         html: Raw HTML for inline verification (same as discovery_input.html)
         agent: Shared FieldDiscoveryAgent instance
@@ -245,7 +238,7 @@ async def run_field_task(
     is_bus_leader = False
     sig: str = ''
     if scoped_bus is not None:
-        sig = field_signature(field_name, field_description, field_hint, yosoi_type)
+        sig = field_signature(field_name, field_description, yosoi_type)
         is_bus_leader = await scoped_bus.acquire(sig)
         if not is_bus_leader:
             cached = await scoped_bus.wait_for(sig)
@@ -260,7 +253,6 @@ async def run_field_task(
         result = await _discover_field(
             field_name=field_name,
             field_description=field_description,
-            field_hint=field_hint,
             discovery_input=discovery_input,
             html=html,
             agent=agent,

@@ -160,7 +160,6 @@ async def _drive_llm_api() -> None:
     await agent.discover_field(
         field_name='headline',
         field_description='the article headline',
-        field_hint=None,
         discovery_input=DiscoveryInput(url='https://example.com', html=_HTML),
         target_level=SelectorLevel.CSS,
     )

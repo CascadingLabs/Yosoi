@@ -192,7 +192,6 @@ class FieldDiscoveryDeps:
     Attributes:
         field_name: Name of the field to discover selectors for
         field_description: Human-readable description of the field
-        field_hint: Optional AI hint from the contract field definition
         input: Typed discovery input containing url and html
         target_level: Maximum selector strategy level allowed
         is_container: True if discovering the yosoi_container selector
@@ -203,7 +202,6 @@ class FieldDiscoveryDeps:
 
     field_name: str
     field_description: str
-    field_hint: str | None
     input: DiscoveryInput
     target_level: SelectorLevel = field(default=SelectorLevel.CSS)
     is_container: bool = False
@@ -218,11 +216,8 @@ def field_single_base_instructions(ctx: RunContext['FieldDiscoveryDeps']) -> str
 def field_single_field_instructions(ctx: RunContext['FieldDiscoveryDeps']) -> str:
     """Describe the single field the agent must find selectors for."""
     deps = ctx.deps
-    hint_text = f'\n    Hint: {deps.field_hint}' if deps.field_hint else ''
     text = (
-        f'Find selectors for this field:\n'
-        f'**{deps.field_name}** — {deps.field_description}{hint_text}\n\n'
-        f'{_FIELD_SELECTOR_GUIDE}'
+        f'Find selectors for this field:\n**{deps.field_name}** — {deps.field_description}\n\n{_FIELD_SELECTOR_GUIDE}'
     )
     if deps.is_container:
         text += f'\n\n{_CONTAINER_GUIDANCE}'

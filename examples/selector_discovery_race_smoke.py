@@ -111,10 +111,10 @@ class CountingAgent:
         self,
         field_name: str,
         _field_description: str,
-        _field_hint: str | None,
         _discovery_input: Any,
         _target_level: SelectorLevel,
         _is_container: bool = False,
+        _feedback: Any = None,
     ) -> FieldSelectors | None:
         self._calls[field_name] += 1
         self._leaders.append(field_name)

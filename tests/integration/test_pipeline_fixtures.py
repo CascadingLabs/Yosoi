@@ -31,8 +31,8 @@ from yosoi.models.snapshot import SelectorSnapshot, SnapshotStatus
 class ProductContract(Contract):
     """Matches VaultMart product cards."""
 
-    name: str = ys.Field(hint='product name')
-    price: str = ys.Field(hint='product price')
+    name: str = ys.Field(description='product name')
+    price: str = ys.Field(description='product price')
 
 
 # ---------------------------------------------------------------------------

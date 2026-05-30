@@ -61,12 +61,15 @@ class ContentAnalyzer:
         # FUTURE: watch for false positives — markup-heavy / image-only pages with little
         # visible text can trip this and over-escalate to Chrome. Tune thresholds against
         # the bake-off harness (CAS-44) before relying on it broadly.
-        from bs4 import BeautifulSoup
+        import lxml.html
 
-        soup = BeautifulSoup(html[:50_000], 'lxml')
-        for tag in soup(['script', 'style', 'noscript']):
-            tag.decompose()
-        text = soup.get_text(separator=' ', strip=True)
+        head = html[:50_000]
+        if not head.strip():
+            return False
+        tree = lxml.html.document_fromstring(head)
+        for tag in tree.xpath('.//script | .//style | .//noscript'):
+            tag.drop_tree()
+        text = ' '.join(tree.itertext()).strip()
         text_ratio = len(text) / max(len(html), 1)
         return len(html) > 5000 and (len(text) < 500 or text_ratio < 0.02)
 

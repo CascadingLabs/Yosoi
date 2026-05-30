@@ -52,13 +52,17 @@ MODEL = ys.openrouter(os.getenv('OPENROUTER_MODEL', 'openai/gpt-5-mini'))
 class RedditPost(ys.Contract):
     """Thread-level metadata from the post container."""
 
-    post_id: str | None = ys.Field(default=None, hint='Stable Reddit post id from the post element or canonical URL')
-    subreddit: str | None = ys.Field(default=None, hint='Subreddit name, preferably the r/... prefixed value')
-    author: str | None = ys.Author(default=None, hint='Original poster username from the post header')
-    title: str | None = ys.Title(default=None, hint='Main Reddit post title')
-    body: str | None = ys.BodyText(default=None, hint='Original post body text, excluding comments and sidebar text')
-    score: int | None = ys.Field(default=None, hint='Post score or upvote count as a non-negative integer')
-    comment_count: int | None = ys.Field(default=None, hint='Total comment count as a non-negative integer')
+    post_id: str | None = ys.Field(
+        default=None, description='Stable Reddit post id from the post element or canonical URL'
+    )
+    subreddit: str | None = ys.Field(default=None, description='Subreddit name, preferably the r/... prefixed value')
+    author: str | None = ys.Author(default=None, description='Original poster username from the post header')
+    title: str | None = ys.Title(default=None, description='Main Reddit post title')
+    body: str | None = ys.BodyText(
+        default=None, description='Original post body text, excluding comments and sidebar text'
+    )
+    score: int | None = ys.Field(default=None, description='Post score or upvote count as a non-negative integer')
+    comment_count: int | None = ys.Field(default=None, description='Total comment count as a non-negative integer')
 
     @field_validator('score', 'comment_count', mode='before')
     @classmethod
@@ -69,17 +73,19 @@ class RedditPost(ys.Contract):
 class RedditComment(ys.Contract):
     """One Reddit comment, scoped to a single ``shreddit-comment``."""
 
-    comment_id: str | None = ys.Field(default=None, hint='Stable Reddit comment id, often a t1_* thing id')
-    parent_id: str | None = ys.Field(default=None, hint='Parent thing id when available; null for top-level comments')
-    depth: int | None = ys.Field(default=None, hint='Comment nesting depth as an integer')
-    author: str | None = ys.Author(default=None, hint='Comment author username')
+    comment_id: str | None = ys.Field(default=None, description='Stable Reddit comment id, often a t1_* thing id')
+    parent_id: str | None = ys.Field(
+        default=None, description='Parent thing id when available; null for top-level comments'
+    )
+    depth: int | None = ys.Field(default=None, description='Comment nesting depth as an integer')
+    author: str | None = ys.Author(default=None, description='Comment author username')
     body: str | None = ys.BodyText(
         default=None,
-        hint='Comment body text only, excluding author, score, timestamp, buttons, and child comments',
+        description='Comment body text only, excluding author, score, timestamp, buttons, and child comments',
     )
-    score: int | None = ys.Field(default=None, hint='Comment score or points as a non-negative integer')
-    created_at: str | None = ys.Datetime(default=None, hint='Comment creation timestamp or timeago datetime')
-    permalink: str | None = ys.Url(default=None, hint='Canonical permalink for this individual comment')
+    score: int | None = ys.Field(default=None, description='Comment score or points as a non-negative integer')
+    created_at: str | None = ys.Datetime(default=None, description='Comment creation timestamp or timeago datetime')
+    permalink: str | None = ys.Url(default=None, description='Canonical permalink for this individual comment')
 
     @field_validator('depth', 'score', mode='before')
     @classmethod

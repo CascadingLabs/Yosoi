@@ -19,8 +19,8 @@ class Product(ys.Contract):
     """E-commerce product — price is always a clean float, no manual parsing required."""
 
     title: str = ys.Title()
-    price: float = ys.Price(hint='Book price — always includes £ symbol')
-    rating: str = ys.Rating(hint="Star rating written as a word e.g. 'Three'")
+    price: float = ys.Price(description='Book price — always includes £ symbol')
+    rating: str = ys.Rating(description="Star rating written as a word e.g. 'Three'")
 
 
 def example_1_builtin_coercion():
@@ -43,8 +43,8 @@ class BookStore(ys.Contract):
     """Book listing with custom per-field normalisation."""
 
     title: str = ys.Title()
-    price: float = ys.Price(hint='Book price including currency symbol')
-    category: str = ys.Field(hint='Genre or category label')
+    price: float = ys.Price(description='Book price including currency symbol')
+    category: str = ys.Field(description='Genre or category label')
 
     class Validators:
         @staticmethod

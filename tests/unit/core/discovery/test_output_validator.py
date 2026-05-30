@@ -14,7 +14,6 @@ def _ctx(forbidden: tuple[str, ...], field_name: str = 'score'):
     deps = FieldDiscoveryDeps(
         field_name=field_name,
         field_description='desc',
-        field_hint=None,
         input=DiscoveryInput(url='https://x', html='<a/>'),
         forbidden_selectors=forbidden,
     )

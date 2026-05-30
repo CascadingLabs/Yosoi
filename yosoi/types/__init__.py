@@ -1,7 +1,6 @@
 """Semantic type factories and field helpers for Yosoi contracts."""
 
 from yosoi.types.author import Author
-from yosoi.types.base import YosoiType
 from yosoi.types.body_text import BodyText
 from yosoi.types.datetime import Datetime
 from yosoi.types.field import Field, js
@@ -22,7 +21,6 @@ __all__ = [
     'RelatedContent',
     'Title',
     'Url',
-    'YosoiType',
     'js',
     'register_coercion',
 ]

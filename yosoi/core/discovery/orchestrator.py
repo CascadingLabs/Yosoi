@@ -135,13 +135,12 @@ class DiscoveryOrchestrator:
         discovery_input = DiscoveryInput(url=url_context, html=html)
 
         field_descs = self._contract.field_descriptions()
-        hints = self._collect_hints()
         overrides = self._contract.get_selector_overrides()
 
         # Build specs first so the bypass check sees root/nested container
         # tasks: a contract that overrides every content field can still depend
         # on a discovered root or container selector.
-        task_specs = self._build_task_specs(field_descs, hints, stale_fields)
+        task_specs = self._build_task_specs(field_descs, stale_fields)
         field_count = len(task_specs)
 
         # Only skip AI when there is genuinely nothing left to discover
@@ -170,7 +169,6 @@ class DiscoveryOrchestrator:
                 url_context=url_context,
                 domain=domain,
                 discovery_input=discovery_input,
-                hints=hints,
                 overrides=overrides,
                 stale_fields=stale_fields,
                 feedback=feedback,
@@ -185,7 +183,6 @@ class DiscoveryOrchestrator:
         url_context: str,
         domain: str,
         discovery_input: DiscoveryInput,
-        hints: dict[str, str | None],
         overrides: dict[str, dict[str, Any]],
         stale_fields: set[str] | None,
         feedback: dict[str, FieldFeedback] | None = None,
@@ -203,7 +200,7 @@ class DiscoveryOrchestrator:
 
         existing = {name: snapshot_to_cache_entry(snapshot) for name, snapshot in snapshots.items()}
 
-        task_specs = self._build_task_specs(field_descs, hints, stale_fields)
+        task_specs = self._build_task_specs(field_descs, stale_fields)
 
         # Obtain a domain-scoped bus view shared by all field tasks in this batch
         scoped_bus = self._bus.scoped(domain) if self._bus is not None else None
@@ -213,7 +210,6 @@ class DiscoveryOrchestrator:
             run_field_task(
                 field_name=str(spec['field_name']),
                 field_description=str(spec['field_description']),
-                field_hint=spec['field_hint'] if spec['field_hint'] is None else str(spec['field_hint']),
                 discovery_input=discovery_input,
                 html=html,
                 agent=self._agent,
@@ -340,7 +336,6 @@ class DiscoveryOrchestrator:
     def _build_task_specs(
         self,
         field_descs: dict[str, str],
-        hints: dict[str, str | None],
         stale_fields: set[str] | None,
     ) -> list[dict[str, object]]:
         """Build the list of field task specs, optionally filtered to stale fields only."""
@@ -348,7 +343,6 @@ class DiscoveryOrchestrator:
             {
                 'field_name': name,
                 'field_description': desc,
-                'field_hint': hints.get(name),
                 'is_container': False,
             }
             for name, desc in field_descs.items()
@@ -362,7 +356,6 @@ class DiscoveryOrchestrator:
                         '(e.g., .product-card, article.listing). '
                         'Set to null for single-item pages.'
                     ),
-                    'field_hint': None,
                     'is_container': True,
                 }
             )
@@ -382,12 +375,7 @@ class DiscoveryOrchestrator:
                     {
                         'field_name': f'{parent_name}_root',
                         'field_description': f'Scoped container element that wraps all {parent_name} fields',
-                        'field_hint': None,
                         'is_container': True,
                     }
                 )
         return specs
-
-    def _collect_hints(self) -> dict[str, str | None]:
-        """Extract yosoi_hint from each contract field, expanding nested contracts."""
-        return self._contract.field_hints()

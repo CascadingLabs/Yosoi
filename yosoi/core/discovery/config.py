@@ -8,7 +8,7 @@ from __future__ import annotations
 import os
 import warnings
 from collections.abc import Callable
-from typing import Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
 # ============================================================================
 # 1. CONFIG DATACLASSES - Simple configuration objects
@@ -16,31 +16,21 @@ from typing import Any, Protocol
 from pydantic import BaseModel, ConfigDict
 from pydantic_ai import Agent
 from pydantic_ai.models import Model
-from pydantic_ai.models.anthropic import AnthropicModel
-from pydantic_ai.models.bedrock import BedrockConverseModel
 from pydantic_ai.models.cerebras import CerebrasModel
 from pydantic_ai.models.google import GoogleModel
 from pydantic_ai.models.groq import GroqModel
-from pydantic_ai.models.huggingface import HuggingFaceModel
-from pydantic_ai.models.mistral import MistralModel
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.models.openrouter import OpenRouterModel
-from pydantic_ai.models.xai import XaiModel
 from pydantic_ai.providers.alibaba import AlibabaProvider
-from pydantic_ai.providers.anthropic import AnthropicProvider
 from pydantic_ai.providers.azure import AzureProvider
-from pydantic_ai.providers.bedrock import BedrockProvider
 from pydantic_ai.providers.cerebras import CerebrasProvider
 from pydantic_ai.providers.deepseek import DeepSeekProvider
 from pydantic_ai.providers.fireworks import FireworksProvider
 from pydantic_ai.providers.github import GitHubProvider
 from pydantic_ai.providers.google import GoogleProvider
-from pydantic_ai.providers.google_vertex import GoogleVertexProvider
 from pydantic_ai.providers.groq import GroqProvider
 from pydantic_ai.providers.heroku import HerokuProvider
-from pydantic_ai.providers.huggingface import HuggingFaceProvider
 from pydantic_ai.providers.litellm import LiteLLMProvider
-from pydantic_ai.providers.mistral import MistralProvider
 from pydantic_ai.providers.moonshotai import MoonshotAIProvider
 from pydantic_ai.providers.nebius import NebiusProvider
 from pydantic_ai.providers.ollama import OllamaProvider
@@ -50,7 +40,16 @@ from pydantic_ai.providers.ovhcloud import OVHcloudProvider
 from pydantic_ai.providers.sambanova import SambaNovaProvider
 from pydantic_ai.providers.together import TogetherProvider
 from pydantic_ai.providers.vercel import VercelProvider
-from pydantic_ai.providers.xai import XaiProvider
+
+if TYPE_CHECKING:
+    # Provider model classes gated behind optional extras (``yosoi[<extra>]``).
+    # The matching SDKs are imported lazily inside each factory below, so a
+    # slim install can still ``import yosoi`` without these packages present.
+    from pydantic_ai.models.anthropic import AnthropicModel
+    from pydantic_ai.models.bedrock import BedrockConverseModel
+    from pydantic_ai.models.huggingface import HuggingFaceModel
+    from pydantic_ai.models.mistral import MistralModel
+    from pydantic_ai.models.xai import XaiModel
 
 
 class LLMConfig(BaseModel):
@@ -138,11 +137,28 @@ def _provider_kwargs(config: LLMConfig) -> dict[str, Any]:
     return kwargs
 
 
+def _provider_extra_error(provider: str, extra: str, exc: ImportError) -> ModuleNotFoundError:
+    """Build a friendly error when an optional provider SDK isn't installed.
+
+    Providers with heavyweight SDKs (boto3, google-genai, etc.) ship as optional
+    extras to keep the base install slim. This points the user at the right one.
+    """
+    return ModuleNotFoundError(
+        f"The '{provider}' provider requires the optional '{extra}' dependency, which is not installed. "
+        f"Install it with:  uv add 'yosoi[{extra}]'  (or:  pip install 'yosoi[{extra}]')"
+    )
+
+
 # --- First-class model providers ---
 
 
 def create_anthropic_model(config: LLMConfig) -> AnthropicModel:
     """Create an Anthropic model from configuration."""
+    try:
+        from pydantic_ai.models.anthropic import AnthropicModel
+        from pydantic_ai.providers.anthropic import AnthropicProvider
+    except ImportError as exc:
+        raise _provider_extra_error('anthropic', 'anthropic', exc) from exc
     prov = AnthropicProvider(**_provider_kwargs(config))
     return AnthropicModel(config.model_name, provider=prov)
 
@@ -167,6 +183,11 @@ def create_gemini_model(config: LLMConfig) -> GoogleModel:
 
 def create_mistral_model(config: LLMConfig) -> MistralModel:
     """Create a Mistral model from configuration."""
+    try:
+        from pydantic_ai.models.mistral import MistralModel
+        from pydantic_ai.providers.mistral import MistralProvider
+    except ImportError as exc:
+        raise _provider_extra_error('mistral', 'mistral', exc) from exc
     prov = MistralProvider(**_provider_kwargs(config))
     return MistralModel(config.model_name, provider=prov)
 
@@ -177,6 +198,11 @@ def create_huggingface_model(config: LLMConfig) -> HuggingFaceModel:
     Set ``provider_name`` in ``extra_params`` to route to a specific
     inference provider (e.g. ``'nebius'``, ``'together'``, ``'cerebras'``).
     """
+    try:
+        from pydantic_ai.models.huggingface import HuggingFaceModel
+        from pydantic_ai.providers.huggingface import HuggingFaceProvider
+    except ImportError as exc:
+        raise _provider_extra_error('huggingface', 'huggingface', exc) from exc
     kwargs = _provider_kwargs(config)
     if config.extra_params and 'provider_name' in config.extra_params:
         kwargs['provider_name'] = config.extra_params['provider_name']
@@ -186,6 +212,11 @@ def create_huggingface_model(config: LLMConfig) -> HuggingFaceModel:
 
 def create_xai_model(config: LLMConfig) -> XaiModel:
     """Create an xAI model from configuration."""
+    try:
+        from pydantic_ai.models.xai import XaiModel
+        from pydantic_ai.providers.xai import XaiProvider
+    except ImportError as exc:
+        raise _provider_extra_error('xai', 'xai', exc) from exc
     prov = XaiProvider(**_provider_kwargs(config))
     return XaiModel(config.model_name, provider=prov)
 
@@ -197,6 +228,11 @@ def create_bedrock_model(config: LLMConfig) -> BedrockConverseModel:
     ``aws_secret_access_key``, ``aws_session_token``, and ``region_name``
     via ``extra_params`` or let boto3 resolve credentials from environment.
     """
+    try:
+        from pydantic_ai.models.bedrock import BedrockConverseModel
+        from pydantic_ai.providers.bedrock import BedrockProvider
+    except ImportError as exc:
+        raise _provider_extra_error('bedrock', 'bedrock', exc) from exc
     kwargs: dict[str, Any] = {}
     if config.api_key is not None:
         kwargs['aws_access_key_id'] = config.api_key
@@ -219,6 +255,10 @@ def create_vertexai_model(config: LLMConfig) -> GoogleModel:
         continues to work but may be removed in a future release. Watch
         https://ai.pydantic.dev/models/google/ for the replacement API.
     """
+    try:
+        from pydantic_ai.providers.google_vertex import GoogleVertexProvider
+    except ImportError as exc:
+        raise _provider_extra_error('vertexai', 'vertexai', exc) from exc
     warnings.warn(
         "The 'vertexai'/'google-vertex' provider uses GoogleVertexProvider which is deprecated "
         'by pydantic-ai. It still works, but watch https://ai.pydantic.dev/models/google/ '

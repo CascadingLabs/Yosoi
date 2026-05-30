@@ -1,14 +1,13 @@
 """Custom type — extending Yosoi with your own semantic type.
 
-Demonstrates both patterns for defining a custom type:
-
-  1. @register_coercion  (preferred — one function, zero boilerplate)
-  2. class MyType(YosoiType)  (OOP style, groups coerce + factory under one name)
+Custom types are defined with the ``@register_coercion`` decorator: one
+function, zero boilerplate. The decorator stores the function as the coerce
+logic and replaces the name with a Field factory.
 
 After definition, custom types work exactly like built-ins:
 
     phone: str = PhoneNumber(country_code='+44')
-    isbn: str = ISBN.field(require_isbn13=True)
+    isbn: str = ISBN(require_isbn13=True)
 
 Run with:
     uv run python examples/custom_type.py
@@ -29,7 +28,7 @@ console = Console()
 
 
 # =============================================================================
-# Pattern 1: @register_coercion  (preferred)
+# Defining a custom type with @register_coercion
 # =============================================================================
 #
 # The decorator does two things at once:
@@ -59,53 +58,19 @@ def PhoneNumber(v: object, config: dict[str, Any], source_url: str | None = None
     return f'{cc}{digits}'
 
 
-# =============================================================================
-# Pattern 2: class MyType(YosoiType)
-# =============================================================================
-#
-# Useful when you prefer OOP or want the coerce logic and field factory
-# grouped under one class name.  __init_subclass__ handles registration.
-# You write the Field factory yourself as a classmethod.
+# A second custom type — config flags become factory kwargs (require_isbn13).
 
 
-class ISBN(ys.YosoiType):
+@register_coercion('isbn', description='An ISBN-10 or ISBN-13 identifier', require_isbn13=False)
+def ISBN(v: object, config: dict[str, Any], source_url: str | None = None) -> str:
     """An ISBN-10 or ISBN-13 field that normalises to digits-only."""
-
-    type_name = 'isbn'
-
-    @staticmethod
-    def coerce(v: object, config: dict[str, Any], source_url: str | None = None) -> str:  # noqa: ARG004
-        """Strip hyphens/spaces and optionally enforce ISBN-13 length."""
-        raw = re.sub(r'[\s\-]', '', str(v))
-        if not raw.isdigit():
-            raise ValueError(f'ISBN contains non-digit characters after normalisation: {raw!r}')
-        require_isbn13: bool = config.get('require_isbn13', False)
-        if require_isbn13 and len(raw) != 13:
-            raise ValueError(f'Expected ISBN-13 (13 digits), got {len(raw)}: {raw!r}')
-        return raw
-
-    @classmethod
-    def field(
-        cls,
-        require_isbn13: bool = False,
-        description: str = 'An ISBN-10 or ISBN-13 identifier',
-        **kwargs: Any,
-    ) -> Any:
-        """Build a pydantic FieldInfo for this type.
-
-        Example::
-
-            class BookListing(Contract):
-                isbn: str = ISBN.field()
-                isbn13: str = ISBN.field(require_isbn13=True)
-        """
-        from yosoi.types.field import Field
-
-        return Field(
-            description=description,
-            json_schema_extra={'yosoi_type': cls.type_name, 'require_isbn13': require_isbn13},
-            **kwargs,
-        )
+    raw = re.sub(r'[\s\-]', '', str(v))
+    if not raw.isdigit():
+        raise ValueError(f'ISBN contains non-digit characters after normalisation: {raw!r}')
+    require_isbn13: bool = config.get('require_isbn13', False)
+    if require_isbn13 and len(raw) != 13:
+        raise ValueError(f'Expected ISBN-13 (13 digits), got {len(raw)}: {raw!r}')
+    return raw
 
 
 # =============================================================================
@@ -128,8 +93,8 @@ class BookListing(Contract):
     title: str = ys.Title()
     author: str = ys.Author()
     price: float = ys.Price()
-    isbn: str = ISBN.field()
-    isbn13: str = ISBN.field(require_isbn13=True)
+    isbn: str = ISBN()
+    isbn13: str = ISBN(require_isbn13=True)
 
 
 # =============================================================================
@@ -186,7 +151,7 @@ def demo_phone() -> None:
 
 
 def demo_isbn() -> None:
-    section('ISBN — YosoiType subclass')
+    section('ISBN — @register_coercion')
 
     cases = [
         ('ISBN-10 dashes', '0-306-40615-2'),

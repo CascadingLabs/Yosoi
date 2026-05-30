@@ -113,7 +113,6 @@ class FieldDiscoveryAgent:
         self,
         field_name: str,
         field_description: str,
-        field_hint: str | None,
         discovery_input: DiscoveryInput,
         target_level: SelectorLevel,
         is_container: bool = False,
@@ -124,7 +123,6 @@ class FieldDiscoveryAgent:
         Args:
             field_name: Name of the field to find selectors for
             field_description: Human-readable field description
-            field_hint: Optional hint from contract field definition
             discovery_input: URL and HTML input for the agent
             target_level: Maximum selector strategy level allowed
             is_container: True when discovering the yosoi_container selector
@@ -143,7 +141,6 @@ class FieldDiscoveryAgent:
         deps = FieldDiscoveryDeps(
             field_name=field_name,
             field_description=field_description,
-            field_hint=field_hint,
             input=discovery_input,
             target_level=target_level,
             is_container=is_container,

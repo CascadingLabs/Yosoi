@@ -64,7 +64,6 @@ from yosoi.types import (
     Rating,
     Title,
     Url,
-    YosoiType,
     js,
     register_coercion,
 )
@@ -104,7 +103,6 @@ __all__ = [
     'Url',
     'Video',
     'YosoiConfig',
-    'YosoiType',
     'alibaba',
     'anthropic',
     'attr',
