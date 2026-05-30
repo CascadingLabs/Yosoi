@@ -28,6 +28,7 @@ dependencies = [
   "click>=8.3",
   "cssselect>=1.4",
   "dateparser>=1.4",
+  "fastmcp>=3.3.1",
   "httpx>=0.28.1",
   "langfuse>=4.5.1",
   "lxml>=6.0.2",
@@ -61,6 +62,7 @@ urls.Homepage = "https://cascadinglabs.com/yosoi/"
 urls.Issues = "https://github.com/CascadingLabs/Yosoi/issues"
 urls.Repository = "https://github.com/CascadingLabs/Yosoi"
 scripts.yosoi = "yosoi.cli:main"
+scripts.yosoi-validator-mcp = "yosoi.integrations.validator_mcp:main"
 
 [dependency-groups]
 dev = [

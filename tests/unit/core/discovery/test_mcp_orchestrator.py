@@ -7,7 +7,7 @@ from yosoi.core.discovery.config import LLMConfig
 from yosoi.core.discovery.mcp_agent import MCPDiscoveryDraft, MCPFieldFinding
 from yosoi.core.discovery.mcp_orchestrator import MCPDiscoveryOrchestrator
 from yosoi.models.defaults import NewsArticle
-from yosoi.models.replay import ActKind, LessonKey, ReplayAct, ReplayNode, ReplayPlan
+from yosoi.models.replay import LessonKey
 from yosoi.models.selectors import SelectorEntry
 from yosoi.storage.lesson import LessonStorage
 from yosoi.utils import observability as obs
@@ -39,15 +39,6 @@ def _draft() -> MCPDiscoveryDraft:
             ),
         ],
         root=SelectorEntry(type='css', value='article.card'),
-        replay_plan=ReplayPlan(
-            nodes=[
-                ReplayNode(
-                    id='nav',
-                    intent='open article',
-                    act=ReplayAct(kind=ActKind.NAVIGATE, url=_URL),
-                )
-            ]
-        ),
     )
 
 

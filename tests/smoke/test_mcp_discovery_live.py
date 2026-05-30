@@ -63,8 +63,15 @@ async def test_mcp_discovers_then_replays(llm_config, lesson_storage):
         lesson_storage=lesson_storage,
     )
 
+    # Fetch the page so the orchestrator's re-extraction gate validates against
+    # real HTML (HN is static, so a plain GET matches what the agent sees).
+    import httpx
+
+    async with httpx.AsyncClient(timeout=30) as client:
+        page_html = (await client.get(HN_URL, follow_redirects=True)).text
+
     # First run: live discovery via the MCP agent.
-    discovered = await orch.discover_selectors('', HN_URL)
+    discovered = await orch.discover_selectors(page_html, HN_URL)
     assert discovered is not None
     assert 'title' in discovered
 

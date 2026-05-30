@@ -28,10 +28,14 @@ from yosoi.core.discovery.mcp_agent import MCPDiscoveryAgent, MCPDiscoveryDraft
 from yosoi.core.verification.semantic import SemanticValidator, field_rules_for_contract
 from yosoi.models.contract import Contract
 from yosoi.models.replay import (
+    ActKind,
     DiscoveryLesson,
     LessonKey,
     LessonProvenance,
     LessonValidation,
+    ReplayAct,
+    ReplayNode,
+    ReplayPlan,
     VerifyReport,
     utc_now,
 )
@@ -46,6 +50,17 @@ from yosoi.utils.signatures import contract_signature
 SelectorMap = dict[str, dict[str, Any]]
 
 logger = logging.getLogger(__name__)
+
+
+def _navigate_plan(url: str) -> ReplayPlan:
+    """Build the minimal replay plan: navigate to the target page.
+
+    Single-page targets only need the page loaded before extraction; the cached
+    selectors do the rest. Richer interaction recording is a separate concern.
+    """
+    return ReplayPlan(
+        nodes=[ReplayNode(id='navigate', intent='open the target page', act=ReplayAct(kind=ActKind.NAVIGATE, url=url))]
+    )
 
 
 class MCPDiscoveryOrchestrator:
@@ -114,12 +129,12 @@ class MCPDiscoveryOrchestrator:
             SelectorMap with discovered selectors, or None if discovery failed.
 
         """
-        # Accepted for call-site parity with the static orchestrator (Pipeline
-        # passes these as args/kwargs). ``html`` is advisory — the agent drives
-        # its own browser from ``url`` — and the agent self-corrects in-loop with
-        # whole-page discovery, so partial rediscovery / external feedback do not
-        # apply here.
-        del html, stale_fields, feedback
+        # ``stale_fields`` / ``feedback`` are accepted for call-site parity with
+        # the static orchestrator (Pipeline passes them as kwargs). The MCP agent
+        # self-corrects in-loop and does whole-page discovery, so neither partial
+        # rediscovery nor external feedback applies here. ``html`` IS used — as the
+        # independent re-extraction oracle in the validation gate (see _distill).
+        del stale_fields, feedback
         if not url:
             logger.warning('MCP discovery requires a URL; none provided')
             return None
@@ -135,13 +150,13 @@ class MCPDiscoveryOrchestrator:
                 return self._lesson_to_selector_map(cached)
 
         with obs.span('mcp_orchestrator_discover_selectors', url=url, domain=domain):
-            return await self._discover_fresh(url=url, key=key)
+            return await self._discover_fresh(url=url, key=key, html=html)
 
-    async def _discover_fresh(self, *, url: str, key: LessonKey) -> SelectorMap | None:
+    async def _discover_fresh(self, *, url: str, key: LessonKey, html: str) -> SelectorMap | None:
         fields = self._contract.field_descriptions()
         draft = await self._agent.discover(url=url, fields=fields, field_rules=self._field_rules)
 
-        merged, snapshots, sample_values, rejected = self._distill(draft)
+        merged, snapshots, sample_values, rejected = self._distill(draft, html)
 
         if not any(name != 'root' for name in merged):
             obs.warning('MCP discovery produced no verified fields', url=url)
@@ -150,7 +165,7 @@ class MCPDiscoveryOrchestrator:
         verified_fields = len(sample_values)
         lesson = DiscoveryLesson(
             key=key,
-            replay_plan=draft.replay_plan,
+            replay_plan=_navigate_plan(url),
             selectors=snapshots,
             validation=LessonValidation(
                 report=VerifyReport(passed=verified_fields, failed=rejected),
@@ -170,12 +185,19 @@ class MCPDiscoveryOrchestrator:
     def _distill(
         self,
         draft: MCPDiscoveryDraft,
+        html: str,
     ) -> tuple[SelectorMap, dict[str, SelectorSnapshot], dict[str, Any], int]:
         """Final-gate the draft's findings and build the selector map + snapshots.
 
-        Each finding's observed value is re-checked against its semantic rule as a
-        backstop on the agent's in-loop ``check_value`` calls — only validated
-        extractions become snapshot entries.
+        The gate validates an *independently* re-extracted value, not the value
+        the model reported: when ``html`` is available the discovered selector is
+        re-run against it (via the real :class:`ContentExtractor`) and that value
+        is what the :class:`SemanticValidator` checks. This keeps a hallucinated
+        ``sample_value`` from ever being cached as a lesson. When re-extraction
+        yields nothing (e.g. a ``:scope`` selector the parser can't replay), we
+        fall back to the model's reported value rather than wrongly rejecting —
+        the agent's in-loop ``check_value`` call already vetted it live. Only
+        validated findings become snapshot entries.
         """
         now = utc_now()
         merged: SelectorMap = {}
@@ -183,18 +205,23 @@ class MCPDiscoveryOrchestrator:
         sample_values: dict[str, Any] = {}
         rejected = 0
 
+        candidates = {f.field: FieldSelectors(primary=f.selector).model_dump(exclude_none=True) for f in draft.fields}
+        reextracted = self._reextract(html, candidates) if html.strip() else {}
+
         for finding in draft.fields:
+            reext = reextracted.get(finding.field)
+            value = reext if reext is not None else finding.sample_value
             rule = self._field_rules.get(finding.field)
             if rule is not None:
-                issues = self._validator.validate({finding.field: finding.sample_value}, {finding.field: rule})
+                issues = self._validator.validate({finding.field: value}, {finding.field: rule})
                 if issues:
                     rejected += 1
                     logger.info('Rejected MCP finding for %s: %s', finding.field, issues[0].reason)
                     continue
-            entry = FieldSelectors(primary=finding.selector).model_dump(exclude_none=True)
+            entry = candidates[finding.field]
             merged[finding.field] = entry
             snapshots[finding.field] = selector_dict_to_snapshot(entry, discovered_at=now)
-            sample_values[finding.field] = finding.sample_value
+            sample_values[finding.field] = value
 
         if draft.root is not None:
             root_entry = {'primary': draft.root.model_dump(exclude_none=True)}
@@ -202,6 +229,34 @@ class MCPDiscoveryOrchestrator:
             snapshots['root'] = selector_dict_to_snapshot(root_entry, discovered_at=now)
 
         return merged, snapshots, sample_values, rejected
+
+    def _reextract(self, html: str, candidates: SelectorMap) -> dict[str, str]:
+        """Independently re-run each discovered selector against the page HTML.
+
+        Returns field -> first extracted value (stringified). Fields whose
+        selector matches nothing are omitted, so the caller can fall back to the
+        model's reported value rather than over-rejecting.
+        """
+        from rich.console import Console as _Console
+
+        from yosoi.core.extraction.extractor import ContentExtractor
+        from yosoi.models.selectors import SelectorLevel
+
+        extractor = ContentExtractor(console=_Console(quiet=True), contract=self._contract)
+        try:
+            extracted = extractor.extract_content_with_html('', html, candidates, max_level=SelectorLevel.VISUAL)
+        except Exception as exc:  # noqa: BLE001 — extraction is a best-effort oracle, never fatal
+            logger.info('Re-extraction oracle failed, falling back to reported values: %s', exc)
+            return {}
+
+        out: dict[str, str] = {}
+        for name, raw in (extracted or {}).items():
+            value: object = raw[0] if isinstance(raw, list) and raw else raw
+            if isinstance(value, dict):
+                value = next(iter(value.values()), None)
+            if value is not None and not isinstance(value, list) and str(value).strip():
+                out[name] = str(value)
+        return out
 
     @staticmethod
     def _lesson_to_selector_map(lesson: DiscoveryLesson) -> SelectorMap:
