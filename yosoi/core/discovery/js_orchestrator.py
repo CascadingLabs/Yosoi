@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
 from pydantic_ai import Agent
 from rich.console import Console
+from tenacity import AsyncRetrying, RetryError, retry_if_exception_type, stop_after_attempt, wait_none
 
 from yosoi.core.discovery.config import LLMConfig, create_model
 from yosoi.prompts.js_discovery import (
@@ -19,18 +21,26 @@ from yosoi.storage.js_scripts import JsScriptEntry, JsScriptStorage
 from yosoi.utils import observability as obs
 
 if TYPE_CHECKING:
-    from yosoi.core.fetcher.voiddriver import _VoidCrawlFetcher
+    from yosoi.core.fetcher.base import HTMLFetcher
 
 logger = logging.getLogger(__name__)
 
 _MAX_ATTEMPTS = 3
-_REPR_MAX = 200  # max chars when showing eval output in feedback
+_REPR_MAX = 200  # max chars when showing eval output in LLM feedback
 
 
 def _repr(value: Any) -> str:
     """Short human-readable repr of a JS eval result for LLM feedback."""
     raw = repr(value)
     return raw if len(raw) <= _REPR_MAX else raw[:_REPR_MAX] + '…'
+
+
+class _VerificationFailed(Exception):
+    """Raised inside the tenacity retry loop when a script fails live-DOM verification."""
+
+    def __init__(self, script: str | None, output: str | None) -> None:
+        self.script = script
+        self.output = output
 
 
 class JsDiscoveryOrchestrator:
@@ -45,7 +55,7 @@ class JsDiscoveryOrchestrator:
     4. Executes the generated script on the live tab to verify it returns a
        non-null, non-error result.
     5. If verification fails, feeds the error/output back to the LLM and retries
-       (up to ``max_attempts`` times).
+       (managed by tenacity, up to ``max_attempts`` times, no sleep between attempts).
     6. Caches verified scripts in ``.yosoi/js_scripts/`` so replay never calls
        the LLM again for that domain+contract pair.
     """
@@ -87,7 +97,7 @@ class JsDiscoveryOrchestrator:
         domain: str,
         contract_sig: str,
         fields: dict[str, str],  # {field_name: description}
-        fetcher: _VoidCrawlFetcher,
+        fetcher: HTMLFetcher,
     ) -> dict[str, str]:
         """Discover JS scripts for all undiscovered action fields.
 
@@ -98,7 +108,7 @@ class JsDiscoveryOrchestrator:
             domain: Bare domain string for cache keying.
             contract_sig: Contract signature for cache keying.
             fields: Mapping of {field_name: description} for undiscovered fields.
-            fetcher: An L2 fetcher whose browser pool is already started.
+            fetcher: An L2 fetcher that implements ``browse()`` (supports_browse=True).
 
         Returns:
             Mapping of {field_name: verified_script} for successfully discovered fields.
@@ -111,18 +121,23 @@ class JsDiscoveryOrchestrator:
         self._console.print(f'[dim]  ↻ JS discovery: {len(fields)} field(s) on {domain}[/dim]')
 
         discovered: dict[str, str] = {}
+        attempt_counts: dict[str, int] = {}
 
-        async with fetcher.browse(url) as tab:
+        async with fetcher.browse(url) as tab:  # type: ignore[attr-defined]
             dom_context = await self._pre_probe(tab)
             if dom_context is None:
                 self._console.print('[warning]  ✗ JS discovery: pre-probe eval failed[/warning]')
                 return {}
 
             for field_name, description in fields.items():
-                script = await self._discover_field(tab, field_name, description, dom_context)
-                if script:
+                result = await self._discover_field(tab, field_name, description, dom_context)
+                if result is not None:
+                    script, attempts = result
                     discovered[field_name] = script
-                    self._console.print(f'[success]  ✓ JS discovery: {field_name}[/success]')
+                    attempt_counts[field_name] = attempts
+                    self._console.print(
+                        f'[success]  ✓ JS discovery: {field_name} (attempt {attempts}/{self._max_attempts})[/success]'
+                    )
                 else:
                     self._console.print(
                         f'[warning]  ✗ JS discovery: {field_name} — no valid script after '
@@ -130,7 +145,7 @@ class JsDiscoveryOrchestrator:
                     )
 
         if discovered:
-            await self._cache(domain, contract_sig, fields, discovered)
+            await self._cache(domain, contract_sig, fields, discovered, attempt_counts)
 
         return discovered
 
@@ -152,49 +167,61 @@ class JsDiscoveryOrchestrator:
         field_name: str,
         description: str,
         dom_context: dict[str, Any],
-    ) -> str | None:
-        """Run the iterative LLM + verify loop for one field."""
-        previous_script: str | None = None
-        previous_result: str | None = None
+    ) -> tuple[str, int] | None:
+        """Run the tenacity-managed LLM+verify loop for one field.
 
-        for attempt in range(1, self._max_attempts + 1):
-            deps = JsDiscoveryDeps(
-                field_name=field_name,
-                field_description=description,
-                dom_context=dom_context,
-                previous_attempt=previous_script,
-                previous_result=previous_result,
-            )
+        Returns:
+            ``(verified_script, attempt_count)`` on success, ``None`` after exhausting
+            all attempts without a verified script.
 
-            with obs.span(
-                f'js_discovery[{field_name}]',
-                field=field_name,
-                attempt=attempt,
+        """
+        state: dict[str, str | None] = {'script': None, 'result': None}
+
+        try:
+            async for attempt in AsyncRetrying(
+                stop=stop_after_attempt(self._max_attempts),
+                wait=wait_none(),  # LLM generation loop — no sleep needed between attempts
+                retry=retry_if_exception_type(_VerificationFailed),
+                reraise=True,
             ):
-                script = await self._call_llm(deps, field_name, attempt)
+                with attempt:
+                    attempt_num = attempt.retry_state.attempt_number
+                    deps = JsDiscoveryDeps(
+                        field_name=field_name,
+                        field_description=description,
+                        dom_context=dom_context,
+                        previous_attempt=state['script'],
+                        previous_result=state['result'],
+                    )
+                    with obs.span(
+                        f'js_discovery[{field_name}]',
+                        field=field_name,
+                        attempt=attempt_num,
+                    ):
+                        script = await self._call_llm(deps, field_name, attempt_num)
 
-            if not script:
-                continue
+                    if not script:
+                        raise _VerificationFailed(None, 'LLM returned empty script')
 
-            script = script.strip()
-            verified, output = await self._verify(tab, script, field_name)
-            if verified:
-                return script
+                    script = script.strip()
+                    verified, output = await self._verify(tab, script, field_name)
+                    if not verified:
+                        state['script'] = script
+                        state['result'] = output
+                        raise _VerificationFailed(script, output)
 
-            previous_script = script
-            previous_result = output
+                    return script, attempt_num
+
+        except (_VerificationFailed, RetryError):
+            pass
 
         return None
 
     async def _call_llm(self, deps: JsDiscoveryDeps, field_name: str, attempt: int) -> str | None:
         """Call the LLM agent and return the generated script string."""
         try:
-            result = await self._agent.run(
-                build_user_prompt(deps),
-                deps=deps,
-            )
+            result = await self._agent.run(build_user_prompt(deps), deps=deps)
             script = result.output.strip()
-            # Strip accidental markdown code fences
             if script.startswith('```'):
                 lines = script.splitlines()
                 script = '\n'.join(ln for ln in lines if not ln.startswith('```')).strip()
@@ -211,9 +238,15 @@ class JsDiscoveryOrchestrator:
     async def _verify(self, tab: Any, script: str, field_name: str) -> tuple[bool, str | None]:
         """Execute the script on the live tab and check the result.
 
+        A script is considered verified when it runs without exception AND
+        returns a non-None value.  Note that ``False``, ``[]``, ``""``, and
+        ``0`` are all valid return values (e.g. "no Alita on this page" or
+        "empty competitor list") and are treated as verified — they are
+        semantically meaningful results, not failures.  Only JavaScript
+        ``null`` (Python ``None``) is treated as "not found / failed".
+
         Returns:
-            (verified, repr_of_output) — verified is True if the script ran
-            without error and returned a non-null, non-undefined value.
+            ``(True, repr_of_output)`` if verified, ``(False, error_or_null)`` otherwise.
 
         """
         try:
@@ -231,23 +264,19 @@ class JsDiscoveryOrchestrator:
         contract_sig: str,
         descriptions: dict[str, str],
         discovered: dict[str, str],
+        attempt_counts: dict[str, int],
     ) -> None:
         """Persist verified scripts to the JS script cache."""
+        now = datetime.now(timezone.utc).isoformat()
         entries = {
             field: JsScriptEntry(
                 script=script,
                 description=descriptions.get(field, ''),
-                discovered_at=_utc_now(),
+                discovered_at=now,
                 verified=True,
                 model=self.model_name,
-                attempts=self._max_attempts,
+                attempts=attempt_counts.get(field, self._max_attempts),
             )
             for field, script in discovered.items()
         }
         await self._storage.save_entries(domain, contract_sig, entries)
-
-
-def _utc_now() -> str:
-    from datetime import datetime, timezone
-
-    return datetime.now(timezone.utc).isoformat()

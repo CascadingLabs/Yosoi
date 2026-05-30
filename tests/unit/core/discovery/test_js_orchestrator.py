@@ -155,7 +155,10 @@ async def test_discover_field_succeeds_on_first_attempt(mocker: MockerFixture):
     script = '(() => ({has_alita: true}))()'
     orch, tab = _make_orchestrator(mocker, [script], [{'has_alita': True}])
     result = await orch._discover_field(tab, 'signals', 'detect alita', {'script_srcs': []})
-    assert result == script
+    assert result is not None
+    verified_script, attempts = result
+    assert verified_script == script
+    assert attempts == 1
 
 
 @pytest.mark.asyncio
@@ -164,7 +167,10 @@ async def test_discover_field_retries_on_null_then_succeeds(mocker: MockerFixtur
     script_good = '(() => ({has_alita: true}))()'
     orch, tab = _make_orchestrator(mocker, [script_bad, script_good], [None, {'has_alita': True}])
     result = await orch._discover_field(tab, 'signals', 'detect alita', {})
-    assert result == script_good
+    assert result is not None
+    verified_script, attempts = result
+    assert verified_script == script_good
+    assert attempts == 2  # took 2 attempts
 
 
 @pytest.mark.asyncio

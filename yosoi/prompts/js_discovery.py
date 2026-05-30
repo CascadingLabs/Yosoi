@@ -14,7 +14,7 @@ PRE_PROBE_JS: Final = """
   script_srcs:  [...document.querySelectorAll('script[src]')].map(e => e.src),
   iframe_srcs:  [...document.querySelectorAll('iframe[src]')].map(e => e.src),
   window_keys:  Object.keys(window).filter(k =>
-    /chat|bot|widget|agent|alita|intercom|drift|zendesk|tidio|freshchat|hubspot|ada/i.test(k)
+    /chat|bot|widget|agent|alita|intercom|drift|zendesk|tidio|freshchat|hubspot|ada|tawk|crisp|livechat|liveagent|olark|brevo|chaport|helpcrunch|userlike|gorgias|support|help|message|notify/i.test(k)
   ),
   cookie_names: document.cookie.split(';').map(c => c.trim().split('=')[0]).filter(Boolean),
   meta_names:   [...document.querySelectorAll('meta[name],meta[property]')]

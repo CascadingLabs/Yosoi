@@ -1600,9 +1600,9 @@ class Pipeline:
             )
             return
         from yosoi.core.discovery.js_orchestrator import JsDiscoveryOrchestrator
-        from yosoi.core.fetcher.voiddriver import _VoidCrawlFetcher
 
-        if not isinstance(fetcher, _VoidCrawlFetcher):
+        if not hasattr(fetcher, 'browse'):
+            self.logger.debug('JS discovery skipped — fetcher does not implement browse()')
             return
         if self._js_discovery_orchestrator is None:
             self._js_discovery_orchestrator = JsDiscoveryOrchestrator(
