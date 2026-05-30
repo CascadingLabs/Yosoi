@@ -17,6 +17,8 @@ from __future__ import annotations
 
 import logging
 import time
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 from typing import Any
 from urllib.parse import urlparse
 
@@ -122,6 +124,22 @@ class _VoidCrawlFetcher(HTMLFetcher):
             await self._pool_ctx.__aexit__(None, None, None)
             self._pool = None
 
+    @property
+    def supports_browse(self) -> bool:
+        """Browser pool is available — JS discovery can open a live tab."""
+        return True
+
+    @asynccontextmanager
+    async def browse(self, url: str) -> AsyncGenerator[Any, None]:
+        """Open a browser tab, navigate to *url*, yield the live tab, then release.
+
+        Intended for discovery workflows that need to run eval_js calls
+        against the rendered DOM without capturing full HTML.
+        """
+        async with self._pool.acquire() as tab:
+            await tab.goto(url, timeout=float(self.timeout))
+            yield tab
+
     async def fetch(self, url: str, action_scripts: dict[str, str] | None = None) -> FetchResult:
         start = time.time()
         return await self._do_fetch(url, start, 'fetch', action_scripts=action_scripts)
@@ -193,7 +211,7 @@ class _VoidCrawlFetcher(HTMLFetcher):
     async def _eval_action_scripts(self, tab: Any, scripts: dict[str, str]) -> JsOutputs:
         composite = self._compose_action_scripts(scripts)
         try:
-            result = await tab.evaluate_js(composite)
+            result = await tab.eval_js(composite)
             if isinstance(result, dict):
                 return result
             logger.warning('action_scripts eval returned non-dict: %r', result)

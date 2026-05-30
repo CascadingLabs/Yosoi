@@ -157,6 +157,28 @@ class Contract(BaseModel):
         return handler(result)
 
     @classmethod
+    def undiscovered_action_fields(cls) -> dict[str, str]:
+        """Return {field_name: description} for JS action fields with no pre-authored script.
+
+        These fields require LLM-driven JS discovery (CAS-92) before they can be
+        evaluated on a live browser tab.
+        """
+        result: dict[str, str] = {}
+        for name, fi in cls.model_fields.items():
+            extra = fi.json_schema_extra
+            if not isinstance(extra, dict):
+                continue
+            cfg = extra.get('yosoi_action')
+            if not isinstance(cfg, dict) or cfg.get('type') != 'js':
+                continue
+            if cfg.get('script'):
+                continue  # hand-authored, already has a script
+            desc = cfg.get('description') or fi.description or ''
+            if desc:
+                result[name] = str(desc)
+        return result
+
+    @classmethod
     def action_fields(cls) -> dict[str, dict[str, Any]]:
         """Return {field_name: action_config} for fields annotated with yosoi_action.
 

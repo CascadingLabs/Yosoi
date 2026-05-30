@@ -19,41 +19,26 @@ FETCHER = 'headless'
 
 SEED_URL = 'https://www.google.com/maps/search/HomeWell+Care+Services+Plano%2C+TX/@33.021,-96.719,15z'
 
-# ── JS probe ───────────────────────────────────────────────────────────────────
-
-_REVIEW_COUNT_JS = """
-(() => {
-  // Primary: .F7nice textContent contains "4.7(43)" — fast O(1) lookup.
-  const ratingEl = document.querySelector('.F7nice');
-  if (ratingEl) {
-    const m = (ratingEl.textContent || '').match(/\\((\\d[\\d,]+)\\)/);
-    if (m) return m[1];
-  }
-  // Fallback: scan leaf nodes for "(N)" — survives .F7nice class rotation.
-  for (const el of document.querySelectorAll('span, div')) {
-    if (el.children.length === 0) {
-      const text = (el.textContent || '').trim();
-      const m = text.match(/^\\((\\d[\\d,]+)\\)$/);
-      if (m) return m[1];
-    }
-  }
-  return '';
-})()
-""".strip()
-
-
 # ── Contract ──────────────────────────────────────────────────────────────────
 
 
 class MapsPlaceFacts(ys.Contract):
-    """Minimal Maps contract — rating via CSS discovery, review_count via ys.js."""
+    """Minimal Maps contract — CSS discovery for most fields, ys.js for review_count.
+
+    review_count uses ys.js auto-discovery: LLM writes the script once on the
+    first domain visit, caches it, replays on all subsequent URLs — zero extra
+    LLM calls after the first.
+    """
 
     business_name: str = ys.Title(default='')
     rating: str = ys.Rating(default='')
     review_count: str = ys.js(
-        _REVIEW_COUNT_JS,
+        description=(
+            'Google Maps review count — the integer shown in parentheses next to the '
+            "star rating, e.g. '47' from '4.7 (47)' or '1,234' from '4.8 (1,234)'. "
+            'Return only the digits and commas, no parentheses or surrounding text.'
+        ),
         default='',
-        description='Google review count extracted from parenthetical text in the live DOM.',
     )
     phone: str = ys.Field(
         default='',

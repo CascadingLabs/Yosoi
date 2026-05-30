@@ -529,7 +529,8 @@ def test_action_fields_returns_js_action_config():
 
     actions = TechContract.action_fields()
     assert 'signals' in actions
-    assert actions['signals'] == {'type': 'js', 'script': '(() => ({has_alita: true}))()'}
+    assert actions['signals']['type'] == 'js'
+    assert actions['signals']['script'] == '(() => ({has_alita: true}))()'
     assert 'title' not in actions
 
 

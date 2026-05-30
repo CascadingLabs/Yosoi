@@ -40,6 +40,7 @@ from yosoi.models.selectors import SelectorLevel
 from yosoi.models.snapshot import CacheVerdict, SelectorSnapshot, snapshot_to_selector_dict
 from yosoi.prompts.discovery import FieldFeedback
 from yosoi.storage import DebugManager, LLMTracker, SelectorStorage
+from yosoi.storage.js_scripts import JsScriptStorage
 from yosoi.storage.tracking import DomainStats
 from yosoi.utils import observability
 from yosoi.utils.exceptions import BotDetectionError
@@ -195,6 +196,7 @@ class Pipeline:
         self.console = Console(theme=self.custom_theme, quiet=quiet)
         self.cleaner = HTMLCleaner(console=self.console)
         self.storage = SelectorStorage()
+        self.js_storage = JsScriptStorage()
         self.discovery = DiscoveryOrchestrator(
             contract=self.contract,
             llm_config=llm_config,
@@ -205,6 +207,7 @@ class Pipeline:
             bus=bus,
             write_lock=write_lock,
         )
+        self._js_discovery_orchestrator: Any = None  # created lazily on first discovery call
         self.verifier = SelectorVerifier(console=self.console)
         self.semantic_validator = SemanticValidator()
         self._field_rules = field_rules_for_contract(self.contract)
@@ -686,10 +689,13 @@ class Pipeline:
             ContentMap dicts — one per extracted item.
 
         """
+        # JS discovery: write and verify scripts for undiscovered ys.js() fields.
+        # Runs before the main fetch so the live tab is reused within the pool.
+        await self._discover_js_actions(url, domain, fetcher)
+
+        js_scripts = await self._resolve_js_scripts(domain)
         with observability.span('fetch', url=url, max_retries=max_fetch_retries):
-            result = await self._fetch(
-                url, fetcher, max_retries=max_fetch_retries, action_scripts=self._js_action_scripts() or None
-            )
+            result = await self._fetch(url, fetcher, max_retries=max_fetch_retries, action_scripts=js_scripts or None)
             if not result:
                 raise RuntimeError(f'Failed to fetch {url}')
             assert result.html is not None, 'result.html should not be None after successful fetch'
@@ -1554,8 +1560,64 @@ class Pipeline:
         return self._pop_root(selectors)
 
     def _js_action_scripts(self) -> dict[str, str]:
-        """Return {field: js_script} for all JS-typed action fields in the contract."""
-        return {name: cfg['script'] for name, cfg in self.contract.action_fields().items() if cfg.get('type') == 'js'}
+        """Return {field: js_script} for JS action fields with a hand-authored script."""
+        return {
+            name: cfg['script']
+            for name, cfg in self.contract.action_fields().items()
+            if cfg.get('type') == 'js' and cfg.get('script')
+        }
+
+    async def _resolve_js_scripts(self, domain: str) -> dict[str, str]:
+        """Return {field: script} for ALL JS action fields — hand-authored and cached discovered.
+
+        Discovery-driven fields (no script in contract) are resolved from the JS
+        script cache. Fields with no cache entry are omitted — callers must run
+        ``_discover_js_actions`` first if they want those fields populated.
+        """
+        scripts = dict(self._js_action_scripts())
+        if self.contract.undiscovered_action_fields():
+            cached = await self.js_storage.get_scripts(domain, self._contract_sig)
+            scripts.update(cached)
+        return scripts
+
+    async def _discover_js_actions(self, url: str, domain: str, fetcher: HTMLFetcher) -> None:
+        """Run JS discovery for action fields that lack a cached script.
+
+        Skips silently when there are no undiscovered fields, when all are
+        already cached, or when the fetcher does not support a live browser tab.
+        """
+        undiscovered = self.contract.undiscovered_action_fields()
+        if not undiscovered:
+            return
+        cached = await self.js_storage.get_scripts(domain, self._contract_sig)
+        missing = {k: v for k, v in undiscovered.items() if k not in cached}
+        if not missing:
+            return
+        if not fetcher.supports_browse:
+            self.console.print(
+                '[warning]⚠ JS discovery skipped — fetcher has no live browser tab; '
+                'switch to fetcher_type="headless" or "waterfall" for ys.js discovery[/warning]'
+            )
+            return
+        from yosoi.core.discovery.js_orchestrator import JsDiscoveryOrchestrator
+        from yosoi.core.fetcher.voiddriver import _VoidCrawlFetcher
+
+        if not isinstance(fetcher, _VoidCrawlFetcher):
+            return
+        if self._js_discovery_orchestrator is None:
+            self._js_discovery_orchestrator = JsDiscoveryOrchestrator(
+                llm_config=self._llm_config,  # type: ignore[arg-type]
+                storage=self.js_storage,
+                console=self.console,
+            )
+        with observability.span('js_discovery', url=url, fields=len(missing)):
+            await self._js_discovery_orchestrator.discover(
+                url=url,
+                domain=domain,
+                contract_sig=self._contract_sig,
+                fields=missing,
+                fetcher=fetcher,
+            )
 
     @staticmethod
     def _merge_js_outputs(
@@ -1752,8 +1814,11 @@ class Pipeline:
         )
         self.console.print(f'[step]{step}[/step]')
 
+        domain = self._extract_domain(url)
+        await self._discover_js_actions(url, domain, fetcher)
+        js_scripts = await self._resolve_js_scripts(domain)
         try:
-            result = await fetcher.fetch(url, action_scripts=self._js_action_scripts() or None)
+            result = await fetcher.fetch(url, action_scripts=js_scripts or None)
 
             if not result.success or result.html is None:
                 self.console.print('[warning]⚠ Could not fetch HTML, skipping extraction[/warning]')

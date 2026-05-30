@@ -50,25 +50,12 @@ class MapsPlaceFacts(ys.Contract):
     business_name: str = ys.Title(default='')
     rating: str = ys.Rating(default='')
     review_count: str = ys.js(
-        """
-(() => {
-  const ratingEl = document.querySelector('.F7nice');
-  if (ratingEl) {
-    const m = (ratingEl.textContent || '').match(/\\((\\d[\\d,]+)\\)/);
-    if (m) return m[1];
-  }
-  for (const el of document.querySelectorAll('span, div')) {
-    if (el.children.length === 0) {
-      const text = (el.textContent || '').trim();
-      const m = text.match(/^\\((\\d[\\d,]+)\\)$/);
-      if (m) return m[1];
-    }
-  }
-  return '';
-})()
-        """.strip(),
+        description=(
+            'Google Maps review count — the integer shown in parentheses next to the '
+            "star rating, e.g. '47' from '4.7 (47)' or '1,234' from '4.8 (1,234)'. "
+            'Return only the digits and commas, no parentheses or surrounding text.'
+        ),
         default='',
-        description='Google review count extracted from parenthetical text in the live DOM.',
     )
     category: str = ys.Field(
         default='',

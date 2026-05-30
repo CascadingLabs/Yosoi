@@ -272,6 +272,15 @@ class HTMLFetcher(ABC):
         """Exit async context manager and close resources."""
         await self.close()
 
+    @property
+    def supports_browse(self) -> bool:
+        """True when this fetcher can open a live browser tab for JS discovery.
+
+        L2 fetchers (headless/headful/waterfall) override this to True.
+        L0 fetchers (simple HTTP) return False — they have no browser pool.
+        """
+        return False
+
     @abstractmethod
     async def fetch(self, url: str, action_scripts: dict[str, str] | None = None) -> FetchResult:
         """Fetch HTML from a URL.
