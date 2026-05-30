@@ -1,0 +1,27 @@
+# Dependency CVE gate — be proactive instead of waiting on Dependabot.
+# Scanners live in CascadingLabs/.github (reusable workflows); update them once,
+# every repo inherits the change. See that repo's .github/workflows/cve-*.yml.
+
+name: Security (CVE)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    uses: CascadingLabs/.github/.github/workflows/cve-python.yml@main
+  js:
+    uses: CascadingLabs/.github/.github/workflows/cve-js.yml@main
+    with:
+      package-manager: bun
