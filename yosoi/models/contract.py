@@ -157,6 +157,22 @@ class Contract(BaseModel):
         return handler(result)
 
     @classmethod
+    def action_fields(cls) -> dict[str, dict[str, Any]]:
+        """Return {field_name: action_config} for fields annotated with yosoi_action.
+
+        These fields are excluded from CSS selector discovery and verification —
+        their values are captured by running the action during fetch.
+        """
+        result: dict[str, dict[str, Any]] = {}
+        for name, fi in cls.model_fields.items():
+            extra = fi.json_schema_extra
+            if isinstance(extra, dict) and 'yosoi_action' in extra:
+                cfg = extra['yosoi_action']
+                if isinstance(cfg, dict):
+                    result[name] = cfg
+        return result
+
+    @classmethod
     def nested_contracts(cls) -> dict[str, type[Contract]]:
         """Return a mapping of field name → child Contract class for Contract-typed fields."""
         result: dict[str, type[Contract]] = {}
@@ -206,9 +222,13 @@ class Contract(BaseModel):
         Non-Contract fields keep their original name; nested Contract fields are
         expanded to ``{parent}_{child}`` keys.  This matches the key format used
         by snapshots, ``field_descriptions()``, and ``get_selector_overrides()``.
+        Action fields (yosoi_action) are excluded — they have no CSS selector.
         """
+        action_names = set(cls.action_fields().keys())
         names: set[str] = set()
         for name, fi in cls.model_fields.items():
+            if name in action_names:
+                continue
             ann = fi.annotation
             if isinstance(ann, type) and issubclass(ann, Contract):
                 for child_name in ann.model_fields:
@@ -310,9 +330,10 @@ class Contract(BaseModel):
         from yosoi.models.selectors import is_discover_sentinel
 
         overridden = cls.get_selector_overrides()
+        action_names = set(cls.action_fields().keys())
         result: dict[str, str] = {}
         for name, fi in cls.model_fields.items():
-            if name in overridden:
+            if name in overridden or name in action_names:
                 continue
             ann = fi.annotation
             if isinstance(ann, type) and issubclass(ann, Contract):

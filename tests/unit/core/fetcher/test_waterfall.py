@@ -22,7 +22,9 @@ class _Simple:
 
 
 class _Headless:
-    async def _do_fetch(self, url: str, start_time: float, tier: str) -> FetchResult:
+    async def _do_fetch(
+        self, url: str, start_time: float, tier: str, action_scripts: dict | None = None
+    ) -> FetchResult:
         return FetchResult(url=url, html='<html><body><article>rendered</article></body></html>', fetch_time=start_time)
 
 

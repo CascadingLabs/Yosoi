@@ -35,7 +35,7 @@ from yosoi.core.verification import (
 )
 from yosoi.models import FetchResult
 from yosoi.models.contract import Contract
-from yosoi.models.results import VerificationResult
+from yosoi.models.results import JsOutputs, VerificationResult
 from yosoi.models.selectors import SelectorLevel
 from yosoi.models.snapshot import CacheVerdict, SelectorSnapshot, snapshot_to_selector_dict
 from yosoi.prompts.discovery import FieldFeedback
@@ -687,7 +687,9 @@ class Pipeline:
 
         """
         with observability.span('fetch', url=url, max_retries=max_fetch_retries):
-            result = await self._fetch(url, fetcher, max_retries=max_fetch_retries)
+            result = await self._fetch(
+                url, fetcher, max_retries=max_fetch_retries, action_scripts=self._js_action_scripts() or None
+            )
             if not result:
                 raise RuntimeError(f'Failed to fetch {url}')
             assert result.html is not None, 'result.html should not be None after successful fetch'
@@ -714,6 +716,8 @@ class Pipeline:
 
         with observability.span('extract', url=url, container=container_selector or 'single'):
             extracted = self._extract(url, result.html, verified, container_selector)
+            if result.js_outputs:
+                extracted = self._merge_js_outputs(extracted, result.js_outputs)
 
         if extracted:
             with observability.span('semantic_refine', url=url):
@@ -1220,7 +1224,13 @@ class Pipeline:
             self.console.print(f'[danger]Invalid fetcher type: {fetcher_type}[/danger]')
             return None
 
-    async def _fetch(self, url: str, fetcher: HTMLFetcher, max_retries: int = 2) -> FetchResult | None:
+    async def _fetch(
+        self,
+        url: str,
+        fetcher: HTMLFetcher,
+        max_retries: int = 2,
+        action_scripts: dict[str, str] | None = None,
+    ) -> FetchResult | None:
         """Fetch HTML with automatic retry logic for bot detection.
 
         Attempts to fetch HTML with automatic retries when bot detection is
@@ -1230,6 +1240,7 @@ class Pipeline:
             url: The URL that is being fetched.
             fetcher: HTML fetcher instance to use.
             max_retries: Maximum retry attempts. Defaults to 2.
+            action_scripts: Optional {field: js_expression} map forwarded to L2 fetchers.
 
         Returns:
             FetchResult if fetch succeeds within retry limit, None if all
@@ -1263,7 +1274,7 @@ class Pipeline:
                 with attempt:
                     result = None
                     try:
-                        result = await fetcher.fetch(url)
+                        result = await fetcher.fetch(url, action_scripts=action_scripts)
 
                         if not result.success:
                             self.console.print(
@@ -1542,6 +1553,33 @@ class Pipeline:
             return {'primary': contract_root.model_dump()}
         return self._pop_root(selectors)
 
+    def _js_action_scripts(self) -> dict[str, str]:
+        """Return {field: js_script} for all JS-typed action fields in the contract."""
+        return {name: cfg['script'] for name, cfg in self.contract.action_fields().items() if cfg.get('type') == 'js'}
+
+    @staticmethod
+    def _merge_js_outputs(
+        extracted: ContentMap | ContentItems | None,
+        js_outputs: JsOutputs | None,
+    ) -> ContentMap | ContentItems | None:
+        """Merge js_outputs from action scripts into extracted content.
+
+        For single-item extraction (dict), fields are merged directly.
+        For multi-item extraction (list), the outputs are merged into every item
+        since JS probes are page-level signals, not per-item values.
+        The cast() calls are intentional — JS outputs widen ContentMap to Any values,
+        which is valid since Pydantic contract validation runs downstream.
+        """
+        from typing import cast
+
+        if not js_outputs:
+            return extracted
+        if extracted is None:
+            return cast(ContentMap, dict(js_outputs))
+        if isinstance(extracted, list):
+            return cast(ContentItems, [{**item, **js_outputs} for item in extracted])
+        return cast(ContentMap, {**extracted, **js_outputs})
+
     def _extract(
         self,
         url: str,
@@ -1715,7 +1753,7 @@ class Pipeline:
         self.console.print(f'[step]{step}[/step]')
 
         try:
-            result = await fetcher.fetch(url)
+            result = await fetcher.fetch(url, action_scripts=self._js_action_scripts() or None)
 
             if not result.success or result.html is None:
                 self.console.print('[warning]⚠ Could not fetch HTML, skipping extraction[/warning]')
@@ -1770,6 +1808,7 @@ class Pipeline:
                 selectors_to_use = existing_selectors
 
             extracted = self._extract(url, cleaned_html, selectors_to_use, container_selector)
+            extracted = self._merge_js_outputs(extracted, result.js_outputs)
             if extracted:
                 if isinstance(extracted, list):
                     return extracted, True

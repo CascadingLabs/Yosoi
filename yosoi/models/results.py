@@ -1,7 +1,10 @@
 """Pydantic models for fetch and verification results."""
 
 from dataclasses import dataclass, field
-from typing import Literal
+from typing import Any, Literal, TypeAlias
+
+# Values captured by ys.js() action fields evaluated in the live browser tab.
+JsOutputs: TypeAlias = dict[str, Any]
 
 from pydantic import BaseModel, Field
 
@@ -47,6 +50,7 @@ class FetchResult:
     is_blocked: bool = False
     block_reason: str | None = None
     fetch_time: float = 0.0
+    js_outputs: JsOutputs | None = None
 
     # Content metadata
     metadata: ContentMetadata = field(default_factory=ContentMetadata)

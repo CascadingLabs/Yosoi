@@ -24,7 +24,7 @@ from rich.console import Console
 
 from yosoi.core.fetcher.base import ContentAnalyzer, HTMLFetcher
 from yosoi.core.fetcher.dom import DOMLoader
-from yosoi.models.results import FetchResult
+from yosoi.models.results import FetchResult, JsOutputs
 from yosoi.storage.a3node import A3Node, A3NodeStorage
 from yosoi.utils.exceptions import BotDetectionError
 
@@ -122,19 +122,21 @@ class _VoidCrawlFetcher(HTMLFetcher):
             await self._pool_ctx.__aexit__(None, None, None)
             self._pool = None
 
-    async def fetch(self, url: str) -> FetchResult:
+    async def fetch(self, url: str, action_scripts: dict[str, str] | None = None) -> FetchResult:
         start = time.time()
-        return await self._do_fetch(url, start, 'fetch')
+        return await self._do_fetch(url, start, 'fetch', action_scripts=action_scripts)
 
     async def _do_fetch(
         self,
         url: str,
         start_time: float,
         _tier: str,
+        action_scripts: dict[str, str] | None = None,
     ) -> FetchResult:
         domain = urlparse(url).netloc.replace('www.', '')
         stored_node = self._a3node_cache.get(domain) if self._experimental_a3node else None
 
+        js_outputs: JsOutputs | None = None
         async with self._pool.acquire() as tab:
             await tab.goto(url, timeout=float(self.timeout))
 
@@ -142,6 +144,9 @@ class _VoidCrawlFetcher(HTMLFetcher):
                 html = await self._fetch_with_replay(tab, domain, stored_node)
             else:
                 html = await self._fetch_with_probe(tab, domain)
+
+            if action_scripts:
+                js_outputs = await self._eval_action_scripts(tab, action_scripts)
 
         if not html or len(html) < self.min_content_length:
             return FetchResult(
@@ -151,6 +156,7 @@ class _VoidCrawlFetcher(HTMLFetcher):
                 is_blocked=False,
                 block_reason=f'Content too short ({len(html or "")} chars)',
                 fetch_time=time.time() - start_time,
+                js_outputs=js_outputs,
             )
 
         is_blocked, indicators = self._check_for_bot_detection(html, 200, {})
@@ -165,7 +171,36 @@ class _VoidCrawlFetcher(HTMLFetcher):
             is_blocked=False,
             fetch_time=time.time() - start_time,
             metadata=metadata,
+            js_outputs=js_outputs,
         )
+
+    @staticmethod
+    def _compose_action_scripts(scripts: dict[str, str]) -> str:
+        """Compose multiple JS scripts into one dict-returning expression.
+
+        Each sub-script is wrapped in try/catch so a single failure does not
+        discard all outputs — the failed field gets ``null`` instead.
+        Field names are JSON-encoded so quotes and special characters are safe.
+        """
+        import json
+
+        entries = '; '.join(
+            f'try {{ out[{json.dumps(k)}] = (()=>{{ return ({v}); }})(); }} catch(e) {{ out[{json.dumps(k)}] = null; }}'
+            for k, v in scripts.items()
+        )
+        return f'(()=>{{ const out={{}}; {entries}; return out; }})()'
+
+    async def _eval_action_scripts(self, tab: Any, scripts: dict[str, str]) -> JsOutputs:
+        composite = self._compose_action_scripts(scripts)
+        try:
+            result = await tab.evaluate_js(composite)
+            if isinstance(result, dict):
+                return result
+            logger.warning('action_scripts eval returned non-dict: %r', result)
+            return {}
+        except Exception as exc:  # noqa: BLE001
+            logger.warning('action_scripts eval failed: %s', exc)
+            return {}
 
     async def _fetch_with_replay(self, tab: Any, domain: str, node: A3Node) -> str | None:
         """Replay a stored A3Node recipe, falling back to a full probe on failure.

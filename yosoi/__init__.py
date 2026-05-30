@@ -65,6 +65,7 @@ from yosoi.types import (
     Title,
     Url,
     YosoiType,
+    js,
     register_coercion,
 )
 from yosoi.utils.contracts import resolve_contract
@@ -123,6 +124,7 @@ __all__ = [
     'groq',
     'heroku',
     'huggingface',
+    'js',
     'jsonld',
     'litellm',
     'load_urls_from_file',

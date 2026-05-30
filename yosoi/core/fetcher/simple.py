@@ -102,16 +102,24 @@ class SimpleFetcher(HTMLFetcher):
             'Upgrade-Insecure-Requests': '1',
         }
 
-    async def fetch(self, url: str) -> FetchResult:
+    async def fetch(self, url: str, action_scripts: dict[str, str] | None = None) -> FetchResult:
         """Fetch HTML using enhanced HTTP request with anti-bot measures.
 
         Args:
             url: The URL that is being fetched
+            action_scripts: JS action scripts — ignored by this fetcher (no live browser
+                tab). A warning is emitted so the caller knows JS fields will be ``None``.
 
         Returns:
             The fetched results like the HTML, URL, if it is blocked, etc.
 
         """
+        if action_scripts:
+            self.logger.warning(
+                'action_scripts ignored for %s — SimpleFetcher has no browser tab; '
+                'switch to fetcher_type="headless" or "waterfall" to evaluate ys.js() fields',
+                url,
+            )
         start_time = time.time()
 
         # Apply delay to avoid rate limiting

@@ -26,6 +26,7 @@ from yosoi.models.snapshot import SnapshotMap as SnapshotMap
 from yosoi.models.snapshot import SnapshotStatus as SnapshotStatus
 from yosoi.types.base import YosoiType as YosoiType
 from yosoi.types.field import Field as Field
+from yosoi.types.field import js as js
 from yosoi.types.registry import register_coercion as register_coercion
 from yosoi.utils.contracts import resolve_contract as resolve_contract
 from yosoi.utils.urls import load_urls_from_file as load_urls_from_file

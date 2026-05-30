@@ -71,6 +71,7 @@ class ReplayAct(BaseModel):
     max_repeats: int = Field(default=1, ge=1)
     dwell_ms: int = Field(default=0, ge=0)
     metadata: dict[str, Any] = Field(default_factory=dict)
+    output_field: str | None = None
 
     @model_validator(mode='after')
     def validate_action_payload(self) -> ReplayAct:

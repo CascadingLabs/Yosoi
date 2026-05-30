@@ -518,3 +518,40 @@ def test_list_fields_empty_when_no_list_fields():
         price: float
 
     assert FlatC.list_fields() == {}
+
+
+def test_action_fields_returns_js_action_config():
+    """action_fields() returns {field_name: action_config} for ys.js fields."""
+
+    class TechContract(Contract):
+        title: str = ys.Title()
+        signals: dict = ys.js('(() => ({has_alita: true}))()', default=None)  # type: ignore[assignment]
+
+    actions = TechContract.action_fields()
+    assert 'signals' in actions
+    assert actions['signals'] == {'type': 'js', 'script': '(() => ({has_alita: true}))()'}
+    assert 'title' not in actions
+
+
+def test_action_fields_excluded_from_discovery():
+    """discovery_field_names() excludes fields annotated with yosoi_action."""
+
+    class TechContract(Contract):
+        title: str = ys.Title()
+        signals: dict = ys.js('(() => ({}))()', default=None)  # type: ignore[assignment]
+
+    names = TechContract.discovery_field_names()
+    assert 'title' in names
+    assert 'signals' not in names
+
+
+def test_action_fields_excluded_from_field_descriptions():
+    """field_descriptions() excludes action fields."""
+
+    class TechContract(Contract):
+        title: str = ys.Title(hint='Main title')
+        signals: dict = ys.js('(() => ({}))()', default=None)  # type: ignore[assignment]
+
+    descs = TechContract.field_descriptions()
+    assert 'title' in descs
+    assert 'signals' not in descs

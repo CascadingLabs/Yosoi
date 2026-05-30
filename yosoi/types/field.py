@@ -6,6 +6,27 @@ import pydantic
 import pydantic.fields
 
 
+def js(script: str, **kwargs: Any) -> pydantic.fields.FieldInfo:
+    """Declare a contract field extracted by a JS program run in the live browser tab.
+
+    The script is evaluated via eval_js after page load (L2 fetchers only).
+    It must return a JSON-serialisable value — that value becomes the field content.
+
+    Args:
+        script: JavaScript expression to evaluate. Should return any JSON-serialisable
+            value, e.g. ``"(() => ({ has_alita: !!window.__alita__ }))()"``
+        **kwargs: Additional arguments forwarded to pydantic.Field (e.g. ``default``,
+            ``description``).
+
+    Returns:
+        A pydantic FieldInfo with ``yosoi_action`` metadata.
+
+    """
+    extra: dict[str, Any] = dict(kwargs.pop('json_schema_extra', {}) or {})
+    extra['yosoi_action'] = {'type': 'js', 'script': script}
+    return cast(pydantic.fields.FieldInfo, pydantic.Field(json_schema_extra=extra, **kwargs))
+
+
 def Field(
     hint: str | None = None,
     frozen: bool = False,

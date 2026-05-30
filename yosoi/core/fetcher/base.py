@@ -273,14 +273,18 @@ class HTMLFetcher(ABC):
         await self.close()
 
     @abstractmethod
-    async def fetch(self, url: str) -> FetchResult:
+    async def fetch(self, url: str, action_scripts: dict[str, str] | None = None) -> FetchResult:
         """Fetch HTML from a URL.
 
         Args:
             url: URL to fetch
+            action_scripts: Optional mapping of {field_name: js_expression} to
+                evaluate in the live browser tab after page load. Only honoured
+                by L2 fetchers (headless/headful/waterfall). L0 fetchers ignore
+                this param and return ``FetchResult.js_outputs = None``.
 
         Returns:
-            FetchResult with HTML, metadata, and status
+            FetchResult with HTML, metadata, status, and optional js_outputs
 
         Raises:
             BotDetectionError: If bot detection is triggered

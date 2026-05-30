@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+from dataclasses import dataclass, field
 from typing import Any
 
 from yosoi.models.replay import ActKind, AssertKind, ReplayAct, ReplayCondition, ReplayPlan, VerifyReport
+from yosoi.models.results import JsOutputs
 from yosoi.models.selectors import SelectorEntry
 
 
@@ -19,32 +21,70 @@ class ReplayExecutionError(RuntimeError):
         self.report = report or VerifyReport(failed=1, failures=[message])
 
 
-async def execute_plan(tab: Any, plan: ReplayPlan) -> VerifyReport:
+@dataclass
+class ReplayResult:
+    """Result of executing a replay plan, including any captured eval outputs.
+
+    Delegates ``score``, ``passed``, ``failed``, and ``failures`` to the
+    inner ``report`` so callers that previously received a ``VerifyReport``
+    directly continue to work without changes.
+    """
+
+    report: VerifyReport = field(default_factory=VerifyReport)
+    extracted_actions: JsOutputs = field(default_factory=dict)
+
+    @property
+    def score(self) -> float:
+        """Pass ratio from the inner VerifyReport."""
+        return self.report.score
+
+    @property
+    def passed(self) -> int:
+        """Passed count from the inner VerifyReport."""
+        return self.report.passed
+
+    @property
+    def failed(self) -> int:
+        """Failed count from the inner VerifyReport."""
+        return self.report.failed
+
+    @property
+    def failures(self) -> list[str]:
+        """Failure messages from the inner VerifyReport."""
+        return self.report.failures
+
+
+async def execute_plan(tab: Any, plan: ReplayPlan) -> ReplayResult:
     """Execute a replay plan against a browser tab.
 
     The runtime is deliberately fail-fast: a failed assess condition, action,
     or expected assertion raises :class:`ReplayExecutionError` instead of
     guessing alternate behavior.
+    When a ReplayAct has ``output_field`` set and kind is EVAL, the return
+    value of the JS expression is captured in ``ReplayResult.extracted_actions``.
     """
     report = VerifyReport()
+    captured: JsOutputs = {}
     for node in plan.nodes:
         if not await _condition_holds(tab, node.assess):
             _fail(report, f'assess failed for {node.id}: {node.intent}')
 
-        await _execute_act(tab, node.act, node.expect)
+        output = await _execute_act(tab, node.act, node.expect)
+        if node.act.output_field is not None and output is not None:
+            captured[node.act.output_field] = output
 
         if not await _condition_holds(tab, node.expect):
             _fail(report, f'assert failed for {node.id}: {node.intent}')
         report.passed += 1
-    return report
+    return ReplayResult(report=report, extracted_actions=captured)
 
 
-async def verify_plan(tab: Any, plan: ReplayPlan) -> VerifyReport:
+async def verify_plan(tab: Any, plan: ReplayPlan) -> ReplayResult:
     """Execute a plan and convert fail-fast errors into a report."""
     try:
         return await execute_plan(tab, plan)
     except ReplayExecutionError as exc:
-        return exc.report
+        return ReplayResult(report=exc.report)
 
 
 def _fail(report: VerifyReport, message: str) -> None:
@@ -53,41 +93,42 @@ def _fail(report: VerifyReport, message: str) -> None:
     raise ReplayExecutionError(message, report)
 
 
-async def _execute_act(tab: Any, act: ReplayAct, expect: ReplayCondition) -> None:
+async def _execute_act(tab: Any, act: ReplayAct, expect: ReplayCondition) -> Any:
     repeats = act.max_repeats if act.repeat else 1
+    last_output: Any = None
     for idx in range(repeats):
-        await _execute_once(tab, act)
+        last_output = await _execute_once(tab, act)
         if act.dwell_ms:
             await asyncio.sleep(act.dwell_ms / 1000)
         if not act.repeat or await _condition_holds(tab, expect):
-            return
+            return last_output
         if idx == repeats - 1:
-            return
+            return last_output
+    return last_output
 
 
-async def _execute_once(tab: Any, act: ReplayAct) -> None:
+async def _execute_once(tab: Any, act: ReplayAct) -> Any:
     if act.kind == ActKind.NAVIGATE:
         await _call(tab, 'goto', act.url)
-        return
+        return None
     if act.kind == ActKind.CLICK:
         await _click_first(tab, act.targets)
-        return
+        return None
     if act.kind == ActKind.TYPE:
         await _type_first(tab, act.targets, act.text or '')
-        return
+        return None
     if act.kind == ActKind.SCROLL:
         await _scroll(tab, act)
-        return
+        return None
     if act.kind == ActKind.WAIT:
         if act.dwell_ms:
             await asyncio.sleep(act.dwell_ms / 1000)
-        return
+        return None
     if act.kind == ActKind.EVAL:
-        await _eval(tab, act.script or '')
-        return
+        return await _eval(tab, act.script or '')
     if act.kind == ActKind.TELEPORT:
         await _teleport(tab, act.metadata)
-        return
+        return None
     raise ReplayExecutionError(f'unsupported act kind: {act.kind}')
 
 
@@ -242,6 +283,8 @@ async def _content(tab: Any) -> str:
 
 
 async def _eval(tab: Any, script: str) -> Any:
+    if hasattr(tab, 'evaluate_js'):
+        return await _call(tab, 'evaluate_js', script)
     if hasattr(tab, 'eval_js'):
         return await _call(tab, 'eval_js', script)
     return await _call(tab, 'evaluate', script)

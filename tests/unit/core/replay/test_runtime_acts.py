@@ -182,3 +182,42 @@ async def test_expect_failure_is_fail_fast():
     )
     with pytest.raises(ReplayExecutionError, match='assert failed'):
         await execute_plan(FakeTab(present=False), plan)
+
+
+async def test_eval_act_with_output_field_captures_result():
+    """EVAL act with output_field stores return value in ReplayResult.extracted_actions."""
+
+    class _ReturnTab(FakeTab):
+        async def eval_js(self, script):
+            self.calls.append(('eval_js', script))
+            return {'has_alita': True, 'competitors': ['comm100']}
+
+    plan = ReplayPlan(
+        nodes=[
+            _node(
+                'probe',
+                ReplayAct(kind=ActKind.EVAL, script='(() => ({has_alita: true}))()', output_field='signals'),
+            )
+        ]
+    )
+    result = await execute_plan(_ReturnTab(), plan)
+    assert result.extracted_actions == {'signals': {'has_alita': True, 'competitors': ['comm100']}}
+
+
+async def test_eval_act_without_output_field_does_not_capture():
+    """EVAL act without output_field leaves extracted_actions empty."""
+    plan = ReplayPlan(nodes=[_node('probe', ReplayAct(kind=ActKind.EVAL, script='document.title'))])
+    result = await execute_plan(FakeTab(), plan)
+    assert result.extracted_actions == {}
+
+
+async def test_replay_act_output_field_round_trips():
+    """output_field serialises and deserialises cleanly."""
+    act = ReplayAct(kind=ActKind.EVAL, script='1+1', output_field='answer')
+    dumped = act.model_dump()
+    assert dumped['output_field'] == 'answer'
+    restored = ReplayAct.model_validate(dumped)
+    assert restored.output_field == 'answer'
+
+    act_no_output = ReplayAct(kind=ActKind.EVAL, script='1+1')
+    assert act_no_output.output_field is None
