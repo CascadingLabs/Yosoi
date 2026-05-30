@@ -210,3 +210,33 @@ def test_field_rules_expands_nested_contract():
     assert rules['title'].kind == KIND_TEXT
     assert rules['inner_url'].kind == KIND_URL
     assert rules['inner_count'].kind == KIND_NUMERIC
+
+
+def test_to_text_returns_none_for_list_of_dicts():
+    """_to_text returns None for a list of dicts (related_content) — not shape-checkable (line 161-162)."""
+    from yosoi.core.verification.semantic import _to_text
+
+    result = _to_text([{'title': 'Related', 'href': '/link'}])
+    assert result is None
+
+
+def test_duplicate_of_returns_none_for_empty_text():
+    """_duplicate_of returns None immediately when text normalizes to '' (line 169)."""
+    from yosoi.core.verification.semantic import _duplicate_of
+
+    result = _duplicate_of('headline', '   ', {'headline': '   ', 'author': 'Bob'})
+    assert result is None
+
+
+def test_check_field_rule_returns_none_when_no_rule_applies():
+    """validate() returns no issues when no semantic rule is registered for a field (line 148)."""
+    from yosoi.core.verification.semantic import SemanticValidator
+    from yosoi.models.contract import Contract
+
+    class MinimalContract(Contract):
+        custom_field: str = ''  # no yosoi type → no semantic rule
+
+    validator = SemanticValidator()
+    rules = {'custom_field': None}  # type: ignore[dict-item]
+    issues = validator.validate({'custom_field': 'anything'}, rules)
+    assert issues == []

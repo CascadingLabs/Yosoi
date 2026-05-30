@@ -709,3 +709,18 @@ def test_clean_html_no_body_main_only_extracts_content(cleaner):
     result = cleaner.clean_html(html)
     assert 'Title' in result
     assert 'text' in result
+
+
+def test_compress_decomposes_deeply_nested_empty_anonymous_divs(cleaner):
+    """_compress_html_simple removes empty anonymous divs deeper than 8 levels (line 223)."""
+    # 9 nested empty anonymous divs — innermost reaches depth 11 > 8 threshold
+    nested = '<div>' * 9 + '</div>' * 9
+    html = f'<html><body><p>important content</p>{nested}</body></html>'
+    soup = BeautifulSoup(html, 'lxml')
+
+    before_count = len(soup.find_all('div'))
+    result = cleaner._compress_html_simple(soup)
+    after_count = len(result.find_all('div'))
+
+    assert after_count < before_count  # deeply nested empty anonymous divs were stripped
+    assert 'important content' in str(result)

@@ -497,6 +497,7 @@ class Pipeline:
                 output_format=output_format,
                 max_workers=max_workers,
                 selector_level=self.selector_level,
+                experimental_a3node=getattr(self, '_experimental_a3node', False),
             )
 
             run_start = time.monotonic()
@@ -689,6 +690,8 @@ class Pipeline:
             ContentMap dicts — one per extracted item.
 
         """
+        observability.annotate_cache(root_span, path=observability.CACHE_FRESH)
+
         # JS discovery: write and verify scripts for undiscovered ys.js() fields.
         # Runs before the main fetch so the live tab is reused within the pool.
         await self._discover_js_actions(url, domain, fetcher)
@@ -898,6 +901,7 @@ class Pipeline:
             stale_fields |= missing
 
         if not stale_fields:
+            observability.annotate_cache(root_span, path=observability.CACHE_CACHED, fresh_fields=len(fresh_fields))
             return self._extract_all_fresh(
                 url, domain, fetcher, raw_html, snapshots, fresh_fields, format_to_use, root_span=root_span
             )
@@ -908,6 +912,12 @@ class Pipeline:
             )
             return None
 
+        observability.annotate_cache(
+            root_span,
+            path=observability.CACHE_PARTIAL,
+            fresh_fields=len(fresh_fields),
+            stale_fields=len(stale_fields),
+        )
         return await self._partial_rediscovery(
             url,
             domain,
@@ -1085,6 +1095,7 @@ class Pipeline:
             await self._track_cached_success(url, domain)
             self.last_elapsed = time.monotonic() - self._url_start
             self.console.print(f'[dim]  ⏱ {self.last_elapsed:.1f}s elapsed[/dim]')
+            observability.annotate_cache(root_span, path=observability.CACHE_CACHED)
             observability.set_trace_output(
                 root_span,
                 {
@@ -1586,6 +1597,15 @@ class Pipeline:
         Skips silently when there are no undiscovered fields, when all are
         already cached, or when the fetcher does not support a live browser tab.
         """
+        # FUTURE: concurrency-safe JS discovery — this check-and-save (get_scripts →
+        # discover → JsScriptStorage.save_entries) is the SAME read-modify-write race
+        # the selector path already guards with the per-domain ``write_lock``. Two
+        # concurrent workers on one domain both see ``missing``, both open a tab, both
+        # run the LLM, and both save (duplicated LLM cost + last-writer-wins). Reuse
+        # the per-domain ``write_lock`` (already threaded into Pipeline) here to make
+        # the JS path "separate but equal" with selectors. Lock the cheap save like
+        # the selector path does, not the whole discovery, to avoid serialising
+        # expensive same-domain discovery across workers.
         undiscovered = self.contract.undiscovered_action_fields()
         if not undiscovered:
             return

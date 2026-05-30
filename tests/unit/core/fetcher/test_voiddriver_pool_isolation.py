@@ -76,6 +76,7 @@ async def test_same_domain_concurrent_fetches_use_distinct_acquired_tabs(mocker)
     fetcher = _VoidCrawlFetcher(min_content_length=1)
     fetcher._pool = pool
     mocker.patch('yosoi.core.fetcher.voiddriver.DOMLoader', _TabEchoDOMLoader)
+    mocker.patch('yosoi.core.fetcher.voiddriver.random.uniform', return_value=0.0)  # disable jitter
 
     first, second = await asyncio.wait_for(
         asyncio.gather(
@@ -86,8 +87,11 @@ async def test_same_domain_concurrent_fetches_use_distinct_acquired_tabs(mocker)
     )
 
     assert pool.max_active == 2
-    assert started == ['tab-a', 'tab-b']
+    assert set(started) == {'tab-a', 'tab-b'}  # both tabs used; order is non-deterministic with jitter
     assert first.html is not None
     assert second.html is not None
-    assert 'tab-a' in first.html
-    assert 'tab-b' in second.html
+    # Each fetch echoed its own tab name; together they cover both tabs
+    assert {'tab-a', 'tab-b'} == {
+        next(t for t in ('tab-a', 'tab-b') if t in first.html),
+        next(t for t in ('tab-a', 'tab-b') if t in second.html),
+    }

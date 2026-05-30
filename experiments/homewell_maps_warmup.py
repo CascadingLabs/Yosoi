@@ -127,7 +127,7 @@ async def run_phase2(pipeline: Pipeline) -> None:
 # ── Entry point ────────────────────────────────────────────────────────────────
 
 
-async def main() -> None:  # noqa: D103
+async def main() -> None:
     if not is_initialized():
         init_yosoi()
 

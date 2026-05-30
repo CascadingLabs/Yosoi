@@ -1,8 +1,9 @@
 """Tests for the yosoi-aware Field wrapper."""
 
+import pytest
 from pydantic.fields import FieldInfo
 
-from yosoi.types.field import Field
+from yosoi.types.field import Field, js
 
 
 def test_field_returns_field_info():
@@ -161,3 +162,40 @@ def test_field_hint_condition_checks_truthiness():
     extra = result.json_schema_extra
     if extra is not None and isinstance(extra, dict):
         assert 'yosoi_hint' not in extra
+
+
+# ---------------------------------------------------------------------------
+# js() field factory
+# ---------------------------------------------------------------------------
+
+
+def test_js_with_script_returns_field_info():
+    """js(script=...) returns a FieldInfo with yosoi_action metadata."""
+    result = js(script='document.title')
+    assert isinstance(result, FieldInfo)
+    extra = result.json_schema_extra
+    assert isinstance(extra, dict)
+    assert extra['yosoi_action']['type'] == 'js'
+    assert extra['yosoi_action']['script'] == 'document.title'
+
+
+def test_js_no_script_no_description_raises():
+    """js() without script or description raises ValueError (line 45)."""
+    with pytest.raises(ValueError, match='requires either script='):
+        js()
+
+
+def test_js_description_propagated_to_pydantic_field():
+    """js(description=...) stores description in pydantic field kwargs (line 54)."""
+    result = js(description='Detect competitor widgets')
+    assert isinstance(result, FieldInfo)
+    assert result.description == 'Detect competitor widgets'
+
+
+def test_js_with_description_only_is_discovery_driven():
+    """js(description=...) without script enables discovery mode."""
+    result = js(description='Detect competitor widgets')
+    extra = result.json_schema_extra
+    assert isinstance(extra, dict)
+    assert extra['yosoi_action']['script'] is None
+    assert extra['yosoi_action']['description'] == 'Detect competitor widgets'

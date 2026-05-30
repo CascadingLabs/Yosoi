@@ -113,7 +113,7 @@ def _print_result(url: str, item: dict[str, Any]) -> None:
 # ── Runner ────────────────────────────────────────────────────────────────────
 
 
-async def run(urls: list[str]) -> None:  # noqa: D103
+async def run(urls: list[str]) -> None:
     if not is_initialized():
         init_yosoi()
 
@@ -165,7 +165,7 @@ def _load_urls() -> list[str]:
     return DEFAULT_URLS
 
 
-async def main() -> None:  # noqa: D103
+async def main() -> None:
     await run(_load_urls())
 
 

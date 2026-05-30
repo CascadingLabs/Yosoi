@@ -63,3 +63,54 @@ async def test_request_populates_usage_from_server_response():
 
     assert response.usage.input_tokens == 150
     assert response.usage.output_tokens == 50
+
+
+@respx.mock
+async def test_debug_span_emitted_when_sdk_debug_env_set(monkeypatch):
+    """Debug obs.span is entered when YOSOI_SDK_DEBUG=1 (lines 87-88)."""
+
+    monkeypatch.setenv('YOSOI_SDK_DEBUG', '1')
+
+    respx.post(f'{_BASE_URL}/session').mock(return_value=httpx.Response(200, json={'id': 's1'}))
+    respx.post(f'{_BASE_URL}/session/s1/message').mock(
+        return_value=httpx.Response(
+            200,
+            json={'info': {}, 'parts': [{'type': 'text', 'text': 'ok'}]},
+        )
+    )
+
+    model = OpenCodeModel(provider_id='openai', model_id='gpt-4o', base_url=_BASE_URL)
+    response = await model.request([], None, ModelRequestParameters())
+    assert response is not None
+
+
+@respx.mock
+async def test_request_warns_and_reraises_on_http_failure(mocker):
+    """obs.warning is called and exception re-raised on HTTP error (lines 132-140)."""
+    import httpx
+    import pytest
+
+    respx.post(f'{_BASE_URL}/session').mock(side_effect=httpx.ConnectError('refused'))
+
+    warn = mocker.patch('yosoi.integrations.opencode.obs.warning')
+
+    model = OpenCodeModel(provider_id='openai', model_id='gpt-4o', base_url=_BASE_URL)
+    with pytest.raises(httpx.ConnectError):
+        await model.request([], None, ModelRequestParameters())
+
+    warn.assert_called_once()
+
+
+def test_usage_from_info_falls_back_when_cache_is_not_dict():
+    """_usage_from_info treats non-dict cache as empty (line 163)."""
+    info = {
+        'tokens': {
+            'input': 100,
+            'output': 20,
+            'cache': 'not-a-dict',  # string instead of dict → treated as {}
+        }
+    }
+    usage = _usage_from_info(info)
+    assert usage.input_tokens == 100
+    assert usage.output_tokens == 20
+    assert usage.cache_read_tokens is None or usage.cache_read_tokens == 0

@@ -115,7 +115,7 @@ async def _call_sdk(
     chunks: list[str] = []
     structured: object | None = None
     usage = RequestUsage()
-    with obs.span('claude_sdk.query', model=model, structured_output=output_format is not None):
+    with obs.transport_span(obs.BACKEND_CLAUDE_SDK, model, structured_output=output_format is not None):
         try:
             async with aclosing(cast(Any, query(prompt=user_prompt, options=options))) as stream:
                 async for message in stream:

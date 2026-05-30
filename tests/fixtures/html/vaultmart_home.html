@@ -1,0 +1,149 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Home — VaultMart</title><link rel="stylesheet" href="/global.css"><script>
+	(function () {
+		function getCookie(name) {
+			var m = document.cookie.match(new RegExp("(?:^|; )" + name + "=([^;]*)"));
+			return m ? decodeURIComponent(m[1]) : null;
+		}
+
+		// Cross-site sync: read cl-theme and cl-lang from inbound links
+		var params = new URLSearchParams(window.location.search);
+		var dirty = false;
+
+		var inbound = params.get("cl-theme");
+		if (inbound === "light" || inbound === "dark" || inbound === "auto") {
+			var storeVal = inbound === "light" || inbound === "dark" ? inbound : "auto";
+			document.cookie = "cl-theme=" + storeVal + "; path=/; max-age=31536000; SameSite=Lax";
+			localStorage.setItem("starlight-theme", inbound === "auto" ? "" : inbound);
+			params.delete("cl-theme");
+			dirty = true;
+		}
+
+		var inboundLang = params.get("cl-lang");
+		if (inboundLang && /^[a-z]{2}(-[A-Za-z]{2,})?$/.test(inboundLang)) {
+			document.cookie = "cl-lang=" + inboundLang + "; path=/; max-age=31536000; SameSite=Lax";
+			params.delete("cl-lang");
+			dirty = true;
+		}
+
+		if (dirty) {
+			var clean = params.toString();
+			history.replaceState(null, "", window.location.pathname + (clean ? "?" + clean : "") + window.location.hash);
+		}
+
+		var c = getCookie("cl-theme");
+		var s = c || localStorage.getItem("starlight-theme");
+		var pref = s === "light" || s === "dark" ? s : "auto";
+		var resolved =
+			pref === "auto"
+				? window.matchMedia("(prefers-color-scheme: light)").matches
+					? "light"
+					: "dark"
+				: pref;
+		document.documentElement.dataset.theme = resolved;
+		document.documentElement.dataset.themePreference = pref;
+
+		// Always ensure cookie + localStorage exist (handles cleared/missing state)
+		var cookieVal = pref === "light" || pref === "dark" ? pref : "auto";
+		document.cookie = "cl-theme=" + cookieVal + "; path=/; max-age=31536000; SameSite=Lax";
+		localStorage.setItem("starlight-theme", pref === "auto" ? "" : pref);
+	})();
+</script><style>.cl-theme-toggle-float[data-astro-cid-x3pjskd3]{position:fixed;bottom:16px;right:16px;z-index:9999;display:flex;align-items:center;justify-content:center;width:2.25rem;height:2.25rem;border-radius:4px;background:#0000008c;border:1px solid rgba(255,255,255,.18);color:#ffffffd9;cursor:pointer;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);transition:background .2s,border-color .2s,color .2s,box-shadow .2s;box-shadow:0 2px 8px #00000059}[data-theme=light] .cl-theme-toggle-float[data-astro-cid-x3pjskd3]{background:#ffffffbf;border-color:#00000024;color:#000000b3;box-shadow:0 2px 8px #0000001f}.cl-theme-toggle-float[data-astro-cid-x3pjskd3]:hover{background:#000000bf;color:#fff}[data-theme=light] .cl-theme-toggle-float[data-astro-cid-x3pjskd3]:hover{background:#fffffff2;color:#000}.cl-theme-icon[data-astro-cid-x3pjskd3]{display:none}[data-theme-preference=dark] .cl-icon-moon[data-astro-cid-x3pjskd3],[data-theme-preference=light] .cl-icon-sun[data-astro-cid-x3pjskd3],[data-theme-preference=auto] .cl-icon-auto[data-astro-cid-x3pjskd3]{display:block}
+</style>
+<link rel="stylesheet" href="/_astro/EshopShell.Dv7sIlcw.css"></head> <body> <div id="container"> <!-- Header --> <div class="headerBar">
+VAULTMART
+<span class="headerMeta">Your Source for Dwarven Goods &amp; Surface Imports</span> </div> <!-- Nav --> <div class="navBar"> <a href="/l1/eshop/" class="active">Home</a> <a href="/l1/eshop/catalog" class>Catalog</a> <a href="/l1/eshop/cart" class>Cart</a> <a href="/l1/eshop/search" class>Search</a> <a href="/l1/eshop/about" class>About</a> <span class="navSep">|</span> <a href="/l1/news/">Herald</a> <a href="/l1/taxes/">ROD Records</a> <a href="/l1/scoretap/">ScoreTap</a> </div> <!-- Breadcrumbs --> <div class="breadcrumbs"> <span id="crumb-current">VaultMart</span> </div> <!-- Page Content -->   <div class="heroBanner"> <h2>Welcome to VaultMart</h2> <p>
+Your underground source for mining equipment, forge supplies, foodstuffs, furniture,
+      and rare surface imports. Serving Mountainhome and the surrounding z-level districts
+      since Year 298. All prices in Gold Sovereigns.
+</p> </div>  <div class="sectionHeader">Featured Products</div> <div class="sectionSub">Hand-selected by our buying team.</div> <div class="product-grid clearfix"> <div class="product-card" data-sku="VM-FRG-005" data-category="Forge &#38; Smithing" data-promoted="true"> <div class="product-card-inner">   <span class="oosBadge">OOS</span> <span class="promoBadge">SPONSORED</span> <img src="https://picsum.photos/seed/vmfrg005/280/200" alt="Cast Iron Anvil" class="product-card-img" width="280" height="200"> <div class="product-card-body"> <span class="categoryBadge cat-forge">Forge &amp; Smithing</span> <div class="product-card-name"> <a href="javascript:void(0)" onclick="navigateToProduct('VM-FRG-005')">Cast Iron Anvil</a> </div> <div class="product-card-excerpt">Single-horn cast iron anvil, 180 kg. Hardened face plate rated for repeated heavy forming. Requires reinforced floor mounting (not included).</div> <span class="starRating"> <span class="starFull">&#9733;</span><span class="starFull">&#9733;</span><span class="starFull">&#9733;</span><span class="starFull">&#9733;</span><span class="starFull">&#9733;</span>  <span class="reviewCount">(14)</span> </span> <div class="product-card-price"> <span class="priceDisplay">120.00 Gold Sovereigns</span> </div> <div style="margin-top:4px;"> <span class="statusOos">Out of Stock</span>    </div> </div> </div> </div><div class="product-card" data-sku="VM-MIN-002" data-category="Mining &#38; Excavation"> <div class="product-card-inner">   <span class="oosBadge">OOS</span>  <img src="https://picsum.photos/seed/vmmin002/280/200" alt="Masterwork Steel Pickaxe" class="product-card-img" width="280" height="200"> <div class="product-card-body"> <span class="categoryBadge cat-mining">Mining &amp; Excavation</span> <div class="product-card-name"> <a href="javascript:void(0)" onclick="navigateToProduct('VM-MIN-002')">Masterwork Steel Pickaxe</a> </div> <div class="product-card-excerpt">Dwarven Iron Guild-certified masterwork pickaxe. Rated for granite, gabbro, and deep-layer igneous formations. Exceptional edge retention.</div> <span class="starRating"> <span class="starFull">&#9733;</span><span class="starFull">&#9733;</span><span class="starFull">&#9733;</span><span class="starFull">&#9733;</span><span class="starFull">&#9733;</span>  <span class="reviewCount">(23)</span> </span> <div class="product-card-price"> <span class="priceDisplay">45.00 Gold Sovereigns</span> </div> <div style="margin-top:4px;"> <span class="statusOos">Out of Stock</span>    </div> </div> </div> </div><div class="product-card" data-sku="VM-MIN-001" data-category="Mining &#38; Excavation" data-promoted="true"> <div class="product-card-inner">    <span class="promoBadge">SPONSORED</span> <img src="https://picsum.photos/seed/vmmin001/280/200" alt="Standard Iron Pickaxe" class="product-card-img" width="280" height="200"> <div class="product-card-body"> <span class="categoryBadge cat-mining">Mining &amp; Excavation</span> <div class="product-card-name"> <a href="javascript:void(0)" onclick="navigateToProduct('VM-MIN-001')">Standard Iron Pickaxe</a> </div> <div class="product-card-excerpt">Reliable forged-iron pickaxe suitable for limestone, sandstone, and upper chalk formations. Standard issue for entry-level miners.</div> <span class="starRating"> <span class="starFull">&#9733;</span><span class="starFull">&#9733;</span><span class="starFull">&#9733;</span><span class="starFull">&#9733;</span> <span class="starEmpty">&#9734;</span> <span class="reviewCount">(47)</span> </span> <div class="product-card-price"> <span class="priceDisplay">14.50 Gold Sovereigns</span> </div> <div style="margin-top:4px;">   <span class="statusApproved" data-stock="12">In Stock</span>  </div> </div> </div> </div> </div>  <div class="sectionHeader">Shop by Category</div> <div class="categoryTileGrid clearfix"> <a class="categoryTile" href="/l1/eshop/catalog?cat=Mining%20%26%20Excavation"> <span class="categoryTileIcon">⛏</span> Mining &amp; Excavation </a><a class="categoryTile" href="/l1/eshop/catalog?cat=Forge%20%26%20Smithing"> <span class="categoryTileIcon">🔨</span> Forge &amp; Smithing </a><a class="categoryTile" href="/l1/eshop/catalog?cat=Food%20%26%20Brewing"> <span class="categoryTileIcon">🍺</span> Food &amp; Brewing </a><a class="categoryTile" href="/l1/eshop/catalog?cat=Furniture%20%26%20Housing"> <span class="categoryTileIcon">🪑</span> Furniture &amp; Housing </a><a class="categoryTile" href="/l1/eshop/catalog?cat=Surface%20Imports"> <span class="categoryTileIcon">🌿</span> Surface Imports </a> </div> <div style="clear:both;"></div>  <div class="sectionHeader" style="margin-top:10px;">New Arrivals</div> <div class="sectionSub">Recently added to the VaultMart catalogue.</div> <div class="product-grid clearfix"> <div class="product-card" data-sku="VM-MIN-006" data-category="Mining &#38; Excavation"> <div class="product-card-inner"> <span class="newBadge">NEW</span>    <img src="https://picsum.photos/seed/vmmin006/280/200" alt="Iron Ore Cart" class="product-card-img" width="280" height="200"> <div class="product-card-body"> <span class="categoryBadge cat-mining">Mining &amp; Excavation</span> <div class="product-card-name"> <a href="javascript:void(0)" onclick="navigateToProduct('VM-MIN-006')">Iron Ore Cart</a> </div> <div class="product-card-excerpt">Single-axle ore transport cart with 0.4 cubic z-metre capacity. Rail-compatible. Includes two spare wheel assemblies.</div> <span class="starRating"> <span class="starFull">&#9733;</span><span class="starFull">&#9733;</span><span class="starFull">&#9733;</span><span class="starFull">&#9733;</span> <span class="starEmpty">&#9734;</span> <span class="reviewCount">(9)</span> </span> <div class="product-card-price"> <span class="priceDisplay">38.00 Gold Sovereigns</span> </div> <div style="margin-top:4px;">   <span class="statusApproved" data-stock="6">In Stock</span>  </div> </div> </div> </div><div class="product-card" data-sku="VM-FRG-001" data-category="Forge &#38; Smithing"> <div class="product-card-inner"> <span class="newBadge">NEW</span>    <img src="https://picsum.photos/seed/vmfrg001/280/200" alt="Iron Ingot Bundle (10-bar)" class="product-card-img" width="280" height="200"> <div class="product-card-body"> <span class="categoryBadge cat-forge">Forge &amp; Smithing</span> <div class="product-card-name"> <a href="javascript:void(0)" onclick="navigateToProduct('VM-FRG-001')">Iron Ingot Bundle (10-bar)</a> </div> <div class="product-card-excerpt">Ten standard iron ingots, Dwarven Iron Guild grade B. Each bar weighs 1.2 kg and meets Bureau of Deep Works dimensional standards.</div> <span class="starRating"> <span class="starFull">&#9733;</span><span class="starFull">&#9733;</span><span class="starFull">&#9733;</span><span class="starFull">&#9733;</span> <span class="starEmpty">&#9734;</span> <span class="reviewCount">(82)</span> </span> <div class="product-card-price"> <span class="priceDisplay">12.00 Gold Sovereigns</span> </div> <div style="margin-top:4px;">    <span class="statusApproved">In Stock</span> </div> </div> </div> </div><div class="product-card" data-sku="VM-FDB-005" data-category="Food &#38; Brewing"> <div class="product-card-inner"> <span class="newBadge">NEW</span>    <img src="https://picsum.photos/seed/vmfdb005/280/200" alt="Mushroom Wine (Vintage 309, 3-bottle)" class="product-card-img" width="280" height="200"> <div class="product-card-body"> <span class="categoryBadge cat-food">Food &amp; Brewing</span> <div class="product-card-name"> <a href="javascript:void(0)" onclick="navigateToProduct('VM-FDB-005')">Mushroom Wine (Vintage 309, 3-bottle)</a> </div> <div class="product-card-excerpt">Limited vintage 309 mushroom wine from the Fungiwood Cavern Biome. Light body, earthy notes, 11% ABV. Award-winning batch, 3-bottle set.</div> <span class="starRating"> <span class="starFull">&#9733;</span><span class="starFull">&#9733;</span><span class="starFull">&#9733;</span><span class="starFull">&#9733;</span><span class="starFull">&#9733;</span>  <span class="reviewCount">(17)</span> </span> <div class="product-card-price"> <span class="priceDisplay">32.00 Gold Sovereigns</span> </div> <div style="margin-top:4px;">  <span class="lowStock" data-stock="2">Only 2 left!</span>   </div> </div> </div> </div><div class="product-card" data-sku="VM-FUR-004" data-category="Furniture &#38; Housing"> <div class="product-card-inner"> <span class="newBadge">NEW</span>    <img src="https://picsum.photos/seed/vmfur004/280/200" alt="Obsidian Display Cabinet" class="product-card-img" width="280" height="200"> <div class="product-card-body"> <span class="categoryBadge cat-furniture">Furniture &amp; Housing</span> <div class="product-card-name"> <a href="javascript:void(0)" onclick="navigateToProduct('VM-FUR-004')">Obsidian Display Cabinet</a> </div> <div class="product-card-excerpt">Three-shelf obsidian display cabinet with iron frame. Used for trophy display, gemstone collections, or valued goods storage.</div> <span class="starRating"> <span class="starFull">&#9733;</span><span class="starFull">&#9733;</span><span class="starFull">&#9733;</span><span class="starFull">&#9733;</span> <span class="starEmpty">&#9734;</span> <span class="reviewCount">(7)</span> </span> <div class="product-card-price"> <span class="priceDisplay">85.00 Gold Sovereigns</span> </div> <div style="margin-top:4px;">    <span class="statusApproved">In Stock</span> </div> </div> </div> </div><div class="product-card" data-sku="VM-SRF-004" data-category="Surface Imports"> <div class="product-card-inner"> <span class="newBadge">NEW</span>    <img src="https://picsum.photos/seed/vmsrf004/280/200" alt="Silver Thread Spool" class="product-card-img" width="280" height="200"> <div class="product-card-body"> <span class="categoryBadge cat-surface">Surface Imports</span> <div class="product-card-name"> <a href="javascript:void(0)" onclick="navigateToProduct('VM-SRF-004')">Silver Thread Spool</a> </div> <div class="product-card-excerpt">One spool (50 m) of fine silver thread, imported via human trade contacts. Suitable for embroidery, ceremonial garments, and rune-marking.</div> <span class="starRating"> <span class="starFull">&#9733;</span><span class="starFull">&#9733;</span><span class="starFull">&#9733;</span><span class="starFull">&#9733;</span><span class="starFull">&#9733;</span>  <span class="reviewCount">(8)</span> </span> <div class="product-card-price"> <span class="priceDisplay">28.00 Gold Sovereigns</span> </div> <div style="margin-top:4px;">    <span class="statusApproved">In Stock</span> </div> </div> </div> </div><div class="product-card" data-sku="VM-SRF-005" data-category="Surface Imports"> <div class="product-card-inner"> <span class="newBadge">NEW</span>    <img src="https://picsum.photos/seed/vmsrf005/280/200" alt="Exotic Feather Bundle" class="product-card-img" width="280" height="200"> <div class="product-card-body"> <span class="categoryBadge cat-surface">Surface Imports</span> <div class="product-card-name"> <a href="javascript:void(0)" onclick="navigateToProduct('VM-SRF-005')">Exotic Feather Bundle</a> </div> <div class="product-card-excerpt">Bundle of 30 assorted surface-bird feathers (quill length 25–40 cm). Used in decorative applications, quill-pen crafting, and ceremonial headwear.</div> <span class="starRating"> <span class="starFull">&#9733;</span><span class="starFull">&#9733;</span><span class="starFull">&#9733;</span><span class="starFull">&#9733;</span> <span class="starEmpty">&#9734;</span> <span class="reviewCount">(14)</span> </span> <div class="product-card-price"> <span class="priceDisplay">16.75 Gold Sovereigns</span> </div> <div style="margin-top:4px;">    <span class="statusApproved">In Stock</span> </div> </div> </div> </div> </div>  <div class="infoBox" style="margin:10px 15px;"> <strong>Trade Route Notice:</strong> Surface imports may experience delays due to ongoing
+    blizzard conditions on the primary route to the Elven Forest Trading Post. See the
+<a href="/l1/news/article?postData=MHH-011">Mountainhome Herald</a> for current route status.
+    Estimated restocking of affected items: mid-season.
+</div>  <!-- Footer --> <div class="footerBar">
+&copy; 2026 VaultMart &mdash; A Division of Koganusan Estates LLC &nbsp;|&nbsp;
+      VaultMart v2.0.2008 &nbsp;|&nbsp;
+<a href="/l1/eshop/about" style="color:#99bbdd;">About</a> &nbsp;|&nbsp;
+<a href="/l1/eshop/catalog" style="color:#99bbdd;">Catalog</a> &nbsp;|&nbsp;
+<a href="/l1/news/" style="color:#99bbdd;">Mountainhome Herald</a> &nbsp;|&nbsp;
+<a href="/l1/taxes/" style="color:#99bbdd;">ROD Records</a> </div> </div> <button class="cl-theme-toggle-float" type="button" aria-label="Toggle theme" id="cl-theme-toggle-site" data-astro-cid-x3pjskd3> <svg class="cl-theme-icon cl-icon-sun" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-astro-cid-x3pjskd3> <circle cx="12" cy="12" r="4" data-astro-cid-x3pjskd3></circle><path d="M12 2v2" data-astro-cid-x3pjskd3></path><path d="M12 20v2" data-astro-cid-x3pjskd3></path><path d="m4.93 4.93 1.41 1.41" data-astro-cid-x3pjskd3></path><path d="m17.66 17.66 1.41 1.41" data-astro-cid-x3pjskd3></path><path d="M2 12h2" data-astro-cid-x3pjskd3></path><path d="M20 12h2" data-astro-cid-x3pjskd3></path><path d="m6.34 17.66-1.41 1.41" data-astro-cid-x3pjskd3></path><path d="m19.07 4.93-1.41 1.41" data-astro-cid-x3pjskd3></path> </svg> <svg class="cl-theme-icon cl-icon-moon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-astro-cid-x3pjskd3> <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" data-astro-cid-x3pjskd3></path> </svg> <svg class="cl-theme-icon cl-icon-auto" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-astro-cid-x3pjskd3> <rect x="2" y="3" width="20" height="14" rx="2" data-astro-cid-x3pjskd3></rect><path d="M8 21h8" data-astro-cid-x3pjskd3></path><path d="M12 17v4" data-astro-cid-x3pjskd3></path> </svg> </button>  <script>
+    (function () {
+        var order = ['dark', 'light', 'auto'];
+
+        function getCookie(name) {
+            var m = document.cookie.match(
+                new RegExp('(?:^|; )' + name + '=([^;]*)'),
+            );
+            return m ? decodeURIComponent(m[1]) : null;
+        }
+
+        function getStored() {
+            var c = getCookie('cl-theme');
+            var s = c || localStorage.getItem('starlight-theme');
+            return s === 'light' || s === 'dark' ? s : 'auto';
+        }
+
+        function apply(pref, animate) {
+            var resolved =
+                pref === 'auto'
+                    ? window.matchMedia('(prefers-color-scheme: light)').matches
+                        ? 'light'
+                        : 'dark'
+                    : pref;
+            function commit() {
+                document.documentElement.dataset.theme = resolved;
+                document.documentElement.dataset.themePreference = pref;
+            }
+            var val = pref === 'light' || pref === 'dark' ? pref : 'auto';
+            document.cookie =
+                'cl-theme=' + val + '; path=/; max-age=31536000; SameSite=Lax';
+            localStorage.setItem(
+                'starlight-theme',
+                pref === 'light' || pref === 'dark' ? pref : '',
+            );
+            // View Transitions API: GPU-composited crossfade of two page
+            // snapshots, instead of per-element CSS transitions.
+            var reduced = window.matchMedia(
+                '(prefers-reduced-motion: reduce)',
+            ).matches;
+            if (
+                animate &&
+                !reduced &&
+                typeof document.startViewTransition === 'function'
+            ) {
+                document.startViewTransition(commit);
+            } else {
+                commit();
+            }
+        }
+
+        document
+            .getElementById('cl-theme-toggle-site')
+            .addEventListener('click', function () {
+                var current = getStored();
+                var next = order[(order.indexOf(current) + 1) % order.length];
+                apply(next, true);
+            });
+
+        window
+            .matchMedia('(prefers-color-scheme: light)')
+            .addEventListener('change', function () {
+                if (getStored() === 'auto') apply('auto', false);
+            });
+
+        window.addEventListener('storage', function (e) {
+            if (e.key === 'starlight-theme') apply(getStored(), false);
+        });
+    })();
+</script> <!-- Shared product navigation script --> <script>
+  function navigateToProduct(sku) {
+    var hash = Math.random().toString(36).substring(2, 15);
+    var payload = 'VM_v1_Dg4kRp9mXs' +
+                  'XXXEEEXXX' +
+                  'SKU=' + encodeURIComponent(sku) + '&HASH=' + hash +
+                  'XXXEEEXXX' +
+                  'bN8wZt3hF6vQ' +
+                  'XXXEEEXXX';
+    window.location.href = '/l1/eshop/product?item=' + encodeURIComponent(payload);
+  }
+  </script> <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"fc50d56ba8964763916ec7a3211a8e85","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body> </html>

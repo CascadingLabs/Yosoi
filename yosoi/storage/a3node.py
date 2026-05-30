@@ -277,9 +277,28 @@ class A3Node:
     last_replayed_at: str | None = None
 
     @property
+    def domloader_acts(self) -> list[ActRecord]:
+        """Acts that DOMLoader should replay (excludes wait_for_js settle acts)."""
+        return [a for a in self.acts if a.kind != 'wait_for_js']
+
+    @property
+    def settle_seconds(self) -> float:
+        """Total settle delay to apply before content() on replay.
+
+        Derived from recorded ``wait_for_js`` acts — each cycle represents
+        one 500 ms poll interval that was needed for the JS assert to pass.
+        """
+        return float(sum(a.cycles * 0.5 for a in self.acts if a.kind == 'wait_for_js'))
+
+    @property
     def is_empty(self) -> bool:
-        """True when this domain needs no actions to reach stability."""
-        return len(self.acts) == 0
+        """True when this domain needs no DOMLoader actions to reach stability.
+
+        A recipe containing only ``wait_for_js`` settle acts is considered
+        empty (no DOMLoader clicks/scrolls needed) but still carries a non-zero
+        :attr:`settle_seconds` that replay must honour.
+        """
+        return len(self.domloader_acts) == 0
 
     @property
     def battle_tested(self) -> bool:

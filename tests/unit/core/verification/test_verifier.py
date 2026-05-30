@@ -690,3 +690,23 @@ class TestVerifyRoot:
     def test_xpath_primary_matches_inside_container(self, verifier):
         entry = {'title': {'primary': {'type': 'xpath', 'value': './/h1[@class="title"]'}}}
         assert verifier.verify_root(self._HTML, 'div.card', entry) is True
+
+
+def test_verify_root_skips_none_primary_without_error(simple_html):
+    """verify_root silently continues when primary is None (line 244)."""
+    from yosoi.core.verification.verifier import SelectorVerifier
+
+    v = SelectorVerifier()
+    selectors = {'headline': {'primary': None}, 'author': {'primary': 'span.author'}}
+    result = v.verify_root(simple_html, 'body', selectors)
+    assert isinstance(result, bool)
+
+
+def test_verify_root_swallows_selector_exception(simple_html):
+    """verify_root catches and continues when a selector raises (lines 249-250)."""
+    from yosoi.core.verification.verifier import SelectorVerifier
+
+    v = SelectorVerifier()
+    selectors = {'headline': {'primary': {'type': 'xpath', 'value': '///invalid//'}}}
+    result = v.verify_root(simple_html, 'body', selectors)
+    assert result is False

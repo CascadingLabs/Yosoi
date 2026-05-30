@@ -64,3 +64,30 @@ jobs:
         uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+
+  integration:
+    name: Browser Integration Tests (Python 3.13)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Install Chrome
+        uses: browser-actions/setup-chrome@latest
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: "**/pyproject.toml"
+
+      - name: Create Virtual Environment
+        run: uv venv --python 3.13
+
+      - name: Install dependencies
+        run: uv sync --group tests --group dev
+
+      - name: Run browser integration tests
+        env:
+          YOSOI_INTEGRATION: "1"
+        run: uv run pytest tests/integration/ -m browser_integration --tb=short -q

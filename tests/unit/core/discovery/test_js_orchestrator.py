@@ -59,10 +59,10 @@ def _make_orchestrator(
         except StopIteration:
             return None
 
-    # _tab_eval (from runtime._eval) checks evaluate_js first, then eval_js.
-    # Provide evaluate_js so the mock matches what voidcrawl tabs expose.
+    # _tab_eval (from runtime._eval) prefers eval_js — Yosoi's canonical name,
+    # the method the pooled voidcrawl tabs actually expose.
     tab = mocker.AsyncMock()
-    tab.evaluate_js = mocker.AsyncMock(side_effect=_eval_js)
+    tab.eval_js = mocker.AsyncMock(side_effect=_eval_js)
 
     return orch, tab
 
@@ -112,7 +112,7 @@ async def test_pre_probe_returns_empty_dict_for_non_dict_result(mocker: MockerFi
 @pytest.mark.asyncio
 async def test_pre_probe_returns_none_on_exception(mocker: MockerFixture):
     orch, tab = _make_orchestrator(mocker, [], [])
-    tab.evaluate_js = mocker.AsyncMock(side_effect=RuntimeError('tab error'))
+    tab.eval_js = mocker.AsyncMock(side_effect=RuntimeError('tab error'))
     result = await orch._pre_probe(tab)
     assert result is None
 
@@ -141,7 +141,7 @@ async def test_verify_returns_false_for_null(mocker: MockerFixture):
 @pytest.mark.asyncio
 async def test_verify_returns_false_on_exception(mocker: MockerFixture):
     orch, tab = _make_orchestrator(mocker, [], [])
-    tab.evaluate_js = mocker.AsyncMock(side_effect=RuntimeError('syntax error'))
+    tab.eval_js = mocker.AsyncMock(side_effect=RuntimeError('syntax error'))
     verified, output = await orch._verify(tab, 'bad js', 'signals')
     assert verified is False
     assert 'syntax error' in (output or '')
@@ -225,7 +225,7 @@ async def test_discover_caches_verified_scripts(mocker: MockerFixture):
 @pytest.mark.asyncio
 async def test_discover_returns_empty_when_pre_probe_fails(mocker: MockerFixture):
     orch, tab = _make_orchestrator(mocker, llm_responses=[], eval_results=[])
-    tab.evaluate_js = mocker.AsyncMock(side_effect=RuntimeError('CDP error'))
+    tab.eval_js = mocker.AsyncMock(side_effect=RuntimeError('CDP error'))
 
     fetcher = mocker.MagicMock()
     fetcher.browse = mocker.MagicMock()

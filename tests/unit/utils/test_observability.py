@@ -296,6 +296,161 @@ def test_set_trace_output_noop_when_client_off(mocker):
     fake_span.set_attribute.assert_not_called()
 
 
+# ────────────────────────────────────────────────────────────────────
+# Standard span-attribute contract — _apply guard + annotate_* helpers
+#
+# The module comment promises emission and tests never drift; these
+# round-trips assert the exact ATTR_* constants land on real OTel spans.
+# ────────────────────────────────────────────────────────────────────
+
+
+def _emitting_tracer():
+    """Point the faked active client at the in-memory test TracerProvider."""
+    from opentelemetry import trace
+
+    obs.LangfuseClient._instance.tracer = trace.get_tracer('yosoi-test')
+
+
+def _attrs_of(span_exporter, name):
+    spans = [s for s in span_exporter.get_finished_spans() if s.name == name]
+    assert len(spans) == 1
+    return spans[0].attributes
+
+
+# -- _apply guard semantics -------------------------------------------
+
+
+@pytest.mark.parametrize(
+    'call',
+    [
+        lambda s: obs.annotate_a3node(s, mode=obs.A3_MODE_REPLAY),
+        lambda s: obs.annotate_cache(s, path=obs.CACHE_FRESH),
+        lambda s: obs.annotate_llm(s, provider='groq', model='llama'),
+    ],
+)
+def test_annotate_helpers_noop_when_client_off(mocker, call):
+    obs.reset_for_tests()
+    fake_span = mocker.MagicMock()
+    call(fake_span)
+    fake_span.set_attribute.assert_not_called()
+
+
+@pytest.mark.usefixtures('_fake_active_client')
+def test_annotate_helpers_noop_on_none_target():
+    # Active client, but no span in scope — must not raise.
+    obs.annotate_a3node(None, mode=obs.A3_MODE_REPLAY)
+    obs.annotate_cache(None, path=obs.CACHE_FRESH)
+    obs.annotate_llm(None, provider='groq', model='llama')
+
+
+@pytest.mark.usefixtures('_fake_active_client')
+def test_apply_skips_none_but_keeps_false_and_zero(span_exporter):
+    """None values are dropped; False / 0 are real signal and must be emitted."""
+    _emitting_tracer()
+    with obs.span('fetch') as s:
+        # replayed defaults False, acts/replay_count default 0 → all kept.
+        obs.annotate_a3node(s, mode=obs.A3_MODE_PROBE)
+    attrs = _attrs_of(span_exporter, 'fetch')
+    assert attrs[obs.ATTR_A3_REPLAYED] is False
+    assert attrs[obs.ATTR_A3_FELL_BACK] is False
+    assert attrs[obs.ATTR_A3_ACTS] == 0
+    assert attrs[obs.ATTR_A3_SETTLE_SECONDS] == 0.0
+
+
+@pytest.mark.usefixtures('_fake_active_client')
+def test_annotate_cache_omits_none_field_counts(span_exporter):
+    _emitting_tracer()
+    with obs.span('scrape') as s:
+        obs.annotate_cache(s, path=obs.CACHE_FRESH)  # fresh/stale default None
+    attrs = _attrs_of(span_exporter, 'scrape')
+    assert attrs[obs.ATTR_CACHE_PATH] == 'fresh'
+    assert obs.ATTR_CACHE_FRESH_FIELDS not in attrs
+    assert obs.ATTR_CACHE_STALE_FIELDS not in attrs
+
+
+# -- per-helper round-trips against the exact contract ----------------
+
+
+@pytest.mark.usefixtures('_fake_active_client')
+def test_annotate_a3node_emits_full_schema(span_exporter):
+    _emitting_tracer()
+    with obs.span('fetch') as s:
+        obs.annotate_a3node(s, mode=obs.A3_MODE_REPLAY, replayed=True, acts=2, replay_count=3, settle_seconds=1.5)
+    attrs = _attrs_of(span_exporter, 'fetch')
+    assert attrs[obs.ATTR_A3_MODE] == 'replay'
+    assert attrs[obs.ATTR_A3_REPLAYED] is True
+    assert attrs[obs.ATTR_A3_ACTS] == 2
+    assert attrs[obs.ATTR_A3_REPLAY_COUNT] == 3
+    assert attrs[obs.ATTR_A3_SETTLE_SECONDS] == 1.5
+
+
+@pytest.mark.usefixtures('_fake_active_client')
+def test_annotate_a3node_accepts_replay_attrs_splat(span_exporter):
+    """The A3ReplayAttrs TypedDict splats cleanly alongside an explicit flag."""
+    _emitting_tracer()
+    replay_attrs: obs.A3ReplayAttrs = {
+        'mode': obs.A3_MODE_REPLAY,
+        'acts': 1,
+        'replay_count': 0,
+        'settle_seconds': 0.0,
+    }
+    with obs.span('fetch') as s:
+        obs.annotate_a3node(s, fell_back=True, **replay_attrs)
+    attrs = _attrs_of(span_exporter, 'fetch')
+    assert attrs[obs.ATTR_A3_MODE] == 'replay'
+    assert attrs[obs.ATTR_A3_FELL_BACK] is True
+    assert attrs[obs.ATTR_A3_ACTS] == 1
+
+
+@pytest.mark.usefixtures('_fake_active_client')
+def test_annotate_cache_emits_path_and_counts(span_exporter):
+    _emitting_tracer()
+    with obs.span('scrape') as s:
+        obs.annotate_cache(s, path=obs.CACHE_PARTIAL, fresh_fields=2, stale_fields=3)
+    attrs = _attrs_of(span_exporter, 'scrape')
+    assert attrs[obs.ATTR_CACHE_PATH] == 'partial'
+    assert attrs[obs.ATTR_CACHE_FRESH_FIELDS] == 2
+    assert attrs[obs.ATTR_CACHE_STALE_FIELDS] == 3
+
+
+@pytest.mark.usefixtures('_fake_active_client')
+def test_annotate_llm_maps_provider_to_backend(span_exporter):
+    _emitting_tracer()
+    with obs.span('discovery') as s:
+        obs.annotate_llm(s, provider='groq', model='llama-3.3-70b')
+    attrs = _attrs_of(span_exporter, 'discovery')
+    assert attrs[obs.ATTR_LLM_BACKEND] == 'api'
+    assert attrs[obs.ATTR_LLM_PROVIDER] == 'groq'
+    assert attrs[obs.ATTR_LLM_MODEL] == 'llama-3.3-70b'
+
+
+@pytest.mark.usefixtures('_fake_active_client')
+def test_transport_span_emits_backend_schema_and_namespaces_extra(span_exporter):
+    _emitting_tracer()
+    with obs.transport_span(obs.BACKEND_OPENCODE, 'sonnet', structured_output=True, base_url='http://x'):
+        pass
+    attrs = _attrs_of(span_exporter, obs.LLM_TRANSPORT_SPAN)
+    assert attrs[obs.ATTR_LLM_BACKEND] == 'opencode'
+    assert attrs[obs.ATTR_LLM_MODEL] == 'sonnet'
+    assert attrs[obs.ATTR_LLM_STRUCTURED] is True
+    assert attrs['yosoi.llm.base_url'] == 'http://x'  # **extra lands under the yosoi.llm.* namespace
+
+
+@pytest.mark.parametrize(
+    ('provider', 'expected'),
+    [
+        ('claude-sdk', 'claude-sdk'),
+        ('opencode', 'opencode'),
+        ('OPENCODE', 'opencode'),  # case-insensitive
+        ('groq', 'api'),
+        ('anthropic', 'api'),
+        ('openai', 'api'),
+    ],
+)
+def test_llm_backend_mapping(provider, expected):
+    assert obs.llm_backend(provider) == expected
+
+
 @pytest.mark.usefixtures('_fake_active_client')
 def test_set_trace_input_noop_when_span_none():
     obs.set_trace_input(None, {'x': 1})  # must not raise
@@ -343,3 +498,14 @@ def test_set_trace_input_serializes_non_json_types(mocker):
     decoded = json.loads(val)
     assert isinstance(decoded['when'], str)
     assert decoded['when'].startswith('2026-01-01')
+
+
+def test_detached_span_is_noop_when_client_is_none():
+    """detached_span() yields None immediately when no Langfuse client (lines 174-175)."""
+    from yosoi.utils import observability as obs
+
+    obs.reset_for_tests()  # ensures client() returns None
+    from yosoi.utils.observability import detached_span
+
+    with detached_span('test_span') as span:
+        assert span is None  # no-op path

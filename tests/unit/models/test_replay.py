@@ -90,3 +90,29 @@ class TestDiscoveryLesson:
     def test_validation_threshold(self):
         validation = LessonValidation(report=VerifyReport(passed=3, failed=1), threshold=0.8)
         assert validation.passed is False
+
+
+# ---------------------------------------------------------------------------
+# ReplayAct validator — missing branches (lines 84, 86)
+# ---------------------------------------------------------------------------
+
+
+def test_type_act_without_text_raises():
+    """TYPE act requires non-None text (line 84)."""
+    from pydantic import ValidationError
+
+    from yosoi.models.replay import ActKind, ReplayAct
+    from yosoi.models.selectors import css
+
+    with pytest.raises(ValidationError, match='type acts require'):
+        ReplayAct(kind=ActKind.TYPE, targets=[css('input')], text=None)
+
+
+def test_eval_act_without_script_raises():
+    """EVAL act requires a non-empty script (line 86)."""
+    from pydantic import ValidationError
+
+    from yosoi.models.replay import ActKind, ReplayAct
+
+    with pytest.raises(ValidationError, match='eval acts require'):
+        ReplayAct(kind=ActKind.EVAL, script=None)

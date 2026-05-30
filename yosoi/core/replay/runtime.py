@@ -283,10 +283,17 @@ async def _content(tab: Any) -> str:
 
 
 async def _eval(tab: Any, script: str) -> Any:
-    if hasattr(tab, 'evaluate_js'):
-        return await _call(tab, 'evaluate_js', script)
+    """Evaluate *script* on a voidcrawl tab — the single eval chokepoint.
+
+    ``eval_js`` is Yosoi's canonical name for live-DOM JS evaluation and is the
+    method present on the pooled tabs we actually acquire. ``evaluate_js`` and
+    the legacy ``evaluate`` are kept only as compatibility fallbacks for bare
+    ``Tab``/``JsTab`` variants that expose just the longer alias.
+    """
     if hasattr(tab, 'eval_js'):
         return await _call(tab, 'eval_js', script)
+    if hasattr(tab, 'evaluate_js'):
+        return await _call(tab, 'evaluate_js', script)
     return await _call(tab, 'evaluate', script)
 
 

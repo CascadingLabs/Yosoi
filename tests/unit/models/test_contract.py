@@ -556,3 +556,123 @@ def test_action_fields_excluded_from_field_descriptions():
     descs = TechContract.field_descriptions()
     assert 'title' in descs
     assert 'signals' not in descs
+
+
+# ---------------------------------------------------------------------------
+# undiscovered_action_fields coverage (lines 145, 151, 170, 174-178)
+# ---------------------------------------------------------------------------
+
+import yosoi as ys
+
+
+class _JsHandAuthoredContract(Contract):
+    """Hand-authored js(script=...) fields should NOT appear in undiscovered."""
+
+    signal: str = ys.js(script='(() => window.__signal__)()')
+
+
+class _JsDiscoveryContract(Contract):
+    """Discovery-driven js(description=...) fields appear in undiscovered."""
+
+    signal: str = ys.js(description='Detect competitor widgets')
+
+
+class _NoActionContract(Contract):
+    """No action fields — undiscovered returns {}."""
+
+    title: str = ys.Title()
+
+
+def test_undiscovered_action_fields_excludes_hand_authored():
+    """Fields with an explicit script= are already authored and must not appear (lines 174-175)."""
+    result = _JsHandAuthoredContract.undiscovered_action_fields()
+    assert 'signal' not in result
+
+
+def test_undiscovered_action_fields_includes_description_only():
+    """Fields with only description= (no script) need discovery (lines 176-178)."""
+    result = _JsDiscoveryContract.undiscovered_action_fields()
+    assert 'signal' in result
+    assert result['signal'] == 'Detect competitor widgets'
+
+
+def test_undiscovered_action_fields_skips_non_dict_extra():
+    """Fields where json_schema_extra is not a dict are skipped (line 170)."""
+    result = _NoActionContract.undiscovered_action_fields()
+    assert result == {}
+
+
+def test_discovery_field_names_includes_action_field_free_fields():
+    """discovery_field_names skips fields that are action_fields (line 252-253)."""
+    names = _JsDiscoveryContract.discovery_field_names()
+    # JS action fields are excluded from discovery_field_names
+    assert 'signal' not in names
+
+
+def test_list_field_coercion_skips_none_values():
+    """List field coercion silently skips None list field values (line 151)."""
+
+    class _OptListContract(Contract):
+        tags: list[str] | None = ys.Field(default=None)
+
+    result = _OptListContract.model_validate({'tags': None})
+    assert result.tags is None
+
+
+def test_undiscovered_action_fields_skips_fields_without_json_extra():
+    """Fields with no json_schema_extra (e.g. bare `str` annotation) are skipped (line 170)."""
+
+    class _BareContract(Contract):
+        name: str  # no json_schema_extra at all → json_schema_extra is None
+
+    result = _BareContract.undiscovered_action_fields()
+    assert 'name' not in result
+
+
+def test_list_field_coercion_skips_none_via_validation_error():
+    """List field coercion continues on None value before pydantic raises (line 151)."""
+    from pydantic import ValidationError
+
+    class _ListContract(Contract):
+        tags: list[str] = ys.Field()
+
+    # The mode='before' validator runs first (line 151 continue), then pydantic rejects None
+    with pytest.raises(ValidationError):
+        _ListContract.model_validate({'tags': None})
+
+
+def test_discovery_field_names_expands_nested_contract_fields():
+    """Nested Contract-typed fields are expanded to flat parent_child names (lines 256-257)."""
+
+    class _ChildContract(Contract):
+        headline: str = ys.Title()
+        author: str = ys.Author()
+
+    class _ParentContract(Contract):
+        article: _ChildContract = ys.Field()  # type: ignore[assignment]
+        date: str = ys.Field()
+
+    names = _ParentContract.discovery_field_names()
+    assert 'article_headline' in names
+    assert 'article_author' in names
+    assert 'date' in names
+    assert 'article' not in names  # the container itself is not a target
+
+
+def test_to_selector_model_skips_overridden_nested_child_fields():
+    """Nested child field with a parent-level override is excluded from selector model (line 286)."""
+
+    class _ChildContract(Contract):
+        headline: str = ys.Title()
+        author: str = ys.Author()
+
+    class _ParentContract(Contract):
+        article: _ChildContract = ys.Field()  # type: ignore[assignment]
+        title: str = ys.Field(selector='h1')  # overridden at parent level
+
+    model = _ParentContract.to_selector_model()
+    fields = model.model_fields
+    # Parent-level override ('title') must be excluded
+    assert 'title' not in fields
+    # Nested child fields from article should be expanded
+    assert 'article_headline' in fields or 'article_author' in fields

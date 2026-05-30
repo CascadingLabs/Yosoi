@@ -53,3 +53,14 @@ def test_url_no_strip_tracking():
 
     result = C.model_validate({'url': 'https://example.com/page?utm_source=newsletter&id=42'})
     assert 'utm_source' in result.url
+
+
+def test_url_http_upgraded_to_https_with_require_https():
+    """http:// URLs are upgraded to https:// when require_https=True (line 39)."""
+
+    class C(Contract):
+        url: str = ys.Url(require_https=True)
+
+    result = C.model_validate({'url': 'http://example.com/page'})
+    assert result.url.startswith('https://')
+    assert 'example.com/page' in result.url

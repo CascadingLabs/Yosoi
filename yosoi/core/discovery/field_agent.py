@@ -150,7 +150,8 @@ class FieldDiscoveryAgent:
             forbidden_selectors=feedback.failed_selectors if feedback else (),
         )
 
-        with obs.span(f'field_agent[{field_name}]', field=field_name, source='agent'):
+        with obs.span(f'field_agent[{field_name}]', field=field_name, source='agent') as field_span:
+            obs.annotate_llm(field_span, provider=self.provider, model=self.model_name)
             try:
                 message = feedback.message if feedback else None
                 result = await self._agent.run(build_field_user_prompt(discovery_input, message), deps=deps)

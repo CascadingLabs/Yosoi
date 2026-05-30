@@ -102,3 +102,44 @@ class TestSchemaParamType:
         param_type = SchemaParamType()
         result = param_type.convert(f'{py_file}:DynTest', None, None)
         assert issubclass(result, Contract)
+
+    def test_exact_registry_match(self):
+        """Exact match in _CONTRACT_REGISTRY resolves correctly (line 82)."""
+        from yosoi.models.contract import _CONTRACT_REGISTRY
+
+        # Define a new contract — __init_subclass__ registers it automatically
+        class _RegistryTestContract(Contract):
+            title: str = ''
+
+        try:
+            param_type = SchemaParamType()
+            result = param_type.convert('_RegistryTestContract', None, None)
+            assert issubclass(result, Contract)
+        finally:
+            _CONTRACT_REGISTRY.pop('_RegistryTestContract', None)
+
+    def test_case_insensitive_registry_match(self):
+        """Case-insensitive match in _CONTRACT_REGISTRY resolves correctly (line 85)."""
+        from yosoi.models.contract import _CONTRACT_REGISTRY
+
+        class _CiRegistryContract(Contract):
+            title: str = ''
+
+        try:
+            param_type = SchemaParamType()
+            result = param_type.convert('_CIREGISTRYCONTRACT', None, None)
+            assert issubclass(result, Contract)
+        finally:
+            _CONTRACT_REGISTRY.pop('_CiRegistryContract', None)
+
+    def test_shell_complete_filters_by_prefix(self):
+        """shell_complete returns completions matching the incomplete prefix (lines 57-58)."""
+
+        param_type = SchemaParamType()
+        completions = param_type.shell_complete(None, None, '')  # type: ignore[arg-type]
+
+        # All built-in schema names should appear when prefix is empty
+        assert len(completions) > 0
+        names = [c.value for c in completions]
+        for builtin in BUILTIN_SCHEMAS:
+            assert builtin in names

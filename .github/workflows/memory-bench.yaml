@@ -1,0 +1,72 @@
+name: Memory Benchmark
+
+# Tracks voidcrawl's REAL memory cost over time so we know what we're up against
+# each release. CodSpeed can't see this: it measures the Python process CPU,
+# while voidcrawl's memory lives in (a) the in-process Rust pool and (b) the
+# Chrome child-process tree. The harness samples PSS across the whole tree and
+# emits a github-action-benchmark JSON; the action stores history on the
+# gh-pages branch, renders a chart per metric, and alerts on regression.
+#
+# RUNNER VARIANCE: GitHub-hosted runners (~7 GB / 2 vCPU, variable) produce
+# noisier and lower absolute numbers than a dev box. For trustworthy release-over-
+# release tracking, run this on a SELF-HOSTED runner with fixed specs and set
+# `runs-on` accordingly. The relative trend is what matters either way.
+
+on:
+  push:
+    branches:
+      - main
+  release:
+    types: [published]
+  workflow_dispatch: {}   # allow manual runs
+
+# Avoid concurrent writes to the gh-pages benchmark history.
+concurrency:
+  group: memory-bench
+  cancel-in-progress: false
+
+jobs:
+  memory:
+    name: voidcrawl memory capacity
+    runs-on: ubuntu-latest   # swap for a fixed self-hosted runner for stable trends
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Install Chrome
+        id: setup-chrome
+        uses: browser-actions/setup-chrome@latest
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: "**/pyproject.toml"
+
+      - name: Create Virtual Environment
+        run: uv venv --python 3.13
+
+      - name: Install dependencies
+        run: uv sync --group tests --group dev
+
+      - name: Measure voidcrawl memory
+        run: >
+          uv run python experiments/voidcrawl_memory_capacity.py
+          --sweep 1,4,8 --rounds 2 --page-items 150 --spa-heap-mb 25
+          --chrome "${{ steps.setup-chrome.outputs.chrome-path }}"
+          --json metrics.json
+
+      - name: Track over time + alert on regression
+        # TODO: pin to a commit SHA (repo convention) once selected.
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: voidcrawl memory (PSS)
+          tool: customSmallerIsBetter
+          output-file-path: metrics.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          benchmark-data-dir-path: dev/bench/memory
+          # Only push history on main/release, not manual dry-runs.
+          auto-push: ${{ github.event_name != 'workflow_dispatch' }}
+          alert-threshold: "120%"        # flag a metric that grows >20%
+          comment-on-alert: true
+          fail-on-alert: false           # alert, don't block releases (tune later)

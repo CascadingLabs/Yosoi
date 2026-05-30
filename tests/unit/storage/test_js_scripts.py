@@ -82,3 +82,31 @@ async def test_save_overwrites_same_field(tmp_path):
 
     scripts = await storage.get_scripts('example.com', 'sig')
     assert scripts['field'] == 'new'
+
+
+async def test_load_returns_none_for_corrupt_json(tmp_path):
+    """load() swallows JSON decode errors and returns None (lines 95-97)."""
+
+    storage = JsScriptStorage(storage_dir=str(tmp_path))
+    filepath = storage._filepath('corrupt.com', 'sig')
+
+    # Write a syntactically invalid JSON file
+    import aiofiles
+
+    async with aiofiles.open(filepath, 'w') as f:
+        await f.write('{not valid json !!!}')
+
+    result = await storage.load('corrupt.com', 'sig')
+    assert result is None
+
+
+async def test_save_entries_logs_warning_on_ioerror(tmp_path, mocker):
+    """save_entries() catches OSError from atomic write and logs a warning (lines 125-126)."""
+    storage = JsScriptStorage(storage_dir=str(tmp_path))
+    mocker.patch(
+        'yosoi.storage.js_scripts.atomic_write_json_async',
+        side_effect=OSError('disk full'),
+    )
+
+    # Must not raise — the OSError is caught and logged
+    await storage.save_entries('example.com', 'sig', {'field': _entry()})

@@ -336,3 +336,18 @@ def test_visual_factory_creates_visual_entry():
     assert entry.x == 12
     assert entry.y == 34
     assert entry.level == SelectorLevel.VISUAL
+
+
+def test_strip_level_removes_selector_level_from_defs():
+    """_strip_level pops SelectorLevel from $defs when present (line 64)."""
+    from yosoi.models.selectors import _strip_level
+
+    schema = {
+        'properties': {'level': 'should be removed'},
+        '$defs': {'SelectorLevel': {'enum': [1, 2, 3]}, 'Other': {}},
+    }
+    _strip_level(schema)
+
+    assert 'SelectorLevel' not in schema['$defs']
+    assert 'Other' in schema['$defs']
+    assert 'level' not in schema['properties']

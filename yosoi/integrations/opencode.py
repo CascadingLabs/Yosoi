@@ -96,12 +96,12 @@ class OpenCodeModel(Model):
         if output_format is not None:
             body['format'] = output_format
 
-        with obs.span(
-            'opencode.message',
-            provider=self._provider_id,
-            model=self._model_id,
-            base_url=self._base_url,
+        with obs.transport_span(
+            obs.BACKEND_OPENCODE,
+            self.model_name,
             structured_output=output_format is not None,
+            base_url=self._base_url,
+            subprovider=self._provider_id,
         ):
             try:
                 async with httpx.AsyncClient(base_url=self._base_url, timeout=180) as client:

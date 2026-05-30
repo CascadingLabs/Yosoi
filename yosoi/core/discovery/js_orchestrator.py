@@ -198,7 +198,8 @@ class JsDiscoveryOrchestrator:
                         f'js_discovery[{field_name}]',
                         field=field_name,
                         attempt=attempt_num,
-                    ):
+                    ) as js_span:
+                        obs.annotate_llm(js_span, provider=self._llm_config.provider, model=self.model_name)
                         script = await self._call_llm(deps, field_name, attempt_num)
 
                     if not script:
@@ -268,6 +269,11 @@ class JsDiscoveryOrchestrator:
         attempt_counts: dict[str, int],
     ) -> None:
         """Persist verified scripts to the JS script cache."""
+        # FUTURE: this save_entries is the write end of the JS-discovery
+        # read-modify-write race. When the per-domain ``write_lock`` is threaded
+        # in (see Pipeline._discover_js_actions), serialise this write under it so
+        # concurrent same-domain workers can't clobber each other's cache entries —
+        # mirroring DiscoveryOrchestrator's locked selector snapshot save.
         now = datetime.now(timezone.utc).isoformat()
         entries = {
             field: JsScriptEntry(

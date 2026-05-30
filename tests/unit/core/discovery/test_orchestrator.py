@@ -503,3 +503,73 @@ async def test_stale_cache_not_resurrected(orchestrator, mock_storage, mocker):
     assert result is not None
     assert 'headline' in result
     assert 'author' not in result
+
+
+async def test_max_concurrent_property_returns_configured_value(llm_config, mock_storage):
+    """max_concurrent property returns the value set at construction (line 102)."""
+    from yosoi.core.discovery.orchestrator import DiscoveryOrchestrator
+    from yosoi.models.defaults import NewsArticle
+
+    orch = DiscoveryOrchestrator(
+        contract=NewsArticle,
+        llm_config=llm_config,
+        storage=mock_storage,
+        max_concurrent=7,
+    )
+    assert orch.max_concurrent == 7
+
+
+async def test_discover_selectors_with_write_lock_on_all_fail(llm_config, mock_storage, mocker):
+    """write_lock is acquired when saving snapshots after all-field failure (lines 250-251)."""
+    import asyncio
+
+    from yosoi.core.discovery.orchestrator import DiscoveryOrchestrator
+    from yosoi.models.defaults import NewsArticle
+
+    lock = asyncio.Lock()
+    orch = DiscoveryOrchestrator(
+        contract=NewsArticle,
+        llm_config=llm_config,
+        storage=mock_storage,
+        write_lock=lock,
+    )
+    # Make every field task return None (all failed) to trigger lines 250-251
+    mocker.patch(
+        'yosoi.core.discovery.orchestrator.run_field_task',
+        new=mocker.AsyncMock(return_value=mocker.MagicMock(selectors=None, from_cache=False, escalated_to=None)),
+    )
+
+    save_spy = mocker.patch.object(mock_storage, 'save_snapshots', new=mocker.AsyncMock())
+    result = await orch.discover_selectors('<h1>Test</h1>', url='https://example.com')
+
+    assert result is None
+    save_spy.assert_called()
+
+
+async def test_discover_selectors_with_write_lock_on_success(llm_config, mock_storage, mocker):
+    """write_lock is acquired when saving snapshots on success (lines 271-272)."""
+    import asyncio
+
+    from yosoi.core.discovery.field_task import FieldTaskResult
+    from yosoi.core.discovery.orchestrator import DiscoveryOrchestrator
+    from yosoi.models.defaults import NewsArticle
+
+    lock = asyncio.Lock()
+    orch = DiscoveryOrchestrator(
+        contract=NewsArticle,
+        llm_config=llm_config,
+        storage=mock_storage,
+        write_lock=lock,
+    )
+
+    async def _succeed(**kwargs):
+        name = kwargs['field_name']
+        sel = FieldSelectors(primary='h1') if name != 'root' else None
+        return FieldTaskResult(field_name=name, selectors=sel, from_cache=False, escalated_to=None)
+
+    mocker.patch('yosoi.core.discovery.orchestrator.run_field_task', new=_succeed)
+    save_spy = mocker.patch.object(mock_storage, 'save_snapshots', new=mocker.AsyncMock())
+
+    await orch.discover_selectors(_HTML, url='https://example.com')
+
+    save_spy.assert_called()

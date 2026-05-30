@@ -49,7 +49,7 @@ class MapsPlaceFacts(ys.Contract):
 # ── Runner ────────────────────────────────────────────────────────────────────
 
 
-async def main() -> None:  # noqa: D103
+async def main() -> None:
     if not is_initialized():
         init_yosoi()
 

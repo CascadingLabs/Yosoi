@@ -297,7 +297,7 @@ _CSV_FIELDS = [
 ]
 
 
-async def main() -> None:  # noqa: D103
+async def main() -> None:
     if not is_initialized():
         init_yosoi()
 
@@ -312,7 +312,7 @@ async def main() -> None:  # noqa: D103
         contract=MapsPlaceFacts,
         output_format=['json'],
         selector_level=ys.SelectorLevel.CSS,
-        experimental_a3node=True,
+        experimental_a3node=False,  # DOMLoader must run per-URL to load the business panel
     )
 
     run_results = await pipeline.process_urls(
@@ -339,12 +339,25 @@ async def main() -> None:  # noqa: D103
         elif isinstance(raw, list) and raw:
             content = raw[0]
 
+        # Split "4.6 (77)" into rating="4.6" and review_count="77"
+        raw_rating = content.get('rating', '') or ''
+        rc_from_js = content.get('review_count', '') or ''
+        m = re.search(r'\((\d[\d,]*)\)', raw_rating)
+        if m:
+            clean_rating = raw_rating[: m.start()].strip().rstrip('(').strip()
+            rc_from_css = m.group(1)
+        else:
+            clean_rating = raw_rating
+            rc_from_css = ''
+        # JS result takes priority; fall back to CSS-embedded count
+        review_count = rc_from_js if (rc_from_js and rc_from_js != clean_rating) else rc_from_css
+
         enriched.append(
             {
                 **loc,
                 'business_name': content.get('business_name', ''),
-                'rating': content.get('rating', ''),
-                'review_count': content.get('review_count', ''),
+                'rating': clean_rating,
+                'review_count': review_count,
                 'category': content.get('category', ''),
                 'address': content.get('address', ''),
                 'hours': content.get('hours', ''),
@@ -370,8 +383,8 @@ async def main() -> None:  # noqa: D103
     print('-' * 75)
     for row in enriched[:10]:
         print(
-            f'{row["domain_regime"]:<10} {row["location_name"]:<25} '
-            f'{row["rating"]:<8} {row["review_count"]:<10} {row["phone"]}'
+            f'{row["domain_regime"] or ""!s:<10} {row["location_name"] or ""!s:<25} '
+            f'{row["rating"] or ""!s:<8} {row["review_count"] or ""!s:<10} {row["phone"] or ""!s}'
         )
 
 
