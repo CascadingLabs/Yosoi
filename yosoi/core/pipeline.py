@@ -4,11 +4,13 @@ Centralized retry logic for bot detection and AI failures.
 """
 
 import asyncio
+import contextlib
 import logging
 import os
 import time
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import ExitStack, nullcontext
+from pathlib import Path
 from typing import Any, Literal
 from urllib.parse import urlparse
 
@@ -108,6 +110,7 @@ class Pipeline:
     _allowed_download_types: tuple[str, ...] = ()
     _download_dir: str | None = None
     _max_download_bytes: int | None = None
+    _keep_downloads: bool = True
 
     def __init__(
         self,
@@ -125,6 +128,7 @@ class Pipeline:
         allowed_download_types: tuple[str, ...] = (),
         download_dir: str | None = None,
         max_download_bytes: int | None = None,
+        keep_downloads: bool = True,
     ):
         """Initialize the pipeline with LLM configuration.
 
@@ -155,6 +159,8 @@ class Pipeline:
             download_dir: Quarantine root for downloaded files. Defaults to ``.yosoi/downloads/``.
             max_download_bytes: Run-wide per-file size cap used when a ys.File() field sets no
                 ``max_bytes`` of its own. Falls back to a 25 MiB built-in default when unset.
+            keep_downloads: Keep downloaded files after the run (default). Set False to purge
+                the content-addressed blobs at run end while retaining provenance in index.json.
 
         """
         self.selector_level = selector_level
@@ -163,6 +169,10 @@ class Pipeline:
         self._allowed_download_types = normalize_allowed_types(allowed_download_types)
         self._download_dir = download_dir
         self._max_download_bytes = max_download_bytes
+        self._keep_downloads = keep_downloads
+        # Accumulates (field, DownloadResult) across the run for the end-of-run manifest
+        # and the keep_downloads purge.
+        self._download_log: list[tuple[str, DownloadResult]] = []
 
         # Auto-resolve model strings → LLMConfig
         if isinstance(llm_config, str):
@@ -270,8 +280,9 @@ class Pipeline:
         return self
 
     async def __aexit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
-        """Exit the async context manager, closing the HTTP client."""
+        """Exit the async context manager, closing the HTTP client + finalizing downloads."""
         await self._client.aclose()
+        self._finalize_downloads()
 
     async def process_url(
         self,
@@ -777,6 +788,7 @@ class Pipeline:
         with observability.span('extract', url=url, container=container_selector or 'single'):
             extracted = self._extract(url, result.html, verified, container_selector)
             extracted = self._merge_fetch_outputs(extracted, result)
+            self._record_downloads(result.downloads)
 
         if extracted:
             with observability.span('semantic_refine', url=url):
@@ -1961,6 +1973,65 @@ class Pipeline:
             extracted = cls._merge_downloads(extracted, result.downloads)
         return extracted
 
+    def _record_downloads(self, downloads: dict[str, DownloadResult] | None) -> None:
+        """Log each ys.File() download and accumulate it for the run-end manifest.
+
+        FUTURE: also annotate the Langfuse fetch span per download (today: structured log +
+        the end-of-run manifest; the fetch span already records the fetch itself).
+        """
+        if not downloads:
+            return
+        for field, result in downloads.items():
+            self._download_log.append((field, result))
+            rec = result.record
+            self.logger.info(
+                'download field=%s path=%s sha256=%s size=%d content_type=%s changed=%s',
+                field,
+                rec.path,
+                rec.sha256[:12],
+                rec.size_bytes,
+                rec.content_type,
+                result.changed,
+            )
+
+    def _finalize_downloads(self) -> None:
+        """At run end: print a download manifest and, unless keeping them, purge the bytes.
+
+        Purge removes the content-addressed blob files this run wrote but **keeps each
+        domain's** ``index.json`` — provenance (hash/name/size/drift history) survives even
+        when the raw bytes don't.
+        """
+        if not getattr(self, '_download_log', None):
+            return
+
+        table = Table(title='Downloads', expand=False)
+        table.add_column('field', style='cyan')
+        table.add_column('type', style='dim')
+        table.add_column('size', justify='right')
+        table.add_column('changed', justify='center')
+        table.add_column('path', style='dim', overflow='fold')
+        total_bytes = 0
+        for field, result in self._download_log:
+            rec = result.record
+            total_bytes += rec.size_bytes
+            table.add_row(
+                field,
+                rec.content_type or '?',
+                f'{rec.size_bytes / 1024:.1f} KiB',
+                '✓' if result.changed else '·',
+                rec.path,
+            )
+        self.console.print(table)
+        self.console.print(f'[dim]{len(self._download_log)} download(s), {total_bytes / 1024:.1f} KiB total[/dim]')
+
+        if not self._keep_downloads:
+            purged = 0
+            for _field, result in self._download_log:
+                with contextlib.suppress(OSError):
+                    Path(result.record.path).unlink(missing_ok=True)
+                    purged += 1
+            self.console.print(f'[dim]purged {purged} download blob(s); provenance retained in index.json[/dim]')
+
     def _extract(
         self,
         url: str,
@@ -2194,6 +2265,7 @@ class Pipeline:
 
             extracted = self._extract(url, cleaned_html, selectors_to_use, container_selector)
             extracted = self._merge_fetch_outputs(extracted, result)
+            self._record_downloads(result.downloads)
             if extracted:
                 if isinstance(extracted, list):
                     return extracted, True

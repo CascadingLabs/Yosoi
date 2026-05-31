@@ -29,6 +29,7 @@ async def scrape(
     allowed_download_types: Sequence[str] = (),
     download_dir: str | None = None,
     max_download_bytes: int | None = None,
+    keep_downloads: bool = True,
 ) -> list[ContentMap]:
     """Scrape one URL and return validated native Python dictionaries.
 
@@ -40,6 +41,7 @@ async def scrape(
     is an optional run-wide file-type allowlist intersected with each field's own.
     ``download_dir`` overrides the quarantine root (default ``.yosoi/downloads/``) and
     ``max_download_bytes`` sets a run-wide per-file cap (used when a field sets no ``max_bytes``).
+    ``keep_downloads=False`` purges the downloaded bytes at run end (provenance is retained).
     """
     contract_cls = resolve_contract(contract) if isinstance(contract, str) else contract
     llm_config = _resolve_model(model)
@@ -65,6 +67,7 @@ async def scrape(
                 allowed_download_types=tuple(allowed_download_types),
                 download_dir=download_dir,
                 max_download_bytes=max_download_bytes,
+                keep_downloads=keep_downloads,
             ) as pipeline:
                 return [
                     item
