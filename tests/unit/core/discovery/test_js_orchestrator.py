@@ -147,6 +147,38 @@ async def test_verify_returns_false_on_exception(mocker: MockerFixture):
     assert 'syntax error' in (output or '')
 
 
+@pytest.mark.asyncio
+async def test_verify_rejects_value_that_fails_field_semantic(mocker: MockerFixture):
+    # CAS-104: a numeric field whose JS returns a long text blob is rejected
+    # (single value oracle across CSS and JS), and the reason feeds the retry.
+    from yosoi.core.verification.semantic import SemanticValidator
+    from yosoi.types.registry import KIND_NUMERIC, SemanticRule
+
+    orch, tab = _make_orchestrator(mocker, [], ['a very long block of prose with no number at all here'])
+    orch._validator = SemanticValidator()
+    rule = SemanticRule(kind=KIND_NUMERIC, max_chars=10)
+
+    verified, reason = await orch._verify(tab, '(() => document.body.innerText)()', 'review_count', rule)
+
+    assert verified is False
+    assert reason is not None
+    assert 'number' in reason
+
+
+@pytest.mark.asyncio
+async def test_verify_accepts_value_matching_field_semantic(mocker: MockerFixture):
+    from yosoi.core.verification.semantic import SemanticValidator
+    from yosoi.types.registry import KIND_NUMERIC, SemanticRule
+
+    orch, tab = _make_orchestrator(mocker, [], ['42'])
+    orch._validator = SemanticValidator()
+    rule = SemanticRule(kind=KIND_NUMERIC, max_chars=10)
+
+    verified, _output = await orch._verify(tab, '(() => "42")()', 'review_count', rule)
+
+    assert verified is True
+
+
 # ---------------------------------------------------------------------------
 # _discover_field — iterative loop
 # ---------------------------------------------------------------------------

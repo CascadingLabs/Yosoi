@@ -1822,6 +1822,7 @@ class Pipeline:
                 contract_sig=self._contract_sig,
                 fields=missing,
                 fetcher=fetcher,
+                field_rules=self._field_rules,
             )
 
     @staticmethod
