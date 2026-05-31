@@ -1,5 +1,6 @@
 """Type stubs for yosoi public API."""
 
+from collections.abc import Iterable
 from typing import Any
 
 from yosoi.core.configs import DebugConfig as DebugConfig
@@ -17,6 +18,7 @@ from yosoi.models.defaults import JobPosting as JobPosting
 from yosoi.models.defaults import NewsArticle as NewsArticle
 from yosoi.models.defaults import Product as Product
 from yosoi.models.defaults import Video as Video
+from yosoi.models.download import DownloadRecord as DownloadRecord
 from yosoi.models.selectors import FieldSelectors as FieldSelectors
 from yosoi.models.selectors import SelectorEntry as SelectorEntry
 from yosoi.models.selectors import SelectorLevel as SelectorLevel
@@ -52,6 +54,17 @@ def Author(description: str = ..., **kwargs: Any) -> Any: ...
 def Url(description: str = ..., *, require_https: bool = ..., strip_tracking: bool = ..., **kwargs: Any) -> Any: ...
 def Datetime(
     description: str = ..., *, assume_utc: bool = ..., past_only: bool = ..., as_iso: bool = ..., **kwargs: Any
+) -> Any: ...
+def File(
+    *,
+    trigger: str | None = ...,
+    href: str | None = ...,
+    url: str | None = ...,
+    description: str | None = ...,
+    allowed_types: Iterable[str] | None = ...,
+    parse: str | None = ...,
+    max_bytes: int | None = ...,
+    **kwargs: Any,
 ) -> Any: ...
 
 # Selector helpers

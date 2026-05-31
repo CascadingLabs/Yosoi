@@ -248,6 +248,16 @@ class Contract(BaseModel):
         return result
 
     @classmethod
+    def file_fields(cls) -> dict[str, dict[str, Any]]:
+        """Return {field_name: action_config} for ``ys.File`` download fields.
+
+        A subset of :meth:`action_fields` filtered to ``type == 'file'``. These run on
+        the live browser tab during fetch and resolve to a ``DownloadRecord`` (or the
+        parsed value when ``parse=`` is set).
+        """
+        return {name: cfg for name, cfg in cls.action_fields().items() if cfg.get('type') == 'file'}
+
+    @classmethod
     def nested_contracts(cls) -> dict[str, type[Contract]]:
         """Return a mapping of field name → child Contract class for Contract-typed fields."""
         result: dict[str, type[Contract]] = {}
