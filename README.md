@@ -15,6 +15,7 @@
   <a href="https://pypi.python.org/pypi/yosoi"><img src="https://img.shields.io/pypi/v/yosoi?labelColor=2e3742&color=c4d4df" alt="PyPI"></a>
   <a href="https://pypi.python.org/pypi/yosoi"><img src="https://img.shields.io/pypi/pyversions/yosoi?labelColor=2e3742&color=c4d4df" alt="Python versions"></a>
   <a href="https://codecov.io/gh/CascadingLabs/Yosoi"><img src="https://img.shields.io/codecov/c/gh/CascadingLabs/Yosoi?token=DFDI574EEA&labelColor=2e3742&color=c4d4df" alt="codecov"></a>
+  <a href="https://codspeed.io/CascadingLabs/Yosoi"><img src="https://img.shields.io/endpoint?url=https://codspeed.io/badge.json&labelColor=2e3742&color=c4d4df" alt="CodSpeed"></a>
   <a href="https://doi.org/10.5281/zenodo.18713573"><img src="https://img.shields.io/badge/DOI-10.5281%2Fzenodo.18713573-c4d4df?labelColor=2e3742" alt="DOI"></a>
   <a href="https://cascadinglabs.com/yosoi"><img src="https://img.shields.io/badge/docs-cascadinglabs.com%2Fyosoi-c4d4df?labelColor=2e3742" alt="docs"></a>
 </p>
