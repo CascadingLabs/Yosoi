@@ -25,11 +25,23 @@ async def scrape(
     selector_level: SelectorLevel = SelectorLevel.CSS,
     save_formats: Sequence[str] = (),
     quiet: bool = True,
+    allow_downloads: bool = False,
+    allowed_download_types: Sequence[str] = (),
+    download_dir: str | None = None,
+    max_download_bytes: int | None = None,
+    keep_downloads: bool = True,
 ) -> list[ContentMap]:
     """Scrape one URL and return validated native Python dictionaries.
 
     By default this API does not write JSON/CSV/etc. files. Pass
     ``save_formats=('json',)`` when file output is wanted.
+
+    For ``ys.File()`` download fields, set ``allow_downloads=True`` and use a browser
+    ``fetcher_type`` (``'headless'``/``'headful'``/``'waterfall'``). ``allowed_download_types``
+    is an optional run-wide file-type allowlist intersected with each field's own.
+    ``download_dir`` overrides the quarantine root (default ``.yosoi/downloads/``) and
+    ``max_download_bytes`` sets a run-wide per-file cap (used when a field sets no ``max_bytes``).
+    ``keep_downloads=False`` purges the downloaded bytes at run end (provenance is retained).
     """
     contract_cls = resolve_contract(contract) if isinstance(contract, str) else contract
     llm_config = _resolve_model(model)
@@ -51,6 +63,11 @@ async def scrape(
                 force=force,
                 quiet=quiet,
                 selector_level=selector_level,
+                allow_downloads=allow_downloads,
+                allowed_download_types=tuple(allowed_download_types),
+                download_dir=download_dir,
+                max_download_bytes=max_download_bytes,
+                keep_downloads=keep_downloads,
             ) as pipeline:
                 return [
                     item

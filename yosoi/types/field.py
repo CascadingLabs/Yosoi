@@ -1,9 +1,12 @@
 """Yosoi-aware Field wrapper."""
 
+from collections.abc import Iterable
 from typing import Any, cast
 
 import pydantic
 import pydantic.fields
+
+from yosoi.types.filetypes import normalize_allowed_types
 
 
 def js(
@@ -50,6 +53,108 @@ def js(
         'description': description,
     }
     # Propagate description to pydantic field if not already set
+    if description and 'description' not in kwargs:
+        kwargs['description'] = description
+    return cast(pydantic.fields.FieldInfo, pydantic.Field(json_schema_extra=extra, **kwargs))
+
+
+def File(
+    *,
+    trigger: str | None = None,
+    href: str | None = None,
+    url: str | None = None,
+    description: str | None = None,
+    allowed_types: Iterable[str] | None = None,
+    max_bytes: int | None = None,
+    **kwargs: Any,
+) -> pydantic.fields.FieldInfo:
+    """Declare a contract field whose value is a file downloaded in the live browser tab.
+
+    Like :func:`js`, this is an *action field* (excluded from CSS discovery) — its value
+    is produced by performing an action during fetch, not by a selector over static HTML.
+
+    ── DESIGN DECISION: annotation-directed output (opinionated, ours) ──────────────────
+    What you GET from a ys.File field is decided by the field's **declared Python type**,
+    NOT by a parse= keyword. This is deliberate and load-bearing — it keeps ys.File
+    consistent with the rest of the contract API, where the type already *is* the meaning
+    (``title: str = ys.Title()``, ``price: float = ys.Price()``) and with ``ys.js()``,
+    whose output is validated against its declared type (CAS-104). A separate ``parse=``
+    knob would be a second source of truth for "what shape do I want" — so we don't have
+    one. The supported annotations (resolved + enforced at contract-definition time by
+    ``yosoi.models.download.output_view_for_annotation``; anything else raises there):
+
+        report: ys.DownloadRecord = ys.File(...)   # provenance handle (path/sha256/size/ct)
+        report: Path              = ys.File(...)   # the quarantined file path
+        blob:   bytes             = ys.File(...)   # raw bytes
+        text:   str               = ys.File(...)   # decoded text
+        rows:   list[dict]        = ys.File(...)   # parsed (csv/json by content-type)
+        rows:   list[MyRow]       = ys.File(...)   # parsed + per-row validated via MyRow
+        obj:    dict | MyModel    = ys.File(...)   # parsed JSON, validated against the type
+
+    For 'parsed' types the file is parsed (csv vs json chosen by content-type) and then run
+    through the contract's TypeAdapter oracle (``Contract.coerce_field``), so a ``list[MyRow]``
+    field yields typed, semantically-coerced rows for free. A ``DownloadRecord`` is always
+    produced internally for provenance regardless of which view the annotation selects.
+    Trade-off accepted: behavior keyed off the annotation is slightly less explicit than a
+    kwarg, but Yosoi is opinionated and one-blessed-path beats two redundant knobs here.
+    DOC FOLLOW-UP: this decision needs first-class docs (see CAS-106). FUTURE: a definition-
+    time allowed_types↔annotation compatibility guard, and a codec hint for tsv/ndjson.
+    ─────────────────────────────────────────────────────────────────────────────────────
+
+    Exactly one trigger source must be given:
+
+    - ``trigger`` — CSS selector to click; the resulting download is captured
+      (``retrigger`` mode, the durable default — survives rotating/signed URLs and runs
+      in the authenticated tab).
+    - ``href`` — CSS selector whose element yields a link to download directly.
+    - ``url`` — a literal URL to download (``refetch`` mode).
+    - ``description`` — human description; the trigger is discovered once and cached.
+
+    Safety (opt-in, default-deny): ``allowed_types`` names the file types you accept
+    (friendly names like ``'csv'``/``'mp4'``, bare extensions, or explicit MIME types).
+    A download whose magic bytes / content-type don't match is rejected and purged. With
+    no ``allowed_types`` here and no run-wide allowlist, downloads fail fast — nothing is
+    fetched "just in case". Downloads also require the run-level ``allow_downloads`` opt-in.
+
+    Args:
+        trigger: CSS selector to click to start the download.
+        href: CSS selector whose element's link is downloaded directly.
+        url: Literal URL to download.
+        description: Description used to discover the trigger (cached after first run).
+        allowed_types: Allowlist of accepted file types. Unknown names raise immediately.
+        max_bytes: Per-file size cap; the download aborts past it.
+        **kwargs: Forwarded to ``pydantic.Field``.
+
+    Returns:
+        A pydantic FieldInfo with ``yosoi_action`` (``type='file'``) metadata. The output
+        view is resolved from the field's annotation later (definition-time), not here.
+
+    Raises:
+        ValueError: When the trigger source / ``allowed_types`` / ``max_bytes`` are invalid.
+            (An unsupported field *type* raises later, at contract-definition time.)
+    """
+    sources = {'trigger': trigger, 'href': href, 'url': url, 'description': description}
+    given = [name for name, value in sources.items() if value]
+    if len(given) != 1:
+        raise ValueError(
+            'ys.File() requires exactly one of trigger= (click), href= (link selector), '
+            'url= (literal URL), or description= (discovery-driven); got: ' + (', '.join(given) or 'none')
+        )
+    if max_bytes is not None and max_bytes <= 0:
+        raise ValueError('ys.File(max_bytes=…) must be a positive byte count')
+    normalized_allowed = normalize_allowed_types(allowed_types)  # validates names; raises on typo
+    mode = 'refetch' if (href or url) else 'retrigger'
+    extra: dict[str, Any] = dict(kwargs.pop('json_schema_extra', {}) or {})
+    extra['yosoi_action'] = {
+        'type': 'file',
+        'mode': mode,
+        'trigger': trigger,
+        'href': href,
+        'url': url,
+        'description': description,
+        'allowed_types': list(normalized_allowed),
+        'max_bytes': max_bytes,
+    }
     if description and 'description' not in kwargs:
         kwargs['description'] = description
     return cast(pydantic.fields.FieldInfo, pydantic.Field(json_schema_extra=extra, **kwargs))

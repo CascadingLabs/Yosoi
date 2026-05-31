@@ -4,11 +4,14 @@ from __future__ import annotations
 
 import re
 from abc import ABC, abstractmethod
-from typing import ClassVar
+from typing import TYPE_CHECKING, ClassVar
 
 from pydantic import BaseModel
 
 from yosoi.models.results import ContentMetadata, FetchResult
+
+if TYPE_CHECKING:
+    from yosoi.models.download import DownloadSpec
 
 
 class JSDetectionResult(BaseModel, frozen=True):
@@ -285,7 +288,12 @@ class HTMLFetcher(ABC):
         return False
 
     @abstractmethod
-    async def fetch(self, url: str, action_scripts: dict[str, str] | None = None) -> FetchResult:
+    async def fetch(
+        self,
+        url: str,
+        action_scripts: dict[str, str] | None = None,
+        download_specs: dict[str, DownloadSpec] | None = None,
+    ) -> FetchResult:
         """Fetch HTML from a URL.
 
         Args:
@@ -294,9 +302,11 @@ class HTMLFetcher(ABC):
                 evaluate in the live browser tab after page load. Only honoured
                 by L2 fetchers (headless/headful/waterfall). L0 fetchers ignore
                 this param and return ``FetchResult.js_outputs = None``.
+            download_specs: Optional {field_name: DownloadSpec} for ys.File() fields,
+                executed on the live tab. Browser fetchers only; L0 fetchers ignore it.
 
         Returns:
-            FetchResult with HTML, metadata, status, and optional js_outputs
+            FetchResult with HTML, metadata, status, and optional js_outputs/downloads
 
         Raises:
             BotDetectionError: If bot detection is triggered

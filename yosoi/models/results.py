@@ -14,6 +14,7 @@ from yosoi.models.selectors import SelectorKind
 
 if TYPE_CHECKING:
     from yosoi.core.fetcher.dom.ax import AxSnapshot
+    from yosoi.models.download import DownloadResult
 
 
 @dataclass
@@ -56,6 +57,10 @@ class FetchResult:
     block_reason: str | None = None
     fetch_time: float = 0.0
     js_outputs: JsOutputs | None = None
+
+    # Files pulled by ys.File() action fields during the live-tab phase, keyed by
+    # field name. None when no download specs ran. Merged into the record post-extraction.
+    downloads: dict[str, DownloadResult] | None = None
 
     # Accessibility-tree snapshot of the rendered page (browser tiers only,
     # None for plain-HTTP fetches). Fed into static discovery as a semantic

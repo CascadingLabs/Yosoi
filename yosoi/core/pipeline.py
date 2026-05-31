@@ -4,11 +4,13 @@ Centralized retry logic for bot detection and AI failures.
 """
 
 import asyncio
+import contextlib
 import logging
 import os
 import time
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import ExitStack, nullcontext
+from pathlib import Path
 from typing import Any, Literal
 from urllib.parse import urlparse
 
@@ -36,6 +38,7 @@ from yosoi.core.verification import (
 )
 from yosoi.models import FetchResult
 from yosoi.models.contract import Contract
+from yosoi.models.download import DownloadResult, DownloadSpec, output_view_for_annotation
 from yosoi.models.results import JsOutputs, VerificationResult
 from yosoi.models.selectors import SelectorLevel
 from yosoi.models.snapshot import CacheVerdict, SelectorSnapshot, snapshot_to_selector_dict
@@ -44,8 +47,9 @@ from yosoi.storage import DebugManager, LLMTracker, SelectorStorage
 from yosoi.storage.discovery_strategy import DiscoveryStrategyStorage
 from yosoi.storage.js_scripts import JsScriptStorage
 from yosoi.storage.tracking import DomainStats
+from yosoi.types.filetypes import normalize_allowed_types
 from yosoi.utils import observability
-from yosoi.utils.exceptions import BotDetectionError
+from yosoi.utils.exceptions import BotDetectionError, DownloadError
 from yosoi.utils.retry import get_async_retryer
 from yosoi.utils.signatures import contract_signature
 
@@ -100,6 +104,14 @@ class Pipeline:
 
     """
 
+    # Class-level defaults so the download wiring is safe even for callers/tests that
+    # bypass __init__. __init__ overrides these per-instance.
+    _allow_downloads: bool = False
+    _allowed_download_types: tuple[str, ...] = ()
+    _download_dir: str | None = None
+    _max_download_bytes: int | None = None
+    _keep_downloads: bool = True
+
     def __init__(
         self,
         llm_config: LLMConfig | YosoiConfig | str,
@@ -112,6 +124,11 @@ class Pipeline:
         bus: DiscoveryBus | None = None,
         write_lock: asyncio.Lock | None = None,
         experimental_a3node: bool = False,
+        allow_downloads: bool = False,
+        allowed_download_types: tuple[str, ...] = (),
+        download_dir: str | None = None,
+        max_download_bytes: int | None = None,
+        keep_downloads: bool = True,
     ):
         """Initialize the pipeline with LLM configuration.
 
@@ -135,10 +152,27 @@ class Pipeline:
                 replay on browser fetchers (headless/headful/waterfall). When enabled,
                 the first visit records the action recipe and later visits replay it
                 directly, skipping the probe. Defaults to False.
+            allow_downloads: Opt into ys.File() downloads. Off by default; when a contract
+                has file fields and this is False, scraping fails fast before fetching.
+            allowed_download_types: Run-wide file-type allowlist (default-deny). Intersected
+                with each field's ``allowed_types``; an empty effective allowlist blocks all.
+            download_dir: Quarantine root for downloaded files. Defaults to ``.yosoi/downloads/``.
+            max_download_bytes: Run-wide per-file size cap used when a ys.File() field sets no
+                ``max_bytes`` of its own. Falls back to a 25 MiB built-in default when unset.
+            keep_downloads: Keep downloaded files after the run (default). Set False to purge
+                the content-addressed blobs at run end while retaining provenance in index.json.
 
         """
         self.selector_level = selector_level
         self._experimental_a3node = experimental_a3node
+        self._allow_downloads = allow_downloads
+        self._allowed_download_types = normalize_allowed_types(allowed_download_types)
+        self._download_dir = download_dir
+        self._max_download_bytes = max_download_bytes
+        self._keep_downloads = keep_downloads
+        # Accumulates (field, DownloadResult) across the run for the end-of-run manifest
+        # and the keep_downloads purge.
+        self._download_log: list[tuple[str, DownloadResult]] = []
 
         # Auto-resolve model strings → LLMConfig
         if isinstance(llm_config, str):
@@ -246,8 +280,9 @@ class Pipeline:
         return self
 
     async def __aexit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
-        """Exit the async context manager, closing the HTTP client."""
+        """Exit the async context manager, closing the HTTP client + finalizing downloads."""
         await self._client.aclose()
+        self._finalize_downloads()
 
     async def process_url(
         self,
@@ -700,8 +735,15 @@ class Pipeline:
         await self._discover_js_actions(url, domain, fetcher)
 
         js_scripts = await self._resolve_js_scripts(domain)
+        download_specs = self._resolve_download_specs(fetcher)
         with observability.span('fetch', url=url, max_retries=max_fetch_retries):
-            result = await self._fetch(url, fetcher, max_retries=max_fetch_retries, action_scripts=js_scripts or None)
+            result = await self._fetch(
+                url,
+                fetcher,
+                max_retries=max_fetch_retries,
+                action_scripts=js_scripts or None,
+                download_specs=download_specs,
+            )
             if not result:
                 raise RuntimeError(f'Failed to fetch {url}')
             assert result.html is not None, 'result.html should not be None after successful fetch'
@@ -745,8 +787,8 @@ class Pipeline:
 
         with observability.span('extract', url=url, container=container_selector or 'single'):
             extracted = self._extract(url, result.html, verified, container_selector)
-            if result.js_outputs:
-                extracted = self._merge_js_outputs(extracted, result.js_outputs)
+            extracted = self._merge_fetch_outputs(extracted, result)
+            self._record_downloads(result.downloads)
 
         if extracted:
             with observability.span('semantic_refine', url=url):
@@ -855,7 +897,12 @@ class Pipeline:
         self.console.print(f'[success]✓ Found cached selectors for {domain}[/success]')
         self.logger.info('Using cached selectors domain=%s url=%s', domain, url)
 
-        if skip_verification:
+        # ys.File() downloads run only on the _extract_with_cached path (it forwards
+        # download_specs); the per-field verdict path below does not. So route file-field
+        # contracts here too — otherwise a cache hit would silently drop downloads.
+        # FUTURE: thread download_specs through _evaluate_cached_verdicts so file-field
+        # contracts also keep per-field partial rediscovery on cache hits.
+        if skip_verification or self.contract.file_fields():
             existing = {name: data for name, snap in snapshots.items() if (data := snapshot_to_selector_dict(snap))}
             items, cache_valid = await self._extract_with_cached(url, fetcher, existing, skip_verification)
             if not cache_valid:
@@ -1262,6 +1309,8 @@ class Pipeline:
                 if console is not None:
                     kwargs['console'] = console
                 kwargs['experimental_a3node'] = self._experimental_a3node
+                kwargs['allow_downloads'] = self._allow_downloads
+                kwargs['download_dir'] = self._download_dir
             return create_fetcher(fetcher_type, **kwargs)
         except ValueError:
             self.console.print(f'[danger]Invalid fetcher type: {fetcher_type}[/danger]')
@@ -1273,6 +1322,7 @@ class Pipeline:
         fetcher: HTMLFetcher,
         max_retries: int = 2,
         action_scripts: dict[str, str] | None = None,
+        download_specs: dict[str, DownloadSpec] | None = None,
     ) -> FetchResult | None:
         """Fetch HTML with automatic retry logic for bot detection.
 
@@ -1284,6 +1334,8 @@ class Pipeline:
             fetcher: HTML fetcher instance to use.
             max_retries: Maximum retry attempts. Defaults to 2.
             action_scripts: Optional {field: js_expression} map forwarded to L2 fetchers.
+            download_specs: Optional {field: DownloadSpec} for ys.File() fields, forwarded
+                to browser fetchers to run on the live tab.
 
         Returns:
             FetchResult if fetch succeeds within retry limit, None if all
@@ -1311,13 +1363,16 @@ class Pipeline:
                 exceptions=(BotDetectionError, Exception),
                 log_callback=before_sleep_log,
                 reraise=False,
+                # A ys.File() download rejection is deterministic — fail fast with its
+                # precise message instead of retrying and collapsing to a generic error.
+                non_retry_exceptions=(DownloadError,),
             )
 
             async for attempt in retryer:
                 with attempt:
                     result = None
                     try:
-                        result = await fetcher.fetch(url, action_scripts=action_scripts)
+                        result = await fetcher.fetch(url, action_scripts=action_scripts, download_specs=download_specs)
 
                         if not result.success:
                             self.console.print(
@@ -1763,6 +1818,59 @@ class Pipeline:
             if cfg.get('type') == 'js' and cfg.get('script')
         }
 
+    def _file_download_specs(self) -> dict[str, DownloadSpec]:
+        """Build resolved DownloadSpec objects for ys.File() fields.
+
+        The effective allowlist is the intersection of the field's ``allowed_types`` and
+        the run-wide ``allowed_download_types`` when both are set (a global ceiling),
+        otherwise whichever is set. An empty result is default-deny — the download fails
+        fast at execution time rather than accepting an arbitrary file.
+        """
+        global_allowed = set(self._allowed_download_types)
+        specs: dict[str, DownloadSpec] = {}
+        for name, cfg in self.contract.file_fields().items():
+            field_allowed = tuple(cfg.get('allowed_types') or ())
+            if field_allowed and global_allowed:
+                effective = tuple(t for t in field_allowed if t in global_allowed)
+            elif field_allowed:
+                effective = field_allowed
+            else:
+                effective = tuple(self._allowed_download_types)
+            # Annotation-directed output: the field's declared type decides the view.
+            annotation = self.contract.model_fields[name].annotation
+            specs[name] = DownloadSpec(
+                field=name,
+                mode=cfg.get('mode', 'retrigger'),
+                trigger=cfg.get('trigger'),
+                href=cfg.get('href'),
+                url=cfg.get('url'),
+                allowed_types=effective,
+                output=output_view_for_annotation(annotation),
+                max_bytes=cfg.get('max_bytes') or self._max_download_bytes,
+            )
+        return specs
+
+    def _resolve_download_specs(self, fetcher: HTMLFetcher | None = None) -> dict[str, DownloadSpec] | None:
+        """Build download specs, failing fast if file fields can't actually download.
+
+        Two fail-fast guards (better than silently dropping the field): downloads must be
+        opted in (``allow_downloads``), and the fetcher must have a live browser tab — the
+        simple HTTP tier can't download.
+        """
+        specs = self._file_download_specs()
+        if specs and not self._allow_downloads:
+            raise RuntimeError(
+                f'{self.contract.__name__} declares ys.File() field(s) {sorted(specs)} but downloads '
+                'are disabled. Pass allow_downloads=True and use a browser fetcher tier '
+                "(fetcher_type='headless'/'headful'/'waterfall')."
+            )
+        if specs and fetcher is not None and not getattr(fetcher, 'supports_browse', False):
+            raise RuntimeError(
+                f'{self.contract.__name__} declares ys.File() field(s) {sorted(specs)} but '
+                "fetcher_type has no browser tab. Use fetcher_type='headless'/'headful'/'waterfall'."
+            )
+        return specs or None
+
     async def _resolve_js_scripts(self, domain: str) -> dict[str, str]:
         """Return {field: script} for ALL JS action fields — hand-authored and cached discovered.
 
@@ -1847,6 +1955,100 @@ class Pipeline:
         if isinstance(extracted, list):
             return cast(ContentItems, [{**item, **js_outputs} for item in extracted])
         return cast(ContentMap, {**extracted, **js_outputs})
+
+    @staticmethod
+    def _merge_downloads(
+        extracted: ContentMap | ContentItems | None,
+        downloads: dict[str, DownloadResult] | None,
+    ) -> ContentMap | ContentItems | None:
+        """Merge ys.File() download results into extracted content.
+
+        Each field's value is the view chosen by its declared type (``DownloadRecord`` /
+        path / bytes / text / parsed structure). Like JS outputs, downloads are page-level
+        and merged into every item for multi-item extraction.
+        """
+        from typing import cast
+
+        if not downloads:
+            return extracted
+        values: dict[str, Any] = {field: result.value for field, result in downloads.items()}
+        if extracted is None:
+            return cast(ContentMap, dict(values))
+        if isinstance(extracted, list):
+            return cast(ContentItems, [{**item, **values} for item in extracted])
+        return cast(ContentMap, {**extracted, **values})
+
+    @classmethod
+    def _merge_fetch_outputs(
+        cls,
+        extracted: ContentMap | ContentItems | None,
+        result: FetchResult,
+    ) -> ContentMap | ContentItems | None:
+        """Merge live-tab action outputs (ys.js() and ys.File()) into extracted content."""
+        if result.js_outputs:
+            extracted = cls._merge_js_outputs(extracted, result.js_outputs)
+        if result.downloads:
+            extracted = cls._merge_downloads(extracted, result.downloads)
+        return extracted
+
+    def _record_downloads(self, downloads: dict[str, DownloadResult] | None) -> None:
+        """Log each ys.File() download and accumulate it for the run-end manifest.
+
+        FUTURE: also annotate the Langfuse fetch span per download (today: structured log +
+        the end-of-run manifest; the fetch span already records the fetch itself).
+        """
+        if not downloads:
+            return
+        for field, result in downloads.items():
+            self._download_log.append((field, result))
+            rec = result.record
+            self.logger.info(
+                'download field=%s path=%s sha256=%s size=%d content_type=%s changed=%s',
+                field,
+                rec.path,
+                rec.sha256[:12],
+                rec.size_bytes,
+                rec.content_type,
+                result.changed,
+            )
+
+    def _finalize_downloads(self) -> None:
+        """At run end: print a download manifest and, unless keeping them, purge the bytes.
+
+        Purge removes the content-addressed blob files this run wrote but **keeps each
+        domain's** ``index.json`` — provenance (hash/name/size/drift history) survives even
+        when the raw bytes don't.
+        """
+        if not getattr(self, '_download_log', None):
+            return
+
+        table = Table(title='Downloads', expand=False)
+        table.add_column('field', style='cyan')
+        table.add_column('type', style='dim')
+        table.add_column('size', justify='right')
+        table.add_column('changed', justify='center')
+        table.add_column('path', style='dim', overflow='fold')
+        total_bytes = 0
+        for field, result in self._download_log:
+            rec = result.record
+            total_bytes += rec.size_bytes
+            table.add_row(
+                field,
+                rec.content_type or '?',
+                f'{rec.size_bytes / 1024:.1f} KiB',
+                '✓' if result.changed else '·',
+                rec.path,
+            )
+        self.console.print(table)
+        self.console.print(f'[dim]{len(self._download_log)} download(s), {total_bytes / 1024:.1f} KiB total[/dim]')
+
+        if not self._keep_downloads:
+            purged = 0
+            for _field, result in self._download_log:
+                with contextlib.suppress(OSError):
+                    Path(result.record.path).unlink(missing_ok=True)
+                    purged += 1
+            self.console.print(f'[dim]purged {purged} download blob(s); provenance retained in index.json[/dim]')
 
     def _extract(
         self,
@@ -2011,6 +2213,9 @@ class Pipeline:
 
         Raises:
             BotDetectionError: Passes through bot detection from fetcher.
+            DownloadError: A ys.File() download rejection (bad type / unsafe url / parse
+                failure) fails fast instead of being swallowed — it would otherwise silently
+                drop the field on the cache-hit path.
 
         """
         step = (
@@ -2023,8 +2228,9 @@ class Pipeline:
         domain = self._extract_domain(url)
         await self._discover_js_actions(url, domain, fetcher)
         js_scripts = await self._resolve_js_scripts(domain)
+        download_specs = self._resolve_download_specs(fetcher)
         try:
-            result = await fetcher.fetch(url, action_scripts=js_scripts or None)
+            result = await fetcher.fetch(url, action_scripts=js_scripts or None, download_specs=download_specs)
 
             if not result.success or result.html is None:
                 self.console.print('[warning]⚠ Could not fetch HTML, skipping extraction[/warning]')
@@ -2079,7 +2285,8 @@ class Pipeline:
                 selectors_to_use = existing_selectors
 
             extracted = self._extract(url, cleaned_html, selectors_to_use, container_selector)
-            extracted = self._merge_js_outputs(extracted, result.js_outputs)
+            extracted = self._merge_fetch_outputs(extracted, result)
+            self._record_downloads(result.downloads)
             if extracted:
                 if isinstance(extracted, list):
                     return extracted, True
@@ -2088,7 +2295,10 @@ class Pipeline:
             self.console.print('[warning]⚠ Extraction failed with cached selectors[/warning]')
             return None, True
 
-        except BotDetectionError:
+        except (BotDetectionError, DownloadError):
+            # DownloadError is deterministic (bad type / unsafe url / parse fail). Fail fast
+            # with its precise message instead of swallowing it here — otherwise a ys.File
+            # field would be silently dropped on the cache-hit path. Mirrors the fresh path.
             raise
         except Exception as e:
             self.logger.exception('Cached selector handling failed for %s', url)

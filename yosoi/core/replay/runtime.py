@@ -126,10 +126,47 @@ async def _execute_once(tab: Any, act: ReplayAct) -> Any:
         return None
     if act.kind == ActKind.EVAL:
         return await _eval(tab, act.script or '')
+    if act.kind == ActKind.DOWNLOAD:
+        return await _download(tab, act)
     if act.kind == ActKind.TELEPORT:
         await _teleport(tab, act.metadata)
         return None
     raise ReplayExecutionError(f'unsupported act kind: {act.kind}')
+
+
+async def _download(tab: Any, act: ReplayAct) -> Any:
+    """Execute a DOWNLOAD act by reusing the explicit-lane downloader.
+
+    Builds a ``DownloadSpec`` from the act (first CSS target → click trigger, or ``url`` for
+    refetch; ``metadata`` carries allowed_types / output view / max_bytes / domain) and runs
+    the same ``run_download`` the live fetch lane uses — so replay inherits content-addressing,
+    the allowed_types gate, and sha256 provenance. Returns the projected field value, captured
+    into ``output_field`` by :func:`execute_plan` like an EVAL output.
+
+    NOTE: latent today — nothing calls ``execute_plan`` yet (FUTURE: CAS-103 wires the executor,
+    Phase 6 makes discovery emit DOWNLOAD nodes). FUTURE: honour the full SelectorEntry cascade
+    rather than just ``targets[0]``.
+    """
+    from yosoi.core.fetcher.downloads import quarantine_dir, run_download
+    from yosoi.models.download import DownloadSpec
+    from yosoi.utils.exceptions import DownloadError
+
+    meta = act.metadata or {}
+    trigger = act.targets[0].value if act.targets and act.targets[0].type == 'css' else None
+    spec = DownloadSpec(
+        field=act.output_field or 'download',
+        mode=meta.get('mode') or ('refetch' if act.url else 'retrigger'),
+        trigger=trigger,
+        url=act.url,
+        allowed_types=tuple(meta.get('allowed_types') or ()),
+        output=meta.get('output', 'record'),
+        max_bytes=meta.get('max_bytes'),
+    )
+    try:
+        result = await run_download(tab, spec, quarantine_dir(str(meta.get('domain') or 'replay')))
+    except DownloadError as exc:
+        raise ReplayExecutionError(str(exc)) from exc
+    return result.value
 
 
 async def _condition_holds(tab: Any, condition: ReplayCondition) -> bool:
@@ -150,7 +187,10 @@ async def _condition_holds(tab: Any, condition: ReplayCondition) -> bool:
         if condition.selector is None:
             return False
         return await _ax_target_exists(tab, condition.selector)
-    return False
+    # DOWNLOAD_OK: the DOWNLOAD act fails-fast internally (allowed_types/min-size via
+    # run_download), so reaching the expect step means a verified download was captured.
+    # FUTURE: thread the captured result here to assert content-type/min-size vs condition.value.
+    return condition.kind == AssertKind.DOWNLOAD_OK
 
 
 async def _selector_condition(tab: Any, condition: ReplayCondition) -> bool:

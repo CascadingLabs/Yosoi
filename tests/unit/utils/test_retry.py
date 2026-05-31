@@ -1,5 +1,6 @@
 """Tests for get_retryer, get_async_retryer config and log_retry."""
 
+import pytest
 from tenacity import AsyncRetrying, Retrying
 
 from yosoi.utils import observability as obs
@@ -233,3 +234,43 @@ async def test_async_retryer_succeeds_on_first_try():
             call_count += 1
 
     assert call_count == 1
+
+
+def test_non_retry_exceptions_are_not_retried():
+    """A listed non_retry_exception must propagate immediately, not be retried."""
+    calls = {'n': 0}
+
+    class Deterministic(RuntimeError):
+        pass
+
+    retryer = get_retryer(max_attempts=3, exceptions=(Exception,), non_retry_exceptions=(Deterministic,))
+
+    def run():
+        for attempt in retryer:
+            with attempt:
+                calls['n'] += 1
+                raise Deterministic('do not retry me')
+
+    with pytest.raises(Deterministic):
+        run()
+    assert calls['n'] == 1  # tried once, not 3x
+
+
+def test_other_exceptions_still_retry_with_non_retry_set():
+    """Exceptions outside non_retry_exceptions still retry up to max_attempts."""
+    calls = {'n': 0}
+
+    class Deterministic(RuntimeError):
+        pass
+
+    retryer = get_retryer(max_attempts=3, exceptions=(Exception,), non_retry_exceptions=(Deterministic,), reraise=True)
+
+    def run():
+        for attempt in retryer:
+            with attempt:
+                calls['n'] += 1
+                raise ValueError('transient')
+
+    with pytest.raises(ValueError, match='transient'):
+        run()
+    assert calls['n'] == 3  # retried the full budget

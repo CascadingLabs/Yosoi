@@ -31,6 +31,22 @@ class LLMGenerationError(YosoiError):
     pass
 
 
+class DownloadError(YosoiError):
+    """Raised when a ``ys.File`` download fails or is rejected.
+
+    Fail-fast (per the project's no-fallback stance): a download that times out,
+    exceeds ``max_bytes``, targets an unsafe URL, or whose bytes don't match the
+    field's ``allowed_types`` raises this rather than yielding an untrusted/partial
+    value. The quarantined bytes are purged before raising on a type mismatch.
+    """
+
+    def __init__(self, field: str, reason: str):
+        """Initialize with the offending field name and a human-readable reason."""
+        self.field = field
+        self.reason = reason
+        super().__init__(f'download failed for field {field!r}: {reason}')
+
+
 class MCPUnavailableError(YosoiError):
     """Raised when MCP discovery is requested but the MCP server cannot be reached.
 

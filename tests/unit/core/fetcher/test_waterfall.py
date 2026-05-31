@@ -23,7 +23,12 @@ class _Simple:
 
 class _Headless:
     async def _do_fetch(
-        self, url: str, start_time: float, tier: str, action_scripts: dict | None = None
+        self,
+        url: str,
+        start_time: float,
+        tier: str,
+        action_scripts: dict | None = None,
+        download_specs: dict | None = None,
     ) -> FetchResult:
         return FetchResult(url=url, html='<html><body><article>rendered</article></body></html>', fetch_time=start_time)
 
@@ -63,6 +68,12 @@ def test_jsfetcher_passes_explicit_a3node_opt_in_to_chrome_tiers():
     fetcher = JSFetcher(experimental_a3node=True)
 
     assert fetcher._chrome_kwargs['experimental_a3node'] is True
+
+
+def test_jsfetcher_supports_browse_so_downloads_arent_gated_out():
+    # Regression: the waterfall escalates to a browser tier and can run ys.File() downloads,
+    # so the download gate (Pipeline._resolve_download_specs) must not reject fetcher_type=waterfall.
+    assert JSFetcher().supports_browse is True
 
 
 async def test_update_selector_level_preserves_cached_fetcher(mocker):

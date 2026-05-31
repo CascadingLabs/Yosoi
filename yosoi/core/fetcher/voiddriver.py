@@ -30,10 +30,12 @@ from yosoi.core.fetcher.base import ContentAnalyzer, HTMLFetcher
 from yosoi.core.fetcher.dom import DOMLoader
 from yosoi.core.fetcher.dom.ax import AxSnapshot
 from yosoi.core.fetcher.dom.probes import capture_ax_snapshot
+from yosoi.core.fetcher.downloads import execute_downloads
+from yosoi.models.download import DownloadResult, DownloadSpec
 from yosoi.models.results import FetchResult, JsOutputs
 from yosoi.storage.a3node import A3Node, A3NodeStorage, ActRecord
 from yosoi.utils import observability as obs
-from yosoi.utils.exceptions import BotDetectionError
+from yosoi.utils.exceptions import BotDetectionError, DownloadError
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +75,8 @@ class _VoidCrawlFetcher(HTMLFetcher):
         browser_executable_path: str | None = None,
         console: Console | None = None,
         experimental_a3node: bool = False,
+        allow_downloads: bool = False,
+        download_dir: str | None = None,
         user_agent: str | None = None,
         accept_language: str | None = None,
         **_kwargs: Any,
@@ -84,6 +88,8 @@ class _VoidCrawlFetcher(HTMLFetcher):
         self.browser_executable_path = browser_executable_path
         self._console = console or Console()
         self._experimental_a3node = experimental_a3node
+        self._allow_downloads = allow_downloads
+        self._download_dir = download_dir
         self._user_agent = user_agent
         self._accept_language = accept_language
         self._pool: Any = None
@@ -155,9 +161,14 @@ class _VoidCrawlFetcher(HTMLFetcher):
             await tab.goto(url, timeout=float(self.timeout))
             yield tab
 
-    async def fetch(self, url: str, action_scripts: dict[str, str] | None = None) -> FetchResult:
+    async def fetch(
+        self,
+        url: str,
+        action_scripts: dict[str, str] | None = None,
+        download_specs: dict[str, DownloadSpec] | None = None,
+    ) -> FetchResult:
         start = time.time()
-        return await self._do_fetch(url, start, 'fetch', action_scripts=action_scripts)
+        return await self._do_fetch(url, start, 'fetch', action_scripts=action_scripts, download_specs=download_specs)
 
     async def _do_fetch(
         self,
@@ -165,11 +176,13 @@ class _VoidCrawlFetcher(HTMLFetcher):
         start_time: float,
         _tier: str,
         action_scripts: dict[str, str] | None = None,
+        download_specs: dict[str, DownloadSpec] | None = None,
     ) -> FetchResult:
         domain = urlparse(url).netloc.replace('www.', '')
         stored_node = self._a3node_cache.get(domain) if self._experimental_a3node else None
 
         js_outputs: JsOutputs | None = None
+        downloads: dict[str, DownloadResult] | None = None
         ax_snapshot: AxSnapshot | None = None
         async with self._pool.acquire() as tab:
             # Jitter: stagger concurrent workers so they don't land simultaneously
@@ -207,6 +220,10 @@ class _VoidCrawlFetcher(HTMLFetcher):
                     if self._a3node_storage is not None and self._experimental_a3node:
                         await self._amend_a3node_settle(domain, wait_cycles)
 
+            # ys.File() downloads — run on the live tab (a download needs the open
+            # browser context). Gated by the allow_downloads opt-in.
+            downloads = await self._run_downloads(tab, download_specs, domain)
+
             # Capture the rendered AX tree (browser tier) as a semantic perception
             # layer for static discovery. Best-effort: None when the tab lacks CDP.
             ax_snapshot = await capture_ax_snapshot(tab)
@@ -220,6 +237,7 @@ class _VoidCrawlFetcher(HTMLFetcher):
                 block_reason=f'Content too short ({len(html or "")} chars)',
                 fetch_time=time.time() - start_time,
                 js_outputs=js_outputs,
+                downloads=downloads,
             )
 
         is_blocked, indicators = self._check_for_bot_detection(html, 200, {})
@@ -235,8 +253,25 @@ class _VoidCrawlFetcher(HTMLFetcher):
             fetch_time=time.time() - start_time,
             metadata=metadata,
             js_outputs=js_outputs,
+            downloads=downloads,
             ax_snapshot=ax_snapshot,
         )
+
+    async def _run_downloads(
+        self,
+        tab: Any,
+        download_specs: dict[str, DownloadSpec] | None,
+        domain: str,
+    ) -> dict[str, DownloadResult] | None:
+        """Execute ys.File() download specs on the live tab (defense-in-depth gate)."""
+        if not download_specs:
+            return None
+        if not self._allow_downloads:
+            raise DownloadError(
+                next(iter(download_specs)),
+                'downloads are disabled; pass allow_downloads=True to enable ys.File() fields',
+            )
+        return await execute_downloads(tab, download_specs, domain, base_dir=self._download_dir)
 
     @staticmethod
     def _compose_action_scripts(scripts: dict[str, str]) -> str:
