@@ -76,7 +76,7 @@ class DetectedTrigger:
     ax_target: AxTarget | None = None
 
 
-async def _ax_snapshot(tab: Any) -> AxSnapshot | None:
+async def capture_ax_snapshot(tab: Any) -> AxSnapshot | None:
     """Return a compact AX snapshot when the tab exposes browser CDP access."""
     try:
         get_full_ax_tree = tab.get_full_ax_tree
@@ -147,7 +147,7 @@ async def probe_age_gate(tab: Any) -> DetectedTrigger | None:
 
 async def probe_load_more(tab: Any) -> DetectedTrigger | None:
     """Detect a load-more / show-more button by text content."""
-    snap = await _ax_snapshot(tab)
+    snap = await capture_ax_snapshot(tab)
     if snap is not None:
         target = find_target(snap, roles={'button'}, names=tuple(LOAD_MORE_TEXTS))
         if target is not None:
@@ -188,7 +188,7 @@ async def probe_tab(tab: Any) -> DetectedTrigger | None:
 
 async def probe_pagination(tab: Any) -> DetectedTrigger | None:
     """Detect a next-page link via known selectors then text matching."""
-    snap = await _ax_snapshot(tab)
+    snap = await capture_ax_snapshot(tab)
     if snap is not None:
         target = find_target(snap, roles={'link'}, names=tuple(NEXT_PAGE_TEXTS), exact=True)
         if target is not None:

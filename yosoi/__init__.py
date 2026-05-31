@@ -14,8 +14,9 @@ statically, so type-checkers and IDEs see the full API. Keep that stub and the
 
 from __future__ import annotations
 
-import importlib
 from importlib.metadata import PackageNotFoundError, version
+
+from yosoi._lazy import lazy_exports
 
 try:
     __version__ = version('yosoi')
@@ -185,15 +186,4 @@ __all__ = [
 ]
 
 
-def __getattr__(name: str) -> object:
-    """Lazily import a public name from its defining submodule (PEP 562)."""
-    module = _LAZY.get(name)
-    if module is None:
-        raise AttributeError(f'module {__name__!r} has no attribute {name!r}')
-    value = getattr(importlib.import_module(module), name)
-    globals()[name] = value  # cache so subsequent access skips __getattr__
-    return value
-
-
-def __dir__() -> list[str]:
-    return sorted(__all__)
+__getattr__, __dir__ = lazy_exports(__name__, globals(), _LAZY)

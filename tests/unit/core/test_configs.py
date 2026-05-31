@@ -118,14 +118,12 @@ class TestDiscoveryConfig:
     def test_defaults(self):
         cfg = DiscoveryConfig()
         assert cfg.max_concurrent == 5
-        assert cfg.mode == 'static'
         assert cfg.mcp_unavailable == 'fail'
         assert cfg.lesson_cache is True
         assert cfg.replay_verify_threshold == 1.0
 
-    def test_mcp_mode_is_valid(self):
-        cfg = DiscoveryConfig(mode='mcp', replay_verify_threshold=0.8)
-        assert cfg.mode == 'mcp'
+    def test_replay_verify_threshold_configurable(self):
+        cfg = DiscoveryConfig(replay_verify_threshold=0.8)
         assert cfg.replay_verify_threshold == 0.8
 
 

@@ -1,7 +1,9 @@
 """Pydantic models for fetch and verification results."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
-from typing import Any, Literal, TypeAlias
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias
 
 # Values captured by ys.js() action fields evaluated in the live browser tab.
 JsOutputs: TypeAlias = dict[str, Any]
@@ -9,6 +11,9 @@ JsOutputs: TypeAlias = dict[str, Any]
 from pydantic import BaseModel, Field
 
 from yosoi.models.selectors import SelectorKind
+
+if TYPE_CHECKING:
+    from yosoi.core.fetcher.dom.ax import AxSnapshot
 
 
 @dataclass
@@ -51,6 +56,11 @@ class FetchResult:
     block_reason: str | None = None
     fetch_time: float = 0.0
     js_outputs: JsOutputs | None = None
+
+    # Accessibility-tree snapshot of the rendered page (browser tiers only,
+    # None for plain-HTTP fetches). Fed into static discovery as a semantic
+    # perception layer alongside the cleaned HTML.
+    ax_snapshot: AxSnapshot | None = None
 
     # Content metadata
     metadata: ContentMetadata = field(default_factory=ContentMetadata)

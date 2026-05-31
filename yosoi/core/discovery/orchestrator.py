@@ -13,6 +13,7 @@ from yosoi.core.discovery.bus import DiscoveryBus
 from yosoi.core.discovery.config import LLMConfig
 from yosoi.core.discovery.field_agent import FieldDiscoveryAgent
 from yosoi.core.discovery.field_task import FieldTaskResult, run_field_task
+from yosoi.core.fetcher.dom.ax import AxSnapshot
 from yosoi.models.contract import Contract
 from yosoi.models.selectors import SelectorLevel
 from yosoi.models.snapshot import SelectorSnapshot, SnapshotStatus, selector_dict_to_snapshot
@@ -25,6 +26,21 @@ from yosoi.utils.signatures import _get_yosoi_type
 SelectorMap = dict[str, dict[str, Any]]
 
 logger = logging.getLogger(__name__)
+
+# Cap the AX outline so the prompt stays compact on huge pages.
+_AX_HINT_LIMIT = 40
+
+
+def format_ax_hint(ax_snapshot: AxSnapshot | None, limit: int = _AX_HINT_LIMIT) -> str:
+    """Render an AX snapshot into a compact ``role: name`` outline for the prompt.
+
+    Returns an empty string when there is no snapshot or no named targets, so the
+    static path is unchanged on plain-HTTP (tier-1) fetches.
+    """
+    if ax_snapshot is None or not ax_snapshot.targets:
+        return ''
+    lines = [f'- {t.role}: {t.name}' for t in ax_snapshot.targets[:limit]]
+    return '\n'.join(lines)
 
 
 class DiscoveryOrchestrator:
@@ -109,6 +125,7 @@ class DiscoveryOrchestrator:
         stale_fields: set[str] | None = None,
         feedback: dict[str, FieldFeedback] | None = None,
         force: bool = False,
+        ax_snapshot: AxSnapshot | None = None,
     ) -> SelectorMap | None:
         """Discover selectors for all contract fields in parallel.
 
@@ -122,6 +139,9 @@ class DiscoveryOrchestrator:
                 attempt's selector was semantically wrong. Forwarded to the LLM
                 prompt for those fields (semantic-validation retry).
             force: Force re-discovery even if selectors exist. Defaults to False.
+            ax_snapshot: Optional accessibility-tree snapshot; rendered via
+                :func:`format_ax_hint` into an AX hint added to the discovery
+                prompt to guide selector choice.
 
         Returns:
             SelectorMap with discovered selectors, or None if all fields failed.
@@ -132,7 +152,7 @@ class DiscoveryOrchestrator:
         # cache lookup, tracing user_id, and per-domain locking all share one
         # bucket (no port/userinfo/casing splits).
         domain = (obs.normalize_user_id(url) if url else None) or 'unknown'
-        discovery_input = DiscoveryInput(url=url_context, html=html)
+        discovery_input = DiscoveryInput(url=url_context, html=html, ax_hint=format_ax_hint(ax_snapshot))
 
         field_descs = self._contract.field_descriptions()
         overrides = self._contract.get_selector_overrides()

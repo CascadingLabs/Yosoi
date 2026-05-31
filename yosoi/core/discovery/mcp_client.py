@@ -44,7 +44,7 @@ def voidcrawl_command(command: str | None = None) -> str:
     if binary is None:
         raise MCPUnavailableError(
             f'{VOIDCRAWL_MCP_BIN!r} was not found on PATH. Install the voidcrawl package '
-            "(`uv add voidcrawl`) or use discovery_mode='static'."
+            '(`uv add voidcrawl`) so interaction-driven discovery escalation can run.'
         )
     return binary
 

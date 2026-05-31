@@ -12,6 +12,7 @@ from yosoi.prompts.discovery import (
     FieldDiscoveryDeps,
     FieldFeedback,
     build_field_user_prompt,
+    field_single_ax_hints,
     field_single_base_instructions,
     field_single_field_instructions,
     field_single_level_instructions,
@@ -106,6 +107,7 @@ class FieldDiscoveryAgent:
         self._agent.system_prompt(field_single_base_instructions)
         self._agent.system_prompt(field_single_field_instructions)
         self._agent.system_prompt(field_single_level_instructions)
+        self._agent.system_prompt(field_single_ax_hints)
         self._agent.system_prompt(field_single_page_hints)
         self._agent.output_validator(_reject_forbidden_selectors)
 

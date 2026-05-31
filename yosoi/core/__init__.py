@@ -8,8 +8,9 @@ in ``Pipeline`` and the whole pydantic-ai / provider-SDK graph via this package
 
 from __future__ import annotations
 
-import importlib
 from typing import TYPE_CHECKING
+
+from yosoi._lazy import lazy_exports
 
 if TYPE_CHECKING:
     from yosoi.core.configs import DebugConfig as DebugConfig
@@ -28,15 +29,4 @@ _LAZY: dict[str, str] = {
 
 __all__ = ['DebugConfig', 'Pipeline', 'TelemetryConfig', 'YosoiConfig', 'find_available_provider']
 
-
-def __getattr__(name: str) -> object:
-    module = _LAZY.get(name)
-    if module is None:
-        raise AttributeError(f'module {__name__!r} has no attribute {name!r}')
-    value = getattr(importlib.import_module(module), name)
-    globals()[name] = value
-    return value
-
-
-def __dir__() -> list[str]:
-    return sorted(__all__)
+__getattr__, __dir__ = lazy_exports(__name__, globals(), _LAZY)

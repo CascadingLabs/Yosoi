@@ -3,7 +3,7 @@
 import pytest
 
 import yosoi as ys
-from yosoi.core.discovery import MCPDiscoveryOrchestrator
+from yosoi.core.discovery import DiscoveryOrchestrator, MCPDiscoveryOrchestrator
 from yosoi.core.pipeline import Pipeline
 from yosoi.models.contract import Contract
 from yosoi.models.results import FetchResult, FieldVerificationResult, VerificationResult
@@ -33,6 +33,11 @@ def _make_pipeline_stub(mocker, contract=None):
     stub.cleaner = mocker.MagicMock()
     stub.discovery = mocker.MagicMock()
     stub.discovery.discover_selectors = mocker.AsyncMock()
+    stub._mcp_discovery = None
+    stub._force_mcp = False
+    stub._discovery_strategy = mocker.MagicMock()
+    stub._discovery_strategy.load = mocker.AsyncMock(return_value=None)
+    stub._discovery_strategy.save = mocker.AsyncMock()
     stub.verifier = mocker.MagicMock()
     stub.extractor = mocker.MagicMock()
     stub.storage = mocker.MagicMock()
@@ -154,20 +159,92 @@ def test_pipeline_accepts_model_string(mocker):
     assert p.discovery is not None
 
 
-def test_pipeline_mcp_mode_wires_mcp_orchestrator(mocker):
-    """MCP mode wires the live-browser orchestrator instead of the static fan-out."""
+def test_pipeline_uses_static_primary_with_lazy_mcp(mocker):
+    """No mode switch: static is the primary path; MCP is built lazily on escalation."""
     mocker.patch('yosoi.storage.persistence.init_yosoi')
+    mocker.patch('yosoi.storage.discovery_strategy.init_yosoi')
     mocker.patch('yosoi.storage.tracking.get_tracking_path', return_value='/tmp/tracking.json')
     mocker.patch('yosoi.utils.files.is_initialized', return_value=True)
     mocker.patch('yosoi.utils.logging.setup_local_logging', return_value='/tmp/test.log')
-    # Avoid spawning a real MCP agent (model + voidcrawl server) at construction.
-    mock_agent = mocker.patch('yosoi.core.discovery.mcp_orchestrator.MCPDiscoveryAgent')
 
-    p = Pipeline(llm_config='groq:llama-3.3-70b-versatile', contract=SimpleContract, discovery_mode='mcp')
+    p = Pipeline(llm_config='groq:llama-3.3-70b-versatile', contract=SimpleContract)
 
-    assert isinstance(p.discovery, MCPDiscoveryOrchestrator)
-    assert p.discovery_mode == 'mcp'
-    mock_agent.assert_called_once()
+    assert isinstance(p.discovery, DiscoveryOrchestrator)
+    assert p._mcp_discovery is None  # not built until first escalation
+    assert p._force_mcp is False
+
+
+def test_pipeline_force_mcp_env_override(mocker, monkeypatch):
+    """The internal YOSOI_DISCOVERY_MODE=mcp debug override is honored (no public param)."""
+    mocker.patch('yosoi.storage.persistence.init_yosoi')
+    mocker.patch('yosoi.storage.discovery_strategy.init_yosoi')
+    mocker.patch('yosoi.storage.tracking.get_tracking_path', return_value='/tmp/tracking.json')
+    mocker.patch('yosoi.utils.files.is_initialized', return_value=True)
+    mocker.patch('yosoi.utils.logging.setup_local_logging', return_value='/tmp/test.log')
+    monkeypatch.setenv('YOSOI_DISCOVERY_MODE', 'mcp')
+    mocker.patch('yosoi.core.discovery.mcp_orchestrator.MCPDiscoveryAgent')
+
+    p = Pipeline(llm_config='groq:llama-3.3-70b-versatile', contract=SimpleContract)
+
+    assert p._force_mcp is True
+    assert isinstance(p._ensure_mcp_discovery(), MCPDiscoveryOrchestrator)
+
+
+class TestEscalationSignal:
+    def test_required_discovery_fields(self, mocker):
+        stub = _make_pipeline_stub(mocker)
+        assert stub._required_discovery_fields() == {'title', 'price'}
+
+    def test_unsatisfied_required_flags_missing(self, mocker):
+        stub = _make_pipeline_stub(mocker)
+        # 'price' missing → unmet; 'title' present → satisfied.
+        assert stub._unsatisfied_required({'title': 'Book'}) == {'price'}
+
+    def test_unsatisfied_required_empty_when_all_present(self, mocker):
+        stub = _make_pipeline_stub(mocker)
+        assert stub._unsatisfied_required({'title': 'Book', 'price': '9.99'}) == set()
+
+    def test_unsatisfied_required_ignores_overrides(self, mocker):
+        stub = _make_pipeline_stub(mocker)
+        mocker.patch.object(stub.contract, 'get_selector_overrides', return_value={'price': {'primary': '.p'}})
+        # 'price' is overridden, so its absence does not force escalation.
+        assert stub._unsatisfied_required({'title': 'Book'}) == set()
+
+
+class TestEscalation:
+    async def test_escalate_merges_improved_selectors(self, mocker):
+        stub = _make_pipeline_stub(mocker)
+        mcp = mocker.MagicMock()
+        mcp.discover_selectors = mocker.AsyncMock(return_value={'price': {'primary': '.price'}})
+        mocker.patch.object(stub, '_ensure_mcp_discovery', return_value=mcp)
+        mocker.patch.object(stub, '_resolve_root', return_value=None)
+        mocker.patch.object(stub, '_verify', return_value={'price': {'primary': '.price'}})
+        mocker.patch.object(stub, '_extract', return_value={'title': 'Book', 'price': '9.99'})
+
+        verified = {'title': {'primary': 'h1'}}
+        extracted, new_verified, _root = await stub._escalate_to_mcp(
+            'https://x.com', '<html/>', '<html/>', verified, None, None, {'title': 'Book'}
+        )
+
+        assert new_verified['price'] == {'primary': '.price'}
+        assert extracted == {'title': 'Book', 'price': '9.99'}
+
+    async def test_escalate_survives_mcp_failure(self, mocker):
+        stub = _make_pipeline_stub(mocker)
+        mcp = mocker.MagicMock()
+        mcp.discover_selectors = mocker.AsyncMock(side_effect=RuntimeError('boom'))
+        mocker.patch.object(stub, '_ensure_mcp_discovery', return_value=mcp)
+        mocker.patch('yosoi.core.pipeline.observability')
+
+        verified = {'title': {'primary': 'h1'}}
+        extracted, new_verified, root = await stub._escalate_to_mcp(
+            'https://x.com', '<html/>', '<html/>', verified, None, None, {'title': 'Book'}
+        )
+
+        # Best-effort: failure leaves the original result intact.
+        assert new_verified == verified
+        assert extracted == {'title': 'Book'}
+        assert root is None
 
 
 # ---------------------------------------------------------------------------

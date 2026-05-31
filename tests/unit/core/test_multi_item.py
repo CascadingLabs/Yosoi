@@ -149,6 +149,11 @@ def _make_pipeline_stub(mocker, contract=None):
     stub.console = mocker.MagicMock()
     stub.logger = mocker.MagicMock()
     stub._contract_sig = 'test-sig'
+    stub._mcp_discovery = None
+    stub._force_mcp = False
+    stub._discovery_strategy = mocker.MagicMock()
+    stub._discovery_strategy.load = mocker.AsyncMock(return_value=None)
+    stub._discovery_strategy.save = mocker.AsyncMock()
     return stub
 
 
@@ -264,6 +269,11 @@ def _make_scrape_stub(mocker, contract=None):
     stub.cleaner = mocker.MagicMock()
     stub.discovery = mocker.MagicMock()
     stub.discovery.discover_selectors = mocker.AsyncMock()
+    stub._mcp_discovery = None
+    stub._force_mcp = False
+    stub._discovery_strategy = mocker.MagicMock()
+    stub._discovery_strategy.load = mocker.AsyncMock(return_value=None)
+    stub._discovery_strategy.save = mocker.AsyncMock()
     stub.verifier = mocker.MagicMock()
     stub.extractor = mocker.MagicMock()
     stub.storage = mocker.MagicMock()

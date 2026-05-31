@@ -26,6 +26,7 @@ from yosoi.core.discovery import DiscoveryOrchestrator, LLMConfig, MCPDiscoveryO
 from yosoi.core.discovery.bus import DiscoveryBus
 from yosoi.core.extraction import ContentExtractor
 from yosoi.core.fetcher import HTMLFetcher, create_fetcher
+from yosoi.core.fetcher.dom.ax import AxSnapshot
 from yosoi.core.fetcher.waterfall import JSFetcher
 from yosoi.core.verification import (
     FieldSemanticIssue,
@@ -40,6 +41,7 @@ from yosoi.models.selectors import SelectorLevel
 from yosoi.models.snapshot import CacheVerdict, SelectorSnapshot, snapshot_to_selector_dict
 from yosoi.prompts.discovery import FieldFeedback
 from yosoi.storage import DebugManager, LLMTracker, SelectorStorage
+from yosoi.storage.discovery_strategy import DiscoveryStrategyStorage
 from yosoi.storage.js_scripts import JsScriptStorage
 from yosoi.storage.tracking import DomainStats
 from yosoi.utils import observability
@@ -107,7 +109,6 @@ class Pipeline:
         force: bool = False,
         quiet: bool = False,
         selector_level: SelectorLevel = SelectorLevel.CSS,
-        discovery_mode: Literal['static', 'mcp'] | None = None,
         bus: DiscoveryBus | None = None,
         write_lock: asyncio.Lock | None = None,
         experimental_a3node: bool = False,
@@ -128,9 +129,6 @@ class Pipeline:
                    progress display replaces per-task output. Defaults to False.
             selector_level: Maximum selector strategy level for discovery and extraction.
                             Defaults to CSS.
-            discovery_mode: Selector discovery path. ``'static'`` uses the
-                            existing cleaned-HTML fan-out. ``'mcp'`` is reserved
-                            for the MCP lesson path and currently fails fast.
             bus: Optional shared discovery bus for cross-pipeline field deduplication.
             write_lock: Optional asyncio.Lock to serialize selector writes for the domain.
             experimental_a3node: Opt into A3Node DOM-stability recipe persistence and
@@ -141,7 +139,6 @@ class Pipeline:
         """
         self.selector_level = selector_level
         self._experimental_a3node = experimental_a3node
-        resolved_discovery_mode = discovery_mode or os.getenv('YOSOI_DISCOVERY_MODE') or 'static'
 
         # Auto-resolve model strings → LLMConfig
         if isinstance(llm_config, str):
@@ -164,7 +161,6 @@ class Pipeline:
             force = yosoi_cfg.force
             max_concurrent_discovery = yosoi_cfg.discovery.max_concurrent
             replay_verify_threshold = yosoi_cfg.discovery.replay_verify_threshold
-            resolved_discovery_mode = discovery_mode or os.getenv('YOSOI_DISCOVERY_MODE') or yosoi_cfg.discovery.mode
             observability.configure(yosoi_cfg.telemetry)
         else:
             from yosoi.core.configs import TelemetryConfig
@@ -188,35 +184,32 @@ class Pipeline:
         )
         self.contract = contract
         self._contract_sig = contract_signature(contract)
-        if resolved_discovery_mode not in {'static', 'mcp'}:
-            raise ValueError("discovery_mode must be 'static' or 'mcp'")
-        self.discovery_mode: Literal['static', 'mcp'] = resolved_discovery_mode  # type: ignore[assignment]
         self.console = Console(theme=self.custom_theme, quiet=quiet)
         self.cleaner = HTMLCleaner(console=self.console)
         self.storage = SelectorStorage()
         self.js_storage = JsScriptStorage()
-        self.discovery: DiscoveryOrchestrator | MCPDiscoveryOrchestrator
-        if self.discovery_mode == 'mcp':
-            # MCP discovery drives a live browser via the voidcrawl MCP toolset and
-            # persists a replay-first lesson. It produces the same SelectorMap shape
-            # as the static fan-out, so the rest of the pipeline is unchanged.
-            self.discovery = MCPDiscoveryOrchestrator(
-                contract=self.contract,
-                llm_config=llm_config,
-                console=self.console,
-                verify_threshold=replay_verify_threshold,
-            )
-        else:
-            self.discovery = DiscoveryOrchestrator(
-                contract=self.contract,
-                llm_config=llm_config,
-                storage=self.storage,
-                console=self.console,
-                target_level=self.selector_level,
-                max_concurrent=max_concurrent_discovery,
-                bus=bus,
-                write_lock=write_lock,
-            )
+
+        # Static discovery is the primary, fast path: it reasons over the cleaned
+        # (post-render) DOM + AX outline. MCP discovery — interaction-driven, slow,
+        # needs a live browser — is built lazily and only used as an *automatic*
+        # escalation when a required field can't be satisfied from the snapshot.
+        # There is no user-facing static-vs-MCP switch. ``YOSOI_DISCOVERY_MODE=mcp``
+        # is an internal/debug override that forces straight to MCP.
+        self.discovery = DiscoveryOrchestrator(
+            contract=self.contract,
+            llm_config=llm_config,
+            storage=self.storage,
+            console=self.console,
+            target_level=self.selector_level,
+            max_concurrent=max_concurrent_discovery,
+            bus=bus,
+            write_lock=write_lock,
+        )
+        self._mcp_discovery: MCPDiscoveryOrchestrator | None = None
+        self._mcp_llm_config: LLMConfig = llm_config
+        self._replay_verify_threshold: float = replay_verify_threshold
+        self._force_mcp: bool = os.getenv('YOSOI_DISCOVERY_MODE') == 'mcp'
+        self._discovery_strategy = DiscoveryStrategyStorage()
         self._js_discovery_orchestrator: Any = None  # created lazily on first discovery call
         self.verifier = SelectorVerifier(console=self.console)
         self.semantic_validator = SemanticValidator()
@@ -718,10 +711,25 @@ class Pipeline:
             if not cleaned_html:
                 raise RuntimeError(f'HTML cleaning failed for {url}')
 
-        with observability.span('discover', url=url, cleaned_chars=len(cleaned_html)):
-            selectors, used_llm = await self._discover(
-                url, cleaned_html, max_retries=max_discovery_retries, force=force_flag
-            )
+        # Automatic discovery waterfall: static over the rendered DOM first; a
+        # cached 'mcp' decision (or the debug override) skips straight to the
+        # interaction-driven path so we don't pay a wasted static attempt.
+        cached_mode = await self._discovery_strategy.load(domain, self._contract_sig)
+        escalate_first = self._force_mcp or cached_mode == 'mcp'
+
+        with observability.span(
+            'discover', url=url, cleaned_chars=len(cleaned_html), mode='mcp' if escalate_first else 'static'
+        ):
+            if escalate_first:
+                selectors, used_llm = await self._discover_via_mcp(url, cleaned_html, force=force_flag)
+            else:
+                selectors, used_llm = await self._discover(
+                    url,
+                    cleaned_html,
+                    max_retries=max_discovery_retries,
+                    force=force_flag,
+                    ax_snapshot=result.ax_snapshot,
+                )
             if not selectors:
                 raise RuntimeError(f'Selector discovery failed for {url}')
 
@@ -749,6 +757,28 @@ class Pipeline:
                     extracted,
                     max_discovery_retries,
                 )
+
+        # Automatic escalation: if static discovery left a *required* field
+        # unsatisfied, drive interaction-driven (MCP) discovery once and merge any
+        # improvement. Best-effort — the lesson + decision persist for replay even
+        # when the content is interaction-gated (full interaction replay: CAS-103).
+        if not escalate_first:
+            # ``extracted`` may be None when static extraction failed entirely; an
+            # empty map reads as "all required fields unmet", which is exactly when
+            # escalation should fire.
+            unmet = self._unsatisfied_required(extracted or {})
+            if unmet:
+                with observability.span('discover_escalate', url=url, unmet=len(unmet)):
+                    self.console.print(
+                        f'[warning]⚠ Static discovery left required field(s) unmet '
+                        f'({", ".join(sorted(unmet))}) — escalating to interaction-driven discovery[/warning]'
+                    )
+                    extracted, verified, root_entry = await self._escalate_to_mcp(
+                        url, cleaned_html, result.html, verified, container_selector, root_entry, extracted or {}
+                    )
+                    container_selector = self._root_value(root_entry)
+                    used_llm = True
+                    await self._discovery_strategy.save(domain, self._contract_sig, 'mcp')
 
         selectors_to_save = self._selectors_with_root(verified, root_entry)
 
@@ -1366,8 +1396,115 @@ class Pipeline:
         self.console.print(f'[success]Cleaned HTML ready ({len(cleaned_html):,} chars)[/success]')
         return cleaned_html
 
+    def _ensure_mcp_discovery(self) -> MCPDiscoveryOrchestrator:
+        """Lazily build the interaction-driven MCP discovery orchestrator.
+
+        Constructed only on first escalation (or when forced), because it resolves
+        a live-browser backend we don't want to pay for on the common static path.
+        """
+        if self._mcp_discovery is None:
+            self._mcp_discovery = MCPDiscoveryOrchestrator(
+                contract=self.contract,
+                llm_config=self._mcp_llm_config,
+                console=self.console,
+                verify_threshold=self._replay_verify_threshold,
+            )
+        return self._mcp_discovery
+
+    async def _discover_via_mcp(
+        self, url: str, cleaned_html: str, force: bool = False
+    ) -> tuple[SelectorMap | None, bool]:
+        """Run interaction-driven (MCP) discovery, returning ``(selectors, used_llm)``."""
+        self.console.print('[step]Step 2: Interaction-driven discovery — driving a live browser...[/step]')
+        overrides = self.contract.get_selector_overrides()
+        try:
+            selectors = await self._ensure_mcp_discovery().discover_selectors(cleaned_html, url, force=force)
+        except Exception as exc:  # noqa: BLE001 — discovery must surface as a clean failure, not a crash
+            observability.warning('MCP discovery failed', url=url, error=str(exc))
+            return None, True
+        if selectors:
+            selectors.update(overrides)
+        return selectors, True
+
+    def _required_discovery_fields(self) -> set[str]:
+        """Flat names of required (no-default) contract discovery fields.
+
+        Nested contract fields flatten to ``parent_child`` to match the extractor.
+        """
+        required: set[str] = set()
+        for name, fi in self.contract.model_fields.items():
+            annotation = fi.annotation
+            if isinstance(annotation, type) and issubclass(annotation, Contract):
+                for child_name, child_fi in annotation.model_fields.items():
+                    if child_fi.is_required():
+                        required.add(f'{name}_{child_name}')
+            elif fi.is_required():
+                required.add(name)
+        return required
+
+    @staticmethod
+    def _representative_item(extracted: ContentMap | ContentItems) -> ContentMap:
+        """Return a representative extracted item (first non-empty for multi-item)."""
+        if isinstance(extracted, list):
+            return next((item for item in extracted if item), {})
+        return extracted or {}
+
+    def _unsatisfied_required(self, extracted: ContentMap | ContentItems) -> set[str]:
+        """Required fields static discovery failed to extract a well-shaped value for."""
+        required = self._required_discovery_fields() - set(self.contract.get_selector_overrides())
+        if not required:
+            return set()
+        item = self._representative_item(extracted)
+        present = {k for k, v in item.items() if v not in (None, '', [], {})}
+        missing = required - present
+        bad = {issue.field for issue in self._semantic_issues(extracted)} & required
+        return missing | bad
+
+    async def _escalate_to_mcp(
+        self,
+        url: str,
+        cleaned_html: str,
+        raw_html: str,
+        verified: SelectorMap,
+        container_selector: str | None,
+        root_entry: dict[str, Any] | None,
+        extracted: ContentMap | ContentItems,
+    ) -> tuple[ContentMap | ContentItems, SelectorMap, dict[str, Any] | None]:
+        """Drive MCP discovery once and merge any selectors that improve extraction.
+
+        Best-effort: MCP failure, or interaction-gated content absent from the
+        static snapshot, leaves the original result intact — while the MCP lesson +
+        the cached 'mcp' decision still persist for replay (CAS-103).
+        """
+        try:
+            fresh = await self._ensure_mcp_discovery().discover_selectors(cleaned_html, url, force=True)
+        except Exception as exc:  # noqa: BLE001 — escalation is best-effort, never fatal to the scrape
+            observability.warning('MCP discovery escalation failed', url=url, error=str(exc))
+            return extracted, verified, root_entry
+        if not fresh:
+            return extracted, verified, root_entry
+
+        mcp_root = self._resolve_root(fresh)
+        if mcp_root:
+            root_entry = mcp_root
+            container_selector = self._root_value(root_entry) or container_selector
+
+        reverified = self._verify(url, cleaned_html, fresh, skip_verification=False) or {}
+        improved = {k: v for k, v in reverified.items() if k != 'root'}
+        if improved:
+            verified.update(improved)
+            re_extracted = self._extract(url, raw_html, verified, container_selector)
+            if re_extracted:
+                extracted = re_extracted
+        return extracted, verified, root_entry
+
     async def _discover(
-        self, url: str, cleaned_html: str, max_retries: int = 3, force: bool = False
+        self,
+        url: str,
+        cleaned_html: str,
+        max_retries: int = 3,
+        force: bool = False,
+        ax_snapshot: AxSnapshot | None = None,
     ) -> tuple[SelectorMap | None, bool]:
         """Discover CSS selectors with AI, using fallback heuristics if needed.
 
@@ -1378,6 +1515,8 @@ class Pipeline:
             cleaned_html: Pre-cleaned HTML content to analyze.
             max_retries: Maximum AI retry attempts. Defaults to 3.
             force: Force re-discovery even if selectors exist. Defaults to False.
+            ax_snapshot: Optional rendered-page accessibility snapshot (browser
+                tiers only), fed to static discovery as a semantic perception layer.
 
         Returns:
             Tuple of (selectors, used_llm) where:
@@ -1419,7 +1558,9 @@ class Pipeline:
                         f'[step]Step 2: AI analyzing HTML (attempt {attempt.retry_state.attempt_number}/{max_retries})...[/step]'
                     )
 
-                    selectors = await self.discovery.discover_selectors(cleaned_html, url, force=force)
+                    selectors = await self.discovery.discover_selectors(
+                        cleaned_html, url, force=force, ax_snapshot=ax_snapshot
+                    )
 
                     if selectors:
                         selectors.update(overrides)

@@ -1,19 +1,36 @@
-"""Storage and tracking components."""
+"""Storage and tracking components.
 
-from yosoi.storage.a3node import A3Node, A3NodeStorage, ActRecord
-from yosoi.storage.debug import DebugManager
-from yosoi.storage.lesson import LessonStorage
-from yosoi.storage.persistence import SelectorStorage
-from yosoi.storage.strategy import FetchStrategyStorage
-from yosoi.storage.tracking import LLMTracker
+Lazy (PEP 562) so importing one storage backend does not pull the others. See
+``CLAUDE.md`` ("Lazy loading").
+"""
 
-__all__ = [
-    'A3Node',
-    'A3NodeStorage',
-    'ActRecord',
-    'DebugManager',
-    'FetchStrategyStorage',
-    'LLMTracker',
-    'LessonStorage',
-    'SelectorStorage',
-]
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from yosoi._lazy import lazy_exports
+
+if TYPE_CHECKING:
+    from yosoi.storage.a3node import A3Node as A3Node
+    from yosoi.storage.a3node import A3NodeStorage as A3NodeStorage
+    from yosoi.storage.a3node import ActRecord as ActRecord
+    from yosoi.storage.debug import DebugManager as DebugManager
+    from yosoi.storage.lesson import LessonStorage as LessonStorage
+    from yosoi.storage.persistence import SelectorStorage as SelectorStorage
+    from yosoi.storage.strategy import FetchStrategyStorage as FetchStrategyStorage
+    from yosoi.storage.tracking import LLMTracker as LLMTracker
+
+_LAZY: dict[str, str] = {
+    'A3Node': 'yosoi.storage.a3node',
+    'A3NodeStorage': 'yosoi.storage.a3node',
+    'ActRecord': 'yosoi.storage.a3node',
+    'DebugManager': 'yosoi.storage.debug',
+    'LessonStorage': 'yosoi.storage.lesson',
+    'SelectorStorage': 'yosoi.storage.persistence',
+    'FetchStrategyStorage': 'yosoi.storage.strategy',
+    'LLMTracker': 'yosoi.storage.tracking',
+}
+
+__all__ = sorted(_LAZY)
+
+__getattr__, __dir__ = lazy_exports(__name__, globals(), _LAZY)

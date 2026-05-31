@@ -3,7 +3,7 @@
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Final
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from pydantic_ai import RunContext
 
 from yosoi.models.selectors import SelectorLevel
@@ -95,6 +95,9 @@ class DiscoveryInput(BaseModel):
 
     url: str
     html: str
+    # Compact accessibility hint (role: name lines) from the rendered page.
+    # Excluded from the user-prompt JSON dump — surfaced via a system prompt instead.
+    ax_hint: str = Field(default='', exclude=True)
 
 
 # ---------------------------------------------------------------------------
@@ -239,6 +242,23 @@ def field_single_level_instructions(ctx: RunContext['FieldDiscoveryDeps']) -> st
     if ctx.deps.target_level >= SelectorLevel.XPATH:
         return _LEVEL_XPATH_ALLOWED
     return _LEVEL_CSS_ONLY
+
+
+def field_single_ax_hints(ctx: RunContext['FieldDiscoveryDeps']) -> str:
+    """Surface the rendered-page accessibility outline, when available.
+
+    The AX tree gives a role/name view of the *rendered* DOM — more stable than
+    class soup on thin or obfuscated markup — so the model can anchor selectors
+    on semantics it can see.
+    """
+    ax_hint = ctx.deps.input.ax_hint
+    if not ax_hint:
+        return ''
+    return (
+        'Accessibility outline of the rendered page (role: accessible name). '
+        'Use it to locate elements semantically:\n'
+        f'{ax_hint}'
+    )
 
 
 def field_single_page_hints(ctx: RunContext['FieldDiscoveryDeps']) -> str:

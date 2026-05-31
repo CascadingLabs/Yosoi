@@ -28,6 +28,8 @@ from rich.console import Console
 
 from yosoi.core.fetcher.base import ContentAnalyzer, HTMLFetcher
 from yosoi.core.fetcher.dom import DOMLoader
+from yosoi.core.fetcher.dom.ax import AxSnapshot
+from yosoi.core.fetcher.dom.probes import capture_ax_snapshot
 from yosoi.models.results import FetchResult, JsOutputs
 from yosoi.storage.a3node import A3Node, A3NodeStorage, ActRecord
 from yosoi.utils import observability as obs
@@ -168,6 +170,7 @@ class _VoidCrawlFetcher(HTMLFetcher):
         stored_node = self._a3node_cache.get(domain) if self._experimental_a3node else None
 
         js_outputs: JsOutputs | None = None
+        ax_snapshot: AxSnapshot | None = None
         async with self._pool.acquire() as tab:
             # Jitter: stagger concurrent workers so they don't land simultaneously
             # on the same origin and trigger bot-detection rate limiting.
@@ -204,6 +207,10 @@ class _VoidCrawlFetcher(HTMLFetcher):
                     if self._a3node_storage is not None and self._experimental_a3node:
                         await self._amend_a3node_settle(domain, wait_cycles)
 
+            # Capture the rendered AX tree (browser tier) as a semantic perception
+            # layer for static discovery. Best-effort: None when the tab lacks CDP.
+            ax_snapshot = await capture_ax_snapshot(tab)
+
         if not html or len(html) < self.min_content_length:
             return FetchResult(
                 url=url,
@@ -228,6 +235,7 @@ class _VoidCrawlFetcher(HTMLFetcher):
             fetch_time=time.time() - start_time,
             metadata=metadata,
             js_outputs=js_outputs,
+            ax_snapshot=ax_snapshot,
         )
 
     @staticmethod
