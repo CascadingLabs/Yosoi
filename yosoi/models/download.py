@@ -80,6 +80,9 @@ class DownloadResult(BaseModel):
 
     record: DownloadRecord
     value: Any = None
+    # True when this field's bytes differ from the last recorded download (drift), per the
+    # per-domain content-addressed index. None when drift wasn't evaluated.
+    changed: bool | None = None
 
 
 def _strip_optional(annotation: Any) -> Any:

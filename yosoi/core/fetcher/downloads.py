@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any
 
 from yosoi.models.download import DownloadRecord, DownloadResult, DownloadSpec
+from yosoi.storage.download_store import commit_download
 from yosoi.types.filetypes import matches_allowed_types, parse_download
 from yosoi.utils.exceptions import DownloadError
 from yosoi.utils.files import init_yosoi
@@ -31,6 +32,8 @@ _HEAD_BYTES = 4096
 # Default per-file cap when a spec sets none. Kept modest on purpose: a scrape rarely
 # needs a huge file, and N concurrent workers x a large cap is easy disk exhaustion.
 _DEFAULT_MAX_BYTES = 25 * 1024 * 1024  # 25 MiB
+# Smallest accepted download — rejects a 0-byte/placeholder file even within an allowed type.
+_MIN_BYTES = 1
 
 
 def quarantine_dir(domain: str, base_dir: str | None = None) -> Path:
@@ -111,6 +114,10 @@ async def run_download(tab: Any, spec: DownloadSpec, qdir: Path) -> DownloadResu
     except OSError as exc:
         raise DownloadError(spec.field, f'downloaded file unreadable: {exc}') from exc
 
+    if len(data) < _MIN_BYTES:
+        await asyncio.to_thread(path.unlink, missing_ok=True)
+        raise DownloadError(spec.field, f'downloaded file is empty ({len(data)} bytes)')
+
     declared_ct = getattr(outcome, 'content_type', None)
     if not matches_allowed_types(spec.allowed_types, declared_ct, data[:_HEAD_BYTES]):
         await asyncio.to_thread(path.unlink, missing_ok=True)  # purge — bytes aren't trusted
@@ -120,17 +127,32 @@ async def run_download(tab: Any, spec: DownloadSpec, qdir: Path) -> DownloadResu
             f'(declared content-type={declared_ct!r}, {len(data)} bytes)',
         )
 
+    # Content-address the verified bytes (dedup) + record provenance / drift in the per-domain
+    # index. `changed` is True when this field's bytes differ from the last recorded download.
+    sha256 = hashlib.sha256(data).hexdigest()
+    size_bytes = int(getattr(outcome, 'bytes', len(data)))
+    cas_path, changed = await asyncio.to_thread(
+        commit_download,
+        qdir=qdir,
+        field=spec.field,
+        src_path=path,
+        sha256=sha256,
+        content_type=declared_ct,
+        size_bytes=size_bytes,
+        source_url=spec.url or spec.href,
+        allowed_types=spec.allowed_types,
+    )
     record = DownloadRecord(
-        path=str(path),
-        sha256=hashlib.sha256(data).hexdigest(),
-        size_bytes=int(getattr(outcome, 'bytes', len(data))),
+        path=str(cas_path),
+        sha256=sha256,
+        size_bytes=size_bytes,
         content_type=declared_ct,
         requested_url=spec.url or spec.href or spec.trigger,
     )
     # The field's declared type (resolved into spec.output) decides the value view.
     # A DownloadRecord is always available on the result for provenance regardless.
     value = _project_value(spec, data, declared_ct, record)
-    return DownloadResult(record=record, value=value)
+    return DownloadResult(record=record, value=value, changed=changed)
 
 
 def _project_value(spec: DownloadSpec, data: bytes, content_type: str | None, record: DownloadRecord) -> Any:

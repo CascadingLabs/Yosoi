@@ -35,6 +35,7 @@ class ActKind(str, Enum):
     WAIT = 'wait'
     EVAL = 'eval'
     TELEPORT = 'teleport'
+    DOWNLOAD = 'download'  # ys.File() download node (see runtime._download)
 
 
 class AssertKind(str, Enum):
@@ -46,6 +47,7 @@ class AssertKind(str, Enum):
     COUNT = 'count'
     DOM_STABLE = 'dom_stable'
     AX_TARGET = 'ax_target'
+    DOWNLOAD_OK = 'download_ok'  # a verified download was captured for the node's act
     NONE = 'none'
 
 
@@ -84,6 +86,11 @@ class ReplayAct(BaseModel):
             raise ValueError('type acts require targets and text')
         if self.kind == ActKind.EVAL and not self.script:
             raise ValueError('eval acts require script')
+        if self.kind == ActKind.DOWNLOAD:
+            if not (self.targets or self.url):
+                raise ValueError('download acts require targets (retrigger) or url (refetch)')
+            if self.repeat:
+                raise ValueError('download acts cannot repeat')
         return self
 
 

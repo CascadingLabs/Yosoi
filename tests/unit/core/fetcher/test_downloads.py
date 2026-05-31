@@ -79,6 +79,26 @@ async def test_retrigger_csv_parse(tmp_path: Path) -> None:
     assert result.record.sha256 == hashlib.sha256(CSV_BYTES).hexdigest()
     assert result.record.size_bytes == len(CSV_BYTES)
     assert Path(result.record.path).read_bytes() == CSV_BYTES
+    # Content-addressed: the stored file is named by its sha256, and drift is flagged.
+    assert Path(result.record.path).name == f'{result.record.sha256}.csv'
+    assert result.changed is True
+    assert (tmp_path / 'index.json').exists()
+
+
+async def test_redownload_same_bytes_is_not_changed(tmp_path: Path) -> None:
+    spec = DownloadSpec(field='report', trigger='a.export', allowed_types=('csv',), output='parsed')
+    first = await dl.run_download(_FakeTab(data=CSV_BYTES, content_type='text/csv', filename='e.csv'), spec, tmp_path)
+    second = await dl.run_download(_FakeTab(data=CSV_BYTES, content_type='text/csv', filename='e.csv'), spec, tmp_path)
+    assert first.changed is True
+    assert second.changed is False  # identical bytes for the same field → no drift
+    assert second.record.path == first.record.path  # deduped to one content-addressed file
+
+
+async def test_empty_download_rejected(tmp_path: Path) -> None:
+    tab = _FakeTab(data=b'', content_type='text/csv', filename='empty.csv')
+    spec = DownloadSpec(field='report', trigger='a.export', allowed_types=('csv',))
+    with pytest.raises(DownloadError, match='empty'):
+        await dl.run_download(tab, spec, tmp_path)
 
 
 async def test_retrigger_no_parse_returns_record(tmp_path: Path) -> None:
