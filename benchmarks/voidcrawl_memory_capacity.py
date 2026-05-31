@@ -38,15 +38,15 @@ per tab). base idle and L1 are solid as measured.
 
 Run it
 ------
-    uv run python experiments/voidcrawl_memory_capacity.py                    # L1 + L2, default sweep
-    uv run python experiments/voidcrawl_memory_capacity.py --sweep 1,2,4,8 --json metrics.json
-    uv run python experiments/voidcrawl_memory_capacity.py --url https://real-spa.example  # calibrate L2
-    uv run python experiments/voidcrawl_memory_capacity.py --headful          # measure headful cost
+    uv run python benchmarks/voidcrawl_memory_capacity.py                    # L1 + L2, default sweep
+    uv run python benchmarks/voidcrawl_memory_capacity.py --sweep 1,2,4,8 --json metrics.json
+    uv run python benchmarks/voidcrawl_memory_capacity.py --url https://real-spa.example  # calibrate L2
+    uv run python benchmarks/voidcrawl_memory_capacity.py --headful          # measure headful cost
 
 To attribute the *in-process* slice (Python interpreter vs Rust extension vs
 otel/langfuse buffers — the post-teardown residue), run one profile under memray:
 
-    uv run memray run -o vc.bin experiments/voidcrawl_memory_capacity.py --profile l1 --sweep 4
+    uv run memray run -o vc.bin benchmarks/voidcrawl_memory_capacity.py --profile l1 --sweep 4
     uv run memray flamegraph vc.bin
 
 Pages are generated locally (no network) unless ``--url`` is given.

@@ -51,7 +51,7 @@ jobs:
 
       - name: Measure voidcrawl memory
         run: >
-          uv run python experiments/voidcrawl_memory_capacity.py
+          uv run python benchmarks/voidcrawl_memory_capacity.py
           --sweep 1,4,8 --rounds 2 --page-items 150 --spa-heap-mb 25
           --chrome "${{ steps.setup-chrome.outputs.chrome-path }}"
           --json metrics.json
