@@ -1771,8 +1771,9 @@ class Pipeline:
         ``_discover_js_actions`` first if they want those fields populated.
         """
         scripts = dict(self._js_action_scripts())
-        if self.contract.undiscovered_action_fields():
-            cached = await self.js_storage.get_scripts(domain, self._contract_sig)
+        undiscovered = self.contract.undiscovered_action_fields()
+        if undiscovered:
+            cached = await self.js_storage.get_scripts(domain, undiscovered)
             scripts.update(cached)
         return scripts
 
@@ -1794,7 +1795,7 @@ class Pipeline:
         undiscovered = self.contract.undiscovered_action_fields()
         if not undiscovered:
             return
-        cached = await self.js_storage.get_scripts(domain, self._contract_sig)
+        cached = await self.js_storage.get_scripts(domain, undiscovered)
         missing = {k: v for k, v in undiscovered.items() if k not in cached}
         if not missing:
             return
@@ -1819,7 +1820,6 @@ class Pipeline:
             await self._js_discovery_orchestrator.discover(
                 url=url,
                 domain=domain,
-                contract_sig=self._contract_sig,
                 fields=missing,
                 fetcher=fetcher,
                 field_coercer=self.contract.coerce_field,

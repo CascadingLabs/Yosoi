@@ -116,7 +116,6 @@ async def test_discover_empty_fields_returns_immediately(mocker: MockerFixture, 
         result = await orch.discover(
             url='https://example.com',
             domain='example.com',
-            contract_sig='sig',
             fields={},
             fetcher=fetcher,
         )
@@ -138,7 +137,6 @@ async def test_discover_logs_failure_when_llm_returns_nothing(mocker: MockerFixt
         result = await orch.discover(
             url='https://example.com',
             domain='example.com',
-            contract_sig='sig',
             fields={'signals': 'Detect third-party widgets'},
             fetcher=fetcher,
         )
@@ -162,7 +160,6 @@ async def test_discover_strips_code_fences_from_llm_output(llm_cfg, mock_storage
         result = await orch.discover(
             url='https://example.com',
             domain='example.com',
-            contract_sig='sig',
             fields={'title': 'Page title'},
             fetcher=fetcher,
         )
@@ -215,7 +212,6 @@ async def test_discover_caches_verified_scripts(llm_cfg, mock_storage):
         result = await orch.discover(
             url='https://example.com',
             domain='example.com',
-            contract_sig='sig',
             fields={'crm': 'CRM vendor', 'chat': 'Chat widget'},
             fetcher=fetcher,
         )

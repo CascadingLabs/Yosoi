@@ -267,7 +267,6 @@ async def test_discover_caches_verified_scripts(mocker: MockerFixture):
     result = await orch.discover(
         url='https://example.com',
         domain='example.com',
-        contract_sig='abc123',
         fields={'signals': 'detect alita embed'},
         fetcher=fetcher,
     )
@@ -289,7 +288,6 @@ async def test_discover_returns_empty_when_pre_probe_fails(mocker: MockerFixture
     result = await orch.discover(
         url='https://example.com',
         domain='example.com',
-        contract_sig='abc',
         fields={'signals': 'detect'},
         fetcher=fetcher,
     )

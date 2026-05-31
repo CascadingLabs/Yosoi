@@ -114,7 +114,6 @@ class JsDiscoveryOrchestrator:
         self,
         url: str,
         domain: str,
-        contract_sig: str,
         fields: dict[str, str],  # {field_name: description}
         fetcher: HTMLFetcher,
         field_coercer: Callable[[str, object], object] | None = None,
@@ -125,8 +124,7 @@ class JsDiscoveryOrchestrator:
 
         Args:
             url: URL to open in the browser tab.
-            domain: Bare domain string for cache keying.
-            contract_sig: Contract signature for cache keying.
+            domain: Bare domain string for cache keying (per-domain, field-keyed).
             fields: Mapping of {field_name: description} for undiscovered fields.
             fetcher: An L2 fetcher that implements ``browse()`` (supports_browse=True).
             field_coercer: Optional ``contract.coerce_field``; a discovered script's
@@ -169,7 +167,7 @@ class JsDiscoveryOrchestrator:
                     )
 
         if discovered:
-            await self._cache(domain, contract_sig, fields, discovered, attempt_counts)
+            await self._cache(domain, fields, discovered, attempt_counts)
 
         return discovered
 
@@ -297,7 +295,6 @@ class JsDiscoveryOrchestrator:
     async def _cache(
         self,
         domain: str,
-        contract_sig: str,
         descriptions: dict[str, str],
         discovered: dict[str, str],
         attempt_counts: dict[str, int],
@@ -320,4 +317,4 @@ class JsDiscoveryOrchestrator:
             )
             for field, script in discovered.items()
         }
-        await self._storage.save_entries(domain, contract_sig, entries)
+        await self._storage.save_entries(domain, entries)
