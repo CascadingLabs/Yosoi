@@ -1,0 +1,110 @@
+{
+  "domain": "quotes.toscrape.com",
+  "row_selector": "div.quote",
+  "notes": "Seed confirmed rows=10 (>3). All list/paginated/tag pages consistently return rows=10. Author detail pages have zero div.quote elements — the page class is entirely different (author-details div, bio text, no quote cards). Clean binary split: list pages all return 10, detail pages return 0. No partial-match case on this domain.",
+  "pages": [
+    {
+      "role": "seed",
+      "href": "https://quotes.toscrape.com/",
+      "title": "Quotes to Scrape",
+      "bodyClass": "",
+      "rows": 10,
+      "tagHist": [
+        ["a", 55],
+        ["span", 32],
+        ["div", 28],
+        ["small", 10],
+        ["meta", 10],
+        ["p", 3],
+        ["h1", 1],
+        ["nav", 1],
+        ["ul", 1],
+        ["li", 1],
+        ["h2", 1],
+        ["footer", 1]
+      ],
+      "blocked": false
+    },
+    {
+      "role": "must-transfer",
+      "href": "https://quotes.toscrape.com/page/2/",
+      "title": "Quotes to Scrape",
+      "bodyClass": "",
+      "rows": 10,
+      "tagHist": [
+        ["a", 64],
+        ["span", 33],
+        ["div", 28],
+        ["small", 10],
+        ["meta", 10],
+        ["p", 3],
+        ["li", 2],
+        ["h1", 1],
+        ["nav", 1],
+        ["ul", 1],
+        ["h2", 1],
+        ["footer", 1]
+      ],
+      "blocked": false
+    },
+    {
+      "role": "must-transfer",
+      "href": "https://quotes.toscrape.com/tag/love/",
+      "title": "Quotes to Scrape",
+      "bodyClass": "",
+      "rows": 10,
+      "tagHist": [
+        ["a", 57],
+        ["span", 32],
+        ["div", 28],
+        ["small", 10],
+        ["meta", 10],
+        ["p", 3],
+        ["h1", 1],
+        ["h3", 1],
+        ["nav", 1],
+        ["ul", 1],
+        ["li", 1],
+        ["h2", 1],
+        ["footer", 1]
+      ],
+      "blocked": false
+    },
+    {
+      "role": "must-refuse",
+      "href": "https://quotes.toscrape.com/author/Albert-Einstein/",
+      "title": "Quotes to Scrape",
+      "bodyClass": "",
+      "rows": 0,
+      "tagHist": [
+        ["div", 7],
+        ["p", 5],
+        ["a", 4],
+        ["span", 3],
+        ["strong", 2],
+        ["h1", 1],
+        ["h3", 1],
+        ["footer", 1]
+      ],
+      "blocked": false
+    },
+    {
+      "role": "must-refuse",
+      "href": "https://quotes.toscrape.com/author/J-K-Rowling/",
+      "title": "Quotes to Scrape",
+      "bodyClass": "",
+      "rows": 0,
+      "tagHist": [
+        ["div", 7],
+        ["p", 5],
+        ["a", 4],
+        ["span", 3],
+        ["strong", 2],
+        ["h1", 1],
+        ["h3", 1],
+        ["footer", 1]
+      ],
+      "blocked": false
+    }
+  ]
+}

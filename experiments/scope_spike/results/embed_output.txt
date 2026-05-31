@@ -1,0 +1,21 @@
+==============================================================================
+EMBEDDING RUNG (PROXY hashed char-trigram, dim=256) — 65 pages
+  NOTE: proxy is LEXICAL not semantic; numbers are a floor. Set
+  EMBEDDINGS_API_KEY (+ optional EMBEDDINGS_BASE_URL/MODEL) for real.
+==============================================================================
+EXP1 — costume case via TITLE embedding (struct cosine could not tell):
+  seed title:     'top scoring links : ted'
+  sibling title:  'top scoring links : Python'   emb-cos to seed = 0.816
+  /user/spez:     'overview for spez'   emb-cos to seed = -0.046
+  -> a LISTING sibling should score HIGHER to the seed than the profile does.
+
+EXP2 — cross-domain 1-NN class accuracy from title embedding alone:
+  42/65 = 0.65  (proxy lexical embedding; a real model embedding is the lower-bounded upgrade)
+
+EXP3 — per-domain: does title-emb cleanly rank transfers above refuses?
+  8/13 domains perfectly separable by title embedding alone
+
+Reading: title embeddings target the SEMANTIC gap that structure misses
+(profile vs listing by meaning) and are O(dim) to compare — a true middle
+rung between free hashes and the expensive LLM. Proxy numbers are a floor;
+a static model2vec/MiniLM embedding is the drop-in that raises them.

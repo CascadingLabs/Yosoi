@@ -1,0 +1,54 @@
+================================================================================
+MULTI-DOMAIN REUSE-SAFETY SHOOTOUT — 13 domains
+  samples: 52 replay decisions (26 must-transfer, 26 must-refuse)
+  knobs: cardinality floor ratio=0.2, structural cosine T=0.9
+================================================================================
+
+Structural cosine separation:
+  must-transfer: min=0.916 mean=0.989 max=1.000
+  must-refuse:   min=0.000 mean=0.723 max=0.993
+  -> overlap zone: refuse-max 0.993 vs transfer-min 0.916
+
+================================================================================
+AGGREGATE CONFUSION (positive event = a wrong-page reuse that should be blocked)
+================================================================================
+approach             good✓  bad✓   LEAKS  false_alarm  acc
+discovery            24     18     8      2            0.81
+cardinality          21     24     2      5            0.87
+route                13     19     7      13           0.62
+structural           26     22     4      0            0.92
+card+struct          21     25     1      5            0.88
+card+route+struct    10     26     0      16           0.69
+
+================================================================================
+FAILURE DETAIL
+================================================================================
+
+discovery:
+  LEAKS (8): books.toscrape.com:index.html, news.ycombinator.com:user?id=pg, news.ycombinator.com:item?id=48341578, lobste.rs:nixos_26_05_released, old.reddit.com:spez, old.reddit.com:speech_posts_18m_pieces/, webscraper.io/test-sites/e-commerce/allinone:123, webscraper.io/test-sites/e-commerce/allinone:allinone
+  false alarms (2): en.wikipedia.org:Category:British_films, en.wikipedia.org:Category:Japanese_films
+
+cardinality:
+  LEAKS (2): news.ycombinator.com:item?id=48341578, old.reddit.com:spez
+  false alarms (5): webscraper.io/test-sites/e-commerce/allinone:tablets, webscraper.io/test-sites/e-commerce/allinone:touch, en.wikipedia.org:Category:British_films, en.wikipedia.org:Category:Japanese_films, ja.wikipedia.org:Category:%E3%82%A4%E3%82
+
+route:
+  LEAKS (7): sec.gov/cgi-bin/browse-edgar:browse-edgar?action=getc, en.wikipedia.org:Film, en.wikipedia.org:Cinema_of_the_United_Sta, ja.wikipedia.org:%E6%98%A0%E7%94%BB, ja.wikipedia.org:%E6%97%A5%E6%9C%AC%E6%98, en.wiktionary.org:dictionary, en.wiktionary.org:word
+  false alarms (13): books.toscrape.com:index.html, books.toscrape.com:index.html, news.ycombinator.com:newest, news.ycombinator.com:ask, lobste.rs:newest, lobste.rs:programming, quotes.toscrape.com:, quotes.toscrape.com:, old.reddit.com:, stackoverflow.com:python, stackoverflow.com:javascript, webscraper.io/test-sites/e-commerce/allinone:tablets, webscraper.io/test-sites/e-commerce/allinone:touch
+
+structural:
+  LEAKS (4): lobste.rs:nixos_26_05_released, old.reddit.com:spez, old.reddit.com:speech_posts_18m_pieces/, stackoverflow.com:jon-skeet
+
+card+struct:
+  LEAKS (1): old.reddit.com:spez
+  false alarms (5): webscraper.io/test-sites/e-commerce/allinone:tablets, webscraper.io/test-sites/e-commerce/allinone:touch, en.wikipedia.org:Category:British_films, en.wikipedia.org:Category:Japanese_films, ja.wikipedia.org:Category:%E3%82%A4%E3%82
+
+card+route+struct:
+  false alarms (16): books.toscrape.com:index.html, books.toscrape.com:index.html, news.ycombinator.com:newest, news.ycombinator.com:ask, lobste.rs:newest, lobste.rs:programming, quotes.toscrape.com:, quotes.toscrape.com:, old.reddit.com:, stackoverflow.com:python, stackoverflow.com:javascript, webscraper.io/test-sites/e-commerce/allinone:tablets, webscraper.io/test-sites/e-commerce/allinone:touch, en.wikipedia.org:Category:British_films, en.wikipedia.org:Category:Japanese_films, ja.wikipedia.org:Category:%E3%82%A4%E3%82
+
+================================================================================
+VERDICT
+================================================================================
+  zero-leak approaches : ['card+route+struct']
+  perfect approaches   : NONE
+  best by (no-leak, accuracy): card+route+struct  (acc=0.69, leaks=0, false_alarms=16)

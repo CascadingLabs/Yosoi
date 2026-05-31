@@ -1,0 +1,30 @@
+==============================================================================
+CHEAP WORLD MODEL — 65 entities, k-NN class recovery, no LLM/training
+==============================================================================
+
+[global] 1-NN page-class accuracy:
+  FULL fingerprint (all 4 components):      0.94
+  drop struct   -> use ['kind', 'scalars', 'simhash']         0.95
+  drop simhash  -> use ['kind', 'scalars', 'struct']          0.92
+  drop kind     -> use ['scalars', 'simhash', 'struct']       0.94
+  drop scalars  -> use ['kind', 'simhash', 'struct']          0.88
+  single-component-only (everything else corrupted):
+    only struct  : 0.91
+    only kind    : 0.69
+    only scalars : 0.94
+
+[cross-domain (entity unseen on its own site)] 1-NN page-class accuracy:
+  FULL fingerprint (all 4 components):      0.85
+  drop struct   -> use ['kind', 'scalars', 'simhash']         0.82
+  drop simhash  -> use ['kind', 'scalars', 'struct']          0.78
+  drop kind     -> use ['scalars', 'simhash', 'struct']       0.88
+  drop scalars  -> use ['kind', 'simhash', 'struct']          0.62
+  single-component-only (everything else corrupted):
+    only struct  : 0.62
+    only kind    : 0.69
+    only scalars : 0.91
+
+Reading: if dropping any ONE component barely moves accuracy, no signal is
+load-bearing -- the world model classifies entities from PARTIAL/CORRUPTED
+info and degrades gracefully. That is the robustness the vision needs, and
+it is all O(1) hashes + tiny-vector cosine -- cheap enough for millions via ANN.

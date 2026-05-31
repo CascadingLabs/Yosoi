@@ -1,0 +1,17 @@
+==============================================================================
+LLM-JUDGE GUARD — scored on the same 52 samples, identical inputs
+==============================================================================
+  scored 52 of 52 packets
+
+approach         good   bad    LEAKS  false_alarm  acc
+llm_judge        26     26     0      0            1.00
+
+  (compare to the algorithmic run:)
+  structural       26     22     4      0            0.92
+  card+struct      21     25     1      5            0.88
+  cardinality      21     24     2      5            0.87
+  discovery        24     18     8      2            0.81
+  route            13     19     7      13           0.62
+
+LEAKS: 0  <-- zero wrong-page reuses allowed
+false alarms: 0
