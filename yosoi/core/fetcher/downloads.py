@@ -33,9 +33,14 @@ _HEAD_BYTES = 4096
 _DEFAULT_MAX_BYTES = 25 * 1024 * 1024  # 25 MiB
 
 
-def quarantine_dir(domain: str) -> Path:
-    """Return a per-domain quarantine dir under ``.yosoi/downloads/`` (mode 0700)."""
-    base = init_yosoi('downloads')
+def quarantine_dir(domain: str, base_dir: str | None = None) -> Path:
+    """Return a per-domain quarantine dir (mode 0700).
+
+    Defaults to ``.yosoi/downloads/<domain>/``. Pass *base_dir* to redirect downloads
+    elsewhere (e.g. a scratch volume); a ``<domain>`` subdir is still created under it.
+    """
+    base = Path(base_dir).expanduser() if base_dir else init_yosoi('downloads')
+    base.mkdir(parents=True, exist_ok=True)
     safe = ''.join(c if (c.isalnum() or c in '.-_') else '_' for c in domain) or 'unknown'
     target = base / safe
     target.mkdir(parents=True, exist_ok=True)
@@ -133,11 +138,15 @@ async def execute_downloads(
     tab: Any,
     specs: dict[str, DownloadSpec] | None,
     domain: str,
+    base_dir: str | None = None,
 ) -> dict[str, DownloadResult]:
-    """Run every download spec sequentially on the live *tab*; return per-field results."""
+    """Run every download spec sequentially on the live *tab*; return per-field results.
+
+    *base_dir* overrides the quarantine root (defaults to ``.yosoi/downloads/``).
+    """
     if not specs:
         return {}
-    qdir = quarantine_dir(domain)
+    qdir = quarantine_dir(domain, base_dir)
     results: dict[str, DownloadResult] = {}
     for field, spec in specs.items():
         results[field] = await run_download(tab, spec, qdir)

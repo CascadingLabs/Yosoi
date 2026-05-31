@@ -27,6 +27,8 @@ async def scrape(
     quiet: bool = True,
     allow_downloads: bool = False,
     allowed_download_types: Sequence[str] = (),
+    download_dir: str | None = None,
+    max_download_bytes: int | None = None,
 ) -> list[ContentMap]:
     """Scrape one URL and return validated native Python dictionaries.
 
@@ -36,6 +38,8 @@ async def scrape(
     For ``ys.File()`` download fields, set ``allow_downloads=True`` and use a browser
     ``fetcher_type`` (``'headless'``/``'headful'``/``'waterfall'``). ``allowed_download_types``
     is an optional run-wide file-type allowlist intersected with each field's own.
+    ``download_dir`` overrides the quarantine root (default ``.yosoi/downloads/``) and
+    ``max_download_bytes`` sets a run-wide per-file cap (used when a field sets no ``max_bytes``).
     """
     contract_cls = resolve_contract(contract) if isinstance(contract, str) else contract
     llm_config = _resolve_model(model)
@@ -59,6 +63,8 @@ async def scrape(
                 selector_level=selector_level,
                 allow_downloads=allow_downloads,
                 allowed_download_types=tuple(allowed_download_types),
+                download_dir=download_dir,
+                max_download_bytes=max_download_bytes,
             ) as pipeline:
                 return [
                     item

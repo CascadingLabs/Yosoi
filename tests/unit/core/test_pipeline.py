@@ -305,7 +305,7 @@ def test_create_waterfall_fetcher_passes_console_and_a3node(mocker):
     Pipeline._create_fetcher(stub, 'waterfall', console=stub.console)
 
     create_fetcher.assert_called_once_with(
-        'waterfall', console=stub.console, experimental_a3node=False, allow_downloads=False
+        'waterfall', console=stub.console, experimental_a3node=False, allow_downloads=False, download_dir=None
     )
 
 

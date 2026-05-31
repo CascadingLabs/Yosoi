@@ -106,6 +106,8 @@ class Pipeline:
     # bypass __init__. __init__ overrides these per-instance.
     _allow_downloads: bool = False
     _allowed_download_types: tuple[str, ...] = ()
+    _download_dir: str | None = None
+    _max_download_bytes: int | None = None
 
     def __init__(
         self,
@@ -121,6 +123,8 @@ class Pipeline:
         experimental_a3node: bool = False,
         allow_downloads: bool = False,
         allowed_download_types: tuple[str, ...] = (),
+        download_dir: str | None = None,
+        max_download_bytes: int | None = None,
     ):
         """Initialize the pipeline with LLM configuration.
 
@@ -148,12 +152,17 @@ class Pipeline:
                 has file fields and this is False, scraping fails fast before fetching.
             allowed_download_types: Run-wide file-type allowlist (default-deny). Intersected
                 with each field's ``allowed_types``; an empty effective allowlist blocks all.
+            download_dir: Quarantine root for downloaded files. Defaults to ``.yosoi/downloads/``.
+            max_download_bytes: Run-wide per-file size cap used when a ys.File() field sets no
+                ``max_bytes`` of its own. Falls back to a 25 MiB built-in default when unset.
 
         """
         self.selector_level = selector_level
         self._experimental_a3node = experimental_a3node
         self._allow_downloads = allow_downloads
         self._allowed_download_types = normalize_allowed_types(allowed_download_types)
+        self._download_dir = download_dir
+        self._max_download_bytes = max_download_bytes
 
         # Auto-resolve model strings → LLMConfig
         if isinstance(llm_config, str):
@@ -1284,6 +1293,7 @@ class Pipeline:
                     kwargs['console'] = console
                 kwargs['experimental_a3node'] = self._experimental_a3node
                 kwargs['allow_downloads'] = self._allow_downloads
+                kwargs['download_dir'] = self._download_dir
             return create_fetcher(fetcher_type, **kwargs)
         except ValueError:
             self.console.print(f'[danger]Invalid fetcher type: {fetcher_type}[/danger]')
@@ -1814,7 +1824,7 @@ class Pipeline:
                 url=cfg.get('url'),
                 allowed_types=effective,
                 parse=cfg.get('parse'),
-                max_bytes=cfg.get('max_bytes'),
+                max_bytes=cfg.get('max_bytes') or self._max_download_bytes,
             )
         return specs
 

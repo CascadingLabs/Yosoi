@@ -27,10 +27,17 @@ class _NoFiles(Contract):
     title: str = ys.Field()
 
 
-def _fake_pipeline(contract: type[Contract], *, allow: bool, global_types: tuple[str, ...] = ()) -> Any:
+def _fake_pipeline(
+    contract: type[Contract],
+    *,
+    allow: bool,
+    global_types: tuple[str, ...] = (),
+    max_download_bytes: int | None = None,
+) -> Any:
     ns = types.SimpleNamespace()
     ns._allow_downloads = allow
     ns._allowed_download_types = normalize_allowed_types(global_types)
+    ns._max_download_bytes = max_download_bytes
     ns.contract = contract
     ns._file_download_specs = lambda: Pipeline._file_download_specs(ns)
     return ns
@@ -48,6 +55,15 @@ def test_global_allowlist_intersects_field() -> None:
     # Global ceiling narrows the field's allowlist.
     specs = Pipeline._file_download_specs(_fake_pipeline(_Files, allow=True, global_types=('csv',)))
     assert specs['report'].allowed_types == ('csv',)
+
+
+def test_run_wide_max_bytes_fallback() -> None:
+    # _Files.report sets no max_bytes, so the run-wide cap fills in.
+    specs = Pipeline._file_download_specs(_fake_pipeline(_Files, allow=True, max_download_bytes=1024))
+    assert specs['report'].max_bytes == 1024
+    # ...and stays None (downloads.py applies its built-in default) when nothing is set.
+    specs2 = Pipeline._file_download_specs(_fake_pipeline(_Files, allow=True))
+    assert specs2['report'].max_bytes is None
 
 
 def test_gate_fails_fast_when_downloads_disabled() -> None:

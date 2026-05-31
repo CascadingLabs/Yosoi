@@ -130,9 +130,28 @@ async def test_refetch_unsafe_scheme_rejected(tmp_path: Path) -> None:
 
 
 async def test_execute_downloads_aggregates(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(dl, 'quarantine_dir', lambda _domain: tmp_path)
+    monkeypatch.setattr(dl, 'quarantine_dir', lambda _domain, _base=None: tmp_path)
     tab = _FakeTab(data=CSV_BYTES, content_type='text/csv', filename='a.csv')
     specs = {'report': DownloadSpec(field='report', trigger='a.x', allowed_types=('csv',), parse='csv')}
     results = await dl.execute_downloads(tab, specs, 'sec.gov')
     assert set(results) == {'report'}
     assert results['report'].value[0]['revenue'] == '100'
+
+
+def test_quarantine_dir_defaults_to_yosoi() -> None:
+    target = dl.quarantine_dir('sec.gov')
+    assert target.parent.name == 'downloads'
+    assert '.yosoi' in target.parts
+
+
+def test_quarantine_dir_honours_custom_base(tmp_path: Path) -> None:
+    target = dl.quarantine_dir('sec.gov', base_dir=str(tmp_path / 'scratch'))
+    assert target == tmp_path / 'scratch' / 'sec.gov'
+    assert target.is_dir()
+
+
+async def test_execute_downloads_uses_base_dir(tmp_path: Path) -> None:
+    tab = _FakeTab(data=CSV_BYTES, content_type='text/csv', filename='a.csv')
+    specs = {'report': DownloadSpec(field='report', trigger='a.x', allowed_types=('csv',))}
+    results = await dl.execute_downloads(tab, specs, 'sec.gov', base_dir=str(tmp_path))
+    assert Path(results['report'].record.path).parent == tmp_path / 'sec.gov'

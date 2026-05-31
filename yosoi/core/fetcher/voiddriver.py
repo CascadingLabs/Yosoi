@@ -76,6 +76,7 @@ class _VoidCrawlFetcher(HTMLFetcher):
         console: Console | None = None,
         experimental_a3node: bool = False,
         allow_downloads: bool = False,
+        download_dir: str | None = None,
         user_agent: str | None = None,
         accept_language: str | None = None,
         **_kwargs: Any,
@@ -88,6 +89,7 @@ class _VoidCrawlFetcher(HTMLFetcher):
         self._console = console or Console()
         self._experimental_a3node = experimental_a3node
         self._allow_downloads = allow_downloads
+        self._download_dir = download_dir
         self._user_agent = user_agent
         self._accept_language = accept_language
         self._pool: Any = None
@@ -269,7 +271,7 @@ class _VoidCrawlFetcher(HTMLFetcher):
                 next(iter(download_specs)),
                 'downloads are disabled; pass allow_downloads=True to enable ys.File() fields',
             )
-        return await execute_downloads(tab, download_specs, domain)
+        return await execute_downloads(tab, download_specs, domain, base_dir=self._download_dir)
 
     @staticmethod
     def _compose_action_scripts(scripts: dict[str, str]) -> str:

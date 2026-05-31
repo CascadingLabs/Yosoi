@@ -70,6 +70,7 @@ class JSFetcher(HTMLFetcher):
         force: bool = False,
         experimental_a3node: bool = False,
         allow_downloads: bool = False,
+        download_dir: str | None = None,
         voidcrawl_user_agent: str | None = None,
         voidcrawl_accept_language: str | None = None,
     ):
@@ -90,6 +91,7 @@ class JSFetcher(HTMLFetcher):
             experimental_a3node: Opt into experimental A3Node persistence/replay.
                 Disabled by default so browser rendering always uses a fresh DOMLoader run.
             allow_downloads: Opt into ys.File() downloads on the browser tiers. Off by default.
+            download_dir: Quarantine root for downloads. Defaults to ``.yosoi/downloads/``.
             voidcrawl_user_agent: Optional browser UA override. When omitted,
                 VoidCrawl owns UA and matching Client Hints.
             voidcrawl_accept_language: Optional browser Accept-Language override.
@@ -124,6 +126,7 @@ class JSFetcher(HTMLFetcher):
             'console': self._console,
             'experimental_a3node': experimental_a3node,
             'allow_downloads': allow_downloads,
+            'download_dir': download_dir,
             'user_agent': voidcrawl_user_agent,
             'accept_language': voidcrawl_accept_language,
         }
