@@ -10,6 +10,9 @@ Run:
 from __future__ import annotations
 
 import asyncio
+from typing import Annotated
+
+from pydantic import BeforeValidator
 
 import yosoi as ys
 from yosoi.utils.files import init_yosoi, is_initialized
@@ -22,23 +25,35 @@ SEED_URL = 'https://www.google.com/maps/search/HomeWell+Care+Services+Plano%2C+T
 # ── Contract ──────────────────────────────────────────────────────────────────
 
 
+def _to_count(value: object) -> int:
+    """Coerce a raw review-count value ('1,234', '47', native int) to an int."""
+    text = str(value).strip()
+    return int(text.replace(',', '')) if text and text.lower() != 'none' else 0
+
+
 class MapsPlaceFacts(ys.Contract):
     """Minimal Maps contract — CSS discovery for most fields, ys.js for review_count.
 
-    review_count uses ys.js auto-discovery: LLM writes the script once on the
-    first domain visit, caches it, replays on all subsequent URLs — zero extra
-    LLM calls after the first.
+    review_count uses ys.js auto-discovery: the LLM writes the script once on the
+    first domain visit, caches it, replays on all subsequent URLs — zero extra LLM
+    calls after the first.
+
+    review_count is **statically typed as int** with a comma-tolerant
+    ``BeforeValidator`` (CAS-114). The JS output is validated through this declared
+    Pydantic type at *discovery* (a script returning a non-numeric blob is rejected
+    and retried) and at *scrape* (a bad value is dropped to the default, not kept
+    raw) — so the field is a real int, not a loosely-typed string.
     """
 
     business_name: str = ys.Title(default='')
     rating: str = ys.Rating(default='')
-    review_count: str = ys.js(
+    review_count: Annotated[int, BeforeValidator(_to_count)] = ys.js(
         description=(
             'Google Maps review count — the integer shown in parentheses next to the '
-            "star rating, e.g. '47' from '4.7 (47)' or '1,234' from '4.8 (1,234)'. "
+            "star rating, e.g. 47 from '4.7 (47)' or 1234 from '4.8 (1,234)'. "
             'Return only the digits and commas, no parentheses or surrounding text.'
         ),
-        default='',
+        default=0,
     )
     phone: str = ys.Field(
         default='',
@@ -75,14 +90,11 @@ async def main() -> None:
             print(f'  {field:<16} {v!r}')
     print('─────────────────────────────────────────────────────────────────')
 
-    rc = items[0].get('review_count', '') if items else ''
-    rating = items[0].get('rating', '') if items else ''
-    if rc and rc != rating:
-        print(f'\n✓ review_count={rc!r} is distinct from rating={rating!r} — looks correct')
-    elif rc == rating:
-        print(f'\n✗ review_count={rc!r} duplicates rating — JS probe needs adjustment')
+    rc = items[0].get('review_count', 0) if items else 0
+    if isinstance(rc, int) and rc > 0:
+        print(f'\n✓ review_count={rc!r} (int) — typed + validated, looks correct')
     else:
-        print('\n✗ review_count is empty — JS probe found nothing')
+        print(f'\n✗ review_count={rc!r} — JS probe found nothing usable')
 
 
 if __name__ == '__main__':
