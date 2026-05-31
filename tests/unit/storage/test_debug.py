@@ -16,10 +16,10 @@ def debug_manager(tmp_path, monkeypatch):
     return DebugManager(console=Console(quiet=True), enabled=True)
 
 
-def test_debug_manager_disabled_does_nothing(tmp_path):
+async def test_debug_manager_disabled_does_nothing(tmp_path):
     mgr = DebugManager(enabled=False)
-    mgr.save_debug_html('https://example.com', '<html></html>')
-    mgr.save_debug_selectors('https://example.com', {'title': 'h1'})
+    await mgr.save_debug_html('https://example.com', '<html></html>')
+    await mgr.save_debug_selectors('https://example.com', {'title': 'h1'})
     # No files created when disabled
     assert not (tmp_path / 'debug').exists()
 
@@ -38,8 +38,8 @@ def test_debug_manager_enabled_true_debug_dir_is_set(tmp_path, monkeypatch):
     assert mgr.enabled is True
 
 
-def test_save_debug_html_creates_file(debug_manager, tmp_path):
-    debug_manager.save_debug_html('https://example.com/page', '<h1>Hello</h1>')
+async def test_save_debug_html_creates_file(debug_manager, tmp_path):
+    await debug_manager.save_debug_html('https://example.com/page', '<h1>Hello</h1>')
     debug_dir = tmp_path / 'debug'
     files = list(debug_dir.iterdir())
     assert len(files) == 1
@@ -48,40 +48,40 @@ def test_save_debug_html_creates_file(debug_manager, tmp_path):
     assert 'https://example.com/page' in content
 
 
-def test_save_debug_html_includes_html_content(debug_manager, tmp_path):
-    debug_manager.save_debug_html('https://example.com/page', '<h1>Hello</h1>')
+async def test_save_debug_html_includes_html_content(debug_manager, tmp_path):
+    await debug_manager.save_debug_html('https://example.com/page', '<h1>Hello</h1>')
     debug_dir = tmp_path / 'debug'
     files = list(debug_dir.iterdir())
     content = files[0].read_text()
     assert '<h1>Hello</h1>' in content
 
 
-def test_save_debug_html_includes_length_comment(debug_manager, tmp_path):
+async def test_save_debug_html_includes_length_comment(debug_manager, tmp_path):
     html_content = '<h1>Hello</h1>'
-    debug_manager.save_debug_html('https://example.com/page', html_content)
+    await debug_manager.save_debug_html('https://example.com/page', html_content)
     debug_dir = tmp_path / 'debug'
     files = list(debug_dir.iterdir())
     content = files[0].read_text()
     assert str(len(html_content)) in content
 
 
-def test_save_debug_html_url_in_comment(debug_manager, tmp_path):
-    debug_manager.save_debug_html('https://example.com/article', '<p>body</p>')
+async def test_save_debug_html_url_in_comment(debug_manager, tmp_path):
+    await debug_manager.save_debug_html('https://example.com/article', '<p>body</p>')
     debug_dir = tmp_path / 'debug'
     files = list(debug_dir.iterdir())
     content = files[0].read_text()
     assert '<!-- URL: https://example.com/article -->' in content
 
 
-def test_save_debug_html_disabled_no_file(tmp_path):
+async def test_save_debug_html_disabled_no_file(tmp_path):
     mgr = DebugManager(enabled=False)
-    mgr.save_debug_html('https://example.com', '<h1>Hello</h1>')
+    await mgr.save_debug_html('https://example.com', '<h1>Hello</h1>')
     assert not (tmp_path / 'debug').exists()
 
 
-def test_save_debug_selectors_creates_json(debug_manager, tmp_path):
+async def test_save_debug_selectors_creates_json(debug_manager, tmp_path):
     selectors = {'title': {'primary': 'h1'}}
-    debug_manager.save_debug_selectors('https://example.com/page', selectors)
+    await debug_manager.save_debug_selectors('https://example.com/page', selectors)
     debug_dir = tmp_path / 'debug'
     json_files = [f for f in debug_dir.iterdir() if f.suffix == '.json']
     assert len(json_files) == 1
@@ -90,15 +90,15 @@ def test_save_debug_selectors_creates_json(debug_manager, tmp_path):
     assert data['selectors'] == selectors
 
 
-def test_save_debug_selectors_disabled_no_file(tmp_path):
+async def test_save_debug_selectors_disabled_no_file(tmp_path):
     mgr = DebugManager(enabled=False)
-    mgr.save_debug_selectors('https://example.com', {'title': 'h1'})
+    await mgr.save_debug_selectors('https://example.com', {'title': 'h1'})
     assert not (tmp_path / 'debug').exists()
 
 
-def test_save_debug_selectors_json_has_url_key(debug_manager, tmp_path):
+async def test_save_debug_selectors_json_has_url_key(debug_manager, tmp_path):
     selectors = {'price': {'primary': '.price'}}
-    debug_manager.save_debug_selectors('https://shop.com/product', selectors)
+    await debug_manager.save_debug_selectors('https://shop.com/product', selectors)
     debug_dir = tmp_path / 'debug'
     json_files = [f for f in debug_dir.iterdir() if f.suffix == '.json']
     data = json.loads(json_files[0].read_text())
@@ -164,19 +164,19 @@ def test_debug_manager_disabled_attribute_is_false():
     assert mgr.enabled is False
 
 
-def test_save_debug_html_file_content_has_url_comment(debug_manager, tmp_path):
+async def test_save_debug_html_file_content_has_url_comment(debug_manager, tmp_path):
     """Saved HTML file must start with '<!-- URL: {url} -->'."""
-    debug_manager.save_debug_html('https://test.example.com/page', '<p>content</p>')
+    await debug_manager.save_debug_html('https://test.example.com/page', '<p>content</p>')
     debug_dir = tmp_path / 'debug'
     files = list(debug_dir.iterdir())
     content = files[0].read_text()
     assert content.startswith('<!-- URL: https://test.example.com/page -->')
 
 
-def test_save_debug_html_file_content_second_line_is_length(debug_manager, tmp_path):
+async def test_save_debug_html_file_content_second_line_is_length(debug_manager, tmp_path):
     """Second line must be '<!-- Cleaned HTML length: N chars -->'."""
     html_content = '<p>hello world</p>'
-    debug_manager.save_debug_html('https://example.com/page', html_content)
+    await debug_manager.save_debug_html('https://example.com/page', html_content)
     debug_dir = tmp_path / 'debug'
     files = list(debug_dir.iterdir())
     content = files[0].read_text()
@@ -200,20 +200,20 @@ def test_get_safe_filename_format_is_base_dot_suffix(debug_manager):
     assert 'example.com' in filename
 
 
-def test_save_debug_selectors_file_content_has_url_key(debug_manager, tmp_path):
+async def test_save_debug_selectors_file_content_has_url_key(debug_manager, tmp_path):
     """Debug selectors JSON must contain 'url' key with exact URL."""
     url = 'https://target.com/article'
     selectors = {'title': {'primary': 'h1'}}
-    debug_manager.save_debug_selectors(url, selectors)
+    await debug_manager.save_debug_selectors(url, selectors)
     debug_dir = tmp_path / 'debug'
     json_files = [f for f in debug_dir.iterdir() if f.suffix == '.json']
     data = json.loads(json_files[0].read_text())
     assert data['url'] == url
 
 
-def test_save_debug_selectors_uses_indent_2(debug_manager, tmp_path):
+async def test_save_debug_selectors_uses_indent_2(debug_manager, tmp_path):
     """Debug selectors JSON must use indent=2."""
-    debug_manager.save_debug_selectors('https://example.com/page', {'title': {'primary': 'h1'}})
+    await debug_manager.save_debug_selectors('https://example.com/page', {'title': {'primary': 'h1'}})
     debug_dir = tmp_path / 'debug'
     json_files = [f for f in debug_dir.iterdir() if f.suffix == '.json']
     raw = json_files[0].read_text()

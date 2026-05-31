@@ -1,5 +1,7 @@
 """Tests for yosoi.core.discovery.config — LLMConfig, create_model, LLMBuilder, convenience helpers."""
 
+import sys
+
 import pytest
 
 from yosoi.core.discovery.config import (
@@ -37,6 +39,19 @@ from yosoi.core.discovery.config import (
     vertexai,
     xai,
 )
+
+
+@pytest.fixture
+def stub_gcp_adc(mocker):
+    """Stub Google Application Default Credentials.
+
+    ``GoogleCloudProvider`` (the Vertex backend) eagerly resolves ADC at
+    construction, unlike the lazy ``GoogleVertexProvider`` it replaced. Without
+    this stub, constructing a Vertex model in an environment with no project and
+    no credentials raises ``DefaultCredentialsError``.
+    """
+    mocker.patch('google.auth.default', return_value=(mocker.MagicMock(), 'stub-project'))
+
 
 # ---------------------------------------------------------------------------
 # LLMConfig
@@ -401,18 +416,16 @@ class TestCreateModelNewFirstClass:
         model = create_model(cfg)
         assert 'HuggingFace' in type(model).__name__
 
-    def test_vertexai_provider(self):
-        """Vertex AI provider creates a GoogleModel (no api_key required) with a deprecation warning."""
+    def test_vertexai_provider(self, stub_gcp_adc):
+        """Vertex AI provider creates a GoogleModel (no api_key required)."""
         cfg = LLMConfig(provider='vertexai', model_name='gemini-2.0-flash-001')
-        with pytest.warns(DeprecationWarning, match='vertexai'):
-            model = create_model(cfg)
+        model = create_model(cfg)
         assert 'Google' in type(model).__name__
 
-    def test_google_vertex_alias(self):
-        """'google-vertex' is an alias for vertexai, also emits a deprecation warning."""
+    def test_google_vertex_alias(self, stub_gcp_adc):
+        """'google-vertex' is an alias for vertexai."""
         cfg = LLMConfig(provider='google-vertex', model_name='gemini-2.0-flash-001')
-        with pytest.warns(DeprecationWarning, match='vertexai'):
-            model = create_model(cfg)
+        model = create_model(cfg)
         assert 'Google' in type(model).__name__
 
     def test_claude_sdk_provider(self):
@@ -583,8 +596,7 @@ class TestSpecialProviderBehaviour:
             model_name='gemini-2.0-flash-001',
             extra_params={'project_id': 'my-project', 'region': 'us-east1'},
         )
-        with pytest.warns(DeprecationWarning, match='vertexai'):
-            model = create_model(cfg)
+        model = create_model(cfg)
         assert 'Google' in type(model).__name__
 
 
@@ -619,12 +631,11 @@ class TestNoApiKeyProviders:
         cfg = ollama('llama3')
         assert cfg.api_key is None
 
-    def test_vertexai_helper_no_api_key(self):
-        """vertexai() produces a config with api_key=None; model creation warns."""
+    def test_vertexai_helper_no_api_key(self, stub_gcp_adc):
+        """vertexai() produces a config with api_key=None; model creation succeeds."""
         cfg = vertexai('gemini-2.0-flash-001')
         assert cfg.api_key is None
-        with pytest.warns(DeprecationWarning, match='vertexai'):
-            create_model(cfg)
+        create_model(cfg)
 
 
 # ---------------------------------------------------------------------------
@@ -802,13 +813,12 @@ class TestProviderNewProviders:
         assert cfg.provider == 'github'
         assert cfg.model_name == 'gpt-4o'
 
-    def test_vertexai(self):
+    def test_vertexai(self, stub_gcp_adc):
         cfg = provider('vertexai:gemini-2.0-flash-001')
         assert cfg.provider == 'vertexai'
         assert cfg.model_name == 'gemini-2.0-flash-001'
         assert cfg.api_key is None
-        with pytest.warns(DeprecationWarning, match='vertexai'):
-            create_model(cfg)
+        create_model(cfg)
 
     def test_claude_sdk(self):
         cfg = provider('claude-sdk:claude-opus-4-7')
@@ -827,3 +837,102 @@ class TestProviderNewProviders:
         cfg = provider('bedrock:anthropic.claude-3-5-sonnet-20241022-v2:0', api_key='k')
         assert cfg.provider == 'bedrock'
         assert cfg.model_name == 'anthropic.claude-3-5-sonnet-20241022-v2:0'
+
+
+# ---------------------------------------------------------------------------
+# Optional-provider extras — friendly error when the SDK isn't installed
+# ---------------------------------------------------------------------------
+
+# Heavyweight providers ship as optional extras (``yosoi[<extra>]``). Each factory
+# imports its SDK lazily and must raise a ModuleNotFoundError naming the right
+# extra when it's absent. The dev venv installs every SDK, so we force the lazy
+# import to fail by blanking the backing module in ``sys.modules`` (a ``None``
+# entry makes ``from <module> import ...`` raise ImportError). This pins the
+# error contract — including the hand-written extra name in each factory — which
+# CI otherwise can't exercise.
+_GATED_PROVIDERS = [
+    ('anthropic', 'anthropic', 'pydantic_ai.models.anthropic'),
+    ('claude', 'anthropic', 'pydantic_ai.models.anthropic'),  # alias
+    ('bedrock', 'bedrock', 'pydantic_ai.models.bedrock'),
+    ('aws', 'bedrock', 'pydantic_ai.models.bedrock'),  # alias
+    ('mistral', 'mistral', 'pydantic_ai.models.mistral'),
+    ('xai', 'xai', 'pydantic_ai.models.xai'),
+    ('grok', 'xai', 'pydantic_ai.models.xai'),  # alias
+    ('huggingface', 'huggingface', 'pydantic_ai.models.huggingface'),
+    ('hf', 'huggingface', 'pydantic_ai.models.huggingface'),  # alias
+    ('vertexai', 'vertexai', 'pydantic_ai.providers.google_cloud'),
+    ('google-vertex', 'vertexai', 'pydantic_ai.providers.google_cloud'),  # alias
+]
+
+# OpenAI-compatible providers ride the base `openai` client and must NOT be gated
+# behind an extra. Probed to construct cleanly with only an api_key (azure/ollama
+# need endpoint config, so they're excluded here).
+_UNGATED_OPENAI_COMPATIBLE = [
+    'deepseek',
+    'fireworks',
+    'together',
+    'nebius',
+    'moonshotai',
+    'alibaba',
+    'sambanova',
+    'ovhcloud',
+    'github',
+    'vercel',
+    'heroku',
+    'litellm',
+]
+
+
+class TestOptionalProviderExtras:
+    @pytest.mark.parametrize(('provider_name', 'extra', 'backing_module'), _GATED_PROVIDERS)
+    def test_missing_sdk_raises_friendly_error(self, provider_name, extra, backing_module, monkeypatch):
+        """A gated provider whose SDK is absent raises ModuleNotFoundError naming yosoi[<extra>]."""
+        monkeypatch.setitem(sys.modules, backing_module, None)
+        cfg = LLMConfig(provider=provider_name, model_name='m', api_key='k')
+        with pytest.raises(ModuleNotFoundError, match=rf'yosoi\[{extra}\]') as exc_info:
+            create_model(cfg)
+        # The original ImportError is chained for debuggability.
+        assert isinstance(exc_info.value.__cause__, ImportError)
+
+    def test_base_provider_unaffected_by_blanked_optional_module(self, monkeypatch):
+        """A base-install provider still builds when an unrelated optional SDK module is absent."""
+        monkeypatch.setitem(sys.modules, 'pydantic_ai.models.anthropic', None)
+        model = create_model(LLMConfig(provider='openai', model_name='gpt-4o-mini', api_key='k'))
+        assert 'OpenAI' in type(model).__name__
+
+    def test_gated_extras_are_declared_in_package_metadata(self):
+        """Every extra named by a gated factory is a real declared optional-dependency.
+
+        Guards against drift between the hand-typed extra name in each factory's
+        error message and the ``[project.optional-dependencies]`` table.
+        """
+        from importlib.metadata import metadata
+
+        declared = {e.lower() for e in (metadata('yosoi').get_all('Provides-Extra') or [])}
+        referenced = {extra for _, extra, _ in _GATED_PROVIDERS}
+        assert referenced <= declared, f'gated factories reference undeclared extras: {referenced - declared}'
+
+    def test_gated_model_classes_not_bound_at_module_level(self):
+        """Gated model classes stay TYPE_CHECKING-only — never eager top-level imports.
+
+        If one is re-added as a runtime top-level import, ``import yosoi`` would
+        require that SDK on a slim install. This pins the lazy boundary.
+        """
+        from yosoi.core.discovery import config
+
+        for name in ('AnthropicModel', 'BedrockConverseModel', 'HuggingFaceModel', 'MistralModel', 'XaiModel'):
+            assert not hasattr(config, name), f'{name} leaked into module namespace (should be TYPE_CHECKING-only)'
+
+    @pytest.mark.parametrize('provider_name', _UNGATED_OPENAI_COMPATIBLE)
+    def test_openai_compatible_providers_not_gated(self, provider_name, monkeypatch):
+        """OpenAI-compatible providers build even with every gated SDK module absent."""
+        for mod in (
+            'pydantic_ai.models.anthropic',
+            'pydantic_ai.models.bedrock',
+            'pydantic_ai.models.mistral',
+            'pydantic_ai.models.xai',
+            'pydantic_ai.models.huggingface',
+        ):
+            monkeypatch.setitem(sys.modules, mod, None)
+        model = create_model(LLMConfig(provider=provider_name, model_name='m', api_key='k'))
+        assert 'OpenAI' in type(model).__name__

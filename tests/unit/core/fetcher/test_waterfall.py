@@ -22,7 +22,9 @@ class _Simple:
 
 
 class _Headless:
-    async def _do_fetch(self, url: str, start_time: float, tier: str) -> FetchResult:
+    async def _do_fetch(
+        self, url: str, start_time: float, tier: str, action_scripts: dict | None = None
+    ) -> FetchResult:
         return FetchResult(url=url, html='<html><body><article>rendered</article></body></html>', fetch_time=start_time)
 
 
@@ -31,6 +33,7 @@ async def test_waterfall_escalates_astro_shell_instead_of_caching_simple(mocker)
     fetcher = JSFetcher(console=_Console())
     fetcher._simple = _Simple()
     fetcher._strategy_storage = mocker.Mock()
+    fetcher._strategy_storage.save = mocker.AsyncMock()
     fetcher._probe_requires_js = mocker.AsyncMock(return_value=False)
     fetcher._ensure_headless = mocker.AsyncMock(return_value=_Headless())
 
@@ -62,12 +65,13 @@ def test_jsfetcher_passes_explicit_a3node_opt_in_to_chrome_tiers():
     assert fetcher._chrome_kwargs['experimental_a3node'] is True
 
 
-def test_update_selector_level_preserves_cached_fetcher(mocker):
+async def test_update_selector_level_preserves_cached_fetcher(mocker):
     fetcher = JSFetcher()
     fetcher._strategy_storage = mocker.Mock()
-    fetcher._record_success('qscrape.dev', 'headless')
+    fetcher._strategy_storage.save = mocker.AsyncMock()
+    await fetcher._record_success('qscrape.dev', 'headless')
 
-    fetcher.update_selector_level('qscrape.dev', 'xpath')
+    await fetcher.update_selector_level('qscrape.dev', 'xpath')
 
     assert fetcher._strategy_cache['qscrape.dev'].fetcher == 'headless'
     assert fetcher._strategy_cache['qscrape.dev'].selector_level == 'xpath'

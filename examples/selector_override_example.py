@@ -44,10 +44,10 @@ class BookMixed(ys.Contract):
 
     title: str = ys.Title()
     price: float = ys.Price(
-        hint='Book price — always includes £ symbol',
+        description='Book price — always includes £ symbol',
         selector='article.product_pod p.price_color',  # we know this one
     )
-    rating: str = ys.Rating(hint="Star rating written as a word e.g. 'Three'")
+    rating: str = ys.Rating(description="Star rating written as a word e.g. 'Three'")
 
 
 async def example_2_mixed():
@@ -62,7 +62,7 @@ class BookDetail(ys.Contract):
     """Scrape a single book's detail page."""
 
     title: str = ys.Title()
-    price: float = ys.Price(hint='Includes £ symbol')
+    price: float = ys.Price(description='Includes £ symbol')
     availability: str = ys.Field(
         description='Stock availability status',
         selector='table.table-striped tr:nth-child(6) td',  # known table row

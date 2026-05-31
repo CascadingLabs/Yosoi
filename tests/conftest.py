@@ -1,3 +1,5 @@
+import os
+
 import pytest
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
@@ -75,17 +77,38 @@ def mock_selectors():
     )
 
 
+@pytest.fixture
+def html_fixture():
+    """Return the load_html callable for qscrape.dev HTML fixtures.
+
+    Usage::
+
+        def test_something(html_fixture):
+            html = html_fixture('mountainhome_home.html')
+    """
+    from tests.fixtures import load_html
+
+    return load_html
+
+
 def pytest_configure(config):
     """Register custom markers."""
     config.addinivalue_line('markers', 'integration: marks tests as integration tests')
     config.addinivalue_line('markers', 'unit: marks tests as unit tests')
     config.addinivalue_line('markers', 'eval: marks tests as evaluation tests')
     config.addinivalue_line('markers', 'smoke: marks opt-in live smoke tests')
+    config.addinivalue_line(
+        'markers',
+        'browser_integration: requires YOSOI_INTEGRATION=1 and Chromium/Chrome',
+    )
 
 
 def pytest_collection_modifyitems(config, items):
-    """Apply directory-based marks to collected test items."""
+    """Apply directory-based marks and conditional skips to collected items."""
     from pathlib import Path
+
+    needs_browser = not os.getenv('YOSOI_INTEGRATION')
+    skip_browser = pytest.mark.skip(reason='set YOSOI_INTEGRATION=1 to run browser integration tests')
 
     for item in items:
         if hasattr(item, 'fspath'):
@@ -98,3 +121,6 @@ def pytest_collection_modifyitems(config, items):
                 item.add_marker(pytest.mark.eval)
             elif 'smoke' in parts:
                 item.add_marker(pytest.mark.smoke)
+
+        if needs_browser and item.get_closest_marker('browser_integration'):
+            item.add_marker(skip_browser)

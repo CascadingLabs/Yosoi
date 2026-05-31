@@ -36,13 +36,13 @@ class Book(ys.Contract):
     """Scrape book data from books.toscrape.com."""
 
     title: str = ys.Title()
-    price: float = ys.Price(hint='Book price — always includes £ symbol')
+    price: float = ys.Price(description='Book price — always includes £ symbol')
     # books.toscrape encodes the rating in the element's class, so discovery
     # picks `p.star-rating::attr(class)` and extraction yields the raw class
     # string e.g. "star-rating Three". CSS can't sub-select one class token,
     # so we shape the value here — extraction's job is the attribute, the
     # contract's job is the meaning.
-    rating: str = ys.Rating(hint="Star rating in the element's class attribute, e.g. class='star-rating Three'")
+    rating: str = ys.Rating(description="Star rating in the element's class attribute, e.g. class='star-rating Three'")
 
     @field_validator('rating', mode='after')
     @classmethod

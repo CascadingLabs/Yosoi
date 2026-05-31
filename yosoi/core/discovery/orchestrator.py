@@ -13,10 +13,11 @@ from yosoi.core.discovery.bus import DiscoveryBus
 from yosoi.core.discovery.config import LLMConfig
 from yosoi.core.discovery.field_agent import FieldDiscoveryAgent
 from yosoi.core.discovery.field_task import FieldTaskResult, run_field_task
+from yosoi.core.fetcher.dom.ax import AxSnapshot
 from yosoi.models.contract import Contract
 from yosoi.models.selectors import SelectorLevel
 from yosoi.models.snapshot import SelectorSnapshot, SnapshotStatus, selector_dict_to_snapshot
-from yosoi.prompts.discovery import DiscoveryInput
+from yosoi.prompts.discovery import DiscoveryInput, FieldFeedback
 from yosoi.storage.persistence import SelectorStorage
 from yosoi.utils import observability as obs
 from yosoi.utils.signatures import _get_yosoi_type
@@ -25,6 +26,52 @@ from yosoi.utils.signatures import _get_yosoi_type
 SelectorMap = dict[str, dict[str, Any]]
 
 logger = logging.getLogger(__name__)
+
+# Cap the AX outline so the prompt stays compact on huge pages.
+_AX_HINT_LIMIT = 40
+
+# Roles worth surfacing to discovery: interactive controls (for interaction-gated
+# fields) and content-bearing structure. Filtering to these BEFORE the cap keeps
+# the outline dense with signal instead of leading with nav links / static text /
+# cookie chrome that sit at the top of the document order.
+_AX_USEFUL_ROLES = frozenset(
+    {
+        'button',
+        'link',
+        'textbox',
+        'searchbox',
+        'combobox',
+        'tab',
+        'menuitem',
+        'heading',
+        'article',
+        'main',
+        'navigation',
+        'region',
+        'list',
+        'listitem',
+        'table',
+        'row',
+        'cell',
+        'img',
+        'time',
+    }
+)
+
+
+def format_ax_hint(ax_snapshot: AxSnapshot | None, limit: int = _AX_HINT_LIMIT) -> str:
+    """Render an AX snapshot into a compact ``role: name`` outline for the prompt.
+
+    Filters to semantically useful roles (:data:`_AX_USEFUL_ROLES`) before capping,
+    so the outline carries signal rather than nav/static-text chrome. Returns an
+    empty string when there is no snapshot or nothing useful, so the static path is
+    unchanged on plain-HTTP (tier-1) fetches.
+    """
+    if ax_snapshot is None or not ax_snapshot.targets:
+        return ''
+    useful = [t for t in ax_snapshot.targets if t.role in _AX_USEFUL_ROLES]
+    lines = [f'- {t.role}: {t.name}' for t in useful[:limit]]
+    return '\n'.join(lines)
 
 
 class DiscoveryOrchestrator:
@@ -107,7 +154,9 @@ class DiscoveryOrchestrator:
         url: str | None = None,
         *,
         stale_fields: set[str] | None = None,
+        feedback: dict[str, FieldFeedback] | None = None,
         force: bool = False,
+        ax_snapshot: AxSnapshot | None = None,
     ) -> SelectorMap | None:
         """Discover selectors for all contract fields in parallel.
 
@@ -117,7 +166,13 @@ class DiscoveryOrchestrator:
             stale_fields: When not None, only discover these fields (partial
                 rediscovery). The caller is responsible for merging fresh cached
                 selectors with the newly discovered ones and saving.
+            feedback: Optional per-field message describing why a previous
+                attempt's selector was semantically wrong. Forwarded to the LLM
+                prompt for those fields (semantic-validation retry).
             force: Force re-discovery even if selectors exist. Defaults to False.
+            ax_snapshot: Optional accessibility-tree snapshot; rendered via
+                :func:`format_ax_hint` into an AX hint added to the discovery
+                prompt to guide selector choice.
 
         Returns:
             SelectorMap with discovered selectors, or None if all fields failed.
@@ -128,16 +183,15 @@ class DiscoveryOrchestrator:
         # cache lookup, tracing user_id, and per-domain locking all share one
         # bucket (no port/userinfo/casing splits).
         domain = (obs.normalize_user_id(url) if url else None) or 'unknown'
-        discovery_input = DiscoveryInput(url=url_context, html=html)
+        discovery_input = DiscoveryInput(url=url_context, html=html, ax_hint=format_ax_hint(ax_snapshot))
 
         field_descs = self._contract.field_descriptions()
-        hints = self._collect_hints()
         overrides = self._contract.get_selector_overrides()
 
         # Build specs first so the bypass check sees root/nested container
         # tasks: a contract that overrides every content field can still depend
         # on a discovered root or container selector.
-        task_specs = self._build_task_specs(field_descs, hints, stale_fields)
+        task_specs = self._build_task_specs(field_descs, stale_fields)
         field_count = len(task_specs)
 
         # Only skip AI when there is genuinely nothing left to discover
@@ -166,9 +220,9 @@ class DiscoveryOrchestrator:
                 url_context=url_context,
                 domain=domain,
                 discovery_input=discovery_input,
-                hints=hints,
                 overrides=overrides,
                 stale_fields=stale_fields,
+                feedback=feedback,
                 force=force,
             )
 
@@ -180,9 +234,9 @@ class DiscoveryOrchestrator:
         url_context: str,
         domain: str,
         discovery_input: DiscoveryInput,
-        hints: dict[str, str | None],
         overrides: dict[str, dict[str, Any]],
         stale_fields: set[str] | None,
+        feedback: dict[str, FieldFeedback] | None = None,
         force: bool = False,
     ) -> SelectorMap | None:
         field_descs = self._contract.field_descriptions()
@@ -192,12 +246,12 @@ class DiscoveryOrchestrator:
         # Load the full domain selector map once — avoids N redundant file reads.
         # Keep snapshot health metadata so absent/failed fields are not mistaken
         # for malformed selector payloads.
-        snapshots = self._storage.load_snapshots(domain) or {}
+        snapshots = await self._storage.load_snapshots(domain) or {}
         from yosoi.models.snapshot import snapshot_to_cache_entry
 
         existing = {name: snapshot_to_cache_entry(snapshot) for name, snapshot in snapshots.items()}
 
-        task_specs = self._build_task_specs(field_descs, hints, stale_fields)
+        task_specs = self._build_task_specs(field_descs, stale_fields)
 
         # Obtain a domain-scoped bus view shared by all field tasks in this batch
         scoped_bus = self._bus.scoped(domain) if self._bus is not None else None
@@ -207,7 +261,6 @@ class DiscoveryOrchestrator:
             run_field_task(
                 field_name=str(spec['field_name']),
                 field_description=str(spec['field_description']),
-                field_hint=spec['field_hint'] if spec['field_hint'] is None else str(spec['field_hint']),
                 discovery_input=discovery_input,
                 html=html,
                 agent=self._agent,
@@ -217,6 +270,7 @@ class DiscoveryOrchestrator:
                 semaphore=semaphore,
                 scoped_bus=scoped_bus,
                 yosoi_type=_get_yosoi_type(self._contract, str(spec['field_name'])),
+                feedback=(feedback or {}).get(str(spec['field_name'])),
             )
             for spec in task_specs
         ]
@@ -241,9 +295,9 @@ class DiscoveryOrchestrator:
             if url and stale_fields is None and persisted_snapshots:
                 if self._write_lock is not None:
                     async with self._write_lock:
-                        self._storage.save_snapshots(url, persisted_snapshots)
+                        await self._storage.save_snapshots(url, persisted_snapshots)
                 else:
-                    self._storage.save_snapshots(url, persisted_snapshots)
+                    await self._storage.save_snapshots(url, persisted_snapshots)
             return None
 
         logger.info(
@@ -262,9 +316,9 @@ class DiscoveryOrchestrator:
         if url and stale_fields is None and persisted_snapshots is not None:
             if self._write_lock is not None:
                 async with self._write_lock:
-                    self._storage.save_snapshots(url, persisted_snapshots)
+                    await self._storage.save_snapshots(url, persisted_snapshots)
             else:
-                self._storage.save_snapshots(url, persisted_snapshots)
+                await self._storage.save_snapshots(url, persisted_snapshots)
 
         return merged
 
@@ -333,7 +387,6 @@ class DiscoveryOrchestrator:
     def _build_task_specs(
         self,
         field_descs: dict[str, str],
-        hints: dict[str, str | None],
         stale_fields: set[str] | None,
     ) -> list[dict[str, object]]:
         """Build the list of field task specs, optionally filtered to stale fields only."""
@@ -341,7 +394,6 @@ class DiscoveryOrchestrator:
             {
                 'field_name': name,
                 'field_description': desc,
-                'field_hint': hints.get(name),
                 'is_container': False,
             }
             for name, desc in field_descs.items()
@@ -355,7 +407,6 @@ class DiscoveryOrchestrator:
                         '(e.g., .product-card, article.listing). '
                         'Set to null for single-item pages.'
                     ),
-                    'field_hint': None,
                     'is_container': True,
                 }
             )
@@ -375,12 +426,7 @@ class DiscoveryOrchestrator:
                     {
                         'field_name': f'{parent_name}_root',
                         'field_description': f'Scoped container element that wraps all {parent_name} fields',
-                        'field_hint': None,
                         'is_container': True,
                     }
                 )
         return specs
-
-    def _collect_hints(self) -> dict[str, str | None]:
-        """Extract yosoi_hint from each contract field, expanding nested contracts."""
-        return self._contract.field_hints()

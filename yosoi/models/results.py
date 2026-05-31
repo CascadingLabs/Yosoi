@@ -1,9 +1,19 @@
 """Pydantic models for fetch and verification results."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
-from typing import Literal
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias
+
+# Values captured by ys.js() action fields evaluated in the live browser tab.
+JsOutputs: TypeAlias = dict[str, Any]
 
 from pydantic import BaseModel, Field
+
+from yosoi.models.selectors import SelectorKind
+
+if TYPE_CHECKING:
+    from yosoi.core.fetcher.dom.ax import AxSnapshot
 
 
 @dataclass
@@ -45,6 +55,12 @@ class FetchResult:
     is_blocked: bool = False
     block_reason: str | None = None
     fetch_time: float = 0.0
+    js_outputs: JsOutputs | None = None
+
+    # Accessibility-tree snapshot of the rendered page (browser tiers only,
+    # None for plain-HTTP fetches). Fed into static discovery as a semantic
+    # perception layer alongside the cleaned HTML.
+    ax_snapshot: AxSnapshot | None = None
 
     # Content metadata
     metadata: ContentMetadata = field(default_factory=ContentMetadata)
@@ -121,9 +137,7 @@ class FieldVerificationResult(BaseModel):
     status: Literal['verified', 'failed'] = Field(description='Verification status')
     working_level: str | None = Field(default=None, description='Which level worked')
     selector: str | None = Field(default=None, description='Selector that worked')
-    selector_level: Literal['css', 'xpath', 'regex', 'jsonld'] | None = Field(
-        default=None, description='Strategy level that worked (css/xpath/regex/jsonld)'
-    )
+    selector_level: SelectorKind | None = Field(default=None, description='Strategy level that worked')
     failed_selectors: list[SelectorFailure] = Field(default_factory=list, description='Failed selectors with reasons')
 
 

@@ -31,6 +31,17 @@ class LLMGenerationError(YosoiError):
     pass
 
 
+class MCPUnavailableError(YosoiError):
+    """Raised when MCP discovery is requested but the MCP server cannot be reached.
+
+    Honors ``DiscoveryConfig.mcp_unavailable='fail'`` — Yosoi's fail-fast stance.
+    We do not silently fall back to static discovery, because that would hide a
+    misconfigured environment behind a slower, blind discovery path.
+    """
+
+    pass
+
+
 class SelectorError(YosoiError):
     """Raised when selector operations fail."""
 

@@ -15,6 +15,7 @@ Run:
 
 from __future__ import annotations
 
+import asyncio
 import tempfile
 import warnings
 from datetime import datetime, timezone
@@ -44,13 +45,13 @@ def isolated_storage(root: Path) -> SelectorStorage:
     return storage
 
 
-def main() -> None:
+async def main() -> None:
     console = Console()
     now = datetime.now(timezone.utc)
 
     with tempfile.TemporaryDirectory(prefix='yosoi-cache-health-') as tmp:
         storage = isolated_storage(Path(tmp))
-        storage.save_snapshots(
+        await storage.save_snapshots(
             'https://example.com/product/1',
             {
                 'title': SelectorSnapshot(primary='h1.product-title', discovered_at=now),
@@ -73,9 +74,9 @@ def main() -> None:
             },
         )
 
-        snapshots = storage.load_snapshots('example.com') or {}
-        selectors = storage.load_selectors('example.com') or {}
-        summary = storage.get_summary()
+        snapshots = await storage.load_snapshots('example.com') or {}
+        selectors = await storage.load_selectors('example.com') or {}
+        summary = await storage.get_summary()
         health = summary['domains'][0]['health'] if summary['domains'] else {}
 
         console.print(
@@ -130,4 +131,4 @@ def main() -> None:
 
 
 if __name__ == '__main__':
-    main()
+    asyncio.run(main())

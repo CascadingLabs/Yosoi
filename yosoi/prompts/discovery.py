@@ -3,7 +3,7 @@
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Final
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from pydantic_ai import RunContext
 
 from yosoi.models.selectors import SelectorLevel
@@ -95,6 +95,9 @@ class DiscoveryInput(BaseModel):
 
     url: str
     html: str
+    # Compact accessibility hint (role: name lines) from the rendered page.
+    # Excluded from the user-prompt JSON dump — surfaced via a system prompt instead.
+    ax_hint: str = Field(default='', exclude=True)
 
 
 # ---------------------------------------------------------------------------
@@ -169,6 +172,22 @@ def page_hints(ctx: RunContext['DiscoveryDeps']) -> str:
 # ---------------------------------------------------------------------------
 
 
+@dataclass(frozen=True)
+class FieldFeedback:
+    """Corrective feedback for a semantic-validation discovery retry.
+
+    Attributes:
+        message: Human-readable explanation of why the previous selector was
+            wrong, prepended to the user prompt.
+        failed_selectors: Selector value strings already tried for this field.
+            Enforced by an output validator so the LLM cannot return them again.
+
+    """
+
+    message: str
+    failed_selectors: tuple[str, ...] = ()
+
+
 @dataclass
 class FieldDiscoveryDeps:
     """Runtime context for single-field selector discovery.
@@ -176,19 +195,20 @@ class FieldDiscoveryDeps:
     Attributes:
         field_name: Name of the field to discover selectors for
         field_description: Human-readable description of the field
-        field_hint: Optional AI hint from the contract field definition
         input: Typed discovery input containing url and html
         target_level: Maximum selector strategy level allowed
         is_container: True if discovering the yosoi_container selector
+        forbidden_selectors: Selector values that already failed and must not be
+            returned again (enforced via a pydantic-ai output validator).
 
     """
 
     field_name: str
     field_description: str
-    field_hint: str | None
     input: DiscoveryInput
     target_level: SelectorLevel = field(default=SelectorLevel.CSS)
     is_container: bool = False
+    forbidden_selectors: tuple[str, ...] = ()
 
 
 def field_single_base_instructions(ctx: RunContext['FieldDiscoveryDeps']) -> str:
@@ -199,11 +219,8 @@ def field_single_base_instructions(ctx: RunContext['FieldDiscoveryDeps']) -> str
 def field_single_field_instructions(ctx: RunContext['FieldDiscoveryDeps']) -> str:
     """Describe the single field the agent must find selectors for."""
     deps = ctx.deps
-    hint_text = f'\n    Hint: {deps.field_hint}' if deps.field_hint else ''
     text = (
-        f'Find selectors for this field:\n'
-        f'**{deps.field_name}** — {deps.field_description}{hint_text}\n\n'
-        f'{_FIELD_SELECTOR_GUIDE}'
+        f'Find selectors for this field:\n**{deps.field_name}** — {deps.field_description}\n\n{_FIELD_SELECTOR_GUIDE}'
     )
     if deps.is_container:
         text += f'\n\n{_CONTAINER_GUIDANCE}'
@@ -225,6 +242,23 @@ def field_single_level_instructions(ctx: RunContext['FieldDiscoveryDeps']) -> st
     if ctx.deps.target_level >= SelectorLevel.XPATH:
         return _LEVEL_XPATH_ALLOWED
     return _LEVEL_CSS_ONLY
+
+
+def field_single_ax_hints(ctx: RunContext['FieldDiscoveryDeps']) -> str:
+    """Surface the rendered-page accessibility outline, when available.
+
+    The AX tree gives a role/name view of the *rendered* DOM — more stable than
+    class soup on thin or obfuscated markup — so the model can anchor selectors
+    on semantics it can see.
+    """
+    ax_hint = ctx.deps.input.ax_hint
+    if not ax_hint:
+        return ''
+    return (
+        'Accessibility outline of the rendered page (role: accessible name). '
+        'Use it to locate elements semantically:\n'
+        f'{ax_hint}'
+    )
 
 
 def field_single_page_hints(ctx: RunContext['FieldDiscoveryDeps']) -> str:
@@ -250,3 +284,22 @@ def field_single_page_hints(ctx: RunContext['FieldDiscoveryDeps']) -> str:
 def build_user_prompt(discovery_input: DiscoveryInput) -> str:
     """Build the user prompt for the deps-based agent (system prompts handle context)."""
     return discovery_input.model_dump_json()
+
+
+def build_field_user_prompt(discovery_input: DiscoveryInput, feedback: str | None = None) -> str:
+    """Build the single-field user prompt, optionally prefixed with retry feedback.
+
+    When ``feedback`` is provided, a "Previous attempt failed because" block is
+    prepended so the LLM can correct a selector that structurally verified but
+    extracted the wrong kind of value (see CAS-78 / ``SemanticValidator``).
+    """
+    base = build_user_prompt(discovery_input)
+    if not feedback:
+        return base
+    return (
+        'Previous attempt failed because:\n'
+        f'{feedback}\n\n'
+        'Find a better selector for the field described above that fixes this. '
+        'Do not repeat the selector that failed.\n\n'
+        f'{base}'
+    )

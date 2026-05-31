@@ -1,8 +1,9 @@
 """Tests for the yosoi-aware Field wrapper."""
 
+import pytest
 from pydantic.fields import FieldInfo
 
-from yosoi.types.field import Field
+from yosoi.types.field import Field, js
 
 
 def test_field_returns_field_info():
@@ -12,26 +13,11 @@ def test_field_returns_field_info():
 
 def test_field_no_args_returns_empty_schema_extra():
     result = Field()
-    # No hint, no frozen, no selector → json_schema_extra is None or empty
+    # No frozen, no selector → json_schema_extra is None or empty
     if result.json_schema_extra is not None:
         assert isinstance(result.json_schema_extra, dict)
-        assert 'yosoi_hint' not in result.json_schema_extra
         assert 'yosoi_frozen' not in result.json_schema_extra
         assert 'yosoi_selector' not in result.json_schema_extra
-
-
-def test_field_with_hint_sets_yosoi_hint():
-    result = Field(hint='Look for the price')
-    assert isinstance(result.json_schema_extra, dict)
-    assert result.json_schema_extra['yosoi_hint'] == 'Look for the price'
-
-
-def test_field_without_hint_no_yosoi_hint():
-    result = Field()
-    extra = result.json_schema_extra
-    if extra is not None:
-        assert isinstance(extra, dict)
-        assert 'yosoi_hint' not in extra
 
 
 def test_field_with_frozen_true_sets_yosoi_frozen():
@@ -62,19 +48,10 @@ def test_field_without_selector_no_yosoi_selector():
         assert 'yosoi_selector' not in extra
 
 
-def test_field_hint_and_frozen_together():
-    result = Field(hint='Find it', frozen=True)
+def test_field_frozen_and_selector_together():
+    result = Field(frozen=True, selector='p.class')
     extra = result.json_schema_extra
     assert isinstance(extra, dict)
-    assert extra['yosoi_hint'] == 'Find it'
-    assert extra['yosoi_frozen'] is True
-
-
-def test_field_all_three_options():
-    result = Field(hint='My hint', frozen=True, selector='p.class')
-    extra = result.json_schema_extra
-    assert isinstance(extra, dict)
-    assert extra['yosoi_hint'] == 'My hint'
     assert extra['yosoi_frozen'] is True
     assert extra['yosoi_selector'] == 'p.class'
 
@@ -85,11 +62,11 @@ def test_field_passes_kwargs_to_pydantic_field():
 
 
 def test_field_with_existing_json_schema_extra():
-    result = Field(json_schema_extra={'custom_key': 'custom_val'}, hint='My hint')
+    result = Field(json_schema_extra={'custom_key': 'custom_val'}, frozen=True)
     extra = result.json_schema_extra
     assert isinstance(extra, dict)
     assert extra['custom_key'] == 'custom_val'
-    assert extra['yosoi_hint'] == 'My hint'
+    assert extra['yosoi_frozen'] is True
 
 
 def test_field_frozen_false_not_stored():
@@ -101,28 +78,12 @@ def test_field_frozen_false_not_stored():
         assert extra.get('yosoi_frozen') is not True
 
 
-def test_field_hint_none_not_stored():
-    """hint=None means yosoi_hint should NOT be in extra."""
-    result = Field(hint=None)
-    extra = result.json_schema_extra
-    if extra is not None and isinstance(extra, dict):
-        assert 'yosoi_hint' not in extra
-
-
 def test_field_selector_none_not_stored():
     """selector=None means yosoi_selector should NOT be in extra."""
     result = Field(selector=None)
     extra = result.json_schema_extra
     if extra is not None and isinstance(extra, dict):
         assert 'yosoi_selector' not in extra
-
-
-def test_field_hint_exact_value_stored():
-    """The exact hint string must be stored in yosoi_hint."""
-    hint = 'Look for the price element'
-    result = Field(hint=hint)
-    assert isinstance(result.json_schema_extra, dict)
-    assert result.json_schema_extra['yosoi_hint'] == hint
 
 
 def test_field_frozen_true_value_is_true():
@@ -140,7 +101,7 @@ def test_field_selector_exact_value_stored():
     assert result.json_schema_extra['yosoi_selector'] == selector
 
 
-def test_field_no_hint_no_frozen_no_selector_extra_is_none():
+def test_field_no_frozen_no_selector_extra_is_none():
     """With no yosoi args, json_schema_extra should be None."""
     result = Field()
     assert result.json_schema_extra is None
@@ -148,16 +109,45 @@ def test_field_no_hint_no_frozen_no_selector_extra_is_none():
 
 def test_field_existing_json_schema_extra_preserved_exactly():
     """Existing json_schema_extra keys must not be overwritten."""
-    result = Field(json_schema_extra={'my_custom': 42}, hint='test')
+    result = Field(json_schema_extra={'my_custom': 42}, frozen=True)
     extra = result.json_schema_extra
     assert isinstance(extra, dict)
     assert extra['my_custom'] == 42
-    assert extra['yosoi_hint'] == 'test'
+    assert extra['yosoi_frozen'] is True
 
 
-def test_field_hint_condition_checks_truthiness():
-    """Only truthy hint values should set yosoi_hint (empty string should not)."""
-    result = Field(hint='')
+# ---------------------------------------------------------------------------
+# js() field factory
+# ---------------------------------------------------------------------------
+
+
+def test_js_with_script_returns_field_info():
+    """js(script=...) returns a FieldInfo with yosoi_action metadata."""
+    result = js(script='document.title')
+    assert isinstance(result, FieldInfo)
     extra = result.json_schema_extra
-    if extra is not None and isinstance(extra, dict):
-        assert 'yosoi_hint' not in extra
+    assert isinstance(extra, dict)
+    assert extra['yosoi_action']['type'] == 'js'
+    assert extra['yosoi_action']['script'] == 'document.title'
+
+
+def test_js_no_script_no_description_raises():
+    """js() without script or description raises ValueError (line 45)."""
+    with pytest.raises(ValueError, match='requires either script='):
+        js()
+
+
+def test_js_description_propagated_to_pydantic_field():
+    """js(description=...) stores description in pydantic field kwargs (line 54)."""
+    result = js(description='Detect competitor widgets')
+    assert isinstance(result, FieldInfo)
+    assert result.description == 'Detect competitor widgets'
+
+
+def test_js_with_description_only_is_discovery_driven():
+    """js(description=...) without script enables discovery mode."""
+    result = js(description='Detect competitor widgets')
+    extra = result.json_schema_extra
+    assert isinstance(extra, dict)
+    assert extra['yosoi_action']['script'] is None
+    assert extra['yosoi_action']['description'] == 'Detect competitor widgets'

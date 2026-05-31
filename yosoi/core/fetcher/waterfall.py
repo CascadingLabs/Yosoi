@@ -129,7 +129,7 @@ class JSFetcher(HTMLFetcher):
     async def __aenter__(self) -> JSFetcher:
         """Start the simple fetcher eagerly; Chrome tiers start lazily."""
         await self._simple.__aenter__()
-        self._strategy_cache = self._strategy_storage.load_all_strategies()
+        self._strategy_cache = await self._strategy_storage.load_all_strategies()
         self.logger.info(
             'JSFetcher ready (simple tier active, %d domain strategies cached)',
             len(self._strategy_cache),
@@ -163,16 +163,16 @@ class JSFetcher(HTMLFetcher):
         """Return the cached strategy for *domain*, or None if unknown."""
         return self._strategy_cache.get(domain)
 
-    def _record_success(self, domain: str, tier: str) -> None:
+    async def _record_success(self, domain: str, tier: str) -> None:
         """Save the winning tier for *domain* if it changed."""
         current = self._strategy_cache.get(domain)
         if current is None or current.fetcher != tier:
             self._strategy_cache[domain] = FetchStrategy(fetcher=tier)
-            self._strategy_storage.save(domain, tier)
+            await self._strategy_storage.save(domain, tier)
             self._console.print(f'[success]  ✓ Fetcher strategy saved: {domain} → {tier}[/success]')
             self.logger.info('Fetch strategy cached: %s -> %s', domain, tier)
 
-    def update_selector_level(self, domain: str, selector_level: str) -> None:
+    async def update_selector_level(self, domain: str, selector_level: str) -> None:
         """Persist the selector escalation level that worked for this domain."""
         current = self._strategy_cache.get(domain)
         if current is None:
@@ -181,7 +181,7 @@ class JSFetcher(HTMLFetcher):
             return
         updated = FetchStrategy(fetcher=current.fetcher, selector_level=selector_level)
         self._strategy_cache[domain] = updated
-        self._strategy_storage.save(domain, current.fetcher, selector_level=selector_level)
+        await self._strategy_storage.save(domain, current.fetcher, selector_level=selector_level)
         self._console.print(f'[dim]  ↳ Selector level cached: {domain} → {selector_level}[/dim]')
 
     # ------------------------------------------------------------------
@@ -256,7 +256,7 @@ class JSFetcher(HTMLFetcher):
     # Public fetch interface
     # ------------------------------------------------------------------
 
-    async def fetch(self, url: str) -> FetchResult:
+    async def fetch(self, url: str, action_scripts: dict[str, str] | None = None) -> FetchResult:
         """Fetch a page using the Simple → Headless → Headful waterfall.
 
         If a winning tier is cached for this domain it is used directly.
@@ -264,6 +264,8 @@ class JSFetcher(HTMLFetcher):
 
         Args:
             url: The URL to fetch.
+            action_scripts: Optional {field: js_expression} map evaluated after
+                page load on L2 tiers. Ignored by the simple HTTP tier.
 
         Returns:
             FetchResult with rendered HTML and metadata on success.
@@ -278,11 +280,13 @@ class JSFetcher(HTMLFetcher):
             self._console.print(
                 f'[dim]  ↳ {domain} — using cached tier [bold]{cached_strategy.fetcher}[/bold]{level_msg}[/dim]'
             )
-            cached_result = await self._fetch_cached_tier(url, domain, cached_strategy.fetcher, start_time)
+            cached_result = await self._fetch_cached_tier(
+                url, domain, cached_strategy.fetcher, start_time, action_scripts=action_scripts
+            )
             if cached_result is not None:
                 return cached_result
 
-        return await self._fetch_waterfall(url, domain, start_time)
+        return await self._fetch_waterfall(url, domain, start_time, action_scripts=action_scripts)
 
     async def _fetch_cached_tier(
         self,
@@ -290,6 +294,7 @@ class JSFetcher(HTMLFetcher):
         domain: str,
         cached_tier: str,
         start_time: float,
+        action_scripts: dict[str, str] | None = None,
     ) -> FetchResult | None:
         """Attempt fetch using the cached winning tier for this domain.
 
@@ -301,6 +306,7 @@ class JSFetcher(HTMLFetcher):
             domain: Extracted domain name.
             cached_tier: Previously cached tier name ('simple', 'headless', 'headful').
             start_time: Monotonic start time for fetch timing.
+            action_scripts: Optional {field: js_expression} map forwarded to L2 tiers.
 
         Returns:
             FetchResult on success, or None if the cached tier should be bypassed.
@@ -328,7 +334,7 @@ class JSFetcher(HTMLFetcher):
         if cached_tier == 'headless':
             try:
                 headless = await self._ensure_headless()
-                result = await headless._do_fetch(url, start_time, 'headless')
+                result = await headless._do_fetch(url, start_time, 'headless', action_scripts=action_scripts)
                 if result.html:
                     return result
                 self._console.print(f'[warning]  ✗ Cached headless tier failed for {domain} — trying headful[/warning]')
@@ -337,24 +343,27 @@ class JSFetcher(HTMLFetcher):
                     f'[warning]  ✗ Cached headless tier blocked for {domain} — re-running waterfall[/warning]'
                 )
             headful = await self._ensure_headful()
-            result = await headful._do_fetch(url, start_time, 'headful')
+            result = await headful._do_fetch(url, start_time, 'headful', action_scripts=action_scripts)
             if result.html:
-                self._record_success(domain, 'headful')
+                await self._record_success(domain, 'headful')
             return result
 
         if cached_tier == 'headful':
             headful = await self._ensure_headful()
-            return await headful._do_fetch(url, start_time, 'headful')
+            return await headful._do_fetch(url, start_time, 'headful', action_scripts=action_scripts)
 
         return None
 
-    async def _fetch_waterfall(self, url: str, domain: str, start_time: float) -> FetchResult:
+    async def _fetch_waterfall(
+        self, url: str, domain: str, start_time: float, action_scripts: dict[str, str] | None = None
+    ) -> FetchResult:
         """Run the full Simple → Headless → Headful waterfall for a new domain.
 
         Args:
             url: The URL to fetch.
             domain: Extracted domain name.
             start_time: Monotonic start time for fetch timing.
+            action_scripts: Optional {field: js_expression} map forwarded to L2 tiers.
 
         Returns:
             FetchResult from whichever tier succeeded, or an empty result
@@ -375,7 +384,7 @@ class JSFetcher(HTMLFetcher):
 
             if result and result.html and not result.requires_js:
                 self._console.print('[success]    ✓ Simple fetcher worked[/success]')
-                self._record_success(domain, 'simple')
+                await self._record_success(domain, 'simple')
                 return result
 
             if result and result.html and result.requires_js:
@@ -389,10 +398,10 @@ class JSFetcher(HTMLFetcher):
         self._console.print('[dim]    [2/3] Trying headless Chrome...[/dim]')
         try:
             headless = await self._ensure_headless()
-            result = await headless._do_fetch(url, start_time, 'headless')
+            result = await headless._do_fetch(url, start_time, 'headless', action_scripts=action_scripts)
             if result.html:
                 self._console.print('[success]    ✓ Headless Chrome worked[/success]')
-                self._record_success(domain, 'headless')
+                await self._record_success(domain, 'headless')
                 return result
             self._console.print(
                 f'[warning]    ✗ Headless Chrome failed ({result.block_reason or "no content"})[/warning]'
@@ -403,11 +412,11 @@ class JSFetcher(HTMLFetcher):
         # Tier 3: Headful (best effort)
         self._console.print('[dim]    [3/3] Trying headful Chrome...[/dim]')
         headful = await self._ensure_headful()
-        result = await headful._do_fetch(url, start_time, 'headful')
+        result = await headful._do_fetch(url, start_time, 'headful', action_scripts=action_scripts)
 
         if result.html:
             self._console.print('[success]    ✓ Headful Chrome worked[/success]')
-            self._record_success(domain, 'headful')
+            await self._record_success(domain, 'headful')
         else:
             self._console.print(f'[warning]    ✗ All three tiers failed for {domain}[/warning]')
 

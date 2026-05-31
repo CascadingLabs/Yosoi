@@ -1,9 +1,22 @@
 """Ensure stubs cover all public API exports."""
 
 import ast
+import importlib
 from pathlib import Path
 
+import pytest
+
 YOSOI_ROOT = Path(__file__).parent.parent.parent / 'yosoi'
+
+
+def _stub_reexports(source: str) -> list[tuple[str, str]]:
+    """Return (module, name) pairs for every `from module import name` in a stub."""
+    tree = ast.parse(source)
+    pairs: list[tuple[str, str]] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module:
+            pairs.extend((node.module, alias.name) for alias in node.names)
+    return pairs
 
 
 def _extract_all_names(source: str) -> set[str]:
@@ -58,6 +71,23 @@ def test_types_stub_covers_all_exports() -> None:
     stub_names = _extract_stub_names(init_pyi.read_text())
     missing = all_names - stub_names
     assert not missing, f'Types stubs missing exports: {missing}'
+
+
+@pytest.mark.parametrize('stub_path', ['__init__.pyi', 'types/__init__.pyi'])
+def test_stub_reexports_resolve_at_runtime(stub_path: str) -> None:
+    """Every `from X import Y` re-export in a stub must resolve at runtime.
+
+    Guards against stubs that outlive the symbols they advertise — e.g. a stub
+    importing from a module that was deleted, or a name that was removed from
+    the public API. This is the reverse of the coverage checks above.
+    """
+    pyi = YOSOI_ROOT / stub_path
+    for module, name in _stub_reexports(pyi.read_text()):
+        try:
+            mod = importlib.import_module(module)
+        except ImportError as exc:
+            pytest.fail(f'{stub_path}: re-exports {name!r} from missing module {module!r} ({exc})')
+        assert hasattr(mod, name), f'{stub_path}: {module!r} has no attribute {name!r} (stale stub re-export)'
 
 
 def test_py_typed_marker_exists() -> None:

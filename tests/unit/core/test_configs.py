@@ -4,6 +4,7 @@ import pytest
 
 from yosoi.core.configs import (
     DebugConfig,
+    DiscoveryConfig,
     TelemetryConfig,
     YosoiConfig,
     auto_config,
@@ -111,6 +112,19 @@ class TestTelemetryConfig:
         assert cfg.langfuse_public_key == 'pk-1'
         assert cfg.langfuse_secret_key == 'sk-1'
         assert cfg.langfuse_host == 'http://localhost:3000'
+
+
+class TestDiscoveryConfig:
+    def test_defaults(self):
+        cfg = DiscoveryConfig()
+        assert cfg.max_concurrent == 5
+        assert cfg.mcp_unavailable == 'fail'
+        assert cfg.lesson_cache is True
+        assert cfg.replay_verify_threshold == 1.0
+
+    def test_replay_verify_threshold_configurable(self):
+        cfg = DiscoveryConfig(replay_verify_threshold=0.8)
+        assert cfg.replay_verify_threshold == 0.8
 
 
 # ---------------------------------------------------------------------------

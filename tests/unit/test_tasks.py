@@ -183,3 +183,20 @@ class TestEnqueueUrls:
         assert process_url_task is not None
         assert hasattr(process_url_task, 'kiq')
         assert hasattr(process_url_task, 'original_func')
+
+
+# ---------------------------------------------------------------------------
+# _get_result exception path (lines 312-314)
+# ---------------------------------------------------------------------------
+
+
+async def test_wait_for_handle_returns_none_on_exception(mocker):
+    """_wait_for_handle swallows wait_result exceptions and returns None (lines 312-314)."""
+    from yosoi.core.tasks import _wait_for_handle
+
+    handle = mocker.AsyncMock()
+    handle.wait_result.side_effect = RuntimeError('timeout or broker gone')
+
+    result = await _wait_for_handle(handle, 'https://example.com')
+
+    assert result is None

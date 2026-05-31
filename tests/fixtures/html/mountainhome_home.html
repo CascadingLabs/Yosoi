@@ -1,0 +1,225 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Home - Mountainhome Herald</title><link rel="stylesheet" href="/global.css"><link rel="alternate" type="application/rss+xml" title="Mountainhome Herald — All Stories" href="/l1/news/rss/all.xml"><script>
+	(function () {
+		function getCookie(name) {
+			var m = document.cookie.match(new RegExp("(?:^|; )" + name + "=([^;]*)"));
+			return m ? decodeURIComponent(m[1]) : null;
+		}
+
+		// Cross-site sync: read cl-theme and cl-lang from inbound links
+		var params = new URLSearchParams(window.location.search);
+		var dirty = false;
+
+		var inbound = params.get("cl-theme");
+		if (inbound === "light" || inbound === "dark" || inbound === "auto") {
+			var storeVal = inbound === "light" || inbound === "dark" ? inbound : "auto";
+			document.cookie = "cl-theme=" + storeVal + "; path=/; max-age=31536000; SameSite=Lax";
+			localStorage.setItem("starlight-theme", inbound === "auto" ? "" : inbound);
+			params.delete("cl-theme");
+			dirty = true;
+		}
+
+		var inboundLang = params.get("cl-lang");
+		if (inboundLang && /^[a-z]{2}(-[A-Za-z]{2,})?$/.test(inboundLang)) {
+			document.cookie = "cl-lang=" + inboundLang + "; path=/; max-age=31536000; SameSite=Lax";
+			params.delete("cl-lang");
+			dirty = true;
+		}
+
+		if (dirty) {
+			var clean = params.toString();
+			history.replaceState(null, "", window.location.pathname + (clean ? "?" + clean : "") + window.location.hash);
+		}
+
+		var c = getCookie("cl-theme");
+		var s = c || localStorage.getItem("starlight-theme");
+		var pref = s === "light" || s === "dark" ? s : "auto";
+		var resolved =
+			pref === "auto"
+				? window.matchMedia("(prefers-color-scheme: light)").matches
+					? "light"
+					: "dark"
+				: pref;
+		document.documentElement.dataset.theme = resolved;
+		document.documentElement.dataset.themePreference = pref;
+
+		// Always ensure cookie + localStorage exist (handles cleared/missing state)
+		var cookieVal = pref === "light" || pref === "dark" ? pref : "auto";
+		document.cookie = "cl-theme=" + cookieVal + "; path=/; max-age=31536000; SameSite=Lax";
+		localStorage.setItem("starlight-theme", pref === "auto" ? "" : pref);
+	})();
+</script><style>.cl-theme-toggle-float[data-astro-cid-x3pjskd3]{position:fixed;bottom:16px;right:16px;z-index:9999;display:flex;align-items:center;justify-content:center;width:2.25rem;height:2.25rem;border-radius:4px;background:#0000008c;border:1px solid rgba(255,255,255,.18);color:#ffffffd9;cursor:pointer;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);transition:background .2s,border-color .2s,color .2s,box-shadow .2s;box-shadow:0 2px 8px #00000059}[data-theme=light] .cl-theme-toggle-float[data-astro-cid-x3pjskd3]{background:#ffffffbf;border-color:#00000024;color:#000000b3;box-shadow:0 2px 8px #0000001f}.cl-theme-toggle-float[data-astro-cid-x3pjskd3]:hover{background:#000000bf;color:#fff}[data-theme=light] .cl-theme-toggle-float[data-astro-cid-x3pjskd3]:hover{background:#fffffff2;color:#000}.cl-theme-icon[data-astro-cid-x3pjskd3]{display:none}[data-theme-preference=dark] .cl-icon-moon[data-astro-cid-x3pjskd3],[data-theme-preference=light] .cl-icon-sun[data-astro-cid-x3pjskd3],[data-theme-preference=auto] .cl-icon-auto[data-astro-cid-x3pjskd3]{display:block}
+</style>
+<link rel="stylesheet" href="/_astro/HeraldShell.Dx7BRLPr.css"></head> <body> <div id="container"> <!-- Header --> <div class="headerBar">
+MOUNTAINHOME HERALD
+<span class="headerMeta">Last Updated: Mar 11, 2026 at 8:15 PM</span> </div> <!-- Breaking Ticker --> <div class="newsTicker"> <span class="tickerLabel">BREAKING</span> <div class="tickerTrack"> <span class="tickerItem"> <a href="javascript:void(0)" data-article-id="MHH-016" class="tickerLink">Surface Relations Act Passes Second Reading</a> <span class="tickerSep">&bull;</span> </span><span class="tickerItem"> <a href="javascript:void(0)" data-article-id="MHH-018" class="tickerLink">Z-Level 28 Tavern Brawl Leaves Five Hospitalized</a> <span class="tickerSep">&bull;</span> </span><span class="tickerItem"> <a href="javascript:void(0)" data-article-id="MHH-019" class="tickerLink">Steelthunder Clan Files Injunction Against Koganusan Estates LLC</a> <span class="tickerSep">&bull;</span> </span><span class="tickerItem"> <a href="javascript:void(0)" data-article-id="MHH-002" class="tickerLink">Fortress Guard Arrest Three in Trophy Hall Gem-Skimming Scheme</a>  </span>  <span class="tickerItem"> <a href="javascript:void(0)" data-article-id="MHH-016" class="tickerLink">Surface Relations Act Passes Second Reading</a> <span class="tickerSep">&bull;</span> </span><span class="tickerItem"> <a href="javascript:void(0)" data-article-id="MHH-018" class="tickerLink">Z-Level 28 Tavern Brawl Leaves Five Hospitalized</a> <span class="tickerSep">&bull;</span> </span><span class="tickerItem"> <a href="javascript:void(0)" data-article-id="MHH-019" class="tickerLink">Steelthunder Clan Files Injunction Against Koganusan Estates LLC</a> <span class="tickerSep">&bull;</span> </span><span class="tickerItem"> <a href="javascript:void(0)" data-article-id="MHH-002" class="tickerLink">Fortress Guard Arrest Three in Trophy Hall Gem-Skimming Scheme</a>  </span> </div> </div> <!-- Nav --> <div class="navBar"> <a href="/l1/news/" class="active">Home</a> <a href="/l1/news/articles" class>Articles</a> <a href="/l1/news/about" class>About</a> <a href="/l1/news/staff" class>Staff</a> <a href="/l1/news/contact" class>Contact</a> <a href="/l1/news/rss/" class="rssLink" style="color:#ff6600;">RSS</a> <span class="navSep">|</span> <a href="/l1/taxes/">ROD Records</a> <a href="/l1/scoretap/">ScoreTap</a> </div> <!-- Leaderboard Ad --> <div class="adSlot adSlot--leaderboard"> <div class="mhh-ad-unit" data-ad-id="DSN-LB-002" data-ad-size="leaderboard" data-ad-campaign="DSN-CAM-2026-Q1" data-ad-placement="header_leaderboard" data-ad-network="deepstone-network" data-astro-cid-i4kgyaob> <iframe srcdoc="<!DOCTYPE html><html><head><style>*{margin:0;padding:0;box-sizing:border-box;}body{overflow:hidden;}</style></head><body><a href=&#34;https://ads.deepstone-network.mh/click?ad_id=DSN-LB-002&#38;campaign=DSN-CAM-2026-Q1&#38;placement=header_leaderboard&#38;redirect=true&#34; target=&#34;_top&#34; style=&#34;display:block;position:relative;width:728px;height:90px;overflow:hidden;text-decoration:none;&#34;><img src=&#34;https://picsum.photos/seed/dsnlb002/728/90&#34; width=&#34;728&#34; height=&#34;90&#34; alt=&#34;Ad&#34; style=&#34;position:absolute;width:100%;height:100%;object-fit:cover;&#34;/><div style=&#34;position:absolute;inset:0;background:rgba(0,51,102,0.6);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px;&#34;><div style=&#34;color:#fff;font-family:Arial,sans-serif;font-size:16px;font-weight:bold;text-align:center;text-shadow:1px 1px 3px rgba(0,0,0,0.6);line-height:1.3;max-width:90%;&#34;>Registry of Deeds — Search Deeds, Mortgages &#38; Liens Online</div><div style=&#34;margin-top:6px;background:#cc0000;color:#fff;padding:4px 14px;font-family:Arial,sans-serif;font-size:10px;font-weight:bold;border-radius:2px;letter-spacing:0.5px;&#34;>Search Records</div></div></a><img src=&#34;https://ads.deepstone-network.mh/pixel?ad_id=DSN-LB-002&#38;imp=1&#38;fmt=gif&#38;cb=72160&#34; width=&#34;1&#34; height=&#34;1&#34; alt=&#34;&#34; style=&#34;position:absolute;left:-9999px;&#34;/><script>(function(){var i=new Image();i.src='https://ads.deepstone-network.mh/beacon?ad_id=DSN-LB-002&#38;event=viewable&#38;ts='+Date.now();})()</script></body></html>" width="728" height="90" scrolling="no" frameborder="0" style="border:none;overflow:hidden;width:728px;height:90px;display:block;margin:0 auto;" title="Advertisement DSN-LB-002" sandbox="allow-scripts allow-popups allow-top-navigation" loading="lazy" data-astro-cid-i4kgyaob></iframe> <div class="mhh-ad-label" data-ad-ref="DSN-LB-002" data-astro-cid-i4kgyaob>
+ADVERTISEMENT &middot; <span class="mhh-ad-id" data-astro-cid-i4kgyaob>DSN-LB-002</span> &middot; <a href="https://ads.deepstone-network.mh/report?ad_id=DSN-LB-002" target="_blank" rel="noopener" style="color:#aaa;text-decoration:underline;" data-astro-cid-i4kgyaob>Report</a> </div> </div> </div> <!-- Breadcrumbs --> <div class="breadcrumbs"> <span>Home</span> </div> <!-- Page Content -->  <div class="categoryStrip" id="categoryStrip"> <a href="javascript:void(0)" onclick="filterCategory('')" class="active" id="cat-All">All</a> <a href="javascript:void(0)" onclick="filterCategory('Politics')" id="cat-Politics">Politics</a><a href="javascript:void(0)" onclick="filterCategory('Crime')" id="cat-Crime">Crime</a><a href="javascript:void(0)" onclick="filterCategory('Economy')" id="cat-Economy">Economy</a><a href="javascript:void(0)" onclick="filterCategory('Culture')" id="cat-Culture">Culture</a><a href="javascript:void(0)" onclick="filterCategory('Sports')" id="cat-Sports">Sports</a><a href="javascript:void(0)" onclick="filterCategory('Weather')" id="cat-Weather">Weather</a> </div> <div class="pageTitle">Rolling News Feed &mdash; Last updated Mar 11, 2026 at 8:15 PM</div> <div class="twoCol clearfix"> <!-- Main column --> <div class="mainCol"> <!-- Featured story --> <div class="featuredBox articleCard" data-category="Sports"> <div class="featuredLabel">
+FEATURED
+ </div> <img class="featuredImg" src="https://picsum.photos/seed/mhh015/560/280" alt="Fortress Wrestling League Opens Season; Avar Ironhand Defends Championship"> <div class="featuredImgCaption">Avar Ironhand raises his fist after retaining the Heavyweight Championship at the Grand Arena. — Bomrek Hammerfall / Herald Sports</div> <div class="featuredContent"> <h2> <a href="javascript:void(0)" onclick="navigateToArticle('MHH-015')">Fortress Wrestling League Opens Season; Avar Ironhand Defends Championship</a> </h2> <div class="cardMeta"> <span class="categoryBadge cat-Sports">Sports</span>&nbsp;
+Mar 11, 2026 at 8:15 PM &mdash; Bomrek Hammerfall
+&nbsp;<span class="cardTimeAgo" data-time-ago="2026-03-11T20:15:00"></span> </div> <p style="margin-top:6px;">Sold-out season opener at Grand Arena sees Ironhand submit challenger Urist Stoneback in round two to retain Heavyweight title. Newcomer Dumed Rockhammer, 21, impresses with first-round TKO debut. Next event March 25.</p> <p> <a href="javascript:void(0)" onclick="navigateToArticle('MHH-015')">Read full story &raquo;</a> </p> </div> </div> <!-- Top stories --> <div class="topStoriesBox"> <h3>Top Stories</h3> <div class="articleCard" data-category="Culture"> <img class="cardThumb" src="https://picsum.photos/seed/mhh017/80/55" alt="Goden Boulderback's Platinum Statue Wins Grand Duke's Medal"> <div class="cardMeta"> <span class="categoryBadge cat-Culture">Culture</span>&nbsp;
+Mar 11, 2026 at 2:00 PM
+&nbsp;<span class="cardTimeAgo" data-time-ago="2026-03-11T14:00:00"></span>  </div> <a href="javascript:void(0)" onclick="navigateToArticle('MHH-017')" class="cardHeadline">Goden Boulderback&#39;s Platinum Statue Wins Grand Duke&#39;s Medal</a> <div class="cardExcerpt">Master sculptor receives Duchy&#39;s highest cultural honour for &quot;The Overseer&#39;s Burden,&quot; a 4.2-meter platinum statue cast from a single 840-kilogram block. Twenty-three years in the making. On view in Grand Hall, Z-Level 1.</div> </div><div class="articleCard" data-category="Weather"> <img class="cardThumb" src="https://picsum.photos/seed/mhh020/80/55" alt="Geomancer's Annual Report: Year 312 Trending 'Exceptionally Stable'"> <div class="cardMeta"> <span class="categoryBadge cat-Weather">Weather</span>&nbsp;
+Mar 11, 2026 at 11:00 AM
+&nbsp;<span class="cardTimeAgo" data-time-ago="2026-03-11T11:00:00"></span>  </div> <a href="javascript:void(0)" onclick="navigateToArticle('MHH-020')" class="cardHeadline">Geomancer&#39;s Annual Report: Year 312 Trending &#39;Exceptionally Stable&#39;</a> <div class="cardExcerpt">Highest stability rating in 14 years. Tectonic stress at lowest quarterly average since Year 298, magma sea pressure in bottom 10% of historical readings. Z-Level 45 advisory and Z-Level 90–100 pressure differential remain on watchlist.</div> </div><div class="articleCard" data-category="Politics"> <img class="cardThumb" src="https://picsum.photos/seed/mhh016/80/55" alt="Surface Relations Act Passes Second Reading"> <div class="cardMeta"> <span class="categoryBadge cat-Politics">Politics</span>&nbsp;
+Mar 11, 2026 at 10:30 AM
+&nbsp;<span class="cardTimeAgo" data-time-ago="2026-03-11T10:30:00"></span> <span style="color:#cc0000;font-size:9px;margin-left:4px;">UPDATED</span> </div> <a href="javascript:void(0)" onclick="navigateToArticle('MHH-016')" class="cardHeadline">Surface Relations Act Passes Second Reading</a> <div class="cardExcerpt">Arcane Council advances most comprehensive surface relations framework in four decades by 6-3 vote. Act would create Bureau of Surface Affairs, establish ambassador designations, and set Upper Gate inspection protocols. Third reading within 30 days.</div> </div><div class="articleCard" data-category="Economy"> <img class="cardThumb" src="https://picsum.photos/seed/mhh019/80/55" alt="Steelthunder Clan Files Injunction Against Koganusan Estates LLC"> <div class="cardMeta"> <span class="categoryBadge cat-Economy">Economy</span>&nbsp;
+Mar 11, 2026 at 9:15 AM
+&nbsp;<span class="cardTimeAgo" data-time-ago="2026-03-11T09:15:00"></span>  </div> <a href="javascript:void(0)" onclick="navigateToArticle('MHH-019')" class="cardHeadline">Steelthunder Clan Files Injunction Against Koganusan Estates LLC</a> <div class="cardExcerpt">Emergency injunction seeks to halt Z-Level 35 excavation that allegedly encroaches on 137-year ancestral mineral claim ST-189-EAST. Koganusan Estates says claim expired under Year 302 amendments. Hearing Friday morning.</div> </div> </div> <!-- Inline ad --> <div class="adSlot--inline"> <div class="mhh-ad-unit" data-ad-id="DSN-BAN-001" data-ad-size="banner" data-ad-campaign="DSN-CAM-2026-Q1" data-ad-placement="home_inline" data-ad-network="deepstone-network" data-astro-cid-i4kgyaob> <iframe srcdoc="<!DOCTYPE html><html><head><style>*{margin:0;padding:0;box-sizing:border-box;}body{overflow:hidden;}</style></head><body><a href=&#34;https://ads.deepstone-network.mh/click?ad_id=DSN-BAN-001&#38;campaign=DSN-CAM-2026-Q1&#38;placement=home_inline&#38;redirect=true&#34; target=&#34;_top&#34; style=&#34;display:block;position:relative;width:468px;height:60px;overflow:hidden;text-decoration:none;&#34;><img src=&#34;https://picsum.photos/seed/dsnban001/468/60&#34; width=&#34;468&#34; height=&#34;60&#34; alt=&#34;Ad&#34; style=&#34;position:absolute;width:100%;height:100%;object-fit:cover;&#34;/><div style=&#34;position:absolute;inset:0;background:rgba(0,51,102,0.6);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px;&#34;><div style=&#34;color:#fff;font-family:Arial,sans-serif;font-size:13px;font-weight:bold;text-align:center;text-shadow:1px 1px 3px rgba(0,0,0,0.6);line-height:1.3;max-width:90%;&#34;>Dwarven Iron Guild — Quality Forgework Since Year 89</div><div style=&#34;margin-top:6px;background:#cc0000;color:#fff;padding:4px 14px;font-family:Arial,sans-serif;font-size:9px;font-weight:bold;border-radius:2px;letter-spacing:0.5px;&#34;>Find a Smith</div></div></a><img src=&#34;https://ads.deepstone-network.mh/pixel?ad_id=DSN-BAN-001&#38;imp=1&#38;fmt=gif&#38;cb=81121&#34; width=&#34;1&#34; height=&#34;1&#34; alt=&#34;&#34; style=&#34;position:absolute;left:-9999px;&#34;/><script>(function(){var i=new Image();i.src='https://ads.deepstone-network.mh/beacon?ad_id=DSN-BAN-001&#38;event=viewable&#38;ts='+Date.now();})()</script></body></html>" width="468" height="60" scrolling="no" frameborder="0" style="border:none;overflow:hidden;width:468px;height:60px;display:block;margin:0 auto;" title="Advertisement DSN-BAN-001" sandbox="allow-scripts allow-popups allow-top-navigation" loading="lazy" data-astro-cid-i4kgyaob></iframe> <div class="mhh-ad-label" data-ad-ref="DSN-BAN-001" data-astro-cid-i4kgyaob>
+ADVERTISEMENT &middot; <span class="mhh-ad-id" data-astro-cid-i4kgyaob>DSN-BAN-001</span> &middot; <a href="https://ads.deepstone-network.mh/report?ad_id=DSN-BAN-001" target="_blank" rel="noopener" style="color:#aaa;text-decoration:underline;" data-astro-cid-i4kgyaob>Report</a> </div> </div> </div> <!-- Latest news feed --> <div class="latestBox"> <h3>Latest News</h3> <ul> <li data-category="Crime"> <span class="categoryBadge cat-Crime">Crime</span>&nbsp;
+<a href="javascript:void(0)" onclick="navigateToArticle('MHH-018')">Z-Level 28 Tavern Brawl Leaves Five Hospitalized</a> <span class="cardMeta"> &mdash; 1:45 AM</span> <span class="cardTimeAgo" data-time-ago="2026-03-11T01:45:00"></span> <span style="color:#cc0000;font-size:9px;margin-left:4px;">UPDATED</span> </li><li data-category="Economy"> <span class="categoryBadge cat-Economy">Economy</span>&nbsp;
+<a href="javascript:void(0)" onclick="navigateToArticle('MHH-014')">Plump Helmet Harvest Forecast Slashed 18% After Cave Mold Infestation</a> <span class="cardMeta"> &mdash; 12:48 PM</span> <span class="cardTimeAgo" data-time-ago="2026-03-09T12:48:00"></span>  </li><li data-category="Crime"> <span class="categoryBadge cat-Crime">Crime</span>&nbsp;
+<a href="javascript:void(0)" onclick="navigateToArticle('MHH-013')">Rune-Wire Fraud Ring Dismantled; 12 Arrested</a> <span class="cardMeta"> &mdash; 5:35 PM</span> <span class="cardTimeAgo" data-time-ago="2026-03-06T17:35:00"></span>  </li><li data-category="Politics"> <span class="categoryBadge cat-Politics">Politics</span>&nbsp;
+<a href="javascript:void(0)" onclick="navigateToArticle('MHH-012')">Arcane Council Debates Mandatory Literacy Rune Testing</a> <span class="cardMeta"> &mdash; 11:10 AM</span> <span class="cardTimeAgo" data-time-ago="2026-03-02T11:10:00"></span>  </li><li data-category="Weather"> <span class="categoryBadge cat-Weather">Weather</span>&nbsp;
+<a href="javascript:void(0)" onclick="navigateToArticle('MHH-011')">Surface Trade Route Closure Extended Through Mid-March</a> <span class="cardMeta"> &mdash; 3:20 PM</span> <span class="cardTimeAgo" data-time-ago="2026-02-25T15:20:00"></span> <span style="color:#cc0000;font-size:9px;margin-left:4px;">UPDATED</span> </li><li data-category="Culture"> <span class="categoryBadge cat-Culture">Culture</span>&nbsp;
+<a href="javascript:void(0)" onclick="navigateToArticle('MHH-010')">Grand Duchy Museum Unveils &#39;Forgotten Beast Collection&#39;</a> <span class="cardMeta"> &mdash; 10:00 AM</span> <span class="cardTimeAgo" data-time-ago="2026-02-21T10:00:00"></span>  </li><li data-category="Economy"> <span class="categoryBadge cat-Economy">Economy</span>&nbsp;
+<a href="javascript:void(0)" onclick="navigateToArticle('MHH-009')">Armok Holdings LLC Acquires Three Magma Sea Sector Parcels</a> <span class="cardMeta"> &mdash; 8:55 AM</span> <span class="cardTimeAgo" data-time-ago="2026-02-17T08:55:00"></span>  </li><li data-category="Crime"> <span class="categoryBadge cat-Crime">Crime</span>&nbsp;
+<a href="javascript:void(0)" onclick="navigateToArticle('MHH-008')">Headshoots LLC Faces Civil Suit Over Catapult Safety Logs</a> <span class="cardMeta"> &mdash; 1:30 PM</span> <span class="cardTimeAgo" data-time-ago="2026-02-11T13:30:00"></span>  </li> </ul> </div> </div> <!-- Sidebar --> <div class="sidebarCol"> <div class="sidebarBox"> <h4>BREAKING</h4> <div class="sidebarContent"> <div class="breakingItem"> <strong><a href="javascript:void(0)" onclick="navigateToArticle('MHH-016')">Surface Relations Act Passes Second Reading</a></strong> <div class="cardTimeAgo" data-time-ago="2026-03-11T10:30:00"></div> </div><div class="breakingItem"> <strong><a href="javascript:void(0)" onclick="navigateToArticle('MHH-018')">Z-Level 28 Tavern Brawl Leaves Five Hospitalized</a></strong> <div class="cardTimeAgo" data-time-ago="2026-03-11T01:45:00"></div> </div><div class="breakingItem"> <strong><a href="javascript:void(0)" onclick="navigateToArticle('MHH-019')">Steelthunder Clan Files Injunction Against Koganusan Estates LLC</a></strong> <div class="cardTimeAgo" data-time-ago="2026-03-11T09:15:00"></div> </div><div class="breakingItem"> <strong><a href="javascript:void(0)" onclick="navigateToArticle('MHH-002')">Fortress Guard Arrest Three in Trophy Hall Gem-Skimming Scheme</a></strong> <div class="cardTimeAgo" data-time-ago="2026-01-08T11:42:00"></div> </div> </div> </div> <div class="sidebarBox"> <h4>GEOMANTIC CONDITIONS</h4> <div class="sidebarContent weatherWidget"> <table> <tr> <th>Zone</th> <th>Status</th> <th>Temp</th> </tr> <tr> <td>Surface</td> <td><span class="wxCaution">BLIZZARD</span></td> <td>-14°S</td> </tr> <tr> <td>Z-1 to Z-10</td> <td><span class="wxStable">STABLE</span></td> <td>58°S</td> </tr> <tr> <td>Z-11 to Z-30</td> <td><span class="wxStable">STABLE</span></td> <td>62°S</td> </tr> <tr> <td>Z-31 to Z-50</td> <td><span class="wxCaution">ADVISORY</span></td> <td>65°S</td> </tr> <tr> <td>Z-51 to Z-80</td> <td><span class="wxStable">STABLE</span></td> <td>71°S</td> </tr> <tr> <td>Z-81 to Z-100</td> <td><span class="wxCaution">MONITOR</span></td> <td>84°S</td> </tr> <tr> <td>Z-101+ (Magma)</td> <td><span class="wxAlert">ELEVATED</span></td> <td>340°S</td> </tr> </table> <div style="margin-top:6px; border-top:1px solid #ddd; padding-top:4px;"> <strong>Seismic Index:</strong> 1.2 (Low)<br> <strong>Magma Pressure:</strong> 12% of capacity<br> <strong>Aquifer Level:</strong> Normal<br> <strong>Surface Wind:</strong> 45 kn NW
+</div> <div style="margin-top:4px; font-size:9px; color:#cc0000;">
+&#9888; Z-Level 45 Advisory remains active.<br>
+&#9888; Surface trade routes CLOSED.
+</div> <div class="wxUpdate">
+Updated: Mar 11, 312 | 9:00 PM<br>
+Source: Geomancer's Office
+</div> </div> </div> <div class="adSlot--inline" style="margin:10px 15px 10px 5px;"> <div class="mhh-ad-unit" data-ad-id="DSN-REC-001" data-ad-size="rectangle" data-ad-campaign="DSN-CAM-2026-Q1" data-ad-placement="home_sidebar_1" data-ad-network="deepstone-network" data-astro-cid-i4kgyaob> <iframe srcdoc="<!DOCTYPE html><html><head><style>*{margin:0;padding:0;box-sizing:border-box;}body{overflow:hidden;}</style></head><body><a href=&#34;https://ads.deepstone-network.mh/click?ad_id=DSN-REC-001&#38;campaign=DSN-CAM-2026-Q1&#38;placement=home_sidebar_1&#38;redirect=true&#34; target=&#34;_top&#34; style=&#34;display:block;position:relative;width:300px;height:250px;overflow:hidden;text-decoration:none;&#34;><img src=&#34;https://picsum.photos/seed/dsnrec001/300/250&#34; width=&#34;300&#34; height=&#34;250&#34; alt=&#34;Ad&#34; style=&#34;position:absolute;width:100%;height:100%;object-fit:cover;&#34;/><div style=&#34;position:absolute;inset:0;background:rgba(0,51,102,0.6);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px;&#34;><div style=&#34;color:#fff;font-family:Arial,sans-serif;font-size:16px;font-weight:bold;text-align:center;text-shadow:1px 1px 3px rgba(0,0,0,0.6);line-height:1.3;max-width:90%;&#34;>Armok Holdings LLC — Industrial Parcels Now Available at Z-Level 114</div><div style=&#34;margin-top:6px;background:#cc0000;color:#fff;padding:4px 14px;font-family:Arial,sans-serif;font-size:11px;font-weight:bold;border-radius:2px;letter-spacing:0.5px;&#34;>View Listings</div></div></a><img src=&#34;https://ads.deepstone-network.mh/pixel?ad_id=DSN-REC-001&#38;imp=1&#38;fmt=gif&#38;cb=52270&#34; width=&#34;1&#34; height=&#34;1&#34; alt=&#34;&#34; style=&#34;position:absolute;left:-9999px;&#34;/><script>(function(){var i=new Image();i.src='https://ads.deepstone-network.mh/beacon?ad_id=DSN-REC-001&#38;event=viewable&#38;ts='+Date.now();})()</script></body></html>" width="300" height="250" scrolling="no" frameborder="0" style="border:none;overflow:hidden;width:300px;height:250px;display:block;margin:0 auto;" title="Advertisement DSN-REC-001" sandbox="allow-scripts allow-popups allow-top-navigation" loading="lazy" data-astro-cid-i4kgyaob></iframe> <div class="mhh-ad-label" data-ad-ref="DSN-REC-001" data-astro-cid-i4kgyaob>
+ADVERTISEMENT &middot; <span class="mhh-ad-id" data-astro-cid-i4kgyaob>DSN-REC-001</span> &middot; <a href="https://ads.deepstone-network.mh/report?ad_id=DSN-REC-001" target="_blank" rel="noopener" style="color:#aaa;text-decoration:underline;" data-astro-cid-i4kgyaob>Report</a> </div> </div> </div> <div class="sidebarBox"> <h4>BY CATEGORY</h4> <div class="sidebarContent"> <div class="catCount"> <span><a href="javascript:void(0)" onclick="filterCategory('Politics')">Politics</a></span> <span>4</span> </div><div class="catCount"> <span><a href="javascript:void(0)" onclick="filterCategory('Crime')">Crime</a></span> <span>4</span> </div><div class="catCount"> <span><a href="javascript:void(0)" onclick="filterCategory('Economy')">Economy</a></span> <span>4</span> </div><div class="catCount"> <span><a href="javascript:void(0)" onclick="filterCategory('Culture')">Culture</a></span> <span>3</span> </div><div class="catCount"> <span><a href="javascript:void(0)" onclick="filterCategory('Sports')">Sports</a></span> <span>2</span> </div><div class="catCount"> <span><a href="javascript:void(0)" onclick="filterCategory('Weather')">Weather</a></span> <span>3</span> </div> </div> </div> <div class="sidebarBox"> <h4>PHOTO OF THE DAY</h4> <img class="sidebarImg" src="https://picsum.photos/seed/mhh-potd/190/140" alt="The Overseer's Burden statue in the Grand Hall"> <div class="sidebarContent"> <strong><a href="javascript:void(0)" onclick="navigateToArticle('MHH-017')">"The Overseer's Burden"</a></strong><br>
+Goden Boulderback's award-winning platinum statue in the Grand Hall, Z-Level 1.
+<a href="javascript:void(0)" onclick="navigateToArticle('MHH-017')">Story &raquo;</a> </div> </div> <div class="sidebarBox"> <h4>ABOUT THE HERALD</h4> <div class="sidebarContent">
+Founded Year 89 by Urist McDwarfquill.
+          The Grand Duchy's independent record of events since the Third Age of Mining.
+<br><br> <a href="/l1/news/staff">Editorial staff &raquo;</a><br> <a href="/l1/news/contact">Contact us &raquo;</a> </div> </div> <div class="adSlot--inline" style="margin:10px 15px 10px 5px;"> <div class="mhh-ad-unit" data-ad-id="DSN-REC-002" data-ad-size="rectangle" data-ad-campaign="DSN-CAM-2026-Q1" data-ad-placement="home_sidebar_2" data-ad-network="deepstone-network" data-astro-cid-i4kgyaob> <iframe srcdoc="<!DOCTYPE html><html><head><style>*{margin:0;padding:0;box-sizing:border-box;}body{overflow:hidden;}</style></head><body><a href=&#34;https://ads.deepstone-network.mh/click?ad_id=DSN-REC-002&#38;campaign=DSN-CAM-2026-Q1&#38;placement=home_sidebar_2&#38;redirect=true&#34; target=&#34;_top&#34; style=&#34;display:block;position:relative;width:300px;height:250px;overflow:hidden;text-decoration:none;&#34;><img src=&#34;https://picsum.photos/seed/dsnrec002/300/250&#34; width=&#34;300&#34; height=&#34;250&#34; alt=&#34;Ad&#34; style=&#34;position:absolute;width:100%;height:100%;object-fit:cover;&#34;/><div style=&#34;position:absolute;inset:0;background:rgba(0,51,102,0.6);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px;&#34;><div style=&#34;color:#fff;font-family:Arial,sans-serif;font-size:16px;font-weight:bold;text-align:center;text-shadow:1px 1px 3px rgba(0,0,0,0.6);line-height:1.3;max-width:90%;&#34;>Grand Arena — FWL Season Tickets On Sale Now</div><div style=&#34;margin-top:6px;background:#cc0000;color:#fff;padding:4px 14px;font-family:Arial,sans-serif;font-size:11px;font-weight:bold;border-radius:2px;letter-spacing:0.5px;&#34;>Buy Tickets</div></div></a><img src=&#34;https://ads.deepstone-network.mh/pixel?ad_id=DSN-REC-002&#38;imp=1&#38;fmt=gif&#38;cb=26174&#34; width=&#34;1&#34; height=&#34;1&#34; alt=&#34;&#34; style=&#34;position:absolute;left:-9999px;&#34;/><script>(function(){var i=new Image();i.src='https://ads.deepstone-network.mh/beacon?ad_id=DSN-REC-002&#38;event=viewable&#38;ts='+Date.now();})()</script></body></html>" width="300" height="250" scrolling="no" frameborder="0" style="border:none;overflow:hidden;width:300px;height:250px;display:block;margin:0 auto;" title="Advertisement DSN-REC-002" sandbox="allow-scripts allow-popups allow-top-navigation" loading="lazy" data-astro-cid-i4kgyaob></iframe> <div class="mhh-ad-label" data-ad-ref="DSN-REC-002" data-astro-cid-i4kgyaob>
+ADVERTISEMENT &middot; <span class="mhh-ad-id" data-astro-cid-i4kgyaob>DSN-REC-002</span> &middot; <a href="https://ads.deepstone-network.mh/report?ad_id=DSN-REC-002" target="_blank" rel="noopener" style="color:#aaa;text-decoration:underline;" data-astro-cid-i4kgyaob>Report</a> </div> </div> </div> <div class="sidebarBox"> <h4>SCORETAP</h4> <div class="sidebarContent">
+Follow scores from the Fortress Wrestling League and Z-Level Games.
+<br><br> <a href="/l1/scoretap/">Open ScoreTap &raquo;</a> </div> </div> <div class="sidebarBox"> <h4>ROD RECORDS</h4> <div class="sidebarContent">
+Search property deeds, mortgages, and liens in the Arcane Registry of Deeds.
+<br><br> <a href="/l1/taxes/">Open ROD Records &raquo;</a> </div> </div> </div> </div> <div style="clear:both;"></div> <script>
+  function filterCategory(cat) {
+    var links = document.querySelectorAll('#categoryStrip a');
+    for (var i = 0; i < links.length; i++) links[i].classList.remove('active');
+    var activeId = cat ? 'cat-' + cat : 'cat-All';
+    var el = document.getElementById(activeId);
+    if (el) el.classList.add('active');
+
+    document.querySelectorAll('.articleCard[data-category]').forEach(function(c) {
+      c.style.display = (!cat || c.getAttribute('data-category') === cat) ? '' : 'none';
+    });
+    document.querySelectorAll('.latestBox li[data-category]').forEach(function(li) {
+      li.style.display = (!cat || li.getAttribute('data-category') === cat) ? '' : 'none';
+    });
+  }
+  </script>  <!-- Footer Ad --> <div class="adSlot adSlot--footer"> <div class="mhh-ad-unit" data-ad-id="DSN-LB-004" data-ad-size="leaderboard" data-ad-campaign="DSN-CAM-2026-Q1" data-ad-placement="footer_leaderboard" data-ad-network="deepstone-network" data-astro-cid-i4kgyaob> <iframe srcdoc="<!DOCTYPE html><html><head><style>*{margin:0;padding:0;box-sizing:border-box;}body{overflow:hidden;}</style></head><body><a href=&#34;https://ads.deepstone-network.mh/click?ad_id=DSN-LB-004&#38;campaign=DSN-CAM-2026-Q1&#38;placement=footer_leaderboard&#38;redirect=true&#34; target=&#34;_top&#34; style=&#34;display:block;position:relative;width:728px;height:90px;overflow:hidden;text-decoration:none;&#34;><img src=&#34;https://picsum.photos/seed/dsnlb004/728/90&#34; width=&#34;728&#34; height=&#34;90&#34; alt=&#34;Ad&#34; style=&#34;position:absolute;width:100%;height:100%;object-fit:cover;&#34;/><div style=&#34;position:absolute;inset:0;background:rgba(0,51,102,0.6);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px;&#34;><div style=&#34;color:#fff;font-family:Arial,sans-serif;font-size:16px;font-weight:bold;text-align:center;text-shadow:1px 1px 3px rgba(0,0,0,0.6);line-height:1.3;max-width:90%;&#34;>Bureau of Surface Commerce — Trade Permits &#38; Route Information</div><div style=&#34;margin-top:6px;background:#cc0000;color:#fff;padding:4px 14px;font-family:Arial,sans-serif;font-size:10px;font-weight:bold;border-radius:2px;letter-spacing:0.5px;&#34;>Apply Today</div></div></a><img src=&#34;https://ads.deepstone-network.mh/pixel?ad_id=DSN-LB-004&#38;imp=1&#38;fmt=gif&#38;cb=99116&#34; width=&#34;1&#34; height=&#34;1&#34; alt=&#34;&#34; style=&#34;position:absolute;left:-9999px;&#34;/><script>(function(){var i=new Image();i.src='https://ads.deepstone-network.mh/beacon?ad_id=DSN-LB-004&#38;event=viewable&#38;ts='+Date.now();})()</script></body></html>" width="728" height="90" scrolling="no" frameborder="0" style="border:none;overflow:hidden;width:728px;height:90px;display:block;margin:0 auto;" title="Advertisement DSN-LB-004" sandbox="allow-scripts allow-popups allow-top-navigation" loading="lazy" data-astro-cid-i4kgyaob></iframe> <div class="mhh-ad-label" data-ad-ref="DSN-LB-004" data-astro-cid-i4kgyaob>
+ADVERTISEMENT &middot; <span class="mhh-ad-id" data-astro-cid-i4kgyaob>DSN-LB-004</span> &middot; <a href="https://ads.deepstone-network.mh/report?ad_id=DSN-LB-004" target="_blank" rel="noopener" style="color:#aaa;text-decoration:underline;" data-astro-cid-i4kgyaob>Report</a> </div> </div> </div> <!-- Footer --> <div class="footerBar">
+&copy; 2026 Mountainhome Herald | MHH CMS v1.0.2004 |
+<a href="/l1/news/about" style="color:#99bbdd;">About</a> |
+<a href="/l1/news/staff" style="color:#99bbdd;">Staff</a> |
+<a href="/l1/news/contact" style="color:#99bbdd;">Contact</a> |
+<a href="/l1/taxes/" style="color:#99bbdd;">ROD Records</a> |
+<a href="/l1/news/rss/" style="color:#ff6600;">RSS Feeds</a> </div> </div> <button class="cl-theme-toggle-float" type="button" aria-label="Toggle theme" id="cl-theme-toggle-site" data-astro-cid-x3pjskd3> <svg class="cl-theme-icon cl-icon-sun" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-astro-cid-x3pjskd3> <circle cx="12" cy="12" r="4" data-astro-cid-x3pjskd3></circle><path d="M12 2v2" data-astro-cid-x3pjskd3></path><path d="M12 20v2" data-astro-cid-x3pjskd3></path><path d="m4.93 4.93 1.41 1.41" data-astro-cid-x3pjskd3></path><path d="m17.66 17.66 1.41 1.41" data-astro-cid-x3pjskd3></path><path d="M2 12h2" data-astro-cid-x3pjskd3></path><path d="M20 12h2" data-astro-cid-x3pjskd3></path><path d="m6.34 17.66-1.41 1.41" data-astro-cid-x3pjskd3></path><path d="m19.07 4.93-1.41 1.41" data-astro-cid-x3pjskd3></path> </svg> <svg class="cl-theme-icon cl-icon-moon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-astro-cid-x3pjskd3> <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" data-astro-cid-x3pjskd3></path> </svg> <svg class="cl-theme-icon cl-icon-auto" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-astro-cid-x3pjskd3> <rect x="2" y="3" width="20" height="14" rx="2" data-astro-cid-x3pjskd3></rect><path d="M8 21h8" data-astro-cid-x3pjskd3></path><path d="M12 17v4" data-astro-cid-x3pjskd3></path> </svg> </button>  <script>
+    (function () {
+        var order = ['dark', 'light', 'auto'];
+
+        function getCookie(name) {
+            var m = document.cookie.match(
+                new RegExp('(?:^|; )' + name + '=([^;]*)'),
+            );
+            return m ? decodeURIComponent(m[1]) : null;
+        }
+
+        function getStored() {
+            var c = getCookie('cl-theme');
+            var s = c || localStorage.getItem('starlight-theme');
+            return s === 'light' || s === 'dark' ? s : 'auto';
+        }
+
+        function apply(pref, animate) {
+            var resolved =
+                pref === 'auto'
+                    ? window.matchMedia('(prefers-color-scheme: light)').matches
+                        ? 'light'
+                        : 'dark'
+                    : pref;
+            function commit() {
+                document.documentElement.dataset.theme = resolved;
+                document.documentElement.dataset.themePreference = pref;
+            }
+            var val = pref === 'light' || pref === 'dark' ? pref : 'auto';
+            document.cookie =
+                'cl-theme=' + val + '; path=/; max-age=31536000; SameSite=Lax';
+            localStorage.setItem(
+                'starlight-theme',
+                pref === 'light' || pref === 'dark' ? pref : '',
+            );
+            // View Transitions API: GPU-composited crossfade of two page
+            // snapshots, instead of per-element CSS transitions.
+            var reduced = window.matchMedia(
+                '(prefers-reduced-motion: reduce)',
+            ).matches;
+            if (
+                animate &&
+                !reduced &&
+                typeof document.startViewTransition === 'function'
+            ) {
+                document.startViewTransition(commit);
+            } else {
+                commit();
+            }
+        }
+
+        document
+            .getElementById('cl-theme-toggle-site')
+            .addEventListener('click', function () {
+                var current = getStored();
+                var next = order[(order.indexOf(current) + 1) % order.length];
+                apply(next, true);
+            });
+
+        window
+            .matchMedia('(prefers-color-scheme: light)')
+            .addEventListener('change', function () {
+                if (getStored() === 'auto') apply('auto', false);
+            });
+
+        window.addEventListener('storage', function (e) {
+            if (e.key === 'starlight-theme') apply(getStored(), false);
+        });
+    })();
+</script> <!-- Shared article navigation script --> <script>
+  function navigateToArticle(id) {
+    var hash = Math.random().toString(36).substring(2,15);
+    var payload = 'MHH_v1_Kp9rXm2bQs' +
+                  'XXXNNNXXX' +
+                  'ID=' + encodeURIComponent(id) + '&HASH=' + hash +
+                  'XXXNNNXXX' +
+                  'tR7vYw1hF3dG' +
+                  'XXXNNNXXX';
+    window.location.href = '/l1/news/article?postData=' + encodeURIComponent(payload);
+  }
+
+  // Wire up ticker links
+  document.querySelectorAll('.tickerLink[data-article-id]').forEach(function(el) {
+    el.addEventListener('click', function(e) {
+      e.preventDefault();
+      navigateToArticle(el.getAttribute('data-article-id'));
+    });
+  });
+
+  // Relative time helper
+  function timeAgo(iso) {
+    var ms = new Date('2026-03-11T21:00:00').getTime() - new Date(iso).getTime();
+    var mins = Math.floor(ms / 60000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return mins + 'm ago';
+    var hours = Math.floor(mins / 60);
+    if (hours < 24) return hours + 'h ago';
+    var days = Math.floor(hours / 24);
+    if (days === 1) return 'yesterday';
+    if (days < 7) return days + 'd ago';
+    var weeks = Math.floor(days / 7);
+    return weeks + 'w ago';
+  }
+
+  // Update any elements with data-time-ago
+  document.querySelectorAll('[data-time-ago]').forEach(function(el) {
+    el.textContent = timeAgo(el.getAttribute('data-time-ago'));
+  });
+  </script> <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"fc50d56ba8964763916ec7a3211a8e85","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body> </html>

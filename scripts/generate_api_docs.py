@@ -212,7 +212,7 @@ def _classify(
 
 
 # Known groupings — extend as the public API grows
-_TYPE_FACTORIES = {'Author', 'BodyText', 'Datetime', 'Field', 'Price', 'Rating', 'Title', 'Url', 'YosoiType'}
+_TYPE_FACTORIES = {'Author', 'BodyText', 'Datetime', 'Field', 'Price', 'Rating', 'Title', 'Url'}
 _PROVIDER_HELPERS = {
     'alibaba',
     'anthropic',

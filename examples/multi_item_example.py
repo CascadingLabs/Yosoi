@@ -70,7 +70,7 @@ class ProductPinned(ys.Contract):
     root = ys.css('article.product_pod')
 
     name: str = ys.Title()
-    price: float = ys.Price(hint='Includes £ symbol')
+    price: float = ys.Price(description='Includes £ symbol')
 
 
 async def example_2_pinned_container():
@@ -95,7 +95,7 @@ class BookDetail(ys.Contract):
     """Detail page for a single book — no container needed."""
 
     title: str = ys.Title()
-    price: float = ys.Price(hint='Includes £ symbol')
+    price: float = ys.Price(description='Includes £ symbol')
     availability: str = ys.Field(description='Stock availability status')
 
 

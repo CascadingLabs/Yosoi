@@ -1,9 +1,13 @@
 """Title type for Yosoi contracts."""
 
-from yosoi.types.registry import CoercionConfig, register_coercion
+from yosoi.types.registry import KIND_TEXT, CoercionConfig, SemanticRule, register_coercion
 
 
-@register_coercion('title', description='A title or heading')
+@register_coercion(
+    'title',
+    description='A title or heading',
+    semantic=SemanticRule(kind=KIND_TEXT, max_chars=500, distinct=True),
+)
 def Title(v: object, config: CoercionConfig, source_url: str | None = None) -> str:
     """Configure a title field.
 

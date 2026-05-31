@@ -3,6 +3,7 @@
 from typing import Any
 
 from yosoi.core.configs import DebugConfig as DebugConfig
+from yosoi.core.configs import DiscoveryConfig as DiscoveryConfig
 from yosoi.core.configs import TelemetryConfig as TelemetryConfig
 from yosoi.core.configs import YosoiConfig as YosoiConfig
 from yosoi.core.configs import auto_config as auto_config
@@ -23,8 +24,8 @@ from yosoi.models.snapshot import CacheVerdict as CacheVerdict
 from yosoi.models.snapshot import SelectorSnapshot as SelectorSnapshot
 from yosoi.models.snapshot import SnapshotMap as SnapshotMap
 from yosoi.models.snapshot import SnapshotStatus as SnapshotStatus
-from yosoi.types.base import YosoiType as YosoiType
 from yosoi.types.field import Field as Field
+from yosoi.types.field import js as js
 from yosoi.types.registry import register_coercion as register_coercion
 from yosoi.utils.contracts import resolve_contract as resolve_contract
 from yosoi.utils.urls import load_urls_from_file as load_urls_from_file
@@ -33,6 +34,10 @@ def css(value: str) -> SelectorEntry: ...
 def xpath(value: str) -> SelectorEntry: ...
 def regex(value: str) -> SelectorEntry: ...
 def jsonld(value: str) -> SelectorEntry: ...
+def attr(value: str, name: str) -> SelectorEntry: ...
+def global_id(value: str, name: str) -> SelectorEntry: ...
+def role(value: str, name: str, nth: int = ...) -> SelectorEntry: ...
+def visual(x: float, y: float, value: str = ...) -> SelectorEntry: ...
 
 # Semantic type factories — override the dynamic signatures produced by @register_coercion
 # Return Any (not FieldInfo) so assignments like `name: str = ys.Title()` pass type checking,

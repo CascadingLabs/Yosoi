@@ -61,12 +61,15 @@ class ContentAnalyzer:
         # FUTURE: watch for false positives — markup-heavy / image-only pages with little
         # visible text can trip this and over-escalate to Chrome. Tune thresholds against
         # the bake-off harness (CAS-44) before relying on it broadly.
-        from bs4 import BeautifulSoup
+        import lxml.html
 
-        soup = BeautifulSoup(html[:50_000], 'lxml')
-        for tag in soup(['script', 'style', 'noscript']):
-            tag.decompose()
-        text = soup.get_text(separator=' ', strip=True)
+        head = html[:50_000]
+        if not head.strip():
+            return False
+        tree = lxml.html.document_fromstring(head)
+        for tag in tree.xpath('.//script | .//style | .//noscript'):
+            tag.drop_tree()
+        text = ' '.join(tree.itertext()).strip()
         text_ratio = len(text) / max(len(html), 1)
         return len(html) > 5000 and (len(text) < 500 or text_ratio < 0.02)
 
@@ -272,15 +275,28 @@ class HTMLFetcher(ABC):
         """Exit async context manager and close resources."""
         await self.close()
 
+    @property
+    def supports_browse(self) -> bool:
+        """True when this fetcher can open a live browser tab for JS discovery.
+
+        L2 fetchers (headless/headful/waterfall) override this to True.
+        L0 fetchers (simple HTTP) return False — they have no browser pool.
+        """
+        return False
+
     @abstractmethod
-    async def fetch(self, url: str) -> FetchResult:
+    async def fetch(self, url: str, action_scripts: dict[str, str] | None = None) -> FetchResult:
         """Fetch HTML from a URL.
 
         Args:
             url: URL to fetch
+            action_scripts: Optional mapping of {field_name: js_expression} to
+                evaluate in the live browser tab after page load. Only honoured
+                by L2 fetchers (headless/headful/waterfall). L0 fetchers ignore
+                this param and return ``FetchResult.js_outputs = None``.
 
         Returns:
-            FetchResult with HTML, metadata, and status
+            FetchResult with HTML, metadata, status, and optional js_outputs
 
         Raises:
             BotDetectionError: If bot detection is triggered

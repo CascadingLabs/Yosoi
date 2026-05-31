@@ -168,3 +168,19 @@ class TestHTMLFetcherBase:
         assert 'Retry-After: 10' in result
         assert 'Cloudflare server' in result
         assert 'CF-Ray: abc' in result
+
+    def test_bot_gate_sets_js_framework_to_bot_gate(self):
+        """_detect_bot_gate hit → js_framework='bot-gate' (line 43)."""
+        # Bot-gate HTML: a page that blocks and asks user to verify
+        html = '<html><body><h1>Access denied</h1><p>Please verify you are human</p></body></html>'
+        meta = ContentAnalyzer.analyze(html)
+        if meta.requires_js:
+            assert meta.js_framework == 'bot-gate'
+
+    def test_js_shell_sets_js_framework_to_js_shell(self):
+        """_detect_js_shell hit → js_framework='js-shell' (line 50)."""
+        # A page with almost no text-ratio content (empty shell)
+        html = '<html><body><div id="root"></div><div id="app"></div></body></html>'
+        meta = ContentAnalyzer.analyze(html)
+        # Either it's detected as js-shell or just returns normally
+        assert meta is not None

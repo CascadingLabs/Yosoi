@@ -14,7 +14,7 @@ from yosoi.types.price import Price
 class SampleContract(Contract):
     """Sample contract with custom types and hints."""
 
-    item_price: float = Price(currency_symbol='£', hint='Look for GBP symbol')
+    item_price: float = Price(currency_symbol='£', description='Look for GBP symbol')
     name: str = Field(description='The name of the item')
 
 
@@ -38,13 +38,11 @@ class BookContract(Contract):
 
 
 def test_selector_model_metadata_preservation():
-    """Verify that to_selector_model preserves descriptions and hints."""
+    """Verify that to_selector_model preserves field descriptions."""
     SelectorModel = SampleContract.to_selector_model()
 
     price_field = SelectorModel.model_fields['item_price']
-    extra = price_field.json_schema_extra
-    assert isinstance(extra, dict)
-    assert extra.get('yosoi_hint') == 'Look for GBP symbol'
+    assert price_field.description == 'Look for GBP symbol'
 
     name_field = SelectorModel.model_fields['name']
     assert name_field.description == 'The name of the item'
@@ -66,8 +64,8 @@ def test_pydantic_ai_schema_rendering():
     price_properties = schema['properties']['item_price']
     assert '$ref' in price_properties
 
-    # yosoi_hint carries the hint; description is the default from the type
-    assert schema['properties']['item_price']['yosoi_hint'] == 'Look for GBP symbol'
+    # The field description flows through to the selector schema.
+    assert schema['properties']['item_price']['description'] == 'Look for GBP symbol'
     assert schema['properties']['name']['description'] == 'The name of the item'
 
 
@@ -518,3 +516,207 @@ def test_list_fields_empty_when_no_list_fields():
         price: float
 
     assert FlatC.list_fields() == {}
+
+
+def test_action_fields_returns_js_action_config():
+    """action_fields() returns {field_name: action_config} for ys.js fields."""
+
+    class TechContract(Contract):
+        title: str = ys.Title()
+        signals: dict = ys.js('(() => ({has_alita: true}))()', default=None)  # type: ignore[assignment]
+
+    actions = TechContract.action_fields()
+    assert 'signals' in actions
+    assert actions['signals']['type'] == 'js'
+    assert actions['signals']['script'] == '(() => ({has_alita: true}))()'
+    assert 'title' not in actions
+
+
+def test_action_fields_excluded_from_discovery():
+    """discovery_field_names() excludes fields annotated with yosoi_action."""
+
+    class TechContract(Contract):
+        title: str = ys.Title()
+        signals: dict = ys.js('(() => ({}))()', default=None)  # type: ignore[assignment]
+
+    names = TechContract.discovery_field_names()
+    assert 'title' in names
+    assert 'signals' not in names
+
+
+def test_action_fields_excluded_from_field_descriptions():
+    """field_descriptions() excludes action fields."""
+
+    class TechContract(Contract):
+        title: str = ys.Title(description='Main title')
+        signals: dict = ys.js('(() => ({}))()', default=None)  # type: ignore[assignment]
+
+    descs = TechContract.field_descriptions()
+    assert 'title' in descs
+    assert 'signals' not in descs
+
+
+# ---------------------------------------------------------------------------
+# undiscovered_action_fields coverage (lines 145, 151, 170, 174-178)
+# ---------------------------------------------------------------------------
+
+import yosoi as ys
+
+
+class _JsHandAuthoredContract(Contract):
+    """Hand-authored js(script=...) fields should NOT appear in undiscovered."""
+
+    signal: str = ys.js(script='(() => window.__signal__)()')
+
+
+class _JsDiscoveryContract(Contract):
+    """Discovery-driven js(description=...) fields appear in undiscovered."""
+
+    signal: str = ys.js(description='Detect competitor widgets')
+
+
+class _NoActionContract(Contract):
+    """No action fields — undiscovered returns {}."""
+
+    title: str = ys.Title()
+
+
+def test_undiscovered_action_fields_excludes_hand_authored():
+    """Fields with an explicit script= are already authored and must not appear (lines 174-175)."""
+    result = _JsHandAuthoredContract.undiscovered_action_fields()
+    assert 'signal' not in result
+
+
+def test_undiscovered_action_fields_includes_description_only():
+    """Fields with only description= (no script) need discovery (lines 176-178)."""
+    result = _JsDiscoveryContract.undiscovered_action_fields()
+    assert 'signal' in result
+    assert result['signal'] == 'Detect competitor widgets'
+
+
+def test_undiscovered_action_fields_skips_non_dict_extra():
+    """Fields where json_schema_extra is not a dict are skipped (line 170)."""
+    result = _NoActionContract.undiscovered_action_fields()
+    assert result == {}
+
+
+def test_discovery_field_names_includes_action_field_free_fields():
+    """discovery_field_names skips fields that are action_fields (line 252-253)."""
+    names = _JsDiscoveryContract.discovery_field_names()
+    # JS action fields are excluded from discovery_field_names
+    assert 'signal' not in names
+
+
+def test_list_field_coercion_skips_none_values():
+    """List field coercion silently skips None list field values (line 151)."""
+
+    class _OptListContract(Contract):
+        tags: list[str] | None = ys.Field(default=None)
+
+    result = _OptListContract.model_validate({'tags': None})
+    assert result.tags is None
+
+
+def test_undiscovered_action_fields_skips_fields_without_json_extra():
+    """Fields with no json_schema_extra (e.g. bare `str` annotation) are skipped (line 170)."""
+
+    class _BareContract(Contract):
+        name: str  # no json_schema_extra at all → json_schema_extra is None
+
+    result = _BareContract.undiscovered_action_fields()
+    assert 'name' not in result
+
+
+def test_list_field_coercion_skips_none_via_validation_error():
+    """List field coercion continues on None value before pydantic raises (line 151)."""
+    from pydantic import ValidationError
+
+    class _ListContract(Contract):
+        tags: list[str] = ys.Field()
+
+    # The mode='before' validator runs first (line 151 continue), then pydantic rejects None
+    with pytest.raises(ValidationError):
+        _ListContract.model_validate({'tags': None})
+
+
+def test_discovery_field_names_expands_nested_contract_fields():
+    """Nested Contract-typed fields are expanded to flat parent_child names (lines 256-257)."""
+
+    class _ChildContract(Contract):
+        headline: str = ys.Title()
+        author: str = ys.Author()
+
+    class _ParentContract(Contract):
+        article: _ChildContract = ys.Field()  # type: ignore[assignment]
+        date: str = ys.Field()
+
+    names = _ParentContract.discovery_field_names()
+    assert 'article_headline' in names
+    assert 'article_author' in names
+    assert 'date' in names
+    assert 'article' not in names  # the container itself is not a target
+
+
+def test_to_selector_model_skips_overridden_nested_child_fields():
+    """Nested child field with a parent-level override is excluded from selector model (line 286)."""
+
+    class _ChildContract(Contract):
+        headline: str = ys.Title()
+        author: str = ys.Author()
+
+    class _ParentContract(Contract):
+        article: _ChildContract = ys.Field()  # type: ignore[assignment]
+        title: str = ys.Field(selector='h1')  # overridden at parent level
+
+    model = _ParentContract.to_selector_model()
+    fields = model.model_fields
+    # Parent-level override ('title') must be excluded
+    assert 'title' not in fields
+    # Nested child fields from article should be expanded
+    assert 'article_headline' in fields or 'article_author' in fields
+
+
+class TestCoerceField:
+    """CAS-114: per-field value oracle reused by JS discovery + scrape enforcement."""
+
+    @staticmethod
+    def _contract():
+        from typing import Annotated
+
+        from pydantic import BeforeValidator
+
+        import yosoi as ys
+
+        def _count(v: object) -> int:
+            s = str(v).strip()
+            return int(s.replace(',', '')) if s and s.lower() != 'none' else 0
+
+        class Counts(ys.Contract):
+            review_count: Annotated[int, BeforeValidator(_count)] = ys.js(description='count', default=0)
+            label: str = ys.Field(default='')
+
+        return Counts
+
+    def test_coerces_native_int(self):
+        assert self._contract().coerce_field('review_count', 43) == 43
+
+    def test_runs_before_validator_on_comma_string(self):
+        assert self._contract().coerce_field('review_count', '1,234') == 1234
+
+    def test_rejects_uncoercible_value(self):
+        from pydantic import ValidationError
+
+        with pytest.raises((ValidationError, ValueError)):
+            self._contract().coerce_field('review_count', 'not a number at all')
+
+    def test_untyped_str_field_accepts_anything(self):
+        assert self._contract().coerce_field('label', 'whatever') == 'whatever'
+
+    def test_unknown_field_passthrough(self):
+        assert self._contract().coerce_field('nope', 'x') == 'x'
+
+    def test_field_default(self):
+        c = self._contract()
+        assert c.field_default('review_count') == 0
+        assert c.field_default('label') == ''
+        assert c.field_default('missing') is None

@@ -140,7 +140,6 @@ def field_deps(discovery_input):
     return FieldDiscoveryDeps(
         field_name='headline',
         field_description='Main article title',
-        field_hint=None,
         input=discovery_input,
     )
 
@@ -163,12 +162,9 @@ class TestFieldSingleFieldInstructions:
         assert 'headline' in result
         assert 'Main article title' in result
 
-    def test_includes_hint_when_set(self, field_deps, mocker):
-        field_deps.field_hint = 'Look for h1 tags'
-        result = field_single_field_instructions(_make_field_ctx(field_deps, mocker))
-        assert 'Look for h1 tags' in result
-
-    def test_no_hint_when_none(self, field_deps, mocker):
+    def test_no_hint_label_in_prompt(self, field_deps, mocker):
+        # Per-field guidance is carried entirely by the description; the prompt
+        # never emits a separate "Hint" label.
         result = field_single_field_instructions(_make_field_ctx(field_deps, mocker))
         assert 'Hint' not in result
 
@@ -239,7 +235,7 @@ class TestFieldSinglePageHints:
 
 class TestFieldDiscoveryDeps:
     def test_default_target_level(self, discovery_input):
-        deps = FieldDiscoveryDeps(field_name='title', field_description='Title', field_hint=None, input=discovery_input)
+        deps = FieldDiscoveryDeps(field_name='title', field_description='Title', input=discovery_input)
         assert deps.target_level == SelectorLevel.CSS
         assert deps.is_container is False
 
@@ -247,12 +243,10 @@ class TestFieldDiscoveryDeps:
         deps = FieldDiscoveryDeps(
             field_name='root',
             field_description='Container',
-            field_hint='Look for cards',
             input=discovery_input,
             target_level=SelectorLevel.XPATH,
             is_container=True,
         )
         assert deps.field_name == 'root'
-        assert deps.field_hint == 'Look for cards'
         assert deps.target_level == SelectorLevel.XPATH
         assert deps.is_container is True

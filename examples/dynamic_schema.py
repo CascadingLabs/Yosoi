@@ -20,8 +20,8 @@ class Book(ys.Contract):
     """Scrape book data from books.toscrape.com."""
 
     title: str = ys.Title()
-    price: float = ys.Price(hint='Book price including currency symbol')
-    rating: str = ys.Rating(hint="Star rating (e.g. 'Three')")
+    price: float = ys.Price(description='Book price including currency symbol')
+    rating: str = ys.Rating(description="Star rating (e.g. 'Three')")
     footer: str = ys.Field(description='optional footer if the site has one')
 
     @field_validator('price', mode='after')

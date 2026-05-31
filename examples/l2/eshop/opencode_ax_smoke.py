@@ -117,7 +117,7 @@ async def run(fetcher_type: str) -> dict[str, Any]:
             quiet=False,
         )
 
-    selectors = SelectorStorage().load_selectors('qscrape.dev') or {}
+    selectors = await SelectorStorage().load_selectors('qscrape.dev') or {}
     if not items:
         raise RuntimeError(f'{fetcher_type} run returned no extracted items')
     if not selectors.get('name') or not selectors.get('price'):

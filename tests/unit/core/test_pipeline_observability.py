@@ -29,7 +29,7 @@ EXTRACTED = {'title': 'book', 'price': '$10'}
 
 # Expected span set for the fresh-discovery path of the canned input above.
 # Pinned explicitly per plan B3: a vague subset is rejected.
-EXPECTED_CHILD_SPANS = {'fetch', 'clean', 'discover', 'verify', 'extract', 'validate', 'save'}
+EXPECTED_CHILD_SPANS = {'fetch', 'clean', 'discover', 'verify', 'extract', 'semantic_refine', 'validate', 'save'}
 EXPECTED_ROOT_SPAN = 'scrape shop.example.com/x'
 
 
@@ -52,21 +52,35 @@ def pipeline_stub(mocker):
     """Pipeline instance with all heavy collaborators mocked."""
     stub = Pipeline.__new__(Pipeline)
     stub.contract = _SimpleContract
+    from yosoi.core.verification import SemanticValidator, field_rules_for_contract
+
+    stub.semantic_validator = SemanticValidator()
+    stub._field_rules = field_rules_for_contract(stub.contract)
     stub.console = mocker.MagicMock()
     stub.logger = mocker.MagicMock()
     stub.cleaner = mocker.MagicMock()
     stub.cleaner.clean_html.return_value = CLEANED_HTML
     stub.discovery = mocker.MagicMock()
     stub.discovery.discover_selectors = mocker.AsyncMock(return_value=DISCOVERED_SELECTORS)
+    stub._mcp_discovery = None
+    stub._force_mcp = False
+    stub._discovery_strategy = mocker.MagicMock()
+    stub._discovery_strategy.load = mocker.AsyncMock(return_value=None)
+    stub._discovery_strategy.save = mocker.AsyncMock()
     stub.verifier = mocker.MagicMock()
     stub.extractor = mocker.MagicMock()
     stub.storage = mocker.MagicMock()
-    stub.storage.load_snapshots.return_value = None
-    stub.storage.load_selectors.return_value = None
+    stub.storage.load_snapshots = mocker.AsyncMock(return_value=None)
+    stub.storage.load_selectors = mocker.AsyncMock(return_value=None)
+    stub.storage.save_snapshots = mocker.AsyncMock()
+    stub.storage.save_content = mocker.AsyncMock()
+    stub.storage.record_verdict = mocker.AsyncMock()
     stub.tracker = mocker.MagicMock()
     stub.tracker.record_url = mocker.AsyncMock()
     stub._client = mocker.AsyncMock()
     stub.debug = mocker.MagicMock()
+    stub.debug.save_debug_html = mocker.AsyncMock()
+    stub.debug.save_debug_selectors = mocker.AsyncMock()
     stub.debug_mode = False
     stub.output_formats = ['json']
     stub.force = False
@@ -232,6 +246,9 @@ async def test_agent_span_nests_under_discover(span_exporter, mocker):
     Agent.instrument_all()
 
     storage = mocker.MagicMock()
+    storage.load_snapshots = mocker.AsyncMock(return_value=None)
+    storage.save_snapshots = mocker.AsyncMock()
+    storage.save_selectors = mocker.AsyncMock()
     # Use a real provider with a fake key so create_model() succeeds; the
     # Agent.override(model=TestModel()) below swaps it out before any LLM call.
     from yosoi.core.discovery.config import LLMConfig

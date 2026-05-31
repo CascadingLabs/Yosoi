@@ -185,3 +185,21 @@ class TestEnsureUtc:
         assert result is not None
         assert result.tzinfo is not None
         assert result.hour == 12  # converted to UTC
+
+
+def test_snapshot_to_cache_entry_includes_status_reason():
+    """snapshot_to_cache_entry includes status_reason when set (line 133)."""
+    from datetime import datetime, timezone
+
+    from yosoi.models.snapshot import SelectorSnapshot, SnapshotStatus, snapshot_to_cache_entry
+
+    snap = SelectorSnapshot(
+        primary='h1.title',
+        discovered_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
+        status=SnapshotStatus.VERIFICATION_FAILED,
+        status_reason='CSS selector stopped matching after site redesign',
+    )
+    entry = snapshot_to_cache_entry(snap)
+
+    assert entry['status_reason'] == 'CSS selector stopped matching after site redesign'
+    assert entry['status'] == SnapshotStatus.VERIFICATION_FAILED

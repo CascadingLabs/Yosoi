@@ -1,3 +1,17 @@
+## Unreleased
+
+### BREAKING CHANGE
+
+- **Contracts**: `ys.Field(hint=...)` removed — use `description=` as the single
+  per-field knob for LLM discovery guidance. Type checkers now flag `hint=`.
+- **Contracts**: custom semantic types must use the `@register_coercion`
+  decorator; the `YosoiType` base class / subclass-coercer path was removed.
+- **Cache**: dropping `hint` from the field signature changes every contract
+  signature, so on first run after upgrade the lesson and JS-script caches (keyed
+  by contract signature) miss once and re-discover (one-time LLM/network cost).
+  Per-domain selector snapshots are unaffected. Old `.yosoi/` lesson and
+  js_script files are orphaned and safe to delete.
+
 ## 0.0.1a17 (2026-03-29)
 
 ## 0.0.1a14 (2026-03-28)

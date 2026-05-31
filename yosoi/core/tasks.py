@@ -36,6 +36,7 @@ class PipelineConfig(BaseModel, frozen=True):
     output_format: str | list[str]
     max_workers: int
     selector_level: SelectorLevel
+    experimental_a3node: bool = False
 
 
 class TaskResult(BaseModel, frozen=True):
@@ -77,6 +78,7 @@ async def configure_broker(
     output_format: str | list[str] = 'json',
     max_workers: int = 5,
     selector_level: SelectorLevel | None = None,
+    experimental_a3node: bool = False,
 ) -> None:
     """Configure the broker with pipeline settings and start it.
 
@@ -86,6 +88,7 @@ async def configure_broker(
         output_format: Output format(s): json, markdown, jsonl, ndjson, csv, xlsx, parquet.
         max_workers: Maximum concurrent tasks.
         selector_level: Maximum selector strategy level. Defaults to CSS.
+        experimental_a3node: Propagate A3Node opt-in to worker pipelines.
 
     """
     global _pipeline_config, _semaphore, _discovery_bus
@@ -95,6 +98,7 @@ async def configure_broker(
         output_format=output_format,
         max_workers=max_workers,
         selector_level=selector_level or SelectorLevel.CSS,
+        experimental_a3node=experimental_a3node,
     )
     _semaphore = asyncio.Semaphore(max_workers)
     _discovery_bus = DiscoveryBus()
@@ -190,6 +194,7 @@ async def process_url_task(
                 selector_level=config.selector_level,
                 bus=_discovery_bus,
                 write_lock=write_lock,
+                experimental_a3node=config.experimental_a3node,
             )
 
             try:

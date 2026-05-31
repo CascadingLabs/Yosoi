@@ -2,8 +2,37 @@
 
 import re
 
-from bs4 import BeautifulSoup, Comment, Tag
+import lxml.html
+from lxml.html import HtmlElement
 from rich.console import Console
+
+# Attributes stripped during cleaning. This is a deny-list: everything not named
+# here is kept, so we never silently lose a selector-worthy attribute (e.g. the
+# bare depth/score/permalink attributes on Reddit's <shreddit-comment>). Only
+# attributes that are never useful as selectors and bloat the token budget go
+# here: inline styles and JS event handlers (any ``on*`` attribute).
+_DROP_ATTRIBUTES = {'style'}
+
+
+def _keep_attribute(attr: str) -> bool:
+    """Return True unless the attribute is known noise (inline style / event handler)."""
+    lowered = attr.lower()
+    if lowered in _DROP_ATTRIBUTES:
+        return False
+    return not lowered.startswith('on')
+
+
+def _drop(element: HtmlElement) -> None:
+    """Detach *element* from the tree if it is still attached.
+
+    ``drop_tree`` preserves the element's tail text (the run of text after its
+    closing tag) by reparenting it — matching BeautifulSoup's ``decompose``,
+    which leaves following sibling text in place. We guard on ``getparent`` so a
+    node already removed as a descendant of an earlier-dropped parent (still in
+    the statically collected list) is skipped instead of raising.
+    """
+    if element.getparent() is not None:
+        element.drop_tree()
 
 
 class HTMLCleaner:
@@ -33,15 +62,18 @@ class HTMLCleaner:
             Cleaned HTML string with noise removed and content extracted.
 
         """
-        soup = BeautifulSoup(html, 'lxml')
+        if not html or not html.strip():
+            return ''
+
+        tree = lxml.html.document_fromstring(html)
 
         # Step 1: Remove noise that's never useful
-        for tag in soup.find_all(['script', 'style', 'noscript', 'iframe']):
-            tag.decompose()
+        for tag in tree.xpath('.//script | .//style | .//noscript | .//iframe'):
+            _drop(tag)
 
         # Step 2: Remove header, nav, footer
-        for tag in soup.find_all(['header', 'nav', 'footer']):
-            tag.decompose()
+        for tag in tree.xpath('.//header | .//nav | .//footer'):
+            _drop(tag)
 
         # Step 3: Remove sidebars, widgets, ads (always enabled)
         for selector in [
@@ -55,19 +87,19 @@ class HTMLCleaner:
             '.related-posts',
             '.useful-links',
         ]:
-            for element in soup.select(selector):
-                element.decompose()
+            for element in tree.cssselect(selector):
+                _drop(element)
         self.console.print('  ↻ Removed sidebars/widgets/ads')
 
         # Step 4: Get body or main content
-        body = soup.find('body')
-        content = None
+        body = tree.find('.//body')
+        content: HtmlElement | None = None
         extraction_method = ''
 
-        if body and isinstance(body, Tag):
+        if body is not None:
             # Check for <main> inside <body> (most specific!)
-            main_in_body = body.find('main')
-            if main_in_body and isinstance(main_in_body, Tag):
+            main_in_body = body.find('.//main')
+            if main_in_body is not None:
                 content = main_in_body
                 extraction_method = '<main> inside <body>'
             else:
@@ -75,144 +107,137 @@ class HTMLCleaner:
                 extraction_method = '<body>'
         else:
             # No <body>, try top-level <main>
-            main = soup.find('main')
-            if main and isinstance(main, Tag):
-                body_in_main = main.find('body')
-                if body_in_main and isinstance(body_in_main, Tag):
+            main = tree.find('.//main')
+            if main is not None:
+                body_in_main = main.find('.//body')
+                if body_in_main is not None:
                     content = body_in_main
                     extraction_method = '<body> inside <main>'
                 else:
                     content = main
                     extraction_method = '<main>'
             else:
-                content = soup
+                content = tree
                 extraction_method = 'full HTML'
 
-        # Step 5: Compress HTML
-        if content:
-            original_size = len(str(content))
+        # Step 5: Compress HTML (mutates *content* in place — no re-parse)
+        original_size = len(lxml.html.tostring(content, encoding='unicode'))
+        content = self._compress_html_simple(content)
 
-            # Apply compression
-            content_soup = BeautifulSoup(str(content), 'lxml')
-            content_soup = self._compress_html_simple(content_soup)
+        # Convert to string and collapse whitespace
+        content_str = lxml.html.tostring(content, encoding='unicode')
+        content_str = self._collapse_whitespace(content_str)
 
-            # Convert to string and collapse whitespace
-            content_str = str(content_soup)
-            content_str = self._collapse_whitespace(content_str)
+        # Warn if content is large but pass through untruncated
+        WARN_CHARS = 30_000
+        if len(content_str) > WARN_CHARS:
+            self.console.print(f'  ⚠ Content is {len(content_str):,} chars (above {WARN_CHARS:,} warning threshold)')
 
-            # Warn if content is large but pass through untruncated
-            WARN_CHARS = 30_000
-            if len(content_str) > WARN_CHARS:
-                self.console.print(
-                    f'  ⚠ Content is {len(content_str):,} chars (above {WARN_CHARS:,} warning threshold)'
-                )
-            final_str = content_str
+        # Calculate savings
+        compression_ratio = (1 - len(content_str) / original_size) * 100 if original_size > 0 else 0
 
-            # Calculate savings
-            compression_ratio = (1 - len(content_str) / original_size) * 100 if original_size > 0 else 0
+        self.console.print(
+            f'  ↻ Using {extraction_method}: '
+            f'{original_size:,} → {len(content_str):,} chars '
+            f'({compression_ratio:.0f}% savings)'
+        )
 
-            self.console.print(
-                f'  ↻ Using {extraction_method}: '
-                f'{original_size:,} → {len(content_str):,} chars '
-                f'({compression_ratio:.0f}% savings)'
-            )
+        return content_str
 
-            return final_str
-
-        # Fallback
-        return str(self._compress_html_simple(soup))
-
-    def _compress_html_simple(self, soup: BeautifulSoup) -> BeautifulSoup:
+    def _compress_html_simple(self, tree: HtmlElement) -> HtmlElement:
         """Compress HTML safely for selector discovery.
 
         Args:
-            soup: BeautifulSoup parsed HTML
+            tree: lxml element to compress in-place
 
         Returns:
-            Compressed BeautifulSoup parsed HTML.
+            The compressed element (mutated in-place).
 
         """
         # 1. Remove HTML comments
-        for comment in soup.find_all(string=lambda text: isinstance(text, Comment)):
-            comment.extract()
+        for comment in tree.xpath('.//comment()'):
+            _drop(comment)
 
-        # 2. Remove attributes not used in CSS selectors
-        KEEP_ATTRIBUTES = {'class', 'id', 'href', 'src', 'datetime', 'alt', 'name', 'type'}
-
-        for tag in soup.find_all(True):
-            if isinstance(tag, Tag) and tag.attrs:
-                tag.attrs = {
-                    attr: value
-                    for attr, value in tag.attrs.items()
-                    if attr in KEEP_ATTRIBUTES or attr.startswith('data-')
-                }
+        # 2. Strip only known-noise attributes (opt-in removal, not opt-in keeping).
+        #
+        # A keep-allowlist silently discards selector-worthy attributes we never
+        # anticipated — the classic failure mode. Reddit, for example, stashes
+        # depth/score/permalink/author as *bare* attributes on <shreddit-comment>;
+        # an allowlist drops them and discovery can never target them. So we keep
+        # every attribute by default and remove only attributes that are never
+        # useful as selectors and bloat the token budget: inline styles and
+        # JS event handlers.
+        for tag in tree.iter():
+            if not isinstance(tag.tag, str):
+                continue
+            for attr in list(tag.attrib):
+                if not _keep_attribute(attr):
+                    del tag.attrib[attr]
 
         # 3. Deduplicate list items (keep first 3)
-        for lst in soup.find_all(['ul', 'ol']):
-            items = lst.find_all('li', recursive=False)
-            if len(items) > 3:
-                for item in items[3:]:
-                    item.decompose()
+        for lst in tree.xpath('.//ul | .//ol'):
+            items = lst.findall('li')  # direct children only
+            for item in items[3:]:
+                _drop(item)
 
         # 4. Deduplicate table rows (keep first 5)
-        for table in soup.find_all('table'):
-            rows = table.find_all('tr')
-            if len(rows) > 5:
-                for row in rows[5:]:
-                    row.decompose()
+        for table in tree.xpath('.//table'):
+            rows = table.xpath('.//tr')
+            for row in rows[5:]:
+                _drop(row)
 
-        # 5. Remove hidden elements
-        for tag in soup.find_all(True):
-            if isinstance(tag, Tag):
-                if tag.get('hidden') is not None:
-                    tag.decompose()
-                    continue
-                if tag.get('aria-hidden') == 'true':
-                    tag.decompose()
+        # 5. Remove hidden elements.
+        # iter() is materialised into a list first so dropping a node doesn't
+        # disturb a live traversal; a node already detached as a descendant of
+        # an earlier-dropped parent is skipped by _drop's getparent guard.
+        for tag in list(tree.iter()):
+            if not isinstance(tag.tag, str):
+                continue
+            if tag.get('hidden') is not None or tag.get('aria-hidden') == 'true':
+                _drop(tag)
 
-        # 5. Remove non-semantic bloat (svg, canvas, base64, empty deep divs)
-        self._prune_non_semantic(soup)
+        # 6. Remove non-semantic bloat (svg, canvas, base64, empty deep divs)
+        self._prune_non_semantic(tree)
 
-        return soup
+        return tree
 
-    def _prune_non_semantic(self, soup: BeautifulSoup) -> BeautifulSoup:
+    def _prune_non_semantic(self, tree: HtmlElement) -> HtmlElement:
         """Remove non-semantic bloat from parsed HTML.
 
         Strips SVG/canvas elements, base64 image data URIs, and deeply nested
         empty divs/spans that contribute no meaningful content.
 
         Args:
-            soup: BeautifulSoup parsed HTML to prune in-place
+            tree: lxml element to prune in-place
 
         Returns:
-            The pruned BeautifulSoup object (mutated in-place).
+            The pruned element (mutated in-place).
 
         """
         # Strip <svg> and <canvas> entirely
-        for tag in soup.find_all(['svg', 'canvas']):
-            tag.decompose()
+        for tag in tree.xpath('.//svg | .//canvas'):
+            _drop(tag)
 
         # Strip base64 inline image data (src="data:image/...")
-        for tag in soup.find_all(True):
-            if isinstance(tag, Tag):
-                src = tag.get('src', '')
-                if isinstance(src, str) and src.startswith('data:'):
-                    tag['src'] = '[data-uri-removed]'
+        for tag in tree.iter():
+            if not isinstance(tag.tag, str):
+                continue
+            src = tag.get('src', '')
+            if src.startswith('data:'):
+                tag.set('src', '[data-uri-removed]')
 
         # Strip deeply nested anonymous divs/spans (depth > 8, no class/id/data-* attrs, empty text)
-        for tag in reversed(soup.find_all(['div', 'span'])):
-            if not isinstance(tag, Tag):
-                continue
+        for tag in reversed(tree.xpath('.//div | .//span')):
             has_semantic_attrs = (
-                'class' in tag.attrs or 'id' in tag.attrs or any(k.startswith('data-') for k in tag.attrs)
+                'class' in tag.attrib or 'id' in tag.attrib or any(k.startswith('data-') for k in tag.attrib)
             )
             if has_semantic_attrs:
                 continue
-            depth = sum(1 for _ in tag.parents)
-            if depth > 8 and len(tag.get_text(strip=True)) == 0:
-                tag.decompose()
+            depth = sum(1 for _ in tag.iterancestors())
+            if depth > 8 and len(tag.text_content().strip()) == 0:
+                _drop(tag)
 
-        return soup
+        return tree
 
     def _collapse_whitespace(self, html: str) -> str:
         """Collapse excessive whitespace.

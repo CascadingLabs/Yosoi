@@ -1,6 +1,20 @@
 """Tests for FieldSelectors, SelectorEntry, SelectorLevel, and factory functions."""
 
-from yosoi.models.selectors import FieldSelectors, SelectorEntry, SelectorLevel, css, jsonld, regex, xpath
+import pytest
+
+from yosoi.models.selectors import (
+    FieldSelectors,
+    SelectorEntry,
+    SelectorLevel,
+    attr,
+    css,
+    global_id,
+    jsonld,
+    regex,
+    role,
+    visual,
+    xpath,
+)
 
 # ---------------------------------------------------------------------------
 # SelectorLevel
@@ -9,6 +23,8 @@ from yosoi.models.selectors import FieldSelectors, SelectorEntry, SelectorLevel,
 
 def test_selector_level_ordering():
     assert SelectorLevel.CSS < SelectorLevel.XPATH < SelectorLevel.REGEX < SelectorLevel.JSONLD
+    assert SelectorLevel.JSONLD < SelectorLevel.ATTR < SelectorLevel.GLOBAL_ID < SelectorLevel.ROLE
+    assert SelectorLevel.ROLE < SelectorLevel.VISUAL
 
 
 # ---------------------------------------------------------------------------
@@ -20,6 +36,11 @@ def test_selector_entry_defaults_to_css():
     e = SelectorEntry(value='h1')
     assert e.type == 'css'
     assert e.level == SelectorLevel.CSS
+
+
+def test_selector_entry_css_requires_value():
+    with pytest.raises(ValueError, match='css selectors require value'):
+        SelectorEntry(type='css')
 
 
 def test_selector_entry_xpath_sets_level():
@@ -35,6 +56,32 @@ def test_selector_entry_regex_sets_level():
 def test_selector_entry_jsonld_sets_level():
     e = SelectorEntry(type='jsonld', value='$.name')
     assert e.level == SelectorLevel.JSONLD
+
+
+def test_selector_entry_role_sets_level():
+    e = SelectorEntry(type='role', value='button', name='More')
+    assert e.level == SelectorLevel.ROLE
+
+
+def test_selector_entry_visual_sets_level():
+    e = SelectorEntry(type='visual', x=10, y=20)
+    assert e.level == SelectorLevel.VISUAL
+
+
+def test_selector_entry_visual_requires_coordinates():
+    with pytest.raises(ValueError, match='visual selectors require x and y'):
+        SelectorEntry(type='visual')
+
+
+def test_selector_entry_role_requires_name():
+    with pytest.raises(ValueError, match='role selectors require name'):
+        SelectorEntry(type='role', value='button')
+
+
+def test_selector_entry_key_includes_non_value_fields():
+    first = SelectorEntry(type='role', value='button', name='More')
+    second = SelectorEntry(type='role', value='button', name='Less')
+    assert first.key() != second.key()
 
 
 # ---------------------------------------------------------------------------
@@ -252,3 +299,55 @@ def test_jsonld_factory_creates_jsonld_entry():
     assert entry.type == 'jsonld'
     assert entry.value == '$.name'
     assert entry.level == SelectorLevel.JSONLD
+
+
+def test_attr_factory_creates_attr_entry():
+    entry = attr('time', 'datetime')
+    assert isinstance(entry, SelectorEntry)
+    assert entry.type == 'attr'
+    assert entry.value == 'time'
+    assert entry.name == 'datetime'
+    assert entry.level == SelectorLevel.ATTR
+
+
+def test_global_id_factory_creates_global_id_entry():
+    entry = global_id('tr.athing', 'score_')
+    assert isinstance(entry, SelectorEntry)
+    assert entry.type == 'global_id'
+    assert entry.value == 'tr.athing'
+    assert entry.name == 'score_'
+    assert entry.level == SelectorLevel.GLOBAL_ID
+
+
+def test_role_factory_creates_role_entry():
+    entry = role('button', 'Load more', nth=1)
+    assert isinstance(entry, SelectorEntry)
+    assert entry.type == 'role'
+    assert entry.value == 'button'
+    assert entry.name == 'Load more'
+    assert entry.nth == 1
+    assert entry.level == SelectorLevel.ROLE
+
+
+def test_visual_factory_creates_visual_entry():
+    entry = visual(12, 34)
+    assert isinstance(entry, SelectorEntry)
+    assert entry.type == 'visual'
+    assert entry.x == 12
+    assert entry.y == 34
+    assert entry.level == SelectorLevel.VISUAL
+
+
+def test_strip_level_removes_selector_level_from_defs():
+    """_strip_level pops SelectorLevel from $defs when present (line 64)."""
+    from yosoi.models.selectors import _strip_level
+
+    schema = {
+        'properties': {'level': 'should be removed'},
+        '$defs': {'SelectorLevel': {'enum': [1, 2, 3]}, 'Other': {}},
+    }
+    _strip_level(schema)
+
+    assert 'SelectorLevel' not in schema['$defs']
+    assert 'Other' in schema['$defs']
+    assert 'level' not in schema['properties']
