@@ -26,12 +26,15 @@ def _make_orchestrator(
     llm_config.model_name = 'test-model'
     llm_config.provider = 'test'
 
+    from yosoi.core.verification.semantic import SemanticValidator
+
     orch = JsDiscoveryOrchestrator.__new__(JsDiscoveryOrchestrator)
     orch._llm_config = llm_config
     orch._storage = storage or _noop_storage(mocker)
     orch._console = mocker.MagicMock()
     orch._max_attempts = 3
     orch.model_name = 'test-model'
+    orch._validator = SemanticValidator()  # match __init__ so rule-gated paths don't AttributeError
 
     # Mock the pydantic-ai agent
     llm_iter = iter(llm_responses)
@@ -148,14 +151,12 @@ async def test_verify_returns_false_on_exception(mocker: MockerFixture):
 
 
 @pytest.mark.asyncio
-async def test_verify_rejects_value_that_fails_field_semantic(mocker: MockerFixture):
+async def test_verify_rejects_string_blob_for_numeric_field(mocker: MockerFixture):
     # CAS-104: a numeric field whose JS returns a long text blob is rejected
     # (single value oracle across CSS and JS), and the reason feeds the retry.
-    from yosoi.core.verification.semantic import SemanticValidator
     from yosoi.types.registry import KIND_NUMERIC, SemanticRule
 
     orch, tab = _make_orchestrator(mocker, [], ['a very long block of prose with no number at all here'])
-    orch._validator = SemanticValidator()
     rule = SemanticRule(kind=KIND_NUMERIC, max_chars=10)
 
     verified, reason = await orch._verify(tab, '(() => document.body.innerText)()', 'review_count', rule)
@@ -166,16 +167,29 @@ async def test_verify_rejects_value_that_fails_field_semantic(mocker: MockerFixt
 
 
 @pytest.mark.asyncio
-async def test_verify_accepts_value_matching_field_semantic(mocker: MockerFixture):
-    from yosoi.core.verification.semantic import SemanticValidator
+async def test_verify_validates_native_number_return(mocker: MockerFixture):
+    # The real fix: eval_js returns NATIVE scalars (a numeric script yields an int,
+    # not a string). The gate must inspect them, not skip them.
     from yosoi.types.registry import KIND_NUMERIC, SemanticRule
 
-    orch, tab = _make_orchestrator(mocker, [], ['42'])
-    orch._validator = SemanticValidator()
     rule = SemanticRule(kind=KIND_NUMERIC, max_chars=10)
 
-    verified, _output = await orch._verify(tab, '(() => "42")()', 'review_count', rule)
+    # native int → valid number → verified
+    orch, tab = _make_orchestrator(mocker, [], [1234])
+    verified, _ = await orch._verify(tab, '(() => reviewCount)()', 'review_count', rule)
+    assert verified is True
 
+    # native bool for a numeric field → wrong shape → rejected (no longer bypasses)
+    orch2, tab2 = _make_orchestrator(mocker, [], [True])
+    verified2, _ = await orch2._verify(tab2, '(() => !!x)()', 'review_count', rule)
+    assert verified2 is False
+
+
+@pytest.mark.asyncio
+async def test_verify_no_rule_is_noop(mocker: MockerFixture):
+    # An object/structured ys.js field (no numeric/url/text rule) is never shape-gated.
+    orch, tab = _make_orchestrator(mocker, [], [{'has_alita': True}])
+    verified, _ = await orch._verify(tab, '(() => ({has_alita:true}))()', 'signals', None)
     assert verified is True
 
 

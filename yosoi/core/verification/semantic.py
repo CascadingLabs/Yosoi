@@ -159,6 +159,13 @@ def _to_text(value: object) -> str | None:
             if isinstance(entry, str):
                 return entry
         return None  # list of dicts (related_content) — not shape-checkable here
+    if isinstance(value, (int, float)):
+        # Native scalars from a live JS eval (eval_js returns native CDP types — a
+        # numeric script yields an int/float/bool, not a string). Stringify so the
+        # numeric/url/text rule actually inspects them; otherwise a JS field's
+        # native return bypassed the shape check entirely (CAS-104). CSS values are
+        # always strings, so this branch is JS-only in practice.
+        return str(value)
     return None
 
 
