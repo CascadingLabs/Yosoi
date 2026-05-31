@@ -57,6 +57,14 @@ def _navigate_plan(url: str) -> ReplayPlan:
 
     Single-page targets only need the page loaded before extraction; the cached
     selectors do the rest. Richer interaction recording is a separate concern.
+
+    FUTURE(CAS-103): plans are NAVIGATE-only today. The Act/Assert runtime in
+    :mod:`yosoi.core.replay.runtime` (``execute_plan``/``verify_plan``) can already
+    replay CLICK/SCROLL/WAIT/EVAL, but no learn-time code emits a multi-step plan
+    here yet and the replay path (:meth:`_lesson_to_selector_map`) never executes
+    the stored plan. That runtime is parked scaffolding awaiting interaction
+    capture — intentionally unwired, not dead code. Greps for ``execute_plan``
+    callers will come up empty until CAS-103 connects these two halves.
     """
     return ReplayPlan(
         nodes=[ReplayNode(id='navigate', intent='open the target page', act=ReplayAct(kind=ActKind.NAVIGATE, url=url))]
@@ -165,6 +173,7 @@ class MCPDiscoveryOrchestrator:
         verified_fields = len(sample_values)
         lesson = DiscoveryLesson(
             key=key,
+            # FUTURE(CAS-103): navigate-only plan; multi-step interaction capture pending.
             replay_plan=_navigate_plan(url),
             selectors=snapshots,
             validation=LessonValidation(
@@ -260,7 +269,12 @@ class MCPDiscoveryOrchestrator:
 
     @staticmethod
     def _lesson_to_selector_map(lesson: DiscoveryLesson) -> SelectorMap:
-        """Reconstruct a SelectorMap from a persisted lesson's snapshots."""
+        """Reconstruct a SelectorMap from a persisted lesson's snapshots.
+
+        Replay is selector-only: ``lesson.replay_plan`` is deliberately NOT executed
+        here (see :func:`_navigate_plan`). Wiring ``verify_plan`` in front of this for
+        interaction-gated pages is FUTURE(CAS-103).
+        """
         merged: SelectorMap = {}
         for name, snap in lesson.selectors.items():
             data = snapshot_to_selector_dict(snap)

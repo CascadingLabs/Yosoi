@@ -90,4 +90,5 @@ jobs:
       - name: Run browser integration tests
         env:
           YOSOI_INTEGRATION: "1"
+          YOSOI_NO_SANDBOX: "1"
         run: uv run pytest tests/integration/ -m browser_integration --tb=short -q

@@ -51,13 +51,13 @@ def static_server():
 
 
 @pytest.mark.browser_integration
-async def test_voiddriver_fetches_static_html(static_server, tmp_path):
+async def test_voiddriver_fetches_static_html(static_server, no_sandbox, tmp_path):
     """VoidDriver fetches a locally-served page through real Chromium."""
     from yosoi.core.fetcher.voiddriver import HeadlessFetcher
 
     url = f'{static_server}/{MOUNTAINHOME_HOME}'
 
-    async with HeadlessFetcher(console=None, timeout=30) as driver:
+    async with HeadlessFetcher(console=None, timeout=30, no_sandbox=no_sandbox) as driver:
         result = await driver.fetch(url)
 
     assert result.html is not None, f'Expected HTML content, got None (status={result.status_code})'
@@ -66,13 +66,13 @@ async def test_voiddriver_fetches_static_html(static_server, tmp_path):
 
 
 @pytest.mark.browser_integration
-async def test_voiddriver_multi_item_page(static_server, tmp_path):
+async def test_voiddriver_multi_item_page(static_server, no_sandbox, tmp_path):
     """VoidDriver fetches the VaultMart catalog and returns the full product grid HTML."""
     from yosoi.core.fetcher.voiddriver import HeadlessFetcher
 
     url = f'{static_server}/{VAULTMART_CATALOG}'
 
-    async with HeadlessFetcher(console=None, timeout=30) as driver:
+    async with HeadlessFetcher(console=None, timeout=30, no_sandbox=no_sandbox) as driver:
         result = await driver.fetch(url)
 
     assert result.html is not None
@@ -81,13 +81,13 @@ async def test_voiddriver_multi_item_page(static_server, tmp_path):
 
 
 @pytest.mark.browser_integration
-async def test_voiddriver_browse_yields_eval_capable_tab(static_server, tmp_path):
+async def test_voiddriver_browse_yields_eval_capable_tab(static_server, no_sandbox, tmp_path):
     """VoidDriver.browse() yields a tab that supports JS evaluation."""
     from yosoi.core.fetcher.voiddriver import HeadlessFetcher
 
     url = f'{static_server}/{MOUNTAINHOME_HOME}'
 
-    async with HeadlessFetcher(console=None, timeout=30) as driver, driver.browse(url) as tab:
+    async with HeadlessFetcher(console=None, timeout=30, no_sandbox=no_sandbox) as driver, driver.browse(url) as tab:
         title = await tab.eval_js('document.title')
 
     assert isinstance(title, str)
@@ -106,11 +106,11 @@ _L2_MIN_RENDERED_CHARS = 3_000
 
 
 @pytest.mark.browser_integration
-async def test_l2_news_articles_renders_article_list():
+async def test_l2_news_articles_renders_article_list(no_sandbox):
     """qscrape.dev L2 news articles page hydrates to show the article grid."""
     from yosoi.core.fetcher.voiddriver import HeadlessFetcher
 
-    async with HeadlessFetcher(console=None, timeout=60) as driver:
+    async with HeadlessFetcher(console=None, timeout=60, no_sandbox=no_sandbox) as driver:
         result = await driver.fetch('https://qscrape.dev/l2/news/articles')
 
     assert result.html is not None
@@ -126,11 +126,11 @@ async def test_l2_news_articles_renders_article_list():
 
 
 @pytest.mark.browser_integration
-async def test_l2_eshop_catalog_renders_product_grid():
+async def test_l2_eshop_catalog_renders_product_grid(no_sandbox):
     """qscrape.dev L2 eshop catalog page hydrates to show product cards."""
     from yosoi.core.fetcher.voiddriver import HeadlessFetcher
 
-    async with HeadlessFetcher(console=None, timeout=60) as driver:
+    async with HeadlessFetcher(console=None, timeout=60, no_sandbox=no_sandbox) as driver:
         result = await driver.fetch('https://qscrape.dev/l2/eshop/catalog')
 
     assert result.html is not None
@@ -142,11 +142,11 @@ async def test_l2_eshop_catalog_renders_product_grid():
 
 
 @pytest.mark.browser_integration
-async def test_l2_scoretap_renders_scores_table():
+async def test_l2_scoretap_renders_scores_table(no_sandbox):
     """qscrape.dev L2 ScoreTap page hydrates to show match scores and standings."""
     from yosoi.core.fetcher.voiddriver import HeadlessFetcher
 
-    async with HeadlessFetcher(console=None, timeout=60) as driver:
+    async with HeadlessFetcher(console=None, timeout=60, no_sandbox=no_sandbox) as driver:
         result = await driver.fetch('https://qscrape.dev/l2/scoretap/')
 
     assert result.html is not None
@@ -158,12 +158,12 @@ async def test_l2_scoretap_renders_scores_table():
 
 
 @pytest.mark.browser_integration
-async def test_l2_news_browse_extracts_via_js():
+async def test_l2_news_browse_extracts_via_js(no_sandbox):
     """browse() + eval_js works on a JS-framework page — can query rendered DOM."""
     from yosoi.core.fetcher.voiddriver import HeadlessFetcher
 
     async with (
-        HeadlessFetcher(console=None, timeout=60) as driver,
+        HeadlessFetcher(console=None, timeout=60, no_sandbox=no_sandbox) as driver,
         driver.browse('https://qscrape.dev/l2/news/articles') as tab,
     ):
         # Count how many article elements the framework rendered
