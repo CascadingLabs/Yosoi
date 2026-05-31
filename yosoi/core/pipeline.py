@@ -1822,7 +1822,7 @@ class Pipeline:
                 contract_sig=self._contract_sig,
                 fields=missing,
                 fetcher=fetcher,
-                field_rules=self._field_rules,
+                field_coercer=self.contract.coerce_field,
             )
 
     @staticmethod
@@ -2174,9 +2174,29 @@ class Pipeline:
             Validated dict, or original if validation fails.
 
         """
+        from pydantic import ValidationError
+
         try:
-            instance = self.contract.model_validate(item, context={'source_url': url})
-            return instance.model_dump()
+            return self.contract.model_validate(item, context={'source_url': url}).model_dump()
+        except ValidationError as e:
+            # Enforce the declared types: drop the field(s) the error names to their
+            # default (pydantic reports all field errors at once), then re-validate
+            # once — rather than silently keeping raw garbage as before (CAS-114).
+            offending = {str(err['loc'][0]) for err in e.errors() if err.get('loc')} & set(item)
+            if not offending:
+                self.logger.warning('Contract validation failed (unisolable), using raw data: %s', e)
+                return item
+            data: dict[str, Any] = dict(item)
+            for field_name in offending:
+                data[field_name] = self.contract.field_default(field_name)
+            self.console.print(
+                f'[warning]⚠ Dropped invalid field(s) to default: {", ".join(sorted(offending))}[/warning]'
+            )
+            try:
+                return self.contract.model_validate(data, context={'source_url': url}).model_dump()
+            except ValidationError as e2:
+                self.logger.warning('Validation still failing after dropping fields, using raw: %s', e2)
+                return item
         except (ValueError, TypeError) as e:
             self.logger.warning('Contract validation failed, using raw data: %s', e)
             self.console.print(f'[warning]⚠ Validation skipped: {e}[/warning]')

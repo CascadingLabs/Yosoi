@@ -26,15 +26,12 @@ def _make_orchestrator(
     llm_config.model_name = 'test-model'
     llm_config.provider = 'test'
 
-    from yosoi.core.verification.semantic import SemanticValidator
-
     orch = JsDiscoveryOrchestrator.__new__(JsDiscoveryOrchestrator)
     orch._llm_config = llm_config
     orch._storage = storage or _noop_storage(mocker)
     orch._console = mocker.MagicMock()
     orch._max_attempts = 3
     orch.model_name = 'test-model'
-    orch._validator = SemanticValidator()  # match __init__ so rule-gated paths don't AttributeError
 
     # Mock the pydantic-ai agent
     llm_iter = iter(llm_responses)
@@ -150,46 +147,57 @@ async def test_verify_returns_false_on_exception(mocker: MockerFixture):
     assert 'syntax error' in (output or '')
 
 
+def _count_contract():
+    """A contract whose ys.js review_count is int-typed with comma + range validators."""
+    from typing import Annotated
+
+    from pydantic import BeforeValidator
+
+    import yosoi as ys
+
+    def _strip(v: object) -> int:
+        s = str(v).strip()
+        return int(s.replace(',', '')) if s and s != 'None' else 0
+
+    class Counts(ys.Contract):
+        review_count: Annotated[int, BeforeValidator(_strip)] = ys.js(description='count', default=0)
+        signals: dict = ys.js(description='structured signals', default_factory=dict)
+
+    return Counts
+
+
 @pytest.mark.asyncio
-async def test_verify_rejects_string_blob_for_numeric_field(mocker: MockerFixture):
-    # CAS-104: a numeric field whose JS returns a long text blob is rejected
-    # (single value oracle across CSS and JS), and the reason feeds the retry.
-    from yosoi.types.registry import KIND_NUMERIC, SemanticRule
+async def test_verify_rejects_blob_for_typed_field(mocker: MockerFixture):
+    # CAS-114: the field's declared type is the oracle — a review_count:int script
+    # that returns a non-numeric blob is rejected, and the error feeds the retry.
+    coercer = _count_contract().coerce_field
+    orch, tab = _make_orchestrator(mocker, [], ['totally non-numeric prose blob'])
 
-    orch, tab = _make_orchestrator(mocker, [], ['a very long block of prose with no number at all here'])
-    rule = SemanticRule(kind=KIND_NUMERIC, max_chars=10)
-
-    verified, reason = await orch._verify(tab, '(() => document.body.innerText)()', 'review_count', rule)
+    verified, reason = await orch._verify(tab, '(() => document.body.innerText)()', 'review_count', coercer)
 
     assert verified is False
-    assert reason is not None
-    assert 'number' in reason
+    assert reason  # carries the pydantic validation message
 
 
 @pytest.mark.asyncio
-async def test_verify_validates_native_number_return(mocker: MockerFixture):
-    # The real fix: eval_js returns NATIVE scalars (a numeric script yields an int,
-    # not a string). The gate must inspect them, not skip them.
-    from yosoi.types.registry import KIND_NUMERIC, SemanticRule
+async def test_verify_coerces_native_and_comma_values(mocker: MockerFixture):
+    coercer = _count_contract().coerce_field
 
-    rule = SemanticRule(kind=KIND_NUMERIC, max_chars=10)
-
-    # native int → valid number → verified
+    # native int → valid
     orch, tab = _make_orchestrator(mocker, [], [1234])
-    verified, _ = await orch._verify(tab, '(() => reviewCount)()', 'review_count', rule)
-    assert verified is True
+    assert (await orch._verify(tab, '(() => reviewCount)()', 'review_count', coercer))[0] is True
 
-    # native bool for a numeric field → wrong shape → rejected (no longer bypasses)
-    orch2, tab2 = _make_orchestrator(mocker, [], [True])
-    verified2, _ = await orch2._verify(tab2, '(() => !!x)()', 'review_count', rule)
-    assert verified2 is False
+    # comma string → BeforeValidator coerces "1,234" → 1234 → valid
+    orch2, tab2 = _make_orchestrator(mocker, [], ['1,234'])
+    assert (await orch2._verify(tab2, '(() => txt)()', 'review_count', coercer))[0] is True
 
 
 @pytest.mark.asyncio
-async def test_verify_no_rule_is_noop(mocker: MockerFixture):
-    # An object/structured ys.js field (no numeric/url/text rule) is never shape-gated.
+async def test_verify_untyped_field_accepts_structured(mocker: MockerFixture):
+    # A dict-typed ys.js field (no scalar constraint) accepts structured output.
+    coercer = _count_contract().coerce_field
     orch, tab = _make_orchestrator(mocker, [], [{'has_alita': True}])
-    verified, _ = await orch._verify(tab, '(() => ({has_alita:true}))()', 'signals', None)
+    verified, _ = await orch._verify(tab, '(() => ({has_alita:true}))()', 'signals', coercer)
     assert verified is True
 
 

@@ -12,7 +12,6 @@ from tenacity import AsyncRetrying, RetryError, retry_if_exception_type, stop_af
 
 from yosoi.core.discovery.config import LLMConfig, create_model
 from yosoi.core.replay.runtime import _eval as _tab_eval
-from yosoi.core.verification.semantic import SemanticValidator
 from yosoi.prompts.js_discovery import (
     PRE_PROBE_JS,
     SYSTEM_PROMPT,
@@ -23,10 +22,14 @@ from yosoi.storage.js_scripts import JsScriptEntry, JsScriptStorage
 from yosoi.utils import observability as obs
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Callable
 
     from yosoi.core.fetcher.base import HTMLFetcher
-    from yosoi.types.registry import SemanticRule
+
+# A per-field validator is ``contract.coerce_field(name, value) -> coerced`` — it
+# raises on a type/validator failure. This lets JS discovery reject a script whose
+# output the field's declared Pydantic type rejects (CAS-114, superseding the
+# CAS-104 SemanticValidator heuristic).
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +41,17 @@ def _repr(value: Any) -> str:
     """Short human-readable repr of a JS eval result for LLM feedback."""
     raw = repr(value)
     return raw if len(raw) <= _REPR_MAX else raw[:_REPR_MAX] + '…'
+
+
+def _coerce_error(exc: Exception) -> str:
+    """Render a concise field-validation failure for the LLM retry prompt."""
+    from pydantic import ValidationError
+
+    if isinstance(exc, ValidationError):
+        errors = exc.errors()
+        if errors:
+            return str(errors[0].get('msg') or exc)[:_REPR_MAX]
+    return str(exc)[:_REPR_MAX]
 
 
 class _VerificationFailed(Exception):
@@ -86,7 +100,6 @@ class JsDiscoveryOrchestrator:
         self._console = console or Console()
         self._max_attempts = max_attempts
         self.model_name = llm_config.model_name
-        self._validator = SemanticValidator()
 
         model = create_model(llm_config)
         self._agent: Agent[JsDiscoveryDeps, str] = Agent(
@@ -104,7 +117,7 @@ class JsDiscoveryOrchestrator:
         contract_sig: str,
         fields: dict[str, str],  # {field_name: description}
         fetcher: HTMLFetcher,
-        field_rules: Mapping[str, SemanticRule] | None = None,
+        field_coercer: Callable[[str, object], object] | None = None,
     ) -> dict[str, str]:
         """Discover JS scripts for all undiscovered action fields.
 
@@ -116,8 +129,10 @@ class JsDiscoveryOrchestrator:
             contract_sig: Contract signature for cache keying.
             fields: Mapping of {field_name: description} for undiscovered fields.
             fetcher: An L2 fetcher that implements ``browse()`` (supports_browse=True).
-            field_rules: Optional {field_name: SemanticRule} so a discovered script's
-                output is shape-validated against the field's type (CAS-104).
+            field_coercer: Optional ``contract.coerce_field``; a discovered script's
+                output is validated through the field's declared Pydantic type +
+                validators (CAS-114). A script whose output the type rejects is
+                retried with the validation error as feedback.
 
         Returns:
             Mapping of {field_name: verified_script} for successfully discovered fields.
@@ -139,8 +154,7 @@ class JsDiscoveryOrchestrator:
                 return {}
 
             for field_name, description in fields.items():
-                rule = field_rules.get(field_name) if field_rules else None
-                result = await self._discover_field(tab, field_name, description, dom_context, rule)
+                result = await self._discover_field(tab, field_name, description, dom_context, field_coercer)
                 if result is not None:
                     script, attempts = result
                     discovered[field_name] = script
@@ -177,7 +191,7 @@ class JsDiscoveryOrchestrator:
         field_name: str,
         description: str,
         dom_context: dict[str, Any],
-        rule: SemanticRule | None = None,
+        coercer: Callable[[str, object], object] | None = None,
     ) -> tuple[str, int] | None:
         """Run the tenacity-managed LLM+verify loop for one field.
 
@@ -216,7 +230,7 @@ class JsDiscoveryOrchestrator:
                         raise _VerificationFailed(None, 'LLM returned empty script')
 
                     script = script.strip()
-                    verified, output = await self._verify(tab, script, field_name, rule)
+                    verified, output = await self._verify(tab, script, field_name, coercer)
                     if not verified:
                         state['script'] = script
                         state['result'] = output
@@ -248,19 +262,19 @@ class JsDiscoveryOrchestrator:
             return None
 
     async def _verify(
-        self, tab: Any, script: str, field_name: str, rule: SemanticRule | None = None
+        self, tab: Any, script: str, field_name: str, coercer: Callable[[str, object], object] | None = None
     ) -> tuple[bool, str | None]:
         """Execute the script on the live tab and check the result.
 
         A script is verified when it runs without exception, returns a non-None
-        value, AND (when the field declares a semantic ``rule``) the value matches
-        that field's type. ``False``, ``[]``, ``""``, and ``0`` remain valid
-        (e.g. "no Alita on this page" / "empty competitor list") — only JavaScript
-        ``null`` (Python ``None``) is a hard "not found". The semantic gate makes
-        ``SemanticValidator`` the *single value-shape oracle* across CSS and JS
-        extraction (CAS-104): a numeric ``review_count`` script returning a long
-        text blob is rejected just as a CSS selector that did the same would be,
-        and the reason feeds the next LLM retry.
+        value, AND (when a ``coercer`` is supplied) the value passes the field's
+        declared Pydantic type + validators. ``False``, ``[]``, ``""``, and ``0``
+        remain valid for fields whose type accepts them — only JavaScript ``null``
+        (Python ``None``) is a hard "not found". The coercer makes the contract's
+        own type system the *single value oracle* across CSS and JS extraction
+        (CAS-114, superseding the CAS-104 heuristic): a ``review_count: int`` script
+        that returns a text blob is rejected by the type just as a CSS selector that
+        did the same would be, and the validation error feeds the next LLM retry.
 
         Returns:
             ``(True, repr_of_output)`` if verified, ``(False, error_or_reason)`` otherwise.
@@ -270,10 +284,11 @@ class JsDiscoveryOrchestrator:
             output = await _tab_eval(tab, script)
             if output is None:
                 return False, 'null'
-            if rule is not None:
-                issues = self._validator.validate({field_name: output}, {field_name: rule})
-                if issues:
-                    return False, issues[0].reason
+            if coercer is not None:
+                try:
+                    coercer(field_name, output)
+                except Exception as exc:  # noqa: BLE001 — any validator/type failure → retry
+                    return False, _coerce_error(exc)
             return True, _repr(output)
         except Exception as exc:  # noqa: BLE001
             logger.debug('JS script verification failed (field=%s): %s', field_name, exc)

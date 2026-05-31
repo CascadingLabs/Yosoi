@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import re
 from collections.abc import Callable
-from typing import Any, ClassVar, get_args, get_origin
+from typing import Annotated, Any, ClassVar, get_args, get_origin
 
 import pydantic
-from pydantic import BaseModel, Field, ValidationInfo, model_validator
+from pydantic import BaseModel, Field, TypeAdapter, ValidationInfo, model_validator
+from pydantic_core import PydanticUndefined
 from typing_extensions import Self
 
 from yosoi.models.selectors import SelectorEntry
@@ -155,6 +156,58 @@ class Contract(BaseModel):
 
         # Step 3: Core pydantic validation
         return handler(result)
+
+    @classmethod
+    def coerce_field(cls, name: str, value: object, source_url: str = '') -> object:
+        """Coerce + validate a single field's value the way the full model would.
+
+        Runs the same per-field pipeline as :meth:`_apply_validators_and_coerce`
+        for one field: the inner ``Validators`` transform, Yosoi semantic-type
+        coercion, then the field's Pydantic type + ``Annotated`` validators (via a
+        ``TypeAdapter``). Raises ``pydantic.ValidationError`` / ``ValueError`` on a
+        type or validator failure.
+
+        This is the single per-field value oracle reused by JS discovery (reject a
+        script whose output the declared type rejects) and scrape-time enforcement,
+        so a ``ys.js()`` field is validated by its declared type — not a heuristic.
+        """
+        field_info = cls.model_fields.get(name)
+        if field_info is None:
+            return value
+
+        # Step 1: inner Validators class transform (e.g. strip/clean).
+        validators_cls = cls._validators_cls
+        if validators_cls is not None:
+            fn = getattr(validators_cls, name, None)
+            if callable(fn):
+                value = fn(value)
+
+        # Step 2: Yosoi semantic-type coercion (scalar fields with a declared type).
+        raw_extra = field_info.json_schema_extra
+        if isinstance(raw_extra, dict) and _unwrap_list_annotation(field_info.annotation) is None:
+            yosoi_type = raw_extra.get('yosoi_type')
+            if isinstance(yosoi_type, str):
+                value = _coerce_dispatch(yosoi_type, value, raw_extra, source_url or None)
+
+        # Step 3: Pydantic type + Annotated (Before/After) validators. The
+        # ``Annotated`` metadata (BeforeValidator/AfterValidator/constraints) lives
+        # on ``field_info.metadata``, not ``.annotation`` — rebuild the full type so
+        # the field's own validators actually run.
+        metadata = tuple(field_info.metadata or ())
+        annotation = Annotated[(field_info.annotation, *metadata)] if metadata else field_info.annotation
+        return TypeAdapter(annotation).validate_python(value)
+
+    @classmethod
+    def field_default(cls, name: str) -> object:
+        """Return a field's default value (or None when it has no static default)."""
+        field_info = cls.model_fields.get(name)
+        if field_info is None:
+            return None
+        if field_info.default is not PydanticUndefined:
+            return field_info.default
+        if field_info.default_factory is not None:
+            return field_info.default_factory()  # type: ignore[call-arg]
+        return None
 
     @classmethod
     def undiscovered_action_fields(cls) -> dict[str, str]:

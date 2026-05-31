@@ -674,3 +674,49 @@ def test_to_selector_model_skips_overridden_nested_child_fields():
     assert 'title' not in fields
     # Nested child fields from article should be expanded
     assert 'article_headline' in fields or 'article_author' in fields
+
+
+class TestCoerceField:
+    """CAS-114: per-field value oracle reused by JS discovery + scrape enforcement."""
+
+    @staticmethod
+    def _contract():
+        from typing import Annotated
+
+        from pydantic import BeforeValidator
+
+        import yosoi as ys
+
+        def _count(v: object) -> int:
+            s = str(v).strip()
+            return int(s.replace(',', '')) if s and s.lower() != 'none' else 0
+
+        class Counts(ys.Contract):
+            review_count: Annotated[int, BeforeValidator(_count)] = ys.js(description='count', default=0)
+            label: str = ys.Field(default='')
+
+        return Counts
+
+    def test_coerces_native_int(self):
+        assert self._contract().coerce_field('review_count', 43) == 43
+
+    def test_runs_before_validator_on_comma_string(self):
+        assert self._contract().coerce_field('review_count', '1,234') == 1234
+
+    def test_rejects_uncoercible_value(self):
+        from pydantic import ValidationError
+
+        with pytest.raises((ValidationError, ValueError)):
+            self._contract().coerce_field('review_count', 'not a number at all')
+
+    def test_untyped_str_field_accepts_anything(self):
+        assert self._contract().coerce_field('label', 'whatever') == 'whatever'
+
+    def test_unknown_field_passthrough(self):
+        assert self._contract().coerce_field('nope', 'x') == 'x'
+
+    def test_field_default(self):
+        c = self._contract()
+        assert c.field_default('review_count') == 0
+        assert c.field_default('label') == ''
+        assert c.field_default('missing') is None
