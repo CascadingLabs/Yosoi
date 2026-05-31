@@ -85,10 +85,12 @@ the labeling flywheel is for.**
   only the ranking quality feeding it.
 
 ## Avenues (ranked)
-1. **Use the learned weights for feature selection now** — drop SimHash, up-weight
-   body-class + prose in `worldmodel.similarity()`. Free, immediate.
-2. **Swap equal-weight blend → learned linear metric** once CAS-118's flywheel has a few
-   hundred invariant-labeled pairs; re-run LODO to see if it then beats 0.85.
+1. **Use the learned weights for feature selection now** — the fit co-weights
+   simhash+struct_cos as the class-carriers and demotes prose-closeness; adopt those
+   weights in `worldmodel.similarity()` instead of the equal blend. Free, immediate.
+2. **Swap equal-weight blend → learned linear metric** — it already edges the baseline
+   cross-domain (0.90 vs 0.85); re-fit + re-run LODO as CAS-118's flywheel adds pairs to
+   confirm the margin holds at larger n.
 3. **Two-tower contrastive (page-tower ↔ contract-tower)** as the CAS-85 retrieval engine
    — the real cross-domain generalizer, gated on thousands of pairs from the flywheel.
 4. **Still the top prerequisite:** capture DOM tag-paths at scrape time — richer pair
