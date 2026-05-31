@@ -1,0 +1,147 @@
+"""Live-tab execution of ``ys.File`` download specs.
+
+Runs inside the browser fetcher's open-tab phase (see ``voiddriver._do_fetch``): for
+each :class:`DownloadSpec` it either re-clicks the trigger and captures the resulting
+download (``retrigger``) or fetches a resolved URL through the page's authenticated
+context (``refetch``). Every download is verified against the spec's ``allowed_types``
+(magic bytes + declared content-type) and fails fast on any mismatch — the offending
+bytes are purged. Parsed (``parse=``) or raw (``DownloadRecord``) value is returned.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import contextlib
+import hashlib
+import json
+import logging
+import os
+from pathlib import Path
+from typing import Any
+
+from yosoi.models.download import DownloadRecord, DownloadResult, DownloadSpec
+from yosoi.types.filetypes import apply_parse, matches_allowed_types
+from yosoi.utils.exceptions import DownloadError
+from yosoi.utils.files import init_yosoi
+
+logger = logging.getLogger(__name__)
+
+# Bytes inspected for magic-byte sniffing (head of the file).
+_HEAD_BYTES = 4096
+# Default per-file cap when a spec sets none. Kept modest on purpose: a scrape rarely
+# needs a huge file, and N concurrent workers x a large cap is easy disk exhaustion.
+_DEFAULT_MAX_BYTES = 25 * 1024 * 1024  # 25 MiB
+
+
+def quarantine_dir(domain: str) -> Path:
+    """Return a per-domain quarantine dir under ``.yosoi/downloads/`` (mode 0700)."""
+    base = init_yosoi('downloads')
+    safe = ''.join(c if (c.isalnum() or c in '.-_') else '_' for c in domain) or 'unknown'
+    target = base / safe
+    target.mkdir(parents=True, exist_ok=True)
+    with contextlib.suppress(OSError):  # best effort on platforms without chmod
+        os.chmod(target, 0o700)
+    return target
+
+
+async def _resolve_href(tab: Any, selector: str) -> str | None:
+    """Read the absolute href of the element matched by *selector* on the live tab."""
+    expr = (
+        f'(() => {{ const el = document.querySelector({json.dumps(selector)}); '
+        'return el ? (el.href || el.getAttribute("href")) : null; })()'
+    )
+    try:
+        result = await tab.eval_js(expr)
+    except Exception as exc:  # noqa: BLE001 - eval failures become a fail-fast below
+        logger.debug('href resolution failed for %r: %s', selector, exc)
+        return None
+    return result if isinstance(result, str) and result else None
+
+
+async def _capture(tab: Any, spec: DownloadSpec, qdir: Path) -> Any:
+    """Perform the actual download, returning a voidcrawl ``DownloadOutcome``."""
+    # capture_download is exported at runtime but missing from voidcrawl's published
+    # .pyi stub (only safe_url is declared) — VoidCrawl stub gap, see CAS-105 notes.
+    from voidcrawl import capture_download, safe_url  # type: ignore[attr-defined]
+
+    max_bytes = spec.max_bytes or _DEFAULT_MAX_BYTES
+
+    if spec.mode == 'retrigger':
+        if not spec.trigger:
+            raise DownloadError(spec.field, 'retrigger mode requires a trigger selector')
+        async with capture_download(tab, str(qdir), max_bytes=max_bytes) as dl:
+            await tab.click_element(spec.trigger)
+        return dl.value
+
+    # refetch: resolve a URL, then download it through the page's browser context.
+    url = spec.url or (await _resolve_href(tab, spec.href) if spec.href else None)
+    if not url:
+        raise DownloadError(spec.field, 'refetch mode could not resolve a URL to download')
+    if safe_url(url) is None:
+        raise DownloadError(spec.field, f'unsafe download URL scheme: {url!r}')
+    # FUTURE (CAS-108): full SSRF defense — DNS-resolve + reject RFC1918/link-local/
+    # metadata IPs + per-redirect re-validation. Alpha relies on safe_url + the
+    # allowed_types content gate; refetch is opt-in and off by default.
+    return await tab.download(url, str(qdir), max_bytes=max_bytes)
+
+
+async def run_download(tab: Any, spec: DownloadSpec, qdir: Path) -> DownloadResult:
+    """Execute one download spec and return its verified result (fail-fast on any error)."""
+    if not spec.allowed_types:
+        raise DownloadError(
+            spec.field,
+            'no allowed_types in effect (default-deny) — set ys.File(allowed_types=[...]) '
+            'or a run-wide allowlist before enabling downloads',
+        )
+    try:
+        outcome = await _capture(tab, spec, qdir)
+    except DownloadError:
+        raise
+    except Exception as exc:
+        raise DownloadError(spec.field, f'download did not complete: {exc}') from exc
+
+    path = Path(outcome.path)
+    try:
+        data = await asyncio.to_thread(path.read_bytes)
+    except OSError as exc:
+        raise DownloadError(spec.field, f'downloaded file unreadable: {exc}') from exc
+
+    declared_ct = getattr(outcome, 'content_type', None)
+    if not matches_allowed_types(spec.allowed_types, declared_ct, data[:_HEAD_BYTES]):
+        await asyncio.to_thread(path.unlink, missing_ok=True)  # purge — bytes aren't trusted
+        raise DownloadError(
+            spec.field,
+            f'content does not match allowed_types {list(spec.allowed_types)} '
+            f'(declared content-type={declared_ct!r}, {len(data)} bytes)',
+        )
+
+    record = DownloadRecord(
+        path=str(path),
+        sha256=hashlib.sha256(data).hexdigest(),
+        size_bytes=int(getattr(outcome, 'bytes', len(data))),
+        content_type=declared_ct,
+        requested_url=spec.url or spec.href or spec.trigger,
+    )
+    try:
+        value: Any = apply_parse(spec.parse, data, declared_ct) if spec.parse else record
+    except Exception as exc:
+        raise DownloadError(spec.field, f'parse={spec.parse!r} failed: {exc}') from exc
+    return DownloadResult(record=record, value=value)
+
+
+async def execute_downloads(
+    tab: Any,
+    specs: dict[str, DownloadSpec] | None,
+    domain: str,
+) -> dict[str, DownloadResult]:
+    """Run every download spec sequentially on the live *tab*; return per-field results."""
+    if not specs:
+        return {}
+    qdir = quarantine_dir(domain)
+    results: dict[str, DownloadResult] = {}
+    for field, spec in specs.items():
+        results[field] = await run_download(tab, spec, qdir)
+    return results
+
+
+__all__ = ['execute_downloads', 'quarantine_dir', 'run_download']

@@ -25,11 +25,17 @@ async def scrape(
     selector_level: SelectorLevel = SelectorLevel.CSS,
     save_formats: Sequence[str] = (),
     quiet: bool = True,
+    allow_downloads: bool = False,
+    allowed_download_types: Sequence[str] = (),
 ) -> list[ContentMap]:
     """Scrape one URL and return validated native Python dictionaries.
 
     By default this API does not write JSON/CSV/etc. files. Pass
     ``save_formats=('json',)`` when file output is wanted.
+
+    For ``ys.File()`` download fields, set ``allow_downloads=True`` and use a browser
+    ``fetcher_type`` (``'headless'``/``'headful'``/``'waterfall'``). ``allowed_download_types``
+    is an optional run-wide file-type allowlist intersected with each field's own.
     """
     contract_cls = resolve_contract(contract) if isinstance(contract, str) else contract
     llm_config = _resolve_model(model)
@@ -51,6 +57,8 @@ async def scrape(
                 force=force,
                 quiet=quiet,
                 selector_level=selector_level,
+                allow_downloads=allow_downloads,
+                allowed_download_types=tuple(allowed_download_types),
             ) as pipeline:
                 return [
                     item

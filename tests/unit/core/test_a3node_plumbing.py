@@ -11,6 +11,7 @@ from yosoi.core.pipeline import Pipeline
 def _stub(mocker: MockerFixture, *, enabled: bool) -> Pipeline:
     stub = Pipeline.__new__(Pipeline)
     stub._experimental_a3node = enabled
+    stub._allow_downloads = False
     stub.console = mocker.MagicMock()
     return stub
 

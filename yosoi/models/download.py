@@ -7,9 +7,9 @@ resolved, fetcher-facing instruction built from a contract's file action field.
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
-from pydantic import AwareDatetime, BaseModel, Field
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 
 from yosoi.models.replay import utc_now
 
@@ -56,4 +56,18 @@ class DownloadSpec(BaseModel):
     max_bytes: int | None = None
 
 
-__all__ = ['DownloadMode', 'DownloadRecord', 'DownloadSpec']
+class DownloadResult(BaseModel):
+    """A completed download: its provenance record plus the field's resolved value.
+
+    ``value`` is the parsed content when the field set ``parse=`` (e.g. CSV rows),
+    otherwise it is the ``DownloadRecord`` itself. The merge step writes ``value`` into
+    the extracted record; ``record`` stays available for the provenance manifest.
+    """
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    record: DownloadRecord
+    value: Any = None
+
+
+__all__ = ['DownloadMode', 'DownloadRecord', 'DownloadResult', 'DownloadSpec']
