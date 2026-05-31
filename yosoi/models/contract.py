@@ -264,8 +264,8 @@ class Contract(BaseModel):
         """Return {field_name: action_config} for ``ys.File`` download fields.
 
         A subset of :meth:`action_fields` filtered to ``type == 'file'``. These run on
-        the live browser tab during fetch and resolve to a ``DownloadRecord`` (or the
-        parsed value when ``parse=`` is set).
+        the live browser tab during fetch and resolve to the view chosen by the field's
+        declared type (``DownloadRecord`` / path / bytes / text / parsed structure).
         """
         return {name: cfg for name, cfg in cls.action_fields().items() if cfg.get('type') == 'file'}
 

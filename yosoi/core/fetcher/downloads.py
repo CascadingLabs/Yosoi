@@ -5,7 +5,8 @@ each :class:`DownloadSpec` it either re-clicks the trigger and captures the resu
 download (``retrigger``) or fetches a resolved URL through the page's authenticated
 context (``refetch``). Every download is verified against the spec's ``allowed_types``
 (magic bytes + declared content-type) and fails fast on any mismatch — the offending
-bytes are purged. Parsed (``parse=``) or raw (``DownloadRecord``) value is returned.
+bytes are purged. The value returned is the view chosen by the field's declared type
+(``DownloadRecord`` / path / bytes / text / parsed structure) via ``spec.output``.
 """
 
 from __future__ import annotations

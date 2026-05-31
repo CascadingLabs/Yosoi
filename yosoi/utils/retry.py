@@ -12,6 +12,7 @@ from tenacity import (
     RetryCallState,
     Retrying,
     retry_if_exception_type,
+    retry_if_not_exception_type,
     stop_after_attempt,
     wait_exponential,
 )
@@ -25,11 +26,17 @@ def _build_retry_kwargs(
     exceptions: tuple[type[Exception], ...] = (Exception,),
     log_callback: Callable[[RetryCallState], None] | None = None,
     reraise: bool = True,
+    non_retry_exceptions: tuple[type[Exception], ...] = (),
 ) -> dict[str, Any]:
+    retry: Any = retry_if_exception_type(exceptions)
+    if non_retry_exceptions:
+        # Deterministic failures (e.g. a content-type mismatch) should surface immediately
+        # rather than being retried then masked by a generic error.
+        retry = retry & retry_if_not_exception_type(non_retry_exceptions)
     return {
         'stop': stop_after_attempt(max_attempts),
         'wait': wait_exponential(multiplier=wait_multiplier, min=wait_min, max=wait_max),
-        'retry': retry_if_exception_type(exceptions),
+        'retry': retry,
         'before_sleep': log_callback,
         'reraise': reraise,
     }
@@ -81,6 +88,7 @@ def get_async_retryer(
     exceptions: tuple[type[Exception], ...] = (Exception,),
     log_callback: Callable[[RetryCallState], None] | None = None,
     reraise: bool = True,
+    non_retry_exceptions: tuple[type[Exception], ...] = (),
 ) -> AsyncRetrying:
     """Create a standardized tenacity AsyncRetrying object for async code.
 
@@ -96,6 +104,8 @@ def get_async_retryer(
         log_callback: Optional callback function for before_sleep logging.
                       Receives the retry state.
         reraise: Whether to reraise the exception after all retries fail.
+        non_retry_exceptions: Exception types that should NOT be retried even if they
+            match ``exceptions`` — they propagate immediately (deterministic failures).
 
     Returns:
         A configured tenacity.AsyncRetrying object.
@@ -110,6 +120,7 @@ def get_async_retryer(
             exceptions,
             log_callback,
             reraise,
+            non_retry_exceptions,
         )
     )
 

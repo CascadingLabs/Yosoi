@@ -77,6 +77,19 @@ def test_gate_returns_specs_when_enabled() -> None:
     assert 'report' in specs
 
 
+def test_gate_fails_fast_on_non_browser_fetcher() -> None:
+    simple = types.SimpleNamespace(supports_browse=False)
+    with pytest.raises(RuntimeError, match='browser'):
+        Pipeline._resolve_download_specs(_fake_pipeline(_Files, allow=True), simple)
+
+
+def test_gate_allows_browser_fetcher() -> None:
+    browser = types.SimpleNamespace(supports_browse=True)
+    specs = Pipeline._resolve_download_specs(_fake_pipeline(_Files, allow=True), browser)
+    assert specs is not None
+    assert 'report' in specs
+
+
 def test_gate_none_without_file_fields() -> None:
     assert Pipeline._resolve_download_specs(_fake_pipeline(_NoFiles, allow=False)) is None
 

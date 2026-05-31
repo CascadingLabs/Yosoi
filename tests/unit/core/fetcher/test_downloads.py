@@ -109,6 +109,28 @@ async def test_retrigger_no_parse_returns_record(tmp_path: Path) -> None:
     assert result.value is result.record
 
 
+async def test_output_view_path(tmp_path: Path) -> None:
+    tab = _FakeTab(data=CSV_BYTES, content_type='text/csv', filename='export.csv')
+    spec = DownloadSpec(field='report', trigger='a.export', allowed_types=('csv',), output='path')
+    result = await dl.run_download(tab, spec, tmp_path)
+    assert isinstance(result.value, Path)
+    assert result.value == Path(result.record.path)
+
+
+async def test_output_view_bytes(tmp_path: Path) -> None:
+    tab = _FakeTab(data=CSV_BYTES, content_type='text/csv', filename='export.csv')
+    spec = DownloadSpec(field='report', trigger='a.export', allowed_types=('csv',), output='bytes')
+    result = await dl.run_download(tab, spec, tmp_path)
+    assert result.value == CSV_BYTES
+
+
+async def test_output_view_text(tmp_path: Path) -> None:
+    tab = _FakeTab(data=CSV_BYTES, content_type='text/csv', filename='export.csv')
+    spec = DownloadSpec(field='report', trigger='a.export', allowed_types=('csv',), output='text')
+    result = await dl.run_download(tab, spec, tmp_path)
+    assert result.value == CSV_BYTES.decode('utf-8')
+
+
 async def test_allowed_types_mismatch_rejects_and_purges(tmp_path: Path) -> None:
     # An HTML interstitial served as text/html must fail when only csv is allowed,
     # and the quarantined bytes must be deleted.

@@ -49,7 +49,7 @@ from yosoi.storage.js_scripts import JsScriptStorage
 from yosoi.storage.tracking import DomainStats
 from yosoi.types.filetypes import normalize_allowed_types
 from yosoi.utils import observability
-from yosoi.utils.exceptions import BotDetectionError
+from yosoi.utils.exceptions import BotDetectionError, DownloadError
 from yosoi.utils.retry import get_async_retryer
 from yosoi.utils.signatures import contract_signature
 
@@ -735,7 +735,7 @@ class Pipeline:
         await self._discover_js_actions(url, domain, fetcher)
 
         js_scripts = await self._resolve_js_scripts(domain)
-        download_specs = self._resolve_download_specs()
+        download_specs = self._resolve_download_specs(fetcher)
         with observability.span('fetch', url=url, max_retries=max_fetch_retries):
             result = await self._fetch(
                 url,
@@ -897,7 +897,12 @@ class Pipeline:
         self.console.print(f'[success]✓ Found cached selectors for {domain}[/success]')
         self.logger.info('Using cached selectors domain=%s url=%s', domain, url)
 
-        if skip_verification:
+        # ys.File() downloads run only on the _extract_with_cached path (it forwards
+        # download_specs); the per-field verdict path below does not. So route file-field
+        # contracts here too — otherwise a cache hit would silently drop downloads.
+        # FUTURE: thread download_specs through _evaluate_cached_verdicts so file-field
+        # contracts also keep per-field partial rediscovery on cache hits.
+        if skip_verification or self.contract.file_fields():
             existing = {name: data for name, snap in snapshots.items() if (data := snapshot_to_selector_dict(snap))}
             items, cache_valid = await self._extract_with_cached(url, fetcher, existing, skip_verification)
             if not cache_valid:
@@ -1358,6 +1363,9 @@ class Pipeline:
                 exceptions=(BotDetectionError, Exception),
                 log_callback=before_sleep_log,
                 reraise=False,
+                # A ys.File() download rejection is deterministic — fail fast with its
+                # precise message instead of retrying and collapsing to a generic error.
+                non_retry_exceptions=(DownloadError,),
             )
 
             async for attempt in retryer:
@@ -1842,14 +1850,24 @@ class Pipeline:
             )
         return specs
 
-    def _resolve_download_specs(self) -> dict[str, DownloadSpec] | None:
-        """Build download specs, failing fast if file fields exist but downloads are off."""
+    def _resolve_download_specs(self, fetcher: HTMLFetcher | None = None) -> dict[str, DownloadSpec] | None:
+        """Build download specs, failing fast if file fields can't actually download.
+
+        Two fail-fast guards (better than silently dropping the field): downloads must be
+        opted in (``allow_downloads``), and the fetcher must have a live browser tab — the
+        simple HTTP tier can't download.
+        """
         specs = self._file_download_specs()
         if specs and not self._allow_downloads:
             raise RuntimeError(
                 f'{self.contract.__name__} declares ys.File() field(s) {sorted(specs)} but downloads '
-                'are disabled. Pass allow_downloads=True (API) or --allow-downloads (CLI) to enable, '
-                'and use a browser fetcher tier (headless/headful/waterfall).'
+                'are disabled. Pass allow_downloads=True and use a browser fetcher tier '
+                "(fetcher_type='headless'/'headful'/'waterfall')."
+            )
+        if specs and fetcher is not None and not getattr(fetcher, 'supports_browse', False):
+            raise RuntimeError(
+                f'{self.contract.__name__} declares ys.File() field(s) {sorted(specs)} but '
+                "fetcher_type has no browser tab. Use fetcher_type='headless'/'headful'/'waterfall'."
             )
         return specs or None
 
@@ -1945,9 +1963,9 @@ class Pipeline:
     ) -> ContentMap | ContentItems | None:
         """Merge ys.File() download results into extracted content.
 
-        Each field's value is the parsed content (when ``parse=`` is set) or its
-        ``DownloadRecord``. Like JS outputs, downloads are page-level and merged into
-        every item for multi-item extraction.
+        Each field's value is the view chosen by its declared type (``DownloadRecord`` /
+        path / bytes / text / parsed structure). Like JS outputs, downloads are page-level
+        and merged into every item for multi-item extraction.
         """
         from typing import cast
 
@@ -2207,7 +2225,7 @@ class Pipeline:
         domain = self._extract_domain(url)
         await self._discover_js_actions(url, domain, fetcher)
         js_scripts = await self._resolve_js_scripts(domain)
-        download_specs = self._resolve_download_specs()
+        download_specs = self._resolve_download_specs(fetcher)
         try:
             result = await fetcher.fetch(url, action_scripts=js_scripts or None, download_specs=download_specs)
 
