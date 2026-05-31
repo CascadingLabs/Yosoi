@@ -159,8 +159,9 @@ def test_pipeline_accepts_model_string(mocker):
     assert p.discovery is not None
 
 
-def test_pipeline_uses_static_primary_with_lazy_mcp(mocker):
+def test_pipeline_uses_static_primary_with_lazy_mcp(mocker, monkeypatch):
     """No mode switch: static is the primary path; MCP is built lazily on escalation."""
+    monkeypatch.setenv('GROQ_KEY', 'test-key')
     mocker.patch('yosoi.storage.persistence.init_yosoi')
     mocker.patch('yosoi.storage.discovery_strategy.init_yosoi')
     mocker.patch('yosoi.storage.tracking.get_tracking_path', return_value='/tmp/tracking.json')
@@ -181,6 +182,7 @@ def test_pipeline_force_mcp_env_override(mocker, monkeypatch):
     mocker.patch('yosoi.storage.tracking.get_tracking_path', return_value='/tmp/tracking.json')
     mocker.patch('yosoi.utils.files.is_initialized', return_value=True)
     mocker.patch('yosoi.utils.logging.setup_local_logging', return_value='/tmp/test.log')
+    monkeypatch.setenv('GROQ_KEY', 'test-key')
     monkeypatch.setenv('YOSOI_DISCOVERY_MODE', 'mcp')
     mocker.patch('yosoi.core.discovery.mcp_orchestrator.MCPDiscoveryAgent')
 

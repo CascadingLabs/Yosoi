@@ -54,7 +54,7 @@ jobs:
         run: uv venv --python ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: uv sync --group tests --group dev
+        run: uv sync --all-extras --group tests --group dev
 
       - name: Run CI Tests
         run: uv run poe ci-test
@@ -85,7 +85,7 @@ jobs:
         run: uv venv --python 3.13
 
       - name: Install dependencies
-        run: uv sync --group tests --group dev
+        run: uv sync --all-extras --group tests --group dev
 
       - name: Run browser integration tests
         env:
