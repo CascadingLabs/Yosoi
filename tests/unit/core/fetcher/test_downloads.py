@@ -69,7 +69,7 @@ class _FakeTab:
 
 async def test_retrigger_csv_parse(tmp_path: Path) -> None:
     tab = _FakeTab(data=CSV_BYTES, content_type='text/csv', filename='export.csv')
-    spec = DownloadSpec(field='report', mode='retrigger', trigger='a.export', allowed_types=('csv',), parse='csv')
+    spec = DownloadSpec(field='report', mode='retrigger', trigger='a.export', allowed_types=('csv',), output='parsed')
 
     result = await dl.run_download(tab, spec, tmp_path)
 
@@ -109,7 +109,7 @@ async def test_default_deny_empty_allowlist(tmp_path: Path) -> None:
 async def test_refetch_by_url(tmp_path: Path) -> None:
     tab = _FakeTab(data=CSV_BYTES, content_type='text/csv', filename='r.csv')
     spec = DownloadSpec(
-        field='report', mode='refetch', url='https://sec.gov/r.csv', allowed_types=('csv',), parse='csv'
+        field='report', mode='refetch', url='https://sec.gov/r.csv', allowed_types=('csv',), output='parsed'
     )
     result = await dl.run_download(tab, spec, tmp_path)
     assert result.value[0]['month'] == 'Jan'
@@ -132,7 +132,7 @@ async def test_refetch_unsafe_scheme_rejected(tmp_path: Path) -> None:
 async def test_execute_downloads_aggregates(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(dl, 'quarantine_dir', lambda _domain, _base=None: tmp_path)
     tab = _FakeTab(data=CSV_BYTES, content_type='text/csv', filename='a.csv')
-    specs = {'report': DownloadSpec(field='report', trigger='a.x', allowed_types=('csv',), parse='csv')}
+    specs = {'report': DownloadSpec(field='report', trigger='a.x', allowed_types=('csv',), output='parsed')}
     results = await dl.execute_downloads(tab, specs, 'sec.gov')
     assert set(results) == {'report'}
     assert results['report'].value[0]['revenue'] == '100'

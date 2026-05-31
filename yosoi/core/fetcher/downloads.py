@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import Any
 
 from yosoi.models.download import DownloadRecord, DownloadResult, DownloadSpec
-from yosoi.types.filetypes import apply_parse, matches_allowed_types
+from yosoi.types.filetypes import matches_allowed_types, parse_download
 from yosoi.utils.exceptions import DownloadError
 from yosoi.utils.files import init_yosoi
 
@@ -127,11 +127,31 @@ async def run_download(tab: Any, spec: DownloadSpec, qdir: Path) -> DownloadResu
         content_type=declared_ct,
         requested_url=spec.url or spec.href or spec.trigger,
     )
-    try:
-        value: Any = apply_parse(spec.parse, data, declared_ct) if spec.parse else record
-    except Exception as exc:
-        raise DownloadError(spec.field, f'parse={spec.parse!r} failed: {exc}') from exc
+    # The field's declared type (resolved into spec.output) decides the value view.
+    # A DownloadRecord is always available on the result for provenance regardless.
+    value = _project_value(spec, data, declared_ct, record)
     return DownloadResult(record=record, value=value)
+
+
+def _project_value(spec: DownloadSpec, data: bytes, content_type: str | None, record: DownloadRecord) -> Any:
+    """Resolve the field value for a download according to ``spec.output``.
+
+    'parsed' yields a generic python structure (csv rows / json object); the contract's
+    TypeAdapter then coerces it into the field's declared type (e.g. list[MyRow]).
+    """
+    if spec.output == 'record':
+        return record
+    if spec.output == 'path':
+        return Path(record.path)
+    if spec.output == 'bytes':
+        return data
+    if spec.output == 'text':
+        return data.decode('utf-8', errors='replace')
+    # 'parsed'
+    try:
+        return parse_download(data, content_type)
+    except Exception as exc:
+        raise DownloadError(spec.field, f'could not parse download as structured data: {exc}') from exc
 
 
 async def execute_downloads(

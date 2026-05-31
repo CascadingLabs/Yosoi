@@ -36,7 +36,7 @@ from yosoi.core.verification import (
 )
 from yosoi.models import FetchResult
 from yosoi.models.contract import Contract
-from yosoi.models.download import DownloadResult, DownloadSpec
+from yosoi.models.download import DownloadResult, DownloadSpec, output_view_for_annotation
 from yosoi.models.results import JsOutputs, VerificationResult
 from yosoi.models.selectors import SelectorLevel
 from yosoi.models.snapshot import CacheVerdict, SelectorSnapshot, snapshot_to_selector_dict
@@ -1816,6 +1816,8 @@ class Pipeline:
                 effective = field_allowed
             else:
                 effective = tuple(self._allowed_download_types)
+            # Annotation-directed output: the field's declared type decides the view.
+            annotation = self.contract.model_fields[name].annotation
             specs[name] = DownloadSpec(
                 field=name,
                 mode=cfg.get('mode', 'retrigger'),
@@ -1823,7 +1825,7 @@ class Pipeline:
                 href=cfg.get('href'),
                 url=cfg.get('url'),
                 allowed_types=effective,
-                parse=cfg.get('parse'),
+                output=output_view_for_annotation(annotation),
                 max_bytes=cfg.get('max_bytes') or self._max_download_bytes,
             )
         return specs

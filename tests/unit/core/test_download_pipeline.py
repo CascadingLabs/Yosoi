@@ -20,7 +20,7 @@ from yosoi.types.filetypes import normalize_allowed_types
 
 class _Files(Contract):
     title: str = ys.Field()
-    report: list = ys.File(trigger='a.export', parse='csv', allowed_types=['csv', 'pdf'])
+    report: list[dict] = ys.File(trigger='a.export', allowed_types=['csv', 'pdf'])
 
 
 class _NoFiles(Contract):
@@ -47,7 +47,7 @@ def test_file_download_specs_built() -> None:
     specs = Pipeline._file_download_specs(_fake_pipeline(_Files, allow=True))
     assert set(specs) == {'report'}
     assert specs['report'].mode == 'retrigger'
-    assert specs['report'].parse == 'csv'
+    assert specs['report'].output == 'parsed'  # list[dict] annotation => parsed view
     assert specs['report'].allowed_types == ('csv', 'pdf')
 
 

@@ -26,7 +26,6 @@ def File(
     url: str | None = ...,
     description: str | None = ...,
     allowed_types: Iterable[str] | None = ...,
-    parse: str | None = ...,
     max_bytes: int | None = ...,
     **kwargs: Any,
 ) -> Any: ...

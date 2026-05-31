@@ -108,6 +108,18 @@ class Contract(BaseModel):
                         f'of {parent_name}.{child_name}. Rename either the flat field or the nested field.'
                     )
 
+        # ys.File() output is annotation-directed (see ys.File docstring): the field's
+        # declared type selects the value view. Validate every file field's type against the
+        # closed supported set HERE so an unsupported/ambiguous annotation fails loudly at
+        # contract-definition time rather than mid-scrape.
+        from yosoi.models.download import output_view_for_annotation
+
+        for name in cls.file_fields():
+            try:
+                output_view_for_annotation(cls.model_fields[name].annotation)
+            except ValueError as exc:  # noqa: PERF203 — definition-time guard over a tiny field list, not a hot loop
+                raise TypeError(f'{cls.__name__}.{name}: {exc}') from exc
+
     @model_validator(mode='wrap')
     @classmethod
     def _apply_validators_and_coerce(

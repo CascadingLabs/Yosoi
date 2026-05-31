@@ -19,8 +19,10 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from typing import Any
 
-# Parse modes shipped today. Stdlib only — no docling / RAG / embeddings / OCR.
-SUPPORTED_PARSE: tuple[str, ...] = ('csv', 'json')
+# Structured parse formats shipped today. Stdlib only — no docling / RAG / embeddings / OCR.
+# The format is inferred from the download's content-type (see ``parse_download``); it is
+# NOT a user knob — the field's declared type decides whether parsing happens at all.
+PARSE_FORMATS: tuple[str, ...] = ('csv', 'json')
 
 
 @dataclass(frozen=True)
@@ -156,6 +158,13 @@ def matches_allowed_types(
 
 
 # --- parse transforms ------------------------------------------------------
+#
+# These back the 'parsed' output view (a ys.File field annotated list/dict/Model). The
+# format (csv vs json) is chosen from the download's content-type — NOT a user knob — so
+# the field's declared *type* stays the single signal for "I want structured data". The
+# resulting python structure is then validated/coerced against the annotation by the
+# contract's TypeAdapter oracle (Contract.coerce_field), which is how a list[MyRow] field
+# gets per-row, semantically-typed rows for free. Pluggable seam for xlsx/zip later.
 
 ParseFn = Callable[[bytes, str | None], Any]
 
@@ -169,21 +178,26 @@ def _parse_json(data: bytes, _content_type: str | None) -> Any:
     return _json.loads(data.decode('utf-8'))
 
 
-# Pluggable registry — leave the seam for xlsx/zip/S3 later, ship nothing heavy now.
 _PARSERS: dict[str, ParseFn] = {'csv': _parse_csv, 'json': _parse_json}
 
 
-def apply_parse(parse: str | None, data: bytes, content_type: str | None) -> Any:
-    """Run the named parse transform over downloaded bytes.
+def _format_for_content_type(content_type: str | None) -> str:
+    """Pick a parse format (csv/json) from the server-declared content-type."""
+    ct = (content_type or '').split(';')[0].strip().lower()
+    if 'json' in ct:
+        return 'json'
+    # csv, text/plain, octet-stream, or no content-type → treat as delimited text.
+    return 'csv'
 
-    Returns ``None`` when ``parse`` is None (caller keeps the raw ``DownloadRecord``).
+
+def parse_download(data: bytes, content_type: str | None) -> Any:
+    """Parse downloaded bytes into a python structure, format chosen by content-type.
+
+    JSON content-types → parsed object; everything else → CSV rows (``list[dict]``).
+    The caller (contract validation) then coerces this into the field's declared type.
     """
-    if parse is None:
-        return None
-    fn = _PARSERS.get(parse)
-    if fn is None:
-        raise ValueError(f'unknown parse mode {parse!r}; supported: {", ".join(SUPPORTED_PARSE)}')
-    return fn(data, content_type)
+    fmt = _format_for_content_type(content_type)
+    return _PARSERS[fmt](data, content_type)
 
 
 def known_type_names() -> tuple[str, ...]:
@@ -192,10 +206,10 @@ def known_type_names() -> tuple[str, ...]:
 
 
 __all__ = [
-    'SUPPORTED_PARSE',
+    'PARSE_FORMATS',
     'FileTypeSpec',
-    'apply_parse',
     'known_type_names',
     'matches_allowed_types',
     'normalize_allowed_types',
+    'parse_download',
 ]

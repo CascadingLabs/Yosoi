@@ -38,22 +38,25 @@ EDGAR_CSV_URL = ''  # e.g. 'https://www.sec.gov/files/<some>.csv' — enables re
 class EdgarDataset(ys.Contract):
     """One EDGAR dataset: a label scraped from the page + a downloaded CSV's rows.
 
-    ``rows`` is a ys.File() field — an action field, not a CSS selector. It downloads the
-    CSV and (because ``parse='csv'``) resolves to a ``list[dict]`` of rows. ``allowed_types``
-    is the per-field allowlist; nothing downloads unless the bytes are really CSV.
+    ``rows`` is a ys.File() field — an action field, not a CSS selector. Yosoi downloads
+    the file and the field's **declared type** decides what you get back (annotation-directed
+    output): ``list[dict]`` here means "parse it into rows". Annotate ``Path`` for the file
+    path, ``bytes`` for raw bytes, ``ys.DownloadRecord`` for the provenance handle, or
+    ``list[MyRow]`` to get per-row validated models. ``allowed_types`` is the per-field
+    allowlist; nothing downloads unless the bytes are really CSV.
     """
 
     title: str = ys.Title(description='The page or dataset title')
 
     # Safe default: retrigger mode — click the CSV download link and capture the result.
-    rows: list = ys.File(
+    # `list[dict]` ⇒ Yosoi parses the CSV into rows. No parse= knob — the type is the knob.
+    rows: list[dict] = ys.File(
         trigger='a[href$=".csv"]',
-        parse='csv',
         allowed_types=['csv'],
     )
     # Alternative (refetch mode) — download a known CSV URL directly. Swap in when you
     # have a stable EDGAR CSV link and set EDGAR_CSV_URL:
-    #   rows: list = ys.File(url=EDGAR_CSV_URL, parse='csv', allowed_types=['csv'])
+    #   rows: list[dict] = ys.File(url=EDGAR_CSV_URL, allowed_types=['csv'])
 
 
 async def main() -> None:
