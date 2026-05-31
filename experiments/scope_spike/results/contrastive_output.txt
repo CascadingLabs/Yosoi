@@ -1,0 +1,27 @@
+==============================================================================
+CONTRASTIVE / METRIC LEARNING — 52 labeled pairs (26 positive / 26 negative)
+==============================================================================
+
+Hand-weighted equal blend (baseline):
+  positive-pair mean 0.965 | negative-pair mean 0.808 | separation 0.157
+
+Learned linear metric (contrastive objective, full fit):
+  positive-pair mean 0.795 | negative-pair mean 0.212 | separation 0.584
+
+Learned metric, LEAVE-ONE-DOMAIN-OUT (generalization to unseen sites):
+  pair-class accuracy 0.90 | leaks (different judged same) 5
+  (worldmodel hand-weighted 1-NN baseline: 0.85 cross-domain)
+
+Learned weights (which components the metric trusts):
+  simhash      +7.338
+  struct_cos   +7.192
+  bodyclass    +2.425
+  link_close   +1.001
+  prose_close  -0.263
+
+Reading: a LEARNED metric widens the positive/negative separation over the
+hand-weighted blend and tells us which cheap signals actually carry class.
+Pairs are labeled for FREE (roles now; content-invariant at runtime), so this
+is the trainable core of contrastive learning without a neural encoder or new
+deps. Deep two-tower contrastive (page-tower vs contract-tower) is the future
+upgrade once the flywheel has thousands of pairs — see FINDINGS_CONTRASTIVE.md.
