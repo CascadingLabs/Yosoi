@@ -23,6 +23,7 @@ not pull the heavier discovery/fetch stack.
 
 from __future__ import annotations
 
+from yosoi.generalization.advise import ReuseHint, SuggestedAction, advise_reuse
 from yosoi.generalization.canonicalize import (
     route_template,
     same_registrable_domain,
@@ -37,10 +38,12 @@ from yosoi.generalization.fingerprint import (
 )
 from yosoi.generalization.recommend import recommend
 from yosoi.generalization.signals import (
+    SCHEMA_VERSION,
     ReuseSignalPanel,
     SignalReading,
     Verdict,
 )
+from yosoi.generalization.store import DecisionStore
 from yosoi.generalization.trust import (
     DecisionRecord,
     Outcome,
@@ -49,14 +52,19 @@ from yosoi.generalization.trust import (
 )
 
 __all__ = [
+    'SCHEMA_VERSION',
     'DecisionRecord',
+    'DecisionStore',
     'Outcome',
     'PageObservation',
+    'ReuseHint',
     'ReuseSignalPanel',
     'SignalReading',
     'StructuralSignals',
+    'SuggestedAction',
     'Trust',
     'Verdict',
+    'advise_reuse',
     'build_decision',
     'observe_html',
     'recommend',
