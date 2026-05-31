@@ -64,3 +64,28 @@ def test_infer_extension() -> None:
     assert infer_extension(None, ('pdf',)) == 'pdf'  # fall back to allowlist name
     assert infer_extension(None, ('video/webm',)) == 'bin'  # MIME-only allowlist → bin
     assert infer_extension(None, ()) == 'bin'
+
+
+def test_commit_recovers_from_corrupt_index(tmp_path: Path) -> None:
+    (tmp_path / 'index.json').write_text('{ this is not json')  # garbage index
+    cas, changed = _commit(tmp_path, field='rows', name='a.csv', data=b'x,y', sha256='h1')
+    assert cas.exists()
+    assert changed is True
+    index = json.loads((tmp_path / 'index.json').read_text())  # rebuilt cleanly
+    assert 'h1' in index['blobs']
+
+
+def test_blob_source_urls_dedup_and_accumulate(tmp_path: Path) -> None:
+    common = {'field': 'rows', 'sha256': 'dup', 'content_type': 'text/csv', 'size_bytes': 1, 'allowed_types': ('csv',)}
+    commit_download(qdir=tmp_path, src_path=_write(tmp_path, 'a.csv', b'z'), source_url='https://a/x.csv', **common)
+    commit_download(qdir=tmp_path, src_path=_write(tmp_path, 'b.csv', b'z'), source_url='https://b/x.csv', **common)
+    commit_download(qdir=tmp_path, src_path=_write(tmp_path, 'c.csv', b'z'), source_url='https://a/x.csv', **common)
+    urls = json.loads((tmp_path / 'index.json').read_text())['blobs']['dup']['source_urls']
+    assert urls == ['https://a/x.csv', 'https://b/x.csv']  # accumulated, deduped
+
+
+def test_commit_recovers_from_non_dict_index(tmp_path: Path) -> None:
+    (tmp_path / 'index.json').write_text('[1, 2, 3]')  # valid JSON, but not a dict
+    cas, _ = _commit(tmp_path, field='rows', name='a.csv', data=b'x', sha256='h9')
+    assert cas.exists()
+    assert json.loads((tmp_path / 'index.json').read_text())['blobs']['h9']['name'] == 'a.csv'

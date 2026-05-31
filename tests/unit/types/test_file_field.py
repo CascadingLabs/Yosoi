@@ -115,3 +115,46 @@ def test_parse_download_csv_and_json() -> None:
     assert parse_download(b'{"a": 1}', 'application/json') == {'a': 1}
     # No content-type and delimited text → treated as CSV.
     assert parse_download(b'x,y\n1,2', None) == [{'x': '1', 'y': '2'}]
+
+
+# --- branch coverage: edge cases -------------------------------------------
+
+
+def test_normalize_rejects_empty_entry() -> None:
+    with pytest.raises(ValueError, match='non-empty'):
+        normalize_allowed_types([' '])
+
+
+def test_explicit_mime_allowlist_matches_by_content_type() -> None:
+    allowed = normalize_allowed_types(['video/webm'])  # explicit MIME escape hatch
+    assert allowed == ('video/webm',)
+    assert matches_allowed_types(allowed, 'video/webm', b'\x1aE\xdf\xa3')  # _spec_for synthetic
+    assert not matches_allowed_types(allowed, 'video/mp4', b'\x1aE\xdf\xa3')
+
+
+def test_no_content_type_text_fallback() -> None:
+    # No server content-type + a text-like allowed type → accept real text, reject binary.
+    assert matches_allowed_types(('csv',), None, b'a,b\n1,2')  # _looks_like_text → True
+    assert not matches_allowed_types(('csv',), None, b'\x00\x01\x02binary')  # NUL byte
+    assert not matches_allowed_types(('csv',), None, b'\xff\xfe\xfa\xfb')  # invalid utf-8
+
+
+def test_download_record_str_is_compact() -> None:
+    rec = DownloadRecord(path='/q/x.csv', sha256='a' * 64, size_bytes=42, content_type='text/csv')
+    text = str(rec)
+    assert '/q/x.csv' in text
+    assert '42B' in text
+    assert text.count('a') >= 12  # sha256 prefix shown
+
+
+def test_output_view_for_bare_pydantic_model() -> None:
+    class Cfg(Contract):
+        name: str = ys.Field()
+
+    assert output_view_for_annotation(Cfg) == 'parsed'
+
+
+def test_output_view_rejects_ambiguous_union() -> None:
+    # A union with two real (non-None) members can't be resolved to one view → unsupported.
+    with pytest.raises(ValueError, match='not supported'):
+        output_view_for_annotation(int | str)

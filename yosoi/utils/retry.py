@@ -50,6 +50,7 @@ def get_retryer(
     exceptions: tuple[type[Exception], ...] = (Exception,),
     log_callback: Callable[[RetryCallState], None] | None = None,
     reraise: bool = True,
+    non_retry_exceptions: tuple[type[Exception], ...] = (),
 ) -> BaseRetrying:
     """Create a standardized tenacity Retrying object for synchronous code.
 
@@ -62,6 +63,8 @@ def get_retryer(
         log_callback: Optional callback function for before_sleep logging.
                       Receives the retry state.
         reraise: Whether to reraise the exception after all retries fail.
+        non_retry_exceptions: Exception types that should NOT be retried even if they
+            match ``exceptions`` — they propagate immediately (deterministic failures).
 
     Returns:
         A configured tenacity.Retrying object.
@@ -76,6 +79,7 @@ def get_retryer(
             exceptions,
             log_callback,
             reraise,
+            non_retry_exceptions,
         )
     )
 

@@ -197,3 +197,69 @@ async def test_execute_downloads_uses_base_dir(tmp_path: Path) -> None:
     specs = {'report': DownloadSpec(field='report', trigger='a.x', allowed_types=('csv',))}
     results = await dl.execute_downloads(tab, specs, 'sec.gov', base_dir=str(tmp_path))
     assert Path(results['report'].record.path).parent == tmp_path / 'sec.gov'
+
+
+# --- error-path / branch coverage ------------------------------------------
+
+
+class _EvalRaisesTab(_FakeTab):
+    async def eval_js(self, expr: str) -> Any:
+        raise RuntimeError('eval blew up')
+
+
+class _ArmRaisesTab(_FakeTab):
+    async def arm_download(self, dir: str, max_bytes: int | None = None) -> object:
+        raise RuntimeError('cdp arm failed')
+
+
+class _MissingFileTab(_FakeTab):
+    def _write(self) -> _FakeOutcome:  # return an outcome whose path was never written
+        assert self._dir is not None
+        return _FakeOutcome(str(Path(self._dir) / 'does-not-exist.csv'), self._content_type, 7)
+
+
+async def test_retrigger_without_trigger_fails(tmp_path: Path) -> None:
+    tab = _FakeTab(data=CSV_BYTES, content_type='text/csv')
+    spec = DownloadSpec(field='report', mode='retrigger', trigger=None, allowed_types=('csv',))
+    with pytest.raises(DownloadError, match='retrigger mode requires'):
+        await dl.run_download(tab, spec, tmp_path)
+
+
+async def test_refetch_href_unresolved_fails(tmp_path: Path) -> None:
+    tab = _FakeTab(data=CSV_BYTES, content_type='text/csv', href=None)  # eval returns None
+    spec = DownloadSpec(field='report', mode='refetch', href='a.missing', allowed_types=('csv',))
+    with pytest.raises(DownloadError, match='could not resolve'):
+        await dl.run_download(tab, spec, tmp_path)
+
+
+async def test_refetch_href_eval_error_fails(tmp_path: Path) -> None:
+    tab = _EvalRaisesTab(data=CSV_BYTES, content_type='text/csv', href='x')
+    spec = DownloadSpec(field='report', mode='refetch', href='a.dl', allowed_types=('csv',))
+    with pytest.raises(DownloadError, match='could not resolve'):
+        await dl.run_download(tab, spec, tmp_path)
+
+
+async def test_capture_backend_error_wrapped(tmp_path: Path) -> None:
+    tab = _ArmRaisesTab(data=CSV_BYTES, content_type='text/csv')
+    spec = DownloadSpec(field='report', trigger='a.x', allowed_types=('csv',))
+    with pytest.raises(DownloadError, match='did not complete'):
+        await dl.run_download(tab, spec, tmp_path)
+
+
+async def test_unreadable_file_fails(tmp_path: Path) -> None:
+    tab = _MissingFileTab(data=CSV_BYTES, content_type='text/csv')
+    spec = DownloadSpec(field='report', trigger='a.x', allowed_types=('csv',))
+    with pytest.raises(DownloadError, match='unreadable'):
+        await dl.run_download(tab, spec, tmp_path)
+
+
+async def test_parse_failure_fails(tmp_path: Path) -> None:
+    tab = _FakeTab(data=b'{not valid json', content_type='application/json', filename='x.json')
+    spec = DownloadSpec(field='cfg', trigger='a.x', allowed_types=('json',), output='parsed')
+    with pytest.raises(DownloadError, match='could not parse'):
+        await dl.run_download(tab, spec, tmp_path)
+
+
+async def test_execute_downloads_empty_specs_returns_empty() -> None:
+    assert await dl.execute_downloads(object(), None, 'sec.gov') == {}
+    assert await dl.execute_downloads(object(), {}, 'sec.gov') == {}
