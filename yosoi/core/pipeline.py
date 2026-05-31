@@ -2213,6 +2213,9 @@ class Pipeline:
 
         Raises:
             BotDetectionError: Passes through bot detection from fetcher.
+            DownloadError: A ys.File() download rejection (bad type / unsafe url / parse
+                failure) fails fast instead of being swallowed — it would otherwise silently
+                drop the field on the cache-hit path.
 
         """
         step = (
