@@ -1,0 +1,77 @@
+{
+  "_comment": "Live PageObservation captures for the reuse-scope generalization demo. Row selector = '.quote' (qscrape.dev quote container), applied uniformly so cross-domain pages are judged under the SEED's recipe. qscrape.dev emits no body_class, so this benchmark deliberately has no page-kind tell — detail pages must be caught structurally.",
+  "seed": {
+    "role": "seed",
+    "scenario": "seed-listing",
+    "url": "https://qscrape.dev/",
+    "title": "QuoteScrape - Practice Web Scraping",
+    "rows": 10,
+    "body_class": "",
+    "tag_hist": {"nav": 1, "div": 54, "a": 43, "h1": 1, "span": 69, "i": 43, "p": 16, "blockquote": 10, "small": 10, "ul": 1, "li": 10, "footer": 1}
+  },
+  "replays": [
+    {
+      "role": "must-transfer",
+      "scenario": "same-subpath",
+      "url": "https://qscrape.dev/tag/love/page/1/",
+      "title": "QuoteScrape - Practice Web Scraping",
+      "rows": 3,
+      "body_class": "",
+      "tag_hist": {"nav": 1, "div": 18, "a": 12, "h1": 1, "span": 7, "i": 6, "p": 4, "blockquote": 3, "small": 3, "ul": 1, "li": 3, "footer": 1}
+    },
+    {
+      "role": "must-transfer",
+      "scenario": "same-subpath",
+      "url": "https://qscrape.dev/tag/humor/page/1/",
+      "title": "QuoteScrape - Practice Web Scraping",
+      "rows": 8,
+      "body_class": "",
+      "tag_hist": {"nav": 1, "div": 43, "a": 34, "h1": 1, "span": 17, "i": 14, "p": 9, "blockquote": 8, "small": 8, "ul": 1, "li": 8, "footer": 1}
+    },
+    {
+      "role": "must-transfer",
+      "scenario": "same-domain-other-route",
+      "url": "https://qscrape.dev/page/2/",
+      "title": "QuoteScrape - Practice Web Scraping",
+      "rows": 10,
+      "body_class": "",
+      "tag_hist": {"nav": 1, "div": 54, "a": 42, "h1": 1, "span": 69, "i": 43, "p": 16, "blockquote": 10, "small": 10, "ul": 1, "li": 10, "footer": 1}
+    },
+    {
+      "role": "must-refuse",
+      "scenario": "same-domain-detail",
+      "url": "https://qscrape.dev/author/Albert-Einstein",
+      "title": "QuoteScrape - Practice Web Scraping",
+      "rows": 0,
+      "body_class": "",
+      "tag_hist": {"nav": 1, "div": 5, "a": 2, "h3": 1, "span": 2, "p": 2, "footer": 1}
+    },
+    {
+      "role": "must-refuse",
+      "scenario": "same-domain-detail",
+      "url": "https://qscrape.dev/login",
+      "title": "QuoteScrape - Practice Web Scraping",
+      "rows": 0,
+      "body_class": "",
+      "tag_hist": {"nav": 1, "div": 5, "a": 2, "form": 1, "label": 2, "span": 1, "i": 1, "input": 3, "footer": 1}
+    },
+    {
+      "role": "expect-abstain",
+      "scenario": "cross-domain-similar",
+      "url": "https://quotes.toscrape.com/",
+      "title": "Quotes to Scrape",
+      "rows": 10,
+      "body_class": "",
+      "tag_hist": {"div": 56, "a": 49, "h1": 1, "span": 4, "i": 3, "p": 12, "nav": 1, "small": 10, "ul": 1, "li": 10, "label": 1, "input": 1, "footer": 1}
+    },
+    {
+      "role": "must-refuse",
+      "scenario": "cross-domain-different",
+      "url": "https://books.toscrape.com/",
+      "title": "All products | Books to Scrape - Sandbox",
+      "rows": 0,
+      "body_class": "",
+      "tag_hist": {"nav": 1, "div": 15, "a": 73, "span": 3, "p": 31, "article": 20, "ol": 1, "li": 28, "form": 1, "img": 20, "section": 1, "h3": 20}
+    }
+  ]
+}
