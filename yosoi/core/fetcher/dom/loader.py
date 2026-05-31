@@ -18,10 +18,23 @@ from typing import Any
 from rich.console import Console
 
 from yosoi.core.fetcher.dom.catalogues import CONTENT_SELECTOR
-from yosoi.core.fetcher.dom.probes import count_content
+from yosoi.core.fetcher.dom.flows import WaitForDOMStable
+from yosoi.core.fetcher.dom.probes import TriggerKind, count_content
+from yosoi.core.fetcher.dom.tree.actions import ClickTrigger, Scroll
+from yosoi.core.fetcher.dom.tree.conditions import HasTrigger
 from yosoi.core.fetcher.dom.tree.default import build_default_tree
 from yosoi.core.fetcher.dom.tree.nodes import Status
 from yosoi.storage.a3node import ActRecord
+
+# Trigger kinds that appear in a stored recipe (the ones that carry an ActionLog).
+# Overlay/cookie dismissals are not recorded as acts and are re-handled by probe.
+_CLICK_KINDS = {
+    TriggerKind.LOAD_MORE.value,
+    TriggerKind.ACCORDION.value,
+    TriggerKind.TAB.value,
+    TriggerKind.PAGINATION.value,
+}
+_SCROLL_KIND = TriggerKind.INFINITE_SCROLL.value
 
 logger = logging.getLogger(__name__)
 
@@ -141,6 +154,81 @@ class DOMLoader:
             html=html,
             acts=acts,
         )
+
+    async def replay(self, tab: Any, acts: list[ActRecord]) -> LoadResult:
+        """Re-execute a stored act sequence directly, skipping trigger discovery.
+
+        This is the "action replay" tier of an A3 node (CAS-75): the recorded
+        triggers are run in order using the same action primitives the probe
+        uses — each action still loops to exhaustion and settles the DOM — but
+        without searching the full behavior tree over trigger kinds the page does
+        not use, and with no LLM in the loop. That makes a repeat visit faster
+        and deterministic.
+
+        ``success`` is False when replay reached no content, so the caller can
+        fall back to a full :meth:`run` probe.
+
+        Args:
+            tab: The browser tab to drive.
+            acts: The stored ordered recipe to replay.
+
+        Returns:
+            A LoadResult whose ``acts`` reflect what actually executed (cycle
+            counts may differ from the recipe, since each action re-derives its
+            own stopping point from live content growth).
+        """
+        start = time.perf_counter()
+        stable = WaitForDOMStable(quiet_ms=self._quiet_ms)
+
+        await tab.wait_for_network_idle(timeout=5.0)
+        content_start = await count_content(tab, self._content_selector)
+        self._log(f'replay: {content_start} items initially, replaying {len(acts)} act(s)')
+
+        executed: list[ActRecord] = []
+        for act in acts:
+            built = self._build_replay_action(act.kind, stable)
+            if built is None:
+                self._log(f'replay: skipping unsupported act kind {act.kind!r}')
+                continue
+            condition, action = built
+            # Populate last_trigger for ClickTrigger; Scroll ignores it. A missing
+            # trigger makes ClickTrigger a no-op (cycles stays 0), which we skip.
+            await condition.tick(tab)
+            await action.tick(tab)
+            if action.log.cycles > 0:
+                executed.append(ActRecord(kind=act.kind, cycles=action.log.cycles))
+                self._log(f'replay: {act.kind} ran {action.log.cycles} cycle(s)')
+
+        html = await self._capture_html(tab)
+        content_final = await count_content(tab, self._content_selector)
+        elapsed_ms = (time.perf_counter() - start) * 1000
+        self._log(f'replay: {content_start} → {content_final} items in {elapsed_ms:.0f}ms')
+
+        return LoadResult(
+            success=html is not None and content_final > 0,
+            content_start=content_start,
+            content_final=content_final,
+            elapsed_ms=elapsed_ms,
+            action_log=[{'kind': a.kind, 'cycles': a.cycles} for a in executed],
+            html=html,
+            acts=executed,
+        )
+
+    def _build_replay_action(
+        self, kind: str, stable: WaitForDOMStable
+    ) -> tuple[HasTrigger, ClickTrigger | Scroll] | None:
+        """Build the (condition, action) pair that re-executes one stored act kind.
+
+        Returns None for kinds that are not replayable triggers (e.g. cookie /
+        overlay dismissals, which are not recorded as acts).
+        """
+        if kind == _SCROLL_KIND:
+            condition = HasTrigger(TriggerKind.INFINITE_SCROLL, self._content_selector)
+            return condition, Scroll(condition, stable, self._max_scroll_cycles)
+        if kind in _CLICK_KINDS:
+            condition = HasTrigger(TriggerKind(kind), self._content_selector)
+            return condition, ClickTrigger(condition, stable, self._max_click_cycles)
+        return None
 
     async def _capture_html(self, tab: Any) -> str | None:
         """Capture full page HTML after loading is complete."""

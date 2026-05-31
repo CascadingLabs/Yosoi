@@ -18,7 +18,6 @@ def _normalize(s: str | None) -> str:
 def field_signature(
     field_name: str,
     description: str,
-    hint: str | None,
     yosoi_type: str | None,
 ) -> str:
     """Return a stable 16-hex-char hash for a field's discovery identity.
@@ -29,7 +28,6 @@ def field_signature(
     Args:
         field_name: Field name as it appears in the contract.
         description: Field description from the contract.
-        hint: Optional yosoi_hint from the contract field.
         yosoi_type: Optional semantic type string (e.g. ``'price'``).
 
     Returns:
@@ -40,7 +38,6 @@ def field_signature(
         {
             'name': _normalize(field_name),
             'desc': _normalize(description),
-            'hint': _normalize(hint),
             'type': _normalize(yosoi_type),
         },
         sort_keys=True,
@@ -62,13 +59,11 @@ def contract_signature(contract: type[Contract]) -> str:
 
     """
     field_descs = contract.field_descriptions()
-    hints = contract.field_hints()
 
     field_sigs = sorted(
         field_signature(
             field_name=name,
             description=desc,
-            hint=hints.get(name),
             yosoi_type=_get_yosoi_type(contract, name),
         )
         for name, desc in field_descs.items()

@@ -22,8 +22,8 @@ class Book(ys.Contract):
     """Scrape book data from books.toscrape.com."""
 
     title: str = ys.Title()
-    price: float = ys.Price(hint='Book price — always includes £ symbol')
-    rating: str = ys.Rating(hint="Star rating written as a word e.g. 'Three'")
+    price: float = ys.Price(description='Book price — always includes £ symbol')
+    rating: str = ys.Rating(description="Star rating written as a word e.g. 'Three'")
 
 
 async def example_1_books():

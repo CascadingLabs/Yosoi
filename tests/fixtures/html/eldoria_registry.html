@@ -1,0 +1,129 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Grand Duchy of Eldoria - Arcane Registry of Deeds</title><link rel="stylesheet" href="/global.css"><script>
+	(function () {
+		function getCookie(name) {
+			var m = document.cookie.match(new RegExp("(?:^|; )" + name + "=([^;]*)"));
+			return m ? decodeURIComponent(m[1]) : null;
+		}
+
+		// Cross-site sync: read cl-theme and cl-lang from inbound links
+		var params = new URLSearchParams(window.location.search);
+		var dirty = false;
+
+		var inbound = params.get("cl-theme");
+		if (inbound === "light" || inbound === "dark" || inbound === "auto") {
+			var storeVal = inbound === "light" || inbound === "dark" ? inbound : "auto";
+			document.cookie = "cl-theme=" + storeVal + "; path=/; max-age=31536000; SameSite=Lax";
+			localStorage.setItem("starlight-theme", inbound === "auto" ? "" : inbound);
+			params.delete("cl-theme");
+			dirty = true;
+		}
+
+		var inboundLang = params.get("cl-lang");
+		if (inboundLang && /^[a-z]{2}(-[A-Za-z]{2,})?$/.test(inboundLang)) {
+			document.cookie = "cl-lang=" + inboundLang + "; path=/; max-age=31536000; SameSite=Lax";
+			params.delete("cl-lang");
+			dirty = true;
+		}
+
+		if (dirty) {
+			var clean = params.toString();
+			history.replaceState(null, "", window.location.pathname + (clean ? "?" + clean : "") + window.location.hash);
+		}
+
+		var c = getCookie("cl-theme");
+		var s = c || localStorage.getItem("starlight-theme");
+		var pref = s === "light" || s === "dark" ? s : "auto";
+		var resolved =
+			pref === "auto"
+				? window.matchMedia("(prefers-color-scheme: light)").matches
+					? "light"
+					: "dark"
+				: pref;
+		document.documentElement.dataset.theme = resolved;
+		document.documentElement.dataset.themePreference = pref;
+
+		// Always ensure cookie + localStorage exist (handles cleared/missing state)
+		var cookieVal = pref === "light" || pref === "dark" ? pref : "auto";
+		document.cookie = "cl-theme=" + cookieVal + "; path=/; max-age=31536000; SameSite=Lax";
+		localStorage.setItem("starlight-theme", pref === "auto" ? "" : pref);
+	})();
+</script><style>.cl-theme-toggle-float[data-astro-cid-x3pjskd3]{position:fixed;bottom:16px;right:16px;z-index:9999;display:flex;align-items:center;justify-content:center;width:2.25rem;height:2.25rem;border-radius:4px;background:#0000008c;border:1px solid rgba(255,255,255,.18);color:#ffffffd9;cursor:pointer;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);transition:background .2s,border-color .2s,color .2s,box-shadow .2s;box-shadow:0 2px 8px #00000059}[data-theme=light] .cl-theme-toggle-float[data-astro-cid-x3pjskd3]{background:#ffffffbf;border-color:#00000024;color:#000000b3;box-shadow:0 2px 8px #0000001f}.cl-theme-toggle-float[data-astro-cid-x3pjskd3]:hover{background:#000000bf;color:#fff}[data-theme=light] .cl-theme-toggle-float[data-astro-cid-x3pjskd3]:hover{background:#fffffff2;color:#000}.cl-theme-icon[data-astro-cid-x3pjskd3]{display:none}[data-theme-preference=dark] .cl-icon-moon[data-astro-cid-x3pjskd3],[data-theme-preference=light] .cl-icon-sun[data-astro-cid-x3pjskd3],[data-theme-preference=auto] .cl-icon-auto[data-astro-cid-x3pjskd3]{display:block}
+</style></head> <body> <div id="container"> <div class="headerBar">Grand Duchy of Eldoria - Arcane Registry of Deeds</div> <div class="navBar"> <a href="/l1/taxes/">Home</a> <a href="/l1/taxes/tax-search">Tax Search</a> <a href="/l1/taxes/how-to">How To</a> <a href="/l1/taxes/recording-fees">Recording Fees</a> </div> <div class="breadcrumbs"> <a href="/l1/taxes/">Home</a> </div> <div class="pageTitle">Welcome to Eldoria Arcane Registry of Deeds</div> <div class="formSection"> <p>The Grand Duchy of Eldoria Arcane Registry of Deeds (ROD) provides public access to property records, tax information, and deed documents for all mystical parcels within the Duchy.</p> <table class="formTable" style="width: 100%; margin: 10px 0;"> <tr> <td colspan="2" style="padding: 10px 0;"> <strong>Online Services</strong> </td> </tr> <tr> <td style="padding: 5px 10px;"> <a href="/l1/taxes/tax-search">Property Tax Search</a> </td> <td>Search property tax records by Aetheric Parcel Number (APN) or Mage Name</td> </tr> <tr> <td style="padding: 5px 10px;"> <a href="/l1/taxes/how-to">How To Guides</a> </td> <td>Step-by-step filing guides for deeds, mortgages, liens, easements, and more</td> </tr> <tr> <td style="padding: 5px 10px;"> <a href="/l1/taxes/recording-fees">Recording Fees</a> </td> <td>Fee schedule for document recording</td> </tr> </table> </div> <div class="formSection"> <strong>Office Information</strong><br> <span class="aspNetLabel">Arcane Registry of Deeds Office<br>
+Hall of Records, Level Z-1, Room 14<br>
+Mountainhome Civic Quarter, Grand Duchy of Eldoria<br><br>
+Rune-Wire: (555) 234-5678<br>
+Sending Stone: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="fb89949fbb9e979f9489929ad59c948d">[email&#160;protected]</a><br>
+Hours: M-F 8:30AM-5:00PM (surface time)</span> </div> <div class="footerBar">
+&copy; 2026 Grand Duchy of Eldoria. All rights reserved.<br>
+Eldoria ROD v2.0.2004
+</div> </div> <button class="cl-theme-toggle-float" type="button" aria-label="Toggle theme" id="cl-theme-toggle-site" data-astro-cid-x3pjskd3> <svg class="cl-theme-icon cl-icon-sun" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-astro-cid-x3pjskd3> <circle cx="12" cy="12" r="4" data-astro-cid-x3pjskd3></circle><path d="M12 2v2" data-astro-cid-x3pjskd3></path><path d="M12 20v2" data-astro-cid-x3pjskd3></path><path d="m4.93 4.93 1.41 1.41" data-astro-cid-x3pjskd3></path><path d="m17.66 17.66 1.41 1.41" data-astro-cid-x3pjskd3></path><path d="M2 12h2" data-astro-cid-x3pjskd3></path><path d="M20 12h2" data-astro-cid-x3pjskd3></path><path d="m6.34 17.66-1.41 1.41" data-astro-cid-x3pjskd3></path><path d="m19.07 4.93-1.41 1.41" data-astro-cid-x3pjskd3></path> </svg> <svg class="cl-theme-icon cl-icon-moon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-astro-cid-x3pjskd3> <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" data-astro-cid-x3pjskd3></path> </svg> <svg class="cl-theme-icon cl-icon-auto" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-astro-cid-x3pjskd3> <rect x="2" y="3" width="20" height="14" rx="2" data-astro-cid-x3pjskd3></rect><path d="M8 21h8" data-astro-cid-x3pjskd3></path><path d="M12 17v4" data-astro-cid-x3pjskd3></path> </svg> </button>  <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+    (function () {
+        var order = ['dark', 'light', 'auto'];
+
+        function getCookie(name) {
+            var m = document.cookie.match(
+                new RegExp('(?:^|; )' + name + '=([^;]*)'),
+            );
+            return m ? decodeURIComponent(m[1]) : null;
+        }
+
+        function getStored() {
+            var c = getCookie('cl-theme');
+            var s = c || localStorage.getItem('starlight-theme');
+            return s === 'light' || s === 'dark' ? s : 'auto';
+        }
+
+        function apply(pref, animate) {
+            var resolved =
+                pref === 'auto'
+                    ? window.matchMedia('(prefers-color-scheme: light)').matches
+                        ? 'light'
+                        : 'dark'
+                    : pref;
+            function commit() {
+                document.documentElement.dataset.theme = resolved;
+                document.documentElement.dataset.themePreference = pref;
+            }
+            var val = pref === 'light' || pref === 'dark' ? pref : 'auto';
+            document.cookie =
+                'cl-theme=' + val + '; path=/; max-age=31536000; SameSite=Lax';
+            localStorage.setItem(
+                'starlight-theme',
+                pref === 'light' || pref === 'dark' ? pref : '',
+            );
+            // View Transitions API: GPU-composited crossfade of two page
+            // snapshots, instead of per-element CSS transitions.
+            var reduced = window.matchMedia(
+                '(prefers-reduced-motion: reduce)',
+            ).matches;
+            if (
+                animate &&
+                !reduced &&
+                typeof document.startViewTransition === 'function'
+            ) {
+                document.startViewTransition(commit);
+            } else {
+                commit();
+            }
+        }
+
+        document
+            .getElementById('cl-theme-toggle-site')
+            .addEventListener('click', function () {
+                var current = getStored();
+                var next = order[(order.indexOf(current) + 1) % order.length];
+                apply(next, true);
+            });
+
+        window
+            .matchMedia('(prefers-color-scheme: light)')
+            .addEventListener('change', function () {
+                if (getStored() === 'auto') apply('auto', false);
+            });
+
+        window.addEventListener('storage', function (e) {
+            if (e.key === 'starlight-theme') apply(getStored(), false);
+        });
+    })();
+</script> <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"fc50d56ba8964763916ec7a3211a8e85","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body></html>

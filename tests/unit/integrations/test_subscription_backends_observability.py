@@ -29,6 +29,7 @@ import respx
 from opentelemetry.sdk.trace import ReadableSpan
 from pydantic import BaseModel
 from pydantic_ai import Agent
+from pydantic_ai.capabilities import Instrumentation
 from pydantic_ai.models.test import TestModel
 
 from yosoi.integrations.claude_sdk import ClaudeSDKModel
@@ -68,7 +69,7 @@ def instrumentation(mocker):
 async def _chat_span(model, span_exporter) -> ReadableSpan:
     """Run a fresh instrumented agent over *model* and return its single chat span."""
     span_exporter.clear()
-    await Agent(model, output_type=_Out, instrument=True).run('extract title')
+    await Agent(model, output_type=_Out, capabilities=[Instrumentation()]).run('extract title')
     chat_spans = [s for s in span_exporter.get_finished_spans() if s.name.startswith('chat ')]
     names = [s.name for s in span_exporter.get_finished_spans()]
     assert len(chat_spans) == 1, f'expected one chat span, got: {names}'

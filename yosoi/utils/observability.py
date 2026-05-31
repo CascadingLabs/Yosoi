@@ -10,7 +10,7 @@ Usage::
     from yosoi.utils import observability as obs
 
     obs.configure(yosoi_cfg.telemetry)            # idempotent, no-op without keys
-    settings = obs.instrumentation_settings()     # pass to Agent(instrument=...)
+    caps = obs.agent_capabilities()               # pass to Agent(capabilities=...)
 
     with obs.span('process_urls', total=10):
         ...
@@ -28,14 +28,17 @@ import uuid
 from collections.abc import Iterator
 from contextlib import contextmanager
 from threading import Lock
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypedDict
 from urllib.parse import urlparse
 
 from langfuse import Langfuse
 from opentelemetry import context as otel_context
 from opentelemetry import trace
+from pydantic_ai.capabilities import Instrumentation
 
 if TYPE_CHECKING:
+    from pydantic_ai.capabilities import AgentCapability
+
     from yosoi.core.configs import TelemetryConfig
 
 _logger = logging.getLogger(__name__)
@@ -129,14 +132,18 @@ def client() -> LangfuseClient | None:
     return LangfuseClient._instance
 
 
-def instrumentation_settings() -> bool:
-    """Return True when Langfuse is active so Agents emit spans, else False.
+def agent_capabilities() -> list[AgentCapability[Any]]:
+    """Return the pydantic-ai capabilities that wire Agents into telemetry.
 
-    Once :func:`configure` runs successfully, ``Agent.instrument_all()`` has
-    already wired pydantic-ai to the global TracerProvider that Langfuse
-    installed, so passing ``instrument=True`` is sufficient.
+    Yields ``[Instrumentation()]`` when Langfuse is active so Agents emit spans,
+    else ``[]``. Once :func:`configure` runs successfully, it has already wired
+    pydantic-ai to the global TracerProvider that Langfuse installed, so the
+    default :class:`Instrumentation` capability picks it up. Pass the result to
+    ``Agent(capabilities=...)``.
     """
-    return client() is not None
+    if client() is None:
+        return []
+    return [Instrumentation()]
 
 
 @contextmanager
@@ -304,6 +311,178 @@ def set_trace_output(span: Any | None, payload: Any) -> None:
     if span is None or client() is None:
         return
     span.set_attribute('langfuse.observation.output', _serialize_for_langfuse(payload))
+
+
+# ---------------------------------------------------------------------------
+# Standard span attribute contract
+# ---------------------------------------------------------------------------
+# One queryable schema so every "view" — the three LLM backends, A3Node
+# replay/probe, and the selector cache — reports the same attribute keys in
+# Langfuse. Call sites set values through the helpers below; the round-trip
+# tests in ``tests/unit/utils/test_observability.py`` assert the emitted spans
+# carry these exact constants, so emission and tests never drift.
+
+# -- LLM transport ----------------------------------------------------------
+# ``LLM_TRANSPORT_SPAN`` replaces the per-backend ``claude_sdk.query`` /
+# ``opencode.message`` spans with one name + attribute schema. The same
+# ``yosoi.llm.*`` identity is also stamped on the discovery span that wraps any
+# ``agent.run()`` (via :func:`annotate_llm`) so it is queryable uniformly for
+# direct-API providers too, which have no custom transport span of their own.
+LLM_TRANSPORT_SPAN = 'llm.transport'
+ATTR_LLM_BACKEND = 'yosoi.llm.backend'  # 'api' | 'claude-sdk' | 'opencode'
+ATTR_LLM_PROVIDER = 'yosoi.llm.provider'  # raw provider, e.g. 'groq'
+ATTR_LLM_MODEL = 'yosoi.llm.model'
+ATTR_LLM_STRUCTURED = 'yosoi.llm.structured_output'
+
+BACKEND_API = 'api'
+BACKEND_CLAUDE_SDK = 'claude-sdk'
+BACKEND_OPENCODE = 'opencode'
+
+# -- A3Node DOM-stability recipe (fetch span) -------------------------------
+# ``mode`` records the *attempted* path, not the HTML's final provenance: a
+# replay that falls short keeps ``mode='replay'`` with ``fell_back=True`` even
+# though it ultimately re-probed. Query ``fell_back`` (not ``mode``) to isolate
+# replays that did not produce the served HTML.
+ATTR_A3_MODE = 'yosoi.a3node.mode'  # 'disabled' | 'probe' | 'replay' (attempt-intent)
+ATTR_A3_REPLAYED = 'yosoi.a3node.replayed'  # replay produced usable HTML
+ATTR_A3_FELL_BACK = 'yosoi.a3node.fell_back'  # replay fell short → re-probed
+ATTR_A3_ACTS = 'yosoi.a3node.acts'  # DOMLoader act count in the recipe
+ATTR_A3_REPLAY_COUNT = 'yosoi.a3node.replay_count'  # prior successful replays
+ATTR_A3_SETTLE_SECONDS = 'yosoi.a3node.settle_seconds'
+
+A3_MODE_DISABLED = 'disabled'
+A3_MODE_PROBE = 'probe'
+A3_MODE_REPLAY = 'replay'
+
+# -- Selector cache outcome (root scrape span) ------------------------------
+ATTR_CACHE_PATH = 'yosoi.cache.path'  # 'fresh' | 'cached' | 'partial'
+ATTR_CACHE_FRESH_FIELDS = 'yosoi.cache.fresh_fields'
+ATTR_CACHE_STALE_FIELDS = 'yosoi.cache.stale_fields'
+
+CACHE_FRESH = 'fresh'  # full fresh discovery, no usable cache
+CACHE_CACHED = 'cached'  # every field served from cache, no LLM
+CACHE_PARTIAL = 'partial'  # some fields cached, some re-discovered
+
+
+def llm_backend(provider: str) -> str:
+    """Map a raw provider name onto the standard LLM backend label.
+
+    Subscription transports (``claude-sdk``, ``opencode``) keep their own
+    label; every direct-API provider (groq, anthropic, openai, …) collapses to
+    ``api`` so a single Langfuse filter separates "our own transports" from
+    "vendor APIs".
+    """
+    p = provider.lower()
+    if p == BACKEND_CLAUDE_SDK:
+        return BACKEND_CLAUDE_SDK
+    if p == BACKEND_OPENCODE:
+        return BACKEND_OPENCODE
+    return BACKEND_API
+
+
+def current_span() -> Any:
+    """Return the active OTel span so callers can annotate it via the helpers.
+
+    May be a non-recording no-op span when no span is in scope; the annotate
+    helpers guard on :func:`client` so this is always safe to pass.
+    """
+    return trace.get_current_span()
+
+
+def _apply(target: Any | None, attrs: dict[str, Any]) -> None:
+    """Set the non-None *attrs* on *target* span. No-op when telemetry is off.
+
+    Centralizes the None-skipping + active-client guard so every annotate
+    helper is a one-liner and OTel never sees a ``None`` attribute value.
+    """
+    if target is None or client() is None:
+        return
+    for k, v in attrs.items():
+        if v is not None:
+            target.set_attribute(k, v)
+
+
+@contextmanager
+def transport_span(backend: str, model: str, *, structured_output: bool, **extra: Any) -> Iterator[Any]:
+    """Span around a custom LLM Model's raw transport call.
+
+    Standardizes the previously divergent per-backend spans onto one name
+    (:data:`LLM_TRANSPORT_SPAN`) and attribute schema, so a single Langfuse
+    view covers every backend. ``**extra`` carries backend-specific detail
+    (e.g. ``base_url``) under the ``yosoi.llm.`` namespace. No-op when
+    telemetry is off.
+    """
+    with span(LLM_TRANSPORT_SPAN) as s:
+        _apply(
+            s,
+            {
+                ATTR_LLM_BACKEND: backend,
+                ATTR_LLM_MODEL: model,
+                ATTR_LLM_STRUCTURED: structured_output,
+                **{f'yosoi.llm.{k}': v for k, v in extra.items()},
+            },
+        )
+        yield s
+
+
+def annotate_llm(target: Any | None, *, provider: str, model: str) -> None:
+    """Tag the discovery span wrapping ``agent.run()`` with uniform LLM identity.
+
+    Applied for every backend so ``yosoi.llm.backend`` / ``provider`` / ``model``
+    sit on the same keys regardless of transport. No-op when telemetry is off.
+    """
+    _apply(target, {ATTR_LLM_BACKEND: llm_backend(provider), ATTR_LLM_PROVIDER: provider, ATTR_LLM_MODEL: model})
+
+
+class A3ReplayAttrs(TypedDict):
+    """Shared A3Node replay-span fields, splat into :func:`annotate_a3node`.
+
+    Excludes ``replayed``/``fell_back`` so each exit point can set its own
+    outcome flag while reusing the common metadata.
+    """
+
+    mode: str
+    acts: int
+    replay_count: int
+    settle_seconds: float
+
+
+def annotate_a3node(
+    target: Any | None,
+    *,
+    mode: str,
+    replayed: bool = False,
+    fell_back: bool = False,
+    acts: int = 0,
+    replay_count: int = 0,
+    settle_seconds: float = 0.0,
+) -> None:
+    """Tag the fetch span with the A3Node recipe outcome. No-op when off."""
+    _apply(
+        target,
+        {
+            ATTR_A3_MODE: mode,
+            ATTR_A3_REPLAYED: replayed,
+            ATTR_A3_FELL_BACK: fell_back,
+            ATTR_A3_ACTS: acts,
+            ATTR_A3_REPLAY_COUNT: replay_count,
+            ATTR_A3_SETTLE_SECONDS: settle_seconds,
+        },
+    )
+
+
+def annotate_cache(
+    target: Any | None, *, path: str, fresh_fields: int | None = None, stale_fields: int | None = None
+) -> None:
+    """Tag the root scrape span with the selector-cache outcome. No-op when off.
+
+    ``fresh_fields`` / ``stale_fields`` are optional so a common emit point can
+    stamp ``path`` alone without clobbering counts set earlier at a branch that
+    actually computed them (``_apply`` skips ``None`` values).
+    """
+    _apply(
+        target, {ATTR_CACHE_PATH: path, ATTR_CACHE_FRESH_FIELDS: fresh_fields, ATTR_CACHE_STALE_FIELDS: stale_fields}
+    )
 
 
 def reset_for_tests() -> None:

@@ -62,3 +62,24 @@ def test_datetime_as_object():
 
     result = C.model_validate({'dt': '2024-06-15T12:00:00Z'})
     assert isinstance(result.dt, dt_module.datetime)
+
+
+def test_datetime_splits_on_middot_separator():
+    """The · separator is split and the last segment is used as the date (line 45)."""
+
+    class C(Contract):
+        dt: str = ys.Datetime()
+
+    result = C.model_validate({'dt': 'Jane Doe · 2025-03-15'})
+    assert isinstance(result.dt, str)
+    assert '2025-03-15' in result.dt
+
+
+def test_datetime_past_only_rejects_future_date():
+    """past_only=True raises when the parsed date is in the future (line 56)."""
+
+    class C(Contract):
+        dt: str = ys.Datetime(past_only=True)
+
+    with pytest.raises(ValidationError, match='Temporal hallucination'):
+        C.model_validate({'dt': '2099-12-31'})

@@ -13,7 +13,7 @@ from tenacity import RetryError
 from yosoi.core.verification.verifier import SelectorVerifier
 from yosoi.models.selectors import FieldSelectors, SelectorLevel
 from yosoi.models.snapshot import SnapshotStatus
-from yosoi.prompts.discovery import DiscoveryInput
+from yosoi.prompts.discovery import DiscoveryInput, FieldFeedback
 from yosoi.utils import observability as obs
 from yosoi.utils.exceptions import LLMGenerationError
 from yosoi.utils.retry import get_async_retryer
@@ -48,25 +48,24 @@ async def _invoke_agent(
     agent: FieldDiscoveryAgent,
     field_name: str,
     field_description: str,
-    field_hint: str | None,
     discovery_input: DiscoveryInput,
     level: SelectorLevel,
     is_container: bool,
     semaphore: asyncio.Semaphore | None,
+    feedback: FieldFeedback | None = None,
 ) -> FieldSelectors | None:
     """Invoke the field discovery agent, optionally throttled by a semaphore."""
     if semaphore is not None:
         async with semaphore:
             return await agent.discover_field(
-                field_name, field_description, field_hint, discovery_input, level, is_container
+                field_name, field_description, discovery_input, level, is_container, feedback
             )
-    return await agent.discover_field(field_name, field_description, field_hint, discovery_input, level, is_container)
+    return await agent.discover_field(field_name, field_description, discovery_input, level, is_container, feedback)
 
 
 async def _discover_field(
     field_name: str,
     field_description: str,
-    field_hint: str | None,
     discovery_input: DiscoveryInput,
     html: str,
     agent: FieldDiscoveryAgent,
@@ -75,6 +74,7 @@ async def _discover_field(
     max_retries: int,
     is_container: bool,
     semaphore: asyncio.Semaphore | None,
+    feedback: FieldFeedback | None = None,
 ) -> FieldTaskResult:
     """Cache-check + per-level escalation loop. No bus coordination."""
     verifier = SelectorVerifier()
@@ -136,11 +136,11 @@ async def _discover_field(
                         agent,
                         field_name,
                         field_description,
-                        field_hint,
                         discovery_input,
                         level,
                         is_container,
                         semaphore,
+                        feedback,
                     )
                     if llm_result is None:
                         # LLM returned NA — not retryable, skip to next level
@@ -180,7 +180,6 @@ async def _discover_field(
 async def run_field_task(
     field_name: str,
     field_description: str,
-    field_hint: str | None,
     discovery_input: DiscoveryInput,
     html: str,
     agent: FieldDiscoveryAgent,
@@ -191,6 +190,7 @@ async def run_field_task(
     semaphore: asyncio.Semaphore | None = None,
     scoped_bus: ScopedBus | None = None,
     yosoi_type: str | None = None,
+    feedback: FieldFeedback | None = None,
 ) -> FieldTaskResult:
     """Discover selectors for a single field with cache check, escalation, and inline verification.
 
@@ -209,7 +209,6 @@ async def run_field_task(
     Args:
         field_name: Name of the field to discover
         field_description: Human-readable description from the contract
-        field_hint: Optional AI hint from the contract field definition
         discovery_input: URL and HTML passed to the agent
         html: Raw HTML for inline verification (same as discovery_input.html)
         agent: Shared FieldDiscoveryAgent instance
@@ -221,16 +220,25 @@ async def run_field_task(
         semaphore: Optional asyncio.Semaphore to cap concurrent LLM calls
         scoped_bus: Optional domain-scoped discovery bus for cross-pipeline sharing.
         yosoi_type: Semantic type string used in the field signature (e.g. ``'price'``).
+        feedback: Optional semantic-validation feedback prepended to the LLM
+            prompt on a corrective retry. When set, the discovery bus is
+            bypassed so a sibling's (wrong) cached result cannot short-circuit
+            the correction.
 
     Returns:
         FieldTaskResult with selectors=None if all attempts failed.
 
     """
+    # A corrective retry must not be satisfied by another pipeline's shared
+    # (and likely identical, hence wrong) result — bypass the bus entirely.
+    if feedback:
+        scoped_bus = None
+
     # --- Bus coordination ---
     is_bus_leader = False
     sig: str = ''
     if scoped_bus is not None:
-        sig = field_signature(field_name, field_description, field_hint, yosoi_type)
+        sig = field_signature(field_name, field_description, yosoi_type)
         is_bus_leader = await scoped_bus.acquire(sig)
         if not is_bus_leader:
             cached = await scoped_bus.wait_for(sig)
@@ -245,7 +253,6 @@ async def run_field_task(
         result = await _discover_field(
             field_name=field_name,
             field_description=field_description,
-            field_hint=field_hint,
             discovery_input=discovery_input,
             html=html,
             agent=agent,
@@ -254,6 +261,7 @@ async def run_field_task(
             max_retries=max_retries,
             is_container=is_container,
             semaphore=semaphore,
+            feedback=feedback,
         )
         return result
     finally:

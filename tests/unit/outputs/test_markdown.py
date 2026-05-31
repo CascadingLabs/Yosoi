@@ -408,3 +408,32 @@ def test_save_markdown_uses_w_mode(tmp_path):
     text = Path(filepath).read_text(encoding='utf-8')
     assert 'OLD CONTENT' not in text
     assert '# New' in text
+
+
+def test_format_items_skips_none_and_empty_values():
+    """Items with None or empty-string values are skipped — no blank lines (line 89)."""
+    from yosoi.outputs.markdown import format_markdown
+
+    content = [
+        {'title': 'Item One', 'subtitle': None, 'body': '', 'price': '9.99'},
+    ]
+    result = format_markdown('https://x.com', 'x.com', content)
+
+    assert 'Item One' in result
+    assert '9.99' in result
+    # None and empty-string fields must not produce blank label lines
+    assert 'subtitle' not in result
+    assert 'body' not in result
+
+
+def test_format_items_block_layout_for_multi_line_values():
+    """A field whose formatted value spans multiple lines uses block layout (lines 97-98)."""
+    from yosoi.outputs.markdown import format_markdown
+
+    # A list value renders as multiple lines (block layout, not inline)
+    content = [{'links': [{'title': 'A', 'href': '/a'}, {'title': 'B', 'href': '/b'}]}]
+    result = format_markdown('https://x.com', 'x.com', content)
+
+    assert 'Links' in result or 'links' in result
+    assert '/a' in result
+    assert '/b' in result

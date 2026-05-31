@@ -227,3 +227,17 @@ def test_save_formatted_content_unknown_format_falls_back_to_json(mocker, tmp_pa
     filepath = str(tmp_path / 'out.xml')
     save_formatted_content(filepath, 'https://example.com', 'example.com', {'title': 'X'}, 'xml')
     mock.assert_called_once()
+
+
+def test_save_formatted_content_list_content_with_accumulating_format_iterates(mocker, tmp_path):
+    """List content is written item-by-item for accumulating formats (lines 74-75)."""
+    mock = mocker.patch('yosoi.outputs.utils.save_jsonl')
+    filepath = str(tmp_path / 'results.jsonl')
+    items = [{'title': 'A'}, {'title': 'B'}, {'title': 'C'}]
+    from yosoi.outputs.utils import save_formatted_content
+
+    save_formatted_content(filepath, 'https://example.com', 'example.com', items, 'jsonl')
+
+    assert mock.call_count == 3
+    mock.assert_any_call(filepath, 'https://example.com', 'example.com', {'title': 'A'})
+    mock.assert_any_call(filepath, 'https://example.com', 'example.com', {'title': 'C'})

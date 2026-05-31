@@ -98,18 +98,6 @@ def test_field_descriptions_skips_child_overrides():
 
 
 # ---------------------------------------------------------------------------
-# field_hints()
-# ---------------------------------------------------------------------------
-
-
-def test_field_hints_expands_nested():
-    hints = _Product.field_hints()
-    assert 'price_amount' in hints
-    assert 'price_currency' in hints
-    assert 'price' not in hints
-
-
-# ---------------------------------------------------------------------------
 # to_selector_model()
 # ---------------------------------------------------------------------------
 

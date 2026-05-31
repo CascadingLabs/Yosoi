@@ -41,3 +41,13 @@ def test_rating_exceeds_scale_raises():
 
     with pytest.raises(ValidationError):
         C.model_validate({'rating': '11 stars'})
+
+
+def test_rating_no_numeric_raises():
+    """Rating with no parseable number raises ValueError (line 57)."""
+
+    class C(Contract):
+        rating: float = ys.Rating(as_float=True)
+
+    with pytest.raises(ValidationError, match='Could not extract numeric rating'):
+        C.model_validate({'rating': 'excellent'})

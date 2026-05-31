@@ -1,8 +1,14 @@
 import json
 from pathlib import Path
 
+import pytest
+
 import yosoi.utils.files
 from yosoi.utils.files import (
+    atomic_write_json,
+    atomic_write_json_async,
+    atomic_write_text,
+    atomic_write_text_async,
     ensure_tracking_file,
     get_debug_path,
     get_logs_path,
@@ -476,3 +482,79 @@ def test_ensure_tracking_migrates_root_file(tmp_path):
     assert not root_tracking.exists()
     data = json.loads((yosoi_dir / 'stats.json').read_text())
     assert data == {'root': True}
+
+
+# ---------------------------------------------------------------------------
+# Atomic write helpers (sync + async)
+# ---------------------------------------------------------------------------
+
+
+def _no_tmp_left(directory: Path) -> bool:
+    """No leftover temp files (atomic writer cleans up on success and failure)."""
+    return not list(directory.glob('.*.tmp'))
+
+
+def test_atomic_write_text_creates_parents_and_writes(tmp_path):
+    target = tmp_path / 'nested' / 'deep' / 'out.txt'
+    atomic_write_text(target, 'hello')
+    assert target.read_text() == 'hello'
+    assert _no_tmp_left(target.parent)
+
+
+def test_atomic_write_json_roundtrips(tmp_path):
+    target = tmp_path / 'data.json'
+    atomic_write_json(target, {'a': 1, 'b': [2, 3]})
+    assert json.loads(target.read_text()) == {'a': 1, 'b': [2, 3]}
+    assert _no_tmp_left(target.parent)
+
+
+def test_atomic_write_text_failure_cleans_tmp_and_preserves_original(tmp_path, mocker):
+    target = tmp_path / 'out.txt'
+    target.write_text('original')
+    mocker.patch('yosoi.utils.files.os.replace', side_effect=OSError('boom'))
+
+    with pytest.raises(OSError, match='boom'):
+        atomic_write_text(target, 'new content')
+
+    # Original is untouched and no temp file is left behind.
+    assert target.read_text() == 'original'
+    assert _no_tmp_left(tmp_path)
+
+
+async def test_atomic_write_text_async_creates_parents_and_writes(tmp_path):
+    target = tmp_path / 'nested' / 'out.txt'
+    await atomic_write_text_async(target, 'hello async')
+    assert target.read_text() == 'hello async'
+    assert _no_tmp_left(target.parent)
+
+
+async def test_atomic_write_json_async_roundtrips(tmp_path):
+    target = tmp_path / 'data.json'
+    await atomic_write_json_async(target, {'x': 'y'}, ensure_ascii=False)
+    assert json.loads(target.read_text()) == {'x': 'y'}
+    assert _no_tmp_left(target.parent)
+
+
+async def test_atomic_write_async_failure_cleans_tmp_and_preserves_original(tmp_path, mocker):
+    target = tmp_path / 'out.txt'
+    target.write_text('original')
+    mocker.patch('yosoi.utils.files.aiofiles.os.replace', side_effect=OSError('boom'))
+
+    with pytest.raises(OSError, match='boom'):
+        await atomic_write_text_async(target, 'new content')
+
+    assert target.read_text() == 'original'
+    assert _no_tmp_left(tmp_path)
+
+
+def test_ensure_tracking_file_reraises_on_migration_failure(tmp_path, mocker):
+    """A failed root-level stats.json migration must re-raise, not be swallowed."""
+    yosoi_dir = tmp_path / '.yosoi'
+    yosoi_dir.mkdir()
+    # Stale root-level tracking file that triggers the migration branch.
+    (tmp_path / 'stats.json').write_text(json.dumps({'a.com': {}}))
+
+    mocker.patch('yosoi.utils.files.shutil.move', side_effect=OSError('move failed'))
+
+    with pytest.raises(OSError, match='move failed'):
+        ensure_tracking_file(yosoi_dir)

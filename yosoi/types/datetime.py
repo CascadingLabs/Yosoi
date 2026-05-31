@@ -6,12 +6,19 @@ import datetime as dt_module
 
 import dateparser
 
-from yosoi.types.registry import CoercionConfig, register_coercion
+from yosoi.types.registry import KIND_TEXT, CoercionConfig, SemanticRule, register_coercion
 
 _STRIP_PREFIXES = ('published:', 'updated:', 'posted on')
 
 
-@register_coercion('datetime', description='A date or datetime value', assume_utc=True, past_only=False, as_iso=True)
+@register_coercion(
+    'datetime',
+    description='A date or datetime value',
+    semantic=SemanticRule(kind=KIND_TEXT, max_chars=80),
+    assume_utc=True,
+    past_only=False,
+    as_iso=True,
+)
 def Datetime(v: object, config: CoercionConfig, source_url: str | None = None) -> dt_module.datetime | str:
     """Configure a datetime field with timezone, tense, and format options.
 

@@ -4,11 +4,13 @@ Centralized retry logic for bot detection and AI failures.
 """
 
 import asyncio
+import contextlib
 import logging
 import os
 import time
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import ExitStack, nullcontext
+from pathlib import Path
 from typing import Any, Literal
 from urllib.parse import urlparse
 
@@ -22,21 +24,32 @@ from tenacity import RetryCallState, RetryError
 
 from yosoi.core.cleaning import HTMLCleaner
 from yosoi.core.configs import YosoiConfig
-from yosoi.core.discovery import DiscoveryOrchestrator, LLMConfig
+from yosoi.core.discovery import DiscoveryOrchestrator, LLMConfig, MCPDiscoveryOrchestrator
 from yosoi.core.discovery.bus import DiscoveryBus
 from yosoi.core.extraction import ContentExtractor
 from yosoi.core.fetcher import HTMLFetcher, create_fetcher
+from yosoi.core.fetcher.dom.ax import AxSnapshot
 from yosoi.core.fetcher.waterfall import JSFetcher
-from yosoi.core.verification import SelectorVerifier
+from yosoi.core.verification import (
+    FieldSemanticIssue,
+    SelectorVerifier,
+    SemanticValidator,
+    field_rules_for_contract,
+)
 from yosoi.models import FetchResult
 from yosoi.models.contract import Contract
-from yosoi.models.results import VerificationResult
+from yosoi.models.download import DownloadResult, DownloadSpec, output_view_for_annotation
+from yosoi.models.results import JsOutputs, VerificationResult
 from yosoi.models.selectors import SelectorLevel
 from yosoi.models.snapshot import CacheVerdict, SelectorSnapshot, snapshot_to_selector_dict
+from yosoi.prompts.discovery import FieldFeedback
 from yosoi.storage import DebugManager, LLMTracker, SelectorStorage
+from yosoi.storage.discovery_strategy import DiscoveryStrategyStorage
+from yosoi.storage.js_scripts import JsScriptStorage
 from yosoi.storage.tracking import DomainStats
+from yosoi.types.filetypes import normalize_allowed_types
 from yosoi.utils import observability
-from yosoi.utils.exceptions import BotDetectionError
+from yosoi.utils.exceptions import BotDetectionError, DownloadError
 from yosoi.utils.retry import get_async_retryer
 from yosoi.utils.signatures import contract_signature
 
@@ -91,6 +104,14 @@ class Pipeline:
 
     """
 
+    # Class-level defaults so the download wiring is safe even for callers/tests that
+    # bypass __init__. __init__ overrides these per-instance.
+    _allow_downloads: bool = False
+    _allowed_download_types: tuple[str, ...] = ()
+    _download_dir: str | None = None
+    _max_download_bytes: int | None = None
+    _keep_downloads: bool = True
+
     def __init__(
         self,
         llm_config: LLMConfig | YosoiConfig | str,
@@ -102,6 +123,12 @@ class Pipeline:
         selector_level: SelectorLevel = SelectorLevel.CSS,
         bus: DiscoveryBus | None = None,
         write_lock: asyncio.Lock | None = None,
+        experimental_a3node: bool = False,
+        allow_downloads: bool = False,
+        allowed_download_types: tuple[str, ...] = (),
+        download_dir: str | None = None,
+        max_download_bytes: int | None = None,
+        keep_downloads: bool = True,
     ):
         """Initialize the pipeline with LLM configuration.
 
@@ -121,9 +148,31 @@ class Pipeline:
                             Defaults to CSS.
             bus: Optional shared discovery bus for cross-pipeline field deduplication.
             write_lock: Optional asyncio.Lock to serialize selector writes for the domain.
+            experimental_a3node: Opt into A3Node DOM-stability recipe persistence and
+                replay on browser fetchers (headless/headful/waterfall). When enabled,
+                the first visit records the action recipe and later visits replay it
+                directly, skipping the probe. Defaults to False.
+            allow_downloads: Opt into ys.File() downloads. Off by default; when a contract
+                has file fields and this is False, scraping fails fast before fetching.
+            allowed_download_types: Run-wide file-type allowlist (default-deny). Intersected
+                with each field's ``allowed_types``; an empty effective allowlist blocks all.
+            download_dir: Quarantine root for downloaded files. Defaults to ``.yosoi/downloads/``.
+            max_download_bytes: Run-wide per-file size cap used when a ys.File() field sets no
+                ``max_bytes`` of its own. Falls back to a 25 MiB built-in default when unset.
+            keep_downloads: Keep downloaded files after the run (default). Set False to purge
+                the content-addressed blobs at run end while retaining provenance in index.json.
 
         """
         self.selector_level = selector_level
+        self._experimental_a3node = experimental_a3node
+        self._allow_downloads = allow_downloads
+        self._allowed_download_types = normalize_allowed_types(allowed_download_types)
+        self._download_dir = download_dir
+        self._max_download_bytes = max_download_bytes
+        self._keep_downloads = keep_downloads
+        # Accumulates (field, DownloadResult) across the run for the end-of-run manifest
+        # and the keep_downloads purge.
+        self._download_log: list[tuple[str, DownloadResult]] = []
 
         # Auto-resolve model strings → LLMConfig
         if isinstance(llm_config, str):
@@ -136,6 +185,8 @@ class Pipeline:
 
         # Default discovery fan-out — overridden below when YosoiConfig is passed.
         max_concurrent_discovery: int = 5
+        # Minimum lesson validation pass-ratio for MCP discovery (overridden by config).
+        replay_verify_threshold: float = 1.0
 
         if isinstance(llm_config, YosoiConfig):
             yosoi_cfg = llm_config
@@ -143,10 +194,9 @@ class Pipeline:
             debug_mode = yosoi_cfg.debug.save_html
             force = yosoi_cfg.force
             max_concurrent_discovery = yosoi_cfg.discovery.max_concurrent
+            replay_verify_threshold = yosoi_cfg.discovery.replay_verify_threshold
             observability.configure(yosoi_cfg.telemetry)
         else:
-            import os
-
             from yosoi.core.configs import TelemetryConfig
 
             observability.configure(
@@ -171,6 +221,14 @@ class Pipeline:
         self.console = Console(theme=self.custom_theme, quiet=quiet)
         self.cleaner = HTMLCleaner(console=self.console)
         self.storage = SelectorStorage()
+        self.js_storage = JsScriptStorage()
+
+        # Static discovery is the primary, fast path: it reasons over the cleaned
+        # (post-render) DOM + AX outline. MCP discovery — interaction-driven, slow,
+        # needs a live browser — is built lazily and only used as an *automatic*
+        # escalation when a required field can't be satisfied from the snapshot.
+        # There is no user-facing static-vs-MCP switch. ``YOSOI_DISCOVERY_MODE=mcp``
+        # is an internal/debug override that forces straight to MCP.
         self.discovery = DiscoveryOrchestrator(
             contract=self.contract,
             llm_config=llm_config,
@@ -181,7 +239,15 @@ class Pipeline:
             bus=bus,
             write_lock=write_lock,
         )
+        self._mcp_discovery: MCPDiscoveryOrchestrator | None = None
+        self._mcp_llm_config: LLMConfig = llm_config
+        self._replay_verify_threshold: float = replay_verify_threshold
+        self._force_mcp: bool = os.getenv('YOSOI_DISCOVERY_MODE') == 'mcp'
+        self._discovery_strategy = DiscoveryStrategyStorage()
+        self._js_discovery_orchestrator: Any = None  # created lazily on first discovery call
         self.verifier = SelectorVerifier(console=self.console)
+        self.semantic_validator = SemanticValidator()
+        self._field_rules = field_rules_for_contract(self.contract)
         self.extractor = ContentExtractor(console=self.console, contract=self.contract)
         self.tracker = LLMTracker()
         self.debug_mode = debug_mode
@@ -214,8 +280,9 @@ class Pipeline:
         return self
 
     async def __aexit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
-        """Exit the async context manager, closing the HTTP client."""
+        """Exit the async context manager, closing the HTTP client + finalizing downloads."""
         await self._client.aclose()
+        self._finalize_downloads()
 
     async def process_url(
         self,
@@ -468,6 +535,7 @@ class Pipeline:
                 output_format=output_format,
                 max_workers=max_workers,
                 selector_level=self.selector_level,
+                experimental_a3node=getattr(self, '_experimental_a3node', False),
             )
 
             run_start = time.monotonic()
@@ -660,21 +728,52 @@ class Pipeline:
             ContentMap dicts — one per extracted item.
 
         """
+        observability.annotate_cache(root_span, path=observability.CACHE_FRESH)
+
+        # JS discovery: write and verify scripts for undiscovered ys.js() fields.
+        # Runs before the main fetch so the live tab is reused within the pool.
+        await self._discover_js_actions(url, domain, fetcher)
+
+        js_scripts = await self._resolve_js_scripts(domain)
+        download_specs = self._resolve_download_specs(fetcher)
         with observability.span('fetch', url=url, max_retries=max_fetch_retries):
-            result = await self._fetch(url, fetcher, max_retries=max_fetch_retries)
+            result = await self._fetch(
+                url,
+                fetcher,
+                max_retries=max_fetch_retries,
+                action_scripts=js_scripts or None,
+                download_specs=download_specs,
+            )
             if not result:
                 raise RuntimeError(f'Failed to fetch {url}')
             assert result.html is not None, 'result.html should not be None after successful fetch'
 
         with observability.span('clean', url=url, raw_chars=len(result.html)):
-            cleaned_html = self._clean(url, result)
+            cleaned_html = await self._clean(url, result)
             if not cleaned_html:
                 raise RuntimeError(f'HTML cleaning failed for {url}')
 
-        with observability.span('discover', url=url, cleaned_chars=len(cleaned_html)):
-            selectors, used_llm = await self._discover(
-                url, cleaned_html, max_retries=max_discovery_retries, force=force_flag
-            )
+        # Automatic discovery waterfall: static over the rendered DOM first; a
+        # cached 'mcp' decision (or the debug override) skips straight to the
+        # interaction-driven path so we don't pay a wasted static attempt.
+        # ``--force`` ignores the cached decision so a page that has reverted to
+        # static-friendly (or a stale/bad 'mcp' decision) can re-attempt static.
+        cached_mode = None if force_flag else await self._discovery_strategy.load(domain, self._contract_sig)
+        escalate_first = self._force_mcp or cached_mode == 'mcp'
+
+        with observability.span(
+            'discover', url=url, cleaned_chars=len(cleaned_html), mode='mcp' if escalate_first else 'static'
+        ):
+            if escalate_first:
+                selectors, used_llm = await self._discover_via_mcp(url, cleaned_html, force=force_flag)
+            else:
+                selectors, used_llm = await self._discover(
+                    url,
+                    cleaned_html,
+                    max_retries=max_discovery_retries,
+                    force=force_flag,
+                    ax_snapshot=result.ax_snapshot,
+                )
             if not selectors:
                 raise RuntimeError(f'Selector discovery failed for {url}')
 
@@ -688,6 +787,26 @@ class Pipeline:
 
         with observability.span('extract', url=url, container=container_selector or 'single'):
             extracted = self._extract(url, result.html, verified, container_selector)
+            extracted = self._merge_fetch_outputs(extracted, result)
+            self._record_downloads(result.downloads)
+
+        if extracted:
+            with observability.span('semantic_refine', url=url):
+                extracted, verified = await self._semantic_refine(
+                    url,
+                    cleaned_html,
+                    result.html,
+                    verified,
+                    container_selector,
+                    extracted,
+                    max_discovery_retries,
+                )
+
+        if not escalate_first:
+            extracted, verified, root_entry, container_selector, escalated = await self._maybe_escalate(
+                url, domain, cleaned_html, result.html, verified, container_selector, root_entry, extracted
+            )
+            used_llm = used_llm or escalated
 
         selectors_to_save = self._selectors_with_root(verified, root_entry)
 
@@ -714,7 +833,7 @@ class Pipeline:
         save_all: ContentMap | ContentItems = validated_items if len(validated_items) > 1 else validated_items[0]
         with observability.span('save', url=url, items=len(validated_items)):
             await self._finish(url, domain, selectors_to_save, save_all, used_llm, format_to_use)
-        self._record_fetch_strategy_selector_level(fetcher, domain)
+        await self._record_fetch_strategy_selector_level(fetcher, domain)
 
         observability.set_trace_output(
             root_span,
@@ -757,7 +876,7 @@ class Pipeline:
             )
             return None
 
-        self.debug.save_debug_html(url, cleaned_html)
+        await self.debug.save_debug_html(url, cleaned_html)
         return result.html, cleaned_html  # raw for extraction, cleaned for verification
 
     async def _try_cached(
@@ -771,14 +890,19 @@ class Pipeline:
         root_span: Any | None = None,
     ) -> AsyncIterator[ContentMap] | None:
         """Attempt cached-selector path with per-field granularity."""
-        snapshots = self.storage.load_snapshots(domain)
+        snapshots = await self.storage.load_snapshots(domain)
         if not snapshots:
             return None
 
         self.console.print(f'[success]✓ Found cached selectors for {domain}[/success]')
         self.logger.info('Using cached selectors domain=%s url=%s', domain, url)
 
-        if skip_verification:
+        # ys.File() downloads run only on the _extract_with_cached path (it forwards
+        # download_specs); the per-field verdict path below does not. So route file-field
+        # contracts here too — otherwise a cache hit would silently drop downloads.
+        # FUTURE: thread download_specs through _evaluate_cached_verdicts so file-field
+        # contracts also keep per-field partial rediscovery on cache hits.
+        if skip_verification or self.contract.file_fields():
             existing = {name: data for name, snap in snapshots.items() if (data := snapshot_to_selector_dict(snap))}
             items, cache_valid = await self._extract_with_cached(url, fetcher, existing, skip_verification)
             if not cache_valid:
@@ -835,7 +959,7 @@ class Pipeline:
             verdicts = self._verify_per_field(cleaned_html, snapshots)
 
         for field_name, verdict in verdicts.items():
-            self.storage.record_verdict(domain, field_name, verdict)
+            await self.storage.record_verdict(domain, field_name, verdict)
 
         stale_fields = {f for f, v in verdicts.items() if v != CacheVerdict.FRESH}
         fresh_fields = {f for f, v in verdicts.items() if v == CacheVerdict.FRESH}
@@ -850,6 +974,7 @@ class Pipeline:
             stale_fields |= missing
 
         if not stale_fields:
+            observability.annotate_cache(root_span, path=observability.CACHE_CACHED, fresh_fields=len(fresh_fields))
             return self._extract_all_fresh(
                 url, domain, fetcher, raw_html, snapshots, fresh_fields, format_to_use, root_span=root_span
             )
@@ -860,6 +985,12 @@ class Pipeline:
             )
             return None
 
+        observability.annotate_cache(
+            root_span,
+            path=observability.CACHE_PARTIAL,
+            fresh_fields=len(fresh_fields),
+            stale_fields=len(stale_fields),
+        )
         return await self._partial_rediscovery(
             url,
             domain,
@@ -929,7 +1060,7 @@ class Pipeline:
         )
 
         new_selectors = await self.discovery.discover_selectors(cleaned_html, url, stale_fields=stale_fields)
-        merged = self._merge_and_save_snapshots(url, snapshots, fresh_fields, new_selectors, cleaned_html)
+        merged = await self._merge_and_save_snapshots(url, snapshots, fresh_fields, new_selectors, cleaned_html)
 
         root_entry = self._resolve_root(merged)
         container_selector = self._root_value(root_entry)
@@ -947,8 +1078,8 @@ class Pipeline:
                 yield v
             save_content: ContentMap | ContentItems = validated if len(validated) > 1 else validated[0]
             for fmt in format_to_use:
-                self.storage.save_content(url, save_content, fmt, contract_sig=self._contract_sig)
-            self._record_fetch_strategy_selector_level(fetcher, domain)
+                await self.storage.save_content(url, save_content, fmt, contract_sig=self._contract_sig)
+            await self._record_fetch_strategy_selector_level(fetcher, domain)
             elapsed = time.monotonic() - self._url_start
             self.last_elapsed = elapsed
             stats = await self.tracker.record_url(
@@ -1031,12 +1162,13 @@ class Pipeline:
                     yield v
                 save_content: ContentMap | ContentItems = validated if len(validated) > 1 else validated[0]
                 for fmt in format_to_use:
-                    self.storage.save_content(url, save_content, fmt, contract_sig=self._contract_sig)
+                    await self.storage.save_content(url, save_content, fmt, contract_sig=self._contract_sig)
             if fetcher is not None:
-                self._record_fetch_strategy_selector_level(fetcher, domain)
+                await self._record_fetch_strategy_selector_level(fetcher, domain)
             await self._track_cached_success(url, domain)
             self.last_elapsed = time.monotonic() - self._url_start
             self.console.print(f'[dim]  ⏱ {self.last_elapsed:.1f}s elapsed[/dim]')
+            observability.annotate_cache(root_span, path=observability.CACHE_CACHED)
             observability.set_trace_output(
                 root_span,
                 {
@@ -1049,7 +1181,7 @@ class Pipeline:
 
         return _gen()
 
-    def _merge_and_save_snapshots(
+    async def _merge_and_save_snapshots(
         self,
         url: str,
         snapshots: dict[str, SelectorSnapshot],
@@ -1087,7 +1219,7 @@ class Pipeline:
                 merged_snapshots[name] = snapshots[name]
             else:
                 merged_snapshots[name] = _to_snap(sel_dict, discovered_at=now, last_verified_at=now)
-        self.storage.save_snapshots(url, merged_snapshots)
+        await self.storage.save_snapshots(url, merged_snapshots)
         return merged
 
     def _validate_items(self, extracted: ContentMap | ContentItems, url: str) -> ContentItems:
@@ -1170,13 +1302,28 @@ class Pipeline:
 
         """
         try:
-            kwargs: dict[str, Any] = {'console': console} if fetcher_type == 'waterfall' and console is not None else {}
+            kwargs: dict[str, Any] = {}
+            # Browser fetchers accept a shared console and the A3Node opt-in;
+            # the simple fetcher takes neither.
+            if fetcher_type in ('waterfall', 'headless', 'headful'):
+                if console is not None:
+                    kwargs['console'] = console
+                kwargs['experimental_a3node'] = self._experimental_a3node
+                kwargs['allow_downloads'] = self._allow_downloads
+                kwargs['download_dir'] = self._download_dir
             return create_fetcher(fetcher_type, **kwargs)
         except ValueError:
             self.console.print(f'[danger]Invalid fetcher type: {fetcher_type}[/danger]')
             return None
 
-    async def _fetch(self, url: str, fetcher: HTMLFetcher, max_retries: int = 2) -> FetchResult | None:
+    async def _fetch(
+        self,
+        url: str,
+        fetcher: HTMLFetcher,
+        max_retries: int = 2,
+        action_scripts: dict[str, str] | None = None,
+        download_specs: dict[str, DownloadSpec] | None = None,
+    ) -> FetchResult | None:
         """Fetch HTML with automatic retry logic for bot detection.
 
         Attempts to fetch HTML with automatic retries when bot detection is
@@ -1186,6 +1333,9 @@ class Pipeline:
             url: The URL that is being fetched.
             fetcher: HTML fetcher instance to use.
             max_retries: Maximum retry attempts. Defaults to 2.
+            action_scripts: Optional {field: js_expression} map forwarded to L2 fetchers.
+            download_specs: Optional {field: DownloadSpec} for ys.File() fields, forwarded
+                to browser fetchers to run on the live tab.
 
         Returns:
             FetchResult if fetch succeeds within retry limit, None if all
@@ -1213,13 +1363,16 @@ class Pipeline:
                 exceptions=(BotDetectionError, Exception),
                 log_callback=before_sleep_log,
                 reraise=False,
+                # A ys.File() download rejection is deterministic — fail fast with its
+                # precise message instead of retrying and collapsing to a generic error.
+                non_retry_exceptions=(DownloadError,),
             )
 
             async for attempt in retryer:
                 with attempt:
                     result = None
                     try:
-                        result = await fetcher.fetch(url)
+                        result = await fetcher.fetch(url, action_scripts=action_scripts, download_specs=download_specs)
 
                         if not result.success:
                             self.console.print(
@@ -1260,7 +1413,7 @@ class Pipeline:
 
         return None
 
-    def _clean(self, url: str, result: FetchResult) -> str | None:
+    async def _clean(self, url: str, result: FetchResult) -> str | None:
         """Clean HTML by removing noise and extracting main content.
 
         Args:
@@ -1280,12 +1433,167 @@ class Pipeline:
             self.console.print('[danger]HTML cleaning produced empty result[/danger]')
             return None
 
-        self.debug.save_debug_html(url, cleaned_html)
+        await self.debug.save_debug_html(url, cleaned_html)
         self.console.print(f'[success]Cleaned HTML ready ({len(cleaned_html):,} chars)[/success]')
         return cleaned_html
 
+    def _ensure_mcp_discovery(self) -> MCPDiscoveryOrchestrator:
+        """Lazily build the interaction-driven MCP discovery orchestrator.
+
+        Constructed only on first escalation (or when forced), because it resolves
+        a live-browser backend we don't want to pay for on the common static path.
+        """
+        if self._mcp_discovery is None:
+            self._mcp_discovery = MCPDiscoveryOrchestrator(
+                contract=self.contract,
+                llm_config=self._mcp_llm_config,
+                console=self.console,
+                verify_threshold=self._replay_verify_threshold,
+            )
+        return self._mcp_discovery
+
+    async def _discover_via_mcp(
+        self, url: str, cleaned_html: str, force: bool = False
+    ) -> tuple[SelectorMap | None, bool]:
+        """Run interaction-driven (MCP) discovery, returning ``(selectors, used_llm)``."""
+        self.console.print('[step]Step 2: Interaction-driven discovery — driving a live browser...[/step]')
+        overrides = self.contract.get_selector_overrides()
+        try:
+            selectors = await self._ensure_mcp_discovery().discover_selectors(cleaned_html, url, force=force)
+        except Exception as exc:  # noqa: BLE001 — discovery must surface as a clean failure, not a crash
+            observability.warning('MCP discovery failed', url=url, error=str(exc))
+            return None, True
+        if selectors:
+            selectors.update(overrides)
+        return selectors, True
+
+    def _required_discovery_fields(self) -> set[str]:
+        """Flat names of required (no-default) contract discovery fields.
+
+        Nested contract fields flatten to ``parent_child`` to match the extractor.
+        """
+        required: set[str] = set()
+        for name, fi in self.contract.model_fields.items():
+            annotation = fi.annotation
+            if isinstance(annotation, type) and issubclass(annotation, Contract):
+                for child_name, child_fi in annotation.model_fields.items():
+                    if child_fi.is_required():
+                        required.add(f'{name}_{child_name}')
+            elif fi.is_required():
+                required.add(name)
+        return required
+
+    @staticmethod
+    def _representative_item(extracted: ContentMap | ContentItems) -> ContentMap:
+        """Return a representative extracted item (first non-empty for multi-item)."""
+        if isinstance(extracted, list):
+            return next((item for item in extracted if item), {})
+        return extracted or {}
+
+    def _unsatisfied_required(self, extracted: ContentMap | ContentItems) -> set[str]:
+        """Required fields static discovery failed to extract a well-shaped value for."""
+        required = self._required_discovery_fields() - set(self.contract.get_selector_overrides())
+        if not required:
+            return set()
+        item = self._representative_item(extracted)
+        present = {k for k, v in item.items() if v not in (None, '', [], {})}
+        missing = required - present
+        bad = {issue.field for issue in self._semantic_issues(extracted)} & required
+        return missing | bad
+
+    async def _maybe_escalate(
+        self,
+        url: str,
+        domain: str,
+        cleaned_html: str,
+        raw_html: str,
+        verified: SelectorMap,
+        container_selector: str | None,
+        root_entry: dict[str, Any] | None,
+        extracted: ContentMap | ContentItems | None,
+    ) -> tuple[ContentMap | ContentItems, SelectorMap, dict[str, Any] | None, str | None, bool]:
+        """Escalate to MCP discovery when static left a required field unsatisfied.
+
+        Drives interaction-driven discovery once and merges any improvement. The
+        'mcp' decision is cached ONLY when escalation actually improved extraction —
+        caching it on a no-op (e.g. interaction-gated content MCP discovers live but
+        the static snapshot can't yet extract, pending CAS-103 replay) would poison
+        every future run into the slow path with no payoff. The lesson still
+        persists for replay regardless. Returns the (possibly updated) extraction,
+        selectors, root, container, and whether escalation improved the result.
+        """
+        # ``extracted`` may be None when static extraction failed entirely; an empty
+        # map reads as "all required fields unmet", which is exactly when to escalate.
+        current = extracted or {}
+        unmet = self._unsatisfied_required(current)
+        if not unmet:
+            return current, verified, root_entry, container_selector, False
+
+        with observability.span('discover_escalate', url=url, unmet=len(unmet)):
+            self.console.print(
+                f'[warning]⚠ Static discovery left required field(s) unmet '
+                f'({", ".join(sorted(unmet))}) — escalating to interaction-driven discovery[/warning]'
+            )
+            current, verified, root_entry, improved = await self._escalate_to_mcp(
+                url, cleaned_html, raw_html, verified, container_selector, root_entry, current, unmet
+            )
+            container_selector = self._root_value(root_entry)
+            if improved:
+                await self._discovery_strategy.save(domain, self._contract_sig, 'mcp')
+        return current, verified, root_entry, container_selector, improved
+
+    async def _escalate_to_mcp(
+        self,
+        url: str,
+        cleaned_html: str,
+        raw_html: str,
+        verified: SelectorMap,
+        container_selector: str | None,
+        root_entry: dict[str, Any] | None,
+        extracted: ContentMap | ContentItems,
+        unmet: set[str],
+    ) -> tuple[ContentMap | ContentItems, SelectorMap, dict[str, Any] | None, bool]:
+        """Drive MCP discovery once and merge selectors that improve extraction.
+
+        Returns ``(extracted, verified, root_entry, improved)`` where ``improved``
+        is True only when a previously-unmet required field is now satisfied — the
+        gate the caller uses before caching an 'mcp' decision. MCP failure, or
+        interaction-gated content that the static snapshot can't yet extract
+        (pending CAS-103 replay), leaves the result intact with ``improved=False``
+        while the MCP lesson still persists for later replay.
+        """
+        try:
+            fresh = await self._ensure_mcp_discovery().discover_selectors(cleaned_html, url, force=True)
+        except Exception as exc:  # noqa: BLE001 — escalation is best-effort, never fatal to the scrape
+            observability.warning('MCP discovery escalation failed', url=url, error=str(exc))
+            return extracted, verified, root_entry, False
+        if not fresh:
+            return extracted, verified, root_entry, False
+
+        mcp_root = self._resolve_root(fresh)
+        if mcp_root:
+            root_entry = mcp_root
+            container_selector = self._root_value(root_entry) or container_selector
+
+        reverified = self._verify(url, cleaned_html, fresh, skip_verification=False) or {}
+        merged = {k: v for k, v in reverified.items() if k != 'root'}
+        if merged:
+            verified.update(merged)
+            re_extracted = self._extract(url, raw_html, verified, container_selector)
+            if re_extracted:
+                extracted = re_extracted
+
+        # Cache-gating signal: did escalation actually satisfy a field static missed?
+        improved = bool(unmet - self._unsatisfied_required(extracted))
+        return extracted, verified, root_entry, improved
+
     async def _discover(
-        self, url: str, cleaned_html: str, max_retries: int = 3, force: bool = False
+        self,
+        url: str,
+        cleaned_html: str,
+        max_retries: int = 3,
+        force: bool = False,
+        ax_snapshot: AxSnapshot | None = None,
     ) -> tuple[SelectorMap | None, bool]:
         """Discover CSS selectors with AI, using fallback heuristics if needed.
 
@@ -1296,6 +1604,8 @@ class Pipeline:
             cleaned_html: Pre-cleaned HTML content to analyze.
             max_retries: Maximum AI retry attempts. Defaults to 3.
             force: Force re-discovery even if selectors exist. Defaults to False.
+            ax_snapshot: Optional rendered-page accessibility snapshot (browser
+                tiers only), fed to static discovery as a semantic perception layer.
 
         Returns:
             Tuple of (selectors, used_llm) where:
@@ -1312,7 +1622,7 @@ class Pipeline:
         if not self.contract.field_descriptions():
             self.console.print('[step]Step 2: All fields have selector overrides — skipping AI discovery[/step]')
             self.logger.info('Skipping AI discovery — all fields overridden url=%s', url)
-            self.debug.save_debug_selectors(url, overrides)
+            await self.debug.save_debug_selectors(url, overrides)
             return overrides, False
 
         def before_ai_sleep_log(retry_state: RetryCallState) -> None:
@@ -1337,12 +1647,14 @@ class Pipeline:
                         f'[step]Step 2: AI analyzing HTML (attempt {attempt.retry_state.attempt_number}/{max_retries})...[/step]'
                     )
 
-                    selectors = await self.discovery.discover_selectors(cleaned_html, url, force=force)
+                    selectors = await self.discovery.discover_selectors(
+                        cleaned_html, url, force=force, ax_snapshot=ax_snapshot
+                    )
 
                     if selectors:
                         selectors.update(overrides)
                         self.console.print(f'[success]Discovered selectors for {len(selectors)} fields[/success]')
-                        self.debug.save_debug_selectors(url, selectors)
+                        await self.debug.save_debug_selectors(url, selectors)
 
                         if attempt.retry_state.attempt_number > 1:
                             self.console.print(
@@ -1443,7 +1755,7 @@ class Pipeline:
 
         return verified
 
-    def _record_fetch_strategy_selector_level(self, fetcher: HTMLFetcher, domain: str) -> None:
+    async def _record_fetch_strategy_selector_level(self, fetcher: HTMLFetcher, domain: str) -> None:
         """Cache the highest selector level that worked with the domain loading strategy."""
         if not isinstance(fetcher, JSFetcher):
             return
@@ -1453,7 +1765,7 @@ class Pipeline:
         order = ['css', 'xpath', 'regex', 'jsonld']
         highest = next((level for level in reversed(order) if level_dist.get(level)), None)
         if highest is not None:
-            fetcher.update_selector_level(domain, highest)
+            await fetcher.update_selector_level(domain, highest)
 
     def _print_verification_failure(self, result: VerificationResult) -> None:
         """Print detailed failure summary when all selectors fail."""
@@ -1498,6 +1810,246 @@ class Pipeline:
             return {'primary': contract_root.model_dump()}
         return self._pop_root(selectors)
 
+    def _js_action_scripts(self) -> dict[str, str]:
+        """Return {field: js_script} for JS action fields with a hand-authored script."""
+        return {
+            name: cfg['script']
+            for name, cfg in self.contract.action_fields().items()
+            if cfg.get('type') == 'js' and cfg.get('script')
+        }
+
+    def _file_download_specs(self) -> dict[str, DownloadSpec]:
+        """Build resolved DownloadSpec objects for ys.File() fields.
+
+        The effective allowlist is the intersection of the field's ``allowed_types`` and
+        the run-wide ``allowed_download_types`` when both are set (a global ceiling),
+        otherwise whichever is set. An empty result is default-deny — the download fails
+        fast at execution time rather than accepting an arbitrary file.
+        """
+        global_allowed = set(self._allowed_download_types)
+        specs: dict[str, DownloadSpec] = {}
+        for name, cfg in self.contract.file_fields().items():
+            field_allowed = tuple(cfg.get('allowed_types') or ())
+            if field_allowed and global_allowed:
+                effective = tuple(t for t in field_allowed if t in global_allowed)
+            elif field_allowed:
+                effective = field_allowed
+            else:
+                effective = tuple(self._allowed_download_types)
+            # Annotation-directed output: the field's declared type decides the view.
+            annotation = self.contract.model_fields[name].annotation
+            specs[name] = DownloadSpec(
+                field=name,
+                mode=cfg.get('mode', 'retrigger'),
+                trigger=cfg.get('trigger'),
+                href=cfg.get('href'),
+                url=cfg.get('url'),
+                allowed_types=effective,
+                output=output_view_for_annotation(annotation),
+                max_bytes=cfg.get('max_bytes') or self._max_download_bytes,
+            )
+        return specs
+
+    def _resolve_download_specs(self, fetcher: HTMLFetcher | None = None) -> dict[str, DownloadSpec] | None:
+        """Build download specs, failing fast if file fields can't actually download.
+
+        Two fail-fast guards (better than silently dropping the field): downloads must be
+        opted in (``allow_downloads``), and the fetcher must have a live browser tab — the
+        simple HTTP tier can't download.
+        """
+        specs = self._file_download_specs()
+        if specs and not self._allow_downloads:
+            raise RuntimeError(
+                f'{self.contract.__name__} declares ys.File() field(s) {sorted(specs)} but downloads '
+                'are disabled. Pass allow_downloads=True and use a browser fetcher tier '
+                "(fetcher_type='headless'/'headful'/'waterfall')."
+            )
+        if specs and fetcher is not None and not getattr(fetcher, 'supports_browse', False):
+            raise RuntimeError(
+                f'{self.contract.__name__} declares ys.File() field(s) {sorted(specs)} but '
+                "fetcher_type has no browser tab. Use fetcher_type='headless'/'headful'/'waterfall'."
+            )
+        return specs or None
+
+    async def _resolve_js_scripts(self, domain: str) -> dict[str, str]:
+        """Return {field: script} for ALL JS action fields — hand-authored and cached discovered.
+
+        Discovery-driven fields (no script in contract) are resolved from the JS
+        script cache. Fields with no cache entry are omitted — callers must run
+        ``_discover_js_actions`` first if they want those fields populated.
+        """
+        scripts = dict(self._js_action_scripts())
+        undiscovered = self.contract.undiscovered_action_fields()
+        if undiscovered:
+            cached = await self.js_storage.get_scripts(domain, undiscovered)
+            scripts.update(cached)
+        return scripts
+
+    async def _discover_js_actions(self, url: str, domain: str, fetcher: HTMLFetcher) -> None:
+        """Run JS discovery for action fields that lack a cached script.
+
+        Skips silently when there are no undiscovered fields, when all are
+        already cached, or when the fetcher does not support a live browser tab.
+        """
+        # FUTURE: concurrency-safe JS discovery — this check-and-save (get_scripts →
+        # discover → JsScriptStorage.save_entries) is the SAME read-modify-write race
+        # the selector path already guards with the per-domain ``write_lock``. Two
+        # concurrent workers on one domain both see ``missing``, both open a tab, both
+        # run the LLM, and both save (duplicated LLM cost + last-writer-wins). Reuse
+        # the per-domain ``write_lock`` (already threaded into Pipeline) here to make
+        # the JS path "separate but equal" with selectors. Lock the cheap save like
+        # the selector path does, not the whole discovery, to avoid serialising
+        # expensive same-domain discovery across workers.
+        undiscovered = self.contract.undiscovered_action_fields()
+        if not undiscovered:
+            return
+        cached = await self.js_storage.get_scripts(domain, undiscovered)
+        missing = {k: v for k, v in undiscovered.items() if k not in cached}
+        if not missing:
+            return
+        if not fetcher.supports_browse:
+            self.console.print(
+                '[warning]⚠ JS discovery skipped — fetcher has no live browser tab; '
+                'switch to fetcher_type="headless" or "waterfall" for ys.js discovery[/warning]'
+            )
+            return
+        from yosoi.core.discovery.js_orchestrator import JsDiscoveryOrchestrator
+
+        if not hasattr(fetcher, 'browse'):
+            self.logger.debug('JS discovery skipped — fetcher does not implement browse()')
+            return
+        if self._js_discovery_orchestrator is None:
+            self._js_discovery_orchestrator = JsDiscoveryOrchestrator(
+                llm_config=self._llm_config,  # type: ignore[arg-type]
+                storage=self.js_storage,
+                console=self.console,
+            )
+        with observability.span('js_discovery', url=url, fields=len(missing)):
+            await self._js_discovery_orchestrator.discover(
+                url=url,
+                domain=domain,
+                fields=missing,
+                fetcher=fetcher,
+                field_coercer=self.contract.coerce_field,
+            )
+
+    @staticmethod
+    def _merge_js_outputs(
+        extracted: ContentMap | ContentItems | None,
+        js_outputs: JsOutputs | None,
+    ) -> ContentMap | ContentItems | None:
+        """Merge js_outputs from action scripts into extracted content.
+
+        For single-item extraction (dict), fields are merged directly.
+        For multi-item extraction (list), the outputs are merged into every item
+        since JS probes are page-level signals, not per-item values.
+        The cast() calls are intentional — JS outputs widen ContentMap to Any values,
+        which is valid since Pydantic contract validation runs downstream.
+        """
+        from typing import cast
+
+        if not js_outputs:
+            return extracted
+        if extracted is None:
+            return cast(ContentMap, dict(js_outputs))
+        if isinstance(extracted, list):
+            return cast(ContentItems, [{**item, **js_outputs} for item in extracted])
+        return cast(ContentMap, {**extracted, **js_outputs})
+
+    @staticmethod
+    def _merge_downloads(
+        extracted: ContentMap | ContentItems | None,
+        downloads: dict[str, DownloadResult] | None,
+    ) -> ContentMap | ContentItems | None:
+        """Merge ys.File() download results into extracted content.
+
+        Each field's value is the view chosen by its declared type (``DownloadRecord`` /
+        path / bytes / text / parsed structure). Like JS outputs, downloads are page-level
+        and merged into every item for multi-item extraction.
+        """
+        from typing import cast
+
+        if not downloads:
+            return extracted
+        values: dict[str, Any] = {field: result.value for field, result in downloads.items()}
+        if extracted is None:
+            return cast(ContentMap, dict(values))
+        if isinstance(extracted, list):
+            return cast(ContentItems, [{**item, **values} for item in extracted])
+        return cast(ContentMap, {**extracted, **values})
+
+    @classmethod
+    def _merge_fetch_outputs(
+        cls,
+        extracted: ContentMap | ContentItems | None,
+        result: FetchResult,
+    ) -> ContentMap | ContentItems | None:
+        """Merge live-tab action outputs (ys.js() and ys.File()) into extracted content."""
+        if result.js_outputs:
+            extracted = cls._merge_js_outputs(extracted, result.js_outputs)
+        if result.downloads:
+            extracted = cls._merge_downloads(extracted, result.downloads)
+        return extracted
+
+    def _record_downloads(self, downloads: dict[str, DownloadResult] | None) -> None:
+        """Log each ys.File() download and accumulate it for the run-end manifest.
+
+        FUTURE: also annotate the Langfuse fetch span per download (today: structured log +
+        the end-of-run manifest; the fetch span already records the fetch itself).
+        """
+        if not downloads:
+            return
+        for field, result in downloads.items():
+            self._download_log.append((field, result))
+            rec = result.record
+            self.logger.info(
+                'download field=%s path=%s sha256=%s size=%d content_type=%s changed=%s',
+                field,
+                rec.path,
+                rec.sha256[:12],
+                rec.size_bytes,
+                rec.content_type,
+                result.changed,
+            )
+
+    def _finalize_downloads(self) -> None:
+        """At run end: print a download manifest and, unless keeping them, purge the bytes.
+
+        Purge removes the content-addressed blob files this run wrote but **keeps each
+        domain's** ``index.json`` — provenance (hash/name/size/drift history) survives even
+        when the raw bytes don't.
+        """
+        if not getattr(self, '_download_log', None):
+            return
+
+        table = Table(title='Downloads', expand=False)
+        table.add_column('field', style='cyan')
+        table.add_column('type', style='dim')
+        table.add_column('size', justify='right')
+        table.add_column('changed', justify='center')
+        table.add_column('path', style='dim', overflow='fold')
+        total_bytes = 0
+        for field, result in self._download_log:
+            rec = result.record
+            total_bytes += rec.size_bytes
+            table.add_row(
+                field,
+                rec.content_type or '?',
+                f'{rec.size_bytes / 1024:.1f} KiB',
+                '✓' if result.changed else '·',
+                rec.path,
+            )
+        self.console.print(table)
+        self.console.print(f'[dim]{len(self._download_log)} download(s), {total_bytes / 1024:.1f} KiB total[/dim]')
+
+        if not self._keep_downloads:
+            purged = 0
+            for _field, result in self._download_log:
+                with contextlib.suppress(OSError):
+                    Path(result.record.path).unlink(missing_ok=True)
+                    purged += 1
+            self.console.print(f'[dim]purged {purged} download blob(s); provenance retained in index.json[/dim]')
+
     def _extract(
         self,
         url: str,
@@ -1540,6 +2092,104 @@ class Pipeline:
         self.console.print(f'[success]Extracted content from {len(extracted)} fields successfully[/success]')
         return extracted
 
+    @staticmethod
+    def _selector_values(entry: dict[str, Any] | None) -> tuple[str, ...]:
+        """Collect the non-empty primary/fallback/tertiary selector strings from an entry.
+
+        These are the selectors already tried (and found semantically wrong) for a
+        field; they are forbidden on the corrective re-discovery so the LLM cannot
+        return one of them again.
+        """
+        if not isinstance(entry, dict):
+            return ()
+        values: list[str] = []
+        for key in ('primary', 'fallback', 'tertiary'):
+            candidate = entry.get(key)
+            if isinstance(candidate, str) and candidate:
+                values.append(candidate)
+            elif isinstance(candidate, dict):
+                value = candidate.get('value')
+                if isinstance(value, str) and value:
+                    values.append(value)
+        return tuple(dict.fromkeys(values))  # dedupe, preserve order
+
+    def _semantic_issues(self, extracted: ContentMap | ContentItems) -> list[FieldSemanticIssue]:
+        """Run the type-aware semantic validator on a representative extracted item.
+
+        For multi-item pages every item shares the same selectors, so the first
+        non-empty item is representative of a systematically wrong selector.
+        """
+        if isinstance(extracted, list):
+            item = next((i for i in extracted if i), None)
+            if item is None:
+                return []
+        else:
+            item = extracted
+        return self.semantic_validator.validate(item, self._field_rules)
+
+    async def _semantic_refine(
+        self,
+        url: str,
+        cleaned_html: str,
+        raw_html: str,
+        verified: SelectorMap,
+        container_selector: str | None,
+        extracted: ContentMap | ContentItems,
+        max_retries: int,
+    ) -> tuple[ContentMap | ContentItems, SelectorMap]:
+        """Re-discover fields whose extracted values fail type-aware semantic checks.
+
+        Structural verification only proves a selector matches *something*; this
+        loop catches values of the wrong shape (e.g. a numeric ``score`` that came
+        back as whole-card text), feeds the failure back to the LLM as a hint, and
+        re-discovers only the offending fields. Bounded by ``max_retries``. Passing
+        fields keep their selectors. See CAS-78.
+
+        Returns:
+            The (possibly improved) extraction result and verified selector map.
+
+        """
+        for attempt in range(max_retries):
+            issues = self._semantic_issues(extracted)
+            if not issues:
+                return extracted, verified
+
+            feedback = {
+                issue.field: FieldFeedback(
+                    message=issue.as_feedback(),
+                    failed_selectors=self._selector_values(verified.get(issue.field)),
+                )
+                for issue in issues
+            }
+            failing = set(feedback)
+            self.console.print(
+                f'[warning]⚠ Semantic check flagged {", ".join(sorted(failing))} — '
+                f're-discovering (attempt {attempt + 1}/{max_retries})[/warning]'
+            )
+
+            fresh = await self.discovery.discover_selectors(
+                cleaned_html, url, stale_fields=failing, feedback=feedback, force=True
+            )
+            if not fresh:
+                break
+
+            reverified = self._verify(url, cleaned_html, fresh, skip_verification=False)
+            improved = {k: v for k, v in (reverified or {}).items() if k != 'root'}
+            if not improved:
+                break
+
+            verified.update(improved)
+            re_extracted = self._extract(url, raw_html, verified, container_selector)
+            if not re_extracted:
+                break
+            extracted = re_extracted
+
+        remaining = self._semantic_issues(extracted)
+        if remaining:
+            fields = ', '.join(sorted({issue.field for issue in remaining}))
+            self.console.print(f'[warning]⚠ Semantic issues remain after {max_retries} retries: {fields}[/warning]')
+        return extracted, verified
+
     async def _extract_with_cached(
         self,
         url: str,
@@ -1563,6 +2213,9 @@ class Pipeline:
 
         Raises:
             BotDetectionError: Passes through bot detection from fetcher.
+            DownloadError: A ys.File() download rejection (bad type / unsafe url / parse
+                failure) fails fast instead of being swallowed — it would otherwise silently
+                drop the field on the cache-hit path.
 
         """
         step = (
@@ -1572,8 +2225,12 @@ class Pipeline:
         )
         self.console.print(f'[step]{step}[/step]')
 
+        domain = self._extract_domain(url)
+        await self._discover_js_actions(url, domain, fetcher)
+        js_scripts = await self._resolve_js_scripts(domain)
+        download_specs = self._resolve_download_specs(fetcher)
         try:
-            result = await fetcher.fetch(url)
+            result = await fetcher.fetch(url, action_scripts=js_scripts or None, download_specs=download_specs)
 
             if not result.success or result.html is None:
                 self.console.print('[warning]⚠ Could not fetch HTML, skipping extraction[/warning]')
@@ -1581,7 +2238,7 @@ class Pipeline:
 
             self.console.print('[step]Cleaning HTML...[/step]')
             cleaned_html = self.cleaner.clean_html(result.html)
-            self.debug.save_debug_html(url, cleaned_html)
+            await self.debug.save_debug_html(url, cleaned_html)
 
             root_entry = self._resolve_root(existing_selectors)
             container_selector = self._root_value(root_entry)
@@ -1628,6 +2285,8 @@ class Pipeline:
                 selectors_to_use = existing_selectors
 
             extracted = self._extract(url, cleaned_html, selectors_to_use, container_selector)
+            extracted = self._merge_fetch_outputs(extracted, result)
+            self._record_downloads(result.downloads)
             if extracted:
                 if isinstance(extracted, list):
                     return extracted, True
@@ -1636,7 +2295,10 @@ class Pipeline:
             self.console.print('[warning]⚠ Extraction failed with cached selectors[/warning]')
             return None, True
 
-        except BotDetectionError:
+        except (BotDetectionError, DownloadError):
+            # DownloadError is deterministic (bad type / unsafe url / parse fail). Fail fast
+            # with its precise message instead of swallowing it here — otherwise a ys.File
+            # field would be silently dropped on the cache-hit path. Mirrors the fresh path.
             raise
         except Exception as e:
             self.logger.exception('Cached selector handling failed for %s', url)
@@ -1722,9 +2384,29 @@ class Pipeline:
             Validated dict, or original if validation fails.
 
         """
+        from pydantic import ValidationError
+
         try:
-            instance = self.contract.model_validate(item, context={'source_url': url})
-            return instance.model_dump()
+            return self.contract.model_validate(item, context={'source_url': url}).model_dump()
+        except ValidationError as e:
+            # Enforce the declared types: drop the field(s) the error names to their
+            # default (pydantic reports all field errors at once), then re-validate
+            # once — rather than silently keeping raw garbage as before (CAS-114).
+            offending = {str(err['loc'][0]) for err in e.errors() if err.get('loc')} & set(item)
+            if not offending:
+                self.logger.warning('Contract validation failed (unisolable), using raw data: %s', e)
+                return item
+            data: dict[str, Any] = dict(item)
+            for field_name in offending:
+                data[field_name] = self.contract.field_default(field_name)
+            self.console.print(
+                f'[warning]⚠ Dropped invalid field(s) to default: {", ".join(sorted(offending))}[/warning]'
+            )
+            try:
+                return self.contract.model_validate(data, context={'source_url': url}).model_dump()
+            except ValidationError as e2:
+                self.logger.warning('Validation still failing after dropping fields, using raw: %s', e2)
+                return item
         except (ValueError, TypeError) as e:
             self.logger.warning('Contract validation failed, using raw data: %s', e)
             self.console.print(f'[warning]⚠ Validation skipped: {e}[/warning]')
@@ -1752,11 +2434,11 @@ class Pipeline:
             elapsed: Time in seconds spent processing this URL. Defaults to None.
 
         """
-        self.storage.save_selectors(url, verified, verified=True)
+        await self.storage.save_selectors(url, verified, verified=True)
 
         if extracted:
             for fmt in output_format:
-                self.storage.save_content(url, extracted, fmt, contract_sig=self._contract_sig)
+                await self.storage.save_content(url, extracted, fmt, contract_sig=self._contract_sig)
 
         level_dist = getattr(self, '_last_level_distribution', None)
         stats = await self.tracker.record_url(
@@ -1786,9 +2468,9 @@ class Pipeline:
     # Display methods
     # ============================================================================
 
-    def show_summary(self) -> None:
+    async def show_summary(self) -> None:
         """Show summary of all saved selectors."""
-        domains = self.storage.list_domains()
+        domains = await self.storage.list_domains()
 
         if not domains:
             self.console.print('[warning]No selectors found in storage[/warning]')
@@ -1799,16 +2481,16 @@ class Pipeline:
         table.add_column('Fields', style='green')
 
         for domain in domains:
-            selectors = self.storage.load_selectors(domain)
+            selectors = await self.storage.load_selectors(domain)
             if selectors:
                 table.add_row(domain, str(len(selectors)))
 
         self.console.print(table)
         self.console.print(f'\n[success]Total domains: {len(domains)}[/success]')
 
-    def show_llm_stats(self) -> None:
+    async def show_llm_stats(self) -> None:
         """Show LLM usage statistics."""
-        stats = self.tracker.get_all_stats()
+        stats = await self.tracker.get_all_stats()
 
         total_llm_calls = sum(domain_stats.llm_calls for domain_stats in stats.values())
         total_urls = sum(domain_stats.url_count for domain_stats in stats.values())

@@ -34,7 +34,10 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
-from yosoi.utils.files import init_yosoi
+import aiofiles
+import aiofiles.os
+
+from yosoi.utils.files import atomic_write_json_async, init_yosoi
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +96,7 @@ class A3NodeStorage:
     # Public API
     # ------------------------------------------------------------------
 
-    def save(self, domain: str, acts: list[ActRecord]) -> None:
+    async def save(self, domain: str, acts: list[ActRecord]) -> None:
         """Persist the stability recipe for *domain*.
 
         If a recipe already exists for this domain, it is overwritten with
@@ -110,7 +113,7 @@ class A3NodeStorage:
         now = datetime.now().isoformat()
 
         # Preserve replay stats when acts haven't changed
-        existing = self._load_raw(domain)
+        existing = await self._load_raw(domain)
         existing_acts = existing.get('acts', []) if existing else []
         new_acts_dicts = [a.to_dict() for a in acts]
         same = existing_acts == new_acts_dicts
@@ -125,13 +128,12 @@ class A3NodeStorage:
         }
 
         try:
-            with open(filepath, 'w', encoding='utf-8') as f:
-                json.dump(data, f, indent=2)
+            await atomic_write_json_async(filepath, data)
             logger.debug('Saved A3Node for %s (%d acts)', domain, len(acts))
         except OSError as e:
             logger.warning('Could not save A3Node for %s: %s', domain, e)
 
-    def load(self, domain: str) -> A3Node | None:
+    async def load(self, domain: str) -> A3Node | None:
         """Return the stored A3Node for *domain*, or None if not found.
 
         Args:
@@ -141,7 +143,7 @@ class A3NodeStorage:
             A3Node with the stability recipe, or None if no recipe exists.
 
         """
-        raw = self._load_raw(domain)
+        raw = await self._load_raw(domain)
         if raw is None:
             return None
         try:
@@ -157,7 +159,7 @@ class A3NodeStorage:
             logger.warning('Corrupt A3Node for %s — ignoring: %s', domain, e)
             return None
 
-    def record_replay(self, domain: str) -> None:
+    async def record_replay(self, domain: str) -> None:
         """Increment the replay count and update last_replayed_at timestamp.
 
         Call this after a successful replay so the UI and future heuristics
@@ -167,19 +169,18 @@ class A3NodeStorage:
             domain: Bare domain string.
 
         """
-        raw = self._load_raw(domain)
+        raw = await self._load_raw(domain)
         if raw is None:
             return
         raw['replay_count'] = int(raw.get('replay_count', 0)) + 1
         raw['last_replayed_at'] = datetime.now().isoformat()
         filepath = self._filepath(domain)
         try:
-            with open(filepath, 'w', encoding='utf-8') as f:
-                json.dump(raw, f, indent=2)
+            await atomic_write_json_async(filepath, raw)
         except OSError as e:
             logger.warning('Could not update A3Node replay count for %s: %s', domain, e)
 
-    def delete(self, domain: str) -> bool:
+    async def delete(self, domain: str) -> bool:
         """Delete the stored A3Node for *domain*.
 
         Args:
@@ -190,28 +191,28 @@ class A3NodeStorage:
 
         """
         filepath = self._filepath(domain)
-        if not os.path.exists(filepath):
+        if not await aiofiles.os.path.exists(filepath):
             return False
         try:
-            os.remove(filepath)
+            await aiofiles.os.remove(filepath)
             logger.debug('Deleted A3Node for %s', domain)
             return True
         except OSError as e:
             logger.warning('Could not delete A3Node for %s: %s', domain, e)
             return False
 
-    def list_domains(self) -> list[str]:
+    async def list_domains(self) -> list[str]:
         """Return all domains with a stored A3Node, sorted alphabetically."""
-        if not os.path.exists(self._dir):
+        if not await aiofiles.os.path.exists(self._dir):
             return []
         domains: list[str] = []
-        for filename in os.listdir(self._dir):
+        for filename in await aiofiles.os.listdir(self._dir):
             if not (filename.startswith('a3node_') and filename.endswith('.json')):
                 continue
             filepath = os.path.join(self._dir, filename)
             try:
-                with open(filepath, encoding='utf-8') as f:
-                    data = json.load(f)
+                async with aiofiles.open(filepath, encoding='utf-8') as f:
+                    data = json.loads(await f.read())
                 domain = data.get('domain')
                 if isinstance(domain, str) and domain:
                     domains.append(domain)
@@ -219,7 +220,7 @@ class A3NodeStorage:
                 pass
         return sorted(domains)
 
-    def load_all(self) -> dict[str, A3Node]:
+    async def load_all(self) -> dict[str, A3Node]:
         """Load every stored A3Node into a domain → A3Node mapping.
 
         Useful for pre-populating an in-memory cache at fetcher startup.
@@ -229,8 +230,8 @@ class A3NodeStorage:
 
         """
         result: dict[str, A3Node] = {}
-        for domain in self.list_domains():
-            node = self.load(domain)
+        for domain in await self.list_domains():
+            node = await self.load(domain)
             if node is not None:
                 result[domain] = node
         return result
@@ -243,13 +244,13 @@ class A3NodeStorage:
         safe = domain.replace('.', '_').replace('/', '_').replace(':', '_')
         return os.path.join(self._dir, f'a3node_{safe}.json')
 
-    def _load_raw(self, domain: str) -> dict[str, Any] | None:
+    async def _load_raw(self, domain: str) -> dict[str, Any] | None:
         filepath = self._filepath(domain)
-        if not os.path.exists(filepath):
+        if not await aiofiles.os.path.exists(filepath):
             return None
         try:
-            with open(filepath, encoding='utf-8') as f:
-                data: dict[str, object] = json.load(f)
+            async with aiofiles.open(filepath, encoding='utf-8') as f:
+                data: dict[str, object] = json.loads(await f.read())
                 return data
         except (OSError, json.JSONDecodeError) as e:
             logger.warning('Could not read A3Node for %s: %s', domain, e)
@@ -276,9 +277,28 @@ class A3Node:
     last_replayed_at: str | None = None
 
     @property
+    def domloader_acts(self) -> list[ActRecord]:
+        """Acts that DOMLoader should replay (excludes wait_for_js settle acts)."""
+        return [a for a in self.acts if a.kind != 'wait_for_js']
+
+    @property
+    def settle_seconds(self) -> float:
+        """Total settle delay to apply before content() on replay.
+
+        Derived from recorded ``wait_for_js`` acts — each cycle represents
+        one 500 ms poll interval that was needed for the JS assert to pass.
+        """
+        return float(sum(a.cycles * 0.5 for a in self.acts if a.kind == 'wait_for_js'))
+
+    @property
     def is_empty(self) -> bool:
-        """True when this domain needs no actions to reach stability."""
-        return len(self.acts) == 0
+        """True when this domain needs no DOMLoader actions to reach stability.
+
+        A recipe containing only ``wait_for_js`` settle acts is considered
+        empty (no DOMLoader clicks/scrolls needed) but still carries a non-zero
+        :attr:`settle_seconds` that replay must honour.
+        """
+        return len(self.domloader_acts) == 0
 
     @property
     def battle_tested(self) -> bool:

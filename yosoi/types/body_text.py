@@ -1,9 +1,13 @@
 """BodyText type for Yosoi contracts."""
 
-from yosoi.types.registry import CoercionConfig, register_coercion
+from yosoi.types.registry import KIND_TEXT, CoercionConfig, SemanticRule, register_coercion
 
 
-@register_coercion('body_text', description='Main body text content')
+@register_coercion(
+    'body_text',
+    description='Main body text content',
+    semantic=SemanticRule(kind=KIND_TEXT, distinct=True),
+)
 def BodyText(v: object, config: CoercionConfig, source_url: str | None = None) -> str:
     """Configure a body text field.
 

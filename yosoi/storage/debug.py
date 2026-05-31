@@ -3,14 +3,13 @@
 Handles saving of HTML and selectors for debugging purposes.
 """
 
-import json
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
 from rich.console import Console
 
-from yosoi.utils.files import get_debug_path
+from yosoi.utils.files import atomic_write_json_async, atomic_write_text_async, get_debug_path
 
 
 class DebugManager:
@@ -54,7 +53,7 @@ class DebugManager:
         base = f'{parsed.netloc}{safe_path}'
         return f'{base}.{suffix}'
 
-    def save_debug_html(self, url: str, html: str) -> None:
+    async def save_debug_html(self, url: str, html: str) -> None:
         """Save cleaned HTML to file for debugging.
 
         Args:
@@ -70,15 +69,15 @@ class DebugManager:
 
         try:
             # Save HTML with metadata comment
-            filepath.write_text(
+            await atomic_write_text_async(
+                filepath,
                 f'<!-- URL: {url} -->\n<!-- Cleaned HTML length: {len(html)} chars -->\n\n{html}',
-                encoding='utf-8',
             )
             self.console.print(f'  [dim]↻ Debug HTML saved to: {filepath}[/dim]')
         except OSError as e:
             self.console.print(f'[warning]Failed to save debug HTML: {e}[/warning]')
 
-    def save_debug_selectors(self, url: str, selectors: dict[str, Any]) -> None:
+    async def save_debug_selectors(self, url: str, selectors: dict[str, Any]) -> None:
         """Save discovered selectors to file for debugging.
 
         Args:
@@ -95,8 +94,7 @@ class DebugManager:
         debug_data = {'url': url, 'selectors': selectors}
 
         try:
-            with open(filepath, 'w', encoding='utf-8') as f:
-                json.dump(debug_data, f, indent=2)
+            await atomic_write_json_async(filepath, debug_data)
             self.console.print(f'  [dim]↻ Debug selectors saved to: {filepath}[/dim]')
         except (OSError, ValueError) as e:
             self.console.print(f'[warning]Failed to save debug selectors: {e}[/warning]')

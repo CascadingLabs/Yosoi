@@ -142,9 +142,18 @@ def _make_pipeline_stub(mocker, contract=None):
     """Create a minimal Pipeline instance without calling __init__."""
     stub = Pipeline.__new__(Pipeline)
     stub.contract = contract or SimpleContract
+    from yosoi.core.verification import SemanticValidator, field_rules_for_contract
+
+    stub.semantic_validator = SemanticValidator()
+    stub._field_rules = field_rules_for_contract(stub.contract)
     stub.console = mocker.MagicMock()
     stub.logger = mocker.MagicMock()
     stub._contract_sig = 'test-sig'
+    stub._mcp_discovery = None
+    stub._force_mcp = False
+    stub._discovery_strategy = mocker.MagicMock()
+    stub._discovery_strategy.load = mocker.AsyncMock(return_value=None)
+    stub._discovery_strategy.save = mocker.AsyncMock()
     return stub
 
 
@@ -251,17 +260,33 @@ def _make_scrape_stub(mocker, contract=None):
 
     stub = Pipeline.__new__(Pipeline)
     stub.contract = contract or SimpleContract
+    from yosoi.core.verification import SemanticValidator, field_rules_for_contract
+
+    stub.semantic_validator = SemanticValidator()
+    stub._field_rules = field_rules_for_contract(stub.contract)
     stub.console = mocker.MagicMock()
     stub.logger = mocker.MagicMock()
     stub.cleaner = mocker.MagicMock()
     stub.discovery = mocker.MagicMock()
     stub.discovery.discover_selectors = mocker.AsyncMock()
+    stub._mcp_discovery = None
+    stub._force_mcp = False
+    stub._discovery_strategy = mocker.MagicMock()
+    stub._discovery_strategy.load = mocker.AsyncMock(return_value=None)
+    stub._discovery_strategy.save = mocker.AsyncMock()
     stub.verifier = mocker.MagicMock()
     stub.extractor = mocker.MagicMock()
     stub.storage = mocker.MagicMock()
+    stub.storage.load_snapshots = mocker.AsyncMock()
+    stub.storage.save_snapshots = mocker.AsyncMock()
+    stub.storage.save_selectors = mocker.AsyncMock()
+    stub.storage.save_content = mocker.AsyncMock()
+    stub.storage.record_verdict = mocker.AsyncMock()
     stub.tracker = mocker.MagicMock()
     stub.tracker.record_url = mocker.AsyncMock(return_value=DomainStats(llm_calls=0, url_count=1))
     stub.debug = mocker.MagicMock()
+    stub.debug.save_debug_html = mocker.AsyncMock()
+    stub.debug.save_debug_selectors = mocker.AsyncMock()
     stub.debug_mode = False
     stub.output_formats = ['json']
     stub.force = False

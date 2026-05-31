@@ -8,7 +8,7 @@ import pytest
 
 from yosoi.core.fetcher.dom.ax import AxTarget, find_target, snapshot, snapshot_for_render_tier
 from yosoi.core.fetcher.dom.flows import ClickByRole
-from yosoi.core.fetcher.dom.probes import TriggerKind, _ax_snapshot, probe
+from yosoi.core.fetcher.dom.probes import TriggerKind, capture_ax_snapshot, probe
 
 
 def _node(
@@ -123,7 +123,7 @@ def test_find_target_exact_mode_requires_exact_name() -> None:
 async def test_ax_snapshot_uses_voidcrawl_032_get_full_ax_tree() -> None:
     tab = _AxTab([_node('button', 'Load more')])
 
-    snap = await _ax_snapshot(tab)
+    snap = await capture_ax_snapshot(tab)
 
     assert snap is not None
     assert snap.node_count == 1
@@ -132,7 +132,7 @@ async def test_ax_snapshot_uses_voidcrawl_032_get_full_ax_tree() -> None:
 
 @pytest.mark.asyncio
 async def test_ax_snapshot_returns_none_when_voidcrawl_ax_api_fails() -> None:
-    assert await _ax_snapshot(_BrokenAxTab()) is None
+    assert await capture_ax_snapshot(_BrokenAxTab()) is None
 
 
 @pytest.mark.asyncio

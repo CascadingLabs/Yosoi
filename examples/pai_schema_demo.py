@@ -31,8 +31,8 @@ class ShoppingContract(Contract):
     """A contract for e-commerce scraping."""
 
     product_name: str = Field(description='The full name of the product')
-    price: float = Price(currency_symbol='$', hint='Look for the large price text near the Buy button')
-    official_url: str = Url(require_https=True, hint="The link to the manufacturer's website")
+    price: float = Price(currency_symbol='$', description='Look for the large price text near the Buy button')
+    official_url: str = Url(require_https=True, description="The link to the manufacturer's website")
 
 
 async def main() -> None:
@@ -58,7 +58,6 @@ async def main() -> None:
     deps = FieldDiscoveryDeps(
         field_name='price',
         field_description='The product price',
-        field_hint='Look for the large price text',
         input=discovery_input,
         target_level=SelectorLevel.CSS,
     )

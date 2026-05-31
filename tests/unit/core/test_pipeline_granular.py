@@ -27,6 +27,10 @@ def _make_pipeline_stub(mocker, contract=None):
     """Create a minimal Pipeline instance without calling __init__."""
     stub = Pipeline.__new__(Pipeline)
     stub.contract = contract or SimpleContract
+    from yosoi.core.verification import SemanticValidator, field_rules_for_contract
+
+    stub.semantic_validator = SemanticValidator()
+    stub._field_rules = field_rules_for_contract(stub.contract)
     stub.console = mocker.MagicMock()
     stub.logger = mocker.MagicMock()
     stub.cleaner = mocker.MagicMock()
@@ -35,9 +39,15 @@ def _make_pipeline_stub(mocker, contract=None):
     stub.verifier = mocker.MagicMock()
     stub.extractor = mocker.MagicMock()
     stub.storage = mocker.MagicMock()
+    stub.storage.load_snapshots = mocker.AsyncMock()
+    stub.storage.save_snapshots = mocker.AsyncMock()
+    stub.storage.save_content = mocker.AsyncMock()
+    stub.storage.record_verdict = mocker.AsyncMock()
     stub.tracker = mocker.MagicMock()
     stub.tracker.record_url = mocker.AsyncMock()
     stub.debug = mocker.MagicMock()
+    stub.debug.save_debug_html = mocker.AsyncMock()
+    stub.debug.save_debug_selectors = mocker.AsyncMock()
     stub.debug_mode = False
     stub.output_formats = ['json']
     stub.force = False

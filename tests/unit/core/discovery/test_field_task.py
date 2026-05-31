@@ -28,7 +28,6 @@ async def test_cache_hit_returns_cached_selectors(mock_agent):
     result = await run_field_task(
         field_name='headline',
         field_description='Article title',
-        field_hint=None,
         discovery_input=_DISCOVERY_INPUT,
         html=_HTML,
         agent=mock_agent,
@@ -47,7 +46,6 @@ async def test_cache_miss_calls_agent(mock_agent):
     result = await run_field_task(
         field_name='headline',
         field_description='Article title',
-        field_hint=None,
         discovery_input=_DISCOVERY_INPUT,
         html=_HTML,
         agent=mock_agent,
@@ -72,7 +70,6 @@ async def test_failed_cache_escalates_to_discovery(mock_agent):
     result = await run_field_task(
         field_name='headline',
         field_description='Article title',
-        field_hint=None,
         discovery_input=_DISCOVERY_INPUT,
         html=_HTML,
         agent=mock_agent,
@@ -93,7 +90,6 @@ async def test_all_levels_fail_returns_none_selectors(mock_agent):
     result = await run_field_task(
         field_name='headline',
         field_description='Article title',
-        field_hint=None,
         discovery_input=_DISCOVERY_INPUT,
         html=_HTML,
         agent=mock_agent,
@@ -112,7 +108,7 @@ async def test_na_response_from_agent_skips_to_next_level(mocker):
     call_count = 0
 
     async def mock_discover(
-        field_name, field_description, field_hint, discovery_input, target_level, is_container=False
+        field_name, field_description, discovery_input, target_level, is_container=False, feedback=None
     ):
         nonlocal call_count
         call_count += 1
@@ -125,7 +121,6 @@ async def test_na_response_from_agent_skips_to_next_level(mocker):
     await run_field_task(
         field_name='headline',
         field_description='Article title',
-        field_hint=None,
         discovery_input=_DISCOVERY_INPUT,
         html=_HTML,
         agent=agent,
@@ -143,7 +138,7 @@ async def test_escalated_level_recorded_in_result(mocker):
     agent = mocker.MagicMock()
 
     async def mock_discover(
-        field_name, field_description, field_hint, discovery_input, target_level, is_container=False
+        field_name, field_description, discovery_input, target_level, is_container=False, feedback=None
     ):
         if target_level == SelectorLevel.CSS:
             raise LLMGenerationError('CSS fails')
@@ -154,7 +149,6 @@ async def test_escalated_level_recorded_in_result(mocker):
     result = await run_field_task(
         field_name='headline',
         field_description='Article title',
-        field_hint=None,
         discovery_input=_DISCOVERY_INPUT,
         html=_HTML,
         agent=agent,
@@ -172,7 +166,6 @@ async def test_css_success_has_no_escalation(mock_agent):
     result = await run_field_task(
         field_name='headline',
         field_description='Article title',
-        field_hint=None,
         discovery_input=_DISCOVERY_INPUT,
         html=_HTML,
         agent=mock_agent,
@@ -191,7 +184,6 @@ async def test_semaphore_is_respected(mock_agent):
     result = await run_field_task(
         field_name='headline',
         field_description='Article title',
-        field_hint=None,
         discovery_input=_DISCOVERY_INPUT,
         html=_HTML,
         agent=mock_agent,
@@ -211,7 +203,6 @@ async def test_invalid_cached_entry_triggers_rediscovery(mock_agent):
     result = await run_field_task(
         field_name='headline',
         field_description='Article title',
-        field_hint=None,
         discovery_input=_DISCOVERY_INPUT,
         html=_HTML,
         agent=mock_agent,
@@ -231,7 +222,6 @@ async def test_absent_cache_status_skips_discovery(mock_agent):
     result = await run_field_task(
         field_name='headline',
         field_description='Article title',
-        field_hint=None,
         discovery_input=_DISCOVERY_INPUT,
         html=_HTML,
         agent=mock_agent,
@@ -256,3 +246,108 @@ async def test_field_task_result_dataclass():
     assert result.selectors is None
     assert result.from_cache is False
     assert result.escalated_to is None
+
+
+# ---------------------------------------------------------------------------
+# Bus coordination coverage (lines 242, 248-253, 277)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.anyio
+async def test_feedback_true_disables_bus(mock_agent):
+    """When feedback=True, scoped_bus is set to None even if provided (line 242)."""
+
+    class _FakeBus:
+        def __init__(self):
+            self.acquire_called = False
+
+        async def acquire(self, sig):
+            self.acquire_called = True
+            return True
+
+        async def wait_for(self, sig):
+            return None
+
+        async def publish(self, sig, selectors):
+            pass
+
+    fake_bus = _FakeBus()
+    await run_field_task(
+        field_name='headline',
+        field_description='Article title',
+        discovery_input=_DISCOVERY_INPUT,
+        html=_HTML,
+        agent=mock_agent,
+        cached_entry=None,
+        max_level=SelectorLevel.CSS,
+        scoped_bus=fake_bus,
+        feedback='Previous hint',  # feedback=truthy → bus disabled
+    )
+
+    assert not fake_bus.acquire_called, 'Bus must not be called when feedback is set'
+
+
+@pytest.mark.anyio
+async def test_bus_follower_returns_cached_result_from_bus(mock_agent):
+    """Bus follower (not leader) uses cached result from bus.wait_for (lines 248-253)."""
+
+    class _FollowerBus:
+        async def acquire(self, sig) -> bool:
+            return False  # not the leader
+
+        async def wait_for(self, sig):
+            return FieldSelectors(primary='h1.title-cached')
+
+        async def publish(self, sig, selectors):
+            pass
+
+    result = await run_field_task(
+        field_name='headline',
+        field_description='Article title',
+        discovery_input=_DISCOVERY_INPUT,
+        html=_HTML,
+        agent=mock_agent,
+        cached_entry=None,
+        max_level=SelectorLevel.CSS,
+        scoped_bus=_FollowerBus(),
+    )
+
+    assert result.from_cache is True
+    assert result.selectors is not None
+    # primary is a SelectorEntry; check its value string
+    primary = result.selectors.primary
+    primary_val = primary.value if hasattr(primary, 'value') else primary
+    assert primary_val == 'h1.title-cached'
+
+
+@pytest.mark.anyio
+async def test_bus_leader_publishes_result_in_finally(mock_agent):
+    """Bus leader publishes its result via scoped_bus.publish in the finally block (line 277)."""
+
+    class _LeaderBus:
+        def __init__(self):
+            self.published: object = None
+
+        async def acquire(self, sig) -> bool:
+            return True  # this worker is the leader
+
+        async def wait_for(self, sig):
+            return None
+
+        async def publish(self, sig, selectors) -> None:
+            self.published = selectors
+
+    bus = _LeaderBus()
+    result = await run_field_task(
+        field_name='headline',
+        field_description='Article title',
+        discovery_input=_DISCOVERY_INPUT,
+        html=_HTML,
+        agent=mock_agent,
+        cached_entry=None,
+        max_level=SelectorLevel.CSS,
+        scoped_bus=bus,
+    )
+
+    assert bus.published is not None, 'Leader must publish result via bus'
+    assert result.selectors is not None

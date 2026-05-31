@@ -15,8 +15,12 @@ are saved via A3NodeStorage so the next visit skips the probe.
 
 from __future__ import annotations
 
+import asyncio
 import logging
+import random
 import time
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 from typing import Any
 from urllib.parse import urlparse
 
@@ -24,11 +28,26 @@ from rich.console import Console
 
 from yosoi.core.fetcher.base import ContentAnalyzer, HTMLFetcher
 from yosoi.core.fetcher.dom import DOMLoader
-from yosoi.models.results import FetchResult
-from yosoi.storage.a3node import A3Node, A3NodeStorage
-from yosoi.utils.exceptions import BotDetectionError
+from yosoi.core.fetcher.dom.ax import AxSnapshot
+from yosoi.core.fetcher.dom.probes import capture_ax_snapshot
+from yosoi.core.fetcher.downloads import execute_downloads
+from yosoi.models.download import DownloadResult, DownloadSpec
+from yosoi.models.results import FetchResult, JsOutputs
+from yosoi.storage.a3node import A3Node, A3NodeStorage, ActRecord
+from yosoi.utils import observability as obs
+from yosoi.utils.exceptions import BotDetectionError, DownloadError
 
 logger = logging.getLogger(__name__)
+
+# ── wait_for_js settle constants ───────────────────────────────────────────────
+# Kind string written into A3Node acts when JS assert needed settle cycles.
+_WAIT_FOR_JS_ACT = 'wait_for_js'
+# Seconds between settle polls (also the unit stored in ActRecord.cycles).
+_JS_POLL_INTERVAL_S: float = 0.5
+# Maximum poll attempts before giving up and accepting whatever the DOM has.
+_JS_MAX_SETTLE_CYCLES: int = 10
+# Max random jitter injected before tab.goto() to stagger concurrent workers.
+_JITTER_MAX_S: float = 1.5
 
 
 def _import_voidcrawl() -> tuple[Any, Any, Any]:
@@ -56,6 +75,8 @@ class _VoidCrawlFetcher(HTMLFetcher):
         browser_executable_path: str | None = None,
         console: Console | None = None,
         experimental_a3node: bool = False,
+        allow_downloads: bool = False,
+        download_dir: str | None = None,
         user_agent: str | None = None,
         accept_language: str | None = None,
         **_kwargs: Any,
@@ -67,6 +88,8 @@ class _VoidCrawlFetcher(HTMLFetcher):
         self.browser_executable_path = browser_executable_path
         self._console = console or Console()
         self._experimental_a3node = experimental_a3node
+        self._allow_downloads = allow_downloads
+        self._download_dir = download_dir
         self._user_agent = user_agent
         self._accept_language = accept_language
         self._pool: Any = None
@@ -85,7 +108,7 @@ class _VoidCrawlFetcher(HTMLFetcher):
         self._pool_ctx = BrowserPool(config)
         self._pool = await self._pool_ctx.__aenter__()
         if self._a3node_storage is not None:
-            self._a3node_cache = self._a3node_storage.load_all()
+            self._a3node_cache = await self._a3node_storage.load_all()
             self._console.print(f'[dim]  ↻ A3Node cache enabled ({len(self._a3node_cache)} recipes cached)[/dim]')
             logger.info('VoidCrawl fetcher ready (%d A3Nodes cached)', len(self._a3node_cache))
         else:
@@ -122,26 +145,88 @@ class _VoidCrawlFetcher(HTMLFetcher):
             await self._pool_ctx.__aexit__(None, None, None)
             self._pool = None
 
-    async def fetch(self, url: str) -> FetchResult:
+    @property
+    def supports_browse(self) -> bool:
+        """Browser pool is available — JS discovery can open a live tab."""
+        return True
+
+    @asynccontextmanager
+    async def browse(self, url: str) -> AsyncGenerator[Any, None]:
+        """Open a browser tab, navigate to *url*, yield the live tab, then release.
+
+        Intended for discovery workflows that need to run eval_js calls
+        against the rendered DOM without capturing full HTML.
+        """
+        async with self._pool.acquire() as tab:
+            await tab.goto(url, timeout=float(self.timeout))
+            yield tab
+
+    async def fetch(
+        self,
+        url: str,
+        action_scripts: dict[str, str] | None = None,
+        download_specs: dict[str, DownloadSpec] | None = None,
+    ) -> FetchResult:
         start = time.time()
-        return await self._do_fetch(url, start, 'fetch')
+        return await self._do_fetch(url, start, 'fetch', action_scripts=action_scripts, download_specs=download_specs)
 
     async def _do_fetch(
         self,
         url: str,
         start_time: float,
         _tier: str,
+        action_scripts: dict[str, str] | None = None,
+        download_specs: dict[str, DownloadSpec] | None = None,
     ) -> FetchResult:
         domain = urlparse(url).netloc.replace('www.', '')
         stored_node = self._a3node_cache.get(domain) if self._experimental_a3node else None
 
+        js_outputs: JsOutputs | None = None
+        downloads: dict[str, DownloadResult] | None = None
+        ax_snapshot: AxSnapshot | None = None
         async with self._pool.acquire() as tab:
+            # Jitter: stagger concurrent workers so they don't land simultaneously
+            # on the same origin and trigger bot-detection rate limiting.
+            jitter = random.uniform(0, _JITTER_MAX_S)
+            if jitter > 0.05:
+                await asyncio.sleep(jitter)
+
             await tab.goto(url, timeout=float(self.timeout))
 
             if stored_node is not None:
                 html = await self._fetch_with_replay(tab, domain, stored_node)
             else:
+                if not self._experimental_a3node:
+                    obs.annotate_a3node(obs.current_span(), mode=obs.A3_MODE_DISABLED)
+                else:
+                    obs.annotate_a3node(obs.current_span(), mode=obs.A3_MODE_PROBE)
                 html = await self._fetch_with_probe(tab, domain)
+
+            if action_scripts:
+                js_outputs, wait_cycles = await self._eval_with_settle(tab, action_scripts)
+                if wait_cycles > 0:
+                    # JS assert needed settle time — the DOM loaded target content
+                    # asynchronously after probe/replay captured HTML.  Re-capture
+                    # now that the condition holds so the HTML includes the content.
+                    try:
+                        settled_html = await tab.content()
+                        if settled_html and len(settled_html) >= self.min_content_length:
+                            html = settled_html
+                    except (RuntimeError, OSError, ValueError) as exc:
+                        logger.debug('settle re-capture failed: %s', exc)
+
+                    # Amend A3Node: record the settle cycles so replay skips
+                    # the probe and just waits settle_seconds before content().
+                    if self._a3node_storage is not None and self._experimental_a3node:
+                        await self._amend_a3node_settle(domain, wait_cycles)
+
+            # ys.File() downloads — run on the live tab (a download needs the open
+            # browser context). Gated by the allow_downloads opt-in.
+            downloads = await self._run_downloads(tab, download_specs, domain)
+
+            # Capture the rendered AX tree (browser tier) as a semantic perception
+            # layer for static discovery. Best-effort: None when the tab lacks CDP.
+            ax_snapshot = await capture_ax_snapshot(tab)
 
         if not html or len(html) < self.min_content_length:
             return FetchResult(
@@ -151,6 +236,8 @@ class _VoidCrawlFetcher(HTMLFetcher):
                 is_blocked=False,
                 block_reason=f'Content too short ({len(html or "")} chars)',
                 fetch_time=time.time() - start_time,
+                js_outputs=js_outputs,
+                downloads=downloads,
             )
 
         is_blocked, indicators = self._check_for_bot_detection(html, 200, {})
@@ -165,40 +252,156 @@ class _VoidCrawlFetcher(HTMLFetcher):
             is_blocked=False,
             fetch_time=time.time() - start_time,
             metadata=metadata,
+            js_outputs=js_outputs,
+            downloads=downloads,
+            ax_snapshot=ax_snapshot,
         )
 
-    async def _fetch_with_replay(self, tab: Any, domain: str, node: A3Node) -> str | None:
-        # FUTURE (A3Node WIP — next cycle): this does not actually replay `node.acts`; the
-        # non-empty branch just re-runs the full DOMLoader probe. Consequences until real
-        # replay lands: (1) no speed gain from a stored recipe, (2) record_replay() is only
-        # called on the empty-recipe path, so replay_count/battle_tested never advance for
-        # real recipes and the "replayed N times" log below is misleading. Trim it or wire
-        # up replay once VoidCrawl exposes reliable AX-tree trigger detection.
+    async def _run_downloads(
+        self,
+        tab: Any,
+        download_specs: dict[str, DownloadSpec] | None,
+        domain: str,
+    ) -> dict[str, DownloadResult] | None:
+        """Execute ys.File() download specs on the live tab (defense-in-depth gate)."""
+        if not download_specs:
+            return None
+        if not self._allow_downloads:
+            raise DownloadError(
+                next(iter(download_specs)),
+                'downloads are disabled; pass allow_downloads=True to enable ys.File() fields',
+            )
+        return await execute_downloads(tab, download_specs, domain, base_dir=self._download_dir)
+
+    @staticmethod
+    def _compose_action_scripts(scripts: dict[str, str]) -> str:
+        """Compose multiple JS scripts into one dict-returning expression.
+
+        Each sub-script is wrapped in try/catch so a single failure does not
+        discard all outputs — the failed field gets ``null`` instead.
+        Field names are JSON-encoded so quotes and special characters are safe.
+        """
+        import json
+
+        entries = '; '.join(
+            f'try {{ out[{json.dumps(k)}] = (()=>{{ return ({v}); }})(); }} catch(e) {{ out[{json.dumps(k)}] = null; }}'
+            for k, v in scripts.items()
+        )
+        return f'(()=>{{ const out={{}}; {entries}; return out; }})()'
+
+    async def _eval_with_settle(
+        self,
+        tab: Any,
+        scripts: dict[str, str],
+    ) -> tuple[JsOutputs, int]:
+        """Evaluate action scripts, polling until all fields return non-null.
+
+        The assert pattern: run JS → if any field is null, wait
+        ``_JS_POLL_INTERVAL_S`` and retry, up to ``_JS_MAX_SETTLE_CYCLES`` times.
+        Returns the outputs and the number of extra cycles waited (0 = first
+        eval succeeded, no settle needed).
+        """
+        for cycle in range(_JS_MAX_SETTLE_CYCLES):
+            outputs = await self._eval_action_scripts(tab, scripts)
+            if all(v is not None for v in outputs.values()):
+                return outputs, cycle
+            if cycle < _JS_MAX_SETTLE_CYCLES - 1:
+                await asyncio.sleep(_JS_POLL_INTERVAL_S)
+        # Final attempt — accept whatever the DOM has now
+        outputs = await self._eval_action_scripts(tab, scripts)
+        return outputs, _JS_MAX_SETTLE_CYCLES
+
+    async def _amend_a3node_settle(self, domain: str, wait_cycles: int) -> None:
+        """Append or update the wait_for_js act in the domain's A3Node recipe."""
         if self._a3node_storage is None:
+            return
+        node = self._a3node_cache.get(domain)
+        existing = list(node.acts) if node else []
+        # Replace any previous wait_for_js with the fresh measurement
+        domloader_only = [a for a in existing if a.kind != _WAIT_FOR_JS_ACT]
+        amended = [*domloader_only, ActRecord(kind=_WAIT_FOR_JS_ACT, cycles=wait_cycles)]
+        await self._a3node_storage.save(domain, amended)
+        loaded = await self._a3node_storage.load(domain)
+        if loaded is not None:
+            self._a3node_cache[domain] = loaded
+        settle_s = wait_cycles * _JS_POLL_INTERVAL_S
+        self._console.print(
+            f'[success]  ✓ A3Node settle recorded for {domain}: '
+            f'{wait_cycles} cycle(s) × {_JS_POLL_INTERVAL_S:.1f}s = {settle_s:.1f}s[/success]'
+        )
+
+    async def _eval_action_scripts(self, tab: Any, scripts: dict[str, str]) -> JsOutputs:
+        composite = self._compose_action_scripts(scripts)
+        try:
+            result = await tab.eval_js(composite)
+            if isinstance(result, dict):
+                return result
+            logger.warning('action_scripts eval returned non-dict: %r', result)
+            return {}
+        except Exception as exc:  # noqa: BLE001
+            logger.warning('action_scripts eval failed: %s', exc)
+            return {}
+
+    async def _fetch_with_replay(self, tab: Any, domain: str, node: A3Node) -> str | None:
+        """Replay a stored A3Node recipe, falling back to a full probe on failure.
+
+        Empty recipe → the page needed no actions, so just capture the current
+        HTML. Non-empty recipe → re-execute the stored acts directly via
+        ``DOMLoader.replay`` (no behavior-tree search, no LLM). Either way, a
+        successful replay records the replay so ``replay_count``/``battle_tested``
+        advance; an insufficient result re-probes and re-saves the fresh recipe.
+        """
+        if self._a3node_storage is None:
+            obs.annotate_a3node(obs.current_span(), mode=obs.A3_MODE_DISABLED)
             return await self._fetch_with_probe(tab, domain)
 
+        settle_s = node.settle_seconds
+        dl_acts = node.domloader_acts
+        span = obs.current_span()
+        # Shared replay-mode metadata; success/fallback exits add replayed/fell_back.
+        replay_attrs: obs.A3ReplayAttrs = {
+            'mode': obs.A3_MODE_REPLAY,
+            'acts': len(dl_acts),
+            'replay_count': node.replay_count,
+            'settle_seconds': settle_s,
+        }
+
         if node.is_empty:
-            self._console.print(f'[dim]  ↻ A3Node replay: {domain} needs no actions[/dim]')
+            settle_label = f', settle={settle_s:.1f}s' if settle_s else ''
+            self._console.print(f'[dim]  ↻ A3Node replay: {domain} needs no DOMLoader actions{settle_label}[/dim]')
             try:
+                if settle_s > 0:
+                    await asyncio.sleep(settle_s)
                 html: str = await tab.content()
                 if html and len(html) >= self.min_content_length:
-                    self._a3node_storage.record_replay(domain)
+                    await self._a3node_storage.record_replay(domain)
+                    obs.annotate_a3node(span, replayed=True, **replay_attrs)
                     return html
             except (RuntimeError, OSError, ValueError) as exc:
                 logger.debug('A3Node empty-recipe content capture failed: %s', exc)
         else:
             self._console.print(
-                f'[dim]  ↻ A3Node replay: {domain} ({len(node.acts)} acts, replayed {node.replay_count}×)[/dim]'
+                f'[dim]  ↻ A3Node replay: {domain} ({len(dl_acts)} act(s), replayed {node.replay_count}×)[/dim]'
             )
-            probe_result = await DOMLoader(console=self._console).run(tab)
-            if probe_result.success:
-                self._a3node_storage.save(domain, probe_result.acts)
-                _updated = self._a3node_storage.load(domain)
-                if _updated is not None:
-                    self._a3node_cache[domain] = _updated
-            return probe_result.html
+            result = await DOMLoader(console=self._console).replay(tab, dl_acts)
+            if result.success:
+                if settle_s > 0:
+                    await asyncio.sleep(settle_s)
+                    # Re-capture after settle — DOMLoader html may predate the async load
+                    try:
+                        settled: str = await tab.content()
+                        html_candidate = settled if settled and len(settled) >= self.min_content_length else result.html
+                    except (RuntimeError, OSError, ValueError):
+                        html_candidate = result.html
+                else:
+                    html_candidate = result.html
+                if html_candidate and len(html_candidate) >= self.min_content_length:
+                    await self._a3node_storage.record_replay(domain)
+                    obs.annotate_a3node(span, replayed=True, **replay_attrs)
+                    return html_candidate
 
-        self._console.print(f'[warning]  ✗ A3Node replay failed for {domain} — re-probing[/warning]')
+        self._console.print(f'[warning]  ✗ A3Node replay fell short for {domain} — re-probing[/warning]')
+        obs.annotate_a3node(span, fell_back=True, **replay_attrs)
         return await self._fetch_with_probe(tab, domain)
 
     async def _fetch_with_probe(self, tab: object, domain: str) -> str | None:
@@ -209,9 +412,9 @@ class _VoidCrawlFetcher(HTMLFetcher):
         # Persist the acts regardless of content length — even "no action needed"
         # is a valid and useful recipe to store
         if self._a3node_storage is not None and probe_result.success:
-            self._a3node_storage.save(domain, probe_result.acts)
+            await self._a3node_storage.save(domain, probe_result.acts)
             # Update in-memory cache
-            node = self._a3node_storage.load(domain)
+            node = await self._a3node_storage.load(domain)
             if node is not None:
                 self._a3node_cache[domain] = node
                 verb = 'stored (no actions needed)' if node.is_empty else f'stored ({len(node.acts)} acts)'

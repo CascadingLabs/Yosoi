@@ -13,37 +13,37 @@ def debug_dir(tmp_path, monkeypatch):
 
 
 class TestDebugManagerErrorPaths:
-    def test_save_html_disabled(self, tmp_path):
+    async def test_save_html_disabled(self, tmp_path):
         """save_debug_html does nothing when disabled."""
         dm = DebugManager(enabled=False)
-        dm.save_debug_html('https://example.com', '<html>test</html>')
+        await dm.save_debug_html('https://example.com', '<html>test</html>')
         # No files should be created when disabled
         assert list(tmp_path.iterdir()) == []
 
-    def test_save_selectors_disabled(self, tmp_path):
+    async def test_save_selectors_disabled(self, tmp_path):
         """save_debug_selectors does nothing when disabled."""
         dm = DebugManager(enabled=False)
-        dm.save_debug_selectors('https://example.com', {'title': {'primary': 'h1'}})
+        await dm.save_debug_selectors('https://example.com', {'title': {'primary': 'h1'}})
         assert list(tmp_path.iterdir()) == []
 
-    def test_save_html_error_handled(self, mocker, debug_dir):
+    async def test_save_html_error_handled(self, mocker, debug_dir):
         """OS error when saving HTML is handled gracefully."""
         dm = DebugManager(enabled=True)
-        mocker.patch('pathlib.Path.write_text', side_effect=OSError('Permission denied'))
+        mocker.patch.object(debug_mod, 'atomic_write_text_async', side_effect=OSError('Permission denied'))
         # Should not raise
-        dm.save_debug_html('https://example.com', '<html>test</html>')
+        await dm.save_debug_html('https://example.com', '<html>test</html>')
 
-    def test_save_selectors_error_handled(self, mocker, debug_dir):
+    async def test_save_selectors_error_handled(self, mocker, debug_dir):
         """OS error when saving selectors is handled gracefully."""
         dm = DebugManager(enabled=True)
-        mocker.patch('builtins.open', side_effect=OSError('Permission denied'))
+        mocker.patch.object(debug_mod, 'atomic_write_json_async', side_effect=OSError('Permission denied'))
         # Should not raise
-        dm.save_debug_selectors('https://example.com', {'title': {'primary': 'h1'}})
+        await dm.save_debug_selectors('https://example.com', {'title': {'primary': 'h1'}})
 
-    def test_save_html_success(self, debug_dir):
+    async def test_save_html_success(self, debug_dir):
         """save_debug_html creates file when enabled."""
         dm = DebugManager(enabled=True)
-        dm.save_debug_html('https://example.com/page', '<html>content</html>')
+        await dm.save_debug_html('https://example.com/page', '<html>content</html>')
         # Check file was created
         filename = dm._get_safe_filename('https://example.com/page', 'html')
         filepath = dm.debug_dir / filename
@@ -51,11 +51,11 @@ class TestDebugManagerErrorPaths:
         content = filepath.read_text()
         assert '<!-- URL: https://example.com/page -->' in content
 
-    def test_save_selectors_success(self, debug_dir):
+    async def test_save_selectors_success(self, debug_dir):
         """save_debug_selectors creates file when enabled."""
         dm = DebugManager(enabled=True)
         selectors = {'title': {'primary': 'h1'}}
-        dm.save_debug_selectors('https://example.com/page', selectors)
+        await dm.save_debug_selectors('https://example.com/page', selectors)
         filename = dm._get_safe_filename('https://example.com/page', 'selectors.json')
         filepath = dm.debug_dir / filename
         assert filepath.exists()

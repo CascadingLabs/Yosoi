@@ -21,6 +21,8 @@ def mock_pipeline(mocker):
 
     mock_pipe = mocker.MagicMock()
     mock_pipe.process_urls = mocker.AsyncMock(return_value={'successful': [], 'failed': []})
+    mock_pipe.show_summary = mocker.AsyncMock()
+    mock_pipe.show_llm_stats = mocker.AsyncMock()
     mock_pipeline_cls = mocker.patch('yosoi.Pipeline', return_value=mock_pipe)
     mocker.patch(
         'yosoi.core.configs.YosoiConfig',

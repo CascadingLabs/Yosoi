@@ -25,7 +25,7 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
 
 import httpx
@@ -37,6 +37,9 @@ from yosoi.core.fetcher.voiddriver import HeadfulFetcher, HeadlessFetcher
 from yosoi.models.results import FetchResult
 from yosoi.storage.strategy import FetchStrategy, FetchStrategyStorage
 from yosoi.utils.exceptions import BotDetectionError
+
+if TYPE_CHECKING:
+    from yosoi.models.download import DownloadSpec
 
 
 class JSFetcher(HTMLFetcher):
@@ -66,6 +69,8 @@ class JSFetcher(HTMLFetcher):
         console: Console | None = None,
         force: bool = False,
         experimental_a3node: bool = False,
+        allow_downloads: bool = False,
+        download_dir: str | None = None,
         voidcrawl_user_agent: str | None = None,
         voidcrawl_accept_language: str | None = None,
     ):
@@ -85,6 +90,8 @@ class JSFetcher(HTMLFetcher):
             force: Skip fetcher strategy cache and re-run full waterfall. Defaults to False.
             experimental_a3node: Opt into experimental A3Node persistence/replay.
                 Disabled by default so browser rendering always uses a fresh DOMLoader run.
+            allow_downloads: Opt into ys.File() downloads on the browser tiers. Off by default.
+            download_dir: Quarantine root for downloads. Defaults to ``.yosoi/downloads/``.
             voidcrawl_user_agent: Optional browser UA override. When omitted,
                 VoidCrawl owns UA and matching Client Hints.
             voidcrawl_accept_language: Optional browser Accept-Language override.
@@ -118,6 +125,8 @@ class JSFetcher(HTMLFetcher):
             'browser_executable_path': browser_executable_path,
             'console': self._console,
             'experimental_a3node': experimental_a3node,
+            'allow_downloads': allow_downloads,
+            'download_dir': download_dir,
             'user_agent': voidcrawl_user_agent,
             'accept_language': voidcrawl_accept_language,
         }
@@ -129,7 +138,7 @@ class JSFetcher(HTMLFetcher):
     async def __aenter__(self) -> JSFetcher:
         """Start the simple fetcher eagerly; Chrome tiers start lazily."""
         await self._simple.__aenter__()
-        self._strategy_cache = self._strategy_storage.load_all_strategies()
+        self._strategy_cache = await self._strategy_storage.load_all_strategies()
         self.logger.info(
             'JSFetcher ready (simple tier active, %d domain strategies cached)',
             len(self._strategy_cache),
@@ -155,6 +164,15 @@ class JSFetcher(HTMLFetcher):
             await self._headful.close()
             self._headful = None
 
+    @property
+    def supports_browse(self) -> bool:
+        """The waterfall escalates to a real browser tier, so a live tab is available.
+
+        This makes ys.File() downloads work on ``fetcher_type='waterfall'`` (the download
+        gate forces the browser tier for download specs; see ``_fetch_waterfall``).
+        """
+        return True
+
     # ------------------------------------------------------------------
     # Strategy cache helpers
     # ------------------------------------------------------------------
@@ -163,16 +181,16 @@ class JSFetcher(HTMLFetcher):
         """Return the cached strategy for *domain*, or None if unknown."""
         return self._strategy_cache.get(domain)
 
-    def _record_success(self, domain: str, tier: str) -> None:
+    async def _record_success(self, domain: str, tier: str) -> None:
         """Save the winning tier for *domain* if it changed."""
         current = self._strategy_cache.get(domain)
         if current is None or current.fetcher != tier:
             self._strategy_cache[domain] = FetchStrategy(fetcher=tier)
-            self._strategy_storage.save(domain, tier)
+            await self._strategy_storage.save(domain, tier)
             self._console.print(f'[success]  ✓ Fetcher strategy saved: {domain} → {tier}[/success]')
             self.logger.info('Fetch strategy cached: %s -> %s', domain, tier)
 
-    def update_selector_level(self, domain: str, selector_level: str) -> None:
+    async def update_selector_level(self, domain: str, selector_level: str) -> None:
         """Persist the selector escalation level that worked for this domain."""
         current = self._strategy_cache.get(domain)
         if current is None:
@@ -181,7 +199,7 @@ class JSFetcher(HTMLFetcher):
             return
         updated = FetchStrategy(fetcher=current.fetcher, selector_level=selector_level)
         self._strategy_cache[domain] = updated
-        self._strategy_storage.save(domain, current.fetcher, selector_level=selector_level)
+        await self._strategy_storage.save(domain, current.fetcher, selector_level=selector_level)
         self._console.print(f'[dim]  ↳ Selector level cached: {domain} → {selector_level}[/dim]')
 
     # ------------------------------------------------------------------
@@ -256,7 +274,12 @@ class JSFetcher(HTMLFetcher):
     # Public fetch interface
     # ------------------------------------------------------------------
 
-    async def fetch(self, url: str) -> FetchResult:
+    async def fetch(
+        self,
+        url: str,
+        action_scripts: dict[str, str] | None = None,
+        download_specs: dict[str, DownloadSpec] | None = None,
+    ) -> FetchResult:
         """Fetch a page using the Simple → Headless → Headful waterfall.
 
         If a winning tier is cached for this domain it is used directly.
@@ -264,6 +287,10 @@ class JSFetcher(HTMLFetcher):
 
         Args:
             url: The URL to fetch.
+            action_scripts: Optional {field: js_expression} map evaluated after
+                page load on L2 tiers. Ignored by the simple HTTP tier.
+            download_specs: Optional {field: DownloadSpec} for ys.File() fields. Forces a
+                browser tier (the simple HTTP tier can't download) and runs on the live tab.
 
         Returns:
             FetchResult with rendered HTML and metadata on success.
@@ -278,11 +305,20 @@ class JSFetcher(HTMLFetcher):
             self._console.print(
                 f'[dim]  ↳ {domain} — using cached tier [bold]{cached_strategy.fetcher}[/bold]{level_msg}[/dim]'
             )
-            cached_result = await self._fetch_cached_tier(url, domain, cached_strategy.fetcher, start_time)
+            cached_result = await self._fetch_cached_tier(
+                url,
+                domain,
+                cached_strategy.fetcher,
+                start_time,
+                action_scripts=action_scripts,
+                download_specs=download_specs,
+            )
             if cached_result is not None:
                 return cached_result
 
-        return await self._fetch_waterfall(url, domain, start_time)
+        return await self._fetch_waterfall(
+            url, domain, start_time, action_scripts=action_scripts, download_specs=download_specs
+        )
 
     async def _fetch_cached_tier(
         self,
@@ -290,6 +326,8 @@ class JSFetcher(HTMLFetcher):
         domain: str,
         cached_tier: str,
         start_time: float,
+        action_scripts: dict[str, str] | None = None,
+        download_specs: dict[str, DownloadSpec] | None = None,
     ) -> FetchResult | None:
         """Attempt fetch using the cached winning tier for this domain.
 
@@ -301,12 +339,20 @@ class JSFetcher(HTMLFetcher):
             domain: Extracted domain name.
             cached_tier: Previously cached tier name ('simple', 'headless', 'headful').
             start_time: Monotonic start time for fetch timing.
+            action_scripts: Optional {field: js_expression} map forwarded to L2 tiers.
+            download_specs: Optional ys.File() download specs forwarded to L2 tiers.
 
         Returns:
             FetchResult on success, or None if the cached tier should be bypassed.
 
         """
         if cached_tier == 'simple':
+            if download_specs:
+                # The simple HTTP tier has no browser tab — ys.File() needs one. Escalate.
+                self._console.print(
+                    f"[warning]  ✗ Cached simple tier can't download for {domain} — escalating to browser[/warning]"
+                )
+                return None
             try:
                 if await self._probe_requires_js(url):
                     self._console.print(
@@ -328,7 +374,9 @@ class JSFetcher(HTMLFetcher):
         if cached_tier == 'headless':
             try:
                 headless = await self._ensure_headless()
-                result = await headless._do_fetch(url, start_time, 'headless')
+                result = await headless._do_fetch(
+                    url, start_time, 'headless', action_scripts=action_scripts, download_specs=download_specs
+                )
                 if result.html:
                     return result
                 self._console.print(f'[warning]  ✗ Cached headless tier failed for {domain} — trying headful[/warning]')
@@ -337,31 +385,45 @@ class JSFetcher(HTMLFetcher):
                     f'[warning]  ✗ Cached headless tier blocked for {domain} — re-running waterfall[/warning]'
                 )
             headful = await self._ensure_headful()
-            result = await headful._do_fetch(url, start_time, 'headful')
+            result = await headful._do_fetch(
+                url, start_time, 'headful', action_scripts=action_scripts, download_specs=download_specs
+            )
             if result.html:
-                self._record_success(domain, 'headful')
+                await self._record_success(domain, 'headful')
             return result
 
         if cached_tier == 'headful':
             headful = await self._ensure_headful()
-            return await headful._do_fetch(url, start_time, 'headful')
+            return await headful._do_fetch(
+                url, start_time, 'headful', action_scripts=action_scripts, download_specs=download_specs
+            )
 
         return None
 
-    async def _fetch_waterfall(self, url: str, domain: str, start_time: float) -> FetchResult:
+    async def _fetch_waterfall(
+        self,
+        url: str,
+        domain: str,
+        start_time: float,
+        action_scripts: dict[str, str] | None = None,
+        download_specs: dict[str, DownloadSpec] | None = None,
+    ) -> FetchResult:
         """Run the full Simple → Headless → Headful waterfall for a new domain.
 
         Args:
             url: The URL to fetch.
             domain: Extracted domain name.
             start_time: Monotonic start time for fetch timing.
+            action_scripts: Optional {field: js_expression} map forwarded to L2 tiers.
+            download_specs: Optional ys.File() download specs forwarded to L2 tiers.
 
         Returns:
             FetchResult from whichever tier succeeded, or an empty result
             if all three tiers failed.
 
         """
-        requires_js = await self._probe_requires_js(url)
+        # ys.File() downloads need a browser tab — never settle on the simple HTTP tier.
+        requires_js = bool(download_specs) or await self._probe_requires_js(url)
 
         if requires_js:
             self._console.print('[dim]    [1/3] HEAD probe detected JS-rendered page — skipping simple HTTP[/dim]')
@@ -375,7 +437,7 @@ class JSFetcher(HTMLFetcher):
 
             if result and result.html and not result.requires_js:
                 self._console.print('[success]    ✓ Simple fetcher worked[/success]')
-                self._record_success(domain, 'simple')
+                await self._record_success(domain, 'simple')
                 return result
 
             if result and result.html and result.requires_js:
@@ -389,10 +451,12 @@ class JSFetcher(HTMLFetcher):
         self._console.print('[dim]    [2/3] Trying headless Chrome...[/dim]')
         try:
             headless = await self._ensure_headless()
-            result = await headless._do_fetch(url, start_time, 'headless')
+            result = await headless._do_fetch(
+                url, start_time, 'headless', action_scripts=action_scripts, download_specs=download_specs
+            )
             if result.html:
                 self._console.print('[success]    ✓ Headless Chrome worked[/success]')
-                self._record_success(domain, 'headless')
+                await self._record_success(domain, 'headless')
                 return result
             self._console.print(
                 f'[warning]    ✗ Headless Chrome failed ({result.block_reason or "no content"})[/warning]'
@@ -403,11 +467,13 @@ class JSFetcher(HTMLFetcher):
         # Tier 3: Headful (best effort)
         self._console.print('[dim]    [3/3] Trying headful Chrome...[/dim]')
         headful = await self._ensure_headful()
-        result = await headful._do_fetch(url, start_time, 'headful')
+        result = await headful._do_fetch(
+            url, start_time, 'headful', action_scripts=action_scripts, download_specs=download_specs
+        )
 
         if result.html:
             self._console.print('[success]    ✓ Headful Chrome worked[/success]')
-            self._record_success(domain, 'headful')
+            await self._record_success(domain, 'headful')
         else:
             self._console.print(f'[warning]    ✗ All three tiers failed for {domain}[/warning]')
 

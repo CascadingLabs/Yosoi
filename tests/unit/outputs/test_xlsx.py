@@ -104,3 +104,19 @@ def test_save_xlsx_none_values_stored_as_empty(tmp_path, xlsx_save):
     # openpyxl reads empty cells as None; None values should not raise
     assert data['headline'] in (None, '')
     assert data['author'] == 'Bob'
+
+
+def test_save_xlsx_extends_header_with_new_columns(tmp_path, xlsx_save):
+    """Appending a record with new keys extends the header row (lines 37-39)."""
+    import openpyxl
+
+    filepath = str(tmp_path / 'results.xlsx')
+    # First write establishes baseline header: url, domain, headline, author
+    xlsx_save(filepath, URL, DOMAIN, CONTENT)
+    # Second write introduces a new key 'rating' not in the original header
+    xlsx_save(filepath, URL, DOMAIN, {'headline': 'Second', 'author': 'Bob', 'rating': '4.5'})
+
+    wb = openpyxl.load_workbook(filepath)
+    ws = wb.active
+    header = [cell.value for cell in ws[1]]
+    assert 'rating' in header  # header was extended

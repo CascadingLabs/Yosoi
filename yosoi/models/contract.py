@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import re
 from collections.abc import Callable
-from typing import Any, ClassVar, get_args, get_origin
+from typing import Annotated, Any, ClassVar, get_args, get_origin
 
 import pydantic
-from pydantic import BaseModel, Field, ValidationInfo, model_validator
+from pydantic import BaseModel, Field, TypeAdapter, ValidationInfo, model_validator
+from pydantic_core import PydanticUndefined
 from typing_extensions import Self
 
 from yosoi.models.selectors import SelectorEntry
@@ -107,6 +108,18 @@ class Contract(BaseModel):
                         f'of {parent_name}.{child_name}. Rename either the flat field or the nested field.'
                     )
 
+        # ys.File() output is annotation-directed (see ys.File docstring): the field's
+        # declared type selects the value view. Validate every file field's type against the
+        # closed supported set HERE so an unsupported/ambiguous annotation fails loudly at
+        # contract-definition time rather than mid-scrape.
+        from yosoi.models.download import output_view_for_annotation
+
+        for name in cls.file_fields():
+            try:
+                output_view_for_annotation(cls.model_fields[name].annotation)
+            except ValueError as exc:  # noqa: PERF203 — definition-time guard over a tiny field list, not a hot loop
+                raise TypeError(f'{cls.__name__}.{name}: {exc}') from exc
+
     @model_validator(mode='wrap')
     @classmethod
     def _apply_validators_and_coerce(
@@ -157,6 +170,106 @@ class Contract(BaseModel):
         return handler(result)
 
     @classmethod
+    def coerce_field(cls, name: str, value: object, source_url: str = '') -> object:
+        """Coerce + validate a single field's value the way the full model would.
+
+        Runs the same per-field pipeline as :meth:`_apply_validators_and_coerce`
+        for one field: the inner ``Validators`` transform, Yosoi semantic-type
+        coercion, then the field's Pydantic type + ``Annotated`` validators (via a
+        ``TypeAdapter``). Raises ``pydantic.ValidationError`` / ``ValueError`` on a
+        type or validator failure.
+
+        This is the single per-field value oracle reused by JS discovery (reject a
+        script whose output the declared type rejects) and scrape-time enforcement,
+        so a ``ys.js()`` field is validated by its declared type — not a heuristic.
+        """
+        field_info = cls.model_fields.get(name)
+        if field_info is None:
+            return value
+
+        # Step 1: inner Validators class transform (e.g. strip/clean).
+        validators_cls = cls._validators_cls
+        if validators_cls is not None:
+            fn = getattr(validators_cls, name, None)
+            if callable(fn):
+                value = fn(value)
+
+        # Step 2: Yosoi semantic-type coercion (scalar fields with a declared type).
+        raw_extra = field_info.json_schema_extra
+        if isinstance(raw_extra, dict) and _unwrap_list_annotation(field_info.annotation) is None:
+            yosoi_type = raw_extra.get('yosoi_type')
+            if isinstance(yosoi_type, str):
+                value = _coerce_dispatch(yosoi_type, value, raw_extra, source_url or None)
+
+        # Step 3: Pydantic type + Annotated (Before/After) validators. The
+        # ``Annotated`` metadata (BeforeValidator/AfterValidator/constraints) lives
+        # on ``field_info.metadata``, not ``.annotation`` — rebuild the full type so
+        # the field's own validators actually run.
+        metadata = tuple(field_info.metadata or ())
+        annotation = Annotated[(field_info.annotation, *metadata)] if metadata else field_info.annotation
+        return TypeAdapter(annotation).validate_python(value)
+
+    @classmethod
+    def field_default(cls, name: str) -> object:
+        """Return a field's default value (or None when it has no static default)."""
+        field_info = cls.model_fields.get(name)
+        if field_info is None:
+            return None
+        if field_info.default is not PydanticUndefined:
+            return field_info.default
+        if field_info.default_factory is not None:
+            return field_info.default_factory()  # type: ignore[call-arg]
+        return None
+
+    @classmethod
+    def undiscovered_action_fields(cls) -> dict[str, str]:
+        """Return {field_name: description} for JS action fields with no pre-authored script.
+
+        These fields require LLM-driven JS discovery (CAS-92) before they can be
+        evaluated on a live browser tab.
+        """
+        result: dict[str, str] = {}
+        for name, fi in cls.model_fields.items():
+            extra = fi.json_schema_extra
+            if not isinstance(extra, dict):
+                continue
+            cfg = extra.get('yosoi_action')
+            if not isinstance(cfg, dict) or cfg.get('type') != 'js':
+                continue
+            if cfg.get('script'):
+                continue  # hand-authored, already has a script
+            desc = cfg.get('description') or fi.description or ''
+            if desc:
+                result[name] = str(desc)
+        return result
+
+    @classmethod
+    def action_fields(cls) -> dict[str, dict[str, Any]]:
+        """Return {field_name: action_config} for fields annotated with yosoi_action.
+
+        These fields are excluded from CSS selector discovery and verification —
+        their values are captured by running the action during fetch.
+        """
+        result: dict[str, dict[str, Any]] = {}
+        for name, fi in cls.model_fields.items():
+            extra = fi.json_schema_extra
+            if isinstance(extra, dict) and 'yosoi_action' in extra:
+                cfg = extra['yosoi_action']
+                if isinstance(cfg, dict):
+                    result[name] = cfg
+        return result
+
+    @classmethod
+    def file_fields(cls) -> dict[str, dict[str, Any]]:
+        """Return {field_name: action_config} for ``ys.File`` download fields.
+
+        A subset of :meth:`action_fields` filtered to ``type == 'file'``. These run on
+        the live browser tab during fetch and resolve to the view chosen by the field's
+        declared type (``DownloadRecord`` / path / bytes / text / parsed structure).
+        """
+        return {name: cfg for name, cfg in cls.action_fields().items() if cfg.get('type') == 'file'}
+
+    @classmethod
     def nested_contracts(cls) -> dict[str, type[Contract]]:
         """Return a mapping of field name → child Contract class for Contract-typed fields."""
         result: dict[str, type[Contract]] = {}
@@ -177,38 +290,19 @@ class Contract(BaseModel):
         return result
 
     @classmethod
-    def field_hints(cls) -> dict[str, str | None]:
-        """Return yosoi_hint per (flat) field name, expanding nested contracts to {parent}_{child}."""
-        hints: dict[str, str | None] = {}
-        for name, fi in cls.model_fields.items():
-            ann = fi.annotation
-            extra = fi.json_schema_extra
-            if isinstance(ann, type) and issubclass(ann, Contract):
-                for child_name, child_fi in ann.model_fields.items():
-                    child_extra = child_fi.json_schema_extra
-                    if isinstance(child_extra, dict):
-                        raw = child_extra.get('yosoi_hint')
-                        hints[f'{name}_{child_name}'] = str(raw) if raw is not None else None
-                    else:
-                        hints[f'{name}_{child_name}'] = None
-            else:
-                if isinstance(extra, dict):
-                    raw = extra.get('yosoi_hint')
-                    hints[name] = str(raw) if raw is not None else None
-                else:
-                    hints[name] = None
-        return hints
-
-    @classmethod
     def discovery_field_names(cls) -> set[str]:
         """Return the set of flattened field names used for discovery and cache keys.
 
         Non-Contract fields keep their original name; nested Contract fields are
         expanded to ``{parent}_{child}`` keys.  This matches the key format used
         by snapshots, ``field_descriptions()``, and ``get_selector_overrides()``.
+        Action fields (yosoi_action) are excluded — they have no CSS selector.
         """
+        action_names = set(cls.action_fields().keys())
         names: set[str] = set()
         for name, fi in cls.model_fields.items():
+            if name in action_names:
+                continue
             ann = fi.annotation
             if isinstance(ann, type) and issubclass(ann, Contract):
                 for child_name in ann.model_fields:
@@ -242,25 +336,12 @@ class Contract(BaseModel):
                     flat_name = f'{name}_{child_name}'
                     if flat_name in overridden or child_name in child_overridden:
                         continue
-                    child_extra = child_fi.json_schema_extra or {}
                     child_desc = child_fi.description or f'Selectors for {flat_name}'
-                    child_hint = child_extra.get('yosoi_hint') if isinstance(child_extra, dict) else None
-                    selector_field = Field(
-                        description=child_desc,
-                        json_schema_extra={'yosoi_hint': child_hint} if child_hint else None,
-                    )
-                    field_defs[flat_name] = (FieldSelectors, selector_field)
+                    field_defs[flat_name] = (FieldSelectors, Field(description=child_desc))
             else:
-                # Copy description and yosoi_hint to the selector field
-                extra = field_info.json_schema_extra or {}
+                # Copy the field description onto the selector field
                 description = field_info.description or f'Selectors for {name}'
-                hint = extra.get('yosoi_hint') if isinstance(extra, dict) else None
-
-                selector_field = Field(
-                    description=description,
-                    json_schema_extra={'yosoi_hint': hint} if hint else None,
-                )
-                field_defs[name] = (FieldSelectors, selector_field)
+                field_defs[name] = (FieldSelectors, Field(description=description))
 
         # Add optional root field for multi-item pages
         field_defs['root'] = (
@@ -310,9 +391,10 @@ class Contract(BaseModel):
         from yosoi.models.selectors import is_discover_sentinel
 
         overridden = cls.get_selector_overrides()
+        action_names = set(cls.action_fields().keys())
         result: dict[str, str] = {}
         for name, fi in cls.model_fields.items():
-            if name in overridden:
+            if name in overridden or name in action_names:
                 continue
             ann = fi.annotation
             if isinstance(ann, type) and issubclass(ann, Contract):
@@ -341,19 +423,19 @@ class Contract(BaseModel):
         lines = [f'# {cls.__name__} Contract Manifest\n']
         if cls.__doc__:
             lines.append(f'> {cls.__doc__.strip()}\n')
-        lines.append('| Field | Semantic Type | Required | Config | AI Hint | Selector Override |')
-        lines.append('|-------|---------------|----------|--------|---------|-------------------|')
-        _SKIP_KEYS = ('yosoi_type', 'yosoi_hint', 'yosoi_frozen', 'yosoi_selector')
+        lines.append('| Field | Semantic Type | Required | Config | Description | Selector Override |')
+        lines.append('|-------|---------------|----------|--------|-------------|-------------------|')
+        _SKIP_KEYS = ('yosoi_type', 'yosoi_frozen', 'yosoi_selector')
         for name, field_info in cls.model_fields.items():
             raw_extra = field_info.json_schema_extra
             extra: dict[str, Any] = raw_extra if isinstance(raw_extra, dict) else {}
             yosoi_type = extra.get('yosoi_type', 'text')
-            hint = extra.get('yosoi_hint', field_info.description or '—')
+            description = field_info.description or '—'
             required = 'Yes' if field_info.is_required() else 'No'
             config_items = {k: v for k, v in extra.items() if k not in _SKIP_KEYS}
             config_str = ', '.join(f'{k}={v!r}' for k, v in config_items.items()) or '—'
             override = f'`{extra["yosoi_selector"]}`' if extra.get('yosoi_selector') else '—'
-            lines.append(f'| `{name}` | `{yosoi_type}` | {required} | {config_str} | {hint} | {override} |')
+            lines.append(f'| `{name}` | `{yosoi_type}` | {required} | {config_str} | {description} | {override} |')
         return '\n'.join(lines)
 
     @classmethod

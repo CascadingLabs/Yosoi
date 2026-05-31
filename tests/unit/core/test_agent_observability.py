@@ -35,12 +35,13 @@ def agent_under_propagate(mocker):
     depend on ``obs.configure()`` having run earlier in the session.
     """
     from pydantic_ai import Agent
+    from pydantic_ai.capabilities import Instrumentation
     from pydantic_ai.models.test import TestModel
 
     obs.reset_for_tests()
     mocker.patch.object(obs.LangfuseClient, '_instance', mocker.MagicMock(tracer=mocker.MagicMock()))
     Agent.instrument_all()
-    return Agent(TestModel(), instrument=True)
+    return Agent(TestModel(), capabilities=[Instrumentation()])
 
 
 def _capturing_propagate(captured: list[dict]):
