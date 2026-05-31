@@ -8,7 +8,7 @@ from yosoi.core.pipeline import Pipeline
 from yosoi.models.contract import Contract
 from yosoi.models.results import FetchResult, FieldVerificationResult, VerificationResult
 from yosoi.storage.tracking import DomainStats
-from yosoi.utils.exceptions import BotDetectionError
+from yosoi.utils.exceptions import BotDetectionError, DownloadError
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -1357,6 +1357,26 @@ async def test_extract_with_cached_fail_open_on_exception(mocker):
     )
     assert cache_valid is True
     assert items is None
+
+
+async def test_extract_with_cached_fails_fast_on_download_error(mocker):
+    """Regression: a DownloadError on the cache-hit path must propagate, not be swallowed.
+
+    Swallowing it (the old behavior) silently dropped the ys.File field on 'scrape forever'
+    cache hits — the dominant path. It must fail fast like the fresh-discovery path.
+    """
+
+    class FileContract(Contract):
+        report: list[dict] = ys.File(trigger='a.export', allowed_types=['csv'])
+
+    stub = _make_pipeline_stub(mocker, contract=FileContract)
+    stub._allow_downloads = True
+    mock_fetcher = mocker.MagicMock()
+    mock_fetcher.supports_browse = True
+    mock_fetcher.fetch = mocker.AsyncMock(side_effect=DownloadError('report', 'content does not match allowed_types'))
+
+    with pytest.raises(DownloadError):
+        await Pipeline._extract_with_cached(stub, 'https://x.com', mock_fetcher, {}, False)
 
 
 async def test_extract_with_cached_missing_contract_field_triggers_rediscovery(mocker):

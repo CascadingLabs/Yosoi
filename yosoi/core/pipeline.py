@@ -2292,7 +2292,10 @@ class Pipeline:
             self.console.print('[warning]⚠ Extraction failed with cached selectors[/warning]')
             return None, True
 
-        except BotDetectionError:
+        except (BotDetectionError, DownloadError):
+            # DownloadError is deterministic (bad type / unsafe url / parse fail). Fail fast
+            # with its precise message instead of swallowing it here — otherwise a ys.File
+            # field would be silently dropped on the cache-hit path. Mirrors the fresh path.
             raise
         except Exception as e:
             self.logger.exception('Cached selector handling failed for %s', url)

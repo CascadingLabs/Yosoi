@@ -70,6 +70,12 @@ def test_jsfetcher_passes_explicit_a3node_opt_in_to_chrome_tiers():
     assert fetcher._chrome_kwargs['experimental_a3node'] is True
 
 
+def test_jsfetcher_supports_browse_so_downloads_arent_gated_out():
+    # Regression: the waterfall escalates to a browser tier and can run ys.File() downloads,
+    # so the download gate (Pipeline._resolve_download_specs) must not reject fetcher_type=waterfall.
+    assert JSFetcher().supports_browse is True
+
+
 async def test_update_selector_level_preserves_cached_fetcher(mocker):
     fetcher = JSFetcher()
     fetcher._strategy_storage = mocker.Mock()
