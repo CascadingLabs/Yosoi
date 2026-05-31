@@ -212,7 +212,7 @@ class TestEscalationSignal:
 
 
 class TestEscalation:
-    async def test_escalate_merges_improved_selectors(self, mocker):
+    async def test_escalate_merges_and_reports_improvement(self, mocker):
         stub = _make_pipeline_stub(mocker)
         mcp = mocker.MagicMock()
         mcp.discover_selectors = mocker.AsyncMock(return_value={'price': {'primary': '.price'}})
@@ -222,12 +222,37 @@ class TestEscalation:
         mocker.patch.object(stub, '_extract', return_value={'title': 'Book', 'price': '9.99'})
 
         verified = {'title': {'primary': 'h1'}}
-        extracted, new_verified, _root = await stub._escalate_to_mcp(
-            'https://x.com', '<html/>', '<html/>', verified, None, None, {'title': 'Book'}
+        extracted, new_verified, _root, improved = await stub._escalate_to_mcp(
+            'https://x.com', '<html/>', '<html/>', verified, None, None, {'title': 'Book'}, {'price'}
         )
 
         assert new_verified['price'] == {'primary': '.price'}
         assert extracted == {'title': 'Book', 'price': '9.99'}
+        assert improved is True  # the previously-unmet 'price' is now satisfied
+
+    async def test_escalate_no_improvement_when_field_still_unmet(self, mocker):
+        # Interaction-gated case: MCP finds nothing that verifies against the
+        # static snapshot, so 'price' stays unmet → improved=False (no cache write).
+        stub = _make_pipeline_stub(mocker)
+        mcp = mocker.MagicMock()
+        mcp.discover_selectors = mocker.AsyncMock(return_value={'price': {'primary': '.price'}})
+        mocker.patch.object(stub, '_ensure_mcp_discovery', return_value=mcp)
+        mocker.patch.object(stub, '_resolve_root', return_value=None)
+        mocker.patch.object(stub, '_verify', return_value={})  # nothing verifies on the static DOM
+        mocker.patch.object(stub, '_extract', return_value={'title': 'Book'})
+
+        _extracted, _verified, _root, improved = await stub._escalate_to_mcp(
+            'https://x.com',
+            '<html/>',
+            '<html/>',
+            {'title': {'primary': 'h1'}},
+            None,
+            None,
+            {'title': 'Book'},
+            {'price'},
+        )
+
+        assert improved is False
 
     async def test_escalate_survives_mcp_failure(self, mocker):
         stub = _make_pipeline_stub(mocker)
@@ -237,14 +262,15 @@ class TestEscalation:
         mocker.patch('yosoi.core.pipeline.observability')
 
         verified = {'title': {'primary': 'h1'}}
-        extracted, new_verified, root = await stub._escalate_to_mcp(
-            'https://x.com', '<html/>', '<html/>', verified, None, None, {'title': 'Book'}
+        extracted, new_verified, root, improved = await stub._escalate_to_mcp(
+            'https://x.com', '<html/>', '<html/>', verified, None, None, {'title': 'Book'}, {'price'}
         )
 
-        # Best-effort: failure leaves the original result intact.
+        # Best-effort: failure leaves the original result intact and reports no improvement.
         assert new_verified == verified
         assert extracted == {'title': 'Book'}
         assert root is None
+        assert improved is False
 
 
 # ---------------------------------------------------------------------------

@@ -714,7 +714,9 @@ class Pipeline:
         # Automatic discovery waterfall: static over the rendered DOM first; a
         # cached 'mcp' decision (or the debug override) skips straight to the
         # interaction-driven path so we don't pay a wasted static attempt.
-        cached_mode = await self._discovery_strategy.load(domain, self._contract_sig)
+        # ``--force`` ignores the cached decision so a page that has reverted to
+        # static-friendly (or a stale/bad 'mcp' decision) can re-attempt static.
+        cached_mode = None if force_flag else await self._discovery_strategy.load(domain, self._contract_sig)
         escalate_first = self._force_mcp or cached_mode == 'mcp'
 
         with observability.span(
@@ -758,27 +760,11 @@ class Pipeline:
                     max_discovery_retries,
                 )
 
-        # Automatic escalation: if static discovery left a *required* field
-        # unsatisfied, drive interaction-driven (MCP) discovery once and merge any
-        # improvement. Best-effort — the lesson + decision persist for replay even
-        # when the content is interaction-gated (full interaction replay: CAS-103).
         if not escalate_first:
-            # ``extracted`` may be None when static extraction failed entirely; an
-            # empty map reads as "all required fields unmet", which is exactly when
-            # escalation should fire.
-            unmet = self._unsatisfied_required(extracted or {})
-            if unmet:
-                with observability.span('discover_escalate', url=url, unmet=len(unmet)):
-                    self.console.print(
-                        f'[warning]⚠ Static discovery left required field(s) unmet '
-                        f'({", ".join(sorted(unmet))}) — escalating to interaction-driven discovery[/warning]'
-                    )
-                    extracted, verified, root_entry = await self._escalate_to_mcp(
-                        url, cleaned_html, result.html, verified, container_selector, root_entry, extracted or {}
-                    )
-                    container_selector = self._root_value(root_entry)
-                    used_llm = True
-                    await self._discovery_strategy.save(domain, self._contract_sig, 'mcp')
+            extracted, verified, root_entry, container_selector, escalated = await self._maybe_escalate(
+                url, domain, cleaned_html, result.html, verified, container_selector, root_entry, extracted
+            )
+            used_llm = used_llm or escalated
 
         selectors_to_save = self._selectors_with_root(verified, root_entry)
 
@@ -1460,6 +1446,47 @@ class Pipeline:
         bad = {issue.field for issue in self._semantic_issues(extracted)} & required
         return missing | bad
 
+    async def _maybe_escalate(
+        self,
+        url: str,
+        domain: str,
+        cleaned_html: str,
+        raw_html: str,
+        verified: SelectorMap,
+        container_selector: str | None,
+        root_entry: dict[str, Any] | None,
+        extracted: ContentMap | ContentItems | None,
+    ) -> tuple[ContentMap | ContentItems, SelectorMap, dict[str, Any] | None, str | None, bool]:
+        """Escalate to MCP discovery when static left a required field unsatisfied.
+
+        Drives interaction-driven discovery once and merges any improvement. The
+        'mcp' decision is cached ONLY when escalation actually improved extraction —
+        caching it on a no-op (e.g. interaction-gated content MCP discovers live but
+        the static snapshot can't yet extract, pending CAS-103 replay) would poison
+        every future run into the slow path with no payoff. The lesson still
+        persists for replay regardless. Returns the (possibly updated) extraction,
+        selectors, root, container, and whether escalation improved the result.
+        """
+        # ``extracted`` may be None when static extraction failed entirely; an empty
+        # map reads as "all required fields unmet", which is exactly when to escalate.
+        current = extracted or {}
+        unmet = self._unsatisfied_required(current)
+        if not unmet:
+            return current, verified, root_entry, container_selector, False
+
+        with observability.span('discover_escalate', url=url, unmet=len(unmet)):
+            self.console.print(
+                f'[warning]⚠ Static discovery left required field(s) unmet '
+                f'({", ".join(sorted(unmet))}) — escalating to interaction-driven discovery[/warning]'
+            )
+            current, verified, root_entry, improved = await self._escalate_to_mcp(
+                url, cleaned_html, raw_html, verified, container_selector, root_entry, current, unmet
+            )
+            container_selector = self._root_value(root_entry)
+            if improved:
+                await self._discovery_strategy.save(domain, self._contract_sig, 'mcp')
+        return current, verified, root_entry, container_selector, improved
+
     async def _escalate_to_mcp(
         self,
         url: str,
@@ -1469,20 +1496,24 @@ class Pipeline:
         container_selector: str | None,
         root_entry: dict[str, Any] | None,
         extracted: ContentMap | ContentItems,
-    ) -> tuple[ContentMap | ContentItems, SelectorMap, dict[str, Any] | None]:
-        """Drive MCP discovery once and merge any selectors that improve extraction.
+        unmet: set[str],
+    ) -> tuple[ContentMap | ContentItems, SelectorMap, dict[str, Any] | None, bool]:
+        """Drive MCP discovery once and merge selectors that improve extraction.
 
-        Best-effort: MCP failure, or interaction-gated content absent from the
-        static snapshot, leaves the original result intact — while the MCP lesson +
-        the cached 'mcp' decision still persist for replay (CAS-103).
+        Returns ``(extracted, verified, root_entry, improved)`` where ``improved``
+        is True only when a previously-unmet required field is now satisfied — the
+        gate the caller uses before caching an 'mcp' decision. MCP failure, or
+        interaction-gated content that the static snapshot can't yet extract
+        (pending CAS-103 replay), leaves the result intact with ``improved=False``
+        while the MCP lesson still persists for later replay.
         """
         try:
             fresh = await self._ensure_mcp_discovery().discover_selectors(cleaned_html, url, force=True)
         except Exception as exc:  # noqa: BLE001 — escalation is best-effort, never fatal to the scrape
             observability.warning('MCP discovery escalation failed', url=url, error=str(exc))
-            return extracted, verified, root_entry
+            return extracted, verified, root_entry, False
         if not fresh:
-            return extracted, verified, root_entry
+            return extracted, verified, root_entry, False
 
         mcp_root = self._resolve_root(fresh)
         if mcp_root:
@@ -1490,13 +1521,16 @@ class Pipeline:
             container_selector = self._root_value(root_entry) or container_selector
 
         reverified = self._verify(url, cleaned_html, fresh, skip_verification=False) or {}
-        improved = {k: v for k, v in reverified.items() if k != 'root'}
-        if improved:
-            verified.update(improved)
+        merged = {k: v for k, v in reverified.items() if k != 'root'}
+        if merged:
+            verified.update(merged)
             re_extracted = self._extract(url, raw_html, verified, container_selector)
             if re_extracted:
                 extracted = re_extracted
-        return extracted, verified, root_entry
+
+        # Cache-gating signal: did escalation actually satisfy a field static missed?
+        improved = bool(unmet - self._unsatisfied_required(extracted))
+        return extracted, verified, root_entry, improved
 
     async def _discover(
         self,

@@ -113,7 +113,6 @@ class MCPDiscoveryOrchestrator:
         stale_fields: set[str] | None = None,
         feedback: dict[str, FieldFeedback] | None = None,
         force: bool = False,
-        ax_snapshot: object | None = None,
     ) -> SelectorMap | None:
         """Discover selectors by driving the live page, or replay a cached lesson.
 
@@ -125,9 +124,6 @@ class MCPDiscoveryOrchestrator:
             feedback: Accepted for parity; the agent self-corrects in-loop via
                 the ``check_value`` tool, so external feedback is unused.
             force: Force fresh discovery, ignoring any cached lesson.
-            ax_snapshot: Accepted for call-site parity with the static
-                orchestrator; unused here, as the agent drives its own live
-                browser rather than reasoning over a pre-captured snapshot.
 
         Returns:
             SelectorMap with discovered selectors, or None if discovery failed.
@@ -138,10 +134,7 @@ class MCPDiscoveryOrchestrator:
         # self-corrects in-loop and does whole-page discovery, so neither partial
         # rediscovery nor external feedback applies here. ``html`` IS used — as the
         # independent re-extraction oracle in the validation gate (see _distill).
-        # ``ax_snapshot`` is accepted for call-site parity with the static
-        # orchestrator; the MCP agent drives its own live browser, so it has no
-        # use for a pre-captured snapshot.
-        del stale_fields, feedback, ax_snapshot
+        del stale_fields, feedback
         if not url:
             logger.warning('MCP discovery requires a URL; none provided')
             return None

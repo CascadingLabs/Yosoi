@@ -30,16 +30,47 @@ logger = logging.getLogger(__name__)
 # Cap the AX outline so the prompt stays compact on huge pages.
 _AX_HINT_LIMIT = 40
 
+# Roles worth surfacing to discovery: interactive controls (for interaction-gated
+# fields) and content-bearing structure. Filtering to these BEFORE the cap keeps
+# the outline dense with signal instead of leading with nav links / static text /
+# cookie chrome that sit at the top of the document order.
+_AX_USEFUL_ROLES = frozenset(
+    {
+        'button',
+        'link',
+        'textbox',
+        'searchbox',
+        'combobox',
+        'tab',
+        'menuitem',
+        'heading',
+        'article',
+        'main',
+        'navigation',
+        'region',
+        'list',
+        'listitem',
+        'table',
+        'row',
+        'cell',
+        'img',
+        'time',
+    }
+)
+
 
 def format_ax_hint(ax_snapshot: AxSnapshot | None, limit: int = _AX_HINT_LIMIT) -> str:
     """Render an AX snapshot into a compact ``role: name`` outline for the prompt.
 
-    Returns an empty string when there is no snapshot or no named targets, so the
-    static path is unchanged on plain-HTTP (tier-1) fetches.
+    Filters to semantically useful roles (:data:`_AX_USEFUL_ROLES`) before capping,
+    so the outline carries signal rather than nav/static-text chrome. Returns an
+    empty string when there is no snapshot or nothing useful, so the static path is
+    unchanged on plain-HTTP (tier-1) fetches.
     """
     if ax_snapshot is None or not ax_snapshot.targets:
         return ''
-    lines = [f'- {t.role}: {t.name}' for t in ax_snapshot.targets[:limit]]
+    useful = [t for t in ax_snapshot.targets if t.role in _AX_USEFUL_ROLES]
+    lines = [f'- {t.role}: {t.name}' for t in useful[:limit]]
     return '\n'.join(lines)
 
 

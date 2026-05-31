@@ -573,3 +573,39 @@ async def test_discover_selectors_with_write_lock_on_success(llm_config, mock_st
     await orch.discover_selectors(_HTML, url='https://example.com')
 
     save_spy.assert_called()
+
+
+class TestFormatAxHint:
+    def test_filters_to_useful_roles_and_drops_chrome(self):
+        from yosoi.core.discovery.orchestrator import format_ax_hint
+        from yosoi.core.fetcher.dom.ax import AxSnapshot, AxTarget
+
+        snap = AxSnapshot(
+            node_count=5,
+            named_count=4,
+            targets=(
+                AxTarget('StaticText', 'Accept cookies'),  # chrome → dropped
+                AxTarget('link', 'Home'),  # useful (interactive)
+                AxTarget('heading', 'Article Title'),  # useful (content)
+                AxTarget('generic', 'wrapper'),  # noise → dropped
+            ),
+        )
+        hint = format_ax_hint(snap)
+
+        assert '- link: Home' in hint
+        assert '- heading: Article Title' in hint
+        assert 'StaticText' not in hint
+        assert 'generic' not in hint
+
+    def test_empty_when_no_useful_roles(self):
+        from yosoi.core.discovery.orchestrator import format_ax_hint
+        from yosoi.core.fetcher.dom.ax import AxSnapshot, AxTarget
+
+        snap = AxSnapshot(node_count=2, named_count=1, targets=(AxTarget('StaticText', 'noise'),))
+
+        assert format_ax_hint(snap) == ''
+
+    def test_none_snapshot(self):
+        from yosoi.core.discovery.orchestrator import format_ax_hint
+
+        assert format_ax_hint(None) == ''
