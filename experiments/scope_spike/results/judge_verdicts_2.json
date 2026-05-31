@@ -1,0 +1,104 @@
+[
+  {
+    "id": "arxiv.org#3",
+    "verdict": "refuse",
+    "confidence": 0.99,
+    "reason": "Replay is a single paper abstract page (/abs/ URL, title is a paper name, rows=0, no dt/dd structure) versus the seed's paginated paper listing with 50 dt/dd row-pairs."
+  },
+  {
+    "id": "books.toscrape.com#2",
+    "verdict": "allow",
+    "confidence": 0.99,
+    "reason": "Replay is a category book listing with identical tag shape (20 article/h3/img rows) — same kind of product grid as the seed, just filtered to Mystery."
+  },
+  {
+    "id": "news.ycombinator.com#1",
+    "verdict": "allow",
+    "confidence": 0.99,
+    "reason": "Replay is /newest, another HN story listing with 30 rows and a nearly identical tr/td/span tag profile — same kind as the seed /news feed."
+  },
+  {
+    "id": "news.ycombinator.com#4",
+    "verdict": "refuse",
+    "confidence": 0.99,
+    "reason": "Replay is a comments thread page (/item?id=…) with a full article headline as title, rows=190 comment rows, and a massive p/br/font/table explosion — not a story index."
+  },
+  {
+    "id": "lobste.rs#3",
+    "verdict": "refuse",
+    "confidence": 0.98,
+    "reason": "Replay is a single story/comments page (/s/ slug URL, title is a release announcement, rows=1, small DOM with p/ol for comments) versus the seed's 25-item front-page listing."
+  },
+  {
+    "id": "pypi.org#2",
+    "verdict": "allow",
+    "confidence": 0.99,
+    "reason": "Replay is the same PyPI search-results template with query=json, identical tag counts and 20 rows — same search-listing kind as the seed."
+  },
+  {
+    "id": "quotes.toscrape.com#1",
+    "verdict": "allow",
+    "confidence": 0.99,
+    "reason": "Replay is page 2 of the same quote listing with 10 rows and an identical tag profile — paginated continuation of the same index."
+  },
+  {
+    "id": "quotes.toscrape.com#4",
+    "verdict": "refuse",
+    "confidence": 0.99,
+    "reason": "Replay is an author biography page (/author/ URL, rows=0, tiny DOM with only 7 div and 5 p) — a detail/profile page, not a quote listing."
+  },
+  {
+    "id": "old.reddit.com#3",
+    "verdict": "refuse",
+    "confidence": 0.97,
+    "reason": "Replay is a user profile page (/user/spez, title 'overview for spez', body_class 'profile-page', rows=5 of mixed recent activity) — not a subreddit link listing despite sharing the 'listing-page' class."
+  },
+  {
+    "id": "sec.gov/cgi-bin/browse-edgar#2",
+    "verdict": "allow",
+    "confidence": 0.97,
+    "reason": "Replay is the same EDGAR browse-edgar search for a different company's 10-K filings (Tesla vs Apple), same title 'EDGAR Search Results', same td/a/br/tr-dominated structure with 23 rows — same filing-list kind."
+  },
+  {
+    "id": "stackoverflow.com#1",
+    "verdict": "allow",
+    "confidence": 0.99,
+    "reason": "Replay is a tag-filtered question list (/questions/tagged/python) with 15 rows and a nearly identical li/button/div tag profile — same question-listing kind as the seed."
+  },
+  {
+    "id": "stackoverflow.com#4",
+    "verdict": "refuse",
+    "confidence": 0.99,
+    "reason": "Replay is a user profile page (/users/ URL, body_class 'user-page', title 'User Jon Skeet', rows=0) — not a question listing."
+  },
+  {
+    "id": "webscraper.io/test-sites/e-commerce/allinone#3",
+    "verdict": "refuse",
+    "confidence": 0.99,
+    "reason": "Replay is a single product detail page (/product/123, rows=1, tiny DOM with 2 h4 and 2 img) versus the seed's 117-item laptop listing grid."
+  },
+  {
+    "id": "en.wikipedia.org#2",
+    "verdict": "allow",
+    "confidence": 0.80,
+    "reason": "Replay is another Wikipedia film category page (ns-14 body class, same div/span/a/li/h3/bdi structure as the seed) — same category-listing kind, though both seed and replay have suspiciously low row counts (1 and 0) suggesting the selector may be fragile."
+  },
+  {
+    "id": "ja.wikipedia.org#1",
+    "verdict": "allow",
+    "confidence": 0.96,
+    "reason": "Replay is another ja.Wikipedia film category page (ns-14, same tag profile, 27 rows vs seed's 55) — same category-listing kind, different country filter."
+  },
+  {
+    "id": "ja.wikipedia.org#4",
+    "verdict": "refuse",
+    "confidence": 0.99,
+    "reason": "Replay is a regular article page (ns-0 body class, /wiki/日本映画 with no Category: prefix, rows=0, massive a/span/sup/cite/p explosion indicating a long prose article) — not a category listing."
+  },
+  {
+    "id": "en.wiktionary.org#3",
+    "verdict": "refuse",
+    "confidence": 0.99,
+    "reason": "Replay is a Wiktionary word entry page (/wiki/dictionary, ns-0, rows=0, 218 abbr and 102 dd/55 dl indicating structured dictionary definitions) — not a category member listing."
+  }
+]

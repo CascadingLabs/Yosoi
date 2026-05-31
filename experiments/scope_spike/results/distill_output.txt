@@ -1,0 +1,31 @@
+==============================================================================
+DISTILLED DETECTOR — 52 samples, 13 domains, leave-one-domain-out
+==============================================================================
+
+Single-feature baselines (whole set, best threshold by hand):
+  body_class kind-match==1  -> {'good': 18, 'bad': 11, 'leaks': 15, 'false_alarms': 8, 'acc': 0.5576923076923077}
+  struct_cosine>=0.90       -> {'good': 26, 'bad': 22, 'leaks': 4, 'false_alarms': 0, 'acc': 0.9230769230769231}
+
+LogReg distilled (leave-one-domain-out, allow-thr=0.5):
+  {'good': 22, 'bad': 26, 'leaks': 0, 'false_alarms': 4, 'acc': 0.9230769230769231}
+
+LogReg distilled (leave-one-domain-out, allow-thr=0.6):
+  {'good': 22, 'bad': 26, 'leaks': 0, 'false_alarms': 4, 'acc': 0.9230769230769231}
+
+LogReg distilled (leave-one-domain-out, allow-thr=0.7):
+  {'good': 21, 'bad': 26, 'leaks': 0, 'false_alarms': 5, 'acc': 0.9038461538461539}
+
+Learned weights (full fit, standardized — sign/magnitude = importance):
+  struct_cosine          +5.000  (pushes -> allow)
+  rows_ratio             +3.486  (pushes -> allow)
+  title_len_ratio        -1.954  (pushes -> refuse)
+  bodyclass_kind_match   +1.718  (pushes -> allow)
+  url_depth_delta        -1.588  (pushes -> refuse)
+  bodyclass_jaccard      +0.734  (pushes -> allow)
+  rows_zero              +0.151  (pushes -> allow)
+  title_is_sentence      +0.067  (pushes -> allow)
+  url_has_id             -0.055  (pushes -> refuse)
+
+Note: leak = wrong data shipped silently (the cardinal sin).
+Headline metric is LEAKS at a threshold that keeps false_alarms tolerable,
+NOT raw accuracy.

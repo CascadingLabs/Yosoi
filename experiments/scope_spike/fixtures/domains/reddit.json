@@ -1,0 +1,54 @@
+{
+  "domain": "old.reddit.com",
+  "row_selector": "div.thing.link:not(.promoted)",
+  "notes": "Selector worked cleanly on all list pages. Seed (r/ted top-all): 25 rows, bodyClass 'listing-page top-page'. r/aww hot: 25 rows, bodyClass 'listing-page hot-page'. r/python top: only 5 rows returned despite the selector being correct — old.reddit served a rate-limited/abbreviated response (tag histogram shows far fewer elements than a full page; notably a/li/div counts are much lower than r/aww or r/ted). This is an anti-bot soft block, not a class mismatch. The user profile page (user/spez) returned rows=5 but bodyClass='listing-page profile-page' — the profile mixes user posts and comments, so a handful of 'thing link' elements appear, but the dominant content is the user overview sidebar and mixed post-types; it should be refused based on bodyClass 'profile-page' rather than row count alone. The comments page returned rows=1 and bodyClass='single-page comments-page' — clearly a different page class with no repeating list structure.",
+  "pages": [
+    {
+      "role": "seed",
+      "href": "https://old.reddit.com/r/ted/top/?t=all",
+      "title": "top scoring links : ted",
+      "bodyClass": "listing-page top-page",
+      "rows": 25,
+      "tagHist": [["div",407],["a",324],["li",198],["span",189],["p",93],["ul",34],["input",34],["form",32],["time",26],["img",25],["script",8],["dt",7],["dd",7],["i",5],["h1",2],["label",1],["dl",1],["code",1],["em",1],["hr",1]],
+      "blocked": false
+    },
+    {
+      "role": "must-transfer",
+      "href": "https://old.reddit.com/r/Python/top/",
+      "title": "top scoring links : Python",
+      "bodyClass": "listing-page top-page",
+      "rows": 5,
+      "tagHist": [["a",217],["li",162],["div",114],["span",99],["p",57],["ul",25],["strong",16],["input",14],["form",12],["script",8],["dt",7],["dd",7],["time",7],["i",5],["h1",4],["img",2],["code",2],["label",1],["dl",1],["h4",1]],
+      "blocked": false,
+      "note": "Suspected rate-limited response: only 5 rows vs expected ~25. bodyClass is identical to seed ('listing-page top-page'), confirming same page-class; row count is anomalously low. Tag counts suggest a stripped response. Not marked blocked because it did return valid HTML of the correct class."
+    },
+    {
+      "role": "must-transfer",
+      "href": "https://old.reddit.com/r/aww/hot/",
+      "title": "A subreddit for cute and cuddly pictures",
+      "bodyClass": "listing-page hot-page",
+      "rows": 25,
+      "tagHist": [["div",417],["a",343],["span",220],["li",214],["p",100],["ul",36],["input",29],["form",27],["img",26],["time",26],["script",8],["dt",7],["dd",7],["i",5],["h1",3],["hr",3],["h3",3],["label",1],["dl",1],["code",1]],
+      "blocked": false
+    },
+    {
+      "role": "must-refuse",
+      "href": "https://old.reddit.com/user/spez",
+      "title": "overview for spez",
+      "bodyClass": "listing-page profile-page",
+      "rows": 5,
+      "tagHist": [["a",411],["div",368],["span",286],["li",235],["br",104],["p",84],["img",43],["td",40],["ul",37],["time",26],["form",25],["input",25],["tr",20],["script",8],["h1",3],["table",1],["tbody",1],["section",1],["h2",1],["style",1]],
+      "blocked": false,
+      "note": "bodyClass='profile-page' distinguishes this from list pages. rows=5 because the user's own posts appear as 'thing link' elements in the overview feed, but this is a user profile, not a subreddit listing. The tag histogram shows br/td/tr/table elements absent from subreddit list pages."
+    },
+    {
+      "role": "must-refuse",
+      "href": "https://old.reddit.com/r/ted/comments/f1y61t/facebook_deleted_15m_hate_speech_posts_18m_pieces/",
+      "title": "Facebook deleted 15m hate speech posts, 18m pieces of terrorist propaganda, and 5.4bn fake FB accounts in the first 9 months of 2019. This is a sheer tidal wave, and it's only just beginning. : ted",
+      "bodyClass": "single-page comments-page",
+      "rows": 1,
+      "tagHist": [["div",212],["a",212],["span",135],["li",129],["p",52],["ul",20],["input",16],["form",13],["time",13],["script",10],["img",7],["dt",7],["dd",7],["i",5],["h1",2],["section",2],["h2",2],["label",1],["dl",1],["code",1]],
+      "blocked": false
+    }
+  ]
+}
