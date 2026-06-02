@@ -16,14 +16,16 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from rich.console import Console
+from voidcrawl.actions import Flow
 
 from yosoi.core.fetcher.dom.catalogues import CONTENT_SELECTOR
-from yosoi.core.fetcher.dom.flows import WaitForDOMStable
-from yosoi.core.fetcher.dom.probes import TriggerKind, count_content
+from yosoi.core.fetcher.dom.flows import WaitForDOMStable, build_flow
+from yosoi.core.fetcher.dom.probes import TriggerKind, count_content, selector_entry_to_detected_trigger
 from yosoi.core.fetcher.dom.tree.actions import ClickTrigger, Scroll
 from yosoi.core.fetcher.dom.tree.conditions import HasTrigger
 from yosoi.core.fetcher.dom.tree.default import build_default_tree
 from yosoi.core.fetcher.dom.tree.nodes import Status
+from yosoi.models.selectors import SelectorEntry
 from yosoi.storage.a3node import ActRecord
 
 # Trigger kinds that appear in a stored recipe (the ones that carry an ActionLog).
@@ -143,7 +145,7 @@ class DOMLoader:
 
         # Build both legacy action_log and structured acts list from the same source
         action_log = [{'kind': log.kind, 'cycles': log.cycles} for log in logs if log.cycles > 0]
-        acts = [ActRecord(kind=log.kind, cycles=log.cycles) for log in logs if log.cycles > 0]
+        acts = [ActRecord(kind=log.kind, cycles=log.cycles, target=log.target) for log in logs if log.cycles > 0]
 
         return LoadResult(
             success=True,
@@ -186,17 +188,30 @@ class DOMLoader:
 
         executed: list[ActRecord] = []
         for act in acts:
+            # Selector-level replay: a stored concrete target is clicked directly, so the
+            # hand-maintained discovery catalogues never run on the replay hot path (CAS-94).
+            if act.target is not None and act.kind in _CLICK_KINDS:
+                cycles = await self._replay_target(tab, act.kind, act.target, stable)
+                if cycles > 0:
+                    executed.append(ActRecord(kind=act.kind, cycles=cycles, target=act.target))
+                    self._log(f'replay: {act.kind} ran {cycles} cycle(s) via stored target')
+                continue
+
+            # Fallback path: scroll acts, or a click act with no stored target (a format-1
+            # recipe or a text-match act) — re-probe via the catalogues seed.
             built = self._build_replay_action(act.kind, stable)
             if built is None:
                 self._log(f'replay: skipping unsupported act kind {act.kind!r}')
                 continue
+            if act.target is None and act.kind in _CLICK_KINDS:
+                self._log(f'replay: {act.kind} has no stored target — falling back to probe')
             condition, action = built
             # Populate last_trigger for ClickTrigger; Scroll ignores it. A missing
             # trigger makes ClickTrigger a no-op (cycles stays 0), which we skip.
             await condition.tick(tab)
             await action.tick(tab)
             if action.log.cycles > 0:
-                executed.append(ActRecord(kind=act.kind, cycles=action.log.cycles))
+                executed.append(ActRecord(kind=act.kind, cycles=action.log.cycles, target=act.target))
                 self._log(f'replay: {act.kind} ran {action.log.cycles} cycle(s)')
 
         html = await self._capture_html(tab)
@@ -229,6 +244,31 @@ class DOMLoader:
             condition = HasTrigger(TriggerKind(kind), self._content_selector)
             return condition, ClickTrigger(condition, stable, self._max_click_cycles)
         return None
+
+    async def _replay_target(self, tab: Any, kind: str, target: SelectorEntry, stable: WaitForDOMStable) -> int:
+        """Replay one click act against its stored target — no probe, no catalogues.
+
+        Rebuilds a DetectedTrigger from the stored ``SelectorEntry`` and clicks it in a
+        growth loop, stopping once content stops growing. Returns the executed cycle
+        count (0 means the target produced no growth, so the caller drops the act and a
+        higher layer can fall back to a full probe).
+        """
+        trigger = selector_entry_to_detected_trigger(TriggerKind(kind), target)
+        cycles = 0
+        for _ in range(self._max_click_cycles):
+            prev = await count_content(tab, self._content_selector)
+            flow = build_flow(trigger, stable)
+            if flow is None:
+                break
+            await flow.run(tab)
+            cycles += 1
+            new = await count_content(tab, self._content_selector)
+            self._log(f'replay-target [{kind}]: {prev} → {new} items')
+            if new <= prev:
+                break
+        # Final settle so late-rendered content is present before HTML capture.
+        await Flow([stable]).run(tab)
+        return cycles
 
     async def _capture_html(self, tab: Any) -> str | None:
         """Capture full page HTML after loading is complete."""

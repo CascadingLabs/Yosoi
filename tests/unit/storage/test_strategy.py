@@ -42,6 +42,15 @@ class TestSave:
         assert strategy.fetcher == 'headless'
         assert strategy.selector_level == 'xpath'
 
+    async def test_save_higher_tier_selector_levels_round_trip(self, storage):
+        """Regression: attr/global_id/role/visual were silently dropped by a stale
+        VALID_SELECTOR_LEVELS subset; they must now persist (AX/role discovery, CAS-79)."""
+        for level in ('attr', 'global_id', 'role', 'visual'):
+            await storage.save('example.com', 'headless', selector_level=level)
+            strategy = await storage.load_strategy('example.com')
+            assert strategy is not None
+            assert strategy.selector_level == level
+
     async def test_save_invalid_selector_level_is_dropped(self, storage):
         await storage.save('example.com', 'headless', selector_level='not_a_level')
         strategy = await storage.load_strategy('example.com')

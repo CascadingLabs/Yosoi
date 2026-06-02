@@ -127,6 +127,17 @@ async def atomic_write_json_async(
     await atomic_write_text_async(path, json.dumps(data, indent=indent, ensure_ascii=ensure_ascii))
 
 
+def safe_domain(domain: str) -> str:
+    """Return a filesystem-safe form of a domain for use in cache filenames.
+
+    Single source of truth for the per-domain cache key. Replaces the
+    ``domain.replace('.', '_')...`` snippets that were copied across the storage modules
+    and had drifted (some stripped ``:``, some did not), so the same domain always maps
+    to the same on-disk filename across every store.
+    """
+    return domain.replace('.', '_').replace('/', '_').replace(':', '_')
+
+
 def get_project_root() -> Path:
     """Find the project root by searching upwards from the Current Working Directory.
 

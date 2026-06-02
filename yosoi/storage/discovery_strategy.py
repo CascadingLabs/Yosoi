@@ -20,7 +20,7 @@ from typing import Literal
 import aiofiles
 import aiofiles.os
 
-from yosoi.utils.files import atomic_write_json_async, init_yosoi
+from yosoi.utils.files import atomic_write_json_async, init_yosoi, safe_domain
 
 logger = logging.getLogger(__name__)
 
@@ -69,6 +69,6 @@ class DiscoveryStrategyStorage:
         return None
 
     def _filepath(self, domain: str, contract_sig: str) -> str:
-        safe_domain = domain.replace('.', '_').replace('/', '_')
+        safe = safe_domain(domain)
         safe_sig = ''.join(c if c.isalnum() or c in ('-', '_') else '_' for c in contract_sig)
-        return os.path.join(self._dir, f'discovery_{safe_domain}__{safe_sig}.json')
+        return os.path.join(self._dir, f'discovery_{safe}__{safe_sig}.json')

@@ -5,7 +5,7 @@ from yosoi.types.registry import KIND_TEXT, CoercionConfig, SemanticRule, regist
 
 @register_coercion(
     'title',
-    description='A title or heading',
+    description='A title',
     semantic=SemanticRule(kind=KIND_TEXT, max_chars=500, distinct=True),
 )
 def Title(v: object, config: CoercionConfig, source_url: str | None = None) -> str:

@@ -75,21 +75,15 @@ class HTMLCleaner:
         for tag in tree.xpath('.//header | .//nav | .//footer'):
             _drop(tag)
 
-        # Step 3: Remove sidebars, widgets, ads (always enabled)
-        for selector in [
-            '.sidebar',
-            '.widget',
-            '#sidebar',
-            '.advertisement',
-            '.ad',
-            '[class*="ad-"]',
-            '[id*="ad-"]',
-            '.related-posts',
-            '.useful-links',
-        ]:
+        # Step 3: Remove common chrome/ad boilerplate. Deliberately conservative —
+        # NO substring matchers ([class*="ad-"] also nuked legit nodes like "bread-crumb"
+        # or "road-map"), and NO content-bearing class guesses (.related-posts /
+        # .useful-links): those can be exactly what a contract targets (e.g. ys.RelatedContent),
+        # and this cleaning runs *before* discovery and selector verification.
+        for selector in ['.sidebar', '#sidebar', '.widget', '.advertisement', '.ad']:
             for element in tree.cssselect(selector):
                 _drop(element)
-        self.console.print('  ↻ Removed sidebars/widgets/ads')
+        self.console.print('  ↻ Removed sidebar/widget/ad boilerplate')
 
         # Step 4: Get body or main content
         body = tree.find('.//body')

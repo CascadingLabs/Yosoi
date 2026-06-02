@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -70,7 +71,11 @@ async def execute_plan(tab: Any, plan: ReplayPlan) -> ReplayResult:
             _fail(report, f'assess failed for {node.id}: {node.intent}')
 
         output = await _execute_act(tab, node.act, node.expect)
-        if node.act.output_field is not None and output is not None:
+        # Gate capture on output_field alone: only producer acts (EVAL/DOWNLOAD) set it,
+        # so this never captures a mutator's None. A producer that legitimately yields
+        # None (JS returning null, an empty projection) must be captured AS None — dropping
+        # it would silently omit the field and read as success on a replay-grade substrate.
+        if node.act.output_field is not None:
             captured[node.act.output_field] = output
 
         if not await _condition_holds(tab, node.expect):
@@ -108,30 +113,17 @@ async def _execute_act(tab: Any, act: ReplayAct, expect: ReplayCondition) -> Any
 
 
 async def _execute_once(tab: Any, act: ReplayAct) -> Any:
-    if act.kind == ActKind.NAVIGATE:
-        await _call(tab, 'goto', act.url)
-        return None
-    if act.kind == ActKind.CLICK:
-        await _click_first(tab, act.targets)
-        return None
-    if act.kind == ActKind.TYPE:
-        await _type_first(tab, act.targets, act.text or '')
-        return None
-    if act.kind == ActKind.SCROLL:
-        await _scroll(tab, act)
-        return None
-    if act.kind == ActKind.WAIT:
-        if act.dwell_ms:
-            await asyncio.sleep(act.dwell_ms / 1000)
-        return None
-    if act.kind == ActKind.EVAL:
-        return await _eval(tab, act.script or '')
-    if act.kind == ActKind.DOWNLOAD:
-        return await _download(tab, act)
-    if act.kind == ActKind.TELEPORT:
-        await _teleport(tab, act.metadata)
-        return None
-    raise ReplayExecutionError(f'unsupported act kind: {act.kind}')
+    """Dispatch a single act to its in-tab executor via :data:`_EXECUTORS`.
+
+    An act kind with no registered executor fails fast — the same loud default the
+    previous if-chain gave, now structural: a new ``ActKind`` cannot silently fall
+    through (see ``tests/unit/core/replay/test_runtime_dispatch.py``, which asserts
+    the table stays in sync with the enum).
+    """
+    executor = _EXECUTORS.get(act.kind)
+    if executor is None:
+        raise ReplayExecutionError(f'unsupported act kind: {act.kind}')
+    return await executor(tab, act)
 
 
 async def _download(tab: Any, act: ReplayAct) -> Any:
@@ -167,6 +159,71 @@ async def _download(tab: Any, act: ReplayAct) -> Any:
     except DownloadError as exc:
         raise ReplayExecutionError(str(exc)) from exc
     return result.value
+
+
+# --- Act executors -----------------------------------------------------------------
+# Each executor runs one act against a LIVE browser tab and returns either None (a
+# page-mutating act like click/navigate) or a value to capture into ``output_field``
+# (eval/download). The thin wrappers below adapt the existing helpers to the uniform
+# ``(tab, act) -> Any`` shape the dispatch table requires.
+
+
+async def _exec_navigate(tab: Any, act: ReplayAct) -> Any:
+    await _call(tab, 'goto', act.url)
+    return None
+
+
+async def _exec_click(tab: Any, act: ReplayAct) -> Any:
+    await _click_first(tab, act.targets)
+    return None
+
+
+async def _exec_type(tab: Any, act: ReplayAct) -> Any:
+    await _type_first(tab, act.targets, act.text or '')
+    return None
+
+
+async def _exec_scroll(tab: Any, act: ReplayAct) -> Any:
+    await _scroll(tab, act)
+    return None
+
+
+async def _exec_wait(tab: Any, act: ReplayAct) -> Any:
+    if act.dwell_ms:
+        await asyncio.sleep(act.dwell_ms / 1000)
+    return None
+
+
+async def _exec_eval(tab: Any, act: ReplayAct) -> Any:
+    return await _eval(tab, act.script or '')
+
+
+async def _exec_teleport(tab: Any, act: ReplayAct) -> Any:
+    await _teleport(tab, act.metadata)
+    return None
+
+
+# Dispatch table for in-tab, deterministic browser acts — the composition spine for a
+# per-domain replay program (CAS-87). New browser act kind → add an executor + one entry.
+#
+# DELIBERATELY browser-acts-only. Out-of-band evals do NOT belong here:
+#   * ys.python (ActKind.EVAL_PYTHON) runs in a Pyodide sandbox over already-extracted
+#     data — it has no live tab, so it is a post-``execute_plan`` transform, not an act.
+#   * ys.llm (ActKind.EVAL_LLM) is a non-deterministic model call — adding it here would
+#     put the LLM back on the replay hot path and break replay-grade determinism.
+#   * ys.wasm is a future codec behind ``_eval``, not a new kind.
+# Keeping this table deterministic and LLM-free is what lets the discovery layer be the
+# signal-driven brain without contaminating replay. See CAS-87 for the full decision.
+_EXECUTORS: dict[ActKind, Callable[[Any, ReplayAct], Awaitable[Any]]] = {
+    ActKind.NAVIGATE: _exec_navigate,
+    ActKind.CLICK: _exec_click,
+    ActKind.TYPE: _exec_type,
+    ActKind.SCROLL: _exec_scroll,
+    ActKind.WAIT: _exec_wait,
+    ActKind.EVAL: _exec_eval,
+    ActKind.DOWNLOAD: _download,
+    ActKind.TELEPORT: _exec_teleport,
+}
 
 
 async def _condition_holds(tab: Any, condition: ReplayCondition) -> bool:

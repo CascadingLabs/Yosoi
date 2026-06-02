@@ -13,7 +13,7 @@ from typing import Any
 import aiofiles
 import aiofiles.os
 
-from yosoi.utils.files import atomic_write_json_async, init_yosoi
+from yosoi.utils.files import atomic_write_json_async, init_yosoi, safe_domain
 
 logger = logging.getLogger(__name__)
 
@@ -78,8 +78,8 @@ class JsScriptStorage:
         self._dir = str(init_yosoi(storage_dir))
 
     def _filepath(self, domain: str) -> str:
-        safe_domain = domain.replace('.', '_').replace('/', '_').replace(':', '_')
-        return os.path.join(self._dir, f'js_{safe_domain}.json')
+        safe = safe_domain(domain)
+        return os.path.join(self._dir, f'js_{safe}.json')
 
     async def load(self, domain: str) -> JsScriptRecord | None:
         """Return the stored record for *domain*, or None."""

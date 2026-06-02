@@ -11,17 +11,17 @@ from yosoi.models.contract import Contract
 class NewsArticle(Contract):
     """Default contract matching the original 5-field behavior."""
 
-    headline: str = ys.Title(description='Main article title (h1/h2 in article, NOT navigation)')
-    author: str = ys.Author(description='Author name (author/byline classes or links)')
-    date: str = ys.Datetime(description='Publication date (time tags or date/published classes)')
-    body_text: str = ys.BodyText(description='Article paragraphs (p tags in article, NOT sidebars/ads)')
-    related_content: str = ys.RelatedContent(description='Related article links (aside/sidebar sections)')
+    headline: str = ys.Title(description='The main headline of the article')
+    author: str = ys.Author(description='The name of the article author or byline')
+    date: str = ys.Datetime(description='The publication date of the article')
+    body_text: str = ys.BodyText(description='The main body text of the article')
+    related_content: str = ys.RelatedContent(description='Links to related or recommended articles')
 
 
 class Video(Contract):
     """Contract for video pages (YouTube-style)."""
 
-    title: str = ys.Title(description='Video title (h1 or main heading)')
+    title: str = ys.Title(description='The title of the video')
     channel: str = ys.Author(description='Channel or creator name')
     duration: str = Field(description='Video duration (e.g. "10:32")')
     views: int | None = Field(description='View count')

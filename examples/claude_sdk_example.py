@@ -23,7 +23,7 @@ class Book(ys.Contract):
     price: float = ys.Price(description='Book price — always includes £ symbol')
     # Rating is encoded in the element's class (e.g. "star-rating Three") —
     # discovery picks `::attr(class)`, then we shape the value to the word.
-    rating: str = ys.Rating(description="Star rating in the element's class attribute, e.g. class='star-rating Three'")
+    rating: str = ys.Rating(description='Star rating, expressed as a word (e.g. "Three")')
 
     @field_validator('rating', mode='after')
     @classmethod
