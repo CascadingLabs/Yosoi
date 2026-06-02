@@ -313,7 +313,7 @@ tasks.coverage = "uv run pytest --cov=yosoi --cov-report=term-missing --cov-repo
 tasks.mutmut-run = "uv run mutmut run"
 tasks.mutmut-results = "uv run mutmut results"
 tasks.licenses = "uv run pip-licenses"  # check declared dependency licenses (metadata gate)
-tasks.licenses-binary = "uv run python scripts/scan_binary_licenses.py"  # scan bundled native deps for vendored copyleft (libidn2-class) — pip-licenses' blind spot
+tasks.licenses-binary = "uv run python scripts/scan_binary_licenses.py --skip claude_agent_sdk/_bundled"  # scan bundled native deps for vendored copyleft; skip claude_agent_sdk/_bundled (bundled AGPL CLI tool, not shipped in yosoi's wheel)
 tasks.docs = "uv run python scripts/generate_api_docs.py --output-dir ../CascadingLabsFE/docs/yosoi-docs/reference"  # generate split API reference with GitHub source links
 tasks.bump = "uv run cz bump --yes"  # auto-detect from conventional commits
 tasks.bump-dry = "uv run cz bump --dry-run"  # preview what the next bump would be

@@ -43,20 +43,55 @@ _COPYLEFT_MARKERS: tuple[bytes, ...] = (
 _PATTERN = re.compile(b'|'.join(_COPYLEFT_MARKERS))
 _BINARY_SUFFIXES = frozenset({'.so', '.dylib', '.pyd'})
 
+# ELF and Mach-O magic bytes — covers Linux/Windows native executables and macOS binaries.
+_ELF_MAGIC = b'\x7fELF'
+_MACHO_MAGIC = frozenset(
+    {
+        b'\xfe\xed\xfa\xce',  # Mach-O 32-bit BE
+        b'\xfe\xed\xfa\xcf',  # Mach-O 64-bit BE
+        b'\xce\xfa\xed\xfe',  # Mach-O 32-bit LE
+        b'\xcf\xfa\xed\xfe',  # Mach-O 64-bit LE
+        b'\xca\xfe\xba\xbe',  # Mach-O fat binary
+    }
+)
+
+
+def _is_native_executable(path: Path) -> bool:
+    """Return True if path starts with ELF or Mach-O magic bytes."""
+    try:
+        header = path.read_bytes()[:4]
+    except OSError:
+        return False
+    return header == _ELF_MAGIC or header in _MACHO_MAGIC
+
 
 def _iter_binaries(roots: Iterable[Path]) -> Iterable[Path]:
     for root in roots:
         if not root.is_dir():
             continue
         for path in root.rglob('*'):
+            if not path.is_file():
+                continue
             if path.suffix in _BINARY_SUFFIXES or '.so.' in path.name:
+                yield path
+            elif not path.suffix and _is_native_executable(path):
+                # Extensionless native executables from binary wheels (e.g. ruff, prek).
                 yield path
 
 
-def scan(roots: Iterable[Path]) -> dict[Path, set[str]]:
-    """Return a mapping of binary path -> set of copyleft markers found in it."""
+def scan(roots: Iterable[Path], skip: Iterable[str] = ()) -> dict[Path, set[str]]:
+    """Return a mapping of binary path -> set of copyleft markers found in it.
+
+    ``skip`` is a sequence of path substrings; any binary whose str() contains one
+    of them is excluded from the results.  Use it for known-acceptable copyleft
+    binaries that are intentionally bundled by a dependency (e.g. a tool that ships
+    its own AGPL CLI for convenience but does not infect yosoi's wheel).
+    """
+    skip_patterns = list(skip)
     hits: dict[Path, set[str]] = {}
     for path in _iter_binaries(roots):
+        if any(s in str(path) for s in skip_patterns):
+            continue
         try:
             data = path.read_bytes()
         except OSError:
@@ -76,11 +111,30 @@ def main(argv: list[str] | None = None) -> int:
         type=Path,
         help="Directories to scan (default: this interpreter's site-packages).",
     )
+    parser.add_argument(
+        '--skip',
+        metavar='PATTERN',
+        action='append',
+        default=[],
+        help=(
+            'Path substring to exclude from scanning.  Repeat for multiple patterns. '
+            'Use for known-acceptable copyleft binaries that a dependency bundles as a '
+            "convenience tool and that do not reach yosoi's own wheel."
+        ),
+    )
     args = parser.parse_args(argv)
-    roots: list[Path] = args.roots or [Path(sysconfig.get_paths()['purelib'])]
+    if args.roots:
+        roots: list[Path] = args.roots
+    else:
+        # purelib = pure-Python packages; platlib = native extensions (.so/.pyd);
+        # scripts = installed executables (extensionless CLI binaries like ruff).
+        sp = sysconfig.get_paths()
+        roots = list({Path(sp[k]) for k in ('purelib', 'platlib', 'scripts')})
 
     print(f'scanning native extensions under: {", ".join(map(str, roots))}')
-    hits = scan(roots)
+    if args.skip:
+        print(f'skipping path patterns: {", ".join(args.skip)}')
+    hits = scan(roots, skip=args.skip)
     if not hits:
         print('OK: no copyleft fingerprints in any bundled binary')
         return 0
