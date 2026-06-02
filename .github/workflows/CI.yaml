@@ -27,6 +27,9 @@ jobs:
       - name: Check dependency licenses
         run: uv run poe licenses
 
+      - name: Scan native deps for vendored copyleft
+        run: uv run poe licenses-binary
+
   test:
     name: Test (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
