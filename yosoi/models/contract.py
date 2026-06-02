@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import re
 from collections.abc import Callable
-from typing import Annotated, Any, ClassVar, get_args, get_origin
+from typing import TYPE_CHECKING, Annotated, Any, ClassVar, get_args, get_origin
+
+if TYPE_CHECKING:
+    from yosoi.models.spec import ContractSpec
 
 import pydantic
 from pydantic import BaseModel, Field, TypeAdapter, ValidationInfo, model_validator
@@ -457,6 +460,36 @@ class Contract(BaseModel):
     def define(cls, name: str) -> ContractBuilder:
         """Start a fluent ContractBuilder for the given contract name."""
         return ContractBuilder(name)
+
+    @classmethod
+    def frozen_fields(cls) -> set[str]:
+        """Return the set of field names marked ``frozen=True`` (``yosoi_frozen``).
+
+        A frozen field with a cached selector is never re-discovered, even when
+        drift is detected — it replays the cached selector unchanged (CAS-123).
+        """
+        result: set[str] = set()
+        for name, fi in cls.model_fields.items():
+            extra = fi.json_schema_extra
+            if isinstance(extra, dict) and extra.get('yosoi_frozen'):
+                result.add(name)
+        return result
+
+    @classmethod
+    def to_spec(cls) -> ContractSpec:
+        """Reflect this contract into a serializable :class:`ContractSpec`."""
+        from yosoi.models.spec import ContractSpec
+
+        return ContractSpec.from_contract(cls)
+
+    @classmethod
+    def from_spec(cls, spec: ContractSpec | dict[str, Any]) -> type[Contract]:
+        """Rehydrate a Contract class from a :class:`ContractSpec` or raw dict."""
+        from yosoi.models.spec import ContractSpec
+
+        if isinstance(spec, dict):
+            spec = ContractSpec.model_validate(spec)
+        return spec.to_contract()
 
 
 class ContractBuilder:

@@ -129,6 +129,7 @@ class Pipeline:
         download_dir: str | None = None,
         max_download_bytes: int | None = None,
         keep_downloads: bool = True,
+        console: Console | None = None,
     ):
         """Initialize the pipeline with LLM configuration.
 
@@ -161,6 +162,9 @@ class Pipeline:
                 ``max_bytes`` of its own. Falls back to a 25 MiB built-in default when unset.
             keep_downloads: Keep downloaded files after the run (default). Set False to purge
                 the content-addressed blobs at run end while retaining provenance in index.json.
+            console: Optional pre-constructed Rich Console. When provided it is used as-is
+                (stderr target, custom theme, quiet flag are already set by the caller).
+                When absent, a new Console is created from the other init flags.
 
         """
         self.selector_level = selector_level
@@ -218,7 +222,7 @@ class Pipeline:
         )
         self.contract = contract
         self._contract_sig = contract_signature(contract)
-        self.console = Console(theme=self.custom_theme, quiet=quiet)
+        self.console = console if console is not None else Console(theme=self.custom_theme, quiet=quiet)
         self.cleaner = HTMLCleaner(console=self.console)
         self.storage = SelectorStorage()
         self.js_storage = JsScriptStorage()
@@ -258,6 +262,7 @@ class Pipeline:
         self._url_start: float = 0.0
         self.last_elapsed: float = 0.0
         self._client: httpx.AsyncClient = httpx.AsyncClient()
+        self._contract_spec_cache: Any = None  # lazy ContractSpec for resolve()
 
         # Process-scoped Langfuse session — every Pipeline in this CLI/script
         # invocation shares the same id, so each pipeline call shows up as a
@@ -964,6 +969,18 @@ class Pipeline:
         stale_fields = {f for f, v in verdicts.items() if v != CacheVerdict.FRESH}
         fresh_fields = {f for f, v in verdicts.items() if v == CacheVerdict.FRESH}
 
+        # Honor yosoi_frozen: a frozen field with a cached selector is NEVER
+        # re-discovered, even under a drift verdict — it replays unchanged (CAS-123).
+        frozen_cached = self.contract.frozen_fields() & set(snapshots)
+        stale_but_frozen = stale_fields & frozen_cached
+        if stale_but_frozen:
+            self.console.print(
+                f'[info]  ↳ Frozen fields with drift — replaying cached selectors: '
+                f'{", ".join(sorted(stale_but_frozen))}[/info]'
+            )
+            stale_fields -= stale_but_frozen
+            fresh_fields |= stale_but_frozen
+
         # Check for new contract fields not in cache
         overridden = set(self.contract.get_selector_overrides())
         missing = (self.contract.discovery_field_names() - overridden) - set(snapshots)
@@ -1016,13 +1033,11 @@ class Pipeline:
         *,
         root_span: Any | None = None,
     ) -> AsyncIterator[ContentMap]:
-        """All cached selectors verified — extract content."""
+        """All cached selectors verified — extract content via the pure resolve() function."""
         self.console.print(f'[success]✓ All {len(fresh_fields)} cached selectors verified[/success]')
         existing = {name: data for name, snap in snapshots.items() if (data := snapshot_to_selector_dict(snap))}
-        root_entry = self._resolve_root(existing)
-        container_selector = self._root_value(root_entry)
-        with observability.span('extract', url=url, mode='cache', container=container_selector or 'single'):
-            extracted = self._extract(url, raw_html, existing, container_selector)
+        with observability.span('extract', url=url, mode='cache-resolve'):
+            extracted = self._resolve_cached_records(raw_html, existing, domain, url)
         if extracted:
             items_list: ContentItems = extracted if isinstance(extracted, list) else [extracted]
             return self._yield_cached_items(
@@ -2049,6 +2064,39 @@ class Pipeline:
                     Path(result.record.path).unlink(missing_ok=True)
                     purged += 1
             self.console.print(f'[dim]purged {purged} download blob(s); provenance retained in index.json[/dim]')
+
+    @property
+    def _contract_spec(self) -> Any:
+        """Lazily computed ContractSpec for this pipeline's contract (used by resolve())."""
+        cached = getattr(self, '_contract_spec_cache', None)
+        if cached is None:
+            cached = self.contract.to_spec()
+            self._contract_spec_cache = cached
+        return cached
+
+    def _resolve_cached_records(
+        self,
+        html: str,
+        selectors: SelectorMap,
+        domain: str,
+        url: str,
+    ) -> ContentMap | ContentItems | None:
+        """Run the pure resolve() function against pre-fetched HTML.
+
+        This is the single source of truth for cached-selector extraction.
+        Returns a ContentMap or list of ContentMaps, or None on extraction failure.
+        """
+        from yosoi.core.resolve import build_cache_from_selectors, resolve
+        from yosoi.models.needs_discovery import NeedsDiscovery
+
+        spec = self._contract_spec
+        cache = build_cache_from_selectors(domain, spec.fingerprint, selectors)
+        result = resolve(spec, html, cache, domain, max_level=self.selector_level, url=url)
+        if isinstance(result, NeedsDiscovery):
+            return None
+        if not result:
+            return None
+        return result if len(result) > 1 else result[0]
 
     def _extract(
         self,
