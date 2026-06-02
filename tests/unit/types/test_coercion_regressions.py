@@ -49,6 +49,25 @@ def test_rating_word_map_is_overridable():
     assert C.model_validate({'rating': 'cinq'}).rating == 5.0
 
 
+def test_rating_word_map_cjk_matches_mid_string():
+    """A CJK word_map key matches even embedded in surrounding text (\\b doesn't fire on CJK)."""
+
+    class C(Contract):
+        rating: float = ys.Rating(as_float=True, word_map={'三': 3})
+
+    assert C.model_validate({'rating': '三つ星'}).rating == 3.0
+
+
+def test_rating_word_map_regex_metachar_does_not_raise():
+    """A word_map key with regex metacharacters must not raise re.error (was unescaped)."""
+
+    class C(Contract):
+        rating: float = ys.Rating(as_float=True, word_map={'(a)': 2})
+
+    with pytest.raises(ValidationError):  # cleanly fails, NOT an unhandled re.error
+        C.model_validate({'rating': 'three'})
+
+
 # --- price: zero-words only when no number is present ------------------------------
 
 
@@ -77,6 +96,7 @@ def test_price_zero_value_words_overridable():
         price: float = ys.Price(zero_value_words=('無料', 'gratuit'))
 
     assert C.model_validate({'price': '無料'}).price == 0.0
+    assert C.model_validate({'price': '無料です'}).price == 0.0  # CJK mid-string
     assert C.model_validate({'price': 'gratuit'}).price == 0.0
 
 
@@ -158,3 +178,15 @@ def test_datetime_strip_prefixes_overridable():
 
     result = C.model_validate({'dt': 'veröffentlicht am 5 January 2020'})
     assert result.dt.startswith('2020-01-05')
+
+
+def test_datetime_month_label_is_not_stripped_into_backfill():
+    """Regression: a bare month/season before a colon ('March: 2020') must NOT be
+    stripped to a partial date that dateparser silently backfills from today — the
+    label-strip skips date-word labels, so this fails loudly instead of corrupting."""
+
+    class C(Contract):
+        dt: str = ys.Datetime()
+
+    with pytest.raises(ValidationError):
+        C.model_validate({'dt': 'March: 2020'})

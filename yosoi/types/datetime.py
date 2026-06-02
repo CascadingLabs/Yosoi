@@ -43,8 +43,15 @@ def Datetime(v: object, config: CoercionConfig, source_url: str | None = None) -
 
     raw = str(v).strip()
 
-    # Strip a leading "Label:" segment in any language (dateparser can't).
-    raw = _LABEL_RE.sub('', raw, count=1).strip()
+    # Strip a leading "Label:" segment in any language (dateparser can't) — but ONLY
+    # when the label is not itself a date word. Stripping a month/weekday/season
+    # ("March: 2020") would leave a partial date that dateparser silently backfills
+    # from today, turning a fail-fast into wrong data; let those fall through and fail.
+    label_match = _LABEL_RE.match(raw)
+    if label_match:
+        label_words = re.split(r'[:：]', label_match.group(0), maxsplit=1)[0].strip()
+        if label_words and dateparser.parse(label_words) is None:
+            raw = raw[label_match.end() :].strip()
 
     # Strip no-colon label idioms (overridable default, never the source of truth).
     strip_prefixes: tuple[str, ...] = config.get('strip_prefixes', _DEFAULT_STRIP_PREFIXES)

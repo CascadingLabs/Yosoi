@@ -2,7 +2,7 @@
 
 import re
 
-from yosoi.types.registry import KIND_NUMERIC, CoercionConfig, SemanticRule, register_coercion
+from yosoi.types.registry import KIND_NUMERIC, CoercionConfig, SemanticRule, matches_word, register_coercion
 
 # Default English number-word map. A DEFAULT, not the source of truth: override per field
 # via ys.Rating(word_map={'trois': 3, ...}) for non-English review sites.
@@ -49,7 +49,8 @@ def Rating(v: object, config: CoercionConfig, source_url: str | None = None) -> 
     lower = raw.lower()
     for word, num in word_map.items():
         # Whole-word match — `startswith` wrongly matched "tens of reviews" → 10.
-        if re.search(rf'\b{word}\b', lower):
+        # `matches_word` escapes the word and handles non-ASCII (CJK) keys safely.
+        if matches_word(lower, word):
             return float(num)
 
     match = re.search(r'(\d+(?:\.\d+)?)', raw)

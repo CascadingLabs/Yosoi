@@ -113,6 +113,15 @@ def test_clean_html_removes_ad_class(cleaner):
     assert 'advertisement' not in result
 
 
+def test_clean_html_keeps_substring_ad_class(cleaner):
+    """Regression: the [class*='ad-'] substring matcher was removed — it nuked legit
+    nodes like 'road-map'/'bread-crumb' (they contain 'ad-'). Such content survives now."""
+    html = '<html><body><main><p>Real</p><div class="road-map">keep me</div></main></body></html>'
+    result = cleaner.clean_html(html)
+    assert 'road-map' in result
+    assert 'keep me' in result
+
+
 def test_clean_html_preserves_main_content(sample_html, cleaner):
     result = cleaner.clean_html(sample_html)
     assert 'Main Story' in result
