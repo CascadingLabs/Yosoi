@@ -16,7 +16,7 @@ from yosoi.core.discovery.field_task import FieldTaskResult, run_field_task
 from yosoi.core.fetcher.dom.ax import AxSnapshot
 from yosoi.models.contract import Contract
 from yosoi.models.selectors import SelectorLevel
-from yosoi.models.snapshot import SelectorSnapshot, SnapshotStatus, selector_dict_to_snapshot
+from yosoi.models.snapshot import SelectorSnapshot, SnapshotStatus, selector_dict_to_snapshot, snapshot_to_selector_dict
 from yosoi.prompts.discovery import DiscoveryInput, FieldFeedback
 from yosoi.storage.persistence import SelectorStorage
 from yosoi.utils import observability as obs
@@ -214,6 +214,24 @@ class DiscoveryOrchestrator:
             field_count=field_count,
             max_concurrent=self._max_concurrent,
         ):
+            # If another domain with identical DOM skeleton already has cached selectors,
+            # reuse them directly — zero LLM calls.
+            if not force and stale_fields is None:
+                from yosoi.core.crawler.link_extractor import LinkExtractor
+
+                structure_hash = LinkExtractor.fingerprint(html)
+                struct_snaps = await self._storage.load_by_structure(structure_hash)
+                if struct_snaps is not None:
+                    self.console.print(
+                        '[success]Structure fingerprint hit — reusing selectors (zero LLM calls)[/success]'
+                    )
+                    logger.info('Structure fingerprint hit url=%s hash=%s', url_context, structure_hash[:8])
+                    return {
+                        name: snapshot_to_selector_dict(snap)
+                        for name, snap in struct_snaps.items()
+                        if snapshot_to_selector_dict(snap)
+                    } or None
+
             return await self._discover_selectors_impl(
                 html=html,
                 url=url,
@@ -239,6 +257,9 @@ class DiscoveryOrchestrator:
         feedback: dict[str, FieldFeedback] | None = None,
         force: bool = False,
     ) -> SelectorMap | None:
+        from yosoi.core.crawler.link_extractor import LinkExtractor
+
+        structure_hash = LinkExtractor.fingerprint(html)
         field_descs = self._contract.field_descriptions()
 
         semaphore = asyncio.Semaphore(self._max_concurrent)
@@ -316,9 +337,9 @@ class DiscoveryOrchestrator:
         if url and stale_fields is None and persisted_snapshots is not None:
             if self._write_lock is not None:
                 async with self._write_lock:
-                    await self._storage.save_snapshots(url, persisted_snapshots)
+                    await self._storage.save_snapshots(url, persisted_snapshots, structure_hash=structure_hash)
             else:
-                await self._storage.save_snapshots(url, persisted_snapshots)
+                await self._storage.save_snapshots(url, persisted_snapshots, structure_hash=structure_hash)
 
         return merged
 

@@ -69,6 +69,7 @@ class SelectorSnapshot(BaseModel):
     parent_root: str | None = None
     status: SnapshotStatus = SnapshotStatus.ACTIVE
     status_reason: str | None = None
+    structure_hash: str | None = None
 
     @model_validator(mode='before')
     @classmethod
@@ -109,6 +110,7 @@ class SnapshotMap(BaseModel):
     url: str
     domain: str
     snapshots: dict[str, SelectorSnapshot] = Field(default_factory=dict)
+    structure_hash: str | None = None
 
 
 def snapshot_to_selector_dict(snap: SelectorSnapshot) -> dict[str, Any]:

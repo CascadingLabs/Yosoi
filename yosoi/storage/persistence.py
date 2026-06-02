@@ -150,6 +150,39 @@ class SelectorStorage:
         logger.info('Saved content to: %s', filepath)
         return filepath
 
+    async def load_by_structure(self, structure_hash: str) -> dict[str, SelectorSnapshot] | None:
+        """Return the first snapshot set whose structure_hash matches, or None.
+
+        Scans all cached domains.  A match means two pages share the same DOM
+        skeleton — selectors discovered for the matched domain can be replayed
+        on the current page with no additional LLM calls.
+
+        Args:
+            structure_hash: 32-char hex digest from LinkExtractor.fingerprint().
+
+        Returns:
+            Snapshot dict for the first matching domain, or None.
+        """
+        if not await aiofiles.os.path.exists(self.storage_dir):
+            return None
+        for filename in await aiofiles.os.listdir(self.storage_dir):
+            if not (filename.startswith('selectors_') and filename.endswith('.json')):
+                continue
+            filepath = os.path.join(self.storage_dir, filename)
+            try:
+                async with aiofiles.open(filepath, encoding='utf-8') as f:
+                    data = json.loads(await f.read())
+            except (OSError, json.JSONDecodeError):
+                continue
+            if data.get('structure_hash') == structure_hash and 'snapshots' in data:
+                try:
+                    snap_map = SnapshotMap.model_validate(data)
+                    if snap_map.snapshots:
+                        return dict(snap_map.snapshots)
+                except (ValueError, TypeError):
+                    continue
+        return None
+
     async def load_content(
         self, url: str, contract_sig: str | None = None
     ) -> dict[str, Any] | list[dict[str, Any]] | None:
@@ -284,21 +317,28 @@ class SelectorStorage:
         except (ValueError, TypeError):
             return None
 
-    async def save_snapshots(self, url: str, snapshots: dict[str, SelectorSnapshot]) -> str:
+    async def save_snapshots(
+        self,
+        url: str,
+        snapshots: dict[str, SelectorSnapshot],
+        structure_hash: str | None = None,
+    ) -> str:
         """Write v2 snapshot format to disk.
 
         Args:
             url: URL the selectors were discovered from
             snapshots: Dict mapping field names to SelectorSnapshot
+            structure_hash: Optional DOM skeleton fingerprint from
+                LinkExtractor.fingerprint(). Stored for cross-domain
+                selector reuse via load_by_structure().
 
         Returns:
             Path to the saved file.
-
         """
         domain = self._extract_domain(url)
         filepath = self._get_selector_filepath(domain)
 
-        snap_map = SnapshotMap(url=url, domain=domain, snapshots=snapshots)
+        snap_map = SnapshotMap(url=url, domain=domain, snapshots=snapshots, structure_hash=structure_hash)
         await atomic_write_json_async(filepath, snap_map.model_dump(mode='json'), ensure_ascii=False)
 
         logger.info('Saved snapshots to: %s', filepath)
