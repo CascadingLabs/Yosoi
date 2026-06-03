@@ -809,6 +809,13 @@ class Pipeline:
             used_llm = used_llm or escalated
 
         selectors_to_save = self._selectors_with_root(verified, root_entry)
+        # Experimental (YOSOI_REUSE_HINT): stash a seed observation of the page we
+        # just discovered on, so later domain-wide replays can be scored against it.
+        # Imported lazily behind the flag so a flag-off Pipeline pays nothing.
+        if os.getenv('YOSOI_REUSE_HINT') == '1':
+            from yosoi.generalization import integration as reuse_hint
+
+            reuse_hint.record_seed(url, cleaned_html, row_selector=container_selector)
 
         if not extracted:
             self.console.print('[warning]⚠ Extraction failed, but selectors are valid[/warning]')
@@ -931,6 +938,37 @@ class Pipeline:
             )
 
         raw_html, cleaned_html = fetch_result
+
+        # Experimental (YOSOI_REUSE_HINT): score this domain-wide replay against the
+        # seed page the recipe was discovered on. Advisory — the per-field verify
+        # below still owns correctness — but a REFUSE skips a doomed replay and
+        # re-discovers, which is the cost/time win. Every call also logs a flywheel
+        # training row. The recipe's repeating-row selector is the seed's row anchor.
+        if os.getenv('YOSOI_REUSE_HINT') == '1':
+            from yosoi.generalization import integration as reuse_hint
+            from yosoi.generalization.advise import SuggestedAction
+
+            cached_dict = {name: data for name, snap in snapshots.items() if (data := snapshot_to_selector_dict(snap))}
+            row_selector = self._root_value(self._resolve_root(dict(cached_dict)))
+            advice = reuse_hint.hint_for_replay(url, cleaned_html, row_selector=row_selector)
+            if advice is not None:
+                hint = advice.hint
+                self.console.print(
+                    f'[info]{hint.as_prompt_line()} · scope={advice.scope.value} · act={advice.act}[/info]'
+                )
+                self.logger.info(
+                    'reuse-hint url=%s action=%s scope=%s act=%s confidence=%.2f',
+                    url,
+                    hint.suggested_action.value,
+                    advice.scope.value,
+                    advice.act,
+                    hint.confidence,
+                )
+                # Only skip when the active profile permits acting (strict = observer).
+                if advice.act and hint.suggested_action is SuggestedAction.REDISCOVER:
+                    self.console.print('[warning]↻ reuse-hint suggests re-discover; skipping cached replay[/warning]')
+                    return None
+
         return await self._evaluate_cached_verdicts(
             url,
             domain,

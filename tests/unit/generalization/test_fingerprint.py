@@ -1,10 +1,14 @@
 """Tests for page observations, structural signals, and the HTML adapter."""
 
 import pytest
+from parsel import Selector
 
 from yosoi.generalization.capture import observe_html
 from yosoi.generalization.fingerprint import (
+    ElementObservation,
     PageObservation,
+    filter_class_tokens,
+    observe_element,
     structural_signals,
     tag_cosine,
 )
@@ -90,3 +94,89 @@ def test_observe_html_bad_selector_yields_zero_rows() -> None:
     """A malformed row selector degrades to zero rows, not an exception."""
     obs = observe_html('https://x.com/', '<html><body><p>hi</p></body></html>', row_selector='::::')
     assert obs.rows == 0
+
+
+# ---------------------------------------------------------------------------
+# ElementObservation + observe_element tests (CAS-141)
+# ---------------------------------------------------------------------------
+
+_PRICE_HTML = (
+    '<html><body>'
+    '<div class="product-card">'
+    '<span id="price" data-testid="price-display" class="price css-1a2b3c">$9.99</span>'
+    '</div>'
+    '</body></html>'
+)
+
+
+def test_observe_element_captures_tag_identity_and_text() -> None:
+    """observe_element extracts tag, stable identity attrs, and text content."""
+    sel = Selector(text=_PRICE_HTML)
+    obs = observe_element(sel.css('span#price')[0])
+    assert obs.tag == 'span'
+    assert obs.identity_attrs == {'id': 'price', 'data-testid': 'price-display'}
+    assert obs.text == '$9.99'
+
+
+def test_observe_element_drops_hash_shaped_class_tokens() -> None:
+    """CSS-in-JS hash tokens are stripped; semantic tokens are kept."""
+    sel = Selector(text=_PRICE_HTML)
+    obs = observe_element(sel.css('span#price')[0])
+    assert 'price' in obs.class_tokens
+    assert not any('css' in t and any(c.isdigit() for c in t) for t in obs.class_tokens)
+
+
+def test_observe_element_captures_ancestry() -> None:
+    """ancestry is the root-to-node tag chain."""
+    sel = Selector(text=_PRICE_HTML)
+    obs = observe_element(sel.css('span#price')[0])
+    assert obs.ancestry == ('html', 'body', 'div')
+    assert obs.parent_tag == 'div'
+
+
+def test_observe_element_captures_siblings() -> None:
+    """siblings captures preceding and following element tags."""
+    html = '<html><body><ul><li>a</li><li id="mid">b</li><li>c</li></ul></body></html>'
+    sel = Selector(text=html)
+    obs = observe_element(sel.css('li#mid')[0])
+    assert 'li' in obs.siblings
+
+
+def test_filter_class_tokens_keeps_semantic_drops_hashes() -> None:
+    """Semantic tokens survive; CSS-in-JS hash tokens are removed."""
+    tokens = filter_class_tokens('price label sc-abc12 css-a1b2c3 MuiChip-root')
+    assert 'price' in tokens
+    assert 'label' in tokens
+    assert not any('abc12' in t or 'a1b2c3' in t for t in tokens)
+
+
+def test_filter_class_tokens_pure_word_tokens_kept() -> None:
+    """Pure word tokens with no digits are never dropped."""
+    tokens = filter_class_tokens('listing-page top-page product')
+    assert tokens == frozenset({'listing-page', 'top-page', 'product'})
+
+
+def test_observe_element_no_identity_attrs_when_absent() -> None:
+    """A plain element with no id/data-testid yields empty identity_attrs."""
+    html = '<html><body><p class="note">hello</p></body></html>'
+    obs = observe_element(Selector(text=html).css('p')[0])
+    assert obs.identity_attrs == {}
+    assert obs.text == 'hello'
+
+
+def test_element_observation_roundtrip_json() -> None:
+    """ElementObservation serialises and deserialises via model_dump_json."""
+    orig = ElementObservation(
+        tag='span',
+        identity_attrs={'id': 'price'},
+        class_tokens=frozenset({'price', 'bold'}),
+        text='$9.99',
+        ancestry=('html', 'body', 'div'),
+        siblings=('li', 'li'),
+        parent_tag='div',
+    )
+    restored = ElementObservation.model_validate_json(orig.model_dump_json())
+    assert restored.tag == 'span'
+    assert restored.identity_attrs == {'id': 'price'}
+    assert restored.class_tokens == frozenset({'price', 'bold'})
+    assert restored.ancestry == ('html', 'body', 'div')

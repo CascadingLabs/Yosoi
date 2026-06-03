@@ -24,5 +24,6 @@ MOUNTAINHOME_HOME = 'mountainhome_home.html'  # News portal homepage
 MOUNTAINHOME_ARTICLES = 'mountainhome_articles.html'  # Article listing
 VAULTMART_HOME = 'vaultmart_home.html'  # E-commerce homepage
 VAULTMART_CATALOG = 'vaultmart_catalog.html'  # Product catalog
+VAULTMART_PRODUCT = 'vaultmart_product.html'  # Single product detail page (no card grid)
 SCORETAP_HOME = 'scoretap_home.html'  # Esports scores
 ELDORIA_REGISTRY = 'eldoria_registry.html'  # Structured form/table data

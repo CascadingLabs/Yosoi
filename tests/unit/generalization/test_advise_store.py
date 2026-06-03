@@ -100,3 +100,29 @@ def test_store_back_filled_outcome_is_persisted(store: DecisionStore) -> None:
     reloaded = store.load_all()[0]
     assert reloaded.outcome is Outcome.CONFIRMED
     assert reloaded.trust is Trust.VERIFIED
+
+
+def test_decide_folds_to_current_without_duplicating(store: DecisionStore) -> None:
+    """A promotion appends a correction row; current() folds to the latest state."""
+    decision = build_decision(advise_reuse(SEED, SIBLING).panel, decided_at=_NOW, driver='test')
+    store.append(decision)
+    resolved = store.decide(decision.id, confirmed=True)
+
+    assert resolved is not None
+    assert resolved.trust is Trust.VERIFIED
+    assert len(store.load_all()) == 2  # original + correction, append-only
+    current = store.current()
+    assert len(current) == 1  # folded to one
+    assert current[0].trust is Trust.VERIFIED
+
+
+def test_decide_unknown_id_is_none(store: DecisionStore) -> None:
+    """Deciding an unknown id is a no-op returning None."""
+    assert store.decide('nope', confirmed=True) is None
+
+
+def test_load_all_skips_corrupt_line(store: DecisionStore) -> None:
+    """A torn/garbage line is skipped, not fatal."""
+    store.append(build_decision(advise_reuse(SEED, SIBLING).panel, decided_at=_NOW, driver='test'))
+    (store.storage_dir / '2026-01-02.jsonl').open('a', encoding='utf-8').write('{not json\n')
+    assert len(store.load_all()) == 1

@@ -21,8 +21,16 @@ REFUSE).
 
 from __future__ import annotations
 
+from difflib import SequenceMatcher
+
 from yosoi.generalization.canonicalize import route_template, same_registrable_domain
-from yosoi.generalization.fingerprint import PageObservation, StructuralSignals, structural_signals
+from yosoi.generalization.fingerprint import (
+    MIN_TAGS,
+    ElementObservation,
+    PageObservation,
+    StructuralSignals,
+    structural_signals,
+)
 from yosoi.generalization.signals import ReuseSignalPanel, SignalReading, Verdict
 
 # Body-class tokens that positively identify a non-listing page kind.
@@ -149,11 +157,32 @@ def _cosine_reading(sig: StructuralSignals) -> SignalReading:
     )
 
 
-def _combine(readings: list[SignalReading], same_domain: bool) -> tuple[Verdict, str]:
+def _degenerate_reading(seed: PageObservation, replay: PageObservation) -> SignalReading | None:
+    """ABSTAIN when either page is too thin to compare (blank/unrendered/error).
+
+    Guards against the vacuous tag-cosine of 1.0 between two empty histograms,
+    which would otherwise read as a confident ALLOW on a blank or JS-shell page.
+    """
+    thin = [name for name, obs in (('seed', seed), ('replay', replay)) if obs.is_degenerate()]
+    if not thin:
+        return None
+    return SignalReading(
+        name='degenerate',
+        value=','.join(thin),
+        threshold=f'>= {MIN_TAGS} tags',
+        verdict=Verdict.ABSTAIN,
+        rationale='page too thin to compare (blank/unrendered/error)',
+    )
+
+
+def _combine(readings: list[SignalReading], same_domain: bool, *, degenerate: bool) -> tuple[Verdict, str]:
     """Cost-asymmetric cascade over the readings -> (recommendation, rationale)."""
     refusals = [r for r in readings if r.verdict is Verdict.REFUSE]
     if refusals:
         return Verdict.REFUSE, f'refused by {refusals[0].name}: {refusals[0].rationale}'
+    # A too-thin page yields a vacuous structural match — never ALLOW on it.
+    if degenerate:
+        return Verdict.ABSTAIN, 'degenerate page; cannot confidently allow'
     # Confident ALLOW needs structure AND cardinality to both say ALLOW.
     gates = {'tag_cosine', 'cardinality'}
     gate_readings = [r for r in readings if r.name in gates]
@@ -182,11 +211,12 @@ def recommend(seed: PageObservation, replay: PageObservation) -> ReuseSignalPane
         _cosine_reading(sig),
         _cardinality_reading(sig),
     ]
-    optional = (_zero_rows_reading(sig), _row_explosion_reading(seed, replay, sig))
+    optional = (_zero_rows_reading(sig), _row_explosion_reading(seed, replay, sig), _degenerate_reading(seed, replay))
     readings.extend(r for r in optional if r is not None)
 
     same_domain = same_registrable_domain(seed.url, replay.url)
-    recommendation, rationale = _combine(readings, same_domain)
+    degenerate = seed.is_degenerate() or replay.is_degenerate()
+    recommendation, rationale = _combine(readings, same_domain, degenerate=degenerate)
     return ReuseSignalPanel(
         seed_url=seed.url,
         replay_url=replay.url,
@@ -196,4 +226,121 @@ def recommend(seed: PageObservation, replay: PageObservation) -> ReuseSignalPane
         readings=readings,
         recommendation=recommendation,
         rationale=rationale,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Per-element drift detection (CAS-141)
+# ---------------------------------------------------------------------------
+
+# Weighted scores mirror recommend.py's cost-asymmetric posture: identity attrs
+# are 4x more load-bearing than text, which itself outweighs positional signals.
+_ELEMENT_WEIGHTS: dict[str, float] = {
+    'identity': 4.0,
+    'tag': 2.0,
+    'class': 1.5,
+    'text': 1.0,
+    'ancestry': 0.5,
+    'siblings': 0.5,
+}
+_TOTAL_WEIGHT: float = sum(_ELEMENT_WEIGHTS.values())  # 9.5
+
+# Score thresholds for the three-way outcome.
+ELEMENT_MATCH_FLOOR = 0.80  # >= this → MATCH  → Verdict.ALLOW
+ELEMENT_DRIFT_FLOOR = 0.50  # >= this → DRIFTED → Verdict.REFUSE; below → AMBIGUOUS → Verdict.ABSTAIN
+
+
+def _identity_score(a: dict[str, str], b: dict[str, str]) -> float:
+    """Similarity of identity-attribute dicts; 0.75 (mildly positive) when both empty.
+
+    Both nodes lacking stable identity is a consistent signal — they agree on being
+    un-anchored. Neutral 0.5 would unfairly penalise elements that never had
+    id/data-testid; 0.75 lets the other signals decide when both are empty.
+    """
+    ka, kb = set(a), set(b)
+    if not ka and not kb:
+        return 0.75
+    all_keys = ka | kb
+    shared = ka & kb
+    if not shared:
+        return 0.0 if (ka and kb) else 0.25
+    matches = sum(a.get(k) == b.get(k) for k in all_keys)
+    return matches / len(all_keys)
+
+
+def _class_score(a: frozenset[str], b: frozenset[str]) -> float:
+    """Jaccard similarity of filtered class tokens; 0.5 (neutral) when both empty."""
+    if not a and not b:
+        return 0.5
+    union = len(a | b)
+    return len(a & b) / union if union else 0.5
+
+
+def _text_score(a: str | None, b: str | None) -> float:
+    """SequenceMatcher ratio on text content; 0.5 (neutral) when both absent."""
+    if a is None and b is None:
+        return 0.5
+    if a is None or b is None:
+        return 0.0
+    return SequenceMatcher(None, a[:500], b[:500]).ratio()
+
+
+def _seq_score(a: tuple[str, ...], b: tuple[str, ...]) -> float:
+    """SequenceMatcher ratio on tag-name sequences; 0.5 (neutral) when both empty."""
+    if not a and not b:
+        return 0.5
+    return SequenceMatcher(None, a, b).ratio()
+
+
+def _element_score(stored: ElementObservation, current: ElementObservation) -> float:
+    """Weighted asymmetric similarity of two element fingerprints, in [0, 1]."""
+    components: dict[str, float] = {
+        'identity': _identity_score(stored.identity_attrs, current.identity_attrs),
+        'tag': 1.0 if stored.tag == current.tag else 0.0,
+        'class': _class_score(stored.class_tokens, current.class_tokens),
+        'text': _text_score(stored.text, current.text),
+        'ancestry': _seq_score(stored.ancestry, current.ancestry),
+        'siblings': _seq_score(stored.siblings, current.siblings),
+    }
+    return sum(_ELEMENT_WEIGHTS[k] * v for k, v in components.items()) / _TOTAL_WEIGHT
+
+
+def element_drift(stored: ElementObservation, current: ElementObservation) -> SignalReading:
+    """Compare a stored element fingerprint against a live node fingerprint.
+
+    Three outcomes (mirroring the page-level cascade's cost-asymmetric posture):
+
+    * **MATCH** (score >= :data:`ELEMENT_MATCH_FLOOR`) → :attr:`Verdict.ALLOW`:
+      the same node survived; reuse is safe.
+    * **DRIFTED** (:data:`ELEMENT_DRIFT_FLOOR` <= score < floor) → :attr:`Verdict.REFUSE`:
+      the node changed; trigger offline re-discovery, never relocate live.
+    * **AMBIGUOUS** (score < :data:`ELEMENT_DRIFT_FLOOR`) → :attr:`Verdict.ABSTAIN`:
+      element unrecognizable or two candidates within ε; fail closed.
+
+    Identity attributes dominate (4x weight) so a stable ``id``/``data-testid``
+    survives a class or position change without triggering a false DRIFTED. Text
+    and positional signals are tie-breakers and drift detectors, not gates.
+
+    Args:
+        stored: :class:`ElementObservation` captured at discovery time.
+        current: :class:`ElementObservation` of the element the selector matched
+            on replay.
+
+    Returns:
+        A :class:`SignalReading` with ``name='element_drift'``, the weighted score
+        as ``value``, and ALLOW / REFUSE / ABSTAIN as ``verdict``.
+    """
+    score = _element_score(stored, current)
+    if score >= ELEMENT_MATCH_FLOOR:
+        verdict, label = Verdict.ALLOW, 'match'
+    elif score >= ELEMENT_DRIFT_FLOOR:
+        verdict, label = Verdict.REFUSE, 'drifted'
+    else:
+        verdict, label = Verdict.ABSTAIN, 'ambiguous'
+    return SignalReading(
+        name='element_drift',
+        value=f'{score:.3f}',
+        threshold=f'>={ELEMENT_MATCH_FLOOR} match, >={ELEMENT_DRIFT_FLOOR} drifted',
+        verdict=verdict,
+        rationale=f'element fingerprint {label} (score {score:.3f})',
     )

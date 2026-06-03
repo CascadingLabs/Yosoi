@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Sequence
+from typing import Any
+from urllib.parse import urlsplit
 
 from yosoi.core.configs import YosoiConfig, auto_config
 from yosoi.core.discovery import LLMConfig
@@ -15,7 +17,7 @@ from yosoi.utils.contracts import resolve_contract
 
 
 async def scrape(
-    url: str,
+    url: str | Sequence[str],
     contract: type[Contract] | str,
     model: YosoiConfig | LLMConfig | str | None = None,
     *,
@@ -30,6 +32,7 @@ async def scrape(
     download_dir: str | None = None,
     max_download_bytes: int | None = None,
     keep_downloads: bool = True,
+    max_concurrency: int = 8,
 ) -> list[ContentMap]:
     """Scrape one URL and return validated native Python dictionaries.
 
@@ -42,7 +45,37 @@ async def scrape(
     ``download_dir`` overrides the quarantine root (default ``.yosoi/downloads/``) and
     ``max_download_bytes`` sets a run-wide per-file cap (used when a field sets no ``max_bytes``).
     ``keep_downloads=False`` purges the downloaded bytes at run end (provenance is retained).
+
+    Pass a list of URLs to scrape them with automatic concurrency: the recipe is
+    discovered once per domain (serially), then the rest fan out concurrently as
+    cache hits. Returns the items flattened in input order. [SPIKE — see CAS ticket]
     """
+    if not isinstance(url, str):
+        urls = list(url)
+        if not urls:
+            return []
+        # Concurrency only engages for MORE THAN ONE URL; a single-element list is
+        # a plain scrape (no domain-seeding, no semaphore, no fan-out).
+        if len(urls) > 1:
+            return await _scrape_urls(
+                urls,
+                contract,
+                model,
+                max_concurrency=max_concurrency,
+                force=force,
+                skip_verification=skip_verification,
+                fetcher_type=fetcher_type,
+                selector_level=selector_level,
+                save_formats=save_formats,
+                quiet=quiet,
+                allow_downloads=allow_downloads,
+                allowed_download_types=allowed_download_types,
+                download_dir=download_dir,
+                max_download_bytes=max_download_bytes,
+                keep_downloads=keep_downloads,
+            )
+        url = urls[0]
+
     contract_cls = resolve_contract(contract) if isinstance(contract, str) else contract
     llm_config = _resolve_model(model)
     save_format_list = list(save_formats)
@@ -82,6 +115,41 @@ async def scrape(
         except Exception as e:
             obs.warning('API scrape failed', url=url, contract=contract_cls.__name__, error=str(e))
             raise
+
+
+async def _scrape_urls(
+    urls: list[str],
+    contract: type[Contract] | str,
+    model: YosoiConfig | LLMConfig | str | None,
+    *,
+    max_concurrency: int,
+    **kwargs: Any,
+) -> list[ContentMap]:
+    """Concurrent multi-URL scrape: discover once per domain, replay the rest in parallel.
+
+    Seeding each domain serially warms its per-domain selector cache before the
+    concurrent replays, so a list of same-domain URLs costs ONE discovery, not N.
+    """
+    if not urls:
+        return []
+    by_domain: dict[str, list[str]] = {}
+    for u in urls:
+        by_domain.setdefault(urlsplit(u).netloc, []).append(u)
+
+    results: dict[str, list[ContentMap]] = {}
+    deferred: list[str] = []
+    for members in by_domain.values():
+        results[members[0]] = await scrape(members[0], contract, model, **kwargs)
+        deferred.extend(members[1:])
+
+    semaphore = asyncio.Semaphore(max(1, max_concurrency))
+
+    async def _one(u: str) -> tuple[str, list[ContentMap]]:
+        async with semaphore:
+            return u, await scrape(u, contract, model, **kwargs)
+
+    results.update(dict(await asyncio.gather(*(_one(u) for u in deferred))))
+    return [item for u in urls for item in results.get(u, [])]
 
 
 async def scrape_many(
