@@ -3,11 +3,11 @@
 Spine only: ``__init__``, ``scrape``, ``process_url``, ``process_urls``, and the
 concurrent processing methods. Behavior is delegated to focused mixin modules:
 
-* ``pipeline_cache.py``      — cached selector replay
-* ``pipeline_extraction.py`` — fetch / clean / extract / downloads
-* ``pipeline_discovery.py``  — AI selector discovery, MCP escalation, JS actions
-* ``pipeline_crawler.py``    — frontier / crawl helpers (CAS-52)
-* ``pipeline_utils.py``      — stateless helpers, display methods
+* ``cache.py``      — cached selector replay
+* ``extraction.py`` — fetch / clean / extract / downloads
+* ``discovery.py``  — AI selector discovery, MCP escalation, JS actions
+* ``crawler.py``    — frontier / crawl helpers (CAS-52)
+* ``utils.py``      — stateless helpers, display methods
 """
 
 import asyncio
@@ -28,12 +28,12 @@ from rich.theme import Theme
 from yosoi.core.configs import YosoiConfig
 from yosoi.core.discovery import DiscoveryOrchestrator, LLMConfig, MCPDiscoveryOrchestrator
 from yosoi.core.discovery.bus import DiscoveryBus
-from yosoi.core.fetcher import create_fetcher  # re-exported: tests patch yosoi.core.pipeline.create_fetcher
-from yosoi.core.pipeline_cache import PipelineCacheMixin
-from yosoi.core.pipeline_crawler import PipelineCrawlerMixin
-from yosoi.core.pipeline_discovery import PipelineDiscoveryMixin
-from yosoi.core.pipeline_extraction import PipelineExtractionMixin
-from yosoi.core.pipeline_utils import PipelineUtilsMixin
+from yosoi.core.fetcher import create_fetcher  # re-exported: tests patch yosoi.core.pipeline.base.create_fetcher
+from yosoi.core.pipeline.cache import PipelineCacheMixin
+from yosoi.core.pipeline.crawler import PipelineCrawlerMixin
+from yosoi.core.pipeline.discovery import PipelineDiscoveryMixin
+from yosoi.core.pipeline.extraction import PipelineExtractionMixin
+from yosoi.core.pipeline.utils import PipelineUtilsMixin
 from yosoi.core.verification import SelectorVerifier, SemanticValidator, field_rules_for_contract
 from yosoi.models.contract import Contract
 from yosoi.models.selectors import SelectorLevel
@@ -231,7 +231,7 @@ class Pipeline(
         """Create HTML fetcher instance.
 
         Defined on Pipeline (not the utils mixin) so that
-        ``mocker.patch('yosoi.core.pipeline.create_fetcher')`` intercepts calls here.
+        ``mocker.patch('yosoi.core.pipeline.base.create_fetcher')`` intercepts calls here.
         """
         try:
             kwargs: dict[str, Any] = {}

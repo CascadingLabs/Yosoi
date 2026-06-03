@@ -3,7 +3,7 @@
 Covers every decision branch in:
   - HTMLFetcher._check_for_bot_detection  (base.py)
   - SimpleFetcher.fetch  -- logger.warning emitted on detection  (simple.py)
-  - Pipeline._handle_bot_detection  -- logger.warning + observability.warning emitted  (pipeline_extraction.py)
+  - Pipeline._handle_bot_detection  -- logger.warning + observability.warning emitted  (pipeline/extraction.py)
 """
 
 import pytest
@@ -280,15 +280,15 @@ async def test_simple_fetcher_no_warning_on_clean_200(mocker):
 
 # ===========================================================================
 # Pipeline._handle_bot_detection
-# _handle_bot_detection lives in pipeline_extraction.py — patch that module's
-# logger and observability bindings, not yosoi.core.pipeline.
+# _handle_bot_detection lives in pipeline/extraction.py — patch that module's
+# logger and observability bindings, not yosoi.core.pipeline.base.
 # ===========================================================================
 
 
 def test_handle_bot_detection_calls_logger_warning(mocker):
     stub = _make_pipeline_stub(mocker)
-    mocker.patch('yosoi.core.pipeline_extraction.observability')
-    mock_logger = mocker.patch('yosoi.core.pipeline_extraction.logger')
+    mocker.patch('yosoi.core.pipeline.extraction.observability')
+    mock_logger = mocker.patch('yosoi.core.pipeline.extraction.logger')
 
     err = BotDetectionError(url='https://x.com', status_code=403, indicators=['HTTP 403', 'CF-Ray: abc'])
     Pipeline._handle_bot_detection(stub, err, attempt=1, max_retries=3)
@@ -301,8 +301,8 @@ def test_handle_bot_detection_calls_logger_warning(mocker):
 
 def test_handle_bot_detection_logger_warning_includes_attempt_info(mocker):
     stub = _make_pipeline_stub(mocker)
-    mocker.patch('yosoi.core.pipeline_extraction.observability')
-    mock_logger = mocker.patch('yosoi.core.pipeline_extraction.logger')
+    mocker.patch('yosoi.core.pipeline.extraction.observability')
+    mock_logger = mocker.patch('yosoi.core.pipeline.extraction.logger')
 
     err = BotDetectionError(url='https://x.com', status_code=429, indicators=['HTTP 429'])
     Pipeline._handle_bot_detection(stub, err, attempt=2, max_retries=3)
@@ -314,7 +314,7 @@ def test_handle_bot_detection_logger_warning_includes_attempt_info(mocker):
 
 def test_handle_bot_detection_calls_obs_warning(mocker):
     stub = _make_pipeline_stub(mocker)
-    mock_obs = mocker.patch('yosoi.core.pipeline_extraction.observability')
+    mock_obs = mocker.patch('yosoi.core.pipeline.extraction.observability')
 
     err = BotDetectionError(url='https://x.com', status_code=503, indicators=['HTTP 503'])
     Pipeline._handle_bot_detection(stub, err, attempt=1, max_retries=2)
@@ -329,7 +329,7 @@ def test_handle_bot_detection_calls_obs_warning(mocker):
 
 def test_handle_bot_detection_obs_includes_indicators(mocker):
     stub = _make_pipeline_stub(mocker)
-    mock_obs = mocker.patch('yosoi.core.pipeline_extraction.observability')
+    mock_obs = mocker.patch('yosoi.core.pipeline.extraction.observability')
 
     indicators = ['HTTP 403', 'Cloudflare server', 'CF-Ray: ray1-LHR']
     err = BotDetectionError(url='https://x.com', status_code=403, indicators=indicators)
@@ -341,7 +341,7 @@ def test_handle_bot_detection_obs_includes_indicators(mocker):
 
 def test_handle_bot_detection_still_prints_to_console(mocker):
     stub = _make_pipeline_stub(mocker)
-    mocker.patch('yosoi.core.pipeline_extraction.observability')
+    mocker.patch('yosoi.core.pipeline.extraction.observability')
 
     err = BotDetectionError(url='https://x.com', status_code=403, indicators=['HTTP 403'])
     Pipeline._handle_bot_detection(stub, err, attempt=1, max_retries=2)
@@ -351,7 +351,7 @@ def test_handle_bot_detection_still_prints_to_console(mocker):
 
 def test_handle_bot_detection_abort_message_when_exhausted(mocker):
     stub = _make_pipeline_stub(mocker)
-    mocker.patch('yosoi.core.pipeline_extraction.observability')
+    mocker.patch('yosoi.core.pipeline.extraction.observability')
 
     err = BotDetectionError(url='https://x.com', status_code=403, indicators=['HTTP 403'])
     Pipeline._handle_bot_detection(stub, err, attempt=2, max_retries=2)
@@ -362,7 +362,7 @@ def test_handle_bot_detection_abort_message_when_exhausted(mocker):
 
 def test_handle_bot_detection_no_abort_message_when_retries_remain(mocker):
     stub = _make_pipeline_stub(mocker)
-    mocker.patch('yosoi.core.pipeline_extraction.observability')
+    mocker.patch('yosoi.core.pipeline.extraction.observability')
 
     err = BotDetectionError(url='https://x.com', status_code=403, indicators=['HTTP 403'])
     Pipeline._handle_bot_detection(stub, err, attempt=1, max_retries=3)

@@ -42,7 +42,7 @@ async def test_pipeline_happy_path(mocker, mock_llm_config, happy_path_html, tmp
             metadata=ContentMetadata(content_length=len(happy_path_html)),
         )
     )
-    mocker.patch('yosoi.core.pipeline.create_fetcher', return_value=mock_fetcher)
+    mocker.patch('yosoi.core.pipeline.base.create_fetcher', return_value=mock_fetcher)
 
     pipeline = Pipeline(mock_llm_config, contract=NewsArticle)
 
@@ -78,7 +78,7 @@ async def test_pipeline_fetch_failure(mocker, mock_llm_config, tmp_path):
             url='http://example.com', html=None, status_code=403, is_blocked=True, block_reason='Forbidden'
         )
     )
-    mocker.patch('yosoi.core.pipeline.create_fetcher', return_value=mock_fetcher)
+    mocker.patch('yosoi.core.pipeline.base.create_fetcher', return_value=mock_fetcher)
 
     pipeline = Pipeline(mock_llm_config, contract=NewsArticle)
 
@@ -114,7 +114,7 @@ async def test_pipeline_ai_failure(mocker, mock_llm_config, happy_path_html, tmp
             metadata=ContentMetadata(content_length=len(happy_path_html)),
         )
     )
-    mocker.patch('yosoi.core.pipeline.create_fetcher', return_value=mock_fetcher)
+    mocker.patch('yosoi.core.pipeline.base.create_fetcher', return_value=mock_fetcher)
 
     pipeline = Pipeline(mock_llm_config, contract=NewsArticle)
 
