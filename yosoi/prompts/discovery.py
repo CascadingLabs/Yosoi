@@ -29,11 +29,10 @@ For each field provide:
 
 If the value lives in an ATTRIBUTE rather than visible text, target the
 attribute with a CSS `::attr(name)` pseudo-element so extraction returns the
-attribute string. Common cases: a rating encoded in a class
-(`p.star-rating::attr(class)`), a machine date (`time::attr(datetime)`), a
-price in microdata (`meta[itemprop="price"]::attr(content)`), or an input's
-`value`. Use `::attr(...)` whenever the matched element carries no useful
-text node."""
+attribute string — for example a value carried in a class token, a
+machine-readable date/time attribute, a microdata content attribute, or an
+input's `value`. Use `::attr(...)` whenever the matched element carries no
+useful text node."""
 
 _LEVEL_CSS_ONLY: Final = 'Use CSS selectors only (e.g. .class-name, #id, h1 > span).'
 
@@ -69,8 +68,8 @@ _HINT_DATA_QA: Final = 'Page uses data-qa/data-cy test attributes — they are s
 _CONTAINER_GUIDANCE: Final = (
     'If the page contains multiple repeating items (e.g., product cards, article listings, '
     'search results), also provide a `root` selector for the repeating wrapper element '
-    'that contains one complete item. This selector should match each individual item on the '
-    'page (e.g., `.product-card`, `article.listing`). '
+    'that contains one complete item — the smallest element that wraps exactly one complete '
+    'item and matches each item on the page. '
     'If the page shows a single item, set `root` to null.'
 )
 
@@ -78,10 +77,9 @@ _MULTI_ITEM_FIELD_GUIDANCE: Final = (
     'IMPORTANT — repeating-item scoping: if the HTML contains multiple repeating items '
     '(product cards, listings, search results, table rows), this field belongs to ONE item, '
     'so your selector MUST match the value *inside a single repeating item* and resolve once '
-    'per item. Do NOT target page-level chrome such as the page title/heading (e.g. a top-level '
-    '<h1>), site header, breadcrumbs, or navigation — even when the field is named "title" or '
-    '"heading", prefer the per-item element (e.g. the card\'s own heading link) over a page-wide '
-    'heading. When in doubt, scope the selector under the repeating item wrapper.'
+    'per item. Even when the field is named "title" or "heading", prefer the per-item element '
+    'over any page-level element that appears once for the whole page. When in doubt, scope the '
+    'selector under the repeating item wrapper.'
 )
 
 

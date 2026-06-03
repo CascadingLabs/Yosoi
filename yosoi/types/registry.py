@@ -9,6 +9,7 @@ interprets a small set of kinds, never the specific built-in type names.
 """
 
 import datetime
+import re
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
@@ -17,6 +18,21 @@ from yosoi.types.field import Field
 
 # Coercion config: json_schema_extra dict passed to coercion functions
 CoercionConfig = dict[str, str | int | float | bool | None]
+
+
+def matches_word(text: str, word: str) -> bool:
+    r"""Return whether *word* occurs in already-lowercased *text* as a whole word.
+
+    ASCII words use a regex word boundary (so ``free`` does not match ``freedom``) and
+    are regex-escaped (so a caller-supplied word with metacharacters can't raise); a
+    non-ASCII word (e.g. CJK) falls back to substring, since ``\b`` does not fire
+    between CJK characters.
+    """
+    w = word.lower()
+    if w.isascii():
+        return re.search(rf'\b{re.escape(w)}\b', text) is not None
+    return w in text
+
 
 # Coercion function return type (includes datetime for Datetime coercer)
 CoercedValue = str | float | int | datetime.datetime | None

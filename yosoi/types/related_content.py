@@ -3,7 +3,7 @@
 from yosoi.types.registry import CoercionConfig, register_coercion
 
 
-@register_coercion('related_content', description='Related links (text + href pairs)')
+@register_coercion('related_content', description='Related links')
 def RelatedContent(v: object, config: CoercionConfig, source_url: str | None = None) -> str:
     """Configure a related content / links field.
 

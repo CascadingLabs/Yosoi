@@ -27,6 +27,7 @@ from yosoi.core.fetcher.dom.catalogues import (
     POPUP_SELECTORS,
     TAB_SELECTOR,
 )
+from yosoi.models.selectors import SelectorEntry
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +75,35 @@ class DetectedTrigger:
     selector: str
     label: str
     ax_target: AxTarget | None = None
+
+
+# Selector sentinels that are NOT stable, replayable targets — they drive a JS
+# text-match click or a generic scroll, so there is nothing concrete to persist.
+_UNSTABLE_SELECTORS = frozenset({'button', 'a[href]', 'body'})
+
+
+def detected_trigger_to_selector_entry(trigger: DetectedTrigger) -> SelectorEntry | None:
+    """Convert a freshly-probed trigger into a durable, replayable target.
+
+    Returns a ``role`` SelectorEntry for an AX-resolved trigger, a ``css`` SelectorEntry
+    for a concrete-selector trigger, or ``None`` for text-match/scroll triggers (those
+    carry no stable selector, so replay re-probes them via the catalogues seed).
+    """
+    ax = trigger.ax_target
+    if ax is not None and ax.name:
+        return SelectorEntry(type='role', value=ax.role, name=ax.name, nth=ax.nth)
+    sel = trigger.selector
+    if sel and not sel.startswith('ax:') and sel not in _UNSTABLE_SELECTORS:
+        return SelectorEntry(type='css', value=sel)
+    return None
+
+
+def selector_entry_to_detected_trigger(kind: TriggerKind, entry: SelectorEntry) -> DetectedTrigger:
+    """Rebuild a DetectedTrigger from a stored target so replay can act WITHOUT probing."""
+    if entry.type == 'role':
+        ax = AxTarget(role=entry.value, name=entry.name or '', nth=entry.nth or 0)
+        return DetectedTrigger(kind=kind, selector=f'ax:{entry.value}', label=entry.name or '', ax_target=ax)
+    return DetectedTrigger(kind=kind, selector=entry.value, label='')
 
 
 async def capture_ax_snapshot(tab: Any) -> AxSnapshot | None:
@@ -208,9 +238,31 @@ async def probe_pagination(tab: Any) -> DetectedTrigger | None:
     return None
 
 
+# Generic scrollability probe: does the page extend meaningfully below the viewport?
+# A real DOM fact (not a count heuristic) that means scrolling could reveal more content.
+_SCROLLABLE_JS = (
+    '(() => { const d = document.documentElement, b = document.body;'
+    ' const h = Math.max(d ? d.scrollHeight : 0, b ? b.scrollHeight : 0);'
+    ' return h - window.innerHeight > 100; })()'
+)
+
+
 async def probe_infinite_scroll(tab: Any, content_count: int) -> DetectedTrigger | None:
-    """Detect infinite scroll by checking if content count is a round number."""
-    if content_count > 0 and content_count % 10 == 0:
+    """Detect infinite scroll when the page is genuinely scrollable.
+
+    The signal is a real DOM fact — the page extends meaningfully below the viewport —
+    rather than the old ``content_count % 10`` guess (which false-fired on any page with
+    a round item count and missed feeds of 7 or 13). The Scroll action self-terminates
+    once scrolling stops growing content, so a false positive costs one bounded cycle.
+    """
+    if content_count <= 0:
+        return None
+    try:
+        scrollable = await tab.eval_js(_SCROLLABLE_JS)
+    except (RuntimeError, OSError, ValueError, AttributeError, TypeError) as exc:
+        logger.debug('probe_infinite_scroll eval failed: %s', exc)
+        return None
+    if scrollable:
         return DetectedTrigger(TriggerKind.INFINITE_SCROLL, 'body', 'scroll to bottom')
     return None
 

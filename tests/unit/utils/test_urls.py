@@ -4,7 +4,24 @@ import json
 
 import pytest
 
-from yosoi.utils.urls import load_urls_from_file
+from yosoi.utils.urls import extract_domain, load_urls_from_file
+
+
+class TestExtractDomain:
+    def test_strips_www_and_lowercases(self):
+        assert extract_domain('https://WWW.Example.com/path') == 'example.com'
+
+    def test_mixed_case_and_port_map_to_same_key(self):
+        """Regression: mixed-case host + port must not fork the per-domain cache."""
+        a = extract_domain('https://Example.com:8080/x')
+        b = extract_domain('https://example.com/y')
+        assert a == b == 'example.com'
+
+    def test_keeps_non_www_subdomain(self):
+        assert extract_domain('https://maps.google.com/maps') == 'maps.google.com'
+
+    def test_unparseable_returns_unknown(self):
+        assert extract_domain('not a url') == 'unknown'
 
 
 class TestLoadUrlsFromFile:

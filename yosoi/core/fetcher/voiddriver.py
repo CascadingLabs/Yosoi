@@ -22,7 +22,6 @@ import time
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Any
-from urllib.parse import urlparse
 
 from rich.console import Console
 
@@ -36,6 +35,7 @@ from yosoi.models.results import FetchResult, JsOutputs
 from yosoi.storage.a3node import A3Node, A3NodeStorage, ActRecord
 from yosoi.utils import observability as obs
 from yosoi.utils.exceptions import BotDetectionError, DownloadError
+from yosoi.utils.urls import extract_domain
 
 logger = logging.getLogger(__name__)
 
@@ -178,7 +178,7 @@ class _VoidCrawlFetcher(HTMLFetcher):
         action_scripts: dict[str, str] | None = None,
         download_specs: dict[str, DownloadSpec] | None = None,
     ) -> FetchResult:
-        domain = urlparse(url).netloc.replace('www.', '')
+        domain = extract_domain(url)
         stored_node = self._a3node_cache.get(domain) if self._experimental_a3node else None
 
         js_outputs: JsOutputs | None = None

@@ -7,9 +7,19 @@ from yosoi.types.registry import KIND_URL, CoercionConfig, SemanticRule, registe
 _TRACKING_PREFIXES = ('utm_', 'fbclid', 'gclid', '_gl', 'ref')
 
 
+def _is_tracking_param(param: str) -> bool:
+    """Return whether a ``key=value`` query param is a known tracking param.
+
+    Entries ending in ``_`` (e.g. ``utm_``) match by key prefix; every other entry must
+    match the key exactly — so ``ref`` strips ``ref=…`` but never ``reference=``/``ref_id=``.
+    """
+    key = param.split('=', 1)[0]
+    return any(key.startswith(t) if t.endswith('_') else key == t for t in _TRACKING_PREFIXES)
+
+
 @register_coercion(
     'url',
-    description='A URL or href',
+    description='A URL',
     semantic=SemanticRule(kind=KIND_URL, max_chars=500),
     require_https=True,
     strip_tracking=True,
@@ -40,9 +50,7 @@ def Url(v: object, config: CoercionConfig, source_url: str | None = None) -> str
 
     if strip_tracking and '?' in raw:
         parsed = urlparse(raw)
-        clean_params = [
-            p for p in parsed.query.split('&') if p and not any(p.startswith(t) for t in _TRACKING_PREFIXES)
-        ]
+        clean_params = [p for p in parsed.query.split('&') if p and not _is_tracking_param(p)]
         raw = urlunparse(parsed._replace(query='&'.join(clean_params))).rstrip('?')
 
     return raw

@@ -3,6 +3,14 @@
 Pure data — no logic. Import from here rather than defining inline so
 patterns are easy to extend without touching any logic files.
 
+These lists are a cold-start SEED and a fallback, NOT the source of truth
+(CAS-94). They are English- and convention-biased on purpose: discovery only
+consults them on the first probe of a domain. A successful probe persists the
+concrete winning target (a :class:`~yosoi.models.selectors.SelectorEntry`) into
+the A3Node recipe, so replay clicks that target directly and never re-reads
+these catalogues. A domain whose language or markup these lists don't cover
+therefore degrades to one extra probe, never to a hard failure.
+
 FUTURE: teach the discovery agent to propose or generate these catalogues,
 using this module as examples instead of relying on hand-maintained lists.
 """

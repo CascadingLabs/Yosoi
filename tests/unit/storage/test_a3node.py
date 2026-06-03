@@ -61,6 +61,47 @@ class TestRealA3NodeStorage:
         await real_storage.save('example.com', _acts('cookie'))  # different acts
         assert (await real_storage.load('example.com')).replay_count == 0
 
+    async def test_act_target_round_trips(self, real_storage):
+        """A concrete SelectorEntry target survives save -> load (format 2)."""
+        from yosoi.models.selectors import SelectorEntry
+        from yosoi.storage.a3node import ActRecord
+
+        target = SelectorEntry(type='role', value='button', name='Load more', nth=0)
+        await real_storage.save('example.com', [ActRecord('load_more', 3, target=target)])
+        node = await real_storage.load('example.com')
+        assert node is not None
+        assert node.acts[0].target == target
+
+    async def test_save_writes_format_version(self, real_storage):
+        import os
+
+        await real_storage.save('example.com', _acts('load_more'))
+        with open(real_storage._filepath('example.com'), encoding='utf-8') as f:
+            assert json.load(f)['format'] == 2
+        assert os.path.exists(real_storage._filepath('example.com'))
+
+    async def test_adding_target_preserves_replay_count(self, real_storage):
+        """Format-1 -> format-2 upgrade (same kind/cycles, target added) keeps stats."""
+        from yosoi.models.selectors import SelectorEntry
+        from yosoi.storage.a3node import ActRecord
+
+        await real_storage.save('example.com', [ActRecord('load_more', 3)])  # no target
+        await real_storage.record_replay('example.com')
+        await real_storage.record_replay('example.com')
+        target = SelectorEntry(type='role', value='button', name='Load more', nth=0)
+        await real_storage.save('example.com', [ActRecord('load_more', 3, target=target)])  # refined
+        assert (await real_storage.load('example.com')).replay_count == 2
+
+    async def test_legacy_record_without_target_loads(self, real_storage):
+        """A format-1 file on disk (no 'format', no 'target') still loads cleanly."""
+        path = real_storage._filepath('legacy.com')
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump({'domain': 'legacy.com', 'acts': [{'kind': 'load_more', 'cycles': 4}]}, f)
+        node = await real_storage.load('legacy.com')
+        assert node is not None
+        assert node.acts[0].kind == 'load_more'
+        assert node.acts[0].target is None
+
     async def test_save_oserror_does_not_raise(self, real_storage, mocker):
         mocker.patch(
             'yosoi.storage.a3node.atomic_write_json_async',

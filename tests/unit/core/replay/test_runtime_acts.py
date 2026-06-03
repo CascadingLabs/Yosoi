@@ -204,6 +204,26 @@ async def test_eval_act_with_output_field_captures_result():
     assert result.extracted_actions == {'signals': {'has_alita': True, 'competitors': ['comm100']}}
 
 
+async def test_eval_act_with_output_field_captures_null_result():
+    """A producer EVAL that yields None is captured AS None, not silently dropped.
+
+    Regression: capture is gated on output_field alone. Dropping a null return would
+    omit the field entirely and read as success — unacceptable for a replay-grade
+    substrate where 'field present and null' differs from 'field never produced'.
+    """
+
+    class _NullTab(FakeTab):
+        async def eval_js(self, script):
+            self.calls.append(('eval_js', script))
+            return
+
+    plan = ReplayPlan(
+        nodes=[_node('probe', ReplayAct(kind=ActKind.EVAL, script='(() => null)()', output_field='signals'))]
+    )
+    result = await execute_plan(_NullTab(), plan)
+    assert result.extracted_actions == {'signals': None}
+
+
 async def test_eval_act_without_output_field_does_not_capture():
     """EVAL act without output_field leaves extracted_actions empty."""
     plan = ReplayPlan(nodes=[_node('probe', ReplayAct(kind=ActKind.EVAL, script='document.title'))])

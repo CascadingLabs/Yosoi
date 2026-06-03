@@ -42,7 +42,7 @@ class Book(ys.Contract):
     # string e.g. "star-rating Three". CSS can't sub-select one class token,
     # so we shape the value here — extraction's job is the attribute, the
     # contract's job is the meaning.
-    rating: str = ys.Rating(description="Star rating in the element's class attribute, e.g. class='star-rating Three'")
+    rating: str = ys.Rating(description='Star rating, expressed as a word (e.g. "Three")')
 
     @field_validator('rating', mode='after')
     @classmethod

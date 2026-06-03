@@ -1762,7 +1762,10 @@ class Pipeline:
         level_dist = getattr(self, '_last_level_distribution', None)
         if not level_dist:
             return
-        order = ['css', 'xpath', 'regex', 'jsonld']
+        # Ascending by level so reversed() picks the highest tier that worked. Derived from
+        # the canonical SelectorLevel enum — must include attr/global_id/role/visual or a
+        # winning higher tier never gets cached (it would fall out of a stale literal list).
+        order = [level.name.lower() for level in sorted(SelectorLevel)]
         highest = next((level for level in reversed(order) if level_dist.get(level)), None)
         if highest is not None:
             await fetcher.update_selector_level(domain, highest)
