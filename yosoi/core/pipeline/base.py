@@ -115,7 +115,36 @@ class Pipeline(
     ):
         """Initialize the pipeline with LLM configuration.
 
-        See full parameter documentation in the original pipeline.py docstring.
+        Args:
+            llm_config: LLMConfig, YosoiConfig, or a model string
+                (e.g. ``'groq:llama-3.3-70b-versatile'``). Strings are
+                auto-resolved via :func:`yosoi.core.discovery.config.provider`.
+            contract: Contract subclass defining the fields to scrape.
+            debug_mode: If enabled will output the HTML from the URL.
+                        Overridden by YosoiConfig.debug.save_html when YosoiConfig is passed.
+            output_format: Format for extracted content ('json' or 'markdown'). Defaults to 'json'.
+            force: Force re-discovery even if selectors are cached. Overridden by
+                   YosoiConfig.force when YosoiConfig is passed. Defaults to False.
+            quiet: Suppress console output. Used in concurrent mode where a
+                   progress display replaces per-task output. Defaults to False.
+            selector_level: Maximum selector strategy level for discovery and extraction.
+                            Defaults to CSS.
+            bus: Optional shared discovery bus for cross-pipeline field deduplication.
+            write_lock: Optional asyncio.Lock to serialize selector writes for the domain.
+            experimental_a3node: Opt into A3Node DOM-stability recipe persistence and
+                replay on browser fetchers (headless/headful/waterfall). When enabled,
+                the first visit records the action recipe and later visits replay it
+                directly, skipping the probe. Defaults to False.
+            allow_downloads: Opt into ys.File() downloads. Off by default; when a contract
+                has file fields and this is False, scraping fails fast before fetching.
+            allowed_download_types: Run-wide file-type allowlist (default-deny). Intersected
+                with each field's ``allowed_types``; an empty effective allowlist blocks all.
+            download_dir: Quarantine root for downloaded files. Defaults to ``.yosoi/downloads/``.
+            max_download_bytes: Run-wide per-file size cap used when a ys.File() field sets no
+                ``max_bytes`` of its own. Falls back to a 25 MiB built-in default when unset.
+            keep_downloads: Keep downloaded files after the run (default). Set False to purge
+                the content-addressed blobs at run end while retaining provenance in index.json.
+
         """
         self.selector_level = selector_level
         self._experimental_a3node = experimental_a3node

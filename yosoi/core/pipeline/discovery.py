@@ -142,7 +142,7 @@ class PipelineDiscoveryMixin:
         force: bool = False,
         ax_snapshot: AxSnapshot | None = None,
     ) -> tuple[dict[str, Any] | None, bool]:
-        """Discover CSS selectors with AI, using fallback heuristics if needed."""
+        """Discover CSS selectors with AI, retrying on failure; returns (None, False) when exhausted."""
         overrides = self.contract.get_selector_overrides()
         if overrides:
             override_fields = ', '.join(f'`{f}`' for f in overrides)
