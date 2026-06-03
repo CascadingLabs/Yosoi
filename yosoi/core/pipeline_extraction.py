@@ -152,23 +152,25 @@ class PipelineExtractionMixin:
         self.console.print('[step]Step 4: Extracting content using verified selectors...[/step]')
 
         if container_selector:
-            items = self.extractor.extract_items(
+            raw_items = self.extractor.extract_items(
                 url, html, verified_selectors, container_selector, max_level=self.selector_level
             )
-            if not items:
+            if not raw_items:
                 self.console.print('[danger]Content extraction failed - no items extracted[/danger]')
                 return None
+            items: ContentItems = list(raw_items)
             self.console.print(f'[success]Extracted {len(items)} items successfully[/success]')
             return items
 
-        extracted = self.extractor.extract_content_with_html(
+        raw_extracted = self.extractor.extract_content_with_html(
             url, html, verified_selectors, max_level=self.selector_level
         )
 
-        if not extracted:
+        if not raw_extracted:
             self.console.print('[danger]Content extraction failed - no content extracted[/danger]')
             return None
 
+        extracted: ContentMap = dict(raw_extracted)
         self.console.print(f'[success]Extracted content from {len(extracted)} fields successfully[/success]')
         return extracted
 

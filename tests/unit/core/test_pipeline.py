@@ -1460,3 +1460,223 @@ class TestProcessUrlsAutoLive:
         )
         mock_concurrent.assert_awaited_once()
         mock_live_fn.assert_not_awaited()
+
+
+# ---------------------------------------------------------------------------
+# Coverage: _validate_single_item branches in pipeline_utils
+# ---------------------------------------------------------------------------
+
+import yosoi as ys
+from yosoi.models.contract import Contract
+
+
+class _PriceContract(Contract):
+    title: str = ys.Title()
+    price: float = ys.Price()
+
+
+def test_validate_single_item_drops_offending_field_to_default(mocker):
+    """When one field is invalid, it's dropped to its default, not the whole item."""
+    stub = _make_pipeline_stub(mocker, _PriceContract)
+    # 'price' is invalid, 'title' is fine — offending={'price'} → field_default('price')
+    result = Pipeline._validate_single_item(stub, {'title': 'Book', 'price': 'NaN'}, url='')
+    # Should not raise; price field gets its default and the item is returned
+    assert 'title' in result
+
+
+def test_validate_single_item_returns_raw_when_still_failing_after_drop(mocker):
+    """When dropping the offending field still leaves validation failing, raw item returned."""
+    stub = _make_pipeline_stub(mocker, _PriceContract)
+    # Patch field_default to return something that also fails (simulate impossible recovery)
+    mocker.patch.object(stub.contract, 'field_default', return_value='still-not-a-float')
+    raw = {'title': 'Book', 'price': 'bad'}
+    result = Pipeline._validate_single_item(stub, raw, url='')
+    assert result is raw
+
+
+def test_validate_single_item_handles_value_error(mocker):
+    """ValueError from model_validate falls through to (ValueError, TypeError) branch."""
+    stub = _make_pipeline_stub(mocker, _PriceContract)
+    mocker.patch.object(stub.contract, 'model_validate', side_effect=ValueError('boom'))
+    raw = {'title': 'Book', 'price': '9.99'}
+    result = Pipeline._validate_single_item(stub, raw, url='')
+    assert result is raw
+
+
+# ---------------------------------------------------------------------------
+# Coverage: _try_cached skip_verification / file_fields branch in pipeline_cache
+# ---------------------------------------------------------------------------
+
+
+async def test_try_cached_skip_verification_branch(mocker):
+    """When skip_verification=True, _try_cached takes the fast path without re-fetching."""
+    from datetime import datetime, timezone
+
+    from yosoi.models.snapshot import SelectorSnapshot
+
+    stub = _make_pipeline_stub(mocker)
+    now = datetime.now(timezone.utc)
+    stub.storage.load_snapshots.return_value = {
+        'title': SelectorSnapshot(primary={'type': 'css', 'value': 'h1'}, discovered_at=now),
+    }
+
+    mock_fetcher = mocker.MagicMock()
+    # _extract_with_cached returns (items, True) — cache valid
+    mocker.patch.object(stub, '_extract_with_cached', return_value=([{'title': 'T'}], True))
+
+    # _yield_cached_items is a generator — return a simple async gen
+    async def _fake_yield(*a, **kw):
+        yield {'title': 'T'}
+
+    mocker.patch.object(stub, '_yield_cached_items', side_effect=_fake_yield)
+
+    result = await Pipeline._try_cached(stub, 'https://x.com', 'x.com', mock_fetcher, True, ['json'])
+    # Result is the async generator returned by _yield_cached_items
+    assert result is not None
+
+
+async def test_try_cached_skip_verification_cache_invalid_returns_none(mocker):
+    """When skip_verification=True but cache is invalid, _try_cached returns None."""
+    from datetime import datetime, timezone
+
+    from yosoi.models.snapshot import SelectorSnapshot
+
+    stub = _make_pipeline_stub(mocker)
+    now = datetime.now(timezone.utc)
+    stub.storage.load_snapshots.return_value = {
+        'title': SelectorSnapshot(primary={'type': 'css', 'value': 'h1'}, discovered_at=now),
+    }
+
+    mock_fetcher = mocker.MagicMock()
+    mocker.patch.object(stub, '_extract_with_cached', return_value=(None, False))
+
+    result = await Pipeline._try_cached(stub, 'https://x.com', 'x.com', mock_fetcher, True, ['json'])
+    assert result is None
+
+
+# ---------------------------------------------------------------------------
+# Coverage: _fetch error branches in pipeline_extraction
+# ---------------------------------------------------------------------------
+
+
+async def test_fetch_prints_error_when_html_is_none_after_fetch(mocker):
+    """When fetcher returns a result with html=None (not blocked), an exception is raised internally."""
+    stub = _make_pipeline_stub(mocker)
+    # Return a result with html=None but is_blocked=False — hits the 'No HTML content received' branch
+    mock_fetcher = mocker.MagicMock()
+    result_no_html = mocker.MagicMock()
+    result_no_html.html = None
+    result_no_html.success = False
+    result_no_html.url = 'https://x.com'
+    mock_fetcher.fetch = mocker.AsyncMock(return_value=result_no_html)
+
+    from tenacity import AsyncRetrying, stop_after_attempt, wait_none
+
+    mocker.patch(
+        'yosoi.core.pipeline_extraction.get_async_retryer',
+        return_value=AsyncRetrying(stop=stop_after_attempt(1), wait=wait_none(), reraise=False),
+    )
+
+    result = await Pipeline._fetch(stub, 'https://x.com', mock_fetcher, max_retries=1)
+    # After all retries exhausted with no HTML, returns None
+    assert result is None
+
+
+async def test_fetch_returns_none_on_unexpected_os_error(mocker):
+    """OSError during fetch is caught and returns None rather than propagating."""
+    stub = _make_pipeline_stub(mocker)
+    mock_fetcher = mocker.MagicMock()
+    mock_fetcher.fetch = mocker.AsyncMock(side_effect=OSError('connection refused'))
+
+    from tenacity import AsyncRetrying, stop_after_attempt, wait_none
+
+    mocker.patch(
+        'yosoi.core.pipeline_extraction.get_async_retryer',
+        return_value=AsyncRetrying(stop=stop_after_attempt(1), wait=wait_none(), reraise=False),
+    )
+
+    result = await Pipeline._fetch(stub, 'https://x.com', mock_fetcher, max_retries=1)
+    assert result is None
+
+
+# ---------------------------------------------------------------------------
+# Coverage: _resolve_js_scripts and _discover_js_actions in pipeline_discovery
+# ---------------------------------------------------------------------------
+
+
+async def test_resolve_js_scripts_returns_hand_authored_scripts(mocker):
+    """_resolve_js_scripts returns hand-authored scripts when no cached ones exist."""
+    stub = _make_pipeline_stub(mocker)
+    stub.js_storage = mocker.MagicMock()
+    stub.js_storage.get_scripts = mocker.AsyncMock(return_value={})
+    mocker.patch.object(stub, '_js_action_scripts', return_value=[('click_btn', 'return true;')])
+    mocker.patch.object(stub.contract, 'undiscovered_action_fields', return_value={})
+
+    result = await Pipeline._resolve_js_scripts(stub, 'example.com')
+    assert result == {'click_btn': 'return true;'}
+
+
+async def test_resolve_js_scripts_merges_cached_scripts(mocker):
+    """_resolve_js_scripts merges cached JS scripts with hand-authored ones."""
+    stub = _make_pipeline_stub(mocker)
+    stub.js_storage = mocker.MagicMock()
+    stub.js_storage.get_scripts = mocker.AsyncMock(return_value={'auto_field': 'return 42;'})
+    mocker.patch.object(stub, '_js_action_scripts', return_value=[])
+    mocker.patch.object(stub.contract, 'undiscovered_action_fields', return_value={'auto_field': {}})
+
+    result = await Pipeline._resolve_js_scripts(stub, 'example.com')
+    assert result == {'auto_field': 'return 42;'}
+
+
+async def test_discover_js_actions_no_op_when_no_undiscovered(mocker):
+    """_discover_js_actions returns immediately when all JS fields already have scripts."""
+    stub = _make_pipeline_stub(mocker)
+    mocker.patch.object(stub.contract, 'undiscovered_action_fields', return_value={})
+    mock_fetcher = mocker.MagicMock()
+
+    # Should return without calling js_storage at all
+    await Pipeline._discover_js_actions(stub, 'https://x.com', 'x.com', mock_fetcher)
+    # No exception = pass
+
+
+async def test_discover_js_actions_skips_when_no_browser_support(mocker):
+    """_discover_js_actions prints warning and returns when fetcher lacks browser support."""
+    stub = _make_pipeline_stub(mocker)
+    stub.js_storage = mocker.MagicMock()
+    stub.js_storage.get_scripts = mocker.AsyncMock(return_value={})
+    mocker.patch.object(stub.contract, 'undiscovered_action_fields', return_value={'btn': {'selector': '.btn'}})
+
+    mock_fetcher = mocker.MagicMock()
+    mock_fetcher.supports_browse = False
+
+    await Pipeline._discover_js_actions(stub, 'https://x.com', 'x.com', mock_fetcher)
+    stub.console.print.assert_called()
+    printed = ' '.join(str(c) for c in stub.console.print.call_args_list)
+    assert 'JS discovery skipped' in printed or 'warning' in printed.lower()
+
+
+async def test_discover_via_mcp_success(mocker):
+    """_discover_via_mcp delegates to MCP orchestrator and returns selectors."""
+    stub = _make_pipeline_stub(mocker)
+    stub.contract.get_selector_overrides = mocker.MagicMock(return_value={})
+    mcp = mocker.MagicMock()
+    mcp.discover_selectors = mocker.AsyncMock(return_value={'title': {'primary': 'h1'}})
+    mocker.patch.object(stub, '_ensure_mcp_discovery', return_value=mcp)
+
+    selectors, used_llm = await Pipeline._discover_via_mcp(stub, 'https://x.com', '<html/>')
+    assert selectors == {'title': {'primary': 'h1'}}
+    assert used_llm is True
+
+
+async def test_discover_via_mcp_returns_none_on_exception(mocker):
+    """_discover_via_mcp catches MCP failures and returns (None, True)."""
+    stub = _make_pipeline_stub(mocker)
+    stub.contract.get_selector_overrides = mocker.MagicMock(return_value={})
+    mcp = mocker.MagicMock()
+    mcp.discover_selectors = mocker.AsyncMock(side_effect=RuntimeError('timeout'))
+    mocker.patch.object(stub, '_ensure_mcp_discovery', return_value=mcp)
+    mocker.patch('yosoi.core.pipeline_discovery.observability')
+
+    selectors, used_llm = await Pipeline._discover_via_mcp(stub, 'https://x.com', '<html/>')
+    assert selectors is None
+    assert used_llm is True
