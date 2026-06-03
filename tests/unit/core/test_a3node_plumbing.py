@@ -19,7 +19,7 @@ def _stub(mocker: MockerFixture, *, enabled: bool) -> Pipeline:
 @pytest.mark.parametrize('fetcher_type', ['headless', 'headful', 'waterfall'])
 def test_browser_fetchers_receive_a3node_flag(mocker: MockerFixture, fetcher_type: str):
     stub = _stub(mocker, enabled=True)
-    cf = mocker.patch('yosoi.core.pipeline.create_fetcher')
+    cf = mocker.patch('yosoi.core.pipeline.base.create_fetcher')
 
     stub._create_fetcher(fetcher_type, console=stub.console)
 
@@ -29,7 +29,7 @@ def test_browser_fetchers_receive_a3node_flag(mocker: MockerFixture, fetcher_typ
 
 def test_disabled_flag_is_forwarded_as_false(mocker: MockerFixture):
     stub = _stub(mocker, enabled=False)
-    cf = mocker.patch('yosoi.core.pipeline.create_fetcher')
+    cf = mocker.patch('yosoi.core.pipeline.base.create_fetcher')
 
     stub._create_fetcher('headless', console=stub.console)
 
@@ -38,7 +38,7 @@ def test_disabled_flag_is_forwarded_as_false(mocker: MockerFixture):
 
 def test_simple_fetcher_gets_no_a3node_kwarg(mocker: MockerFixture):
     stub = _stub(mocker, enabled=True)
-    cf = mocker.patch('yosoi.core.pipeline.create_fetcher')
+    cf = mocker.patch('yosoi.core.pipeline.base.create_fetcher')
 
     stub._create_fetcher('simple', console=stub.console)
 

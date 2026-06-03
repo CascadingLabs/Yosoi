@@ -90,7 +90,7 @@ def _mock_fetcher(mocker, html: str, url: str = 'https://example.com') -> object
             metadata=ContentMetadata(content_length=len(html)),
         )
     )
-    mocker.patch('yosoi.core.pipeline.create_fetcher', return_value=fetcher)
+    mocker.patch('yosoi.core.pipeline.base.create_fetcher', return_value=fetcher)
     return fetcher
 
 

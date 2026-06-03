@@ -89,7 +89,7 @@ async def test_cache_path_fresh_then_cached(span_exporter, mocker, tmp_path):
     )
     mock_fetcher = mocker.AsyncMock()
     mock_fetcher.fetch = mocker.AsyncMock(return_value=fetch_result)
-    mocker.patch('yosoi.core.pipeline.create_fetcher', return_value=mock_fetcher)
+    mocker.patch('yosoi.core.pipeline.base.create_fetcher', return_value=mock_fetcher)
 
     llm_config = LLMConfig(provider='groq', model_name='llama-3.3-70b-versatile', api_key='test-key', temperature=0.0)
     pipeline = Pipeline(llm_config, contract=NewsArticle)

@@ -96,7 +96,7 @@ async def test_concurrent_session_propagation_via_real_broker(
             metadata=ContentMetadata(content_length=len(CANNED_HTML)),
         )
     )
-    mocker.patch('yosoi.core.pipeline.create_fetcher', return_value=mock_fetcher)
+    mocker.patch('yosoi.core.pipeline.base.create_fetcher', return_value=mock_fetcher)
 
     llm_config = LLMConfig(
         provider='groq',
