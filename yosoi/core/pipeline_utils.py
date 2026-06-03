@@ -15,7 +15,7 @@ import httpx
 from rich.console import Console
 from rich.table import Table
 
-from yosoi.core.fetcher import HTMLFetcher, create_fetcher
+from yosoi.core.fetcher import HTMLFetcher
 from yosoi.models.selectors import SelectorLevel
 from yosoi.utils import observability
 
@@ -66,22 +66,6 @@ class PipelineUtilsMixin:
         """Extract the (sub)domain from URL."""
         return observability.normalize_user_id(url) or ''
 
-    def _create_fetcher(self, fetcher_type: str, console: Console | None = None) -> HTMLFetcher | None:
-        """Create HTML fetcher instance."""
-        try:
-            kwargs: dict[str, Any] = {}
-            if fetcher_type in ('waterfall', 'headless', 'headful'):
-                if console is not None:
-                    kwargs['console'] = console
-                kwargs['experimental_a3node'] = self._experimental_a3node
-                kwargs['allow_downloads'] = self._allow_downloads
-                kwargs['download_dir'] = self._download_dir
-            return create_fetcher(fetcher_type, **kwargs)
-        except ValueError:
-            self.console.print(f'[danger]Invalid fetcher type: {fetcher_type}[/danger]')
-            return None
-
-    @staticmethod
     def _pop_root(selectors: dict[str, Any]) -> dict[str, Any] | None:
         """Remove and return the full ``root`` selector entry from a selector map."""
         root_entry = selectors.pop('root', None)
@@ -298,3 +282,24 @@ class PipelineUtilsMixin:
             self.console.print(f'[success]Efficiency: {efficiency:.1f} URLs per LLM call[/success]')
 
         self.console.print()
+
+    def _validate_with_contract(self, extracted: ContentMap | ContentItems, url: str = '') -> ContentMap | ContentItems:
+        """Instantiate Contract with extracted data to run validators and type coercion.
+
+        Args:
+            extracted: Raw extracted data (single dict or list of dicts).
+            url: Source URL injected into validation context for relative URL resolution.
+
+        Returns:
+            Validated and transformed data, or the original if validation fails.
+
+        """
+        if isinstance(extracted, list):
+            validated_items: ContentItems = [self._validate_single_item(item, url) for item in extracted]
+            self.console.print(f'[success]✓ Contract validation applied to {len(validated_items)} items[/success]')
+            return validated_items
+
+        validated = self._validate_single_item(extracted, url)
+        if validated is not extracted:
+            self.console.print('[success]✓ Contract validation applied[/success]')
+        return validated

@@ -29,6 +29,7 @@ from yosoi.core._pipeline_table import _build_concurrent_table
 from yosoi.core.configs import YosoiConfig
 from yosoi.core.discovery import DiscoveryOrchestrator, LLMConfig, MCPDiscoveryOrchestrator
 from yosoi.core.discovery.bus import DiscoveryBus
+from yosoi.core.fetcher import create_fetcher  # re-exported: tests patch yosoi.core.pipeline.create_fetcher
 from yosoi.core.pipeline_cache import PipelineCacheMixin
 from yosoi.core.pipeline_crawler import PipelineCrawlerMixin
 from yosoi.core.pipeline_discovery import PipelineDiscoveryMixin
@@ -203,6 +204,25 @@ class Pipeline(
         """Exit the async context manager, closing the HTTP client + finalizing downloads."""
         await self._client.aclose()
         self._finalize_downloads()
+
+    def _create_fetcher(self, fetcher_type: str, console: Console | None = None) -> Any | None:
+        """Create HTML fetcher instance.
+
+        Defined on Pipeline (not the utils mixin) so that
+        ``mocker.patch('yosoi.core.pipeline.create_fetcher')`` intercepts calls here.
+        """
+        try:
+            kwargs: dict[str, Any] = {}
+            if fetcher_type in ('waterfall', 'headless', 'headful'):
+                if console is not None:
+                    kwargs['console'] = console
+                kwargs['experimental_a3node'] = self._experimental_a3node
+                kwargs['allow_downloads'] = self._allow_downloads
+                kwargs['download_dir'] = self._download_dir
+            return create_fetcher(fetcher_type, **kwargs)
+        except ValueError:
+            self.console.print(f'[danger]Invalid fetcher type: {fetcher_type}[/danger]')
+            return None
 
     async def process_url(
         self,
