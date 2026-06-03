@@ -68,6 +68,7 @@ scripts.yosoi-validator-mcp = "yosoi.integrations.validator_mcp:main"
 dev = [
   "commitizen>=4.13",
   "coverage>=7.13.5",
+  "diff-cover>=9.7",
   "griffe>=2",
   "memray>=1.19.2",
   "mypy>=1.19",
@@ -308,6 +309,7 @@ tasks.bench = "uv run pytest tests/benchmarks --codspeed"  # run CodSpeed perf b
 tasks.integration = "uv run pytest -m 'integration'"  # run integration tests
 tasks.unit = "uv run pytest -m 'unit'"  # run unit tests
 tasks.ci-test = "uv run pytest tests/unit/ tests/stubs/ -m 'not eval' --cov=yosoi --cov-branch --cov-report=xml"  # unit + stub tests with coverage
+tasks.patch-cov = "uv run diff-cover coverage.xml --compare-branch=main --fail-under=93"  # local mirror of Codecov patch coverage (run after ci-test)
 tasks.ci-format = "uv run ruff check --fix"
 tasks.coverage = "uv run pytest --cov=yosoi --cov-report=term-missing --cov-report=html tests/"
 tasks.mutmut-run = "uv run mutmut run"

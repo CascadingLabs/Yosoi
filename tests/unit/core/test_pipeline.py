@@ -1475,27 +1475,47 @@ class _PriceContract(Contract):
     price: float = ys.Price()
 
 
-def test_validate_single_item_drops_offending_field_to_default(mocker):
-    """When one field is invalid, it's dropped to its default, not the whole item."""
-    stub = _make_pipeline_stub(mocker, _PriceContract)
-    # 'price' is invalid, 'title' is fine — offending={'price'} → field_default('price')
-    result = Pipeline._validate_single_item(stub, {'title': 'Book', 'price': 'NaN'}, url='')
-    # Should not raise; price field gets its default and the item is returned
-    assert 'title' in result
+class _CountContract(Contract):
+    title: str = ys.Title()
+    count: int = ys.Field(description='Count', default=0)  # type: ignore[assignment]
 
 
-def test_validate_single_item_returns_raw_when_still_failing_after_drop(mocker):
-    """When dropping the offending field still leaves validation failing, raw item returned."""
+def test_validate_single_item_drops_isolable_field_to_default(mocker):
+    """A FIELD-level validation error is isolated: only the bad field is reset to its
+    default, the good fields survive, and the item re-validates.
+
+    NB: ``int`` produces a field-scoped pydantic error (loc=('count',)) — unlike
+    ``ys.Price()`` which raises a *model*-level error (loc=()), exercised separately
+    below. This is the path that actually drops-and-recovers.
+    """
+    stub = _make_pipeline_stub(mocker, _CountContract)
+    result = Pipeline._validate_single_item(stub, {'title': 'Book', 'count': 'not-a-number'}, url='')
+    assert result == {'title': 'Book', 'count': 0}  # count -> its default, title preserved
+    printed = ' '.join(str(c) for c in stub.console.print.call_args_list)
+    assert 'Dropped invalid field' in printed
+    assert 'count' in printed
+
+
+def test_validate_single_item_returns_raw_when_default_also_invalid(mocker):
+    """If the dropped field's default STILL fails validation, the raw item is returned untouched."""
+    stub = _make_pipeline_stub(mocker, _CountContract)
+    mocker.patch.object(stub.contract, 'field_default', return_value='still-not-an-int')
+    raw = {'title': 'Book', 'count': 'not-a-number'}
+    result = Pipeline._validate_single_item(stub, raw, url='')
+    assert result is raw  # identity — nothing salvageable, returned as-is
+
+
+def test_validate_single_item_returns_raw_when_error_unisolable(mocker):
+    """A MODEL-level error (pydantic loc=()) can't be pinned to one field, so we don't
+    guess which to drop — the raw item is returned intact."""
     stub = _make_pipeline_stub(mocker, _PriceContract)
-    # Patch field_default to return something that also fails (simulate impossible recovery)
-    mocker.patch.object(stub.contract, 'field_default', return_value='still-not-a-float')
-    raw = {'title': 'Book', 'price': 'bad'}
+    raw = {'title': 'Book', 'price': 'NaN'}  # ys.Price() rejects with loc=()
     result = Pipeline._validate_single_item(stub, raw, url='')
     assert result is raw
 
 
 def test_validate_single_item_handles_value_error(mocker):
-    """ValueError from model_validate falls through to (ValueError, TypeError) branch."""
+    """A non-pydantic ValueError from model_validate falls through to the raw-return guard."""
     stub = _make_pipeline_stub(mocker, _PriceContract)
     mocker.patch.object(stub.contract, 'model_validate', side_effect=ValueError('boom'))
     raw = {'title': 'Book', 'price': '9.99'}
@@ -1939,3 +1959,145 @@ async def test_process_urls_with_live_drives_status_callbacks(mocker):
 
     assert seen['workers'] == 2
     assert result == {'successful': ['https://a.com'], 'failed': ['https://b.com'], 'skipped': []}
+
+
+# ---------------------------------------------------------------------------
+# Coverage: real-behavior tests for selector/root helpers, download merging,
+# cached-fetch error handling, and verification reporting across the mixins.
+# Each asserts an observable outcome, not merely that a line executed.
+# ---------------------------------------------------------------------------
+
+
+def test_root_value_reads_typed_selector_and_guards_empties():
+    """_root_value pulls the value from a typed {primary:{value}} entry, and returns
+    None for empty/non-string primaries rather than leaking a bad selector."""
+    assert Pipeline._root_value({'primary': '.card'}) == '.card'
+    assert Pipeline._root_value({'primary': {'value': '.card'}}) == '.card'
+    assert Pipeline._root_value({'primary': {'value': ''}}) is None
+    assert Pipeline._root_value({'primary': None}) is None  # final guard: not str, not dict
+
+
+def test_pop_root_handles_nested_primary_and_pops_in_place():
+    """_pop_root removes the root entry and accepts a nested {primary:{value}} form."""
+    sels = {'root': {'primary': {'value': '.card'}}, 'title': {'primary': 'h1'}}
+    entry = Pipeline._pop_root(sels)
+    assert entry == {'primary': {'value': '.card'}}
+    assert 'root' not in sels  # removed in place
+    assert Pipeline._pop_root({'root': {'primary': {'value': ''}}}) is None  # empty value → no root
+
+
+def test_selectors_with_root_reattaches_root_entry():
+    """_selectors_with_root re-attaches the root entry for persistence without mutating input."""
+    verified = {'title': {'primary': 'h1'}}
+    out = Pipeline._selectors_with_root(verified, {'primary': '.card'})
+    assert out == {'title': {'primary': 'h1'}, 'root': {'primary': '.card'}}
+    assert 'root' not in verified  # original untouched
+    # no root entry → unchanged copy
+    assert Pipeline._selectors_with_root(verified, None) == verified
+
+
+def test_merge_downloads_injects_file_values_into_each_shape(mocker):
+    """_merge_downloads folds ys.File() results into dict, list, and None extractions."""
+    dl = mocker.MagicMock()
+    dl.value = '/files/report.pdf'
+    downloads = {'report': dl}
+    # no downloads → extraction returned as-is
+    assert Pipeline._merge_downloads({'a': 1}, None) == {'a': 1}
+    # extraction is None → fresh dict of download values
+    assert Pipeline._merge_downloads(None, downloads) == {'report': '/files/report.pdf'}
+    # single dict → merged
+    assert Pipeline._merge_downloads({'a': 1}, downloads) == {'a': 1, 'report': '/files/report.pdf'}
+    # list → merged into every item
+    assert Pipeline._merge_downloads([{'a': 1}, {'a': 2}], downloads) == [
+        {'a': 1, 'report': '/files/report.pdf'},
+        {'a': 2, 'report': '/files/report.pdf'},
+    ]
+
+
+def test_extract_returns_none_when_container_yields_no_items(mocker):
+    """Multi-item extraction with a container selector returns None (not []) when the
+    extractor finds nothing — the caller treats None as 'extraction failed'."""
+    stub = _make_pipeline_stub(mocker)
+    stub.extractor.extract_items = mocker.MagicMock(return_value=[])
+    result = Pipeline._extract(stub, 'https://x.com', '<html/>', {'title': {'primary': 'h1'}}, '.card')
+    assert result is None
+    stub.extractor.extract_items.assert_called_once()
+
+
+async def test_fetch_and_clean_for_cache_returns_none_on_fetch_error(mocker):
+    """A generic fetch error during cache verification is swallowed into None (skip),
+    so a cache hit degrades gracefully instead of crashing the run."""
+    stub = _make_pipeline_stub(mocker)
+    mocker.patch.object(stub, '_fetch', side_effect=RuntimeError('network down'))
+    mocker.patch('yosoi.core.pipeline.cache.observability')
+    result = await Pipeline._fetch_and_clean_for_cache(stub, 'https://x.com', mocker.MagicMock())
+    assert result is None
+
+
+async def test_fetch_and_clean_for_cache_propagates_bot_detection(mocker):
+    """BotDetectionError is NOT swallowed during cache verification — it must surface
+    so the caller can rotate proxy/profile (fail loud, per the project rules)."""
+    stub = _make_pipeline_stub(mocker)
+    mocker.patch.object(stub, '_fetch', side_effect=BotDetectionError('https://x.com', 403, ['captcha']))
+    mocker.patch('yosoi.core.pipeline.cache.observability')
+    with pytest.raises(BotDetectionError):
+        await Pipeline._fetch_and_clean_for_cache(stub, 'https://x.com', mocker.MagicMock())
+
+
+async def test_record_fetch_strategy_noop_without_level_distribution(mocker):
+    """With no recorded level distribution, the JSFetcher's selector level is left
+    untouched — we never persist an empty/guessed level."""
+    from yosoi.core.fetcher.waterfall import JSFetcher
+
+    stub = _make_pipeline_stub(mocker)
+    stub._last_level_distribution = {}  # nothing verified yet
+    fetcher = mocker.Mock(spec=JSFetcher)
+    await Pipeline._record_fetch_strategy_selector_level(stub, fetcher, 'example.com')
+    fetcher.update_selector_level.assert_not_called()
+
+
+def test_print_verification_failure_lists_every_failed_selector(mocker):
+    """_print_verification_failure surfaces each field and each tried selector with its
+    level and reason — so a human can see exactly what was attempted."""
+    stub = _make_pipeline_stub(mocker)
+    failure = mocker.MagicMock(level='css', selector='h1.title', reason='no_match')
+    field_result = mocker.MagicMock(failed_selectors=[failure])
+    result = mocker.MagicMock(results={'title': field_result})
+    Pipeline._print_verification_failure(stub, result)
+    printed = ' '.join(str(c) for c in stub.console.print.call_args_list)
+    assert 'title' in printed
+    assert 'h1.title' in printed
+    assert 'no_match' in printed
+
+
+async def test_discover_fails_closed_when_retryer_cannot_be_built(mocker):
+    """If the retryer itself raises a transient error, _discover returns (None, False) —
+    it fails closed rather than propagating, consistent with fail-fast/no-fallback."""
+    stub = _make_pipeline_stub(mocker)
+    mocker.patch.object(stub.contract, 'get_selector_overrides', return_value={})
+    mocker.patch.object(stub.contract, 'field_descriptions', return_value={'title': 'The title'})
+    mocker.patch('yosoi.core.pipeline.discovery.get_async_retryer', side_effect=ValueError('bad retry config'))
+    mocker.patch('yosoi.core.pipeline.discovery.observability')
+    selectors, used_llm = await Pipeline._discover(stub, 'https://x.com', '<html/>', max_retries=2)
+    assert selectors is None
+    assert used_llm is False
+
+
+async def test_semantic_refine_stops_when_reextraction_goes_empty(mocker):
+    """If a re-discovered, re-verified selector set extracts nothing, _semantic_refine
+    breaks out and returns the prior extraction rather than overwriting it with empty."""
+    stub = _make_pipeline_stub(mocker)
+    # First semantic pass: one issue; second call (post-loop): none left to report.
+    issue = mocker.MagicMock(field='price')
+    issue.as_feedback.return_value = 'price looks wrong'
+    mocker.patch.object(stub, '_semantic_issues', side_effect=[[issue], []])
+    stub.discovery.discover_selectors = mocker.AsyncMock(return_value={'price': {'primary': '.p'}})
+    mocker.patch.object(stub, '_verify', return_value={'price': {'primary': '.p'}})
+    mocker.patch.object(stub, '_extract', return_value=None)  # re-extraction yields nothing
+    mocker.patch.object(stub, '_selector_values', return_value=())
+
+    original = {'title': 'Book', 'price': '$5'}
+    extracted, _verified = await Pipeline._semantic_refine(
+        stub, 'https://x.com', '<clean/>', '<raw/>', {'price': {}}, '.card', original, max_retries=3
+    )
+    assert extracted is original  # prior extraction preserved, not clobbered by the empty re-extract
