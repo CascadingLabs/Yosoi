@@ -6,6 +6,6 @@ which now auto-activates the Live table display when workers > 1.
 
 from __future__ import annotations
 
-from yosoi.core._pipeline_table import _build_concurrent_table as _build_progress_table
+from yosoi.core.pipeline import _build_concurrent_table as _build_progress_table
 
 __all__ = ['_build_progress_table']

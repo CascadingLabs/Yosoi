@@ -22,10 +22,9 @@ from urllib.parse import urlparse
 import httpx
 from rich.console import Console
 from rich.live import Live
+from rich.table import Table
 from rich.theme import Theme
 
-# Re-export for backwards-compat (imported by cli/progress.py and tests)
-from yosoi.core._pipeline_table import _build_concurrent_table
 from yosoi.core.configs import YosoiConfig
 from yosoi.core.discovery import DiscoveryOrchestrator, LLMConfig, MCPDiscoveryOrchestrator
 from yosoi.core.discovery.bus import DiscoveryBus
@@ -44,6 +43,29 @@ from yosoi.storage.js_scripts import JsScriptStorage
 from yosoi.types.filetypes import normalize_allowed_types
 from yosoi.utils import observability
 from yosoi.utils.signatures import contract_signature
+
+_STATUS_STYLES: dict[str, tuple[str, bool]] = {
+    'Queued': ('dim', False),
+    'Running': ('bold yellow', True),
+    'Done': ('bold green', False),
+    'Skipped': ('dim', False),
+    'Failed': ('bold red', False),
+}
+
+
+def _build_concurrent_table(url_status: dict[str, tuple[str, float]]) -> Table:
+    """Build a Rich Table showing per-URL concurrent progress."""
+    table = Table(title='Concurrent Processing', expand=True)
+    table.add_column('#', style='dim', width=4)
+    table.add_column('URL', style='cyan', ratio=3)
+    table.add_column('Status', width=12)
+    table.add_column('Elapsed', style='dim', width=10)
+    for idx, (u, (status, value)) in enumerate(url_status.items(), 1):
+        style, is_running = _STATUS_STYLES.get(status, ('bold red', False))
+        elapsed_str = f'{time.monotonic() - value:.1f}s' if is_running else (f'{value:.1f}s' if value else '—')
+        table.add_row(str(idx), u, f'[{style}]{status}[/{style}]', elapsed_str)
+    return table
+
 
 # Type aliases
 SelectorMap = dict[str, dict[str, Any]]

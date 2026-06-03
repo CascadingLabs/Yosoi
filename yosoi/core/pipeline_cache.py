@@ -23,7 +23,9 @@ from yosoi.utils.exceptions import BotDetectionError
 if TYPE_CHECKING:
     from yosoi.core.fetcher import HTMLFetcher
     from yosoi.models.contract import Contract
-    from yosoi.models.results import ContentItems, ContentMap
+
+    ContentMap = dict[str, object]
+    ContentItems = list[dict[str, object]]
 
 logger = logging.getLogger(__name__)
 

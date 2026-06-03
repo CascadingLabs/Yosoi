@@ -23,9 +23,11 @@ if TYPE_CHECKING:
     from yosoi.core.discovery import DiscoveryOrchestrator, MCPDiscoveryOrchestrator
     from yosoi.core.fetcher import HTMLFetcher
     from yosoi.core.fetcher.dom.ax import AxSnapshot
-    from yosoi.core.verification import FieldSemanticIssue
     from yosoi.models.contract import Contract
-    from yosoi.models.results import ContentItems, ContentMap
+
+    ContentMap = dict[str, object]
+    ContentItems = list[dict[str, object]]
+    from yosoi.core.verification import FieldSemanticIssue
 
 logger = logging.getLogger(__name__)
 
@@ -231,7 +233,8 @@ class PipelineDiscoveryMixin:
                 return []
         else:
             item = extracted
-        return self.semantic_validator.validate(item, self._field_rules)
+        result: list[FieldSemanticIssue] = self.semantic_validator.validate(item, self._field_rules)
+        return result
 
     def _unsatisfied_required(self, extracted: ContentMap | ContentItems) -> set[str]:
         """Required fields static discovery failed to extract a well-shaped value for."""

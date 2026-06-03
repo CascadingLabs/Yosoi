@@ -22,7 +22,9 @@ from yosoi.utils import observability
 if TYPE_CHECKING:
     from yosoi.models.contract import Contract
     from yosoi.models.download import DownloadResult, DownloadSpec
-    from yosoi.models.results import ContentItems, ContentMap
+
+    ContentMap = dict[str, object]
+    ContentItems = list[dict[str, object]]
     from yosoi.storage.tracking import DomainStats
 
 logger = logging.getLogger(__name__)
@@ -66,6 +68,7 @@ class PipelineUtilsMixin:
         """Extract the (sub)domain from URL."""
         return observability.normalize_user_id(url) or ''
 
+    @staticmethod
     def _pop_root(selectors: dict[str, Any]) -> dict[str, Any] | None:
         """Remove and return the full ``root`` selector entry from a selector map."""
         root_entry = selectors.pop('root', None)

@@ -26,7 +26,10 @@ if TYPE_CHECKING:
     from yosoi.core.fetcher import HTMLFetcher
     from yosoi.models.contract import Contract
     from yosoi.models.download import DownloadResult, DownloadSpec
-    from yosoi.models.results import ContentItems, ContentMap, FetchResult
+
+    ContentMap = dict[str, object]
+    ContentItems = list[dict[str, object]]
+    from yosoi.models.results import FetchResult
 
 logger = logging.getLogger(__name__)
 
@@ -127,7 +130,7 @@ class PipelineExtractionMixin:
         assert result.html is not None, 'result.html should not be None in _clean'
 
         self.console.print('[step]Step 1.5: Cleaning HTML...[/step]')
-        cleaned_html = self.cleaner.clean_html(result.html)
+        cleaned_html: str = self.cleaner.clean_html(result.html)
 
         if not cleaned_html:
             self.console.print('[danger]HTML cleaning produced empty result[/danger]')
@@ -195,7 +198,7 @@ class PipelineExtractionMixin:
                 return None, True
 
             self.console.print('[step]Cleaning HTML...[/step]')
-            cleaned_html = self.cleaner.clean_html(result.html)
+            cleaned_html: str = self.cleaner.clean_html(result.html)
             await self.debug.save_debug_html(url, cleaned_html)
 
             root_entry = self._resolve_root(existing_selectors)  # type: ignore[attr-defined]
