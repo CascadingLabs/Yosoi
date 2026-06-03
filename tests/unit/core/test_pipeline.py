@@ -1680,3 +1680,71 @@ async def test_discover_via_mcp_returns_none_on_exception(mocker):
     selectors, used_llm = await Pipeline._discover_via_mcp(stub, 'https://x.com', '<html/>')
     assert selectors is None
     assert used_llm is True
+
+
+async def test_discover_js_actions_no_op_when_all_cached(mocker):
+    """_discover_js_actions returns early when all undiscovered fields are already cached."""
+    stub = _make_pipeline_stub(mocker)
+    stub.js_storage = mocker.MagicMock()
+    # All fields come back from cache — missing dict is empty → early return
+    stub.js_storage.get_scripts = mocker.AsyncMock(return_value={'btn': 'return true;'})
+    mocker.patch.object(stub.contract, 'undiscovered_action_fields', return_value={'btn': {'selector': '.btn'}})
+
+    mock_fetcher = mocker.MagicMock()
+    mock_fetcher.supports_browse = True
+
+    await Pipeline._discover_js_actions(stub, 'https://x.com', 'x.com', mock_fetcher)
+    # No orchestrator created, no discovery call
+    assert not hasattr(stub, '_js_discovery_orchestrator') or stub._js_discovery_orchestrator is None
+
+
+async def test_discover_js_actions_skips_when_fetcher_lacks_browse_method(mocker):
+    """_discover_js_actions logs debug and returns when fetcher has no browse() method."""
+    stub = _make_pipeline_stub(mocker)
+    stub.js_storage = mocker.MagicMock()
+    stub.js_storage.get_scripts = mocker.AsyncMock(return_value={})
+    mocker.patch.object(stub.contract, 'undiscovered_action_fields', return_value={'btn': {'selector': '.btn'}})
+    mock_logger = mocker.patch('yosoi.core.pipeline_discovery.logger')
+
+    # supports_browse=True but no browse attribute → hits the hasattr branch
+    mock_fetcher = mocker.MagicMock(spec=[])  # empty spec: no attributes at all
+    mock_fetcher.supports_browse = True
+
+    await Pipeline._discover_js_actions(stub, 'https://x.com', 'x.com', mock_fetcher)
+    mock_logger.debug.assert_called()
+
+
+async def test_discover_js_actions_runs_orchestrator_on_happy_path(mocker):
+    """_discover_js_actions creates JsDiscoveryOrchestrator and calls discover() when all conditions met."""
+    stub = _make_pipeline_stub(mocker)
+    stub.js_storage = mocker.MagicMock()
+    stub.js_storage.get_scripts = mocker.AsyncMock(return_value={})
+    stub._js_discovery_orchestrator = None
+    stub._llm_config = mocker.MagicMock()
+    mocker.patch.object(stub.contract, 'undiscovered_action_fields', return_value={'btn': {'selector': '.btn'}})
+    mocker.patch.object(stub.contract, 'coerce_field', return_value=None)
+
+    # Fetcher that supports browse AND has a browse attribute
+    mock_fetcher = mocker.MagicMock()
+    mock_fetcher.supports_browse = True
+    mock_fetcher.browse = mocker.MagicMock()
+
+    # JsDiscoveryOrchestrator is imported locally inside _discover_js_actions:
+    #   from yosoi.core.discovery.js_orchestrator import JsDiscoveryOrchestrator
+    # For a local import we must patch the name in the source module.
+    mock_orch = mocker.MagicMock()
+    mock_orch.discover = mocker.AsyncMock()
+    mocker.patch(
+        'yosoi.core.discovery.js_orchestrator.JsDiscoveryOrchestrator',
+        return_value=mock_orch,
+    )
+    mocker.patch('yosoi.core.pipeline_discovery.observability')
+
+    await Pipeline._discover_js_actions(stub, 'https://x.com', 'x.com', mock_fetcher)
+
+    # Orchestrator was instantiated and discover() was called
+    mock_orch.discover.assert_awaited_once()
+    call_kwargs = mock_orch.discover.call_args.kwargs
+    assert call_kwargs['url'] == 'https://x.com'
+    assert call_kwargs['domain'] == 'x.com'
+    assert 'btn' in call_kwargs['fields']
