@@ -2,8 +2,10 @@
 
 import re
 
-from yosoi.types.registry import KIND_NUMERIC, CoercionConfig, SemanticRule, register_coercion
+from yosoi.types.registry import KIND_NUMERIC, CoercionConfig, SemanticRule, matches_word, register_coercion
 
+# Default zero-price words. A DEFAULT, not the source of truth: override per field via
+# ys.Price(zero_value_words=('無料', 'gratuit', ...)) for non-English locales.
 _ZERO_VALUE_WORDS = ('free', 'complimentary', 'gratis')
 
 
@@ -13,6 +15,7 @@ _ZERO_VALUE_WORDS = ('free', 'complimentary', 'gratis')
     semantic=SemanticRule(kind=KIND_NUMERIC, max_chars=50),
     currency_symbol=None,
     require_decimals=False,
+    zero_value_words=_ZERO_VALUE_WORDS,
 )
 def Price(v: object, config: CoercionConfig, source_url: str | None = None) -> float:
     """Configure a price field with optional currency and decimal enforcement.
@@ -24,21 +27,24 @@ def Price(v: object, config: CoercionConfig, source_url: str | None = None) -> f
     """
     currency_symbol: str | None = config.get('currency_symbol')
     require_decimals: bool = config.get('require_decimals', False)
+    zero_value_words: tuple[str, ...] = config.get('zero_value_words', _ZERO_VALUE_WORDS)
 
     if not isinstance(v, str):
         return float(str(v))
 
     cleaned = v.strip().lower()
 
-    if any(word in cleaned for word in _ZERO_VALUE_WORDS):
-        return 0.0
+    match = re.search(r'\d+[.,\d]*', cleaned)
+    if not match:
+        # No number present — honour an explicit zero-value word. Whole-word for ASCII
+        # ("free shipping over $50" already took the numeric path above); substring for
+        # non-ASCII (CJK) overrides where \b does not fire. See registry.matches_word.
+        if any(matches_word(cleaned, word) for word in zero_value_words):
+            return 0.0
+        raise ValueError(f'No numeric value found in: {v!r}')
 
     if currency_symbol and currency_symbol not in v:
         raise ValueError(f'Price missing required currency symbol: {currency_symbol!r}')
-
-    match = re.search(r'\d+[.,\d]*', cleaned)
-    if not match:
-        raise ValueError(f'No numeric value found in: {v!r}')
 
     num_str = match.group(0)
 

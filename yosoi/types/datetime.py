@@ -3,12 +3,20 @@
 from __future__ import annotations
 
 import datetime as dt_module
+import re
 
 import dateparser
 
 from yosoi.types.registry import KIND_TEXT, CoercionConfig, SemanticRule, register_coercion
 
-_STRIP_PREFIXES = ('published:', 'updated:', 'posted on')
+# Language-agnostic "Label:" prefix (dateparser returns None on any labelled date, in any
+# language). Matches up to ~4 leading letter-words then a colon — a digit anywhere before
+# the colon breaks the match, so real dates with times ("Jan 5 2020 10:30") are never eaten.
+_LABEL_RE = re.compile(r'^(?:[^\W\d_]+\s+){0,3}[^\W\d_]+\s*[:：]\s*')
+
+# No-colon label idioms dateparser can't strip itself. A DEFAULT, not the SSoT: override
+# per field via ys.Datetime(strip_prefixes=(...)). Empty tuple disables it entirely.
+_DEFAULT_STRIP_PREFIXES = ('posted on',)
 
 
 @register_coercion(
@@ -18,6 +26,7 @@ _STRIP_PREFIXES = ('published:', 'updated:', 'posted on')
     assume_utc=True,
     past_only=False,
     as_iso=True,
+    strip_prefixes=_DEFAULT_STRIP_PREFIXES,
 )
 def Datetime(v: object, config: CoercionConfig, source_url: str | None = None) -> dt_module.datetime | str:
     """Configure a datetime field with timezone, tense, and format options.
@@ -34,8 +43,20 @@ def Datetime(v: object, config: CoercionConfig, source_url: str | None = None) -
 
     raw = str(v).strip()
 
+    # Strip a leading "Label:" segment in any language (dateparser can't) — but ONLY
+    # when the label is not itself a date word. Stripping a month/weekday/season
+    # ("March: 2020") would leave a partial date that dateparser silently backfills
+    # from today, turning a fail-fast into wrong data; let those fall through and fail.
+    label_match = _LABEL_RE.match(raw)
+    if label_match:
+        label_words = re.split(r'[:：]', label_match.group(0), maxsplit=1)[0].strip()
+        if label_words and dateparser.parse(label_words) is None:
+            raw = raw[label_match.end() :].strip()
+
+    # Strip no-colon label idioms (overridable default, never the source of truth).
+    strip_prefixes: tuple[str, ...] = config.get('strip_prefixes', _DEFAULT_STRIP_PREFIXES)
     lower = raw.lower()
-    for prefix in _STRIP_PREFIXES:
+    for prefix in strip_prefixes:
         if lower.startswith(prefix):
             raw = raw[len(prefix) :].strip()
             break

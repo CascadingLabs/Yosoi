@@ -26,17 +26,17 @@ from __future__ import annotations
 import logging
 import time
 from typing import TYPE_CHECKING, Any
-from urllib.parse import urlparse
 
 import httpx
 from rich.console import Console
 
-from yosoi.core.fetcher.base import HTMLFetcher
+from yosoi.core.fetcher.base import HARD_BLOCK_STATUS, HTMLFetcher
 from yosoi.core.fetcher.simple import SimpleFetcher
 from yosoi.core.fetcher.voiddriver import HeadfulFetcher, HeadlessFetcher
 from yosoi.models.results import FetchResult
 from yosoi.storage.strategy import FetchStrategy, FetchStrategyStorage
 from yosoi.utils.exceptions import BotDetectionError
+from yosoi.utils.urls import extract_domain
 
 if TYPE_CHECKING:
     from yosoi.models.download import DownloadSpec
@@ -224,7 +224,7 @@ class JSFetcher(HTMLFetcher):
             headers = {k.lower(): v.lower() for k, v in r.headers.items()}
 
             # Hard block / bot gate status codes → Chrome required
-            if r.status_code in (403, 429, 503):
+            if r.status_code in HARD_BLOCK_STATUS:
                 return True
 
             # Thin content-length on an HTML page = likely a shell with no body
@@ -297,7 +297,7 @@ class JSFetcher(HTMLFetcher):
 
         """
         start_time = time.time()
-        domain = urlparse(url).netloc.replace('www.', '')
+        domain = extract_domain(url)
         cached_strategy = None if self._force else self._preferred_strategy(domain)
 
         if cached_strategy is not None:

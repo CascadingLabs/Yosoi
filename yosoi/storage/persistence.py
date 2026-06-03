@@ -23,7 +23,8 @@ from yosoi.models.snapshot import (
     selector_dict_to_snapshot,
     snapshot_to_selector_dict,
 )
-from yosoi.utils.files import atomic_write_json_async, init_yosoi
+from yosoi.utils.files import atomic_write_json_async, init_yosoi, safe_domain
+from yosoi.utils.urls import extract_domain
 
 
 class SelectorStorage:
@@ -396,25 +397,8 @@ class SelectorStorage:
         return formatted
 
     def _extract_domain(self, url: str) -> str:
-        """Extract domain from URL.
-
-        Removes 'www.' prefix if present.
-
-        Args:
-            url: URL to extract domain from
-
-        Returns:
-            Domain name without 'www.' prefix, or 'unknown' if URL is invalid.
-
-        """
-        try:
-            parsed = urlparse(url)
-            domain = parsed.netloc
-            if domain.startswith('www.'):
-                domain = domain[4:]
-            return domain
-        except ValueError:
-            return 'unknown'
+        """Extract the normalized domain from a URL (single source of truth)."""
+        return extract_domain(url)
 
     def _get_filepath(self, domain: str) -> str:
         """Get filepath for a domain's selectors (always JSON).
@@ -438,8 +422,8 @@ class SelectorStorage:
             Full file path for the domain's selector file.
 
         """
-        safe_domain = domain.replace('.', '_').replace('/', '_')
-        return os.path.join(self.storage_dir, f'selectors_{safe_domain}.json')
+        safe = safe_domain(domain)
+        return os.path.join(self.storage_dir, f'selectors_{safe}.json')
 
     def _get_content_filepath(self, url: str, output_format: str = 'json', contract_sig: str | None = None) -> str:
         """Get filepath for a URL's extracted content.
@@ -472,10 +456,10 @@ class SelectorStorage:
         }
 
         parsed = urlparse(url)
-        domain = parsed.netloc.replace('www.', '')
-        safe_domain = domain.replace('.', '_').replace('/', '_')
+        domain = extract_domain(url)
+        safe = safe_domain(domain)
         ext = _EXTENSIONS.get(output_format, 'json')
-        domain_dir = os.path.join(self.content_dir, safe_domain)
+        domain_dir = os.path.join(self.content_dir, safe)
 
         if output_format in _ACCUMULATING:
             return os.path.join(domain_dir, f'results.{ext}')

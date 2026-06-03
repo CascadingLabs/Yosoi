@@ -7,13 +7,14 @@ probe phase entirely and reaching page stability at significantly higher speed.
 
 Storage location: .yosoi/a3nodes/a3node_<domain>.json
 
-File format::
+File format (format 2)::
 
     {
+      "format": 2,
       "domain": "finance.yahoo.com",
       "acts": [
-        {"kind": "cookie", "cycles": 1},
-        {"kind": "load_more", "cycles": 7}
+        {"kind": "load_more", "cycles": 7,
+         "target": {"type": "role", "value": "button", "name": "Load more", "nth": 0}}
       ],
       "discovered_at": "2026-05-23T14:00:00",
       "replay_count": 3,
@@ -23,6 +24,14 @@ File format::
 ``acts`` is an ordered list — replay executes them in the stored order.
 An empty ``acts`` list means the domain was probed but needed no action.
 ``replay_count`` tracks how often the stored recipe was used successfully.
+
+``target`` (added in format 2) is the concrete winning selector — a serialised
+:class:`~yosoi.models.selectors.SelectorEntry` — so replay clicks it directly instead
+of re-running the discovery catalogues. The hand-maintained catalogues are only the
+cold-start *seed* and the fallback. An act with no ``target`` (a format-1 recipe, or a
+text-match act with no stable selector) falls back to a catalogue re-probe on replay.
+A missing ``format`` key is treated as format 1. Recipe identity for replay_count
+preservation is the ``(kind, cycles)`` sequence, so refining a target keeps the stats.
 """
 
 from __future__ import annotations
@@ -37,9 +46,24 @@ from typing import Any
 import aiofiles
 import aiofiles.os
 
-from yosoi.utils.files import atomic_write_json_async, init_yosoi
+from yosoi.models.selectors import SelectorEntry
+from yosoi.utils.files import atomic_write_json_async, init_yosoi, safe_domain
 
 logger = logging.getLogger(__name__)
+
+# On-disk recipe format. 1 = {kind, cycles} only; 2 = adds a concrete `target` per act
+# so replay skips the discovery catalogues. A file with no `format` key is format 1.
+_A3NODE_FORMAT = 2
+
+
+def _acts_shape(acts: list[dict[str, Any]]) -> list[tuple[object, object]]:
+    """Recipe identity for stat preservation: the (kind, cycles) sequence only.
+
+    Adding or refining a concrete ``target`` on an otherwise-identical recipe must NOT
+    reset ``replay_count`` — that is what makes the format-1 -> format-2 upgrade
+    non-destructive for battle-tested domains.
+    """
+    return [(a.get('kind'), a.get('cycles')) for a in acts]
 
 
 @dataclass
@@ -54,15 +78,21 @@ class ActRecord:
 
     kind: str
     cycles: int
+    target: SelectorEntry | None = None
 
     def to_dict(self) -> dict[str, object]:
         """Serialise to a plain dict for JSON storage."""
-        return {'kind': self.kind, 'cycles': self.cycles}
+        d: dict[str, object] = {'kind': self.kind, 'cycles': self.cycles}
+        if self.target is not None:
+            d['target'] = self.target.model_dump(exclude_none=True)
+        return d
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> ActRecord:
-        """Deserialise from a plain dict."""
-        return cls(kind=str(d['kind']), cycles=int(d['cycles']))
+        """Deserialise from a plain dict (tolerates format-1 records with no target)."""
+        raw_target = d.get('target')
+        target = SelectorEntry.model_validate(raw_target) if raw_target else None
+        return cls(kind=str(d['kind']), cycles=int(d['cycles']), target=target)
 
 
 class A3NodeStorage:
@@ -112,13 +142,16 @@ class A3NodeStorage:
         filepath = self._filepath(domain)
         now = datetime.now().isoformat()
 
-        # Preserve replay stats when acts haven't changed
+        # Preserve replay stats when the recipe's (kind, cycles) shape is unchanged.
+        # Comparing shape (not the full dict) keeps replay_count across a target refinement
+        # and across the format-1 -> format-2 upgrade; a real kind/cycles change resets it.
         existing = await self._load_raw(domain)
         existing_acts = existing.get('acts', []) if existing else []
         new_acts_dicts = [a.to_dict() for a in acts]
-        same = existing_acts == new_acts_dicts
+        same = _acts_shape(existing_acts) == _acts_shape(new_acts_dicts)
 
         data: dict[str, object] = {
+            'format': _A3NODE_FORMAT,
             'domain': domain,
             'acts': new_acts_dicts,
             'discovered_at': existing.get('discovered_at', now) if existing else now,
@@ -241,7 +274,7 @@ class A3NodeStorage:
     # ------------------------------------------------------------------
 
     def _filepath(self, domain: str) -> str:
-        safe = domain.replace('.', '_').replace('/', '_').replace(':', '_')
+        safe = safe_domain(domain)
         return os.path.join(self._dir, f'a3node_{safe}.json')
 
     async def _load_raw(self, domain: str) -> dict[str, Any] | None:

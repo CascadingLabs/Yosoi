@@ -7,12 +7,12 @@ import asyncio
 import json
 import os
 from typing import Any
-from urllib.parse import urlparse
 
 import aiofiles
 from pydantic import BaseModel, Field
 
 from yosoi.utils.files import atomic_write_json, atomic_write_json_async, get_tracking_path
+from yosoi.utils.urls import extract_domain
 
 
 class DomainStats(BaseModel):
@@ -88,25 +88,8 @@ class LLMTracker:
         await atomic_write_json_async(self.tracking_file, data, ensure_ascii=False)
 
     def extract_domain(self, url: str) -> str:
-        """Extract domain from URL.
-
-        Removes 'www.' prefix if present.
-
-        Args:
-            url: URL to extract domain from
-
-        Returns:
-            Domain name without 'www.' prefix, or 'unknown' if URL is invalid.
-
-        """
-        try:
-            parsed = urlparse(url)
-            domain = parsed.netloc
-            if domain.startswith('www.'):
-                domain = domain[4:]
-            return domain
-        except ValueError:
-            return 'unknown'
+        """Extract the normalized domain from a URL (single source of truth)."""
+        return extract_domain(url)
 
     async def record_url(
         self,

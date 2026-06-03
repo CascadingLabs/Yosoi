@@ -424,8 +424,8 @@ class DiscoveryOrchestrator:
                 {
                     'field_name': 'root',
                     'field_description': (
-                        'Selector for the repeating wrapper element that contains one complete item '
-                        '(e.g., .product-card, article.listing). '
+                        'Selector for the repeating wrapper element that contains one complete item — '
+                        'the smallest element that wraps exactly one complete item. '
                         'Set to null for single-item pages.'
                     ),
                     'is_container': True,

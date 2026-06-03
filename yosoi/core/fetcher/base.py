@@ -13,6 +13,10 @@ from yosoi.models.results import ContentMetadata, FetchResult
 if TYPE_CHECKING:
     from yosoi.models.download import DownloadSpec
 
+# Status codes that signal a hard anti-bot block and trigger fetch-tier escalation.
+# Single source of truth — was duplicated as a list here and a tuple in waterfall.py.
+HARD_BLOCK_STATUS = frozenset({403, 429, 503})
+
 
 class JSDetectionResult(BaseModel, frozen=True):
     """Result of JavaScript framework detection."""
@@ -376,7 +380,7 @@ class HTMLFetcher(ABC):
         headers_lower: dict[str, str] = {k.lower(): v for k, v in (headers or {}).items()}
 
         # Hard-block status codes — enrich with header context and return immediately
-        if status_code in [403, 429, 503]:
+        if status_code in HARD_BLOCK_STATUS:
             return True, self._enrich_with_header_context([f'HTTP {status_code}'], headers_lower)
 
         # cf-mitigated is a definitive Cloudflare block signal on any status code

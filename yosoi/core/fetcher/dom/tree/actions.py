@@ -15,9 +15,10 @@ from typing import Any
 from voidcrawl.actions import Flow, ScrollTo
 
 from yosoi.core.fetcher.dom.flows import WaitForDOMStable, build_flow
-from yosoi.core.fetcher.dom.probes import count_content
+from yosoi.core.fetcher.dom.probes import count_content, detected_trigger_to_selector_entry
 from yosoi.core.fetcher.dom.tree.conditions import HasTrigger
 from yosoi.core.fetcher.dom.tree.nodes import Node, Status
+from yosoi.models.selectors import SelectorEntry
 
 logger = logging.getLogger(__name__)
 
@@ -31,10 +32,13 @@ class ActionLog:
     Attributes:
         kind: What type of action was taken.
         cycles: How many times the action was repeated.
+        target: The concrete winning selector for this action (for selector-level
+            replay), or None for scroll / text-match actions that carry no stable target.
     """
 
     kind: str
     cycles: int = 0
+    target: SelectorEntry | None = None
 
 
 class ClickClose(Node):
@@ -98,6 +102,11 @@ class ClickTrigger(Node):
         trigger = self._condition.last_trigger
         if trigger is None:
             return Status.FAILURE
+
+        # Record the concrete winning target once, so replay can click it directly
+        # instead of re-running the discovery catalogues (CAS-94).
+        if self.log.target is None:
+            self.log.target = detected_trigger_to_selector_entry(trigger)
 
         content_selector = self._condition._content_selector
 

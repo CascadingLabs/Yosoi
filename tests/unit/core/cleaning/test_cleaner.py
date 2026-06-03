@@ -113,6 +113,15 @@ def test_clean_html_removes_ad_class(cleaner):
     assert 'advertisement' not in result
 
 
+def test_clean_html_keeps_substring_ad_class(cleaner):
+    """Regression: the [class*='ad-'] substring matcher was removed — it nuked legit
+    nodes like 'road-map'/'bread-crumb' (they contain 'ad-'). Such content survives now."""
+    html = '<html><body><main><p>Real</p><div class="road-map">keep me</div></main></body></html>'
+    result = cleaner.clean_html(html)
+    assert 'road-map' in result
+    assert 'keep me' in result
+
+
 def test_clean_html_preserves_main_content(sample_html, cleaner):
     result = cleaner.clean_html(sample_html)
     assert 'Main Story' in result
@@ -442,16 +451,19 @@ def test_clean_html_removes_ad_class_exact(cleaner):
     assert 'Ad content' not in result
 
 
-def test_clean_html_removes_useful_links(cleaner):
+def test_clean_html_preserves_useful_links(cleaner):
+    """Content-bearing classes are NOT stripped — a contract may target them
+    (e.g. ys.RelatedContent), and cleaning runs before discovery/verification."""
     html = '<html><body><main><p>Content</p><div class="useful-links">Links</div></main></body></html>'
     result = cleaner.clean_html(html)
-    assert 'useful-links' not in result
+    assert 'useful-links' in result
 
 
-def test_clean_html_removes_related_posts(cleaner):
+def test_clean_html_preserves_related_posts(cleaner):
+    """`.related-posts` is real content (cf. ys.RelatedContent), so it must survive cleaning."""
     html = '<html><body><main><article><p>Content</p></article><div class="related-posts">More posts</div></main></body></html>'
     result = cleaner.clean_html(html)
-    assert 'related-posts' not in result
+    assert 'related-posts' in result
 
 
 def test_clean_html_removes_widget_class(cleaner):

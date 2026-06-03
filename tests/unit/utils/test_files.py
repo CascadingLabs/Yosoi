@@ -16,7 +16,18 @@ from yosoi.utils.files import (
     get_tracking_path,
     init_yosoi,
     is_initialized,
+    safe_domain,
 )
+
+
+def test_safe_domain_replaces_separators():
+    assert safe_domain('finance.yahoo.com') == 'finance_yahoo_com'
+
+
+def test_safe_domain_strips_port_and_path_separators():
+    """The single source of truth handles ':' and '/' too, so port/path-bearing
+    domains map to one stable filename across every store (was the drift)."""
+    assert safe_domain('localhost:8080/app') == 'localhost_8080_app'
 
 
 def test_get_project_root(monkeypatch, tmp_path):

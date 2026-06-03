@@ -24,16 +24,21 @@ import logging
 import os
 from dataclasses import dataclass
 from datetime import datetime
+from typing import get_args
 
 import aiofiles
 import aiofiles.os
 
-from yosoi.utils.files import atomic_write_json_async, init_yosoi
+from yosoi.models.selectors import SelectorKind
+from yosoi.utils.files import atomic_write_json_async, init_yosoi, safe_domain
 
 logger = logging.getLogger(__name__)
 
 VALID_FETCHERS = frozenset({'simple', 'headless', 'headful'})
-VALID_SELECTOR_LEVELS = frozenset({'css', 'xpath', 'regex', 'jsonld'})
+# Derived from the canonical SelectorKind union — must cover every level the discovery
+# pipeline can produce (css/xpath/regex/jsonld/attr/global_id/role/visual), or a winning
+# higher-tier strategy (e.g. role/attr from AX discovery) is silently dropped on save.
+VALID_SELECTOR_LEVELS = frozenset(get_args(SelectorKind))
 
 
 @dataclass(frozen=True)
@@ -176,5 +181,5 @@ class FetchStrategyStorage:
     # ------------------------------------------------------------------
 
     def _filepath(self, domain: str) -> str:
-        safe = domain.replace('.', '_').replace('/', '_')
+        safe = safe_domain(domain)
         return os.path.join(self._dir, f'fetch_{safe}.json')

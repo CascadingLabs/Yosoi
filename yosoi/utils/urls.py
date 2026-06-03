@@ -3,9 +3,30 @@
 import json
 import os
 import re
+from urllib.parse import urlparse
 
 _URL_RE = re.compile(r'https?://[^\s\'"<>]+')
 _MD_LINK_RE = re.compile(r'\[([^\]]*)\]\((https?://[^)]+)\)')
+
+
+def extract_domain(url: str) -> str:
+    """Return the normalized host for a URL — lowercased, leading ``www.`` stripped, no port.
+
+    Single source of truth for the per-domain cache key on the storage/fetch path. Using
+    ``hostname`` (not ``netloc``) and lowercasing means the same site never forks the cache
+    across mixed-case hosts, ports, or userinfo — which would silently break
+    "discover once, scrape forever". Returns ``'unknown'`` for an unparseable URL.
+    """
+    try:
+        host = urlparse(url).hostname
+    except ValueError:
+        return 'unknown'
+    if not host:
+        return 'unknown'
+    host = host.lower()
+    if host.startswith('www.') and len(host) > 4:
+        host = host[4:]
+    return host
 
 
 try:

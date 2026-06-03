@@ -56,11 +56,9 @@ class RedditPost(ys.Contract):
         default=None, description='Stable Reddit post id from the post element or canonical URL'
     )
     subreddit: str | None = ys.Field(default=None, description='Subreddit name, preferably the r/... prefixed value')
-    author: str | None = ys.Author(default=None, description='Original poster username from the post header')
+    author: str | None = ys.Author(default=None, description='Original poster username')
     title: str | None = ys.Title(default=None, description='Main Reddit post title')
-    body: str | None = ys.BodyText(
-        default=None, description='Original post body text, excluding comments and sidebar text'
-    )
+    body: str | None = ys.BodyText(default=None, description='Original post body text, excluding comments')
     score: int | None = ys.Field(default=None, description='Post score or upvote count as a non-negative integer')
     comment_count: int | None = ys.Field(default=None, description='Total comment count as a non-negative integer')
 

@@ -36,8 +36,8 @@ class QscrapeL2NewsArticle(ys.Contract):
     headline: str = ys.Title(description='Main article headline')
     author: str = ys.Author(description='Article author or byline')
     date: str = ys.Datetime(description='Article publication date')
-    body_text: str = ys.BodyText(description='Full article body text, excluding navigation and related links')
-    related_content: list[str] = ys.Field(description='Related article links or sidebar recommendations')
+    body_text: str = ys.BodyText(description='Full article body text')
+    related_content: list[str] = ys.Field(description='Related or recommended article links')
 
 
 async def main() -> None:

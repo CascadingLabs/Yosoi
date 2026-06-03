@@ -14,6 +14,7 @@ from yosoi.core.fetcher.dom.flows import WaitForDOMStable
 from yosoi.core.fetcher.dom.loader import _CLICK_KINDS, _SCROLL_KIND, DOMLoader
 from yosoi.core.fetcher.dom.tree.actions import ClickTrigger, Scroll
 from yosoi.core.fetcher.dom.tree.conditions import HasTrigger
+from yosoi.models.selectors import SelectorEntry
 from yosoi.storage.a3node import ActRecord
 
 
@@ -115,6 +116,31 @@ async def test_replay_reports_failure_when_no_content(mocker: MockerFixture):
 
     result = await loader.replay(_FakeTab(), [ActRecord('load_more', 1)])
     assert result.success is False  # caller will fall back to a full probe
+
+
+async def test_replay_with_stored_target_skips_catalogue_probe(mocker: MockerFixture):
+    """The core CAS-94 property: an act with a concrete target replays by clicking that
+    target via build_flow directly — the legacy probe/_build_replay_action (catalogues)
+    path is never used."""
+    loader = DOMLoader()
+    mocker.patch('yosoi.core.fetcher.dom.loader.count_content', return_value=3)
+    mocker.patch.object(loader, '_capture_html', mocker.AsyncMock(return_value='<html>' + 'x' * 100 + '</html>'))
+    legacy = mocker.patch.object(loader, '_build_replay_action')
+    fake_flow = mocker.MagicMock()
+    fake_flow.run = mocker.AsyncMock()
+    flow_builder = mocker.patch('yosoi.core.fetcher.dom.loader.build_flow', return_value=fake_flow)
+    settle = mocker.MagicMock()
+    settle.run = mocker.AsyncMock()
+    mocker.patch('yosoi.core.fetcher.dom.loader.Flow', return_value=settle)
+
+    target = SelectorEntry(type='role', value='button', name='Load more', nth=0)
+    result = await loader.replay(_FakeTab(), [ActRecord('load_more', 2, target=target)])
+
+    assert flow_builder.called  # stored target clicked via build_flow
+    assert not legacy.called  # catalogue/probe path NOT used
+    assert fake_flow.run.await_count >= 1
+    assert [(a.kind, a.cycles) for a in result.acts] == [('load_more', 1)]
+    assert result.acts[0].target == target  # target carried through to the replayed recipe
 
 
 async def test_replay_drops_acts_that_did_nothing(mocker: MockerFixture):

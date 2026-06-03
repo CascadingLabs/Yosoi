@@ -35,7 +35,7 @@ class BookContract(Contract):
 
     title: str = ys.Title()
     price: float = ys.Price()
-    rating: str = ys.Field(description='Star rating, encoded in the class attribute')
+    rating: str = ys.Field(description='Star rating, expressed as a word (e.g. "Three")')
 
 
 class ArticleContract(Contract):
