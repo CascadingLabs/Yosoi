@@ -69,7 +69,7 @@ def _build_concurrent_table(url_status: dict[str, tuple[str, float]]) -> Table:
 
 # Type aliases
 SelectorMap = dict[str, dict[str, Any]]
-ContentMap = dict[str, str | list[str | dict[str, str]]]
+ContentMap = dict[str, object]
 ContentItems = list[ContentMap]
 
 logger = logging.getLogger(__name__)

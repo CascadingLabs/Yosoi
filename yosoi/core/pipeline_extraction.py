@@ -26,10 +26,11 @@ if TYPE_CHECKING:
     from yosoi.core.fetcher import HTMLFetcher
     from yosoi.models.contract import Contract
     from yosoi.models.download import DownloadResult, DownloadSpec
-
-    ContentMap = dict[str, object]
-    ContentItems = list[dict[str, object]]
     from yosoi.models.results import FetchResult
+
+# Type aliases — defined at module level so they exist at runtime (used in cast() calls)
+ContentMap = dict[str, object]
+ContentItems = list[dict[str, object]]
 
 logger = logging.getLogger(__name__)
 

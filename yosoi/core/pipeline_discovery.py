@@ -23,11 +23,12 @@ if TYPE_CHECKING:
     from yosoi.core.discovery import DiscoveryOrchestrator, MCPDiscoveryOrchestrator
     from yosoi.core.fetcher import HTMLFetcher
     from yosoi.core.fetcher.dom.ax import AxSnapshot
+    from yosoi.core.verification import FieldSemanticIssue
     from yosoi.models.contract import Contract
 
-    ContentMap = dict[str, object]
-    ContentItems = list[dict[str, object]]
-    from yosoi.core.verification import FieldSemanticIssue
+# Type aliases — defined at module level so they exist at runtime (used in cast() calls)
+ContentMap = dict[str, object]
+ContentItems = list[dict[str, object]]
 
 logger = logging.getLogger(__name__)
 

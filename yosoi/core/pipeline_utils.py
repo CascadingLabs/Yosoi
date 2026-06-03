@@ -22,10 +22,11 @@ from yosoi.utils import observability
 if TYPE_CHECKING:
     from yosoi.models.contract import Contract
     from yosoi.models.download import DownloadResult, DownloadSpec
-
-    ContentMap = dict[str, object]
-    ContentItems = list[dict[str, object]]
     from yosoi.storage.tracking import DomainStats
+
+# Type aliases — defined at module level so they exist at runtime (used in cast() calls)
+ContentMap = dict[str, object]
+ContentItems = list[dict[str, object]]
 
 logger = logging.getLogger(__name__)
 
