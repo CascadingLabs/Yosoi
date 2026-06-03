@@ -237,13 +237,24 @@ ignore-packages = [
   "mistralai",           # Apache-2.0 (missing metadata, verified via GitHub)
   "taskiq-dependencies", # MIT (missing metadata, verified via GitHub)
 ]
+# Permissive allow-list. MPL-2.0 is intentionally allowed: it is weak/file-level
+# copyleft and only reaches us via unremovable transitive deps (certifi <- httpx,
+# tqdm <- openai, pathspec <- mypy), none of which we fork.
+# WARNING: `allow-only` is split on ';'. Never paste a package's *compound* classifier
+# string (e.g. "BSD License; GNU General Public License (GPL); Public Domain") in whole
+# — it fragments into separate tokens and silently allows GPL. Add a single canonical
+# token, or use `ignore-packages` for a specific dep. `fail-on` below is the backstop.
 allow-only = """\
   Apache Software License;Apache-2.0;Apache-2.0 AND MIT;Apache-2.0 AND CNRI-Python;Apache-2.0 OR BSD-3-Clause;Apache \
   License 2.0;MIT;MIT License;MIT AND PSF-2.0;BSD License;BSD-2-Clause;BSD-3-Clause;BSD-3-Clause AND 0BSD AND MIT AND \
   Zlib AND CC0-1.0;3-Clause BSD License;ISC;ISC License (ISCL);PSF-2.0;Python Software Foundation \
-  License;MPL-2.0;MPL-2.0 AND MIT;Mozilla Public License 2.0 (MPL 2.0);The Unlicense (Unlicense);BSD License; GNU \
-  General Public License (GPL); Public Domain;Apache Software License; BSD License;Apache Software License; MIT License\
+  License;MPL-2.0;MPL-2.0 AND MIT;Mozilla Public License 2.0 (MPL 2.0);The Unlicense (Unlicense);Apache Software \
+  License; BSD License;Apache Software License; MIT License\
   """
+# Hard denylist — copyleft families we will not ship, regardless of `allow-only`.
+# (MPL deliberately excluded; see note above.) With partial-match, "GPL" also catches
+# LGPL/AGPL. This is what keeps a re-pasted compound string from leaking GPL again.
+fail-on = "GPL;LGPL;AGPL"
 partial-match = true
 
 [tool.mutmut]
@@ -301,7 +312,8 @@ tasks.ci-format = "uv run ruff check --fix"
 tasks.coverage = "uv run pytest --cov=yosoi --cov-report=term-missing --cov-report=html tests/"
 tasks.mutmut-run = "uv run mutmut run"
 tasks.mutmut-results = "uv run mutmut results"
-tasks.licenses = "uv run pip-licenses"  # check dependency licenses
+tasks.licenses = "uv run pip-licenses"  # check declared dependency licenses (metadata gate)
+tasks.licenses-binary = "uv run python scripts/scan_binary_licenses.py --skip claude_agent_sdk/_bundled"  # scan bundled native deps for vendored copyleft; skip claude_agent_sdk/_bundled (bundled AGPL CLI tool, not shipped in yosoi's wheel)
 tasks.docs = "uv run python scripts/generate_api_docs.py --output-dir ../CascadingLabsFE/docs/yosoi-docs/reference"  # generate split API reference with GitHub source links
 tasks.bump = "uv run cz bump --yes"  # auto-detect from conventional commits
 tasks.bump-dry = "uv run cz bump --dry-run"  # preview what the next bump would be
