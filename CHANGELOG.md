@@ -1,3 +1,89 @@
+## 0.0.2a19 (2026-06-04)
+
+### Fix
+
+- **ci**: install --all-extras in publish workflow
+
+## 0.0.2a18 (2026-06-04)
+
+### Feat
+
+- **CAS-94**: de-hardcode coercion, descriptions, selectors + selecto… (#90)
+- **CAS-105**: ys.File() — downloadable files as a contract field (#86)
+- **CAS-79**: opinionated discovery foundation — auto static→MCP escalation, AX perception, typed ys.js(), A3Node replay (#83)
+
+### Fix
+
+- **licenses**: plug GPL leak in pip-licenses allow-only + add bundled-binary copyleft scan (#89)
+
+## 0.0.1a17 (2026-05-24)
+
+### Feat
+
+- improve langfuse traces for OpenCode and Claude Code
+- add SDK-backed model integrations
+- **pipeline**: extract from raw HTML, add A3Node DOM stability storage
+- made the JS DOM rendering more like a behavior tree
+- made the DOM stablizer more modular
+- added a DOM explorer finite state machine
+- added a DOM explorer finite state machine
+- **fetcher**: migrate browser fetchers from zendriver to voidcrawl
+- JS fetcher waterfall with domain strategy caching and NA sentinel for absent fields
+- added browser worker pool and WIP Docker building
+
+### Fix
+
+- **tests**: mock _verify_field instead of verify for cached path test
+- **cleaner,fetcher,orchestrator,tests**: restore list truncation, fix js-shell detection, fix NA sentinel storage, update test mocks for load_snapshots
+- **models,tests**: restore related_content field, fix _fetch_and_clean_for_cache tuple unpack in tests
+- **fetcher,storage**: resolve mypy and ruff errors in branch files
+- extract CSS pseudo-element selector values
+- satisfy mypy for SDK integrations
+- thread force param through _discover_selectors_impl, handle author·date in Datetime coercion
+- rename fetcher 'js' → 'waterfall', fix --force flag, and improve bot gate detection
+- shared fetcher with Chrome pre-warm resolves businesswire stub page loop
+
+### Refactor
+
+- move some utils
+
+## 0.0.1a16 (2026-03-29)
+
+### Feat
+
+- added pip licenses checks to CI!
+
+## 0.0.1a15 (2026-03-28)
+
+## 0.0.1a13 (2026-03-28)
+
+## 0.0.1a12 (2026-03-28)
+
+## 0.0.1a11 (2026-03-15)
+
+## 0.0.1a10 (2026-03-15)
+
+## 0.0.1a9 (2026-02-20)
+
+### Feat
+
+- add per-URL and total elapsed time to CLI output with rich Live progress for concurrent mode
+- **Contracts**: Added Dynamic Contracts with examples
+- **models,-pipeline**: updated error logic handling w/ new model for failure states and reasoing
+- **verifier/validator**: changed how validation and verification works. new verifier for dynamic pydantic verififcation of HTML soup
+
+### Fix
+
+- Ensure spaces between adjacent inline elements during body text extraction and add unit tests for text concatenation.
+- **cli,-deubg**: changed gemini model, changed debug dir name
+
+### Refactor
+
+- mark `BaseType.__init_subclass__` as a classmethod.
+- **yosoi/-dir**: better file structure for scaling better and 0.1
+- **model-selectors**: chanded NA empty selector field to just be None (<null>) type. This is better for data pipelinees
+- **prompts**: moved prompts to seperate dir
+
 ## 0.0.1a18 (2026-06-04)
 
 ### BREAKING CHANGE
