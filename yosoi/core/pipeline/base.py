@@ -285,8 +285,27 @@ class Pipeline(
         fetcher_type: str = 'simple',
         output_format: str | list[str] | None = None,
         fetcher: Any | None = None,
+        depth: int = 0,
+        max_pages: int = 1,
+        score_threshold: float = 0.0,
+        session_id: str | None = None,
     ) -> None:
-        """Process a single URL: discover, verify, and save selectors."""
+        """Process a single URL: discover, verify, and save selectors.
+
+        Args:
+            url: URL to process.
+            force: Force re-discovery even if selectors exist. Defaults to False.
+            max_fetch_retries: Maximum fetch retry attempts. Defaults to 2.
+            max_discovery_retries: Maximum AI discovery retry attempts. Defaults to 3.
+            skip_verification: Skip verification step. Defaults to False.
+            fetcher_type: Type of fetcher ('simple', 'waterfall', etc.). Defaults to 'simple'.
+            output_format: Format(s) for extracted content. Defaults to None.
+            fetcher: Optional pre-existing fetcher instance.
+            depth: Maximum crawl depth. 0 (default) scrapes only the seed URL.
+            max_pages: Maximum total pages to scrape. Only used when depth > 0.
+            score_threshold: Minimum link score to enqueue. Only used when depth > 0.
+            session_id: Optional stable session id for frontier persistence/resume.
+        """
         async for _ in self.scrape(
             url,
             force=force,
@@ -296,6 +315,10 @@ class Pipeline(
             fetcher_type=fetcher_type,
             output_format=output_format,
             fetcher=fetcher,
+            depth=depth,
+            max_pages=max_pages,
+            score_threshold=score_threshold,
+            session_id=session_id,
         ):
             pass
 
@@ -406,13 +429,60 @@ class Pipeline(
         fetcher_type: str = 'simple',
         output_format: str | list[str] | None = None,
         fetcher: Any | None = None,
+        depth: int = 0,
+        max_pages: int = 1,
+        score_threshold: float = 0.0,
+        session_id: str | None = None,
     ) -> AsyncIterator[ContentMap]:
-        """Async generator yielding individual content items from a URL."""
+        """..."""
         self._url_start = time.monotonic()
         _raw = output_format if output_format is not None else self.output_formats
         format_to_use: list[str] = [_raw] if isinstance(_raw, str) else list(_raw)
         force_flag = self.force if force is None else force
         url = await self.normalize_url(url)
+
+        if depth == 0:
+            async for item in self._scrape_single(
+                url=url,
+                force_flag=force_flag,
+                max_fetch_retries=max_fetch_retries,
+                max_discovery_retries=max_discovery_retries,
+                skip_verification=skip_verification,
+                fetcher_type=fetcher_type,
+                format_to_use=format_to_use,
+                fetcher=fetcher,
+            ):
+                yield item
+            return
+
+        async for item in self._scrape_crawl(
+            url=url,
+            force_flag=force_flag,
+            max_fetch_retries=max_fetch_retries,
+            max_discovery_retries=max_discovery_retries,
+            skip_verification=skip_verification,
+            fetcher_type=fetcher_type,
+            format_to_use=format_to_use,
+            fetcher=fetcher,
+            depth=depth,
+            max_pages=max_pages,
+            score_threshold=score_threshold,
+            session_id=session_id,
+        ):
+            yield item
+
+    async def _scrape_single(
+        self,
+        url: str,
+        force_flag: bool,
+        max_fetch_retries: int,
+        max_discovery_retries: int,
+        skip_verification: bool,
+        fetcher_type: str,
+        format_to_use: list[str],
+        fetcher: Any | None,
+    ) -> AsyncIterator[ContentMap]:
+        """Single-URL scrape path — the original pre-CAS-49 behavior."""
         parsed = urlparse(url)
         trace_name = f'scrape {parsed.netloc}{parsed.path or "/"}'
         sess_id = observability.process_session_id()
@@ -445,7 +515,6 @@ class Pipeline(
                 fetcher = self._create_fetcher(fetcher_type, console=self.console)
                 if not fetcher:
                     raise RuntimeError(f'Invalid fetcher type: {fetcher_type}')
-
             if fetcher is None:
                 raise RuntimeError('No fetcher available')
             ctx = fetcher if _owns_fetcher else nullcontext(fetcher)
@@ -472,6 +541,107 @@ class Pipeline(
                     root_span=root_span,
                 ):
                     yield item
+
+    async def _scrape_crawl(
+        self,
+        url: str,
+        force_flag: bool,
+        max_fetch_retries: int,
+        max_discovery_retries: int,
+        skip_verification: bool,
+        fetcher_type: str,
+        format_to_use: list[str],
+        fetcher: Any | None,
+        depth: int,
+        max_pages: int,
+        score_threshold: float,
+        session_id: str | None,
+    ) -> AsyncIterator[ContentMap]:
+        """Frontier-based multi-page crawl path (CAS-49)."""
+        import uuid
+
+        from yosoi.core.cleaning import HTMLCleaner
+        from yosoi.core.crawler.frontier import Frontier
+        from yosoi.core.crawler.link_extractor import LinkExtractor
+
+        sid = session_id or str(uuid.uuid4())
+        frontier = Frontier(session_id=sid, score_threshold=score_threshold)
+        frontier.push(url, depth=0, score=1.0)
+
+        _owns_fetcher = fetcher is None
+        if _owns_fetcher:
+            fetcher = self._create_fetcher(fetcher_type, console=self.console)
+            if not fetcher:
+                raise RuntimeError(f'Invalid fetcher type: {fetcher_type}')
+        if fetcher is None:
+            raise RuntimeError('No fetcher available')
+
+        extractor = LinkExtractor()
+        cleaner = HTMLCleaner()
+
+        async with fetcher if _owns_fetcher else nullcontext(fetcher):
+            while not frontier.is_empty() and frontier.pages_scraped < max_pages:
+                current_url, current_depth = await frontier.popleft()
+                domain = self._extract_domain(current_url)
+
+                self.console.print(
+                    f'[dim]  ↻ Crawl [{frontier.pages_scraped}/{max_pages}] depth={current_depth} {current_url}[/dim]'
+                )
+
+                try:
+                    if not force_flag:
+                        cache_gen = await self._try_cached(
+                            current_url, domain, fetcher, skip_verification, format_to_use
+                        )
+                        if cache_gen is not None:
+                            async for item in cache_gen:
+                                yield item
+                            if current_depth < depth:
+                                await self._discover_and_push(
+                                    current_url,
+                                    fetcher,
+                                    cleaner,
+                                    extractor,
+                                    frontier,
+                                    current_depth,
+                                    max_fetch_retries,
+                                )
+                            continue
+
+                    async for item in self._scrape_fresh(
+                        url=current_url,
+                        domain=domain,
+                        fetcher=fetcher,
+                        force_flag=force_flag,
+                        max_fetch_retries=max_fetch_retries,
+                        max_discovery_retries=max_discovery_retries,
+                        skip_verification=skip_verification,
+                        format_to_use=format_to_use,
+                        root_span=None,
+                    ):
+                        yield item
+
+                except Exception as exc:  # noqa: BLE001
+                    observability.warning('Crawl page failed', url=current_url, error=str(exc))
+                    self.logger.warning('Crawl failed for %s: %s', current_url, exc)
+                    continue
+
+                if current_depth < depth:
+                    await self._discover_and_push(
+                        current_url,
+                        fetcher,
+                        cleaner,
+                        extractor,
+                        frontier,
+                        current_depth,
+                        max_fetch_retries,
+                    )
+
+        await frontier.save()
+        self.console.print(
+            f'[success]Crawl complete: {frontier.pages_scraped} pages scraped, '
+            f'{frontier.visited_count()} unique URLs seen[/success]'
+        )
 
     async def _scrape_fresh(
         self,
