@@ -35,6 +35,7 @@ from yosoi.models.results import FetchResult, JsOutputs
 from yosoi.storage.a3node import A3Node, A3NodeStorage, ActRecord
 from yosoi.utils import observability as obs
 from yosoi.utils.exceptions import BotDetectionError, DownloadError
+from yosoi.utils.retry import get_async_retryer, log_retry
 from yosoi.utils.urls import extract_domain
 
 logger = logging.getLogger(__name__)
@@ -158,7 +159,19 @@ class _VoidCrawlFetcher(HTMLFetcher):
         against the rendered DOM without capturing full HTML.
         """
         async with self._pool.acquire() as tab:
-            await tab.goto(url, timeout=float(self.timeout))
+            # A cold tab from the pool can transiently time out on the first
+            # navigation (slow Chrome cold-start, esp. in CI), surfacing as a
+            # RuntimeError ("navigation failed: Request timed out"). Retry the
+            # goto with backoff before failing — tenacity per AGENTS.md.
+            async for attempt in get_async_retryer(
+                max_attempts=3,
+                wait_min=0.5,
+                wait_max=4.0,
+                exceptions=(RuntimeError,),
+                log_callback=log_retry,
+            ):
+                with attempt:
+                    await tab.goto(url, timeout=float(self.timeout))
             yield tab
 
     async def fetch(

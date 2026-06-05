@@ -13,11 +13,14 @@ name: Memory Benchmark
 # `runs-on` accordingly. The relative trend is what matters either way.
 
 on:
-  push:
-    branches:
-      - main
-  release:
-    types: [published]
+  # Temporarily disabled on push/release: the GitHub-hosted runner is too noisy
+  # (and Chrome cold-starts flaky) to gate releases on. Re-enable once this runs
+  # on a fixed self-hosted runner. Still runnable on demand via workflow_dispatch.
+  # push:
+  #   branches:
+  #     - main
+  # release:
+  #   types: [published]
   workflow_dispatch: {}   # allow manual runs
 
 # Avoid concurrent writes to the gh-pages benchmark history.
