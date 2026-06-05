@@ -47,7 +47,9 @@ async def test_waterfall_escalates_astro_shell_instead_of_caching_simple(mocker)
     assert result.html == '<html><body><article>rendered</article></body></html>'
     assert fetcher._strategy_cache['qscrape.dev'].fetcher == 'headless'
     assert fetcher._strategy_cache['qscrape.dev'].selector_level is None
-    fetcher._strategy_storage.save.assert_called_once_with('qscrape.dev', 'headless')
+    fetcher._strategy_storage.save.assert_called_once_with(
+        'qscrape.dev', 'headless', selector_level=None, identity_id=None
+    )
 
 
 def test_a3node_is_disabled_by_default_on_browser_fetcher():
@@ -86,4 +88,89 @@ async def test_update_selector_level_preserves_cached_fetcher(mocker):
 
     assert fetcher._strategy_cache['qscrape.dev'].fetcher == 'headless'
     assert fetcher._strategy_cache['qscrape.dev'].selector_level == 'xpath'
-    fetcher._strategy_storage.save.assert_any_call('qscrape.dev', 'headless', selector_level='xpath')
+    fetcher._strategy_storage.save.assert_any_call('qscrape.dev', 'headless', selector_level='xpath', identity_id=None)
+
+
+# ---------------------------------------------------------------------------
+# W2 — profile cascade wiring in the waterfall terminal tier
+# ---------------------------------------------------------------------------
+
+
+class _BlockedHeadless:
+    """Headless tier stub that always reports a bot block."""
+
+    async def _do_fetch(self, url, start_time, tier, action_scripts=None, download_specs=None):  # type: ignore[no-untyped-def]
+        from yosoi.utils.exceptions import BotDetectionError
+
+        raise BotDetectionError(url, 200, ['blocked'])
+
+
+async def test_waterfall_terminal_tier_uses_cascade_when_configured(mocker):
+    """A configured IdentityCascade replaces the best-effort headful terminal tier."""
+    from yosoi.core.fetcher.identity import BrowserIdentity, IdentityCascade
+
+    cascade = IdentityCascade((BrowserIdentity(id='fresh'), BrowserIdentity(id='proxy_a', proxy='http://1.2.3.4:8080')))
+    fetcher = JSFetcher(console=_Console(), identity_cascade=cascade)
+    fetcher._strategy_storage = mocker.Mock()
+    fetcher._strategy_storage.save = mocker.AsyncMock()
+    fetcher._probe_requires_js = mocker.AsyncMock(return_value=True)
+    fetcher._ensure_headless = mocker.AsyncMock(return_value=_BlockedHeadless())
+
+    # Cascade: 'fresh' blocks, 'proxy_a' wins.
+    from yosoi.utils.exceptions import BotDetectionError
+
+    async def fake_start(identity, base_kwargs):  # type: ignore[no-untyped-def]
+        class _Ident:
+            async def _do_fetch(self, url, start_time, tier, action_scripts=None, download_specs=None):  # type: ignore[no-untyped-def]
+                if identity.id == 'fresh':
+                    raise BotDetectionError(url, 200, ['recaptcha'], identity_id='fresh')
+                return FetchResult(url=url, html='<html><body>serp results here</body></html>')
+
+            async def close(self):  # type: ignore[no-untyped-def]
+                pass
+
+        return _Ident()
+
+    fetcher._start_identity_fetcher = fake_start  # type: ignore[assignment,method-assign]
+
+    result = await fetcher._fetch_waterfall('https://google.com/search?q=x', 'google.com', 1.0)
+
+    assert result.html == '<html><body>serp results here</body></html>'
+    # Winning identity persisted per-domain.
+    assert fetcher._strategy_cache['google.com'].identity_id == 'proxy_a'
+    assert fetcher._strategy_cache['google.com'].fetcher == 'headful'
+
+
+async def test_waterfall_cascade_exhaustion_raises(mocker):
+    """All identities blocked -> the waterfall RAISES (fail-fast), not empty result."""
+    from yosoi.core.fetcher.identity import BrowserIdentity, IdentityCascade
+    from yosoi.utils.exceptions import BotDetectionError
+
+    cascade = IdentityCascade((BrowserIdentity(id='a'), BrowserIdentity(id='b')))
+    fetcher = JSFetcher(console=_Console(), identity_cascade=cascade)
+    fetcher._strategy_storage = mocker.Mock()
+    fetcher._strategy_storage.save = mocker.AsyncMock()
+    fetcher._probe_requires_js = mocker.AsyncMock(return_value=True)
+    fetcher._ensure_headless = mocker.AsyncMock(return_value=_BlockedHeadless())
+
+    async def fake_start(identity, base_kwargs):  # type: ignore[no-untyped-def]
+        class _Ident:
+            async def _do_fetch(self, url, start_time, tier, action_scripts=None, download_specs=None):  # type: ignore[no-untyped-def]
+                raise BotDetectionError(url, 200, ['blocked'], identity_id=identity.id)
+
+            async def close(self):  # type: ignore[no-untyped-def]
+                pass
+
+        return _Ident()
+
+    fetcher._start_identity_fetcher = fake_start  # type: ignore[assignment,method-assign]
+
+    with pytest.raises(BotDetectionError) as exc_info:
+        await fetcher._fetch_waterfall('https://x.com', 'x.com', 1.0)
+    assert exc_info.value.identity_id == 'b'  # last attempted identity, attributed
+
+
+def test_jsfetcher_without_cascade_keeps_legacy_terminal_tier():
+    fetcher = JSFetcher()
+    assert fetcher._identity_cascade is None
+    assert fetcher._identity_pool is None

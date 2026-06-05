@@ -43,10 +43,17 @@ VALID_SELECTOR_LEVELS = frozenset(get_args(SelectorKind))
 
 @dataclass(frozen=True)
 class FetchStrategy:
-    """Cached loading strategy for a domain."""
+    """Cached loading strategy for a domain.
+
+    ``identity_id`` (W2): the winning browser identity from the profile cascade
+    (which profile/proxy combo last got past the bot wall for this domain).
+    Older ``fetch_<domain>.json`` files predate this key; the parse defaults it
+    to ``None`` so the cache survives an in-place upgrade.
+    """
 
     fetcher: str
     selector_level: str | None = None
+    identity_id: str | None = None
 
 
 class FetchStrategyStorage:
@@ -76,13 +83,20 @@ class FetchStrategyStorage:
     # Public API
     # ------------------------------------------------------------------
 
-    async def save(self, domain: str, fetcher: str, selector_level: str | None = None) -> None:
+    async def save(
+        self,
+        domain: str,
+        fetcher: str,
+        selector_level: str | None = None,
+        identity_id: str | None = None,
+    ) -> None:
         """Persist the winning fetcher tier for *domain*.
 
         Args:
             domain: Bare domain string (e.g. 'finance.yahoo.com').
             fetcher: Tier name — one of 'simple', 'headless', 'headful'.
             selector_level: Optional highest selector strategy that worked.
+            identity_id: Optional winning browser-identity id from the cascade.
 
         """
         if fetcher not in VALID_FETCHERS:
@@ -97,6 +111,7 @@ class FetchStrategyStorage:
             'domain': domain,
             'fetcher': fetcher,
             'selector_level': selector_level,
+            'identity_id': identity_id,
             'discovered_at': datetime.now().isoformat(),
         }
         try:
@@ -125,7 +140,9 @@ class FetchStrategyStorage:
             if fetcher in VALID_FETCHERS:
                 selector_level = data.get('selector_level')
                 level = str(selector_level) if selector_level in VALID_SELECTOR_LEVELS else None
-                return FetchStrategy(fetcher=str(fetcher), selector_level=level)
+                identity_raw = data.get('identity_id')
+                identity_id = str(identity_raw) if identity_raw is not None else None
+                return FetchStrategy(fetcher=str(fetcher), selector_level=level, identity_id=identity_id)
             logger.warning('Invalid fetcher value %r in cache for %s', fetcher, domain)
             return None
         except (OSError, json.JSONDecodeError) as e:
@@ -161,7 +178,9 @@ class FetchStrategyStorage:
                 if domain and fetcher in VALID_FETCHERS:
                     selector_level = data.get('selector_level')
                     level = str(selector_level) if selector_level in VALID_SELECTOR_LEVELS else None
-                    result[domain] = FetchStrategy(fetcher=str(fetcher), selector_level=level)
+                    identity_raw = data.get('identity_id')
+                    identity_id = str(identity_raw) if identity_raw is not None else None
+                    result[domain] = FetchStrategy(fetcher=str(fetcher), selector_level=level, identity_id=identity_id)
             except (OSError, json.JSONDecodeError):
                 pass
         if result:

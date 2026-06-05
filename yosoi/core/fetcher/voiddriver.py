@@ -30,6 +30,7 @@ from yosoi.core.fetcher.dom import DOMLoader
 from yosoi.core.fetcher.dom.ax import AxSnapshot
 from yosoi.core.fetcher.dom.probes import capture_ax_snapshot
 from yosoi.core.fetcher.downloads import execute_downloads
+from yosoi.core.fetcher.identity import BrowserIdentity
 from yosoi.models.download import DownloadResult, DownloadSpec
 from yosoi.models.replay import ReplayPlan
 from yosoi.models.results import FetchResult, JsOutputs
@@ -82,6 +83,7 @@ class _VoidCrawlFetcher(HTMLFetcher):
         download_dir: str | None = None,
         user_agent: str | None = None,
         accept_language: str | None = None,
+        identity: BrowserIdentity | None = None,
         **_kwargs: Any,
     ) -> None:
         self.timeout = timeout
@@ -96,6 +98,7 @@ class _VoidCrawlFetcher(HTMLFetcher):
         self._download_dir = download_dir
         self._user_agent = user_agent
         self._accept_language = accept_language
+        self._identity = identity
         self._pool: Any = None
         self._pool_ctx: Any = None
         self._a3node_storage = A3NodeStorage() if experimental_a3node else None
@@ -121,9 +124,20 @@ class _VoidCrawlFetcher(HTMLFetcher):
         return self
 
     def _browser_config_kwargs(self, BrowserConfig: Any) -> dict[str, Any]:
-        """Build BrowserConfig kwargs, only overriding UA when requested."""
+        """Build BrowserConfig kwargs, only overriding UA / identity when requested.
+
+        Identity passthrough (W2): when an identity is pinned, thread its proxy
+        (egress IP), profile dir (raw ``--user-data-dir`` — VoidCrawl has no
+        native ``user_data_dir`` field yet, so it goes through ``extra_args``,
+        pool-wide for this fetcher's own single-identity pool), and
+        locale/timezone. An identity may also force headful regardless of the
+        class default (``HeadfulFetcher`` vs ``HeadlessFetcher``).
+        """
+        headless = self._headless
+        if self._identity is not None and self._identity.headful:
+            headless = False
         kwargs: dict[str, Any] = {
-            'headless': self._headless,
+            'headless': headless,
             'stealth': True,
             'no_sandbox': self.no_sandbox,
             'chrome_executable': self.browser_executable_path,
@@ -133,10 +147,24 @@ class _VoidCrawlFetcher(HTMLFetcher):
             fields = getattr(BrowserConfig, '__fields__', {})
         if self._user_agent is not None and 'user_agent' in fields:
             kwargs['user_agent'] = self._user_agent
+        # accept_language / locale override (CLI knob) — identity.locale wins below.
         if self._accept_language is not None and 'locale' in fields:
             kwargs['locale'] = self._accept_language
         elif self._accept_language is not None and 'accept_language' in fields:
             kwargs['accept_language'] = self._accept_language
+
+        ident = self._identity
+        if ident is not None:
+            if ident.proxy is not None and 'proxy' in fields:
+                kwargs['proxy'] = ident.proxy
+            if ident.locale is not None and 'locale' in fields:
+                kwargs['locale'] = ident.locale
+            if ident.timezone_id is not None and 'timezone_id' in fields:
+                kwargs['timezone_id'] = ident.timezone_id
+            if ident.profile_dir is not None and 'extra_args' in fields:
+                extra = list(kwargs.get('extra_args', []))
+                extra.extend([f'--user-data-dir={ident.profile_dir}', '--profile-directory=Default'])
+                kwargs['extra_args'] = extra
         return kwargs
 
     async def __aexit__(self, *exc: Any) -> None:
@@ -259,6 +287,13 @@ class _VoidCrawlFetcher(HTMLFetcher):
         js_outputs: JsOutputs | None = None
         downloads: dict[str, DownloadResult] | None = None
         ax_snapshot: AxSnapshot | None = None
+        # Block-attribution (W2): probe the live tab for a named captcha BEFORE it
+        # releases, so a BotDetectionError raised after the block can carry it.
+        # This is a DIFFERENT signal from the html-marker heuristic below — it may
+        # be None on a soft (200 + marker) block. Recorded distinctly; never
+        # conflated. Captured inside the acquire() block because the DOM probe
+        # needs a live tab/Page (a PooledTab may not even bind detect_captcha).
+        captcha_kind: str | None = None
         async with self._pool.acquire() as tab:
             # Jitter: stagger concurrent workers so they don't land simultaneously
             # on the same origin and trigger bot-detection rate limiting.
@@ -303,6 +338,12 @@ class _VoidCrawlFetcher(HTMLFetcher):
             # layer for static discovery. Best-effort: None when the tab lacks CDP.
             ax_snapshot = await capture_ax_snapshot(tab)
 
+            # Capture the captcha signal while the tab is still live. Best-effort:
+            # detect_captcha is a Page method and may not be bound on a PooledTab,
+            # so probe defensively — absence yields None (its own attribution
+            # bucket), it is NOT treated as "no block".
+            captcha_kind = await self._probe_captcha(tab)
+
         if not html or len(html) < self.min_content_length:
             return FetchResult(
                 url=url,
@@ -317,7 +358,13 @@ class _VoidCrawlFetcher(HTMLFetcher):
 
         is_blocked, indicators = self._check_for_bot_detection(html, 200, {})
         if is_blocked:
-            raise BotDetectionError(url, 200, indicators)
+            raise BotDetectionError(
+                url,
+                200,
+                indicators,
+                identity_id=self._identity.id if self._identity is not None else None,
+                captcha_kind=captcha_kind,
+            )
 
         metadata = ContentAnalyzer.analyze(html)
         return FetchResult(
@@ -331,6 +378,25 @@ class _VoidCrawlFetcher(HTMLFetcher):
             downloads=downloads,
             ax_snapshot=ax_snapshot,
         )
+
+    async def _probe_captcha(self, tab: Any) -> str | None:
+        """Best-effort live-tab captcha probe for block attribution (W2).
+
+        ``Page.detect_captcha`` returns the captcha kind or None. It is a Page
+        method and may not be bound on a PooledTab; older VoidCrawl builds may
+        lack it entirely. Either way we return None rather than failing the
+        fetch — None is a valid attribution value (soft block with no named
+        captcha), distinct from the html-marker heuristic.
+        """
+        probe = getattr(tab, 'detect_captcha', None)
+        if probe is None:
+            return None
+        try:
+            result = await probe()
+        except Exception as exc:  # noqa: BLE001 — attribution is best-effort
+            logger.debug('detect_captcha probe failed: %s', exc)
+            return None
+        return result if isinstance(result, str) else None
 
     async def _run_downloads(
         self,

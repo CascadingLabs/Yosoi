@@ -64,6 +64,34 @@ class TestSave:
         await storage.save('example.com', 'headless', selector_level='not_a_level')
         mock_warn.assert_called_once()
 
+    async def test_save_identity_id_round_trips(self, storage):
+        """W2: the cascade-winning identity persists and reloads on FetchStrategy."""
+        await storage.save('google.com', 'headful', identity_id='trusted_profile')
+        strategy = await storage.load_strategy('google.com')
+        assert strategy is not None
+        assert strategy.fetcher == 'headful'
+        assert strategy.identity_id == 'trusted_profile'
+
+    async def test_load_strategy_tolerates_missing_identity_id(self, storage):
+        """Old fetch_<domain>.json files predate identity_id — parse defaults to None."""
+        fp = storage._filepath('legacy.com')
+        with open(fp, 'w', encoding='utf-8') as f:
+            json.dump(
+                {'domain': 'legacy.com', 'fetcher': 'headful', 'selector_level': 'css'},
+                f,
+            )
+        strategy = await storage.load_strategy('legacy.com')
+        assert strategy is not None
+        assert strategy.fetcher == 'headful'
+        assert strategy.identity_id is None
+
+    async def test_load_all_tolerates_missing_identity_id(self, storage):
+        fp = storage._filepath('legacy2.com')
+        with open(fp, 'w', encoding='utf-8') as f:
+            json.dump({'domain': 'legacy2.com', 'fetcher': 'headless'}, f)
+        all_strats = await storage.load_all_strategies()
+        assert all_strats['legacy2.com'].identity_id is None
+
     async def test_save_invalid_fetcher_returns_early(self, storage):
         await storage.save('example.com', 'invalid_tier')
         assert await storage.load('example.com') is None

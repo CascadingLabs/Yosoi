@@ -8,21 +8,53 @@ class YosoiError(Exception):
 
 
 class BotDetectionError(YosoiError):
-    """Raised when bot detection is triggered."""
+    """Raised when bot detection is triggered.
 
-    def __init__(self, url: str, status_code: int, indicators: list[str]):
+    Block attribution (W2): the optional ``identity_id`` and ``captcha_kind``
+    kwargs let the profile-cascade attribute a block to the *identity* that
+    earned it (which profile / proxy / fingerprint), so rotation has something
+    to rotate on. These are intentionally distinct signals:
+
+    * ``indicators`` — the HTML-marker heuristic (a 200 response whose body
+      carries Cloudflare / captcha markers). A *soft* block.
+    * ``captcha_kind`` — the result of a live DOM captcha probe
+      (``Page.detect_captcha``). May be ``None`` even on a marker-triggered
+      block, in which case the block is "soft-marker, no named captcha" — its
+      own attribution bucket. Never conflate the two.
+    """
+
+    def __init__(
+        self,
+        url: str,
+        status_code: int,
+        indicators: list[str],
+        identity_id: str | None = None,
+        captcha_kind: str | None = None,
+    ):
         """Initialize bot detection error.
 
         Args:
             url: URL where bot detection was triggered
             status_code: HTTP status code received
-            indicators: List of bot detection indicators found
+            indicators: List of bot detection indicators found (HTML-marker heuristic)
+            identity_id: Optional id of the browser identity (profile/proxy) that
+                was blocked. ``None`` when the block is not identity-attributed.
+            captcha_kind: Optional captcha kind from a live DOM probe
+                (``Page.detect_captcha``). ``None`` when no named captcha was
+                detected — distinct from the marker heuristic in ``indicators``.
 
         """
         self.url = url
         self.status_code = status_code
         self.indicators = indicators
-        super().__init__(f'Bot detection triggered on {url} (status={status_code}): {", ".join(indicators)}')
+        self.identity_id = identity_id
+        self.captcha_kind = captcha_kind
+        suffix = ''
+        if identity_id is not None:
+            suffix += f' [identity={identity_id}]'
+        if captcha_kind is not None:
+            suffix += f' [captcha={captcha_kind}]'
+        super().__init__(f'Bot detection triggered on {url} (status={status_code}): {", ".join(indicators)}{suffix}')
 
 
 class LLMGenerationError(YosoiError):
