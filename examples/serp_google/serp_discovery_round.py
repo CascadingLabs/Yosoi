@@ -111,17 +111,28 @@ AdResult = SerpResult.variant(
 
 
 def resolve_llm(model_arg: str | None) -> LLMConfig | None:
-    """Return a real LLMConfig from --model or the environment, else None."""
-    if model_arg:
-        provider, _, name = model_arg.partition(':')
-        return LLMConfig(provider=provider, model_name=name or '', api_key=None)
-    from yosoi.core.configs import find_available_provider
+    """Return a real LLMConfig.
 
-    found = find_available_provider()
-    if not found:
-        return None
-    provider, name, key = found
-    return LLMConfig(provider=provider, model_name=name, api_key=key)
+    Default: the Claude Agent SDK transport (``ys.claude_sdk``) — it uses the local
+    Claude CLI subscription, so it needs no API key. ``--model env`` falls back to the
+    first provider with a key in the environment; ``--model provider:name`` picks one
+    explicitly (e.g. ``openai:gpt-4o``, ``ollama:llama3.1``).
+    """
+    from yosoi.core.discovery.config import claude_sdk
+
+    if not model_arg or model_arg.startswith(('claude-sdk', 'claude_sdk')):
+        _, _, name = model_arg.partition(':') if model_arg else ('', '', '')
+        return claude_sdk(name or 'claude-opus-4-7')
+    if model_arg == 'env':
+        from yosoi.core.configs import find_available_provider
+
+        found = find_available_provider()
+        if not found:
+            return None
+        provider, name, key = found
+        return LLMConfig(provider=provider, model_name=name, api_key=key)
+    provider, _, name = model_arg.partition(':')
+    return LLMConfig(provider=provider, model_name=name or '', api_key=None)
 
 
 # --------------------------------------------------------------------------- #
