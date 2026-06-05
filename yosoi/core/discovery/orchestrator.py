@@ -183,7 +183,13 @@ class DiscoveryOrchestrator:
         # cache lookup, tracing user_id, and per-domain locking all share one
         # bucket (no port/userinfo/casing splits).
         domain = (obs.normalize_user_id(url) if url else None) or 'unknown'
-        discovery_input = DiscoveryInput(url=url_context, html=html, ax_hint=format_ax_hint(ax_snapshot))
+        # Thread the contract's class docstring through as discovery intent so two
+        # same-shape contracts that differ only by NL intent (AdLink vs OrganicLink,
+        # both {url, title}) produce DISTINCT agent prompts — not byte-identical
+        # input. Without this the docstring-aware signature would give them two cache
+        # slots holding non-discriminated selectors (see W5 verifier note).
+        intent = (self._contract.__doc__ or '').strip()
+        discovery_input = DiscoveryInput(url=url_context, html=html, ax_hint=format_ax_hint(ax_snapshot), intent=intent)
 
         field_descs = self._contract.field_descriptions()
         overrides = self._contract.get_selector_overrides()

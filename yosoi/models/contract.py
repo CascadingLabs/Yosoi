@@ -458,6 +458,135 @@ class Contract(BaseModel):
         """Start a fluent ContractBuilder for the given contract name."""
         return ContractBuilder(name)
 
+    @classmethod
+    def variant(cls, name: str, description: str) -> type[Contract]:
+        """Declare a redundant sibling contract differing ONLY by NL intent.
+
+        Two near-identical contracts that share a field set but mean different
+        things — a sponsored/ad result vs an organic one, both ``{url, title}`` —
+        used to collide: the contract signature ignored the docstring, so they
+        shared one per-domain cache slot and the second discovery clobbered the
+        first (the failure nimbal's ``serp_contracts.py`` had to abandon). With
+        the docstring now folded into :func:`contract_signature`, declaring the
+        variants gives each a DISTINCT signature, hence a distinct cached selector
+        on the SAME domain, and the docstring is threaded into the discovery agent
+        so it can actually pick the ad-rail container vs the organic list.
+
+        Example::
+
+            OrganicLink = Link.variant('OrganicLink', 'A free/organic search result link.')
+            AdLink      = Link.variant('AdLink', 'A paid/sponsored result link.')
+
+        Args:
+            name: Class name for the new contract. Must be unique — the global
+                ``_CONTRACT_REGISTRY`` is ``__name__``-keyed, so a duplicate name
+                would clobber a sibling and make ``resolve_contract`` ambiguous.
+            description: The disambiguating NL intent (becomes the class docstring).
+
+        Returns:
+            A new ``Contract`` subclass inheriting ``cls``'s fields, with its own
+            docstring.
+
+        Raises:
+            ValueError: If ``name`` is empty, equals ``cls.__name__``, or is already
+                registered (would clobber the registry).
+            TypeError: If ``description`` is empty (the whole point of a variant).
+
+        """
+        if not name:
+            raise ValueError('Contract.variant requires a non-empty name')
+        if not description.strip():
+            raise TypeError(
+                f'Contract.variant({name!r}) requires a non-empty description — '
+                'the description IS the disambiguator that gives the variant a '
+                'distinct signature; without it the variant collides with its base.'
+            )
+        if name == cls.__name__:
+            raise ValueError(
+                f'Contract.variant name {name!r} must differ from the base contract name; '
+                'same name would clobber it in the __name__-keyed registry.'
+            )
+        existing = _CONTRACT_REGISTRY.get(name)
+        if existing is not None and existing is not cls:
+            raise ValueError(
+                f'Contract.variant name {name!r} is already registered to '
+                f'{existing.__module__}.{existing.__qualname__}; pick a unique name '
+                '(the registry is __name__-keyed and would clobber the existing one).'
+            )
+        # __init_subclass__ registers the new class under `name`.
+        sub: type[Contract] = pydantic.create_model(name, __base__=cls)
+        sub.__doc__ = description
+        return sub
+
+    @classmethod
+    def to_model(
+        cls,
+        base: type[BaseModel] = BaseModel,
+        *,
+        name: str | None = None,
+        include: set[str] | None = None,
+        exclude: set[str] | None = None,
+        **extra_fields: Any,
+    ) -> type[BaseModel]:
+        """Project this contract's fields onto an arbitrary pydantic ``base``.
+
+        The single blessed contract→model/ODM export path: pass
+        ``base=beanie.Document`` for Mongo, a Django-Ninja ``Schema`` for an API
+        surface, or the default ``BaseModel`` — no hand-written ``dict -> model``
+        adapter, no plugin, and **beanie/pymongo are never imported by Yosoi** (the
+        base is caller-injected, keeping the lazy import graph clean). The field
+        types, ``yosoi_type`` and descriptions ride along automatically via each
+        field's ``json_schema_extra``, so they survive into ``model_json_schema``.
+
+        This does NOT replace a consumer's *semantic* layer (status enums, run_id
+        stamping, granularity de-biasing) — those are genuine consumer decisions,
+        correctly outside Yosoi's fail-fast/no-decide charter. It deletes only the
+        boilerplate field-restating half: the consumer base declares the extra
+        envelope fields and inherits the extraction fields.
+
+        Args:
+            base: Base class for the generated model (``BaseModel`` /
+                ``beanie.Document`` / Ninja ``Schema`` / …). Caller owns its import.
+            name: Class name for the generated model. Defaults to ``f'{cls.__name__}Model'``.
+            include: If given, only project these contract field names.
+            exclude: Field names to drop (applied after ``include``). Use this to
+                skip names that collide with ODM internals (``id``, ``revision_id``).
+            **extra_fields: Caller's envelope fields, in pydantic ``create_model``
+                shape (``run_id=(str, ...)``, ``captured_at=(datetime, None)``).
+
+        Returns:
+            A new pydantic model subclassing ``base`` with the projected fields.
+
+        Raises:
+            ValueError: If ``include`` names an unknown field, or an ``extra_fields``
+                name collides with a projected contract field (ambiguous — the caller
+                must rename or ``exclude`` the contract field first).
+
+        """
+        if include is not None:
+            unknown = include - set(cls.model_fields)
+            if unknown:
+                raise ValueError(f'to_model include= names unknown fields: {sorted(unknown)}')
+
+        drop = exclude or set()
+        defs: dict[str, Any] = {}
+        for field_name, fi in cls.model_fields.items():
+            if include is not None and field_name not in include:
+                continue
+            if field_name in drop:
+                continue
+            defs[field_name] = (fi.annotation, fi)
+
+        collisions = set(extra_fields) & set(defs)
+        if collisions:
+            raise ValueError(
+                f'to_model extra_fields {sorted(collisions)} collide with projected contract fields; '
+                'rename the envelope field or exclude= the contract field to disambiguate.'
+            )
+        defs.update(extra_fields)
+
+        return pydantic.create_model(name or f'{cls.__name__}Model', __base__=base, **defs)
+
 
 class ContractBuilder:
     """Fluent builder for creating Contract subclasses at runtime."""

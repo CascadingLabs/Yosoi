@@ -96,6 +96,12 @@ class DiscoveryInput(BaseModel):
     # Compact accessibility hint (role: name lines) from the rendered page.
     # Excluded from the user-prompt JSON dump — surfaced via a system prompt instead.
     ax_hint: str = Field(default='', exclude=True)
+    # Contract-level intent (the class docstring). For two same-shape contracts
+    # that differ ONLY by NL intent (AdLink vs OrganicLink, both {url, title}),
+    # this is the ONLY signal that lets the discovery agent pick the ad-rail
+    # container vs the organic list instead of returning byte-identical input.
+    # Excluded from the user-prompt JSON dump — surfaced via a system prompt.
+    intent: str = Field(default='', exclude=True)
 
 
 # ---------------------------------------------------------------------------
@@ -137,6 +143,24 @@ def field_instructions(ctx: RunContext['DiscoveryDeps']) -> str:
     fields_text = '\n'.join(f'**{name}** — {desc}' for name, desc in descriptions.items())
     container_guidance = '' if ctx.deps.contract.get_root() else f'\n\n{_CONTAINER_GUIDANCE}'
     return f'Find selectors for these fields:\n{fields_text}\n\n{_FIELD_SELECTOR_GUIDE}{container_guidance}'
+
+
+def _intent_block(intent: str) -> str:
+    """Render the contract-intent system-prompt block, or '' when no intent set."""
+    if not intent.strip():
+        return ''
+    return (
+        'Overall intent of this contract (what KIND of element to target):\n'
+        f'{intent.strip()}\n'
+        'When several regions of the page expose the same fields (e.g. a sponsored/ad '
+        'rail vs an organic results list), use this intent to choose the region that '
+        'matches it — do NOT default to the first match.'
+    )
+
+
+def contract_intent_instructions(ctx: RunContext['DiscoveryDeps']) -> str:
+    """Surface the contract's NL intent so same-shape contracts are discriminable."""
+    return _intent_block(ctx.deps.input.intent)
 
 
 def level_instructions(ctx: RunContext['DiscoveryDeps']) -> str:
@@ -229,6 +253,11 @@ def field_single_field_instructions(ctx: RunContext['FieldDiscoveryDeps']) -> st
         # don't latch onto page-level chrome.
         text += f'\n\n{_MULTI_ITEM_FIELD_GUIDANCE}'
     return text
+
+
+def field_single_intent_instructions(ctx: RunContext['FieldDiscoveryDeps']) -> str:
+    """Surface the contract's NL intent for single-field discovery."""
+    return _intent_block(ctx.deps.input.intent)
 
 
 def field_single_level_instructions(ctx: RunContext['FieldDiscoveryDeps']) -> str:

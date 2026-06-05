@@ -51,6 +51,28 @@ class TestLessonStorage:
     async def test_load_missing_returns_none(self, storage):
         assert await storage.load(LessonKey(domain='missing.com', contract_signature='sig')) is None
 
+    async def test_list_stale_by_scheme_flags_old_version(self, storage):
+        """A signature-scheme bump must be observable: old-scheme lessons are reported STALE.
+
+        Regression for the W5 'silent mass cache flush' risk — without the
+        sig_version stamp a scheme change is an unobservable load-miss.
+        """
+        from yosoi.utils.signatures import SIGNATURE_SCHEME_VERSION
+
+        # A v1 (pre-versioning) lesson: bare signature -> sig_version derived as 'v1'.
+        old = _lesson(domain='old.com', contract_sig='abc123def4567890')
+        assert old.key.sig_version == 'v1'
+        await storage.save(old)
+
+        # A current-scheme lesson.
+        current = _lesson(domain='new.com', contract_sig=f'{SIGNATURE_SCHEME_VERSION}:abc123def4567890')
+        assert current.key.sig_version == SIGNATURE_SCHEME_VERSION
+        await storage.save(current)
+
+        stale = await storage.list_stale_by_scheme()
+        assert old.key.storage_key in stale
+        assert current.key.storage_key not in stale
+
     async def test_load_active_omits_stale(self, storage):
         lesson = _lesson()
         lesson.status = ReplayStatus.STALE

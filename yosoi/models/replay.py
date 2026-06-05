@@ -158,6 +158,24 @@ class LessonKey(BaseModel):
     mode: Literal['mcp'] = 'mcp'
     engine_host: str | None = None
     param_keys: tuple[str, ...] = ()
+    sig_version: str = Field(
+        default='',
+        description=(
+            'Signature-scheme version that produced contract_signature. Lets a '
+            'load-miss after a scheme bump be reported STALE instead of a silent '
+            "re-discovery. Empty means a pre-versioning ('v1') lesson; "
+            'derived from contract_signature when unset.'
+        ),
+    )
+
+    @model_validator(mode='after')
+    def _default_sig_version(self) -> LessonKey:
+        """Derive sig_version from contract_signature's prefix when unset."""
+        if not self.sig_version:
+            from yosoi.utils.signatures import signature_scheme_of
+
+            object.__setattr__(self, 'sig_version', signature_scheme_of(self.contract_signature))
+        return self
 
     @property
     def storage_key(self) -> str:

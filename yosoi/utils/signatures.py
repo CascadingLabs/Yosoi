@@ -10,6 +10,17 @@ if TYPE_CHECKING:
     from yosoi.models.contract import Contract
 
 
+# Bump whenever the bytes that feed ``contract_signature`` change shape so a
+# load-miss caused by the scheme change is distinguishable from a genuine new
+# contract. ``v1`` hashed field metadata only; ``v2`` folds in the class name +
+# docstring so two same-shape contracts differing only by NL intent (AdLink vs
+# OrganicLink) no longer collide. The prefix rides on the returned signature, so
+# every cache key (persistence, lesson storage_key, discovery-strategy) rotates
+# together — stale lessons surface via ``LessonKey.sig_version`` rather than a
+# silent re-discovery.
+SIGNATURE_SCHEME_VERSION = 'v2'
+
+
 def _normalize(s: str | None) -> str:
     """Lowercase and collapse whitespace for stable hashing."""
     return ' '.join(s.lower().split()) if s else ''
@@ -46,16 +57,24 @@ def field_signature(
 
 
 def contract_signature(contract: type[Contract]) -> str:
-    """Return a stable 16-hex-char hash of a contract's full field set.
+    """Return a stable, scheme-versioned hash of a contract's discovery identity.
 
-    Computed as SHA-256 over the sorted list of individual field signatures,
-    so any change in field metadata produces a distinct contract signature.
+    The identity is the sorted list of per-field signatures **plus** the class
+    name and normalized docstring. The class docstring is a load-bearing
+    disambiguator: two contracts with identical fields but different NL intent
+    (``AdLink`` vs ``OrganicLink``, both ``{url, title}``) MUST get distinct cache
+    slots, not clobber each other (see nimbal ``serp_contracts.py`` lesson). The
+    class name is folded in too so two identically-documented-but-differently-named
+    contracts also split — matching the ``_CONTRACT_REGISTRY`` ``__name__`` key.
+
+    The returned digest is prefixed with :data:`SIGNATURE_SCHEME_VERSION` so a
+    cache load-miss caused by a scheme change is observable rather than silent.
 
     Args:
         contract: Contract subclass to hash.
 
     Returns:
-        16-character hex digest.
+        ``"<scheme>:<16-hex-char digest>"`` (e.g. ``"v2:4e9f8fa8a1b2c3d4"``).
 
     """
     field_descs = contract.field_descriptions()
@@ -68,8 +87,26 @@ def contract_signature(contract: type[Contract]) -> str:
         )
         for name, desc in field_descs.items()
     )
-    payload = json.dumps(field_sigs)
-    return hashlib.sha256(payload.encode()).hexdigest()[:16]
+    payload = json.dumps(
+        {
+            'name': _normalize(contract.__name__),
+            'doc': _normalize(contract.__doc__),
+            'fields': field_sigs,
+        },
+        sort_keys=True,
+    )
+    digest = hashlib.sha256(payload.encode()).hexdigest()[:16]
+    return f'{SIGNATURE_SCHEME_VERSION}:{digest}'
+
+
+def signature_scheme_of(contract_sig: str) -> str:
+    """Extract the scheme-version prefix from a contract signature.
+
+    Returns the substring before the first ``':'`` (e.g. ``'v2'``). A bare,
+    un-prefixed legacy signature (no ``':'``) is reported as ``'v1'``.
+    """
+    scheme, sep, _ = contract_sig.partition(':')
+    return scheme if sep else 'v1'
 
 
 def _get_yosoi_type(contract: type[Contract], field_name: str) -> str | None:
