@@ -109,7 +109,12 @@ def _bind(act: ReplayAct, params: dict[str, str]) -> ReplayAct:
     return act.model_copy(update={'url': sub(act.url), 'text': sub(act.text)})
 
 
-async def execute_plan(tab: Any, plan: ReplayPlan, params: dict[str, str] | None = None) -> ReplayResult:
+async def execute_plan(
+    tab: Any,
+    plan: ReplayPlan,
+    params: dict[str, str] | None = None,
+    resolver: Any = None,
+) -> ReplayResult:
     """Execute a replay plan against a browser tab.
 
     The runtime is deliberately fail-fast: a failed assess condition, action,
@@ -124,6 +129,14 @@ async def execute_plan(tab: Any, plan: ReplayPlan, params: dict[str, str] | None
     engine/tool program (e.g. ``similarweb.com/website/{d}/``) replay across N
     target domains by passing ``params={'d': domain}`` — without any model call
     on the hot path. ``act.script`` is deliberately never templated.
+
+    ``resolver`` is the OFF-hot-path (PLANE B) :class:`~yosoi.core.replay.reactions.
+    ReactionResolver` reached when an UNLEARNED REACTION fires (W1): it resolves the
+    reaction's description into a recovery subtree, hot-swaps it in, and the run
+    resumes. Left ``None`` (the default), an UNLEARNED reaction fails fast with
+    ``ReactionMiss`` — the deterministic hot path never imports a model itself, so
+    forwarding the resolver here is the single seam that connects the public replay
+    entrypoint to concurrent discovery.
     """
     params = params or {}
     # Teleport-before-first-paint: install the CDP geolocation/locale override BEFORE
@@ -136,7 +149,7 @@ async def execute_plan(tab: Any, plan: ReplayPlan, params: dict[str, str] | None
     # Single execution form: a flat plan compiles to one SEQUENCE-of-LEAF tree, so
     # execute_plan and execute_tree share the same fail-fast walker (W1).
     result = ReplayResult()
-    await execute_tree(tab, plan.compile(), result, params=params)
+    await execute_tree(tab, plan.compile(), result, params=params, resolver=resolver)
     return result
 
 
