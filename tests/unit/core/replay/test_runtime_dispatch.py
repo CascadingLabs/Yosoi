@@ -14,7 +14,12 @@ from __future__ import annotations
 
 import pytest
 
-from yosoi.core.replay.runtime import _EXECUTORS, ReplayExecutionError, _execute_once
+from yosoi.core.replay.runtime import (
+    _EXECUTORS,
+    _RECOVERY_LEAVES,
+    ReplayExecutionError,
+    _execute_once,
+)
 from yosoi.models.replay import ActKind, ReplayAct
 
 # Act kinds intentionally absent from _EXECUTORS because they run as post-execute_plan
@@ -24,17 +29,43 @@ _DEFERRED_KINDS: frozenset[ActKind] = frozenset()
 
 
 def test_every_act_kind_is_registered_or_explicitly_deferred():
-    """No ActKind may silently fall through: it is either dispatchable or deferred."""
-    missing = set(ActKind) - set(_EXECUTORS) - _DEFERRED_KINDS
+    """No ActKind may silently fall through: it is either dispatchable or deferred.
+
+    Dispatchable means it has an executor in EITHER the browser-act table
+    (``_EXECUTORS``) or the recovery-leaf table (``_RECOVERY_LEAVES``, W1). Both
+    are reached by ``_execute_once``; a kind in neither and not deferred would
+    fail fast at replay time, which this test forbids at import time instead.
+    """
+    dispatchable = set(_EXECUTORS) | set(_RECOVERY_LEAVES)
+    missing = set(ActKind) - dispatchable - _DEFERRED_KINDS
     assert not missing, (
         f'ActKind(s) {sorted(k.value for k in missing)} have no executor and are not in '
-        '_DEFERRED_KINDS. Register an in-tab executor, or defer out-of-band evals.'
+        '_DEFERRED_KINDS. Register an in-tab executor / recovery leaf, or defer out-of-band evals.'
     )
+
+
+def test_recovery_leaves_are_disjoint_from_browser_acts():
+    """A kind is either a browser act or a recovery leaf, never both.
+
+    The two tables are dispatched by the same ``_execute_once``; an overlap would
+    make dispatch order load-bearing and silently shadow one executor.
+    """
+    assert not (set(_EXECUTORS) & set(_RECOVERY_LEAVES))
+
+
+def test_recovery_leaf_table_matches_recovery_kinds():
+    """The recovery-leaf table holds exactly the recovery ActKinds (W1).
+
+    Pins the closed set a REACTION's recovery subtree may compose — adding a new
+    recovery primitive ActKind must also register a leaf here, or this fails.
+    """
+    expected = {ActKind.CAPTCHA_PROBE, ActKind.INJECT_TOKEN, ActKind.HUMAN_CLICK}
+    assert set(_RECOVERY_LEAVES) == expected
 
 
 def test_table_and_deferred_sets_are_disjoint():
     """A kind cannot be both dispatchable and deferred."""
-    assert not (set(_EXECUTORS) & _DEFERRED_KINDS)
+    assert not ((set(_EXECUTORS) | set(_RECOVERY_LEAVES)) & _DEFERRED_KINDS)
 
 
 def test_out_of_band_eval_kinds_are_never_registered_in_table():

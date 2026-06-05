@@ -22,12 +22,15 @@ if TYPE_CHECKING:
     from yosoi.models.replay import LessonStats as LessonStats
     from yosoi.models.replay import LessonTrace as LessonTrace
     from yosoi.models.replay import LessonValidation as LessonValidation
+    from yosoi.models.replay import NodeKind as NodeKind
+    from yosoi.models.replay import ReactionState as ReactionState
     from yosoi.models.replay import ReplayAct as ReplayAct
     from yosoi.models.replay import ReplayCondition as ReplayCondition
     from yosoi.models.replay import ReplayNode as ReplayNode
     from yosoi.models.replay import ReplayPlan as ReplayPlan
     from yosoi.models.replay import ReplayStatus as ReplayStatus
     from yosoi.models.replay import TeleportSpec as TeleportSpec
+    from yosoi.models.replay import TreeNode as TreeNode
     from yosoi.models.replay import VerifyReport as VerifyReport
     from yosoi.models.results import ContentMetadata as ContentMetadata
     from yosoi.models.results import FetchResult as FetchResult
@@ -58,12 +61,15 @@ _LAZY: dict[str, str] = {
     'LessonStats': _REPLAY,
     'LessonTrace': _REPLAY,
     'LessonValidation': _REPLAY,
+    'NodeKind': _REPLAY,
+    'ReactionState': _REPLAY,
     'ReplayAct': _REPLAY,
     'ReplayCondition': _REPLAY,
     'ReplayNode': _REPLAY,
     'ReplayPlan': _REPLAY,
     'ReplayStatus': _REPLAY,
     'TeleportSpec': _REPLAY,
+    'TreeNode': _REPLAY,
     'VerifyReport': _REPLAY,
     'ContentMetadata': _RESULTS,
     'FetchResult': _RESULTS,

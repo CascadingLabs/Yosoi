@@ -36,6 +36,15 @@ class ActKind(str, Enum):
     EVAL = 'eval'
     TELEPORT = 'teleport'
     DOWNLOAD = 'download'  # ys.File() download node (see runtime._download)
+    # --- Recovery primitives (W1) ----------------------------------------------------
+    # The closed set a REACTION's recovery subtree composes / the discovery layer
+    # patches with. They live on the deterministic hot path (CAS-87): each maps to a
+    # _RECOVERY_LEAVES executor built ONLY from primitives already on PooledTab
+    # (eval_js / dispatch_mouse_event). No solver/LLM call ever lands here — the actual
+    # solve happens OFF the hot path in PLANE B and is injected as a pre-resolved leaf.
+    CAPTCHA_PROBE = 'captcha_probe'  # eval_js(CAPTURE_JS) -> CaptchaInfo dict | None
+    INJECT_TOKEN = 'inject_token'  # eval_js(INJECT_JS, kind, token) — pre-resolved token
+    HUMAN_CLICK = 'human_click'  # replay a recorded dispatch_mouse_event recipe
 
 
 class AssertKind(str, Enum):
@@ -48,6 +57,7 @@ class AssertKind(str, Enum):
     DOM_STABLE = 'dom_stable'
     AX_TARGET = 'ax_target'
     DOWNLOAD_OK = 'download_ok'  # a verified download was captured for the node's act
+    CAPTCHA = 'captcha'  # trigger guard (W1): a rendered antibot/captcha wall is present
     NONE = 'none'
 
 
@@ -129,17 +139,115 @@ class TeleportSpec(BaseModel):
     locale: str | None = None
 
 
+class NodeKind(str, Enum):
+    """Composite/leaf kinds for the behavior-tree replay model (W1).
+
+    The tree is ADDITIVE over the legacy flat ``ReplayPlan.nodes`` list:
+    :meth:`ReplayPlan.compile` wraps a flat plan in a single ``SEQUENCE`` of
+    ``LEAF`` nodes, so there is exactly one execution code path
+    (:func:`yosoi.core.replay.runtime.execute_tree`) and zero breakage for
+    existing flat plans.
+    """
+
+    LEAF = 'leaf'  # wraps exactly one ReplayNode (today's assess/act/expect)
+    SEQUENCE = 'sequence'  # tick children L->R; fail-fast on first child failure
+    SELECTOR = 'selector'  # tick children L->R; succeed on first child success
+    REACTION = 'reaction'  # decorator: guard one child subtree with trigger->recovery
+
+
+class ReactionState(str, Enum):
+    """Whether a REACTION already knows how to recover, or must learn it.
+
+    * ``LEARNED`` — ``recovery`` is a pinned subtree of :data:`ActKind` recovery
+      leaves; ticking it is deterministic and stays on the hot path (CAS-87).
+    * ``UNLEARNED`` — only a ``description`` placeholder is known. On a fired
+      trigger the walker resolves the description OFF the hot path (PLANE B, via
+      the DiscoveryBus) into a recovery leaf, hot-swaps it in, and persists it.
+      A captcha intent and a drifted data selector are the same event here.
+    """
+
+    LEARNED = 'learned'
+    UNLEARNED = 'unlearned'
+
+
+class TreeNode(BaseModel):
+    """A node in a replay behavior tree (W1).
+
+    Exactly one of the kind-specific payloads is meaningful per ``kind``:
+
+    * ``LEAF``     → ``leaf`` (a :class:`ReplayNode`).
+    * ``SEQUENCE`` / ``SELECTOR`` → ``children``.
+    * ``REACTION`` → ``child`` (the guarded subtree) plus ``trigger`` and either
+      a ``recovery`` subtree (``state == LEARNED``) or a ``description``
+      (``state == UNLEARNED``) that PLANE B resolves into one.
+    """
+
+    kind: NodeKind
+    id: str
+    # LEAF:
+    leaf: ReplayNode | None = None
+    # SEQUENCE / SELECTOR:
+    children: list[TreeNode] = Field(default_factory=list)
+    # REACTION (decorator over exactly one child):
+    child: TreeNode | None = None
+    trigger: ReplayCondition | None = None
+    recovery: TreeNode | None = None
+    resume: bool = True  # re-tick the guarded child after recovery succeeds
+    state: ReactionState = ReactionState.LEARNED
+    description: str | None = None  # UNLEARNED: the intent the bus resolves->recovery leaf
+
+    @model_validator(mode='after')
+    def _validate_kind_payload(self) -> TreeNode:
+        """Reject structurally-impossible trees up front (fail-fast authoring)."""
+        if self.kind is NodeKind.LEAF and self.leaf is None:
+            raise ValueError('LEAF nodes require a leaf ReplayNode')
+        if self.kind is NodeKind.REACTION:
+            if self.child is None:
+                raise ValueError('REACTION nodes decorate exactly one child')
+            if self.trigger is None:
+                raise ValueError('REACTION nodes require a trigger condition')
+            if self.state is ReactionState.LEARNED and self.recovery is None:
+                raise ValueError('LEARNED REACTION nodes require a recovery subtree')
+            if self.state is ReactionState.UNLEARNED and not self.description:
+                raise ValueError('UNLEARNED REACTION nodes require a description to resolve')
+        return self
+
+
 class ReplayPlan(BaseModel):
-    """Flat sequence of replay nodes for one learned browser state."""
+    """A learned browser program — flat node list and/or a behavior tree.
+
+    ``nodes`` is the legacy flat sequence and stays the authoring surface for
+    existing discovery code. ``tree`` is the additive behavior-tree form (W1).
+    :meth:`compile` returns a single ``TreeNode`` for either shape, so the
+    runtime has one execution path.
+    """
 
     nodes: list[ReplayNode] = Field(default_factory=list)
+    tree: TreeNode | None = None
     teleport: TeleportSpec | None = None
-    version: int = 1
+    version: int = 2
 
     @property
     def is_empty(self) -> bool:
         """Return whether the plan has no browser actions."""
-        return len(self.nodes) == 0
+        return self.tree is None and len(self.nodes) == 0
+
+    def compile(self) -> TreeNode:
+        """Return the behavior tree for this plan — the single execution form.
+
+        If ``tree`` is set it is returned verbatim. Otherwise the flat ``nodes``
+        list is wrapped in one ``SEQUENCE`` of ``LEAF`` nodes, preserving the
+        exact left-to-right fail-fast semantics ``execute_plan`` had. This is the
+        zero-breakage bridge: a legacy flat plan and a hand-built tree both
+        reduce to one ``TreeNode`` the walker ticks.
+        """
+        if self.tree is not None:
+            return self.tree
+        return TreeNode(
+            kind=NodeKind.SEQUENCE,
+            id='__plan_root__',
+            children=[TreeNode(kind=NodeKind.LEAF, id=node.id, leaf=node) for node in self.nodes],
+        )
 
 
 class VerifyReport(BaseModel):
