@@ -82,6 +82,15 @@ _MULTI_ITEM_FIELD_GUIDANCE: Final = (
     'selector under the repeating item wrapper.'
 )
 
+_FIELD_ROOT_GUIDANCE: Final = (
+    'PREFER A SIMPLE LEAF UNDER A `root` SCOPE: instead of one long absolute path '
+    "(e.g. `div.A div.B > a::attr(href)`), set this field's `root` to a stable parent region "
+    'and give a SHORT leaf selector evaluated relative to it (e.g. root `div.A`, leaf '
+    '`a::attr(href)`). The leaf and the root then break independently, so the selector is '
+    'sturdier. For links prefer `::attr(href)`; reuse a real attribute over a deep path. '
+    'Leave `root` null only when the whole page is a single unambiguous region.'
+)
+
 
 # ---------------------------------------------------------------------------
 # Input model
@@ -154,7 +163,11 @@ def _intent_block(intent: str) -> str:
         f'{intent.strip()}\n'
         'When several regions of the page expose the same fields (e.g. a sponsored/ad '
         'rail vs an organic results list), use this intent to choose the region that '
-        'matches it — do NOT default to the first match.'
+        'matches it — do NOT default to the first match. Express that choice concretely '
+        "by setting each field's `root` to the intent-matched region (e.g. the block that "
+        'has — or specifically lacks — a "Sponsored"/"Ad" label), then give the leaf '
+        'selector relative to that root. This takes precedence over the repeating-item '
+        'default above: a correct singleton region beats the wrong repeating one.'
     )
 
 
@@ -251,7 +264,7 @@ def field_single_field_instructions(ctx: RunContext['FieldDiscoveryDeps']) -> st
         # see the container selector. Tell them to scope within a single
         # repeating item so ambiguous fields (e.g. title vs. page heading)
         # don't latch onto page-level chrome.
-        text += f'\n\n{_MULTI_ITEM_FIELD_GUIDANCE}'
+        text += f'\n\n{_MULTI_ITEM_FIELD_GUIDANCE}\n\n{_FIELD_ROOT_GUIDANCE}'
     return text
 
 

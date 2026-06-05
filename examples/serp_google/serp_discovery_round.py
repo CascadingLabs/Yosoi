@@ -148,7 +148,9 @@ async def discover(contract: type[Contract], html: str, url: str, cfg: LLMConfig
 
 def _primary(smap: dict[str, Any] | None, field: str) -> str:
     entry = (smap or {}).get(field) or {}
-    return ((entry.get('primary') or {}).get('value')) or '<none>'
+    leaf = ((entry.get('primary') or {}).get('value')) or '<none>'
+    root = (entry.get('root') or {}).get('value') if isinstance(entry.get('root'), dict) else None
+    return f'root={root!r} leaf={leaf!r}' if root else leaf
 
 
 async def run_round(cfg: LLMConfig) -> dict[str, Any]:
@@ -170,9 +172,13 @@ async def run_round(cfg: LLMConfig) -> dict[str, Any]:
     ad_rows = ContentExtractor(contract=AdResult).extract_content_with_html('', cleaned, ad) if ad else None
 
     from yosoi.core.discovery.dedup import maps_collide
+    from yosoi.core.discovery.discrimination import discriminated as det_discriminated
 
     return {
         'collide': maps_collide(organic, ad),
+        # TIER 1 (deterministic): do the two contracts resolve to DISJOINT DOM elements?
+        # Independent of extracted values / DOM order — this is the honest gate.
+        'discriminated': bool(organic) and bool(ad) and det_discriminated(cleaned, organic, ad),
         'organic_sig': contract_signature(OrganicResult),
         'ad_sig': contract_signature(AdResult),
         'organic_url_sel': _primary(organic, 'url'),
@@ -216,12 +222,15 @@ async def _amain() -> None:
 
     org = str((rep['organic_extracted'] or {}).get('url', ''))
     ad = str((rep['ad_extracted'] or {}).get('url', ''))
-    discriminated = bool(org) and bool(ad) and org != ad and 'sponsored' not in org.lower()
-    print(f'\n  discriminated organic from sponsored? {discriminated}')
+    discriminated = rep['discriminated']  # TIER 1 deterministic gate, NOT a value-diff guess
+    print(f'\n  discriminated? {discriminated}  (deterministic: do the two selectors hit DISJOINT DOM elements?)')
     print(f'    organic url: {org or "<none>"}')
     print(f'    ad url:      {ad or "<none>"}')
+    if not discriminated:
+        print('    ↳ a contract whose selector overlaps the other region only extracted the right')
+        print('      value by DOM-order luck — the value diff is NOT proof of discrimination.')
     print(
-        f'\nRESULT: {"PASS — discovery discriminated on obfuscated markup" if discriminated else "FINDING — see selectors above (real discovery output, not asserted)"}'
+        f'\nRESULT: {"PASS — selectors hit disjoint regions (deterministically discriminated)" if discriminated else "FINDING — selectors overlap; not discriminated (Tier-1 gate failed)"}'
     )
 
 
