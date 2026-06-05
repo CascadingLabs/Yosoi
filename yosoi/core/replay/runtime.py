@@ -8,7 +8,15 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from typing import Any
 
-from yosoi.models.replay import ActKind, AssertKind, ReplayAct, ReplayCondition, ReplayPlan, VerifyReport
+from yosoi.models.replay import (
+    ActKind,
+    AssertKind,
+    ReplayAct,
+    ReplayCondition,
+    ReplayPlan,
+    TeleportSpec,
+    VerifyReport,
+)
 from yosoi.models.results import JsOutputs
 from yosoi.models.selectors import SelectorEntry
 
@@ -110,6 +118,13 @@ async def execute_plan(tab: Any, plan: ReplayPlan, params: dict[str, str] | None
     params = params or {}
     report = VerifyReport()
     captured: JsOutputs = {}
+    # Teleport-before-first-paint: install the CDP geolocation/locale override BEFORE
+    # the node loop so it is live before the first NAVIGATE's goto. Lifting the spoof to
+    # a per-plan field (rather than a free-floating TELEPORT node) makes "after a
+    # navigate" structurally impossible — the override is sticky across the navigations
+    # that follow (page.rs:set_geolocation issues a session-level Emulation override).
+    if plan.teleport is not None:
+        await _apply_teleport(tab, plan.teleport)
     for node in plan.nodes:
         if not await _condition_holds(tab, node.assess):
             _fail(report, f'assess failed for {node.id}: {node.intent}')
@@ -433,6 +448,24 @@ async def _teleport(tab: Any, metadata: dict[str, Any]) -> None:
         await _call(tab, 'set_timezone', timezone)
     if locale := metadata.get('locale'):
         await _call(tab, 'set_locale', locale)
+
+
+async def _apply_teleport(tab: Any, spec: TeleportSpec) -> None:
+    """Install the geolocation/timezone/locale override for a per-plan TeleportSpec.
+
+    Called by :func:`execute_plan` BEFORE the node loop so the CDP override is live
+    before first paint. NO ``example.com`` secure-context prime here: that proof-read
+    is DISCOVERY-TIME verification (it confirms the override mechanism landed once when
+    the lesson was learned), not a replay hot-path ritual. ``set_geolocation`` is a
+    sticky session-level override (page.rs), so one install survives the navigations
+    that follow — the double-load the notes blamed on teleport is an engine-side
+    one-zone-lag effect, modeled separately, not a reload teleport itself needs.
+    """
+    await _call(tab, 'set_geolocation', spec.latitude, spec.longitude)
+    if spec.timezone:
+        await _call(tab, 'set_timezone', spec.timezone)
+    if spec.locale:
+        await _call(tab, 'set_locale', spec.locale)
 
 
 async def _wait_for_dom_stable(tab: Any, condition: ReplayCondition) -> None:

@@ -15,6 +15,7 @@ from yosoi.models.replay import (
     ReplayNode,
     ReplayPlan,
     ReplayStatus,
+    TeleportSpec,
     VerifyReport,
 )
 from yosoi.models.selectors import css, role, visual
@@ -59,6 +60,32 @@ class TestReplayPlan:
 
         assert restored.is_empty is False
         assert restored.nodes[0].act.targets[0].type == 'role'
+
+    def test_plan_defaults_to_no_teleport(self):
+        assert ReplayPlan().teleport is None
+
+    def test_plan_carries_teleport_spec_round_trip(self):
+        plan = ReplayPlan(
+            nodes=[],
+            teleport=TeleportSpec(latitude=38.88, longitude=-77.1, timezone='America/New_York', locale='en-US'),
+        )
+        restored = ReplayPlan.model_validate(plan.model_dump(mode='json'))
+        assert restored.teleport is not None
+        assert restored.teleport.latitude == 38.88
+        assert restored.teleport.longitude == -77.1
+        assert restored.teleport.timezone == 'America/New_York'
+
+
+class TestTeleportSpec:
+    def test_minimal_spec_allows_optional_fields_none(self):
+        spec = TeleportSpec(latitude=1.0, longitude=2.0)
+        assert spec.timezone is None
+        assert spec.locale is None
+
+    @pytest.mark.parametrize(('lat', 'lon'), [(91.0, 0.0), (-91.0, 0.0), (0.0, 181.0), (0.0, -181.0)])
+    def test_rejects_out_of_range_coords(self, lat, lon):
+        with pytest.raises(ValueError, match=r'less than or equal|greater than or equal'):
+            TeleportSpec(latitude=lat, longitude=lon)
 
 
 class TestVerifyReport:

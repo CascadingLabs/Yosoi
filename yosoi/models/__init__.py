@@ -27,6 +27,7 @@ if TYPE_CHECKING:
     from yosoi.models.replay import ReplayNode as ReplayNode
     from yosoi.models.replay import ReplayPlan as ReplayPlan
     from yosoi.models.replay import ReplayStatus as ReplayStatus
+    from yosoi.models.replay import TeleportSpec as TeleportSpec
     from yosoi.models.replay import VerifyReport as VerifyReport
     from yosoi.models.results import ContentMetadata as ContentMetadata
     from yosoi.models.results import FetchResult as FetchResult
@@ -62,6 +63,7 @@ _LAZY: dict[str, str] = {
     'ReplayNode': _REPLAY,
     'ReplayPlan': _REPLAY,
     'ReplayStatus': _REPLAY,
+    'TeleportSpec': _REPLAY,
     'VerifyReport': _REPLAY,
     'ContentMetadata': _RESULTS,
     'FetchResult': _RESULTS,

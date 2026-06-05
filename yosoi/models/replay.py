@@ -104,10 +104,36 @@ class ReplayNode(BaseModel):
     expect: ReplayCondition = Field(default_factory=ReplayCondition)
 
 
+class TeleportSpec(BaseModel):
+    """Geolocation/locale spoof applied BEFORE a plan's first navigate.
+
+    This is the teleport-before-first-paint contract. A free-floating
+    ``ActKind.TELEPORT`` node leaves the spoof's ordering relative to the first
+    ``NAVIGATE`` up to whatever index discovery happened to emit it at; CDP's
+    ``Emulation.setGeolocationOverride`` is a *session-level* override that must
+    be installed before the page loads to be reflected on first paint. Lifting
+    the spoof to a per-plan field that ``execute_plan`` applies *before* the node
+    loop makes "after a navigate" structurally impossible — no node-order
+    scanning validator needed.
+
+    The coordinates are LITERAL: discovery geocodes ``city, state`` → ``(lat,
+    lon)`` and bakes the result here, so replay never imports geopy and stays
+    import-light (CAS-87). A ``words``-localization plan carries NO ``TeleportSpec``
+    (city/state is baked into the query string instead); only a ``teleport``
+    plan sets one.
+    """
+
+    latitude: float = Field(ge=-90.0, le=90.0)
+    longitude: float = Field(ge=-180.0, le=180.0)
+    timezone: str | None = None
+    locale: str | None = None
+
+
 class ReplayPlan(BaseModel):
     """Flat sequence of replay nodes for one learned browser state."""
 
     nodes: list[ReplayNode] = Field(default_factory=list)
+    teleport: TeleportSpec | None = None
     version: int = 1
 
     @property
