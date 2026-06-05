@@ -92,20 +92,53 @@ def is_generic(html: str, slot: dict[str, Any], *, expected: int = 1, slack: int
     return n > expected + slack
 
 
-def discriminated(html: str, map_a: dict[str, Any], map_b: dict[str, Any]) -> bool:
-    """True iff every shared field's element sets are NON-EMPTY and DISJOINT.
+def contract_element_ids(sel: Selector, contract_map: dict[str, Any]) -> set[str]:
+    """Union of element identities all of a contract's content fields resolve to.
 
-    This is the deterministic answer to "did discovery discriminate these two contracts?"
-    — independent of extracted values, prompts, or DOM order. Overlap on even one field
-    (e.g. an ad selector that also matches organic anchors) is a hard FAIL.
+    This is the contract's *region footprint* — the set of DOM elements it claims. Region
+    disjointness works across HETEROGENEOUS contracts (ad/organic share ``{url, title}``,
+    but maps/images/shopping have different field names), which per-field comparison cannot.
+    """
+    out: set[str] = set()
+    for field, slot in (contract_map or {}).items():
+        if field in _STRUCTURAL:
+            continue
+        out |= field_element_ids(sel, slot)
+    return out
+
+
+def discriminated(html: str, map_a: dict[str, Any], map_b: dict[str, Any]) -> bool:
+    """True iff the two contracts' element footprints are NON-EMPTY and DISJOINT.
+
+    The deterministic answer to "did discovery discriminate these two contracts?" —
+    independent of extracted values, prompts, or DOM order. Any shared element (e.g. an ad
+    selector that also matches an organic anchor) is a hard FAIL.
     """
     sel = Selector(text=html)
-    shared = (set(map_a) & set(map_b)) - _STRUCTURAL
-    if not shared:
-        return False
-    for field in shared:
-        a = field_element_ids(sel, map_a[field])
-        b = field_element_ids(sel, map_b[field])
-        if not a or not b or (a & b):
-            return False
-    return True
+    a, b = contract_element_ids(sel, map_a), contract_element_ids(sel, map_b)
+    return bool(a) and bool(b) and not (a & b)
+
+
+def overlapping_pairs(html: str, maps: dict[str, dict[str, Any]]) -> dict[tuple[str, str], int]:
+    """Pairwise region overlap across N named contracts.
+
+    Returns ``{(name_a, name_b): shared_element_count}`` for every pair that is NOT cleanly
+    discriminated (shares ≥1 element, or either footprint is empty → recorded as overlap 0).
+    An empty result means all N contracts are mutually discriminated.
+    """
+    sel = Selector(text=html)
+    footprints = {name: contract_element_ids(sel, m) for name, m in maps.items()}
+    names = list(maps)
+    out: dict[tuple[str, str], int] = {}
+    for i in range(len(names)):
+        for j in range(i + 1, len(names)):
+            fa, fb = footprints[names[i]], footprints[names[j]]
+            shared = fa & fb
+            if shared or not fa or not fb:
+                out[(names[i], names[j])] = len(shared)
+    return out
+
+
+def mutually_discriminated(html: str, maps: dict[str, dict[str, Any]]) -> bool:
+    """True iff all N contracts have non-empty, pairwise-disjoint element footprints."""
+    return len(maps) >= 2 and not overlapping_pairs(html, maps)

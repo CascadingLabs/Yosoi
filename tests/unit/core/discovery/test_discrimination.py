@@ -50,6 +50,23 @@ def test_match_count_and_genericity() -> None:
     assert is_generic(_HTML, _slot('a::attr(href)', root='.uEierd')) is False
 
 
+def test_mutual_discrimination_across_blocks() -> None:
+    from yosoi.core.discovery.discrimination import mutually_discriminated, overlapping_pairs
+
+    ad = {'url': _slot('a::attr(href)', root='.uEierd')}
+    organic = {'url': _slot('a::attr(href)', root='.MjjYud')}
+    # A third "block" that overlaps organic (generic): matches all anchors.
+    generic = {'url': _slot('a::attr(href)')}
+
+    assert mutually_discriminated(_HTML, {'ad': ad, 'organic': organic}) is True
+    report = overlapping_pairs(_HTML, {'ad': ad, 'organic': organic, 'generic': generic})
+    # 'generic' overlaps BOTH ad and organic; ad vs organic stays clean.
+    assert ('ad', 'organic') not in report
+    assert report[('ad', 'generic')] >= 1
+    assert report[('organic', 'generic')] >= 1
+    assert mutually_discriminated(_HTML, {'ad': ad, 'organic': organic, 'generic': generic}) is False
+
+
 def test_pseudo_element_stripped_to_compare_elements_not_attr_nodes() -> None:
     # `a::attr(href)` and `a` resolve to the SAME elements (the anchors), so two contracts
     # using them in the same region are (correctly) not discriminated.
