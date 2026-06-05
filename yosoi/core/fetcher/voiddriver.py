@@ -31,6 +31,7 @@ from yosoi.core.fetcher.dom.ax import AxSnapshot
 from yosoi.core.fetcher.dom.probes import capture_ax_snapshot
 from yosoi.core.fetcher.downloads import execute_downloads
 from yosoi.models.download import DownloadResult, DownloadSpec
+from yosoi.models.replay import ReplayPlan
 from yosoi.models.results import FetchResult, JsOutputs
 from yosoi.storage.a3node import A3Node, A3NodeStorage, ActRecord
 from yosoi.utils import observability as obs
@@ -76,6 +77,7 @@ class _VoidCrawlFetcher(HTMLFetcher):
         browser_executable_path: str | None = None,
         console: Console | None = None,
         experimental_a3node: bool = False,
+        experimental_replay_plan: bool = False,
         allow_downloads: bool = False,
         download_dir: str | None = None,
         user_agent: str | None = None,
@@ -89,6 +91,7 @@ class _VoidCrawlFetcher(HTMLFetcher):
         self.browser_executable_path = browser_executable_path
         self._console = console or Console()
         self._experimental_a3node = experimental_a3node
+        self._experimental_replay_plan = experimental_replay_plan
         self._allow_downloads = allow_downloads
         self._download_dir = download_dir
         self._user_agent = user_agent
@@ -182,6 +185,65 @@ class _VoidCrawlFetcher(HTMLFetcher):
     ) -> FetchResult:
         start = time.time()
         return await self._do_fetch(url, start, 'fetch', action_scripts=action_scripts, download_specs=download_specs)
+
+    async def fetch_with_plan(
+        self,
+        plan: ReplayPlan,
+        params: dict[str, str] | None = None,
+    ) -> FetchResult:
+        """Drive a learned ReplayPlan over a pooled tab via the deterministic runtime.
+
+        This is the hotpath wiring: instead of ``goto`` + eval'd JS strings, a
+        discovered :class:`~yosoi.models.replay.ReplayPlan` is replayed through
+        :func:`yosoi.core.replay.runtime.execute_plan` against a live
+        :class:`PooledTab`. ``params`` (e.g. ``{'d': domain}``) parametrize the
+        plan's ``url``/``text`` fields at dispatch time — one engine program
+        replayed across N targets, LLM-free.
+
+        Gated by ``experimental_replay_plan``: callers must opt in, mirroring the
+        ``experimental_a3node`` flag. The plan's EVAL ``output_field`` captures land
+        in ``FetchResult.js_outputs``; the final DOM is captured as ``html``. A
+        fail-fast :class:`ReplayExecutionError` (missing param, antibot challenge,
+        failed assertion) propagates — the runtime never returns garbage.
+        """
+        from yosoi.core.replay.runtime import execute_plan
+
+        if not self._experimental_replay_plan:
+            raise RuntimeError('replay-plan fetch is disabled; pass experimental_replay_plan=True to enable it')
+        start_time = time.time()
+        plan_url = next((node.act.url for node in plan.nodes if node.act.url), '') or ''
+        async with self._pool.acquire() as tab:
+            jitter = random.uniform(0, _JITTER_MAX_S)
+            if jitter > 0.05:
+                await asyncio.sleep(jitter)
+            result = await execute_plan(tab, plan, params=params)
+            html: str | None = None
+            try:
+                html = await tab.content()
+            except (RuntimeError, OSError, ValueError) as exc:
+                logger.debug('replay-plan content capture failed: %s', exc)
+
+        js_outputs: JsOutputs | None = result.extracted_actions or None
+        if not html or len(html) < self.min_content_length:
+            return FetchResult(
+                url=plan_url,
+                html=html,
+                status_code=None,
+                is_blocked=False,
+                block_reason=f'Content too short ({len(html or "")} chars)',
+                fetch_time=time.time() - start_time,
+                js_outputs=js_outputs,
+            )
+        metadata = ContentAnalyzer.analyze(html)
+        return FetchResult(
+            url=plan_url,
+            html=html,
+            status_code=200,
+            is_blocked=False,
+            fetch_time=time.time() - start_time,
+            metadata=metadata,
+            js_outputs=js_outputs,
+        )
 
     async def _do_fetch(
         self,

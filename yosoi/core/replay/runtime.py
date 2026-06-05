@@ -55,7 +55,43 @@ class ReplayResult:
         return self.report.failures
 
 
-async def execute_plan(tab: Any, plan: ReplayPlan) -> ReplayResult:
+class _StrictParams(dict[str, str]):
+    """A ``format_map`` mapping that fail-fasts on any missing key.
+
+    The default ``str.format_map`` raises ``KeyError`` on a missing field, but
+    only lazily and with an opaque message. Subclassing makes the failure mode
+    explicit and lets us raise a replay-grade error: a parametrized plan that
+    references ``{d}`` with no ``d`` in ``params`` is a hard authoring/wiring
+    bug, never something to paper over with an empty substitution (that would
+    silently produce a garbage URL and violate the no-garbage fail-fast rule).
+    """
+
+    def __missing__(self, key: str) -> str:
+        raise ReplayExecutionError(f'replay param {{{key}}} is missing from params')
+
+
+def _bind(act: ReplayAct, params: dict[str, str]) -> ReplayAct:
+    """Substitute ``params`` into templated act fields — pure string templating.
+
+    NO model call: substitution is ``str.format_map`` only, so this preserves
+    CAS-87 replay determinism. Crucially, templating is confined to ``act.url``
+    and ``act.text`` — the only fields where ``{d}``/``{q}`` actually live on the
+    hotpath. ``act.script`` is NEVER templated: real extraction JS is dense with
+    literal braces (arrow funcs, object literals, regex quantifiers like
+    ``{0,40}``) and ``format_map`` would either raise on or corrupt the first
+    brace. A brace-heavy script must round-trip untouched.
+    """
+    if not params:
+        return act
+    strict = _StrictParams(params)
+
+    def sub(value: str | None) -> str | None:
+        return value.format_map(strict) if value else value
+
+    return act.model_copy(update={'url': sub(act.url), 'text': sub(act.text)})
+
+
+async def execute_plan(tab: Any, plan: ReplayPlan, params: dict[str, str] | None = None) -> ReplayResult:
     """Execute a replay plan against a browser tab.
 
     The runtime is deliberately fail-fast: a failed assess condition, action,
@@ -63,14 +99,22 @@ async def execute_plan(tab: Any, plan: ReplayPlan) -> ReplayResult:
     guessing alternate behavior.
     When a ReplayAct has ``output_field`` set and kind is EVAL, the return
     value of the JS expression is captured in ``ReplayResult.extracted_actions``.
+
+    ``params`` parametrizes the plan at dispatch time: ``{d}``/``{q}`` tokens in
+    ``act.url`` / ``act.text`` are substituted via a strict ``format_map`` that
+    raises on any missing key (see :func:`_bind`). This is what lets ONE
+    engine/tool program (e.g. ``similarweb.com/website/{d}/``) replay across N
+    target domains by passing ``params={'d': domain}`` — without any model call
+    on the hot path. ``act.script`` is deliberately never templated.
     """
+    params = params or {}
     report = VerifyReport()
     captured: JsOutputs = {}
     for node in plan.nodes:
         if not await _condition_holds(tab, node.assess):
             _fail(report, f'assess failed for {node.id}: {node.intent}')
 
-        output = await _execute_act(tab, node.act, node.expect)
+        output = await _execute_act(tab, _bind(node.act, params), node.expect)
         # Gate capture on output_field alone: only producer acts (EVAL/DOWNLOAD) set it,
         # so this never captures a mutator's None. A producer that legitimately yields
         # None (JS returning null, an empty projection) must be captured AS None — dropping
@@ -169,8 +213,26 @@ async def _download(tab: Any, act: ReplayAct) -> Any:
 
 
 async def _exec_navigate(tab: Any, act: ReplayAct) -> Any:
-    await _call(tab, 'goto', act.url)
+    response = await _call(tab, 'goto', act.url)
+    _raise_if_challenged(response, act.url)
     return None
+
+
+def _raise_if_challenged(response: Any, url: str | None) -> None:
+    """Fail-fast on an antibot/captcha challenge surfaced by ``goto``.
+
+    ``PooledTab.goto`` returns a ``PageResponse`` whose ``antibot.challenged``
+    flag is the substrate's existing captcha signal — no ``Page.detect_captcha``
+    (which is not bound on a pooled tab) and no new ``AssertKind`` needed. When a
+    challenge is present we raise :class:`ReplayExecutionError` so the off-hotpath
+    orchestrator can rotate proxy/profile via tenacity, rather than proceeding to
+    scrape a challenge page and returning garbage. Defensive ``getattr``: older
+    VoidCrawl builds expose no ``antibot`` field, in which case there is simply no
+    challenge signal to act on (absence is not a challenge — we do not fail-closed).
+    """
+    antibot = getattr(response, 'antibot', None)
+    if antibot is not None and getattr(antibot, 'challenged', False):
+        raise ReplayExecutionError(f'antibot challenge detected at {url}')
 
 
 async def _exec_click(tab: Any, act: ReplayAct) -> Any:
@@ -344,6 +406,13 @@ async def _type_first(tab: Any, targets: list[SelectorEntry], text: str) -> None
     for target in targets:
         if target.type != 'css':
             continue
+        # PooledTab (the object the BrowserPool yields) exposes only ``type_into``
+        # — neither ``fill`` nor ``type``. Prefer it so SERP programs that type a
+        # query can replay on the live pooled-tab substrate; the ``fill``/``type``
+        # branches remain for bare Tab/JsTab variants used in discovery.
+        if hasattr(tab, 'type_into'):
+            await _call(tab, 'type_into', target.value, text)
+            return
         if hasattr(tab, 'fill'):
             await _call(tab, 'fill', target.value, text)
             return

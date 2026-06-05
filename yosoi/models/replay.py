@@ -137,17 +137,42 @@ class VerifyReport(BaseModel):
 
 
 class LessonKey(BaseModel):
-    """Stable identity for a discovery lesson."""
+    """Stable identity for a discovery lesson.
+
+    Two cache shapes coexist:
+
+    * **per-destination** (default) — keyed by ``domain`` (the target page's
+      host). This is the discover-once-per-target unit the static/MCP pipelines
+      use today.
+    * **per-engine** (hotpath) — when ``engine_host`` is set, identity is the
+      ENGINE/TOOL host (``google.com``, ``similarweb.com``) plus ``param_keys``
+      (e.g. ``('d',)`` for ``{d}``, ``('q',)`` for a SERP query). The target
+      domain is no longer part of identity; it becomes a replay-time param. This
+      is the inversion the Nimbal hotpath needs — one program per engine replayed
+      across N targets — and ``storage_key`` keeps the two namespaces disjoint.
+    """
 
     domain: str
     contract_signature: str
     page_profile: str = 'default'
     mode: Literal['mcp'] = 'mcp'
+    engine_host: str | None = None
+    param_keys: tuple[str, ...] = ()
 
     @property
     def storage_key(self) -> str:
-        """Filesystem-safe key for lesson persistence."""
-        raw = f'{self.domain}__{self.contract_signature}__{self.page_profile}__{self.mode}'
+        """Filesystem-safe key for lesson persistence.
+
+        Per-destination keys (no ``engine_host``) are byte-identical to the
+        legacy format so existing lessons keep loading. Per-engine keys add an
+        ``engine``/``params`` segment so they cannot collide with a domain-keyed
+        lesson for the same contract.
+        """
+        if self.engine_host is not None:
+            params = '-'.join(self.param_keys)
+            raw = f'engine_{self.engine_host}__{self.contract_signature}__{params}__{self.page_profile}__{self.mode}'
+        else:
+            raw = f'{self.domain}__{self.contract_signature}__{self.page_profile}__{self.mode}'
         return ''.join(ch if ch.isalnum() or ch in ('-', '_') else '_' for ch in raw)
 
 

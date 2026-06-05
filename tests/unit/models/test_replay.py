@@ -74,6 +74,26 @@ class TestDiscoveryLesson:
         key = LessonKey(domain='news.ycombinator.com', contract_signature='abc/123', page_profile='top stories')
         assert key.storage_key == 'news_ycombinator_com__abc_123__top_stories__mcp'
 
+    def test_per_engine_key_has_distinct_namespace(self):
+        # An engine-keyed lesson (the hotpath inversion) must not collide with a
+        # domain-keyed lesson for the same contract: the 'engine_' prefix + the
+        # param-keys segment keep the two namespaces disjoint.
+        engine = LessonKey(
+            domain='ignored',
+            contract_signature='sig',
+            engine_host='similarweb.com',
+            param_keys=('d',),
+        )
+        per_domain = LessonKey(domain='ignored', contract_signature='sig')
+        assert engine.storage_key == 'engine_similarweb_com__sig__d__default__mcp'
+        assert engine.storage_key != per_domain.storage_key
+
+    def test_per_destination_key_unchanged_when_no_engine_host(self):
+        # Backward compatibility: adding engine_host/param_keys must not perturb
+        # the legacy per-destination storage_key format.
+        key = LessonKey(domain='example.com', contract_signature='sig')
+        assert key.storage_key == 'example_com__sig__default__mcp'
+
     def test_active_requires_status_and_validation(self):
         now = datetime.now(timezone.utc)
         lesson = DiscoveryLesson(
