@@ -169,7 +169,10 @@ async def run_round(cfg: LLMConfig) -> dict[str, Any]:
     )
     ad_rows = ContentExtractor(contract=AdResult).extract_content_with_html('', cleaned, ad) if ad else None
 
+    from yosoi.core.discovery.dedup import maps_collide
+
     return {
+        'collide': maps_collide(organic, ad),
         'organic_sig': contract_signature(OrganicResult),
         'ad_sig': contract_signature(AdResult),
         'organic_url_sel': _primary(organic, 'url'),
@@ -205,6 +208,11 @@ async def _amain() -> None:
     print('\n  EXTRACTED via the discovered selectors:')
     print(f'    organic: {rep["organic_extracted"]}')
     print(f'    ad:      {rep["ad_extracted"]}')
+
+    if rep['collide']:
+        print('\n  ⚠ DEDUP SMELL: AdResult and OrganicResult resolved to IDENTICAL selectors —')
+        print('    they are not being discriminated (one is wrong). The fix is field-level root:')
+        print("    scope each contract's fields under its own region (Sponsored block vs organic list).")
 
     org = str((rep['organic_extracted'] or {}).get('url', ''))
     ad = str((rep['ad_extracted'] or {}).get('url', ''))

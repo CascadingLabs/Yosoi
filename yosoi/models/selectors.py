@@ -212,6 +212,15 @@ class FieldSelectors(BaseModel):
     primary: SelectorEntry = Field(description='Most specific selector')
     fallback: SelectorEntry | None = Field(default=None, description='Less specific fallback')
     tertiary: SelectorEntry | None = Field(default=None, description='Generic selector or None')
+    root: SelectorEntry | None = Field(
+        default=None,
+        description=(
+            'Optional PARENT scope this field resolves under. When set, primary/fallback/'
+            'tertiary are evaluated RELATIVE to the element matched by root — pinning the '
+            'field to one region of the page (e.g. a sponsored ad block vs the organic '
+            'results list) so the leaf selector can stay simple and sturdy.'
+        ),
+    )
 
     @field_validator('primary', mode='before')
     @classmethod
@@ -221,7 +230,7 @@ class FieldSelectors(BaseModel):
             return SelectorEntry(value=v)
         return v
 
-    @field_validator('fallback', 'tertiary', mode='before')
+    @field_validator('fallback', 'tertiary', 'root', mode='before')
     @classmethod
     def _coerce_optional(cls, v: object) -> object:
         """Coerce bare string to SelectorEntry for optional fields; treat 'NA' as None."""

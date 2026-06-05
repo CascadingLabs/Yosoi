@@ -317,6 +317,17 @@ class DiscoveryOrchestrator:
             f'[success]Discovered selectors for {len(non_container)} fields (cached={cached_count})[/success]'
         )
 
+        # Soft dedup smell (never fail-fast): two distinct fields sharing one selector
+        # means the contract is ambiguous or the model conflated them. Warn, don't block.
+        from yosoi.core.discovery.dedup import duplicate_fields
+
+        for selector_value, dup_fields in duplicate_fields(merged).items():
+            obs.warning('duplicate selector across fields', url=url_context, fields=dup_fields, selector=selector_value)
+            self.console.print(
+                f'[warning]  ⚠ fields {", ".join(dup_fields)} share selector {selector_value!r} — '
+                f'contract may be ambiguous or discovery conflated them[/warning]'
+            )
+
         # Single write — avoids read-modify-write races across concurrent tasks
         # Skip save for partial rediscovery (pipeline handles merge + save)
         if url and stale_fields is None and persisted_snapshots is not None:
