@@ -13,6 +13,30 @@ class ApiContract(Contract):
     title: str = ys.Title()
 
 
+class ApiContract2(Contract):
+    url: str = ys.Url()
+
+
+async def test_scrape_accepts_a_list_of_contracts(monkeypatch):
+    """scrape() with a LIST runs each contract concurrently and returns a name-keyed dict."""
+    FakePipeline.instances.clear()
+    monkeypatch.setattr(api, 'Pipeline', FakePipeline)
+
+    result = await api.scrape('https://example.com', [ApiContract, ApiContract2], model=ys.claude_sdk())
+
+    assert result == {
+        'ApiContract': [{'title': 'Example'}],
+        'ApiContract2': [{'title': 'Example'}],
+    }
+    assert len(FakePipeline.instances) == 2
+    # All concurrent contracts share ONE write-lock (serialised selector writes), and NO
+    # DiscoveryBus is shared across them (sharing would force identical selectors).
+    locks = [i.kwargs.get('write_lock') for i in FakePipeline.instances]
+    assert all(lock is not None for lock in locks)
+    assert len({id(lock) for lock in locks}) == 1
+    assert all(i.kwargs.get('bus') is None for i in FakePipeline.instances)
+
+
 class FakePipeline:
     """Pipeline test double that captures constructor and scrape arguments."""
 

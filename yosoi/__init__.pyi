@@ -1,6 +1,6 @@
 """Type stubs for yosoi public API."""
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from typing import Any
 
 from yosoi.core.configs import DebugConfig as DebugConfig
@@ -101,10 +101,10 @@ def vertexai(model_name: str, **kwargs: Any) -> LLMConfig: ...
 def xai(model_name: str, api_key: str | None = ..., **kwargs: Any) -> LLMConfig: ...
 async def scrape(
     url: str,
-    contract: type[Contract] | str,
+    contract: type[Contract] | str | Sequence[type[Contract] | str],
     model: YosoiConfig | LLMConfig | str | None = ...,
     **kwargs: Any,
-) -> list[dict[str, Any]]: ...
+) -> list[dict[str, Any]] | dict[str, list[dict[str, Any]]]: ...
 async def scrape_many(
     urls: list[str] | tuple[str, ...],
     contract: type[Contract] | str,
