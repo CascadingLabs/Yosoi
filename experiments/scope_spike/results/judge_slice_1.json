@@ -1,0 +1,1958 @@
+[
+  {
+    "id": "arxiv.org#2",
+    "domain": "arxiv.org",
+    "seed": {
+      "url": "https://arxiv.org/list/cs.AI/recent",
+      "title": "Artificial Intelligence",
+      "body_class": "with-cu-identity",
+      "rows": 50,
+      "top_tags": [
+        [
+          "a",
+          659
+        ],
+        [
+          "div",
+          262
+        ],
+        [
+          "span",
+          180
+        ],
+        [
+          "dt",
+          50
+        ],
+        [
+          "dd",
+          50
+        ],
+        [
+          "li",
+          16
+        ],
+        [
+          "option",
+          15
+        ],
+        [
+          "ul",
+          6
+        ],
+        [
+          "input",
+          5
+        ],
+        [
+          "svg",
+          5
+        ],
+        [
+          "path",
+          5
+        ],
+        [
+          "img",
+          4
+        ]
+      ]
+    },
+    "replay": {
+      "url": "https://arxiv.org/list/cs.LG/recent",
+      "title": "Machine Learning",
+      "body_class": "with-cu-identity",
+      "rows": 50,
+      "top_tags": [
+        [
+          "a",
+          481
+        ],
+        [
+          "div",
+          263
+        ],
+        [
+          "span",
+          181
+        ],
+        [
+          "dt",
+          50
+        ],
+        [
+          "dd",
+          50
+        ],
+        [
+          "li",
+          16
+        ],
+        [
+          "option",
+          15
+        ],
+        [
+          "ul",
+          6
+        ],
+        [
+          "input",
+          5
+        ],
+        [
+          "svg",
+          5
+        ],
+        [
+          "path",
+          5
+        ],
+        [
+          "img",
+          4
+        ]
+      ]
+    }
+  },
+  {
+    "id": "books.toscrape.com#1",
+    "domain": "books.toscrape.com",
+    "seed": {
+      "url": "https://books.toscrape.com/",
+      "title": "All products | Books to Scrape - Sandbox",
+      "body_class": "default",
+      "rows": 20,
+      "top_tags": [
+        [
+          "i",
+          120
+        ],
+        [
+          "a",
+          94
+        ],
+        [
+          "li",
+          75
+        ],
+        [
+          "p",
+          60
+        ],
+        [
+          "div",
+          56
+        ],
+        [
+          "form",
+          21
+        ],
+        [
+          "article",
+          20
+        ],
+        [
+          "img",
+          20
+        ],
+        [
+          "h3",
+          20
+        ],
+        [
+          "button",
+          20
+        ],
+        [
+          "script",
+          8
+        ],
+        [
+          "ul",
+          4
+        ]
+      ]
+    },
+    "replay": {
+      "url": "https://books.toscrape.com/catalogue/category/books/travel_2/index.html",
+      "title": "Travel | Books to Scrape - Sandbox",
+      "body_class": "default",
+      "rows": 11,
+      "top_tags": [
+        [
+          "a",
+          76
+        ],
+        [
+          "i",
+          66
+        ],
+        [
+          "li",
+          65
+        ],
+        [
+          "div",
+          37
+        ],
+        [
+          "p",
+          33
+        ],
+        [
+          "form",
+          12
+        ],
+        [
+          "article",
+          11
+        ],
+        [
+          "img",
+          11
+        ],
+        [
+          "h3",
+          11
+        ],
+        [
+          "button",
+          11
+        ],
+        [
+          "script",
+          8
+        ],
+        [
+          "ul",
+          3
+        ]
+      ]
+    }
+  },
+  {
+    "id": "books.toscrape.com#4",
+    "domain": "books.toscrape.com",
+    "seed": {
+      "url": "https://books.toscrape.com/",
+      "title": "All products | Books to Scrape - Sandbox",
+      "body_class": "default",
+      "rows": 20,
+      "top_tags": [
+        [
+          "i",
+          120
+        ],
+        [
+          "a",
+          94
+        ],
+        [
+          "li",
+          75
+        ],
+        [
+          "p",
+          60
+        ],
+        [
+          "div",
+          56
+        ],
+        [
+          "form",
+          21
+        ],
+        [
+          "article",
+          20
+        ],
+        [
+          "img",
+          20
+        ],
+        [
+          "h3",
+          20
+        ],
+        [
+          "button",
+          20
+        ],
+        [
+          "script",
+          8
+        ],
+        [
+          "ul",
+          4
+        ]
+      ]
+    },
+    "replay": {
+      "url": "https://books.toscrape.com/catalogue/tipping-the-velvet_999/index.html",
+      "title": "Tipping the Velvet | Books to Scrape - Sandbox",
+      "body_class": "default",
+      "rows": 1,
+      "top_tags": [
+        [
+          "div",
+          23
+        ],
+        [
+          "i",
+          12
+        ],
+        [
+          "script",
+          8
+        ],
+        [
+          "p",
+          7
+        ],
+        [
+          "tr",
+          7
+        ],
+        [
+          "th",
+          7
+        ],
+        [
+          "td",
+          7
+        ],
+        [
+          "a",
+          6
+        ],
+        [
+          "li",
+          5
+        ],
+        [
+          "h2",
+          3
+        ],
+        [
+          "ul",
+          2
+        ],
+        [
+          "article",
+          2
+        ]
+      ]
+    }
+  },
+  {
+    "id": "news.ycombinator.com#3",
+    "domain": "news.ycombinator.com",
+    "seed": {
+      "url": "https://news.ycombinator.com/news",
+      "title": "Hacker News",
+      "body_class": "",
+      "rows": 30,
+      "top_tags": [
+        [
+          "span",
+          243
+        ],
+        [
+          "a",
+          229
+        ],
+        [
+          "td",
+          159
+        ],
+        [
+          "tr",
+          98
+        ],
+        [
+          "center",
+          32
+        ],
+        [
+          "div",
+          30
+        ],
+        [
+          "table",
+          4
+        ],
+        [
+          "tbody",
+          4
+        ],
+        [
+          "br",
+          3
+        ],
+        [
+          "img",
+          2
+        ],
+        [
+          "b",
+          1
+        ],
+        [
+          "form",
+          1
+        ]
+      ]
+    },
+    "replay": {
+      "url": "https://news.ycombinator.com/user?id=pg",
+      "title": "Profile: pg | Hacker News",
+      "body_class": "",
+      "rows": 1,
+      "top_tags": [
+        [
+          "td",
+          19
+        ],
+        [
+          "a",
+          15
+        ],
+        [
+          "tr",
+          11
+        ],
+        [
+          "table",
+          3
+        ],
+        [
+          "tbody",
+          3
+        ],
+        [
+          "span",
+          3
+        ],
+        [
+          "u",
+          3
+        ],
+        [
+          "br",
+          2
+        ],
+        [
+          "center",
+          1
+        ],
+        [
+          "img",
+          1
+        ],
+        [
+          "b",
+          1
+        ],
+        [
+          "script",
+          1
+        ]
+      ]
+    }
+  },
+  {
+    "id": "lobste.rs#2",
+    "domain": "lobste.rs",
+    "seed": {
+      "url": "https://lobste.rs/",
+      "title": "Lobsters",
+      "body_class": "",
+      "rows": 25,
+      "top_tags": [
+        [
+          "a",
+          284
+        ],
+        [
+          "span",
+          178
+        ],
+        [
+          "div",
+          102
+        ],
+        [
+          "li",
+          75
+        ],
+        [
+          "img",
+          25
+        ],
+        [
+          "time",
+          25
+        ],
+        [
+          "details",
+          25
+        ],
+        [
+          "summary",
+          25
+        ],
+        [
+          "ul",
+          25
+        ],
+        [
+          "nav",
+          4
+        ],
+        [
+          "header",
+          1
+        ],
+        [
+          "ol",
+          1
+        ]
+      ]
+    },
+    "replay": {
+      "url": "https://lobste.rs/t/programming",
+      "title": "programming - Use when every tag or no specific tag applies | Lobsters",
+      "body_class": "",
+      "rows": 25,
+      "top_tags": [
+        [
+          "a",
+          292
+        ],
+        [
+          "span",
+          173
+        ],
+        [
+          "div",
+          103
+        ],
+        [
+          "li",
+          65
+        ],
+        [
+          "img",
+          25
+        ],
+        [
+          "time",
+          25
+        ],
+        [
+          "details",
+          20
+        ],
+        [
+          "summary",
+          20
+        ],
+        [
+          "ul",
+          20
+        ],
+        [
+          "nav",
+          4
+        ],
+        [
+          "p",
+          3
+        ],
+        [
+          "header",
+          1
+        ]
+      ]
+    }
+  },
+  {
+    "id": "pypi.org#1",
+    "domain": "pypi.org",
+    "seed": {
+      "url": "https://pypi.org/search/?q=test",
+      "title": "Search results \u00b7 PyPI",
+      "body_class": "with-sticky",
+      "rows": 20,
+      "top_tags": [
+        [
+          "li",
+          879
+        ],
+        [
+          "input",
+          822
+        ],
+        [
+          "label",
+          818
+        ],
+        [
+          "ul",
+          110
+        ],
+        [
+          "a",
+          74
+        ],
+        [
+          "div",
+          65
+        ],
+        [
+          "span",
+          65
+        ],
+        [
+          "button",
+          32
+        ],
+        [
+          "p",
+          27
+        ],
+        [
+          "h3",
+          20
+        ],
+        [
+          "time",
+          20
+        ],
+        [
+          "img",
+          10
+        ]
+      ]
+    },
+    "replay": {
+      "url": "https://pypi.org/search/?q=http",
+      "title": "Search results \u00b7 PyPI",
+      "body_class": "with-sticky",
+      "rows": 20,
+      "top_tags": [
+        [
+          "li",
+          879
+        ],
+        [
+          "input",
+          822
+        ],
+        [
+          "label",
+          818
+        ],
+        [
+          "ul",
+          110
+        ],
+        [
+          "a",
+          74
+        ],
+        [
+          "div",
+          65
+        ],
+        [
+          "span",
+          65
+        ],
+        [
+          "button",
+          32
+        ],
+        [
+          "p",
+          27
+        ],
+        [
+          "h3",
+          20
+        ],
+        [
+          "time",
+          20
+        ],
+        [
+          "img",
+          10
+        ]
+      ]
+    }
+  },
+  {
+    "id": "pypi.org#4",
+    "domain": "pypi.org",
+    "seed": {
+      "url": "https://pypi.org/search/?q=test",
+      "title": "Search results \u00b7 PyPI",
+      "body_class": "with-sticky",
+      "rows": 20,
+      "top_tags": [
+        [
+          "li",
+          879
+        ],
+        [
+          "input",
+          822
+        ],
+        [
+          "label",
+          818
+        ],
+        [
+          "ul",
+          110
+        ],
+        [
+          "a",
+          74
+        ],
+        [
+          "div",
+          65
+        ],
+        [
+          "span",
+          65
+        ],
+        [
+          "button",
+          32
+        ],
+        [
+          "p",
+          27
+        ],
+        [
+          "h3",
+          20
+        ],
+        [
+          "time",
+          20
+        ],
+        [
+          "img",
+          10
+        ]
+      ]
+    },
+    "replay": {
+      "url": "https://pypi.org/project/Flask/",
+      "title": "Flask \u00b7 PyPI",
+      "body_class": "with-sticky",
+      "rows": 0,
+      "top_tags": [
+        [
+          "div",
+          343
+        ],
+        [
+          "a",
+          210
+        ],
+        [
+          "li",
+          161
+        ],
+        [
+          "p",
+          156
+        ],
+        [
+          "img",
+          76
+        ],
+        [
+          "span",
+          73
+        ],
+        [
+          "time",
+          71
+        ],
+        [
+          "i",
+          52
+        ],
+        [
+          "ul",
+          47
+        ],
+        [
+          "code",
+          42
+        ],
+        [
+          "strong",
+          34
+        ],
+        [
+          "button",
+          28
+        ]
+      ]
+    }
+  },
+  {
+    "id": "quotes.toscrape.com#3",
+    "domain": "quotes.toscrape.com",
+    "seed": {
+      "url": "https://quotes.toscrape.com/",
+      "title": "Quotes to Scrape",
+      "body_class": "",
+      "rows": 10,
+      "top_tags": [
+        [
+          "a",
+          55
+        ],
+        [
+          "span",
+          32
+        ],
+        [
+          "div",
+          28
+        ],
+        [
+          "small",
+          10
+        ],
+        [
+          "meta",
+          10
+        ],
+        [
+          "p",
+          3
+        ],
+        [
+          "h1",
+          1
+        ],
+        [
+          "nav",
+          1
+        ],
+        [
+          "ul",
+          1
+        ],
+        [
+          "li",
+          1
+        ],
+        [
+          "h2",
+          1
+        ],
+        [
+          "footer",
+          1
+        ]
+      ]
+    },
+    "replay": {
+      "url": "https://quotes.toscrape.com/author/Albert-Einstein/",
+      "title": "Quotes to Scrape",
+      "body_class": "",
+      "rows": 0,
+      "top_tags": [
+        [
+          "div",
+          7
+        ],
+        [
+          "p",
+          5
+        ],
+        [
+          "a",
+          4
+        ],
+        [
+          "span",
+          3
+        ],
+        [
+          "strong",
+          2
+        ],
+        [
+          "h1",
+          1
+        ],
+        [
+          "h3",
+          1
+        ],
+        [
+          "footer",
+          1
+        ]
+      ]
+    }
+  },
+  {
+    "id": "old.reddit.com#2",
+    "domain": "old.reddit.com",
+    "seed": {
+      "url": "https://old.reddit.com/r/ted/top/?t=all",
+      "title": "top scoring links : ted",
+      "body_class": "listing-page top-page",
+      "rows": 25,
+      "top_tags": [
+        [
+          "div",
+          407
+        ],
+        [
+          "a",
+          324
+        ],
+        [
+          "li",
+          198
+        ],
+        [
+          "span",
+          189
+        ],
+        [
+          "p",
+          93
+        ],
+        [
+          "ul",
+          34
+        ],
+        [
+          "input",
+          34
+        ],
+        [
+          "form",
+          32
+        ],
+        [
+          "time",
+          26
+        ],
+        [
+          "img",
+          25
+        ],
+        [
+          "script",
+          8
+        ],
+        [
+          "dt",
+          7
+        ]
+      ]
+    },
+    "replay": {
+      "url": "https://old.reddit.com/r/aww/hot/",
+      "title": "A subreddit for cute and cuddly pictures",
+      "body_class": "listing-page hot-page",
+      "rows": 25,
+      "top_tags": [
+        [
+          "div",
+          417
+        ],
+        [
+          "a",
+          343
+        ],
+        [
+          "span",
+          220
+        ],
+        [
+          "li",
+          214
+        ],
+        [
+          "p",
+          100
+        ],
+        [
+          "ul",
+          36
+        ],
+        [
+          "input",
+          29
+        ],
+        [
+          "form",
+          27
+        ],
+        [
+          "img",
+          26
+        ],
+        [
+          "time",
+          26
+        ],
+        [
+          "script",
+          8
+        ],
+        [
+          "dt",
+          7
+        ]
+      ]
+    }
+  },
+  {
+    "id": "sec.gov/cgi-bin/browse-edgar#1",
+    "domain": "sec.gov/cgi-bin/browse-edgar",
+    "seed": {
+      "url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0000320193&type=10-K&dateb=&owner=include&count=40",
+      "title": "EDGAR Search Results",
+      "body_class": "",
+      "rows": 35,
+      "top_tags": [
+        [
+          "td",
+          180
+        ],
+        [
+          "a",
+          101
+        ],
+        [
+          "br",
+          80
+        ],
+        [
+          "tr",
+          39
+        ],
+        [
+          "div",
+          15
+        ],
+        [
+          "span",
+          10
+        ],
+        [
+          "input",
+          10
+        ],
+        [
+          "li",
+          8
+        ],
+        [
+          "script",
+          6
+        ],
+        [
+          "label",
+          6
+        ],
+        [
+          "option",
+          5
+        ],
+        [
+          "th",
+          5
+        ]
+      ]
+    },
+    "replay": {
+      "url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0000789019&type=10-K&dateb=&owner=include&count=40",
+      "title": "EDGAR Search Results",
+      "body_class": "",
+      "rows": 33,
+      "top_tags": [
+        [
+          "td",
+          170
+        ],
+        [
+          "a",
+          96
+        ],
+        [
+          "br",
+          74
+        ],
+        [
+          "tr",
+          37
+        ],
+        [
+          "div",
+          15
+        ],
+        [
+          "span",
+          10
+        ],
+        [
+          "input",
+          10
+        ],
+        [
+          "li",
+          8
+        ],
+        [
+          "script",
+          6
+        ],
+        [
+          "label",
+          6
+        ],
+        [
+          "option",
+          5
+        ],
+        [
+          "th",
+          5
+        ]
+      ]
+    }
+  },
+  {
+    "id": "sec.gov/cgi-bin/browse-edgar#4",
+    "domain": "sec.gov/cgi-bin/browse-edgar",
+    "seed": {
+      "url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0000320193&type=10-K&dateb=&owner=include&count=40",
+      "title": "EDGAR Search Results",
+      "body_class": "",
+      "rows": 35,
+      "top_tags": [
+        [
+          "td",
+          180
+        ],
+        [
+          "a",
+          101
+        ],
+        [
+          "br",
+          80
+        ],
+        [
+          "tr",
+          39
+        ],
+        [
+          "div",
+          15
+        ],
+        [
+          "span",
+          10
+        ],
+        [
+          "input",
+          10
+        ],
+        [
+          "li",
+          8
+        ],
+        [
+          "script",
+          6
+        ],
+        [
+          "label",
+          6
+        ],
+        [
+          "option",
+          5
+        ],
+        [
+          "th",
+          5
+        ]
+      ]
+    },
+    "replay": {
+      "url": "https://www.sec.gov/",
+      "title": "SEC.gov | Home",
+      "body_class": "path-frontpage-plus path-frontpage node--type-landing-page",
+      "rows": 0,
+      "top_tags": [
+        [
+          "div",
+          130
+        ],
+        [
+          "li",
+          119
+        ],
+        [
+          "a",
+          117
+        ],
+        [
+          "span",
+          28
+        ],
+        [
+          "ul",
+          23
+        ],
+        [
+          "svg",
+          18
+        ],
+        [
+          "use",
+          15
+        ],
+        [
+          "p",
+          14
+        ],
+        [
+          "h3",
+          13
+        ],
+        [
+          "button",
+          12
+        ],
+        [
+          "img",
+          10
+        ],
+        [
+          "input",
+          10
+        ]
+      ]
+    }
+  },
+  {
+    "id": "stackoverflow.com#3",
+    "domain": "stackoverflow.com",
+    "seed": {
+      "url": "https://stackoverflow.com/questions",
+      "title": "Newest Questions - Stack Overflow",
+      "body_class": "questions-page unified-theme",
+      "rows": 15,
+      "top_tags": [
+        [
+          "li",
+          960
+        ],
+        [
+          "button",
+          845
+        ],
+        [
+          "div",
+          503
+        ],
+        [
+          "a",
+          226
+        ],
+        [
+          "span",
+          206
+        ],
+        [
+          "path",
+          63
+        ],
+        [
+          "meta",
+          51
+        ],
+        [
+          "ul",
+          41
+        ],
+        [
+          "input",
+          39
+        ],
+        [
+          "svg",
+          38
+        ],
+        [
+          "script",
+          38
+        ],
+        [
+          "h3",
+          18
+        ]
+      ]
+    },
+    "replay": {
+      "url": "https://stackoverflow.com/questions/231767/what-does-the-yield-keyword-do-in-python",
+      "title": "iterator - What does the \"yield\" keyword do in Python? - Stack Overflow",
+      "body_class": "question-page unified-theme",
+      "rows": 0,
+      "top_tags": [
+        [
+          "div",
+          2812
+        ],
+        [
+          "span",
+          2108
+        ],
+        [
+          "button",
+          1215
+        ],
+        [
+          "li",
+          981
+        ],
+        [
+          "a",
+          604
+        ],
+        [
+          "path",
+          517
+        ],
+        [
+          "code",
+          460
+        ],
+        [
+          "svg",
+          397
+        ],
+        [
+          "p",
+          323
+        ],
+        [
+          "input",
+          148
+        ],
+        [
+          "script",
+          92
+        ],
+        [
+          "pre",
+          90
+        ]
+      ]
+    }
+  },
+  {
+    "id": "webscraper.io/test-sites/e-commerce/allinone#2",
+    "domain": "webscraper.io/test-sites/e-commerce/allinone",
+    "seed": {
+      "url": "https://webscraper.io/test-sites/e-commerce/allinone/computers/laptops",
+      "title": "Allinone | Web Scraper Test Sites",
+      "body_class": "",
+      "rows": 117,
+      "top_tags": [
+        [
+          "div",
+          622
+        ],
+        [
+          "span",
+          519
+        ],
+        [
+          "p",
+          361
+        ],
+        [
+          "h4",
+          234
+        ],
+        [
+          "a",
+          152
+        ],
+        [
+          "img",
+          118
+        ],
+        [
+          "meta",
+          117
+        ],
+        [
+          "li",
+          39
+        ],
+        [
+          "ul",
+          9
+        ],
+        [
+          "i",
+          8
+        ],
+        [
+          "script",
+          2
+        ],
+        [
+          "button",
+          2
+        ]
+      ]
+    },
+    "replay": {
+      "url": "https://webscraper.io/test-sites/e-commerce/allinone/phones/touch",
+      "title": "Allinone | Web Scraper Test Sites",
+      "body_class": "",
+      "rows": 9,
+      "top_tags": [
+        [
+          "div",
+          82
+        ],
+        [
+          "span",
+          47
+        ],
+        [
+          "a",
+          43
+        ],
+        [
+          "li",
+          38
+        ],
+        [
+          "p",
+          37
+        ],
+        [
+          "h4",
+          18
+        ],
+        [
+          "img",
+          10
+        ],
+        [
+          "ul",
+          9
+        ],
+        [
+          "meta",
+          9
+        ],
+        [
+          "i",
+          8
+        ],
+        [
+          "script",
+          2
+        ],
+        [
+          "button",
+          2
+        ]
+      ]
+    }
+  },
+  {
+    "id": "en.wikipedia.org#1",
+    "domain": "en.wikipedia.org",
+    "seed": {
+      "url": "https://en.wikipedia.org/wiki/Category:American_films",
+      "title": "Category:American films - Wikipedia",
+      "body_class": "skin--responsive skin-vector skin-vector-search-vue mediawiki ltr sitedir-ltr mw-hide-empty-elt ns-14 ns-subject mw-editable page-Category_American_films rootpage-Category_American_films skin-vector-2022 action-view uls-dialog-sticky-hide",
+      "rows": 1,
+      "top_tags": [
+        [
+          "span",
+          330
+        ],
+        [
+          "div",
+          298
+        ],
+        [
+          "a",
+          287
+        ],
+        [
+          "li",
+          236
+        ],
+        [
+          "ul",
+          46
+        ],
+        [
+          "bdi",
+          39
+        ],
+        [
+          "h3",
+          21
+        ],
+        [
+          "input",
+          18
+        ],
+        [
+          "label",
+          14
+        ],
+        [
+          "button",
+          10
+        ],
+        [
+          "nav",
+          9
+        ],
+        [
+          "img",
+          9
+        ]
+      ]
+    },
+    "replay": {
+      "url": "https://en.wikipedia.org/wiki/Category:British_films",
+      "title": "Category:British films - Wikipedia",
+      "body_class": "skin--responsive skin-vector skin-vector-search-vue mediawiki ltr sitedir-ltr mw-hide-empty-elt ns-14 ns-subject mw-editable page-Category_British_films rootpage-Category_British_films skin-vector-2022 action-view",
+      "rows": 0,
+      "top_tags": [
+        [
+          "a",
+          481
+        ],
+        [
+          "li",
+          433
+        ],
+        [
+          "div",
+          303
+        ],
+        [
+          "span",
+          289
+        ],
+        [
+          "ul",
+          51
+        ],
+        [
+          "bdi",
+          47
+        ],
+        [
+          "h3",
+          19
+        ],
+        [
+          "input",
+          10
+        ],
+        [
+          "button",
+          10
+        ],
+        [
+          "tr",
+          10
+        ],
+        [
+          "nav",
+          9
+        ],
+        [
+          "img",
+          9
+        ]
+      ]
+    }
+  },
+  {
+    "id": "en.wikipedia.org#4",
+    "domain": "en.wikipedia.org",
+    "seed": {
+      "url": "https://en.wikipedia.org/wiki/Category:American_films",
+      "title": "Category:American films - Wikipedia",
+      "body_class": "skin--responsive skin-vector skin-vector-search-vue mediawiki ltr sitedir-ltr mw-hide-empty-elt ns-14 ns-subject mw-editable page-Category_American_films rootpage-Category_American_films skin-vector-2022 action-view uls-dialog-sticky-hide",
+      "rows": 1,
+      "top_tags": [
+        [
+          "span",
+          330
+        ],
+        [
+          "div",
+          298
+        ],
+        [
+          "a",
+          287
+        ],
+        [
+          "li",
+          236
+        ],
+        [
+          "ul",
+          46
+        ],
+        [
+          "bdi",
+          39
+        ],
+        [
+          "h3",
+          21
+        ],
+        [
+          "input",
+          18
+        ],
+        [
+          "label",
+          14
+        ],
+        [
+          "button",
+          10
+        ],
+        [
+          "nav",
+          9
+        ],
+        [
+          "img",
+          9
+        ]
+      ]
+    },
+    "replay": {
+      "url": "https://en.wikipedia.org/wiki/Cinema_of_the_United_States",
+      "title": "Cinema of the United States - Wikipedia",
+      "body_class": "skin--responsive skin-vector skin-vector-search-vue mediawiki ltr sitedir-ltr mw-hide-empty-elt ns-0 ns-subject mw-editable page-Cinema_of_the_United_States rootpage-Cinema_of_the_United_States skin-vector-2022 action-view uls-dialog-sticky-hide",
+      "rows": 0,
+      "top_tags": [
+        [
+          "a",
+          2480
+        ],
+        [
+          "span",
+          1575
+        ],
+        [
+          "li",
+          1119
+        ],
+        [
+          "i",
+          337
+        ],
+        [
+          "div",
+          336
+        ],
+        [
+          "sup",
+          284
+        ],
+        [
+          "b",
+          225
+        ],
+        [
+          "link",
+          192
+        ],
+        [
+          "ul",
+          188
+        ],
+        [
+          "td",
+          176
+        ],
+        [
+          "cite",
+          163
+        ],
+        [
+          "tr",
+          120
+        ]
+      ]
+    }
+  },
+  {
+    "id": "ja.wikipedia.org#3",
+    "domain": "ja.wikipedia.org",
+    "seed": {
+      "url": "https://ja.wikipedia.org/wiki/Category:%E6%97%A5%E6%9C%AC%E3%81%AE%E6%98%A0%E7%94%BB",
+      "title": "Category:\u65e5\u672c\u306e\u6620\u753b - Wikipedia",
+      "body_class": "skin--responsive skin-vector skin-vector-search-vue mediawiki ltr sitedir-ltr mw-hide-empty-elt ns-14 ns-subject mw-editable page-Category_\u65e5\u672c\u306e\u6620\u753b rootpage-Category_\u65e5\u672c\u306e\u6620\u753b skin-vector-2022 action-view uls-dialog-sticky-hide",
+      "rows": 55,
+      "top_tags": [
+        [
+          "div",
+          261
+        ],
+        [
+          "a",
+          253
+        ],
+        [
+          "span",
+          245
+        ],
+        [
+          "li",
+          216
+        ],
+        [
+          "ul",
+          61
+        ],
+        [
+          "h3",
+          37
+        ],
+        [
+          "bdi",
+          24
+        ],
+        [
+          "input",
+          18
+        ],
+        [
+          "label",
+          14
+        ],
+        [
+          "button",
+          10
+        ],
+        [
+          "nav",
+          9
+        ],
+        [
+          "img",
+          8
+        ]
+      ]
+    },
+    "replay": {
+      "url": "https://ja.wikipedia.org/wiki/%E6%98%A0%E7%94%BB",
+      "title": "\u6620\u753b - Wikipedia",
+      "body_class": "skin--responsive skin-vector skin-vector-search-vue mediawiki ltr sitedir-ltr mw-hide-empty-elt ns-0 ns-subject mw-editable page-\u6620\u753b rootpage-\u6620\u753b skin-vector-2022 action-view uls-dialog-sticky-hide",
+      "rows": 0,
+      "top_tags": [
+        [
+          "span",
+          1232
+        ],
+        [
+          "a",
+          923
+        ],
+        [
+          "li",
+          406
+        ],
+        [
+          "div",
+          240
+        ],
+        [
+          "td",
+          198
+        ],
+        [
+          "ul",
+          69
+        ],
+        [
+          "img",
+          65
+        ],
+        [
+          "sup",
+          65
+        ],
+        [
+          "tr",
+          52
+        ],
+        [
+          "p",
+          49
+        ],
+        [
+          "cite",
+          27
+        ],
+        [
+          "i",
+          26
+        ]
+      ]
+    }
+  },
+  {
+    "id": "en.wiktionary.org#2",
+    "domain": "en.wiktionary.org",
+    "seed": {
+      "url": "https://en.wiktionary.org/wiki/Category:English_lemmas",
+      "title": "Category:English lemmas - Wiktionary, the free dictionary",
+      "body_class": "skin--responsive skin-vector skin-vector-search-vue mediawiki ltr sitedir-ltr mw-hide-empty-elt ns-14 ns-subject mw-editable page-Category_English_lemmas rootpage-Category_English_lemmas skin-vector-2022 action-view",
+      "rows": 200,
+      "top_tags": [
+        [
+          "a",
+          1131
+        ],
+        [
+          "span",
+          1105
+        ],
+        [
+          "td",
+          681
+        ],
+        [
+          "li",
+          355
+        ],
+        [
+          "div",
+          199
+        ],
+        [
+          "ul",
+          44
+        ],
+        [
+          "tr",
+          33
+        ],
+        [
+          "h3",
+          21
+        ],
+        [
+          "bdi",
+          15
+        ],
+        [
+          "input",
+          10
+        ],
+        [
+          "button",
+          10
+        ],
+        [
+          "nav",
+          9
+        ]
+      ]
+    },
+    "replay": {
+      "url": "https://en.wiktionary.org/wiki/Category:English_verbs",
+      "title": "Category:English verbs - Wiktionary, the free dictionary",
+      "body_class": "skin--responsive skin-vector skin-vector-search-vue mediawiki ltr sitedir-ltr mw-hide-empty-elt ns-14 ns-subject mw-editable page-Category_English_verbs rootpage-Category_English_verbs skin-vector-2022 action-view",
+      "rows": 200,
+      "top_tags": [
+        [
+          "a",
+          1184
+        ],
+        [
+          "span",
+          1165
+        ],
+        [
+          "td",
+          681
+        ],
+        [
+          "li",
+          414
+        ],
+        [
+          "div",
+          234
+        ],
+        [
+          "ul",
+          49
+        ],
+        [
+          "tr",
+          33
+        ],
+        [
+          "h3",
+          26
+        ],
+        [
+          "bdi",
+          25
+        ],
+        [
+          "input",
+          10
+        ],
+        [
+          "button",
+          10
+        ],
+        [
+          "nav",
+          9
+        ]
+      ]
+    }
+  }
+]

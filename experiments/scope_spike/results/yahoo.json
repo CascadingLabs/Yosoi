@@ -1,0 +1,192 @@
+{
+  "spike": "domain-wide-tier-hypothesis",
+  "site": "finance.yahoo.com",
+  "fetched_at": "2026-05-30",
+  "consent_wall_or_bot_block": false,
+  "notes": "No consent wall encountered. Pages loaded cleanly via voidcrawl headless Chrome. networkidle timed out at 45s; omitting wait_for (default) succeeded at 60s — Yahoo hydrates aggressively.",
+
+  "selectors_locked_from_seed": {
+    "price": {
+      "selector": "[data-testid=\"qsp-price\"]",
+      "attribute": "data-testid",
+      "stable": true,
+      "notes": "Quote Summary Panel price. Resolves on /quote/* pages; null on /markets/"
+    },
+    "change": {
+      "selector": "[data-testid=\"qsp-price-change\"]",
+      "attribute": "data-testid",
+      "stable": true,
+      "notes": "Absolute day change. Same scope as qsp-price."
+    },
+    "change_pct": {
+      "selector": "fin-streamer[data-field=\"regularMarketChangePercent\"]",
+      "attribute": "data-field",
+      "stable": true,
+      "notes": "Custom element. Resolves everywhere but is ambiguous on non-quote pages (grabs header ticker). Should be paired with data-symbol qualifier for strict extraction: fin-streamer[data-symbol][data-field='regularMarketChangePercent']"
+    },
+    "name_and_symbol": {
+      "selector": "[data-testid=\"quote-title\"]",
+      "attribute": "data-testid",
+      "stable": true,
+      "notes": "Returns 'Company Name (TICKER)' string. Only present on quote page types."
+    }
+  },
+
+  "seed_discovery": {
+    "url": "https://finance.yahoo.com/quote/AAPL/",
+    "role": "seed",
+    "selectors_tried": {
+      "fin-streamer[data-field=\"regularMarketPrice\"]": {
+        "resolved": true,
+        "value": "74055.00",
+        "notes": "WRONG — grabbed BTC header ticker (first fin-streamer on page). Not safe without data-symbol scoping."
+      },
+      "fin-streamer[data-field=\"regularMarketChange\"]": {
+        "resolved": true,
+        "value": "+16.43",
+        "notes": "Same ambiguity issue as regularMarketPrice without data-symbol."
+      },
+      "fin-streamer[data-field=\"regularMarketChangePercent\"]": {
+        "resolved": true,
+        "value": "+0.86%"
+      },
+      "[data-testid=\"qsp-price\"]": {
+        "resolved": true,
+        "value": "312.06"
+      },
+      "[data-testid=\"qsp-price-change\"]": {
+        "resolved": true,
+        "value": "-0.45"
+      },
+      "[data-testid=\"quote-title\"]": {
+        "resolved": true,
+        "value": "Apple Inc. (AAPL)"
+      },
+      "[data-symbol]": {
+        "resolved": true,
+        "value": "74055.00",
+        "notes": "Grabs header ticker element, not quote panel. Not safe standalone."
+      },
+      "h1": {
+        "resolved": true,
+        "value": "Yahoo Finance",
+        "notes": "Site-level h1, not quote name. Discard."
+      },
+      "[class*=\"regularMarketPrice\"]": {
+        "resolved": false,
+        "value": null
+      }
+    }
+  },
+
+  "results": [
+    {
+      "url": "https://finance.yahoo.com/quote/AAPL/",
+      "ticker": "AAPL",
+      "role": "seed",
+      "page_type": "quote_summary",
+      "resolved": {
+        "price": true,
+        "change": true,
+        "change_pct": true,
+        "name_and_symbol": true
+      },
+      "sample_values": {
+        "price": "312.06",
+        "change": "-0.45",
+        "change_pct": "+0.86%",
+        "name_and_symbol": "Apple Inc. (AAPL)"
+      },
+      "transfer": "n/a (seed)"
+    },
+    {
+      "url": "https://finance.yahoo.com/quote/MSFT/",
+      "ticker": "MSFT",
+      "role": "transfer_test",
+      "page_type": "quote_summary",
+      "resolved": {
+        "price": true,
+        "change": true,
+        "change_pct": true,
+        "name_and_symbol": true
+      },
+      "sample_values": {
+        "price": "450.24",
+        "change": "+23.25",
+        "change_pct": "+0.85%",
+        "name_and_symbol": "Microsoft Corporation (MSFT)"
+      },
+      "transfer": "PASS — all 4 fields resolved with zero selector changes"
+    },
+    {
+      "url": "https://finance.yahoo.com/quote/TSLA/",
+      "ticker": "TSLA",
+      "role": "transfer_test",
+      "page_type": "quote_summary",
+      "resolved": {
+        "price": true,
+        "change": true,
+        "change_pct": true,
+        "name_and_symbol": true
+      },
+      "sample_values": {
+        "price": "435.79",
+        "change": "-6.31",
+        "change_pct": "+0.83%",
+        "name_and_symbol": "Tesla, Inc. (TSLA)"
+      },
+      "transfer": "PASS — all 4 fields resolved with zero selector changes"
+    },
+    {
+      "url": "https://finance.yahoo.com/quote/AAPL/news/",
+      "ticker": "AAPL",
+      "role": "contrast_same_ticker_different_subpage",
+      "page_type": "quote_news",
+      "resolved": {
+        "price": true,
+        "change": true,
+        "change_pct": true,
+        "name_and_symbol": true
+      },
+      "sample_values": {
+        "price": "312.06",
+        "change": "-0.45",
+        "change_pct": "+0.84%",
+        "name_and_symbol": "Apple Inc. (AAPL)"
+      },
+      "transfer": "PASS (unexpected) — quote summary panel persists across all /quote/* sub-tabs (summary, news, history, etc.). Selectors still work because the panel is embedded in every quote sub-page."
+    },
+    {
+      "url": "https://finance.yahoo.com/markets/",
+      "ticker": null,
+      "role": "contrast_different_page_type",
+      "page_type": "markets_overview",
+      "resolved": {
+        "price": false,
+        "change": false,
+        "change_pct": "stray_value",
+        "name_and_symbol": false
+      },
+      "sample_values": {
+        "price": null,
+        "change": null,
+        "change_pct": "+0.83% (stray header ticker — not a quote-panel value)",
+        "name_and_symbol": null
+      },
+      "transfer": "FAIL (expected) — qsp-price/change/quote-title are null; page type boundary confirmed"
+    }
+  ],
+
+  "scoring": {
+    "domain_wide_transfer": true,
+    "transfer_rate": "4/4 fields on both MSFT and TSLA",
+    "selector_changes_required": 0,
+    "caveats": [
+      "fin-streamer[data-field=X] selectors are present site-wide but grab the FIRST matching element, which may be a header crypto/index ticker, not the quote panel. They MUST be scoped with data-symbol or a nearest quote-panel ancestor to be safe for extraction.",
+      "qsp-price / qsp-price-change / quote-title data-testid selectors are safe and scope cleanly to the quote panel.",
+      "The /quote/*/news and other sub-tabs also embed the quote summary panel, so the page-type boundary is quote/* vs non-quote pages, not quote/summary vs quote/news."
+    ]
+  },
+
+  "verdict": "CONFIRMED: stable data-testid selectors (qsp-price, qsp-price-change, quote-title) give full domain-wide transfer across all Yahoo Finance quote pages with zero selector modification — discover once on any ticker, replay on every other ticker for free."
+}

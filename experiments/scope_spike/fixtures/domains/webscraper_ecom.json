@@ -1,0 +1,52 @@
+{
+  "domain": "webscraper.io/test-sites/e-commerce/allinone",
+  "row_selector": ".product-wrapper",
+  "notes": "First selector tried (.product-wrapper) worked immediately on all list pages — no fallback needed. The seed (laptops) returned 117 rows, tablets 21, touch phones 9. The product detail page (must-refuse) returned rows=1 because the single detail card also contains a .product-wrapper div. The homepage (must-refuse) returned rows=3 (the three featured/top products shown on the landing jumbotron). Both refuse pages are clearly distinguishable from list pages by their very low row count and different DOM shape (detail has no pagination, homepage has no category-grid structure). Tag histograms on list pages are dominated by span/p/h4/img in repeating blocks; detail and homepage are much flatter.",
+  "pages": [
+    {
+      "role": "seed",
+      "href": "https://webscraper.io/test-sites/e-commerce/allinone/computers/laptops",
+      "title": "Allinone | Web Scraper Test Sites",
+      "bodyClass": "",
+      "rows": 117,
+      "tagHist": [["div",622],["span",519],["p",361],["h4",234],["a",152],["img",118],["meta",117],["li",39],["ul",9],["i",8],["script",2],["button",2],["h1",2],["noscript",1],["header",1],["nav",1],["main",1],["br",1],["b",1],["style",1]],
+      "blocked": false
+    },
+    {
+      "role": "must-transfer",
+      "href": "https://webscraper.io/test-sites/e-commerce/allinone/computers/tablets",
+      "title": "Allinone | Web Scraper Test Sites",
+      "bodyClass": "",
+      "rows": 21,
+      "tagHist": [["div",142],["span",109],["p",73],["a",56],["h4",42],["li",39],["img",22],["meta",21],["ul",9],["i",8],["script",2],["button",2],["h1",2],["noscript",1],["header",1],["nav",1],["main",1],["br",1],["b",1],["style",1]],
+      "blocked": false
+    },
+    {
+      "role": "must-transfer",
+      "href": "https://webscraper.io/test-sites/e-commerce/allinone/phones/touch",
+      "title": "Allinone | Web Scraper Test Sites",
+      "bodyClass": "",
+      "rows": 9,
+      "tagHist": [["div",82],["span",47],["a",43],["li",38],["p",37],["h4",18],["img",10],["ul",9],["meta",9],["i",8],["script",2],["button",2],["h1",2],["noscript",1],["header",1],["nav",1],["main",1],["br",1],["b",1],["style",1]],
+      "blocked": false
+    },
+    {
+      "role": "must-refuse",
+      "href": "https://webscraper.io/test-sites/e-commerce/allinone/product/123",
+      "title": "Web Scraper - The #1 web scraping extension",
+      "bodyClass": "",
+      "rows": 1,
+      "tagHist": [["div",43],["li",37],["a",33],["span",14],["p",11],["ul",8],["i",8],["button",6],["script",2],["img",2],["h4",2],["noscript",1],["header",1],["nav",1],["main",1],["h1",1],["meta",1],["label",1],["br",1],["b",1]],
+      "blocked": false
+    },
+    {
+      "role": "must-refuse",
+      "href": "https://webscraper.io/test-sites/e-commerce/allinone",
+      "title": "Allinone | Web Scraper Test Sites",
+      "bodyClass": "",
+      "rows": 3,
+      "tagHist": [["div",53],["li",37],["a",36],["span",24],["p",19],["ul",8],["i",8],["h4",6],["img",4],["meta",3],["script",2],["button",2],["noscript",1],["header",1],["nav",1],["main",1],["h1",1],["h2",1],["h3",1],["br",1]],
+      "blocked": false
+    }
+  ]
+}
