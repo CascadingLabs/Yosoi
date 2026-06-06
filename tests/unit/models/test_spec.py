@@ -73,12 +73,38 @@ class TestRoundTrip:
 
 
 class TestFingerprint:
-    def test_same_fields_different_name_same_fingerprint(self):
+    def test_same_fields_different_name_different_fingerprint(self):
+        # P0: contract name is part of identity — a renamed contract is a distinct
+        # cache slot (mirrors v2 contract_signature; the AdLink/OrganicLink fix).
         spec_a = NewsArticle.to_spec()
         spec_b = spec_a.model_copy(update={'name': 'AliasContract'})
-        assert spec_a.fingerprint == spec_b.fingerprint
+        assert spec_a.fingerprint != spec_b.fingerprint
 
-    def test_same_fields_different_description_same_fingerprint(self):
+    def test_same_fields_different_doc_different_fingerprint(self):
+        # P0: the contract-level docstring is the discovery-time intent disambiguator.
+        spec_a = NewsArticle.to_spec()
+        spec_b = spec_a.model_copy(update={'doc': 'A completely different intent.'})
+        assert spec_a.fingerprint != spec_b.fingerprint
+
+    def test_structurally_identical_different_intent_discriminated(self):
+        # The motivating SERP case: AdLink vs OrganicLink — identical {url, title}
+        # structure, distinguished ONLY by name + docstring intent.
+        class AdLink(Contract):
+            """A paid advertisement result link."""
+
+            url: str = ys.Url(description='Link URL')
+            title: str = ys.Title(description='Link title')
+
+        class OrganicLink(Contract):
+            """A natural (non-paid) organic search result link."""
+
+            url: str = ys.Url(description='Link URL')
+            title: str = ys.Title(description='Link title')
+
+        assert AdLink.to_spec().fingerprint != OrganicLink.to_spec().fingerprint
+
+    def test_same_fields_different_field_description_same_fingerprint(self):
+        # Per-FIELD description stays advisory/excluded — only contract name+doc carry identity.
         spec_a = NewsArticle.to_spec()
         new_fields = dict(spec_a.fields)
         f = new_fields['headline']

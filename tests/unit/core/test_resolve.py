@@ -82,11 +82,14 @@ class TestCacheHit:
 
 
 class TestFingerprintDedup:
-    def test_mirror_spec_hits_same_cache_entry(self, spec, warm_cache):
+    def test_renamed_spec_is_distinct_cache_slot(self, spec, warm_cache):
+        # P0: contract name is part of identity. A renamed contract no longer
+        # piggybacks on another's selectors — it gets its own slot (cache miss).
+        # This is the AdLink/OrganicLink discrimination fix at the resolve layer.
         mirror = spec.model_copy(update={'name': 'MirrorArticle'})
-        assert mirror.fingerprint == spec.fingerprint
+        assert mirror.fingerprint != spec.fingerprint
         result = resolve(mirror, MINIMAL_HTML, warm_cache, DOMAIN)
-        assert isinstance(result, list)
+        assert isinstance(result, NeedsDiscovery)
 
     def test_different_fingerprint_is_miss(self, spec, warm_cache):
         from yosoi.models.spec import ContractSpec, FieldSpec

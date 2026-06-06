@@ -1,13 +1,20 @@
 """Canonical serializable Contract data (CAS-97).
 
 A ContractSpec is a JSON-round-trippable description of a Contract that:
-  - Has a stable structural fingerprint (description excluded — it's advisory).
+  - Has a stable identity fingerprint that DISCRIMINATES contracts by structure + intent.
   - Can be rehydrated into a working Contract subclass via ``to_contract()``.
   - Is accepted by ``resolve_contract()`` alongside names and ``path:Class`` strings.
 
-Fingerprint inputs (no description — it has no enforcement teeth):
-  schema_version + sorted field names + per-field (yosoi_type, selector, delimiter, frozen)
-  + root selector + nested fingerprints + validators ref
+Fingerprint inputs (P0 — mirrors the v2 ``contract_signature`` semantics so the
+ContractCache/resolve path discriminates the same way the LessonStore path does):
+  contract ``name`` + normalized ``doc`` (the discovery-time disambiguator — two
+  structurally identical contracts with different NL intent, e.g. ``AdLink`` vs
+  ``OrganicLink`` both ``{url, title}``, MUST get distinct cache slots)
+  + schema_version + sorted field names + per-field (yosoi_type, selector, delimiter,
+  frozen) + root selector + nested fingerprints + validators ref.
+
+Per-FIELD ``description`` stays EXCLUDED — it's advisory/stochastic and has no
+enforcement teeth. Only the contract-level ``name``/``doc`` carry identity.
 """
 
 from __future__ import annotations
@@ -18,6 +25,8 @@ import json
 from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
+
+from yosoi.utils.signatures import _normalize
 
 CURRENT_SCHEMA_VERSION = 1
 
@@ -51,6 +60,7 @@ class ContractSpec(BaseModel):
 
     schema_version: int = Field(default=CURRENT_SCHEMA_VERSION)
     name: str
+    doc: str | None = None  # contract-level docstring — discovery-time intent disambiguator (in fingerprint)
     fields: dict[str, FieldSpec] = Field(default_factory=dict)
     root: dict[str, Any] | None = None  # SelectorEntry serialized, or None
     nested: dict[str, ContractSpec] = Field(default_factory=dict)
@@ -67,12 +77,26 @@ class ContractSpec(BaseModel):
 
     @property
     def fingerprint(self) -> str:
-        """Stable SHA-256 structural fingerprint (description excluded).
+        """Stable 16-hex identity fingerprint: structure + contract name + normalized doc.
 
-        Two specs with identical structure but different names or descriptions
-        produce the same fingerprint and share a selector cache entry.
+        Two structurally identical contracts that differ only by ``name`` or by their
+        contract-level ``doc`` (NL intent) produce DIFFERENT fingerprints and get
+        distinct selector cache slots — e.g. ``AdLink`` vs ``OrganicLink``, both
+        ``{url, title}``. This mirrors the ``contract_signature`` (v2) semantics used by
+        the LessonStore path, so both cache systems discriminate identically.
+
+        Per-FIELD ``description`` remains excluded (advisory, stochastic, no teeth).
         """
-        return _fingerprint(self)
+        payload = json.dumps(
+            {
+                'name': _normalize(self.name),
+                'doc': _normalize(self.doc),
+                'struct': _fingerprint_dict(self),
+            },
+            sort_keys=True,
+            separators=(',', ':'),
+        )
+        return hashlib.sha256(payload.encode()).hexdigest()[:16]
 
     def to_contract(self) -> type[Contract]:
         """Rehydrate a working Contract subclass from this spec.
@@ -120,6 +144,9 @@ class ContractSpec(BaseModel):
         field_defs.update(nested_defs)
 
         cls = pydantic.create_model(self.name, __base__=_Contract, **field_defs)
+        # Preserve the contract-level docstring (create_model drops it) so a rehydrated
+        # contract's intent — and its contract_signature — match the original.
+        cls.__doc__ = self.doc
 
         if self.root is not None:
             from yosoi.models.selectors import SelectorEntry
@@ -175,6 +202,7 @@ class ContractSpec(BaseModel):
 
         return cls(
             name=contract.__name__,
+            doc=contract.__doc__,
             fields=fields,
             root=root_dict,
             nested=nested,
@@ -189,13 +217,6 @@ class ContractSpec(BaseModel):
 
 
 # ── helpers ──────────────────────────────────────────────────────────────────
-
-
-def _fingerprint(spec: ContractSpec) -> str:
-    """Compute a stable 16-char fingerprint for a ContractSpec."""
-    payload = _fingerprint_dict(spec)
-    serialized = json.dumps(payload, sort_keys=True, separators=(',', ':'))
-    return hashlib.sha256(serialized.encode()).hexdigest()[:16]
 
 
 def _fingerprint_dict(spec: ContractSpec) -> dict[str, Any]:
