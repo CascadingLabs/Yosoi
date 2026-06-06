@@ -277,18 +277,18 @@ _ARTICLE = (
 
 
 def test_skeleton_is_content_volume_invariant() -> None:
-    from yosoi.generalization.fingerprint import same_template, skeleton_jaccard
+    from yosoi.generalization.fingerprint import same_shape, skeleton_jaccard
 
     # 5 rows vs 40 rows of the SAME template — set-of-shingles dedups the repeats.
     assert skeleton_jaccard(_listing(5), _listing(40)) > 0.9
-    assert same_template(_listing(5), _listing(40))
+    assert same_shape(_listing(5), _listing(40))
 
 
 def test_skeleton_distinguishes_templates() -> None:
-    from yosoi.generalization.fingerprint import same_template, skeleton_jaccard
+    from yosoi.generalization.fingerprint import same_shape, skeleton_jaccard
 
     assert skeleton_jaccard(_listing(10), _ARTICLE) < 0.5
-    assert not same_template(_listing(10), _ARTICLE)
+    assert not same_shape(_listing(10), _ARTICLE)
 
 
 def test_skeleton_fp_prefix_and_degenerate() -> None:
@@ -315,17 +315,17 @@ def test_semantics_extracts_landmarks_and_schema() -> None:
 
 
 def test_same_shape_conjunctive_true_for_same_template() -> None:
-    from yosoi.generalization.fingerprint import page_similarity, same_shape
+    from yosoi.generalization.fingerprint import PageFingerprint, same_shape
 
-    sim = page_similarity(_listing(5), _listing(40))
+    sim = PageFingerprint.of(_listing(5)).similarity(PageFingerprint.of(_listing(40)))
     assert sim.same_shape  # both layers agree
     assert same_shape(_listing(5), _listing(40))
 
 
 def test_same_shape_rejects_different_template_even_if_one_layer_high() -> None:
-    from yosoi.generalization.fingerprint import page_similarity, same_shape
+    from yosoi.generalization.fingerprint import PageFingerprint, same_shape
 
-    sim = page_similarity(_listing(10), _ARTICLE)
+    sim = PageFingerprint.of(_listing(10)).similarity(PageFingerprint.of(_ARTICLE))
     # the structural skeleton vetoes the merge regardless of the semantic layer (fail-closed)
     assert sim.skeleton < 0.5
     assert not sim.same_shape

@@ -235,10 +235,12 @@ SKELETON_SCHEME_VERSION = 't1'
 _SKELETON_DEPTH = 2  # root-to-node path length (tree q-gram)
 _SKELETON_CLASS_K = 2  # top-K structural class tokens folded into a node symbol
 _MIN_SKELETON_SHINGLES = 8  # below this a page is too thin to identify → degenerate
-# Same-template if Jaccard ≥ this. Conservative middle of the measured gap (0.28 vs 0.65);
-# it only PROPOSES a fingerprint-sourced reuse, which the strict trust policy quarantines by
-# default — so the real safety is the trust tier, not this threshold. Tune on a larger corpus.
-SKELETON_SIMILARITY_THRESHOLD = 0.5
+# Same-shape if each layer's Jaccard ≥ its threshold. 0.40/0.50 is the empirical operating
+# point from a 12-page cross-domain sweep (experiments/fingerprint_generalization.py): recall
+# 4/4 template families incl. cross-locale, precision 61/62 (the one false merge is quarantined
+# anyway). A match only PROPOSES a fingerprint-sourced reuse; the strict trust policy is the
+# real safety, not this threshold.
+SKELETON_SIMILARITY_THRESHOLD = 0.40
 # Presence (not value) of any of these marks a structurally significant / templated node.
 _IDENTITY_PRESENCE_ATTRS: tuple[str, ...] = ('id', 'data-testid', 'name', 'role', 'aria-label')
 
@@ -394,51 +396,56 @@ def semantics_jaccard(a_html: str, b_html: str) -> float:
     return _jaccard(page_semantics(a_html), page_semantics(b_html))
 
 
-def same_template(a_html: str, b_html: str, threshold: float = SKELETON_SIMILARITY_THRESHOLD) -> bool:
-    """Whether two pages are the same template by skeleton Jaccard ≥ ``threshold``.
-
-    A PROPOSAL only — a True here would mint a ``fingerprint``-sourced atom, which the strict
-    trust policy quarantines by default (see :mod:`yosoi.core.atom_read`). The fingerprint
-    proposes; the trust policy decides.
-    """
-    return skeleton_jaccard(a_html, b_html) >= threshold
-
-
 class PageSimilarity(BaseModel):
-    """Multi-signal similarity verdict between two pages (P5)."""
+    """Per-layer similarity and the conjunctive same-shape verdict between two fingerprints."""
 
     skeleton: float  # L1 structural skeleton Jaccard
     semantic: float  # L2 landmark / heading / schema Jaccard
-    same_shape: bool  # conjunctive verdict — both layers agree
+    same_shape: bool  # conjunctive verdict — every layer agrees
 
 
-def page_similarity(
-    a_html: str,
-    b_html: str,
-    *,
-    skeleton_threshold: float = SKELETON_SIMILARITY_THRESHOLD,
-    semantic_threshold: float = SEMANTIC_SIMILARITY_THRESHOLD,
-) -> PageSimilarity:
-    """Compute the L1+L2 similarity and the conjunctive same-shape verdict.
+class PageFingerprint(BaseModel):
+    """A page's structural identity — compute ONCE from HTML, then compare cheaply.
 
-    CONJUNCTIVE / fail-closed: two pages are the same shape only if the structural skeleton
-    AND the semantic layer BOTH clear their thresholds. A single layer can REJECT but never
-    force a merge — so a coarse layer (on real Yahoo, L2 rates a *different* template ~0.9)
-    cannot merge templates the skeleton (~0.4) rejects. Measured live: same-ticker and
-    cross-locale pages pass both; a different template (markets) is vetoed by the skeleton.
+    The clean surface for the whole fingerprint: ``PageFingerprint.of(html)`` extracts the
+    layer feature sets once; ``a.matches(b)`` / ``a.similarity(b)`` compare them. Adding a
+    layer (L3 network) is a new field + one term in :meth:`similarity` — generalizable by
+    construction.
+
+    Matching is CONJUNCTIVE and fail-closed: two pages are the same shape only if EVERY layer
+    clears its threshold, so a coarse layer can never *force* a merge (on real Yahoo, L2 rates
+    a different template ~0.9, but the skeleton ~0.4 vetoes it). A match only PROPOSES a
+    ``fingerprint``-sourced reuse, which the strict trust policy quarantines by default — the
+    fingerprint proposes, the trust policy decides what is served.
     """
-    sk = skeleton_jaccard(a_html, b_html)
-    se = semantics_jaccard(a_html, b_html)
-    return PageSimilarity(skeleton=sk, semantic=se, same_shape=(sk >= skeleton_threshold and se >= semantic_threshold))
+
+    skeleton: frozenset[str]  # L1 structural template (depth-D node-symbol paths)
+    semantic: frozenset[str]  # L2 landmark / heading / schema feature set
+
+    @classmethod
+    def of(cls, html: str) -> PageFingerprint:
+        """Compute a page's fingerprint from its HTML (do this once per page)."""
+        return cls(skeleton=page_skeleton(html), semantic=page_semantics(html))
+
+    def similarity(self, other: PageFingerprint) -> PageSimilarity:
+        """Per-layer Jaccard plus the conjunctive same-shape verdict against ``other``."""
+        sk = _jaccard(self.skeleton, other.skeleton)
+        se = _jaccard(self.semantic, other.semantic)
+        same = sk >= SKELETON_SIMILARITY_THRESHOLD and se >= SEMANTIC_SIMILARITY_THRESHOLD
+        return PageSimilarity(skeleton=sk, semantic=se, same_shape=same)
+
+    def matches(self, other: PageFingerprint) -> bool:
+        """Whether two pages are the same shape (conjunctive, fail-closed)."""
+        return self.similarity(other).same_shape
 
 
 def same_shape(a_html: str, b_html: str) -> bool:
-    """Conjunctive, fail-closed same-shape verdict (L1 skeleton AND L2 semantic agree).
+    """Convenience: are two pages the same shape? Builds both fingerprints and matches.
 
-    A PROPOSAL only — a True mints a ``fingerprint``-sourced atom that the strict trust policy
-    quarantines by default. The fingerprint proposes; the trust policy decides what is served.
+    A True only PROPOSES a ``fingerprint``-sourced reuse, which the strict trust policy
+    quarantines by default. The fingerprint proposes; the trust policy decides.
     """
-    return page_similarity(a_html, b_html).same_shape
+    return PageFingerprint.of(a_html).matches(PageFingerprint.of(b_html))
 
 
 # ---------------------------------------------------------------------------

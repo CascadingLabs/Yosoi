@@ -131,6 +131,27 @@ Open: same-template Jaccard is only ~0.65 (real pages genuinely differ ~35%), so
 is ONE strong signal, not standalone identity — confirming the multi-signal plan. Next: feed it
 as a layer alongside L2 (a11y) / L3 (network) under the candidate-then-verify gate.
 
+## Cross-domain experiments + API optimization (real-world tuning)
+
+`experiments/fingerprint_generalization.py` — 12 live pages across domains/types (Yahoo,
+books/quotes toscrape, Wikipedia en/de, Hacker News). Findings that tuned the design:
+- **Precision is the strong suit** — zero false merges across diverse different-template
+  pairs at threshold 0.5; the conjunctive fail-closed matcher never over-merges.
+- **Recall vs flexible templates** — Wikipedia article↔article only ~0.42 skeleton (articles
+  vary: infoboxes/TOC/section counts). Threshold sweep → **skeleton 0.40 / semantic 0.50** is
+  the operating point: recall 4/4 families incl. **cross-locale wiki en↔de now buckets**,
+  precision 61/62 (and that one "miss" is the en↔de merge — arguably correct).
+- **The fingerprint buckets SAME TEMPLATE, not "same page type across sites"** — two different
+  news sites are different templates (correctly distinct); cross-domain reuse is for true
+  mirrors / shared CMS (wiki locales), exactly as intended.
+
+**API optimized to first principles** — collapsed the free-function sprawl into one clean,
+compute-once, generalizable value object: `PageFingerprint.of(html)` then `a.matches(b)` /
+`a.similarity(b)`. Adding L3 (network) is a new field + one term in `similarity()`. Scrapling
+consulted (per-element relocation via stored tag/attrs/text/siblings/path + similarity score,
+SQLite) — that's element-level resilience; our `ElementObservation` already mirrors it, and
+`PageFingerprint` is the page-level analog.
+
 ## Staging — falsifiable experiment first
 
 - **WF0 — Plumbing (low-risk, unblocks all).** Surface already-captured signals onto
