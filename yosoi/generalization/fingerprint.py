@@ -484,6 +484,41 @@ def identity_jaccard(a_html: str, b_html: str) -> float:
 AX_SIMILARITY_THRESHOLD = 0.50
 
 
+# L3-lite network layer — the infra/CDN signature of the HTTP response. Present only when a fetch
+# carried response headers; compared present-in-both. PROVISIONAL threshold (untuned). NOTE: this is
+# the static-from-headers slice of L3; the CDP XHR/fetch endpoint-path skeleton remains a VoidCrawl
+# wrapper gap (the antibot verdict + network log are dropped before reaching FetchResult).
+NETWORK_SIMILARITY_THRESHOLD = 0.50
+
+
+def network_signature(headers: Any) -> frozenset[str]:
+    """L3-lite network signature: the SET of response header NAMES + ``Set-Cookie`` cookie NAMES.
+
+    Header names (``server``, ``content-type``, ``cf-ray``, ``x-frame-options``…) and cookie names
+    are an infra/CDN/framework signature of the response — content-invariant, because only the
+    NAMES are taken, never the values (a ``cf-ray`` value is per-request; the cookie *value* is the
+    session). Duck-typed over a header mapping and fully defensive: any malformed input degrades to
+    the empty set ("not carried"), never raising out of :meth:`PageFingerprint.of`.
+    """
+    try:
+        items = headers.items() if hasattr(headers, 'items') else None
+        if items is None:
+            return frozenset()
+        feats: set[str] = set()
+        for raw_key, raw_val in items:
+            name = str(raw_key).strip().lower()
+            if not name:
+                continue
+            feats.add(f'hdr:{name}')
+            if name == 'set-cookie' and raw_val:
+                cookie = str(raw_val).split('=', 1)[0].strip().lower()
+                if cookie:
+                    feats.add(f'cookie:{cookie}')
+    except Exception:  # noqa: BLE001 — a malformed header map must degrade to "not carried", never raise
+        return frozenset()
+    return frozenset(feats)
+
+
 def ax_spine_features(ax_snapshot: Any) -> frozenset[str]:
     """L2 rendered AX spine: the SET of distinct roles in the rendered accessibility tree.
 
@@ -515,6 +550,7 @@ class PageSimilarity(BaseModel):
     semantic: float  # L2 static landmark / heading / schema Jaccard
     identity: float | None  # L1 identity-attr Jaccard, or None when not carried by both pages
     ax: float | None  # L2 rendered AX-spine Jaccard, or None when not carried by both pages
+    network: float | None  # L3-lite header/cookie-name Jaccard, or None when not carried by both pages
     same_shape: bool  # conjunctive verdict — every CARRIED layer agrees
 
 
@@ -556,20 +592,23 @@ class PageFingerprint(BaseModel):
     semantic: frozenset[str]  # L2 static landmark / heading / schema feature set
     identity: frozenset[str] = frozenset()  # L1 identity-attr signature (data-* keys); empty = not carried
     ax_spine: frozenset[str] = frozenset()  # L2 RENDERED AX role-spine (browser tiers only); empty = not carried
+    network: frozenset[str] = frozenset()  # L3-lite header/cookie-name signature; empty = not carried
 
     @classmethod
-    def of(cls, html: str, *, ax_snapshot: Any = None) -> PageFingerprint:
+    def of(cls, html: str, *, ax_snapshot: Any = None, headers: Any = None) -> PageFingerprint:
         """Compute a page's fingerprint from its HTML (do this once per page).
 
-        Pass ``ax_snapshot`` (a rendered accessibility-tree snapshot, browser tiers only) to carry
-        the L2 rendered AX-spine layer; without it that layer is empty ("not carried") and a static
-        fetch fingerprints on L1 alone — the waterfall principle.
+        Optional richer layers populate only when their fetch-tier signal is supplied, so a static
+        fetch fingerprints on L1 alone (the waterfall principle): pass ``ax_snapshot`` (rendered
+        accessibility tree, browser tiers) for the L2 AX-spine layer, and ``headers`` (the response
+        header map, HTTP tiers) for the L3-lite network layer.
         """
         return cls(
             skeleton=page_skeleton(html),
             semantic=page_semantics(html),
             identity=page_identity(html),
             ax_spine=ax_spine_features(ax_snapshot) if ax_snapshot is not None else frozenset(),
+            network=network_signature(headers) if headers is not None else frozenset(),
         )
 
     @property
@@ -591,13 +630,14 @@ class PageFingerprint(BaseModel):
         semantic_threshold: float = SEMANTIC_SIMILARITY_THRESHOLD,
         identity_threshold: float = IDENTITY_SIMILARITY_THRESHOLD,
         ax_threshold: float = AX_SIMILARITY_THRESHOLD,
+        network_threshold: float = NETWORK_SIMILARITY_THRESHOLD,
     ) -> PageSimilarity:
         """Per-layer Jaccard plus the conjunctive same-shape verdict against ``other``.
 
         Thresholds default to the tuned operating point but are overridable — bring your own.
         A degenerate fingerprint on either side forces ``same_shape=False`` (fail closed). The
-        optional layers (identity, rendered AX) are conjunctive ONLY when both pages carry them
-        (the waterfall "compare on the common layer" rule).
+        optional layers (identity, rendered AX, network) are conjunctive ONLY when both pages carry
+        them substantively (the waterfall "compare on the common layer" rule).
         """
         sk = _jaccard(self.skeleton, other.skeleton)
         se = _jaccard(self.semantic, other.semantic)
@@ -605,6 +645,7 @@ class PageFingerprint(BaseModel):
         # (>= _MIN_OPTIONAL_LAYER_FEATURES); otherwise it abstains (None) and never decides the match.
         idn = _optional_layer_jaccard(self.identity, other.identity)
         ax = _optional_layer_jaccard(self.ax_spine, other.ax_spine)
+        net = _optional_layer_jaccard(self.network, other.network)
         same = (
             not self.degenerate
             and not other.degenerate
@@ -612,8 +653,9 @@ class PageFingerprint(BaseModel):
             and se >= semantic_threshold
             and (idn is None or idn >= identity_threshold)
             and (ax is None or ax >= ax_threshold)
+            and (net is None or net >= network_threshold)
         )
-        return PageSimilarity(skeleton=sk, semantic=se, identity=idn, ax=ax, same_shape=same)
+        return PageSimilarity(skeleton=sk, semantic=se, identity=idn, ax=ax, network=net, same_shape=same)
 
     def matches(
         self,
@@ -623,6 +665,7 @@ class PageFingerprint(BaseModel):
         semantic_threshold: float = SEMANTIC_SIMILARITY_THRESHOLD,
         identity_threshold: float = IDENTITY_SIMILARITY_THRESHOLD,
         ax_threshold: float = AX_SIMILARITY_THRESHOLD,
+        network_threshold: float = NETWORK_SIMILARITY_THRESHOLD,
     ) -> bool:
         """Whether two pages are the same shape (conjunctive, fail-closed)."""
         return self.similarity(
@@ -631,6 +674,7 @@ class PageFingerprint(BaseModel):
             semantic_threshold=semantic_threshold,
             identity_threshold=identity_threshold,
             ax_threshold=ax_threshold,
+            network_threshold=network_threshold,
         ).same_shape
 
 

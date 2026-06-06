@@ -67,6 +67,11 @@ class FetchResult:
     # perception layer alongside the cleaned HTML.
     ax_snapshot: AxSnapshot | None = None
 
+    # Response header map (HTTP tiers; None when unavailable). Feeds the L3-lite network layer of
+    # the waterfall fingerprint — the set of header NAMES + Set-Cookie cookie NAMES is an
+    # infra/CDN signature (the values are per-request content and are never fingerprinted).
+    headers: dict[str, str] | None = None
+
     # Content metadata
     metadata: ContentMetadata = field(default_factory=ContentMetadata)
 

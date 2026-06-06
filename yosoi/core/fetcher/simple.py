@@ -200,7 +200,13 @@ class SimpleFetcher(HTMLFetcher):
             fetch_time = time.time() - start_time
 
             return FetchResult(
-                url=url, html=html, status_code=status_code, is_blocked=False, fetch_time=fetch_time, metadata=metadata
+                url=url,
+                html=html,
+                status_code=status_code,
+                is_blocked=False,
+                fetch_time=fetch_time,
+                metadata=metadata,
+                headers=response_headers,  # L3-lite: header/cookie NAME set feeds the network layer
             )
 
         except BotDetectionError:

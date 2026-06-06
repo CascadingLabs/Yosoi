@@ -203,12 +203,19 @@ score 1.0); `ax_spine` is a role SET (one feature/role → uniform floor, volume
     (`orchestrator._log_page_shape`, which already receives `ax_snapshot`): logs which layers a
     tier populates (`layers=L1+ax`). Conjunctive present-in-both; empty on static fetches → no
     behavior change. Duck-typed so `generalization/` stays free of a `core.fetcher` import.
-  - ⛔ **L3 (response headers, antibot verdict, `Set-Cookie`/network) BLOCKED — VoidCrawl gap.**
-    `FetchResult` does not carry response headers or the CAS-139 antibot verdict (they're produced
-    in VoidCrawl and dropped before reaching `FetchResult`). Surfacing them is a **VoidCrawl
-    wrapper change**, not buildable from this repo (per AGENTS.md — no Playwright side-path). The
-    fingerprint already has the slot: L3 drops in as one more present-in-both layer once the
-    signal reaches `FetchResult`.
+  - ✅ **L3-lite (header-name + `Set-Cookie`-name set) wired (2026-06-06).** `FetchResult.headers`
+    added + populated by the simple HTTP fetcher (it already had `response.headers` in hand);
+    `PageFingerprint.of(html, headers=...)` + `network_signature` build the L3-lite network layer
+    (response header NAMES + cookie NAMES — an infra/CDN signature; values never fingerprinted).
+    Conjunctive present-in-both, defensive (malformed → not carried), uniform thinness floor,
+    PROVISIONAL threshold. Capture + layer landed; threading headers into the live advisory log
+    (like `ax_snapshot`) is deferred with the read-path wiring (it would touch the whole
+    `discover_selectors` call chain for an advisory-only benefit).
+  - ⛔ **L3-full (CDP XHR/fetch endpoint-path skeleton, antibot verdict) BLOCKED — VoidCrawl gap.**
+    The network log + CAS-139 antibot verdict are produced in VoidCrawl and dropped before reaching
+    `FetchResult`. Surfacing them is a **VoidCrawl wrapper change**, not buildable from this repo
+    (per AGENTS.md — no Playwright side-path). The fingerprint already has the layer pattern: the
+    endpoint-skeleton drops in as one more present-in-both layer once the signal reaches `FetchResult`.
   - ↩ `ElementObservation` wiring deferred (orphaned; not on the WF0 critical path).
 - **WF1 — Template skeleton (L1), advisory — THE EXPERIMENT.** Implement the AST anti-unification
   path-shingle fingerprint (the single highest-leverage fix). Compute alongside `page_shape_fp`,

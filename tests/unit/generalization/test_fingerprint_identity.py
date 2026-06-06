@@ -8,6 +8,7 @@ from yosoi.generalization.fingerprint import (
     PageFingerprint,
     ax_spine_features,
     identity_jaccard,
+    network_signature,
     page_identity,
 )
 
@@ -345,3 +346,46 @@ def test_degenerate_page_never_matches_despite_rich_identity() -> None:
     assert sim.identity == 1.0
     assert sim.same_shape is False
     assert fp.matches(fp) is False
+
+
+# ── L3-lite network layer (header-name + Set-Cookie-name set, from FetchResult.headers) ───────
+
+
+def test_network_signature_takes_names_not_values() -> None:
+    feats = network_signature({'Server': 'nginx', 'CF-RAY': 'abc123', 'Set-Cookie': 'sessionid=SECRET; Path=/'})
+    assert {'hdr:server', 'hdr:cf-ray', 'hdr:set-cookie', 'cookie:sessionid'} <= feats
+    # the per-request VALUES must never leak (the cf-ray value, the session secret)
+    assert not any('abc123' in t or 'SECRET' in t for t in feats)
+
+
+def test_network_signature_empty_and_malformed() -> None:
+    assert network_signature(None) == frozenset()
+    assert network_signature({}) == frozenset()
+    assert network_signature(42) == frozenset()  # malformed → degrade, never raise
+
+
+def test_network_layer_carried_only_when_headers_passed() -> None:
+    html = _page(12)
+    hdrs = {'server': 'x', 'content-type': 'text/html', 'cache-control': 'no-cache', 'x-frame-options': 'DENY'}
+    assert PageFingerprint.of(html).network == frozenset()  # no headers → not carried
+    assert PageFingerprint.of(html, headers=hdrs).network  # HTTP tier → carried
+
+
+def test_network_layer_vetoes_when_both_carry_and_disagree() -> None:
+    # identical static structure, but the response infra signatures disagree → conjunctive veto
+    a_h = {'server': 'nginx', 'cf-ray': 'x', 'cf-cache-status': 'HIT', 'x-frame-options': 'DENY'}
+    b_h = {'server': 'apache', 'x-aspnet-version': 'x', 'x-powered-by': 'x', 'x-drupal-cache': 'x'}
+    a = PageFingerprint.of(_page(12), headers=a_h)
+    b = PageFingerprint.of(_page(12), headers=b_h)
+    sim = a.similarity(b)
+    assert sim.network is not None
+    assert sim.network < 0.50
+    assert not sim.same_shape
+
+
+def test_network_layer_skipped_when_not_carried_by_both() -> None:
+    rich = PageFingerprint.of(_page(12), headers={'server': 'x', 'a': '1', 'b': '2', 'c': '3'})
+    thin = PageFingerprint.of(_page(12))  # no headers
+    sim = rich.similarity(thin)
+    assert sim.network is None
+    assert sim.same_shape  # matches on L1 alone
