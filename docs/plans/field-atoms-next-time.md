@@ -61,7 +61,8 @@ provenance/trust tiers and the first slice of P5 (the waterfall fingerprint, L1+
 
 ## Suggested next session (in order)
 1. **TrustPolicy value object** — collapse the three env reads into one immutable policy threaded from the API
-   edge into `resolve`. Pure, testable, unblocks everything below. (Small, do first.)
+   edge into `resolve`. Pure, testable, unblocks everything below. (Small, do first.) This is the **MVP slice
+   of P6 `ys.policies`** — the config-cascade pattern; see `docs/plans/ys-policies-p6.md` / CAS-168.
 2. **Wire `PageFingerprint` similarity into the read path** behind the `fingerprint` trust tier: on an
    exact-shape miss, look for atoms in a _similar_ shape (skeleton≥0.40 ∧ semantic≥0.50), serve only under
    `YOSOI_ATOM_TRUST=yellow`, stamp the served atom `source='fingerprint'`. This is the cross-shape reuse the
