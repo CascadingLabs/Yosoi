@@ -104,6 +104,23 @@ class _VoidCrawlFetcher(HTMLFetcher):
         self._pool_ctx: Any = None
         self._a3node_storage = A3NodeStorage() if experimental_a3node else None
         self._a3node_cache: dict[str, A3Node] = {}
+        # Whether the installed VoidCrawl `goto` accepts `capture_endpoints` (CAS-169). Probed once
+        # on first use and cached, so an older build degrades to a single plain goto (no double-nav).
+        self._supports_endpoint_capture = True
+
+    async def _goto_capture(self, tab: Any, url: str) -> Any:
+        """``tab.goto`` requesting the data-plane endpoint set (CAS-169), back-compatibly.
+
+        Returns the ``PageResponse`` (carrying ``headers``/``antibot``/``endpoints`` on a CAS-169
+        build). Tolerates an older VoidCrawl whose ``goto`` lacks ``capture_endpoints``: the probe
+        TypeErrors once, the flag is cleared, and every later call is a single plain goto.
+        """
+        if self._supports_endpoint_capture:
+            try:
+                return await tab.goto(url, timeout=float(self.timeout), capture_endpoints=True)
+            except TypeError:
+                self._supports_endpoint_capture = False
+        return await tab.goto(url, timeout=float(self.timeout))
 
     async def __aenter__(self) -> _VoidCrawlFetcher:
         BrowserPool, BrowserConfig, PoolConfig = _import_voidcrawl()
@@ -310,6 +327,10 @@ class _VoidCrawlFetcher(HTMLFetcher):
         js_outputs: JsOutputs | None = None
         downloads: dict[str, DownloadResult] | None = None
         ax_snapshot: AxSnapshot | None = None
+        # Navigation-time signals from the goto PageResponse (CAS-169). Read defensively so an
+        # older VoidCrawl build (no headers/endpoints on PageResponse) simply leaves them None.
+        resp_headers: dict[str, str] | None = None
+        resp_endpoints: list[str] | None = None
         # Block-attribution (W2): probe the live tab for a named captcha BEFORE it
         # releases, so a BotDetectionError raised after the block can carry it.
         # This is a DIFFERENT signal from the html-marker heuristic below — it may
@@ -325,7 +346,11 @@ class _VoidCrawlFetcher(HTMLFetcher):
                 await asyncio.sleep(jitter)
 
             await self._apply_identity_geo(tab)
-            await tab.goto(url, timeout=float(self.timeout))
+            # Capture the goto PageResponse instead of discarding it — its headers/endpoints feed
+            # the waterfall fingerprint's L3 layers (the former blind spot).
+            page_resp = await self._goto_capture(tab, url)
+            resp_headers = getattr(page_resp, 'headers', None) or None
+            resp_endpoints = getattr(page_resp, 'endpoints', None) or None
 
             if stored_node is not None:
                 html = await self._fetch_with_replay(tab, domain, stored_node)
@@ -401,6 +426,8 @@ class _VoidCrawlFetcher(HTMLFetcher):
             js_outputs=js_outputs,
             downloads=downloads,
             ax_snapshot=ax_snapshot,
+            headers=resp_headers,
+            endpoints=resp_endpoints,
         )
 
     async def _probe_captcha(self, tab: Any) -> str | None:

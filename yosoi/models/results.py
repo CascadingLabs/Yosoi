@@ -72,6 +72,11 @@ class FetchResult:
     # infra/CDN signature (the values are per-request content and are never fingerprinted).
     headers: dict[str, str] | None = None
 
+    # PII-safe XHR/fetch endpoint set captured by the browser tier (VoidCrawl's
+    # PageResponse.endpoints: scheme://host/path, query/secrets stripped at the source). Feeds the
+    # L3 endpoint-path skeleton layer. None when the fetch tier didn't capture it (HTTP/replay).
+    endpoints: list[str] | None = None
+
     # Content metadata
     metadata: ContentMetadata = field(default_factory=ContentMetadata)
 

@@ -490,6 +490,61 @@ AX_SIMILARITY_THRESHOLD = 0.50
 # wrapper gap (the antibot verdict + network log are dropped before reaching FetchResult).
 NETWORK_SIMILARITY_THRESHOLD = 0.50
 
+# L3 network-ENDPOINT layer — the XHR/fetch endpoint-path skeleton (the strongest cross-instance
+# invariant: a Yahoo quote calls the same query1.finance.yahoo.com/v*/finance/quoteSummary/... for
+# every ticker). Fed from VoidCrawl's PII-safe `PageResponse.endpoints` (browser/CDP tiers only).
+# PROVISIONAL threshold — untuned pending a live multi-instance battery.
+ENDPOINT_SIMILARITY_THRESHOLD = 0.50
+
+# A path segment that is per-request IDENTITY (not template) — collapse to `{id}` so
+# `.../quoteSummary/AAPL` and `.../MSFT` fold together: pure numbers, hex/uuid blobs, the
+# producer's `:redacted` secret sentinel.
+_ENDPOINT_ID_SEG = re.compile(
+    r'^(?:[0-9]+|[0-9a-f]{8,}|[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}|:redacted)$', re.IGNORECASE
+)
+
+
+def _normalize_endpoint_segment(seg: str) -> str:
+    """Collapse a content-bearing path segment to ``{id}``; keep template segments verbatim."""
+    if not seg or _ENDPOINT_ID_SEG.match(seg):
+        return '{id}' if seg else seg
+    # A digit-dominant mixed token (e.g. a security id like ``0P0000OQ68``) is an id, not a word.
+    digits = sum(c.isdigit() for c in seg)
+    if len(seg) >= 4 and digits >= 4 and digits * 5 >= len(seg) * 2:
+        return '{id}'
+    return seg.lower()
+
+
+def network_endpoint_skeleton(endpoints: Any) -> frozenset[str]:
+    """L3 endpoint-path skeleton: the SET of ``host`` + id-normalized path the page called.
+
+    The strongest cross-instance invariant we have — once per-request id segments collapse, the
+    endpoint SET is content-invariant (every ticker hits the same quoteSummary endpoint). A *set*
+    (not a multiset) makes it volume-tolerant — N parallel/retried calls fold to one feature. The
+    producer (VoidCrawl) delivers PII-safe ``scheme://host/path`` (query/fragment/userinfo stripped,
+    secrets ``:redacted``, XHR/fetch only); Yosoi owns the id-segment normalization so the scheme
+    versions with the rest of the fingerprint. Duck-typed and fully defensive: any malformed input
+    degrades to the empty set ("not carried"), never raising out of :meth:`PageFingerprint.of`.
+    """
+    try:
+        if not endpoints or isinstance(endpoints, (str, bytes)) or not isinstance(endpoints, Iterable):
+            return frozenset()
+        feats: set[str] = set()
+        for raw in endpoints:
+            ep = str(raw).strip()
+            if not ep:
+                continue
+            after = ep.split('://', 1)[-1]  # drop scheme; keep host + path
+            host, _, path = after.partition('/')
+            host = host.rsplit('@', 1)[-1].lower()  # defensive: drop any residual userinfo
+            if not host:
+                continue
+            segs = '/'.join(_normalize_endpoint_segment(s) for s in path.split('/') if s)
+            feats.add(f'ep:{host}/{segs}')
+    except Exception:  # noqa: BLE001 — malformed endpoint data must degrade to "not carried", never raise
+        return frozenset()
+    return frozenset(feats)
+
 
 def network_signature(headers: Any) -> frozenset[str]:
     """L3-lite network signature: the SET of response header NAMES + ``Set-Cookie`` cookie NAMES.
@@ -551,6 +606,7 @@ class PageSimilarity(BaseModel):
     identity: float | None  # L1 identity-attr Jaccard, or None when not carried by both pages
     ax: float | None  # L2 rendered AX-spine Jaccard, or None when not carried by both pages
     network: float | None  # L3-lite header/cookie-name Jaccard, or None when not carried by both pages
+    endpoint: float | None  # L3 XHR/fetch endpoint-skeleton Jaccard, or None when not carried by both
     same_shape: bool  # conjunctive verdict — every CARRIED layer agrees
 
 
@@ -593,15 +649,17 @@ class PageFingerprint(BaseModel):
     identity: frozenset[str] = frozenset()  # L1 identity-attr signature (data-* keys); empty = not carried
     ax_spine: frozenset[str] = frozenset()  # L2 RENDERED AX role-spine (browser tiers only); empty = not carried
     network: frozenset[str] = frozenset()  # L3-lite header/cookie-name signature; empty = not carried
+    endpoints: frozenset[str] = frozenset()  # L3 XHR/fetch endpoint-path skeleton; empty = not carried
 
     @classmethod
-    def of(cls, html: str, *, ax_snapshot: Any = None, headers: Any = None) -> PageFingerprint:
+    def of(cls, html: str, *, ax_snapshot: Any = None, headers: Any = None, endpoints: Any = None) -> PageFingerprint:
         """Compute a page's fingerprint from its HTML (do this once per page).
 
         Optional richer layers populate only when their fetch-tier signal is supplied, so a static
         fetch fingerprints on L1 alone (the waterfall principle): pass ``ax_snapshot`` (rendered
-        accessibility tree, browser tiers) for the L2 AX-spine layer, and ``headers`` (the response
-        header map, HTTP tiers) for the L3-lite network layer.
+        accessibility tree, browser tiers) for the L2 AX-spine layer, ``headers`` (the response
+        header map) for the L3-lite network layer, and ``endpoints`` (VoidCrawl's PII-safe
+        ``PageResponse.endpoints``) for the L3 endpoint-path skeleton.
         """
         return cls(
             skeleton=page_skeleton(html),
@@ -609,6 +667,7 @@ class PageFingerprint(BaseModel):
             identity=page_identity(html),
             ax_spine=ax_spine_features(ax_snapshot) if ax_snapshot is not None else frozenset(),
             network=network_signature(headers) if headers is not None else frozenset(),
+            endpoints=network_endpoint_skeleton(endpoints) if endpoints is not None else frozenset(),
         )
 
     @property
@@ -631,6 +690,7 @@ class PageFingerprint(BaseModel):
         identity_threshold: float = IDENTITY_SIMILARITY_THRESHOLD,
         ax_threshold: float = AX_SIMILARITY_THRESHOLD,
         network_threshold: float = NETWORK_SIMILARITY_THRESHOLD,
+        endpoint_threshold: float = ENDPOINT_SIMILARITY_THRESHOLD,
     ) -> PageSimilarity:
         """Per-layer Jaccard plus the conjunctive same-shape verdict against ``other``.
 
@@ -646,6 +706,7 @@ class PageFingerprint(BaseModel):
         idn = _optional_layer_jaccard(self.identity, other.identity)
         ax = _optional_layer_jaccard(self.ax_spine, other.ax_spine)
         net = _optional_layer_jaccard(self.network, other.network)
+        ep = _optional_layer_jaccard(self.endpoints, other.endpoints)
         same = (
             not self.degenerate
             and not other.degenerate
@@ -654,8 +715,9 @@ class PageFingerprint(BaseModel):
             and (idn is None or idn >= identity_threshold)
             and (ax is None or ax >= ax_threshold)
             and (net is None or net >= network_threshold)
+            and (ep is None or ep >= endpoint_threshold)
         )
-        return PageSimilarity(skeleton=sk, semantic=se, identity=idn, ax=ax, network=net, same_shape=same)
+        return PageSimilarity(skeleton=sk, semantic=se, identity=idn, ax=ax, network=net, endpoint=ep, same_shape=same)
 
     def matches(
         self,
@@ -666,6 +728,7 @@ class PageFingerprint(BaseModel):
         identity_threshold: float = IDENTITY_SIMILARITY_THRESHOLD,
         ax_threshold: float = AX_SIMILARITY_THRESHOLD,
         network_threshold: float = NETWORK_SIMILARITY_THRESHOLD,
+        endpoint_threshold: float = ENDPOINT_SIMILARITY_THRESHOLD,
     ) -> bool:
         """Whether two pages are the same shape (conjunctive, fail-closed)."""
         return self.similarity(
@@ -675,6 +738,7 @@ class PageFingerprint(BaseModel):
             identity_threshold=identity_threshold,
             ax_threshold=ax_threshold,
             network_threshold=network_threshold,
+            endpoint_threshold=endpoint_threshold,
         ).same_shape
 
 

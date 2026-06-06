@@ -8,6 +8,7 @@ from yosoi.generalization.fingerprint import (
     PageFingerprint,
     ax_spine_features,
     identity_jaccard,
+    network_endpoint_skeleton,
     network_signature,
     page_identity,
 )
@@ -388,4 +389,78 @@ def test_network_layer_skipped_when_not_carried_by_both() -> None:
     thin = PageFingerprint.of(_page(12))  # no headers
     sim = rich.similarity(thin)
     assert sim.network is None
+    assert sim.same_shape  # matches on L1 alone
+
+
+# ── L3 network-endpoint skeleton layer (fed from VoidCrawl PageResponse.endpoints) ────────────
+
+
+def test_endpoint_skeleton_normalizes_ids_and_is_volume_invariant() -> None:
+    # The cross-instance invariant: two instances of the same template share the endpoint skeleton
+    # once per-request path ids collapse (numeric here) — and a query-keyed id (`?symbol=AAPL`,
+    # already query-stripped by the producer) is identical across instances by construction. A
+    # *set* makes it volume-invariant: a duplicate/retried call folds to one feature.
+    a = network_endpoint_skeleton(
+        [
+            'https://api.example.com/v2/items/123',
+            'https://api.example.com/v2/items/123',  # retried → folds (set semantics)
+            'https://api.example.com/v2/feed',  # query-keyed (?symbol=…) already stripped at source
+        ]
+    )
+    b = network_endpoint_skeleton(['https://api.example.com/v2/items/789', 'https://api.example.com/v2/feed'])
+    assert a == b  # numeric id → {id}; shared structural endpoint identical
+    assert 'ep:api.example.com/v2/items/{id}' in a
+    # NOTE (known limit): an ALPHA path id (a ticker like .../quoteSummary/AAPL) is not numeric/hex,
+    # so it isn't collapsed — those instances overlap only partially. Numeric/uuid/hex/query-keyed
+    # ids (the common case) collapse cleanly; an alpha-id templatizer is a possible follow-up.
+
+
+def test_endpoint_skeleton_collapses_numeric_uuid_hex_and_redacted() -> None:
+    feats = network_endpoint_skeleton(
+        [
+            'https://api.example.com/users/12345/profile',
+            'https://api.example.com/items/550e8400-e29b-41d4-a716-446655440000',
+            'https://api.example.com/blob/deadbeefcafe1234',
+            'https://api.example.com/reset/:redacted',
+        ]
+    )
+    assert feats == frozenset(
+        {
+            'ep:api.example.com/users/{id}/profile',
+            'ep:api.example.com/items/{id}',
+            'ep:api.example.com/blob/{id}',
+            'ep:api.example.com/reset/{id}',
+        }
+    )
+
+
+def test_endpoint_skeleton_empty_and_malformed() -> None:
+    assert network_endpoint_skeleton(None) == frozenset()
+    assert network_endpoint_skeleton([]) == frozenset()
+    assert network_endpoint_skeleton('https://h.com/x') == frozenset()  # a bare str is not a list → not carried
+    assert network_endpoint_skeleton(42) == frozenset()
+
+
+def test_endpoint_layer_carried_only_when_endpoints_passed() -> None:
+    html = _page(12)
+    eps = [f'https://api.example.com/v1/resource/{n}' for n in ('a', 'b', 'c')]
+    assert PageFingerprint.of(html).endpoints == frozenset()  # no endpoints → not carried
+    assert PageFingerprint.of(html, endpoints=eps).endpoints  # browser/CDP tier → carried
+
+
+def test_endpoint_layer_vetoes_when_both_carry_and_disagree() -> None:
+    # identical static structure, but the data-plane endpoint sets are disjoint → conjunctive veto.
+    a = PageFingerprint.of(_page(12), endpoints=['https://a.api.com/x', 'https://a.api.com/y', 'https://a.api.com/z'])
+    b = PageFingerprint.of(_page(12), endpoints=['https://b.api.com/x', 'https://b.api.com/y', 'https://b.api.com/z'])
+    sim = a.similarity(b)
+    assert sim.endpoint is not None
+    assert sim.endpoint < 0.50
+    assert not sim.same_shape
+
+
+def test_endpoint_layer_skipped_when_not_carried_by_both() -> None:
+    rich = PageFingerprint.of(_page(12), endpoints=['https://a.com/1', 'https://a.com/2', 'https://a.com/3'])
+    thin = PageFingerprint.of(_page(12))  # static, no endpoints
+    sim = rich.similarity(thin)
+    assert sim.endpoint is None
     assert sim.same_shape  # matches on L1 alone
