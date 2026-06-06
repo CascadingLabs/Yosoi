@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Any
 
 from yosoi.models.needs_discovery import NeedsDiscovery
 from yosoi.models.selectors import SelectorLevel
+from yosoi.policies import Policy
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +43,7 @@ def resolve(
     max_level: SelectorLevel = SelectorLevel.CSS,
     url: str | None = None,
     atom_store: AtomStore | None = None,
+    policy: Policy | None = None,
 ) -> ResolveResult:
     """Replay cached selectors against ``html`` and return records or a cache-miss signal.
 
@@ -52,21 +54,25 @@ def resolve(
         domain: Domain name — first part of the cache key (e.g. ``'example.com'``).
         max_level: Maximum selector strategy level. Defaults to CSS.
         url: Source URL used for relative-URL resolution in coercions. Defaults to domain.
-        atom_store: Optional field-atom index (P3). When atom reads are enabled
-            (``YOSOI_ATOM_READS``), a legacy-cache miss is retried against this index
-            before falling back to discovery.
+        atom_store: Optional field-atom index (P3). When ``policy.atom_reads`` is on, a
+            legacy-cache miss is retried against this index before falling back to discovery.
+        policy: The resolved :class:`~yosoi.policies.Policy` governing atom reads + trust tier.
+            Resolved ONCE here (``policy or Policy.from_env()``) — this is the single env-read
+            site for the read path, after which the deep core takes config as an explicit value
+            (the CAS-119 purity contract). Pass an explicit Policy to override the env layer.
 
     Returns:
         ``list[dict]`` of extracted records on a cache hit, or a :class:`NeedsDiscovery`
         instance on a cache miss. Never raises on a miss — caller decides what to do next.
     """
+    effective_policy = policy or Policy.from_env()
     fingerprint = spec.fingerprint
     selectors = cache.get((domain, fingerprint))
 
     if selectors is None:
-        # P3: behind YOSOI_ATOM_READS, try the field-atom index before discovery. A full,
+        # P3: behind policy.atom_reads, try the field-atom index before discovery. A full,
         # unambiguous, same-shape resolution extracts directly; anything less falls through.
-        atom_records = _try_atom_reads(spec, html, domain, url, atom_store, max_level)
+        atom_records = _try_atom_reads(spec, html, domain, url, atom_store, max_level, effective_policy)
         if atom_records is not None:
             return atom_records
         contract = spec.to_contract()
@@ -86,20 +92,17 @@ def _try_atom_reads(
     url: str | None,
     atom_store: AtomStore | None,
     max_level: SelectorLevel,
+    policy: Policy,
 ) -> list[dict[str, Any]] | None:
-    """Attempt to serve a contract entirely from the field-atom index (P3, flag-gated).
+    """Attempt to serve a contract entirely from the field-atom index (P3, policy-gated).
 
-    Returns extracted records when every field resolves unambiguously on this page's
-    shape, else None (caller falls back to discovery). Fail-closed: any error or partial
-    resolution yields None, never a half-built selector set.
+    Takes the already-resolved ``policy`` (no env read here — ``resolve`` owns the single
+    boundary read), so both the gate and the trust-tier filter derive from ONE value. Returns
+    extracted records when every field resolves unambiguously on this page's shape, else None
+    (caller falls back to discovery). Fail-closed: any error or partial resolution yields None.
     """
     from yosoi.core.atom_read import resolve_via_atoms, selector_map_from_atoms
-    from yosoi.policies import Policy
 
-    # Resolve ONE policy here (the edge of the atom-read path), then derive every decision from it,
-    # so the gate and the trust-tier filter can't observe different env state. Threading a Policy in
-    # from the API edge (so this stops reading env at all) is phase 2 — see CAS-168.
-    policy = Policy.from_env()
     if not policy.atom_reads:
         return None
     try:
