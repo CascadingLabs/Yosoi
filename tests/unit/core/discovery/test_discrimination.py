@@ -73,3 +73,55 @@ def test_pseudo_element_stripped_to_compare_elements_not_attr_nodes() -> None:
     a = {'url': _slot('a::attr(href)', root='.uEierd')}
     b = {'url': _slot('a', root='.uEierd')}
     assert discriminated(_HTML, a, b) is False
+
+
+# ── evaluate_discrimination: the structured gate (P1.5) ────────────────────────
+
+
+def test_gate_accepts_disjoint_contracts() -> None:
+    from yosoi.core.discovery.discrimination import evaluate_discrimination
+
+    maps = {
+        'AdResult': {'url': _slot('a::attr(href)', root='.uEierd')},
+        'OrganicResult': {'url': _slot('a::attr(href)', root='.MjjYud')},
+    }
+    report = evaluate_discrimination(_HTML, maps)
+    assert report.accepted is True
+    assert report.overlaps == {}
+    assert report.empty == []
+    assert report.footprints['AdResult'] >= 1
+    assert report.footprints['OrganicResult'] >= 1
+
+
+def test_gate_rejects_overlapping_contracts() -> None:
+    from yosoi.core.discovery.discrimination import evaluate_discrimination
+
+    # AdResult uses a bare `a` that also matches every organic anchor -> overlap.
+    maps = {
+        'AdResult': {'url': _slot('a::attr(href)')},
+        'OrganicResult': {'url': _slot('a::attr(href)', root='.MjjYud')},
+    }
+    report = evaluate_discrimination(_HTML, maps)
+    assert report.accepted is False
+    assert report.overlaps  # at least one conflicting pair recorded
+    assert 'overlap' in report.reason
+
+
+def test_gate_rejects_empty_footprint() -> None:
+    from yosoi.core.discovery.discrimination import evaluate_discrimination
+
+    maps = {
+        'AdResult': {'url': _slot('a::attr(href)', root='.uEierd')},
+        'Ghost': {'url': _slot('a::attr(href)', root='.does-not-exist')},
+    }
+    report = evaluate_discrimination(_HTML, maps)
+    assert report.accepted is False
+    assert 'Ghost' in report.empty
+
+
+def test_gate_requires_two_contracts() -> None:
+    from yosoi.core.discovery.discrimination import evaluate_discrimination
+
+    report = evaluate_discrimination(_HTML, {'AdResult': {'url': _slot('a::attr(href)', root='.uEierd')}})
+    assert report.accepted is False
+    assert '>=2' in report.reason

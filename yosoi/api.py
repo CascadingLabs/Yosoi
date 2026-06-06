@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from collections.abc import Callable, Mapping, Sequence
+from typing import Any
 
 from yosoi.core.configs import YosoiConfig, auto_config
 from yosoi.core.discovery import LLMConfig
@@ -13,6 +15,50 @@ from yosoi.models.contract import Contract
 from yosoi.models.selectors import SelectorLevel
 from yosoi.utils import observability as obs
 from yosoi.utils.contracts import resolve_contract
+
+logger = logging.getLogger(__name__)
+
+# Per-contract capture for the cross-contract discrimination gate: contract name ->
+# (selector_map, cleaned_html) from that contract's fresh discovery on a page.
+GateCollector = dict[str, tuple[dict[str, Any], str | None]]
+
+
+def _run_discrimination_gates(collectors: dict[str, GateCollector]) -> None:
+    """Run the advisory discrimination gate for every URL that collected >=2 contracts."""
+    for url, collected in collectors.items():
+        _advisory_discrimination_gate(url, collected)
+
+
+def _advisory_discrimination_gate(url: str, collected: GateCollector) -> None:
+    """Run the discrimination gate over a page's contract set and LOG the verdict (P1.5).
+
+    Advisory in P1.5: this surfaces whether ``AdResult``/``OrganicResult``-style
+    contracts on one page resolved to DISJOINT DOM regions, so a conflation
+    (overlapping selectors) is visible before P2 ever internalizes those selectors
+    into the field-atom index. It does not yet block caching. Best-effort — a gate
+    failure must never break a scrape.
+    """
+    if len(collected) < 2:
+        return
+    try:
+        from yosoi.core.discovery.discrimination import evaluate_discrimination
+
+        maps = {name: selectors for name, (selectors, _html) in collected.items()}
+        html = next((h for (_s, h) in collected.values() if h), None)
+        if not html:
+            return
+        report = evaluate_discrimination(html, maps)
+        logger.log(
+            logging.INFO if report.accepted else logging.WARNING,
+            'discrimination gate url=%s accepted=%s reason=%s footprints=%s overlaps=%s',
+            url,
+            report.accepted,
+            report.reason,
+            report.footprints,
+            report.overlaps,
+        )
+    except Exception as exc:  # noqa: BLE001 — advisory gate must never break a scrape
+        logger.debug('discrimination gate skipped (url=%s): %s', url, exc)
 
 
 async def scrape(
@@ -98,6 +144,10 @@ async def scrape(
     sem = asyncio.Semaphore(max_concurrency) if max_concurrency else None
     pairs = [(u, c) for u in urls for c in contract_clss]
 
+    # P1.5 advisory gate: collect each contract's discovered selector map per URL so we
+    # can judge region disjointness after the run (the gate self-skips a URL with <2).
+    gate_collectors: dict[str, GateCollector] = {u: {} for u in urls}
+
     async def _unit(u: str, c: type[Contract]) -> list[ContentMap]:
         async def _go() -> list[ContentMap]:
             return await _scrape_one(
@@ -117,6 +167,7 @@ async def scrape(
                 keep_downloads=keep_downloads,
                 write_lock=write_lock,
                 identity=_identity_for(u),
+                gate_collect=gate_collectors[u],
             )
 
         if sem is None:
@@ -126,6 +177,8 @@ async def scrape(
 
     flat = await asyncio.gather(*(_unit(u, c) for (u, c) in pairs))
     cell = {(u, c.__name__): flat[i] for i, (u, c) in enumerate(pairs)}
+
+    _run_discrimination_gates(gate_collectors)
 
     if multi_url and multi_contract:
         return {u: {c.__name__: cell[u, c.__name__] for c in contract_clss} for u in urls}
@@ -155,12 +208,15 @@ async def _scrape_one(
     keep_downloads: bool = True,
     write_lock: asyncio.Lock | None = None,
     identity: BrowserIdentity | None = None,
+    gate_collect: GateCollector | None = None,
 ) -> list[ContentMap]:
     """One ``(url, contract)`` unit (returns ``list[record]``).
 
     ``write_lock`` is the shared per-call lock that :func:`scrape` threads through so
     concurrent units don't race on per-domain selector writes; ``None`` for a lone scrape.
     ``identity`` is the opt-in per-URL :class:`BrowserIdentity` (profile/headful/geo).
+    ``gate_collect``, when provided, receives this contract's freshly-discovered selector
+    map + cleaned HTML for the cross-contract discrimination gate (P1.5, advisory).
     """
     contract_cls = resolve_contract(contract) if isinstance(contract, str) else contract
     llm_config = _resolve_model(model)
@@ -190,7 +246,7 @@ async def _scrape_one(
                 write_lock=write_lock,
                 identity=identity,
             ) as pipeline:
-                return [
+                items = [
                     item
                     async for item in pipeline.scrape(
                         url,
@@ -200,6 +256,13 @@ async def _scrape_one(
                         output_format=save_format_list,
                     )
                 ]
+                # P1.5: hand this contract's freshly-discovered selectors to the gate
+                # collector (only set on a fresh discovery, not a cache replay).
+                # getattr-guarded so a Pipeline-like double without these attrs is fine.
+                last_selectors = getattr(pipeline, 'last_selectors', None)
+                if gate_collect is not None and last_selectors is not None:
+                    gate_collect[contract_cls.__name__] = (last_selectors, getattr(pipeline, 'last_cleaned_html', None))
+                return items
         except Exception as e:
             obs.warning('API scrape failed', url=url, contract=contract_cls.__name__, error=str(e))
             raise

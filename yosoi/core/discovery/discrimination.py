@@ -20,6 +20,7 @@ from __future__ import annotations
 from typing import Any
 
 from parsel import Selector
+from pydantic import BaseModel
 
 from yosoi.models.selectors import SelectorEntry, coerce_selector_entry
 
@@ -142,3 +143,68 @@ def overlapping_pairs(html: str, maps: dict[str, dict[str, Any]]) -> dict[tuple[
 def mutually_discriminated(html: str, maps: dict[str, dict[str, Any]]) -> bool:
     """True iff all N contracts have non-empty, pairwise-disjoint element footprints."""
     return len(maps) >= 2 and not overlapping_pairs(html, maps)
+
+
+class DiscriminationReport(BaseModel):
+    """The accept/reject verdict on a page's contract set — the gate before internalize.
+
+    A contract set is ACCEPTED only when every contract claims a non-empty DOM region
+    AND no two share an element (``mutually_discriminated`` is True). A REJECTED set
+    means at least one selector is generic or mis-rooted and would internalize a
+    conflation — e.g. an ``AdResult`` selector that also grabs organic anchors. The
+    field-atom store must NOT cache a rejected set (fail closed): a conflated selector
+    baked into the durable index is a silent-corruption bug, far worse than a re-discover.
+
+    Attributes:
+        accepted: Whether the set is mutually discriminated (the gate verdict).
+        footprints: Per-contract region-footprint size (DOM elements the contract claims).
+        empty: Contracts whose footprint is empty — their selectors matched nothing.
+        overlaps: ``"a|b" -> shared_element_count`` for each genuinely conflicting pair.
+        reason: Human-readable explanation of the verdict.
+    """
+
+    accepted: bool
+    footprints: dict[str, int]
+    empty: list[str]
+    overlaps: dict[str, int]
+    reason: str
+
+
+def evaluate_discrimination(html: str, maps: dict[str, dict[str, Any]]) -> DiscriminationReport:
+    """Evaluate the discrimination gate for a page's contract set.
+
+    Wraps the deterministic judge (:func:`mutually_discriminated` /
+    :func:`overlapping_pairs`) into a structured, loggable verdict so callers — the
+    field-atom internalization path and the ``ys.scrape`` cross-contract seam — share
+    one accept/reject decision plus the detail needed to explain a rejection.
+
+    Args:
+        html: The page HTML all contracts were discovered/extracted against (one parse).
+        maps: ``{contract_name: selector_map}`` for every contract on the page, where a
+            selector_map is the ``{field: {primary, root?}}`` shape discovery produces.
+
+    Returns:
+        A :class:`DiscriminationReport`. ``accepted`` equals
+        :func:`mutually_discriminated` by construction.
+    """
+    sel = Selector(text=html)
+    footprints = {name: len(contract_element_ids(sel, m)) for name, m in maps.items()}
+    empty = sorted(name for name, size in footprints.items() if size == 0)
+    overlaps = {f'{a}|{b}': shared for (a, b), shared in overlapping_pairs(html, maps).items() if shared > 0}
+
+    accepted = mutually_discriminated(html, maps)
+    if len(maps) < 2:
+        reason = f'need >=2 contracts to discriminate (got {len(maps)})'
+    elif empty:
+        reason = f'empty region footprint(s) — selectors matched nothing: {", ".join(empty)}'
+    elif overlaps:
+        reason = f'region overlap (shared DOM elements): {overlaps}'
+    else:
+        reason = 'all contracts claim non-empty, pairwise-disjoint regions'
+    return DiscriminationReport(
+        accepted=accepted,
+        footprints=footprints,
+        empty=empty,
+        overlaps=overlaps,
+        reason=reason,
+    )

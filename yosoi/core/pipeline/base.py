@@ -242,6 +242,12 @@ class Pipeline(
         self.logger = logging.getLogger(__name__)
         self._url_start: float = 0.0
         self.last_elapsed: float = 0.0
+        # P1.5: the selector map + cleaned HTML from the most recent FRESH discovery,
+        # exposed so a cross-contract caller (ys.scrape) can run the discrimination gate
+        # before those selectors are internalized. None until a fresh discovery runs
+        # (a cache hit does not re-internalize, so it leaves these untouched).
+        self.last_selectors: dict[str, Any] | None = None
+        self.last_cleaned_html: str | None = None
         self._last_level_distribution: dict[str, int] = {}
         self._client: httpx.AsyncClient = httpx.AsyncClient()
 
@@ -578,6 +584,12 @@ class Pipeline(
             used_llm = used_llm or escalated
 
         selectors_to_save = self._selectors_with_root(verified, root_entry)
+
+        # P1.5: expose the freshly-accepted selector map + cleaned HTML so the
+        # cross-contract discrimination gate (ys.scrape) can judge this contract's
+        # region footprint against its siblings before anything is internalized.
+        self.last_selectors = selectors_to_save
+        self.last_cleaned_html = cleaned_html
 
         if not extracted:
             self.console.print('[warning]⚠ Extraction failed, but selectors are valid[/warning]')
