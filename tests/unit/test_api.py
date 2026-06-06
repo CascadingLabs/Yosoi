@@ -37,6 +37,34 @@ async def test_scrape_accepts_a_list_of_contracts(monkeypatch):
     assert all(i.kwargs.get('bus') is None for i in FakePipeline.instances)
 
 
+async def test_scrape_accepts_a_list_of_urls(monkeypatch):
+    """scrape() with a LIST of urls returns a url-keyed dict, one unit per url."""
+    FakePipeline.instances.clear()
+    monkeypatch.setattr(api, 'Pipeline', FakePipeline)
+
+    result = await api.scrape(['https://a.example', 'https://b.example'], ApiContract, model=ys.claude_sdk())
+
+    assert result == {
+        'https://a.example': [{'title': 'Example'}],
+        'https://b.example': [{'title': 'Example'}],
+    }
+    assert len(FakePipeline.instances) == 2
+
+
+async def test_scrape_grid_urls_x_contracts(monkeypatch):
+    """scrape([urls], [contracts]) returns {url: {contract_name: records}} — the full grid."""
+    FakePipeline.instances.clear()
+    monkeypatch.setattr(api, 'Pipeline', FakePipeline)
+
+    result = await api.scrape(
+        ['https://a.example', 'https://b.example'], [ApiContract, ApiContract2], model=ys.claude_sdk()
+    )
+
+    assert set(result) == {'https://a.example', 'https://b.example'}
+    assert set(result['https://a.example']) == {'ApiContract', 'ApiContract2'}
+    assert len(FakePipeline.instances) == 4  # 2 urls x 2 contracts
+
+
 class FakePipeline:
     """Pipeline test double that captures constructor and scrape arguments."""
 

@@ -15,7 +15,7 @@ from yosoi.utils.contracts import resolve_contract
 
 
 async def scrape(
-    url: str,
+    url: str | Sequence[str],
     contract: type[Contract] | str | Sequence[type[Contract] | str],
     model: YosoiConfig | LLMConfig | str | None = None,
     *,
@@ -30,57 +30,77 @@ async def scrape(
     download_dir: str | None = None,
     max_download_bytes: int | None = None,
     keep_downloads: bool = True,
-) -> list[ContentMap] | dict[str, list[ContentMap]]:
-    """Scrape one URL and return validated native Python dictionaries.
+) -> list[ContentMap] | dict[str, list[ContentMap]] | dict[str, dict[str, list[ContentMap]]]:
+    """Scrape one-or-many URLs with one-or-many contracts — the single blessed path.
 
-    ``contract`` is ONE contract — returning ``list[record]`` — or a LIST of contracts for
-    the same page (separate data contracts, e.g. an ad-result and an organic-result block),
-    returning ``{contract_name: [records]}``. The multi-contract form discovers concurrently
-    (the contracts do not block one another); see :func:`_scrape_multi`.
+    ``url`` and ``contract`` each take a scalar OR a list; the return shape follows which axes
+    are lists, and every ``(url, contract)`` unit runs CONCURRENTLY under one shared
+    write-lock (so per-domain selector writes don't race):
 
-    By default this API does not write JSON/CSV/etc. files. Pass
-    ``save_formats=('json',)`` when file output is wanted.
+      * ``scrape(url, Contract)``      -> ``list[record]``
+      * ``scrape(url, [A, B])``        -> ``{contract_name: [records]}``
+      * ``scrape([u1, u2], Contract)`` -> ``{url: [records]}``
+      * ``scrape([u1, u2], [A, B])``   -> ``{url: {contract_name: [records]}}``
 
-    For ``ys.File()`` download fields, set ``allow_downloads=True`` and use a browser
-    ``fetcher_type`` (``'headless'``/``'headful'``/``'waterfall'``). ``allowed_download_types``
-    is an optional run-wide file-type allowlist intersected with each field's own.
-    ``download_dir`` overrides the quarantine root (default ``.yosoi/downloads/``) and
-    ``max_download_bytes`` sets a run-wide per-file cap (used when a field sets no ``max_bytes``).
-    ``keep_downloads=False`` purges the downloaded bytes at run end (provenance is retained).
+    Multiple data contracts for the SAME page (an ad-result vs an organic-result block)
+    discover concurrently and do not block one another. NOTE: no ``DiscoveryBus`` is shared
+    across distinct contracts — the bus dedupes on ``field_signature`` (name + description +
+    type, NOT the contract intent), so sharing it would force e.g. ``Ad.url == Organic.url``,
+    the opposite of discrimination. Related contracts must learn to DIVERGE, not dedup.
+
+    By default this API does not write files. Pass ``save_formats=('json',)`` for file output.
+    ``ys.File()`` download fields need ``allow_downloads=True`` + a browser ``fetcher_type``;
+    ``allowed_download_types``/``download_dir``/``max_download_bytes``/``keep_downloads`` tune
+    the download lane (see :func:`_scrape_one`).
+
+    FUTURE: fetch-once — each ``(url, contract)`` unit fetches independently, so N contracts on
+    one URL = N fetches (bad for anti-bot SERPs); share one fetched+cleaned HTML per URL.
+    FUTURE: cross-contract discrimination "path-planning" — when two contracts' selectors
+    overlap, coordinate them apart (Tier-1 region gate + a re-discover divergence loop in
+    ``yosoi.core.discovery.discrimination``); today field-level root + per-contract intent
+    discriminate by construction, but nothing ENFORCES disjointness here yet.
+    FUTURE: bound URL-axis concurrency (a semaphore) and concurrent page SELECTION.
     """
-    if not isinstance(contract, (str, type)):  # a list/sequence of contracts
-        return await _scrape_multi(
-            url,
-            contract,
-            model,
-            force=force,
-            skip_verification=skip_verification,
-            fetcher_type=fetcher_type,
-            selector_level=selector_level,
-            save_formats=save_formats,
-            quiet=quiet,
-            allow_downloads=allow_downloads,
-            allowed_download_types=allowed_download_types,
-            download_dir=download_dir,
-            max_download_bytes=max_download_bytes,
-            keep_downloads=keep_downloads,
+    urls: list[str] = [url] if isinstance(url, str) else list(url)
+    raw_contracts = [contract] if isinstance(contract, (str, type)) else list(contract)
+    contract_clss = [resolve_contract(c) if isinstance(c, str) else c for c in raw_contracts]
+    multi_url = not isinstance(url, str)
+    multi_contract = not isinstance(contract, (str, type))
+
+    write_lock = asyncio.Lock() if (multi_url or multi_contract) else None
+    pairs = [(u, c) for u in urls for c in contract_clss]
+    flat = await asyncio.gather(
+        *(
+            _scrape_one(
+                u,
+                c,
+                model,
+                force=force,
+                skip_verification=skip_verification,
+                fetcher_type=fetcher_type,
+                selector_level=selector_level,
+                save_formats=save_formats,
+                quiet=quiet,
+                allow_downloads=allow_downloads,
+                allowed_download_types=allowed_download_types,
+                download_dir=download_dir,
+                max_download_bytes=max_download_bytes,
+                keep_downloads=keep_downloads,
+                write_lock=write_lock,
+            )
+            for (u, c) in pairs
         )
-    return await _scrape_one(
-        url,
-        contract,
-        model,
-        force=force,
-        skip_verification=skip_verification,
-        fetcher_type=fetcher_type,
-        selector_level=selector_level,
-        save_formats=save_formats,
-        quiet=quiet,
-        allow_downloads=allow_downloads,
-        allowed_download_types=allowed_download_types,
-        download_dir=download_dir,
-        max_download_bytes=max_download_bytes,
-        keep_downloads=keep_downloads,
     )
+    cell = {(u, c.__name__): flat[i] for i, (u, c) in enumerate(pairs)}
+
+    if multi_url and multi_contract:
+        return {u: {c.__name__: cell[u, c.__name__] for c in contract_clss} for u in urls}
+    if multi_url:
+        name = contract_clss[0].__name__
+        return {u: cell[u, name] for u in urls}
+    if multi_contract:
+        return {c.__name__: cell[urls[0], c.__name__] for c in contract_clss}
+    return flat[0]
 
 
 async def _scrape_one(
@@ -99,8 +119,13 @@ async def _scrape_one(
     download_dir: str | None = None,
     max_download_bytes: int | None = None,
     keep_downloads: bool = True,
+    write_lock: asyncio.Lock | None = None,
 ) -> list[ContentMap]:
-    """Single-contract scrape — the original ``scrape`` body (returns ``list[record]``)."""
+    """One ``(url, contract)`` unit (returns ``list[record]``).
+
+    ``write_lock`` is the shared per-call lock that :func:`scrape` threads through so
+    concurrent units don't race on per-domain selector writes; ``None`` for a lone scrape.
+    """
     contract_cls = resolve_contract(contract) if isinstance(contract, str) else contract
     llm_config = _resolve_model(model)
     save_format_list = list(save_formats)
@@ -126,6 +151,7 @@ async def _scrape_one(
                 download_dir=download_dir,
                 max_download_bytes=max_download_bytes,
                 keep_downloads=keep_downloads,
+                write_lock=write_lock,
             ) as pipeline:
                 return [
                     item
@@ -140,78 +166,6 @@ async def _scrape_one(
         except Exception as e:
             obs.warning('API scrape failed', url=url, contract=contract_cls.__name__, error=str(e))
             raise
-
-
-async def _scrape_multi(
-    url: str,
-    contracts: Sequence[type[Contract] | str],
-    model: YosoiConfig | LLMConfig | str | None,
-    *,
-    force: bool,
-    skip_verification: bool,
-    fetcher_type: str,
-    selector_level: SelectorLevel,
-    save_formats: Sequence[str],
-    quiet: bool,
-    allow_downloads: bool,
-    allowed_download_types: Sequence[str],
-    download_dir: str | None,
-    max_download_bytes: int | None,
-    keep_downloads: bool,
-) -> dict[str, list[ContentMap]]:
-    """Scrape one URL with MANY contracts — separate data contracts for the same page.
-
-    Discovery is CONCURRENT: the contracts discover at once and do not block one another
-    (``asyncio.gather``), sharing a write-lock so their per-domain selector writes don't
-    race. Returns ``{contract_name: [records]}``.
-
-    Deliberately does NOT share a ``DiscoveryBus`` across contracts: the bus dedupes on
-    ``field_signature`` (field name + description + type), so sharing it would force e.g. an
-    ``Ad`` and an ``Organic`` contract's ``url`` to the SAME selector — the opposite of
-    discrimination. Related contracts must learn to DIVERGE, not dedup.
-
-    FUTURE: fetch-once — today each contract's pipeline fetches the URL, so N contracts means
-    N fetches (bad for anti-bot SERPs); share one fetched+cleaned HTML across contracts.
-    FUTURE: cross-contract discrimination "path-planning" — when two contracts' selectors
-    overlap, coordinate them apart (the Tier-1 region gate + a re-discover divergence loop in
-    ``yosoi.core.discovery.discrimination``). Today field-level root + per-contract intent
-    discriminate by construction, but nothing ENFORCES disjointness here yet.
-    FUTURE: concurrent page SELECTION/extraction (joint planning) — not worked out yet.
-    """
-    contract_clss = [resolve_contract(c) if isinstance(c, str) else c for c in contracts]
-    llm_config = _resolve_model(model)
-    save_format_list = list(save_formats)
-    write_lock = asyncio.Lock()
-
-    async def _one(contract_cls: type[Contract]) -> list[ContentMap]:
-        async with Pipeline(
-            llm_config=llm_config,
-            contract=contract_cls,
-            output_format=save_format_list,
-            force=force,
-            quiet=quiet,
-            selector_level=selector_level,
-            allow_downloads=allow_downloads,
-            allowed_download_types=tuple(allowed_download_types),
-            download_dir=download_dir,
-            max_download_bytes=max_download_bytes,
-            keep_downloads=keep_downloads,
-            write_lock=write_lock,
-        ) as pipeline:
-            return [
-                item
-                async for item in pipeline.scrape(
-                    url,
-                    force=force,
-                    skip_verification=skip_verification,
-                    fetcher_type=fetcher_type,
-                    output_format=save_format_list,
-                )
-            ]
-
-    with obs.span('api.scrape_multi', url=url, contracts=len(contract_clss), model=_model_label(llm_config)):
-        results = await asyncio.gather(*(_one(c) for c in contract_clss))
-    return {c.__name__: r for c, r in zip(contract_clss, results, strict=True)}
 
 
 async def scrape_many(

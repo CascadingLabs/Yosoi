@@ -100,11 +100,11 @@ def vercel(model_name: str, api_key: str | None = ..., **kwargs: Any) -> LLMConf
 def vertexai(model_name: str, **kwargs: Any) -> LLMConfig: ...
 def xai(model_name: str, api_key: str | None = ..., **kwargs: Any) -> LLMConfig: ...
 async def scrape(
-    url: str,
+    url: str | Sequence[str],
     contract: type[Contract] | str | Sequence[type[Contract] | str],
     model: YosoiConfig | LLMConfig | str | None = ...,
     **kwargs: Any,
-) -> list[dict[str, Any]] | dict[str, list[dict[str, Any]]]: ...
+) -> list[dict[str, Any]] | dict[str, list[dict[str, Any]]] | dict[str, dict[str, list[dict[str, Any]]]]: ...
 async def scrape_many(
     urls: list[str] | tuple[str, ...],
     contract: type[Contract] | str,
