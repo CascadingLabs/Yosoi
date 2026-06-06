@@ -15,6 +15,18 @@ deterministic recommender (:mod:`yosoi.generalization.recommend`) combines.
 The fingerprint is **redundant by construction** — no single component is
 load-bearing, so a corrupted or missing component degrades gracefully rather than
 breaking the decision (validated by ablation in the spike).
+
+This file holds THREE structural views of a page, cheapest first:
+  * **shape** (:func:`page_shape_fp`) — a tag-frequency bucket hash. Coarse; fragments on
+    content drift. Used as the exact bucket key for the field-atom cache.
+  * **skeleton** (:func:`page_skeleton`) — the set of depth-D tree paths (the template).
+    Robust to repeated content; compared by Jaccard, not exact hash.
+  * **fingerprint** (:class:`PageFingerprint`) — skeleton (L1) + semantics (L2) together,
+    compared with a conjunctive, fail-closed matcher.
+
+Most callers want **`PageFingerprint.of(html)` then `a.matches(b)`**, or the
+`same_shape(a_html, b_html)` one-liner. The `*_fp` exact hashes exist for the cache key;
+the similarity path (`PageFingerprint`) is the trustworthy "are these the same page?" answer.
 """
 
 from __future__ import annotations
