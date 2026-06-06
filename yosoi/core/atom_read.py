@@ -19,43 +19,43 @@ Fail-closed safety:
 
 from __future__ import annotations
 
-import os
 from typing import Any
 
 from pydantic import BaseModel, Field
 
+from yosoi.policies import Policy, TrustTier
 from yosoi.storage.atoms import AtomStore, FieldAtom
+
+# These helpers are now thin views over a Policy resolved from the env layer, so the env switches
+# keep working unchanged while there is ONE source of truth (yosoi.policies, the P6 MVP slice).
+# As similarity-in-reads lands, callers should pass a resolved Policy through instead of calling
+# these — see docs/plans/ys-policies-p6.md (CAS-168).
 
 
 def atom_reads_enabled() -> bool:
     """Whether atom-backed reads are turned on (env ``YOSOI_ATOM_READS``). Default OFF."""
-    return os.environ.get('YOSOI_ATOM_READS', '').strip().lower() in ('1', 'true', 'yes', 'on')
-
-
-# Provenance sources QUARANTINED by the strict/green default — never served unless opted in.
-_QUARANTINED_SOURCES = frozenset({'fingerprint'})
+    return Policy.from_env().atom_reads
 
 
 def atom_trust_mode() -> str:
-    """Active trust mode (env ``YOSOI_ATOM_TRUST``): ``strict`` (default) | ``yellow``.
+    """Active trust tier (env ``YOSOI_ATOM_TRUST``): ``strict`` (default) | ``yellow``.
 
     ``strict``/``green`` default-denies the risky, fingerprint-generalized atoms (quarantine).
     ``yellow``/``ride`` is "let it ride" — serve every tier, including fingerprint reuse.
     """
-    return os.environ.get('YOSOI_ATOM_TRUST', 'strict').strip().lower()
+    return Policy.from_env().trust_tier
 
 
 def allowed_sources(mode: str | None = None) -> frozenset[str] | None:
-    """Which provenance sources the active trust mode will serve; ``None`` means all (yellow).
+    """Which provenance sources the active trust tier will serve; ``None`` means all (yellow).
 
     Strict/green serves everything EXCEPT the quarantined sources (default-deny the risky);
-    yellow/"let it ride" returns None (serve every tier).
+    yellow/"let it ride" returns None (serve every tier). ``mode`` overrides the env tier.
     """
-    from yosoi.storage.atoms import SOURCE_TRUST
-
-    if (mode or atom_trust_mode()) in ('yellow', 'ride', 'all'):
-        return None
-    return frozenset(s for s in SOURCE_TRUST if s not in _QUARANTINED_SOURCES)
+    if mode is not None:
+        tier: TrustTier = 'yellow' if mode in ('yellow', 'ride', 'all') else 'strict'
+        return Policy(trust_tier=tier).allowed_sources
+    return Policy.from_env().allowed_sources
 
 
 class AtomResolution(BaseModel):
