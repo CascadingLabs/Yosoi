@@ -70,6 +70,10 @@ _CONTAINER_GUIDANCE: Final = (
     'search results), also provide a `root` selector for the repeating wrapper element '
     'that contains one complete item — the smallest element that wraps exactly one complete '
     'item and matches each item on the page. '
+    'IMPORTANT: choose the repeating item type whose elements actually contain the fields '
+    'you are asked to find — not just the most numerous repeating element on the page. '
+    'If the page has multiple types of repeating items, pick the one where headline, '
+    'author, body text and similar fields are present inside the wrapper.'
     'If the page shows a single item, set `root` to null.'
 )
 

@@ -1,7 +1,8 @@
-"""Crawl frontier for depth-first scraping with politeness and persistence.
+"""Crawl frontier for score-priority scraping with politeness and persistence.
 
 Design constraints (CAS-49):
-- FIFO deque as the scrape queue (breadth-first within a depth level).
+- Priority queue (max-heap by score) as the scrape queue — highest scoring
+  URLs are scraped first regardless of insertion order.
 - Visited set for URL dedup using normalised URLs.
 - URL normalisation: lowercase scheme and host, strip trailing slashes,
   drop default ports (80 for http, 443 for https).
@@ -16,10 +17,10 @@ Design constraints (CAS-49):
 from __future__ import annotations
 
 import asyncio
+import heapq
 import json
 import logging
 import time
-from collections import deque
 from pathlib import Path
 from urllib.parse import urlparse, urlunparse
 
@@ -75,7 +76,11 @@ def normalize_url(url: str) -> str | None:
 
 
 class Frontier:
-    """FIFO crawl frontier with dedup, politeness, and JSON persistence.
+    """Score-priority crawl frontier with dedup, politeness, and JSON persistence.
+
+    URLs are scraped in descending score order — the highest-scoring URL is
+    always scraped next, regardless of when it was pushed. Equal scores are
+    broken by insertion order (FIFO within the same score).
 
     Usage::
 
@@ -102,6 +107,7 @@ class Frontier:
         score_threshold: float = 0.0,
         politeness_delay: float = _POLITENESS_DELAY,
         storage_dir: str = 'frontier',
+        seed_domain: str | None = None,
     ) -> None:
         """Initialise the frontier, reloading any persisted state for session_id.
 
@@ -110,14 +116,20 @@ class Frontier:
             score_threshold: Minimum score for a URL to be enqueued.
             politeness_delay: Minimum seconds between fetches of the same host.
             storage_dir: Sub-directory under .yosoi/ for persistence files.
+            seed_domain: Base domain of the seed URL; cross-domain links are
+                penalised (score halved) before threshold check.
         """
         self.session_id = session_id
         self.score_threshold = score_threshold
         self.politeness_delay = politeness_delay
         self._storage_dir = Path(str(init_yosoi(storage_dir)))
+        self._seed_domain = seed_domain
 
-        # Core state
-        self._queue: deque[tuple[str, int]] = deque()  # (normalised_url, depth)
+        # Core state — heap entries are (-score, insertion_index, url, depth)
+        # Negated score so heapq (min-heap) pops highest score first.
+        # insertion_index breaks ties in FIFO order.
+        self._queue: list[tuple[float, int, str, int]] = []
+        self._insertion_counter: int = 0
         self._visited: set[str] = set()
         self._pages_scraped: int = 0
 
@@ -139,16 +151,24 @@ class Frontier:
         return self._pages_scraped
 
     def push(self, url: str, depth: int, score: float) -> bool:
-        """Enqueue a URL if it passes dedup and score threshold checks.
+        """Enqueue a URL if it passes dedup, threshold, and domain checks.
 
         Args:
-            url: Absolute URL to enqueue.
-            depth: Current crawl depth of this URL.
-            score: Heuristic relevance score from LinkExtractor (0.0-1.0).
+            url: URL to enqueue.
+            depth: Crawl depth of this URL.
+            score: Relevance score (0.0-1.0). Higher scores are scraped first.
 
         Returns:
-            True if the URL was enqueued, False if it was filtered out.
+            True if the URL was enqueued, False if rejected (duplicate,
+            below threshold, or invalid).
         """
+        # Cross-domain penalty — halve score for links outside the seed domain
+        if self._seed_domain:
+            normalised_check = normalize_url(url)
+            host = urlparse(normalised_check or '').hostname or ''
+            if host != self._seed_domain and not host.endswith('.' + self._seed_domain):
+                score *= 0.5
+
         if score < self.score_threshold:
             return False
 
@@ -160,14 +180,15 @@ class Frontier:
             return False
 
         self._visited.add(normalised)
-        self._queue.append((normalised, depth))
+        heapq.heappush(self._queue, (-score, self._insertion_counter, normalised, depth))
+        self._insertion_counter += 1
         logger.debug('Frontier.push url=%s depth=%d score=%.2f', normalised, depth, score)
         return True
 
     async def popleft(self) -> tuple[str, int]:
-        """Return the next (url, depth) to scrape, respecting per-host politeness.
+        """Return the highest-scoring (url, depth) to scrape.
 
-        Waits if the host was fetched too recently. Increments pages_scraped.
+        Respects per-host politeness delay. Increments pages_scraped.
 
         Returns:
             Tuple of (normalised_url, depth).
@@ -175,7 +196,7 @@ class Frontier:
         Raises:
             IndexError: If the queue is empty (check is_empty() first).
         """
-        url, depth = self._queue.popleft()
+        _, _, url, depth = heapq.heappop(self._queue)
         self._pages_scraped += 1
 
         host = urlparse(url).hostname or ''
@@ -213,12 +234,15 @@ class Frontier:
         """
         from yosoi.utils.files import atomic_write_json_async
 
+        # Serialise as [score, insertion_index, url, depth] — store positive score
         data = {
             'session_id': self.session_id,
             'score_threshold': self.score_threshold,
+            'seed_domain': self._seed_domain,
             'pages_scraped': self._pages_scraped,
+            'insertion_counter': self._insertion_counter,
             'visited': sorted(self._visited),
-            'queue': list(self._queue),  # list of [url, depth]
+            'queue': [[-neg_score, idx, url, depth] for neg_score, idx, url, depth in self._queue],
         }
         await atomic_write_json_async(self._filepath, data)
         logger.debug(
@@ -238,9 +262,17 @@ class Frontier:
 
         self._visited = set(data.get('visited', []))
         self._pages_scraped = int(data.get('pages_scraped', 0))
+        self._insertion_counter = int(data.get('insertion_counter', 0))
+        self._seed_domain = data.get('seed_domain')
+
         for entry in data.get('queue', []):
-            if isinstance(entry, (list, tuple)) and len(entry) == 2:
-                self._queue.append((str(entry[0]), int(entry[1])))
+            if isinstance(entry, (list, tuple)) and len(entry) == 4:
+                score, idx, url, depth = entry
+                heapq.heappush(self._queue, (-float(score), int(idx), str(url), int(depth)))
+            elif isinstance(entry, (list, tuple)) and len(entry) == 2:
+                # Legacy format: (url, depth) with no score — use 0.5 as default
+                heapq.heappush(self._queue, (-0.5, self._insertion_counter, str(entry[0]), int(entry[1])))
+                self._insertion_counter += 1
 
         logger.info(
             'Frontier resumed session=%s queue=%d visited=%d scraped=%d',

@@ -7,9 +7,18 @@ Design constraints (CAS-51):
   boilerplate separation is upstream of this module.
 - Detects repeated listing patterns structurally (same parent tag + class prefix).
 - Detects pagination generically via text / aria-label signals.
-- Scores each link by keyword overlap with contract field descriptions (no LLM).
-- Escalates to LLM scoring only when heuristic scores are too clustered to
-  discriminate (future hook — wired but not yet called).
+- Uses contract field_descriptions to keyword-boost links that look like
+  content URLs — without hardcoding any domain or path pattern.
+
+Scoring philosophy:
+- Content URLs (individual articles, products, jobs) can be identified by
+  matching keywords extracted from the contract's ``url`` field description.
+  If the contract says "URL of the NFL news article or story", then links
+  whose path contains "story" or "article" score higher.
+- LinkExtractor's structural job: find listing/index pages (pagination,
+  category links) to seed the frontier with.
+- Contract keyword job: boost links that look like content URLs so they
+  are prioritised over section homepages in the frontier.
 
 Structure fingerprinting (Layer 2):
 - Hashes the DOM skeleton (tag names + normalised class prefixes, no content).
@@ -31,7 +40,7 @@ from lxml.html import HtmlElement
 
 # ---------------------------------------------------------------------------
 # Pagination signals — text or aria-label matches trigger high score + no
-# depth increment.  All lowercase; matching is case-insensitive substring.
+# depth increment. All lowercase; matching is case-insensitive substring.
 # ---------------------------------------------------------------------------
 _PAGINATION_TEXTS: frozenset[str] = frozenset(
     {
@@ -57,11 +66,55 @@ _LISTING_MIN_SIBLINGS = 3
 _CLASS_PREFIX_LEN = 12
 
 # Score constants
-_SCORE_PAGINATION = 0.95
-_SCORE_LISTING = 0.70
-_SCORE_CONTENT = 0.40
-_SCORE_KEYWORD_BOOST = 0.20  # per overlapping keyword, capped at 1.0
-_SCORE_FLOOR = 0.05  # any link that made it past boilerplate
+_SCORE_PAGINATION = 0.95  # next/prev page — high priority, same depth
+_SCORE_LISTING = 0.70  # repeated structural pattern — likely an index page
+_SCORE_CONTENT = 0.40  # one-off link — lower priority
+_SCORE_FLOOR = 0.05  # minimum score for any link past boilerplate
+
+# Keyword boost multiplier — applied when a link matches url field keywords.
+# Capped at 0.95 to stay below pagination score.
+_KEYWORD_BOOST = 1.4
+_SCORE_CAP = 0.94
+
+# Stop words to strip from keyword extraction — these carry no signal.
+_STOP_WORDS: frozenset[str] = frozenset(
+    {
+        'a',
+        'an',
+        'the',
+        'of',
+        'in',
+        'on',
+        'at',
+        'to',
+        'for',
+        'with',
+        'and',
+        'or',
+        'is',
+        'are',
+        'be',
+        'this',
+        'that',
+        'url',
+        'link',
+        'href',
+        'path',
+        'page',
+        'containing',
+        'contains',
+        'which',
+        'has',
+        'its',
+        'their',
+        'from',
+        'by',
+        'as',
+        'it',
+        'into',
+        'via',
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -69,12 +122,12 @@ class LinkScore:
     """A candidate URL and its heuristic score.
 
     Attributes:
-        url:         Absolute, normalised URL.
-        score:       0.0-1.0 heuristic relevance estimate.
+        url:           Absolute, normalised URL.
+        score:         0.0-1.0 heuristic relevance estimate.
         is_pagination: True when this link is a "next page" signal.
             The frontier uses this to avoid incrementing depth.
-        anchor_text: Visible text of the link (for debugging / LLM fallback).
-        context_text: Surrounding paragraph text used for keyword scoring.
+        anchor_text:   Visible text of the link (for debugging).
+        context_text:  Surrounding paragraph text (for debugging).
     """
 
     url: str
@@ -85,23 +138,20 @@ class LinkScore:
 
 
 class LinkExtractor:
-    """Extract and score candidate links from a cleaned HTML page.
+    """Extract and score candidate links from an HTML page.
 
-    Takes the output of :class:`~yosoi.core.cleaning.cleaner.HTMLCleaner`
-    (nav/footer/sidebar already stripped) and returns a ranked list of
-    :class:`LinkScore` tuples.
+    Scoring is structural by default. If ``field_descriptions`` contains a
+    ``url`` field, keywords from its description are extracted and used to
+    boost links whose URL path or anchor text match — without any hardcoded
+    domain or path rules.
 
     Usage::
 
         extractor = LinkExtractor()
-        links = extractor.extract(cleaned_html, base_url="https://example.com")
-
-    For keyword-boosted scoring supply the contract's field descriptions::
-
         links = extractor.extract(
-            cleaned_html,
+            html,
             base_url="https://example.com",
-            field_descriptions=contract.field_descriptions(),
+            field_descriptions={"url": "The URL of the NFL news article or story"},
         )
     """
 
@@ -118,11 +168,13 @@ class LinkExtractor:
         """Return scored candidate links from *html*.
 
         Args:
-            html:              Cleaned HTML (nav/sidebar already removed).
-            base_url:          Absolute URL of the source page, used to
-                               resolve relative hrefs.
-            field_descriptions: Optional contract field descriptions for
-                               keyword-overlap scoring.
+            html:               HTML string (raw or cleaned).
+            base_url:           Absolute URL of the source page, used to
+                                resolve relative hrefs.
+            field_descriptions: Optional mapping of field name → description
+                                from the scraping contract. If a ``url`` key
+                                is present, its description is parsed for
+                                keywords used to boost content link scores.
 
         Returns:
             List of :class:`LinkScore`, sorted descending by score.
@@ -131,19 +183,21 @@ class LinkExtractor:
         if not html or not html.strip():
             return []
 
+        # Extract keywords from the url field description if provided
+        url_keywords = _extract_url_keywords(field_descriptions)
+
         tree = lxml.html.document_fromstring(html)
-        keywords = _build_keywords(field_descriptions)
 
         # Collect raw link data
         raw: list[_RawLink] = self._collect_links(tree, base_url)
 
-        # Detect listing groups (shared structural key, ≥ _LISTING_MIN_SIBLINGS)
+        # Detect listing groups (shared structural key, >= _LISTING_MIN_SIBLINGS)
         listing_urls = _detect_listing_groups(raw)
 
         # Score each link
         scored: dict[str, LinkScore] = {}
         for rl in raw:
-            ls = self._score_link(rl, listing_urls, keywords)
+            ls = self._score_link(rl, listing_urls, url_keywords)
             if ls.url not in scored or scored[ls.url].score < ls.score:
                 scored[ls.url] = ls
 
@@ -158,7 +212,7 @@ class LinkExtractor:
         """Return a stable hex digest of the DOM skeleton.
 
         Hashes tag names and normalised class prefixes — no content, no IDs,
-        no dynamic attributes.  Two pages with the same layout template
+        no dynamic attributes. Two pages with the same layout template
         (even on different domains) produce the same fingerprint.
 
         Args:
@@ -192,11 +246,8 @@ class LinkExtractor:
             anchor_text = _node_text(anchor)
             aria_label = anchor.get('aria-label', '')
             title = anchor.get('title', '')
-
-            # Context: text of the nearest block-level ancestor paragraph
             context_text = _nearest_paragraph_text(anchor)
 
-            # Structural key: (parent-tag, normalised-class-prefix)
             parent = anchor.getparent()
             struct_key = _structural_key(parent) if parent is not None else ('', '')
 
@@ -216,12 +267,22 @@ class LinkExtractor:
         self,
         rl: _RawLink,
         listing_urls: frozenset[str],
-        keywords: frozenset[str],
+        url_keywords: frozenset[str],
     ) -> LinkScore:
-        """Compute a heuristic score for one raw link."""
+        """Compute a heuristic score for one raw link.
+
+        Base scoring is structural:
+        - Pagination signals → 0.95, is_pagination=True
+        - Repeated listing pattern → 0.70
+        - One-off link → 0.40
+
+        If url_keywords are provided, links whose URL path or anchor text
+        contain any keyword are boosted by _KEYWORD_BOOST (capped at
+        _SCORE_CAP to stay below pagination).
+        """
         display = (rl.anchor_text or rl.aria_label or rl.title).lower().strip()
 
-        # Pagination check
+        # Pagination check — keywords don't override pagination detection
         if any(display == p or display.startswith(p) for p in _PAGINATION_TEXTS):
             return LinkScore(
                 url=rl.url,
@@ -231,26 +292,72 @@ class LinkExtractor:
                 context_text=rl.context_text,
             )
 
-        # Base score
-        base = _SCORE_LISTING if rl.url in listing_urls else _SCORE_CONTENT
+        # Structural base score
+        score = _SCORE_LISTING if rl.url in listing_urls else _SCORE_CONTENT
 
-        # Keyword boost from anchor text + surrounding paragraph
-        combined = f'{rl.anchor_text} {rl.context_text} {rl.title}'.lower()
-        if keywords:
-            overlap = sum(1 for kw in keywords if kw in combined)
-            boost = min(overlap * _SCORE_KEYWORD_BOOST, 1.0 - base)
-        else:
-            boost = 0.0
-
-        score = max(base + boost, _SCORE_FLOOR)
+        # Keyword boost — check URL path and anchor text
+        if url_keywords and _matches_keywords(rl.url, rl.anchor_text, url_keywords):
+            score = min(score * _KEYWORD_BOOST, _SCORE_CAP)
 
         return LinkScore(
             url=rl.url,
-            score=min(score, 1.0),
+            score=max(score, _SCORE_FLOOR),
             is_pagination=False,
             anchor_text=rl.anchor_text,
             context_text=rl.context_text,
         )
+
+
+# ---------------------------------------------------------------------------
+# Keyword extraction and matching
+# ---------------------------------------------------------------------------
+
+
+def _extract_url_keywords(
+    field_descriptions: dict[str, str] | None,
+) -> frozenset[str]:
+    """Extract meaningful keywords from the url field description.
+
+    Strips stop words, punctuation, and short tokens. Returns an empty
+    frozenset if no url field description is available.
+
+    Args:
+        field_descriptions: Mapping of field name → description string.
+
+    Returns:
+        Frozenset of lowercase keyword strings.
+    """
+    if not field_descriptions:
+        return frozenset()
+
+    url_desc = field_descriptions.get('url', '')
+    if not url_desc:
+        return frozenset()
+
+    # Split on whitespace and punctuation, lowercase
+    tokens = re.split(r'[\s\-_/.,;:\'\"()\[\]{}]+', url_desc.lower())
+
+    keywords = frozenset(t for t in tokens if t and len(t) >= 3 and t not in _STOP_WORDS)
+    return keywords
+
+
+def _matches_keywords(url: str, anchor_text: str, keywords: frozenset[str]) -> bool:
+    """Return True if the URL path or anchor text contains any keyword.
+
+    Matching is substring-based and case-insensitive — "story" matches
+    "/nfl/story/_/id/123" and "Read the full story".
+
+    Args:
+        url:         Absolute URL string.
+        anchor_text: Visible link text.
+        keywords:    Keywords to match against.
+
+    Returns:
+        True if any keyword appears in the URL path or anchor text.
+    """
+    path = urlparse(url).path.lower()
+    text = anchor_text.lower()
+    return any(kw in path or kw in text for kw in keywords)
 
 
 # ---------------------------------------------------------------------------
@@ -282,7 +389,6 @@ def _resolve_url(href: str, base_url: str) -> str | None:
         parsed = urlparse(abs_url)
         if parsed.scheme not in ('http', 'https'):
             return None
-        # Strip fragment — crawlers don't need fragment-only variants
         return abs_url.split('#')[0].rstrip('/')
     except ValueError:
         return None
@@ -295,10 +401,10 @@ def _node_text(el: HtmlElement) -> str:
 
 
 def _nearest_paragraph_text(anchor: HtmlElement) -> str:
-    """Walk up ancestors to find the nearest <p> or <li> and return its text."""
+    """Walk up ancestors to find the nearest block element and return its text."""
     _BLOCK_TAGS = {'p', 'li', 'td', 'dd', 'blockquote', 'article', 'section'}
     current = anchor.getparent()
-    for _ in range(6):  # limit traversal depth
+    for _ in range(6):
         if current is None:
             break
         tag = current.tag if isinstance(current.tag, str) else ''
@@ -320,7 +426,7 @@ def _structural_key(el: HtmlElement) -> tuple[str, str]:
 def _detect_listing_groups(raw: list[_RawLink]) -> frozenset[str]:
     """Return URLs that belong to repeated listing patterns.
 
-    A listing pattern is ≥ _LISTING_MIN_SIBLINGS links sharing the same
+    A listing pattern is >= _LISTING_MIN_SIBLINGS links sharing the same
     (parent-tag, class-prefix) structural key.
     """
     from collections import Counter
@@ -328,49 +434,6 @@ def _detect_listing_groups(raw: list[_RawLink]) -> frozenset[str]:
     key_counts: Counter[tuple[str, str]] = Counter(rl.struct_key for rl in raw)
     listing_keys = {k for k, count in key_counts.items() if count >= _LISTING_MIN_SIBLINGS}
     return frozenset(rl.url for rl in raw if rl.struct_key in listing_keys)
-
-
-def _build_keywords(field_descriptions: dict[str, str] | None) -> frozenset[str]:
-    """Extract meaningful keyword tokens from contract field descriptions."""
-    if not field_descriptions:
-        return frozenset()
-    _STOPWORDS = frozenset(
-        {
-            'a',
-            'an',
-            'the',
-            'and',
-            'or',
-            'of',
-            'in',
-            'on',
-            'at',
-            'to',
-            'for',
-            'with',
-            'by',
-            'from',
-            'is',
-            'are',
-            'was',
-            'be',
-            'as',
-            'it',
-            'its',
-            'that',
-            'this',
-            'not',
-            'no',
-            'if',
-            'via',
-        }
-    )
-    tokens: set[str] = set()
-    combined = ' '.join(field_descriptions.values()).lower()
-    for word in re.findall(r'[a-z]{3,}', combined):
-        if word not in _STOPWORDS:
-            tokens.add(word)
-    return frozenset(tokens)
 
 
 def _build_skeleton(tree: HtmlElement) -> str:
@@ -388,10 +451,8 @@ def _build_skeleton(tree: HtmlElement) -> str:
 def _walk_skeleton(el: Any, parts: list[str]) -> None:
     """Depth-first walk emitting skeleton tokens."""
     if not isinstance(el.tag, str):
-        # Skip comments, processing instructions
         return
     tag = el.tag.lower()
-    # Skip elements that are pure noise
     if tag in ('script', 'style', 'noscript', 'svg', 'canvas'):
         return
     classes = el.get('class', '')
