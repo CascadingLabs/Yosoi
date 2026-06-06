@@ -173,6 +173,27 @@ randomize" signature — as a conjunctive high-trust term, active only when both
   the reusable part: L2 (AX spine) and L3 (network) drop in as the same shape — a new field + one
   optional term, no matcher rewrite.
 
+## Review outcomes (3 rounds, 2026-06-06) + tracked follow-ups
+
+WF0+WF2 went through 3 subagent review rounds (correctness + architecture + test-writer + final
+verification). Outcome: **mergeable as an advisory/quarantined foundation**, with fixes applied and
+two items deferred *by design* (safe today: fingerprint-tier reuse is strict-quarantined and nothing
+compares on the read path yet).
+
+Fixed in review: thinness floor on optional layers (a thin/empty layer abstains, doesn't vacuously
+score 1.0); `ax_spine` is a role SET (one feature/role → uniform floor, volume-invariant);
+`ax_spine_features` never raises out of `of()`.
+
+**Open follow-ups (must precede trusting these layers to veto on real data):**
+- **FU-1 — framework-global vacuous-agree.** Identity/AX can agree ~1.0 on framework-global features
+  (`data-mw` on every MediaWiki page; `main`/`navigation` roles everywhere) that clear the floor but
+  carry no template-discriminating signal. Cardinality ≠ trust. Fix = a framework-global stop-set or
+  IDF-style down-weighting, tuned on real L2 data. Pinned by `test_known_residue_framework_global_...`.
+- **FU-2 — cross-tier abstain.** A rich seed vs a thinner replay silently compares on the common
+  layers instead of abstaining. Needs explicit per-fingerprint carriage tracking; lands with the
+  read-path wiring. The two `test_matches_symmetric_one_side_thin_*` tests pin today's behavior and
+  flip when it lands.
+
 ## Staging — falsifiable experiment first
 
 - **WF0 — Plumbing (low-risk, unblocks all). [PARTIALLY DONE — L2/AX wired in-repo]**
