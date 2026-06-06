@@ -175,12 +175,20 @@ randomize" signature — as a conjunctive high-trust term, active only when both
 
 ## Staging — falsifiable experiment first
 
-- **WF0 — Plumbing (low-risk, unblocks all).** Surface already-captured signals onto
-  `FetchResult` → `PageObservation`: response **headers**, **antibot verdict** (CAS-139),
-  `ax_snapshot` (already on `FetchResult` — thread into `PageObservation`), and wire the
-  orphaned `ElementObservation`. Advisory/log-only — zero behavior change (mirrors P1).
-  Surface any missing CDP capability (e.g. network request log) as a **VoidCrawl wrapper gap**,
-  not a Playwright side-path (per AGENTS.md).
+- **WF0 — Plumbing (low-risk, unblocks all). [PARTIALLY DONE — L2/AX wired in-repo]**
+  - ✅ **L2 rendered AX spine wired (2026-06-06).** `FetchResult.ax_snapshot` → `PageFingerprint`
+    via `PageFingerprint.of(html, ax_snapshot=...)` + `ax_spine_features` (role multiset + count
+    bands, content-free — names excluded). Threaded into the live discovery path advisory log
+    (`orchestrator._log_page_shape`, which already receives `ax_snapshot`): logs which layers a
+    tier populates (`layers=L1+ax`). Conjunctive present-in-both; empty on static fetches → no
+    behavior change. Duck-typed so `generalization/` stays free of a `core.fetcher` import.
+  - ⛔ **L3 (response headers, antibot verdict, `Set-Cookie`/network) BLOCKED — VoidCrawl gap.**
+    `FetchResult` does not carry response headers or the CAS-139 antibot verdict (they're produced
+    in VoidCrawl and dropped before reaching `FetchResult`). Surfacing them is a **VoidCrawl
+    wrapper change**, not buildable from this repo (per AGENTS.md — no Playwright side-path). The
+    fingerprint already has the slot: L3 drops in as one more present-in-both layer once the
+    signal reaches `FetchResult`.
+  - ↩ `ElementObservation` wiring deferred (orphaned; not on the WF0 critical path).
 - **WF1 — Template skeleton (L1), advisory — THE EXPERIMENT.** Implement the AST anti-unification
   path-shingle fingerprint (the single highest-leverage fix). Compute alongside `page_shape_fp`,
   log on the **real AAPL / MSFT / uk. / markets corpus**. Gate: *does the skeleton fingerprint

@@ -458,12 +458,41 @@ def identity_jaccard(a_html: str, b_html: str) -> float:
     return _jaccard(page_identity(a_html), page_identity(b_html))
 
 
+# L2 rendered layer — the accessibility spine of the *rendered* page (browser tiers only). Present
+# only when a fetch carried an AX snapshot; compared present-in-both like the identity layer.
+AX_SIMILARITY_THRESHOLD = 0.50
+
+
+def ax_spine_features(ax_snapshot: Any) -> frozenset[str]:
+    """L2 rendered AX spine: the role multiset of the rendered accessibility tree (content-free).
+
+    Takes only the *roles* of named AX nodes (never their names, which are content) plus a banded
+    count per role, so two renders of the same template — different data — share the spine. Duck-
+    typed (expects ``.targets`` of objects with ``.role``) to keep ``generalization`` free of a
+    ``core.fetcher`` import. Empty/None snapshot → empty set → the layer is "not carried".
+    """
+    targets = getattr(ax_snapshot, 'targets', None)
+    if not targets:
+        return frozenset()
+    counts: dict[str, int] = {}
+    for t in targets:
+        role = (getattr(t, 'role', '') or '').strip().lower()
+        if role:
+            counts[role] = counts.get(role, 0) + 1
+    feats: set[str] = set()
+    for role, n in counts.items():
+        feats.add(f'ax:{role}')
+        feats.add(f'axn:{role}:{_count_band(n)}')
+    return frozenset(feats)
+
+
 class PageSimilarity(BaseModel):
     """Per-layer similarity and the conjunctive same-shape verdict between two fingerprints."""
 
     skeleton: float  # L1 structural skeleton Jaccard
-    semantic: float  # L2 landmark / heading / schema Jaccard
+    semantic: float  # L2 static landmark / heading / schema Jaccard
     identity: float | None  # L1 identity-attr Jaccard, or None when not carried by both pages
+    ax: float | None  # L2 rendered AX-spine Jaccard, or None when not carried by both pages
     same_shape: bool  # conjunctive verdict — every CARRIED layer agrees
 
 
@@ -490,13 +519,24 @@ class PageFingerprint(BaseModel):
     """
 
     skeleton: frozenset[str]  # L1 structural template (depth-D node-symbol paths)
-    semantic: frozenset[str]  # L2 landmark / heading / schema feature set
-    identity: frozenset[str] = frozenset()  # L1 identity-attr signature (ids + data-* keys); '' = not carried
+    semantic: frozenset[str]  # L2 static landmark / heading / schema feature set
+    identity: frozenset[str] = frozenset()  # L1 identity-attr signature (data-* keys); empty = not carried
+    ax_spine: frozenset[str] = frozenset()  # L2 RENDERED AX role-spine (browser tiers only); empty = not carried
 
     @classmethod
-    def of(cls, html: str) -> PageFingerprint:
-        """Compute a page's fingerprint from its HTML (do this once per page)."""
-        return cls(skeleton=page_skeleton(html), semantic=page_semantics(html), identity=page_identity(html))
+    def of(cls, html: str, *, ax_snapshot: Any = None) -> PageFingerprint:
+        """Compute a page's fingerprint from its HTML (do this once per page).
+
+        Pass ``ax_snapshot`` (a rendered accessibility-tree snapshot, browser tiers only) to carry
+        the L2 rendered AX-spine layer; without it that layer is empty ("not carried") and a static
+        fetch fingerprints on L1 alone — the waterfall principle.
+        """
+        return cls(
+            skeleton=page_skeleton(html),
+            semantic=page_semantics(html),
+            identity=page_identity(html),
+            ax_spine=ax_spine_features(ax_snapshot) if ax_snapshot is not None else frozenset(),
+        )
 
     @property
     def degenerate(self) -> bool:
@@ -516,26 +556,30 @@ class PageFingerprint(BaseModel):
         skeleton_threshold: float = SKELETON_SIMILARITY_THRESHOLD,
         semantic_threshold: float = SEMANTIC_SIMILARITY_THRESHOLD,
         identity_threshold: float = IDENTITY_SIMILARITY_THRESHOLD,
+        ax_threshold: float = AX_SIMILARITY_THRESHOLD,
     ) -> PageSimilarity:
         """Per-layer Jaccard plus the conjunctive same-shape verdict against ``other``.
 
         Thresholds default to the tuned operating point but are overridable — bring your own.
         A degenerate fingerprint on either side forces ``same_shape=False`` (fail closed). The
-        identity layer is conjunctive ONLY when both pages carry it (waterfall common-layer rule).
+        optional layers (identity, rendered AX) are conjunctive ONLY when both pages carry them
+        (the waterfall "compare on the common layer" rule).
         """
         sk = _jaccard(self.skeleton, other.skeleton)
         se = _jaccard(self.semantic, other.semantic)
-        # L1 identity is a high-trust veto, but only when BOTH pages expose identity attrs;
-        # otherwise the layer isn't carried (None) and never decides the match either way.
+        # Optional high-trust layers: each is a veto, but only when BOTH pages carry it; otherwise
+        # the layer isn't carried (None) and never decides the match either way.
         idn = _jaccard(self.identity, other.identity) if (self.identity and other.identity) else None
+        ax = _jaccard(self.ax_spine, other.ax_spine) if (self.ax_spine and other.ax_spine) else None
         same = (
             not self.degenerate
             and not other.degenerate
             and sk >= skeleton_threshold
             and se >= semantic_threshold
             and (idn is None or idn >= identity_threshold)
+            and (ax is None or ax >= ax_threshold)
         )
-        return PageSimilarity(skeleton=sk, semantic=se, identity=idn, same_shape=same)
+        return PageSimilarity(skeleton=sk, semantic=se, identity=idn, ax=ax, same_shape=same)
 
     def matches(
         self,
@@ -544,6 +588,7 @@ class PageFingerprint(BaseModel):
         skeleton_threshold: float = SKELETON_SIMILARITY_THRESHOLD,
         semantic_threshold: float = SEMANTIC_SIMILARITY_THRESHOLD,
         identity_threshold: float = IDENTITY_SIMILARITY_THRESHOLD,
+        ax_threshold: float = AX_SIMILARITY_THRESHOLD,
     ) -> bool:
         """Whether two pages are the same shape (conjunctive, fail-closed)."""
         return self.similarity(
@@ -551,6 +596,7 @@ class PageFingerprint(BaseModel):
             skeleton_threshold=skeleton_threshold,
             semantic_threshold=semantic_threshold,
             identity_threshold=identity_threshold,
+            ax_threshold=ax_threshold,
         ).same_shape
 
 

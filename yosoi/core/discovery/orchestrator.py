@@ -188,7 +188,7 @@ class DiscoveryOrchestrator:
         # validate its stability envelope against real traffic BEFORE it ever keys the
         # selector cache. This does NOT yet feed LessonKey.page_profile — it only
         # observes. Best-effort: a failure here must never break discovery.
-        self._log_page_shape(html, url_context, domain)
+        self._log_page_shape(html, url_context, domain, ax_snapshot=ax_snapshot)
 
         # Thread the contract's class docstring through as discovery intent so two
         # same-shape contracts that differ only by NL intent (AdLink vs OrganicLink,
@@ -240,19 +240,29 @@ class DiscoveryOrchestrator:
             )
 
     @staticmethod
-    def _log_page_shape(html: str, url_context: str, domain: str) -> None:
-        """Compute and log the structural page-shape bucket (P1, advisory only).
+    def _log_page_shape(html: str, url_context: str, domain: str, ax_snapshot: AxSnapshot | None = None) -> None:
+        """Compute and log the structural page-shape bucket + carried fingerprint layers (advisory).
 
-        Best-effort observation so we can validate that same-template pages across
-        mirrors/locales bucket together before page-shape ever keys the cache. Never
-        raises into the discovery path.
+        Best-effort observation so we can validate that same-template pages across mirrors/locales
+        bucket together before page-shape ever keys the cache. When the fetch carried a rendered
+        ``ax_snapshot`` (browser tiers), the waterfall fingerprint also carries the L2 rendered
+        AX-spine layer — logged here so we can see which layers a tier actually populates (WF0).
+        Never raises into the discovery path.
         """
         try:
             from yosoi.generalization.capture import observe_html
-            from yosoi.generalization.fingerprint import page_shape_fp
+            from yosoi.generalization.fingerprint import PageFingerprint, page_shape_fp
 
             shape = page_shape_fp(observe_html(url_context, html, row_selector=''))
-            logger.info('page_shape (advisory) url=%s domain=%s shape=%s', url_context, domain, shape)
+            fp = PageFingerprint.of(html, ax_snapshot=ax_snapshot)
+            layers = [name for name, carried in (('identity', fp.identity), ('ax', fp.ax_spine)) if carried]
+            logger.info(
+                'page_shape (advisory) url=%s domain=%s shape=%s layers=L1%s',
+                url_context,
+                domain,
+                shape,
+                '+' + '+'.join(layers) if layers else '',
+            )
         except Exception as exc:  # noqa: BLE001 — advisory observation must never break discovery
             logger.debug('page_shape computation skipped (url=%s): %s', url_context, exc)
 

@@ -1,8 +1,15 @@
-"""L1 identity-attribute layer + the waterfall 'compare on the common layer' rule."""
+"""L1 identity-attribute layer + L2 rendered-AX layer + the waterfall 'common layer' rule."""
 
 from __future__ import annotations
 
-from yosoi.generalization.fingerprint import PageFingerprint, identity_jaccard, page_identity
+from dataclasses import dataclass
+
+from yosoi.generalization.fingerprint import (
+    PageFingerprint,
+    ax_spine_features,
+    identity_jaccard,
+    page_identity,
+)
 
 
 def _rows(n: int, data_key: str | None = None) -> str:
@@ -72,3 +79,59 @@ def test_identity_layer_passes_when_both_carry_and_agree() -> None:
     sim = a.similarity(b)
     assert sim.identity == 1.0
     assert sim.same_shape
+
+
+# ── L2 rendered AX-spine layer (WF0: fed from a browser tier's ax_snapshot) ───────────────────
+
+
+@dataclass
+class _FakeAxTarget:
+    role: str
+    name: str
+
+
+@dataclass
+class _FakeAxSnapshot:
+    targets: tuple[_FakeAxTarget, ...]
+
+
+def _ax(*roles: str) -> _FakeAxSnapshot:
+    # names are content; the spine must depend only on roles + banded counts
+    return _FakeAxSnapshot(targets=tuple(_FakeAxTarget(role=r, name=f'n{i}') for i, r in enumerate(roles)))
+
+
+def test_ax_spine_is_role_only_content_free() -> None:
+    feats = ax_spine_features(_ax('navigation', 'main', 'article'))
+    assert {'ax:navigation', 'ax:main', 'ax:article'} <= feats
+    # no node NAME ('n0'/'n1'/...) ever leaks into the spine
+    assert not any(t.startswith('ax:n') and t[3:].isdigit() for t in feats)
+
+
+def test_ax_spine_empty_for_none_or_no_targets() -> None:
+    assert ax_spine_features(None) == frozenset()
+    assert ax_spine_features(_FakeAxSnapshot(targets=())) == frozenset()
+
+
+def test_of_carries_ax_layer_only_when_snapshot_passed() -> None:
+    html = _page(12, None)
+    assert PageFingerprint.of(html).ax_spine == frozenset()  # static fetch → layer not carried
+    assert PageFingerprint.of(html, ax_snapshot=_ax('main', 'navigation')).ax_spine  # browser tier → carried
+
+
+def test_ax_layer_skipped_when_not_carried_by_both() -> None:
+    a = PageFingerprint.of(_page(12), ax_snapshot=_ax('main', 'navigation'))
+    b = PageFingerprint.of(_page(12))  # static, no AX
+    sim = a.similarity(b)
+    assert sim.ax is None  # not carried by both → never decides
+    assert sim.same_shape  # matches on L1 alone
+
+
+def test_ax_layer_vetoes_when_both_carry_and_disagree() -> None:
+    # identical static structure, but the RENDERED AX spines disagree → conjunctive veto
+    a = PageFingerprint.of(_page(12), ax_snapshot=_ax('main', 'navigation', 'article'))
+    b = PageFingerprint.of(_page(12), ax_snapshot=_ax('form', 'button', 'textbox', 'checkbox'))
+    sim = a.similarity(b)
+    assert sim.skeleton >= 0.40
+    assert sim.ax is not None
+    assert sim.ax < 0.50
+    assert not sim.same_shape
