@@ -69,7 +69,7 @@ class _SimpleContract(Contract):
 
 
 class _AltContract(Contract):
-    title: str = Field(description='Different description')
+    headline: str = Field(description='Article title')  # structural change: different field NAME
     author: str = Field(description='Author name')
 
 
@@ -83,6 +83,17 @@ def test_contract_signature_is_scheme_versioned():
     assert sep == ':'
     assert scheme == SIGNATURE_SCHEME_VERSION
     assert len(digest) == 16
+
+
+def test_contract_signature_ignores_field_description() -> None:
+    # v3: per-field description is advisory (no teeth) → two contracts identical in name, doc, and
+    # field (name, yosoi_type) but differing ONLY in field prose get the SAME signature. Rewording a
+    # description must never bust the selector cache. create_model gives them an identical __name__.
+    from pydantic import create_model
+
+    a = create_model('SameName', __base__=Contract, title=(str, Field(description='Article headline')))
+    b = create_model('SameName', __base__=Contract, title=(str, Field(description='totally reworded prose')))
+    assert contract_signature(a) == contract_signature(b)
 
 
 def test_contract_signature_differs_on_field_change():

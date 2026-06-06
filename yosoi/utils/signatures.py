@@ -12,13 +12,19 @@ if TYPE_CHECKING:
 
 # Bump whenever the bytes that feed ``contract_signature`` change shape so a
 # load-miss caused by the scheme change is distinguishable from a genuine new
-# contract. ``v1`` hashed field metadata only; ``v2`` folds in the class name +
+# contract. ``v1`` hashed field metadata only; ``v2`` folded in the class name +
 # docstring so two same-shape contracts differing only by NL intent (AdLink vs
-# OrganicLink) no longer collide. The prefix rides on the returned signature, so
-# every cache key (persistence, lesson storage_key, discovery-strategy) rotates
-# together — stale lessons surface via ``LessonKey.sig_version`` rather than a
-# silent re-discovery.
-SIGNATURE_SCHEME_VERSION = 'v2'
+# OrganicLink) no longer collide. ``v3`` DROPS per-field ``description`` from the
+# contract identity — field prose is advisory and stochastic (it has "no teeth";
+# the discrimination gate, not the description, separates regions), and rewording a
+# field's description must not bust the selector cache. This aligns
+# ``contract_signature`` with ``ContractSpec.fingerprint`` (cas-96), which already
+# excludes per-field description. Contract ``name`` + ``doc`` are KEPT — they remain
+# the deliberate intent disambiguator (AdLink vs OrganicLink split on the docstring).
+# The prefix rides on the returned signature, so every cache key (persistence, lesson
+# storage_key, discovery-strategy) rotates together — stale v2 lessons surface via
+# ``LessonKey.sig_version`` (→ lazy re-discovery), never a silent collision.
+SIGNATURE_SCHEME_VERSION = 'v3'
 
 
 def _normalize(s: str | None) -> str:
@@ -59,39 +65,39 @@ def field_signature(
 def contract_signature(contract: type[Contract]) -> str:
     """Return a stable, scheme-versioned hash of a contract's discovery identity.
 
-    The identity is the sorted list of per-field signatures **plus** the class
-    name and normalized docstring. The class docstring is a load-bearing
-    disambiguator: two contracts with identical fields but different NL intent
-    (``AdLink`` vs ``OrganicLink``, both ``{url, title}``) MUST get distinct cache
-    slots, not clobber each other (see nimbal ``serp_contracts.py`` lesson). The
-    class name is folded in too so two identically-documented-but-differently-named
-    contracts also split — matching the ``_CONTRACT_REGISTRY`` ``__name__`` key.
+    The identity is the class name, the normalized class docstring, and the sorted set of
+    per-field ``(name, yosoi_type)`` tokens. Per-field ``description`` is DELIBERATELY EXCLUDED
+    (``v3``): field prose is advisory/stochastic and has no teeth — rewording a description must
+    not bust the selector cache, and regions are separated by the discrimination gate, not prose.
+    This mirrors :meth:`ContractSpec.fingerprint`.
 
-    The returned digest is prefixed with :data:`SIGNATURE_SCHEME_VERSION` so a
-    cache load-miss caused by a scheme change is observable rather than silent.
+    The class docstring + name remain the load-bearing intent disambiguator: two contracts with
+    identical fields but different NL intent (``AdLink`` vs ``OrganicLink``, both ``{url, title}``)
+    MUST get distinct cache slots, and they still do — they differ by docstring (and/or name).
+
+    The returned digest is prefixed with :data:`SIGNATURE_SCHEME_VERSION` so a cache load-miss
+    caused by a scheme change is observable (→ lazy re-discovery) rather than a silent collision.
 
     Args:
         contract: Contract subclass to hash.
 
     Returns:
-        ``"<scheme>:<16-hex-char digest>"`` (e.g. ``"v2:4e9f8fa8a1b2c3d4"``).
+        ``"<scheme>:<16-hex-char digest>"`` (e.g. ``"v3:4e9f8fa8a1b2c3d4"``).
 
     """
-    field_descs = contract.field_descriptions()
-
-    field_sigs = sorted(
-        field_signature(
-            field_name=name,
-            description=desc,
-            yosoi_type=_get_yosoi_type(contract, name),
+    # Field identity = (name, yosoi_type) only — description excluded by design (see docstring).
+    field_ids = sorted(
+        json.dumps(
+            {'name': _normalize(name), 'type': _normalize(_get_yosoi_type(contract, name))},
+            sort_keys=True,
         )
-        for name, desc in field_descs.items()
+        for name in contract.field_descriptions()
     )
     payload = json.dumps(
         {
             'name': _normalize(contract.__name__),
             'doc': _normalize(contract.__doc__),
-            'fields': field_sigs,
+            'fields': field_ids,
         },
         sort_keys=True,
     )
