@@ -130,6 +130,26 @@ def search_url(query: str, engine: str) -> str:
     return ENGINES[engine].format(q=quote_plus(query))
 
 
+def engine_of(url: str) -> str:
+    if 'google.' in url:
+        return 'google'
+    if 'bing.' in url:
+        return 'bing'
+    return 'brave'
+
+
+def identities_for(urls: list[str], profile_dir: str) -> dict:
+    """Opt-in per-ENGINE BrowserIdentity: google gets headful + the trusted profile;
+    bing/brave run plain headless (None). This is the sensitive choice, explicit per URL."""
+    from yosoi.core.fetcher.identity import BrowserIdentity
+
+    out: dict = {}
+    for u in urls:
+        if engine_of(u) == 'google':
+            out[u] = BrowserIdentity(id='google-trusted', headful=True, profile_dir=profile_dir)
+    return out
+
+
 def build_plan(
     locations: list[Location], engines: list[str]
 ) -> tuple[list[str], list[tuple[str, str, str, str]], list[str]]:
@@ -144,8 +164,9 @@ def build_plan(
         # ys.scrape applies ONE fetcher_type to the whole URL list, but google needs
         # headful+profile while bing/brave work headless — can't mix per-engine in one call.
         issues.append(
-            f'multi-engine: engines need DIFFERENT fetchers ({ {e: ENGINE_FETCHER[e] for e in engines} }) '
-            f'but ys.scrape takes one fetcher_type for all URLs — no per-URL/per-engine fetcher+profile'
+            f'multi-engine: engines need different tiers ({ {e: ENGINE_FETCHER[e] for e in engines} }). '
+            f'RESOLVED via the opt-in identities= param (per-URL headful+profile vs headless, concurrent); '
+            f'pass --profile to enable. Only the simple-vs-browser fetcher_type is still global.'
         )
     for loc in locations:
         rendered = render_matrix(loc.company_type, brand=loc.brand, city=loc.city, state=loc.state)
@@ -172,13 +193,14 @@ def build_plan(
 # --------------------------------------------------------------------------- #
 
 
-async def _amain() -> None:
+async def _amain() -> None:  # noqa: C901 — a deliberately linear, instrumented demo driver
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--limit', type=int, default=3, help='number of CSV companies to use')
     ap.add_argument('--live', action='store_true', help='actually run ys.scrape (will hit anti-bot issues)')
     ap.add_argument('--fetcher', default='simple', help='fetcher_type for --live (simple/headless/headful/waterfall)')
     ap.add_argument('--model', default='claude-sdk', help='discovery model for --live (default: keyless Claude SDK)')
     ap.add_argument('--engines', default='google,bing,brave', help='comma-separated SERP engines to run concurrently')
+    ap.add_argument('--profile', default=None, help='OPT-IN trusted Chromium profile dir for the google tab (headful)')
     a = ap.parse_args()
     engines = [e.strip() for e in a.engines.split(',') if e.strip() in ENGINES]
 
@@ -202,11 +224,27 @@ async def _amain() -> None:
         f'  concurrent multi-engine call: ys.scrape([google,bing,brave search urls...], {[c.__name__ for c in BLOCK_CONTRACTS]})'
     )
 
+    # Opt-in per-engine identities (sensitive): google -> headful + trusted profile.
+    identities = None
+    if a.profile:
+        identities = identities_for(urls, a.profile)
+        fetcher = 'headless'  # identities force headful per-URL where set
+        print(
+            f'\n  OPT-IN identities: {len(identities)} google url(s) -> headful+profile {a.profile!r}; '
+            f'bing/brave -> plain headless'
+        )
+    else:
+        fetcher = a.fetcher
+
     if a.live:
-        print(f'\nStage 4 — LIVE ys.scrape (fetcher={a.fetcher}, model={a.model}); collecting issues...')
+        print(
+            f'\nStage 4 — LIVE ys.scrape (fetcher={fetcher}, model={a.model}, profile={a.profile}); collecting issues...'
+        )
         model = ys.claude_sdk() if a.model.startswith(('claude-sdk', 'claude_sdk')) else a.model
         try:
-            result = await ys.scrape(urls[:2], BLOCK_CONTRACTS, model=model, fetcher_type=a.fetcher, quiet=True)
+            result = await ys.scrape(
+                urls[:2], BLOCK_CONTRACTS, model=model, fetcher_type=fetcher, identities=identities, quiet=True
+            )
             for u, by_contract in result.items():  # type: ignore[union-attr]
                 print(f'\n  {u[:70]}')
                 first_urls: dict[str, str] = {}
