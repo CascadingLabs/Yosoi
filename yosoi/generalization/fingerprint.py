@@ -427,16 +427,45 @@ class PageFingerprint(BaseModel):
         """Compute a page's fingerprint from its HTML (do this once per page)."""
         return cls(skeleton=page_skeleton(html), semantic=page_semantics(html))
 
-    def similarity(self, other: PageFingerprint) -> PageSimilarity:
-        """Per-layer Jaccard plus the conjunctive same-shape verdict against ``other``."""
+    @property
+    def degenerate(self) -> bool:
+        """True when the page is too thin to identify (fewer than the minimum structural paths).
+
+        A degenerate fingerprint NEVER matches another: two near-empty pages share a vacuously
+        high Jaccard (tiny sets, both semantic sets empty → 1.0), so abstaining is the only
+        fail-closed answer. This guard lives here, not just in the exact-hash helpers, so the
+        similarity path can't be tricked into a vacuous merge.
+        """
+        return len(self.skeleton) < _MIN_SKELETON_SHINGLES
+
+    def similarity(
+        self,
+        other: PageFingerprint,
+        *,
+        skeleton_threshold: float = SKELETON_SIMILARITY_THRESHOLD,
+        semantic_threshold: float = SEMANTIC_SIMILARITY_THRESHOLD,
+    ) -> PageSimilarity:
+        """Per-layer Jaccard plus the conjunctive same-shape verdict against ``other``.
+
+        Thresholds default to the tuned operating point but are overridable — bring your own.
+        A degenerate fingerprint on either side forces ``same_shape=False`` (fail closed).
+        """
         sk = _jaccard(self.skeleton, other.skeleton)
         se = _jaccard(self.semantic, other.semantic)
-        same = sk >= SKELETON_SIMILARITY_THRESHOLD and se >= SEMANTIC_SIMILARITY_THRESHOLD
+        same = not self.degenerate and not other.degenerate and sk >= skeleton_threshold and se >= semantic_threshold
         return PageSimilarity(skeleton=sk, semantic=se, same_shape=same)
 
-    def matches(self, other: PageFingerprint) -> bool:
+    def matches(
+        self,
+        other: PageFingerprint,
+        *,
+        skeleton_threshold: float = SKELETON_SIMILARITY_THRESHOLD,
+        semantic_threshold: float = SEMANTIC_SIMILARITY_THRESHOLD,
+    ) -> bool:
         """Whether two pages are the same shape (conjunctive, fail-closed)."""
-        return self.similarity(other).same_shape
+        return self.similarity(
+            other, skeleton_threshold=skeleton_threshold, semantic_threshold=semantic_threshold
+        ).same_shape
 
 
 def same_shape(a_html: str, b_html: str) -> bool:

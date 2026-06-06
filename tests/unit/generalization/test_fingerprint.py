@@ -330,3 +330,30 @@ def test_same_shape_rejects_different_template_even_if_one_layer_high() -> None:
     assert sim.skeleton < 0.5
     assert not sim.same_shape
     assert not same_shape(_listing(10), _ARTICLE)
+
+
+# ── edge cases (round 1) ────────────────────────────────────────────────────────
+
+
+def test_degenerate_pages_never_match() -> None:
+    from yosoi.generalization.fingerprint import PageFingerprint, same_shape
+
+    # two empty pages, and two DIFFERENT thin pages, must NOT vacuously merge
+    assert not same_shape('<html><body></body></html>', '<html><body></body></html>')
+    a = PageFingerprint.of('<html><body><div>hi</div></body></html>')
+    b = PageFingerprint.of('<html><body><span>yo</span></body></html>')
+    assert a.degenerate
+    assert b.degenerate
+    assert not a.matches(b)
+
+
+def test_similarity_thresholds_are_overridable() -> None:
+    from yosoi.generalization.fingerprint import PageFingerprint
+
+    a = PageFingerprint.of(_listing(10))
+    b = PageFingerprint.of(_ARTICLE)
+    # a permissive caller can lower thresholds (bring your own) — but degenerate guard still applies
+    strict = a.similarity(b, skeleton_threshold=0.9, semantic_threshold=0.9)
+    loose = a.similarity(b, skeleton_threshold=0.0, semantic_threshold=0.0)
+    assert not strict.same_shape
+    assert loose.same_shape  # non-degenerate listings, thresholds satisfied

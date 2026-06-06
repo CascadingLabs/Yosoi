@@ -186,3 +186,27 @@ def test_monolith_and_domain_are_not_atom_identity() -> None:
     assert a.key == b.key
     assert 'a.com' not in a.key  # domain lives in provenance, not the key
     assert 'AdContract' not in a.key  # contract name lives in provenance, not the key
+
+
+# ── validation edge cases (round 1) ─────────────────────────────────────────────
+
+
+def test_invalid_source_is_rejected() -> None:
+    import pytest
+
+    with pytest.raises(Exception):  # noqa: B017,PT011 - pydantic ValidationError
+        FieldAtom(page_shape='s', region_role='r', field_name='f', selector=_primary('a'), source='banana')
+
+
+def test_empty_selector_is_rejected() -> None:
+    import pytest
+
+    with pytest.raises(Exception):  # noqa: B017,PT011
+        FieldAtom(page_shape='s', region_role='r', field_name='f', selector={})
+
+
+def test_empty_key_fields_rejected() -> None:
+    import pytest
+
+    with pytest.raises(Exception):  # noqa: B017,PT011
+        FieldAtom(page_shape='', region_role='r', field_name='f', selector=_primary('a'))

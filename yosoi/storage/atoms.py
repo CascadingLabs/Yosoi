@@ -22,9 +22,9 @@ fail-closed cross-shape reuse gate) arrive in P3.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 # Unit separator — safe inside a content-addressed key (never appears in selectors).
 _SEP = '\x1f'
@@ -39,6 +39,7 @@ DEFAULT_STORE_PATH = '.yosoi/atoms.jsonl'
 #   'fingerprint' — reused via similarity/generality fingerprint match (NOT discovered on this
 #                   page) → lowest trust, DEFAULT-QUARANTINED. The fingerprint proposes; the
 #                   trust policy (see yosoi.core.atom_read) decides what is actually served.
+AtomSource = Literal['verified', 'llm', 'manual', 'fingerprint']
 SOURCE_TRUST: dict[str, int] = {'verified': 3, 'manual': 2, 'llm': 2, 'fingerprint': 1}
 
 # Atom-corpus identity scheme (P4). Bump when the atom KEY or the fingerprint that feeds it
@@ -84,15 +85,23 @@ class FieldAtom(BaseModel):
         contracts: Provenance — the contract names that have minted/used this atom.
     """
 
-    page_shape: str
-    region_role: str
-    field_name: str
+    page_shape: str = Field(min_length=1)
+    region_role: str = Field(min_length=1)
+    field_name: str = Field(min_length=1)
     yosoi_type: str | None = None
     selector: dict[str, Any]
-    source: str = 'llm'
+    source: AtomSource = 'llm'
     scheme: str = ''
     domains_seen: list[str] = Field(default_factory=list)
     contracts: list[str] = Field(default_factory=list)
+
+    @field_validator('selector')
+    @classmethod
+    def _selector_has_value(cls, v: dict[str, Any]) -> dict[str, Any]:
+        """An atom selector must carry a non-empty ``value`` — an empty selector is unservable."""
+        if not (isinstance(v, dict) and v.get('value')):
+            raise ValueError('atom selector must carry a non-empty "value"')
+        return v
 
     @property
     def key(self) -> str:
@@ -105,7 +114,7 @@ def derive_atoms(
     contract_name: str,
     domain: str | None,
     fields: list[tuple[str, dict[str, Any], str | None, str | None]],
-    source: str = 'llm',
+    source: AtomSource = 'llm',
 ) -> list[FieldAtom]:
     """Build the atoms a single (accepted) contract contributes on a page.
 
