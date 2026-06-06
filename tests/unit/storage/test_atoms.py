@@ -151,3 +151,38 @@ def test_merge_upgrades_to_highest_trust_source() -> None:
     s2.upsert_all(ver)
     s2.upsert_all(fp)
     assert s2.get(ver[0].key).source == 'verified'
+
+
+# ── P4: self-versioned, migration-safe corpus (monolith + domain retired as identity) ──
+
+
+def test_derive_atoms_stamps_scheme() -> None:
+    from yosoi.storage.atoms import ATOM_SCHEME_VERSION
+
+    a = derive_atoms(SHAPE, 'C', 'd.com', [('url', _primary('a::attr(href)'), '.r', 'url')])[0]
+    assert a.scheme == ATOM_SCHEME_VERSION
+
+
+def test_list_stale_by_scheme_reports_old_and_unversioned() -> None:
+    from yosoi.storage.atoms import ATOM_SCHEME_VERSION
+
+    store = AtomStore()
+    store.upsert_all(derive_atoms(SHAPE, 'C', 'd.com', [('url', _primary('a::attr(href)'), '.r', 'url')]))  # current
+    # a pre-versioning (empty-scheme) atom and an old-scheme atom are stale
+    store.upsert(FieldAtom(page_shape=SHAPE, region_role='.old1', field_name='x', selector=_primary('x'), scheme=''))
+    store.upsert(FieldAtom(page_shape=SHAPE, region_role='.old2', field_name='y', selector=_primary('y'), scheme='a0'))
+    stale = set(store.list_stale_by_scheme(ATOM_SCHEME_VERSION))
+    assert len(stale) == 2  # only the two non-current atoms
+    # the current-scheme atom is NOT stale
+    fresh = derive_atoms(SHAPE, 'C', 'd.com', [('url', _primary('a::attr(href)'), '.r', 'url')])[0]
+    assert fresh.key not in stale
+
+
+def test_monolith_and_domain_are_not_atom_identity() -> None:
+    # P4: contract_signature (monolith) and the literal domain are NOT part of atom identity —
+    # same (shape, region, field, type) from different contracts/domains share ONE key.
+    a = derive_atoms(SHAPE, 'AdContract', 'a.com', [('url', _primary('x'), '.r', 'url')])[0]
+    b = derive_atoms(SHAPE, 'OtherContract', 'b.co.uk', [('url', _primary('x'), '.r', 'url')])[0]
+    assert a.key == b.key
+    assert 'a.com' not in a.key  # domain lives in provenance, not the key
+    assert 'AdContract' not in a.key  # contract name lives in provenance, not the key

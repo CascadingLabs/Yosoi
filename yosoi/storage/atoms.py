@@ -41,6 +41,14 @@ DEFAULT_STORE_PATH = '.yosoi/atoms.jsonl'
 #                   trust policy (see yosoi.core.atom_read) decides what is actually served.
 SOURCE_TRUST: dict[str, int] = {'verified': 3, 'manual': 2, 'llm': 2, 'fingerprint': 1}
 
+# Atom-corpus identity scheme (P4). Bump when the atom KEY or the fingerprint that feeds it
+# changes shape (e.g. the P5 waterfall fingerprint), so a post-bump load-miss is reported
+# STALE (→ lazy re-mint) instead of silently re-discovering — mirrors the lesson store's
+# SIGNATURE_SCHEME_VERSION discipline. NOTE: in the atom model the monolithic
+# ``contract_signature`` and the literal domain are NOT identity — atoms key on
+# (page_shape, region, field, type); domain lives in ``domains_seen`` provenance only.
+ATOM_SCHEME_VERSION = 'a1'
+
 
 def _normalize_region(root_selector: str | None, contract_name: str) -> str:
     """The durable region identity: the field's root selector, or a name-scoped fallback.
@@ -70,6 +78,8 @@ class FieldAtom(BaseModel):
         yosoi_type: The field's semantic type (``url``/``title``/…), or None.
         selector: The field's primary selector entry (``{type, value}``), root-relative.
         source: Provenance trust tier — how this selector was obtained (see ``SOURCE_TRUST``).
+        scheme: Atom identity-scheme version it was minted under (see ``ATOM_SCHEME_VERSION``);
+            empty means a pre-versioning atom. Drives ``list_stale_by_scheme`` migration.
         domains_seen: Provenance — the literal domains this atom has been confirmed on.
         contracts: Provenance — the contract names that have minted/used this atom.
     """
@@ -80,6 +90,7 @@ class FieldAtom(BaseModel):
     yosoi_type: str | None = None
     selector: dict[str, Any]
     source: str = 'llm'
+    scheme: str = ''
     domains_seen: list[str] = Field(default_factory=list)
     contracts: list[str] = Field(default_factory=list)
 
@@ -120,6 +131,7 @@ def derive_atoms(
                 yosoi_type=yosoi_type,
                 selector=primary,
                 source=source,
+                scheme=ATOM_SCHEME_VERSION,
                 domains_seen=[domain] if domain else [],
                 contracts=[contract_name],
             )
@@ -194,6 +206,17 @@ class AtomStore:
     def upsert_all(self, atoms: list[FieldAtom]) -> int:
         """Upsert many atoms; return how many were NEW (minted, not merged)."""
         return sum(1 for a in atoms if self.upsert(a))
+
+    def list_stale_by_scheme(self, current: str = ATOM_SCHEME_VERSION) -> list[str]:
+        """Return the keys of atoms minted under an OLDER identity scheme (P4 migration).
+
+        After an atom-scheme bump (e.g. the P5 fingerprint change), atoms whose ``schema``
+        differs from ``current`` are reported STALE so the caller can lazily re-mint them
+        under the new scheme — non-destructive: the old atoms remain until overwritten, and
+        a stale atom simply isn't trusted for reuse. Mirrors the lesson store's
+        ``list_stale_by_scheme``.
+        """
+        return [atom.key for atom in self._atoms.values() if atom.scheme != current]
 
     def get(self, key: str) -> FieldAtom | None:
         """Return the atom with this content-addressed key, or None."""
