@@ -154,6 +154,18 @@ class PipelineCacheMixin:
         stale_fields = {f for f, v in verdicts.items() if v != CacheVerdict.FRESH}
         fresh_fields = {f for f, v in verdicts.items() if v == CacheVerdict.FRESH}
 
+        # Frozen cached fields replay unchanged even when drift verification marks
+        # them stale. They are caller-owned anchors, not discovery candidates.
+        frozen_cached = self.contract.frozen_fields() & set(snapshots)
+        stale_but_frozen = stale_fields & frozen_cached
+        if stale_but_frozen:
+            self.console.print(
+                '[info]  ↳ Frozen fields with drift — replaying cached selectors: '
+                f'{", ".join(sorted(stale_but_frozen))}[/info]'
+            )
+            stale_fields -= stale_but_frozen
+            fresh_fields |= stale_but_frozen
+
         overridden = set(self.contract.get_selector_overrides())
         missing = (self.contract.discovery_field_names() - overridden) - set(snapshots)
         if missing:
