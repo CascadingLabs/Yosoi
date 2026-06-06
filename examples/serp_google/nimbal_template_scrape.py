@@ -115,35 +115,55 @@ def load_locations(limit: int | None) -> tuple[list[Location], list[str]]:
 # --------------------------------------------------------------------------- #
 
 
-def search_url(query: str) -> str:
-    return f'https://www.google.com/search?q={quote_plus(query)}&hl=en&gl=us'
+# Per-engine SERP URL builders. Nimbal's finding: bing/brave/ddg work on plain headless;
+# only google.com bot-walls and needs headful + a trusted Chromium profile.
+ENGINES: dict[str, str] = {
+    'google': 'https://www.google.com/search?q={q}&hl=en&gl=us',
+    'bing': 'https://www.bing.com/search?q={q}',
+    'brave': 'https://search.brave.com/search?q={q}',
+}
+# Fetcher tier each engine actually needs (Nimbal todo.md observation).
+ENGINE_FETCHER = {'google': 'headful+profile', 'bing': 'headless', 'brave': 'headless'}
 
 
-def build_plan(locations: list[Location]) -> tuple[list[str], list[tuple[str, str, str]], list[str]]:
-    """Return (unique search URLs, [(brand, intent, query)], issues)."""
+def search_url(query: str, engine: str) -> str:
+    return ENGINES[engine].format(q=quote_plus(query))
+
+
+def build_plan(
+    locations: list[Location], engines: list[str]
+) -> tuple[list[str], list[tuple[str, str, str, str]], list[str]]:
+    """Return (unique search URLs across engines, [(brand, engine, intent, query)], issues)."""
     from nimbal.core.serp_template_queries import render_matrix
 
-    rows: list[tuple[str, str, str]] = []
+    rows: list[tuple[str, str, str, str]] = []
     urls: list[str] = []
     seen: set[str] = set()
     issues: list[str] = []
+    if len({ENGINE_FETCHER[e] for e in engines}) > 1:
+        # ys.scrape applies ONE fetcher_type to the whole URL list, but google needs
+        # headful+profile while bing/brave work headless — can't mix per-engine in one call.
+        issues.append(
+            f'multi-engine: engines need DIFFERENT fetchers ({ {e: ENGINE_FETCHER[e] for e in engines} }) '
+            f'but ys.scrape takes one fetcher_type for all URLs — no per-URL/per-engine fetcher+profile'
+        )
     for loc in locations:
         rendered = render_matrix(loc.company_type, brand=loc.brand, city=loc.city, state=loc.state)
         if not rendered:
             issues.append(f'{loc.brand} {loc.city}: render_matrix produced 0 queries')
         for rq in rendered:
             if rq.localization == 'teleport':
-                # ISSUE seed: teleport queries drop the location words and expect a GPS spoof,
-                # but ys.scrape has no teleport hook — a teleport query scraped without the spoof
-                # returns NON-local results (wrong signal). Flagged, still counted.
+                # teleport drops the location words and expects a GPS spoof, but ys.scrape has no
+                # teleport hook — a teleport query scraped without the spoof returns NON-local results.
                 issues.append(
                     f'{loc.brand}: teleport query {rq.query!r} has no GPS spoof in ys.scrape (would be non-local)'
                 )
-            rows.append((loc.brand, rq.intent, rq.query))
-            u = search_url(rq.query)
-            if u not in seen:
-                seen.add(u)
-                urls.append(u)
+            for engine in engines:
+                rows.append((loc.brand, engine, rq.intent, rq.query))
+                u = search_url(rq.query, engine)
+                if u not in seen:
+                    seen.add(u)
+                    urls.append(u)
     return urls, rows, issues
 
 
@@ -158,7 +178,9 @@ async def _amain() -> None:
     ap.add_argument('--live', action='store_true', help='actually run ys.scrape (will hit anti-bot issues)')
     ap.add_argument('--fetcher', default='simple', help='fetcher_type for --live (simple/headless/headful/waterfall)')
     ap.add_argument('--model', default='claude-sdk', help='discovery model for --live (default: keyless Claude SDK)')
+    ap.add_argument('--engines', default='google,bing,brave', help='comma-separated SERP engines to run concurrently')
     a = ap.parse_args()
+    engines = [e.strip() for e in a.engines.split(',') if e.strip() in ENGINES]
 
     issues: list[str] = []
 
@@ -168,14 +190,17 @@ async def _amain() -> None:
     for loc in locations:
         print(f'  {loc.brand} | {loc.city}, {loc.state or "??"} | {loc.domain or "??"}')
 
-    urls, rows, plan_issues = build_plan(locations)
+    urls, rows, plan_issues = build_plan(locations, engines)
     issues += plan_issues
-    print(f'\nStage 2/3 — {len(rows)} template queries -> {len(urls)} unique Google search URLs')
+    print(f'\nStage 2/3 — engines={engines}; {len(rows)} (engine,query) rows -> {len(urls)} unique search URLs')
     print(f'  contracts/page: {[c.__name__ for c in BLOCK_CONTRACTS]}')
     print(
-        f'  SCALE of the ys.scrape grid: {len(urls)} urls x {len(BLOCK_CONTRACTS)} contracts = {len(urls) * len(BLOCK_CONTRACTS)} (url,contract) units'
+        f'  SCALE of the ys.scrape grid: {len(urls)} urls x {len(BLOCK_CONTRACTS)} contracts = '
+        f'{len(urls) * len(BLOCK_CONTRACTS)} (url,contract) units, all run CONCURRENTLY'
     )
-    print(f'  example call: ys.scrape({urls[0]!r}..., [{", ".join(c.__name__ for c in BLOCK_CONTRACTS)}])')
+    print(
+        f'  concurrent multi-engine call: ys.scrape([google,bing,brave search urls...], {[c.__name__ for c in BLOCK_CONTRACTS]})'
+    )
 
     if a.live:
         print(f'\nStage 4 — LIVE ys.scrape (fetcher={a.fetcher}, model={a.model}); collecting issues...')

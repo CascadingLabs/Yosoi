@@ -56,6 +56,29 @@ drives the grid. So the harness uses *separate* block contracts — the thing Ni
 | 4 discrimination | Tier-1 gate + Tier-2 loop (`discrimination.py`) | `# FUTURE` in `_scrape` grid |
 | 6 fetch-once | — | `# FUTURE` in `scrape` |
 
+## Headful / Chromium-profile finding (user-confirmed) + multi-engine
+
+**Google needs headful or at least a trusted Chromium profile** (matches Nimbal's `_real.py`:
+`headless=False, stealth=True, extra_args=['--user-data-dir=…','--profile-directory=Default']`).
+The empirical proof: the `simple` fetcher returned 1-row-then-0-rows (blocked) across two
+identical runs.
+
+- **The profile path EXISTS in the fetcher but is unreachable via `ys.scrape`.** W2 already
+  wired it: `_VoidCrawlFetcher.__init__(identity: BrowserIdentity | None)` →
+  `--user-data-dir={ident.profile_dir}` (voiddriver.py:164-167). BUT `Pipeline._create_fetcher`
+  forwards only `console`/`a3node`/`downloads` (base.py:259-273) — no identity — and `ys.scrape`
+  has no identity/profile param. So even `fetcher_type='headful'` launches a FRESH browser
+  without the trusted profile Google needs. → thread `BrowserIdentity`/profile through
+  `scrape → Pipeline → create_fetcher`.
+
+- **Concurrent multi-engine (brave/bing/google) works TODAY** via the URL axis:
+  `ys.scrape([google_url, bing_url, brave_url], [contracts])` runs all engines concurrently on
+  the VoidCrawl tab pool (harness: 39 urls × 3 contracts = 117 units, all concurrent). The gap:
+  **one `fetcher_type` for the whole call.** Engines need DIFFERENT tiers (`google:
+  headful+profile`, `bing`/`brave`: `headless`), which one scrape call can't express. →
+  per-URL (or per-engine) fetcher + identity selection; plus a concurrency semaphore so 117
+  simultaneous tabs don't self-DOS / trip anti-bot.
+
 ## Next step (recommended order)
 1. Make the block contracts repeating (list rows) — cheap, unblocks real rank rollup.
 2. Wire the Tier-1 gate into the multi-contract scrape (verified discrimination).
