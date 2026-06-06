@@ -16,6 +16,7 @@ are saved via A3NodeStorage so the next visit skips the probe.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 import random
 import time
@@ -172,6 +173,22 @@ class _VoidCrawlFetcher(HTMLFetcher):
                 kwargs['extra_args'] = extra
         return kwargs
 
+    async def _apply_identity_geo(self, tab: Any) -> None:
+        """Teleport-at-fetch: spoof geolocation from the pinned identity BEFORE navigating.
+
+        Complements the ``_browser_config_kwargs`` path (which only fires when VoidCrawl's
+        ``BrowserConfig`` exposes a ``geolocation`` field). Setting it post-launch on the live
+        tab via ``set_geolocation`` (Emulation.setGeolocationOverride) makes
+        ``BrowserIdentity.geo`` take effect on EVERY build. Best-effort: a tab without
+        ``set_geolocation`` skips it, and a spoof failure never fails the fetch.
+        """
+        ident = self._identity
+        if ident is None or ident.geo is None or not hasattr(tab, 'set_geolocation'):
+            return
+        # geo spoof is best-effort; a failure must never fail the fetch
+        with contextlib.suppress(Exception):
+            await tab.set_geolocation(ident.geo[0], ident.geo[1])
+
     async def __aexit__(self, *exc: Any) -> None:
         if self._pool is not None:
             await self._pool_ctx.__aexit__(*exc)
@@ -207,6 +224,7 @@ class _VoidCrawlFetcher(HTMLFetcher):
                 log_callback=log_retry,
             ):
                 with attempt:
+                    await self._apply_identity_geo(tab)
                     await tab.goto(url, timeout=float(self.timeout))
             yield tab
 
@@ -306,6 +324,7 @@ class _VoidCrawlFetcher(HTMLFetcher):
             if jitter > 0.05:
                 await asyncio.sleep(jitter)
 
+            await self._apply_identity_geo(tab)
             await tab.goto(url, timeout=float(self.timeout))
 
             if stored_node is not None:

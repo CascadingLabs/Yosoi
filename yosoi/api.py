@@ -22,7 +22,7 @@ async def scrape(
     *,
     force: bool = False,
     skip_verification: bool = False,
-    fetcher_type: str = 'simple',
+    fetcher_type: str | Mapping[str, str] | Callable[[str], str] = 'simple',
     selector_level: SelectorLevel = SelectorLevel.CSS,
     save_formats: Sequence[str] = (),
     quiet: bool = True,
@@ -32,6 +32,7 @@ async def scrape(
     max_download_bytes: int | None = None,
     keep_downloads: bool = True,
     identities: Mapping[str, BrowserIdentity] | Callable[[str], BrowserIdentity | None] | None = None,
+    max_concurrency: int | None = None,
 ) -> list[ContentMap] | dict[str, list[ContentMap]] | dict[str, dict[str, list[ContentMap]]]:
     """Scrape one-or-many URLs with one-or-many contracts — the single blessed path.
 
@@ -49,6 +50,12 @@ async def scrape(
     across distinct contracts — the bus dedupes on ``field_signature`` (name + description +
     type, NOT the contract intent), so sharing it would force e.g. ``Ad.url == Organic.url``,
     the opposite of discrimination. Related contracts must learn to DIVERGE, not dedup.
+
+    ``fetcher_type`` is a scalar OR a per-URL ``{url: tier}`` map / ``url -> tier`` callable, so
+    different engines get different tiers in ONE concurrent call (e.g. ``google: 'headful'``,
+    ``bing``/``brave``: ``'headless'``). ``max_concurrency`` (opt-in) caps how many
+    ``(url, contract)`` units run at once — set it on big SERP grids so you don't open hundreds
+    of tabs and trip anti-bot; default ``None`` is unbounded (today's behavior).
 
     ``identities`` is an OPT-IN, per-URL :class:`~yosoi.core.fetcher.identity.BrowserIdentity`
     (a dict ``{url: identity}`` or a ``url -> identity | None`` callable). It is how you opt
@@ -82,17 +89,24 @@ async def scrape(
             return None
         return identities(u) if callable(identities) else identities.get(u)
 
+    def _fetcher_for(u: str) -> str:
+        if isinstance(fetcher_type, str):
+            return fetcher_type
+        return fetcher_type(u) if callable(fetcher_type) else fetcher_type.get(u, 'simple')
+
     write_lock = asyncio.Lock() if (multi_url or multi_contract) else None
+    sem = asyncio.Semaphore(max_concurrency) if max_concurrency else None
     pairs = [(u, c) for u in urls for c in contract_clss]
-    flat = await asyncio.gather(
-        *(
-            _scrape_one(
+
+    async def _unit(u: str, c: type[Contract]) -> list[ContentMap]:
+        async def _go() -> list[ContentMap]:
+            return await _scrape_one(
                 u,
                 c,
                 model,
                 force=force,
                 skip_verification=skip_verification,
-                fetcher_type=fetcher_type,
+                fetcher_type=_fetcher_for(u),
                 selector_level=selector_level,
                 save_formats=save_formats,
                 quiet=quiet,
@@ -104,9 +118,13 @@ async def scrape(
                 write_lock=write_lock,
                 identity=_identity_for(u),
             )
-            for (u, c) in pairs
-        )
-    )
+
+        if sem is None:
+            return await _go()
+        async with sem:
+            return await _go()
+
+    flat = await asyncio.gather(*(_unit(u, c) for (u, c) in pairs))
     cell = {(u, c.__name__): flat[i] for i, (u, c) in enumerate(pairs)}
 
     if multi_url and multi_contract:
