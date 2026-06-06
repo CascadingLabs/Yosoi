@@ -29,6 +29,9 @@ from pydantic import BaseModel, Field
 # Unit separator — safe inside a content-addressed key (never appears in selectors).
 _SEP = '\x1f'
 
+# Default on-disk field-atom corpus (gitignored like the rest of .yosoi/).
+DEFAULT_STORE_PATH = '.yosoi/atoms.jsonl'
+
 
 def _normalize_region(root_selector: str | None, contract_name: str) -> str:
     """The durable region identity: the field's root selector, or a name-scoped fallback.
@@ -38,9 +41,13 @@ def _normalize_region(root_selector: str | None, contract_name: str) -> str:
     this is what lets two contracts SHARE an atom. A rootless field has no structural
     region anchor, so it falls back to a contract-scoped role (less generalizable, but it
     never collides with another contract's rootless field).
+
+    Only whitespace is collapsed — case is PRESERVED, because the region role doubles as
+    the root CSS selector at replay time and CSS class names are case-sensitive
+    (``.MjjYud`` != ``.mjjyud``).
     """
     if root_selector:
-        return ' '.join(root_selector.lower().split())
+        return ' '.join(root_selector.split())
     return f'name:{contract_name}'
 
 

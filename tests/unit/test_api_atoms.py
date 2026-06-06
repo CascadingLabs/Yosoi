@@ -55,7 +55,7 @@ def test_accepted_set_dualwrites_atoms(tmp_path, monkeypatch) -> None:
     types = {a.yosoi_type for a in store.all()}
     assert types == {'url', 'title'}
     regions = {a.region_role for a in store.all()}
-    assert regions == {'.ueierd', '.mjjyud'}  # normalized root selectors
+    assert regions == {'.uEierd', '.MjjYud'}  # root selectors, case preserved
 
 
 def test_rejected_set_writes_nothing(tmp_path, monkeypatch) -> None:

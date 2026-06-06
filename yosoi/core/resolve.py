@@ -20,6 +20,7 @@ from yosoi.models.selectors import SelectorLevel
 
 if TYPE_CHECKING:
     from yosoi.models.spec import ContractSpec
+    from yosoi.storage.atoms import AtomStore
 
 # Cache value type: (domain, fingerprint) → {field_name: {primary, fallback, tertiary}}
 SelectorMap = dict[str, dict[str, Any]]
@@ -37,6 +38,7 @@ def resolve(
     *,
     max_level: SelectorLevel = SelectorLevel.CSS,
     url: str | None = None,
+    atom_store: AtomStore | None = None,
 ) -> ResolveResult:
     """Replay cached selectors against ``html`` and return records or a cache-miss signal.
 
@@ -47,6 +49,9 @@ def resolve(
         domain: Domain name — first part of the cache key (e.g. ``'example.com'``).
         max_level: Maximum selector strategy level. Defaults to CSS.
         url: Source URL used for relative-URL resolution in coercions. Defaults to domain.
+        atom_store: Optional field-atom index (P3). When atom reads are enabled
+            (``YOSOI_ATOM_READS``), a legacy-cache miss is retried against this index
+            before falling back to discovery.
 
     Returns:
         ``list[dict]`` of extracted records on a cache hit, or a :class:`NeedsDiscovery`
@@ -56,6 +61,11 @@ def resolve(
     selectors = cache.get((domain, fingerprint))
 
     if selectors is None:
+        # P3: behind YOSOI_ATOM_READS, try the field-atom index before discovery. A full,
+        # unambiguous, same-shape resolution extracts directly; anything less falls through.
+        atom_records = _try_atom_reads(spec, html, domain, url, atom_store, max_level)
+        if atom_records is not None:
+            return atom_records
         contract = spec.to_contract()
         return NeedsDiscovery(
             domain=domain,
@@ -64,6 +74,45 @@ def resolve(
         )
 
     return _extract_from_html(spec, html, selectors, domain, max_level=max_level, url=url)
+
+
+def _try_atom_reads(
+    spec: ContractSpec,
+    html: str,
+    domain: str,
+    url: str | None,
+    atom_store: AtomStore | None,
+    max_level: SelectorLevel,
+) -> list[dict[str, Any]] | None:
+    """Attempt to serve a contract entirely from the field-atom index (P3, flag-gated).
+
+    Returns extracted records when every field resolves unambiguously on this page's
+    shape, else None (caller falls back to discovery). Fail-closed: any error or partial
+    resolution yields None, never a half-built selector set.
+    """
+    from yosoi.core.atom_read import atom_reads_enabled, resolve_via_atoms, selector_map_from_atoms
+
+    if not atom_reads_enabled():
+        return None
+    try:
+        from yosoi.generalization.capture import observe_html
+        from yosoi.generalization.fingerprint import page_shape_fp
+        from yosoi.storage.atoms import DEFAULT_STORE_PATH, AtomStore
+
+        store = atom_store if atom_store is not None else AtomStore(DEFAULT_STORE_PATH)
+        if len(store) == 0:
+            return None
+        page_shape = page_shape_fp(observe_html(url or domain, html, row_selector=''))
+        requested = [(name, fspec.yosoi_type) for name, fspec in spec.fields.items()]
+        if not requested:
+            return None
+        resolution = resolve_via_atoms(page_shape, requested, store)
+        if not resolution.fully_resolved:
+            return None
+        selectors = selector_map_from_atoms(resolution.hits)
+        return _extract_from_html(spec, html, selectors, domain, max_level=max_level, url=url)
+    except Exception:  # noqa: BLE001 — atom reads must fail closed to legacy discovery
+        return None
 
 
 def _extract_from_html(

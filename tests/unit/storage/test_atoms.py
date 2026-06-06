@@ -27,7 +27,7 @@ def test_key_is_domain_independent() -> None:
 
 def test_derive_region_from_root_and_name_fallback() -> None:
     rooted = derive_atoms(SHAPE, 'OrganicResult', 'google.com', [('url', _primary('a::attr(href)'), '.MjjYud', 'url')])
-    assert rooted[0].region_role == '.mjjyud'  # normalized (lowercased)
+    assert rooted[0].region_role == '.MjjYud'  # case preserved (CSS is case-sensitive)
     rootless = derive_atoms(SHAPE, 'OrganicResult', 'google.com', [('url', _primary('a::attr(href)'), None, 'url')])
     assert rootless[0].region_role == 'name:OrganicResult'
 
