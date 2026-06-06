@@ -183,6 +183,13 @@ class DiscoveryOrchestrator:
         # cache lookup, tracing user_id, and per-domain locking all share one
         # bucket (no port/userinfo/casing splits).
         domain = (obs.normalize_user_id(url) if url else None) or 'unknown'
+
+        # P1 (advisory/log-only): compute the structural page-shape bucket so we can
+        # validate its stability envelope against real traffic BEFORE it ever keys the
+        # selector cache. This does NOT yet feed LessonKey.page_profile — it only
+        # observes. Best-effort: a failure here must never break discovery.
+        self._log_page_shape(html, url_context, domain)
+
         # Thread the contract's class docstring through as discovery intent so two
         # same-shape contracts that differ only by NL intent (AdLink vs OrganicLink,
         # both {url, title}) produce DISTINCT agent prompts — not byte-identical
@@ -231,6 +238,23 @@ class DiscoveryOrchestrator:
                 feedback=feedback,
                 force=force,
             )
+
+    @staticmethod
+    def _log_page_shape(html: str, url_context: str, domain: str) -> None:
+        """Compute and log the structural page-shape bucket (P1, advisory only).
+
+        Best-effort observation so we can validate that same-template pages across
+        mirrors/locales bucket together before page-shape ever keys the cache. Never
+        raises into the discovery path.
+        """
+        try:
+            from yosoi.generalization.capture import observe_html
+            from yosoi.generalization.fingerprint import page_shape_fp
+
+            shape = page_shape_fp(observe_html(url_context, html, row_selector=''))
+            logger.info('page_shape (advisory) url=%s domain=%s shape=%s', url_context, domain, shape)
+        except Exception as exc:  # noqa: BLE001 — advisory observation must never break discovery
+            logger.debug('page_shape computation skipped (url=%s): %s', url_context, exc)
 
     async def _discover_selectors_impl(
         self,
