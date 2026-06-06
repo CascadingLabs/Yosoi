@@ -23,7 +23,7 @@ import hashlib
 import json
 import math
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, Field
 
@@ -223,6 +223,105 @@ def page_shape_fp(obs: PageObservation) -> str:
     )
     digest = hashlib.sha256(payload.encode()).hexdigest()[:16]
     return f'{SHAPE_SCHEME_VERSION}:{digest}'
+
+
+# ---------------------------------------------------------------------------
+# Template-skeleton fingerprint (P5 / WF1) — content-volume-invariant structural identity
+# ---------------------------------------------------------------------------
+
+SKELETON_SCHEME_VERSION = 't1'
+# depth-2 + class tokens gave the cleanest separation on real Yahoo (quote family incl.
+# cross-locale ~0.63-0.68 Jaccard vs a different template ~0.28); see skeleton_jaccard.
+_SKELETON_DEPTH = 2  # root-to-node path length (tree q-gram)
+_SKELETON_CLASS_K = 2  # top-K structural class tokens folded into a node symbol
+_MIN_SKELETON_SHINGLES = 8  # below this a page is too thin to identify → degenerate
+# Same-template if Jaccard ≥ this. Conservative middle of the measured gap (0.28 vs 0.65);
+# it only PROPOSES a fingerprint-sourced reuse, which the strict trust policy quarantines by
+# default — so the real safety is the trust tier, not this threshold. Tune on a larger corpus.
+SKELETON_SIMILARITY_THRESHOLD = 0.5
+# Presence (not value) of any of these marks a structurally significant / templated node.
+_IDENTITY_PRESENCE_ATTRS: tuple[str, ...] = ('id', 'data-testid', 'name', 'role', 'aria-label')
+
+
+def _node_symbol(el: Any) -> str:
+    """A content-free structural symbol for one element: tag + identity-presence + top-K classes."""
+    tag = el.tag if isinstance(el.tag, str) else '_'
+    ident = '#' if any(el.get(a) for a in _IDENTITY_PRESENCE_ATTRS) else ''
+    classes = sorted(filter_class_tokens(el.get('class') or ''))[:_SKELETON_CLASS_K]
+    return tag + ident + ''.join(f'.{c}' for c in classes)
+
+
+def page_skeleton_fp(html: str) -> str:
+    """Return a content-volume-invariant TEMPLATE fingerprint of a page (P5 / WF1).
+
+    A page is an instance of a template; two pages share a shape iff they share the template.
+    We approximate the template by the SET of depth-D root-to-node paths of *content-free*
+    node symbols (tree q-grams). Using a SET (not a multiset) makes repeated siblings — 12 vs
+    30 ad / recommended rows — collapse for free, so content volume does not fragment the
+    bucket the way the tag-histogram :func:`page_shape_fp` does. Class names have their
+    CSS-in-JS hashes stripped (:func:`filter_class_tokens`), so randomized classes don't churn it.
+
+    Returns ``"t1:<16hex>"`` for a real skeleton, or ``"t1:degenerate"`` for a too-thin page.
+
+    NOTE (measured on real Yahoo): the EXACT hash over-discriminates — two quote pages whose
+    templates are ~95% identical still differ in a few per-ticker modules, so their hashes
+    differ. Identity should therefore be a SIMILARITY over :func:`page_skeleton` (see
+    :func:`skeleton_jaccard`), with this exact hash only as the same-template fast path.
+    """
+    shingles = page_skeleton(html)
+    if len(shingles) < _MIN_SKELETON_SHINGLES:
+        return f'{SKELETON_SCHEME_VERSION}:degenerate'
+    payload = json.dumps(sorted(shingles), separators=(',', ':'))
+    return f'{SKELETON_SCHEME_VERSION}:{hashlib.sha256(payload.encode()).hexdigest()[:16]}'
+
+
+def page_skeleton(html: str) -> frozenset[str]:
+    """Return the SET of depth-D content-free node-symbol paths (the template feature set).
+
+    This is the feature set behind the skeleton fingerprint. As a *set* it is content-volume
+    invariant (repeated siblings dedup); compared by Jaccard it measures template similarity
+    robustly, which exact-hashing it (:func:`page_skeleton_fp`) throws away.
+    """
+    from parsel import Selector
+
+    root = Selector(text=html).root
+    if not hasattr(root, 'iter'):
+        return frozenset()
+    shingles: set[str] = set()
+    for el in root.iter():
+        if not isinstance(getattr(el, 'tag', None), str):
+            continue  # comment / processing-instruction node
+        chain: list[str] = []
+        cur: Any = el
+        for _ in range(_SKELETON_DEPTH):
+            if cur is None or not isinstance(getattr(cur, 'tag', None), str):
+                break
+            chain.append(_node_symbol(cur))
+            cur = cur.getparent()
+        shingles.add('/'.join(reversed(chain)))
+    return frozenset(shingles)
+
+
+def skeleton_jaccard(a_html: str, b_html: str) -> float:
+    """Jaccard similarity of two pages' template skeletons, in ``[0, 1]`` (1 = identical set).
+
+    High between same-template pages (a quote for AAPL vs MSFT) even when their exact
+    skeleton hashes differ; low between genuinely different templates (a quote vs a news
+    feed). This is the similarity the exact hash cannot express.
+    """
+    a, b = page_skeleton(a_html), page_skeleton(b_html)
+    union = a | b
+    return len(a & b) / len(union) if union else 1.0
+
+
+def same_template(a_html: str, b_html: str, threshold: float = SKELETON_SIMILARITY_THRESHOLD) -> bool:
+    """Whether two pages are the same template by skeleton Jaccard ≥ ``threshold``.
+
+    A PROPOSAL only — a True here would mint a ``fingerprint``-sourced atom, which the strict
+    trust policy quarantines by default (see :mod:`yosoi.core.atom_read`). The fingerprint
+    proposes; the trust policy decides.
+    """
+    return skeleton_jaccard(a_html, b_html) >= threshold
 
 
 # ---------------------------------------------------------------------------

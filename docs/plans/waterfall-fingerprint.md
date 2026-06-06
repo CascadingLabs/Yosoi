@@ -104,6 +104,33 @@ fingerprint reuse); the read path (`atom_read.py`) consults the active trust mod
 This is cross-cutting — it retrofits the P2 `FieldAtom` model, not only P5 — and is the governance
 that makes similarity-based reuse safe to ship.
 
+## Real-data finding (2026-06-05) that sharpens WF1
+
+Measured live: **JS rendering alone already buckets cross-ticker.** Through the headless
+(VoidCrawl) tier, `finance.yahoo.com/quote/AAPL` and `/quote/MSFT` both fingerprint to
+`s1:7d4191ce5292eb65` under the *current static* `page_shape_fp` — the render normalizes
+the per-ticker noise. The remaining gaps WF1 must close: (a) the **static-HTML** tier
+(unrendered AAPL/MSFT/uk all differ), and (b) **cross-locale** (`uk.finance.yahoo.com`
+renders its own shape `s1:407f…`). So WF1's template skeleton is aimed at the static tier
+and at cross-locale, not at the already-solved rendered-same-subdomain case.
+
+## WF1 result (built + measured) — similarity, not exact hash
+
+Implemented the L1 template skeleton (`page_skeleton`/`page_skeleton_fp`/`skeleton_jaccard`/
+`same_template` in `generalization/fingerprint.py`) and ran it on real Yahoo:
+- **Exact-hash skeleton FALSIFIED** — AAPL ≠ MSFT (per-ticker modules differ); over-discriminates.
+- **Jaccard similarity WORKS** — depth-2 + class tokens: the quote family (AAPL/MSFT **and
+  cross-locale `uk.`**) clusters at **0.63–0.68**; a different template (markets) sits at
+  **0.28**. So similarity over the skeleton separates templates AND fixes cross-locale — the
+  exact hash was the wrong matcher.
+- Threshold (`SKELETON_SIMILARITY_THRESHOLD=0.5`) only PROPOSES a `fingerprint`-sourced reuse;
+  the strict trust policy quarantines it by default — so the trust tier is the real safety net,
+  not the threshold. This is the conjunctive, fail-closed design working as intended.
+
+Open: same-template Jaccard is only ~0.65 (real pages genuinely differ ~35%), so the skeleton
+is ONE strong signal, not standalone identity — confirming the multi-signal plan. Next: feed it
+as a layer alongside L2 (a11y) / L3 (network) under the candidate-then-verify gate.
+
 ## Staging — falsifiable experiment first
 
 - **WF0 — Plumbing (low-risk, unblocks all).** Surface already-captured signals onto

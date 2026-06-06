@@ -254,3 +254,45 @@ def test_page_shape_is_scheme_prefixed() -> None:
     fp = page_shape_fp(observe_html('https://google.com/search?q=x', _serp_html(10, tld='com'), row_selector=''))
     assert fp.startswith(f'{SHAPE_SCHEME_VERSION}:')
     assert len(fp.split(':', 1)[1]) == 16
+
+
+# ── template-skeleton fingerprint (P5/WF1) ──────────────────────────────────────
+
+
+def _listing(n_rows: int) -> str:
+    rows = ''.join(
+        f'<li class="item"><a class="lnk" href="/x{i}">t{i}</a><span class="px">{i}</span></li>' for i in range(n_rows)
+    )
+    return (
+        f'<html><body class="listing-page"><header><nav><a class="logo">H</a></nav></header>'
+        f'<main class="content"><ul class="results">{rows}</ul></main></body></html>'
+    )
+
+
+_ARTICLE = (
+    '<html><body class="article-page"><header><nav><a class="logo">H</a></nav></header>'
+    '<article class="story"><h1>T</h1><p>a</p><p>b</p><p>c</p><blockquote>q</blockquote>'
+    '<time>2h</time></article></body></html>'
+)
+
+
+def test_skeleton_is_content_volume_invariant() -> None:
+    from yosoi.generalization.fingerprint import same_template, skeleton_jaccard
+
+    # 5 rows vs 40 rows of the SAME template — set-of-shingles dedups the repeats.
+    assert skeleton_jaccard(_listing(5), _listing(40)) > 0.9
+    assert same_template(_listing(5), _listing(40))
+
+
+def test_skeleton_distinguishes_templates() -> None:
+    from yosoi.generalization.fingerprint import same_template, skeleton_jaccard
+
+    assert skeleton_jaccard(_listing(10), _ARTICLE) < 0.5
+    assert not same_template(_listing(10), _ARTICLE)
+
+
+def test_skeleton_fp_prefix_and_degenerate() -> None:
+    from yosoi.generalization.fingerprint import page_skeleton_fp
+
+    assert page_skeleton_fp(_listing(10)).startswith('t1:')
+    assert page_skeleton_fp('<html><body></body></html>') == 't1:degenerate'
