@@ -419,12 +419,52 @@ def semantics_jaccard(a_html: str, b_html: str) -> float:
     return _jaccard(page_semantics(a_html), page_semantics(b_html))
 
 
+# L1 identity layer — the "expensive to randomize" signals (anti-bot lens). Compared CONJUNCTIVELY
+# but only when BOTH pages carry it (the waterfall "compare on the common layer" rule), so pages
+# with no stable identity attrs are neither vetoed nor vacuously merged.
+IDENTITY_SIMILARITY_THRESHOLD = 0.40
+
+
+def page_identity(html: str) -> frozenset[str]:
+    """L1 identity-attribute signature: the set of ``data-*`` attribute KEYS used on the page.
+
+    A framework's ``data-*`` namespace (``data-testid``, ``data-mw``, ``data-component``) is the
+    template's "expensive to randomize" signature, and — unlike ``id`` VALUES — it is genuinely
+    content-invariant: only the KEYS are taken, never their values. (Live finding 2026-06-06: raw
+    ``id`` values are content-DERIVED — MediaWiki mints section-anchor ids from the localized
+    heading text, e.g. en ``History`` vs de ``Geschichte`` — so including ids made this layer
+    content-sensitive and broke cross-locale reuse. Keys only.)
+
+    Empty when a page uses no ``data-*`` attrs (e.g. a bare static page) → the layer is "not
+    carried", and :meth:`PageFingerprint.similarity` skips it (the waterfall common-layer rule).
+    On a static fetch this layer is often sparse; it gains discriminating power on a rendered
+    (L2) fetch where component frameworks emit rich ``data-*`` testids.
+    """
+    from parsel import Selector
+
+    root = Selector(text=html).root
+    if not hasattr(root, 'iter'):
+        return frozenset()
+    feats: set[str] = set()
+    for el in root.iter():
+        if not isinstance(getattr(el, 'tag', None), str):
+            continue  # comment / processing-instruction node
+        feats.update(f'data:{k}' for k in el.attrib if isinstance(k, str) and k.startswith('data-'))
+    return frozenset(feats)
+
+
+def identity_jaccard(a_html: str, b_html: str) -> float:
+    """Jaccard similarity of two pages' L1 identity-attribute signatures, in ``[0, 1]``."""
+    return _jaccard(page_identity(a_html), page_identity(b_html))
+
+
 class PageSimilarity(BaseModel):
     """Per-layer similarity and the conjunctive same-shape verdict between two fingerprints."""
 
     skeleton: float  # L1 structural skeleton Jaccard
     semantic: float  # L2 landmark / heading / schema Jaccard
-    same_shape: bool  # conjunctive verdict — every layer agrees
+    identity: float | None  # L1 identity-attr Jaccard, or None when not carried by both pages
+    same_shape: bool  # conjunctive verdict — every CARRIED layer agrees
 
 
 class PageFingerprint(BaseModel):
@@ -440,15 +480,23 @@ class PageFingerprint(BaseModel):
     a different template ~0.9, but the skeleton ~0.4 vetoes it). A match only PROPOSES a
     ``fingerprint``-sourced reuse, which the strict trust policy quarantines by default — the
     fingerprint proposes, the trust policy decides what is served.
+
+    **Waterfall-aware:** a fingerprint records WHICH layers it carries. Layers computable from
+    static HTML (skeleton, semantic, identity) are always present; richer layers (rendered AX
+    spine, network endpoint set — L2/L3) arrive only from a browser/CDP fetch tier. Matching
+    compares only the layers PRESENT IN BOTH (an absent layer neither vetoes nor vacuously
+    merges), so a static-vs-static compare uses L1, and a CDP-vs-CDP compare adds the high-trust
+    behavioral layer — never a cross-layer false merge.
     """
 
     skeleton: frozenset[str]  # L1 structural template (depth-D node-symbol paths)
     semantic: frozenset[str]  # L2 landmark / heading / schema feature set
+    identity: frozenset[str] = frozenset()  # L1 identity-attr signature (ids + data-* keys); '' = not carried
 
     @classmethod
     def of(cls, html: str) -> PageFingerprint:
         """Compute a page's fingerprint from its HTML (do this once per page)."""
-        return cls(skeleton=page_skeleton(html), semantic=page_semantics(html))
+        return cls(skeleton=page_skeleton(html), semantic=page_semantics(html), identity=page_identity(html))
 
     @property
     def degenerate(self) -> bool:
@@ -467,16 +515,27 @@ class PageFingerprint(BaseModel):
         *,
         skeleton_threshold: float = SKELETON_SIMILARITY_THRESHOLD,
         semantic_threshold: float = SEMANTIC_SIMILARITY_THRESHOLD,
+        identity_threshold: float = IDENTITY_SIMILARITY_THRESHOLD,
     ) -> PageSimilarity:
         """Per-layer Jaccard plus the conjunctive same-shape verdict against ``other``.
 
         Thresholds default to the tuned operating point but are overridable — bring your own.
-        A degenerate fingerprint on either side forces ``same_shape=False`` (fail closed).
+        A degenerate fingerprint on either side forces ``same_shape=False`` (fail closed). The
+        identity layer is conjunctive ONLY when both pages carry it (waterfall common-layer rule).
         """
         sk = _jaccard(self.skeleton, other.skeleton)
         se = _jaccard(self.semantic, other.semantic)
-        same = not self.degenerate and not other.degenerate and sk >= skeleton_threshold and se >= semantic_threshold
-        return PageSimilarity(skeleton=sk, semantic=se, same_shape=same)
+        # L1 identity is a high-trust veto, but only when BOTH pages expose identity attrs;
+        # otherwise the layer isn't carried (None) and never decides the match either way.
+        idn = _jaccard(self.identity, other.identity) if (self.identity and other.identity) else None
+        same = (
+            not self.degenerate
+            and not other.degenerate
+            and sk >= skeleton_threshold
+            and se >= semantic_threshold
+            and (idn is None or idn >= identity_threshold)
+        )
+        return PageSimilarity(skeleton=sk, semantic=se, identity=idn, same_shape=same)
 
     def matches(
         self,
@@ -484,10 +543,14 @@ class PageFingerprint(BaseModel):
         *,
         skeleton_threshold: float = SKELETON_SIMILARITY_THRESHOLD,
         semantic_threshold: float = SEMANTIC_SIMILARITY_THRESHOLD,
+        identity_threshold: float = IDENTITY_SIMILARITY_THRESHOLD,
     ) -> bool:
         """Whether two pages are the same shape (conjunctive, fail-closed)."""
         return self.similarity(
-            other, skeleton_threshold=skeleton_threshold, semantic_threshold=semantic_threshold
+            other,
+            skeleton_threshold=skeleton_threshold,
+            semantic_threshold=semantic_threshold,
+            identity_threshold=identity_threshold,
         ).same_shape
 
 

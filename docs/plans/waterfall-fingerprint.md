@@ -152,6 +152,27 @@ consulted (per-element relocation via stored tag/attrs/text/siblings/path + simi
 SQLite) — that's element-level resilience; our `ElementObservation` already mirrors it, and
 `PageFingerprint` is the page-level analog.
 
+## WF2 result (built + measured) — L1 identity layer + waterfall common-layer matching
+
+Made `PageFingerprint` genuinely **waterfall-aware**: it now records WHICH layers it carries and
+`similarity()` compares only the layers **present in both** (an absent layer neither vetoes nor
+vacuously merges — "compare on the highest common layer"). Added the **L1 identity layer**
+(`page_identity`): the set of **`data-*` attribute KEYS** — the framework's "expensive to
+randomize" signature — as a conjunctive high-trust term, active only when both pages carry it.
+
+- **Live finding (2026-06-06): raw `id` VALUES are content-DERIVED, not content-invariant.** The
+  first cut included element ids; it **broke cross-locale E5** (en↔de wiki split) because MediaWiki
+  mints section-anchor ids from the *localized* heading text (`History` vs `Geschichte`). Fix:
+  identity = `data-*` KEYS only (values and ids excluded). E5 restored to MATCH.
+- **Measured on the 17-page battery: 12/12 experiments, recall 7/8, precision 126/128 — unchanged.**
+  On a STATIC corpus the layer is largely inert (few sites expose differing `data-*` namespaces),
+  so it neither helps nor harms the operating point today. Its discriminating power is expected to
+  **grow at L2** (a rendered fetch: component frameworks emit rich `data-testid`/`data-qa`), which
+  is exactly the waterfall thesis — richer fetch tier ⇒ richer carried layers.
+- The machinery (per-layer present-in-both conjunction, `PageSimilarity.identity: float | None`) is
+  the reusable part: L2 (AX spine) and L3 (network) drop in as the same shape — a new field + one
+  optional term, no matcher rewrite.
+
 ## Staging — falsifiable experiment first
 
 - **WF0 — Plumbing (low-risk, unblocks all).** Surface already-captured signals onto
