@@ -33,6 +33,7 @@ from yosoi.core.fetcher.identity import BrowserIdentity
 from yosoi.core.pipeline.cache import PipelineCacheMixin
 from yosoi.core.pipeline.crawler import PipelineCrawlerMixin
 from yosoi.core.pipeline.discovery import PipelineDiscoveryMixin
+from yosoi.core.pipeline.discovery_gate import DiscoveryGate
 from yosoi.core.pipeline.extraction import PipelineExtractionMixin
 from yosoi.core.pipeline.utils import PipelineUtilsMixin
 from yosoi.core.verification import SelectorVerifier, SemanticValidator, field_rules_for_contract
@@ -95,6 +96,7 @@ class Pipeline(
     _download_dir: str | None = None
     _max_download_bytes: int | None = None
     _keep_downloads: bool = True
+    _discovery_gate: DiscoveryGate | None = None  # class default for __new__-built stubs
 
     def __init__(
         self,
@@ -107,6 +109,7 @@ class Pipeline(
         selector_level: SelectorLevel = SelectorLevel.CSS,
         bus: DiscoveryBus | None = None,
         write_lock: asyncio.Lock | None = None,
+        discovery_gate: DiscoveryGate | None = None,
         experimental_a3node: bool = False,
         allow_downloads: bool = False,
         allowed_download_types: tuple[str, ...] = (),
@@ -134,6 +137,8 @@ class Pipeline(
                             Defaults to CSS.
             bus: Optional shared discovery bus for cross-pipeline field deduplication.
             write_lock: Optional asyncio.Lock to serialize selector writes for the domain.
+            discovery_gate: Optional shared single-flight gate so concurrent scrapes of the
+                same (domain, contract) discover once and the rest replay the warm cache.
             experimental_a3node: Opt into A3Node DOM-stability recipe persistence and
                 replay on browser fetchers (headless/headful/waterfall). When enabled,
                 the first visit records the action recipe and later visits replay it
@@ -203,6 +208,9 @@ class Pipeline(
         )
         self.contract = contract
         self._contract_sig = contract_signature(contract)
+        # Shared across a ys.scrape call so concurrent units for the same (domain, contract)
+        # single-flight discovery; a lone pipeline gets its own (trivial) gate.
+        self._discovery_gate = discovery_gate or DiscoveryGate()
         # Honor a caller-provided console (the CLI passes a themed stderr Console for
         # --json runs); otherwise build the default themed one.
         self.console = console if console is not None else Console(theme=self.custom_theme, quiet=quiet)
@@ -484,6 +492,25 @@ class Pipeline(
                             yield item
                         return
 
+                    # Single-flight the COLD discovery only (empty cache): the first concurrent
+                    # unit discovers, the rest wait, re-check, and replay the now-warm cache — so
+                    # N concurrent cold scrapes cost ONE LLM discovery, natively. A cache that
+                    # exists but failed verification has nothing to wait for and falls through.
+                    if not await self.storage.load_snapshots(domain):
+                        async for item in self._gated_fresh(
+                            url=url,
+                            domain=domain,
+                            fetcher=fetcher,
+                            force_flag=force_flag,
+                            max_fetch_retries=max_fetch_retries,
+                            max_discovery_retries=max_discovery_retries,
+                            skip_verification=skip_verification,
+                            format_to_use=format_to_use,
+                            root_span=root_span,
+                        ):
+                            yield item
+                        return
+
                 async for item in self._scrape_fresh(
                     url=url,
                     domain=domain,
@@ -496,6 +523,46 @@ class Pipeline(
                     root_span=root_span,
                 ):
                     yield item
+
+    async def _gated_fresh(
+        self,
+        *,
+        url: str,
+        domain: str,
+        fetcher: Any,
+        force_flag: bool,
+        max_fetch_retries: int,
+        max_discovery_retries: int,
+        skip_verification: bool,
+        format_to_use: list[str],
+        root_span: Any | None,
+    ) -> AsyncIterator[ContentMap]:
+        """Single-flight a cold discovery under the (domain, contract) gate.
+
+        Only the first concurrent unit runs fresh discovery; waiters acquire the lock after
+        it, re-check the now-warm cache, and replay — so N concurrent cold scrapes of the same
+        contract cost ONE LLM discovery.
+        """
+        async with (self._discovery_gate or DiscoveryGate()).hold(f'{domain}::{self._contract_sig}'):
+            cache_gen = await self._try_cached(
+                url, domain, fetcher, skip_verification, format_to_use, root_span=root_span
+            )
+            if cache_gen is not None:
+                async for item in cache_gen:
+                    yield item
+                return
+            async for item in self._scrape_fresh(
+                url=url,
+                domain=domain,
+                fetcher=fetcher,
+                force_flag=force_flag,
+                max_fetch_retries=max_fetch_retries,
+                max_discovery_retries=max_discovery_retries,
+                skip_verification=skip_verification,
+                format_to_use=format_to_use,
+                root_span=root_span,
+            ):
+                yield item
 
     async def _scrape_fresh(
         self,

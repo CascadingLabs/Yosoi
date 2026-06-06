@@ -11,6 +11,7 @@ from yosoi.core.configs import YosoiConfig, auto_config
 from yosoi.core.discovery import LLMConfig
 from yosoi.core.fetcher.identity import BrowserIdentity
 from yosoi.core.pipeline import ContentMap, Pipeline
+from yosoi.core.pipeline.discovery_gate import DiscoveryGate
 from yosoi.models.contract import Contract
 from yosoi.models.selectors import SelectorLevel
 from yosoi.utils import observability as obs
@@ -216,6 +217,9 @@ async def scrape(
         return fetcher_type(u) if callable(fetcher_type) else fetcher_type.get(u, 'simple')
 
     write_lock = asyncio.Lock() if (multi_url or multi_contract) else None
+    # Shared single-flight gate: concurrent units for the same (domain, contract) discover
+    # ONCE; the rest wait and replay — so the simple call stays simple.
+    discovery_gate = DiscoveryGate()
     sem = asyncio.Semaphore(max_concurrency) if max_concurrency else None
     pairs = [(u, c) for u in urls for c in contract_clss]
 
@@ -243,6 +247,7 @@ async def scrape(
                 write_lock=write_lock,
                 identity=_identity_for(u),
                 gate_collect=gate_collectors[u],
+                discovery_gate=discovery_gate,
             )
 
         if sem is None:
@@ -284,6 +289,7 @@ async def _scrape_one(
     write_lock: asyncio.Lock | None = None,
     identity: BrowserIdentity | None = None,
     gate_collect: GateCollector | None = None,
+    discovery_gate: DiscoveryGate | None = None,
 ) -> list[ContentMap]:
     """One ``(url, contract)`` unit (returns ``list[record]``).
 
@@ -320,6 +326,7 @@ async def _scrape_one(
                 keep_downloads=keep_downloads,
                 write_lock=write_lock,
                 identity=identity,
+                discovery_gate=discovery_gate,
             ) as pipeline:
                 items = [
                     item
