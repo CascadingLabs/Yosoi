@@ -210,3 +210,17 @@ def test_empty_key_fields_rejected() -> None:
 
     with pytest.raises(Exception):  # noqa: B017,PT011
         FieldAtom(page_shape='', region_role='r', field_name='f', selector=_primary('a'))
+
+
+def test_load_skips_unreadable_lines(tmp_path) -> None:
+    # one good atom + a non-JSON line + a now-invalid-source line: skip the bad, keep the good.
+    path = tmp_path / 'atoms.jsonl'
+    good = FieldAtom(
+        page_shape='s1:x', region_role='r', field_name='f', yosoi_type='t', selector=_primary('a')
+    ).model_dump_json()
+    path.write_text(
+        good + '\n{not json\n'
+        '{"page_shape":"s1:y","region_role":"r","field_name":"f","selector":{"value":"b"},"source":"banana"}\n'
+    )
+    store = AtomStore(path)
+    assert len(store) == 1  # corpus survives bad lines instead of crashing the whole load

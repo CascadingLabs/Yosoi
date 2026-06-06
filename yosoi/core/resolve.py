@@ -13,10 +13,13 @@ Design contract:
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING, Any
 
 from yosoi.models.needs_discovery import NeedsDiscovery
 from yosoi.models.selectors import SelectorLevel
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from yosoi.models.spec import ContractSpec
@@ -116,7 +119,8 @@ def _try_atom_reads(
             return None
         selectors = selector_map_from_atoms(resolution.hits)
         return _extract_from_html(spec, html, selectors, domain, max_level=max_level, url=url)
-    except Exception:  # noqa: BLE001 — atom reads must fail closed to legacy discovery
+    except Exception as exc:  # noqa: BLE001 — atom reads must fail closed to legacy discovery
+        logger.debug('atom read failed, falling back to discovery: %s', exc)
         return None
 
 

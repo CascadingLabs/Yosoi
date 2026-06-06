@@ -21,10 +21,13 @@ fail-closed cross-shape reuse gate) arrive in P3.
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
+
+logger = logging.getLogger(__name__)
 
 # Unit separator — safe inside a content-addressed key (never appears in selectors).
 _SEP = '\x1f'
@@ -170,11 +173,17 @@ class AtomStore:
 
     def _load(self) -> None:
         assert self._path is not None
-        for line in self._path.read_text(encoding='utf-8').splitlines():
-            line = line.strip()
-            if line:
+        for lineno, raw in enumerate(self._path.read_text(encoding='utf-8').splitlines(), 1):
+            line = raw.strip()
+            if not line:
+                continue
+            try:
                 atom = FieldAtom.model_validate_json(line)
-                self._atoms[atom.key] = atom
+            except (ValueError, TypeError) as exc:
+                # One bad/outdated line must not kill the whole corpus — skip it loudly.
+                logger.warning('atom store: skipping unreadable line %d in %s: %s', lineno, self._path, exc)
+                continue
+            self._atoms[atom.key] = atom
 
     def _flush(self) -> None:
         if self._path is None:
@@ -196,8 +205,12 @@ class AtomStore:
             self._flush()
             return True
         if existing.selector != atom.selector:
-            # Should not happen for a gate-accepted set; record, keep first-writer-wins.
+            # An invariant violation (a gate-accepted set has disjoint regions ⇒ distinct keys):
+            # surface it LOUDLY, not into a list nobody reads. Keep first-writer-wins.
             self.conflicts.append((atom.key, existing.selector, atom.selector))
+            logger.warning(
+                'atom store CONFLICT on %s: keeping %s, dropping %s', atom.key, existing.selector, atom.selector
+            )
         # Trust is monotonic on merge: keep the most-truthy source seen (a later 'verified'
         # upgrades an earlier 'fingerprint'; a 'fingerprint' never downgrades a 'verified').
         best_source = max(existing.source, atom.source, key=lambda s: SOURCE_TRUST.get(s, 0))
