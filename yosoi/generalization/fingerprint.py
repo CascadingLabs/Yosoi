@@ -485,26 +485,27 @@ AX_SIMILARITY_THRESHOLD = 0.50
 
 
 def ax_spine_features(ax_snapshot: Any) -> frozenset[str]:
-    """L2 rendered AX spine: the role multiset of the rendered accessibility tree (content-free).
+    """L2 rendered AX spine: the SET of distinct roles in the rendered accessibility tree.
 
-    Takes only the *roles* of named AX nodes (never their names, which are content) plus a banded
-    count per role, so two renders of the same template — different data — share the spine. Duck-
-    typed (expects ``.targets`` of objects with ``.role``) to keep ``generalization`` free of a
-    ``core.fetcher`` import. Empty/None snapshot → empty set → the layer is "not carried".
+    Takes only the *roles* of named AX nodes — never their names (content) and not counts (volume).
+    A role SET (not a multiset) is content- AND volume-invariant by construction: two renders of the
+    same template with different row counts share the spine, mirroring the skeleton's set semantics
+    (the AAPL/MSFT/pagination lesson). One feature per distinct role, so the optional-layer thinness
+    floor counts distinct roles uniformly with the identity layer's distinct data-keys.
+
+    Duck-typed (expects ``.targets`` of objects with ``.role``) to keep ``generalization`` free of a
+    ``core.fetcher`` import, and fully defensive: ANY malformed snapshot (non-iterable, or a
+    ``.targets`` accessor that raises) degrades to the empty set ("not carried"), never raising out
+    of the public :meth:`PageFingerprint.of`.
     """
-    targets = getattr(ax_snapshot, 'targets', None)
-    if not targets or isinstance(targets, (str, bytes)) or not isinstance(targets, Iterable):
-        return frozenset()  # absent, or a malformed (non-iterable) snapshot → layer not carried
-    counts: dict[str, int] = {}
-    for t in targets:
-        role = (getattr(t, 'role', '') or '').strip().lower()
-        if role:
-            counts[role] = counts.get(role, 0) + 1
-    feats: set[str] = set()
-    for role, n in counts.items():
-        feats.add(f'ax:{role}')
-        feats.add(f'axn:{role}:{_count_band(n)}')
-    return frozenset(feats)
+    try:
+        targets = getattr(ax_snapshot, 'targets', None)
+        if not targets or isinstance(targets, (str, bytes)) or not isinstance(targets, Iterable):
+            return frozenset()  # absent or malformed (non-iterable) → layer not carried
+        roles = {role for t in targets if (role := (getattr(t, 'role', '') or '').strip().lower())}
+    except Exception:  # noqa: BLE001 — a malformed/lazy snapshot must degrade to "not carried", never raise
+        return frozenset()
+    return frozenset(f'ax:{role}' for role in roles)
 
 
 class PageSimilarity(BaseModel):
@@ -536,11 +537,19 @@ class PageFingerprint(BaseModel):
     tier will add the network layer (L3). Matching compares only the layers SUBSTANTIVELY PRESENT
     IN BOTH (a too-thin or absent optional layer abstains — neither vetoes nor vacuously merges).
 
-    KNOWN LIMITATION (not yet enforced): a cross-tier compare (rich seed vs thin replay) silently
-    falls back to the common layers, so the seed's high-trust layers go unchecked. The intended
-    invariant — "a replay thinner than the seed must ABSTAIN, not match on absence" — needs explicit
-    per-fingerprint carriage tracking and lands with the read-path wiring (see waterfall-fingerprint
-    plan). Today this is harmless because nothing compares cross-tier on the read path yet.
+    KNOWN LIMITATIONS (not yet resolved — both safe today because nothing compares cross-tier on the
+    read path yet, and the optional-layer thresholds are PROVISIONAL):
+      1. Cross-tier compare (rich seed vs thin replay) silently falls back to the common layers, so
+         the seed's high-trust layers go unchecked. The intended invariant — "a replay thinner than
+         the seed must ABSTAIN, not match on absence" — needs explicit per-fingerprint carriage
+         tracking and lands with the read-path wiring (see the waterfall plan).
+      2. The optional layers can vacuously AGREE on FRAMEWORK-GLOBAL features (e.g. ``data-mw`` on
+         every MediaWiki page, or ``main``/``navigation`` roles on every page): such features clear
+         the thinness floor yet carry no template-DISCRIMINATING signal, so identity/ax can score
+         ~1.0 and rubber-stamp a structural near-merge instead of vetoing it. Cardinality is not a
+         trust proxy. The real fix (a framework-global stop-set / IDF-style down-weighting) needs
+         real L2 data to tune; until then these layers can refine but are NOT trusted to authorize a
+         match — which is exactly why a `fingerprint`-sourced reuse stays strict-quarantined.
     """
 
     skeleton: frozenset[str]  # L1 structural template (depth-D node-symbol paths)
