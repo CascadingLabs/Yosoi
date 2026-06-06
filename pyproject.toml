@@ -175,6 +175,7 @@ lint.ignore = [
 lint.per-file-ignores."__init__.py" = [ "F401" ]
 lint.per-file-ignores."benchmarks/**/*.py" = [ "BLE", "D" ]  # standalone memory-bench harness
 lint.per-file-ignores."examples/**/*.py" = [ "BLE", "D" ]
+lint.per-file-ignores."mocked-projects/**/*.py" = [ "BLE", "D" ]  # standalone mocked-project demos
 lint.per-file-ignores."tests/**/*.py" = [
   "ARG001",   # unused arguments in test functions
   "ARG002",   # unused method arguments in tests
