@@ -113,7 +113,7 @@ def embed_text_remote(texts: list[str]) -> list[list[float]] | None:
         with urllib.request.urlopen(req, timeout=60) as resp:
             payload = _json.loads(resp.read())
         return [row['embedding'] for row in payload['data']]
-    except Exception as e:  # noqa: BLE001 - spike: degrade to proxy, report why
+    except Exception as e:
         print(f'  [remote embeddings unavailable: {type(e).__name__}: {e}]')
         return None
 
