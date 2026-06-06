@@ -184,6 +184,10 @@ lint.per-file-ignores."tests/**/*.py" = [
   "D",        # pydocstyle - no docstrings required for tests
 ]
 lint.per-file-ignores."yosoi/cli/args.py" = [ "ARG002" ]  # Click ParamType method overrides require unused params
+lint.per-file-ignores."yosoi/cli/contract_param.py" = [
+  "ARG002"
+]  # Click ParamType method overrides require unused params
+lint.per-file-ignores."yosoi/cli/main.py" = [ "C901" ]  # CLI group command bodies are inherently complex
 lint.per-file-ignores."yosoi/core/cleaning/cleaner.py" = [ "C901" ]
 lint.flake8-tidy-imports.banned-api."unittest.mock".msg = "Use pytest-mock's `mocker` fixture instead of unittest.mock."
 lint.flake8-tidy-imports.banned-api.unittest.msg = "Use pytest. The unittest stdlib module is banned project-wide; see scripts/check_no_unittest.py."

@@ -73,6 +73,45 @@ async def test_scrape_threads_opt_in_identity_per_url(monkeypatch):
     assert by_url['https://bing.test'].kwargs['identity'] is None  # bing opted out -> plain
 
 
+async def test_scrape_per_url_fetcher_type(monkeypatch):
+    """fetcher_type can be a {url: tier} map — each url's pipeline gets its own tier."""
+    FakePipeline.instances.clear()
+    monkeypatch.setattr(api, 'Pipeline', FakePipeline)
+
+    await api.scrape(
+        ['https://google.test', 'https://bing.test'],
+        ApiContract,
+        model=ys.claude_sdk(),
+        fetcher_type={'https://google.test': 'headful', 'https://bing.test': 'headless'},
+    )
+    by_url = {i.scrape_kwargs['url']: i for i in FakePipeline.instances}  # type: ignore[index]
+    assert by_url['https://google.test'].scrape_kwargs['fetcher_type'] == 'headful'
+    assert by_url['https://bing.test'].scrape_kwargs['fetcher_type'] == 'headless'
+
+
+async def test_scrape_max_concurrency_caps_inflight(monkeypatch):
+    """max_concurrency bounds how many (url, contract) units run at once."""
+    import asyncio
+
+    inflight = 0
+    peak = 0
+
+    class _SlowPipeline(FakePipeline):
+        async def scrape(self, url: str, **kwargs: object):
+            nonlocal inflight, peak
+            inflight += 1
+            peak = max(peak, inflight)
+            await asyncio.sleep(0.02)
+            inflight -= 1
+            yield {'title': 'Example'}
+
+    FakePipeline.instances.clear()
+    monkeypatch.setattr(api, 'Pipeline', _SlowPipeline)
+    urls = [f'https://u{i}.test' for i in range(6)]
+    await api.scrape(urls, ApiContract, model=ys.claude_sdk(), max_concurrency=2)
+    assert peak <= 2
+
+
 async def test_scrape_no_identities_is_default(monkeypatch):
     """Default (no identities) forwards identity=None — behavior unchanged."""
     FakePipeline.instances.clear()
