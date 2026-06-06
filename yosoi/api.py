@@ -22,31 +22,48 @@ logger = logging.getLogger(__name__)
 # (selector_map, cleaned_html) from that contract's fresh discovery on a page.
 GateCollector = dict[str, tuple[dict[str, Any], str | None]]
 
+# Default on-disk field-atom corpus (P2 dual-write target). Gitignored like .yosoi/.
+_ATOM_STORE_PATH = '.yosoi/atoms.jsonl'
 
-def _run_discrimination_gates(collectors: dict[str, GateCollector]) -> None:
-    """Run the advisory discrimination gate for every URL that collected >=2 contracts."""
+
+def _run_discrimination_gates(
+    collectors: dict[str, GateCollector], contract_by_name: dict[str, type[Contract]]
+) -> None:
+    """Gate each URL's contract set; on ACCEPT, dual-write its atoms (P1.5 + P2).
+
+    The gate verdict is logged advisory (P1.5). When a set is ACCEPTED — non-empty,
+    pairwise-disjoint regions — its selectors are internalized into the field-atom store
+    (P2 dual-write). A REJECTED set writes NOTHING: never internalize a conflation.
+    Reads still come from the legacy lesson cache; this only builds the atom corpus.
+    """
+    store = None
     for url, collected in collectors.items():
-        _advisory_discrimination_gate(url, collected)
+        report = _advisory_discrimination_gate(url, collected)
+        if report is None or not report.accepted:
+            continue
+        if store is None:
+            from yosoi.storage.atoms import AtomStore
+
+            store = AtomStore(_ATOM_STORE_PATH)
+        _internalize_accepted(store, url, collected, contract_by_name)
 
 
-def _advisory_discrimination_gate(url: str, collected: GateCollector) -> None:
+def _advisory_discrimination_gate(url: str, collected: GateCollector) -> Any:
     """Run the discrimination gate over a page's contract set and LOG the verdict (P1.5).
 
-    Advisory in P1.5: this surfaces whether ``AdResult``/``OrganicResult``-style
-    contracts on one page resolved to DISJOINT DOM regions, so a conflation
-    (overlapping selectors) is visible before P2 ever internalizes those selectors
-    into the field-atom index. It does not yet block caching. Best-effort — a gate
-    failure must never break a scrape.
+    Returns the :class:`DiscriminationReport` (or None when <2 contracts / no HTML / a
+    failure), so the caller can gate dual-write on ``report.accepted``. Best-effort — a
+    gate failure must never break a scrape.
     """
     if len(collected) < 2:
-        return
+        return None
     try:
         from yosoi.core.discovery.discrimination import evaluate_discrimination
 
         maps = {name: selectors for name, (selectors, _html) in collected.items()}
         html = next((h for (_s, h) in collected.values() if h), None)
         if not html:
-            return
+            return None
         report = evaluate_discrimination(html, maps)
         logger.log(
             logging.INFO if report.accepted else logging.WARNING,
@@ -57,8 +74,65 @@ def _advisory_discrimination_gate(url: str, collected: GateCollector) -> None:
             report.footprints,
             report.overlaps,
         )
+        return report
     except Exception as exc:  # noqa: BLE001 — advisory gate must never break a scrape
         logger.debug('discrimination gate skipped (url=%s): %s', url, exc)
+        return None
+
+
+def _internalize_accepted(
+    store: Any,
+    url: str,
+    collected: GateCollector,
+    contract_by_name: dict[str, type[Contract]],
+) -> None:
+    """Dual-write a gate-ACCEPTED page's selectors into the field-atom store (P2).
+
+    Each contract's content fields become atoms keyed by ``(page_shape, region, field,
+    yosoi_type)`` — domain-independent, so the next mirror/locale merges provenance
+    instead of re-minting. Best-effort: a failure here must never break the scrape.
+    """
+    try:
+        from yosoi.core.discovery.discrimination import _STRUCTURAL
+        from yosoi.generalization.capture import observe_html
+        from yosoi.generalization.fingerprint import page_shape_fp
+        from yosoi.models.selectors import coerce_selector_entry
+        from yosoi.storage.atoms import derive_atoms
+        from yosoi.utils.signatures import _get_yosoi_type
+
+        html = next((h for (_s, h) in collected.values() if h), None)
+        if not html:
+            return
+        page_shape = page_shape_fp(observe_html(url, html, row_selector=''))
+        domain = obs.normalize_user_id(url) or url
+
+        minted = reused = 0
+        for name, (selectors, _h) in collected.items():
+            cls = contract_by_name.get(name)
+            fields = []
+            for field_name, slot in selectors.items():
+                if field_name in _STRUCTURAL or not isinstance(slot, dict):
+                    continue
+                primary = coerce_selector_entry(slot.get('primary'))
+                if primary is None:
+                    continue
+                root = coerce_selector_entry(slot.get('root'))
+                yosoi_type = _get_yosoi_type(cls, field_name) if cls else None
+                fields.append((field_name, primary.model_dump(), root.value if root else None, yosoi_type))
+            atoms = derive_atoms(page_shape, name, domain, fields)
+            new = store.upsert_all(atoms)
+            minted += new
+            reused += len(atoms) - new
+        logger.info(
+            'field-atoms internalized url=%s shape=%s minted=%d reused=%d store_total=%d',
+            url,
+            page_shape,
+            minted,
+            reused,
+            len(store),
+        )
+    except Exception as exc:  # noqa: BLE001 — dual-write must never break a scrape
+        logger.debug('field-atom dual-write skipped (url=%s): %s', url, exc)
 
 
 async def scrape(
@@ -178,7 +252,7 @@ async def scrape(
     flat = await asyncio.gather(*(_unit(u, c) for (u, c) in pairs))
     cell = {(u, c.__name__): flat[i] for i, (u, c) in enumerate(pairs)}
 
-    _run_discrimination_gates(gate_collectors)
+    _run_discrimination_gates(gate_collectors, {c.__name__: c for c in contract_clss})
 
     if multi_url and multi_contract:
         return {u: {c.__name__: cell[u, c.__name__] for c in contract_clss} for u in urls}
