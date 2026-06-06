@@ -71,6 +71,21 @@ provenance/trust tiers and the first slice of P5 (the waterfall fingerprint, L1+
 4. **Gated atom-primary flip** (the risky half of P4): only after the live SERP case passes repeatedly in
    prod — flip reads to atoms-first, demote the legacy lesson cache to fallback.
 
+## Live evidence from the generalization battery (2026-06-06)
+See `docs/research/fingerprint-generalization-findings.md` + `scrapling-adaptive-selectors.md`.
+The 12-experiment live run (8 domains, 6 page types) confirmed the design (12/12, recall 7/8,
+precision 126/128) and surfaced two concrete tuning candidates to fold into the work above:
+- **Semantic threshold (0.50) vs cross-locale margin.** The cross-locale reuse we want
+  (en↔de wiki, skel 0.47/sem 0.74) shares a skeleton band with a cross-MediaWiki leak
+  (short article↔archwiki, skel 0.51). Skeleton alone can't separate them → this is the live
+  case for wiring L2 semantics into the read path (step 2 above). Do NOT bump semantic to 0.70
+  to kill the leak: the en↔de margin is only 0.04 and a thinner locale could drop below it,
+  silently losing the headline reuse. The leak only fires in opt-in `yellow`; default is safe.
+- **Degenerate floor (`_MIN_SKELETON_SHINGLES=8`) admits thin-but-real pages** (example.com=10).
+  Two unrelated 404/parking pages could clear it and match. Raising it requires enlarging the
+  10-shingle test fixtures and trades away small-real-page reuse — left as a documented tunable,
+  guarded for now by strict-mode quarantine.
+
 ## Guardrails that must not regress
 - Fail-closed everywhere: ABSTAIN→discover, never guess a selector across a similar-but-not-equal shape.
 - Never lose the provenance signal (`source`); never serve a `fingerprint`-tier atom under strict.
