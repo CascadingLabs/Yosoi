@@ -152,3 +152,49 @@ def test_atom_resolution_model_defaults() -> None:
     r = AtomResolution()
     assert r.fully_resolved
     assert r.to_discover == []
+
+
+# ── trust tiers / quarantine ────────────────────────────────────────────────────
+
+
+def test_strict_mode_quarantines_fingerprint(monkeypatch) -> None:
+    from yosoi.core.atom_read import allowed_sources
+
+    monkeypatch.setenv('YOSOI_ATOM_TRUST', 'strict')
+    allowed = allowed_sources()
+    assert allowed is not None
+    assert 'fingerprint' not in allowed
+    assert {'verified', 'llm', 'manual'} <= allowed
+
+
+def test_yellow_mode_lets_it_ride(monkeypatch) -> None:
+    from yosoi.core.atom_read import allowed_sources
+
+    monkeypatch.setenv('YOSOI_ATOM_TRUST', 'yellow')
+    assert allowed_sources() is None  # all tiers served
+
+
+def test_trust_mode_defaults_strict(monkeypatch) -> None:
+    from yosoi.core.atom_read import atom_trust_mode
+
+    monkeypatch.delenv('YOSOI_ATOM_TRUST', raising=False)
+    assert atom_trust_mode() == 'strict'
+
+
+def test_resolve_filters_quarantined_source() -> None:
+    store = AtomStore()
+    store.upsert(
+        FieldAtom(
+            page_shape=SHAPE,
+            region_role='.MjjYud',
+            field_name='url',
+            yosoi_type='url',
+            selector={'type': 'css', 'value': 'a::attr(href)'},
+            source='fingerprint',
+        )
+    )
+    strict = frozenset({'verified', 'llm', 'manual'})
+    # quarantined under strict → invisible → miss → would discover
+    assert resolve_via_atoms(SHAPE, [('url', 'url')], store, allowed=strict).misses == ['url']
+    # yellow (allowed=None) → served
+    assert resolve_via_atoms(SHAPE, [('url', 'url')], store, allowed=None).fully_resolved

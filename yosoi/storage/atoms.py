@@ -32,6 +32,15 @@ _SEP = '\x1f'
 # Default on-disk field-atom corpus (gitignored like the rest of .yosoi/).
 DEFAULT_STORE_PATH = '.yosoi/atoms.jsonl'
 
+# Provenance / trust tiers — HOW an atom's selector was obtained (never lost). Most-truthy first:
+#   'verified'    — LLM-discovered AND passed discrimination/verification on the real DOM.
+#   'llm'         — LLM-discovered on the actual page, not independently verified.
+#   'manual'      — hand-coded / pinned (yosoi_selector); human-asserted.
+#   'fingerprint' — reused via similarity/generality fingerprint match (NOT discovered on this
+#                   page) → lowest trust, DEFAULT-QUARANTINED. The fingerprint proposes; the
+#                   trust policy (see yosoi.core.atom_read) decides what is actually served.
+SOURCE_TRUST: dict[str, int] = {'verified': 3, 'manual': 2, 'llm': 2, 'fingerprint': 1}
+
 
 def _normalize_region(root_selector: str | None, contract_name: str) -> str:
     """The durable region identity: the field's root selector, or a name-scoped fallback.
@@ -60,6 +69,7 @@ class FieldAtom(BaseModel):
         field_name: The contract field this selector fills.
         yosoi_type: The field's semantic type (``url``/``title``/…), or None.
         selector: The field's primary selector entry (``{type, value}``), root-relative.
+        source: Provenance trust tier — how this selector was obtained (see ``SOURCE_TRUST``).
         domains_seen: Provenance — the literal domains this atom has been confirmed on.
         contracts: Provenance — the contract names that have minted/used this atom.
     """
@@ -69,6 +79,7 @@ class FieldAtom(BaseModel):
     field_name: str
     yosoi_type: str | None = None
     selector: dict[str, Any]
+    source: str = 'llm'
     domains_seen: list[str] = Field(default_factory=list)
     contracts: list[str] = Field(default_factory=list)
 
@@ -83,6 +94,7 @@ def derive_atoms(
     contract_name: str,
     domain: str | None,
     fields: list[tuple[str, dict[str, Any], str | None, str | None]],
+    source: str = 'llm',
 ) -> list[FieldAtom]:
     """Build the atoms a single (accepted) contract contributes on a page.
 
@@ -92,6 +104,8 @@ def derive_atoms(
         domain: The literal domain (provenance only), or None.
         fields: ``(field_name, primary_selector, root_selector, yosoi_type)`` per content
             field — ``primary_selector`` is the stored ``{type, value}`` dict.
+        source: Provenance trust tier for these selectors (see ``SOURCE_TRUST``). Gate-accepted
+            discovery passes ``'verified'``; default ``'llm'``.
 
     Returns:
         One :class:`FieldAtom` per field, region keyed by that field's root.
@@ -105,6 +119,7 @@ def derive_atoms(
                 field_name=field_name,
                 yosoi_type=yosoi_type,
                 selector=primary,
+                source=source,
                 domains_seen=[domain] if domain else [],
                 contracts=[contract_name],
             )
@@ -162,10 +177,14 @@ class AtomStore:
         if existing.selector != atom.selector:
             # Should not happen for a gate-accepted set; record, keep first-writer-wins.
             self.conflicts.append((atom.key, existing.selector, atom.selector))
+        # Trust is monotonic on merge: keep the most-truthy source seen (a later 'verified'
+        # upgrades an earlier 'fingerprint'; a 'fingerprint' never downgrades a 'verified').
+        best_source = max(existing.source, atom.source, key=lambda s: SOURCE_TRUST.get(s, 0))
         merged = existing.model_copy(
             update={
                 'domains_seen': sorted(set(existing.domains_seen) | set(atom.domains_seen)),
                 'contracts': sorted(set(existing.contracts) | set(atom.contracts)),
+                'source': best_source,
             }
         )
         self._atoms[atom.key] = merged

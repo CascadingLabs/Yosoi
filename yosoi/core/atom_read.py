@@ -32,6 +32,32 @@ def atom_reads_enabled() -> bool:
     return os.environ.get('YOSOI_ATOM_READS', '').strip().lower() in ('1', 'true', 'yes', 'on')
 
 
+# Provenance sources QUARANTINED by the strict/green default — never served unless opted in.
+_QUARANTINED_SOURCES = frozenset({'fingerprint'})
+
+
+def atom_trust_mode() -> str:
+    """Active trust mode (env ``YOSOI_ATOM_TRUST``): ``strict`` (default) | ``yellow``.
+
+    ``strict``/``green`` default-denies the risky, fingerprint-generalized atoms (quarantine).
+    ``yellow``/``ride`` is "let it ride" — serve every tier, including fingerprint reuse.
+    """
+    return os.environ.get('YOSOI_ATOM_TRUST', 'strict').strip().lower()
+
+
+def allowed_sources(mode: str | None = None) -> frozenset[str] | None:
+    """Which provenance sources the active trust mode will serve; ``None`` means all (yellow).
+
+    Strict/green serves everything EXCEPT the quarantined sources (default-deny the risky);
+    yellow/"let it ride" returns None (serve every tier).
+    """
+    from yosoi.storage.atoms import SOURCE_TRUST
+
+    if (mode or atom_trust_mode()) in ('yellow', 'ride', 'all'):
+        return None
+    return frozenset(s for s in SOURCE_TRUST if s not in _QUARANTINED_SOURCES)
+
+
 class AtomResolution(BaseModel):
     """Outcome of resolving a contract's fields against the atom index."""
 
@@ -54,16 +80,21 @@ def resolve_via_atoms(
     page_shape: str,
     requested: list[tuple[str, str | None]],
     store: AtomStore,
+    allowed: frozenset[str] | None = None,
 ) -> AtomResolution:
     """Resolve ``requested`` ``(field_name, yosoi_type)`` pairs against the atom index.
 
     Exact ``page_shape`` only; a field served only when exactly one region on this shape
-    holds it (fail closed on 0 and on >1).
+    holds it (fail closed on 0 and on >1). ``allowed`` restricts which provenance ``source``
+    tiers are eligible — a quarantined atom (e.g. ``fingerprint`` under strict mode) is
+    invisible, so its field misses and falls through to discovery. ``None`` allows all tiers.
     """
     by_field: dict[tuple[str, str | None], list[FieldAtom]] = {}
     for atom in store.all():
         if atom.page_shape != page_shape:
             continue
+        if allowed is not None and atom.source not in allowed:
+            continue  # quarantined source under the active trust mode → not eligible
         by_field.setdefault((atom.field_name, atom.yosoi_type), []).append(atom)
 
     res = AtomResolution()

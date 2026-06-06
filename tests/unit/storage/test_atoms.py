@@ -123,3 +123,31 @@ def test_jsonl_persistence_round_trip(tmp_path) -> None:
     assert len(reloaded) == 2
     keys = {a.key for a in reloaded.all()}
     assert keys == {a.key for a in store.all()}
+
+
+# ── provenance / trust tiers ───────────────────────────────────────────────────
+
+
+def test_source_defaults_to_llm() -> None:
+    a = derive_atoms(SHAPE, 'C', 'd.com', [('url', _primary('a::attr(href)'), '.r', 'url')])[0]
+    assert a.source == 'llm'
+
+
+def test_derive_atoms_source_param() -> None:
+    a = derive_atoms(SHAPE, 'C', 'd.com', [('url', _primary('a::attr(href)'), '.r', 'url')], source='verified')[0]
+    assert a.source == 'verified'
+
+
+def test_merge_upgrades_to_highest_trust_source() -> None:
+    fp = derive_atoms(SHAPE, 'C', 'd1.com', [('url', _primary('a::attr(href)'), '.r', 'url')], source='fingerprint')
+    ver = derive_atoms(SHAPE, 'C', 'd2.com', [('url', _primary('a::attr(href)'), '.r', 'url')], source='verified')
+    # fingerprint first, then verified → upgrades
+    s1 = AtomStore()
+    s1.upsert_all(fp)
+    s1.upsert_all(ver)
+    assert s1.get(fp[0].key).source == 'verified'
+    # verified first, then fingerprint → never downgrades
+    s2 = AtomStore()
+    s2.upsert_all(ver)
+    s2.upsert_all(fp)
+    assert s2.get(ver[0].key).source == 'verified'

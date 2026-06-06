@@ -90,7 +90,12 @@ def _try_atom_reads(
     shape, else None (caller falls back to discovery). Fail-closed: any error or partial
     resolution yields None, never a half-built selector set.
     """
-    from yosoi.core.atom_read import atom_reads_enabled, resolve_via_atoms, selector_map_from_atoms
+    from yosoi.core.atom_read import (
+        allowed_sources,
+        atom_reads_enabled,
+        resolve_via_atoms,
+        selector_map_from_atoms,
+    )
 
     if not atom_reads_enabled():
         return None
@@ -106,7 +111,7 @@ def _try_atom_reads(
         requested = [(name, fspec.yosoi_type) for name, fspec in spec.fields.items()]
         if not requested:
             return None
-        resolution = resolve_via_atoms(page_shape, requested, store)
+        resolution = resolve_via_atoms(page_shape, requested, store, allowed=allowed_sources())
         if not resolution.fully_resolved:
             return None
         selectors = selector_map_from_atoms(resolution.hits)

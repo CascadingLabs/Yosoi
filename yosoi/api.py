@@ -119,7 +119,8 @@ def _internalize_accepted(
                 root = coerce_selector_entry(slot.get('root'))
                 yosoi_type = _get_yosoi_type(cls, field_name) if cls else None
                 fields.append((field_name, primary.model_dump(), root.value if root else None, yosoi_type))
-            atoms = derive_atoms(page_shape, name, domain, fields)
+            # Gate-accepted on the real DOM → highest-truth provenance tier.
+            atoms = derive_atoms(page_shape, name, domain, fields, source='verified')
             new = store.upsert_all(atoms)
             minted += new
             reused += len(atoms) - new
