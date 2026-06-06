@@ -161,6 +161,11 @@ class _VoidCrawlFetcher(HTMLFetcher):
                 kwargs['locale'] = ident.locale
             if ident.timezone_id is not None and 'timezone_id' in fields:
                 kwargs['timezone_id'] = ident.timezone_id
+            if ident.geo is not None and 'geolocation' in fields:
+                # teleport-at-fetch: only when VoidCrawl's BrowserConfig exposes a geolocation
+                # field. FUTURE: if it never does, apply ident.geo post-launch via the tab's
+                # set_geolocation before the first navigate (Emulation.setGeolocationOverride).
+                kwargs['geolocation'] = {'latitude': ident.geo[0], 'longitude': ident.geo[1]}
             if ident.profile_dir is not None and 'extra_args' in fields:
                 extra = list(kwargs.get('extra_args', []))
                 extra.extend([f'--user-data-dir={ident.profile_dir}', '--profile-directory=Default'])

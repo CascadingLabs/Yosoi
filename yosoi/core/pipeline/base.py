@@ -29,6 +29,7 @@ from yosoi.core.configs import YosoiConfig
 from yosoi.core.discovery import DiscoveryOrchestrator, LLMConfig, MCPDiscoveryOrchestrator
 from yosoi.core.discovery.bus import DiscoveryBus
 from yosoi.core.fetcher import create_fetcher  # re-exported: tests patch yosoi.core.pipeline.base.create_fetcher
+from yosoi.core.fetcher.identity import BrowserIdentity
 from yosoi.core.pipeline.cache import PipelineCacheMixin
 from yosoi.core.pipeline.crawler import PipelineCrawlerMixin
 from yosoi.core.pipeline.discovery import PipelineDiscoveryMixin
@@ -112,6 +113,7 @@ class Pipeline(
         download_dir: str | None = None,
         max_download_bytes: int | None = None,
         keep_downloads: bool = True,
+        identity: BrowserIdentity | None = None,
     ):
         """Initialize the pipeline with LLM configuration.
 
@@ -142,6 +144,8 @@ class Pipeline(
             download_dir: Quarantine root for downloaded files. Defaults to ``.yosoi/downloads/``.
             max_download_bytes: Run-wide per-file size cap used when a ys.File() field sets no
                 ``max_bytes`` of its own. Falls back to a 25 MiB built-in default when unset.
+            identity: Optional opt-in BrowserIdentity (trusted profile / headful / geo teleport /
+                proxy / locale) forwarded to a browser fetcher; ignored by the simple fetcher.
             keep_downloads: Keep downloaded files after the run (default). Set False to purge
                 the content-addressed blobs at run end while retaining provenance in index.json.
 
@@ -153,6 +157,7 @@ class Pipeline(
         self._download_dir = download_dir
         self._max_download_bytes = max_download_bytes
         self._keep_downloads = keep_downloads
+        self._identity = identity  # opt-in browser identity (profile/headful/geo) for browser fetchers
         self._download_log: list[Any] = []
 
         if isinstance(llm_config, str):
@@ -264,12 +269,20 @@ class Pipeline(
         """
         try:
             kwargs: dict[str, Any] = {}
+            identity = getattr(self, '_identity', None)  # getattr: __new__-based test stubs omit it
             if fetcher_type in ('waterfall', 'headless', 'headful'):
                 if console is not None:
                     kwargs['console'] = console
                 kwargs['experimental_a3node'] = self._experimental_a3node
                 kwargs['allow_downloads'] = self._allow_downloads
                 kwargs['download_dir'] = self._download_dir
+                if identity is not None:  # opt-in profile/headful/geo (browser only)
+                    kwargs['identity'] = identity
+            elif fetcher_type == 'simple' and identity is not None:
+                self.console.print(
+                    '[warning]⚠ identity (profile/headful) is ignored by the simple fetcher — '
+                    'use fetcher_type=headless/headful[/warning]'
+                )
             return create_fetcher(fetcher_type, **kwargs)
         except ValueError:
             self.console.print(f'[danger]Invalid fetcher type: {fetcher_type}[/danger]')

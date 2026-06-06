@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Sequence
+from collections.abc import Callable, Mapping, Sequence
 
 from yosoi.core.configs import YosoiConfig, auto_config
 from yosoi.core.discovery import LLMConfig
+from yosoi.core.fetcher.identity import BrowserIdentity
 from yosoi.core.pipeline import ContentMap, Pipeline
 from yosoi.models.contract import Contract
 from yosoi.models.selectors import SelectorLevel
@@ -30,6 +31,7 @@ async def scrape(
     download_dir: str | None = None,
     max_download_bytes: int | None = None,
     keep_downloads: bool = True,
+    identities: Mapping[str, BrowserIdentity] | Callable[[str], BrowserIdentity | None] | None = None,
 ) -> list[ContentMap] | dict[str, list[ContentMap]] | dict[str, dict[str, list[ContentMap]]]:
     """Scrape one-or-many URLs with one-or-many contracts — the single blessed path.
 
@@ -47,6 +49,14 @@ async def scrape(
     across distinct contracts — the bus dedupes on ``field_signature`` (name + description +
     type, NOT the contract intent), so sharing it would force e.g. ``Ad.url == Organic.url``,
     the opposite of discrimination. Related contracts must learn to DIVERGE, not dedup.
+
+    ``identities`` is an OPT-IN, per-URL :class:`~yosoi.core.fetcher.identity.BrowserIdentity`
+    (a dict ``{url: identity}`` or a ``url -> identity | None`` callable). It is how you opt
+    into the *sensitive* choices a SERP scrape needs — a trusted Chromium ``profile_dir``,
+    ``headful``, a ``geo`` teleport, ``proxy``/``locale``/``timezone_id`` — PER URL, so e.g. a
+    google tab runs headful+profile while bing/brave tabs run plain headless, all concurrently.
+    Default ``None`` keeps today's behavior exactly. An identity needs a browser
+    ``fetcher_type`` (``headless``/``headful``); the ``simple`` fetcher ignores it (and warns).
 
     By default this API does not write files. Pass ``save_formats=('json',)`` for file output.
     ``ys.File()`` download fields need ``allow_downloads=True`` + a browser ``fetcher_type``;
@@ -66,6 +76,11 @@ async def scrape(
     contract_clss = [resolve_contract(c) if isinstance(c, str) else c for c in raw_contracts]
     multi_url = not isinstance(url, str)
     multi_contract = not isinstance(contract, (str, type))
+
+    def _identity_for(u: str) -> BrowserIdentity | None:
+        if identities is None:
+            return None
+        return identities(u) if callable(identities) else identities.get(u)
 
     write_lock = asyncio.Lock() if (multi_url or multi_contract) else None
     pairs = [(u, c) for u in urls for c in contract_clss]
@@ -87,6 +102,7 @@ async def scrape(
                 max_download_bytes=max_download_bytes,
                 keep_downloads=keep_downloads,
                 write_lock=write_lock,
+                identity=_identity_for(u),
             )
             for (u, c) in pairs
         )
@@ -120,11 +136,13 @@ async def _scrape_one(
     max_download_bytes: int | None = None,
     keep_downloads: bool = True,
     write_lock: asyncio.Lock | None = None,
+    identity: BrowserIdentity | None = None,
 ) -> list[ContentMap]:
     """One ``(url, contract)`` unit (returns ``list[record]``).
 
     ``write_lock`` is the shared per-call lock that :func:`scrape` threads through so
     concurrent units don't race on per-domain selector writes; ``None`` for a lone scrape.
+    ``identity`` is the opt-in per-URL :class:`BrowserIdentity` (profile/headful/geo).
     """
     contract_cls = resolve_contract(contract) if isinstance(contract, str) else contract
     llm_config = _resolve_model(model)
@@ -152,6 +170,7 @@ async def _scrape_one(
                 max_download_bytes=max_download_bytes,
                 keep_downloads=keep_downloads,
                 write_lock=write_lock,
+                identity=identity,
             ) as pipeline:
                 return [
                     item

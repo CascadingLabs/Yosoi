@@ -51,6 +51,36 @@ async def test_scrape_accepts_a_list_of_urls(monkeypatch):
     assert len(FakePipeline.instances) == 2
 
 
+async def test_scrape_threads_opt_in_identity_per_url(monkeypatch):
+    """identities={url: BrowserIdentity} is forwarded to that url's Pipeline (opt-in profile)."""
+    from yosoi.core.fetcher.identity import BrowserIdentity
+
+    FakePipeline.instances.clear()
+    monkeypatch.setattr(api, 'Pipeline', FakePipeline)
+
+    g = BrowserIdentity(id='google', headful=True, profile_dir='/tmp/prof')
+    result = await api.scrape(
+        ['https://google.test', 'https://bing.test'],
+        ApiContract,
+        model=ys.claude_sdk(),
+        fetcher_type='headless',
+        identities={'https://google.test': g},
+    )
+
+    assert set(result) == {'https://google.test', 'https://bing.test'}
+    by_url = {i.scrape_kwargs['url']: i for i in FakePipeline.instances}  # type: ignore[index]
+    assert by_url['https://google.test'].kwargs['identity'] is g  # google gets the trusted profile
+    assert by_url['https://bing.test'].kwargs['identity'] is None  # bing opted out -> plain
+
+
+async def test_scrape_no_identities_is_default(monkeypatch):
+    """Default (no identities) forwards identity=None — behavior unchanged."""
+    FakePipeline.instances.clear()
+    monkeypatch.setattr(api, 'Pipeline', FakePipeline)
+    await api.scrape('https://x.test', ApiContract, model=ys.claude_sdk())
+    assert FakePipeline.instances[0].kwargs['identity'] is None
+
+
 async def test_scrape_grid_urls_x_contracts(monkeypatch):
     """scrape([urls], [contracts]) returns {url: {contract_name: records}} — the full grid."""
     FakePipeline.instances.clear()
