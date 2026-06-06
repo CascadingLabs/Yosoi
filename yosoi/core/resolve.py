@@ -93,14 +93,14 @@ def _try_atom_reads(
     shape, else None (caller falls back to discovery). Fail-closed: any error or partial
     resolution yields None, never a half-built selector set.
     """
-    from yosoi.core.atom_read import (
-        allowed_sources,
-        atom_reads_enabled,
-        resolve_via_atoms,
-        selector_map_from_atoms,
-    )
+    from yosoi.core.atom_read import resolve_via_atoms, selector_map_from_atoms
+    from yosoi.policies import Policy
 
-    if not atom_reads_enabled():
+    # Resolve ONE policy here (the edge of the atom-read path), then derive every decision from it,
+    # so the gate and the trust-tier filter can't observe different env state. Threading a Policy in
+    # from the API edge (so this stops reading env at all) is phase 2 — see CAS-168.
+    policy = Policy.from_env()
+    if not policy.atom_reads:
         return None
     try:
         from yosoi.generalization.capture import observe_html
@@ -114,7 +114,7 @@ def _try_atom_reads(
         requested = [(name, fspec.yosoi_type) for name, fspec in spec.fields.items()]
         if not requested:
             return None
-        resolution = resolve_via_atoms(page_shape, requested, store, allowed=allowed_sources())
+        resolution = resolve_via_atoms(page_shape, requested, store, allowed=policy.allowed_sources)
         if not resolution.fully_resolved:
             return None
         selectors = selector_map_from_atoms(resolution.hits)

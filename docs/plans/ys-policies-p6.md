@@ -47,7 +47,8 @@ class Policy(BaseModel, frozen=True):
 defaults  <  env  <  session  <  contract  <  call-site override
 ```
 
-Each layer is a *partial* override; `Policy.resolve(*layers)` merges into one **effective** Policy.
+Each layer is a *partial* override; `Policy.cascade(*layers)` merges into one **effective** Policy. (Named `cascade`, not `resolve`, to
+avoid colliding with the pure replay `resolve()`.)
 This is the generalization the pattern buys: **one resolution point, one precedence order, one place
 to test.** A new knob is a new field — never a new env-read site, never a new scattered `if`.
 
@@ -91,7 +92,7 @@ reproducible and unit-testable: pass a `Policy`, assert the path taken.
   knobs — rather than landing as one big abstraction.
 
 ## Acceptance sketch (for the ticket)
-1. `yosoi/policies.py`: frozen `Policy` + `FingerprintPolicy`, `Policy.resolve(*layers)` cascade.
+1. `yosoi/policies.py`: frozen `Policy` + `FingerprintPolicy`, `Policy.cascade(*layers)`.
 2. Replace `atom_reads_enabled` / `atom_trust_mode` / `allowed_sources` env-reads with `Policy`
    fields; thread `policy` from `api.scrape` → `resolve` → `_try_atom_reads`. `resolve()` stays pure.
 3. Per-contract override surface (Contract carries an optional `Policy` partial) + per-call `policy=`.
