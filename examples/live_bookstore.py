@@ -1,64 +1,43 @@
-"""LIVE scrape — discover selectors ONCE, replay across the catalogue. No mocks.
+"""Read real web pages and pull out the facts you want — in a few plain lines.
 
-Hits books.toscrape.com for real, extracts structured records with a 4-line contract,
-and shows the discover-once-replay-forever cost model live: the first page pays one LLM
-discovery; every other page is a pure cached replay with zero LLM calls.
+You describe a "book" in words. You list some real pages. Yosoi reads them and hands
+you clean data. It figures out HOW to read a page once (with AI), then remembers — so
+the same few lines work for five pages or five million.
 
+Run it:
     uv run python examples/live_bookstore.py
 """
 
-from __future__ import annotations
-
 import asyncio
-import time
 
 import yosoi as ys
 
 
+# 1) Describe what you want, in plain English.
 class Book(ys.Contract):
-    """A book product page on books.toscrape.com."""
+    """A book for sale."""
 
-    title: str = ys.Title(description="the book's title")
-    price: str = ys.Field(description='the price, e.g. £51.77')
-    availability: str = ys.Field(description='the in-stock availability text')
+    title: str = ys.Title(description='the name of the book')
+    price: str = ys.Field(description='how much it costs, like £51.77')
+    in_stock: str = ys.Field(description='whether it is in stock')
 
 
-_BASE = 'https://books.toscrape.com/catalogue/'
-_BOOKS = [
-    'a-light-in-the-attic_1000',
-    'tipping-the-velvet_999',
-    'soumission_998',
-    'sharp-objects_997',
-    'sapiens-a-brief-history-of-humankind_996',
-    'the-requiem-red_995',
-    'the-black-maria_991',
-    'starving-hearts-triangular-trade-trilogy-1_990',
-    'shakespeares-sonnets_989',
-    'set-me-free_988',
-    'scott-pilgrims-precious-little-life-scott-pilgrim-1_987',
-    'rip-it-up-and-start-again_986',
+# 2) List some real web pages.
+pages = [
+    'https://books.toscrape.com/catalogue/a-light-in-the-attic_1000/index.html',
+    'https://books.toscrape.com/catalogue/tipping-the-velvet_999/index.html',
+    'https://books.toscrape.com/catalogue/soumission_998/index.html',
+    'https://books.toscrape.com/catalogue/sharp-objects_997/index.html',
+    'https://books.toscrape.com/catalogue/sapiens-a-brief-history-of-humankind_996/index.html',
 ]
-URLS = [f'{_BASE}{slug}/index.html' for slug in _BOOKS]
 
 
-async def main() -> None:
-    model = ys.claude_sdk()
-    t = time.time()
-    await ys.scrape(URLS[0], Book, model=model)  # cold: one LLM discovery, caches selectors
-    cold = time.time() - t
-
-    t = time.time()
-    results = await ys.scrape(URLS[1:], Book, model=model)  # warm: pure cached replay, no LLM
-    warm, n = time.time() - t, len(URLS) - 1
-
-    print(f'\n  {"TITLE":<46}{"PRICE":>9}  STOCK')
-    for url in URLS[1:]:
-        b = (results[url] or [{}])[0]
-        print(f'  {b.get("title", "?")[:44]:<46}{b.get("price", "?"):>9}  {b.get("availability", "?")}')
-    print(f'\n  cold start  (1 page, LLM discovery): {cold:5.1f}s')
-    print(f'  warm replay ({n} pages, cached)    : {warm:5.1f}s  →  {warm / n * 1000:.0f} ms/page, ZERO LLM calls')
-    print(f'  discover once · replay forever — {n} live pages off a single discovery.')
+# 3) Ask Yosoi to read them, then print what it found.
+async def main():
+    books = await ys.scrape(pages, Book, model=ys.claude_sdk())
+    for page in pages:
+        book = books[page][0]
+        print(f'{book["title"]} — {book["price"]} — {book["in_stock"]}')
 
 
-if __name__ == '__main__':
-    asyncio.run(main())
+asyncio.run(main())
