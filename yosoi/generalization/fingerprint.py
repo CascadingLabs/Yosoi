@@ -314,6 +314,86 @@ def skeleton_jaccard(a_html: str, b_html: str) -> float:
     return len(a & b) / len(union) if union else 1.0
 
 
+# ---------------------------------------------------------------------------
+# L2 semantic layer (P5) — landmark spine + heading outline + schema.org types (static)
+# ---------------------------------------------------------------------------
+
+_LANDMARK_TAGS: tuple[str, ...] = ('header', 'nav', 'main', 'aside', 'footer', 'section', 'article', 'form')
+SEMANTIC_SIMILARITY_THRESHOLD = 0.5
+
+
+def _count_band(n: int) -> str:
+    """Coarse count band so heading counts don't churn the feature on small drift."""
+    return 'lo' if n <= 2 else ('mid' if n <= 6 else 'hi')
+
+
+def _parse_ld_types(blob: str) -> set[str]:
+    """Parse one JSON-LD blob into its schema.org ``@type`` set; ``{}`` on bad JSON."""
+    try:
+        return _ld_types(json.loads(blob))
+    except (ValueError, TypeError):
+        return set()
+
+
+def _ld_types(data: Any) -> set[str]:
+    """Recursively collect schema.org ``@type`` strings from parsed JSON-LD."""
+    out: set[str] = set()
+    if isinstance(data, dict):
+        t = data.get('@type')
+        if isinstance(t, str):
+            out.add(t)
+        elif isinstance(t, list):
+            out.update(x for x in t if isinstance(x, str))
+        for v in data.values():
+            out |= _ld_types(v)
+    elif isinstance(data, list):
+        for item in data:
+            out |= _ld_types(item)
+    return out
+
+
+def page_semantics(html: str) -> frozenset[str]:
+    """L2 semantic feature set (static-derivable): landmarks + roles + heading shape + schema types.
+
+    These are properties of the authored template's *meaning* — a screen-reader skeleton plus
+    structured-data contract — which personalization is contractually forbidden from breaking,
+    so they survive the per-ticker module churn that drags the deep skeleton down. Compared by
+    Jaccard alongside the structural skeleton in the conjunctive matcher.
+    """
+    from parsel import Selector
+
+    sel = Selector(text=html)
+    feats: set[str] = set()
+    for tag in _LANDMARK_TAGS:
+        if sel.css(tag):
+            feats.add(f'lm:{tag}')
+    for role in sel.css('[role]::attr(role)').getall():
+        r = role.strip().lower()
+        if r:
+            feats.add(f'role:{r}')
+    for lvl in range(1, 7):
+        n = len(sel.css(f'h{lvl}'))
+        if n:
+            feats.add(f'h{lvl}:{_count_band(n)}')
+    for blob in sel.css('script[type="application/ld+json"]::text').getall():
+        feats.update(f'schema:{t}' for t in _parse_ld_types(blob))
+    for it in sel.css('[itemtype]::attr(itemtype)').getall():
+        seg = it.rstrip('/').rsplit('/', 1)[-1].strip()
+        if seg:
+            feats.add(f'schema:{seg}')
+    return frozenset(feats)
+
+
+def _jaccard(a: frozenset[str], b: frozenset[str]) -> float:
+    union = a | b
+    return len(a & b) / len(union) if union else 1.0
+
+
+def semantics_jaccard(a_html: str, b_html: str) -> float:
+    """Jaccard similarity of two pages' L2 semantic feature sets, in ``[0, 1]``."""
+    return _jaccard(page_semantics(a_html), page_semantics(b_html))
+
+
 def same_template(a_html: str, b_html: str, threshold: float = SKELETON_SIMILARITY_THRESHOLD) -> bool:
     """Whether two pages are the same template by skeleton Jaccard ≥ ``threshold``.
 
@@ -322,6 +402,43 @@ def same_template(a_html: str, b_html: str, threshold: float = SKELETON_SIMILARI
     proposes; the trust policy decides.
     """
     return skeleton_jaccard(a_html, b_html) >= threshold
+
+
+class PageSimilarity(BaseModel):
+    """Multi-signal similarity verdict between two pages (P5)."""
+
+    skeleton: float  # L1 structural skeleton Jaccard
+    semantic: float  # L2 landmark / heading / schema Jaccard
+    same_shape: bool  # conjunctive verdict — both layers agree
+
+
+def page_similarity(
+    a_html: str,
+    b_html: str,
+    *,
+    skeleton_threshold: float = SKELETON_SIMILARITY_THRESHOLD,
+    semantic_threshold: float = SEMANTIC_SIMILARITY_THRESHOLD,
+) -> PageSimilarity:
+    """Compute the L1+L2 similarity and the conjunctive same-shape verdict.
+
+    CONJUNCTIVE / fail-closed: two pages are the same shape only if the structural skeleton
+    AND the semantic layer BOTH clear their thresholds. A single layer can REJECT but never
+    force a merge — so a coarse layer (on real Yahoo, L2 rates a *different* template ~0.9)
+    cannot merge templates the skeleton (~0.4) rejects. Measured live: same-ticker and
+    cross-locale pages pass both; a different template (markets) is vetoed by the skeleton.
+    """
+    sk = skeleton_jaccard(a_html, b_html)
+    se = semantics_jaccard(a_html, b_html)
+    return PageSimilarity(skeleton=sk, semantic=se, same_shape=(sk >= skeleton_threshold and se >= semantic_threshold))
+
+
+def same_shape(a_html: str, b_html: str) -> bool:
+    """Conjunctive, fail-closed same-shape verdict (L1 skeleton AND L2 semantic agree).
+
+    A PROPOSAL only — a True mints a ``fingerprint``-sourced atom that the strict trust policy
+    quarantines by default. The fingerprint proposes; the trust policy decides what is served.
+    """
+    return page_similarity(a_html, b_html).same_shape
 
 
 # ---------------------------------------------------------------------------

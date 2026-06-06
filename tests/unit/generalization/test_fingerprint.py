@@ -296,3 +296,37 @@ def test_skeleton_fp_prefix_and_degenerate() -> None:
 
     assert page_skeleton_fp(_listing(10)).startswith('t1:')
     assert page_skeleton_fp('<html><body></body></html>') == 't1:degenerate'
+
+
+# ── L2 semantic layer + conjunctive same_shape (P5) ─────────────────────────────
+
+
+def test_semantics_extracts_landmarks_and_schema() -> None:
+    from yosoi.generalization.fingerprint import page_semantics
+
+    html = (
+        '<html><body><header></header><nav></nav><main><h1>x</h1></main><footer></footer>'
+        '<script type="application/ld+json">{"@type": "FinancialProduct"}</script></body></html>'
+    )
+    feats = page_semantics(html)
+    assert 'lm:header' in feats
+    assert 'lm:main' in feats
+    assert 'schema:FinancialProduct' in feats
+
+
+def test_same_shape_conjunctive_true_for_same_template() -> None:
+    from yosoi.generalization.fingerprint import page_similarity, same_shape
+
+    sim = page_similarity(_listing(5), _listing(40))
+    assert sim.same_shape  # both layers agree
+    assert same_shape(_listing(5), _listing(40))
+
+
+def test_same_shape_rejects_different_template_even_if_one_layer_high() -> None:
+    from yosoi.generalization.fingerprint import page_similarity, same_shape
+
+    sim = page_similarity(_listing(10), _ARTICLE)
+    # the structural skeleton vetoes the merge regardless of the semantic layer (fail-closed)
+    assert sim.skeleton < 0.5
+    assert not sim.same_shape
+    assert not same_shape(_listing(10), _ARTICLE)
