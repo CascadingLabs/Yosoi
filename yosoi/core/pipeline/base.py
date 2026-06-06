@@ -114,6 +114,7 @@ class Pipeline(
         max_download_bytes: int | None = None,
         keep_downloads: bool = True,
         identity: BrowserIdentity | None = None,
+        console: Console | None = None,
     ):
         """Initialize the pipeline with LLM configuration.
 
@@ -146,6 +147,8 @@ class Pipeline(
                 ``max_bytes`` of its own. Falls back to a 25 MiB built-in default when unset.
             identity: Optional opt-in BrowserIdentity (trusted profile / headful / geo teleport /
                 proxy / locale) forwarded to a browser fetcher; ignored by the simple fetcher.
+            console: Optional pre-built Rich Console to use (e.g. the CLI's themed stderr
+                console for ``--json`` runs); a default themed console is built when omitted.
             keep_downloads: Keep downloaded files after the run (default). Set False to purge
                 the content-addressed blobs at run end while retaining provenance in index.json.
 
@@ -200,7 +203,9 @@ class Pipeline(
         )
         self.contract = contract
         self._contract_sig = contract_signature(contract)
-        self.console = Console(theme=self.custom_theme, quiet=quiet)
+        # Honor a caller-provided console (the CLI passes a themed stderr Console for
+        # --json runs); otherwise build the default themed one.
+        self.console = console if console is not None else Console(theme=self.custom_theme, quiet=quiet)
         from yosoi.core.cleaning import HTMLCleaner
 
         self.cleaner = HTMLCleaner(console=self.console)
