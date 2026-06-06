@@ -87,6 +87,20 @@ precision 126/128) and surfaced two concrete tuning candidates to fold into the 
   10-shingle test fixtures and trades away small-real-page reuse — left as a documented tunable,
   guarded for now by strict-mode quarantine.
 
+## FU-3 — bus dedup key should carry contract intent (latent, pre-existing)
+Surfaced by the v3-signature review. `field_signature` (the `DiscoveryBus` dedup key) carries
+`(name, description, type)` but **no contract name/doc**, and the bus is a process-wide singleton
+scoped only by `domain` (`bus.py` key = `domain:field_sig`). So the per-field `description` is
+currently the ONLY thing keeping `Ad.url` and `Organic.url` in separate in-flight discovery slots on
+a shared domain — a stochastic separator (the very "no teeth" property v3 acknowledged). Two
+same-shape contracts with similar field prose could silently merge on the bus; the discrimination
+gate is a post-hoc reject, not a pre-discovery split, so it can't un-merge a slot already served.
+**Fix direction:** thread contract identity (the v3 `contract_signature`, or name+doc) into the bus
+key, *then* drop description from `field_signature` so both identity paths separate on a deterministic
+basis. Regression: two `{url,title}` contracts, identical field descriptions, different docstrings,
+concurrent on one domain → must NOT share a bus slot; gate stays green. (Adjacent to the
+ledger-concurrency item.) This is why v3 deliberately left `field_signature` untouched.
+
 ## Guardrails that must not regress
 - Fail-closed everywhere: ABSTAIN→discover, never guess a selector across a similar-but-not-equal shape.
 - Never lose the provenance signal (`source`); never serve a `fingerprint`-tier atom under strict.

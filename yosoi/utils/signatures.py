@@ -69,7 +69,11 @@ def contract_signature(contract: type[Contract]) -> str:
     per-field ``(name, yosoi_type)`` tokens. Per-field ``description`` is DELIBERATELY EXCLUDED
     (``v3``): field prose is advisory/stochastic and has no teeth — rewording a description must
     not bust the selector cache, and regions are separated by the discrimination gate, not prose.
-    This mirrors :meth:`ContractSpec.fingerprint`.
+    This matches :meth:`ContractSpec.fingerprint`'s per-field-description EXCLUSION specifically —
+    not its full identity. The two functions key DIFFERENT caches (this one → the on-disk
+    ``LessonStore``; ``fingerprint`` → the in-memory selector cache) and otherwise differ
+    (``fingerprint`` also folds ``python_type``/``selector``/etc.), so they are not interchangeable;
+    only the "description has no teeth" policy is shared.
 
     The class docstring + name remain the load-bearing intent disambiguator: two contracts with
     identical fields but different NL intent (``AdLink`` vs ``OrganicLink``, both ``{url, title}``)

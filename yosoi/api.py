@@ -170,10 +170,14 @@ async def scrape(
       * ``scrape([u1, u2], [A, B])``   -> ``{url: {contract_name: [records]}}``
 
     Multiple data contracts for the SAME page (an ad-result vs an organic-result block)
-    discover concurrently and do not block one another. NOTE: no ``DiscoveryBus`` is shared
-    across distinct contracts — the bus dedupes on ``field_signature`` (name + description +
-    type, NOT the contract intent), so sharing it would force e.g. ``Ad.url == Organic.url``,
-    the opposite of discrimination. Related contracts must learn to DIVERGE, not dedup.
+    discover concurrently and do not block one another. NOTE: the ``DiscoveryBus`` is a
+    process-wide singleton scoped only by ``domain`` and dedupes on ``field_signature``
+    (name + description + type — NO contract name/doc). So today the per-field ``description``
+    token is the ONLY thing keeping ``Ad.url`` and ``Organic.url`` in separate in-flight slots on a
+    shared domain — a fragile, stochastic separator (the bus has no region/intent concept, and the
+    discrimination gate is a post-hoc reject, not a pre-discovery split). Threading contract identity
+    into the bus key is a tracked follow-up (FU-3); until then, related same-shape contracts rely on
+    divergent field descriptions to avoid bus conflation.
 
     ``fetcher_type`` is a scalar OR a per-URL ``{url: tier}`` map / ``url -> tier`` callable, so
     different engines get different tiers in ONE concurrent call (e.g. ``google: 'headful'``,
