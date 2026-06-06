@@ -89,6 +89,14 @@ def resolve_via_atoms(
     tiers are eligible — a quarantined atom (e.g. ``fingerprint`` under strict mode) is
     invisible, so its field misses and falls through to discovery. ``None`` allows all tiers.
     """
+    from yosoi.generalization.fingerprint import is_degenerate_shape
+
+    res = AtomResolution()
+    if is_degenerate_shape(page_shape):
+        # a too-thin page collapses to a shared degenerate bucket — never reuse across it
+        res.misses.extend(name for name, _ in requested)
+        return res
+
     by_field: dict[tuple[str, str | None], list[FieldAtom]] = {}
     for atom in store.all():
         if atom.page_shape != page_shape:
@@ -97,7 +105,6 @@ def resolve_via_atoms(
             continue  # quarantined source under the active trust mode → not eligible
         by_field.setdefault((atom.field_name, atom.yosoi_type), []).append(atom)
 
-    res = AtomResolution()
     for field_name, yosoi_type in requested:
         candidates = by_field.get((field_name, yosoi_type), [])
         if len(candidates) == 1:

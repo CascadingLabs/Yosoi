@@ -225,6 +225,17 @@ def page_shape_fp(obs: PageObservation) -> str:
     return f'{SHAPE_SCHEME_VERSION}:{digest}'
 
 
+def is_degenerate_shape(shape: str) -> bool:
+    """True when a ``page_shape``/``page_skeleton`` fingerprint is the degenerate sentinel.
+
+    Thin/blank/unrendered pages all collapse to ``"<scheme>:degenerate"``. Atoms must never be
+    minted or served under it — otherwise two unrelated thin pages share one bucket and one
+    serves the other's selectors (silent cross-page corruption). Callers (the atom read/write
+    paths) gate on this.
+    """
+    return shape.endswith(':degenerate')
+
+
 # ---------------------------------------------------------------------------
 # Template-skeleton fingerprint (P5 / WF1) — content-volume-invariant structural identity
 # ---------------------------------------------------------------------------

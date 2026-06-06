@@ -74,7 +74,11 @@ def test_flag_helper(monkeypatch) -> None:
 
 # ── resolve() integration ──────────────────────────────────────────────────────
 
-_HTML = '<body class="q"><div id="hdr"><h1>AAPL</h1><span class="px">171.52</span></div></body>'
+# Non-degenerate (>= MIN_TAGS tags) so it doesn't collapse to the shared degenerate bucket.
+_HTML = (
+    '<body class="q"><header><nav><a>home</a></nav></header>'
+    '<div id="hdr"><h1>AAPL</h1><span class="px">171.52</span></div><footer>x</footer></body>'
+)
 
 
 def _quote_spec() -> ContractSpec:
@@ -198,3 +202,20 @@ def test_resolve_filters_quarantined_source() -> None:
     assert resolve_via_atoms(SHAPE, [('url', 'url')], store, allowed=strict).misses == ['url']
     # yellow (allowed=None) → served
     assert resolve_via_atoms(SHAPE, [('url', 'url')], store, allowed=None).fully_resolved
+
+
+def test_degenerate_shape_never_serves() -> None:
+    # two unrelated thin pages share the 's1:degenerate' bucket — never reuse across it
+    store = AtomStore()
+    store.upsert(
+        FieldAtom(
+            page_shape='s1:degenerate',
+            region_role='body',
+            field_name='title',
+            yosoi_type='text',
+            selector={'type': 'css', 'value': 'h1::text'},
+        )
+    )
+    res = resolve_via_atoms('s1:degenerate', [('title', 'text')], store)
+    assert res.misses == ['title']
+    assert not res.fully_resolved

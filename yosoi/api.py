@@ -96,7 +96,7 @@ def _internalize_accepted(
     try:
         from yosoi.core.discovery.discrimination import _STRUCTURAL
         from yosoi.generalization.capture import observe_html
-        from yosoi.generalization.fingerprint import page_shape_fp
+        from yosoi.generalization.fingerprint import is_degenerate_shape, page_shape_fp
         from yosoi.models.selectors import coerce_selector_entry
         from yosoi.storage.atoms import derive_atoms
         from yosoi.utils.signatures import _get_yosoi_type
@@ -105,6 +105,8 @@ def _internalize_accepted(
         if not html:
             return
         page_shape = page_shape_fp(observe_html(url, html, row_selector=''))
+        if is_degenerate_shape(page_shape):
+            return  # never internalize on a too-thin page — its bucket is shared by all thin pages
         domain = obs.normalize_user_id(url) or url
 
         minted = reused = 0
