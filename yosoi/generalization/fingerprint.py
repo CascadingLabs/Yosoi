@@ -35,6 +35,7 @@ import hashlib
 import json
 import math
 import re
+from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, Field
@@ -419,10 +420,29 @@ def semantics_jaccard(a_html: str, b_html: str) -> float:
     return _jaccard(page_semantics(a_html), page_semantics(b_html))
 
 
+# An optional layer (identity, ax) is only a trustworthy veto when it carries enough features on
+# BOTH sides; below this it ABSTAINS (None) rather than returning a vacuous Jaccard (two pages each
+# carrying a single shared global key would otherwise score 1.0 and rubber-stamp a match).
+_MIN_OPTIONAL_LAYER_FEATURES = 3
+
 # L1 identity layer — the "expensive to randomize" signals (anti-bot lens). Compared CONJUNCTIVELY
 # but only when BOTH pages carry it (the waterfall "compare on the common layer" rule), so pages
 # with no stable identity attrs are neither vetoed nor vacuously merged.
+# PROVISIONAL threshold: unlike skeleton/semantic (tuned on the live battery), this layer was inert
+# on the static corpus, so 0.40 is a placeholder pending an L2/rendered live run.
 IDENTITY_SIMILARITY_THRESHOLD = 0.40
+
+
+def _optional_layer_jaccard(a: frozenset[str], b: frozenset[str]) -> float | None:
+    """Jaccard for an OPTIONAL fingerprint layer, or ``None`` when it should abstain.
+
+    Returns ``None`` (layer "not carried" → never decides the match) when either side carries
+    fewer than :data:`_MIN_OPTIONAL_LAYER_FEATURES` features — so a thin/empty optional layer can
+    neither vacuously pass nor falsely veto. Only a substantively-carried-on-both-sides layer votes.
+    """
+    if len(a) < _MIN_OPTIONAL_LAYER_FEATURES or len(b) < _MIN_OPTIONAL_LAYER_FEATURES:
+        return None
+    return _jaccard(a, b)
 
 
 def page_identity(html: str) -> frozenset[str]:
@@ -460,6 +480,7 @@ def identity_jaccard(a_html: str, b_html: str) -> float:
 
 # L2 rendered layer — the accessibility spine of the *rendered* page (browser tiers only). Present
 # only when a fetch carried an AX snapshot; compared present-in-both like the identity layer.
+# PROVISIONAL threshold (placeholder): not yet exercised on real rendered data — tune on an L2 run.
 AX_SIMILARITY_THRESHOLD = 0.50
 
 
@@ -472,8 +493,8 @@ def ax_spine_features(ax_snapshot: Any) -> frozenset[str]:
     ``core.fetcher`` import. Empty/None snapshot → empty set → the layer is "not carried".
     """
     targets = getattr(ax_snapshot, 'targets', None)
-    if not targets:
-        return frozenset()
+    if not targets or isinstance(targets, (str, bytes)) or not isinstance(targets, Iterable):
+        return frozenset()  # absent, or a malformed (non-iterable) snapshot → layer not carried
     counts: dict[str, int] = {}
     for t in targets:
         role = (getattr(t, 'role', '') or '').strip().lower()
@@ -510,12 +531,16 @@ class PageFingerprint(BaseModel):
     ``fingerprint``-sourced reuse, which the strict trust policy quarantines by default — the
     fingerprint proposes, the trust policy decides what is served.
 
-    **Waterfall-aware:** a fingerprint records WHICH layers it carries. Layers computable from
-    static HTML (skeleton, semantic, identity) are always present; richer layers (rendered AX
-    spine, network endpoint set — L2/L3) arrive only from a browser/CDP fetch tier. Matching
-    compares only the layers PRESENT IN BOTH (an absent layer neither vetoes nor vacuously
-    merges), so a static-vs-static compare uses L1, and a CDP-vs-CDP compare adds the high-trust
-    behavioral layer — never a cross-layer false merge.
+    **Waterfall-aware:** a fingerprint carries layers from whatever fetch tier produced it — static
+    HTML gives skeleton/semantic/identity; a browser tier adds the rendered AX spine (L2); a CDP
+    tier will add the network layer (L3). Matching compares only the layers SUBSTANTIVELY PRESENT
+    IN BOTH (a too-thin or absent optional layer abstains — neither vetoes nor vacuously merges).
+
+    KNOWN LIMITATION (not yet enforced): a cross-tier compare (rich seed vs thin replay) silently
+    falls back to the common layers, so the seed's high-trust layers go unchecked. The intended
+    invariant — "a replay thinner than the seed must ABSTAIN, not match on absence" — needs explicit
+    per-fingerprint carriage tracking and lands with the read-path wiring (see waterfall-fingerprint
+    plan). Today this is harmless because nothing compares cross-tier on the read path yet.
     """
 
     skeleton: frozenset[str]  # L1 structural template (depth-D node-symbol paths)
@@ -567,10 +592,10 @@ class PageFingerprint(BaseModel):
         """
         sk = _jaccard(self.skeleton, other.skeleton)
         se = _jaccard(self.semantic, other.semantic)
-        # Optional high-trust layers: each is a veto, but only when BOTH pages carry it; otherwise
-        # the layer isn't carried (None) and never decides the match either way.
-        idn = _jaccard(self.identity, other.identity) if (self.identity and other.identity) else None
-        ax = _jaccard(self.ax_spine, other.ax_spine) if (self.ax_spine and other.ax_spine) else None
+        # Optional high-trust layers: each is a veto, but only when BOTH pages carry it SUBSTANTIVELY
+        # (>= _MIN_OPTIONAL_LAYER_FEATURES); otherwise it abstains (None) and never decides the match.
+        idn = _optional_layer_jaccard(self.identity, other.identity)
+        ax = _optional_layer_jaccard(self.ax_spine, other.ax_spine)
         same = (
             not self.degenerate
             and not other.degenerate
