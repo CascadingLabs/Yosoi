@@ -58,14 +58,51 @@ Identity is **not one hash**. It is three things computed from one capture:
 
 ### Layer table
 
+> **Scope note (per owner): L0 is NOT wired yet — out of scope.** Do not build the
+> fingerprint on an L0 layer. The working **floor is L1** (the static template skeleton),
+> which is fully computable from HTML we already fetch; L2/L3 are the escalations.
+
 | Layer | Signals | Source | Tier available | Adversary-cost |
 |---|---|---|---|---|
-| **L0 — coarse** | route-template (URL), CDN/antibot **vendor** (header-tier), tag-cosine class | headers + HTML | all (even simple) | vendor high / tags low |
-| **L1 — template skeleton (static AST)** | anti-unified path-shingle set (`{+}` collapsed), **identity-attr** presence signature, landmark elements + heading outline + **JSON-LD `@type` set** | raw HTML (parsel) | all | high |
+| ~~**L0 — coarse**~~ | _route-template / CDN-vendor coarse bucket_ | _—_ | **NOT WIRED — out of scope** | _deferred_ |
+| **L1 — template skeleton (static AST) — the floor** | anti-unified path-shingle set (`{+}` collapsed), **identity-attr** presence signature, landmark elements + heading outline + **JSON-LD `@type` set** | raw HTML (parsel) | all | high |
 | **L2 — rendered / semantic** | computed **AX landmark spine** + role multiset, rendered-DOM skeleton | `ax_snapshot` / browser tier | headless/headful | high |
 | **L3 — behavioral** | **XHR/fetch endpoint-path skeleton**, response-header-name set, `Set-Cookie` name set, cookie/session class | CDP network capture | headful (CDP) | very high |
 
-**Matching:** bucket on L0+L1 → LSH candidate search → **verify on the highest common layer** (conjunctive: identity-attr agreement AND skeleton containment ≥ τ AND anchor-landmark set match) → exactly one surviving bucket reuses; 0 or >1 → ABSTAIN → discover. Quarantine (no write, no read) when `challenged` or the fingerprint flips under a bot signal.
+**Matching:** bucket on L1 → LSH candidate search → **verify on the highest common layer** (conjunctive: identity-attr agreement AND skeleton containment ≥ τ AND anchor-landmark set match) → exactly one surviving bucket reuses; 0 or >1 → ABSTAIN → discover. Quarantine (no write, no read) when `challenged` or the fingerprint flips under a bot signal.
+
+## Provenance & trust tiers — never lose the signal
+
+Every selector / atom — and the contract or schema it belongs to — MUST record **how it was
+obtained**. Provenance is itself an identity signal and must never be discarded, because a
+fingerprint-matched selector is inherently *less truthy* than one an LLM discovered on the
+actual page. Source tiers, most-truthy first:
+
+- **`verified`** — LLM-discovered AND passed verification / discrimination on the real DOM. Highest trust.
+- **`llm`** — discovered by an LLM on the actual page, not yet independently verified.
+- **`manual`** — hand-coded / pinned (`yosoi_selector` override). Human-asserted; its own tier.
+- **`fingerprint`** — reused via similarity / generality fingerprint match. It was **NOT** discovered
+  on this page — it was inferred from a same-shape sibling. Lowest trust by construction; carries the
+  seed atom id + the layers/confidence that authorized the match (a provenance chain).
+
+**Acceptance is an opt-in trust mode — default-deny the risky (quarantine):**
+
+- **strict / green (default):** serve only `verified` (and `manual`) on an exact, high-confidence
+  match. Anything obtained by fingerprint-generalization is **QUARANTINED** — stored, never served.
+- **opt-in escalation:** the operator grants specific domains/contracts permission to accept a lower
+  tier — *more permission = more risk*, scoped, explicit (never global-by-default).
+- **yellow / "let it ride":** accept provisional `fingerprint` atoms, flagged, recorded as a
+  back-fillable labelled decision for audit/training. Risk accepted on purpose.
+- A **quarantine** store holds low-trust atoms until their tier is opted-in; the default policy
+  accepts none of it.
+
+This rides the cas-85 trust substrate — `generalization/trust.py` (`Trust`, `Outcome`,
+`DecisionRecord`, `build_decision` — "every reuse becomes an auditable, labelled training row") +
+the ALLOW/REFUSE/ABSTAIN recommender. Division of labour: **the fingerprint PROPOSES; the trust
+policy DECIDES what is served.** `FieldAtom` gains `source` + `trust` (+ provenance chain on
+fingerprint reuse); the read path (`atom_read.py`) consults the active trust mode before serving.
+This is cross-cutting — it retrofits the P2 `FieldAtom` model, not only P5 — and is the governance
+that makes similarity-based reuse safe to ship.
 
 ## Staging — falsifiable experiment first
 
