@@ -37,6 +37,33 @@ async def test_save_selectors_formats_with_primary_fallback_tertiary(storage):
     assert 'tertiary' not in loaded['title']  # omitted when not provided
 
 
+async def test_save_selectors_round_trips_field_root(storage):
+    selectors = {
+        'title': {
+            'primary': {'type': 'css', 'value': 'h3::text'},
+            'root': {'type': 'xpath', 'value': '//article'},
+        },
+    }
+    await storage.save_selectors('https://example.com', selectors)
+
+    loaded = await storage.load_selectors('example.com')
+
+    assert loaded is not None
+    assert loaded['title']['root'] == {'type': 'xpath', 'value': '//article'}
+
+
+def test_snapshot_parent_root_back_compat_rehydrates_css_root():
+    snap = SelectorSnapshot(
+        primary={'type': 'css', 'value': 'h3::text'},
+        parent_root='.card',
+        discovered_at='2026-01-01T00:00:00Z',
+    )
+
+    from yosoi.models.snapshot import snapshot_to_selector_dict
+
+    assert snapshot_to_selector_dict(snap)['root'] == {'type': 'css', 'value': '.card'}
+
+
 async def test_nonexistent_domain_returns_none(storage):
     result = await storage.load_selectors('nonexistent.com')
     assert result is None
@@ -295,6 +322,12 @@ def test_format_selectors_preserves_all_three_levels(storage):
     assert 'primary' in formatted['title']
     assert 'fallback' in formatted['title']
     assert 'tertiary' in formatted['title']
+
+
+def test_format_selectors_preserves_field_root(storage):
+    selectors = {'title': {'primary': 'h1', 'root': {'type': 'css', 'value': '.card'}}}
+    formatted = storage._format_selectors(selectors)
+    assert formatted['title']['root'] == {'type': 'css', 'value': '.card'}
 
 
 async def test_load_selectors_returns_selectors_key(storage):

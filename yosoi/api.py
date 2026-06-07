@@ -43,9 +43,10 @@ def _run_discrimination_gates(
         if report is None or not report.accepted:
             continue
         if store is None:
-            from yosoi.storage.atoms import AtomStore
+            from yosoi.storage.atoms import AtomStore, default_store_path
 
-            store = AtomStore(_ATOM_STORE_PATH)
+            store_path = _ATOM_STORE_PATH if _ATOM_STORE_PATH != '.yosoi/atoms.jsonl' else default_store_path()
+            store = AtomStore(store_path)
         _internalize_accepted(store, url, collected, contract_by_name)
 
 

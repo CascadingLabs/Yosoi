@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from yosoi.policies import QUARANTINED_SOURCES, TRUSTED_SOURCES, Policy
+from yosoi.policies import QUARANTINED_SOURCES, TRUSTED_SOURCES, Outcome, Policy, Trust, promote_trust
 
 
 def test_defaults_are_deny() -> None:
@@ -29,6 +29,35 @@ def test_strict_allowlist_is_positive_and_partitions_all_sources() -> None:
 
 def test_yellow_serves_all_tiers() -> None:
     assert Policy(trust_tier='yellow').allowed_sources is None
+
+
+def test_source_trust_maps_known_tiers_to_lattice() -> None:
+    p = Policy()
+    assert p.source_trust('verified') is Trust.VERIFIED
+    assert p.source_trust('manual') is Trust.VERIFIED
+    assert p.source_trust('llm') is Trust.VERIFIED
+    assert p.source_trust('fingerprint') is Trust.QUARANTINED
+    assert p.source_trust('new-tier') is Trust.REJECTED
+
+
+def test_strict_rejects_quarantined_output() -> None:
+    p = Policy(trust_tier='strict')
+    assert p.allows_source('verified') is True
+    assert p.output_trust('verified') is Trust.VERIFIED
+    assert p.allows_source('fingerprint') is False
+    assert p.output_trust('fingerprint') is Trust.REJECTED
+
+
+def test_yellow_serves_quarantined_output_without_verifying_it() -> None:
+    p = Policy(trust_tier='yellow')
+    assert p.allows_source('fingerprint') is True
+    assert p.output_trust('fingerprint') is Trust.QUARANTINED
+
+
+def test_promote_trust_resolves_quarantined_state() -> None:
+    assert promote_trust(Trust.QUARANTINED, confirmed=True) == (Trust.VERIFIED, Outcome.CONFIRMED)
+    assert promote_trust(Trust.QUARANTINED, confirmed=False) == (Trust.REJECTED, Outcome.REFUTED)
+    assert promote_trust(Trust.VERIFIED, confirmed=False) == (Trust.VERIFIED, Outcome.PENDING)
 
 
 def test_frozen_is_immutable() -> None:

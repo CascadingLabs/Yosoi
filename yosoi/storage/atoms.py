@@ -27,6 +27,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
+from yosoi.utils.files import atomic_write_text, get_project_root
+
 logger = logging.getLogger(__name__)
 
 # Unit separator — safe inside a content-addressed key (never appears in selectors).
@@ -34,6 +36,20 @@ _SEP = '\x1f'
 
 # Default on-disk field-atom corpus (gitignored like the rest of .yosoi/).
 DEFAULT_STORE_PATH = '.yosoi/atoms.jsonl'
+
+
+def default_store_path() -> Path:
+    """Return the project-rooted default field-atom corpus path."""
+    return get_project_root() / DEFAULT_STORE_PATH
+
+
+def _resolve_store_path(path: str | Path) -> Path:
+    """Resolve the sentinel default path through the project root; preserve explicit paths."""
+    candidate = Path(path)
+    if not candidate.is_absolute() and candidate == Path(DEFAULT_STORE_PATH):
+        return default_store_path()
+    return candidate
+
 
 # Provenance / trust tiers — HOW an atom's selector was obtained (never lost). Most-truthy first:
 #   'verified'    — LLM-discovered AND passed discrimination/verification on the real DOM.
@@ -165,7 +181,7 @@ class AtomStore:
 
     def __init__(self, path: str | Path | None = None) -> None:
         """Open an atom store; ``path`` JSONL-persists upserts, ``None`` stays in-memory."""
-        self._path = Path(path) if path else None
+        self._path = _resolve_store_path(path) if path else None
         self._atoms: dict[str, FieldAtom] = {}
         self.conflicts: list[tuple[str, dict[str, Any], dict[str, Any]]] = []
         if self._path is not None and self._path.exists():
@@ -190,7 +206,7 @@ class AtomStore:
             return
         self._path.parent.mkdir(parents=True, exist_ok=True)
         payload = '\n'.join(a.model_dump_json() for a in self._atoms.values())
-        self._path.write_text(payload + ('\n' if payload else ''), encoding='utf-8')
+        atomic_write_text(self._path, payload + ('\n' if payload else ''), encoding='utf-8')
 
     def upsert(self, atom: FieldAtom) -> bool:
         """Insert ``atom`` or merge its provenance into an existing one.

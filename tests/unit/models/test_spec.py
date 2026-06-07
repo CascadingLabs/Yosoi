@@ -213,6 +213,13 @@ class TestToContractPaths:
         )
         cls = spec.to_contract()
         assert 'price' in cls.model_fields
+        assert cls.model_fields['price'].annotation == float | None
+
+    def test_from_contract_preserves_pep604_optional_type(self):
+        spec = SimpleContract.to_spec()
+        assert spec.fields['price'].python_type == 'float'
+        rehydrated = Contract.from_spec(spec)
+        assert rehydrated.model_fields['price'].annotation == float | None
 
     def test_from_contract_with_root(self):
         import pydantic

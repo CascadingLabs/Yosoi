@@ -108,9 +108,9 @@ def _try_atom_reads(
     try:
         from yosoi.generalization.capture import observe_html
         from yosoi.generalization.fingerprint import page_shape_fp
-        from yosoi.storage.atoms import DEFAULT_STORE_PATH, AtomStore
+        from yosoi.storage.atoms import AtomStore, default_store_path
 
-        store = atom_store if atom_store is not None else AtomStore(DEFAULT_STORE_PATH)
+        store = atom_store if atom_store is not None else AtomStore(default_store_path())
         if len(store) == 0:
             return None
         page_shape = page_shape_fp(observe_html(url or domain, html, row_selector=''))

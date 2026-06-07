@@ -79,6 +79,7 @@ class JSFetcher(HTMLFetcher):
         download_dir: str | None = None,
         voidcrawl_user_agent: str | None = None,
         voidcrawl_accept_language: str | None = None,
+        identity: BrowserIdentity | None = None,
         identity_cascade: IdentityCascade | None = None,
         max_live_identities: int = 3,
     ):
@@ -103,6 +104,9 @@ class JSFetcher(HTMLFetcher):
             voidcrawl_user_agent: Optional browser UA override. When omitted,
                 VoidCrawl owns UA and matching Client Hints.
             voidcrawl_accept_language: Optional browser Accept-Language override.
+            identity: Optional single browser identity. Converted to a one-entry
+                ``IdentityCascade`` so ``fetcher_type='auto'`` accepts the same
+                identity argument as the direct browser tiers.
             identity_cascade: Optional :class:`IdentityCascade` of browser
                 identities (profile/proxy combos). When set, a bot-block on the
                 terminal headful tier escalates into a per-identity rotation
@@ -148,7 +152,7 @@ class JSFetcher(HTMLFetcher):
 
         # W2 — profile cascade. Built lazily on first block so a run with no
         # bot-walled domains never pays for it.
-        self._identity_cascade = identity_cascade
+        self._identity_cascade = identity_cascade or (IdentityCascade((identity,)) if identity is not None else None)
         self._max_live_identities = max_live_identities
         self._identity_pool: IdentityFetcherPool | None = None
 

@@ -18,11 +18,34 @@ from __future__ import annotations
 
 import os
 from collections.abc import Mapping
+from enum import Enum
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict
 
 TrustTier = Literal['strict', 'yellow']
+
+
+class Trust(str, Enum):
+    """Trust lattice for reuse output.
+
+    ``QUARANTINED`` is the key middle state from the CAS-85 spike: output may be
+    produced under an explicit ride/yellow policy, but it is not silently treated
+    as verified until a later invariant/judge confirms it.
+    """
+
+    VERIFIED = 'verified'
+    QUARANTINED = 'quarantined'
+    REJECTED = 'rejected'
+
+
+class Outcome(str, Enum):
+    """Ground-truth outcome that resolves a quarantined reuse decision."""
+
+    PENDING = 'pending'
+    CONFIRMED = 'confirmed'
+    REFUTED = 'refuted'
+
 
 # Strict serves ONLY these provenance tiers — a POSITIVE allow-list (deny-by-default). A new tier in
 # storage.atoms.SOURCE_TRUST is refused under strict until it is consciously promoted here, so reuse
@@ -93,3 +116,46 @@ class Policy(BaseModel):
         yellow returns ``None`` (serve every tier, including fingerprint-generalized reuse).
         """
         return None if self.trust_tier == 'yellow' else TRUSTED_SOURCES
+
+    def source_trust(self, source: str) -> Trust:
+        """Classify a provenance source in the trust lattice, independent of serving policy.
+
+        Known verified/manual/LLM sources are verified. Known fingerprint-generalized
+        sources are quarantined. Unknown sources are rejected so newly-added tiers
+        fail closed until explicitly classified.
+        """
+        if source in TRUSTED_SOURCES:
+            return Trust.VERIFIED
+        if source in QUARANTINED_SOURCES:
+            return Trust.QUARANTINED
+        return Trust.REJECTED
+
+    def allows_source(self, source: str) -> bool:
+        """Whether this policy may serve a source at all."""
+        trust = self.source_trust(source)
+        if trust is Trust.REJECTED:
+            return False
+        if trust is Trust.QUARANTINED:
+            return self.trust_tier == 'yellow'
+        return True
+
+    def output_trust(self, source: str) -> Trust:
+        """Trust state of output produced from ``source`` under this policy."""
+        trust = self.source_trust(source)
+        if trust is Trust.QUARANTINED and not self.allows_source(source):
+            return Trust.REJECTED
+        return trust
+
+
+def promote_trust(trust: Trust, *, confirmed: bool) -> tuple[Trust, Outcome]:
+    """Resolve a quarantined trust state with a later ground-truth signal.
+
+    Terminal states remain terminal. A quarantined result promotes to verified
+    when confirmed, or rejected when refuted.
+    """
+    if trust is Trust.QUARANTINED:
+        return (
+            Trust.VERIFIED if confirmed else Trust.REJECTED,
+            Outcome.CONFIRMED if confirmed else Outcome.REFUTED,
+        )
+    return trust, Outcome.PENDING

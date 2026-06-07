@@ -125,6 +125,22 @@ def test_jsonl_persistence_round_trip(tmp_path) -> None:
     assert keys == {a.key for a in store.all()}
 
 
+def test_default_store_path_is_project_rooted(tmp_path, monkeypatch) -> None:
+    import yosoi.storage.atoms as atoms
+
+    project = tmp_path / 'project'
+    subdir = project / 'pkg' / 'subdir'
+    subdir.mkdir(parents=True)
+    (project / 'pyproject.toml').touch()
+    monkeypatch.setattr(atoms, 'get_project_root', lambda: project)
+
+    store = AtomStore('.yosoi/atoms.jsonl')
+    store.upsert_all(derive_atoms(SHAPE, 'C', 'd.com', [('url', _primary('a'), '.r', 'url')]))
+
+    assert (project / '.yosoi' / 'atoms.jsonl').exists()
+    assert not (subdir / '.yosoi' / 'atoms.jsonl').exists()
+
+
 # ── provenance / trust tiers ───────────────────────────────────────────────────
 
 

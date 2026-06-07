@@ -22,6 +22,8 @@ from __future__ import annotations
 import hashlib
 import importlib
 import json
+import types
+import typing
 from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
@@ -289,12 +291,10 @@ def _python_type_to_annotation(type_str: str, required: bool) -> Any:
 
 def _annotation_to_python_type(ann: Any, fi: Any) -> str:
     """Convert a field annotation to a simple string for storage."""
-    import typing
-
     if ann is None:
         return 'str'
     origin = typing.get_origin(ann)
-    if origin is typing.Union:
+    if origin in (typing.Union, types.UnionType):
         args = [a for a in typing.get_args(ann) if a is not type(None)]
         inner: Any = args[0] if args else str
         result: str = getattr(inner, '__name__', None) or 'str'

@@ -355,7 +355,7 @@ class SelectorStorage:
             payload['contract_sig'] = contract_sig
         await atomic_write_json_async(filepath, payload, ensure_ascii=False)
 
-    def _format_selectors(self, selectors: dict[str, Any]) -> dict[str, dict[str, str | None]]:
+    def _format_selectors(self, selectors: dict[str, Any]) -> dict[str, dict[str, Any]]:
         """Format selectors for storage.
 
         Args:
@@ -365,7 +365,7 @@ class SelectorStorage:
             Formatted selectors with primary, fallback, and tertiary keys.
 
         """
-        formatted: dict[str, dict[str, str | None]] = {}
+        formatted: dict[str, dict[str, Any]] = {}
 
         for field, field_data in selectors.items():
             if isinstance(field_data, dict):
@@ -374,6 +374,8 @@ class SelectorStorage:
                     'fallback': field_data.get('fallback'),
                     'tertiary': field_data.get('tertiary'),
                 }
+                if field_data.get('root') is not None:
+                    formatted[field]['root'] = field_data.get('root')
 
         return formatted
 

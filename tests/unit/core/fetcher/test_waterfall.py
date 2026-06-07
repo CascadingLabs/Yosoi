@@ -174,3 +174,12 @@ def test_jsfetcher_without_cascade_keeps_legacy_terminal_tier():
     fetcher = JSFetcher()
     assert fetcher._identity_cascade is None
     assert fetcher._identity_pool is None
+
+
+def test_jsfetcher_accepts_single_identity_as_cascade():
+    from yosoi.core.fetcher.identity import BrowserIdentity
+
+    fetcher = JSFetcher(identity=BrowserIdentity(id='geo-us', geo=(40.7, -74.0)))
+
+    assert fetcher._identity_cascade is not None
+    assert fetcher._identity_cascade.identities[0].id == 'geo-us'
