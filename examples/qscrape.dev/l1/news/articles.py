@@ -1,0 +1,43 @@
+"""Scrape the qscrape.dev L1 Mountainhome Herald article archive.
+
+Run:
+    uv run python examples/qscrape.dev/l1/news/articles.py
+"""
+
+from __future__ import annotations
+
+import asyncio
+import json
+import os
+
+import yosoi as ys
+
+URL = 'https://qscrape.dev/l1/news/articles'
+
+
+class ArticleSummary(ys.Contract):
+    """One row in the static qscrape.dev L1 news article archive."""
+
+    root = ys.css('tr[data-id]')
+
+    published_at: str = ys.Datetime(description='Article publication date')
+    category: str = ys.Field(description='Article category')
+    headline: str = ys.Title(description='Article headline')
+    author: str = ys.Author(description='Article author')
+    excerpt: str = ys.BodyText(description='Short article summary')
+
+
+async def main() -> None:
+    items = await ys.scrape(
+        URL,
+        ArticleSummary,
+        model=os.getenv('YOSOI_MODEL') or None,
+        fetcher_type='simple',
+        force=os.getenv('YOSOI_FORCE', '').lower() in {'1', 'true', 'yes'},
+        quiet=False,
+    )
+    print(json.dumps(items, indent=2, ensure_ascii=False))
+
+
+if __name__ == '__main__':
+    asyncio.run(main())
