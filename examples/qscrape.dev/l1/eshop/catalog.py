@@ -22,8 +22,6 @@ URLS = [
 class Product(ys.Contract):
     """A product card in the static qscrape.dev L1 e-shop catalog."""
 
-    root = ys.css('.product-card')
-
     name: str = ys.Title(description='Product name')
     category: str = ys.Field(description='Product category label')
     price: float = ys.Price(description='Product price as a number')

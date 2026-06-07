@@ -18,8 +18,6 @@ URL = 'https://qscrape.dev/l1/news/articles'
 class ArticleSummary(ys.Contract):
     """One row in the static qscrape.dev L1 news article archive."""
 
-    root = ys.css('tr[data-id]')
-
     published_at: str = ys.Datetime(description='Article publication date')
     category: str = ys.Field(description='Article category')
     headline: str = ys.Title(description='Article headline')

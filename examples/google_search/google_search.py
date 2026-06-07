@@ -51,15 +51,7 @@ AdResult = SerpResult.variant(
     'A sponsored Google Search ad marked as paid placement, not an organic result.',
 )
 
-EXTRACT_JS = r"""(() => {
-  const host = a => { try { return new URL(a.href).hostname.replace(/^www\./,''); } catch(e){ return null; } };
-  const out = [];
-  for (const h of document.querySelectorAll('#rso a h3')) {
-    const a = h.closest('a'); if (!a) continue;
-    const u = host(a); if (u) out.push({url: a.href, title: h.textContent});
-  }
-  return out.slice(0, 15);
-})()"""
+EXTRACT_RESULTS_ACTION = 'extract_google_search_results'
 
 
 def build_google_program(*, latitude: float, longitude: float) -> ReplayPlan:
@@ -79,7 +71,7 @@ def build_google_program(*, latitude: float, longitude: float) -> ReplayPlan:
         leaf=ReplayNode(
             id='google.extract',
             intent='extract organic result hosts and titles',
-            act=ReplayAct(kind=ActKind.EVAL, script=EXTRACT_JS, output_field='organic'),
+            act=ReplayAct(kind=ActKind.EVAL, script=EXTRACT_RESULTS_ACTION, output_field='organic'),
         ),
     )
     guarded = TreeNode(kind=NodeKind.SEQUENCE, id='google.fetch', children=[navigate, extract])
@@ -141,7 +133,7 @@ class FakeTab:
                 'widget_rendered': True,
                 'widget_rect': {'x': 380.0, 'y': 300.0, 'width': 300.0, 'height': 74.0},
             }
-        if script is EXTRACT_JS:
+        if script == EXTRACT_RESULTS_ACTION:
             return [
                 {'url': 'https://carebuildersathome.com/louisville/', 'title': 'CareBuilders at Home - Louisville'},
                 {'url': 'https://example-competitor.com/', 'title': 'A Competitor'},
