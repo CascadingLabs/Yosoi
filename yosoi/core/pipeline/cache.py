@@ -54,10 +54,11 @@ class PipelineCacheMixin:
         skip_verification: bool,
         format_to_use: list[str],
         *,
+        max_discovery_retries: int = 3,
         root_span: Any | None = None,
     ) -> AsyncIterator[ContentMap] | None:
         """Attempt cached-selector path with per-field granularity."""
-        snapshots = await self.storage.load_snapshots(domain)
+        snapshots = await self.storage.load_snapshots(domain, contract_sig=self._contract_sig)
         if not snapshots:
             return None
 
@@ -101,6 +102,7 @@ class PipelineCacheMixin:
             cleaned_html,
             snapshots,
             format_to_use,
+            max_discovery_retries,
             root_span=root_span,
         )
 
@@ -141,6 +143,7 @@ class PipelineCacheMixin:
         cleaned_html: str,
         snapshots: dict[str, SelectorSnapshot],
         format_to_use: list[str],
+        max_discovery_retries: int = 3,
         *,
         root_span: Any | None = None,
     ) -> AsyncIterator[ContentMap] | None:
@@ -149,7 +152,7 @@ class PipelineCacheMixin:
             verdicts = self._verify_per_field(cleaned_html, snapshots)
 
         for field_name, verdict in verdicts.items():
-            await self.storage.record_verdict(domain, field_name, verdict)
+            await self.storage.record_verdict(domain, field_name, verdict, contract_sig=self._contract_sig)
 
         stale_fields = {f for f, v in verdicts.items() if v != CacheVerdict.FRESH}
         fresh_fields = {f for f, v in verdicts.items() if v == CacheVerdict.FRESH}
@@ -170,7 +173,8 @@ class PipelineCacheMixin:
         missing = (self.contract.discovery_field_names() - overridden) - set(snapshots)
         if missing:
             self.console.print(
-                f'[warning]⚠ New contract fields not in cache: {", ".join(sorted(missing))} — re-discovering[/warning]'
+                '[warning]⚠ Selector cache missing current contract field(s): '
+                f'{", ".join(sorted(missing))} — discovering only those field(s)[/warning]'
             )
             stale_fields |= missing
 
@@ -202,6 +206,7 @@ class PipelineCacheMixin:
             fresh_fields,
             stale_fields,
             format_to_use,
+            max_discovery_retries,
             root_span=root_span,
         )
 
@@ -251,6 +256,7 @@ class PipelineCacheMixin:
         fresh_fields: set[str],
         stale_fields: set[str],
         format_to_use: list[str],
+        max_discovery_retries: int = 3,
         *,
         root_span: Any | None = None,
     ) -> AsyncIterator[ContentMap] | None:
@@ -270,6 +276,17 @@ class PipelineCacheMixin:
         if not extracted:
             self.console.print('[warning]⚠ Extraction failed after partial rediscovery[/warning]')
             return None
+
+        with observability.span('semantic_refine', url=url, mode='cache_partial'):
+            extracted, merged = await self._semantic_refine(  # type: ignore[attr-defined]
+                url,
+                cleaned_html,
+                raw_html,
+                merged,
+                container_selector,
+                extracted,
+                max_discovery_retries,
+            )
 
         items_list: ContentItems = extracted if isinstance(extracted, list) else [extracted]
         validated = self._validate_items(items_list, url)  # type: ignore[attr-defined]
@@ -407,7 +424,7 @@ class PipelineCacheMixin:
                 merged_snapshots[name] = snapshots[name]
             else:
                 merged_snapshots[name] = _to_snap(sel_dict, discovered_at=now, last_verified_at=now)
-        await self.storage.save_snapshots(url, merged_snapshots)
+        await self.storage.save_snapshots(url, merged_snapshots, contract_sig=self._contract_sig)
         return merged
 
     async def _track_cached_success(self, url: str, domain: str) -> None:

@@ -16,7 +16,7 @@ def _stub(mocker: MockerFixture, *, enabled: bool) -> Pipeline:
     return stub
 
 
-@pytest.mark.parametrize('fetcher_type', ['headless', 'headful', 'waterfall'])
+@pytest.mark.parametrize('fetcher_type', ['auto', 'headless', 'headful', 'waterfall'])
 def test_browser_fetchers_receive_a3node_flag(mocker: MockerFixture, fetcher_type: str):
     stub = _stub(mocker, enabled=True)
     cf = mocker.patch('yosoi.core.pipeline.base.create_fetcher')

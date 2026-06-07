@@ -51,6 +51,8 @@ _DEFAULT_NUMERIC_MAX_CHARS = 50
 
 _PREVIEW_CHARS = 160
 _HAS_DIGIT_RE = re.compile(r'\d')
+_STRICT_NUMERIC_RE = re.compile(r'^[+-]?\s*[$€£¥]?\s*(?:\d{1,3}(?:,\d{3})+|\d+)(?:[.,]\d+)?\s*%?$')
+_NUMERIC_TOKEN_RE = re.compile(r'(?<![\w.])[+-]?(?:[$€£¥]\s*)?(?:\d{1,3}(?:,\d{3})+|\d+)(?:[.,]\d+)?%?(?![\w.])')
 
 
 @dataclass(frozen=True)
@@ -123,11 +125,7 @@ class SemanticValidator:
             return None  # absence is not a wrong shape — see module docstring
 
         if rule.kind == KIND_NUMERIC:
-            if not _HAS_DIGIT_RE.search(text):
-                return FieldSemanticIssue(field, text, 'returned text with no number in it.')
-            if rule.max_chars is not None and len(text) > rule.max_chars:
-                return FieldSemanticIssue(field, text, 'returned a long block of text, not a number.')
-            return None
+            return self._check_numeric(field, text, rule)
 
         if rule.kind == KIND_URL:
             if not (text.startswith('/') or text.startswith('http')):
@@ -145,6 +143,16 @@ class SemanticValidator:
                     return FieldSemanticIssue(field, text, f'returned the same value as field `{dup}`.')
             return None
 
+        return None
+
+    def _check_numeric(self, field: str, text: str, rule: SemanticRule) -> FieldSemanticIssue | None:
+        normalized = text.strip()
+        if not _HAS_DIGIT_RE.search(normalized):
+            return FieldSemanticIssue(field, text, 'returned text with no number in it.')
+        if rule.max_chars is not None and len(text) > rule.max_chars:
+            return FieldSemanticIssue(field, text, 'returned a long block of text, not a number.')
+        if not _STRICT_NUMERIC_RE.fullmatch(normalized) and len(_NUMERIC_TOKEN_RE.findall(normalized)) != 1:
+            return FieldSemanticIssue(field, text, 'returned extra text around the number.')
         return None
 
 

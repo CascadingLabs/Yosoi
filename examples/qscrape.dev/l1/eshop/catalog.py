@@ -7,10 +7,10 @@ Run:
 from __future__ import annotations
 
 import asyncio
-import json
 import os
 
 import yosoi as ys
+from yosoi.core.discovery import LLMConfig
 
 URLS = [
     'https://qscrape.dev/l1/eshop/catalog/?cat=Forge%20%26%20Smithing',
@@ -25,21 +25,34 @@ class Product(ys.Contract):
     name: str = ys.Title(description='Product name')
     category: str = ys.Field(description='Product category label')
     price: float = ys.Price(description='Product price as a number')
-    rating: str = ys.Rating(description='Visible star rating')
-    reviews_count: int | None = ys.Field(default=None, description='Number of product reviews')
+    rating: int = ys.Rating(as_float=True, description='Visible star rating as a 1-5 score')
+    reviews_count: int | None = ys.Field(description='Number of product reviews')
     availability: str = ys.Field(description='Stock status')
+
+
+def model_config() -> LLMConfig | str | None:
+    """Choose the discovery model without changing the scraper."""
+    if model := os.getenv('YOSOI_MODEL'):
+        return model
+
+    # Copy-paste provider switch:
+    # return ys.claude_sdk('claude-opus-4-7')
+    # return ys.opencode('openai/gpt-5-codex')
+    # return ys.openrouter('anthropic/claude-3.5-sonnet')
+    # return ys.provider('groq:llama-3.3-70b-versatile')
+    return None
 
 
 async def main() -> None:
     result = await ys.scrape(
         URLS,
         Product,
-        model=os.getenv('YOSOI_MODEL') or None,
+        model=model_config(),
         fetcher_type='simple',
         force=os.getenv('YOSOI_FORCE', '').lower() in {'1', 'true', 'yes'},
         quiet=False,
     )
-    print(json.dumps(result, indent=2, ensure_ascii=False))
+    ys.show(result)
 
 
 if __name__ == '__main__':

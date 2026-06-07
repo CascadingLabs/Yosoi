@@ -29,6 +29,8 @@ _LAZY: dict[str, str] = {
     'scrape': 'yosoi.api',
     'scrape_many': 'yosoi.api',
     'scrape_sync': 'yosoi.api',
+    # display
+    'show': 'yosoi.display',
     # config
     'DebugConfig': 'yosoi.core.configs',
     'DiscoveryConfig': 'yosoi.core.configs',
@@ -181,6 +183,7 @@ __all__ = [
     'scrape',
     'scrape_many',
     'scrape_sync',
+    'show',
     'together',
     'vercel',
     'vertexai',

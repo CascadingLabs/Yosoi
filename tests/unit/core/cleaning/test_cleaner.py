@@ -445,6 +445,19 @@ def test_clean_html_removes_iframe(cleaner):
     assert '<iframe' not in result
 
 
+def test_clean_html_keeps_hidden_framework_payload(cleaner):
+    html = (
+        '<html><body><main>'
+        '<div hidden><article data-sku="VM-1"><h3>Standard Iron Pickaxe</h3>'
+        '<span data-price="14.50">14.50 GS</span></article></div>'
+        '<div hidden></div>'
+        '</main></body></html>'
+    )
+    result = cleaner.clean_html(html)
+    assert 'Standard Iron Pickaxe' in result
+    assert 'data-sku="VM-1"' in result
+
+
 def test_clean_html_removes_ad_class_exact(cleaner):
     html = '<html><body><main><p>Content</p><div class="ad">Ad content</div></main></body></html>'
     result = cleaner.clean_html(html)

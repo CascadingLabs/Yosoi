@@ -17,7 +17,7 @@ from yosoi.types.filetypes import (
 class _DocContract(Contract):
     title: str = ys.Field()
     rows: list[dict] = ys.File(trigger='a.export', allowed_types=['csv'])
-    clip: ys.DownloadRecord | None = ys.File(href='a.clip', allowed_types=['mp4', 'MP3', '.pdf'], default=None)
+    clip: ys.DownloadRecord | None = ys.File(href='a.clip', allowed_types=['mp4', 'MP3', '.pdf'])
 
 
 def test_file_field_metadata_and_modes() -> None:

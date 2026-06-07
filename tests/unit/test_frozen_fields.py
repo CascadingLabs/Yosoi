@@ -143,7 +143,18 @@ class TestFrozenGuardInPipeline:
         captured_stale: set[str] = set()
 
         async def _partial_spy(
-            url, domain, raw_html, cleaned_html, fetcher, snaps, fresh, stale, fmt, *, root_span=None
+            url,
+            domain,
+            raw_html,
+            cleaned_html,
+            fetcher,
+            snaps,
+            fresh,
+            stale,
+            fmt,
+            max_discovery_retries=3,
+            *,
+            root_span=None,
         ):
             captured_stale.update(stale)
 

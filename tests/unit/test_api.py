@@ -120,6 +120,15 @@ async def test_scrape_no_identities_is_default(monkeypatch):
     assert FakePipeline.instances[0].kwargs['identity'] is None
 
 
+async def test_scrape_defaults_to_auto_fetcher(monkeypatch):
+    FakePipeline.instances.clear()
+    monkeypatch.setattr(api, 'Pipeline', FakePipeline)
+
+    await api.scrape('https://x.test', ApiContract, model=ys.claude_sdk())
+
+    assert FakePipeline.instances[0].scrape_kwargs['fetcher_type'] == 'auto'  # type: ignore[index]
+
+
 async def test_scrape_grid_urls_x_contracts(monkeypatch):
     """scrape([urls], [contracts]) returns {url: {contract_name: records}} — the full grid."""
     FakePipeline.instances.clear()

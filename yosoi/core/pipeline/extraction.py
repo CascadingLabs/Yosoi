@@ -242,7 +242,8 @@ class PipelineExtractionMixin:
                 missing = required_fields - set(selectors_to_use)
                 if missing:
                     self.console.print(
-                        f'[warning]⚠ New contract fields not in cache: {", ".join(sorted(missing))} — re-discovering[/warning]'
+                        '[warning]⚠ Selector cache missing current contract field(s): '
+                        f'{", ".join(sorted(missing))} — discovering only those field(s)[/warning]'
                     )
                     return None, False
             else:

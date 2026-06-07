@@ -304,6 +304,15 @@ class TestTryCachedGranular:
 
         # Mock extraction
         stub.extractor.extract_content_with_html.return_value = {'title': 'Test', 'price': '$20'}
+        stub._semantic_refine = mocker.AsyncMock(
+            return_value=(
+                {'title': 'Test', 'price': '$20'},
+                {
+                    'title': {'primary': {'type': 'css', 'value': 'h1.title'}},
+                    'price': {'primary': {'type': 'css', 'value': '.new-price'}},
+                },
+            )
+        )
 
         stub.tracker.record_url.return_value = DomainStats(
             llm_calls=1,
@@ -323,6 +332,7 @@ class TestTryCachedGranular:
         stub.discovery.discover_selectors.assert_called_once()
         call_kwargs = stub.discovery.discover_selectors.call_args
         assert call_kwargs.kwargs.get('stale_fields') == {'price'}
+        stub._semantic_refine.assert_awaited_once()
 
 
 def mocker_fetcher(stub):

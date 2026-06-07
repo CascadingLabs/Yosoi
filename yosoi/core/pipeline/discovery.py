@@ -83,7 +83,7 @@ class PipelineDiscoveryMixin:
         if not fetcher.supports_browse:
             self.console.print(
                 '[warning]⚠ JS discovery skipped — fetcher has no live browser tab; '
-                'switch to fetcher_type="headless" or "waterfall" for ys.js discovery[/warning]'
+                'switch to fetcher_type="auto" or "headless" for ys.js discovery[/warning]'
             )
             return
         from yosoi.core.discovery.js_orchestrator import JsDiscoveryOrchestrator
@@ -360,6 +360,8 @@ class PipelineDiscoveryMixin:
         unmet: set[str],
     ) -> tuple[ContentMap | ContentItems, dict[str, Any], dict[str, Any] | None, bool]:
         """Drive MCP discovery once and merge selectors that improve extraction."""
+        original_unmet = set(unmet) or self._unsatisfied_required(extracted)
+        original_count = len(extracted) if isinstance(extracted, list) else (1 if extracted else 0)
         try:
             fresh = await self._ensure_mcp_discovery().discover_selectors(cleaned_html, url, force=True)
         except Exception as exc:  # noqa: BLE001
@@ -368,18 +370,34 @@ class PipelineDiscoveryMixin:
         if not fresh:
             return extracted, verified, root_entry, False
 
+        candidate_root = root_entry
+        candidate_container = container_selector
         mcp_root = self._resolve_root(fresh)  # type: ignore[attr-defined]
         if mcp_root:
-            root_entry = mcp_root
-            container_selector = self._root_value(root_entry) or container_selector  # type: ignore[attr-defined]
+            candidate_root = mcp_root
+            candidate_container = self._root_value(candidate_root) or candidate_container  # type: ignore[attr-defined]
 
         reverified = self._verify(url, cleaned_html, fresh, skip_verification=False) or {}  # type: ignore[attr-defined]
         merged = {k: v for k, v in reverified.items() if k != 'root'}
-        if merged:
-            verified.update(merged)
-            re_extracted = self._extract(url, raw_html, verified, container_selector)  # type: ignore[attr-defined]
-            if re_extracted:
-                extracted = re_extracted
+        if not merged:
+            return extracted, verified, root_entry, False
 
-        improved = bool(unmet - self._unsatisfied_required(extracted))
-        return extracted, verified, root_entry, improved
+        candidate_verified = dict(verified)
+        candidate_verified.update(merged)
+        re_extracted = self._extract(url, raw_html, candidate_verified, candidate_container)  # type: ignore[attr-defined]
+        if not re_extracted:
+            return extracted, verified, root_entry, False
+
+        candidate_unmet = self._unsatisfied_required(re_extracted)
+        improved = bool(original_unmet - candidate_unmet)
+        if not improved:
+            return extracted, verified, root_entry, False
+
+        candidate_count = len(re_extracted) if isinstance(re_extracted, list) else 1
+        if original_count > 1 and candidate_count < original_count:
+            self.console.print(
+                '[warning]⚠ MCP escalation produced fewer items than static extraction; keeping static selectors[/warning]'
+            )
+            return extracted, verified, root_entry, False
+
+        return re_extracted, candidate_verified, candidate_root, True

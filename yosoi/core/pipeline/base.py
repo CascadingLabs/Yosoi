@@ -140,7 +140,7 @@ class Pipeline(
             discovery_gate: Optional shared single-flight gate so concurrent scrapes of the
                 same (domain, contract) discover once and the rest replay the warm cache.
             experimental_a3node: Opt into A3Node DOM-stability recipe persistence and
-                replay on browser fetchers (headless/headful/waterfall). When enabled,
+                replay on browser fetchers (auto/headless/headful). When enabled,
                 the first visit records the action recipe and later visits replay it
                 directly, skipping the probe. Defaults to False.
             allow_downloads: Opt into ys.File() downloads. Off by default; when a contract
@@ -289,18 +289,18 @@ class Pipeline(
         try:
             kwargs: dict[str, Any] = {}
             identity = getattr(self, '_identity', None)  # getattr: __new__-based test stubs omit it
-            if fetcher_type in ('waterfall', 'headless', 'headful'):
+            if fetcher_type in ('auto', 'waterfall', 'headless', 'headful'):
                 if console is not None:
                     kwargs['console'] = console
-                kwargs['experimental_a3node'] = self._experimental_a3node
-                kwargs['allow_downloads'] = self._allow_downloads
-                kwargs['download_dir'] = self._download_dir
+                kwargs['experimental_a3node'] = getattr(self, '_experimental_a3node', False)
+                kwargs['allow_downloads'] = getattr(self, '_allow_downloads', False)
+                kwargs['download_dir'] = getattr(self, '_download_dir', None)
                 if identity is not None:  # opt-in profile/headful/geo (browser only)
                     kwargs['identity'] = identity
             elif fetcher_type == 'simple' and identity is not None:
                 self.console.print(
                     '[warning]⚠ identity (profile/headful) is ignored by the simple fetcher — '
-                    'use fetcher_type=headless/headful[/warning]'
+                    'use fetcher_type=auto/headless/headful[/warning]'
                 )
             return create_fetcher(fetcher_type, **kwargs)
         except ValueError:
@@ -314,7 +314,7 @@ class Pipeline(
         max_fetch_retries: int = 2,
         max_discovery_retries: int = 3,
         skip_verification: bool = False,
-        fetcher_type: str = 'simple',
+        fetcher_type: str = 'auto',
         output_format: str | list[str] | None = None,
         fetcher: Any | None = None,
     ) -> None:
@@ -336,7 +336,7 @@ class Pipeline(
         urls: list[str],
         force: bool | None = None,
         skip_verification: bool = False,
-        fetcher_type: str = 'simple',
+        fetcher_type: str = 'auto',
         max_fetch_retries: int = 2,
         max_discovery_retries: int = 3,
         output_format: str | list[str] | None = None,
@@ -435,7 +435,7 @@ class Pipeline(
         max_fetch_retries: int = 2,
         max_discovery_retries: int = 3,
         skip_verification: bool = False,
-        fetcher_type: str = 'simple',
+        fetcher_type: str = 'auto',
         output_format: str | list[str] | None = None,
         fetcher: Any | None = None,
     ) -> AsyncIterator[ContentMap]:
@@ -485,31 +485,35 @@ class Pipeline(
             async with ctx:
                 if not force_flag:
                     cache_gen = await self._try_cached(
-                        url, domain, fetcher, skip_verification, format_to_use, root_span=root_span
+                        url,
+                        domain,
+                        fetcher,
+                        skip_verification,
+                        format_to_use,
+                        max_discovery_retries=max_discovery_retries,
+                        root_span=root_span,
                     )
                     if cache_gen is not None:
                         async for item in cache_gen:
                             yield item
                         return
 
-                    # Single-flight the COLD discovery only (empty cache): the first concurrent
-                    # unit discovers, the rest wait, re-check, and replay the now-warm cache — so
-                    # N concurrent cold scrapes cost ONE LLM discovery, natively. A cache that
-                    # exists but failed verification has nothing to wait for and falls through.
-                    if not await self.storage.load_snapshots(domain):
-                        async for item in self._gated_fresh(
-                            url=url,
-                            domain=domain,
-                            fetcher=fetcher,
-                            force_flag=force_flag,
-                            max_fetch_retries=max_fetch_retries,
-                            max_discovery_retries=max_discovery_retries,
-                            skip_verification=skip_verification,
-                            format_to_use=format_to_use,
-                            root_span=root_span,
-                        ):
-                            yield item
-                        return
+                    # Single-flight any non-force cache miss/stale path. A stale domain cache
+                    # is still shared state; letting each concurrent URL rediscover independently
+                    # races selector writes and can mix partial selector sets across results.
+                    async for item in self._gated_fresh(
+                        url=url,
+                        domain=domain,
+                        fetcher=fetcher,
+                        force_flag=force_flag,
+                        max_fetch_retries=max_fetch_retries,
+                        max_discovery_retries=max_discovery_retries,
+                        skip_verification=skip_verification,
+                        format_to_use=format_to_use,
+                        root_span=root_span,
+                    ):
+                        yield item
+                    return
 
                 async for item in self._scrape_fresh(
                     url=url,
@@ -545,7 +549,13 @@ class Pipeline(
         """
         async with (self._discovery_gate or DiscoveryGate()).hold(f'{domain}::{self._contract_sig}'):
             cache_gen = await self._try_cached(
-                url, domain, fetcher, skip_verification, format_to_use, root_span=root_span
+                url,
+                domain,
+                fetcher,
+                skip_verification,
+                format_to_use,
+                max_discovery_retries=max_discovery_retries,
+                root_span=root_span,
             )
             if cache_gen is not None:
                 async for item in cache_gen:

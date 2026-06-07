@@ -53,6 +53,12 @@ def Rating(v: object, config: CoercionConfig, source_url: str | None = None) -> 
         if matches_word(lower, word):
             return float(num)
 
+    full_stars = raw.count('★') + raw.count('⭐')
+    if full_stars:
+        if full_stars > scale:
+            raise ValueError(f'Extracted rating {full_stars} exceeds configured scale of {scale}')
+        return float(full_stars)
+
     match = re.search(r'(\d+(?:\.\d+)?)', raw)
     if match:
         val = float(match.group(1))

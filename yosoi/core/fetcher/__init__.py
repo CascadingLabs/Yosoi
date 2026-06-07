@@ -20,10 +20,13 @@ _LAZY: dict[str, str] = {
     'SimpleFetcher': 'yosoi.core.fetcher.simple',
 }
 
+AUTO_FETCHER_TYPES = {'auto', 'waterfall'}
+FETCHER_TYPES = ('auto', 'simple', 'headless', 'headful', 'waterfall')
+
 __all__ = ['HTMLFetcher', 'SimpleFetcher', 'create_fetcher']
 
 
-def create_fetcher(fetcher_type: str = 'simple', **kwargs: Any) -> HTMLFetcher:
+def create_fetcher(fetcher_type: str = 'auto', **kwargs: Any) -> HTMLFetcher:
     """Create an HTML fetcher."""
     if fetcher_type == 'simple':
         from yosoi.core.fetcher.simple import SimpleFetcher
@@ -31,7 +34,7 @@ def create_fetcher(fetcher_type: str = 'simple', **kwargs: Any) -> HTMLFetcher:
         return SimpleFetcher(**kwargs)
 
     # Browser fetchers: import lazily so voidcrawl is not required at startup
-    if fetcher_type == 'waterfall':
+    if fetcher_type in AUTO_FETCHER_TYPES:
         from yosoi.core.fetcher.waterfall import JSFetcher
 
         return JSFetcher(**kwargs)
@@ -44,7 +47,8 @@ def create_fetcher(fetcher_type: str = 'simple', **kwargs: Any) -> HTMLFetcher:
 
         return HeadfulFetcher(**kwargs)
 
-    raise ValueError(f'Unknown fetcher type: {fetcher_type!r}. Choose from: simple, waterfall, headless, headful')
+    choices = ', '.join(FETCHER_TYPES)
+    raise ValueError(f'Unknown fetcher type: {fetcher_type!r}. Choose from: {choices}')
 
 
 __getattr__, __dir__ = lazy_exports(__name__, globals(), _LAZY)
