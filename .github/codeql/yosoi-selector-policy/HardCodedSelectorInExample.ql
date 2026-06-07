@@ -93,7 +93,10 @@ predicate selectorKeywordLiteral(StrConst literal) {
   exists(Call call, string name |
     inExamplePython(call) and
     selectorKeyword(name) and
-    exprContainsString(call.getNamedArg(name), literal)
+    exists(DictItem keywordArg |
+      keywordArg = call.getNamedArg(name) and
+      exprContainsString(keywordArg.getValue(), literal)
+    )
   )
 }
 

@@ -311,6 +311,23 @@ def test_checks_python_files_under_directory(tmp_path: Path) -> None:
     assert {violation.path for violation in violations} == {path}
 
 
+def test_checks_skip_ignored_directories(tmp_path: Path) -> None:
+    ignored = tmp_path / '.venv'
+    ignored.mkdir()
+    (ignored / 'catalog.py').write_text("root = ys.css('.product-card')")
+
+    assert check_files([tmp_path]) == []
+
+
+def test_main_defaults_to_examples_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    examples = tmp_path / 'examples'
+    examples.mkdir()
+    (examples / 'catalog.py').write_text("title = 'Product name'")
+    monkeypatch.chdir(tmp_path)
+
+    assert main() == 0
+
+
 def test_reports_syntax_errors(tmp_path: Path) -> None:
     path = _write(tmp_path, 'def broken(:\n')
 
