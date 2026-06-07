@@ -29,6 +29,7 @@ dependencies = [
   "cssselect>=1.4",
   "dateparser>=1.4",
   "fastmcp>=3.3.1",
+  "geopy>=2.4.1",
   "httpx>=0.28.1",
   "langfuse>=4.5.1",
   "lxml>=6.0.2",
@@ -183,6 +184,10 @@ lint.per-file-ignores."tests/**/*.py" = [
   "D",        # pydocstyle - no docstrings required for tests
 ]
 lint.per-file-ignores."yosoi/cli/args.py" = [ "ARG002" ]  # Click ParamType method overrides require unused params
+lint.per-file-ignores."yosoi/cli/contract_param.py" = [
+  "ARG002"
+]  # Click ParamType method overrides require unused params
+lint.per-file-ignores."yosoi/cli/main.py" = [ "C901" ]  # CLI group command bodies are inherently complex
 lint.per-file-ignores."yosoi/core/cleaning/cleaner.py" = [ "C901" ]
 lint.flake8-tidy-imports.banned-api."unittest.mock".msg = "Use pytest-mock's `mocker` fixture instead of unittest.mock."
 lint.flake8-tidy-imports.banned-api.unittest.msg = "Use pytest. The unittest stdlib module is banned project-wide; see scripts/check_no_unittest.py."
@@ -307,9 +312,15 @@ tasks.obs-eval = "uv run pytest tests/evals/observability/"  # deterministic obs
 tasks.bench = "uv run pytest tests/benchmarks --codspeed"  # run CodSpeed perf benchmarks (walltime locally)
 tasks.integration = "uv run pytest -m 'integration'"  # run integration tests
 tasks.unit = "uv run pytest -m 'unit'"  # run unit tests
-tasks.ci-test = "uv run pytest tests/unit/ tests/stubs/ -m 'not eval' --cov=yosoi --cov-branch --cov-report=xml"  # unit + stub tests with coverage
+tasks.ci-test = """\
+  uv run pytest tests/unit/ tests/stubs/ -m 'not eval' --cov=yosoi --cov=scripts.check_no_hardcoded_selectors \
+  --cov-branch --cov-report=xml\
+  """  # unit + stub tests with coverage
 tasks.ci-format = "uv run ruff check --fix"
-tasks.coverage = "uv run pytest --cov=yosoi --cov-report=term-missing --cov-report=html tests/"
+tasks.coverage = """\
+  uv run pytest --cov=yosoi --cov=scripts.check_no_hardcoded_selectors --cov-report=term-missing --cov-report=html \
+  tests/\
+  """
 tasks.mutmut-run = "uv run mutmut run"
 tasks.mutmut-results = "uv run mutmut results"
 tasks.licenses = "uv run pip-licenses"  # check declared dependency licenses (metadata gate)

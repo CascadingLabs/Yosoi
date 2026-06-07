@@ -125,13 +125,13 @@ class SimpleFetcher(HTMLFetcher):
         if action_scripts:
             self.logger.warning(
                 'action_scripts ignored for %s — SimpleFetcher has no browser tab; '
-                'switch to fetcher_type="headless" or "waterfall" to evaluate ys.js() fields',
+                'switch to fetcher_type="auto" or "headless" to evaluate ys.js() fields',
                 url,
             )
         if download_specs:
             self.logger.warning(
                 'download_specs ignored for %s — SimpleFetcher has no browser tab; '
-                'use fetcher_type="headless"/"headful"/"waterfall" for ys.File() downloads',
+                'use fetcher_type="auto"/"headless"/"headful" for ys.File() downloads',
                 url,
             )
         start_time = time.time()
@@ -200,7 +200,13 @@ class SimpleFetcher(HTMLFetcher):
             fetch_time = time.time() - start_time
 
             return FetchResult(
-                url=url, html=html, status_code=status_code, is_blocked=False, fetch_time=fetch_time, metadata=metadata
+                url=url,
+                html=html,
+                status_code=status_code,
+                is_blocked=False,
+                fetch_time=fetch_time,
+                metadata=metadata,
+                headers=response_headers,  # L3-lite: header/cookie NAME set feeds the network layer
             )
 
         except BotDetectionError:

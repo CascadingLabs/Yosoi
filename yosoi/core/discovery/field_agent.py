@@ -15,6 +15,7 @@ from yosoi.prompts.discovery import (
     field_single_ax_hints,
     field_single_base_instructions,
     field_single_field_instructions,
+    field_single_intent_instructions,
     field_single_level_instructions,
     field_single_page_hints,
 )
@@ -106,6 +107,7 @@ class FieldDiscoveryAgent:
         )
         self._agent.system_prompt(field_single_base_instructions)
         self._agent.system_prompt(field_single_field_instructions)
+        self._agent.system_prompt(field_single_intent_instructions)
         self._agent.system_prompt(field_single_level_instructions)
         self._agent.system_prompt(field_single_ax_hints)
         self._agent.system_prompt(field_single_page_hints)

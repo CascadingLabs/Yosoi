@@ -46,6 +46,16 @@ class TestSaveLoadSnapshots:
     async def test_load_nonexistent_returns_none(self, storage):
         assert await storage.load_snapshots('nonexistent.com') is None
 
+    def test_contract_scoped_snapshot_paths_do_not_share_domain_file(self, storage):
+        catalog_path = storage._get_selector_filepath('qscrape.dev', contract_sig='catalog')
+        taxes_path = storage._get_selector_filepath('qscrape.dev', contract_sig='taxes')
+        legacy_path = storage._get_selector_filepath('qscrape.dev')
+
+        assert catalog_path.endswith('selectors_qscrape_dev_catalog.json')
+        assert taxes_path.endswith('selectors_qscrape_dev_taxes.json')
+        assert legacy_path.endswith('selectors_qscrape_dev.json')
+        assert len({catalog_path, taxes_path, legacy_path}) == 3
+
     async def test_legacy_na_primary_loads_as_absent_snapshot(self, storage):
         now = datetime.now(timezone.utc)
         snapshots = {

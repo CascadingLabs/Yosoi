@@ -81,6 +81,36 @@ class LessonStorage:
         lesson.stats.last_failed_at = utc_now()
         await self.save(lesson)
 
+    async def list_stale_by_scheme(self) -> list[str]:
+        """Return storage keys of lessons whose signature scheme is out of date.
+
+        After a :data:`~yosoi.utils.signatures.SIGNATURE_SCHEME_VERSION` bump the
+        contract signature — hence the lesson filename — changes, so replay would
+        silently miss the old lesson and re-discover. Scanning for lessons whose
+        recorded ``key.sig_version`` differs from the current scheme makes that
+        flush observable: callers can report/mark them STALE rather than treat the
+        miss as a brand-new contract.
+        """
+        from yosoi.utils.signatures import SIGNATURE_SCHEME_VERSION
+
+        try:
+            names = await aiofiles.os.listdir(self._dir)
+        except OSError:
+            return []
+        stale: list[str] = []
+        for name in names:
+            if not (name.startswith('lesson_') and name.endswith('.json')):
+                continue
+            try:
+                async with aiofiles.open(os.path.join(self._dir, name), encoding='utf-8') as f:
+                    data = json.loads(await f.read())
+                key = LessonKey.model_validate(data['key'])
+            except (OSError, json.JSONDecodeError, KeyError, ValueError, TypeError):
+                continue
+            if key.sig_version != SIGNATURE_SCHEME_VERSION:
+                stale.append(key.storage_key)
+        return stale
+
     async def delete(self, key: LessonKey) -> bool:
         """Delete a lesson by key."""
         filepath = self._filepath(key)

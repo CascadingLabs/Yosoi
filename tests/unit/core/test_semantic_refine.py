@@ -10,8 +10,8 @@ from yosoi.prompts.discovery import FieldFeedback
 
 
 class _PostContract(ys.Contract):
-    score: int | None = ys.Field(default=None)
-    title: str | None = ys.Title(default=None)
+    score: int | None = ys.Field()
+    title: str | None = ys.Title()
 
 
 def _stub(mocker, contract=_PostContract):

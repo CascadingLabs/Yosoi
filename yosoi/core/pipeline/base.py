@@ -29,9 +29,11 @@ from yosoi.core.configs import YosoiConfig
 from yosoi.core.discovery import DiscoveryOrchestrator, LLMConfig, MCPDiscoveryOrchestrator
 from yosoi.core.discovery.bus import DiscoveryBus
 from yosoi.core.fetcher import create_fetcher  # re-exported: tests patch yosoi.core.pipeline.base.create_fetcher
+from yosoi.core.fetcher.identity import BrowserIdentity
 from yosoi.core.pipeline.cache import PipelineCacheMixin
 from yosoi.core.pipeline.crawler import PipelineCrawlerMixin
 from yosoi.core.pipeline.discovery import PipelineDiscoveryMixin
+from yosoi.core.pipeline.discovery_gate import DiscoveryGate
 from yosoi.core.pipeline.extraction import PipelineExtractionMixin
 from yosoi.core.pipeline.utils import PipelineUtilsMixin
 from yosoi.core.verification import SelectorVerifier, SemanticValidator, field_rules_for_contract
@@ -94,6 +96,7 @@ class Pipeline(
     _download_dir: str | None = None
     _max_download_bytes: int | None = None
     _keep_downloads: bool = True
+    _discovery_gate: DiscoveryGate | None = None  # class default for __new__-built stubs
 
     def __init__(
         self,
@@ -106,12 +109,15 @@ class Pipeline(
         selector_level: SelectorLevel = SelectorLevel.CSS,
         bus: DiscoveryBus | None = None,
         write_lock: asyncio.Lock | None = None,
+        discovery_gate: DiscoveryGate | None = None,
         experimental_a3node: bool = False,
         allow_downloads: bool = False,
         allowed_download_types: tuple[str, ...] = (),
         download_dir: str | None = None,
         max_download_bytes: int | None = None,
         keep_downloads: bool = True,
+        identity: BrowserIdentity | None = None,
+        console: Console | None = None,
     ):
         """Initialize the pipeline with LLM configuration.
 
@@ -131,8 +137,10 @@ class Pipeline(
                             Defaults to CSS.
             bus: Optional shared discovery bus for cross-pipeline field deduplication.
             write_lock: Optional asyncio.Lock to serialize selector writes for the domain.
+            discovery_gate: Optional shared single-flight gate so concurrent scrapes of the
+                same (domain, contract) discover once and the rest replay the warm cache.
             experimental_a3node: Opt into A3Node DOM-stability recipe persistence and
-                replay on browser fetchers (headless/headful/waterfall). When enabled,
+                replay on browser fetchers (auto/headless/headful). When enabled,
                 the first visit records the action recipe and later visits replay it
                 directly, skipping the probe. Defaults to False.
             allow_downloads: Opt into ys.File() downloads. Off by default; when a contract
@@ -142,6 +150,10 @@ class Pipeline(
             download_dir: Quarantine root for downloaded files. Defaults to ``.yosoi/downloads/``.
             max_download_bytes: Run-wide per-file size cap used when a ys.File() field sets no
                 ``max_bytes`` of its own. Falls back to a 25 MiB built-in default when unset.
+            identity: Optional opt-in BrowserIdentity (trusted profile / headful / geo teleport /
+                proxy / locale) forwarded to a browser fetcher; ignored by the simple fetcher.
+            console: Optional pre-built Rich Console to use (e.g. the CLI's themed stderr
+                console for ``--json`` runs); a default themed console is built when omitted.
             keep_downloads: Keep downloaded files after the run (default). Set False to purge
                 the content-addressed blobs at run end while retaining provenance in index.json.
 
@@ -153,6 +165,7 @@ class Pipeline(
         self._download_dir = download_dir
         self._max_download_bytes = max_download_bytes
         self._keep_downloads = keep_downloads
+        self._identity = identity  # opt-in browser identity (profile/headful/geo) for browser fetchers
         self._download_log: list[Any] = []
 
         if isinstance(llm_config, str):
@@ -195,7 +208,12 @@ class Pipeline(
         )
         self.contract = contract
         self._contract_sig = contract_signature(contract)
-        self.console = Console(theme=self.custom_theme, quiet=quiet)
+        # Shared across a ys.scrape call so concurrent units for the same (domain, contract)
+        # single-flight discovery; a lone pipeline gets its own (trivial) gate.
+        self._discovery_gate = discovery_gate or DiscoveryGate()
+        # Honor a caller-provided console (the CLI passes a themed stderr Console for
+        # --json runs); otherwise build the default themed one.
+        self.console = console if console is not None else Console(theme=self.custom_theme, quiet=quiet)
         from yosoi.core.cleaning import HTMLCleaner
 
         self.cleaner = HTMLCleaner(console=self.console)
@@ -232,6 +250,12 @@ class Pipeline(
         self.logger = logging.getLogger(__name__)
         self._url_start: float = 0.0
         self.last_elapsed: float = 0.0
+        # P1.5: the selector map + cleaned HTML from the most recent FRESH discovery,
+        # exposed so a cross-contract caller (ys.scrape) can run the discrimination gate
+        # before those selectors are internalized. None until a fresh discovery runs
+        # (a cache hit does not re-internalize, so it leaves these untouched).
+        self.last_selectors: dict[str, Any] | None = None
+        self.last_cleaned_html: str | None = None
         self._last_level_distribution: dict[str, int] = {}
         self._client: httpx.AsyncClient = httpx.AsyncClient()
 
@@ -264,12 +288,20 @@ class Pipeline(
         """
         try:
             kwargs: dict[str, Any] = {}
-            if fetcher_type in ('waterfall', 'headless', 'headful'):
+            identity = getattr(self, '_identity', None)  # getattr: __new__-based test stubs omit it
+            if fetcher_type in ('auto', 'waterfall', 'headless', 'headful'):
                 if console is not None:
                     kwargs['console'] = console
-                kwargs['experimental_a3node'] = self._experimental_a3node
-                kwargs['allow_downloads'] = self._allow_downloads
-                kwargs['download_dir'] = self._download_dir
+                kwargs['experimental_a3node'] = getattr(self, '_experimental_a3node', False)
+                kwargs['allow_downloads'] = getattr(self, '_allow_downloads', False)
+                kwargs['download_dir'] = getattr(self, '_download_dir', None)
+                if identity is not None:  # opt-in profile/headful/geo (browser only)
+                    kwargs['identity'] = identity
+            elif fetcher_type == 'simple' and identity is not None:
+                self.console.print(
+                    '[warning]⚠ identity (profile/headful) is ignored by the simple fetcher — '
+                    'use fetcher_type=auto/headless/headful[/warning]'
+                )
             return create_fetcher(fetcher_type, **kwargs)
         except ValueError:
             self.console.print(f'[danger]Invalid fetcher type: {fetcher_type}[/danger]')
@@ -282,7 +314,7 @@ class Pipeline(
         max_fetch_retries: int = 2,
         max_discovery_retries: int = 3,
         skip_verification: bool = False,
-        fetcher_type: str = 'simple',
+        fetcher_type: str = 'auto',
         output_format: str | list[str] | None = None,
         fetcher: Any | None = None,
     ) -> None:
@@ -304,7 +336,7 @@ class Pipeline(
         urls: list[str],
         force: bool | None = None,
         skip_verification: bool = False,
-        fetcher_type: str = 'simple',
+        fetcher_type: str = 'auto',
         max_fetch_retries: int = 2,
         max_discovery_retries: int = 3,
         output_format: str | list[str] | None = None,
@@ -403,7 +435,7 @@ class Pipeline(
         max_fetch_retries: int = 2,
         max_discovery_retries: int = 3,
         skip_verification: bool = False,
-        fetcher_type: str = 'simple',
+        fetcher_type: str = 'auto',
         output_format: str | list[str] | None = None,
         fetcher: Any | None = None,
     ) -> AsyncIterator[ContentMap]:
@@ -453,12 +485,35 @@ class Pipeline(
             async with ctx:
                 if not force_flag:
                     cache_gen = await self._try_cached(
-                        url, domain, fetcher, skip_verification, format_to_use, root_span=root_span
+                        url,
+                        domain,
+                        fetcher,
+                        skip_verification,
+                        format_to_use,
+                        max_discovery_retries=max_discovery_retries,
+                        root_span=root_span,
                     )
                     if cache_gen is not None:
                         async for item in cache_gen:
                             yield item
                         return
+
+                    # Single-flight any non-force cache miss/stale path. A stale domain cache
+                    # is still shared state; letting each concurrent URL rediscover independently
+                    # races selector writes and can mix partial selector sets across results.
+                    async for item in self._gated_fresh(
+                        url=url,
+                        domain=domain,
+                        fetcher=fetcher,
+                        force_flag=force_flag,
+                        max_fetch_retries=max_fetch_retries,
+                        max_discovery_retries=max_discovery_retries,
+                        skip_verification=skip_verification,
+                        format_to_use=format_to_use,
+                        root_span=root_span,
+                    ):
+                        yield item
+                    return
 
                 async for item in self._scrape_fresh(
                     url=url,
@@ -472,6 +527,52 @@ class Pipeline(
                     root_span=root_span,
                 ):
                     yield item
+
+    async def _gated_fresh(
+        self,
+        *,
+        url: str,
+        domain: str,
+        fetcher: Any,
+        force_flag: bool,
+        max_fetch_retries: int,
+        max_discovery_retries: int,
+        skip_verification: bool,
+        format_to_use: list[str],
+        root_span: Any | None,
+    ) -> AsyncIterator[ContentMap]:
+        """Single-flight a cold discovery under the (domain, contract) gate.
+
+        Only the first concurrent unit runs fresh discovery; waiters acquire the lock after
+        it, re-check the now-warm cache, and replay — so N concurrent cold scrapes of the same
+        contract cost ONE LLM discovery.
+        """
+        async with (self._discovery_gate or DiscoveryGate()).hold(f'{domain}::{self._contract_sig}'):
+            cache_gen = await self._try_cached(
+                url,
+                domain,
+                fetcher,
+                skip_verification,
+                format_to_use,
+                max_discovery_retries=max_discovery_retries,
+                root_span=root_span,
+            )
+            if cache_gen is not None:
+                async for item in cache_gen:
+                    yield item
+                return
+            async for item in self._scrape_fresh(
+                url=url,
+                domain=domain,
+                fetcher=fetcher,
+                force_flag=force_flag,
+                max_fetch_retries=max_fetch_retries,
+                max_discovery_retries=max_discovery_retries,
+                skip_verification=skip_verification,
+                format_to_use=format_to_use,
+                root_span=root_span,
+            ):
+                yield item
 
     async def _scrape_fresh(
         self,
@@ -560,6 +661,12 @@ class Pipeline(
             used_llm = used_llm or escalated
 
         selectors_to_save = self._selectors_with_root(verified, root_entry)
+
+        # P1.5: expose the freshly-accepted selector map + cleaned HTML so the
+        # cross-contract discrimination gate (ys.scrape) can judge this contract's
+        # region footprint against its siblings before anything is internalized.
+        self.last_selectors = selectors_to_save
+        self.last_cleaned_html = cleaned_html
 
         if not extracted:
             self.console.print('[warning]⚠ Extraction failed, but selectors are valid[/warning]')

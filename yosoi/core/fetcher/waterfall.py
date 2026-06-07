@@ -31,8 +31,14 @@ import httpx
 from rich.console import Console
 
 from yosoi.core.fetcher.base import HARD_BLOCK_STATUS, HTMLFetcher
+from yosoi.core.fetcher.identity import (
+    BrowserIdentity,
+    IdentityCascade,
+    IdentityFetcherPool,
+    run_cascade,
+)
 from yosoi.core.fetcher.simple import SimpleFetcher
-from yosoi.core.fetcher.voiddriver import HeadfulFetcher, HeadlessFetcher
+from yosoi.core.fetcher.voiddriver import HeadfulFetcher, HeadlessFetcher, _VoidCrawlFetcher
 from yosoi.models.results import FetchResult
 from yosoi.storage.strategy import FetchStrategy, FetchStrategyStorage
 from yosoi.utils.exceptions import BotDetectionError
@@ -73,6 +79,9 @@ class JSFetcher(HTMLFetcher):
         download_dir: str | None = None,
         voidcrawl_user_agent: str | None = None,
         voidcrawl_accept_language: str | None = None,
+        identity: BrowserIdentity | None = None,
+        identity_cascade: IdentityCascade | None = None,
+        max_live_identities: int = 3,
     ):
         """Initialise the three-tier JS fetcher.
 
@@ -95,6 +104,16 @@ class JSFetcher(HTMLFetcher):
             voidcrawl_user_agent: Optional browser UA override. When omitted,
                 VoidCrawl owns UA and matching Client Hints.
             voidcrawl_accept_language: Optional browser Accept-Language override.
+            identity: Optional single browser identity. Converted to a one-entry
+                ``IdentityCascade`` so ``fetcher_type='auto'`` accepts the same
+                identity argument as the direct browser tiers.
+            identity_cascade: Optional :class:`IdentityCascade` of browser
+                identities (profile/proxy combos). When set, a bot-block on the
+                terminal headful tier escalates into a per-identity rotation
+                (W2) instead of returning best-effort. ``None`` keeps the legacy
+                single-identity 3-tier behaviour.
+            max_live_identities: Cap on simultaneously-live identity fetchers
+                (each is its own Chrome process); losers are LRU-closed.
 
         """
         self._simple = SimpleFetcher(
@@ -131,6 +150,12 @@ class JSFetcher(HTMLFetcher):
             'accept_language': voidcrawl_accept_language,
         }
 
+        # W2 — profile cascade. Built lazily on first block so a run with no
+        # bot-walled domains never pays for it.
+        self._identity_cascade = identity_cascade or (IdentityCascade((identity,)) if identity is not None else None)
+        self._max_live_identities = max_live_identities
+        self._identity_pool: IdentityFetcherPool | None = None
+
     # ------------------------------------------------------------------
     # Context manager
     # ------------------------------------------------------------------
@@ -163,12 +188,15 @@ class JSFetcher(HTMLFetcher):
         if self._headful is not None:
             await self._headful.close()
             self._headful = None
+        if self._identity_pool is not None:
+            await self._identity_pool.close()
+            self._identity_pool = None
 
     @property
     def supports_browse(self) -> bool:
         """The waterfall escalates to a real browser tier, so a live tab is available.
 
-        This makes ys.File() downloads work on ``fetcher_type='waterfall'`` (the download
+        This makes ys.File() downloads work on ``fetcher_type='auto'`` (the download
         gate forces the browser tier for download specs; see ``_fetch_waterfall``).
         """
         return True
@@ -181,14 +209,18 @@ class JSFetcher(HTMLFetcher):
         """Return the cached strategy for *domain*, or None if unknown."""
         return self._strategy_cache.get(domain)
 
-    async def _record_success(self, domain: str, tier: str) -> None:
-        """Save the winning tier for *domain* if it changed."""
+    async def _record_success(self, domain: str, tier: str, identity_id: str | None = None) -> None:
+        """Save the winning tier (and cascade identity) for *domain* if it changed."""
         current = self._strategy_cache.get(domain)
-        if current is None or current.fetcher != tier:
-            self._strategy_cache[domain] = FetchStrategy(fetcher=tier)
-            await self._strategy_storage.save(domain, tier)
-            self._console.print(f'[success]  ✓ Fetcher strategy saved: {domain} → {tier}[/success]')
-            self.logger.info('Fetch strategy cached: %s -> %s', domain, tier)
+        if current is None or current.fetcher != tier or current.identity_id != identity_id:
+            selector_level = current.selector_level if current is not None else None
+            self._strategy_cache[domain] = FetchStrategy(
+                fetcher=tier, selector_level=selector_level, identity_id=identity_id
+            )
+            await self._strategy_storage.save(domain, tier, selector_level=selector_level, identity_id=identity_id)
+            ident_msg = f' (identity {identity_id})' if identity_id else ''
+            self._console.print(f'[success]  ✓ Fetcher strategy saved: {domain} → {tier}{ident_msg}[/success]')
+            self.logger.info('Fetch strategy cached: %s -> %s%s', domain, tier, ident_msg)
 
     async def update_selector_level(self, domain: str, selector_level: str) -> None:
         """Persist the selector escalation level that worked for this domain."""
@@ -197,9 +229,11 @@ class JSFetcher(HTMLFetcher):
             return
         if current.selector_level == selector_level:
             return
-        updated = FetchStrategy(fetcher=current.fetcher, selector_level=selector_level)
+        updated = FetchStrategy(fetcher=current.fetcher, selector_level=selector_level, identity_id=current.identity_id)
         self._strategy_cache[domain] = updated
-        await self._strategy_storage.save(domain, current.fetcher, selector_level=selector_level)
+        await self._strategy_storage.save(
+            domain, current.fetcher, selector_level=selector_level, identity_id=current.identity_id
+        )
         self._console.print(f'[dim]  ↳ Selector level cached: {domain} → {selector_level}[/dim]')
 
     # ------------------------------------------------------------------
@@ -265,6 +299,81 @@ class JSFetcher(HTMLFetcher):
             self._headful = HeadfulFetcher(**self._chrome_kwargs)
             await self._headful.__aenter__()
         return self._headful
+
+    # ------------------------------------------------------------------
+    # Profile cascade (W2)
+    # ------------------------------------------------------------------
+
+    async def _start_identity_fetcher(
+        self, identity: BrowserIdentity, base_kwargs: dict[str, Any]
+    ) -> _VoidCrawlFetcher:
+        """Factory: start one entered _VoidCrawlFetcher bound to *identity*.
+
+        Each identity gets its OWN Chrome process (VoidCrawl's pool is
+        single-identity). Headful identities run a small pool; the cascade
+        serializes escalation so we never fan out N headful processes at once.
+        """
+        kwargs = dict(base_kwargs)
+        kwargs['identity'] = identity
+        if identity.headful:
+            kwargs['max_concurrent'] = min(int(kwargs.get('max_concurrent', 5)), 6)
+            fetcher: _VoidCrawlFetcher = HeadfulFetcher(**kwargs)
+        else:
+            fetcher = HeadlessFetcher(**kwargs)
+        await fetcher.__aenter__()
+        return fetcher
+
+    def _ensure_identity_pool(self) -> IdentityFetcherPool:
+        if self._identity_pool is None:
+            self._identity_pool = IdentityFetcherPool(
+                factory=self._start_identity_fetcher,
+                base_kwargs=self._chrome_kwargs,
+                max_live=self._max_live_identities,
+            )
+        return self._identity_pool
+
+    async def _fetch_cascade(
+        self,
+        url: str,
+        domain: str,
+        start_time: float,
+        action_scripts: dict[str, str] | None = None,
+        download_specs: dict[str, DownloadSpec] | None = None,
+    ) -> FetchResult:
+        """Rotate browser identities on a block until one wins, else fail-fast.
+
+        Drives the configured :class:`IdentityCascade` through the tenacity-based
+        :func:`run_cascade`, preferring this domain's previously-winning identity
+        first. On success the winning identity is persisted via
+        ``_record_success`` so the next visit retries it directly. On cascade
+        exhaustion the last :class:`BotDetectionError` propagates (fail-fast — no
+        heuristic fallback).
+        """
+        assert self._identity_cascade is not None
+        pool = self._ensure_identity_pool()
+        cached = self._strategy_cache.get(domain)
+        prefer = cached.identity_id if cached is not None else None
+
+        async def do_fetch(fetcher: _VoidCrawlFetcher, ident: BrowserIdentity) -> FetchResult:
+            self._console.print(f'[dim]    ↳ cascade identity [bold]{ident.id}[/bold] for {domain}[/dim]')
+            return await fetcher._do_fetch(
+                url,
+                start_time,
+                f'cascade:{ident.id}',
+                action_scripts=action_scripts,
+                download_specs=download_specs,
+            )
+
+        result, winner = await run_cascade(
+            cascade=self._identity_cascade,
+            pool=pool,
+            do_fetch=do_fetch,
+            prefer=prefer,
+        )
+        if result.html:
+            await self._record_success(domain, 'headful', identity_id=winner.id)
+            self._console.print(f'[success]    ✓ Cascade identity {winner.id} won for {domain}[/success]')
+        return result
 
     # ------------------------------------------------------------------
     # Public fetch interface
@@ -393,6 +502,12 @@ class JSFetcher(HTMLFetcher):
             return result
 
         if cached_tier == 'headful':
+            if self._identity_cascade is not None:
+                # Cached identity is retried first inside the cascade; a block
+                # rotates to the next identity rather than returning a challenge page.
+                return await self._fetch_cascade(
+                    url, domain, start_time, action_scripts=action_scripts, download_specs=download_specs
+                )
             headful = await self._ensure_headful()
             return await headful._do_fetch(
                 url, start_time, 'headful', action_scripts=action_scripts, download_specs=download_specs
@@ -464,7 +579,14 @@ class JSFetcher(HTMLFetcher):
         except BotDetectionError:
             self._console.print('[warning]    ✗ Headless Chrome blocked by bot protection[/warning]')
 
-        # Tier 3: Headful (best effort)
+        # Tier 3: Headful — or, when an identity cascade is configured, rotate
+        # profiles/proxies on a block (W2) instead of best-effort single identity.
+        if self._identity_cascade is not None:
+            self._console.print('[dim]    [3/3] Escalating to profile cascade...[/dim]')
+            return await self._fetch_cascade(
+                url, domain, start_time, action_scripts=action_scripts, download_specs=download_specs
+            )
+
         self._console.print('[dim]    [3/3] Trying headful Chrome...[/dim]')
         headful = await self._ensure_headful()
         result = await headful._do_fetch(

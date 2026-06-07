@@ -190,6 +190,22 @@ def test_validators_and_type_coercion_combined():
     assert result.price == 19.99
 
 
+def test_price_coercion_prefers_current_price_after_original_price():
+    class ShopContract(Contract):
+        price: float = ys.Price()
+
+    result = ShopContract.model_validate({'price': '8.75 GS 6.50 Gold Sovereigns'})
+    assert result.price == 6.5
+
+
+def test_rating_coercion_counts_star_glyphs_before_review_count():
+    class ProductContract(Contract):
+        rating: int = ys.Rating(as_float=True)
+
+    result = ProductContract.model_validate({'rating': '★ ★ ★ ★   ☆   (47)'})
+    assert result.rating == 4
+
+
 # ---------------------------------------------------------------------------
 # generate_manifest
 # ---------------------------------------------------------------------------
@@ -232,6 +248,24 @@ def test_yosoi_type_skipped_when_extra_not_dict():
 
     result = PlainContract.model_validate({'name': 'hello'})
     assert result.name == 'hello'
+
+
+def test_plain_numeric_field_coerces_short_single_number_text():
+    class ProductContract(Contract):
+        reviews_count: int | None = ys.Field(description='Review count')
+
+    assert ProductContract.model_validate({'reviews_count': '47 reviews'}).reviews_count == 47
+    assert ProductContract.model_validate({'reviews_count': '★ ★ ★ ★ ☆ (47)'}).reviews_count == 47
+
+
+def test_plain_numeric_field_rejects_ambiguous_multi_number_text():
+    from pydantic import ValidationError
+
+    class ProductContract(Contract):
+        reviews_count: int | None = ys.Field(description='Review count')
+
+    with pytest.raises(ValidationError):
+        ProductContract.model_validate({'reviews_count': '4.5 stars from 47 reviews'})
 
 
 # ---------------------------------------------------------------------------
@@ -611,10 +645,22 @@ def test_list_field_coercion_skips_none_values():
     """List field coercion silently skips None list field values (line 151)."""
 
     class _OptListContract(Contract):
-        tags: list[str] | None = ys.Field(default=None)
+        tags: list[str] | None = ys.Field()
 
+    assert _OptListContract.model_fields['tags'].default is None
+    assert _OptListContract.model_validate({}).tags is None
     result = _OptListContract.model_validate({'tags': None})
     assert result.tags is None
+
+
+def test_optional_field_annotation_implies_default_none():
+    class _OptionalContract(Contract):
+        score: int | None = ys.Field(description='Optional score')
+        title: str | None = ys.Title(description='Optional title')
+
+    assert _OptionalContract.model_fields['score'].default is None
+    assert _OptionalContract.model_fields['title'].default is None
+    assert _OptionalContract.model_validate({}).model_dump() == {'score': None, 'title': None}
 
 
 def test_undiscovered_action_fields_skips_fields_without_json_extra():

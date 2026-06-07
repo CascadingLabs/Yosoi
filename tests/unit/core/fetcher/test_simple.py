@@ -239,6 +239,15 @@ class TestCreateFetcher:
         f = create_fetcher('simple')
         assert isinstance(f, SimpleFetcher)
 
+    def test_create_auto_fetcher_is_default(self):
+        """create_fetcher() returns the auto fetcher by default."""
+        from yosoi.core.fetcher import create_fetcher
+        from yosoi.core.fetcher.waterfall import JSFetcher
+
+        assert isinstance(create_fetcher(), JSFetcher)
+        assert isinstance(create_fetcher('auto'), JSFetcher)
+        assert isinstance(create_fetcher('waterfall'), JSFetcher)
+
     def test_create_unknown_fetcher_raises(self):
         """create_fetcher with unknown type raises ValueError."""
         from yosoi.core.fetcher import create_fetcher

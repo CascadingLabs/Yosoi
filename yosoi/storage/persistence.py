@@ -47,7 +47,9 @@ class SelectorStorage:
         self.storage_dir = str(init_yosoi(storage_dir))
         self.content_dir = str(init_yosoi(content_dir))
 
-    async def save_selectors(self, url: str, selectors: dict[str, Any], *, verified: bool = False) -> str:
+    async def save_selectors(
+        self, url: str, selectors: dict[str, Any], *, verified: bool = False, contract_sig: str | None = None
+    ) -> str:
         """Save selectors as snapshot format.
 
         Wraps each field's selector dict in a SelectorSnapshot with a
@@ -57,6 +59,7 @@ class SelectorStorage:
             url: URL the selectors were discovered from
             selectors: Dictionary of validated selectors
             verified: When True, stamp each snapshot with ``last_verified_at=now``.
+            contract_sig: Optional contract signature for isolated selector cache files.
 
         Returns:
             Path to the saved file.
@@ -69,9 +72,9 @@ class SelectorStorage:
             snapshots[field_name] = selector_dict_to_snapshot(
                 field_data, discovered_at=now, last_verified_at=now if verified else None
             )
-        return await self.save_snapshots(url, snapshots)
+        return await self.save_snapshots(url, snapshots, contract_sig=contract_sig)
 
-    async def load_selectors(self, domain: str) -> dict[str, Any] | None:
+    async def load_selectors(self, domain: str, contract_sig: str | None = None) -> dict[str, Any] | None:
         """Load selectors from a snapshot file.
 
         Strips audit metadata — callers receive
@@ -79,44 +82,49 @@ class SelectorStorage:
 
         Args:
             domain: Domain name (e.g., 'example.com')
+            contract_sig: Optional contract signature for isolated selector cache files.
 
         Returns:
             Dictionary of selectors, or None if not found or error occurred.
 
         """
-        snapshots = await self.load_snapshots(domain)
+        snapshots = await self.load_snapshots(domain, contract_sig=contract_sig)
         if snapshots is None:
             return None
         return {name: data for name, snap in snapshots.items() if (data := snapshot_to_selector_dict(snap))}
 
-    async def load_field_selector(self, domain: str, field_name: str) -> dict[str, Any] | None:
+    async def load_field_selector(
+        self, domain: str, field_name: str, contract_sig: str | None = None
+    ) -> dict[str, Any] | None:
         """Return raw selector dict for a single field, or None if not cached.
 
         Args:
             domain: Domain name (e.g., 'example.com')
             field_name: Field name to look up
+            contract_sig: Optional contract signature for isolated selector cache files.
 
         Returns:
             Dict with primary/fallback/tertiary keys, or None if not found.
 
         """
-        data = await self.load_selectors(domain)
+        data = await self.load_selectors(domain, contract_sig=contract_sig)
         if data is None:
             return None
         entry = data.get(field_name)
         return entry if isinstance(entry, dict) else None
 
-    async def selector_exists(self, domain: str) -> bool:
+    async def selector_exists(self, domain: str, contract_sig: str | None = None) -> bool:
         """Check if selectors exist for a domain.
 
         Args:
             domain: Domain name to check
+            contract_sig: Optional contract signature for isolated selector cache files.
 
         Returns:
             True if selector file exists for the domain, False otherwise.
 
         """
-        filepath = self._get_filepath(domain)
+        filepath = self._get_filepath(domain, contract_sig=contract_sig)
         return await aiofiles.os.path.exists(filepath)
 
     async def save_content(
@@ -225,7 +233,7 @@ class SelectorStorage:
             except (OSError, json.JSONDecodeError):
                 pass
 
-        return sorted(domains)
+        return sorted(set(domains))
 
     async def get_summary(self) -> dict[str, Any]:
         """Get summary of all saved selectors.
@@ -262,17 +270,18 @@ class SelectorStorage:
     # Snapshot API (v2)
     # ------------------------------------------------------------------
 
-    async def load_snapshots(self, domain: str) -> dict[str, SelectorSnapshot] | None:
+    async def load_snapshots(self, domain: str, contract_sig: str | None = None) -> dict[str, SelectorSnapshot] | None:
         """Load full snapshots with audit metadata for a domain.
 
         Args:
             domain: Domain name (e.g., 'example.com')
+            contract_sig: Optional contract signature for isolated selector cache files.
 
         Returns:
             Dict mapping field names to SelectorSnapshot, or None if not found.
 
         """
-        data = await self._load_file_data(domain)
+        data = await self._load_file_data(domain, contract_sig=contract_sig)
         if data is None:
             return None
 
@@ -285,36 +294,45 @@ class SelectorStorage:
         except (ValueError, TypeError):
             return None
 
-    async def save_snapshots(self, url: str, snapshots: dict[str, SelectorSnapshot]) -> str:
+    async def save_snapshots(
+        self, url: str, snapshots: dict[str, SelectorSnapshot], contract_sig: str | None = None
+    ) -> str:
         """Write v2 snapshot format to disk.
 
         Args:
             url: URL the selectors were discovered from
             snapshots: Dict mapping field names to SelectorSnapshot
+            contract_sig: Optional contract signature for isolated selector cache files.
 
         Returns:
             Path to the saved file.
 
         """
         domain = self._extract_domain(url)
-        filepath = self._get_selector_filepath(domain)
+        filepath = self._get_selector_filepath(domain, contract_sig=contract_sig)
 
         snap_map = SnapshotMap(url=url, domain=domain, snapshots=snapshots)
-        await atomic_write_json_async(filepath, snap_map.model_dump(mode='json'), ensure_ascii=False)
+        payload = snap_map.model_dump(mode='json')
+        if contract_sig:
+            payload['contract_sig'] = contract_sig
+        await atomic_write_json_async(filepath, payload, ensure_ascii=False)
 
         logger.info('Saved snapshots to: %s', filepath)
         return filepath
 
-    async def record_verdict(self, domain: str, field_name: str, verdict: CacheVerdict) -> None:
+    async def record_verdict(
+        self, domain: str, field_name: str, verdict: CacheVerdict, contract_sig: str | None = None
+    ) -> None:
         """Update the audit trail for a single field after verification.
 
         Args:
             domain: Domain name
             field_name: Field whose verdict to record
             verdict: FRESH, STALE, or DEGRADED
+            contract_sig: Optional contract signature for isolated selector cache files.
 
         """
-        data = await self._load_file_data(domain)
+        data = await self._load_file_data(domain, contract_sig=contract_sig)
         if data is None or 'snapshots' not in data:
             return
 
@@ -331,10 +349,13 @@ class SelectorStorage:
             snap.last_failed_at = now
             snap.failure_count += 1
 
-        filepath = self._get_filepath(domain)
-        await atomic_write_json_async(filepath, snap_map.model_dump(mode='json'), ensure_ascii=False)
+        filepath = self._get_filepath(domain, contract_sig=contract_sig)
+        payload = snap_map.model_dump(mode='json')
+        if contract_sig:
+            payload['contract_sig'] = contract_sig
+        await atomic_write_json_async(filepath, payload, ensure_ascii=False)
 
-    def _format_selectors(self, selectors: dict[str, Any]) -> dict[str, dict[str, str | None]]:
+    def _format_selectors(self, selectors: dict[str, Any]) -> dict[str, dict[str, Any]]:
         """Format selectors for storage.
 
         Args:
@@ -344,7 +365,7 @@ class SelectorStorage:
             Formatted selectors with primary, fallback, and tertiary keys.
 
         """
-        formatted: dict[str, dict[str, str | None]] = {}
+        formatted: dict[str, dict[str, Any]] = {}
 
         for field, field_data in selectors.items():
             if isinstance(field_data, dict):
@@ -353,6 +374,8 @@ class SelectorStorage:
                     'fallback': field_data.get('fallback'),
                     'tertiary': field_data.get('tertiary'),
                 }
+                if field_data.get('root') is not None:
+                    formatted[field]['root'] = field_data.get('root')
 
         return formatted
 
@@ -360,29 +383,33 @@ class SelectorStorage:
         """Extract the normalized domain from a URL (single source of truth)."""
         return extract_domain(url)
 
-    def _get_filepath(self, domain: str) -> str:
+    def _get_filepath(self, domain: str, contract_sig: str | None = None) -> str:
         """Get filepath for a domain's selectors (always JSON).
 
         Args:
             domain: Domain name
+            contract_sig: Optional contract signature for isolated selector cache files.
 
         Returns:
             Full file path for the domain's selector file (JSON).
 
         """
-        return self._get_selector_filepath(domain)
+        return self._get_selector_filepath(domain, contract_sig=contract_sig)
 
-    def _get_selector_filepath(self, domain: str) -> str:
+    def _get_selector_filepath(self, domain: str, contract_sig: str | None = None) -> str:
         """Get filepath for a domain's selectors (always JSON).
 
         Args:
             domain: Domain name
+            contract_sig: Optional contract signature for isolated selector cache files.
 
         Returns:
             Full file path for the domain's selector file.
 
         """
         safe = safe_domain(domain)
+        if contract_sig:
+            safe = f'{safe}_{contract_sig}'
         return os.path.join(self.storage_dir, f'selectors_{safe}.json')
 
     def _get_content_filepath(self, url: str, output_format: str = 'json', contract_sig: str | None = None) -> str:
@@ -436,18 +463,19 @@ class SelectorStorage:
 
         return os.path.join(domain_dir, filename)
 
-    async def _load_file_data(self, domain: str) -> dict[str, Any] | None:
+    async def _load_file_data(self, domain: str, contract_sig: str | None = None) -> dict[str, Any] | None:
         """Load complete file data for a domain.
 
         Args:
             domain: Domain name
+            contract_sig: Optional contract signature for isolated selector cache files.
 
         Returns:
             Dictionary with full JSON structure (url, domain, discovered_at, selectors),
             or None if not found or error occurred.
 
         """
-        filepath = self._get_filepath(domain)
+        filepath = self._get_filepath(domain, contract_sig=contract_sig)
 
         if not await aiofiles.os.path.exists(filepath):
             return None

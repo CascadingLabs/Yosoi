@@ -69,6 +69,14 @@ repos:
         types: [python]
         stages: [pre-commit, manual]
 
+      - id: no-hardcoded-example-selectors
+        name: ban hard-coded selectors in examples
+        entry: uv run python scripts/check_no_hardcoded_selectors.py examples
+        language: system
+        types: [python]
+        pass_filenames: false
+        stages: [pre-commit, manual]
+
   - repo: https://github.com/astral-sh/uv-pre-commit
     rev: 0.10.0
     hooks:

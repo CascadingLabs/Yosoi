@@ -141,13 +141,24 @@ class ContentExtractor:
                 ('tertiary', coerce_selector_entry(field_selectors.get('tertiary'))),
             ]
 
+            # Field-level root: scope this field's resolution to its parent region. A field
+            # rooted under one region (e.g. a sponsored ad block) cannot latch onto another
+            # (the organic list), and its leaf selector can stay simple. If a root is set but
+            # matches nothing, the field has no value IN that region — we do NOT silently fall
+            # back to the whole document (that would defeat the discrimination root buys).
+            root_entry = coerce_selector_entry(field_selectors.get('root'))
+            scope = self._scope_to_root(sel, root_entry)
+            if scope is None:
+                self.console.print(f'  ✗ {field_name}: root selector matched no region')
+                continue
+
             content = None
             selector_used = None
 
             for level_name, entry in candidates:
                 if entry is None:
                     continue
-                content = self._resolve(sel, entry, field_name, max_level)
+                content = self._resolve(scope, entry, field_name, max_level)
                 if content:
                     selector_used = level_name
                     break
@@ -168,6 +179,23 @@ class ContentExtractor:
         if not extracted:
             return None
         return self._unflatten(extracted, self._nested_prefixes)
+
+    def _scope_to_root(self, sel: Selector, root_entry: SelectorEntry | None) -> Selector | None:
+        """Scope *sel* to a field's root region, or return *sel* unchanged when no root.
+
+        Returns the FIRST element matched by the root (single-record semantics), the
+        unscoped selector when no root is set, or ``None`` when a root is set but matches
+        nothing — the signal that this field simply has no value in its region.
+        """
+        if root_entry is None:
+            return sel
+        if root_entry.type == 'xpath':
+            matches = sel.xpath(root_entry.value)
+        elif root_entry.type == 'css':
+            matches = sel.css(root_entry.value)
+        else:
+            return sel  # non-structural root kinds aren't scopes; ignore rather than fail
+        return matches[0] if matches else None
 
     def _resolve(
         self,
@@ -324,6 +352,7 @@ class ContentExtractor:
         self.console.print(f'  ↻ Found {len(containers)} items with container selector: {container_selector}')
 
         items: list[dict[str, str | list[str | dict[str, str]]]] = []
+        seen_items: set[tuple[tuple[str, str], ...]] = set()
         for container in containers:
             item: dict[str, str | list[str | dict[str, str]]] = {}
 
@@ -347,7 +376,12 @@ class ContentExtractor:
                         break
 
             if item:
-                items.append(self._unflatten(item, self._nested_prefixes))
+                unflattened = self._unflatten(item, self._nested_prefixes)
+                key = tuple(sorted((name, repr(value)) for name, value in unflattened.items()))
+                if key in seen_items:
+                    continue
+                seen_items.add(key)
+                items.append(unflattened)
 
         self.console.print(f'  ↻ Extracted {len(items)} non-empty items')
         return items if items else None

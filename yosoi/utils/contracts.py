@@ -1,14 +1,20 @@
 """Contract resolution utilities — core logic without CLI dependencies."""
 
+from __future__ import annotations
+
 import ast
 import difflib
 import importlib.util
 import inspect
 import os
 import pathlib
+from typing import TYPE_CHECKING, Any
 
 from yosoi.models.contract import _CONTRACT_REGISTRY, Contract
 from yosoi.models.defaults import BUILTIN_SCHEMAS
+
+if TYPE_CHECKING:
+    from yosoi.models.spec import ContractSpec
 
 _SCAN_SKIP_DIRS = frozenset(
     {
@@ -125,20 +131,21 @@ def _load_contract_from_file(schema_str: str) -> type[Contract]:
     return cls
 
 
-def resolve_contract(name: str) -> type[Contract]:
-    """Resolve a contract name to a Contract class (exact matching only).
+def resolve_contract(name: str | dict[str, Any] | ContractSpec) -> type[Contract]:
+    """Resolve a contract to a Contract class.
 
     This is the programmatic API. No fuzzy matching or file scanning is
     performed — those are CLI-only DX features in ``SchemaParamType``.
 
     Resolution order:
-    1. Exact match in BUILTIN_SCHEMAS
-    2. Case-insensitive match in BUILTIN_SCHEMAS
-    3. Exact / case-insensitive match in _CONTRACT_REGISTRY (custom schemas)
-    4. Dynamic import via ``path:ClassName``
+    1. ContractSpec / dict → rehydrate via ``ContractSpec.to_contract()``
+    2. Exact match in BUILTIN_SCHEMAS
+    3. Case-insensitive match in BUILTIN_SCHEMAS
+    4. Exact / case-insensitive match in _CONTRACT_REGISTRY (custom schemas)
+    5. Dynamic import via ``path:ClassName``
 
     Args:
-        name: Contract name or ``path:ClassName`` string.
+        name: Contract name, ``path:ClassName`` string, inline ContractSpec, or dict.
 
     Returns:
         The resolved Contract subclass.
@@ -147,23 +154,38 @@ def resolve_contract(name: str) -> type[Contract]:
         ValueError: If no matching contract is found.
 
     """
-    # 1. Exact match in builtins
+    # 1. ContractSpec or dict — rehydrate
+    if not isinstance(name, str):
+        from yosoi.models.spec import ContractSpec as _Spec
+
+        spec = name if isinstance(name, _Spec) else _Spec.model_validate(name)
+        # Dedup: if a registered contract with the same fingerprint exists, return it.
+        fp = spec.fingerprint
+        for cls in list(BUILTIN_SCHEMAS.values()) + list(_CONTRACT_REGISTRY.values()):
+            try:
+                if cls.to_spec().fingerprint == fp:
+                    return cls
+            except Exception:  # noqa: BLE001, PERF203
+                pass
+        return spec.to_contract()
+
+    # 2. Exact match in builtins
     if name in BUILTIN_SCHEMAS:
         return BUILTIN_SCHEMAS[name]
 
-    # 2. Case-insensitive match in builtins
+    # 3. Case-insensitive match in builtins
     lower_builtin = {k.lower(): k for k in BUILTIN_SCHEMAS}
     if name.lower() in lower_builtin:
         return BUILTIN_SCHEMAS[lower_builtin[name.lower()]]
 
-    # 3. Exact / case-insensitive match in registry
+    # 4. Exact / case-insensitive match in registry
     if name in _CONTRACT_REGISTRY:
         return _CONTRACT_REGISTRY[name]
     lower_registry = {k.lower(): k for k in _CONTRACT_REGISTRY}
     if name.lower() in lower_registry:
         return _CONTRACT_REGISTRY[lower_registry[name.lower()]]
 
-    # 4. Dynamic import (path:ClassName)
+    # 5. Dynamic import (path:ClassName)
     if ':' in name:
         return _load_contract_from_file(name)
 

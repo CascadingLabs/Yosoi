@@ -66,7 +66,7 @@ async def scrape():
             html = await tab.content()
 ```
 
-See [`examples/pool_usage.py`](examples/pool_usage.py) and [`examples/pool_fetch_cleaned.py`](examples/pool_fetch_cleaned.py) for full working examples.
+See [`examples/README.md`](examples/README.md) for the maintained example set.
 
 ## Quick Start
 

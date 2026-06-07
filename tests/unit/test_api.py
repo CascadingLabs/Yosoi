@@ -13,6 +13,136 @@ class ApiContract(Contract):
     title: str = ys.Title()
 
 
+class ApiContract2(Contract):
+    url: str = ys.Url()
+
+
+async def test_scrape_accepts_a_list_of_contracts(monkeypatch):
+    """scrape() with a LIST runs each contract concurrently and returns a name-keyed dict."""
+    FakePipeline.instances.clear()
+    monkeypatch.setattr(api, 'Pipeline', FakePipeline)
+
+    result = await api.scrape('https://example.com', [ApiContract, ApiContract2], model=ys.claude_sdk())
+
+    assert result == {
+        'ApiContract': [{'title': 'Example'}],
+        'ApiContract2': [{'title': 'Example'}],
+    }
+    assert len(FakePipeline.instances) == 2
+    # All concurrent contracts share ONE write-lock (serialised selector writes), and NO
+    # DiscoveryBus is shared across them (sharing would force identical selectors).
+    locks = [i.kwargs.get('write_lock') for i in FakePipeline.instances]
+    assert all(lock is not None for lock in locks)
+    assert len({id(lock) for lock in locks}) == 1
+    assert all(i.kwargs.get('bus') is None for i in FakePipeline.instances)
+
+
+async def test_scrape_accepts_a_list_of_urls(monkeypatch):
+    """scrape() with a LIST of urls returns a url-keyed dict, one unit per url."""
+    FakePipeline.instances.clear()
+    monkeypatch.setattr(api, 'Pipeline', FakePipeline)
+
+    result = await api.scrape(['https://a.example', 'https://b.example'], ApiContract, model=ys.claude_sdk())
+
+    assert result == {
+        'https://a.example': [{'title': 'Example'}],
+        'https://b.example': [{'title': 'Example'}],
+    }
+    assert len(FakePipeline.instances) == 2
+
+
+async def test_scrape_threads_opt_in_identity_per_url(monkeypatch):
+    """identities={url: BrowserIdentity} is forwarded to that url's Pipeline (opt-in profile)."""
+    from yosoi.core.fetcher.identity import BrowserIdentity
+
+    FakePipeline.instances.clear()
+    monkeypatch.setattr(api, 'Pipeline', FakePipeline)
+
+    g = BrowserIdentity(id='google', headful=True, profile_dir='/tmp/prof')
+    result = await api.scrape(
+        ['https://google.test', 'https://bing.test'],
+        ApiContract,
+        model=ys.claude_sdk(),
+        fetcher_type='headless',
+        identities={'https://google.test': g},
+    )
+
+    assert set(result) == {'https://google.test', 'https://bing.test'}
+    by_url = {i.scrape_kwargs['url']: i for i in FakePipeline.instances}  # type: ignore[index]
+    assert by_url['https://google.test'].kwargs['identity'] is g  # google gets the trusted profile
+    assert by_url['https://bing.test'].kwargs['identity'] is None  # bing opted out -> plain
+
+
+async def test_scrape_per_url_fetcher_type(monkeypatch):
+    """fetcher_type can be a {url: tier} map — each url's pipeline gets its own tier."""
+    FakePipeline.instances.clear()
+    monkeypatch.setattr(api, 'Pipeline', FakePipeline)
+
+    await api.scrape(
+        ['https://google.test', 'https://bing.test'],
+        ApiContract,
+        model=ys.claude_sdk(),
+        fetcher_type={'https://google.test': 'headful', 'https://bing.test': 'headless'},
+    )
+    by_url = {i.scrape_kwargs['url']: i for i in FakePipeline.instances}  # type: ignore[index]
+    assert by_url['https://google.test'].scrape_kwargs['fetcher_type'] == 'headful'
+    assert by_url['https://bing.test'].scrape_kwargs['fetcher_type'] == 'headless'
+
+
+async def test_scrape_max_concurrency_caps_inflight(monkeypatch):
+    """max_concurrency bounds how many (url, contract) units run at once."""
+    import asyncio
+
+    inflight = 0
+    peak = 0
+
+    class _SlowPipeline(FakePipeline):
+        async def scrape(self, url: str, **kwargs: object):
+            nonlocal inflight, peak
+            inflight += 1
+            peak = max(peak, inflight)
+            await asyncio.sleep(0.02)
+            inflight -= 1
+            yield {'title': 'Example'}
+
+    FakePipeline.instances.clear()
+    monkeypatch.setattr(api, 'Pipeline', _SlowPipeline)
+    urls = [f'https://u{i}.test' for i in range(6)]
+    await api.scrape(urls, ApiContract, model=ys.claude_sdk(), max_concurrency=2)
+    assert peak <= 2
+
+
+async def test_scrape_no_identities_is_default(monkeypatch):
+    """Default (no identities) forwards identity=None — behavior unchanged."""
+    FakePipeline.instances.clear()
+    monkeypatch.setattr(api, 'Pipeline', FakePipeline)
+    await api.scrape('https://x.test', ApiContract, model=ys.claude_sdk())
+    assert FakePipeline.instances[0].kwargs['identity'] is None
+
+
+async def test_scrape_defaults_to_auto_fetcher(monkeypatch):
+    FakePipeline.instances.clear()
+    monkeypatch.setattr(api, 'Pipeline', FakePipeline)
+
+    await api.scrape('https://x.test', ApiContract, model=ys.claude_sdk())
+
+    assert FakePipeline.instances[0].scrape_kwargs['fetcher_type'] == 'auto'  # type: ignore[index]
+
+
+async def test_scrape_grid_urls_x_contracts(monkeypatch):
+    """scrape([urls], [contracts]) returns {url: {contract_name: records}} — the full grid."""
+    FakePipeline.instances.clear()
+    monkeypatch.setattr(api, 'Pipeline', FakePipeline)
+
+    result = await api.scrape(
+        ['https://a.example', 'https://b.example'], [ApiContract, ApiContract2], model=ys.claude_sdk()
+    )
+
+    assert set(result) == {'https://a.example', 'https://b.example'}
+    assert set(result['https://a.example']) == {'ApiContract', 'ApiContract2'}
+    assert len(FakePipeline.instances) == 4  # 2 urls x 2 contracts
+
+
 class FakePipeline:
     """Pipeline test double that captures constructor and scrape arguments."""
 

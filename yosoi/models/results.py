@@ -67,6 +67,16 @@ class FetchResult:
     # perception layer alongside the cleaned HTML.
     ax_snapshot: AxSnapshot | None = None
 
+    # Response header map (HTTP tiers; None when unavailable). Feeds the L3-lite network layer of
+    # the waterfall fingerprint — the set of header NAMES + Set-Cookie cookie NAMES is an
+    # infra/CDN signature (the values are per-request content and are never fingerprinted).
+    headers: dict[str, str] | None = None
+
+    # PII-safe XHR/fetch endpoint set captured by the browser tier (VoidCrawl's
+    # PageResponse.endpoints: scheme://host/path, query/secrets stripped at the source). Feeds the
+    # L3 endpoint-path skeleton layer. None when the fetch tier didn't capture it (HTTP/replay).
+    endpoints: list[str] | None = None
+
     # Content metadata
     metadata: ContentMetadata = field(default_factory=ContentMetadata)
 

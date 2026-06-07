@@ -39,7 +39,17 @@ def test_flush_safe_when_off():
     obs.flush()
 
 
-def test_configure_initializes_client_with_keys():
+def _mock_langfuse_success(mocker):
+    fake_sdk = mocker.MagicMock()
+    fake_sdk.auth_check.return_value = True
+    mocker.patch.object(obs, '_langfuse_preflight_error', return_value=None)
+    mocker.patch.object(obs, 'Langfuse', return_value=fake_sdk)
+    mocker.patch('pydantic_ai.agent.Agent.instrument_all')
+    return fake_sdk
+
+
+def test_configure_initializes_client_with_keys(mocker):
+    _mock_langfuse_success(mocker)
     cfg = TelemetryConfig(
         langfuse_public_key='pk-test',
         langfuse_secret_key='sk-test',
@@ -51,7 +61,19 @@ def test_configure_initializes_client_with_keys():
     assert c.tracer is not None
 
 
-def test_configure_is_idempotent():
+def test_configure_disables_client_when_langfuse_unreachable(caplog):
+    cfg = TelemetryConfig(
+        langfuse_public_key='pk-test',
+        langfuse_secret_key='sk-test',
+        langfuse_host='http://localhost:3000',
+    )
+    obs.configure(cfg)
+    assert obs.client() is None
+    assert 'scraping continues without trace export' in caplog.text
+
+
+def test_configure_is_idempotent(mocker):
+    _mock_langfuse_success(mocker)
     cfg = TelemetryConfig(
         langfuse_public_key='pk-test',
         langfuse_secret_key='sk-test',
@@ -63,9 +85,10 @@ def test_configure_is_idempotent():
     assert obs.client() is first
 
 
-def test_agent_capabilities_instrumented_when_configured():
+def test_agent_capabilities_instrumented_when_configured(mocker):
     from pydantic_ai.capabilities import Instrumentation
 
+    _mock_langfuse_success(mocker)
     obs.configure(
         TelemetryConfig(
             langfuse_public_key='pk-test',
@@ -123,8 +146,9 @@ def test_cross_session_fresh_import_simulation(monkeypatch):
     assert obs.process_session_id() == 'cross-session-foo'
 
 
-def test_reset_for_tests_clears_singleton_and_session_id(monkeypatch):
+def test_reset_for_tests_clears_singleton_and_session_id(monkeypatch, mocker):
     monkeypatch.delenv('YOSOI_SESSION_ID', raising=False)
+    _mock_langfuse_success(mocker)
     cfg = TelemetryConfig(
         langfuse_public_key='pk-test',
         langfuse_secret_key='sk-test',

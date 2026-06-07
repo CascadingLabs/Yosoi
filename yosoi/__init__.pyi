@@ -1,7 +1,7 @@
 """Type stubs for yosoi public API."""
 
-from collections.abc import Iterable
-from typing import Any
+from collections.abc import Iterable, Sequence
+from typing import Any, Literal
 
 from yosoi.core.configs import DebugConfig as DebugConfig
 from yosoi.core.configs import DiscoveryConfig as DiscoveryConfig
@@ -11,6 +11,7 @@ from yosoi.core.configs import auto_config as auto_config
 from yosoi.core.discovery import LLMConfig as LLMConfig
 from yosoi.core.discovery.config import LLMBuilder as LLMBuilder
 from yosoi.core.pipeline import Pipeline as Pipeline
+from yosoi.generalization.fingerprint import PageFingerprint as PageFingerprint
 from yosoi.integrations import ClaudeSDKModel as ClaudeSDKModel
 from yosoi.integrations import OpenCodeModel as OpenCodeModel
 from yosoi.models.contract import Contract as Contract
@@ -99,12 +100,19 @@ def together(model_name: str, api_key: str | None = ..., **kwargs: Any) -> LLMCo
 def vercel(model_name: str, api_key: str | None = ..., **kwargs: Any) -> LLMConfig: ...
 def vertexai(model_name: str, **kwargs: Any) -> LLMConfig: ...
 def xai(model_name: str, api_key: str | None = ..., **kwargs: Any) -> LLMConfig: ...
+def fingerprint(
+    source: object,
+    *,
+    ax_snapshot: Any = ...,
+    headers: dict[str, str] | None = ...,
+    endpoints: Sequence[str] | None = ...,
+) -> PageFingerprint: ...
 async def scrape(
-    url: str,
-    contract: type[Contract] | str,
+    url: str | Sequence[str],
+    contract: type[Contract] | str | Sequence[type[Contract] | str],
     model: YosoiConfig | LLMConfig | str | None = ...,
     **kwargs: Any,
-) -> list[dict[str, Any]]: ...
+) -> list[dict[str, Any]] | dict[str, list[dict[str, Any]]] | dict[str, dict[str, list[dict[str, Any]]]]: ...
 async def scrape_many(
     urls: list[str] | tuple[str, ...],
     contract: type[Contract] | str,
@@ -117,6 +125,14 @@ def scrape_sync(
     model: YosoiConfig | LLMConfig | str | None = ...,
     **kwargs: Any,
 ) -> list[dict[str, Any]]: ...
+def show(
+    value: Any,
+    *,
+    format: Literal['auto', 'table', 'plain', 'json'] = ...,
+    title: str | None = ...,
+    console: Any = ...,
+    fingerprint: object | bool | None = ...,
+) -> None: ...
 
 __version__: str
 __all__: list[str]

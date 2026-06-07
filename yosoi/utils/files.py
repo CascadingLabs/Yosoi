@@ -145,12 +145,15 @@ def get_project_root() -> Path:
     """
     # Start where the user ran the command
     current_path = Path.cwd()
+    tmp_root = Path(tempfile.gettempdir()).resolve()
 
     # Define what makes a folder a "project root"
     markers = {'.git', 'pyproject.toml', '.yosoi', 'requirements.txt'}
 
     # Walk up the filesystem
     for parent in [current_path, *list(current_path.parents)]:
+        if parent.resolve() == tmp_root and parent != current_path:
+            continue
         # Check if any marker exists in this directory
         if any((parent / marker).exists() for marker in markers):
             return parent

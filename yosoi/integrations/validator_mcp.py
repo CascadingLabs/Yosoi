@@ -63,12 +63,27 @@ def _load_rules() -> dict[str, SemanticRule]:
     return rules
 
 
+def _check_value_feedback(field: str, value: str, rules: dict[str, SemanticRule]) -> str:
+    """Evaluate a single field value and return check feedback.
+
+    This helper keeps rule checks available as a pure function for tests and
+    mirrors the same semantics as the MCP-registered ``check_value`` tool.
+    """
+    validator = SemanticValidator()
+    rule = rules.get(field)
+    if rule is None:
+        return 'ok'
+    issues = validator.validate({field: value}, {field: rule})
+    if not issues:
+        return 'ok'
+    return issues[0].as_feedback()
+
+
 def build_server() -> object:
     """Construct the FastMCP server with the ``check_value`` tool registered."""
     from mcp.server.fastmcp import FastMCP
 
     rules = _load_rules()
-    validator = SemanticValidator()
     server = FastMCP('yosoi-validator')
 
     @server.tool()
@@ -79,13 +94,7 @@ def build_server() -> object:
         produced it. Returns ``"ok"`` when the value is well-shaped (or the field
         has no rule), otherwise a short reason to try a different selector.
         """
-        rule = rules.get(field)
-        if rule is None:
-            return 'ok'
-        issues = validator.validate({field: value}, {field: rule})
-        if not issues:
-            return 'ok'
-        return issues[0].as_feedback()
+        return _check_value_feedback(field, value, rules)
 
     return server
 

@@ -1,0 +1,16 @@
+name: Yosoi CodeQL config
+
+# Runs the default CodeQL security query suite for Python.
+#
+# The "no hard-coded selectors in examples" policy is enforced by
+# scripts/check_no_hardcoded_selectors.py — locally via the pre-commit hook and
+# in CI via the "Selector policy" job in lint.yaml. That checker is the single
+# tested source of truth; we don't duplicate it as a custom CodeQL query.
+
+# Scope the security scan to deployed code. Test/example/experiment code is not an
+# attack surface, and assertions there (e.g. `assert 'example.com' in output`) trip
+# the URL-substring-sanitization taint rule as false positives.
+paths-ignore:
+  - tests
+  - examples
+  - experiments

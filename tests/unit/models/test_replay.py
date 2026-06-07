@@ -15,6 +15,7 @@ from yosoi.models.replay import (
     ReplayNode,
     ReplayPlan,
     ReplayStatus,
+    TeleportSpec,
     VerifyReport,
 )
 from yosoi.models.selectors import css, role, visual
@@ -60,6 +61,32 @@ class TestReplayPlan:
         assert restored.is_empty is False
         assert restored.nodes[0].act.targets[0].type == 'role'
 
+    def test_plan_defaults_to_no_teleport(self):
+        assert ReplayPlan().teleport is None
+
+    def test_plan_carries_teleport_spec_round_trip(self):
+        plan = ReplayPlan(
+            nodes=[],
+            teleport=TeleportSpec(latitude=38.88, longitude=-77.1, timezone='America/New_York', locale='en-US'),
+        )
+        restored = ReplayPlan.model_validate(plan.model_dump(mode='json'))
+        assert restored.teleport is not None
+        assert restored.teleport.latitude == 38.88
+        assert restored.teleport.longitude == -77.1
+        assert restored.teleport.timezone == 'America/New_York'
+
+
+class TestTeleportSpec:
+    def test_minimal_spec_allows_optional_fields_none(self):
+        spec = TeleportSpec(latitude=1.0, longitude=2.0)
+        assert spec.timezone is None
+        assert spec.locale is None
+
+    @pytest.mark.parametrize(('lat', 'lon'), [(91.0, 0.0), (-91.0, 0.0), (0.0, 181.0), (0.0, -181.0)])
+    def test_rejects_out_of_range_coords(self, lat, lon):
+        with pytest.raises(ValueError, match=r'less than or equal|greater than or equal'):
+            TeleportSpec(latitude=lat, longitude=lon)
+
 
 class TestVerifyReport:
     def test_empty_report_scores_one(self):
@@ -73,6 +100,26 @@ class TestDiscoveryLesson:
     def test_lesson_key_storage_key_is_filesystem_safe(self):
         key = LessonKey(domain='news.ycombinator.com', contract_signature='abc/123', page_profile='top stories')
         assert key.storage_key == 'news_ycombinator_com__abc_123__top_stories__mcp'
+
+    def test_per_engine_key_has_distinct_namespace(self):
+        # An engine-keyed lesson (the hotpath inversion) must not collide with a
+        # domain-keyed lesson for the same contract: the 'engine_' prefix + the
+        # param-keys segment keep the two namespaces disjoint.
+        engine = LessonKey(
+            domain='ignored',
+            contract_signature='sig',
+            engine_host='similarweb.com',
+            param_keys=('d',),
+        )
+        per_domain = LessonKey(domain='ignored', contract_signature='sig')
+        assert engine.storage_key == 'engine_similarweb_com__sig__d__default__mcp'
+        assert engine.storage_key != per_domain.storage_key
+
+    def test_per_destination_key_unchanged_when_no_engine_host(self):
+        # Backward compatibility: adding engine_host/param_keys must not perturb
+        # the legacy per-destination storage_key format.
+        key = LessonKey(domain='example.com', contract_signature='sig')
+        assert key.storage_key == 'example_com__sig__default__mcp'
 
     def test_active_requires_status_and_validation(self):
         now = datetime.now(timezone.utc)

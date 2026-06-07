@@ -252,6 +252,8 @@ class MCPDiscoveryOrchestrator:
         from yosoi.models.selectors import SelectorLevel
 
         extractor = ContentExtractor(console=_Console(quiet=True), contract=self._contract)
+        if not candidates:
+            return {}
         try:
             extracted = extractor.extract_content_with_html('', html, candidates, max_level=SelectorLevel.VISUAL)
         except Exception as exc:  # noqa: BLE001 — extraction is a best-effort oracle, never fatal

@@ -183,7 +183,20 @@ class DiscoveryOrchestrator:
         # cache lookup, tracing user_id, and per-domain locking all share one
         # bucket (no port/userinfo/casing splits).
         domain = (obs.normalize_user_id(url) if url else None) or 'unknown'
-        discovery_input = DiscoveryInput(url=url_context, html=html, ax_hint=format_ax_hint(ax_snapshot))
+
+        # P1 (advisory/log-only): compute the structural page-shape bucket so we can
+        # validate its stability envelope against real traffic BEFORE it ever keys the
+        # selector cache. This does NOT yet feed LessonKey.page_profile — it only
+        # observes. Best-effort: a failure here must never break discovery.
+        self._log_page_shape(html, url_context, domain, ax_snapshot=ax_snapshot)
+
+        # Thread the contract's class docstring through as discovery intent so two
+        # same-shape contracts that differ only by NL intent (AdLink vs OrganicLink,
+        # both {url, title}) produce DISTINCT agent prompts — not byte-identical
+        # input. Without this the docstring-aware signature would give them two cache
+        # slots holding non-discriminated selectors (see W5 verifier note).
+        intent = (self._contract.__doc__ or '').strip()
+        discovery_input = DiscoveryInput(url=url_context, html=html, ax_hint=format_ax_hint(ax_snapshot), intent=intent)
 
         field_descs = self._contract.field_descriptions()
         overrides = self._contract.get_selector_overrides()
@@ -225,6 +238,33 @@ class DiscoveryOrchestrator:
                 feedback=feedback,
                 force=force,
             )
+
+    @staticmethod
+    def _log_page_shape(html: str, url_context: str, domain: str, ax_snapshot: AxSnapshot | None = None) -> None:
+        """Compute and log the structural page-shape bucket + carried fingerprint layers (advisory).
+
+        Best-effort observation so we can validate that same-template pages across mirrors/locales
+        bucket together before page-shape ever keys the cache. When the fetch carried a rendered
+        ``ax_snapshot`` (browser tiers), the waterfall fingerprint also carries the L2 rendered
+        AX-spine layer — logged here so we can see which layers a tier actually populates (WF0).
+        Never raises into the discovery path.
+        """
+        try:
+            from yosoi.generalization.capture import observe_html
+            from yosoi.generalization.fingerprint import PageFingerprint, page_shape_fp
+
+            shape = page_shape_fp(observe_html(url_context, html, row_selector=''))
+            fp = PageFingerprint.of(html, ax_snapshot=ax_snapshot)
+            layers = [name for name, carried in (('identity', fp.identity), ('ax', fp.ax_spine)) if carried]
+            logger.info(
+                'page_shape (advisory) url=%s domain=%s shape=%s layers=L1%s',
+                url_context,
+                domain,
+                shape,
+                '+' + '+'.join(layers) if layers else '',
+            )
+        except Exception as exc:  # noqa: BLE001 — advisory observation must never break discovery
+            logger.debug('page_shape computation skipped (url=%s): %s', url_context, exc)
 
     async def _discover_selectors_impl(
         self,
@@ -310,6 +350,17 @@ class DiscoveryOrchestrator:
         self.console.print(
             f'[success]Discovered selectors for {len(non_container)} fields (cached={cached_count})[/success]'
         )
+
+        # Soft dedup smell (never fail-fast): two distinct fields sharing one selector
+        # means the contract is ambiguous or the model conflated them. Warn, don't block.
+        from yosoi.core.discovery.dedup import duplicate_fields
+
+        for selector_value, dup_fields in duplicate_fields(merged).items():
+            obs.warning('duplicate selector across fields', url=url_context, fields=dup_fields, selector=selector_value)
+            self.console.print(
+                f'[warning]  ⚠ fields {", ".join(dup_fields)} share selector {selector_value!r} — '
+                f'contract may be ambiguous or discovery conflated them[/warning]'
+            )
 
         # Single write — avoids read-modify-write races across concurrent tasks
         # Skip save for partial rediscovery (pipeline handles merge + save)

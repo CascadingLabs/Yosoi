@@ -34,8 +34,8 @@ def Price(v: object, config: CoercionConfig, source_url: str | None = None) -> f
 
     cleaned = v.strip().lower()
 
-    match = re.search(r'\d+[.,\d]*', cleaned)
-    if not match:
+    matches = re.findall(r'\d+[.,\d]*', cleaned)
+    if not matches:
         # No number present — honour an explicit zero-value word. Whole-word for ASCII
         # ("free shipping over $50" already took the numeric path above); substring for
         # non-ASCII (CJK) overrides where \b does not fire. See registry.matches_word.
@@ -46,7 +46,7 @@ def Price(v: object, config: CoercionConfig, source_url: str | None = None) -> f
     if currency_symbol and currency_symbol not in v:
         raise ValueError(f'Price missing required currency symbol: {currency_symbol!r}')
 
-    num_str = match.group(0)
+    num_str = matches[-1]
 
     if require_decimals and '.' not in num_str and ',' not in num_str:
         raise ValueError(f'Price lacks required decimal precision: {v!r}')

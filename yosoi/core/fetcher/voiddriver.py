@@ -16,6 +16,7 @@ are saved via A3NodeStorage so the next visit skips the probe.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 import random
 import time
@@ -30,7 +31,9 @@ from yosoi.core.fetcher.dom import DOMLoader
 from yosoi.core.fetcher.dom.ax import AxSnapshot
 from yosoi.core.fetcher.dom.probes import capture_ax_snapshot
 from yosoi.core.fetcher.downloads import execute_downloads
+from yosoi.core.fetcher.identity import BrowserIdentity
 from yosoi.models.download import DownloadResult, DownloadSpec
+from yosoi.models.replay import ReplayPlan
 from yosoi.models.results import FetchResult, JsOutputs
 from yosoi.storage.a3node import A3Node, A3NodeStorage, ActRecord
 from yosoi.utils import observability as obs
@@ -76,10 +79,12 @@ class _VoidCrawlFetcher(HTMLFetcher):
         browser_executable_path: str | None = None,
         console: Console | None = None,
         experimental_a3node: bool = False,
+        experimental_replay_plan: bool = False,
         allow_downloads: bool = False,
         download_dir: str | None = None,
         user_agent: str | None = None,
         accept_language: str | None = None,
+        identity: BrowserIdentity | None = None,
         **_kwargs: Any,
     ) -> None:
         self.timeout = timeout
@@ -89,14 +94,33 @@ class _VoidCrawlFetcher(HTMLFetcher):
         self.browser_executable_path = browser_executable_path
         self._console = console or Console()
         self._experimental_a3node = experimental_a3node
+        self._experimental_replay_plan = experimental_replay_plan
         self._allow_downloads = allow_downloads
         self._download_dir = download_dir
         self._user_agent = user_agent
         self._accept_language = accept_language
+        self._identity = identity
         self._pool: Any = None
         self._pool_ctx: Any = None
         self._a3node_storage = A3NodeStorage() if experimental_a3node else None
         self._a3node_cache: dict[str, A3Node] = {}
+        # Whether the installed VoidCrawl `goto` accepts `capture_endpoints` (CAS-169). Probed once
+        # on first use and cached, so an older build degrades to a single plain goto (no double-nav).
+        self._supports_endpoint_capture = True
+
+    async def _goto_capture(self, tab: Any, url: str) -> Any:
+        """``tab.goto`` requesting the data-plane endpoint set (CAS-169), back-compatibly.
+
+        Returns the ``PageResponse`` (carrying ``headers``/``antibot``/``endpoints`` on a CAS-169
+        build). Tolerates an older VoidCrawl whose ``goto`` lacks ``capture_endpoints``: the probe
+        TypeErrors once, the flag is cleared, and every later call is a single plain goto.
+        """
+        if self._supports_endpoint_capture:
+            try:
+                return await tab.goto(url, timeout=float(self.timeout), capture_endpoints=True)
+            except TypeError:
+                self._supports_endpoint_capture = False
+        return await tab.goto(url, timeout=float(self.timeout))
 
     async def __aenter__(self) -> _VoidCrawlFetcher:
         BrowserPool, BrowserConfig, PoolConfig = _import_voidcrawl()
@@ -118,9 +142,20 @@ class _VoidCrawlFetcher(HTMLFetcher):
         return self
 
     def _browser_config_kwargs(self, BrowserConfig: Any) -> dict[str, Any]:
-        """Build BrowserConfig kwargs, only overriding UA when requested."""
+        """Build BrowserConfig kwargs, only overriding UA / identity when requested.
+
+        Identity passthrough (W2): when an identity is pinned, thread its proxy
+        (egress IP), profile dir (raw ``--user-data-dir`` — VoidCrawl has no
+        native ``user_data_dir`` field yet, so it goes through ``extra_args``,
+        pool-wide for this fetcher's own single-identity pool), and
+        locale/timezone. An identity may also force headful regardless of the
+        class default (``HeadfulFetcher`` vs ``HeadlessFetcher``).
+        """
+        headless = self._headless
+        if self._identity is not None and self._identity.headful:
+            headless = False
         kwargs: dict[str, Any] = {
-            'headless': self._headless,
+            'headless': headless,
             'stealth': True,
             'no_sandbox': self.no_sandbox,
             'chrome_executable': self.browser_executable_path,
@@ -130,11 +165,46 @@ class _VoidCrawlFetcher(HTMLFetcher):
             fields = getattr(BrowserConfig, '__fields__', {})
         if self._user_agent is not None and 'user_agent' in fields:
             kwargs['user_agent'] = self._user_agent
+        # accept_language / locale override (CLI knob) — identity.locale wins below.
         if self._accept_language is not None and 'locale' in fields:
             kwargs['locale'] = self._accept_language
         elif self._accept_language is not None and 'accept_language' in fields:
             kwargs['accept_language'] = self._accept_language
+
+        ident = self._identity
+        if ident is not None:
+            if ident.proxy is not None and 'proxy' in fields:
+                kwargs['proxy'] = ident.proxy
+            if ident.locale is not None and 'locale' in fields:
+                kwargs['locale'] = ident.locale
+            if ident.timezone_id is not None and 'timezone_id' in fields:
+                kwargs['timezone_id'] = ident.timezone_id
+            if ident.geo is not None and 'geolocation' in fields:
+                # teleport-at-fetch: only when VoidCrawl's BrowserConfig exposes a geolocation
+                # field. FUTURE: if it never does, apply ident.geo post-launch via the tab's
+                # set_geolocation before the first navigate (Emulation.setGeolocationOverride).
+                kwargs['geolocation'] = {'latitude': ident.geo[0], 'longitude': ident.geo[1]}
+            if ident.profile_dir is not None and 'extra_args' in fields:
+                extra = list(kwargs.get('extra_args', []))
+                extra.extend([f'--user-data-dir={ident.profile_dir}', '--profile-directory=Default'])
+                kwargs['extra_args'] = extra
         return kwargs
+
+    async def _apply_identity_geo(self, tab: Any) -> None:
+        """Teleport-at-fetch: spoof geolocation from the pinned identity BEFORE navigating.
+
+        Complements the ``_browser_config_kwargs`` path (which only fires when VoidCrawl's
+        ``BrowserConfig`` exposes a ``geolocation`` field). Setting it post-launch on the live
+        tab via ``set_geolocation`` (Emulation.setGeolocationOverride) makes
+        ``BrowserIdentity.geo`` take effect on EVERY build. Best-effort: a tab without
+        ``set_geolocation`` skips it, and a spoof failure never fails the fetch.
+        """
+        ident = self._identity
+        if ident is None or ident.geo is None or not hasattr(tab, 'set_geolocation'):
+            return
+        # geo spoof is best-effort; a failure must never fail the fetch
+        with contextlib.suppress(Exception):
+            await tab.set_geolocation(ident.geo[0], ident.geo[1])
 
     async def __aexit__(self, *exc: Any) -> None:
         if self._pool is not None:
@@ -171,6 +241,7 @@ class _VoidCrawlFetcher(HTMLFetcher):
                 log_callback=log_retry,
             ):
                 with attempt:
+                    await self._apply_identity_geo(tab)
                     await tab.goto(url, timeout=float(self.timeout))
             yield tab
 
@@ -182,6 +253,65 @@ class _VoidCrawlFetcher(HTMLFetcher):
     ) -> FetchResult:
         start = time.time()
         return await self._do_fetch(url, start, 'fetch', action_scripts=action_scripts, download_specs=download_specs)
+
+    async def fetch_with_plan(
+        self,
+        plan: ReplayPlan,
+        params: dict[str, str] | None = None,
+    ) -> FetchResult:
+        """Drive a learned ReplayPlan over a pooled tab via the deterministic runtime.
+
+        This is the hotpath wiring: instead of ``goto`` + eval'd JS strings, a
+        discovered :class:`~yosoi.models.replay.ReplayPlan` is replayed through
+        :func:`yosoi.core.replay.runtime.execute_plan` against a live
+        :class:`PooledTab`. ``params`` (e.g. ``{'d': domain}``) parametrize the
+        plan's ``url``/``text`` fields at dispatch time — one engine program
+        replayed across N targets, LLM-free.
+
+        Gated by ``experimental_replay_plan``: callers must opt in, mirroring the
+        ``experimental_a3node`` flag. The plan's EVAL ``output_field`` captures land
+        in ``FetchResult.js_outputs``; the final DOM is captured as ``html``. A
+        fail-fast :class:`ReplayExecutionError` (missing param, antibot challenge,
+        failed assertion) propagates — the runtime never returns garbage.
+        """
+        from yosoi.core.replay.runtime import execute_plan
+
+        if not self._experimental_replay_plan:
+            raise RuntimeError('replay-plan fetch is disabled; pass experimental_replay_plan=True to enable it')
+        start_time = time.time()
+        plan_url = next((node.act.url for node in plan.nodes if node.act.url), '') or ''
+        async with self._pool.acquire() as tab:
+            jitter = random.uniform(0, _JITTER_MAX_S)
+            if jitter > 0.05:
+                await asyncio.sleep(jitter)
+            result = await execute_plan(tab, plan, params=params)
+            html: str | None = None
+            try:
+                html = await tab.content()
+            except (RuntimeError, OSError, ValueError) as exc:
+                logger.debug('replay-plan content capture failed: %s', exc)
+
+        js_outputs: JsOutputs | None = result.extracted_actions or None
+        if not html or len(html) < self.min_content_length:
+            return FetchResult(
+                url=plan_url,
+                html=html,
+                status_code=None,
+                is_blocked=False,
+                block_reason=f'Content too short ({len(html or "")} chars)',
+                fetch_time=time.time() - start_time,
+                js_outputs=js_outputs,
+            )
+        metadata = ContentAnalyzer.analyze(html)
+        return FetchResult(
+            url=plan_url,
+            html=html,
+            status_code=200,
+            is_blocked=False,
+            fetch_time=time.time() - start_time,
+            metadata=metadata,
+            js_outputs=js_outputs,
+        )
 
     async def _do_fetch(
         self,
@@ -197,6 +327,17 @@ class _VoidCrawlFetcher(HTMLFetcher):
         js_outputs: JsOutputs | None = None
         downloads: dict[str, DownloadResult] | None = None
         ax_snapshot: AxSnapshot | None = None
+        # Navigation-time signals from the goto PageResponse (CAS-169). Read defensively so an
+        # older VoidCrawl build (no headers/endpoints on PageResponse) simply leaves them None.
+        resp_headers: dict[str, str] | None = None
+        resp_endpoints: list[str] | None = None
+        # Block-attribution (W2): probe the live tab for a named captcha BEFORE it
+        # releases, so a BotDetectionError raised after the block can carry it.
+        # This is a DIFFERENT signal from the html-marker heuristic below — it may
+        # be None on a soft (200 + marker) block. Recorded distinctly; never
+        # conflated. Captured inside the acquire() block because the DOM probe
+        # needs a live tab/Page (a PooledTab may not even bind detect_captcha).
+        captcha_kind: str | None = None
         async with self._pool.acquire() as tab:
             # Jitter: stagger concurrent workers so they don't land simultaneously
             # on the same origin and trigger bot-detection rate limiting.
@@ -204,7 +345,12 @@ class _VoidCrawlFetcher(HTMLFetcher):
             if jitter > 0.05:
                 await asyncio.sleep(jitter)
 
-            await tab.goto(url, timeout=float(self.timeout))
+            await self._apply_identity_geo(tab)
+            # Capture the goto PageResponse instead of discarding it — its headers/endpoints feed
+            # the waterfall fingerprint's L3 layers (the former blind spot).
+            page_resp = await self._goto_capture(tab, url)
+            resp_headers = getattr(page_resp, 'headers', None) or None
+            resp_endpoints = getattr(page_resp, 'endpoints', None) or None
 
             if stored_node is not None:
                 html = await self._fetch_with_replay(tab, domain, stored_node)
@@ -241,6 +387,12 @@ class _VoidCrawlFetcher(HTMLFetcher):
             # layer for static discovery. Best-effort: None when the tab lacks CDP.
             ax_snapshot = await capture_ax_snapshot(tab)
 
+            # Capture the captcha signal while the tab is still live. Best-effort:
+            # detect_captcha is a Page method and may not be bound on a PooledTab,
+            # so probe defensively — absence yields None (its own attribution
+            # bucket), it is NOT treated as "no block".
+            captcha_kind = await self._probe_captcha(tab)
+
         if not html or len(html) < self.min_content_length:
             return FetchResult(
                 url=url,
@@ -255,7 +407,13 @@ class _VoidCrawlFetcher(HTMLFetcher):
 
         is_blocked, indicators = self._check_for_bot_detection(html, 200, {})
         if is_blocked:
-            raise BotDetectionError(url, 200, indicators)
+            raise BotDetectionError(
+                url,
+                200,
+                indicators,
+                identity_id=self._identity.id if self._identity is not None else None,
+                captcha_kind=captcha_kind,
+            )
 
         metadata = ContentAnalyzer.analyze(html)
         return FetchResult(
@@ -268,7 +426,28 @@ class _VoidCrawlFetcher(HTMLFetcher):
             js_outputs=js_outputs,
             downloads=downloads,
             ax_snapshot=ax_snapshot,
+            headers=resp_headers,
+            endpoints=resp_endpoints,
         )
+
+    async def _probe_captcha(self, tab: Any) -> str | None:
+        """Best-effort live-tab captcha probe for block attribution (W2).
+
+        ``Page.detect_captcha`` returns the captcha kind or None. It is a Page
+        method and may not be bound on a PooledTab; older VoidCrawl builds may
+        lack it entirely. Either way we return None rather than failing the
+        fetch — None is a valid attribution value (soft block with no named
+        captcha), distinct from the html-marker heuristic.
+        """
+        probe = getattr(tab, 'detect_captcha', None)
+        if probe is None:
+            return None
+        try:
+            result = await probe()
+        except Exception as exc:  # noqa: BLE001 — attribution is best-effort
+            logger.debug('detect_captcha probe failed: %s', exc)
+            return None
+        return result if isinstance(result, str) else None
 
     async def _run_downloads(
         self,

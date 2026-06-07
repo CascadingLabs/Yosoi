@@ -24,14 +24,28 @@ import sys
 from collections.abc import Mapping, Sequence
 from contextlib import aclosing
 from dataclasses import dataclass, field
-from typing import Any, Protocol, cast, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, cast, runtime_checkable
 
 from yosoi.core.discovery.config import LLMConfig, create_model
 from yosoi.core.discovery.mcp_draft import MCPDiscoveryDraft
 from yosoi.utils import observability as obs
 from yosoi.utils.exceptions import LLMGenerationError
 
+if TYPE_CHECKING:
+    from yosoi.core.discovery.mcp_opencode import OpenCodeBackend as OpenCodeBackend
+
 logger = logging.getLogger(__name__)
+
+__all__ = [
+    'VOIDCRAWL_DISCOVERY_TOOLS',
+    'ClaudeSDKBackend',
+    'MCPDiscoveryBackend',
+    'OpenCodeBackend',
+    'PydanticAIBackend',
+    'StdioServerSpec',
+    'backend_for',
+    'validator_server_command',
+]
 
 #: voidcrawl MCP tools the discovery agent is allowed to call. Enumerated because
 #: subscription SDKs gate tool access by an explicit allowlist.
@@ -202,3 +216,12 @@ def backend_for(llm_config: LLMConfig) -> MCPDiscoveryBackend:
 
         return OpenCodeBackend(llm_config)
     return PydanticAIBackend(create_model(llm_config))
+
+
+def __getattr__(name: str) -> object:
+    """Lazily preserve the historic ``mcp_backends.OpenCodeBackend`` import path."""
+    if name == 'OpenCodeBackend':
+        from yosoi.core.discovery.mcp_opencode import OpenCodeBackend
+
+        return OpenCodeBackend
+    raise AttributeError(f'module {__name__!r} has no attribute {name!r}')

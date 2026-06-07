@@ -249,13 +249,13 @@ def test_create_fetcher_invalid_type_returns_none(mocker):
     assert result is None
 
 
-def test_create_waterfall_fetcher_passes_console_and_a3node(mocker):
+def test_create_auto_fetcher_passes_console_and_a3node(mocker):
     stub = _make_pipeline_stub(mocker)
     stub._experimental_a3node = False
     create_fetcher = mocker.patch('yosoi.core.pipeline.base.create_fetcher', return_value=mocker.MagicMock())
-    Pipeline._create_fetcher(stub, 'waterfall', console=stub.console)
+    Pipeline._create_fetcher(stub, 'auto', console=stub.console)
     create_fetcher.assert_called_once_with(
-        'waterfall', console=stub.console, experimental_a3node=False, allow_downloads=False, download_dir=None
+        'auto', console=stub.console, experimental_a3node=False, allow_downloads=False, download_dir=None
     )
 
 
@@ -709,6 +709,29 @@ async def test_process_url_succeeds_with_cached_selectors(mocker):
     stub.tracker.record_url.return_value = DomainStats(url_count=1)
     mocker.patch('yosoi.core.pipeline.base.observability')
     await Pipeline.process_url(stub, 'https://x.com')
+
+
+async def test_process_url_cache_miss_uses_gated_fresh(mocker):
+    stub = _make_pipeline_stub(mocker)
+    fetcher = mocker.MagicMock()
+    fetcher.__aenter__ = mocker.AsyncMock(return_value=fetcher)
+    fetcher.__aexit__ = mocker.AsyncMock(return_value=None)
+    mocker.patch.object(Pipeline, 'normalize_url', return_value='https://x.com')
+    mocker.patch.object(Pipeline, '_extract_domain', return_value='x.com')
+    mocker.patch.object(Pipeline, '_create_fetcher', return_value=fetcher)
+    mocker.patch.object(Pipeline, '_try_cached', return_value=None)
+    scrape_fresh = mocker.patch.object(Pipeline, '_scrape_fresh')
+
+    async def gated_fresh(*args, **kwargs):
+        yield {'title': 'Book', 'price': 1.0}
+
+    gated = mocker.patch.object(Pipeline, '_gated_fresh', side_effect=gated_fresh)
+    mocker.patch('yosoi.core.pipeline.base.observability')
+
+    await Pipeline.process_url(stub, 'https://x.com')
+
+    gated.assert_called_once()
+    scrape_fresh.assert_not_called()
 
 
 async def test_process_url_full_success_path(mocker):
@@ -1491,9 +1514,39 @@ def test_validate_single_item_drops_isolable_field_to_default(mocker):
     stub = _make_pipeline_stub(mocker, _CountContract)
     result = Pipeline._validate_single_item(stub, {'title': 'Book', 'count': 'not-a-number'}, url='')
     assert result == {'title': 'Book', 'count': 0}  # count -> its default, title preserved
+
+
+def test_validate_items_summarizes_defaulted_fields(mocker):
+    stub = _make_pipeline_stub(mocker, _CountContract)
+    result = Pipeline._validate_items(
+        stub,
+        [{'title': 'Book', 'count': 'not-a-number'}, {'title': 'Pen', 'count': 'still-not-a-number'}],
+        url='',
+    )
+    assert result == [{'title': 'Book', 'count': 0}, {'title': 'Pen', 'count': 0}]
     printed = ' '.join(str(c) for c in stub.console.print.call_args_list)
-    assert 'Dropped invalid field' in printed
+    assert 'Contract validation defaulted invalid field' in printed
     assert 'count' in printed
+    assert '2 items' in printed
+
+
+def test_validate_items_deduplicates_framework_copies_after_coercion(mocker):
+    stub = _make_pipeline_stub(mocker, _PriceContract)
+    result = Pipeline._validate_items(
+        stub,
+        [
+            {'title': 'Standard Iron Pickaxe', 'price': '14.50 GS'},
+            {'title': 'Standard Iron Pickaxe', 'price': '14.50  GS'},
+            {'title': 'Masterwork Steel Pickaxe', 'price': '45.00 GS'},
+        ],
+        url='',
+    )
+    assert result == [
+        {'title': 'Standard Iron Pickaxe', 'price': 14.5},
+        {'title': 'Masterwork Steel Pickaxe', 'price': 45.0},
+    ]
+    printed = ' '.join(str(c) for c in stub.console.print.call_args_list)
+    assert 'Dropped 1 duplicate item' in printed
 
 
 def test_validate_single_item_returns_raw_when_default_also_invalid(mocker):
@@ -1852,6 +1905,37 @@ async def test_escalate_to_mcp_adopts_mcp_root(mocker):
     )
     assert root == {'primary': '.card'}
     assert improved is True
+
+
+async def test_escalate_to_mcp_rejects_candidate_that_collapses_item_count(mocker):
+    """MCP escalation must not replace a good multi-item extraction with a broad body row."""
+    stub = _make_pipeline_stub(mocker)
+    mcp = mocker.MagicMock()
+    mcp.discover_selectors = mocker.AsyncMock(
+        return_value={'root': {'primary': 'body'}, 'title': {'primary': 'body'}, 'price': {'primary': '.price'}}
+    )
+    mocker.patch.object(stub, '_ensure_mcp_discovery', return_value=mcp)
+    mocker.patch.object(stub, '_resolve_root', return_value={'primary': 'body'})
+    mocker.patch.object(stub, '_root_value', return_value='body')
+    mocker.patch.object(stub, '_verify', return_value={'title': {'primary': 'body'}, 'price': {'primary': '.price'}})
+    mocker.patch.object(
+        stub,
+        '_unsatisfied_required',
+        side_effect=[{'title'}, set()],
+    )
+    original = [{'title': 'Book', 'price': '9.99'}, {'title': 'Pen', 'price': '1.99'}]
+    candidate = {'title': 'Whole page text', 'price': '9.99'}
+    mocker.patch.object(stub, '_extract', return_value=candidate)
+    verified = {'title': {'primary': '.name'}, 'price': {'primary': '.price'}}
+
+    extracted, new_verified, root, improved = await Pipeline._escalate_to_mcp(
+        stub, 'https://x.com', '<c/>', '<r/>', verified, '.card', {'primary': '.card'}, original, {'title'}
+    )
+
+    assert extracted is original
+    assert new_verified is verified
+    assert root == {'primary': '.card'}
+    assert improved is False
 
 
 async def test_maybe_escalate_noop_when_all_required_met(mocker):

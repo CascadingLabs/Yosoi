@@ -137,21 +137,82 @@ class PipelineUtilsMixin:
             raise RuntimeError(
                 f'{self.contract.__name__} declares ys.File() field(s) {sorted(specs)} but downloads '
                 'are disabled. Pass allow_downloads=True and use a browser fetcher tier '
-                "(fetcher_type='headless'/'headful'/'waterfall')."
+                "(fetcher_type='auto'/'headless'/'headful')."
             )
         if specs and fetcher is not None and not getattr(fetcher, 'supports_browse', False):
             raise RuntimeError(
                 f'{self.contract.__name__} declares ys.File() field(s) {sorted(specs)} but '
-                "fetcher_type has no browser tab. Use fetcher_type='headless'/'headful'/'waterfall'."
+                "fetcher_type has no browser tab. Use fetcher_type='auto'/'headless'/'headful'."
             )
         return specs or None
 
     def _validate_items(self, extracted: ContentMap | ContentItems, url: str) -> ContentItems:
         """Normalise extraction result to list and validate each item."""
         items_list: ContentItems = extracted if isinstance(extracted, list) else [extracted]
-        return [self._validate_single_item(item, url) for item in items_list]
+        dropped_counts: dict[str, int] = {}
+        validated = [self._validate_single_item(item, url, dropped_counts=dropped_counts) for item in items_list]
+        validated = self._dedupe_validated_items(validated)
+        if dropped_counts:
+            parts = [
+                f'{field} ({count} item{"s" if count != 1 else ""})' for field, count in sorted(dropped_counts.items())
+            ]
+            self.console.print(
+                '[warning]⚠ Contract validation defaulted invalid field(s): '
+                f'{", ".join(parts)}. Check the selector or field type if this was unexpected.[/warning]'
+            )
+        return validated
 
-    def _validate_single_item(self, item: ContentMap, url: str) -> ContentMap:
+    def _dedupe_validated_items(self, items: ContentItems) -> ContentItems:
+        """Collapse duplicated framework-island rows after contract coercion."""
+        if len(items) < 2:
+            return items
+
+        seen: set[tuple[tuple[str, str], ...]] = set()
+        out: ContentItems = []
+        dropped = 0
+        for item in items:
+            key = self._identity_key(item)
+            if key and key in seen:
+                dropped += 1
+                continue
+            if key:
+                seen.add(key)
+            out.append(item)
+
+        if dropped:
+            self.console.print(f'[info]  ↻ Dropped {dropped} duplicate item(s) after validation[/info]')
+        return out
+
+    @staticmethod
+    def _identity_key(item: ContentMap) -> tuple[tuple[str, str], ...] | None:
+        """Return a conservative identity key for repeated content rows."""
+        name_field = next((field for field in ('name', 'title', 'headline', 'service_name') if item.get(field)), None)
+        if not name_field:
+            return None
+
+        partner_field = next(
+            (field for field in ('price', 'url', 'service_url', 'date', 'published_at', 'score') if item.get(field)),
+            None,
+        )
+        if partner_field is None:
+            return None
+
+        return (
+            (name_field, PipelineUtilsMixin._normalize_identity_value(item[name_field])),
+            (partner_field, PipelineUtilsMixin._normalize_identity_value(item[partner_field])),
+        )
+
+    @staticmethod
+    def _normalize_identity_value(value: object) -> str:
+        return ' '.join(str(value).casefold().split())
+
+    def _validate_single_item(
+        self,
+        item: ContentMap,
+        url: str,
+        *,
+        dropped_counts: dict[str, int] | None = None,
+    ) -> ContentMap:
         """Validate a single content dict through the Contract."""
         from pydantic import ValidationError
 
@@ -165,9 +226,8 @@ class PipelineUtilsMixin:
             data: dict[str, Any] = dict(item)
             for field_name in offending:
                 data[field_name] = self.contract.field_default(field_name)
-            self.console.print(
-                f'[warning]⚠ Dropped invalid field(s) to default: {", ".join(sorted(offending))}[/warning]'
-            )
+                if dropped_counts is not None:
+                    dropped_counts[field_name] = dropped_counts.get(field_name, 0) + 1
             try:
                 return self.contract.model_validate(data, context={'source_url': url}).model_dump()
             except ValidationError as e2:
@@ -212,7 +272,7 @@ class PipelineUtilsMixin:
         elapsed: float | None = None,
     ) -> None:
         """Save verified selectors, extracted content, and track LLM usage."""
-        await self.storage.save_selectors(url, verified, verified=True)
+        await self.storage.save_selectors(url, verified, verified=True, contract_sig=self._contract_sig)
 
         if extracted:
             for fmt in output_format:

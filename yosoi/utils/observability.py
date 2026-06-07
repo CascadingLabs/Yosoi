@@ -24,12 +24,21 @@ from __future__ import annotations
 import json
 import logging
 import os
+import socket
 import uuid
+import warnings
 from collections.abc import Iterator
 from contextlib import contextmanager
 from threading import Lock
 from typing import TYPE_CHECKING, Any, TypedDict
 from urllib.parse import urlparse
+
+warnings.filterwarnings(
+    'ignore',
+    message="Core Pydantic V1 functionality isn't compatible with Python 3.14 or greater.",
+    category=UserWarning,
+    module=r'langfuse\.api\.core\.pydantic_utilities',
+)
 
 from langfuse import Langfuse
 from opentelemetry import context as otel_context
@@ -51,6 +60,26 @@ _configure_called = False
 # Pipeline is constructed. Override via ``YOSOI_SESSION_ID`` for resumed runs
 # or external orchestration.
 _PROCESS_SESSION_ID: str | None = None
+
+
+class TelemetryUnavailable(RuntimeError):
+    """Raised internally when configured telemetry cannot export traces."""
+
+
+def _langfuse_preflight_error(host: str | None) -> str | None:
+    """Return a connection error for an unreachable explicit host, else None."""
+    if not host:
+        return None
+    parsed = urlparse(host)
+    hostname = parsed.hostname
+    if not hostname:
+        return None
+    port = parsed.port or (443 if parsed.scheme == 'https' else 80)
+    try:
+        with socket.create_connection((hostname, port), timeout=0.25):
+            return None
+    except OSError as exc:
+        return str(exc)
 
 
 def process_session_id() -> str:
@@ -89,6 +118,16 @@ class LangfuseClient:
 
     def __init__(self, cfg: TelemetryConfig) -> None:
         """Construct the SDK, install OTel instrumentation, and run an auth probe."""
+        preflight_error = _langfuse_preflight_error(cfg.langfuse_host)
+        if preflight_error:
+            _logger.warning(
+                'Langfuse telemetry is unreachable at %s (%s); scraping continues without trace export. '
+                'Start Langfuse, fix LANGFUSE_BASE_URL, or unset LANGFUSE_PUBLIC_KEY/SECRET_KEY to silence this warning.',
+                cfg.langfuse_host or 'the configured host',
+                preflight_error,
+            )
+            raise TelemetryUnavailable(preflight_error)
+
         self.sdk = Langfuse(
             public_key=cfg.langfuse_public_key,
             secret_key=cfg.langfuse_secret_key,
@@ -97,15 +136,31 @@ class LangfuseClient:
             # instrumentation scopes; allow our `yosoi` tracer spans too.
             should_export_span=lambda _s: True,
         )
+        try:
+            if not self.sdk.auth_check():
+                self.sdk.shutdown()
+                _logger.warning(
+                    'Langfuse telemetry auth failed for %s; scraping continues without trace export. '
+                    'Verify LANGFUSE_PUBLIC_KEY/SECRET_KEY/BASE_URL or unset them to silence this warning.',
+                    cfg.langfuse_host or 'the configured host',
+                )
+                raise TelemetryUnavailable('Langfuse auth check failed')
+        except TelemetryUnavailable:
+            raise
+        except Exception as e:
+            self.sdk.shutdown()
+            _logger.warning(
+                'Langfuse telemetry is unreachable at %s (%s); scraping continues without trace export. '
+                'Start Langfuse, fix LANGFUSE_BASE_URL, or unset LANGFUSE_PUBLIC_KEY/SECRET_KEY to silence this warning.',
+                cfg.langfuse_host or 'the configured host',
+                e,
+            )
+            raise TelemetryUnavailable(str(e)) from e
+
         from pydantic_ai.agent import Agent
 
         Agent.instrument_all()
         self.tracer = trace.get_tracer('yosoi')
-        try:
-            if not self.sdk.auth_check():
-                _logger.warning('Langfuse auth check failed — verify LANGFUSE_PUBLIC_KEY/SECRET_KEY/BASE_URL')
-        except Exception as e:  # noqa: BLE001 - probe must never break pipeline init
-            _logger.warning('Langfuse auth check errored (%s) — traces may not export', e)
 
 
 def configure(cfg: TelemetryConfig) -> None:
@@ -124,7 +179,10 @@ def configure(cfg: TelemetryConfig) -> None:
             _logger.warning('Langfuse not initialized — set LANGFUSE_PUBLIC_KEY and LANGFUSE_SECRET_KEY to enable')
             return
         if LangfuseClient._instance is None:
-            LangfuseClient._instance = LangfuseClient(cfg)
+            try:
+                LangfuseClient._instance = LangfuseClient(cfg)
+            except TelemetryUnavailable:
+                LangfuseClient._instance = None
 
 
 def client() -> LangfuseClient | None:

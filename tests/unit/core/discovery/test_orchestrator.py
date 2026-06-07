@@ -609,3 +609,44 @@ class TestFormatAxHint:
         from yosoi.core.discovery.orchestrator import format_ax_hint
 
         assert format_ax_hint(None) == ''
+
+
+@pytest.mark.anyio
+async def test_discovery_input_carries_contract_docstring_as_intent(llm_config, mock_storage, mocker):
+    """The contract docstring must thread into discovery_input.intent (W5 NOTE #2).
+
+    Without this, two same-shape contracts that differ only by docstring feed the
+    discovery agent byte-identical input and cannot be discriminated.
+    """
+
+    from pydantic import Field
+
+    class _AdLink(Contract):
+        """A paid/sponsored result link."""
+
+        url: str = Field(description='The link URL')
+
+    captured_intents: list[str] = []
+
+    async def mock_run_field_task(**kwargs):
+        from yosoi.core.discovery.field_task import FieldTaskResult
+
+        captured_intents.append(kwargs['discovery_input'].intent)
+        name = kwargs['field_name']
+        return FieldTaskResult(
+            field_name=name, selectors=FieldSelectors(primary='a'), from_cache=False, escalated_to=None
+        )
+
+    mocker.patch('yosoi.core.discovery.orchestrator.run_field_task', new=mock_run_field_task)
+
+    orch = DiscoveryOrchestrator(
+        contract=_AdLink,
+        llm_config=llm_config,
+        storage=mock_storage,
+        console=Console(quiet=True),
+        target_level=SelectorLevel.CSS,
+    )
+    await orch.discover_selectors('<html><body><a href="x">x</a></body></html>', 'https://example.com')
+
+    assert captured_intents
+    assert all(intent == 'A paid/sponsored result link.' for intent in captured_intents)

@@ -69,6 +69,22 @@ class SelectorVerifier:
             results=results,
         )
 
+    def _scope_to_root(self, sel: Selector, root: SelectorEntry | None) -> Selector | None:
+        """Scope *sel* to a field's root region (first match), or return *sel* when no root.
+
+        Returns ``None`` when a root is set but matches nothing — the field's claimed
+        region is absent, so it cannot verify there.
+        """
+        if root is None:
+            return sel
+        if root.type == 'xpath':
+            matches = sel.xpath(root.value)
+        elif root.type == 'css':
+            matches = sel.css(root.value)
+        else:
+            return sel  # non-structural root kinds aren't scopes; ignore rather than fail
+        return matches[0] if matches else None
+
     def _verify_field(
         self,
         sel: Selector,
@@ -90,12 +106,30 @@ class SelectorVerifier:
         """
         if isinstance(field_data, FieldSelectors):
             entries: list[tuple[str, SelectorEntry | None]] = field_data.as_entries()
+            root = field_data.root
         else:
             entries = [
                 ('primary', coerce_selector_entry(field_data.get('primary'))),
                 ('fallback', coerce_selector_entry(field_data.get('fallback'))),
                 ('tertiary', coerce_selector_entry(field_data.get('tertiary'))),
             ]
+            root = coerce_selector_entry(field_data.get('root'))
+
+        # Field-level root: verify the leaf RELATIVE to its parent region, mirroring
+        # extraction. A (root, leaf) pair is only trustworthy if the leaf resolves UNDER the
+        # root — and the root must match. A root that matches nothing fails the field (the
+        # region the field claims to live in is absent), so a wrongly-rooted ad selector
+        # can't masquerade as verified against the organic block.
+        scoped = self._scope_to_root(sel, root)
+        if scoped is None:
+            return FieldVerificationResult(
+                field_name=field_name,
+                status='failed',
+                failed_selectors=[
+                    SelectorFailure(level='root', selector=root.value if root else '', reason='root matched no element')
+                ],
+            )
+        sel = scoped
 
         failed_selectors: list[SelectorFailure] = []
 

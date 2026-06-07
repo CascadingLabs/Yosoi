@@ -12,6 +12,7 @@ from rich.console import Console
 # attributes that are never useful as selectors and bloat the token budget go
 # here: inline styles and JS event handlers (any ``on*`` attribute).
 _DROP_ATTRIBUTES = {'style'}
+_NON_SEMANTIC_TAGS = {'svg', 'canvas'}
 
 
 def _keep_attribute(attr: str) -> bool:
@@ -180,20 +181,35 @@ class HTMLCleaner:
             for row in rows[5:]:
                 _drop(row)
 
-        # 5. Remove hidden elements.
+        # 5. Remove hidden elements that carry no scrapeable payload.
+        # Framework islands sometimes leave the data-bearing rendered subtree in a
+        # hidden sibling while the visible active island is represented by a thin
+        # shell in serialized HTML. Dropping every hidden node erases the only
+        # selector-worthy product/listing rows.
         # iter() is materialised into a list first so dropping a node doesn't
         # disturb a live traversal; a node already detached as a descendant of
         # an earlier-dropped parent is skipped by _drop's getparent guard.
-        for tag in list(tree.iter()):
+        for tag in tree.xpath('.//*[@hidden or @aria-hidden = "true"]'):
             if not isinstance(tag.tag, str):
                 continue
-            if tag.get('hidden') is not None or tag.get('aria-hidden') == 'true':
+            if tag.tag in _NON_SEMANTIC_TAGS:
+                _drop(tag)
+                continue
+            if not self._has_scrapeable_payload(tag):
                 _drop(tag)
 
         # 6. Remove non-semantic bloat (svg, canvas, base64, empty deep divs)
         self._prune_non_semantic(tree)
 
         return tree
+
+    @staticmethod
+    def _has_scrapeable_payload(tag: HtmlElement) -> bool:
+        """Hidden subtree has enough structure/text to be useful for discovery."""
+        if tag.xpath('.//article | .//tr | .//li | .//*[@data-sku] | .//*[@data-component]'):
+            return True
+        text = ' '.join(tag.xpath('.//text()[normalize-space()]'))
+        return len(text.strip()) >= 80
 
     def _prune_non_semantic(self, tree: HtmlElement) -> HtmlElement:
         """Remove non-semantic bloat from parsed HTML.

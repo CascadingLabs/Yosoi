@@ -55,6 +55,7 @@ class SelectorSnapshot(BaseModel):
         failure_count: Number of consecutive verification failures. Reset to 0 on success.
         source: How the selector was obtained — ``'discovered'`` (LLM), ``'pinned'`` (contract), or ``'override'`` (manual edit).
         parent_root: Optional parent CSS selector for nested/scoped items within multi-item pages.
+        root: Optional full root selector entry for field-scoped extraction.
 
     """
 
@@ -67,6 +68,7 @@ class SelectorSnapshot(BaseModel):
     failure_count: int = 0
     source: Literal['discovered', 'pinned', 'override'] = 'discovered'
     parent_root: str | None = None
+    root: str | dict[str, Any] | None = None
     status: SnapshotStatus = SnapshotStatus.ACTIVE
     status_reason: str | None = None
 
@@ -122,6 +124,10 @@ def snapshot_to_selector_dict(snap: SelectorSnapshot) -> dict[str, Any]:
         result['fallback'] = snap.fallback
     if snap.tertiary is not None:
         result['tertiary'] = snap.tertiary
+    if snap.root is not None:
+        result['root'] = snap.root
+    elif snap.parent_root is not None:
+        result['root'] = {'type': 'css', 'value': snap.parent_root}
     return result
 
 
@@ -161,6 +167,7 @@ def selector_dict_to_snapshot(
         last_verified_at=_ensure_utc(last_verified_at),
         source=source,
         parent_root=parent_root,
+        root=None if status != SnapshotStatus.ACTIVE else field_data.get('root'),
         status=status,
         status_reason='legacy primary=NA sentinel' if status == SnapshotStatus.ABSENT else None,
     )

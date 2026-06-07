@@ -59,12 +59,13 @@ def build_yosoi_config(model_arg: str | None, debug: bool) -> YosoiConfig:
 def print_fetcher_info(fetcher_type: str) -> None:
     """Print information about the selected fetcher."""
     _FETCHER_LABELS: dict[str, tuple[str, str]] = {
+        'auto': ('Auto fetcher', 'Simple -> Headless -> Headful as needed'),
         'simple': ('Simple fetcher', 'fast, works for most sites'),
-        'waterfall': ('Waterfall fetcher', 'Simple → Headless → Headful'),
+        'waterfall': ('Auto fetcher', 'Simple -> Headless -> Headful as needed'),
         'headless': ('Headless fetcher', 'headless Chrome via VoidCrawl'),
         'headful': ('Headful fetcher', 'headful Chrome via VoidCrawl'),
     }
     label, hint = _FETCHER_LABELS.get(fetcher_type, (f'{fetcher_type} fetcher', ''))
     console.print(f'[cyan]ℹ Using {label}[/cyan] [dim]({hint})[/dim]')
-    if fetcher_type in {'waterfall', 'headless', 'headful'}:
+    if fetcher_type in {'auto', 'waterfall', 'headless', 'headful'}:
         console.print('[cyan]ℹ A3Node cache:[/cyan] [dim]disabled by default; browser DOMLoader runs fresh[/dim]')

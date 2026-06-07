@@ -130,6 +130,7 @@ from yosoi.prompts.discovery import (
     FieldDiscoveryDeps,
     field_single_base_instructions,
     field_single_field_instructions,
+    field_single_intent_instructions,
     field_single_level_instructions,
     field_single_page_hints,
 )
@@ -177,6 +178,40 @@ class TestFieldSingleFieldInstructions:
         field_deps.is_container = False
         result = field_single_field_instructions(_make_field_ctx(field_deps, mocker))
         assert 'repeating wrapper' not in result
+
+
+class TestFieldSingleIntentInstructions:
+    def test_empty_when_no_intent(self, field_deps, mocker):
+        # discovery_input fixture sets intent='' (default).
+        result = field_single_intent_instructions(_make_field_ctx(field_deps, mocker))
+        assert result == ''
+
+    def test_surfaces_contract_intent(self, field_deps, mocker):
+        field_deps.input = DiscoveryInput(
+            url='https://x.com',
+            html='<div>x</div>',
+            intent='A paid/sponsored result link.',
+        )
+        result = field_single_intent_instructions(_make_field_ctx(field_deps, mocker))
+        assert 'paid/sponsored result link' in result
+
+    def test_distinct_intents_produce_distinct_prompts(self, field_deps, mocker):
+        """Two same-shape contracts (organic vs ad) must NOT feed byte-identical input."""
+        organic_deps = FieldDiscoveryDeps(
+            field_name='url',
+            field_description='The link URL',
+            input=DiscoveryInput(url='u', html='h', intent='A free/organic search result link.'),
+        )
+        ad_deps = FieldDiscoveryDeps(
+            field_name='url',
+            field_description='The link URL',
+            input=DiscoveryInput(url='u', html='h', intent='A paid/sponsored result link.'),
+        )
+        organic = field_single_intent_instructions(_make_field_ctx(organic_deps, mocker))
+        ad = field_single_intent_instructions(_make_field_ctx(ad_deps, mocker))
+        assert organic != ad
+        assert organic
+        assert ad
 
 
 class TestFieldSingleLevelInstructions:
