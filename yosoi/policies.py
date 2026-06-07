@@ -5,10 +5,9 @@ contract means) into a single frozen value object, **resolved once at the edge**
 through the pure core — so the replay ``resolve()`` stays a deterministic function of its inputs and
 never reads the environment deep in the stack (the CAS-119 purity contract).
 
-This is the MVP slice of P6 (`docs/plans/ys-policies-p6.md`, CAS-168). Today it subsumes the
-atom-read flag and the trust tier; new knobs (reuse thresholds, the fingerprint signal-lane
-priority/backpressure) become new fields under the same cascade — never a new ``os.environ`` read
-site or a new buried conditional.
+This is the MVP slice of CAS-168. Today it subsumes the atom-read flag and the trust tier; new knobs
+(reuse thresholds, the fingerprint signal-lane priority/backpressure) become new fields under the
+same cascade — never a new ``os.environ`` read site or a new buried conditional.
 
 Precedence (lowest → highest): ``defaults < env < session < contract < call-site``.
 :meth:`Policy.cascade` merges partial overrides (only the fields each layer explicitly set) into

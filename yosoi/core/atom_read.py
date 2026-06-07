@@ -28,8 +28,8 @@ from yosoi.storage.atoms import AtomStore, FieldAtom
 
 # These helpers are thin views over a Policy resolved from the env layer, so the env switches keep
 # working unchanged while there is ONE source of truth (yosoi.policies, the P6 MVP slice). As
-# similarity-in-reads lands, callers thread a resolved Policy through instead of calling these — see
-# docs/plans/ys-policies-p6.md (CAS-168). (resolve._try_atom_reads already resolves one Policy.)
+# similarity-in-reads lands, callers thread a resolved Policy through instead of calling these.
+# (resolve._try_atom_reads already resolves one Policy.)
 
 
 def atom_reads_enabled() -> bool:

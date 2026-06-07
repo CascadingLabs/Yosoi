@@ -3,10 +3,9 @@
 Two distinct fields (or two contracts on the same page) that resolve to the IDENTICAL
 selector are a signal: either the contract intent is too weak to tell them apart, or the
 model conflated them. We WARN, we never fail — a legitimately shared selector still works,
-but the common "AI got it wrong" case becomes visible. See
-``findings/W5-discovery-discrimination.md`` (an AdResult that latched onto the organic
-selector). A field's ``root`` (its parent scope) is part of identity here, so once
-field-level roots discriminate two regions, their fields are no longer "duplicates".
+but the common "AI got it wrong" case becomes visible. A field's ``root`` (its parent scope)
+is part of identity here, so once field-level roots discriminate two regions, their fields are
+no longer "duplicates".
 """
 
 from __future__ import annotations

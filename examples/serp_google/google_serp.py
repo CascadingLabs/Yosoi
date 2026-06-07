@@ -22,8 +22,7 @@ WHAT RUNS TODAY (default, offline, deterministic):
   the SAME extraction node resumes. No network, no LLM, no flakiness — it proves the wiring.
 
 WHAT NEEDS VOIDCRAWL (the --real path, gated):
-  The live loop drives a pooled VoidCrawl tab. Two known gaps (see findings/W1.md,
-  findings/W4.md follow-ups) keep it from fully firing yet:
+  The live loop drives a pooled VoidCrawl tab. Two known gaps keep it from fully firing yet:
     1. The installed VoidCrawl PageResponse has no `antibot` field, so the W4 goto-level
        challenge gate is inert (it degrades to "no signal", never a false block).
     2. capture/inject/solve_captcha are not bound on PooledTab, so the captcha PROBE runs
@@ -301,7 +300,7 @@ async def _amain() -> None:
     if a.real:
         print('--real: the live path drives _VoidCrawlFetcher.fetch_with_plan(plan, params).')
         print('Gated until VoidCrawl exposes PageResponse.antibot + binds capture/solve_captcha')
-        print('on PooledTab (see findings/W1.md & findings/W4.md follow-ups). The captcha guard')
+        print('on PooledTab. The captcha guard')
         print('uses the CAPTURE_JS widget probe, which already works on a pooled tab.\n')
         return
 

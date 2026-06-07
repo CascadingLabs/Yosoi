@@ -260,10 +260,9 @@ _SKELETON_DEPTH = 2  # root-to-node path length (tree q-gram)
 _SKELETON_CLASS_K = 2  # top-K structural class tokens folded into a node symbol
 _MIN_SKELETON_SHINGLES = 8  # below this a page is too thin to identify → degenerate
 # Same-shape if each layer's Jaccard ≥ its threshold. 0.40/0.50 is the empirical operating
-# point from a 12-page cross-domain sweep (experiments/fingerprint_generalization.py): recall
-# 4/4 template families incl. cross-locale, precision 61/62 (the one false merge is quarantined
-# anyway). A match only PROPOSES a fingerprint-sourced reuse; the strict trust policy is the
-# real safety, not this threshold.
+# point from a cross-domain sweep: recall 4/4 template families incl. cross-locale, precision
+# 61/62 (the one false merge is quarantined anyway). A match only PROPOSES a fingerprint-sourced
+# reuse; the strict trust policy is the real safety, not this threshold.
 SKELETON_SIMILARITY_THRESHOLD = 0.40
 # Presence (not value) of any of these marks a structurally significant / templated node.
 _IDENTITY_PRESENCE_ATTRS: tuple[str, ...] = ('id', 'data-testid', 'name', 'role', 'aria-label')
