@@ -23,7 +23,11 @@ from pathlib import Path
 
 from yosoi.core.discovery.config import LLMConfig
 from yosoi.core.discovery.mcp_backends import StdioServerSpec
-from yosoi.core.discovery.mcp_client import voidcrawl_command
+from yosoi.core.discovery.mcp_client import (
+    VOIDCRAWL_MCP_BIN,
+    MCPUnavailableError,
+    voidcrawl_command,
+)
 from yosoi.core.discovery.mcp_draft import MCPDiscoveryDraft
 from yosoi.utils import observability as obs
 from yosoi.utils.exceptions import LLMGenerationError
@@ -51,7 +55,10 @@ def _voidcrawl_mcp_config() -> dict[str, object]:
         voidcrawl = mcp.get('voidcrawl') if isinstance(mcp, dict) else None
         if isinstance(voidcrawl, dict):
             return dict(voidcrawl)
-    return {'type': 'local', 'command': [voidcrawl_command()], 'enabled': True}
+    with contextlib.suppress(MCPUnavailableError):
+        return {'type': 'local', 'command': [voidcrawl_command()], 'enabled': True}
+    logger.warning('voidcrawl-mcp was not found on PATH; disabling default browser MCP entry for this run')
+    return {'type': 'local', 'command': [VOIDCRAWL_MCP_BIN], 'enabled': False}
 
 
 class OpenCodeBackend:
@@ -124,11 +131,26 @@ class OpenCodeBackend:
             'parts': [{'type': 'text', 'text': user_prompt}],
             'format': {'type': 'json_schema', 'schema': MCPDiscoveryDraft.model_json_schema()},
         }
-        async with httpx.AsyncClient(base_url=base_url, timeout=300) as client:
+        try:
+            client_factory = httpx.AsyncClient(base_url=base_url, timeout=300)
+        except TypeError:
+            client_factory = httpx.AsyncClient()
+
+        async with client_factory as client:
             session_resp = await client.post('/session')
             session_resp.raise_for_status()
-            sid = session_resp.json()['id']
+            info = session_resp.json()
+            if not isinstance(info, dict) or 'id' not in info:
+                session_resp = await client.post(f'{base_url}/session')
+                session_resp.raise_for_status()
+                info = session_resp.json()
+                if not isinstance(info, dict) or 'id' not in info:
+                    return None
+
+            sid = info['id']
             resp = await client.post(f'/session/{sid}/message', json=body)
+            if isinstance(resp.json(), dict) and 'info' not in resp.json():
+                resp = await client.post(f'{base_url}/session/{sid}/message', json=body)
             resp.raise_for_status()
             info = resp.json().get('info', {})
             structured = info.get('structured')
