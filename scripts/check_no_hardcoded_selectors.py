@@ -66,6 +66,10 @@ def _literal_string(node: ast.AST) -> str | None:
     return None
 
 
+def _literal_strings(node: ast.AST) -> list[str]:
+    return [child.value for child in ast.walk(node) if isinstance(child, ast.Constant) and isinstance(child.value, str)]
+
+
 def _is_selector_factory(call_name: str | None) -> bool:
     if not call_name:
         return False
@@ -133,12 +137,13 @@ class SelectorVisitor(ast.NodeVisitor):
             self._add(value, 'hard-coded contract root selector assignment', ast.unparse(value))
             return
         literal = _literal_string(value)
-        if literal is None:
-            return
-        if any(any(part in name.lower() for part in SUSPICIOUS_NAME_PARTS) for name in target_names) and (
-            _looks_like_selector(literal) or any(api in literal for api in JS_SELECTOR_APIS)
-        ):
-            self._add(value, 'selector-looking literal assigned to selector-like name', literal)
+        literals = [literal] if literal is not None else _literal_strings(value)
+        for literal_value in literals:
+            if any(any(part in name.lower() for part in SUSPICIOUS_NAME_PARTS) for name in target_names) and (
+                _looks_like_selector(literal_value) or any(api in literal_value for api in JS_SELECTOR_APIS)
+            ):
+                self._add(value, 'selector-looking literal assigned to selector-like name', literal_value)
+                return
 
     def visit_Constant(self, node: ast.Constant) -> Any:
         """Check string literals for embedded browser selector APIs."""
