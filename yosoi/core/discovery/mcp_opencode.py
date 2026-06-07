@@ -25,12 +25,11 @@ from yosoi.core.discovery.config import LLMConfig
 from yosoi.core.discovery.mcp_backends import StdioServerSpec
 from yosoi.core.discovery.mcp_client import (
     VOIDCRAWL_MCP_BIN,
-    MCPUnavailableError,
     voidcrawl_command,
 )
 from yosoi.core.discovery.mcp_draft import MCPDiscoveryDraft
 from yosoi.utils import observability as obs
-from yosoi.utils.exceptions import LLMGenerationError
+from yosoi.utils.exceptions import LLMGenerationError, MCPUnavailableError
 
 logger = logging.getLogger(__name__)
 
