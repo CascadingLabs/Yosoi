@@ -101,10 +101,15 @@ def _try_atom_reads(
     extracted records when every field resolves unambiguously on this page's shape, else None
     (caller falls back to discovery). Fail-closed: any error or partial resolution yields None.
     """
-    from yosoi.core.atom_read import resolve_via_atoms, selector_map_from_atoms
-
     if not policy.atom_reads:
         return None
+
+    requested = [(name, fspec.yosoi_type) for name, fspec in spec.fields.items()]
+    if not requested:
+        return None
+
+    from yosoi.core.atom_read import resolve_via_atoms, selector_map_from_atoms
+
     try:
         from yosoi.generalization.capture import observe_html
         from yosoi.generalization.fingerprint import page_shape_fp
@@ -114,9 +119,6 @@ def _try_atom_reads(
         if len(store) == 0:
             return None
         page_shape = page_shape_fp(observe_html(url or domain, html, row_selector=''))
-        requested = [(name, fspec.yosoi_type) for name, fspec in spec.fields.items()]
-        if not requested:
-            return None
         resolution = resolve_via_atoms(page_shape, requested, store, allowed=policy.allowed_sources)
         if not resolution.fully_resolved:
             return None
@@ -152,12 +154,23 @@ def _extract_from_html(
     cleaned = cleaner.clean_html(html)
 
     extractor = ContentExtractor(console=quiet_console, contract=contract)
-    raw = extractor.extract_content_with_html(
-        url or domain,
-        cleaned,
-        selectors,
-        max_level=max_level,
-    )
+    container_selector = _root_selector_value(contract, selectors)
+    raw: dict[str, Any] | list[dict[str, Any]] | None
+    if container_selector:
+        raw = extractor.extract_items(
+            url or domain,
+            cleaned,
+            selectors,
+            container_selector,
+            max_level=max_level,
+        )
+    else:
+        raw = extractor.extract_content_with_html(
+            url or domain,
+            cleaned,
+            selectors,
+            max_level=max_level,
+        )
 
     if raw is None:
         return []
@@ -172,6 +185,26 @@ def _extract_from_html(
         except Exception:  # noqa: BLE001, PERF203
             validated.append(item)
     return validated
+
+
+def _root_selector_value(contract: type[Any], selectors: SelectorMap) -> str | None:
+    """Return a CSS root selector for grouped replay, if one is configured."""
+    contract_root = getattr(contract, 'get_root', lambda: None)()
+    if contract_root is not None:
+        value = getattr(contract_root, 'value', None)
+        return value if isinstance(value, str) and value else None
+
+    root_entry = selectors.get('root')
+    if not isinstance(root_entry, dict):
+        return None
+    primary = root_entry.get('primary')
+    if isinstance(primary, str) and primary:
+        return primary
+    if isinstance(primary, dict):
+        value = primary.get('value')
+        return value if isinstance(value, str) and value else None
+    value = root_entry.get('value')
+    return value if isinstance(value, str) and value else None
 
 
 def build_cache_from_selectors(

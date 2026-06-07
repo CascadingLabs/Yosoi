@@ -42,6 +42,19 @@ def _draft() -> MCPDiscoveryDraft:
     )
 
 
+def _draft_no_root() -> MCPDiscoveryDraft:
+    return MCPDiscoveryDraft(
+        fields=[
+            MCPFieldFinding(
+                field='headline', selector=SelectorEntry(type='css', value='h1.title'), sample_value='Title'
+            ),
+            MCPFieldFinding(
+                field='author', selector=SelectorEntry(type='css', value='span.author'), sample_value='Jane'
+            ),
+        ],
+    )
+
+
 @pytest.fixture
 def llm_config():
     return LLMConfig(provider='groq', model_name='test-model', api_key='test-key', temperature=0.0)
@@ -139,3 +152,35 @@ class TestValidationGate:
         assert 'headline' in result
         assert 'author' not in result
         assert 'root' in result  # root is structural, not value-validated
+
+    async def test_returns_none_when_all_fields_fail_validation(self, llm_config, lesson_storage, mocker):
+        from yosoi.core.verification.semantic import FieldSemanticIssue
+
+        def _always_fail(item, _rules):
+            field = next(iter(item))
+            return [FieldSemanticIssue(field, next(iter(item.values())), 'bad')]
+
+        orch = _orchestrator(llm_config, lesson_storage, _FakeAgent(_draft_no_root()))
+        mocker.patch.object(orch._validator, 'validate', side_effect=_always_fail)
+
+        result = await orch.discover_selectors('', _URL)
+
+        assert result is None
+
+    async def test_reextract_returns_empty_on_extractor_failure(self, llm_config, lesson_storage, mocker):
+        orch = _orchestrator(llm_config, lesson_storage, _FakeAgent(_draft()))
+
+        class _FailingExtractor:
+            def __init__(self, **kwargs):
+                self._kwargs = kwargs
+
+            def extract_content_with_html(self, *args, **kwargs):
+                raise RuntimeError('extractor failure')
+
+        extractor_module = __import__('yosoi.core.extraction.extractor', fromlist=['ContentExtractor'])
+        mocker.patch.object(extractor_module, 'ContentExtractor', _FailingExtractor)
+
+        result = await orch.discover_selectors('', _URL)
+
+        assert result is not None
+        assert result['headline']['primary']['value'] == 'h1.title'

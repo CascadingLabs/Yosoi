@@ -26,11 +26,12 @@ except PackageNotFoundError:
 # Public name -> submodule that defines it. Resolved on first attribute access.
 _LAZY: dict[str, str] = {
     # api
+    'fingerprint': 'yosoi.api',
     'scrape': 'yosoi.api',
     'scrape_many': 'yosoi.api',
     'scrape_sync': 'yosoi.api',
     # display
-    'show': 'yosoi.display',
+    'show': 'yosoi.reporting',
     # config
     'DebugConfig': 'yosoi.core.configs',
     'DiscoveryConfig': 'yosoi.core.configs',
@@ -70,6 +71,8 @@ _LAZY: dict[str, str] = {
     'xai': 'yosoi.core.discovery',
     # pipeline
     'Pipeline': 'yosoi.core.pipeline',
+    # generalization
+    'PageFingerprint': 'yosoi.generalization.fingerprint',
     # integration transports
     'ClaudeSDKModel': 'yosoi.integrations',
     'OpenCodeModel': 'yosoi.integrations',
@@ -130,6 +133,7 @@ __all__ = [
     'LLMConfig',
     'NewsArticle',
     'OpenCodeModel',
+    'PageFingerprint',
     'Pipeline',
     'Price',
     'Rating',
@@ -154,6 +158,7 @@ __all__ = [
     'css',
     'deepseek',
     'discover',
+    'fingerprint',
     'fireworks',
     'gemini',
     'github',

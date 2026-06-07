@@ -4,9 +4,13 @@ from __future__ import annotations
 
 import pytest
 
+import yosoi as ys
 from yosoi.core.resolve import ContractCache, build_cache_from_selectors, resolve
+from yosoi.models.contract import Contract
 from yosoi.models.defaults import NewsArticle
 from yosoi.models.needs_discovery import NeedsDiscovery
+from yosoi.models.selectors import SelectorEntry
+from yosoi.models.spec import ContractSpec, FieldSpec
 
 DOMAIN = 'example.com'
 MINIMAL_HTML = """<html><body>
@@ -58,6 +62,16 @@ class TestCacheMiss:
         assert isinstance(result, NeedsDiscovery)
         assert len(result.fields) > 0
 
+    def test_miss_returns_discovery_when_atom_reads_requested_and_contract_has_no_fields(
+        self,
+        monkeypatch,
+        empty_cache,
+    ):
+        monkeypatch.setenv('YOSOI_ATOM_READS', '1')
+        spec = ContractSpec(name='Empty', fields={})
+        result = resolve(spec, MINIMAL_HTML, empty_cache, DOMAIN)
+        assert isinstance(result, NeedsDiscovery)
+
 
 class TestCacheHit:
     def test_hit_returns_list(self, spec, warm_cache):
@@ -80,6 +94,31 @@ class TestCacheHit:
         r2 = resolve(spec, MINIMAL_HTML, empty_cache, DOMAIN)
         assert isinstance(r2, NeedsDiscovery)
 
+    def test_rooted_cache_hit_returns_one_record_per_container(self):
+        class ProductCard(Contract):
+            root = SelectorEntry(type='css', value='.card')
+
+            name: str = ys.Title()
+            price: str = ys.Field()
+
+        html = """<html><body>
+        <div class="card"><h2>Hammer</h2><span class="price">$10</span></div>
+        <div class="card"><h2>Anvil</h2><span class="price">$20</span></div>
+        </body></html>"""
+        spec = ProductCard.to_spec()
+        cache = build_cache_from_selectors(
+            DOMAIN,
+            spec.fingerprint,
+            {
+                'name': {'primary': {'type': 'css', 'value': 'h2::text'}},
+                'price': {'primary': {'type': 'css', 'value': '.price::text'}},
+            },
+        )
+
+        result = resolve(spec, html, cache, DOMAIN)
+
+        assert result == [{'name': 'Hammer', 'price': '$10'}, {'name': 'Anvil', 'price': '$20'}]
+
 
 class TestFingerprintDedup:
     def test_renamed_spec_is_distinct_cache_slot(self, spec, warm_cache):
@@ -100,6 +139,30 @@ class TestFingerprintDedup:
         )
         assert different.fingerprint != spec.fingerprint
         result = resolve(different, MINIMAL_HTML, warm_cache, DOMAIN)
+        assert isinstance(result, NeedsDiscovery)
+
+    def test_atom_read_fails_closed_on_atom_pipeline_errors(self, monkeypatch, empty_cache):
+        import yosoi.generalization.capture as capture
+
+        monkeypatch.setenv('YOSOI_ATOM_READS', '1')
+
+        def _observe_html(*_args, **_kwargs):
+            raise RuntimeError('boom')
+
+        monkeypatch.setattr(
+            capture,
+            'observe_html',
+            _observe_html,
+        )
+
+        result = resolve(
+            ContractSpec(name='Quote', fields={'symbol': FieldSpec(yosoi_type=None)}),
+            MINIMAL_HTML,
+            empty_cache,
+            DOMAIN,
+            url='https://example.com/quote',
+        )
+
         assert isinstance(result, NeedsDiscovery)
 
 

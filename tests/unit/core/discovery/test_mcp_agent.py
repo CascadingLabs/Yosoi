@@ -4,6 +4,7 @@ from yosoi.core.discovery.config import LLMConfig
 from yosoi.core.discovery.mcp_agent import MCPDiscoveryAgent, MCPDiscoveryDraft, MCPFieldFinding
 from yosoi.core.discovery.mcp_backends import (
     ClaudeSDKBackend,
+    OpenCodeBackend,
     PydanticAIBackend,
     StdioServerSpec,
     backend_for,
@@ -58,6 +59,11 @@ class TestBackendSelection:
         cfg = LLMConfig(provider='claude-sdk', model_name='claude-opus-4-7')
 
         assert isinstance(backend_for(cfg), ClaudeSDKBackend)
+
+    def test_opencode_provider_uses_opencode_backend(self):
+        cfg = LLMConfig(provider='opencode', model_name='openai/gpt-5-codex')
+
+        assert isinstance(backend_for(cfg), OpenCodeBackend)
 
 
 class TestAllowlist:

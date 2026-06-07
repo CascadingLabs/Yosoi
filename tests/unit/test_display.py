@@ -92,6 +92,29 @@ def test_show_title_prints_before_value() -> None:
     assert out.index('Products') < out.index('name')
 
 
+def test_show_renders_page_fingerprint() -> None:
+    console, buf = _capture()
+    fp = ys.fingerprint(_page('A', 5))
+
+    show(fp, console=console)
+
+    out = buf.getvalue()
+    assert 'Fingerprint' in out
+    assert 'skeleton' in out
+    assert 'semantic' in out
+
+
+def test_show_renders_fingerprint_comparison() -> None:
+    console, buf = _capture()
+
+    show(_page('A', 5), fingerprint=_page('A', 7), console=console)
+
+    out = buf.getvalue()
+    assert 'Fingerprint comparison' in out
+    assert 'same_shape' in out
+    assert 'yes' in out
+
+
 def test_show_table_rejects_non_table_values() -> None:
     console, _ = _capture()
 
@@ -114,3 +137,8 @@ def test_show_does_not_mutate_input() -> None:
     show(rows, console=console)
 
     assert rows == before
+
+
+def _page(label: str, count: int) -> str:
+    cards = ''.join(f'<article><h2>{label}</h2><p>${i}</p></article>' for i in range(count))
+    return f'<html><body><main><h1>Catalog</h1><section class="catalog">{cards}</section></main></body></html>'

@@ -118,6 +118,9 @@ class TestScrapeReplayOnly:
         doc = json.loads(json_lines[0])
         assert doc['type'] == 'needs_discovery'
         assert result.exit_code == 2  # NEEDS_DISCOVERY
+        storage_instance.load_selectors.assert_awaited_once_with(
+            'example.com', contract_sig=NewsArticle.to_spec().fingerprint
+        )
 
 
 class TestCacheStatus:

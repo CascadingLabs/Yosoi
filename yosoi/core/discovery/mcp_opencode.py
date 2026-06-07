@@ -18,6 +18,7 @@ import logging
 import re
 import tempfile
 from collections.abc import Sequence
+from functools import lru_cache
 from pathlib import Path
 
 from yosoi.core.discovery.config import LLMConfig
@@ -41,6 +42,7 @@ def _split_model(model_name: str) -> tuple[str, str]:
     return 'openai', model_name
 
 
+@lru_cache(maxsize=1)
 def _voidcrawl_mcp_config() -> dict[str, object]:
     """Reuse the user's voidcrawl OpenCode config if present, else build a default."""
     with contextlib.suppress(OSError, json.JSONDecodeError, ValueError):
@@ -75,17 +77,20 @@ class OpenCodeBackend:
 
         with tempfile.TemporaryDirectory(prefix='yosoi-opencode-') as tmp:
             (Path(tmp) / 'opencode.json').write_text(json.dumps(config))
-            proc = await asyncio.create_subprocess_exec(
-                'opencode',
-                'serve',
-                '--port',
-                '0',
-                '--hostname',
-                '127.0.0.1',
-                cwd=tmp,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.STDOUT,
-            )
+            try:
+                proc = await asyncio.create_subprocess_exec(
+                    'opencode',
+                    'serve',
+                    '--port',
+                    '0',
+                    '--hostname',
+                    '127.0.0.1',
+                    cwd=tmp,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.STDOUT,
+                )
+            except FileNotFoundError as exc:
+                raise LLMGenerationError('OpenCode binary not found on PATH: opencode') from exc
             try:
                 base_url = await asyncio.wait_for(self._read_url(proc), timeout=self._startup_timeout)
                 with obs.transport_span(

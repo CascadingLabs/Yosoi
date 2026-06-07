@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from collections.abc import Callable, Mapping, Sequence
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from yosoi.core.configs import YosoiConfig, auto_config
 from yosoi.core.discovery import LLMConfig
@@ -19,12 +19,34 @@ from yosoi.utils.contracts import resolve_contract
 
 logger = logging.getLogger(__name__)
 
+if TYPE_CHECKING:
+    from yosoi.generalization.fingerprint import PageFingerprint
+
 # Per-contract capture for the cross-contract discrimination gate: contract name ->
 # (selector_map, cleaned_html) from that contract's fresh discovery on a page.
 GateCollector = dict[str, tuple[dict[str, Any], str | None]]
 
 # Default on-disk field-atom corpus (P2 dual-write target). Gitignored like .yosoi/.
 _ATOM_STORE_PATH = '.yosoi/atoms.jsonl'
+
+
+def fingerprint(
+    source: object,
+    *,
+    ax_snapshot: Any = None,
+    headers: Mapping[str, str] | None = None,
+    endpoints: Sequence[str] | None = None,
+) -> PageFingerprint:
+    """Compute a page fingerprint from HTML or a Yosoi fetch result.
+
+    This is the high-level escape hatch for inspecting page shape directly:
+    pass raw HTML, or pass an object with ``.html`` plus optional
+    ``.ax_snapshot``, ``.headers``, and ``.endpoints`` attributes. It never
+        reads ``.yosoi`` cache files.
+    """
+    from yosoi.reporting.fingerprint import coerce_fingerprint
+
+    return coerce_fingerprint(source, ax_snapshot=ax_snapshot, headers=headers, endpoints=endpoints)
 
 
 def _run_discrimination_gates(

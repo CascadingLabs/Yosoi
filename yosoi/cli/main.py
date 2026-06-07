@@ -24,7 +24,7 @@ _LEVEL_MAP: dict[str, SelectorLevel] = {
 }
 
 _VALID_FORMATS = {'json', 'md', 'markdown', 'jsonl', 'ndjson', 'csv', 'xlsx', 'parquet'}
-_FETCHER_CHOICES = ['auto', 'simple', 'headless', 'headful', 'waterfall']
+_FETCHER_CHOICES = ['auto', 'simple', 'headless', 'headful', 'waterfall']  # waterfall aliases auto
 
 _THEME = Theme(
     {
@@ -385,7 +385,7 @@ def scrape(
         async def _replay_json() -> int:
             for scrape_url in all_urls:
                 domain = _domain_from_url(scrape_url)
-                raw_selectors = await storage.load_selectors(domain)
+                raw_selectors = await storage.load_selectors(domain, contract_sig=fp)
                 if raw_selectors is None:
                     nd = NeedsDiscovery(
                         domain=domain, contract_fingerprint=fp, fields=sorted(resolved_contract.discovery_field_names())
