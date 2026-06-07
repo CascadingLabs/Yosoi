@@ -9,7 +9,7 @@ import pytest
 
 from yosoi.core.discovery.config import LLMConfig
 from yosoi.core.discovery.mcp_backends import StdioServerSpec
-from yosoi.core.discovery.mcp_opencode import OpenCodeBackend, _split_model
+from yosoi.core.discovery.mcp_opencode import OpenCodeBackend, _split_model, _voidcrawl_mcp_config
 from yosoi.utils.exceptions import LLMGenerationError
 
 
@@ -32,6 +32,14 @@ def _build_proc(url_line: bytes) -> SimpleNamespace:
         kill=lambda: None,
         wait=_wait,
     )
+
+
+@pytest.fixture(autouse=True)
+def _stub_voidcrawl_command(mocker):
+    _voidcrawl_mcp_config.cache_clear()
+    mocker.patch('yosoi.core.discovery.mcp_opencode.voidcrawl_command', return_value='voidcrawl-mcp')
+    yield
+    _voidcrawl_mcp_config.cache_clear()
 
 
 def test_split_model_supports_provider_prefix():
@@ -86,6 +94,9 @@ async def test_discover_parses_structured_and_non_structured_payloads(monkeypatc
 
     async def _run(structured: object) -> object | None:
         class _Client:
+            def __init__(self, *args, **kwargs):
+                pass
+
             async def __aenter__(self):
                 return self
 
