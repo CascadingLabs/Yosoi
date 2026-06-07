@@ -1,4 +1,4 @@
-"""Regression for the Google SERP use case (examples/serp_google/google_serp.py).
+"""Regression for the Google SERP use case (examples/tutorial/serp_google/google_serp.py).
 
 The example is the spike's runnable dogfood; this pins its end-to-end behavior so a
 future engine change that breaks the teleport / parametrized-replay / captcha-reaction
@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 from types import ModuleType
 
-_DEMO = Path(__file__).resolve().parents[2] / 'examples' / 'serp_google' / 'google_serp.py'
+_DEMO = Path(__file__).resolve().parents[2] / 'examples' / 'tutorial' / 'serp_google' / 'google_serp.py'
 _MODNAME = 'serp_google_demo'
 
 
