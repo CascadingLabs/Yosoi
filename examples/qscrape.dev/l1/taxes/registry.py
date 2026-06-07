@@ -7,7 +7,6 @@ Run:
 from __future__ import annotations
 
 import asyncio
-import json
 import os
 
 import yosoi as ys
@@ -20,7 +19,7 @@ class RegistryService(ys.Contract):
 
     service_name: str = ys.Title(description='Registry service name')
     description: str = ys.BodyText(description='What the service lets users do')
-    service_url: str | None = ys.Url(default=None, description='Link target for the service')
+    service_url: str | None = ys.Url(description='Link target for the service')
 
 
 async def main() -> None:
@@ -32,7 +31,7 @@ async def main() -> None:
         force=os.getenv('YOSOI_FORCE', '').lower() in {'1', 'true', 'yes'},
         quiet=False,
     )
-    print(json.dumps(items, indent=2, ensure_ascii=False))
+    ys.show(items)
 
 
 if __name__ == '__main__':

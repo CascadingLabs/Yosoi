@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import re
+import types
+import typing
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Annotated, Any, ClassVar, get_args, get_origin
 
@@ -21,6 +23,7 @@ from yosoi.types.coerce import dispatch as _coerce_dispatch
 # Builtins are registered when yosoi.models.defaults is imported; custom schemas
 # are registered when their module is loaded (e.g. via load_schema in the CLI).
 _CONTRACT_REGISTRY: dict[str, type[Contract]] = {}
+_NUMERIC_TOKEN_RE = re.compile(r'(?<![\w.])[+-]?(?:[$€£¥]\s*)?(?:\d{1,3}(?:,\d{3})+|\d+)(?:[.,]\d+)?%?(?![\w.])')
 
 
 def _unwrap_list_annotation(annotation: object) -> type | None:
@@ -31,6 +34,57 @@ def _unwrap_list_annotation(annotation: object) -> type | None:
             inner: type = args[0]
             return inner
     return None
+
+
+def _allows_none(annotation: object) -> bool:
+    """Return True when an annotation is Optional[T] / T | None."""
+    origin = get_origin(annotation)
+    if origin in (typing.Union, types.UnionType):
+        return any(arg is type(None) for arg in get_args(annotation))
+    return annotation is None or annotation is type(None)
+
+
+def _numeric_annotation(annotation: object) -> type | None:
+    """Return int/float when an annotation is numeric or optional numeric."""
+    if annotation in (int, float):
+        return annotation
+    origin = get_origin(annotation)
+    if origin in (typing.Union, types.UnionType):
+        numeric = [arg for arg in get_args(annotation) if arg in (int, float)]
+        if len(numeric) == 1:
+            return numeric[0]
+    return None
+
+
+def _coerce_numeric_annotation(annotation: object, value: object) -> object:
+    """Coerce short one-number strings for plain int/float annotations."""
+    numeric_type = _numeric_annotation(annotation)
+    if numeric_type is None or not isinstance(value, str):
+        return value
+
+    tokens = _NUMERIC_TOKEN_RE.findall(value)
+    if len(tokens) != 1:
+        return value
+
+    token = tokens[0].strip().rstrip('%')
+    token = token.replace('$', '').replace('€', '').replace('£', '').replace('¥', '').replace(' ', '')
+    if ',' in token and '.' in token:
+        if token.rfind(',') > token.rfind('.'):
+            token = token.replace('.', '').replace(',', '.')
+        else:
+            token = token.replace(',', '')
+    elif ',' in token:
+        parts = token.split(',')
+        token = ''.join(parts) if all(len(part) == 3 for part in parts[1:]) else token.replace(',', '.')
+
+    number = float(token) if '.' in token else int(token)
+    if numeric_type is int:
+        if isinstance(number, float):
+            if not number.is_integer():
+                return value
+            return int(number)
+        return number
+    return float(number)
 
 
 def _coerce_list_field(
@@ -81,6 +135,14 @@ class Contract(BaseModel):
         - ``list[Contract]`` fields, which are not yet supported (Phase 2).
         """
         super().__pydantic_init_subclass__(**kwargs)
+
+        inferred_optional_defaults = False
+        for fi in cls.model_fields.values():
+            if fi.default is PydanticUndefined and fi.default_factory is None and _allows_none(fi.annotation):
+                fi.default = None
+                inferred_optional_defaults = True
+        if inferred_optional_defaults:
+            cls.model_rebuild(force=True)
 
         # Cache Validators class at class definition time to avoid per-call MRO walk
         cls._validators_cls = next(
@@ -155,11 +217,13 @@ class Contract(BaseModel):
                 continue
             raw_extra = field_info.json_schema_extra
             if not isinstance(raw_extra, dict):
+                result[field_name] = _coerce_numeric_annotation(field_info.annotation, result[field_name])
                 continue
             yosoi_type = raw_extra.get('yosoi_type')
-            if not isinstance(yosoi_type, str):
-                continue
-            result[field_name] = _coerce_dispatch(yosoi_type, result[field_name], raw_extra, source_url)
+            if isinstance(yosoi_type, str):
+                result[field_name] = _coerce_dispatch(yosoi_type, result[field_name], raw_extra, source_url)
+            else:
+                result[field_name] = _coerce_numeric_annotation(field_info.annotation, result[field_name])
 
         # Step 2.5: List field coercion — normalize to list, split single strings, coerce per-element
         for field_name in _list_field_names:
@@ -199,10 +263,12 @@ class Contract(BaseModel):
 
         # Step 2: Yosoi semantic-type coercion (scalar fields with a declared type).
         raw_extra = field_info.json_schema_extra
-        if isinstance(raw_extra, dict) and _unwrap_list_annotation(field_info.annotation) is None:
-            yosoi_type = raw_extra.get('yosoi_type')
-            if isinstance(yosoi_type, str):
+        if _unwrap_list_annotation(field_info.annotation) is None:
+            yosoi_type = raw_extra.get('yosoi_type') if isinstance(raw_extra, dict) else None
+            if isinstance(raw_extra, dict) and isinstance(yosoi_type, str):
                 value = _coerce_dispatch(yosoi_type, value, raw_extra, source_url or None)
+            else:
+                value = _coerce_numeric_annotation(field_info.annotation, value)
 
         # Step 3: Pydantic type + Annotated (Before/After) validators. The
         # ``Annotated`` metadata (BeforeValidator/AfterValidator/constraints) lives

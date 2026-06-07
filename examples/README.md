@@ -8,9 +8,15 @@ Yosoi discover selectors from the page structure.
 `qscrape.dev` is the maintained example target. Each level uses the same domain
 with increasing rendering complexity:
 
-- `l1/`: static HTML pages that can run with the simple fetcher.
-- `l2/`: JavaScript-rendered pages that use the waterfall fetcher.
-- `l3/`: island-rendered pages that use the waterfall fetcher.
+- `l1/`: static HTML pages that the default auto fetcher handles at L1.
+- `l2/`: JavaScript-rendered pages that the default auto fetcher promotes as needed.
+- `l3/`: island-rendered pages that the default auto fetcher promotes as needed.
+
+The scripts use Yosoi's default `fetcher_type='auto'`, so they stay close to the
+recommended path: try plain HTTP first, then promote only when the page requires it.
+
+Set `YOSOI_MODEL` to choose a provider/model, and set `YOSOI_FORCE=1` when you
+want to force rediscovery instead of replaying a cached contract.
 
 Each level has examples for:
 
@@ -22,6 +28,7 @@ Each level has examples for:
 Run one directly, for example:
 
 ```bash
+YOSOI_MODEL=groq:llama-3.3-70b-versatile \
 uv run python examples/qscrape.dev/l1/eshop/catalog.py
 ```
 

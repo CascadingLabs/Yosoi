@@ -89,6 +89,20 @@ def test_extract_items_all_items_have_both_fields():
         assert 'price' in item
 
 
+def test_extract_items_deduplicates_repeated_items():
+    extractor = _make_extractor(ProductContract)
+    html = """\
+    <div class="product-card"><h2 class="name">Iron Pickaxe</h2><span class="price">14.50 Gold</span></div>
+    <div class="product-card"><h2 class="name">Iron Pickaxe</h2><span class="price">14.50 Gold</span></div>
+    <div class="product-card"><h2 class="name">Steel Anvil</h2><span class="price">89.00 Gold</span></div>
+    """
+    result = extractor.extract_items('https://shop.example.com/catalog', html, SELECTORS, '.product-card')
+    assert result == [
+        {'name': 'Iron Pickaxe', 'price': '14.50 Gold'},
+        {'name': 'Steel Anvil', 'price': '89.00 Gold'},
+    ]
+
+
 # ---------------------------------------------------------------------------
 # extract_items — edge cases
 # ---------------------------------------------------------------------------

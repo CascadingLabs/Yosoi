@@ -192,7 +192,7 @@ class JSFetcher(HTMLFetcher):
     def supports_browse(self) -> bool:
         """The waterfall escalates to a real browser tier, so a live tab is available.
 
-        This makes ys.File() downloads work on ``fetcher_type='waterfall'`` (the download
+        This makes ys.File() downloads work on ``fetcher_type='auto'`` (the download
         gate forces the browser tier for download specs; see ``_fetch_waterfall``).
         """
         return True

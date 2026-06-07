@@ -146,7 +146,7 @@ async def scrape(
     *,
     force: bool = False,
     skip_verification: bool = False,
-    fetcher_type: str | Mapping[str, str] | Callable[[str], str] = 'simple',
+    fetcher_type: str | Mapping[str, str] | Callable[[str], str] = 'auto',
     selector_level: SelectorLevel = SelectorLevel.CSS,
     save_formats: Sequence[str] = (),
     quiet: bool = True,
@@ -179,8 +179,9 @@ async def scrape(
     into the bus key is a tracked follow-up (FU-3); until then, related same-shape contracts rely on
     divergent field descriptions to avoid bus conflation.
 
-    ``fetcher_type`` is a scalar OR a per-URL ``{url: tier}`` map / ``url -> tier`` callable, so
-    different engines get different tiers in ONE concurrent call (e.g. ``google: 'headful'``,
+    ``fetcher_type`` defaults to ``'auto'`` (plain HTTP first, then browser tiers only when
+    needed). It also accepts a scalar OR a per-URL ``{url: tier}`` map / ``url -> tier`` callable,
+    so different engines get different tiers in ONE concurrent call (e.g. ``google: 'headful'``,
     ``bing``/``brave``: ``'headless'``). ``max_concurrency`` (opt-in) caps how many
     ``(url, contract)`` units run at once — set it on big SERP grids so you don't open hundreds
     of tabs and trip anti-bot; default ``None`` is unbounded (today's behavior).
@@ -191,10 +192,12 @@ async def scrape(
     ``headful``, a ``geo`` teleport, ``proxy``/``locale``/``timezone_id`` — PER URL, so e.g. a
     google tab runs headful+profile while bing/brave tabs run plain headless, all concurrently.
     Default ``None`` keeps today's behavior exactly. An identity needs a browser
-    ``fetcher_type`` (``headless``/``headful``); the ``simple`` fetcher ignores it (and warns).
+    ``fetcher_type`` (``auto``/``headless``/``headful``); the ``simple`` fetcher ignores it
+    (and warns).
 
     By default this API does not write files. Pass ``save_formats=('json',)`` for file output.
-    ``ys.File()`` download fields need ``allow_downloads=True`` + a browser ``fetcher_type``;
+    ``ys.File()`` download fields need ``allow_downloads=True`` + a browser-capable
+    ``fetcher_type``;
     ``allowed_download_types``/``download_dir``/``max_download_bytes``/``keep_downloads`` tune
     the download lane (see :func:`_scrape_one`).
 
@@ -220,7 +223,7 @@ async def scrape(
     def _fetcher_for(u: str) -> str:
         if isinstance(fetcher_type, str):
             return fetcher_type
-        return fetcher_type(u) if callable(fetcher_type) else fetcher_type.get(u, 'simple')
+        return fetcher_type(u) if callable(fetcher_type) else fetcher_type.get(u, 'auto')
 
     write_lock = asyncio.Lock() if (multi_url or multi_contract) else None
     # Shared single-flight gate: concurrent units for the same (domain, contract) discover
@@ -283,7 +286,7 @@ async def _scrape_one(
     *,
     force: bool = False,
     skip_verification: bool = False,
-    fetcher_type: str = 'simple',
+    fetcher_type: str = 'auto',
     selector_level: SelectorLevel = SelectorLevel.CSS,
     save_formats: Sequence[str] = (),
     quiet: bool = True,
@@ -363,7 +366,7 @@ async def scrape_many(
     *,
     force: bool = False,
     skip_verification: bool = False,
-    fetcher_type: str = 'simple',
+    fetcher_type: str = 'auto',
     selector_level: SelectorLevel = SelectorLevel.CSS,
     save_formats: Sequence[str] = (),
     quiet: bool = True,
@@ -402,7 +405,7 @@ def scrape_sync(
     *,
     force: bool = False,
     skip_verification: bool = False,
-    fetcher_type: str = 'simple',
+    fetcher_type: str = 'auto',
     selector_level: SelectorLevel = SelectorLevel.CSS,
     save_formats: Sequence[str] = (),
     quiet: bool = True,

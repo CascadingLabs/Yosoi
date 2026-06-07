@@ -352,6 +352,7 @@ class ContentExtractor:
         self.console.print(f'  ↻ Found {len(containers)} items with container selector: {container_selector}')
 
         items: list[dict[str, str | list[str | dict[str, str]]]] = []
+        seen_items: set[tuple[tuple[str, str], ...]] = set()
         for container in containers:
             item: dict[str, str | list[str | dict[str, str]]] = {}
 
@@ -375,7 +376,12 @@ class ContentExtractor:
                         break
 
             if item:
-                items.append(self._unflatten(item, self._nested_prefixes))
+                unflattened = self._unflatten(item, self._nested_prefixes)
+                key = tuple(sorted((name, repr(value)) for name, value in unflattened.items()))
+                if key in seen_items:
+                    continue
+                seen_items.add(key)
+                items.append(unflattened)
 
         self.console.print(f'  ↻ Extracted {len(items)} non-empty items')
         return items if items else None

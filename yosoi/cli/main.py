@@ -24,6 +24,7 @@ _LEVEL_MAP: dict[str, SelectorLevel] = {
 }
 
 _VALID_FORMATS = {'json', 'md', 'markdown', 'jsonl', 'ndjson', 'csv', 'xlsx', 'parquet'}
+_FETCHER_CHOICES = ['auto', 'simple', 'headless', 'headful', 'waterfall']
 
 _THEME = Theme(
     {
@@ -123,8 +124,8 @@ async def _run_json(
 @click.option(
     '-t',
     '--fetcher',
-    type=click.Choice(['simple', 'waterfall', 'headless', 'headful'], case_sensitive=False),
-    default='simple',
+    type=click.Choice(_FETCHER_CHOICES, case_sensitive=False),
+    default='auto',
     help='HTML fetcher to use',
 )
 @click.option(
@@ -301,8 +302,8 @@ def main(
 @click.option(
     '-t',
     '--fetcher',
-    type=click.Choice(['simple', 'waterfall', 'headless', 'headful'], case_sensitive=False),
-    default='simple',
+    type=click.Choice(_FETCHER_CHOICES, case_sensitive=False),
+    default='auto',
 )
 @click.option(
     '-L',
@@ -465,8 +466,8 @@ def scrape(
 @click.option(
     '-t',
     '--fetcher',
-    type=click.Choice(['simple', 'waterfall', 'headless', 'headful'], case_sensitive=False),
-    default='simple',
+    type=click.Choice(_FETCHER_CHOICES, case_sensitive=False),
+    default='auto',
 )
 @click.option(
     '-L',
@@ -587,6 +588,7 @@ def cache_status(target: str, contract: type[Contract] | None) -> None:
 
     from yosoi.storage import SelectorStorage
     from yosoi.utils.files import init_yosoi, is_initialized
+    from yosoi.utils.signatures import contract_signature
 
     if not is_initialized():
         init_yosoi()
@@ -600,7 +602,8 @@ def cache_status(target: str, contract: type[Contract] | None) -> None:
     storage = SelectorStorage()
 
     async def _check() -> None:
-        snapshots = await storage.load_snapshots(domain)
+        contract_sig = contract_signature(contract) if contract is not None else None
+        snapshots = await storage.load_snapshots(domain, contract_sig=contract_sig)
         if not snapshots:
             console.print(f'[warning]✗ No cached selectors for {domain!r}[/warning]')
             return

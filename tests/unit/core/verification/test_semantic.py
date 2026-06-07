@@ -38,12 +38,28 @@ def test_numeric_accepts_short_number(validator):
     assert validator.validate({'score': '42'}, {'score': NUMERIC}) == []
 
 
+def test_numeric_accepts_currency_and_percent_formatting(validator):
+    assert validator.validate({'price': '$1,299.50'}, {'price': NUMERIC}) == []
+    assert validator.validate({'discount': '15%'}, {'discount': NUMERIC}) == []
+
+
+def test_numeric_accepts_short_single_number_text(validator):
+    assert validator.validate({'reviews_count': '★ ★ ★ ★ ☆ (47)'}, {'reviews_count': NUMERIC}) == []
+    assert validator.validate({'reviews_count': '47 reviews'}, {'reviews_count': NUMERIC}) == []
+
+
+def test_numeric_rejects_ambiguous_multi_number_text(validator):
+    issues = validator.validate({'reviews_count': '4.5 stars from 47 reviews'}, {'reviews_count': NUMERIC})
+    assert len(issues) == 1
+    assert 'extra text' in issues[0].reason
+
+
 def test_numeric_rejects_long_card_text(validator):
     blob = '42 points · ' + 'Facebook deleted my account ' * 50
     issues = validator.validate({'score': blob}, {'score': NUMERIC})
     assert len(issues) == 1
     assert issues[0].field == 'score'
-    assert 'not a number' in issues[0].reason
+    assert 'long block' in issues[0].reason
 
 
 def test_numeric_rejects_text_without_digits(validator):
@@ -52,10 +68,11 @@ def test_numeric_rejects_text_without_digits(validator):
     assert 'no number' in issues[0].reason
 
 
-def test_numeric_without_max_chars_only_needs_a_digit(validator):
+def test_numeric_without_max_chars_still_rejects_ambiguous_text(validator):
     rule = SemanticRule(kind=KIND_NUMERIC)
-    long_with_digit = 'x' * 1000 + ' 5'
-    assert validator.validate({'n': long_with_digit}, {'n': rule}) == []
+    issues = validator.validate({'n': 'from 5 to 10'}, {'n': rule})
+    assert len(issues) == 1
+    assert 'extra text' in issues[0].reason
 
 
 # ---------------------------------------------------------------------------
@@ -177,13 +194,13 @@ def test_feedback_truncates_long_values():
 
 def test_field_rules_from_contract():
     class Post(ys.Contract):
-        title: str | None = ys.Title(default=None)
-        author: str | None = ys.Author(default=None)
-        body: str | None = ys.BodyText(default=None)
-        created_at: str | None = ys.Datetime(default=None)
-        permalink: str | None = ys.Url(default=None)
-        score: int | None = ys.Field(default=None)
-        note: str | None = ys.Field(default=None)
+        title: str | None = ys.Title()
+        author: str | None = ys.Author()
+        body: str | None = ys.BodyText()
+        created_at: str | None = ys.Datetime()
+        permalink: str | None = ys.Url()
+        score: int | None = ys.Field()
+        note: str | None = ys.Field()
 
     rules = field_rules_for_contract(Post)
     assert rules['title'].kind == KIND_TEXT
@@ -199,11 +216,11 @@ def test_field_rules_from_contract():
 
 def test_field_rules_expands_nested_contract():
     class Inner(ys.Contract):
-        url: str | None = ys.Url(default=None)
-        count: int | None = ys.Field(default=None)
+        url: str | None = ys.Url()
+        count: int | None = ys.Field()
 
     class Outer(ys.Contract):
-        title: str | None = ys.Title(default=None)
+        title: str | None = ys.Title()
         inner: Inner = ys.Field(default_factory=Inner)
 
     rules = field_rules_for_contract(Outer)

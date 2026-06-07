@@ -1,7 +1,7 @@
 """Type stubs for yosoi public API."""
 
 from collections.abc import Iterable, Sequence
-from typing import Any
+from typing import Any, Literal
 
 from yosoi.core.configs import DebugConfig as DebugConfig
 from yosoi.core.configs import DiscoveryConfig as DiscoveryConfig
@@ -117,6 +117,13 @@ def scrape_sync(
     model: YosoiConfig | LLMConfig | str | None = ...,
     **kwargs: Any,
 ) -> list[dict[str, Any]]: ...
+def show(
+    value: Any,
+    *,
+    format: Literal['auto', 'table', 'plain', 'json'] = ...,
+    title: str | None = ...,
+    console: Any = ...,
+) -> None: ...
 
 __version__: str
 __all__: list[str]
