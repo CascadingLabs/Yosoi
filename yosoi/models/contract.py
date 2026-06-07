@@ -46,13 +46,13 @@ def _allows_none(annotation: object) -> bool:
 
 def _numeric_annotation(annotation: object) -> type | None:
     """Return int/float when an annotation is numeric or optional numeric."""
-    if annotation in (int, float):
-        return annotation
+    if annotation is int or annotation is float:
+        return int if annotation is int else float
     origin = get_origin(annotation)
     if origin in (typing.Union, types.UnionType):
-        numeric = [arg for arg in get_args(annotation) if arg in (int, float)]
+        numeric = [arg for arg in get_args(annotation) if arg is int or arg is float]
         if len(numeric) == 1:
-            return numeric[0]
+            return int if numeric[0] is int else float
     return None
 
 

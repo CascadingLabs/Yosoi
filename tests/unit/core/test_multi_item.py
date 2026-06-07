@@ -396,8 +396,11 @@ async def test_scrape_cached_verification_failure_falls_through(mocker):
     assert len(items) == 1
     assert items[0]['title'] == 'Hello'
 
-    # Fetch called twice: once in cached path, once in fresh discovery via _fetch
-    assert mock_fetcher.fetch.call_count == 2
+    # Fetch called three times: the initial cached attempt, the DiscoveryGate
+    # re-check of the cache under the single-flight lock (_gated_fresh), and the
+    # fresh discovery fetch. The gate re-checks the now-(maybe-)warm cache before
+    # rediscovering, so a cache miss costs one extra verify fetch.
+    assert mock_fetcher.fetch.call_count == 3
     # AI discovery was called after cache miss
     assert stub.discovery.discover_selectors.call_count == 1
 
