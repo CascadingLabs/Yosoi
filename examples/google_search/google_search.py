@@ -1,4 +1,4 @@
-"""Google Search replay example with parametrized navigation and captcha recovery.
+"""Offline Google Search replay example with parametrized navigation and captcha recovery.
 
 The default run is deterministic and offline. It uses a tiny fake browser tab to
 exercise the replay engine, the captcha reaction resolver, and the contract

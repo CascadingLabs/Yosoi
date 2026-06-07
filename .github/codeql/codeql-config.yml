@@ -1,0 +1,5 @@
+name: Yosoi CodeQL config
+
+queries:
+  - name: Yosoi selector policy
+    uses: ./.github/codeql/yosoi-selector-policy

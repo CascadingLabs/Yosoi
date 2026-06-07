@@ -22,6 +22,7 @@ SELECTOR_KEYWORDS = {'selector', 'selectors', 'root_selector', 'row_selector'}
 ROOT_ASSIGN_NAMES = {'root'}
 DOM_SELECTOR_METHODS = {'querySelector', 'querySelectorAll', 'closest', 'matches'}
 SUSPICIOUS_NAME_PARTS = ('selector', 'selectors', 'root', 'xpath', 'css')
+SELECTOR_CONSTRUCTION_MARKERS = ('.', '#', '//', '[', '::')
 JS_SELECTOR_APIS = (
     'querySelector(',
     'querySelectorAll(',
@@ -31,6 +32,14 @@ JS_SELECTOR_APIS = (
     'document.evaluate(',
 )
 SELECTOR_LITERAL = re.compile(
+    r'(^|[\s,(])('
+    r'[.#][A-Za-z_-][\w-]*|'
+    r'[A-Za-z][\w-]*\[[^\]]+\]|'
+    r'//[A-Za-z*]|'
+    r'::(?:attr|text)\b'
+    r')'
+)
+CONTEXTUAL_SELECTOR_LITERAL = re.compile(
     r'(^|[\s,(])('
     r'[.#][A-Za-z_-][\w-]*|'
     r'[A-Za-z][\w-]*(?:\[[^\]]+\]|[.#][A-Za-z_-][\w-]*)|'
@@ -70,6 +79,16 @@ def _literal_strings(node: ast.AST) -> list[str]:
     return [child.value for child in ast.walk(node) if isinstance(child, ast.Constant) and isinstance(child.value, str)]
 
 
+def _constructs_selector(node: ast.AST) -> str | None:
+    literals = _literal_strings(node)
+    if isinstance(node, ast.JoinedStr):
+        joined_static = ''.join(literals)
+        return joined_static or '<f-string>'
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add) and literals:
+        return ''.join(literals)
+    return None
+
+
 def _is_selector_factory(call_name: str | None) -> bool:
     if not call_name:
         return False
@@ -78,6 +97,14 @@ def _is_selector_factory(call_name: str | None) -> bool:
 
 def _looks_like_selector(value: str) -> bool:
     return bool(SELECTOR_LITERAL.search(value))
+
+
+def _looks_like_contextual_selector(value: str) -> bool:
+    return bool(CONTEXTUAL_SELECTOR_LITERAL.search(value))
+
+
+def _looks_like_selector_construction(value: str) -> bool:
+    return any(marker in value for marker in SELECTOR_CONSTRUCTION_MARKERS)
 
 
 def _short(value: str) -> str:
@@ -113,9 +140,14 @@ class SelectorVisitor(ast.NodeVisitor):
             self._add(node, f'hard-coded browser selector API `{call_name}`', call_name)
         for keyword in node.keywords:
             if keyword.arg in SELECTOR_KEYWORDS:
-                value = _literal_string(keyword.value)
-                if value is not None:
-                    self._add(keyword.value, f'hard-coded `{keyword.arg}=...` selector literal', value)
+                values = _literal_strings(keyword.value)
+                constructed = _constructs_selector(keyword.value)
+                if constructed is not None:
+                    values.append(constructed)
+                for value in values:
+                    if _looks_like_contextual_selector(value) or any(api in value for api in JS_SELECTOR_APIS):
+                        self._add(keyword.value, f'hard-coded `{keyword.arg}=...` selector literal', value)
+                        break
         self.generic_visit(node)
 
     def visit_Assign(self, node: ast.Assign) -> Any:
@@ -133,22 +165,48 @@ class SelectorVisitor(ast.NodeVisitor):
             return
         target_names = {_target_name(target) for target in targets}
         target_names.discard(None)
+        has_selectorish_target = any(
+            any(part in name.lower() for part in SUSPICIOUS_NAME_PARTS) for name in target_names
+        )
         if target_names & ROOT_ASSIGN_NAMES:
             self._add(value, 'hard-coded contract root selector assignment', ast.unparse(value))
             return
         literal = _literal_string(value)
         literals = [literal] if literal is not None else _literal_strings(value)
+        constructed = _constructs_selector(value)
+        if constructed is not None:
+            literals.append(constructed)
+        if has_selectorish_target and isinstance(value, ast.BinOp) and literals:
+            self._add(value, 'selector-like name assigned composed string literal', ast.unparse(value))
+            return
         for literal_value in literals:
-            if any(any(part in name.lower() for part in SUSPICIOUS_NAME_PARTS) for name in target_names) and (
-                _looks_like_selector(literal_value) or any(api in literal_value for api in JS_SELECTOR_APIS)
+            if has_selectorish_target and (
+                _looks_like_contextual_selector(literal_value) or any(api in literal_value for api in JS_SELECTOR_APIS)
             ):
                 self._add(value, 'selector-looking literal assigned to selector-like name', literal_value)
                 return
 
+    def visit_JoinedStr(self, node: ast.JoinedStr) -> Any:
+        """Check f-strings that construct CSS/XPath fragments."""
+        constructed = _constructs_selector(node)
+        if constructed is not None and _looks_like_selector_construction(constructed):
+            self._add(node, 'selector-looking f-string literal', constructed)
+        self.generic_visit(node)
+
+    def visit_BinOp(self, node: ast.BinOp) -> Any:
+        """Check string concatenation that constructs CSS/XPath fragments."""
+        constructed = _constructs_selector(node)
+        if constructed is not None and _looks_like_selector_construction(constructed):
+            self._add(node, 'selector-looking concatenated string literal', constructed)
+        self.generic_visit(node)
+
     def visit_Constant(self, node: ast.Constant) -> Any:
-        """Check string literals for embedded browser selector APIs."""
-        if isinstance(node.value, str) and any(api in node.value for api in JS_SELECTOR_APIS):
-            self._add(node, 'browser selector API embedded in string literal', node.value)
+        """Check string literals for selector fragments and browser selector APIs."""
+        if isinstance(node.value, str):
+            if any(api in node.value for api in JS_SELECTOR_APIS):
+                self._add(node, 'browser selector API embedded in string literal', node.value)
+            elif _looks_like_selector(node.value):
+                self._add(node, 'selector-looking string literal', node.value)
         self.generic_visit(node)
 
 

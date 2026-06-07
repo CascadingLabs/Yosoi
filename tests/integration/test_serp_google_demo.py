@@ -1,4 +1,4 @@
-"""Regression for the Google Search replay example.
+"""Regression for the offline Google Search replay example.
 
 The example is the spike's runnable dogfood; this pins its end-to-end behavior so a
 future engine change that breaks the teleport / parametrized-replay / captcha-reaction

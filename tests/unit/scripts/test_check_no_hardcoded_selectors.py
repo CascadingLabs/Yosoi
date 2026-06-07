@@ -25,10 +25,13 @@ class Product(ys.Contract):
     assert check_files([path]) == []
 
 
-def test_allows_unresolved_call_without_selector_api(tmp_path: Path) -> None:
+def test_rejects_selector_literal_inside_unresolved_call(tmp_path: Path) -> None:
     path = _write(tmp_path, "factory['css']('.product-card')\n")
 
-    assert check_files([path]) == []
+    violations = check_files([path])
+
+    assert violations
+    assert 'selector-looking string literal' in violations[0].reason
 
 
 def test_allows_annotated_root_without_value(tmp_path: Path) -> None:
@@ -109,7 +112,7 @@ class Product(ys.Contract):
     violations = check_files([path])
 
     assert violations
-    assert 'selector=...' in violations[0].reason
+    assert any('selector' in violation.reason for violation in violations)
 
 
 @pytest.mark.parametrize('keyword', ['selector', 'selectors', 'root_selector', 'row_selector'])
@@ -127,6 +130,51 @@ field = ys.Field(description='Product name', {keyword}='.product-card')
 
     assert violations
     assert f'{keyword}=...' in violations[0].reason
+
+
+def test_rejects_selector_keyword_collection_literal(tmp_path: Path) -> None:
+    path = _write(
+        tmp_path,
+        """
+import yosoi as ys
+
+field = ys.Field(description='Product name', selectors=['.product-card'])
+""",
+    )
+
+    violations = check_files([path])
+
+    assert violations
+    assert 'selectors=...' in violations[0].reason
+
+
+def test_rejects_selector_keyword_composed_literal(tmp_path: Path) -> None:
+    path = _write(
+        tmp_path,
+        """
+import yosoi as ys
+
+field = ys.Field(description='Product name', selector=f'.{class_name}')
+""",
+    )
+
+    violations = check_files([path])
+
+    assert violations
+    assert any('selector' in violation.reason for violation in violations)
+
+
+def test_allows_selector_keyword_without_selector_literal(tmp_path: Path) -> None:
+    path = _write(
+        tmp_path,
+        """
+import yosoi as ys
+
+field = ys.Field(description='Product name', selector='discover this field')
+""",
+    )
+
+    assert check_files([path]) == []
 
 
 def test_rejects_browser_selector_inside_string(tmp_path: Path) -> None:
@@ -191,6 +239,45 @@ def test_rejects_selector_like_attribute_assignment(tmp_path: Path) -> None:
 
 def test_allows_selector_literal_assigned_to_unknown_target(tmp_path: Path) -> None:
     path = _write(tmp_path, "items[0] = '.product-card'\n")
+
+    violations = check_files([path])
+
+    assert violations
+    assert 'selector-looking string literal' in violations[0].reason
+
+
+@pytest.mark.parametrize(
+    'source',
+    [
+        "klass = 'product-card'\nproduct_selector = f'.{klass}'",
+        "prefix = '.'\nproduct_selector = prefix + 'product-card'",
+        "product_selector = '.' + 'product-card'",
+    ],
+)
+def test_rejects_composed_selector_literals(tmp_path: Path, source: str) -> None:
+    path = _write(tmp_path, source)
+
+    violations = check_files([path])
+
+    assert violations
+    assert any('selector' in violation.reason for violation in violations)
+
+
+def test_allows_dotted_domains_and_replay_ids(tmp_path: Path) -> None:
+    path = _write(
+        tmp_path,
+        """
+URL = 'https://qscrape.dev/l1/eshop/catalog'
+NODE_ID = 'google.navigate'
+DOMAIN = 'google.com'
+""",
+    )
+
+    assert check_files([path]) == []
+
+
+def test_allows_non_selector_f_string(tmp_path: Path) -> None:
+    path = _write(tmp_path, "message = f'hello {name}'\n")
 
     assert check_files([path]) == []
 
