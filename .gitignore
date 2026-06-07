@@ -113,3 +113,4 @@ Thumbs.db
 .claude/ralph-loop.local.md
 yosoi_driver/target/
 .claude/scheduled_tasks.lock
+AGENT_CONNECTION.md
