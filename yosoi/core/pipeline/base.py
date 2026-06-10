@@ -39,6 +39,7 @@ from yosoi.core.pipeline.utils import PipelineUtilsMixin
 from yosoi.core.verification import SelectorVerifier, SemanticValidator, field_rules_for_contract
 from yosoi.models.contract import Contract
 from yosoi.models.selectors import SelectorLevel
+from yosoi.policies import Policy
 from yosoi.storage import DebugManager, LLMTracker, SelectorStorage
 from yosoi.storage.discovery_strategy import DiscoveryStrategyStorage
 from yosoi.storage.js_scripts import JsScriptStorage
@@ -118,6 +119,7 @@ class Pipeline(
         keep_downloads: bool = True,
         identity: BrowserIdentity | None = None,
         console: Console | None = None,
+        policy: Policy | None = None,
     ):
         """Initialize the pipeline with LLM configuration.
 
@@ -156,6 +158,10 @@ class Pipeline(
                 console for ``--json`` runs); a default themed console is built when omitted.
             keep_downloads: Keep downloaded files after the run (default). Set False to purge
                 the content-addressed blobs at run end while retaining provenance in index.json.
+            policy: Resolved pipeline :class:`~yosoi.policies.Policy` threaded from the API edge.
+                Stored once (``policy or Policy.from_env()``) as a forward-compat seam so future
+                policy-gated behavior reads ``self._policy`` instead of the environment; the
+                pipeline has no policy-gated branch today.
 
         """
         self.selector_level = selector_level
@@ -166,6 +172,8 @@ class Pipeline(
         self._max_download_bytes = max_download_bytes
         self._keep_downloads = keep_downloads
         self._identity = identity  # opt-in browser identity (profile/headful/geo) for browser fetchers
+        # Resolve the policy ONCE here (defensive single resolve); stored as a forward-compat seam.
+        self._policy: Policy = policy or Policy.from_env()
         self._download_log: list[Any] = []
 
         if isinstance(llm_config, str):

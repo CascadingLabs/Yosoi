@@ -14,6 +14,7 @@ from yosoi.core.pipeline import ContentMap, Pipeline
 from yosoi.core.pipeline.discovery_gate import DiscoveryGate
 from yosoi.models.contract import Contract
 from yosoi.models.selectors import SelectorLevel
+from yosoi.policies import Policy
 from yosoi.utils import observability as obs
 from yosoi.utils.contracts import resolve_contract
 
@@ -180,6 +181,7 @@ async def scrape(
     keep_downloads: bool = True,
     identities: Mapping[str, BrowserIdentity] | Callable[[str], BrowserIdentity | None] | None = None,
     max_concurrency: int | None = None,
+    policy: Policy | None = None,
 ) -> list[ContentMap] | dict[str, list[ContentMap]] | dict[str, dict[str, list[ContentMap]]]:
     """Scrape one-or-many URLs with one-or-many contracts — the single blessed path.
 
@@ -280,6 +282,7 @@ async def scrape(
                 identity=_identity_for(u),
                 gate_collect=gate_collectors[u],
                 discovery_gate=discovery_gate,
+                policy=policy,
             )
 
         if sem is None:
@@ -322,6 +325,7 @@ async def _scrape_one(
     identity: BrowserIdentity | None = None,
     gate_collect: GateCollector | None = None,
     discovery_gate: DiscoveryGate | None = None,
+    policy: Policy | None = None,
 ) -> list[ContentMap]:
     """One ``(url, contract)`` unit (returns ``list[record]``).
 
@@ -330,8 +334,12 @@ async def _scrape_one(
     ``identity`` is the opt-in per-URL :class:`BrowserIdentity` (profile/headful/geo).
     ``gate_collect``, when provided, receives this contract's freshly-discovered selector
     map + cleaned HTML for the cross-contract discrimination gate (P1.5, advisory).
+    ``policy`` is the resolved pipeline policy; this is the edge — resolve ONCE here
+    (``policy or Policy.from_env()``) and hand the concrete Policy down so the core never
+    re-reads the environment (the CAS-119 purity contract).
     """
     contract_cls = resolve_contract(contract) if isinstance(contract, str) else contract
+    effective_policy = policy or Policy.from_env()
     llm_config = _resolve_model(model)
     save_format_list = list(save_formats)
     with obs.span(
@@ -359,6 +367,7 @@ async def _scrape_one(
                 write_lock=write_lock,
                 identity=identity,
                 discovery_gate=discovery_gate,
+                policy=effective_policy,
             ) as pipeline:
                 items = [
                     item
@@ -393,6 +402,7 @@ async def scrape_many(
     selector_level: SelectorLevel = SelectorLevel.CSS,
     save_formats: Sequence[str] = (),
     quiet: bool = True,
+    policy: Policy | None = None,
 ) -> dict[str, list[ContentMap]]:
     """Scrape multiple URLs and return items keyed by URL."""
     url_list = list(urls)
@@ -414,6 +424,7 @@ async def scrape_many(
                     selector_level=selector_level,
                     save_formats=save_formats,
                     quiet=quiet,
+                    policy=policy,
                 )
         except Exception as e:
             obs.warning('API scrape_many URL failed', url=current_url, error=str(e))
@@ -432,6 +443,7 @@ def scrape_sync(
     selector_level: SelectorLevel = SelectorLevel.CSS,
     save_formats: Sequence[str] = (),
     quiet: bool = True,
+    policy: Policy | None = None,
 ) -> list[ContentMap]:
     """Synchronous wrapper around :func:`scrape`."""
     with obs.span('api.scrape_sync', url=url, contract=contract if isinstance(contract, str) else contract.__name__):
@@ -449,6 +461,7 @@ def scrape_sync(
                     selector_level=selector_level,
                     save_formats=save_formats,
                     quiet=quiet,
+                    policy=policy,
                 )
             )
         error = 'scrape_sync() cannot run inside an active event loop; await scrape() instead.'

@@ -371,6 +371,7 @@ def scrape(
         from yosoi.cli import exit_codes
         from yosoi.core.resolve import build_cache_from_selectors, resolve
         from yosoi.models.needs_discovery import NeedsDiscovery
+        from yosoi.policies import Policy
         from yosoi.storage import SelectorStorage
 
         def _domain_from_url(u: str) -> str:
@@ -402,7 +403,7 @@ def scrape(
                     resp = await client.get(scrape_url, follow_redirects=True, timeout=30)
                     html = resp.text
 
-                result = resolve(spec, html, cache, domain, url=scrape_url)
+                result = resolve(spec, html, cache, domain, url=scrape_url, policy=Policy.from_env())
                 if isinstance(result, NeedsDiscovery):
                     sys.stdout.write(result.to_exit_json() + '\n')
                     sys.stdout.flush()

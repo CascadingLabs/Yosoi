@@ -19,12 +19,12 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from enum import Enum
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 from urllib.parse import urlparse
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, field_validator, model_validator
 
 TrustTier = Literal['strict', 'yellow']
 CrawlModeName = Literal['seed_hunt', 'contract_focus', 'structure_guarded', 'explorer']
@@ -83,6 +83,29 @@ def _normalize_host(host: str) -> str:
     return hostname
 
 
+def _normalize_path_prefix(raw: str) -> str | None:
+    """Normalize a blocked-path-prefix token; empty → None; non-anchored → ValueError."""
+    prefix = raw.strip()
+    if not prefix:
+        return None
+    if not prefix.startswith('/'):
+        raise ValueError(f'blocked_path_prefixes must start with "/": {prefix!r}')
+    return prefix
+
+
+def _coerce_str_tuple(value: object, *, normalize: Callable[[str], str | None], label: str) -> tuple[str, ...]:
+    """Coerce None/str/iterable into a deduped tuple of normalized (non-None) string tokens."""
+    if value is None:
+        return ()
+    if isinstance(value, str):
+        raw = (value,)
+    elif isinstance(value, Iterable):
+        raw = tuple(value)
+    else:
+        raise TypeError(label)
+    return tuple(dict.fromkeys(n for n in (normalize(str(i)) for i in raw) if n is not None))
+
+
 def policy_arn(namespace: str, name: str) -> str:
     """Return an ARN-like stable address for a local policy preset."""
     namespace = namespace.strip()
@@ -99,21 +122,23 @@ def _reject_bool(value: object) -> object:
     return value
 
 
+# Numeric policy types that reject bool (Python's bool is an int) before coercion. Each field keeps
+# its own Field(default=..., ge=..., le=..., gt=...) — bounds differ per field, so don't fold them in.
+StrictInt = Annotated[int, BeforeValidator(_reject_bool)]
+StrictFloat = Annotated[float, BeforeValidator(_reject_bool)]
+StrictOptInt = Annotated[int | None, BeforeValidator(_reject_bool)]
+
+
 class CrawlBudget(BaseModel):
     """Budget controls and traversal limits for one crawl/index run."""
 
     model_config = ConfigDict(frozen=True)
 
-    max_pages: int = Field(default=1, ge=1, le=1_000_000)
-    max_depth: int = Field(default=0, ge=0, le=20)
-    max_attempts: int | None = Field(default=None, ge=1, le=2_000_000)
-    max_pages_per_host: int | None = Field(default=None, ge=1, le=1_000_000)
+    max_pages: StrictInt = Field(default=1, ge=1, le=1_000_000)
+    max_depth: StrictInt = Field(default=0, ge=0, le=20)
+    max_attempts: StrictOptInt = Field(default=None, ge=1, le=2_000_000)
+    max_pages_per_host: StrictOptInt = Field(default=None, ge=1, le=1_000_000)
     crawl_session_id: str | None = None
-
-    @field_validator('max_pages', 'max_depth', 'max_attempts', 'max_pages_per_host', mode='before')
-    @classmethod
-    def _reject_bool_numbers(cls, value: object) -> object:
-        return _reject_bool(value)
 
     @field_validator('crawl_session_id')
     @classmethod
@@ -141,23 +166,11 @@ class SchedulerPolicy(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    max_workers: int = Field(default=1, ge=1, le=128)
-    per_host_concurrency: int = Field(default=1, ge=1, le=64)
-    politeness_delay: float = Field(default=1.0, ge=0.0, le=120.0)
-    fetch_timeout_seconds: float = Field(default=15.0, gt=0.0, le=300.0)
-    max_fetch_retries: int = Field(default=2, ge=0, le=10)
-
-    @field_validator(
-        'max_workers',
-        'per_host_concurrency',
-        'politeness_delay',
-        'fetch_timeout_seconds',
-        'max_fetch_retries',
-        mode='before',
-    )
-    @classmethod
-    def _reject_bool_numbers(cls, value: object) -> object:
-        return _reject_bool(value)
+    max_workers: StrictInt = Field(default=1, ge=1, le=128)
+    per_host_concurrency: StrictInt = Field(default=1, ge=1, le=64)
+    politeness_delay: StrictFloat = Field(default=1.0, ge=0.0, le=120.0)
+    fetch_timeout_seconds: StrictFloat = Field(default=15.0, gt=0.0, le=300.0)
+    max_fetch_retries: StrictInt = Field(default=2, ge=0, le=10)
 
     @model_validator(mode='after')
     def _validate_scheduler_shape(self) -> SchedulerPolicy:
@@ -180,37 +193,18 @@ class CrawlSafety(BaseModel):
     @field_validator('allowed_hosts', 'denied_hosts', mode='before')
     @classmethod
     def _coerce_hosts(cls, value: object) -> tuple[str, ...]:
-        if value is None:
-            return ()
-        if isinstance(value, str):
-            raw_hosts = (value,)
-        elif isinstance(value, Iterable):
-            raw_hosts = tuple(value)
-        else:
-            raise TypeError('host entries must be a string or iterable of strings')
-        normalized = tuple(dict.fromkeys(_normalize_host(str(host)) for host in raw_hosts))
-        return normalized
+        return _coerce_str_tuple(
+            value, normalize=_normalize_host, label='host entries must be a string or iterable of strings'
+        )
 
     @field_validator('blocked_path_prefixes', mode='before')
     @classmethod
     def _coerce_path_prefixes(cls, value: object) -> tuple[str, ...]:
-        if value is None:
-            return ()
-        if isinstance(value, str):
-            raw_values = (value,)
-        elif isinstance(value, Iterable):
-            raw_values = tuple(value)
-        else:
-            raise TypeError('blocked_path_prefixes must be a string or iterable of strings')
-        prefixes: list[str] = []
-        for raw in raw_values:
-            prefix = str(raw).strip()
-            if not prefix:
-                continue
-            if not prefix.startswith('/'):
-                raise ValueError(f'blocked_path_prefixes must start with "/": {prefix!r}')
-            prefixes.append(prefix)
-        return tuple(dict.fromkeys(prefixes))
+        return _coerce_str_tuple(
+            value,
+            normalize=_normalize_path_prefix,
+            label='blocked_path_prefixes must be a string or iterable of strings',
+        )
 
     @model_validator(mode='after')
     def _validate_safety(self) -> CrawlSafety:
@@ -229,13 +223,8 @@ class EscalationPolicy(BaseModel):
 
     allow_model_discovery: bool = False
     allow_paid_scrapers: bool = False
-    max_llm_calls: int = Field(default=0, ge=0, le=100_000)
-    max_paid_scraper_calls: int = Field(default=0, ge=0, le=1_000_000)
-
-    @field_validator('max_llm_calls', 'max_paid_scraper_calls', mode='before')
-    @classmethod
-    def _reject_bool_numbers(cls, value: object) -> object:
-        return _reject_bool(value)
+    max_llm_calls: StrictInt = Field(default=0, ge=0, le=100_000)
+    max_paid_scraper_calls: StrictInt = Field(default=0, ge=0, le=1_000_000)
 
     @model_validator(mode='after')
     def _validate_escalation_budget(self) -> EscalationPolicy:
@@ -252,14 +241,9 @@ class CrawlTarget(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     name: str
-    min_fields: int = Field(default=1, ge=0)
-    min_confidence: float = Field(default=0.0, ge=0.0, le=1.0)
-    max_budget_pages: int | None = Field(default=None, ge=1)
-
-    @field_validator('min_fields', 'min_confidence', 'max_budget_pages', mode='before')
-    @classmethod
-    def _reject_bool_numbers(cls, value: object) -> object:
-        return _reject_bool(value)
+    min_fields: StrictInt = Field(default=1, ge=0)
+    min_confidence: StrictFloat = Field(default=0.0, ge=0.0, le=1.0)
+    max_budget_pages: StrictOptInt = Field(default=None, ge=1)
 
     @field_validator('name')
     @classmethod
@@ -307,25 +291,22 @@ class CrawlPolicy(BaseModel):
         return tuple(dict.fromkeys(hosts))
 
     def to_runtime_config(self, *, seeds: tuple[str, ...] = ()) -> CrawlRuntimeConfig:
-        """Return the small runtime config shape needed by crawler executors."""
+        """Return the small runtime config shape needed by crawler executors.
+
+        ``budget``/``scheduler`` splat faithfully (their field sets are exactly the budget/
+        scheduler columns of :class:`CrawlRuntimeConfig`); ``safety`` is NOT splatted because
+        ``allowed_hosts`` is a computed override (seed-derived) that a splat would clobber.
+        """
         return CrawlRuntimeConfig(
-            seeds=seeds,
-            mode=self.mode,
-            max_pages=self.budget.max_pages,
-            max_depth=self.budget.max_depth,
-            max_attempts=self.budget.max_attempts,
-            max_pages_per_host=self.budget.max_pages_per_host,
-            crawl_session_id=self.budget.crawl_session_id,
-            max_workers=self.scheduler.max_workers,
-            per_host_concurrency=self.scheduler.per_host_concurrency,
-            politeness_delay=self.scheduler.politeness_delay,
-            fetch_timeout_seconds=self.scheduler.fetch_timeout_seconds,
-            max_fetch_retries=self.scheduler.max_fetch_retries,
+            **self.budget.model_dump(),
+            **self.scheduler.model_dump(),
             respect_robots=self.safety.respect_robots,
             allow_cross_domain=self.safety.allow_cross_domain,
-            allowed_hosts=self.effective_allowed_hosts(seeds),
             denied_hosts=self.safety.denied_hosts,
             blocked_path_prefixes=self.safety.blocked_path_prefixes,
+            allowed_hosts=self.effective_allowed_hosts(seeds),
+            seeds=seeds,
+            mode=self.mode,
             fetcher_type=self.fetcher_type,
         )
 
@@ -420,7 +401,7 @@ class Policy(BaseModel):
         return cls(**kwargs)
 
     @classmethod
-    def crawl_policy(
+    def for_crawl(
         cls,
         preset: str | None = 'crawl.conservative',
         **overrides: Any,
@@ -432,15 +413,6 @@ class Policy(BaseModel):
             crawl_payload.update(overrides)
             crawl = CrawlPolicy.model_validate(crawl_payload)
         return cls(crawl=crawl)
-
-    @classmethod
-    def for_crawl(
-        cls,
-        preset: str | None = 'crawl.conservative',
-        **overrides: Any,
-    ) -> Policy:
-        """Alias for crawl policy construction at public call sites."""
-        return cls.crawl_policy(preset, **overrides)
 
     @classmethod
     def cascade(cls, *layers: Policy | None) -> Policy:
