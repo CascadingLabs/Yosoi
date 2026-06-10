@@ -55,7 +55,7 @@ def policy_from_named_preset() -> ys.Policy:
     return ys.Policy.for_crawl(
         'crawl.conservative',
         budget=ys.CrawlBudget(
-            max_pages=False,
+            max_pages=120,
             max_depth=2,
             max_attempts=240,
             max_pages_per_host=80,
