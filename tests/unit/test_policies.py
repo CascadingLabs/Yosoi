@@ -649,3 +649,17 @@ def test_resolve_crawl_policy_unwraps_full_policy() -> None:
     policy = Policy.for_crawl('crawl.conservative')
 
     assert resolve_crawl_policy(policy) is policy.crawl
+
+
+def test_from_string_api_key_is_runtime_only_no_env_dict_needed() -> None:
+    """Clean key handoff: api_key rides on the model, resolve_run_spec() needs no env mapping."""
+    policy = Policy(model=ModelPolicy.from_string('groq:llama', api_key='gk-secret', temperature=0.0))
+
+    spec = policy.resolve_run_spec()
+
+    assert spec.llm_config.provider == 'groq'
+    assert spec.llm_config.api_key == 'gk-secret'
+    # never serialized — same contract as the provider helpers
+    assert 'gk-secret' not in policy.model_dump_json()
+    assert 'gk-secret' not in repr(policy)
+    assert 'gk-secret' not in policy.policy_hash

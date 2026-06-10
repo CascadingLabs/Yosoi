@@ -58,12 +58,22 @@ class ModelPolicy(BaseModel):
     _runtime_api_key: str | None = PrivateAttr(default=None)
 
     @classmethod
-    def from_string(cls, model: str, **kwargs: Any) -> ModelPolicy:
-        """Build a model policy from ``provider:model-name``."""
+    def from_string(cls, model: str, *, api_key: str | None = None, **kwargs: Any) -> ModelPolicy:
+        """Build a model policy from ``provider:model-name``.
+
+        An ``api_key`` is held runtime-only (a ``PrivateAttr``), never serialized into
+        ``model_dump``/``repr``/``policy_hash`` — same contract as the provider helpers
+        (``ys.groq(..., api_key=...)``). Prefer this over threading a raw secret through
+        ``resolve_run_spec``'s env mapping. For env-resolved secrets use
+        ``credential_ref=ys.SecretRef.env('GROQ_KEY')`` instead.
+        """
         from yosoi.core.discovery.config import _parse_model_string
 
         provider, model_name = _parse_model_string(model)
-        return cls(provider=provider, model_name=model_name, **kwargs)
+        policy = cls(provider=provider, model_name=model_name, **kwargs)
+        if api_key is not None:
+            policy._runtime_api_key = api_key
+        return policy
 
     @model_validator(mode='after')
     def _validate_pair(self) -> ModelPolicy:
