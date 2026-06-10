@@ -30,6 +30,7 @@ def _make_pipeline_stub(mocker, contract=None):
     stub.discovery.discover_selectors = mocker.AsyncMock()
     stub._mcp_discovery = None
     stub._force_mcp = False
+    stub._signal_lane = None
     stub._discovery_strategy = mocker.MagicMock()
     stub._discovery_strategy.load = mocker.AsyncMock(return_value=None)
     stub._discovery_strategy.save = mocker.AsyncMock()

@@ -38,6 +38,7 @@ from yosoi.policy.crawl import (
     CrawlPolicy,
     CrawlRuntimeConfig,
 )
+from yosoi.policy.fingerprint import FingerprintPolicy
 
 
 class PolicyCheck(BaseModel):
@@ -59,6 +60,7 @@ class Policy(BaseModel):
         trust_tier: ``strict`` serves only :data:`TRUSTED_SOURCES` (quarantines the risky
             fingerprint-generalized reuse); ``yellow`` ("let it ride") serves every tier.
         crawl: Optional crawl-stack sub-policy (see :mod:`yosoi.policy.crawl`).
+        fingerprint: Optional signal-lane sub-policy (see :mod:`yosoi.policy.fingerprint`).
     """
 
     model_config = ConfigDict(frozen=True)
@@ -66,6 +68,7 @@ class Policy(BaseModel):
     atom_reads: bool = False
     trust_tier: TrustTier = 'strict'
     crawl: CrawlPolicy | None = None
+    fingerprint: FingerprintPolicy | None = None
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> Policy:

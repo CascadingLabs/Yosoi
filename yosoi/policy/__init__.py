@@ -64,8 +64,12 @@ if TYPE_CHECKING:  # static typing only — no runtime cost
     from yosoi.policy.crawl import (
         SchedulerPolicy as SchedulerPolicy,
     )
+    from yosoi.policy.fingerprint import (
+        FingerprintPolicy as FingerprintPolicy,
+    )
 
 _LAZY = {
+    'FingerprintPolicy': 'yosoi.policy.fingerprint',
     'QUARANTINED_SOURCES': 'yosoi.policy._base',
     'TRUSTED_SOURCES': 'yosoi.policy._base',
     'Outcome': 'yosoi.policy._base',

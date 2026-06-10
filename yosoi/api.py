@@ -305,6 +305,15 @@ async def scrape(
     return flat[0]
 
 
+def _edge_policy(contract_cls: type[Contract], call_policy: Policy | None) -> Policy:
+    """Resolve the effective policy ONCE at the api edge via the cascade.
+
+    Precedence ``defaults < env < contract < call-site``: the contract's pinned
+    ``policy`` partial (if any) sits between the env layer and the per-call override.
+    """
+    return Policy.cascade(Policy.from_env(), getattr(contract_cls, 'policy', None), call_policy)
+
+
 async def _scrape_one(
     url: str,
     contract: type[Contract] | str,
@@ -339,7 +348,7 @@ async def _scrape_one(
     re-reads the environment (the CAS-119 purity contract).
     """
     contract_cls = resolve_contract(contract) if isinstance(contract, str) else contract
-    effective_policy = policy or Policy.from_env()
+    effective_policy = _edge_policy(contract_cls, policy)
     llm_config = _resolve_model(model)
     save_format_list = list(save_formats)
     with obs.span(

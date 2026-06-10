@@ -34,6 +34,7 @@ from yosoi.policy import CrawlRuntimeConfig as _CrawlRuntimeConfig
 from yosoi.policy import CrawlSafety as _CrawlSafety
 from yosoi.policy import CrawlTarget as _CrawlTarget
 from yosoi.policy import EscalationPolicy as _EscalationPolicy
+from yosoi.policy import FingerprintPolicy as _FingerprintPolicy
 from yosoi.policy import Outcome as _Outcome
 from yosoi.policy import Policy as _Policy
 from yosoi.policy import PolicyCheck as _PolicyCheck
@@ -202,10 +203,24 @@ class PolicyCheck(_PolicyCheck):
     warnings: tuple[str, ...]
     runtime: CrawlRuntimeConfig | None
 
+class FingerprintPolicy(_FingerprintPolicy):
+    signal_lane: bool
+    backpressure: Literal['defer', 'drop']
+    max_queue: int
+
+    def __init__(
+        self,
+        *,
+        signal_lane: bool = ...,
+        backpressure: Literal['defer', 'drop'] = ...,
+        max_queue: int = ...,
+    ) -> None: ...
+
 class Policy(_Policy):
     atom_reads: bool
     trust_tier: TrustTier
     crawl: CrawlPolicy | None
+    fingerprint: FingerprintPolicy | None
 
     def __init__(
         self,
@@ -213,6 +228,7 @@ class Policy(_Policy):
         atom_reads: bool = ...,
         trust_tier: TrustTier = ...,
         crawl: CrawlPolicy | None = ...,
+        fingerprint: FingerprintPolicy | None = ...,
     ) -> None: ...
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = ...) -> Policy: ...

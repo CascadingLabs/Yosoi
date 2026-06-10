@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Annotated, Any, ClassVar, get_args, get_origin
 
 if TYPE_CHECKING:
     from yosoi.models.spec import ContractSpec
+    from yosoi.policy import Policy
 
 import pydantic
 from pydantic import BaseModel, Field, TypeAdapter, ValidationInfo, model_validator
@@ -119,6 +120,9 @@ class Contract(BaseModel):
 
     root: ClassVar[SelectorEntry | None] = None
     _validators_cls: ClassVar[type | None] = None
+    # Optional per-contract policy partial pinned on the class; folded into the cascade at the
+    # api edge between the env/session layers and the call-site override (CAS-168). Default-none.
+    policy: ClassVar[Policy | None] = None
 
     def __init_subclass__(cls, **kwargs: Any) -> None:  # pragma: no mutate
         """Register every Contract subclass in the global _CONTRACT_REGISTRY."""

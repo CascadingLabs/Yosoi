@@ -35,6 +35,7 @@ from yosoi.core.pipeline.crawler import PipelineCrawlerMixin
 from yosoi.core.pipeline.discovery import PipelineDiscoveryMixin
 from yosoi.core.pipeline.discovery_gate import DiscoveryGate
 from yosoi.core.pipeline.extraction import PipelineExtractionMixin
+from yosoi.core.pipeline.signal import PageObservation, build_fingerprint_lane
 from yosoi.core.pipeline.utils import PipelineUtilsMixin
 from yosoi.core.verification import SelectorVerifier, SemanticValidator, field_rules_for_contract
 from yosoi.models.contract import Contract
@@ -174,6 +175,8 @@ class Pipeline(
         self._identity = identity  # opt-in browser identity (profile/headful/geo) for browser fetchers
         # Resolve the policy ONCE here (defensive single resolve); stored as a forward-compat seam.
         self._policy: Policy = policy or Policy.from_env()
+        # Off-path fingerprint signal lane (CAS-168); None unless a FingerprintPolicy opts in.
+        self._signal_lane = build_fingerprint_lane(self._policy.fingerprint)
         self._download_log: list[Any] = []
 
         if isinstance(llm_config, str):
@@ -281,12 +284,16 @@ class Pipeline(
 
     async def __aenter__(self) -> 'Pipeline':
         """Enter the async context manager, returning self."""
+        if self._signal_lane is not None:
+            await self._signal_lane.start()
         return self
 
     async def __aexit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
         """Exit the async context manager, closing the HTTP client + finalizing downloads."""
         await self._client.aclose()
         self._finalize_downloads()
+        if self._signal_lane is not None:
+            await self._signal_lane.aclose()
 
     def _create_fetcher(self, fetcher_type: str, console: Console | None = None) -> Any | None:
         """Create HTML fetcher instance.
@@ -617,6 +624,13 @@ class Pipeline(
             cleaned_html = await self._clean(url, result)
             if not cleaned_html:
                 raise RuntimeError(f'HTML cleaning failed for {url}')
+
+        # Gather the page-fingerprint signal off the hot path (non-blocking; fingerprint computed
+        # in the lane drainer). Default-off unless a FingerprintPolicy opts in.
+        if self._signal_lane is not None:
+            self._signal_lane.offer(
+                PageObservation(url, domain, self.contract.__name__, result.html, result.ax_snapshot)
+            )
 
         cached_mode = None if force_flag else await self._discovery_strategy.load(domain, self._contract_sig)
         escalate_first = self._force_mcp or cached_mode == 'mcp'
