@@ -6,7 +6,7 @@ from collections.abc import Sequence
 
 from yosoi.core.crawler.coordinator import CrawlCoordinator, CrawlRunSummary
 from yosoi.core.fetcher import create_fetcher
-from yosoi.policies import Policy
+from yosoi.policy import Policy
 
 
 async def crawl_index(

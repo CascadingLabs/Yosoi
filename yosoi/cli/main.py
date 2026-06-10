@@ -371,7 +371,7 @@ def scrape(
         from yosoi.cli import exit_codes
         from yosoi.core.resolve import build_cache_from_selectors, resolve
         from yosoi.models.needs_discovery import NeedsDiscovery
-        from yosoi.policies import Policy
+        from yosoi.policy import Policy
         from yosoi.storage import SelectorStorage
 
         def _domain_from_url(u: str) -> str:

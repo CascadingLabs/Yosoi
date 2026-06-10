@@ -14,7 +14,7 @@ from yosoi.core.pipeline import ContentMap, Pipeline
 from yosoi.core.pipeline.discovery_gate import DiscoveryGate
 from yosoi.models.contract import Contract
 from yosoi.models.selectors import SelectorLevel
-from yosoi.policies import Policy
+from yosoi.policy import Policy
 from yosoi.utils import observability as obs
 from yosoi.utils.contracts import resolve_contract
 

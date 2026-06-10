@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from yosoi.policies import (
+from yosoi.policy import (
     QUARANTINED_SOURCES,
     TRUSTED_SOURCES,
     CrawlBudget,

@@ -18,7 +18,7 @@ from rich.table import Table
 
 from yosoi.core.crawler import CrawlCoordinator
 from yosoi.models.results import FetchResult
-from yosoi.policies import CrawlBudget, CrawlPolicy, CrawlSafety, Policy, SchedulerPolicy
+from yosoi.policy import CrawlBudget, CrawlPolicy, CrawlSafety, Policy, SchedulerPolicy
 
 BENCH_HOST = 'bench.local'
 BENCH_ORIGIN = f'https://{BENCH_HOST}'

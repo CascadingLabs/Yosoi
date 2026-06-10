@@ -6,7 +6,7 @@ import pytest
 
 from yosoi.core.crawler import CrawlCoordinator
 from yosoi.models.results import FetchResult
-from yosoi.policies import CrawlBudget, CrawlPolicy, CrawlSafety, Policy, SchedulerPolicy
+from yosoi.policy import CrawlBudget, CrawlPolicy, CrawlSafety, Policy, SchedulerPolicy
 
 
 class FakeFetcher:

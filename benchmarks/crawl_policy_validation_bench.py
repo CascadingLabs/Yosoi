@@ -16,7 +16,7 @@ from pathlib import Path
 from rich.console import Console
 from rich.table import Table
 
-from yosoi.policies import CrawlBudget, CrawlPolicy, CrawlSafety, Policy, SchedulerPolicy, check_policy
+from yosoi.policy import CrawlBudget, CrawlPolicy, CrawlSafety, Policy, SchedulerPolicy, check_policy
 
 
 @dataclass(frozen=True, slots=True)

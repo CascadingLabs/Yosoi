@@ -163,7 +163,7 @@ def test_pipeline_force_mcp_env_override(mocker, monkeypatch):
 
 
 def test_pipeline_stores_resolved_policy(mocker, monkeypatch):
-    from yosoi.policies import Policy
+    from yosoi.policy import Policy
 
     monkeypatch.setenv('GROQ_KEY', 'test-key')
     mocker.patch('yosoi.storage.persistence.init_yosoi')

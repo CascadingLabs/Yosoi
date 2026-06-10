@@ -10,7 +10,7 @@ from urllib.parse import urlparse
 
 from yosoi.core.crawler.frontier import CrawlFrontier, FrontierEntry
 from yosoi.core.crawler.links import CrawlLink, LinkExtractor
-from yosoi.policies import CrawlRuntimeConfig
+from yosoi.policy import CrawlRuntimeConfig
 
 CrawlStatus = Literal['succeeded', 'failed', 'policy_blocked']
 

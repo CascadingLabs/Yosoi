@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Any
 
 from yosoi.models.needs_discovery import NeedsDiscovery
 from yosoi.models.selectors import SelectorLevel
-from yosoi.policies import Policy
+from yosoi.policy import Policy
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ def resolve(
         url: Source URL used for relative-URL resolution in coercions. Defaults to domain.
         atom_store: Optional field-atom index (P3). When ``policy.atom_reads`` is on, a
             legacy-cache miss is retried against this index before falling back to discovery.
-        policy: The resolved :class:`~yosoi.policies.Policy` governing atom reads + trust tier.
+        policy: The resolved :class:`~yosoi.policy.Policy` governing atom reads + trust tier.
             Resolved ONCE here (``policy or Policy.from_env()``) — this is the single env-read
             site for the read path, after which the deep core takes config as an explicit value
             (the CAS-119 purity contract). Pass an explicit Policy to override the env layer.

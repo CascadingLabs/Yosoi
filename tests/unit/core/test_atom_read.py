@@ -11,7 +11,7 @@ from yosoi.core.resolve import resolve
 from yosoi.generalization.capture import observe_html
 from yosoi.generalization.fingerprint import page_shape_fp
 from yosoi.models.spec import ContractSpec, FieldSpec
-from yosoi.policies import Policy
+from yosoi.policy import Policy
 from yosoi.storage.atoms import AtomStore, FieldAtom
 
 SHAPE = 's1:abc'
