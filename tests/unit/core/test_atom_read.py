@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from yosoi.core.atom_read import (
     AtomResolution,
-    atom_reads_enabled,
     resolve_via_atoms,
     selector_map_from_atoms,
 )
@@ -12,6 +11,7 @@ from yosoi.core.resolve import resolve
 from yosoi.generalization.capture import observe_html
 from yosoi.generalization.fingerprint import page_shape_fp
 from yosoi.models.spec import ContractSpec, FieldSpec
+from yosoi.policies import Policy
 from yosoi.storage.atoms import AtomStore, FieldAtom
 
 SHAPE = 's1:abc'
@@ -67,9 +67,9 @@ def test_selector_map_reconstructs_root_and_handles_rootless() -> None:
 
 def test_flag_helper(monkeypatch) -> None:
     monkeypatch.delenv('YOSOI_ATOM_READS', raising=False)
-    assert atom_reads_enabled() is False
+    assert Policy.from_env().atom_reads is False
     monkeypatch.setenv('YOSOI_ATOM_READS', '1')
-    assert atom_reads_enabled() is True
+    assert Policy.from_env().atom_reads is True
 
 
 # ── resolve() integration ──────────────────────────────────────────────────────
@@ -162,27 +162,21 @@ def test_atom_resolution_model_defaults() -> None:
 
 
 def test_strict_mode_quarantines_fingerprint(monkeypatch) -> None:
-    from yosoi.core.atom_read import allowed_sources
-
     monkeypatch.setenv('YOSOI_ATOM_TRUST', 'strict')
-    allowed = allowed_sources()
+    allowed = Policy.from_env().allowed_sources
     assert allowed is not None
     assert 'fingerprint' not in allowed
     assert {'verified', 'llm', 'manual'} <= allowed
 
 
 def test_yellow_mode_lets_it_ride(monkeypatch) -> None:
-    from yosoi.core.atom_read import allowed_sources
-
     monkeypatch.setenv('YOSOI_ATOM_TRUST', 'yellow')
-    assert allowed_sources() is None  # all tiers served
+    assert Policy.from_env().allowed_sources is None  # all tiers served
 
 
 def test_trust_mode_defaults_strict(monkeypatch) -> None:
-    from yosoi.core.atom_read import atom_trust_mode
-
     monkeypatch.delenv('YOSOI_ATOM_TRUST', raising=False)
-    assert atom_trust_mode() == 'strict'
+    assert Policy.from_env().trust_tier == 'strict'
 
 
 def test_resolve_filters_quarantined_source() -> None:
