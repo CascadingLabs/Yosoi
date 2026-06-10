@@ -38,21 +38,33 @@ def build_policy(
 
     load_dotenv()
     try:
-        model_policy = ModelPolicy.from_string(model_arg) if model_arg else None
-        scrape_policy = ScrapePolicy(
-            force=force,
-            skip_verification=skip_verification,
-            fetcher_type=cast(FetcherName, fetcher_type),
-            selector_level=selector_level if selector_level is not None else ScrapePolicy().selector_level,
-            max_concurrency=max_concurrency,
-        )
-        output_policy = OutputPolicy(
+        # Only set fields that differ from the defaults, so the env layer
+        # (YOSOI_MODEL / YOSOI_FORCE / YOSOI_FETCHER_TYPE / ...) is not clobbered
+        # by CLI flags the user never passed.
+        call_kwargs: dict[str, object] = {}
+        if model_arg:
+            call_kwargs['model'] = ModelPolicy.from_string(model_arg)
+        scrape_defaults = ScrapePolicy()
+        scrape_payload: dict[str, object] = {}
+        if force:
+            scrape_payload['force'] = True
+        if skip_verification:
+            scrape_payload['skip_verification'] = True
+        if fetcher_type != scrape_defaults.fetcher_type:
+            scrape_payload['fetcher_type'] = cast(FetcherName, fetcher_type)
+        if selector_level is not None and selector_level != scrape_defaults.selector_level:
+            scrape_payload['selector_level'] = selector_level
+        if max_concurrency is not None:
+            scrape_payload['max_concurrency'] = max_concurrency
+        if scrape_payload:
+            call_kwargs['scrape'] = ScrapePolicy.model_validate(scrape_payload)
+        call_kwargs['output'] = OutputPolicy(
             formats=tuple(output_formats),
             quiet=quiet,
             json_output=json_output,
             debug_html=debug,
         )
-        call_policy = Policy(model=model_policy, scrape=scrape_policy, output=output_policy)
+        call_policy = Policy.model_validate(call_kwargs)
         policy = Policy.cascade(Policy.from_env(), call_policy)
         spec = policy.resolve_run_spec()
     except (KeyError, ValueError, ValidationError) as e:

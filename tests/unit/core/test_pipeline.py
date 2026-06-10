@@ -2209,3 +2209,32 @@ async def test_semantic_refine_stops_when_reextraction_goes_empty(mocker):
         stub, 'https://x.com', '<clean/>', '<raw/>', {'price': {}}, '.card', original, max_retries=3
     )
     assert extracted is original  # prior extraction preserved, not clobbered by the empty re-extract
+
+
+def test_pipeline_configures_telemetry_from_policy(mocker, monkeypatch):
+    """Regression: explicit llm_config + policy must still configure Langfuse telemetry."""
+    mocker.patch('yosoi.storage.persistence.init_yosoi')
+    mocker.patch('yosoi.storage.discovery_strategy.init_yosoi')
+    mocker.patch('yosoi.storage.tracking.get_tracking_path', return_value='/tmp/tracking.json')
+    mocker.patch('yosoi.utils.files.is_initialized', return_value=True)
+    mocker.patch('yosoi.utils.logging.setup_local_logging', return_value='/tmp/test.log')
+    monkeypatch.setenv('GROQ_KEY', 'test-key')
+    monkeypatch.setenv('LANGFUSE_PUBLIC_KEY', 'pk-policy-test')
+    monkeypatch.setenv('LANGFUSE_SECRET_KEY', 'sk-policy-test')
+    configure = mocker.patch('yosoi.utils.observability.configure')
+
+    Pipeline(
+        llm_config='groq:llama-3.3-70b-versatile',
+        contract=SimpleContract,
+        policy=ys.Policy.from_env(),
+    )
+
+    configure.assert_called_once()
+    telemetry_config = configure.call_args.args[0]
+    assert telemetry_config.langfuse_public_key == 'pk-policy-test'
+    assert telemetry_config.langfuse_secret_key == 'sk-policy-test'
+
+
+def test_pipeline_rejects_model_policy_as_llm_config():
+    with pytest.raises(TypeError, match='policy=Policy'):
+        Pipeline(ys.groq('llama-3.3-70b-versatile'), contract=SimpleContract)

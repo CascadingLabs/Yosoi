@@ -53,6 +53,13 @@ class TestBuildYosoiConfig:
         cfg = build_yosoi_config('groq:llama', debug=True)
         assert cfg.debug.save_html is True
 
+    def test_debug_mode_without_model_arg(self, monkeypatch):
+        """Debug-only invocation (no model arg) still flows through the policy layer."""
+        monkeypatch.setenv('GROQ_KEY', 'groq-key')
+        cfg = build_yosoi_config(None, debug=True)
+        assert cfg.debug.save_html is True
+        assert cfg.llm.provider == 'groq'
+
     def test_no_api_key_raises(self):
         """Missing API key raises ClickException."""
         with pytest.raises(click.ClickException):
@@ -146,3 +153,29 @@ class TestBuildPolicy:
 
         with pytest.raises(click.ClickException, match='Invalid YOSOI_SELECTOR_LEVEL'):
             build_policy('groq:llama', debug=False)
+
+    def test_build_policy_honors_yosoi_model_env_without_model_flag(self, monkeypatch):
+        """Regression: no -m flag must not clobber the YOSOI_MODEL env layer."""
+        monkeypatch.setenv('YOSOI_MODEL', 'anthropic:claude-x')
+        monkeypatch.setenv('ANTHROPIC_API_KEY', 'sk-ant-test')
+        monkeypatch.setenv('GROQ_KEY', 'groq-test')
+
+        policy = build_policy(None, debug=False)
+        spec = policy.resolve_run_spec()
+
+        assert policy.model is not None
+        assert policy.model.provider == 'anthropic'
+        assert spec.llm_config.provider == 'anthropic'
+        assert spec.llm_config.api_key == 'sk-ant-test'
+
+    def test_build_policy_honors_scrape_env_layer_with_default_flags(self, monkeypatch):
+        """Regression: default CLI flags must not clobber YOSOI_FORCE / YOSOI_FETCHER_TYPE."""
+        monkeypatch.setenv('GROQ_KEY', 'groq-test')
+        monkeypatch.setenv('YOSOI_FORCE', '1')
+        monkeypatch.setenv('YOSOI_FETCHER_TYPE', 'headless')
+
+        policy = build_policy(None, debug=False)
+
+        assert policy.scrape is not None
+        assert policy.scrape.force is True
+        assert policy.scrape.fetcher_type == 'headless'

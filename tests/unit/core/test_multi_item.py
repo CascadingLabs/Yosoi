@@ -499,3 +499,43 @@ async def test_scrape_sets_last_elapsed(mocker):
     assert hasattr(stub, 'last_elapsed')
     assert isinstance(stub.last_elapsed, float)
     assert stub.last_elapsed >= 0
+
+
+async def test_scrape_offers_page_observation_to_signal_lane(mocker):
+    """When a signal lane is wired, scrape() offers the page observation off the hot path."""
+    from yosoi.models.results import FieldVerificationResult, VerificationResult
+
+    stub = _make_scrape_stub(mocker)
+    stub._signal_lane = mocker.MagicMock()
+    stub.storage.load_snapshots.return_value = None
+
+    mock_fetcher = mocker.MagicMock()
+    mock_fetcher.__aenter__ = mocker.AsyncMock(return_value=mock_fetcher)
+    mock_fetcher.__aexit__ = mocker.AsyncMock(return_value=False)
+    mock_fetcher.fetch = mocker.AsyncMock(
+        return_value=FetchResult(url='https://example.com', html='<html><h1>Fresh</h1></html>')
+    )
+    mocker.patch.object(stub, '_create_fetcher', return_value=mock_fetcher)
+    stub.cleaner.clean_html.return_value = '<h1>Fresh</h1>'
+    stub.discovery.target_level = stub.selector_level
+    stub.discovery.discover_selectors = mocker.AsyncMock(
+        return_value={'title': {'primary': 'h1', 'fallback': None, 'tertiary': None}}
+    )
+    stub.verifier.verify.return_value = VerificationResult(
+        total_fields=1,
+        verified_count=1,
+        results={
+            'title': FieldVerificationResult(
+                field_name='title', status='verified', matched_selector='h1', failed_selectors=[]
+            )
+        },
+    )
+    stub.extractor.extract_content_with_html.return_value = {'title': 'Fresh'}
+
+    items = [item async for item in stub.scrape('https://example.com')]
+
+    assert len(items) == 1
+    stub._signal_lane.offer.assert_called_once()
+    observation = stub._signal_lane.offer.call_args.args[0]
+    assert observation.url == 'https://example.com'
+    assert observation.contract == stub.contract.__name__

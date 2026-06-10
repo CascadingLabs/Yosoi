@@ -40,7 +40,7 @@ from yosoi.core.pipeline.utils import PipelineUtilsMixin
 from yosoi.core.verification import SelectorVerifier, SemanticValidator, field_rules_for_contract
 from yosoi.models.contract import Contract
 from yosoi.models.selectors import SelectorLevel
-from yosoi.policy import Policy
+from yosoi.policy import ModelPolicy, Policy
 from yosoi.storage import DebugManager, LLMTracker, SelectorStorage
 from yosoi.storage.discovery_strategy import DiscoveryStrategyStorage
 from yosoi.storage.js_scripts import JsScriptStorage
@@ -167,6 +167,10 @@ class Pipeline(
         """
         if contract is None:
             raise TypeError('Pipeline requires a contract')
+        if isinstance(llm_config, ModelPolicy):
+            raise TypeError(
+                'Pipeline no longer accepts a ModelPolicy as llm_config; pass policy=Policy(model=...) instead'
+            )
         # Resolve policy-first construction before applying legacy kwargs.
         if llm_config is None:
             spec = (policy or Policy.from_env()).resolve_run_spec()
@@ -181,7 +185,6 @@ class Pipeline(
             download_dir = spec.download_dir
             max_download_bytes = spec.max_download_bytes
             keep_downloads = spec.keep_downloads
-            observability.configure(spec.telemetry_config)
         self.selector_level = selector_level
         self._experimental_a3node = experimental_a3node
         self._allow_downloads = allow_downloads
@@ -217,16 +220,13 @@ class Pipeline(
             max_concurrent_discovery = yosoi_cfg.discovery.max_concurrent
             replay_verify_threshold = yosoi_cfg.discovery.replay_verify_threshold
             observability.configure(yosoi_cfg.telemetry)
-        elif policy is None:
+        else:
+            # Policy-resolved telemetry: Policy.from_env() captures LANGFUSE_* as SecretRefs,
+            # so this covers both an explicit policy and the legacy env-only construction.
             from yosoi.core.configs import TelemetryConfig
+            from yosoi.policy.run import resolve_telemetry_values
 
-            observability.configure(
-                TelemetryConfig(
-                    langfuse_public_key=os.getenv('LANGFUSE_PUBLIC_KEY'),
-                    langfuse_secret_key=os.getenv('LANGFUSE_SECRET_KEY'),
-                    langfuse_host=os.getenv('LANGFUSE_BASE_URL') or os.getenv('LANGFUSE_HOST'),
-                )
-            )
+            observability.configure(TelemetryConfig(**resolve_telemetry_values(self._policy.telemetry)))
 
         self.custom_theme = Theme(
             {

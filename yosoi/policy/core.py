@@ -50,6 +50,7 @@ from yosoi.policy.run import (
     SecretRef,
     TelemetryPolicy,
     find_secret_ref,
+    resolve_telemetry_values,
 )
 
 
@@ -155,6 +156,12 @@ class Policy(BaseModel):
         Each layer contributes only the fields it explicitly set (``exclude_unset``), so a partial
         override like ``Policy(trust_tier='yellow')`` changes only the tier; ``None`` layers are
         skipped so callers can pass optional overrides positionally.
+
+        ``model`` merges with a credential firewall: a layer that changes the model *identity*
+        (``provider``/``model_name``) replaces the model wholesale, so a lower layer's
+        ``credential_ref``/runtime key can never be transmitted to a different provider. A layer
+        that only tweaks non-identity fields (e.g. ``temperature``) field-merges and keeps the
+        existing credentials.
         """
         merged: dict[str, Any] = {}
         for layer in layers:
@@ -162,15 +169,29 @@ class Policy(BaseModel):
                 for key in layer.model_fields_set:
                     value = getattr(layer, key)
                     existing = merged.get(key)
-                    if isinstance(value, ModelPolicy) and value._runtime_api_key is not None:
-                        merged[key] = value
+                    if isinstance(value, ModelPolicy):
+                        merged[key] = cls._merge_model_layer(existing, value)
                     elif isinstance(value, BaseModel) and isinstance(existing, BaseModel):
-                        merged[key] = existing.model_copy(update=value.model_dump(exclude_unset=True))
+                        # Re-validate so nested models (e.g. SecretRef) survive the dump/merge
+                        # round-trip as models, not raw dicts.
+                        merged[key] = type(value).model_validate(
+                            {**existing.model_dump(), **value.model_dump(exclude_unset=True)}
+                        )
                     elif isinstance(value, dict) and isinstance(existing, dict):
                         merged[key] = {**existing, **value}
                     else:
                         merged[key] = value
         return cls(**merged)
+
+    @staticmethod
+    def _merge_model_layer(existing: Any, value: ModelPolicy) -> ModelPolicy:
+        """Merge one ``model`` cascade layer under the credential firewall."""
+        identity_change = bool({'provider', 'model_name'} & value.model_fields_set)
+        if identity_change or value._runtime_api_key is not None or not isinstance(existing, ModelPolicy):
+            return value
+        updated = ModelPolicy.model_validate({**existing.model_dump(), **value.model_dump(exclude_unset=True)})
+        updated._runtime_api_key = existing._runtime_api_key
+        return updated
 
     @property
     def policy_hash(self) -> str:
@@ -219,7 +240,7 @@ class Policy(BaseModel):
             expected = ', '.join(_PROVIDER_ENV_VARS.get(provider_name, ())) or 'a provider-specific API key'
             raise ValueError(f'No API key found for explicit provider {provider_name!r}; set {expected}')
 
-        telemetry = self.telemetry or TelemetryPolicy()
+        telemetry = self.telemetry
         scrape = self.scrape or ScrapePolicy()
         discovery = self.discovery or DiscoveryPolicy()
         output = self.output or OutputPolicy()
@@ -235,15 +256,7 @@ class Policy(BaseModel):
                 max_tokens=model.max_tokens,
                 extra_params=dict(model.extra_params) if model.extra_params is not None else None,
             ),
-            telemetry_config=TelemetryConfig(
-                langfuse_public_key=telemetry.langfuse_public_key_ref.resolve(src)
-                if telemetry.langfuse_public_key_ref is not None
-                else None,
-                langfuse_secret_key=telemetry.langfuse_secret_key_ref.resolve(src)
-                if telemetry.langfuse_secret_key_ref is not None
-                else None,
-                langfuse_host=telemetry.langfuse_host,
-            ),
+            telemetry_config=TelemetryConfig(**resolve_telemetry_values(telemetry, src)),
             debug_html=output.debug_html,
             debug_html_dir=output.debug_html_dir,
             force=scrape.force,

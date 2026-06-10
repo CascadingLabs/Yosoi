@@ -54,3 +54,22 @@ async def test_opt_out_ignores_robots() -> None:
 
     assert 'http://site.test/private/b' in fetcher.fetched  # opted out → fetched anyway
     assert not summary.outcome_lanes.get('policy_blocked', [])
+
+
+async def test_allowed_passes_hostless_urls() -> None:
+    from yosoi.policy.robots import RobotsGate
+
+    gate = RobotsGate(RobotsFetcher())
+    assert await gate.allowed('not-a-url') is True
+
+
+async def test_unreachable_robots_is_allow_all() -> None:
+
+    from yosoi.policy.robots import RobotsGate
+
+    class FailingFetcher:
+        async def fetch(self, url: str) -> SimpleNamespace:
+            raise RuntimeError('network down')
+
+    gate = RobotsGate(FailingFetcher())
+    assert await gate.allowed('http://site.test/private/b') is True

@@ -479,3 +479,101 @@ def test_model_policy_rejects_provider_without_model_name() -> None:
 def test_download_policy_rejects_settings_without_allow() -> None:
     with pytest.raises(ValidationError, match='require DownloadPolicy\\(allow=True\\)'):
         ys.DownloadPolicy(allowed_types=('pdf',))
+
+
+# ── cascade credential firewall ───────────────────────────────────────────────
+def test_cascade_provider_override_drops_lower_layer_runtime_key() -> None:
+    base = Policy(model=ys.anthropic('claude-x', api_key='sk-ant-secret'))
+    override = Policy(model=ModelPolicy.from_string('groq:llama'))
+
+    merged = Policy.cascade(base, override).model
+
+    assert merged is not None
+    assert merged.provider == 'groq'
+    assert merged._runtime_api_key is None
+
+
+def test_cascade_provider_override_drops_lower_layer_credential_ref() -> None:
+    env = {'YOSOI_MODEL': 'anthropic:claude-x', 'ANTHROPIC_API_KEY': 'sk-ant-env', 'GROQ_KEY': 'groq-env'}
+    eff = Policy.cascade(Policy.from_env(env), Policy(model=ModelPolicy.from_string('groq:llama')))
+
+    spec = eff.resolve_run_spec(env)
+
+    assert spec.llm_config.provider == 'groq'
+    assert spec.llm_config.api_key == 'groq-env'
+
+
+def test_cascade_revalidates_nested_secret_refs() -> None:
+    low = Policy(model=ModelPolicy.from_string('groq:llama'))
+    high = Policy(model=ModelPolicy.from_string('groq:llama', credential_ref=SecretRef.env('GROQ_KEY')))
+
+    merged = Policy.cascade(low, high).model
+
+    assert merged is not None
+    assert isinstance(merged.credential_ref, SecretRef)
+    assert merged.credential_ref.name == 'GROQ_KEY'
+
+
+def test_cascade_non_identity_override_keeps_runtime_key() -> None:
+    base = Policy(model=ys.groq('llama', api_key='groq-secret'))
+    override = Policy(model=ModelPolicy(temperature=0.5))
+
+    merged = Policy.cascade(base, override).model
+
+    assert merged is not None
+    assert merged.provider == 'groq'
+    assert merged.temperature == 0.5
+    assert merged._runtime_api_key == 'groq-secret'
+
+
+def test_cascade_telemetry_merge_keeps_secret_refs_as_models() -> None:
+    low = Policy(telemetry=ys.TelemetryPolicy(langfuse_host='http://low'))
+    high = Policy(telemetry=ys.TelemetryPolicy(langfuse_public_key_ref=SecretRef.env('LANGFUSE_PUBLIC_KEY')))
+
+    merged = Policy.cascade(low, high).telemetry
+
+    assert merged is not None
+    assert merged.langfuse_host == 'http://low'
+    assert isinstance(merged.langfuse_public_key_ref, SecretRef)
+
+
+# ── small uncovered guard branches ────────────────────────────────────────────
+def test_require_crawl_raises_without_crawl_settings() -> None:
+    with pytest.raises(ValueError, match='does not include crawl settings'):
+        Policy().require_crawl()
+
+
+def test_allows_source_quarantined_requires_yellow_tier() -> None:
+    quarantined = next(iter(QUARANTINED_SOURCES))
+
+    assert Policy(trust_tier='yellow').allows_source(quarantined) is True
+    assert Policy(trust_tier='strict').allows_source(quarantined) is False
+
+
+def test_output_trust_rejects_quarantined_source_under_strict_tier() -> None:
+    quarantined = next(iter(QUARANTINED_SOURCES))
+
+    assert Policy(trust_tier='strict').output_trust(quarantined) is Trust.REJECTED
+    assert Policy(trust_tier='yellow').output_trust(quarantined) is Trust.QUARANTINED
+
+
+def test_crawl_session_id_validator_branches() -> None:
+    assert CrawlBudget(crawl_session_id=None).crawl_session_id is None
+    assert CrawlBudget(crawl_session_id='  ').crawl_session_id is None
+    with pytest.raises(ValidationError, match='120 characters'):
+        CrawlBudget(crawl_session_id='x' * 121)
+
+
+def test_crawl_target_rejects_blank_name() -> None:
+    with pytest.raises(ValidationError, match='non-empty'):
+        CrawlTarget(name='   ')
+
+
+def test_seed_hunt_rejects_target_contracts() -> None:
+    with pytest.raises(ValidationError, match='seed_hunt'):
+        CrawlPolicy(mode='seed_hunt', target_contracts=(CrawlTarget(name='Article'),))
+
+
+def test_policy_arn_rejects_blank_parts() -> None:
+    with pytest.raises(ValueError, match='non-empty'):
+        policy_arn('  ', 'crawl.seed_hunt')

@@ -345,6 +345,26 @@ class ResolvedRunSpec(BaseModel):
     static_mode_warning: bool
 
 
+def resolve_telemetry_values(
+    telemetry: TelemetryPolicy | None, env: Mapping[str, str] | None = None
+) -> dict[str, str | None]:
+    """Resolve a telemetry policy's secret refs into raw runtime values.
+
+    Returns plain ``TelemetryConfig`` kwargs instead of the config object so this
+    module never imports ``yosoi.core.configs`` (which imports back into policy).
+    """
+    resolved = telemetry or TelemetryPolicy()
+    return {
+        'langfuse_public_key': resolved.langfuse_public_key_ref.resolve(env)
+        if resolved.langfuse_public_key_ref is not None
+        else None,
+        'langfuse_secret_key': resolved.langfuse_secret_key_ref.resolve(env)
+        if resolved.langfuse_secret_key_ref is not None
+        else None,
+        'langfuse_host': resolved.langfuse_host,
+    }
+
+
 def find_secret_ref(provider: str, env: Mapping[str, str] | None = None) -> SecretRef | None:
     """Return the first set provider credential ref, preserving env-name only."""
     from yosoi.core.discovery.config import _PROVIDER_ENV_VARS

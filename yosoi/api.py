@@ -14,7 +14,7 @@ from yosoi.core.pipeline import ContentMap, Pipeline
 from yosoi.core.pipeline.discovery_gate import DiscoveryGate
 from yosoi.models.contract import Contract
 from yosoi.models.selectors import SelectorLevel
-from yosoi.policy import DownloadPolicy, ModelPolicy, OutputPolicy, Policy, ScrapePolicy
+from yosoi.policy import DiscoveryPolicy, DownloadPolicy, ModelPolicy, OutputPolicy, Policy, ScrapePolicy
 from yosoi.utils import observability as obs
 from yosoi.utils.contracts import resolve_contract
 
@@ -284,9 +284,12 @@ async def scrape(
 
     async def _unit(u: str, c: type[Contract]) -> list[ContentMap]:
         async def _go() -> list[ContentMap]:
+            # A per-URL mapping that resolves to 'auto' (e.g. dict miss) contributes nothing,
+            # so an explicit policy fetcher_type still wins for that URL.
+            per_url_fetcher = _fetcher_for(u)
             per_url_policy = (
-                Policy(scrape=ScrapePolicy.model_validate({'fetcher_type': _fetcher_for(u)}))
-                if not isinstance(fetcher_type, str)
+                Policy(scrape=ScrapePolicy.model_validate({'fetcher_type': per_url_fetcher}))
+                if not isinstance(fetcher_type, str) and per_url_fetcher != 'auto'
                 else None
             )
             return await _scrape_one(
@@ -385,8 +388,8 @@ def _compat_policy_layer(  # noqa: C901
         kwargs['model'] = model_policy
 
     scrape_payload: dict[str, Any] = {}
-    if force:
-        scrape_payload['force'] = force
+    if force or (isinstance(model, YosoiConfig) and model.force):
+        scrape_payload['force'] = True
     if skip_verification:
         scrape_payload['skip_verification'] = skip_verification
     if fetcher_type != 'auto':
@@ -397,6 +400,16 @@ def _compat_policy_layer(  # noqa: C901
         scrape_payload['max_concurrency'] = max_concurrency
     if scrape_payload:
         kwargs['scrape'] = ScrapePolicy(**scrape_payload)
+
+    if isinstance(model, YosoiConfig):
+        discovery_defaults = DiscoveryPolicy()
+        discovery_payload: dict[str, Any] = {}
+        if model.discovery.max_concurrent != discovery_defaults.max_concurrent:
+            discovery_payload['max_concurrent'] = model.discovery.max_concurrent
+        if model.discovery.replay_verify_threshold != discovery_defaults.replay_verify_threshold:
+            discovery_payload['replay_verify_threshold'] = model.discovery.replay_verify_threshold
+        if discovery_payload:
+            kwargs['discovery'] = DiscoveryPolicy(**discovery_payload)
 
     output_payload: dict[str, Any] = {}
     if save_formats:
@@ -409,19 +422,18 @@ def _compat_policy_layer(  # noqa: C901
     if output_payload:
         kwargs['output'] = OutputPolicy(**output_payload)
 
-    download_payload: dict[str, Any] = {}
+    # Downloads stay default-deny: the sub-settings only mean anything once the caller
+    # opted in via allow_downloads=True, matching the legacy kwarg semantics.
     if allow_downloads:
-        download_payload['allow'] = True
-    if allowed_download_types:
-        download_payload['allowed_types'] = tuple(allowed_download_types)
-    if download_dir is not None:
-        download_payload['directory'] = download_dir
-    if max_download_bytes is not None:
-        download_payload['max_bytes'] = max_download_bytes
-    if not keep_downloads:
-        download_payload['keep'] = False
-    if download_payload:
-        download_payload.setdefault('allow', True)
+        download_payload: dict[str, Any] = {'allow': True}
+        if allowed_download_types:
+            download_payload['allowed_types'] = tuple(allowed_download_types)
+        if download_dir is not None:
+            download_payload['directory'] = download_dir
+        if max_download_bytes is not None:
+            download_payload['max_bytes'] = max_download_bytes
+        if not keep_downloads:
+            download_payload['keep'] = False
         kwargs['download'] = DownloadPolicy(**download_payload)
 
     return Policy(**kwargs)
