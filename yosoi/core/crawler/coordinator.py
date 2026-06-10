@@ -104,6 +104,10 @@ class CrawlCoordinator:
         """Create a coordinator for one policy-derived crawl runtime config."""
         self.fetcher = fetcher
         self.config = config
+        # Fail-closed confinement: when cross-domain is disallowed and no explicit
+        # allow-list was given, the crawl is pinned to its own seed hosts (populated in
+        # run()), so an empty allow-list can never silently mean "follow links anywhere".
+        self._seed_confined_hosts: set[str] = set()
         session_id = config.crawl_session_id or 'crawl-policy-run'
         self.extractor = extractor or LinkExtractor()
         self.persist_frontier = persist_frontier
@@ -122,6 +126,9 @@ class CrawlCoordinator:
         started = time.monotonic()
         summary = CrawlRunSummary(_max_workers_seen=self.config.max_workers)
         crawl_seeds = seeds if seeds is not None else self.config.seeds
+
+        if not self.config.allow_cross_domain and not self.config.allowed_hosts:
+            self._seed_confined_hosts = {host.lower() for s in crawl_seeds if (host := urlparse(s).hostname)}
 
         for seed in crawl_seeds:
             self.frontier.push(seed, depth=0, score=1.0)
@@ -192,8 +199,9 @@ class CrawlCoordinator:
 
         links: tuple[CrawlLink, ...] = ()
         if job.depth < self.config.max_depth:
-            allowed_hosts = set(self.config.allowed_hosts) if self.config.allowed_hosts else None
-            extracted = self.extractor.extract(str(html), base_url=job.url, allowed_hosts=allowed_hosts)
+            extracted = self.extractor.extract(
+                str(html), base_url=job.url, allowed_hosts=self._effective_allowed_hosts() or None
+            )
             links = tuple(extracted)
 
         return CrawlResult(
@@ -204,12 +212,23 @@ class CrawlCoordinator:
             fetch_time=time.monotonic() - started,
         )
 
+    def _effective_allowed_hosts(self) -> set[str]:
+        """Hosts this crawl may visit: the explicit allow-list, else seed-host confinement.
+
+        Empty only when cross-domain is explicitly permitted; otherwise an empty
+        ``allowed_hosts`` is backfilled with the seed hosts so the crawl fails closed.
+        """
+        if self.config.allowed_hosts:
+            return {h.lower() for h in self.config.allowed_hosts}
+        return self._seed_confined_hosts
+
     def _policy_error(self, url: str) -> str | None:
         parsed = urlparse(url)
         host = parsed.hostname.lower() if parsed.hostname else ''
         if host in set(self.config.denied_hosts):
             return f'host denied by policy: {host}'
-        if self.config.allowed_hosts and host not in set(self.config.allowed_hosts):
+        allowed_hosts = self._effective_allowed_hosts()
+        if allowed_hosts and host not in allowed_hosts:
             return f'host not allowed by policy: {host}'
         if any(parsed.path.startswith(prefix) for prefix in self.config.blocked_path_prefixes):
             return f'path blocked by policy: {parsed.path}'

@@ -663,3 +663,35 @@ def test_from_string_api_key_is_runtime_only_no_env_dict_needed() -> None:
     assert 'gk-secret' not in policy.model_dump_json()
     assert 'gk-secret' not in repr(policy)
     assert 'gk-secret' not in policy.policy_hash
+
+
+def test_resolved_run_spec_never_leaks_secrets_in_repr_or_dump() -> None:
+    """ResolvedRunSpec carries the live key for use but masks it in repr/dump/json."""
+    spec = Policy(model=ModelPolicy.from_string('groq:llama', api_key='SECRET-KEY-123')).resolve_run_spec()
+
+    assert spec.llm_config.api_key == 'SECRET-KEY-123'  # live value reachable at point of use
+    assert 'SECRET-KEY-123' not in repr(spec)
+    assert 'SECRET-KEY-123' not in repr(spec.llm_config)
+    assert 'SECRET-KEY-123' not in str(spec.model_dump())
+    assert 'SECRET-KEY-123' not in spec.model_dump_json()
+    assert spec.model_dump()['llm_config']['api_key'] == '***REDACTED***'
+
+
+def test_check_crawl_warns_unenforced_per_host_caps() -> None:
+    policy = Policy.for_crawl('crawl.seed_hunt')
+
+    warnings = policy.check_crawl(seeds=('https://x.test/',)).warnings
+
+    assert any('per_host_concurrency is not yet enforced' in w for w in warnings)
+    assert any('max_pages_per_host is not yet enforced' in w for w in warnings)
+
+
+def test_redact_secret_configs_handles_none_and_dict_inputs() -> None:
+    """The redaction serializer is defensive for the Any-typed config fields."""
+    spec = Policy(model=ModelPolicy.from_string('groq:llama', api_key='k')).resolve_run_spec()
+
+    assert spec._redact_secret_configs(None) is None
+    assert spec._redact_secret_configs({'api_key': 'raw', 'other': 1}) == {
+        'api_key': '***REDACTED***',
+        'other': 1,
+    }

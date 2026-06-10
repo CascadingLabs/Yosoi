@@ -7,7 +7,7 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, field_serializer, field_validator, model_validator
 
 from yosoi.models.selectors import SelectorLevel
 from yosoi.policy._base import StrictFloat, StrictInt
@@ -331,13 +331,20 @@ class DownloadPolicy(BaseModel):
 
 
 class ResolvedRunSpec(BaseModel):
-    """Execution-time run configuration, including resolved secrets."""
+    """Execution-time run configuration, including resolved secrets.
+
+    Holds the raw, resolved credentials needed to run — but never exposes them in
+    ``repr`` or ``model_dump``. The secret-bearing sub-configs are stored with
+    ``repr=False`` and masked on serialization, so logging or JSON-dumping a spec
+    can't leak an API key or Langfuse secret. Access the live values through the
+    typed attributes (``spec.llm_config.api_key``) at the point of use.
+    """
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     policy_hash: str
-    llm_config: Any
-    telemetry_config: Any
+    llm_config: Any = Field(repr=False)
+    telemetry_config: Any = Field(repr=False)
     debug_html: bool
     debug_html_dir: Path
     force: bool
@@ -359,6 +366,17 @@ class ResolvedRunSpec(BaseModel):
     lesson_cache: bool
     replay_verify_threshold: float
     static_mode_warning: bool
+
+    @field_serializer('llm_config', 'telemetry_config')
+    def _redact_secret_configs(self, config: Any) -> Any:
+        """Mask resolved secrets so ``model_dump``/``model_dump_json`` never carry them."""
+        if config is None:
+            return None
+        dumped = config.model_dump() if isinstance(config, BaseModel) else dict(config)
+        for secret_field in ('api_key', 'langfuse_secret_key', 'langfuse_public_key'):
+            if dumped.get(secret_field) is not None:
+                dumped[secret_field] = '***REDACTED***'
+        return dumped
 
 
 def resolve_telemetry_values(

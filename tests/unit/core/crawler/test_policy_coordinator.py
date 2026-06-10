@@ -228,3 +228,53 @@ def test_idle_worker_ratio_is_alias_for_dispatch_slot_idle_ratio() -> None:
     summary = CrawlRunSummary(batches=4, idle_worker_slots=1)
 
     assert summary.idle_worker_ratio == summary.dispatch_slot_idle_ratio == 0.25
+
+
+async def test_empty_allowlist_confines_to_seed_hosts_fail_closed(tmp_path, monkeypatch) -> None:
+    """allow_cross_domain=False + empty allowed_hosts must not follow links off the seed hosts."""
+    monkeypatch.setattr('yosoi.core.crawler.frontier.init_yosoi', lambda _name: tmp_path)
+    fetcher = FakeFetcher({'https://safe.test/': '<a href="https://evil.test/x">off</a><a href="/ok">on</a>'})
+    # No explicit allowed_hosts, cross-domain disallowed; runtime resolved WITHOUT seeds
+    # so its baked allowed_hosts is empty (the direct-caller fail-open path).
+    policy = Policy.for_crawl(
+        'crawl.conservative',
+        budget=CrawlBudget(max_pages=5, max_depth=1),
+        scheduler=SchedulerPolicy(max_workers=1, politeness_delay=0),
+    )
+    runtime = policy.check_crawl().runtime  # empty allowed_hosts
+    assert runtime is not None
+    assert runtime.allowed_hosts == ()
+    assert runtime.allow_cross_domain is False
+
+    summary = await CrawlCoordinator(fetcher=fetcher, config=runtime, persist_frontier=False).run(
+        seeds=('https://safe.test/',)
+    )
+
+    fetched_hosts = {__import__('urllib.parse', fromlist=['urlparse']).urlparse(u).hostname for u in fetcher.calls}
+    assert 'evil.test' not in fetched_hosts  # confined to seed host
+    assert summary.pages_fetched >= 1
+
+
+async def test_cross_domain_true_still_follows_any_host(tmp_path, monkeypatch) -> None:
+    """The confinement only applies when cross-domain is disallowed — opt-in stays unrestricted."""
+    monkeypatch.setattr('yosoi.core.crawler.frontier.init_yosoi', lambda _name: tmp_path)
+    fetcher = FakeFetcher(
+        {
+            'https://safe.test/': '<a href="https://other.test/x">off</a>',
+            'https://other.test/x': '<p>ok</p>',
+        }
+    )
+    policy = Policy.for_crawl(
+        'crawl.conservative',
+        budget=CrawlBudget(max_pages=5, max_depth=1),
+        scheduler=SchedulerPolicy(max_workers=1, politeness_delay=0),
+        safety=CrawlSafety(allow_cross_domain=True),
+    )
+    runtime = policy.check_crawl().runtime
+    assert runtime is not None
+    assert runtime.allow_cross_domain is True
+
+    await CrawlCoordinator(fetcher=fetcher, config=runtime, persist_frontier=False).run(seeds=('https://safe.test/',))
+
+    fetched_hosts = {__import__('urllib.parse', fromlist=['urlparse']).urlparse(u).hostname for u in fetcher.calls}
+    assert 'other.test' in fetched_hosts  # cross-domain opt-in unrestricted

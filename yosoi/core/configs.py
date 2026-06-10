@@ -61,7 +61,7 @@ class TelemetryConfig(BaseModel):
     """
 
     langfuse_public_key: str | None = None
-    langfuse_secret_key: str | None = None
+    langfuse_secret_key: str | None = Field(default=None, repr=False)  # secret: keep out of repr
     langfuse_host: str | None = None
 
 

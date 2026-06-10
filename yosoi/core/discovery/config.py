@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any, Protocol
 # ============================================================================
 # 1. CONFIG DATACLASSES - Simple configuration objects
 # ============================================================================
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from pydantic_ai import Agent
 from pydantic_ai.models import Model
 from pydantic_ai.models.cerebras import CerebrasModel
@@ -69,7 +69,7 @@ class LLMConfig(BaseModel):
 
     provider: str
     model_name: str
-    api_key: str | None = None
+    api_key: str | None = Field(default=None, repr=False)  # secret: keep out of repr/tracebacks
     temperature: float = 0.01
     max_tokens: int | None = None
     extra_params: dict[str, Any] | None = None

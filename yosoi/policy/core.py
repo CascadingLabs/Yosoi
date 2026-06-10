@@ -300,6 +300,16 @@ class Policy(BaseModel):
             warnings.append('no allowed_hosts resolved; pass seeds or set safety.allowed_hosts')
         if runtime.per_host_concurrency > 1 and runtime.politeness_delay == 0:
             warnings.append('same-host concurrency without politeness_delay can be impolite')
+        # Honesty: these per-host caps are carried on the policy but the crawl engine does not
+        # enforce them yet (per-host fan-out is bounded only by max_workers + politeness_delay).
+        # Warn so an operator does not assume a tighter per-host limit than they actually get.
+        if runtime.per_host_concurrency < runtime.max_workers:
+            warnings.append(
+                'per_host_concurrency is not yet enforced by the crawl engine; per-host fan-out '
+                'is bounded only by max_workers and politeness_delay'
+            )
+        if runtime.max_pages_per_host is not None:
+            warnings.append('max_pages_per_host is not yet enforced by the crawl engine; it has no effect')
         return PolicyCheck(valid=True, policy_hash=self.policy_hash, warnings=tuple(warnings), runtime=runtime)
 
     @property
