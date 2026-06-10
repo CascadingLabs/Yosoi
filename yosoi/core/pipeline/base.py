@@ -335,6 +335,9 @@ class Pipeline(
                 kwargs['experimental_a3node'] = getattr(self, '_experimental_a3node', False)
                 kwargs['allow_downloads'] = getattr(self, '_allow_downloads', False)
                 kwargs['download_dir'] = getattr(self, '_download_dir', None)
+                pipeline_policy: Policy | None = getattr(self, '_policy', None)
+                if pipeline_policy is not None and pipeline_policy.scrape is not None:
+                    kwargs['cross_origin_dom'] = pipeline_policy.scrape.cross_origin_dom
                 if identity is not None:  # opt-in profile/headful/geo (browser only)
                     kwargs['identity'] = identity
             elif fetcher_type == 'simple' and identity is not None:

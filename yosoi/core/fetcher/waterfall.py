@@ -82,6 +82,7 @@ class JSFetcher(HTMLFetcher):
         identity: BrowserIdentity | None = None,
         identity_cascade: IdentityCascade | None = None,
         max_live_identities: int = 3,
+        cross_origin_dom: bool = False,
     ):
         """Initialise the three-tier JS fetcher.
 
@@ -114,6 +115,10 @@ class JSFetcher(HTMLFetcher):
                 single-identity 3-tier behaviour.
             max_live_identities: Cap on simultaneously-live identity fetchers
                 (each is its own Chrome process); losers are LRU-closed.
+            cross_origin_dom: Opt the Chrome tiers into cross-origin DOM access
+                (``ScrapePolicy.cross_origin_dom``): disables site-isolation field
+                trials so ``evaluate_js_in_frame`` reaches isolated origins. Off
+                by default; ignored by the simple tier.
 
         """
         self._simple = SimpleFetcher(
@@ -148,6 +153,7 @@ class JSFetcher(HTMLFetcher):
             'download_dir': download_dir,
             'user_agent': voidcrawl_user_agent,
             'accept_language': voidcrawl_accept_language,
+            'cross_origin_dom': cross_origin_dom,
         }
 
         # W2 — profile cascade. Built lazily on first block so a run with no

@@ -238,6 +238,11 @@ class ScrapePolicy(BaseModel):
     fetcher_type: FetcherPolicyName = 'auto'
     selector_level: SelectorLevel = SelectorLevel.CSS
     max_concurrency: StrictInt | None = Field(default=None, gt=0)
+    # Cross-origin DOM manipulation (VoidCrawl >= 0.3.5): launches browser fetchers with
+    # Chrome's site-isolation field trials disabled so `evaluate_js_in_frame` can reach
+    # field-trial-isolated origins (e.g. embedded google.com frames). This weakens the
+    # browser's security posture for the whole session — explicit opt-in, default off.
+    cross_origin_dom: bool = False
 
 
 class DiscoveryPolicy(BaseModel):
@@ -330,6 +335,7 @@ class ResolvedRunSpec(BaseModel):
     fetcher_type: str
     selector_level: SelectorLevel
     max_concurrency: int | None
+    cross_origin_dom: bool
     output_formats: tuple[str, ...]
     quiet: bool
     json_output: bool

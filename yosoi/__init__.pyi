@@ -258,6 +258,7 @@ class ScrapePolicy(_ScrapePolicy):
     fetcher_type: Literal['auto', 'simple', 'headless', 'headful', 'waterfall']
     selector_level: SelectorLevel
     max_concurrency: int | None
+    cross_origin_dom: bool
 
     def __init__(
         self,
@@ -267,6 +268,7 @@ class ScrapePolicy(_ScrapePolicy):
         fetcher_type: Literal['auto', 'simple', 'headless', 'headful', 'waterfall'] = ...,
         selector_level: SelectorLevel = ...,
         max_concurrency: int | None = ...,
+        cross_origin_dom: bool = ...,
     ) -> None: ...
 
 class DiscoveryPolicy(_DiscoveryPolicy):
@@ -321,6 +323,7 @@ class ResolvedRunSpec(_ResolvedRunSpec):
     force: bool
     fetcher_type: str
     selector_level: SelectorLevel
+    cross_origin_dom: bool
 
 class Policy(_Policy):
     atom_reads: bool

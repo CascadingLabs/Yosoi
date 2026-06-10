@@ -624,3 +624,22 @@ def test_provider_helper_without_api_key_has_no_runtime_key() -> None:
     model = ys.provider('groq:llama')
 
     assert model._runtime_api_key is None
+
+
+# ── cross-origin DOM opt-in (VoidCrawl >= 0.3.5) ─────────────────────────────
+def test_cross_origin_dom_defaults_off_and_resolves_into_spec() -> None:
+    assert ScrapePolicy().cross_origin_dom is False
+
+    policy = Policy(model=ys.claude_sdk(), scrape=ScrapePolicy(cross_origin_dom=True))
+    spec = policy.resolve_run_spec({})
+
+    assert spec.cross_origin_dom is True
+    assert Policy(model=ys.claude_sdk()).resolve_run_spec({}).cross_origin_dom is False
+
+
+def test_from_env_reads_cross_origin_dom() -> None:
+    policy = Policy.from_env({'YOSOI_CROSS_ORIGIN_DOM': '1'})
+
+    assert policy.scrape is not None
+    assert policy.scrape.cross_origin_dom is True
+    assert Policy.from_env({}).scrape is None

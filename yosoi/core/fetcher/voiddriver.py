@@ -85,6 +85,7 @@ class _VoidCrawlFetcher(HTMLFetcher):
         user_agent: str | None = None,
         accept_language: str | None = None,
         identity: BrowserIdentity | None = None,
+        cross_origin_dom: bool = False,
         **_kwargs: Any,
     ) -> None:
         self.timeout = timeout
@@ -100,6 +101,7 @@ class _VoidCrawlFetcher(HTMLFetcher):
         self._user_agent = user_agent
         self._accept_language = accept_language
         self._identity = identity
+        self._cross_origin_dom = cross_origin_dom
         self._pool: Any = None
         self._pool_ctx: Any = None
         self._a3node_storage = A3NodeStorage() if experimental_a3node else None
@@ -171,24 +173,36 @@ class _VoidCrawlFetcher(HTMLFetcher):
         elif self._accept_language is not None and 'accept_language' in fields:
             kwargs['accept_language'] = self._accept_language
 
-        ident = self._identity
-        if ident is not None:
-            if ident.proxy is not None and 'proxy' in fields:
-                kwargs['proxy'] = ident.proxy
-            if ident.locale is not None and 'locale' in fields:
-                kwargs['locale'] = ident.locale
-            if ident.timezone_id is not None and 'timezone_id' in fields:
-                kwargs['timezone_id'] = ident.timezone_id
-            if ident.geo is not None and 'geolocation' in fields:
-                # teleport-at-fetch: only when VoidCrawl's BrowserConfig exposes a geolocation
-                # field. FUTURE: if it never does, apply ident.geo post-launch via the tab's
-                # set_geolocation before the first navigate (Emulation.setGeolocationOverride).
-                kwargs['geolocation'] = {'latitude': ident.geo[0], 'longitude': ident.geo[1]}
-            if ident.profile_dir is not None and 'extra_args' in fields:
-                extra = list(kwargs.get('extra_args', []))
-                extra.extend([f'--user-data-dir={ident.profile_dir}', '--profile-directory=Default'])
-                kwargs['extra_args'] = extra
+        if self._identity is not None:
+            self._apply_identity_kwargs(kwargs, fields, self._identity)
+
+        # Cross-origin DOM opt-in (ScrapePolicy.cross_origin_dom, VoidCrawl >= 0.3.5): disable
+        # Chrome's site-isolation field trials so evaluate_js_in_frame reaches field-trial-
+        # isolated origins. Weakens isolation for the whole pool — never set by default.
+        if self._cross_origin_dom and 'extra_args' in fields:
+            extra = list(kwargs.get('extra_args', []))
+            extra.append('disable-site-isolation-trials')
+            kwargs['extra_args'] = extra
         return kwargs
+
+    @staticmethod
+    def _apply_identity_kwargs(kwargs: dict[str, Any], fields: Any, ident: BrowserIdentity) -> None:
+        """Thread a pinned identity's proxy/locale/timezone/geo/profile into BrowserConfig kwargs."""
+        if ident.proxy is not None and 'proxy' in fields:
+            kwargs['proxy'] = ident.proxy
+        if ident.locale is not None and 'locale' in fields:
+            kwargs['locale'] = ident.locale
+        if ident.timezone_id is not None and 'timezone_id' in fields:
+            kwargs['timezone_id'] = ident.timezone_id
+        if ident.geo is not None and 'geolocation' in fields:
+            # teleport-at-fetch: only when VoidCrawl's BrowserConfig exposes a geolocation
+            # field. FUTURE: if it never does, apply ident.geo post-launch via the tab's
+            # set_geolocation before the first navigate (Emulation.setGeolocationOverride).
+            kwargs['geolocation'] = {'latitude': ident.geo[0], 'longitude': ident.geo[1]}
+        if ident.profile_dir is not None and 'extra_args' in fields:
+            extra = list(kwargs.get('extra_args', []))
+            extra.extend([f'--user-data-dir={ident.profile_dir}', '--profile-directory=Default'])
+            kwargs['extra_args'] = extra
 
     async def _apply_identity_geo(self, tab: Any) -> None:
         """Teleport-at-fetch: spoof geolocation from the pinned identity BEFORE navigating.
