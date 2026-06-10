@@ -313,6 +313,7 @@ async def crawl_index(
     *,
     policy: Policy | None = ...,
     fetcher_type: str | None = ...,
+    persist: bool = ...,
 ) -> CrawlRunSummary: ...
 async def scrape(
     url: str | Sequence[str],

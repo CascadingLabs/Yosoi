@@ -82,7 +82,7 @@ class CrawlSafety(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    respect_robots: bool = True
+    respect_robots: bool = True  # default: honor robots.txt; set False to opt out of robots compliance
     allow_cross_domain: bool = False
     allowed_hosts: tuple[str, ...] = ()
     denied_hosts: tuple[str, ...] = ()

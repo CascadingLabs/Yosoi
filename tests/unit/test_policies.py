@@ -178,7 +178,7 @@ def test_crawl_policy_preset_resolves_to_runtime_config() -> None:
     assert check.runtime.max_workers == 3
     assert check.runtime.per_host_concurrency == 1
     assert check.runtime.allowed_hosts == ('example.com',)
-    assert check.runtime.respect_robots is True
+    assert check.runtime.respect_robots is True  # default-respect robots
 
 
 def test_crawl_policy_arn_preset_resolution() -> None:

@@ -11,6 +11,7 @@ from urllib.parse import urlparse
 from yosoi.core.crawler.frontier import CrawlFrontier, FrontierEntry
 from yosoi.core.crawler.links import CrawlLink, LinkExtractor
 from yosoi.policy import CrawlRuntimeConfig
+from yosoi.policy.robots import RobotsGate
 
 CrawlStatus = Literal['succeeded', 'failed', 'policy_blocked']
 
@@ -106,6 +107,8 @@ class CrawlCoordinator:
         session_id = config.crawl_session_id or 'crawl-policy-run'
         self.extractor = extractor or LinkExtractor()
         self.persist_frontier = persist_frontier
+        # robots.txt is policy-gated and default-on; opting out (respect_robots=False) skips the gate.
+        self._robots = RobotsGate(fetcher) if config.respect_robots else None
         self.frontier = frontier or CrawlFrontier(
             session_id=session_id,
             max_depth=config.max_depth,
@@ -166,6 +169,9 @@ class CrawlCoordinator:
         policy_error = self._policy_error(job.url)
         if policy_error is not None:
             return CrawlResult(job=job, status='policy_blocked', error=policy_error)
+
+        if self._robots is not None and not await self._robots.allowed(job.url):
+            return CrawlResult(job=job, status='policy_blocked', error='disallowed by robots.txt')
 
         try:
             await self.frontier.respect_politeness(job.url)

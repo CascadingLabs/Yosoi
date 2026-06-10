@@ -14,6 +14,8 @@ class FakeFetcher:
         self.calls: list[str] = []
 
     async def fetch(self, url: str) -> FetchResult:
+        if url.endswith('/robots.txt'):  # robots gate is default-on; allow-all, don't count it
+            return FetchResult(url=url, html=None, status_code=404)
         self.calls.append(url)
         html = self.pages.get(url)
         if html is None:
