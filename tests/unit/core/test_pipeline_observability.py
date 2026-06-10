@@ -88,6 +88,7 @@ def pipeline_stub(mocker):
     stub._contract_sig = contract_signature(stub.contract)
     stub.session_id = 'test-session-xyz'
     stub._url_start = 0.0
+    stub._signal_lane = None
     return stub
 
 

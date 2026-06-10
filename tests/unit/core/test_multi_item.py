@@ -292,6 +292,7 @@ def _make_scrape_stub(mocker, contract=None):
     stub.force = False
     stub.selector_level = SelectorLevel.CSS
     stub._contract_sig = 'test-sig'
+    stub._signal_lane = None
 
     # Stub normalize_url to pass through
     mocker.patch.object(stub, 'normalize_url', new=mocker.AsyncMock(side_effect=lambda u: u))
