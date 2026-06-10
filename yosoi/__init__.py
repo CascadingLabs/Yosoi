@@ -69,6 +69,9 @@ _LAZY: dict[str, str] = {
     'vercel': 'yosoi.core.discovery',
     'vertexai': 'yosoi.core.discovery',
     'xai': 'yosoi.core.discovery',
+    # crawler
+    'CrawlRunSummary': 'yosoi.core.crawler',
+    'crawl_index': 'yosoi.core.crawler.run',
     # pipeline
     'Pipeline': 'yosoi.core.pipeline',
     # policies
@@ -137,6 +140,7 @@ __all__ = [
     'Contract',
     'CrawlBudget',
     'CrawlPolicy',
+    'CrawlRunSummary',
     'CrawlRuntimeConfig',
     'CrawlSafety',
     'CrawlTarget',
@@ -178,6 +182,7 @@ __all__ = [
     'cerebras',
     'check_policy',
     'claude_sdk',
+    'crawl_index',
     'css',
     'deepseek',
     'discover',

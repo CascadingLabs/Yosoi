@@ -8,6 +8,7 @@ from yosoi.core.configs import DiscoveryConfig as DiscoveryConfig
 from yosoi.core.configs import TelemetryConfig as TelemetryConfig
 from yosoi.core.configs import YosoiConfig as YosoiConfig
 from yosoi.core.configs import auto_config as auto_config
+from yosoi.core.crawler import CrawlRunSummary as CrawlRunSummary
 from yosoi.core.discovery import LLMConfig as LLMConfig
 from yosoi.core.discovery.config import LLMBuilder as LLMBuilder
 from yosoi.core.pipeline import Pipeline as Pipeline
@@ -309,6 +310,12 @@ def fingerprint(
     headers: dict[str, str] | None = ...,
     endpoints: Sequence[str] | None = ...,
 ) -> PageFingerprint: ...
+async def crawl_index(
+    seeds: Sequence[str],
+    *,
+    policy: Policy | None = ...,
+    fetcher_type: str | None = ...,
+) -> CrawlRunSummary: ...
 async def scrape(
     url: str | Sequence[str],
     contract: type[Contract] | str | Sequence[type[Contract] | str],
