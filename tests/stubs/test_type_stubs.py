@@ -109,6 +109,61 @@ class TestProviderStubs:
         )
         assert result.returncode == 0, result.stdout + result.stderr
 
+
+class TestPolicyStubs:
+    """Verify that top-level policy constructors expose keyword signatures."""
+
+    def test_top_level_policy_kwargs_typecheck(self) -> None:
+        result = _run_mypy(
+            textwrap.dedent("""\
+            import yosoi as ys
+
+            policy = ys.Policy.for_crawl(
+                'crawl.conservative',
+                budget=ys.CrawlBudget(
+                    max_pages=200,
+                    max_depth=2,
+                    max_attempts=240,
+                    max_pages_per_host=80,
+                    crawl_session_id='sports-news-index-001',
+                ),
+                scheduler=ys.SchedulerPolicy(
+                    max_workers=5,
+                    per_host_concurrency=1,
+                    politeness_delay=1.0,
+                    fetch_timeout_seconds=15.0,
+                    max_fetch_retries=2,
+                ),
+                safety=ys.CrawlSafety(
+                    respect_robots=True,
+                    allowed_hosts=('www.espn.com',),
+                    blocked_path_prefixes=('/login',),
+                ),
+                escalation=ys.EscalationPolicy(
+                    allow_model_discovery=False,
+                    allow_paid_scrapers=False,
+                    max_llm_calls=0,
+                    max_paid_scraper_calls=0,
+                ),
+                fetcher_type='auto',
+            )
+            check = ys.check_policy(policy, seeds=('https://www.espn.com/nfl/',))
+            assert check.runtime is not None
+        """)
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
+
+    def test_top_level_policy_kwargs_fail_static_on_misspelling(self) -> None:
+        result = _run_mypy(
+            textwrap.dedent("""\
+            import yosoi as ys
+
+            ys.EscalationPolicy(allow_model_discover=True)
+        """)
+        )
+        assert result.returncode != 0
+        assert 'Unexpected keyword argument "allow_model_discover"' in result.stdout + result.stderr
+
     def test_provider_returns_llmconfig(self) -> None:
         result = _run_mypy(
             textwrap.dedent("""\

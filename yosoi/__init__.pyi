@@ -1,6 +1,6 @@
 """Type stubs for yosoi public API."""
 
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from typing import Any, Literal
 
 from yosoi.core.configs import DebugConfig as DebugConfig
@@ -27,12 +27,214 @@ from yosoi.models.snapshot import CacheVerdict as CacheVerdict
 from yosoi.models.snapshot import SelectorSnapshot as SelectorSnapshot
 from yosoi.models.snapshot import SnapshotMap as SnapshotMap
 from yosoi.models.snapshot import SnapshotStatus as SnapshotStatus
+from yosoi.policies import CrawlBudget as _CrawlBudget
+from yosoi.policies import CrawlPolicy as _CrawlPolicy
+from yosoi.policies import CrawlRuntimeConfig as _CrawlRuntimeConfig
+from yosoi.policies import CrawlSafety as _CrawlSafety
+from yosoi.policies import CrawlTarget as _CrawlTarget
+from yosoi.policies import EscalationPolicy as _EscalationPolicy
+from yosoi.policies import Outcome as _Outcome
+from yosoi.policies import Policy as _Policy
+from yosoi.policies import PolicyCheck as _PolicyCheck
+from yosoi.policies import SchedulerPolicy as _SchedulerPolicy
+from yosoi.policies import Trust as _Trust
 from yosoi.types.field import Field as Field
 from yosoi.types.field import js as js
 from yosoi.types.registry import register_coercion as register_coercion
 from yosoi.utils.contracts import resolve_contract as resolve_contract
 from yosoi.utils.urls import load_urls_from_file as load_urls_from_file
 
+TrustTier = Literal['strict', 'yellow']
+CrawlModeName = Literal['seed_hunt', 'contract_focus', 'structure_guarded', 'explorer']
+FetcherName = Literal['auto', 'simple', 'headless', 'headful']
+
+class CrawlBudget(_CrawlBudget):
+    max_pages: int
+    max_depth: int
+    max_attempts: int | None
+    max_pages_per_host: int | None
+    crawl_session_id: str | None
+
+    def __init__(
+        self,
+        *,
+        max_pages: int = ...,
+        max_depth: int = ...,
+        max_attempts: int | None = ...,
+        max_pages_per_host: int | None = ...,
+        crawl_session_id: str | None = ...,
+    ) -> None: ...
+
+class SchedulerPolicy(_SchedulerPolicy):
+    max_workers: int
+    per_host_concurrency: int
+    politeness_delay: float
+    fetch_timeout_seconds: float
+    max_fetch_retries: int
+
+    def __init__(
+        self,
+        *,
+        max_workers: int = ...,
+        per_host_concurrency: int = ...,
+        politeness_delay: float = ...,
+        fetch_timeout_seconds: float = ...,
+        max_fetch_retries: int = ...,
+    ) -> None: ...
+
+class CrawlSafety(_CrawlSafety):
+    respect_robots: bool
+    allow_cross_domain: bool
+    allowed_hosts: tuple[str, ...]
+    denied_hosts: tuple[str, ...]
+    blocked_path_prefixes: tuple[str, ...]
+
+    def __init__(
+        self,
+        *,
+        respect_robots: bool = ...,
+        allow_cross_domain: bool = ...,
+        allowed_hosts: tuple[str, ...] = ...,
+        denied_hosts: tuple[str, ...] = ...,
+        blocked_path_prefixes: tuple[str, ...] = ...,
+    ) -> None: ...
+
+class EscalationPolicy(_EscalationPolicy):
+    allow_model_discovery: bool
+    allow_paid_scrapers: bool
+    max_llm_calls: int
+    max_paid_scraper_calls: int
+
+    def __init__(
+        self,
+        *,
+        allow_model_discovery: bool = ...,
+        allow_paid_scrapers: bool = ...,
+        max_llm_calls: int = ...,
+        max_paid_scraper_calls: int = ...,
+    ) -> None: ...
+
+class CrawlTarget(_CrawlTarget):
+    name: str
+    min_fields: int
+    min_confidence: float
+    max_budget_pages: int | None
+
+    def __init__(
+        self,
+        *,
+        name: str,
+        min_fields: int = ...,
+        min_confidence: float = ...,
+        max_budget_pages: int | None = ...,
+    ) -> None: ...
+
+class CrawlRuntimeConfig(_CrawlRuntimeConfig):
+    seeds: tuple[str, ...]
+    mode: CrawlModeName
+    max_pages: int
+    max_depth: int
+    max_attempts: int | None
+    max_pages_per_host: int | None
+    crawl_session_id: str | None
+    max_workers: int
+    per_host_concurrency: int
+    politeness_delay: float
+    fetch_timeout_seconds: float
+    max_fetch_retries: int
+    respect_robots: bool
+    allow_cross_domain: bool
+    allowed_hosts: tuple[str, ...]
+    denied_hosts: tuple[str, ...]
+    blocked_path_prefixes: tuple[str, ...]
+    fetcher_type: FetcherName
+
+    def __init__(
+        self,
+        *,
+        seeds: tuple[str, ...] = ...,
+        mode: CrawlModeName = ...,
+        max_pages: int = ...,
+        max_depth: int = ...,
+        max_attempts: int | None = ...,
+        max_pages_per_host: int | None = ...,
+        crawl_session_id: str | None = ...,
+        max_workers: int = ...,
+        per_host_concurrency: int = ...,
+        politeness_delay: float = ...,
+        fetch_timeout_seconds: float = ...,
+        max_fetch_retries: int = ...,
+        respect_robots: bool = ...,
+        allow_cross_domain: bool = ...,
+        allowed_hosts: tuple[str, ...] = ...,
+        denied_hosts: tuple[str, ...] = ...,
+        blocked_path_prefixes: tuple[str, ...] = ...,
+        fetcher_type: FetcherName = ...,
+    ) -> None: ...
+
+class CrawlPolicy(_CrawlPolicy):
+    mode: CrawlModeName
+    budget: CrawlBudget
+    scheduler: SchedulerPolicy
+    safety: CrawlSafety
+    escalation: EscalationPolicy
+    target_contracts: tuple[CrawlTarget, ...]
+    fetcher_type: FetcherName
+
+    def __init__(
+        self,
+        *,
+        mode: CrawlModeName = ...,
+        budget: CrawlBudget = ...,
+        scheduler: SchedulerPolicy = ...,
+        safety: CrawlSafety = ...,
+        escalation: EscalationPolicy = ...,
+        target_contracts: tuple[CrawlTarget, ...] = ...,
+        fetcher_type: FetcherName = ...,
+    ) -> None: ...
+    def effective_allowed_hosts(self, seeds: tuple[str, ...] = ...) -> tuple[str, ...]: ...
+    def to_runtime_config(self, *, seeds: tuple[str, ...] = ...) -> CrawlRuntimeConfig: ...
+
+class PolicyCheck(_PolicyCheck):
+    valid: bool
+    policy_hash: str
+    warnings: tuple[str, ...]
+    runtime: CrawlRuntimeConfig | None
+
+class Policy(_Policy):
+    atom_reads: bool
+    trust_tier: TrustTier
+    crawl: CrawlPolicy | None
+
+    def __init__(
+        self,
+        *,
+        atom_reads: bool = ...,
+        trust_tier: TrustTier = ...,
+        crawl: CrawlPolicy | None = ...,
+    ) -> None: ...
+    @classmethod
+    def from_env(cls, env: Mapping[str, str] | None = ...) -> Policy: ...
+    @classmethod
+    def crawl_policy(cls, preset: str | None = ..., **overrides: Any) -> Policy: ...
+    @classmethod
+    def for_crawl(cls, preset: str | None = ..., **overrides: Any) -> Policy: ...
+    @classmethod
+    def cascade(cls, *layers: Policy | None) -> Policy: ...
+    @property
+    def policy_hash(self) -> str: ...
+    @property
+    def allowed_sources(self) -> frozenset[str] | None: ...
+    def require_crawl(self) -> CrawlPolicy: ...
+    def check_crawl(self, *, seeds: tuple[str, ...] = ...) -> PolicyCheck: ...
+    def source_trust(self, source: str) -> _Trust: ...
+    def allows_source(self, source: str) -> bool: ...
+    def output_trust(self, source: str) -> _Trust: ...
+
+def policy_arn(namespace: str, name: str) -> str: ...
+def resolve_crawl_policy(policy: str | CrawlPolicy | Policy | None = ...) -> CrawlPolicy: ...
+def check_policy(policy: str | CrawlPolicy | Policy | None = ..., *, seeds: tuple[str, ...] = ...) -> PolicyCheck: ...
+def promote_trust(trust: _Trust, *, confirmed: bool) -> tuple[_Trust, _Outcome]: ...
 def css(value: str) -> SelectorEntry: ...
 def xpath(value: str) -> SelectorEntry: ...
 def regex(value: str) -> SelectorEntry: ...

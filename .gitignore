@@ -80,6 +80,7 @@ coverage.xml
 memray*.bin
 .prof/
 profile/
+spike-results/
 
 # Runners
 .tox/

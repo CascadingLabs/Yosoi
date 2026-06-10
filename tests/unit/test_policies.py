@@ -5,7 +5,23 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from yosoi.policies import QUARANTINED_SOURCES, TRUSTED_SOURCES, Outcome, Policy, Trust, promote_trust
+from yosoi.policies import (
+    QUARANTINED_SOURCES,
+    TRUSTED_SOURCES,
+    CrawlBudget,
+    CrawlPolicy,
+    CrawlSafety,
+    CrawlTarget,
+    EscalationPolicy,
+    Outcome,
+    Policy,
+    SchedulerPolicy,
+    Trust,
+    check_policy,
+    policy_arn,
+    promote_trust,
+    resolve_crawl_policy,
+)
 
 
 def test_defaults_are_deny() -> None:
@@ -143,3 +159,154 @@ def test_cascade_skips_none_layers() -> None:
 
 def test_cascade_empty_is_defaults() -> None:
     assert Policy.cascade() == Policy()
+
+
+# ── crawl policy: fail-fast config layer ─────────────────────────────────────
+def test_crawl_policy_preset_resolves_to_runtime_config() -> None:
+    policy = Policy.for_crawl(
+        'crawl.conservative',
+        safety=CrawlSafety(allowed_hosts=('https://Example.com',)),
+    )
+
+    check = policy.check_crawl(seeds=('https://example.com/news/a',))
+
+    assert check.valid is True
+    assert check.policy_hash == policy.policy_hash
+    assert check.runtime is not None
+    assert check.runtime.max_pages == 80
+    assert check.runtime.max_depth == 2
+    assert check.runtime.max_workers == 3
+    assert check.runtime.per_host_concurrency == 1
+    assert check.runtime.allowed_hosts == ('example.com',)
+    assert check.runtime.respect_robots is True
+
+
+def test_crawl_policy_arn_preset_resolution() -> None:
+    arn = policy_arn('default', 'crawl.seed_hunt')
+
+    policy = resolve_crawl_policy(arn)
+
+    assert policy.mode == 'seed_hunt'
+    assert policy.budget.max_pages == 200
+
+
+def test_crawl_policy_runtime_config_uses_seed_host_when_allowed_hosts_omitted() -> None:
+    policy = CrawlPolicy(
+        budget=CrawlBudget(max_pages=5, max_depth=1),
+        scheduler=SchedulerPolicy(max_workers=2),
+    )
+
+    runtime = policy.to_runtime_config(seeds=('https://sports.example.com/articles/1',))
+
+    assert runtime.allowed_hosts == ('sports.example.com',)
+    assert runtime.allow_cross_domain is False
+
+
+def test_crawl_policy_check_warns_when_workers_exceed_budget() -> None:
+    policy = Policy(
+        crawl=CrawlPolicy(
+            budget=CrawlBudget(max_pages=2, max_depth=0),
+            scheduler=SchedulerPolicy(max_workers=8),
+        )
+    )
+
+    check = policy.check_crawl(seeds=('https://example.com/',))
+
+    assert 'max_workers exceeds max_pages; some workers will be idle' in check.warnings
+
+
+def test_crawl_budget_rejects_depth_without_page_budget() -> None:
+    with pytest.raises(ValidationError, match='max_depth > 0 requires max_pages > 1'):
+        CrawlBudget(max_pages=1, max_depth=1)
+
+
+@pytest.mark.parametrize(
+    ('field_name', 'kwargs'),
+    [
+        ('max_pages', {'max_pages': False}),
+        ('max_depth', {'max_depth': False}),
+        ('max_attempts', {'max_attempts': False}),
+        ('max_pages_per_host', {'max_pages_per_host': False}),
+    ],
+)
+def test_crawl_budget_rejects_bool_numeric_fields(field_name: str, kwargs: dict[str, object]) -> None:
+    with pytest.raises(ValidationError, match='boolean values are not valid numeric policy settings'):
+        CrawlBudget(**kwargs)
+
+
+def test_crawl_budget_rejects_attempt_budget_below_page_budget() -> None:
+    with pytest.raises(ValidationError, match='max_attempts must be >= max_pages'):
+        CrawlBudget(max_pages=10, max_depth=1, max_attempts=5)
+
+
+def test_scheduler_rejects_per_host_concurrency_above_workers() -> None:
+    with pytest.raises(ValidationError, match='per_host_concurrency cannot exceed max_workers'):
+        SchedulerPolicy(max_workers=2, per_host_concurrency=3)
+
+
+@pytest.mark.parametrize(
+    'kwargs',
+    [
+        {'max_workers': False},
+        {'per_host_concurrency': False},
+        {'politeness_delay': False},
+        {'fetch_timeout_seconds': False},
+        {'max_fetch_retries': False},
+    ],
+)
+def test_scheduler_rejects_bool_numeric_fields(kwargs: dict[str, object]) -> None:
+    with pytest.raises(ValidationError, match='boolean values are not valid numeric policy settings'):
+        SchedulerPolicy(**kwargs)
+
+
+def test_safety_rejects_host_overlap() -> None:
+    with pytest.raises(ValidationError, match='hosts cannot be both allowed and denied'):
+        CrawlSafety(allowed_hosts=('example.com',), denied_hosts=('https://example.com',))
+
+
+def test_safety_rejects_cross_domain_with_allowed_hosts() -> None:
+    with pytest.raises(ValidationError, match='allow_cross_domain=True cannot be combined with allowed_hosts'):
+        CrawlSafety(allow_cross_domain=True, allowed_hosts=('example.com',))
+
+
+def test_safety_rejects_path_shaped_host_entries() -> None:
+    with pytest.raises(ValidationError, match='host entries may not include paths'):
+        CrawlSafety(allowed_hosts=('example.com/news',))
+
+
+def test_escalation_rejects_model_budget_when_discovery_disabled() -> None:
+    with pytest.raises(ValidationError, match='max_llm_calls must be 0'):
+        EscalationPolicy(allow_model_discovery=False, max_llm_calls=1)
+
+
+@pytest.mark.parametrize('kwargs', [{'max_llm_calls': False}, {'max_paid_scraper_calls': False}])
+def test_escalation_rejects_bool_numeric_fields(kwargs: dict[str, object]) -> None:
+    with pytest.raises(ValidationError, match='boolean values are not valid numeric policy settings'):
+        EscalationPolicy(**kwargs)
+
+
+def test_escalation_rejects_paid_budget_when_paid_scrapers_disabled() -> None:
+    with pytest.raises(ValidationError, match='max_paid_scraper_calls must be 0'):
+        EscalationPolicy(allow_paid_scrapers=False, max_paid_scraper_calls=1)
+
+
+@pytest.mark.parametrize(
+    'kwargs',
+    [
+        {'name': 'Article', 'min_fields': False},
+        {'name': 'Article', 'min_confidence': False},
+        {'name': 'Article', 'max_budget_pages': False},
+    ],
+)
+def test_crawl_target_rejects_bool_numeric_fields(kwargs: dict[str, object]) -> None:
+    with pytest.raises(ValidationError, match='boolean values are not valid numeric policy settings'):
+        CrawlTarget(**kwargs)
+
+
+def test_check_policy_resolves_public_preset_without_network() -> None:
+    check = check_policy('crawl.conservative', seeds=('https://example.com/start',))
+
+    assert check.valid is True
+    assert check.runtime is not None
+    assert check.runtime.allowed_hosts == ('example.com',)
+    assert check.runtime.fetcher_type == 'auto'
