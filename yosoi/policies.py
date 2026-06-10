@@ -21,10 +21,10 @@ import json
 import os
 from collections.abc import Iterable, Mapping
 from enum import Enum
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 from urllib.parse import urlparse
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, field_validator, model_validator
 
 TrustTier = Literal['strict', 'yellow']
 CrawlModeName = Literal['seed_hunt', 'contract_focus', 'structure_guarded', 'explorer']
@@ -99,21 +99,23 @@ def _reject_bool(value: object) -> object:
     return value
 
 
+# Numeric policy types that reject bool (Python's bool is an int) before coercion. Each field keeps
+# its own Field(default=..., ge=..., le=..., gt=...) — bounds differ per field, so don't fold them in.
+StrictInt = Annotated[int, BeforeValidator(_reject_bool)]
+StrictFloat = Annotated[float, BeforeValidator(_reject_bool)]
+StrictOptInt = Annotated[int | None, BeforeValidator(_reject_bool)]
+
+
 class CrawlBudget(BaseModel):
     """Budget controls and traversal limits for one crawl/index run."""
 
     model_config = ConfigDict(frozen=True)
 
-    max_pages: int = Field(default=1, ge=1, le=1_000_000)
-    max_depth: int = Field(default=0, ge=0, le=20)
-    max_attempts: int | None = Field(default=None, ge=1, le=2_000_000)
-    max_pages_per_host: int | None = Field(default=None, ge=1, le=1_000_000)
+    max_pages: StrictInt = Field(default=1, ge=1, le=1_000_000)
+    max_depth: StrictInt = Field(default=0, ge=0, le=20)
+    max_attempts: StrictOptInt = Field(default=None, ge=1, le=2_000_000)
+    max_pages_per_host: StrictOptInt = Field(default=None, ge=1, le=1_000_000)
     crawl_session_id: str | None = None
-
-    @field_validator('max_pages', 'max_depth', 'max_attempts', 'max_pages_per_host', mode='before')
-    @classmethod
-    def _reject_bool_numbers(cls, value: object) -> object:
-        return _reject_bool(value)
 
     @field_validator('crawl_session_id')
     @classmethod
@@ -141,23 +143,11 @@ class SchedulerPolicy(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    max_workers: int = Field(default=1, ge=1, le=128)
-    per_host_concurrency: int = Field(default=1, ge=1, le=64)
-    politeness_delay: float = Field(default=1.0, ge=0.0, le=120.0)
-    fetch_timeout_seconds: float = Field(default=15.0, gt=0.0, le=300.0)
-    max_fetch_retries: int = Field(default=2, ge=0, le=10)
-
-    @field_validator(
-        'max_workers',
-        'per_host_concurrency',
-        'politeness_delay',
-        'fetch_timeout_seconds',
-        'max_fetch_retries',
-        mode='before',
-    )
-    @classmethod
-    def _reject_bool_numbers(cls, value: object) -> object:
-        return _reject_bool(value)
+    max_workers: StrictInt = Field(default=1, ge=1, le=128)
+    per_host_concurrency: StrictInt = Field(default=1, ge=1, le=64)
+    politeness_delay: StrictFloat = Field(default=1.0, ge=0.0, le=120.0)
+    fetch_timeout_seconds: StrictFloat = Field(default=15.0, gt=0.0, le=300.0)
+    max_fetch_retries: StrictInt = Field(default=2, ge=0, le=10)
 
     @model_validator(mode='after')
     def _validate_scheduler_shape(self) -> SchedulerPolicy:
@@ -229,13 +219,8 @@ class EscalationPolicy(BaseModel):
 
     allow_model_discovery: bool = False
     allow_paid_scrapers: bool = False
-    max_llm_calls: int = Field(default=0, ge=0, le=100_000)
-    max_paid_scraper_calls: int = Field(default=0, ge=0, le=1_000_000)
-
-    @field_validator('max_llm_calls', 'max_paid_scraper_calls', mode='before')
-    @classmethod
-    def _reject_bool_numbers(cls, value: object) -> object:
-        return _reject_bool(value)
+    max_llm_calls: StrictInt = Field(default=0, ge=0, le=100_000)
+    max_paid_scraper_calls: StrictInt = Field(default=0, ge=0, le=1_000_000)
 
     @model_validator(mode='after')
     def _validate_escalation_budget(self) -> EscalationPolicy:
@@ -252,14 +237,9 @@ class CrawlTarget(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     name: str
-    min_fields: int = Field(default=1, ge=0)
-    min_confidence: float = Field(default=0.0, ge=0.0, le=1.0)
-    max_budget_pages: int | None = Field(default=None, ge=1)
-
-    @field_validator('min_fields', 'min_confidence', 'max_budget_pages', mode='before')
-    @classmethod
-    def _reject_bool_numbers(cls, value: object) -> object:
-        return _reject_bool(value)
+    min_fields: StrictInt = Field(default=1, ge=0)
+    min_confidence: StrictFloat = Field(default=0.0, ge=0.0, le=1.0)
+    max_budget_pages: StrictOptInt = Field(default=None, ge=1)
 
     @field_validator('name')
     @classmethod
