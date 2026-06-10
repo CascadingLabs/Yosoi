@@ -162,6 +162,29 @@ def test_pipeline_force_mcp_env_override(mocker, monkeypatch):
     assert isinstance(p._ensure_mcp_discovery(), MCPDiscoveryOrchestrator)
 
 
+def test_pipeline_stores_resolved_policy(mocker, monkeypatch):
+    from yosoi.policies import Policy
+
+    monkeypatch.setenv('GROQ_KEY', 'test-key')
+    mocker.patch('yosoi.storage.persistence.init_yosoi')
+    mocker.patch('yosoi.storage.discovery_strategy.init_yosoi')
+    mocker.patch('yosoi.storage.tracking.get_tracking_path', return_value='/tmp/tracking.json')
+    mocker.patch('yosoi.utils.files.is_initialized', return_value=True)
+    mocker.patch('yosoi.utils.logging.setup_local_logging', return_value='/tmp/test.log')
+
+    # explicit policy is threaded/stored as-is
+    explicit = Policy(atom_reads=True)
+    p = Pipeline(llm_config='groq:llama-3.3-70b-versatile', contract=SimpleContract, policy=explicit)
+    assert p._policy is explicit
+
+    # no policy → resolved once from env (default strict / atom_reads off)
+    monkeypatch.delenv('YOSOI_ATOM_READS', raising=False)
+    monkeypatch.delenv('YOSOI_ATOM_TRUST', raising=False)
+    d = Pipeline(llm_config='groq:llama-3.3-70b-versatile', contract=SimpleContract)
+    assert d._policy.atom_reads is False
+    assert d._policy.trust_tier == 'strict'
+
+
 class TestEscalationSignal:
     def test_required_discovery_fields(self, mocker):
         stub = _make_pipeline_stub(mocker)
