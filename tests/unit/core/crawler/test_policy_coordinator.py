@@ -179,3 +179,52 @@ async def test_policy_coordinator_enforces_politeness_between_same_host_workers(
     assert len(fetcher.started_at) == 3
     assert fetcher.started_at[1] - fetcher.started_at[0] >= 0.009
     assert fetcher.started_at[2] - fetcher.started_at[1] >= 0.009
+
+
+async def test_policy_coordinator_records_fetch_exceptions_as_failures(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr('yosoi.core.crawler.frontier.init_yosoi', lambda _name: tmp_path)
+
+    class ExplodingFetcher(FakeFetcher):
+        async def fetch(self, url: str) -> FetchResult:
+            if url == 'https://example.com/boom':
+                raise RuntimeError('connection torn down')
+            return await super().fetch(url)
+
+    fetcher = ExplodingFetcher({'https://example.com/': '<a href="/boom">boom</a>'})
+    policy = Policy.for_crawl(
+        'crawl.conservative',
+        budget=CrawlBudget(max_pages=3, max_depth=1),
+        scheduler=SchedulerPolicy(max_workers=2, politeness_delay=0),
+        safety=CrawlSafety(allowed_hosts=('example.com',)),
+    )
+    runtime = _runtime(policy, 'https://example.com/')
+    assert runtime is not None
+
+    summary = await CrawlCoordinator(fetcher=fetcher, config=runtime, persist_frontier=False).run()
+
+    assert summary.failures == 1
+    failed = [r for r in summary.results if r.status == 'failed']
+    assert failed[0].error == 'connection torn down'
+
+
+def test_policy_error_denied_host_and_hostless_urls(tmp_path) -> None:
+    policy = Policy.for_crawl(
+        'crawl.conservative',
+        budget=CrawlBudget(max_pages=1),
+        safety=CrawlSafety(denied_hosts=('evil.example',)),
+    )
+    runtime = _runtime(policy, 'https://ok.example/')
+    assert runtime is not None
+    coordinator = CrawlCoordinator(fetcher=FakeFetcher({}), config=runtime, persist_frontier=False)
+
+    assert coordinator._policy_error('https://evil.example/page') == 'host denied by policy: evil.example'
+    # a hostless URL fails the allowed-hosts check (fail closed), not the denied check
+    assert coordinator._policy_error('not-a-url') == 'host not allowed by policy: '
+
+
+def test_idle_worker_ratio_is_alias_for_dispatch_slot_idle_ratio() -> None:
+    from yosoi.core.crawler.coordinator import CrawlRunSummary
+
+    summary = CrawlRunSummary(batches=4, idle_worker_slots=1)
+
+    assert summary.idle_worker_ratio == summary.dispatch_slot_idle_ratio == 0.25

@@ -448,3 +448,74 @@ def test_compat_layer_maps_output_and_enabled_downloads():
     assert policy.download.directory == 'dl'
     assert policy.download.max_bytes == 1024
     assert policy.download.keep is False
+
+
+def test_compat_layer_parses_string_model():
+    policy = _compat_layer('groq:llama')
+
+    assert policy.model is not None
+    assert policy.model.provider == 'groq'
+    assert policy.model.model_name == 'llama'
+
+
+def test_compat_layer_maps_each_scrape_kwarg():
+    from yosoi.models.selectors import SelectorLevel
+
+    policy = _compat_layer(
+        skip_verification=True,
+        fetcher_type='headless',
+        selector_level=SelectorLevel.XPATH,
+        max_concurrency=2,
+    )
+
+    assert policy.scrape == ys.ScrapePolicy(
+        skip_verification=True,
+        fetcher_type='headless',
+        selector_level=SelectorLevel.XPATH,
+        max_concurrency=2,
+    )
+
+
+def test_compat_layer_default_yosoi_config_contributes_no_extra_layers():
+    from yosoi.core.configs import YosoiConfig
+    from yosoi.core.discovery.config import LLMConfig
+
+    cfg = YosoiConfig(llm=LLMConfig(provider='groq', model_name='llama', api_key='k'))
+
+    policy = _compat_layer(cfg)
+
+    assert policy.scrape is None
+    assert policy.discovery is None
+    assert policy.output is None
+
+
+def test_compat_layer_downloads_enabled_without_sub_settings():
+    policy = _compat_layer(allow_downloads=True)
+
+    assert policy.download == ys.DownloadPolicy(allow=True)
+
+
+async def test_scrape_many_llm_config_overrides_resolved_spec(monkeypatch):
+    """An explicit LLMConfig keeps its exact instance (incl. raw key) on the pipeline."""
+    from yosoi.core.discovery.config import LLMConfig
+
+    FakePipeline.instances.clear()
+    monkeypatch.setattr(api, 'Pipeline', FakePipeline)
+    cfg = LLMConfig(provider='groq', model_name='llama', api_key='raw-key')
+
+    await api.scrape_many(['https://x.test'], ApiContract, model=cfg)
+
+    assert FakePipeline.instances[0].kwargs['llm_config'] is cfg
+
+
+async def test_scrape_many_yosoi_config_overrides_resolved_spec(monkeypatch):
+    from yosoi.core.configs import YosoiConfig
+    from yosoi.core.discovery.config import LLMConfig
+
+    FakePipeline.instances.clear()
+    monkeypatch.setattr(api, 'Pipeline', FakePipeline)
+    cfg = YosoiConfig(llm=LLMConfig(provider='groq', model_name='llama', api_key='raw-key'))
+
+    await api.scrape_many(['https://x.test'], ApiContract, model=cfg)
+
+    assert FakePipeline.instances[0].kwargs['llm_config'] is cfg.llm

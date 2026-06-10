@@ -43,3 +43,10 @@ def test_pagination_and_content_hint_scoring() -> None:
     assert links['2'].score == 0.95
     assert links['why-crawlers-crawl'].score == 0.8
     assert links['misc'].score < 0.8
+
+
+def test_is_pagination_tolerates_anchor_without_attributes() -> None:
+    extractor = LinkExtractor()
+
+    assert extractor._is_pagination(object(), 'Next page') is True
+    assert extractor._is_pagination(object(), 'About us') is False

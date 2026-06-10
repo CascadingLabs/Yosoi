@@ -156,3 +156,13 @@ async def test_sink_exception_does_not_kill_the_lane():
     await lane.aclose()
 
     assert seen == ['ok']
+
+
+async def test_start_twice_is_idempotent():
+    lane = SignalLane(_noop, backpressure='defer', max_queue=2)
+    await lane.start()
+    drainer = lane._drainer
+    await lane.start()
+
+    assert lane._drainer is drainer
+    await lane.aclose()

@@ -177,8 +177,6 @@ class Policy(BaseModel):
                         merged[key] = type(value).model_validate(
                             {**existing.model_dump(), **value.model_dump(exclude_unset=True)}
                         )
-                    elif isinstance(value, dict) and isinstance(existing, dict):
-                        merged[key] = {**existing, **value}
                     else:
                         merged[key] = value
         return cls(**merged)
@@ -227,7 +225,7 @@ class Policy(BaseModel):
 
         provider_name = model.provider
         model_name_value = model.model_name
-        if provider_name is None or model_name_value is None:
+        if provider_name is None or model_name_value is None:  # pragma: no cover - validator enforces the pair
             raise ValueError('model.provider and model.model_name must be resolved before execution')
 
         api_key = model._runtime_api_key

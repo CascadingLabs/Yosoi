@@ -577,3 +577,50 @@ def test_seed_hunt_rejects_target_contracts() -> None:
 def test_policy_arn_rejects_blank_parts() -> None:
     with pytest.raises(ValueError, match='non-empty'):
         policy_arn('  ', 'crawl.seed_hunt')
+
+
+# ── branch-coverage closure on PR-changed lines ───────────────────────────────
+def test_allows_source_rejects_unknown_source_outright() -> None:
+    assert Policy(trust_tier='yellow').allows_source('not-a-known-tier') is False
+    assert Policy().output_trust('not-a-known-tier') is Trust.REJECTED
+
+
+def test_output_trust_passes_verified_source_through() -> None:
+    assert Policy().output_trust('verified') is Trust.VERIFIED
+
+
+def test_resolve_crawl_policy_accepts_inline_crawl_policy_and_rejects_unknown_key() -> None:
+    inline = CrawlPolicy(mode='seed_hunt')
+    assert resolve_crawl_policy(inline) is inline
+    with pytest.raises(KeyError, match='Unknown crawl policy'):
+        resolve_crawl_policy('crawl.not-a-preset')
+
+
+def test_crawl_session_id_valid_value_round_trips() -> None:
+    assert CrawlBudget(crawl_session_id=' run-7 ').crawl_session_id == 'run-7'
+
+
+@pytest.mark.parametrize(
+    ('hosts', 'message'),
+    [
+        (('',), 'non-empty'),
+        (('example.com/path',), 'may not include paths'),
+        (('example.com?q=1',), 'may not include paths'),
+        (('http://',), 'invalid host entry'),
+    ],
+)
+def test_crawl_safety_rejects_malformed_hosts(hosts: tuple[str, ...], message: str) -> None:
+    with pytest.raises(ValidationError, match=message):
+        CrawlSafety(allowed_hosts=hosts)
+
+
+def test_crawl_safety_path_prefix_validation() -> None:
+    assert CrawlSafety(blocked_path_prefixes=('', '/ok')).blocked_path_prefixes == ('/ok',)
+    with pytest.raises(ValidationError, match='must start with'):
+        CrawlSafety(blocked_path_prefixes=('login',))
+
+
+def test_provider_helper_without_api_key_has_no_runtime_key() -> None:
+    model = ys.provider('groq:llama')
+
+    assert model._runtime_api_key is None
