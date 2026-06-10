@@ -3,13 +3,10 @@
 from collections.abc import Iterable, Mapping, Sequence
 from typing import Any, Literal
 
-from yosoi.core.configs import DebugConfig as DebugConfig
-from yosoi.core.configs import DiscoveryConfig as DiscoveryConfig
-from yosoi.core.configs import TelemetryConfig as TelemetryConfig
-from yosoi.core.configs import YosoiConfig as YosoiConfig
-from yosoi.core.configs import auto_config as auto_config
+from yosoi.core.configs import TelemetryConfig as _TelemetryConfig
+from yosoi.core.configs import YosoiConfig as _YosoiConfig
 from yosoi.core.crawler import CrawlRunSummary as CrawlRunSummary
-from yosoi.core.discovery import LLMConfig as LLMConfig
+from yosoi.core.discovery import LLMConfig as _LLMConfig
 from yosoi.core.discovery.config import LLMBuilder as LLMBuilder
 from yosoi.core.pipeline import Pipeline as Pipeline
 from yosoi.generalization.fingerprint import PageFingerprint as PageFingerprint
@@ -33,12 +30,20 @@ from yosoi.policy import CrawlPolicy as _CrawlPolicy
 from yosoi.policy import CrawlRuntimeConfig as _CrawlRuntimeConfig
 from yosoi.policy import CrawlSafety as _CrawlSafety
 from yosoi.policy import CrawlTarget as _CrawlTarget
+from yosoi.policy import DiscoveryPolicy as _DiscoveryPolicy
+from yosoi.policy import DownloadPolicy as _DownloadPolicy
 from yosoi.policy import EscalationPolicy as _EscalationPolicy
 from yosoi.policy import FingerprintPolicy as _FingerprintPolicy
+from yosoi.policy import ModelPolicy as _ModelPolicy
 from yosoi.policy import Outcome as _Outcome
+from yosoi.policy import OutputPolicy as _OutputPolicy
 from yosoi.policy import Policy as _Policy
 from yosoi.policy import PolicyCheck as _PolicyCheck
+from yosoi.policy import ResolvedRunSpec as _ResolvedRunSpec
 from yosoi.policy import SchedulerPolicy as _SchedulerPolicy
+from yosoi.policy import ScrapePolicy as _ScrapePolicy
+from yosoi.policy import SecretRef as _SecretRef
+from yosoi.policy import TelemetryPolicy as _TelemetryPolicy
 from yosoi.policy import Trust as _Trust
 from yosoi.types.field import Field as Field
 from yosoi.types.field import js as js
@@ -49,6 +54,7 @@ from yosoi.utils.urls import load_urls_from_file as load_urls_from_file
 TrustTier = Literal['strict', 'yellow']
 CrawlModeName = Literal['seed_hunt', 'contract_focus', 'structure_guarded', 'explorer']
 FetcherName = Literal['auto', 'simple', 'headless', 'headful']
+DiscoveryMode = Literal['auto', 'static', 'mcp']
 
 class CrawlBudget(_CrawlBudget):
     max_pages: int
@@ -216,9 +222,115 @@ class FingerprintPolicy(_FingerprintPolicy):
         max_queue: int = ...,
     ) -> None: ...
 
+class SecretRef(_SecretRef):
+    source: Literal['env']
+    name: str
+
+    def __init__(self, *, source: Literal['env'], name: str) -> None: ...
+    @classmethod
+    def env(cls, name: str) -> SecretRef: ...
+    def resolve(self, env: Mapping[str, str] | None = ...) -> str | None: ...
+
+class ModelPolicy(_ModelPolicy):
+    provider: str | None
+    model_name: str | None
+    temperature: float
+    max_tokens: int | None
+    extra_params: Mapping[str, Any] | None
+    credential_ref: SecretRef | None
+
+    def __init__(
+        self,
+        *,
+        provider: str | None = ...,
+        model_name: str | None = ...,
+        temperature: float = ...,
+        max_tokens: int | None = ...,
+        extra_params: Mapping[str, Any] | None = ...,
+        credential_ref: SecretRef | None = ...,
+    ) -> None: ...
+    @classmethod
+    def from_string(cls, model: str, **kwargs: Any) -> ModelPolicy: ...
+
+class ScrapePolicy(_ScrapePolicy):
+    force: bool
+    skip_verification: bool
+    fetcher_type: Literal['auto', 'simple', 'headless', 'headful', 'waterfall']
+    selector_level: SelectorLevel
+    max_concurrency: int | None
+
+    def __init__(
+        self,
+        *,
+        force: bool = ...,
+        skip_verification: bool = ...,
+        fetcher_type: Literal['auto', 'simple', 'headless', 'headful', 'waterfall'] = ...,
+        selector_level: SelectorLevel = ...,
+        max_concurrency: int | None = ...,
+    ) -> None: ...
+
+class DiscoveryPolicy(_DiscoveryPolicy):
+    max_concurrent: int
+    mode: DiscoveryMode
+    lesson_cache: bool
+    replay_verify_threshold: float
+    static_mode_warning: bool
+
+    def __init__(
+        self,
+        *,
+        max_concurrent: int = ...,
+        mode: DiscoveryMode = ...,
+        lesson_cache: bool = ...,
+        replay_verify_threshold: float = ...,
+        static_mode_warning: bool = ...,
+    ) -> None: ...
+
+class TelemetryPolicy(_TelemetryPolicy):
+    langfuse_public_key_ref: SecretRef | None
+    langfuse_secret_key_ref: SecretRef | None
+    langfuse_host: str | None
+
+    def __init__(
+        self,
+        *,
+        langfuse_public_key_ref: SecretRef | None = ...,
+        langfuse_secret_key_ref: SecretRef | None = ...,
+        langfuse_host: str | None = ...,
+    ) -> None: ...
+
+class OutputPolicy(_OutputPolicy):
+    formats: tuple[str, ...]
+    quiet: bool
+    json_output: bool
+    debug_html: bool
+    debug_html_dir: Any
+    logs: bool
+
+class DownloadPolicy(_DownloadPolicy):
+    allow: bool
+    allowed_types: tuple[str, ...]
+    directory: str | None
+    max_bytes: int | None
+    keep: bool
+
+class ResolvedRunSpec(_ResolvedRunSpec):
+    policy_hash: str
+    llm_config: _LLMConfig
+    telemetry_config: _TelemetryConfig
+    force: bool
+    fetcher_type: str
+    selector_level: SelectorLevel
+
 class Policy(_Policy):
     atom_reads: bool
     trust_tier: TrustTier
+    model: ModelPolicy | None
+    scrape: ScrapePolicy | None
+    discovery: DiscoveryPolicy | None
+    telemetry: TelemetryPolicy | None
+    output: OutputPolicy | None
+    download: DownloadPolicy | None
     crawl: CrawlPolicy | None
     fingerprint: FingerprintPolicy | None
 
@@ -227,6 +339,12 @@ class Policy(_Policy):
         *,
         atom_reads: bool = ...,
         trust_tier: TrustTier = ...,
+        model: ModelPolicy | None = ...,
+        scrape: ScrapePolicy | None = ...,
+        discovery: DiscoveryPolicy | None = ...,
+        telemetry: TelemetryPolicy | None = ...,
+        output: OutputPolicy | None = ...,
+        download: DownloadPolicy | None = ...,
         crawl: CrawlPolicy | None = ...,
         fingerprint: FingerprintPolicy | None = ...,
     ) -> None: ...
@@ -241,6 +359,7 @@ class Policy(_Policy):
     @property
     def allowed_sources(self) -> frozenset[str] | None: ...
     def require_crawl(self) -> CrawlPolicy: ...
+    def resolve_run_spec(self, env: Mapping[str, str] | None = ...) -> ResolvedRunSpec: ...
     def check_crawl(self, *, seeds: tuple[str, ...] = ...) -> PolicyCheck: ...
     def source_trust(self, source: str) -> _Trust: ...
     def allows_source(self, source: str) -> bool: ...
@@ -288,35 +407,35 @@ def File(
 def discover() -> SelectorEntry: ...
 
 # Provider helpers
-def alibaba(model_name: str, api_key: str | None = ..., **kwargs: Any) -> LLMConfig: ...
-def anthropic(model_name: str, api_key: str | None = ..., **kwargs: Any) -> LLMConfig: ...
-def azure(model_name: str, api_key: str | None = ..., **kwargs: Any) -> LLMConfig: ...
-def bedrock(model_name: str, api_key: str | None = ..., **kwargs: Any) -> LLMConfig: ...
-def cerebras(model_name: str, api_key: str | None = ..., **kwargs: Any) -> LLMConfig: ...
-def claude_sdk(model_name: str = ..., **kwargs: Any) -> LLMConfig: ...
-def deepseek(model_name: str, api_key: str | None = ..., **kwargs: Any) -> LLMConfig: ...
-def fireworks(model_name: str, api_key: str | None = ..., **kwargs: Any) -> LLMConfig: ...
-def gemini(model_name: str, api_key: str | None = ..., **kwargs: Any) -> LLMConfig: ...
-def github(model_name: str, api_key: str | None = ..., **kwargs: Any) -> LLMConfig: ...
-def grok(model_name: str, api_key: str | None = ..., **kwargs: Any) -> LLMConfig: ...
-def groq(model_name: str, api_key: str | None = ..., **kwargs: Any) -> LLMConfig: ...
-def heroku(model_name: str, api_key: str | None = ..., **kwargs: Any) -> LLMConfig: ...
-def huggingface(model_name: str, api_key: str | None = ..., **kwargs: Any) -> LLMConfig: ...
-def litellm(model_name: str, api_key: str | None = ..., **kwargs: Any) -> LLMConfig: ...
-def mistral(model_name: str, api_key: str | None = ..., **kwargs: Any) -> LLMConfig: ...
-def moonshotai(model_name: str, api_key: str | None = ..., **kwargs: Any) -> LLMConfig: ...
-def nebius(model_name: str, api_key: str | None = ..., **kwargs: Any) -> LLMConfig: ...
-def ollama(model_name: str, **kwargs: Any) -> LLMConfig: ...
-def openai(model_name: str, api_key: str | None = ..., **kwargs: Any) -> LLMConfig: ...
-def opencode(model_name: str = ..., **kwargs: Any) -> LLMConfig: ...
-def openrouter(model_name: str, api_key: str | None = ..., **kwargs: Any) -> LLMConfig: ...
-def ovhcloud(model_name: str, api_key: str | None = ..., **kwargs: Any) -> LLMConfig: ...
-def provider(model_string: str, api_key: str | None = ..., **kwargs: Any) -> LLMConfig: ...
-def sambanova(model_name: str, api_key: str | None = ..., **kwargs: Any) -> LLMConfig: ...
-def together(model_name: str, api_key: str | None = ..., **kwargs: Any) -> LLMConfig: ...
-def vercel(model_name: str, api_key: str | None = ..., **kwargs: Any) -> LLMConfig: ...
-def vertexai(model_name: str, **kwargs: Any) -> LLMConfig: ...
-def xai(model_name: str, api_key: str | None = ..., **kwargs: Any) -> LLMConfig: ...
+def alibaba(model_name: str, api_key: str | None = ..., **kwargs: Any) -> ModelPolicy: ...
+def anthropic(model_name: str, api_key: str | None = ..., **kwargs: Any) -> ModelPolicy: ...
+def azure(model_name: str, api_key: str | None = ..., **kwargs: Any) -> ModelPolicy: ...
+def bedrock(model_name: str, api_key: str | None = ..., **kwargs: Any) -> ModelPolicy: ...
+def cerebras(model_name: str, api_key: str | None = ..., **kwargs: Any) -> ModelPolicy: ...
+def claude_sdk(model_name: str = ..., **kwargs: Any) -> ModelPolicy: ...
+def deepseek(model_name: str, api_key: str | None = ..., **kwargs: Any) -> ModelPolicy: ...
+def fireworks(model_name: str, api_key: str | None = ..., **kwargs: Any) -> ModelPolicy: ...
+def gemini(model_name: str, api_key: str | None = ..., **kwargs: Any) -> ModelPolicy: ...
+def github(model_name: str, api_key: str | None = ..., **kwargs: Any) -> ModelPolicy: ...
+def grok(model_name: str, api_key: str | None = ..., **kwargs: Any) -> ModelPolicy: ...
+def groq(model_name: str, api_key: str | None = ..., **kwargs: Any) -> ModelPolicy: ...
+def heroku(model_name: str, api_key: str | None = ..., **kwargs: Any) -> ModelPolicy: ...
+def huggingface(model_name: str, api_key: str | None = ..., **kwargs: Any) -> ModelPolicy: ...
+def litellm(model_name: str, api_key: str | None = ..., **kwargs: Any) -> ModelPolicy: ...
+def mistral(model_name: str, api_key: str | None = ..., **kwargs: Any) -> ModelPolicy: ...
+def moonshotai(model_name: str, api_key: str | None = ..., **kwargs: Any) -> ModelPolicy: ...
+def nebius(model_name: str, api_key: str | None = ..., **kwargs: Any) -> ModelPolicy: ...
+def ollama(model_name: str, **kwargs: Any) -> ModelPolicy: ...
+def openai(model_name: str, api_key: str | None = ..., **kwargs: Any) -> ModelPolicy: ...
+def opencode(model_name: str = ..., **kwargs: Any) -> ModelPolicy: ...
+def openrouter(model_name: str, api_key: str | None = ..., **kwargs: Any) -> ModelPolicy: ...
+def ovhcloud(model_name: str, api_key: str | None = ..., **kwargs: Any) -> ModelPolicy: ...
+def provider(model_string: str, api_key: str | None = ..., **kwargs: Any) -> ModelPolicy: ...
+def sambanova(model_name: str, api_key: str | None = ..., **kwargs: Any) -> ModelPolicy: ...
+def together(model_name: str, api_key: str | None = ..., **kwargs: Any) -> ModelPolicy: ...
+def vercel(model_name: str, api_key: str | None = ..., **kwargs: Any) -> ModelPolicy: ...
+def vertexai(model_name: str, **kwargs: Any) -> ModelPolicy: ...
+def xai(model_name: str, api_key: str | None = ..., **kwargs: Any) -> ModelPolicy: ...
 def fingerprint(
     source: object,
     *,
@@ -334,19 +453,19 @@ async def crawl_index(
 async def scrape(
     url: str | Sequence[str],
     contract: type[Contract] | str | Sequence[type[Contract] | str],
-    model: YosoiConfig | LLMConfig | str | None = ...,
+    model: _YosoiConfig | _LLMConfig | ModelPolicy | str | None = ...,
     **kwargs: Any,
 ) -> list[dict[str, Any]] | dict[str, list[dict[str, Any]]] | dict[str, dict[str, list[dict[str, Any]]]]: ...
 async def scrape_many(
     urls: list[str] | tuple[str, ...],
     contract: type[Contract] | str,
-    model: YosoiConfig | LLMConfig | str | None = ...,
+    model: _YosoiConfig | _LLMConfig | ModelPolicy | str | None = ...,
     **kwargs: Any,
 ) -> dict[str, list[dict[str, Any]]]: ...
 def scrape_sync(
     url: str,
     contract: type[Contract] | str,
-    model: YosoiConfig | LLMConfig | str | None = ...,
+    model: _YosoiConfig | _LLMConfig | ModelPolicy | str | None = ...,
     **kwargs: Any,
 ) -> list[dict[str, Any]]: ...
 def show(

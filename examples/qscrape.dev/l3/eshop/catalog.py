@@ -7,7 +7,6 @@ Run:
 from __future__ import annotations
 
 import asyncio
-import os
 
 import yosoi as ys
 
@@ -23,13 +22,17 @@ class Product(ys.Contract):
 
 
 async def main() -> None:
+    policy = ys.Policy.cascade(
+        ys.Policy.from_env(),
+        ys.Policy(
+            scrape=ys.ScrapePolicy(selector_level=ys.SelectorLevel.XPATH),
+            output=ys.OutputPolicy(quiet=False),
+        ),
+    )
     items = await ys.scrape(
         URL,
         Product,
-        model=os.getenv('YOSOI_MODEL') or None,
-        selector_level=ys.SelectorLevel.XPATH,
-        force=os.getenv('YOSOI_FORCE', '').lower() in {'1', 'true', 'yes'},
-        quiet=False,
+        policy=policy,
     )
     ys.show(items)
 

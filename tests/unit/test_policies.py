@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
+import yosoi as ys
 from yosoi.policy import (
     QUARANTINED_SOURCES,
     TRUSTED_SOURCES,
@@ -13,9 +14,12 @@ from yosoi.policy import (
     CrawlSafety,
     CrawlTarget,
     EscalationPolicy,
+    ModelPolicy,
     Outcome,
     Policy,
     SchedulerPolicy,
+    ScrapePolicy,
+    SecretRef,
     Trust,
     check_policy,
     policy_arn,
@@ -159,6 +163,83 @@ def test_cascade_skips_none_layers() -> None:
 
 def test_cascade_empty_is_defaults() -> None:
     assert Policy.cascade() == Policy()
+
+
+def test_nested_cascade_preserves_lower_model_fields() -> None:
+    base = Policy(model=ModelPolicy(provider='groq', model_name='llama'))
+    override = Policy(model=ModelPolicy(temperature=0.0))
+
+    eff = Policy.cascade(base, override)
+
+    assert eff.model is not None
+    assert eff.model.provider == 'groq'
+    assert eff.model.model_name == 'llama'
+    assert eff.model.temperature == 0.0
+
+
+def test_from_env_model_and_secret_ref_are_redacted() -> None:
+    policy = Policy.from_env({'YOSOI_MODEL': 'groq:llama', 'GROQ_KEY': 'super-secret'})
+
+    assert policy.model is not None
+    assert policy.model.credential_ref == SecretRef.env('GROQ_KEY')
+    dumped = policy.model_dump()
+    assert dumped['model']['credential_ref'] == {'source': 'env', 'name': 'GROQ_KEY'}
+    assert 'super-secret' not in repr(policy)
+    assert 'super-secret' not in policy.policy_hash
+
+
+def test_secret_refs_participate_in_policy_hash_without_raw_values() -> None:
+    a = Policy(model=ModelPolicy.from_string('groq:llama', credential_ref=SecretRef.env('GROQ_KEY')))
+    b = Policy(model=ModelPolicy.from_string('groq:llama', credential_ref=SecretRef.env('ALT_GROQ_KEY')))
+
+    assert a.policy_hash != b.policy_hash
+    assert 'GROQ_KEY' in a.model_dump_json()
+    assert 'secret-value' not in a.policy_hash
+
+
+def test_resolve_run_spec_reads_secret_without_storing_it() -> None:
+    policy = Policy.from_env({'YOSOI_MODEL': 'groq:llama', 'GROQ_KEY': 'super-secret'})
+
+    spec = policy.resolve_run_spec({'YOSOI_MODEL': 'groq:llama', 'GROQ_KEY': 'super-secret'})
+
+    assert spec.llm_config.provider == 'groq'
+    assert spec.llm_config.model_name == 'llama'
+    assert spec.llm_config.api_key == 'super-secret'
+    assert policy.model is not None
+    assert policy.model_dump()['model'] == {
+        'provider': 'groq',
+        'model_name': 'llama',
+        'temperature': 0.01,
+        'max_tokens': None,
+        'extra_params': None,
+        'credential_ref': {'source': 'env', 'name': 'GROQ_KEY'},
+    }
+
+
+def test_explicit_model_does_not_fall_back_to_other_provider_key() -> None:
+    policy = Policy(model=ModelPolicy.from_string('openai:gpt-4o'))
+
+    with pytest.raises(ValueError, match="explicit provider 'openai'"):
+        policy.resolve_run_spec({'GROQ_KEY': 'groq-key'})
+
+
+def test_root_provider_helpers_return_redacted_model_policy() -> None:
+    model = ys.groq('llama', api_key='super-secret')
+    policy = ys.Policy(model=model)
+
+    assert isinstance(model, ModelPolicy)
+    assert model.provider == 'groq'
+    assert model.model_name == 'llama'
+    assert 'super-secret' not in repr(model)
+    assert 'super-secret' not in policy.model_dump_json()
+    assert 'super-secret' not in policy.policy_hash
+    assert policy.resolve_run_spec({}).llm_config.api_key == 'super-secret'
+
+
+def test_from_env_reads_scrape_policy() -> None:
+    policy = Policy.from_env({'YOSOI_FORCE': '1', 'YOSOI_FETCHER_TYPE': 'headless', 'YOSOI_SELECTOR_LEVEL': 'xpath'})
+
+    assert policy.scrape == ScrapePolicy(force=True, fetcher_type='headless', selector_level=ys.SelectorLevel.XPATH)
 
 
 # ── crawl policy: fail-fast config layer ─────────────────────────────────────
@@ -310,3 +391,91 @@ def test_check_policy_resolves_public_preset_without_network() -> None:
     assert check.runtime is not None
     assert check.runtime.allowed_hosts == ('example.com',)
     assert check.runtime.fetcher_type == 'auto'
+
+
+# ── run-stack policy: provider helpers + validator guards ────────────────────
+_KEYED_PROVIDER_HELPERS = [
+    'alibaba',
+    'anthropic',
+    'azure',
+    'bedrock',
+    'cerebras',
+    'deepseek',
+    'fireworks',
+    'gemini',
+    'github',
+    'grok',
+    'groq',
+    'heroku',
+    'huggingface',
+    'litellm',
+    'mistral',
+    'moonshotai',
+    'nebius',
+    'openai',
+    'openrouter',
+    'ovhcloud',
+    'sambanova',
+    'together',
+    'vercel',
+    'xai',
+]
+
+
+@pytest.mark.parametrize('helper', _KEYED_PROVIDER_HELPERS)
+def test_keyed_provider_helper_returns_redacted_model_policy(helper: str) -> None:
+    model = getattr(ys, helper)('some-model', api_key='raw-secret')
+
+    assert isinstance(model, ModelPolicy)
+    assert model.provider == helper
+    assert model.model_name == 'some-model'
+    assert 'raw-secret' not in model.model_dump_json()
+    assert ys.Policy(model=model).resolve_run_spec({}).llm_config.api_key == 'raw-secret'
+
+
+@pytest.mark.parametrize(
+    ('helper', 'provider_name'),
+    [('ollama', 'ollama'), ('vertexai', 'vertexai')],
+)
+def test_keyless_provider_helpers(helper: str, provider_name: str) -> None:
+    model = getattr(ys, helper)('some-model')
+
+    assert isinstance(model, ModelPolicy)
+    assert model.provider == provider_name
+    assert model.model_name == 'some-model'
+
+
+@pytest.mark.parametrize(
+    ('helper', 'provider_name'),
+    [('claude_sdk', 'claude-sdk'), ('opencode', 'opencode')],
+)
+def test_default_model_provider_helpers(helper: str, provider_name: str) -> None:
+    model = getattr(ys, helper)()
+
+    assert isinstance(model, ModelPolicy)
+    assert model.provider == provider_name
+    assert model.model_name
+
+
+def test_provider_helper_parses_model_string_and_keeps_key_runtime_only() -> None:
+    model = ys.provider('groq:llama-3.3-70b-versatile', api_key='raw-secret')
+
+    assert model.provider == 'groq'
+    assert model.model_name == 'llama-3.3-70b-versatile'
+    assert 'raw-secret' not in model.model_dump_json()
+    assert ys.Policy(model=model).resolve_run_spec({}).llm_config.api_key == 'raw-secret'
+
+
+def test_secret_ref_rejects_empty_env_name() -> None:
+    with pytest.raises(ValidationError, match='must be non-empty'):
+        SecretRef.env('   ')
+
+
+def test_model_policy_rejects_provider_without_model_name() -> None:
+    with pytest.raises(ValidationError, match='must be set together'):
+        ModelPolicy(provider='groq')
+
+
+def test_download_policy_rejects_settings_without_allow() -> None:
+    with pytest.raises(ValidationError, match='require DownloadPolicy\\(allow=True\\)'):
+        ys.DownloadPolicy(allowed_types=('pdf',))

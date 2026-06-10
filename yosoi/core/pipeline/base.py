@@ -102,8 +102,8 @@ class Pipeline(
 
     def __init__(
         self,
-        llm_config: LLMConfig | YosoiConfig | str,
-        contract: type[Contract],
+        llm_config: LLMConfig | YosoiConfig | str | None = None,
+        contract: type[Contract] | None = None,
         debug_mode: bool = False,
         output_format: str | list[str] = 'json',
         force: bool = False,
@@ -165,6 +165,23 @@ class Pipeline(
                 pipeline has no policy-gated branch today.
 
         """
+        if contract is None:
+            raise TypeError('Pipeline requires a contract')
+        # Resolve policy-first construction before applying legacy kwargs.
+        if llm_config is None:
+            spec = (policy or Policy.from_env()).resolve_run_spec()
+            llm_config = spec.llm_config
+            debug_mode = spec.debug_html
+            output_format = list(spec.output_formats)
+            force = spec.force
+            quiet = spec.quiet
+            selector_level = spec.selector_level
+            allow_downloads = spec.allow_downloads
+            allowed_download_types = spec.allowed_download_types
+            download_dir = spec.download_dir
+            max_download_bytes = spec.max_download_bytes
+            keep_downloads = spec.keep_downloads
+            observability.configure(spec.telemetry_config)
         self.selector_level = selector_level
         self._experimental_a3node = experimental_a3node
         self._allow_downloads = allow_downloads
@@ -188,6 +205,9 @@ class Pipeline(
 
         max_concurrent_discovery: int = 5
         replay_verify_threshold: float = 1.0
+        if self._policy.discovery is not None:
+            max_concurrent_discovery = self._policy.discovery.max_concurrent
+            replay_verify_threshold = self._policy.discovery.replay_verify_threshold
 
         if isinstance(llm_config, YosoiConfig):
             yosoi_cfg = llm_config
@@ -197,7 +217,7 @@ class Pipeline(
             max_concurrent_discovery = yosoi_cfg.discovery.max_concurrent
             replay_verify_threshold = yosoi_cfg.discovery.replay_verify_threshold
             observability.configure(yosoi_cfg.telemetry)
-        else:
+        elif policy is None:
             from yosoi.core.configs import TelemetryConfig
 
             observability.configure(
@@ -244,7 +264,12 @@ class Pipeline(
         self._mcp_discovery: MCPDiscoveryOrchestrator | None = None
         self._mcp_llm_config: LLMConfig = llm_config
         self._replay_verify_threshold: float = replay_verify_threshold
-        self._force_mcp: bool = os.getenv('YOSOI_DISCOVERY_MODE') == 'mcp'
+        discovery_policy = self._policy.discovery
+        self._force_mcp: bool = (
+            discovery_policy.mode == 'mcp'
+            if discovery_policy is not None
+            else os.getenv('YOSOI_DISCOVERY_MODE') == 'mcp'
+        )
         self._discovery_strategy = DiscoveryStrategyStorage()
         self._js_discovery_orchestrator: Any = None
         self.verifier = SelectorVerifier(console=self.console)

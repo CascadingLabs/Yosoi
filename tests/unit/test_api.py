@@ -89,6 +89,20 @@ async def test_scrape_per_url_fetcher_type(monkeypatch):
     assert by_url['https://bing.test'].scrape_kwargs['fetcher_type'] == 'headless'
 
 
+async def test_scrape_policy_fetcher_not_overwritten_by_default_legacy_fetcher(monkeypatch):
+    """Default fetcher_type='auto' must not clobber explicit Policy scrape fetcher."""
+    FakePipeline.instances.clear()
+    monkeypatch.setattr(api, 'Pipeline', FakePipeline)
+
+    await api.scrape(
+        'https://x.test',
+        ApiContract,
+        policy=ys.Policy(model=ys.claude_sdk(), scrape=ys.ScrapePolicy(fetcher_type='simple')),
+    )
+
+    assert FakePipeline.instances[0].scrape_kwargs['fetcher_type'] == 'simple'
+
+
 async def test_scrape_max_concurrency_caps_inflight(monkeypatch):
     """max_concurrency bounds how many (url, contract) units run at once."""
     import asyncio
@@ -109,6 +123,33 @@ async def test_scrape_max_concurrency_caps_inflight(monkeypatch):
     monkeypatch.setattr(api, 'Pipeline', _SlowPipeline)
     urls = [f'https://u{i}.test' for i in range(6)]
     await api.scrape(urls, ApiContract, model=ys.claude_sdk(), max_concurrency=2)
+    assert peak <= 2
+
+
+async def test_scrape_policy_max_concurrency_caps_inflight(monkeypatch):
+    """Policy scrape.max_concurrency bounds API fan-out on the policy-first path."""
+    import asyncio
+
+    inflight = 0
+    peak = 0
+
+    class _SlowPipeline(FakePipeline):
+        async def scrape(self, url: str, **kwargs: object):
+            nonlocal inflight, peak
+            inflight += 1
+            peak = max(peak, inflight)
+            await asyncio.sleep(0.02)
+            inflight -= 1
+            yield {'title': 'Example'}
+
+    FakePipeline.instances.clear()
+    monkeypatch.setattr(api, 'Pipeline', _SlowPipeline)
+    urls = [f'https://u{i}.test' for i in range(6)]
+    await api.scrape(
+        urls,
+        ApiContract,
+        policy=ys.Policy(model=ys.claude_sdk(), scrape=ys.ScrapePolicy(max_concurrency=2)),
+    )
     assert peak <= 2
 
 

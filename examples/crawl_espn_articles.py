@@ -31,8 +31,9 @@ async def main() -> None:
         budget=ys.CrawlBudget(max_pages=100, max_depth=2, max_pages_per_host=100),
         scheduler=ys.SchedulerPolicy(max_workers=6, per_host_concurrency=2, politeness_delay=0.3),
         safety=ys.CrawlSafety(allowed_hosts=('www.espn.com',)),
+        fetcher_type='simple',
     )
-    summary = await ys.crawl_index(SEEDS, policy=policy, fetcher_type='simple')
+    summary = await ys.crawl_index(SEEDS, policy=policy)
 
     # Article URLs = discovered links + actually-fetched pages matching ESPN's article shape.
     candidates = {link.url for result in summary.results for link in result.discovered_links}

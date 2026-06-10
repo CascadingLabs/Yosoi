@@ -24,6 +24,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict
 
+from yosoi.models.selectors import SelectorLevel
 from yosoi.policy._base import (
     _TRUTHY,
     QUARANTINED_SOURCES,
@@ -39,6 +40,17 @@ from yosoi.policy.crawl import (
     CrawlRuntimeConfig,
 )
 from yosoi.policy.fingerprint import FingerprintPolicy
+from yosoi.policy.run import (
+    DiscoveryPolicy,
+    DownloadPolicy,
+    ModelPolicy,
+    OutputPolicy,
+    ResolvedRunSpec,
+    ScrapePolicy,
+    SecretRef,
+    TelemetryPolicy,
+    find_secret_ref,
+)
 
 
 class PolicyCheck(BaseModel):
@@ -67,11 +79,17 @@ class Policy(BaseModel):
 
     atom_reads: bool = False
     trust_tier: TrustTier = 'strict'
+    model: ModelPolicy | None = None
+    scrape: ScrapePolicy | None = None
+    discovery: DiscoveryPolicy | None = None
+    telemetry: TelemetryPolicy | None = None
+    output: OutputPolicy | None = None
+    download: DownloadPolicy | None = None
     crawl: CrawlPolicy | None = None
     fingerprint: FingerprintPolicy | None = None
 
     @classmethod
-    def from_env(cls, env: Mapping[str, str] | None = None) -> Policy:
+    def from_env(cls, env: Mapping[str, str] | None = None) -> Policy:  # noqa: C901
         """The ``env`` layer of the cascade: read the (legacy) ``YOSOI_*`` switches.
 
         Only sets a field when its env var is actually PRESENT, so an unset var contributes nothing
@@ -83,6 +101,35 @@ class Policy(BaseModel):
             kwargs['atom_reads'] = src['YOSOI_ATOM_READS'].strip().lower() in _TRUTHY
         if 'YOSOI_ATOM_TRUST' in src:
             kwargs['trust_tier'] = _classify_tier(src['YOSOI_ATOM_TRUST'])
+        if 'YOSOI_MODEL' in src and src['YOSOI_MODEL'].strip():
+            model = ModelPolicy.from_string(src['YOSOI_MODEL'].strip())
+            ref = find_secret_ref(model.provider, src) if model.provider is not None else None
+            kwargs['model'] = model.model_copy(update={'credential_ref': ref}) if ref is not None else model
+        if 'YOSOI_FORCE' in src or 'YOSOI_FETCHER_TYPE' in src or 'YOSOI_SELECTOR_LEVEL' in src:
+            scrape_payload: dict[str, Any] = {}
+            if 'YOSOI_FORCE' in src:
+                scrape_payload['force'] = src['YOSOI_FORCE'].strip().lower() in _TRUTHY
+            if 'YOSOI_FETCHER_TYPE' in src:
+                scrape_payload['fetcher_type'] = src['YOSOI_FETCHER_TYPE'].strip().lower()
+            if 'YOSOI_SELECTOR_LEVEL' in src:
+                level = src['YOSOI_SELECTOR_LEVEL'].strip().lower()
+                try:
+                    scrape_payload['selector_level'] = SelectorLevel[level.upper()]
+                except KeyError as exc:
+                    valid = ', '.join(sorted(member.name.lower() for member in SelectorLevel))
+                    raise ValueError(f'Invalid YOSOI_SELECTOR_LEVEL {level!r}; choose one of: {valid}') from exc
+            kwargs['scrape'] = ScrapePolicy.model_validate(scrape_payload)
+        if 'YOSOI_DISCOVERY_MODE' in src:
+            kwargs['discovery'] = DiscoveryPolicy.model_validate({'mode': src['YOSOI_DISCOVERY_MODE'].strip().lower()})
+        telemetry_payload: dict[str, Any] = {}
+        if 'LANGFUSE_PUBLIC_KEY' in src:
+            telemetry_payload['langfuse_public_key_ref'] = SecretRef.env('LANGFUSE_PUBLIC_KEY')
+        if 'LANGFUSE_SECRET_KEY' in src:
+            telemetry_payload['langfuse_secret_key_ref'] = SecretRef.env('LANGFUSE_SECRET_KEY')
+        if 'LANGFUSE_BASE_URL' in src or 'LANGFUSE_HOST' in src:
+            telemetry_payload['langfuse_host'] = src.get('LANGFUSE_BASE_URL') or src.get('LANGFUSE_HOST')
+        if telemetry_payload:
+            kwargs['telemetry'] = TelemetryPolicy(**telemetry_payload)
         return cls(**kwargs)
 
     @classmethod
@@ -112,7 +159,17 @@ class Policy(BaseModel):
         merged: dict[str, Any] = {}
         for layer in layers:
             if layer is not None:
-                merged.update(layer.model_dump(exclude_unset=True))
+                for key in layer.model_fields_set:
+                    value = getattr(layer, key)
+                    existing = merged.get(key)
+                    if isinstance(value, ModelPolicy) and value._runtime_api_key is not None:
+                        merged[key] = value
+                    elif isinstance(value, BaseModel) and isinstance(existing, BaseModel):
+                        merged[key] = existing.model_copy(update=value.model_dump(exclude_unset=True))
+                    elif isinstance(value, dict) and isinstance(existing, dict):
+                        merged[key] = {**existing, **value}
+                    else:
+                        merged[key] = value
         return cls(**merged)
 
     @property
@@ -121,6 +178,93 @@ class Policy(BaseModel):
         payload = self.model_dump(mode='json', exclude_unset=False)
         encoded = json.dumps(payload, sort_keys=True, separators=(',', ':')).encode()
         return hashlib.sha256(encoded).hexdigest()[:16]
+
+    def resolve_run_spec(self, env: Mapping[str, str] | None = None) -> ResolvedRunSpec:
+        """Resolve runtime-only values, including raw secrets, from this public policy."""
+        from yosoi.core.configs import PROVIDER_FALLBACK_ORDER, TelemetryConfig
+        from yosoi.core.discovery.config import _PROVIDER_ENV_VARS, NO_API_KEY_REQUIRED_PROVIDERS, LLMConfig
+
+        src = os.environ if env is None else env
+        model = self.model
+        if model is None or model.provider is None or model.model_name is None:
+            found: tuple[str, str, str] | None = None
+            for provider, default_model in PROVIDER_FALLBACK_ORDER:
+                for env_var in _PROVIDER_ENV_VARS.get(provider, ()):
+                    if key := src.get(env_var):
+                        found = (provider, default_model, key)
+                        break
+                if found is not None:
+                    break
+            if found is None:
+                raise ValueError(
+                    'No model specified and no API key found. '
+                    'Pass policy=ys.Policy(model=ys.ModelPolicy.from_string("groq:...")) '
+                    'or set YOSOI_MODEL and a provider API key.'
+                )
+            provider, model_name, _key = found
+            model = ModelPolicy(provider=provider, model_name=model_name, credential_ref=find_secret_ref(provider, src))
+
+        provider_name = model.provider
+        model_name_value = model.model_name
+        if provider_name is None or model_name_value is None:
+            raise ValueError('model.provider and model.model_name must be resolved before execution')
+
+        api_key = model._runtime_api_key
+        if api_key is None and model.credential_ref is not None:
+            api_key = model.credential_ref.resolve(src)
+        if api_key is None and provider_name not in NO_API_KEY_REQUIRED_PROVIDERS:
+            ref = find_secret_ref(provider_name, src)
+            api_key = ref.resolve(src) if ref is not None else None
+        if api_key is None and provider_name not in NO_API_KEY_REQUIRED_PROVIDERS:
+            expected = ', '.join(_PROVIDER_ENV_VARS.get(provider_name, ())) or 'a provider-specific API key'
+            raise ValueError(f'No API key found for explicit provider {provider_name!r}; set {expected}')
+
+        telemetry = self.telemetry or TelemetryPolicy()
+        scrape = self.scrape or ScrapePolicy()
+        discovery = self.discovery or DiscoveryPolicy()
+        output = self.output or OutputPolicy()
+        download = self.download or DownloadPolicy()
+
+        return ResolvedRunSpec(
+            policy_hash=self.policy_hash,
+            llm_config=LLMConfig(
+                provider=provider_name,
+                model_name=model_name_value,
+                api_key=api_key,
+                temperature=model.temperature,
+                max_tokens=model.max_tokens,
+                extra_params=dict(model.extra_params) if model.extra_params is not None else None,
+            ),
+            telemetry_config=TelemetryConfig(
+                langfuse_public_key=telemetry.langfuse_public_key_ref.resolve(src)
+                if telemetry.langfuse_public_key_ref is not None
+                else None,
+                langfuse_secret_key=telemetry.langfuse_secret_key_ref.resolve(src)
+                if telemetry.langfuse_secret_key_ref is not None
+                else None,
+                langfuse_host=telemetry.langfuse_host,
+            ),
+            debug_html=output.debug_html,
+            debug_html_dir=output.debug_html_dir,
+            force=scrape.force,
+            skip_verification=scrape.skip_verification,
+            fetcher_type=scrape.fetcher_type,
+            selector_level=scrape.selector_level,
+            max_concurrency=scrape.max_concurrency,
+            output_formats=output.formats,
+            quiet=output.quiet,
+            json_output=output.json_output,
+            allow_downloads=download.allow,
+            allowed_download_types=download.allowed_types,
+            download_dir=download.directory,
+            max_download_bytes=download.max_bytes,
+            keep_downloads=download.keep,
+            discovery_max_concurrent=discovery.max_concurrent,
+            discovery_mode=discovery.mode,
+            lesson_cache=discovery.lesson_cache,
+            replay_verify_threshold=discovery.replay_verify_threshold,
+            static_mode_warning=discovery.static_mode_warning,
+        )
 
     def require_crawl(self) -> CrawlPolicy:
         """Return the crawl policy or fail before a crawl can start."""

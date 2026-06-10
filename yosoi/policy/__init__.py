@@ -67,9 +67,157 @@ if TYPE_CHECKING:  # static typing only — no runtime cost
     from yosoi.policy.fingerprint import (
         FingerprintPolicy as FingerprintPolicy,
     )
+    from yosoi.policy.run import (
+        DiscoveryPolicy as DiscoveryPolicy,
+    )
+    from yosoi.policy.run import (
+        DownloadPolicy as DownloadPolicy,
+    )
+    from yosoi.policy.run import (
+        ModelPolicy as ModelPolicy,
+    )
+    from yosoi.policy.run import (
+        OutputPolicy as OutputPolicy,
+    )
+    from yosoi.policy.run import (
+        ResolvedRunSpec as ResolvedRunSpec,
+    )
+    from yosoi.policy.run import (
+        ScrapePolicy as ScrapePolicy,
+    )
+    from yosoi.policy.run import (
+        SecretRef as SecretRef,
+    )
+    from yosoi.policy.run import (
+        TelemetryPolicy as TelemetryPolicy,
+    )
+    from yosoi.policy.run import (
+        alibaba as alibaba,
+    )
+    from yosoi.policy.run import (
+        anthropic as anthropic,
+    )
+    from yosoi.policy.run import (
+        azure as azure,
+    )
+    from yosoi.policy.run import (
+        bedrock as bedrock,
+    )
+    from yosoi.policy.run import (
+        cerebras as cerebras,
+    )
+    from yosoi.policy.run import (
+        claude_sdk as claude_sdk,
+    )
+    from yosoi.policy.run import (
+        deepseek as deepseek,
+    )
+    from yosoi.policy.run import (
+        fireworks as fireworks,
+    )
+    from yosoi.policy.run import (
+        gemini as gemini,
+    )
+    from yosoi.policy.run import (
+        github as github,
+    )
+    from yosoi.policy.run import (
+        grok as grok,
+    )
+    from yosoi.policy.run import (
+        groq as groq,
+    )
+    from yosoi.policy.run import (
+        heroku as heroku,
+    )
+    from yosoi.policy.run import (
+        huggingface as huggingface,
+    )
+    from yosoi.policy.run import (
+        litellm as litellm,
+    )
+    from yosoi.policy.run import (
+        mistral as mistral,
+    )
+    from yosoi.policy.run import (
+        moonshotai as moonshotai,
+    )
+    from yosoi.policy.run import (
+        nebius as nebius,
+    )
+    from yosoi.policy.run import (
+        ollama as ollama,
+    )
+    from yosoi.policy.run import (
+        openai as openai,
+    )
+    from yosoi.policy.run import (
+        opencode as opencode,
+    )
+    from yosoi.policy.run import (
+        openrouter as openrouter,
+    )
+    from yosoi.policy.run import (
+        ovhcloud as ovhcloud,
+    )
+    from yosoi.policy.run import (
+        provider as provider,
+    )
+    from yosoi.policy.run import (
+        sambanova as sambanova,
+    )
+    from yosoi.policy.run import (
+        together as together,
+    )
+    from yosoi.policy.run import (
+        vercel as vercel,
+    )
+    from yosoi.policy.run import (
+        vertexai as vertexai,
+    )
+    from yosoi.policy.run import (
+        xai as xai,
+    )
 
 _LAZY = {
     'FingerprintPolicy': 'yosoi.policy.fingerprint',
+    'DiscoveryPolicy': 'yosoi.policy.run',
+    'DownloadPolicy': 'yosoi.policy.run',
+    'ModelPolicy': 'yosoi.policy.run',
+    'OutputPolicy': 'yosoi.policy.run',
+    'ResolvedRunSpec': 'yosoi.policy.run',
+    'ScrapePolicy': 'yosoi.policy.run',
+    'SecretRef': 'yosoi.policy.run',
+    'TelemetryPolicy': 'yosoi.policy.run',
+    'alibaba': 'yosoi.policy.run',
+    'anthropic': 'yosoi.policy.run',
+    'azure': 'yosoi.policy.run',
+    'bedrock': 'yosoi.policy.run',
+    'cerebras': 'yosoi.policy.run',
+    'claude_sdk': 'yosoi.policy.run',
+    'deepseek': 'yosoi.policy.run',
+    'fireworks': 'yosoi.policy.run',
+    'gemini': 'yosoi.policy.run',
+    'github': 'yosoi.policy.run',
+    'grok': 'yosoi.policy.run',
+    'groq': 'yosoi.policy.run',
+    'heroku': 'yosoi.policy.run',
+    'huggingface': 'yosoi.policy.run',
+    'litellm': 'yosoi.policy.run',
+    'mistral': 'yosoi.policy.run',
+    'moonshotai': 'yosoi.policy.run',
+    'nebius': 'yosoi.policy.run',
+    'ollama': 'yosoi.policy.run',
+    'openai': 'yosoi.policy.run',
+    'opencode': 'yosoi.policy.run',
+    'openrouter': 'yosoi.policy.run',
+    'ovhcloud': 'yosoi.policy.run',
+    'provider': 'yosoi.policy.run',
+    'sambanova': 'yosoi.policy.run',
+    'together': 'yosoi.policy.run',
+    'vercel': 'yosoi.policy.run',
+    'vertexai': 'yosoi.policy.run',
+    'xai': 'yosoi.policy.run',
     'QUARANTINED_SOURCES': 'yosoi.policy._base',
     'TRUSTED_SOURCES': 'yosoi.policy._base',
     'Outcome': 'yosoi.policy._base',

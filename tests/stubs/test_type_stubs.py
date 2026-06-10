@@ -96,15 +96,14 @@ class TestFieldFactoryStubs:
 
 
 class TestProviderStubs:
-    """Verify that provider helpers are seen as returning LLMConfig."""
+    """Verify that provider helpers are seen as returning ModelPolicy."""
 
-    def test_groq_returns_llmconfig(self) -> None:
+    def test_groq_returns_model_policy(self) -> None:
         result = _run_mypy(
             textwrap.dedent("""\
             import yosoi as ys
-            from yosoi.core.discovery.config import LLMConfig
 
-            c: LLMConfig = ys.groq('llama-3.3-70b-versatile')
+            c: ys.ModelPolicy = ys.groq('llama-3.3-70b-versatile')
         """)
         )
         assert result.returncode == 0, result.stdout + result.stderr
@@ -164,13 +163,12 @@ class TestPolicyStubs:
         assert result.returncode != 0
         assert 'Unexpected keyword argument "allow_model_discover"' in result.stdout + result.stderr
 
-    def test_provider_returns_llmconfig(self) -> None:
+    def test_provider_returns_model_policy(self) -> None:
         result = _run_mypy(
             textwrap.dedent("""\
             import yosoi as ys
-            from yosoi.core.discovery.config import LLMConfig
 
-            c: LLMConfig = ys.provider('groq:llama-3.3-70b-versatile')
+            c: ys.ModelPolicy = ys.provider('groq:llama-3.3-70b-versatile')
         """)
         )
         assert result.returncode == 0, result.stdout + result.stderr
@@ -179,9 +177,8 @@ class TestPolicyStubs:
         result = _run_mypy(
             textwrap.dedent("""\
             import yosoi as ys
-            from yosoi.core.discovery.config import LLMConfig
 
-            c: LLMConfig = ys.gemini('gemini-2.0-flash', api_key='test')
+            c: ys.ModelPolicy = ys.gemini('gemini-2.0-flash', api_key='test')
         """)
         )
         assert result.returncode == 0, result.stdout + result.stderr
