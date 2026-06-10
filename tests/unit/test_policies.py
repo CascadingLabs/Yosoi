@@ -643,3 +643,9 @@ def test_from_env_reads_cross_origin_dom() -> None:
     assert policy.scrape is not None
     assert policy.scrape.cross_origin_dom is True
     assert Policy.from_env({}).scrape is None
+
+
+def test_resolve_crawl_policy_unwraps_full_policy() -> None:
+    policy = Policy.for_crawl('crawl.conservative')
+
+    assert resolve_crawl_policy(policy) is policy.crawl

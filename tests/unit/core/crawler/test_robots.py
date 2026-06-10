@@ -73,3 +73,31 @@ async def test_unreachable_robots_is_allow_all() -> None:
 
     gate = RobotsGate(FailingFetcher())
     assert await gate.allowed('http://site.test/private/b') is True
+
+
+async def test_parser_is_fetched_once_under_concurrent_access() -> None:
+    """Double-checked lock: concurrent first-touches on one host fetch robots.txt exactly once."""
+    import asyncio
+    from types import SimpleNamespace
+
+    from yosoi.policy.robots import RobotsGate
+
+    class CountingFetcher:
+        def __init__(self) -> None:
+            self.robots_fetches = 0
+
+        async def fetch(self, url: str) -> SimpleNamespace:
+            self.robots_fetches += 1
+            await asyncio.sleep(0.01)  # hold the lock so the racer hits the cached branch
+            return SimpleNamespace(html='User-agent: *\nDisallow: /private/\n', status_code=200)
+
+    fetcher = CountingFetcher()
+    gate = RobotsGate(fetcher)
+
+    results = await asyncio.gather(
+        gate.allowed('https://site.test/public/a'),
+        gate.allowed('https://site.test/private/b'),
+    )
+
+    assert results == [True, False]
+    assert fetcher.robots_fetches == 1  # the second coroutine took the already-cached branch

@@ -214,3 +214,17 @@ async def test_respect_politeness_skips_sleep_when_delay_already_elapsed(mocker)
     await frontier.respect_politeness('https://example.com/a')
 
     sleep.assert_not_awaited()
+
+
+def test_push_many_counts_only_newly_accepted_entries() -> None:
+    frontier = _frontier()
+    frontier.push('https://example.com/dup', depth=0)
+
+    pushed = frontier.push_many(
+        [
+            FrontierEntry(url='https://example.com/dup', depth=0),  # already seen → rejected
+            FrontierEntry(url='https://example.com/fresh', depth=0),
+        ]
+    )
+
+    assert pushed == 1

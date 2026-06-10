@@ -50,8 +50,8 @@ def _cold_import(target: str) -> ModuleType:
 
 @pytest.mark.parametrize(
     'target',
-    ['yosoi', 'yosoi.integrations.validator_mcp', 'yosoi.core.discovery.mcp_draft'],
-    ids=['top-level', 'validator-path', 'discovery-leaf'],
+    ['yosoi', 'yosoi.integrations.validator_mcp', 'yosoi.core.discovery.mcp_draft', 'yosoi.policy'],
+    ids=['top-level', 'validator-path', 'discovery-leaf', 'policy-pkg'],
 )
 def test_cold_import(benchmark: BenchmarkFixture, target: str) -> None:
     # Warm the eager types package once so the first iteration doesn't pay (and
