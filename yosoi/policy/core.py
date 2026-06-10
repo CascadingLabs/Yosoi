@@ -106,10 +106,13 @@ class Policy(BaseModel):
             model = ModelPolicy.from_string(src['YOSOI_MODEL'].strip())
             ref = find_secret_ref(model.provider, src) if model.provider is not None else None
             kwargs['model'] = model.model_copy(update={'credential_ref': ref}) if ref is not None else model
-        if 'YOSOI_FORCE' in src or 'YOSOI_FETCHER_TYPE' in src or 'YOSOI_SELECTOR_LEVEL' in src:
+        scrape_env_keys = ('YOSOI_FORCE', 'YOSOI_FETCHER_TYPE', 'YOSOI_SELECTOR_LEVEL', 'YOSOI_CROSS_ORIGIN_DOM')
+        if any(key in src for key in scrape_env_keys):
             scrape_payload: dict[str, Any] = {}
             if 'YOSOI_FORCE' in src:
                 scrape_payload['force'] = src['YOSOI_FORCE'].strip().lower() in _TRUTHY
+            if 'YOSOI_CROSS_ORIGIN_DOM' in src:
+                scrape_payload['cross_origin_dom'] = src['YOSOI_CROSS_ORIGIN_DOM'].strip().lower() in _TRUTHY
             if 'YOSOI_FETCHER_TYPE' in src:
                 scrape_payload['fetcher_type'] = src['YOSOI_FETCHER_TYPE'].strip().lower()
             if 'YOSOI_SELECTOR_LEVEL' in src:
@@ -264,6 +267,7 @@ class Policy(BaseModel):
             fetcher_type=scrape.fetcher_type,
             selector_level=scrape.selector_level,
             max_concurrency=scrape.max_concurrency,
+            cross_origin_dom=scrape.cross_origin_dom,
             output_formats=output.formats,
             quiet=output.quiet,
             json_output=output.json_output,

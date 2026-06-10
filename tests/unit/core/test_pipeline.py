@@ -2238,3 +2238,26 @@ def test_pipeline_configures_telemetry_from_policy(mocker, monkeypatch):
 def test_pipeline_rejects_model_policy_as_llm_config():
     with pytest.raises(TypeError, match='policy=Policy'):
         Pipeline(ys.groq('llama-3.3-70b-versatile'), contract=SimpleContract)
+
+
+def test_pipeline_threads_cross_origin_dom_to_browser_fetcher(mocker, monkeypatch):
+    """ScrapePolicy.cross_origin_dom reaches the browser fetcher; default stays off."""
+    mocker.patch('yosoi.storage.persistence.init_yosoi')
+    mocker.patch('yosoi.storage.discovery_strategy.init_yosoi')
+    mocker.patch('yosoi.storage.tracking.get_tracking_path', return_value='/tmp/tracking.json')
+    mocker.patch('yosoi.utils.files.is_initialized', return_value=True)
+    mocker.patch('yosoi.utils.logging.setup_local_logging', return_value='/tmp/test.log')
+    monkeypatch.setenv('GROQ_KEY', 'test-key')
+    create_fetcher = mocker.patch('yosoi.core.pipeline.base.create_fetcher')
+
+    opted_in = Pipeline(
+        llm_config='groq:llama-3.3-70b-versatile',
+        contract=SimpleContract,
+        policy=ys.Policy(scrape=ys.ScrapePolicy(cross_origin_dom=True)),
+    )
+    opted_in._create_fetcher('headless')
+    assert create_fetcher.call_args.kwargs['cross_origin_dom'] is True
+
+    default = Pipeline(llm_config='groq:llama-3.3-70b-versatile', contract=SimpleContract)
+    default._create_fetcher('headless')
+    assert create_fetcher.call_args.kwargs.get('cross_origin_dom', False) is False

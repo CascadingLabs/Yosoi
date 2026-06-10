@@ -43,7 +43,7 @@ dependencies = [
   "rich-click>=1.9.7",
   "taskiq>=0.12.1",
   "tenacity>=9.1.4",
-  "voidcrawl>=0.3.3",
+  "voidcrawl>=0.3.5",
 ]
 optional-dependencies.all = [
   "pydantic-ai-slim[anthropic,bedrock,google,groq,huggingface,mistral,openai,openrouter,vertexai,xai]>=1.74",
