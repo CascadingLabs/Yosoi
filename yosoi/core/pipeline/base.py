@@ -39,6 +39,7 @@ from yosoi.core.pipeline.utils import PipelineUtilsMixin
 from yosoi.core.verification import SelectorVerifier, SemanticValidator, field_rules_for_contract
 from yosoi.models.contract import Contract
 from yosoi.models.selectors import SelectorLevel
+from yosoi.models.snapshot import SnapshotMap
 from yosoi.storage import DebugManager, LLMTracker, SelectorStorage
 from yosoi.storage.discovery_strategy import DiscoveryStrategyStorage
 from yosoi.storage.js_scripts import JsScriptStorage
@@ -118,6 +119,7 @@ class Pipeline(
         keep_downloads: bool = True,
         identity: BrowserIdentity | None = None,
         console: Console | None = None,
+        preloaded_snapshots: dict[str, SnapshotMap] | None = None,
     ):
         """Initialize the pipeline with LLM configuration.
 
@@ -156,6 +158,9 @@ class Pipeline(
                 console for ``--json`` runs); a default themed console is built when omitted.
             keep_downloads: Keep downloaded files after the run (default). Set False to purge
                 the content-addressed blobs at run end while retaining provenance in index.json.
+            preloaded_snapshots: Optional ``{domain: SnapshotMap}`` of pre-discovered selector
+                snapshots (e.g. loaded from a recipe). When provided, the storage layer serves
+                these domains directly so cached replay skips LLM discovery entirely.
 
         """
         self.selector_level = selector_level
@@ -217,7 +222,7 @@ class Pipeline(
         from yosoi.core.cleaning import HTMLCleaner
 
         self.cleaner = HTMLCleaner(console=self.console)
-        self.storage = SelectorStorage()
+        self.storage = SelectorStorage(preloaded=preloaded_snapshots)
         self.js_storage = JsScriptStorage()
 
         self.discovery = DiscoveryOrchestrator(

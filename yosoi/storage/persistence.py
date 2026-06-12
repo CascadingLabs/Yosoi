@@ -23,6 +23,7 @@ from yosoi.models.snapshot import (
     selector_dict_to_snapshot,
     snapshot_to_selector_dict,
 )
+from yosoi.storage.selector_key import SelectorKey
 from yosoi.utils.files import atomic_write_json_async, init_yosoi, safe_domain
 from yosoi.utils.urls import extract_domain
 
@@ -36,16 +37,25 @@ class SelectorStorage:
 
     """
 
-    def __init__(self, storage_dir: str = 'selectors', content_dir: str = 'content'):
+    def __init__(
+        self,
+        storage_dir: str = 'selectors',
+        content_dir: str = 'content',
+        preloaded: dict[str, SnapshotMap] | None = None,
+    ):
         """Initialize the storage manager.
 
         Args:
             storage_dir: Directory path for storing selector files. Defaults to 'selectors'.
             content_dir: Directory path for storing extracted content. Defaults to 'content'.
+            preloaded: Optional ``{domain: SnapshotMap}`` of in-memory selector snapshots
+                (e.g. from a loaded recipe). Domains present here are served from memory
+                and take precedence over the on-disk cache.
 
         """
         self.storage_dir = str(init_yosoi(storage_dir))
         self.content_dir = str(init_yosoi(content_dir))
+        self._preloaded: dict[str, SnapshotMap] = preloaded or {}
 
     async def save_selectors(
         self, url: str, selectors: dict[str, Any], *, verified: bool = False, contract_sig: str | None = None
@@ -124,7 +134,10 @@ class SelectorStorage:
             True if selector file exists for the domain, False otherwise.
 
         """
-        filepath = self._get_filepath(domain, contract_sig=contract_sig)
+        if self._preloaded_for_domain(domain) is not None:
+            return True
+        key = SelectorKey(domain=domain, contract_sig=contract_sig or '')
+        filepath = self._get_filepath_by_key(key)
         return await aiofiles.os.path.exists(filepath)
 
     async def save_content(
@@ -281,7 +294,14 @@ class SelectorStorage:
             Dict mapping field names to SelectorSnapshot, or None if not found.
 
         """
-        data = await self._load_file_data(domain, contract_sig=contract_sig)
+        preloaded = self._preloaded_for_domain(domain)
+        if preloaded is not None:
+            return dict(preloaded.snapshots) if preloaded.snapshots else None
+        key = SelectorKey(domain=domain, contract_sig=contract_sig or '')
+        data = await self._load_file_data_by_key(key)
+        if data is None and not contract_sig:
+            data = await self._load_file_data_legacy(domain)
+
         if data is None:
             return None
 
@@ -309,7 +329,8 @@ class SelectorStorage:
 
         """
         domain = self._extract_domain(url)
-        filepath = self._get_selector_filepath(domain, contract_sig=contract_sig)
+        key = SelectorKey(domain=domain, contract_sig=contract_sig or '')
+        filepath = self._get_filepath_by_key(key)
 
         snap_map = SnapshotMap(url=url, domain=domain, snapshots=snapshots)
         payload = snap_map.model_dump(mode='json')
@@ -332,9 +353,13 @@ class SelectorStorage:
             contract_sig: Optional contract signature for isolated selector cache files.
 
         """
-        data = await self._load_file_data(domain, contract_sig=contract_sig)
+        if self._preloaded_for_domain(domain) is not None:
+            return
+        key = SelectorKey(domain=domain, contract_sig=contract_sig or '')
+        data = await self._load_file_data_by_key(key)
         if data is None or 'snapshots' not in data:
             return
+        filepath = self._get_filepath_by_key(key)
 
         snap_map = SnapshotMap.model_validate(data)
         snap = snap_map.snapshots.get(field_name)
@@ -349,7 +374,6 @@ class SelectorStorage:
             snap.last_failed_at = now
             snap.failure_count += 1
 
-        filepath = self._get_filepath(domain, contract_sig=contract_sig)
         payload = snap_map.model_dump(mode='json')
         if contract_sig:
             payload['contract_sig'] = contract_sig
@@ -503,3 +527,50 @@ class SelectorStorage:
 
         logger.info('Exported summary to: %s', output_file)
         return output_file
+
+    def has_preloaded(self) -> bool:
+        """True when this storage instance has pre-loaded recipe snapshots."""
+        return bool(self._preloaded)
+
+    def _preloaded_for_domain(self, domain: str):
+        """Return a pre-loaded SnapshotMap for a domain, with subdomain fallback.
+
+        Returns None when no pre-loaded data exists for this domain.
+        """
+        if domain in self._preloaded:
+            return self._preloaded[domain]
+        # Strip one leading label: www.example.com → example.com
+        parts = domain.split('.', 1)
+        if len(parts) == 2:
+            return self._preloaded.get(parts[1])
+        return None
+
+    def _get_filepath_by_key(self, key) -> str:  # key: SelectorKey
+        """Get the absolute filepath for a SelectorKey."""
+        return os.path.join(self.storage_dir, key.to_filename())
+
+    def _legacy_filepath(self, domain: str) -> str:
+        """Legacy filepath with no contract_sig segment: selectors_example_com.json."""
+        safe = safe_domain(domain)
+        return os.path.join(self.storage_dir, f'selectors_{safe}.json')
+
+    async def _load_file_data_by_key(self, key) -> dict | None:  # key: SelectorKey
+        filepath = self._get_filepath_by_key(key)
+        if not await aiofiles.os.path.exists(filepath):
+            return None
+        try:
+            async with aiofiles.open(filepath, encoding='utf-8') as f:
+                return json.loads(await f.read())
+        except (OSError, json.JSONDecodeError):
+            return None
+
+    async def _load_file_data_legacy(self, domain: str) -> dict | None:
+        """Load from the legacy filename (no contract_sig segment)."""
+        filepath = self._legacy_filepath(domain)
+        if not await aiofiles.os.path.exists(filepath):
+            return None
+        try:
+            async with aiofiles.open(filepath, encoding='utf-8') as f:
+                return json.loads(await f.read())
+        except (OSError, json.JSONDecodeError):
+            return None

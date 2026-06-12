@@ -14,6 +14,7 @@ from yosoi.core.pipeline import ContentMap, Pipeline
 from yosoi.core.pipeline.discovery_gate import DiscoveryGate
 from yosoi.models.contract import Contract
 from yosoi.models.selectors import SelectorLevel
+from yosoi.storage.recipe_loader import is_recipe_source, load_recipe
 from yosoi.utils import observability as obs
 from yosoi.utils.contracts import resolve_contract
 
@@ -162,6 +163,35 @@ def _internalize_accepted(
         logger.debug('field-atom dual-write skipped (url=%s): %s', url, exc)
 
 
+async def _resolve_contract_and_preload(
+    contract,  # type[Contract] | str
+):
+    """Resolve a contract, handling recipe URLs/paths specially.
+
+    For a recipe source (HTTP URL or local .json path):
+    - Fetch and validate the RecipeBundle
+    - Extract the contract class from ContractSpec
+    - Return the pre-loaded SnapshotMap dict for SelectorStorage injection
+
+    For everything else:
+    - Delegate to the existing sync resolve_contract()
+    - Return None for pre-loaded (no recipe injection)
+
+    Returns:
+        (contract_cls, preloaded_snapshots_or_None)
+
+    Raises:
+        ValueError: On recipe fetch/validation failure (fail-fast).
+    """
+    if isinstance(contract, str) and is_recipe_source(contract):
+        bundle = await load_recipe(contract)
+        contract_cls = bundle.contract.to_contract()
+        return contract_cls, bundle.selectors  # dict[domain, SnapshotMap]
+
+    contract_cls = resolve_contract(contract) if isinstance(contract, str) else contract
+    return contract_cls, None
+
+
 async def scrape(
     url: str | Sequence[str],
     contract: type[Contract] | str | Sequence[type[Contract] | str],
@@ -234,7 +264,15 @@ async def scrape(
     """
     urls: list[str] = [url] if isinstance(url, str) else list(url)
     raw_contracts = [contract] if isinstance(contract, (str, type)) else list(contract)
-    contract_clss = [resolve_contract(c) if isinstance(c, str) else c for c in raw_contracts]
+
+    contract_clss = []
+    preloaded_by_contract = {}  # dict[contract_name, dict[domain, SnapshotMap] | None]
+
+    for raw in raw_contracts:
+        cls, preloaded = await _resolve_contract_and_preload(raw)
+        contract_clss.append(cls)
+        preloaded_by_contract[cls.__name__] = preloaded
+
     multi_url = not isinstance(url, str)
     multi_contract = not isinstance(contract, (str, type))
 
@@ -280,6 +318,7 @@ async def scrape(
                 identity=_identity_for(u),
                 gate_collect=gate_collectors[u],
                 discovery_gate=discovery_gate,
+                preloaded=preloaded_by_contract.get(c.__name__),
             )
 
         if sem is None:
@@ -322,6 +361,7 @@ async def _scrape_one(
     identity: BrowserIdentity | None = None,
     gate_collect: GateCollector | None = None,
     discovery_gate: DiscoveryGate | None = None,
+    preloaded: dict | None = None,
 ) -> list[ContentMap]:
     """One ``(url, contract)`` unit (returns ``list[record]``).
 
@@ -334,6 +374,27 @@ async def _scrape_one(
     contract_cls = resolve_contract(contract) if isinstance(contract, str) else contract
     llm_config = _resolve_model(model)
     save_format_list = list(save_formats)
+    from yosoi.models.snapshot import SnapshotMap
+    from yosoi.utils.urls import extract_domain
+
+    preloaded_snapshots = None
+    if preloaded is not None:
+        domain = extract_domain(url)
+        covered = domain in preloaded or any(domain.endswith('.' + k) or k.endswith('.' + domain) for k in preloaded)
+        if not covered:
+            raise ValueError(
+                f'Recipe does not cover domain {domain!r}.\n'
+                f'The recipe contains selectors for: {list(preloaded.keys())}.\n'
+                f'Re-mint the recipe targeting {domain!r}, or scrape a URL '
+                f'from one of the covered domains.'
+            )
+        preloaded_snapshots = {}
+        for domain_key, value in preloaded.items():
+            if isinstance(value, SnapshotMap):
+                preloaded_snapshots[domain_key] = value
+            elif isinstance(value, dict):
+                preloaded_snapshots[domain_key] = SnapshotMap.model_validate(value)
+    # ← remove the erroneous "return preloaded_snapshots" line that was here
     with obs.span(
         'api.scrape',
         url=url,
@@ -359,6 +420,7 @@ async def _scrape_one(
                 write_lock=write_lock,
                 identity=identity,
                 discovery_gate=discovery_gate,
+                preloaded_snapshots=preloaded_snapshots,
             ) as pipeline:
                 items = [
                     item
