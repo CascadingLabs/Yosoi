@@ -1,17 +1,21 @@
-"""Recipe loader — fetch a RecipeBundle from an HTTP URL or local file path.
+"""Recipe loader — fetch a RecipeBundle from a URL, ``gh:`` ref, or local file path.
 
 This is the async entry point for the ``contract=`` URL/path overload in
-``ys.scrape()``. It handles:
+``ys.scrape()`` and the hydration backend for ``ReplayPolicy``. It handles:
 
-- HTTP/HTTPS URLs (raw GitHub, any public host)
+- HTTPS URLs (raw GitHub, any public host) — plaintext ``http://`` is rejected
+- ``gh:owner/repo/path@ref`` shorthand (rewritten to raw.githubusercontent.com)
 - Local ``.json`` file paths
+- Private-host fetches via an optional bearer token (resolved from a SecretRef
+  at the policy edge — never read from env here)
 - Schema version checking
-- Integrity verification (sha256)
+- Integrity verification (sha256), plus an optional pinned ``expected_recipe_id``
 - Fail-fast on stale or misaligned recipes
 
 Usage::
 
     bundle = await load_recipe("https://raw.githubusercontent.com/...")
+    bundle = await load_recipe("gh:owner/yosoi-recipes/recipes/shop/v1/recipe.json@main")
     bundle = await load_recipe("/path/to/recipe.json")
 """
 
@@ -19,8 +23,6 @@ from __future__ import annotations
 
 import logging
 import os
-
-import httpx
 
 from yosoi.models.recipe import RecipeBundle
 
@@ -33,63 +35,139 @@ _MAX_RECIPE_BYTES = 5 * 1024 * 1024  # 5 MiB
 # Timeout for HTTP fetches.
 _HTTP_TIMEOUT = 30.0
 
+#: GitHub shorthand prefix accepted by :func:`resolve_recipe_ref`.
+GH_PREFIX = 'gh:'
+
 
 def is_recipe_source(source: str) -> bool:
-    """Return True when ``source`` looks like a recipe URL or JSON file path.
+    """Return True when ``source`` looks like a recipe URL, ``gh:`` ref, or JSON file path.
 
     Used by ``scrape()`` to decide whether to go through the recipe path
     instead of the normal ``resolve_contract()`` path.
 
     Matches:
-    - Any ``http://`` or ``https://`` URL
+    - Any ``http://`` or ``https://`` URL (``http://`` is matched so it routes
+      into :func:`load_recipe`, which rejects it with an actionable error —
+      better than silently treating it as a contract name)
+    - Any ``gh:owner/repo/path[@ref]`` shorthand
     - Any local path ending in ``.json`` that exists on disk
     """
-    if source.startswith('http://') or source.startswith('https://'):
+    if source.startswith(('http://', 'https://', GH_PREFIX)):
         return True
     return source.endswith('.json') and os.path.isfile(source)
 
 
-async def load_recipe(source: str) -> RecipeBundle:
-    """Load, validate, and return a RecipeBundle from a URL or local path.
+def resolve_recipe_ref(source: str) -> str:
+    """Rewrite a ``gh:owner/repo/path@ref`` shorthand into a raw.githubusercontent URL.
 
-    Performs in order:
-    1. Fetch content (HTTP GET or file read)
-    2. Parse JSON into RecipeBundle
-    3. Schema version check
-    4. Integrity check (recipe_id sha256)
-    5. Alignment check (contract fields vs selector coverage) — warns, does not fail
-    6. Fail-fast if no selectors are present at all
+    Pure string manipulation — no IO, no GitHub API — so the MVP install path
+    stays a plain https fetch. Non-``gh:`` sources pass through untouched. The
+    ``@ref`` segment is split on the LAST ``@`` so paths containing ``@`` keep
+    working; a missing ref defaults to ``main``.
 
     Args:
-        source: An ``https://`` URL or a local ``.json`` file path.
+        source: A recipe ref in any accepted form.
+
+    Returns:
+        An ``https://raw.githubusercontent.com/...`` URL for ``gh:`` refs,
+        otherwise ``source`` unchanged.
+
+    Raises:
+        ValueError: When a ``gh:`` ref is missing owner, repo, or a file path.
+
+    """
+    if not source.startswith(GH_PREFIX):
+        return source
+    body = source[len(GH_PREFIX) :]
+    if '@' in body:
+        path_part, _, ref = body.rpartition('@')
+    else:
+        path_part, ref = body, 'main'
+    parts = [p for p in path_part.split('/') if p]
+    if len(parts) < 3 or not ref:
+        raise ValueError(
+            f'Malformed gh: recipe ref {source!r}. '
+            "Expected 'gh:owner/repo/path/to/recipe.json[@ref]' (ref defaults to 'main')."
+        )
+    owner, repo, *rest = parts
+    return f'https://raw.githubusercontent.com/{owner}/{repo}/{ref}/{"/".join(rest)}'
+
+
+async def load_recipe(
+    source: str,
+    *,
+    expected_recipe_id: str | None = None,
+    token: str | None = None,
+) -> RecipeBundle:
+    """Load, validate, and return a RecipeBundle from a URL, ``gh:`` ref, or local path.
+
+    Performs in order:
+    1. Resolve ``gh:`` shorthand; reject plaintext ``http://``
+    2. Fetch content (HTTPS GET or file read)
+    3. Parse JSON into RecipeBundle
+    4. Schema version check
+    5. Integrity check (recipe_id sha256)
+    6. Pinned-identity check (``expected_recipe_id``), when supplied
+    7. Alignment check (contract fields vs selector coverage) — warns, does not fail
+    8. Fail-fast if no selectors are present at all
+
+    Args:
+        source: An ``https://`` URL, a ``gh:owner/repo/path@ref`` shorthand, or a
+            local ``.json`` file path.
+        expected_recipe_id: Optional pinned content hash (``sha256:...``). A
+            fetched bundle whose ``recipe_id`` differs fails closed — the
+            lockfile-grade guarantee for refs that can move (e.g. ``@main``).
+        token: Optional bearer token for private hosts. Pass the *resolved*
+            secret (the policy edge owns SecretRef resolution); it is sent only
+            on the initial request — httpx drops Authorization on cross-origin
+            redirects, so the token cannot leak to a redirect target.
 
     Returns:
         Validated RecipeBundle ready for use.
 
     Raises:
-        ValueError: On schema mismatch, integrity failure, or empty selectors.
+        ValueError: On plaintext-http refusal, schema mismatch, integrity
+            failure, pinned-id mismatch, or empty selectors.
         FileNotFoundError: When a local path does not exist.
         httpx.HTTPError: On network failure fetching a URL.
+
     """
-    raw = await _fetch_raw(source)
-    return _parse_and_validate(raw, source)
-
-
-async def _fetch_raw(source: str) -> str:
-    """Fetch raw JSON text from a URL or local path."""
-    if source.startswith('http://') or source.startswith('https://'):
-        return await _fetch_http(source)
-    return _read_local(source)
-
-
-async def _fetch_http(url: str) -> str:
-    """Fetch a recipe from an HTTP/HTTPS URL."""
-    logger.info('Fetching recipe from %s', url)
-    async with httpx.AsyncClient(timeout=_HTTP_TIMEOUT, follow_redirects=True) as client:
-        response = await client.get(
-            url,
-            headers={'Accept': 'application/json, text/plain, */*'},
+    raw = await _fetch_raw(source, token=token)
+    bundle = _parse_and_validate(raw, source)
+    if expected_recipe_id is not None and bundle.recipe_id != expected_recipe_id:
+        raise ValueError(
+            f'Recipe from {source!r} has recipe_id {bundle.recipe_id!r} but '
+            f'{expected_recipe_id!r} was pinned. The artifact at this ref has changed '
+            '(or the pin is stale) — refusing to replay an unexpected recipe.'
         )
+    return bundle
+
+
+async def _fetch_raw(source: str, token: str | None = None) -> str:
+    """Resolve the ref and fetch raw JSON text from an https URL or local path."""
+    resolved = resolve_recipe_ref(source)
+    if resolved.startswith('http://'):
+        raise ValueError(
+            f'Refusing to fetch recipe over plaintext http: {resolved!r}. '
+            'Integrity hashing protects the artifact at rest, not a plaintext fetch '
+            'an attacker can rewrite end-to-end (recipe_id travels inside the same '
+            'file). Use https://, a gh: ref, or a local path.'
+        )
+    if resolved.startswith('https://'):
+        return await _fetch_http(resolved, token=token)
+    return _read_local(resolved)
+
+
+async def _fetch_http(url: str, token: str | None = None) -> str:
+    """Fetch a recipe from an HTTPS URL, optionally authenticating with a bearer token."""
+    import httpx  # lazy: keep `import yosoi` (and the policy edge) off the httpx tax
+
+    logger.info('Fetching recipe from %s', url)
+    headers = {'Accept': 'application/json, text/plain, */*'}
+    if token:
+        headers['Authorization'] = f'Bearer {token}'
+    async with httpx.AsyncClient(timeout=_HTTP_TIMEOUT, follow_redirects=True) as client:
+        response = await client.get(url, headers=headers)
         response.raise_for_status()
 
         content_length = int(response.headers.get('content-length', 0))
