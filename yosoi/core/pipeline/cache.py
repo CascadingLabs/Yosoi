@@ -65,6 +65,13 @@ class PipelineCacheMixin:
         self.console.print(f'[success]✓ Found cached selectors for {domain}[/success]')
         logger.info('Using cached selectors domain=%s url=%s', domain, url)
 
+        # Diagnostic only — disambiguates a preloaded recipe (e.g. contract='gh:...')
+        # from the on-disk .yosoi/selectors/ cache. Without this, "Found cached
+        # selectors" looks identical for both, so a shared recipe and a stale local
+        # cache from a prior run are indistinguishable to the operator.
+        source = await self.storage.selector_source(domain, self._contract_sig)
+        self.console.print(f'[dim]  ↳ source: {source}[/dim]')
+
         if skip_verification or self.contract.file_fields():
             existing = {name: data for name, snap in snapshots.items() if (data := snapshot_to_selector_dict(snap))}
             items, cache_valid = await self._extract_with_cached(url, fetcher, existing, skip_verification)  # type: ignore[attr-defined]
@@ -177,6 +184,21 @@ class PipelineCacheMixin:
                 f'{", ".join(sorted(missing))} — discovering only those field(s)[/warning]'
             )
             stale_fields |= missing
+
+        # A recipe (contract='gh:...' or any other preloaded source) that drifts
+        # is a different situation from an on-disk cache that drifts: the on-disk
+        # cache below falls through to re-discovery (the user already paid for
+        # discovery once and can pay again). A stale RECIPE silently re-discovering
+        # would defeat the entire point of sharing it — surface it loudly instead so
+        # the consumer can get a newer recipe or opt into re-discovery explicitly.
+        # `missing` fields are excluded: a contract that GREW a field the recipe
+        # never had is "incomplete coverage", not "drift", and discovery for just
+        # that field is the correct (and expected) behavior even for a recipe.
+        if stale_fields - missing and await self.storage.selector_source(domain, self._contract_sig) == 'preloaded':
+            from yosoi.storage.recipe_loader import StaleRecipeError
+
+            recipe_ref = getattr(self, '_recipe_source', None) or domain
+            raise StaleRecipeError(recipe_ref, stale_fields - missing, domain)
 
         if not stale_fields:
             observability.annotate_cache(root_span, path=observability.CACHE_CACHED, fresh_fields=len(fresh_fields))

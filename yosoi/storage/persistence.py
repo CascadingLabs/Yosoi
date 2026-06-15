@@ -7,7 +7,7 @@ import json
 import logging
 import os
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Literal
 from urllib.parse import urlparse
 
 import aiofiles
@@ -48,9 +48,7 @@ class SelectorStorage:
         Args:
             storage_dir: Directory path for storing selector files. Defaults to 'selectors'.
             content_dir: Directory path for storing extracted content. Defaults to 'content'.
-            preloaded: Optional ``{domain: SnapshotMap}`` of in-memory selector snapshots
-                (e.g. from a loaded recipe). Domains present here are served from memory
-                and take precedence over the on-disk cache.
+            preloaded: Tells us if the domain is preloaded or not.
 
         """
         self.storage_dir = str(init_yosoi(storage_dir))
@@ -531,6 +529,40 @@ class SelectorStorage:
     def has_preloaded(self) -> bool:
         """True when this storage instance has pre-loaded recipe snapshots."""
         return bool(self._preloaded)
+
+    async def selector_source(
+        self, domain: str, contract_sig: str | None = None
+    ) -> Literal['preloaded', 'disk', 'none']:
+        """Report WHERE selectors for *domain* would come from, without loading them.
+
+        Disambiguates the two cache layers that ``load_snapshots`` silently
+        conflates: a preloaded recipe (e.g. from ``contract='gh:...'``) always
+        wins over the on-disk cache (same precedence as ``_preloaded_for_domain``),
+        so callers that only check "is there a cache hit" can't tell whether a
+        shared recipe is actually doing the work or whether a stale local
+        ``.yosoi/selectors/`` entry from a prior run is. Intended for the
+        ``[info] Selectors served from: ...`` log line at the top of
+        ``_try_cached`` — purely diagnostic, changes no behavior.
+
+        Args:
+            domain: Domain name to check.
+            contract_sig: Optional contract signature for isolated selector cache files.
+
+        Returns:
+            ``'preloaded'`` if a recipe covers this domain (with the same
+            one-label subdomain fallback as ``_preloaded_for_domain``),
+            ``'disk'`` if an on-disk selector file exists, else ``'none'``.
+
+        """
+        if self._preloaded_for_domain(domain) is not None:
+            return 'preloaded'
+        key = SelectorKey(domain=domain, contract_sig=contract_sig or '')
+        filepath = self._get_filepath_by_key(key)
+        if await aiofiles.os.path.exists(filepath):
+            return 'disk'
+        if not contract_sig and await aiofiles.os.path.exists(self._legacy_filepath(domain)):
+            return 'disk'
+        return 'none'
 
     def _preloaded_for_domain(self, domain: str):
         """Return a pre-loaded SnapshotMap for a domain, with subdomain fallback.
