@@ -185,6 +185,7 @@ async def _resolve_contract_and_preload(
     """
     if isinstance(contract, str) and is_recipe_source(contract):
         bundle = await load_recipe(contract)
+        Pipeline._recipe_source = contract
         contract_cls = bundle.contract.to_contract()
         return contract_cls, bundle.selectors  # dict[domain, SnapshotMap]
 
