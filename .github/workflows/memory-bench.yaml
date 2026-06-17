@@ -19,9 +19,17 @@ on:
   # push:
   #   branches:
   #     - main
-  # release:
-  #   types: [published]
-  workflow_dispatch: {}   # allow manual runs
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Push benchmark history to gh-pages
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
 
 # Avoid concurrent writes to the gh-pages benchmark history.
 concurrency:
@@ -68,8 +76,8 @@ jobs:
           output-file-path: metrics.json
           github-token: ${{ secrets.GITHUB_TOKEN }}
           benchmark-data-dir-path: dev/bench/memory
-          # Only push history on main/release, not manual dry-runs.
-          auto-push: ${{ github.event_name != 'workflow_dispatch' }}
+          # Release runs publish history; manual runs publish only when explicitly requested.
+          auto-push: ${{ github.event_name == 'release' || inputs.publish == true }}
           alert-threshold: "120%"        # flag a metric that grows >20%
           comment-on-alert: true
           fail-on-alert: false           # alert, don't block releases (tune later)
