@@ -1,15 +1,8 @@
 """Yosoi: AI-powered CSS selector discovery and web scraping.
 
 The public API is resolved **lazily** (PEP 562). ``import yosoi`` no longer
-eagerly pulls the heavy dependency graph (pydantic-ai and its provider SDKs, the
-Claude/OpenCode transports, parsel, dateparser, …); each name is imported from
-its submodule on first access instead. This cuts ``import yosoi`` — and every
-short-lived subprocess that only needs a slice of the package, e.g. the
-``yosoi-validator-mcp`` server — from ~1.6s to well under a second.
-
-Static typing is unaffected: ``yosoi/__init__.pyi`` declares every name
-statically, so type-checkers and IDEs see the full API. Keep that stub and the
-``_LAZY`` map below in lockstep with each other.
+eagerly pulls the heavy dependency graph; each name is imported from its
+submodule on first access instead.
 """
 
 from __future__ import annotations
@@ -23,7 +16,6 @@ try:
 except PackageNotFoundError:
     __version__ = 'unknown'
 
-# Public name -> submodule that defines it. Resolved on first attribute access.
 _LAZY: dict[str, str] = {
     # api
     'fingerprint': 'yosoi.api',
@@ -99,7 +91,7 @@ _LAZY: dict[str, str] = {
     'SelectorSnapshot': 'yosoi.models.snapshot',
     'SnapshotMap': 'yosoi.models.snapshot',
     'SnapshotStatus': 'yosoi.models.snapshot',
-    # semantic types (importing these registers their coercions)
+    # semantic types
     'Author': 'yosoi.types',
     'BodyText': 'yosoi.types',
     'Datetime': 'yosoi.types',
@@ -114,6 +106,12 @@ _LAZY: dict[str, str] = {
     # utils
     'resolve_contract': 'yosoi.utils.contracts',
     'load_urls_from_file': 'yosoi.utils.urls',
+    # contract IO — save/load contracts as JSON files
+    'save_contract': 'yosoi.utils.contract_io',
+    'load_contract': 'yosoi.utils.contract_io',
+    # selector IO — save/load selectors as standalone JSON files
+    'save_selectors': 'yosoi.utils.selector_io',
+    'load_selectors': 'yosoi.utils.selector_io',
 }
 
 __all__ = [
@@ -170,6 +168,8 @@ __all__ = [
     'js',
     'jsonld',
     'litellm',
+    'load_contract',
+    'load_selectors',
     'load_urls_from_file',
     'mistral',
     'moonshotai',
@@ -185,6 +185,8 @@ __all__ = [
     'resolve_contract',
     'role',
     'sambanova',
+    'save_contract',
+    'save_selectors',
     'scrape',
     'scrape_many',
     'scrape_sync',
@@ -196,6 +198,5 @@ __all__ = [
     'xai',
     'xpath',
 ]
-
 
 __getattr__, __dir__ = lazy_exports(__name__, globals(), _LAZY)

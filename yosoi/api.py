@@ -14,6 +14,7 @@ from yosoi.core.pipeline import ContentMap, Pipeline
 from yosoi.core.pipeline.discovery_gate import DiscoveryGate
 from yosoi.models.contract import Contract
 from yosoi.models.selectors import SelectorLevel
+from yosoi.models.snapshot import SnapshotMap
 from yosoi.storage.recipe_loader import is_recipe_source, load_recipe
 from yosoi.utils import observability as obs
 from yosoi.utils.contracts import resolve_contract
@@ -23,11 +24,9 @@ logger = logging.getLogger(__name__)
 if TYPE_CHECKING:
     from yosoi.generalization.fingerprint import PageFingerprint
 
-# Per-contract capture for the cross-contract discrimination gate: contract name ->
-# (selector_map, cleaned_html) from that contract's fresh discovery on a page.
+# Per-contract capture for the cross-contract discrimination gate.
 GateCollector = dict[str, tuple[dict[str, Any], str | None]]
 
-# Default on-disk field-atom corpus (P2 dual-write target). Gitignored like .yosoi/.
 _ATOM_STORE_PATH = '.yosoi/atoms.jsonl'
 
 
@@ -38,13 +37,7 @@ def fingerprint(
     headers: Mapping[str, str] | None = None,
     endpoints: Sequence[str] | None = None,
 ) -> PageFingerprint:
-    """Compute a page fingerprint from HTML or a Yosoi fetch result.
-
-    This is the high-level escape hatch for inspecting page shape directly:
-    pass raw HTML, or pass an object with ``.html`` plus optional
-    ``.ax_snapshot``, ``.headers``, and ``.endpoints`` attributes. It never
-        reads ``.yosoi`` cache files.
-    """
+    """Compute a page fingerprint from HTML or a Yosoi fetch result."""
     from yosoi.reporting.fingerprint import coerce_fingerprint
 
     return coerce_fingerprint(source, ax_snapshot=ax_snapshot, headers=headers, endpoints=endpoints)
@@ -53,13 +46,6 @@ def fingerprint(
 def _run_discrimination_gates(
     collectors: dict[str, GateCollector], contract_by_name: dict[str, type[Contract]]
 ) -> None:
-    """Gate each URL's contract set; on ACCEPT, dual-write its atoms (P1.5 + P2).
-
-    The gate verdict is logged advisory (P1.5). When a set is ACCEPTED — non-empty,
-    pairwise-disjoint regions — its selectors are internalized into the field-atom store
-    (P2 dual-write). A REJECTED set writes NOTHING: never internalize a conflation.
-    Reads still come from the legacy lesson cache; this only builds the atom corpus.
-    """
     store = None
     for url, collected in collectors.items():
         report = _advisory_discrimination_gate(url, collected)
@@ -74,12 +60,6 @@ def _run_discrimination_gates(
 
 
 def _advisory_discrimination_gate(url: str, collected: GateCollector) -> Any:
-    """Run the discrimination gate over a page's contract set and LOG the verdict (P1.5).
-
-    Returns the :class:`DiscriminationReport` (or None when <2 contracts / no HTML / a
-    failure), so the caller can gate dual-write on ``report.accepted``. Best-effort — a
-    gate failure must never break a scrape.
-    """
     if len(collected) < 2:
         return None
     try:
@@ -100,7 +80,7 @@ def _advisory_discrimination_gate(url: str, collected: GateCollector) -> Any:
             report.overlaps,
         )
         return report
-    except Exception as exc:  # noqa: BLE001 — advisory gate must never break a scrape
+    except Exception as exc:  # noqa: BLE001
         logger.debug('discrimination gate skipped (url=%s): %s', url, exc)
         return None
 
@@ -111,12 +91,6 @@ def _internalize_accepted(
     collected: GateCollector,
     contract_by_name: dict[str, type[Contract]],
 ) -> None:
-    """Dual-write a gate-ACCEPTED page's selectors into the field-atom store (P2).
-
-    Each contract's content fields become atoms keyed by ``(page_shape, region, field,
-    yosoi_type)`` — domain-independent, so the next mirror/locale merges provenance
-    instead of re-minting. Best-effort: a failure here must never break the scrape.
-    """
     try:
         from yosoi.core.discovery.discrimination import _STRUCTURAL
         from yosoi.generalization.capture import observe_html
@@ -130,7 +104,7 @@ def _internalize_accepted(
             return
         page_shape = page_shape_fp(observe_html(url, html, row_selector=''))
         if is_degenerate_shape(page_shape):
-            return  # never internalize on a too-thin page — its bucket is shared by all thin pages
+            return
         domain = obs.normalize_user_id(url) or url
 
         minted = reused = 0
@@ -146,7 +120,6 @@ def _internalize_accepted(
                 root = coerce_selector_entry(slot.get('root'))
                 yosoi_type = _get_yosoi_type(cls, field_name) if cls else None
                 fields.append((field_name, primary.model_dump(), root.value if root else None, yosoi_type))
-            # Gate-accepted on the real DOM → highest-truth provenance tier.
             atoms = derive_atoms(page_shape, name, domain, fields, source='verified')
             new = store.upsert_all(atoms)
             minted += new
@@ -159,38 +132,78 @@ def _internalize_accepted(
             reused,
             len(store),
         )
-    except Exception as exc:  # noqa: BLE001 — dual-write must never break a scrape
+    except Exception as exc:  # noqa: BLE001
         logger.debug('field-atom dual-write skipped (url=%s): %s', url, exc)
 
 
 async def _resolve_contract_and_preload(
     contract,  # type[Contract] | str
-):
-    """Resolve a contract, handling recipe URLs/paths specially.
+    selectors: str | dict[str, SnapshotMap] | None = None,
+) -> tuple[type[Contract], dict[str, SnapshotMap] | None]:
+    """Resolve a contract and optionally load selectors from a separate source.
 
-    For a recipe source (HTTP URL or local .json path):
-    - Fetch and validate the RecipeBundle
-    - Extract the contract class from ContractSpec
-    - Return the pre-loaded SnapshotMap dict for SelectorStorage injection
+    Handles four cases:
+    1. contract is a full recipe URL/path  → load bundle, extract contract + selectors
+    2. contract is a contract JSON/URL     → load just the contract; selectors separate
+    3. selectors is a string (URL/path)    → load selectors from that source
+    4. selectors is already a dict         → use directly as preloaded snapshots
 
-    For everything else:
-    - Delegate to the existing sync resolve_contract()
-    - Return None for pre-loaded (no recipe injection)
+    Args:
+        contract: A Contract class, name string, recipe URL/path, or contract JSON path.
+        selectors: Optional separate selector source — a URL/path string or already-loaded
+            dict[domain, SnapshotMap]. When provided, overrides any selectors that would
+            have come from a recipe bundle.
 
     Returns:
         (contract_cls, preloaded_snapshots_or_None)
-
-    Raises:
-        ValueError: On recipe fetch/validation failure (fail-fast).
     """
-    if isinstance(contract, str) and is_recipe_source(contract):
+    from yosoi.utils.contract_io import is_contract_source, load_contract
+    from yosoi.utils.selector_io import is_selector_source, load_selectors
+
+    # Case 1: full recipe source (has both contract and selectors bundled)
+    # Only treat as recipe when no separate selectors are provided and it looks
+    # like a recipe (not a bare contract JSON).
+    if isinstance(contract, str) and is_recipe_source(contract) and selectors is None:
         bundle = await load_recipe(contract)
         Pipeline._recipe_source = contract
         contract_cls = bundle.contract.to_contract()
-        return contract_cls, bundle.selectors  # dict[domain, SnapshotMap]
+        return contract_cls, bundle.selectors
 
-    contract_cls = resolve_contract(contract) if isinstance(contract, str) else contract
-    return contract_cls, None
+    # Case 2: contract is a standalone contract JSON/URL
+    if isinstance(contract, str) and is_contract_source(contract):
+        contract_cls = await load_contract(contract)
+    else:
+        contract_cls = resolve_contract(contract) if isinstance(contract, str) else contract
+
+    # Case 3 & 4: resolve selectors from a separate source
+    preloaded: dict[str, SnapshotMap] | None = None
+    if selectors is not None:
+        if isinstance(selectors, str):
+            if not is_selector_source(selectors):
+                raise ValueError(
+                    f'selectors={selectors!r} does not look like a valid selector source. '
+                    'Expected a local .json path, an https:// URL, or a gh: ref.'
+                )
+            preloaded = await load_selectors(selectors)
+        elif isinstance(selectors, dict):
+            # Already loaded by the caller — validate shape
+            preloaded = {}
+            for domain, value in selectors.items():
+                if isinstance(value, SnapshotMap):
+                    preloaded[domain] = value
+                elif isinstance(value, dict):
+                    preloaded[domain] = SnapshotMap.model_validate(value)
+                else:
+                    raise ValueError(
+                        f'selectors dict entry for {domain!r} must be a SnapshotMap '
+                        f'or dict, got {type(value).__name__}.'
+                    )
+        else:
+            raise ValueError(
+                f'selectors must be a string (path/URL) or dict[domain, SnapshotMap], got {type(selectors).__name__}.'
+            )
+
+    return contract_cls, preloaded
 
 
 async def scrape(
@@ -198,6 +211,7 @@ async def scrape(
     contract: type[Contract] | str | Sequence[type[Contract] | str],
     model: YosoiConfig | LLMConfig | str | None = None,
     *,
+    selectors: str | dict[str, SnapshotMap] | None = None,
     force: bool = False,
     skip_verification: bool = False,
     fetcher_type: str | Mapping[str, str] | Callable[[str], str] = 'auto',
@@ -212,65 +226,72 @@ async def scrape(
     identities: Mapping[str, BrowserIdentity] | Callable[[str], BrowserIdentity | None] | None = None,
     max_concurrency: int | None = None,
 ) -> list[ContentMap] | dict[str, list[ContentMap]] | dict[str, dict[str, list[ContentMap]]]:
-    """Scrape one-or-many URLs with one-or-many contracts — the single blessed path.
+    """Scrape one-or-many URLs with one-or-many contracts.
 
-    ``url`` and ``contract`` each take a scalar OR a list; the return shape follows which axes
-    are lists, and every ``(url, contract)`` unit runs CONCURRENTLY under one shared
-    write-lock (so per-domain selector writes don't race):
+    The ``selectors`` parameter lets you supply pre-discovered selector snapshots
+    from a separate source rather than discovering them fresh or using a bundled
+    recipe. This enables mixing and matching:
 
-      * ``scrape(url, Contract)``      -> ``list[record]``
-      * ``scrape(url, [A, B])``        -> ``{contract_name: [records]}``
-      * ``scrape([u1, u2], Contract)`` -> ``{url: [records]}``
-      * ``scrape([u1, u2], [A, B])``   -> ``{url: {contract_name: [records]}}``
+    - Your contract + someone else's selectors::
 
-    Multiple data contracts for the SAME page (an ad-result vs an organic-result block)
-    discover concurrently and do not block one another. NOTE: the ``DiscoveryBus`` is a
-    process-wide singleton scoped only by ``domain`` and dedupes on ``field_signature``
-    (name + description + type — NO contract name/doc). So today the per-field ``description``
-    token is the ONLY thing keeping ``Ad.url`` and ``Organic.url`` in separate in-flight slots on a
-    shared domain — a fragile, stochastic separator (the bus has no region/intent concept, and the
-    discrimination gate is a post-hoc reject, not a pre-discovery split). Threading contract identity
-    into the bus key is a tracked follow-up (FU-3); until then, related same-shape contracts rely on
-    divergent field descriptions to avoid bus conflation.
+        await scrape(url, contract=MyContract,
+                     selectors="gh:someone/selectors/shopify.json")
 
-    ``fetcher_type`` defaults to ``'auto'`` (plain HTTP first, then browser tiers only when
-    needed). It also accepts a scalar OR a per-URL ``{url: tier}`` map / ``url -> tier`` callable,
-    so different engines get different tiers in ONE concurrent call (e.g. ``google: 'headful'``,
-    ``bing``/``brave``: ``'headless'``). ``max_concurrency`` (opt-in) caps how many
-    ``(url, contract)`` units run at once — set it on big SERP grids so you don't open hundreds
-    of tabs and trip anti-bot; default ``None`` is unbounded (today's behavior).
+    - Someone else's contract + your local selectors::
 
-    ``identities`` is an OPT-IN, per-URL :class:`~yosoi.core.fetcher.identity.BrowserIdentity`
-    (a dict ``{url: identity}`` or a ``url -> identity | None`` callable). It is how you opt
-    into the *sensitive* choices a SERP scrape needs — a trusted Chromium ``profile_dir``,
-    ``headful``, a ``geo`` teleport, ``proxy``/``locale``/``timezone_id`` — PER URL, so e.g. a
-    google tab runs headful+profile while bing/brave tabs run plain headless, all concurrently.
-    Default ``None`` keeps today's behavior exactly. An identity needs a browser
-    ``fetcher_type`` (``auto``/``headless``/``headful``); the ``simple`` fetcher ignores it
-    (and warns).
+        await scrape(url, contract="gh:someone/contracts/product.json",
+                     selectors="selectors/my_shopify.json")
 
-    By default this API does not write files. Pass ``save_formats=('json',)`` for file output.
-    ``ys.File()`` download fields need ``allow_downloads=True`` + a browser-capable
-    ``fetcher_type``;
-    ``allowed_download_types``/``download_dir``/``max_download_bytes``/``keep_downloads`` tune
-    the download lane (see :func:`_scrape_one`).
+    - A full recipe (contract + selectors bundled, existing behavior)::
 
-    FUTURE: fetch-once — each ``(url, contract)`` unit fetches independently, so N contracts on
-    one URL = N fetches (bad for anti-bot SERPs); share one fetched+cleaned HTML per URL.
-    FUTURE: cross-contract discrimination "path-planning" — when two contracts' selectors
-    overlap, coordinate them apart (Tier-1 region gate + a re-discover divergence loop in
-    ``yosoi.core.discovery.discrimination``); today field-level root + per-contract intent
-    discriminate by construction, but nothing ENFORCES disjointness here yet.
-    FUTURE: bound URL-axis concurrency (a semaphore) and concurrent page SELECTION.
+        await scrape(url, contract="gh:someone/recipes/shopify.json")
+
+    - No selectors (discover fresh, existing behavior)::
+
+        await scrape(url, contract=MyContract)
+
+    Args:
+        url: Single URL string or list of URLs.
+        contract: Contract class, name string, local .json path, https:// URL,
+            gh: ref pointing to a ContractSpec JSON, or a full recipe URL/path
+            (when selectors is None).
+        model: LLM configuration. Defaults to auto-detected provider.
+        selectors: Optional separate selector source. Accepts:
+            - A local .json path to a selector snapshot file
+            - An https:// URL to a selector snapshot file
+            - A gh:owner/repo/path@ref shorthand
+            - A pre-loaded dict[domain, SnapshotMap]
+            When provided, these selectors are used instead of discovering fresh
+            or loading from a recipe bundle. Selectors for domains not covered
+            fall through to normal discovery if a model is configured.
+        force: Force re-discovery even if selectors are cached.
+        skip_verification: Skip selector verification for faster processing.
+        fetcher_type: HTML fetcher to use. Defaults to 'auto'.
+        selector_level: Maximum selector strategy level. Defaults to CSS.
+        save_formats: Output formats to save (e.g. ('json',)).
+        quiet: Suppress console output.
+        allow_downloads: Enable ys.File() downloads.
+        allowed_download_types: Run-wide file-type allowlist.
+        download_dir: Quarantine root for downloads.
+        max_download_bytes: Run-wide per-file size cap.
+        keep_downloads: Keep downloaded files after the run.
+        identities: Per-URL browser identities.
+        max_concurrency: Cap on concurrent (url, contract) units.
+
+    Returns:
+        - ``scrape(url, Contract)``      → ``list[record]``
+        - ``scrape(url, [A, B])``        → ``{contract_name: [records]}``
+        - ``scrape([u1, u2], Contract)`` → ``{url: [records]}``
+        - ``scrape([u1, u2], [A, B])``   → ``{url: {contract_name: [records]}}``
     """
     urls: list[str] = [url] if isinstance(url, str) else list(url)
     raw_contracts = [contract] if isinstance(contract, (str, type)) else list(contract)
 
     contract_clss = []
-    preloaded_by_contract = {}  # dict[contract_name, dict[domain, SnapshotMap] | None]
+    preloaded_by_contract: dict[str, dict[str, SnapshotMap] | None] = {}
 
     for raw in raw_contracts:
-        cls, preloaded = await _resolve_contract_and_preload(raw)
+        cls, preloaded = await _resolve_contract_and_preload(raw, selectors)
         contract_clss.append(cls)
         preloaded_by_contract[cls.__name__] = preloaded
 
@@ -288,14 +309,10 @@ async def scrape(
         return fetcher_type(u) if callable(fetcher_type) else fetcher_type.get(u, 'auto')
 
     write_lock = asyncio.Lock() if (multi_url or multi_contract) else None
-    # Shared single-flight gate: concurrent units for the same (domain, contract) discover
-    # ONCE; the rest wait and replay — so the simple call stays simple.
     discovery_gate = DiscoveryGate()
     sem = asyncio.Semaphore(max_concurrency) if max_concurrency else None
     pairs = [(u, c) for u in urls for c in contract_clss]
 
-    # P1.5 advisory gate: collect each contract's discovered selector map per URL so we
-    # can judge region disjointness after the run (the gate self-skips a URL with <2).
     gate_collectors: dict[str, GateCollector] = {u: {} for u in urls}
 
     async def _unit(u: str, c: type[Contract]) -> list[ContentMap]:
@@ -362,16 +379,9 @@ async def _scrape_one(
     identity: BrowserIdentity | None = None,
     gate_collect: GateCollector | None = None,
     discovery_gate: DiscoveryGate | None = None,
-    preloaded: dict | None = None,
+    preloaded: dict[str, SnapshotMap] | None = None,
 ) -> list[ContentMap]:
-    """One ``(url, contract)`` unit (returns ``list[record]``).
-
-    ``write_lock`` is the shared per-call lock that :func:`scrape` threads through so
-    concurrent units don't race on per-domain selector writes; ``None`` for a lone scrape.
-    ``identity`` is the opt-in per-URL :class:`BrowserIdentity` (profile/headful/geo).
-    ``gate_collect``, when provided, receives this contract's freshly-discovered selector
-    map + cleaned HTML for the cross-contract discrimination gate (P1.5, advisory).
-    """
+    """One (url, contract) unit — returns list[record]."""
     contract_cls = resolve_contract(contract) if isinstance(contract, str) else contract
     llm_config = _resolve_model(model)
     save_format_list = list(save_formats)
@@ -384,9 +394,9 @@ async def _scrape_one(
         covered = domain in preloaded or any(domain.endswith('.' + k) or k.endswith('.' + domain) for k in preloaded)
         if not covered:
             raise ValueError(
-                f'Recipe does not cover domain {domain!r}.\n'
-                f'The recipe contains selectors for: {list(preloaded.keys())}.\n'
-                f'Re-mint the recipe targeting {domain!r}, or scrape a URL '
+                f'Selector source does not cover domain {domain!r}.\n'
+                f'The provided selectors cover: {list(preloaded.keys())}.\n'
+                f'Re-fetch selectors targeting {domain!r}, or scrape a URL '
                 f'from one of the covered domains.'
             )
         preloaded_snapshots = {}
@@ -395,7 +405,7 @@ async def _scrape_one(
                 preloaded_snapshots[domain_key] = value
             elif isinstance(value, dict):
                 preloaded_snapshots[domain_key] = SnapshotMap.model_validate(value)
-    # ← remove the erroneous "return preloaded_snapshots" line that was here
+
     with obs.span(
         'api.scrape',
         url=url,
@@ -433,9 +443,6 @@ async def _scrape_one(
                         output_format=save_format_list,
                     )
                 ]
-                # P1.5: hand this contract's freshly-discovered selectors to the gate
-                # collector (only set on a fresh discovery, not a cache replay).
-                # getattr-guarded so a Pipeline-like double without these attrs is fine.
                 last_selectors = getattr(pipeline, 'last_selectors', None)
                 if gate_collect is not None and last_selectors is not None:
                     gate_collect[contract_cls.__name__] = (last_selectors, getattr(pipeline, 'last_cleaned_html', None))
@@ -450,6 +457,7 @@ async def scrape_many(
     contract: type[Contract] | str,
     model: YosoiConfig | LLMConfig | str | None = None,
     *,
+    selectors: str | dict[str, SnapshotMap] | None = None,
     force: bool = False,
     skip_verification: bool = False,
     fetcher_type: str = 'auto',
@@ -457,19 +465,39 @@ async def scrape_many(
     save_formats: Sequence[str] = (),
     quiet: bool = True,
 ) -> dict[str, list[ContentMap]]:
-    """Scrape multiple URLs and return items keyed by URL."""
+    """Scrape multiple URLs and return items keyed by URL.
+
+    Args:
+        urls: List of URLs to scrape.
+        contract: Contract class, name, local .json path, or URL.
+        model: LLM configuration.
+        selectors: Optional separate selector source (path, URL, or preloaded dict).
+        force: Force re-discovery.
+        skip_verification: Skip selector verification.
+        fetcher_type: HTML fetcher to use.
+        selector_level: Maximum selector strategy level.
+        save_formats: Output formats to save.
+        quiet: Suppress console output.
+
+    Returns:
+        Dict mapping URL strings to lists of extracted records.
+    """
     url_list = list(urls)
     with obs.span(
-        'api.scrape_many', urls=len(url_list), contract=contract if isinstance(contract, str) else contract.__name__
+        'api.scrape_many',
+        urls=len(url_list),
+        contract=contract if isinstance(contract, str) else contract.__name__,
     ):
         results: dict[str, list[ContentMap]] = {}
         current_url: str | None = None
         try:
+            # Resolve contract + selectors once, reuse across all URLs
+            contract_cls, preloaded = await _resolve_contract_and_preload(contract, selectors)
             for url in url_list:
                 current_url = url
                 results[url] = await _scrape_one(
                     url,
-                    contract,
+                    contract_cls,
                     model,
                     force=force,
                     skip_verification=skip_verification,
@@ -477,6 +505,7 @@ async def scrape_many(
                     selector_level=selector_level,
                     save_formats=save_formats,
                     quiet=quiet,
+                    preloaded=preloaded,
                 )
         except Exception as e:
             obs.warning('API scrape_many URL failed', url=current_url, error=str(e))
@@ -489,6 +518,7 @@ def scrape_sync(
     contract: type[Contract] | str,
     model: YosoiConfig | LLMConfig | str | None = None,
     *,
+    selectors: str | dict[str, SnapshotMap] | None = None,
     force: bool = False,
     skip_verification: bool = False,
     fetcher_type: str = 'auto',
@@ -496,8 +526,31 @@ def scrape_sync(
     save_formats: Sequence[str] = (),
     quiet: bool = True,
 ) -> list[ContentMap]:
-    """Synchronous wrapper around :func:`scrape`."""
-    with obs.span('api.scrape_sync', url=url, contract=contract if isinstance(contract, str) else contract.__name__):
+    """Synchronous wrapper around scrape().
+
+    Args:
+        url: URL to scrape.
+        contract: Contract class, name, local .json path, or URL.
+        model: LLM configuration.
+        selectors: Optional separate selector source (path, URL, or preloaded dict).
+        force: Force re-discovery.
+        skip_verification: Skip selector verification.
+        fetcher_type: HTML fetcher to use.
+        selector_level: Maximum selector strategy level.
+        save_formats: Output formats to save.
+        quiet: Suppress console output.
+
+    Returns:
+        List of extracted records.
+
+    Raises:
+        RuntimeError: If called inside an active event loop.
+    """
+    with obs.span(
+        'api.scrape_sync',
+        url=url,
+        contract=contract if isinstance(contract, str) else contract.__name__,
+    ):
         try:
             asyncio.get_running_loop()
         except RuntimeError:
@@ -512,11 +565,28 @@ def scrape_sync(
                     selector_level=selector_level,
                     save_formats=save_formats,
                     quiet=quiet,
+                    preloaded=(asyncio.run(_resolve_selectors_only(selectors)) if selectors is not None else None),
                 )
             )
         error = 'scrape_sync() cannot run inside an active event loop; await scrape() instead.'
         obs.warning('API scrape_sync called inside active event loop', url=url)
         raise RuntimeError(error)
+
+
+async def _resolve_selectors_only(
+    selectors: str | dict[str, SnapshotMap],
+) -> dict[str, SnapshotMap] | None:
+    """Resolve selectors from a string source without resolving a contract."""
+    from yosoi.utils.selector_io import is_selector_source, load_selectors
+
+    if isinstance(selectors, str):
+        if not is_selector_source(selectors):
+            raise ValueError(
+                f'selectors={selectors!r} does not look like a valid selector source. '
+                'Expected a local .json path, an https:// URL, or a gh: ref.'
+            )
+        return await load_selectors(selectors)
+    return selectors if isinstance(selectors, dict) else None
 
 
 def _resolve_model(model: YosoiConfig | LLMConfig | str | None) -> YosoiConfig | LLMConfig:

@@ -86,7 +86,6 @@ def _load_contract_from_file(schema_str: str) -> type[Contract]:
     Raises:
         FileNotFoundError: If the schema file does not exist.
         ValueError: If the class cannot be found or is not a Contract.
-
     """
     if ':' not in schema_str:
         raise ValueError(f'Dynamic schema must use path:ClassName format, got {schema_str!r}')
@@ -131,35 +130,73 @@ def _load_contract_from_file(schema_str: str) -> type[Contract]:
     return cls
 
 
+def _load_contract_from_json(path: str) -> type[Contract]:
+    """Load a Contract class from a local ContractSpec JSON file.
+
+    Args:
+        path: Local .json file path.
+
+    Returns:
+        A rehydrated Contract subclass.
+
+    Raises:
+        FileNotFoundError: If the file does not exist.
+        ValueError: If the file is not a valid ContractSpec.
+    """
+    if not os.path.isfile(path):
+        raise FileNotFoundError(f'Contract JSON file not found: {path!r}')
+
+    from yosoi.models.spec import ContractSpec
+
+    with open(path, encoding='utf-8') as f:
+        raw = f.read()
+
+    try:
+        spec = ContractSpec.model_validate_json(raw)
+    except Exception as exc:
+        raise ValueError(
+            f'Failed to parse contract JSON from {path!r}.\n'
+            f'Is this a valid Yosoi ContractSpec JSON file?\nDetail: {exc}'
+        ) from exc
+
+    try:
+        return spec.to_contract()
+    except Exception as exc:
+        raise ValueError(f'Contract spec from {path!r} could not be rehydrated: {exc}') from exc
+
+
 def resolve_contract(name: str | dict[str, Any] | ContractSpec) -> type[Contract]:
     """Resolve a contract to a Contract class.
-
-    This is the programmatic API. No fuzzy matching or file scanning is
-    performed — those are CLI-only DX features in ``SchemaParamType``.
 
     Resolution order:
     1. ContractSpec / dict → rehydrate via ``ContractSpec.to_contract()``
     2. Exact match in BUILTIN_SCHEMAS
     3. Case-insensitive match in BUILTIN_SCHEMAS
     4. Exact / case-insensitive match in _CONTRACT_REGISTRY (custom schemas)
-    5. Dynamic import via ``path:ClassName``
+    5. Local .json file path (ContractSpec JSON) — new
+    6. https:// or gh: URL → raises with helpful message to use load_contract()
+    7. Dynamic import via ``path:ClassName``
+
+    Note: URL-based contract loading (https://, gh:) is async and cannot be
+    done here. Use ``yosoi.utils.contract_io.load_contract()`` directly, or
+    pass the URL to ``ys.scrape(contract=...)`` which handles it automatically.
 
     Args:
-        name: Contract name, ``path:ClassName`` string, inline ContractSpec, or dict.
+        name: Contract name, path:ClassName string, local .json path,
+              inline ContractSpec, or dict.
 
     Returns:
         The resolved Contract subclass.
 
     Raises:
         ValueError: If no matching contract is found.
-
+        FileNotFoundError: If a local .json path does not exist.
     """
     # 1. ContractSpec or dict — rehydrate
     if not isinstance(name, str):
         from yosoi.models.spec import ContractSpec as _Spec
 
         spec = name if isinstance(name, _Spec) else _Spec.model_validate(name)
-        # Dedup: if a registered contract with the same fingerprint exists, return it.
         fp = spec.fingerprint
         for cls in list(BUILTIN_SCHEMAS.values()) + list(_CONTRACT_REGISTRY.values()):
             try:
@@ -185,7 +222,21 @@ def resolve_contract(name: str | dict[str, Any] | ContractSpec) -> type[Contract
     if name.lower() in lower_registry:
         return _CONTRACT_REGISTRY[lower_registry[name.lower()]]
 
-    # 5. Dynamic import (path:ClassName)
+    # 5. Local .json file — ContractSpec JSON (no :ClassName needed)
+    if name.endswith('.json') and os.path.isfile(name):
+        return _load_contract_from_json(name)
+
+    # 6. URL sources — async, cannot resolve here; give a clear error
+    from yosoi.storage.recipe_loader import GH_PREFIX
+
+    if name.startswith(('https://', 'http://', GH_PREFIX)):
+        raise ValueError(
+            f'Loading a contract from a URL ({name!r}) requires async resolution. '
+            'Pass the URL directly to ys.scrape(contract=...) or use '
+            'await yosoi.utils.contract_io.load_contract(url) to load it first.'
+        )
+
+    # 7. Dynamic import (path:ClassName)
     if ':' in name:
         return _load_contract_from_file(name)
 
