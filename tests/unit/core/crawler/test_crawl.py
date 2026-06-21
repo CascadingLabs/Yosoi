@@ -175,6 +175,41 @@ async def test_crawl_builds_contract_candidates_for_targets(monkeypatch) -> None
     assert 'https://example.com/news/articles/blocked' not in fetcher.calls
 
 
+async def test_crawl_policy_can_scrape_selected_contract_candidates(monkeypatch) -> None:
+    fetcher = FakeFetcher(
+        {
+            'https://example.com/news/': '<a href="/story">Story One</a>',
+            'https://example.com/story': (
+                '<html><head><script type="application/ld+json">'
+                '{"@type": "NewsArticle"}'
+                '</script></head><body><article><h1>Story One</h1>'
+                '<p>First paragraph.</p><p>Second paragraph.</p><p>Third paragraph.</p>'
+                '</article></body></html>'
+            ),
+        }
+    )
+    scraped_calls: list[tuple[list[str], object]] = []
+
+    async def fake_scrape(urls: list[str], contract: object, **_kwargs: object) -> list[dict[str, str]]:
+        scraped_calls.append((urls, contract))
+        return [{'headline': 'Story One'}]
+
+    _inject(monkeypatch, fetcher)
+    monkeypatch.setattr('yosoi.api.scrape', fake_scrape)
+    policy = Policy.for_crawl(
+        'crawl.conservative',
+        budget=CrawlBudget(max_pages=2, max_depth=1),
+        scheduler=SchedulerPolicy(max_workers=1, politeness_delay=0),
+        safety=CrawlSafety(allowed_hosts=('example.com',)),
+        scrape_contracts=True,
+    )
+
+    summary = await crawl('https://example.com/news/', contracts=NewsArticle, policy=policy, progress=False)
+
+    assert scraped_calls == [(['https://example.com/story'], NewsArticle)]
+    assert summary.scraped_content == {'NewsArticle': [{'headline': 'Story One'}]}
+
+
 async def test_crawl_accepts_contract_classes_at_call_site(monkeypatch) -> None:
     fetcher = FakeFetcher(
         {
@@ -328,6 +363,61 @@ def test_archive_grid_container_does_not_score_as_article_body() -> None:
     entry = _score(NewsArticle, html)
 
     assert entry is None or entry.fit != 'strong'
+
+
+def test_candidate_scoring_ignores_invalid_attribute_values(monkeypatch) -> None:
+    class BrokenAttrib(dict):
+        def get(self, _key: object, _default: object = None) -> object:
+            raise ValueError('All strings must be XML compatible')
+
+    class BrokenNode:
+        attrib = BrokenAttrib()
+
+        def xpath(self, query: str):
+            if query == 'name()':
+                return _SelectorResult(['div'])
+            if query.startswith('.//text()'):
+                return _SelectorResult(['Story body text'])
+            return _SelectorResult([])
+
+    class FakeSelector:
+        def __init__(self, *_args: object, **_kwargs: object) -> None:
+            pass
+
+        def css(self, _query: str):
+            return _SelectorResult([])
+
+        def xpath(self, query: str):
+            if query == '//*':
+                return [BrokenNode()]
+            return _SelectorResult([])
+
+    html = '<html><body><div bad="x">Story</div></body></html>'
+    fingerprint = PageFingerprint.of(html)
+    observation = observe_html('https://example.com/page', html, row_selector='')
+    monkeypatch.setattr('parsel.Selector', FakeSelector)
+
+    entry = score_contract_fit(
+        NewsArticle,
+        url='https://example.com/page',
+        source_url='https://example.com/',
+        fingerprint=fingerprint,
+        observation=observation,
+        html=html,
+    )
+
+    assert entry is None or entry.fit != 'strong'
+
+
+class _SelectorResult:
+    def __init__(self, values: list[str]) -> None:
+        self.values = values
+
+    def get(self) -> str | None:
+        return self.values[0] if self.values else None
+
+    def getall(self) -> list[str]:
+        return self.values
 
 
 def test_repeated_card_body_containers_do_not_score_as_article_body() -> None:

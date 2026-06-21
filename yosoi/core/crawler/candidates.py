@@ -37,6 +37,56 @@ _AUTHOR_FIELD_NAMES = frozenset({'author', 'byline', 'channel', 'company'})
 _DATE_FIELD_NAMES = frozenset({'date', 'posted_date', 'upload_date', 'published_at', 'updated_at'})
 _NUMERIC_FIELD_NAMES = frozenset({'price', 'rating', 'reviews_count', 'salary', 'views'})
 _METADATA_FIELD_NAMES = _AUTHOR_FIELD_NAMES | _DATE_FIELD_NAMES | _NUMERIC_FIELD_NAMES
+_INTENT_HINTS_BY_CONTRACT: dict[str, frozenset[str]] = {
+    'newsarticle': frozenset({'article', 'articles', 'news', 'headline', 'published', 'author', 'archive'}),
+    'product': frozenset({'product', 'products', 'catalog', 'shop', 'eshop', 'item', 'sku', 'price', 'rating'}),
+    'gamescore': frozenset({'game', 'games', 'score', 'scores', 'scoretap', 'match', 'standings', 'team'}),
+    'matchscore': frozenset({'game', 'games', 'score', 'scores', 'scoretap', 'match', 'standings', 'team'}),
+    'taxinformation': frozenset({'tax', 'taxes', 'registry', 'deeds', 'records', 'service', 'recording'}),
+    'registryservice': frozenset({'tax', 'taxes', 'registry', 'deeds', 'records', 'service', 'recording'}),
+}
+_INTENT_STOPWORDS = frozenset(
+    {
+        'a',
+        'an',
+        'and',
+        'as',
+        'card',
+        'count',
+        'data',
+        'dev',
+        'displayed',
+        'for',
+        'from',
+        'label',
+        'none',
+        'number',
+        'one',
+        'or',
+        'page',
+        'per',
+        'public',
+        'qscrape',
+        'row',
+        'short',
+        'site',
+        'str',
+        'the',
+        'this',
+        'to',
+        'type',
+        'url',
+        'visible',
+        'with',
+    }
+)
+_NON_TARGET_URL_TOKENS = frozenset(
+    {'about', 'cart', 'contact', 'privacy', 'rss', 'search', 'sitemap', 'staff', 'terms'}
+)
+_CONFLICTING_URL_TOKENS_BY_CONTRACT: dict[str, frozenset[str]] = {
+    'gamescore': frozenset({'article', 'event', 'events', 'news', 'team', 'teams'}),
+    'matchscore': frozenset({'article', 'event', 'events', 'news', 'team', 'teams'}),
+}
 _LISTING_LINK_DENSITY = 0.45
 _DETAIL_PROSE_SHARE = 0.10
 _MIN_PROSE_TAGS = 2
@@ -72,9 +122,12 @@ class CrawlCandidateEntry:
 
 
 def contract_name(contract: str | type[Contract] | Any) -> str:
-    """Return the public contract name for strings and Contract classes."""
+    """Return the public contract name for strings, Contract classes, and crawl targets."""
     if isinstance(contract, str):
         return contract
+    target_name = getattr(contract, 'name', None)
+    if isinstance(target_name, str) and target_name:
+        return target_name
     name = getattr(contract, '__name__', None)
     if isinstance(name, str) and name:
         return name
@@ -82,7 +135,7 @@ def contract_name(contract: str | type[Contract] | Any) -> str:
 
 
 def score_contract_fit(
-    contract: str | type[Contract],
+    contract: str | type[Contract] | Any,
     *,
     url: str,
     source_url: str | None,
@@ -101,8 +154,10 @@ def score_contract_fit(
     name = contract_name(contract)
     key = _contract_key(name)
     evidence = extract_crawl_evidence(
+        contract=contract,
         contract_name=name,
         contract_key=key,
+        url=url,
         fingerprint=fingerprint,
         observation=observation,
         html=html,
@@ -111,7 +166,9 @@ def score_contract_fit(
         return None
     if key == 'newsarticle' and _is_root_page(url) and not _has_direct_article_structure(evidence):
         return None
-    if key == 'newsarticle' and not evidence.structure:
+    if key == 'newsarticle' and not (evidence.structure or evidence.intent):
+        return None
+    if _has_non_target_url_shape(url) or _has_conflicting_url_shape(key, url):
         return None
 
     reasons = evidence.raw_reasons
@@ -142,14 +199,18 @@ class CrawlEvidence:
     body: bool = False
     metadata: bool = False
     listing: bool = False
+    intent: bool = False
+    intent_score: float = 0.0
     labels: tuple[str, ...] = ()
     raw_reasons: tuple[str, ...] = ()
 
 
 def extract_crawl_evidence(
     *,
+    contract: str | type[Contract] | Any,
     contract_name: str,
     contract_key: str,
+    url: str,
     fingerprint: PageFingerprint,
     observation: PageObservation,
     html: str = '',
@@ -198,6 +259,15 @@ def extract_crawl_evidence(
         embedded_body=embedded_body,
     )
     metadata = _append_metadata_evidence(labels, raw, schema_fields)
+    intent_score = _append_contract_intent_evidence(
+        labels,
+        raw,
+        contract=contract,
+        contract_name=contract_name,
+        contract_key=contract_key,
+        url=url,
+        html=html,
+    )
 
     return CrawlEvidence(
         structure=structure,
@@ -205,6 +275,8 @@ def extract_crawl_evidence(
         body=body,
         metadata=metadata,
         listing=listing_shape,
+        intent=intent_score > 0,
+        intent_score=intent_score,
         labels=tuple(dict.fromkeys(labels)),
         raw_reasons=tuple(dict.fromkeys(raw)),
     )
@@ -297,12 +369,47 @@ def _append_metadata_evidence(labels: list[str], raw: list[str], schema_fields: 
     return True
 
 
+def _append_contract_intent_evidence(
+    labels: list[str],
+    raw: list[str],
+    *,
+    contract: str | type[Contract] | Any,
+    contract_name: str,
+    contract_key: str,
+    url: str,
+    html: str,
+) -> float:
+    contract_tokens = _contract_intent_tokens(contract, contract_name, contract_key)
+    if not contract_tokens:
+        return 0.0
+    parsed = urlparse(url)
+    url_matches = _tokens_from_text(f'{parsed.path} {parsed.query}') & contract_tokens
+    content_matches = (_tokens_from_text(html[:80_000]) & contract_tokens) - url_matches
+    if not url_matches:
+        return 0.0
+
+    labels.append('contract intent')
+    raw.extend(f'intent:url:{token}' for token in sorted(url_matches)[:4])
+    raw.extend(f'intent:content:{token}' for token in sorted(content_matches)[:4])
+    return round(min(0.35, (0.12 * len(url_matches)) + (0.04 * min(len(content_matches), 4))), 2)
+
+
 def _candidate_fit(evidence: CrawlEvidence) -> CandidateFit:
     if evidence.structure and evidence.title and evidence.body and not evidence.listing:
         return 'strong'
+    if evidence.intent and evidence.title and (evidence.body or evidence.metadata) and not evidence.listing:
+        return 'likely'
     if evidence.structure and (evidence.title or evidence.body) and evidence.metadata and not evidence.listing:
         return 'likely'
     if evidence.structure and (evidence.title or evidence.body or evidence.metadata) and not evidence.listing:
+        return 'possible'
+    if evidence.intent_score >= 0.20 and evidence.listing:
+        return 'possible'
+    if (
+        evidence.intent_score >= 0.20
+        and (evidence.title or evidence.body or evidence.metadata)
+        and not evidence.listing
+    ):
         return 'possible'
     if evidence.title and evidence.body and not evidence.listing:
         return 'possible'
@@ -319,13 +426,50 @@ def _candidate_score(evidence: CrawlEvidence) -> float:
         score += 0.25
     if evidence.metadata:
         score += 0.15
+    if evidence.intent:
+        score += evidence.intent_score
     if evidence.listing:
-        score = min(score, 0.35)
+        score = min(score, 0.35 + evidence.intent_score)
     return round(min(score, 1.0), 2)
 
 
 def _contract_key(contract_name: str) -> str:
     return ''.join(part for part in contract_name.lower() if part.isalnum())
+
+
+def _contract_intent_tokens(
+    contract: str | type[Contract] | Any, contract_name: str, contract_key: str
+) -> frozenset[str]:
+    tokens = set(_tokens_from_text(contract_name))
+    target_tokens = getattr(contract, 'intent_tokens', None)
+    if target_tokens:
+        tokens.update(str(token) for token in target_tokens)
+    tokens.update(_INTENT_HINTS_BY_CONTRACT.get(contract_key, ()))
+    return frozenset(_normalize_intent_token(token) for token in tokens if _usable_intent_token(token))
+
+
+def _tokens_from_text(text: str) -> set[str]:
+    raw = re.findall(r'[A-Z]?[a-z]+|[A-Z]+(?=[A-Z]|$)|[0-9]+', text)
+    tokens: set[str] = set()
+    for token in raw:
+        token = _normalize_intent_token(token)
+        if _usable_intent_token(token):
+            tokens.add(token)
+    return tokens
+
+
+def _normalize_intent_token(token: str) -> str:
+    lowered = token.lower()
+    if len(lowered) > 3 and lowered.endswith('ies'):
+        return f'{lowered[:-3]}y'
+    if len(lowered) > 3 and lowered.endswith('s'):
+        return lowered[:-1]
+    return lowered
+
+
+def _usable_intent_token(token: str) -> bool:
+    normalized = _normalize_intent_token(token)
+    return len(normalized) >= 3 and normalized not in _INTENT_STOPWORDS
 
 
 def _matching_schema_types(
@@ -363,6 +507,17 @@ def _is_root_page(url: str) -> bool:
     parsed = urlparse(url)
     path = parsed.path.strip('/')
     return not path
+
+
+def _has_non_target_url_shape(url: str) -> bool:
+    return bool(_tokens_from_text(urlparse(url).path) & _NON_TARGET_URL_TOKENS)
+
+
+def _has_conflicting_url_shape(contract_key: str, url: str) -> bool:
+    conflicting = _CONFLICTING_URL_TOKENS_BY_CONTRACT.get(contract_key)
+    if not conflicting:
+        return False
+    return bool(_tokens_from_text(urlparse(url).path) & conflicting)
 
 
 def _structured_property_names(html: str) -> frozenset[str]:
@@ -428,10 +583,10 @@ def _visible_detail_signals(html: str) -> tuple[bool, bool]:
         attrs = ' '.join(
             value
             for value in (
-                node.attrib.get('class', ''),
-                node.attrib.get('id', ''),
-                node.attrib.get('itemprop', ''),
-                node.attrib.get('property', ''),
+                _safe_attr(node, 'class'),
+                _safe_attr(node, 'id'),
+                _safe_attr(node, 'itemprop'),
+                _safe_attr(node, 'property'),
             )
             if value
         )
@@ -450,6 +605,14 @@ def _visible_detail_signals(html: str) -> tuple[bool, bool]:
         if title and body:
             return True, True
     return title, body
+
+
+def _safe_attr(node: Any, name: str) -> str:
+    try:
+        value = node.attrib.get(name, '')
+    except (TypeError, ValueError):
+        return ''
+    return value if isinstance(value, str) else ''
 
 
 def _visible_node_text(node: Any) -> str:

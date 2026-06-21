@@ -67,6 +67,28 @@ class _FakeTab:
         return self._href
 
 
+class _FakeCaptureDownload:
+    def __init__(self, tab: _FakeTab, dir: str, max_bytes: int | None = None) -> None:
+        self._tab = tab
+        self._dir = dir
+        self._max_bytes = max_bytes
+        self._capture: object | None = None
+        self.value: _FakeOutcome | None = None
+
+    async def __aenter__(self) -> _FakeCaptureDownload:
+        self._capture = await self._tab.arm_download(self._dir, max_bytes=self._max_bytes)
+        return self
+
+    async def __aexit__(self, *_args: object) -> None:
+        assert self._capture is not None
+        self.value = await self._tab.wait_download(self._capture)
+
+
+@pytest.fixture(autouse=True)
+def _fake_capture_download(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr('voidcrawl.capture_download', _FakeCaptureDownload)
+
+
 async def test_retrigger_csv_parse(tmp_path: Path) -> None:
     tab = _FakeTab(data=CSV_BYTES, content_type='text/csv', filename='export.csv')
     spec = DownloadSpec(field='report', mode='retrigger', trigger='a.export', allowed_types=('csv',), output='parsed')

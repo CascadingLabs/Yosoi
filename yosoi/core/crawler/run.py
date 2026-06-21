@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
 from typing import Any
@@ -55,10 +56,35 @@ async def crawl(
                     persist_frontier=persist,
                     reporter=reporter,
                 )
-                return await coordinator.run(seeds=seed_tuple)
+                summary = await coordinator.run(seeds=seed_tuple)
+        else:
+            coordinator = CrawlCoordinator(fetcher=active_fetcher, config=runtime, persist_frontier=persist)
+            summary = await coordinator.run(seeds=seed_tuple)
 
-        coordinator = CrawlCoordinator(fetcher=active_fetcher, config=runtime, persist_frontier=persist)
-        return await coordinator.run(seeds=seed_tuple)
+    if crawl.scrape_contracts:
+        await _scrape_crawl_candidates(
+            summary, contracts=contracts, policy=pol, limit=crawl.scrape_url_limit_per_contract
+        )
+    return summary
+
+
+async def _scrape_crawl_candidates(
+    summary: CrawlRunSummary,
+    *,
+    contracts: Sequence[object] | object | None,
+    policy: Policy,
+    limit: int,
+) -> None:
+    from yosoi.api import scrape
+
+    contract_items = _contract_items(contracts) if contracts is not None else tuple(summary.contract_candidate_urls)
+    for item in contract_items:
+        name = contract_name(item)
+        urls = summary.urls_for(item, limit=limit)
+        if not urls:
+            summary.scraped_content[name] = []
+            continue
+        summary.scraped_content[name] = await scrape(urls, item, policy=policy)
 
 
 def _show_crawl_progress(policy: Policy) -> bool:
@@ -83,7 +109,10 @@ def _with_crawl_targets(policy: Policy, *, contracts: Sequence[object] | object 
         )
     else:
         contract_items = _contract_items(contracts)
-        targets = tuple(CrawlTarget(name=contract_name(item), max_budget_pages=limit) for item in contract_items)
+        targets = tuple(
+            CrawlTarget(name=contract_name(item), max_budget_pages=limit, intent_tokens=_contract_intent_tokens(item))
+            for item in contract_items
+        )
 
     crawl_payload = crawl.model_dump()
     crawl_payload['target_contracts'] = targets
@@ -97,6 +126,25 @@ def _contract_items(contracts: Sequence[object] | object) -> tuple[object, ...]:
         return tuple(contracts)  # type: ignore[arg-type]
     except TypeError:
         return (contracts,)
+
+
+def _contract_intent_tokens(contract: object) -> tuple[str, ...]:
+    tokens: set[str] = set(_tokens_from_text(contract_name(contract)))
+    doc = getattr(contract, '__doc__', None)
+    if isinstance(doc, str):
+        tokens.update(_tokens_from_text(doc))
+    fields = getattr(contract, 'model_fields', None)
+    if isinstance(fields, dict):
+        for name, field in fields.items():
+            tokens.update(_tokens_from_text(str(name)))
+            description = getattr(field, 'description', None)
+            if isinstance(description, str):
+                tokens.update(_tokens_from_text(description))
+    return tuple(sorted(tokens))
+
+
+def _tokens_from_text(text: str) -> set[str]:
+    return {token.lower() for token in re.findall(r'[A-Z]?[a-z]+|[A-Z]+(?=[A-Z]|$)|[0-9]+', text) if len(token) >= 3}
 
 
 def _seed_items(seeds: str | Sequence[str]) -> tuple[str, ...]:

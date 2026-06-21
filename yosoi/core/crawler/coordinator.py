@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import re
 import time
 from dataclasses import dataclass, field
 from typing import Any, Literal, Protocol
@@ -80,6 +81,7 @@ class CrawlRunSummary:
     results: list[CrawlResult] = field(default_factory=list)
     contract_candidate_urls: dict[str, list[str]] = field(default_factory=dict)
     contract_candidate_entries: dict[str, list[CrawlCandidateEntry]] = field(default_factory=dict)
+    scraped_content: dict[str, Any] = field(default_factory=dict)
     _max_workers_seen: int = 1
 
     @property
@@ -377,7 +379,7 @@ class CrawlCoordinator:
             limit = target.max_budget_pages or self.config.max_pages
 
             entry = score_contract_fit(
-                name,
+                target,
                 url=result.job.url,
                 source_url=result.job.source_url,
                 fingerprint=result.fingerprint,
@@ -403,12 +405,26 @@ class CrawlCoordinator:
         self.frontier.reprioritize(lambda entry: self._planned_url_score(entry.url, entry.score, references))
 
     def _planned_link_score(self, link: CrawlLink, summary: CrawlRunSummary) -> float:
+        score = self._target_intent_link_score(link)
         if not self._path_planning_enabled():
-            return link.score
+            return score
         references = self._candidate_reference_urls(summary)
         if not references:
-            return link.score
-        return self._planned_url_score(link.url, link.score, references)
+            return score
+        return self._planned_url_score(link.url, score, references)
+
+    def _target_intent_link_score(self, link: CrawlLink) -> float:
+        score = link.score
+        parsed = urlparse(link.url)
+        link_tokens = _tokens_from_text(f'{parsed.path} {parsed.query} {link.text}')
+        for target in self.config.target_contracts:
+            target_tokens = set(target.intent_tokens) | _tokens_from_text(target.name)
+            matches = link_tokens & target_tokens
+            if len(matches) >= 2:
+                score = max(score, min(1.0, link.score + 0.40))
+            elif matches:
+                score = max(score, min(1.0, link.score + 0.25))
+        return score
 
     def _planned_url_score(self, url: str, base_score: float, references: tuple[str, ...]) -> float:
         if not self._path_planning_enabled():
@@ -433,3 +449,11 @@ class CrawlCoordinator:
 
     def _path_planning_enabled(self) -> bool:
         return bool(self.config.path_planning.enabled and self.config.path_planning.score_boost > 0)
+
+
+def _tokens_from_text(text: str) -> set[str]:
+    return {
+        token.lower()
+        for token in re.findall(r'[A-Z]?[a-z]+|[A-Z]+(?=[A-Z]|$)|[0-9]+', text)
+        if len(token) >= 3 and token.lower() not in {'dev', 'qscrape'}
+    }

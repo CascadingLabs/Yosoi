@@ -156,6 +156,7 @@ class CrawlTarget(BaseModel):
     min_fields: StrictInt = Field(default=1, ge=0)
     min_fit_score: StrictFloat = Field(default=0.0, ge=0.0, le=1.0)
     max_budget_pages: StrictOptInt = Field(default=None, ge=1)
+    intent_tokens: tuple[str, ...] = ()
 
     @field_validator('name')
     @classmethod
@@ -178,6 +179,8 @@ class CrawlPolicy(BaseModel):
     escalation: EscalationPolicy = Field(default_factory=EscalationPolicy)
     path_planning: PathPlanningPolicy = Field(default_factory=PathPlanningPolicy)
     target_contracts: tuple[CrawlTarget, ...] = ()
+    scrape_contracts: bool = False
+    scrape_url_limit_per_contract: StrictInt = Field(default=1, ge=1, le=1_000)
     fetcher_type: FetcherName = 'auto'
 
     @field_validator('target_contracts', mode='before')

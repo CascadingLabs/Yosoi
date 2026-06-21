@@ -11,7 +11,6 @@ bytes are purged. The value returned is the view chosen by the field's declared 
 
 from __future__ import annotations
 
-import asyncio
 import contextlib
 import hashlib
 import json
@@ -94,6 +93,37 @@ async def _capture(tab: Any, spec: DownloadSpec, qdir: Path) -> Any:
     return await tab.download(url, str(qdir), max_bytes=max_bytes)
 
 
+def _read_download_bytes(path: Path) -> bytes:
+    return path.read_bytes()
+
+
+def _purge_download(path: Path) -> None:
+    path.unlink(missing_ok=True)
+
+
+def _commit_verified_download(
+    *,
+    qdir: Path,
+    field: str,
+    src_path: Path,
+    sha256: str,
+    content_type: str | None,
+    size_bytes: int,
+    source_url: str | None,
+    allowed_types: tuple[str, ...],
+) -> tuple[Path, bool]:
+    return commit_download(
+        qdir=qdir,
+        field=field,
+        src_path=src_path,
+        sha256=sha256,
+        content_type=content_type,
+        size_bytes=size_bytes,
+        source_url=source_url,
+        allowed_types=allowed_types,
+    )
+
+
 async def run_download(tab: Any, spec: DownloadSpec, qdir: Path) -> DownloadResult:
     """Execute one download spec and return its verified result (fail-fast on any error)."""
     if not spec.allowed_types:
@@ -111,17 +141,17 @@ async def run_download(tab: Any, spec: DownloadSpec, qdir: Path) -> DownloadResu
 
     path = Path(outcome.path)
     try:
-        data = await asyncio.to_thread(path.read_bytes)
+        data = _read_download_bytes(path)
     except OSError as exc:
         raise DownloadError(spec.field, f'downloaded file unreadable: {exc}') from exc
 
     if len(data) < _MIN_BYTES:
-        await asyncio.to_thread(path.unlink, missing_ok=True)
+        _purge_download(path)
         raise DownloadError(spec.field, f'downloaded file is empty ({len(data)} bytes)')
 
     declared_ct = getattr(outcome, 'content_type', None)
     if not matches_allowed_types(spec.allowed_types, declared_ct, data[:_HEAD_BYTES]):
-        await asyncio.to_thread(path.unlink, missing_ok=True)  # purge — bytes aren't trusted
+        _purge_download(path)  # purge — bytes aren't trusted
         raise DownloadError(
             spec.field,
             f'content does not match allowed_types {list(spec.allowed_types)} '
@@ -132,8 +162,7 @@ async def run_download(tab: Any, spec: DownloadSpec, qdir: Path) -> DownloadResu
     # index. `changed` is True when this field's bytes differ from the last recorded download.
     sha256 = hashlib.sha256(data).hexdigest()
     size_bytes = int(getattr(outcome, 'bytes', len(data)))
-    cas_path, changed = await asyncio.to_thread(
-        commit_download,
+    cas_path, changed = _commit_verified_download(
         qdir=qdir,
         field=spec.field,
         src_path=path,

@@ -87,6 +87,7 @@ class CrawlRunSummary:
     wall_time: float
     contract_candidate_urls: dict[str, list[str]]
     contract_candidate_entries: dict[str, list[CrawlCandidateEntry]]
+    scraped_content: dict[str, Any]
 
     def urls_for(
         self,
@@ -179,6 +180,7 @@ class CrawlTarget(_CrawlTarget):
     min_fields: int
     min_fit_score: float
     max_budget_pages: int | None
+    intent_tokens: tuple[str, ...]
 
     def __init__(
         self,
@@ -187,6 +189,7 @@ class CrawlTarget(_CrawlTarget):
         min_fields: int = ...,
         min_fit_score: float = ...,
         max_budget_pages: int | None = ...,
+        intent_tokens: tuple[str, ...] = ...,
     ) -> None: ...
 
 class PathPlanningPolicy(_PathPlanningPolicy):
@@ -291,6 +294,8 @@ class CrawlPolicy(_CrawlPolicy):
     escalation: EscalationPolicy
     path_planning: PathPlanningPolicy
     target_contracts: tuple[CrawlTarget, ...]
+    scrape_contracts: bool
+    scrape_url_limit_per_contract: int
     fetcher_type: FetcherName
 
     def __init__(
@@ -303,6 +308,8 @@ class CrawlPolicy(_CrawlPolicy):
         escalation: EscalationPolicy = ...,
         path_planning: PathPlanningPolicy = ...,
         target_contracts: Sequence[CrawlTarget | Literal['NewsArticle', 'Product', 'JobPosting', 'Video'] | str] = ...,
+        scrape_contracts: bool = ...,
+        scrape_url_limit_per_contract: int = ...,
         fetcher_type: FetcherName = ...,
     ) -> None: ...
     def effective_allowed_hosts(self, seeds: tuple[str, ...] = ...) -> tuple[str, ...]: ...

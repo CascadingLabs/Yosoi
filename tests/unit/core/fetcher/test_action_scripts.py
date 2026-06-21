@@ -5,6 +5,7 @@ from __future__ import annotations
 import contextlib
 import logging
 
+import httpx
 import pytest
 
 from yosoi.core.fetcher.simple import SimpleFetcher
@@ -108,16 +109,24 @@ def test_merge_js_outputs_overwrite_existing_key():
 
 
 @pytest.mark.asyncio
-async def test_simple_fetcher_warns_when_action_scripts_provided(caplog):
-    fetcher = SimpleFetcher()
+async def test_simple_fetcher_warns_when_action_scripts_provided(caplog, mocker):
+    fetcher = SimpleFetcher(use_session=False, min_delay=0)
+    mocker.patch(
+        'httpx.AsyncClient.get',
+        return_value=httpx.Response(200, text='<html><body>' + ('content ' * 20) + '</body></html>'),
+    )
     with caplog.at_level(logging.WARNING, logger='yosoi.core.fetcher.simple'), contextlib.suppress(Exception):
         await fetcher.fetch('https://example.com', action_scripts={'x': '1'})
     assert any('action_scripts ignored' in r.message for r in caplog.records)
 
 
 @pytest.mark.asyncio
-async def test_simple_fetcher_no_warning_without_action_scripts(caplog):
-    fetcher = SimpleFetcher()
+async def test_simple_fetcher_no_warning_without_action_scripts(caplog, mocker):
+    fetcher = SimpleFetcher(use_session=False, min_delay=0)
+    mocker.patch(
+        'httpx.AsyncClient.get',
+        return_value=httpx.Response(200, text='<html><body>' + ('content ' * 20) + '</body></html>'),
+    )
     with caplog.at_level(logging.WARNING, logger='yosoi.core.fetcher.simple'), contextlib.suppress(Exception):
         await fetcher.fetch('https://example.com')
     assert not any('action_scripts ignored' in r.message for r in caplog.records)
