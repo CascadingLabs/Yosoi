@@ -36,7 +36,7 @@ import json
 import math
 import re
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from pydantic import BaseModel, Field
 
@@ -414,6 +414,109 @@ def _jaccard(a: frozenset[str], b: frozenset[str]) -> float:
     return len(a & b) / len(union) if union else 1.0
 
 
+def containment(a: frozenset[str], b: frozenset[str]) -> float:
+    """Containment overlap for two feature sets, in ``[0, 1]``.
+
+    Unlike Jaccard, containment asks whether the smaller carried feature set is included in the
+    larger one. This is useful explanatory evidence for same-template pages where one side has an
+    extra recommendation rail, ad module, or browser-enriched subtree; it is reported beside the
+    stricter weighted-Jaccard decision score, not used as a standalone authorization gate.
+    """
+    if not a and not b:
+        return 1.0
+    floor = min(len(a), len(b))
+    if floor == 0:
+        return 0.0
+    return len(a & b) / floor
+
+
+def weighted_jaccard(a: frozenset[str], b: frozenset[str], *, layer: str = 'generic') -> float:
+    """Weighted Jaccard similarity for one fingerprint layer.
+
+    The plain layer Jaccard remains available for audit/debugging. Weighted Jaccard is the decision
+    score: generic chrome/framework-global features are downweighted while discriminating page-shape
+    evidence (schema types, component/test IDs, endpoint routes) gets more vote. This keeps the
+    matcher explainable while reducing the "nav/footer matched, therefore similar" failure mode.
+    """
+    union = a | b
+    if not union:
+        return 1.0
+    numerator = sum(_feature_weight(feature, layer=layer) for feature in a & b)
+    denominator = sum(_feature_weight(feature, layer=layer) for feature in union)
+    return numerator / denominator if denominator else 1.0
+
+
+def _feature_weight(feature: str, *, layer: str) -> float:
+    """Return the explainable voting weight for one already content-scrubbed feature."""
+    if layer == 'semantic':
+        return _semantic_feature_weight(feature)
+    if layer == 'skeleton':
+        return _skeleton_feature_weight(feature)
+    if layer == 'identity':
+        return _identity_feature_weight(feature)
+    if layer == 'ax':
+        return _ax_feature_weight(feature)
+    if layer == 'network':
+        return _network_feature_weight(feature)
+    if layer == 'endpoint':
+        return 3.0 if feature.startswith('ep:') and not feature.endswith('/') else 1.0
+    return 1.0
+
+
+def _semantic_feature_weight(feature: str) -> float:
+    if feature.startswith('schema:'):
+        return 3.0
+    if feature.startswith('role:'):
+        return 2.0
+    if feature.startswith('h') and ':' in feature:
+        return 1.25
+    if feature in {'lm:nav', 'lm:footer', 'lm:header'}:
+        return 0.35
+    if feature in {'lm:main', 'lm:article', 'lm:form'}:
+        return 1.5
+    return 1.0
+
+
+def _skeleton_feature_weight(feature: str) -> float:
+    parts = re.split(r'[/#.]+', feature)
+    tags = {part for part in parts if part}
+    weight = 0.35 if tags and tags <= {'html', 'body', 'div', 'span', 'ul', 'li', 'a'} else 1.0
+    if '.' in feature:
+        weight += 0.75
+    if '#' in feature:
+        weight += 1.0
+    if tags & {'main', 'article', 'section', 'form', 'table'}:
+        weight += 0.5
+    return min(weight, 3.0)
+
+
+def _identity_feature_weight(feature: str) -> float:
+    lowered = feature.lower()
+    if any(token in lowered for token in ('testid', 'test-id', 'qa', 'cy', 'component')):
+        return 2.0
+    if lowered in {'data:data-mw', 'data:data-reactroot'}:
+        return 0.5
+    return 1.0
+
+
+def _ax_feature_weight(feature: str) -> float:
+    if feature in {'ax:link', 'ax:text', 'ax:generic'}:
+        return 0.5
+    if feature in {'ax:main', 'ax:article', 'ax:form', 'ax:search', 'ax:button', 'ax:table'}:
+        return 1.5
+    return 1.0
+
+
+def _network_feature_weight(feature: str) -> float:
+    if feature.startswith('cookie:'):
+        return 1.5
+    if feature in {'hdr:date', 'hdr:content-length', 'hdr:cache-control', 'hdr:etag', 'hdr:last-modified'}:
+        return 0.25
+    if feature in {'hdr:server', 'hdr:x-powered-by'} or feature.startswith('hdr:cf-'):
+        return 1.0
+    return 0.75
+
+
 def semantics_jaccard(a_html: str, b_html: str) -> float:
     """Jaccard similarity of two pages' L2 semantic feature sets, in ``[0, 1]``."""
     return _jaccard(page_semantics(a_html), page_semantics(b_html))
@@ -433,15 +536,24 @@ IDENTITY_SIMILARITY_THRESHOLD = 0.40
 
 
 def _optional_layer_jaccard(a: frozenset[str], b: frozenset[str]) -> float | None:
-    """Jaccard for an OPTIONAL fingerprint layer, or ``None`` when it should abstain.
+    """Jaccard for an OPTIONAL fingerprint layer, or ``None`` when it should abstain."""
+    score, _weighted, _contained = _optional_layer_scores(a, b, layer='generic')
+    return score
 
-    Returns ``None`` (layer "not carried" → never decides the match) when either side carries
-    fewer than :data:`_MIN_OPTIONAL_LAYER_FEATURES` features — so a thin/empty optional layer can
-    neither vacuously pass nor falsely veto. Only a substantively-carried-on-both-sides layer votes.
+
+def _optional_layer_scores(
+    a: frozenset[str], b: frozenset[str], *, layer: str
+) -> tuple[float | None, float | None, float | None]:
+    """Raw Jaccard, weighted Jaccard, and containment for an optional layer.
+
+    Returns ``(None, None, None)`` (layer "not carried" → never decides the match) when either side
+    carries fewer than :data:`_MIN_OPTIONAL_LAYER_FEATURES` features — so a thin/empty optional layer
+    can neither vacuously pass nor falsely veto. Only a substantively-carried-on-both-sides layer
+    votes.
     """
     if len(a) < _MIN_OPTIONAL_LAYER_FEATURES or len(b) < _MIN_OPTIONAL_LAYER_FEATURES:
-        return None
-    return _jaccard(a, b)
+        return None, None, None
+    return _jaccard(a, b), weighted_jaccard(a, b, layer=layer), containment(a, b)
 
 
 def page_identity(html: str) -> frozenset[str]:
@@ -597,17 +709,121 @@ def ax_spine_features(ax_snapshot: Any) -> frozenset[str]:
     return frozenset(f'ax:{role}' for role in roles)
 
 
-class PageSimilarity(BaseModel):
-    """Per-layer similarity, an aggregate score, and the conjunctive same-shape verdict."""
+class FingerprintLayerSimilarity(BaseModel):
+    """Similarity evidence for one carried fingerprint layer.
 
-    score: float  # 0..1 aggregate over carried layers; degenerate comparisons score 0.0
-    skeleton: float  # L1 structural skeleton Jaccard
-    semantic: float  # L2 static landmark / heading / schema Jaccard
-    identity: float | None  # L1 identity-attr Jaccard, or None when not carried by both pages
-    ax: float | None  # L2 rendered AX-spine Jaccard, or None when not carried by both pages
-    network: float | None  # L3-lite header/cookie-name Jaccard, or None when not carried by both pages
-    endpoint: float | None  # L3 XHR/fetch endpoint-skeleton Jaccard, or None when not carried by both
-    same_shape: bool  # conjunctive verdict — every CARRIED layer agrees
+    ``jaccard`` is the raw set overlap retained for audit/backward readability. ``weighted`` is the
+    score used by the conjunctive page decision. ``containment`` is explanatory evidence for
+    subset/superset cases such as the same template plus an extra rail.
+    """
+
+    jaccard: float = Field(ge=0.0, le=1.0)
+    weighted: float = Field(ge=0.0, le=1.0)
+    containment: float = Field(ge=0.0, le=1.0)
+
+    @property
+    def score(self) -> float:
+        """Backward-readable raw layer score."""
+        return self.jaccard
+
+    def __float__(self) -> float:  # noqa: D105
+        return self.jaccard
+
+    def __format__(self, spec: str) -> str:  # noqa: D105
+        return format(self.jaccard, spec)
+
+    def __lt__(self, other: object) -> bool:  # noqa: D105
+        return self.jaccard < _coerce_score(other)
+
+    def __le__(self, other: object) -> bool:  # noqa: D105
+        return self.jaccard <= _coerce_score(other)
+
+    def __gt__(self, other: object) -> bool:  # noqa: D105
+        return self.jaccard > _coerce_score(other)
+
+    def __ge__(self, other: object) -> bool:  # noqa: D105
+        return self.jaccard >= _coerce_score(other)
+
+    def __eq__(self, other: object) -> bool:  # noqa: D105
+        if isinstance(other, (int, float)):
+            return self.jaccard == float(other)
+        return super().__eq__(other)
+
+    def __sub__(self, other: object) -> float:  # noqa: D105
+        return self.jaccard - _coerce_score(other)
+
+    def __rsub__(self, other: object) -> float:  # noqa: D105
+        return _coerce_score(other) - self.jaccard
+
+    def __add__(self, other: object) -> float:  # noqa: D105
+        return self.jaccard + _coerce_score(other)
+
+    def __radd__(self, other: object) -> float:  # noqa: D105
+        return _coerce_score(other) + self.jaccard
+
+
+class SkeletonSimilarity(FingerprintLayerSimilarity):
+    """L1 DOM-template skeleton similarity evidence."""
+
+
+class SemanticSimilarity(FingerprintLayerSimilarity):
+    """L1/L2 static semantic similarity evidence."""
+
+
+class IdentitySimilarity(FingerprintLayerSimilarity):
+    """L1 identity-attribute-key similarity evidence."""
+
+
+class AxSimilarity(FingerprintLayerSimilarity):
+    """L2+ rendered accessibility-role similarity evidence."""
+
+
+class NetworkSimilarity(FingerprintLayerSimilarity):
+    """L2+ response metadata similarity evidence."""
+
+
+class EndpointSimilarity(FingerprintLayerSimilarity):
+    """L2+ browser endpoint skeleton similarity evidence."""
+
+
+def _coerce_score(value: object) -> float:
+    if isinstance(value, FingerprintLayerSimilarity):
+        return value.jaccard
+    if isinstance(value, (int, float)):
+        return float(value)
+    raise TypeError(f'cannot compare fingerprint layer score to {type(value).__name__}')
+
+
+LayerSimilarityT = TypeVar('LayerSimilarityT', bound=FingerprintLayerSimilarity)
+
+
+def _optional_similarity(
+    model: type[LayerSimilarityT], jaccard: float | None, weighted: float | None, contained: float | None
+) -> LayerSimilarityT | None:
+    if jaccard is None:
+        return None
+    if weighted is None or contained is None:
+        raise ValueError('carried fingerprint layer is missing weighted/containment evidence')
+    return model(jaccard=jaccard, weighted=weighted, containment=contained)
+
+
+class PageSimilarity(BaseModel):
+    """Nested page-fingerprint similarity, aggregate scores, and the same-shape verdict."""
+
+    score: float = Field(ge=0.0, le=1.0)  # weighted aggregate over carried layers
+    containment_score: float = Field(ge=0.0, le=1.0)  # aggregate containment over carried layers
+    skeleton: SkeletonSimilarity
+    semantic: SemanticSimilarity
+    identity: IdentitySimilarity | None
+    ax: AxSimilarity | None
+    network: NetworkSimilarity | None
+    endpoint: EndpointSimilarity | None
+    same_shape: bool  # conjunctive verdict — every CARRIED weighted layer agrees
+
+    @property
+    def weighted_score(self) -> float:
+        """Explicit alias for the aggregate weighted score used for ranking."""
+        return self.score
 
 
 class PageFingerprint(BaseModel):
@@ -701,32 +917,43 @@ class PageFingerprint(BaseModel):
         """
         sk = _jaccard(self.skeleton, other.skeleton)
         se = _jaccard(self.semantic, other.semantic)
+        skw = weighted_jaccard(self.skeleton, other.skeleton, layer='skeleton')
+        sew = weighted_jaccard(self.semantic, other.semantic, layer='semantic')
+        skc = containment(self.skeleton, other.skeleton)
+        sec = containment(self.semantic, other.semantic)
         # Optional high-trust layers: each is a veto, but only when BOTH pages carry it SUBSTANTIVELY
         # (>= _MIN_OPTIONAL_LAYER_FEATURES); otherwise it abstains (None) and never decides the match.
-        idn = _optional_layer_jaccard(self.identity, other.identity)
-        ax = _optional_layer_jaccard(self.ax_spine, other.ax_spine)
-        net = _optional_layer_jaccard(self.network, other.network)
-        ep = _optional_layer_jaccard(self.endpoints, other.endpoints)
+        idn, idnw, idnc = _optional_layer_scores(self.identity, other.identity, layer='identity')
+        ax, axw, axc = _optional_layer_scores(self.ax_spine, other.ax_spine, layer='ax')
+        net, netw, netc = _optional_layer_scores(self.network, other.network, layer='network')
+        ep, epw, epc = _optional_layer_scores(self.endpoints, other.endpoints, layer='endpoint')
         non_degenerate = not self.degenerate and not other.degenerate
         same = (
             non_degenerate
-            and sk >= skeleton_threshold
-            and se >= semantic_threshold
-            and (idn is None or idn >= identity_threshold)
-            and (ax is None or ax >= ax_threshold)
-            and (net is None or net >= network_threshold)
-            and (ep is None or ep >= endpoint_threshold)
+            and skw >= skeleton_threshold
+            and sew >= semantic_threshold
+            and (idnw is None or idnw >= identity_threshold)
+            and (axw is None or axw >= ax_threshold)
+            and (netw is None or netw >= network_threshold)
+            and (epw is None or epw >= endpoint_threshold)
         )
-        carried_scores = [score for score in (sk, se, idn, ax, net, ep) if score is not None]
-        score = sum(carried_scores) / len(carried_scores) if non_degenerate else 0.0
+        carried_weighted = [score for score in (skw, sew, idnw, axw, netw, epw) if score is not None]
+        carried_containment = [score for score in (skc, sec, idnc, axc, netc, epc) if score is not None]
+        weighted_score = sum(carried_weighted) / len(carried_weighted) if non_degenerate else 0.0
+        containment_score = sum(carried_containment) / len(carried_containment) if non_degenerate else 0.0
+        identity = _optional_similarity(IdentitySimilarity, idn, idnw, idnc)
+        ax_layer = _optional_similarity(AxSimilarity, ax, axw, axc)
+        network_layer = _optional_similarity(NetworkSimilarity, net, netw, netc)
+        endpoint_layer = _optional_similarity(EndpointSimilarity, ep, epw, epc)
         return PageSimilarity(
-            score=score,
-            skeleton=sk,
-            semantic=se,
-            identity=idn,
-            ax=ax,
-            network=net,
-            endpoint=ep,
+            score=weighted_score,
+            containment_score=containment_score,
+            skeleton=SkeletonSimilarity(jaccard=sk, weighted=skw, containment=skc),
+            semantic=SemanticSimilarity(jaccard=se, weighted=sew, containment=sec),
+            identity=identity,
+            ax=ax_layer,
+            network=network_layer,
+            endpoint=endpoint_layer,
             same_shape=same,
         )
 

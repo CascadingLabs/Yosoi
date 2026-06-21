@@ -116,7 +116,7 @@ class LinkExtractor:
     def _is_pagination(self, anchor: object, text: str) -> bool:
         label = ''
         if hasattr(anchor, 'get'):
-            raw_label = anchor.get('aria-label')  # type: ignore[attr-defined]
+            raw_label = anchor.get('aria-label')
             label = raw_label if isinstance(raw_label, str) else ''
         return bool(_PAGINATION_RE.search(f'{text} {label}'))
 

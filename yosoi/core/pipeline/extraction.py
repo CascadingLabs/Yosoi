@@ -108,7 +108,8 @@ class PipelineExtractionMixin:
             if result is None:
                 raise RuntimeError(f'Failed to fetch {url}')
             assert result.html is not None
-            cleaned_html = await self._clean(url, result)
+            with observability.span('clean', url=url, raw_chars=len(result.html), mode='fresh'):
+                cleaned_html = await self._clean(url, result)
             if not cleaned_html:
                 raise RuntimeError(f'HTML cleaning failed for {url}')
             return PageSnapshot(

@@ -721,5 +721,5 @@ class ContractBuilder:
         field_defs: dict[str, Any] = {name: (ftype, Field(description=desc)) for name, ftype, desc in self._fields}
         cls = pydantic.create_model(self._name, __base__=Contract, **field_defs)
         if self._root is not None:
-            cls.root = self._root  # type: ignore[attr-defined]
+            cls.root = self._root
         return cls

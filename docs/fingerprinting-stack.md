@@ -12,9 +12,11 @@ For a Monday demo, describe the stack as a waterfall of evidence:
 
 1. **L0/L1 static HTML** — parse the HTML once and extract a template skeleton.
 2. **L2 rendered browser view** — when VoidCrawl renders the page, add accessibility-tree roles from the browser-computed AX snapshot.
-3. **L3 network shape** — add response header/cookie names and browser-captured XHR/fetch endpoint paths.
-4. **Conjunctive comparison** — two pages match only when every carried layer clears its threshold.
+3. **L2+ runtime/transport evidence** — add response header/cookie names and browser-captured XHR/fetch endpoint paths when the fetch tier carried them.
+4. **Conjunctive comparison** — two pages match only when every carried layer clears its weighted threshold.
 5. **Fail-closed trust** — blank/thin pages abstain; optional layers abstain when too sparse; reuse remains subject to trust policy.
+
+`L3` is reserved for antibot/browser-identity health (profile, proxy/IP, cookies, locale, block attribution), not page-template fingerprinting.
 
 This lets the demo answer, “why did Yosoi think these pages are the same kind of page?” with layer-by-layer evidence rather than a single opaque score.
 
@@ -34,22 +36,36 @@ Implementation entry point: `yosoi.generalization.fingerprint.PageFingerprint.of
 
 ## How matching works
 
-`PageFingerprint.similarity(other)` returns a `PageSimilarity` with:
+`PageFingerprint.similarity(other)` returns a nested `PageSimilarity`. Each carried layer is a small model:
 
-- `skeleton`: structural Jaccard score.
-- `semantic`: landmark/heading/schema Jaccard score.
-- `identity`: optional `data-*` key Jaccard, or `None` when not carried by both pages.
-- `ax`: optional rendered accessibility-role Jaccard, or `None`.
-- `network`: optional header/cookie-name Jaccard, or `None`.
-- `endpoint`: optional endpoint-path Jaccard, or `None`.
+```python
+{
+    'jaccard': 0.82,       # raw set overlap, kept for audit/debugging
+    'weighted': 0.88,      # weighted Jaccard, used by same_shape thresholds
+    'containment': 0.96,   # smaller-set inclusion, explains subset/superset cases
+}
+```
+
+The page model contains:
+
+- `score` / `weighted_score`: aggregate weighted score over carried layers.
+- `containment_score`: aggregate containment over carried layers.
+- `skeleton`: structural layer model.
+- `semantic`: landmark/heading/schema layer model.
+- `identity`: optional `data-*` key layer model, or `None` when not carried by both pages.
+- `ax`: optional rendered accessibility-role layer model, or `None`.
+- `network`: optional header/cookie-name layer model, or `None`.
+- `endpoint`: optional endpoint-path layer model, or `None`.
 - `same_shape`: final conjunctive verdict.
 
 The final verdict is deliberately conservative:
 
 - degenerate fingerprints never match;
-- skeleton and semantic layers must pass;
+- skeleton and semantic weighted scores must pass;
 - optional layers only vote when both sides carry enough features;
-- every voting optional layer is a veto if it misses its threshold.
+- every voting optional layer is a veto if its weighted score misses its threshold.
+
+Raw Jaccard remains visible, but weighted Jaccard is the decision score. Containment is explanatory; it helps show "same template plus extra module" without becoming a standalone authorization gate.
 
 ## Explainability output to show
 
@@ -69,12 +85,14 @@ Example shape of the output:
 
 ```python
 {
-    'skeleton': 0.82,
-    'semantic': 0.75,
+    'score': 0.84,
+    'containment_score': 0.92,
+    'skeleton': {'jaccard': 0.82, 'weighted': 0.87, 'containment': 0.95},
+    'semantic': {'jaccard': 0.75, 'weighted': 0.81, 'containment': 0.88},
     'identity': None,
-    'ax': 0.67,
-    'network': 0.58,
-    'endpoint': 0.91,
+    'ax': {'jaccard': 0.67, 'weighted': 0.70, 'containment': 0.80},
+    'network': {'jaccard': 0.58, 'weighted': 0.62, 'containment': 0.78},
+    'endpoint': {'jaccard': 0.91, 'weighted': 0.91, 'containment': 1.0},
     'same_shape': True,
 }
 ```
@@ -92,6 +110,8 @@ Narration:
 - Thin pages and malformed optional data degrade to “not carried” or degenerate instead of raising or matching.
 - Optional thresholds are provisional until more rendered/live batteries are collected.
 - Cross-tier comparison is intentionally cautious: richer browser evidence should not be treated as mandatory unless both pages carry it.
+- MinHash is a future performance/indexing optimization only: shortlist candidate references, then run exact nested similarity for the auditable decision.
+- SimHash and learned classifiers belong to production health checks, not page-template reuse authority: SimHash is better suited to extracted/body content drift and near-duplicate checks; classifiers need labeled reuse outcomes.
 
 ## Code map
 
