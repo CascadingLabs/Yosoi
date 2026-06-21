@@ -19,6 +19,28 @@ import threading
 
 import pytest
 
+_OFFLINE_BROWSER_CSP = (
+    "default-src 'self' data: 'unsafe-inline'; "
+    "script-src 'self' 'unsafe-inline'; "
+    "style-src 'self' 'unsafe-inline'; "
+    "img-src 'self' data:; "
+    "connect-src 'self'; "
+    "frame-src 'self' data:"
+)
+
+
+class OfflineFixtureHandler(http.server.SimpleHTTPRequestHandler):
+    """Serve committed fixtures without letting browsers wait on third-party assets."""
+
+    def end_headers(self) -> None:
+        self.send_header('Content-Security-Policy', _OFFLINE_BROWSER_CSP)
+        super().end_headers()
+
+    def do_POST(self) -> None:
+        self.send_response(204)
+        self.end_headers()
+
+
 from tests.fixtures import FIXTURES_HTML_DIR, MOUNTAINHOME_HOME, VAULTMART_CATALOG
 
 # ---------------------------------------------------------------------------
@@ -30,7 +52,7 @@ from tests.fixtures import FIXTURES_HTML_DIR, MOUNTAINHOME_HOME, VAULTMART_CATAL
 def static_server():
     """Serve tests/fixtures/html/ over HTTP on a random port for the whole session."""
     handler = functools.partial(
-        http.server.SimpleHTTPRequestHandler,
+        OfflineFixtureHandler,
         directory=str(FIXTURES_HTML_DIR),
     )
     server = http.server.HTTPServer(('127.0.0.1', 0), handler)
