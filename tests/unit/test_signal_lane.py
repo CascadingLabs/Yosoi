@@ -61,9 +61,9 @@ async def test_drop_loses_overflow() -> None:
     assert len(seen) <= 2  # only what fit the bounded queue survived
 
 
-def test_fingerprint_policy_defaults_to_gather_on() -> None:
+def test_fingerprint_policy_subpolicy_defaults_to_gather_on() -> None:
     fp = ys.FingerprintPolicy()
-    assert fp.signal_lane is True  # gathering default-on
+    assert fp.signal_lane is True  # once the sub-policy is attached, gather by default
     assert fp.backpressure == 'defer'  # defer-not-drop default
 
 

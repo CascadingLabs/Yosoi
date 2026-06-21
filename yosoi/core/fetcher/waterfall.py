@@ -23,6 +23,7 @@ Usage (drop-in for SimpleFetcher)::
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import time
 from typing import TYPE_CHECKING, Any
@@ -69,6 +70,7 @@ class JSFetcher(HTMLFetcher):
         min_delay: float = 0.5,
         max_delay: float = 2.0,
         randomize_headers: bool = True,
+        allow_redirects: bool = True,
         max_concurrent: int = 5,
         min_content_length: int = 500,
         browser_executable_path: str | None = None,
@@ -93,6 +95,8 @@ class JSFetcher(HTMLFetcher):
             min_delay: Minimum pause between requests (seconds).
             max_delay: Maximum pause between requests (seconds).
             randomize_headers: Forwarded to SimpleFetcher for interface compat.
+            allow_redirects: Forwarded to SimpleFetcher. Browser tiers may still
+                follow redirects; crawl policy blocks changed final URLs after fetch.
             max_concurrent: Max tabs open at once per Chrome tier.
             min_content_length: HTML shorter than this triggers Chrome fallback.
             browser_executable_path: Path to Chrome binary. Auto-detected if None.
@@ -128,12 +132,16 @@ class JSFetcher(HTMLFetcher):
             min_delay=min_delay,
             max_delay=max_delay,
             randomize_headers=randomize_headers,
+            allow_redirects=allow_redirects,
         )
         self._headless: HeadlessFetcher | None = None
         self._headful: HeadfulFetcher | None = None
+        self._headless_lock = asyncio.Lock()
+        self._headful_lock = asyncio.Lock()
 
         # In-memory cache populated from disk on __aenter__
         self._strategy_cache: dict[str, FetchStrategy] = {}
+        self._strategy_lock = asyncio.Lock()
         self._strategy_storage = FetchStrategyStorage()
 
         self._console = console or Console()
@@ -217,30 +225,34 @@ class JSFetcher(HTMLFetcher):
 
     async def _record_success(self, domain: str, tier: str, identity_id: str | None = None) -> None:
         """Save the winning tier (and cascade identity) for *domain* if it changed."""
-        current = self._strategy_cache.get(domain)
-        if current is None or current.fetcher != tier or current.identity_id != identity_id:
-            selector_level = current.selector_level if current is not None else None
-            self._strategy_cache[domain] = FetchStrategy(
-                fetcher=tier, selector_level=selector_level, identity_id=identity_id
-            )
-            await self._strategy_storage.save(domain, tier, selector_level=selector_level, identity_id=identity_id)
-            ident_msg = f' (identity {identity_id})' if identity_id else ''
-            self._console.print(f'[success]  ✓ Fetcher strategy saved: {domain} → {tier}{ident_msg}[/success]')
-            self.logger.info('Fetch strategy cached: %s -> %s%s', domain, tier, ident_msg)
+        async with self._strategy_lock:
+            current = self._strategy_cache.get(domain)
+            if current is None or current.fetcher != tier or current.identity_id != identity_id:
+                selector_level = current.selector_level if current is not None else None
+                self._strategy_cache[domain] = FetchStrategy(
+                    fetcher=tier, selector_level=selector_level, identity_id=identity_id
+                )
+                await self._strategy_storage.save(domain, tier, selector_level=selector_level, identity_id=identity_id)
+                ident_msg = f' (identity {identity_id})' if identity_id else ''
+                self._console.print(f'[success]  ✓ Fetcher strategy saved: {domain} → {tier}{ident_msg}[/success]')
+                self.logger.info('Fetch strategy cached: %s -> %s%s', domain, tier, ident_msg)
 
     async def update_selector_level(self, domain: str, selector_level: str) -> None:
         """Persist the selector escalation level that worked for this domain."""
-        current = self._strategy_cache.get(domain)
-        if current is None:
-            return
-        if current.selector_level == selector_level:
-            return
-        updated = FetchStrategy(fetcher=current.fetcher, selector_level=selector_level, identity_id=current.identity_id)
-        self._strategy_cache[domain] = updated
-        await self._strategy_storage.save(
-            domain, current.fetcher, selector_level=selector_level, identity_id=current.identity_id
-        )
-        self._console.print(f'[dim]  ↳ Selector level cached: {domain} → {selector_level}[/dim]')
+        async with self._strategy_lock:
+            current = self._strategy_cache.get(domain)
+            if current is None:
+                return
+            if current.selector_level == selector_level:
+                return
+            updated = FetchStrategy(
+                fetcher=current.fetcher, selector_level=selector_level, identity_id=current.identity_id
+            )
+            self._strategy_cache[domain] = updated
+            await self._strategy_storage.save(
+                domain, current.fetcher, selector_level=selector_level, identity_id=current.identity_id
+            )
+            self._console.print(f'[dim]  ↳ Selector level cached: {domain} → {selector_level}[/dim]')
 
     # ------------------------------------------------------------------
     # Lazy Chrome tier startup
@@ -293,17 +305,23 @@ class JSFetcher(HTMLFetcher):
     async def _ensure_headless(self) -> HeadlessFetcher:
         """Start headless Chrome lazily on first need."""
         if self._headless is None:
-            self._console.print('[dim]  ↳ Starting headless Chrome...[/dim]')
-            self._headless = HeadlessFetcher(**self._chrome_kwargs)
-            await self._headless.__aenter__()
+            async with self._headless_lock:
+                if self._headless is None:
+                    self._console.print('[dim]  ↳ Starting headless Chrome...[/dim]')
+                    headless = HeadlessFetcher(**self._chrome_kwargs)
+                    await headless.__aenter__()
+                    self._headless = headless
         return self._headless
 
     async def _ensure_headful(self) -> HeadfulFetcher:
         """Start headful Chrome lazily on first need."""
         if self._headful is None:
-            self._console.print('[dim]  ↳ Starting headful Chrome...[/dim]')
-            self._headful = HeadfulFetcher(**self._chrome_kwargs)
-            await self._headful.__aenter__()
+            async with self._headful_lock:
+                if self._headful is None:
+                    self._console.print('[dim]  ↳ Starting headful Chrome...[/dim]')
+                    headful = HeadfulFetcher(**self._chrome_kwargs)
+                    await headful.__aenter__()
+                    self._headful = headful
         return self._headful
 
     # ------------------------------------------------------------------
@@ -489,8 +507,13 @@ class JSFetcher(HTMLFetcher):
         if cached_tier == 'headless':
             try:
                 headless = await self._ensure_headless()
-                result = await headless._do_fetch(
-                    url, start_time, 'headless', action_scripts=action_scripts, download_specs=download_specs
+                result = await self._fetch_browser_tier(
+                    headless,
+                    url,
+                    start_time,
+                    'headless',
+                    action_scripts=action_scripts,
+                    download_specs=download_specs,
                 )
                 if result.html:
                     return result
@@ -500,8 +523,13 @@ class JSFetcher(HTMLFetcher):
                     f'[warning]  ✗ Cached headless tier blocked for {domain} — re-running waterfall[/warning]'
                 )
             headful = await self._ensure_headful()
-            result = await headful._do_fetch(
-                url, start_time, 'headful', action_scripts=action_scripts, download_specs=download_specs
+            result = await self._fetch_browser_tier(
+                headful,
+                url,
+                start_time,
+                'headful',
+                action_scripts=action_scripts,
+                download_specs=download_specs,
             )
             if result.html:
                 await self._record_success(domain, 'headful')
@@ -515,8 +543,13 @@ class JSFetcher(HTMLFetcher):
                     url, domain, start_time, action_scripts=action_scripts, download_specs=download_specs
                 )
             headful = await self._ensure_headful()
-            return await headful._do_fetch(
-                url, start_time, 'headful', action_scripts=action_scripts, download_specs=download_specs
+            return await self._fetch_browser_tier(
+                headful,
+                url,
+                start_time,
+                'headful',
+                action_scripts=action_scripts,
+                download_specs=download_specs,
             )
 
         return None
@@ -572,8 +605,13 @@ class JSFetcher(HTMLFetcher):
         self._console.print('[dim]    [2/3] Trying headless Chrome...[/dim]')
         try:
             headless = await self._ensure_headless()
-            result = await headless._do_fetch(
-                url, start_time, 'headless', action_scripts=action_scripts, download_specs=download_specs
+            result = await self._fetch_browser_tier(
+                headless,
+                url,
+                start_time,
+                'headless',
+                action_scripts=action_scripts,
+                download_specs=download_specs,
             )
             if result.html:
                 self._console.print('[success]    ✓ Headless Chrome worked[/success]')
@@ -595,8 +633,13 @@ class JSFetcher(HTMLFetcher):
 
         self._console.print('[dim]    [3/3] Trying headful Chrome...[/dim]')
         headful = await self._ensure_headful()
-        result = await headful._do_fetch(
-            url, start_time, 'headful', action_scripts=action_scripts, download_specs=download_specs
+        result = await self._fetch_browser_tier(
+            headful,
+            url,
+            start_time,
+            'headful',
+            action_scripts=action_scripts,
+            download_specs=download_specs,
         )
 
         if result.html:
@@ -606,3 +649,46 @@ class JSFetcher(HTMLFetcher):
             self._console.print(f'[warning]    ✗ All three tiers failed for {domain}[/warning]')
 
         return result
+
+    async def _fetch_browser_tier(
+        self,
+        fetcher: _VoidCrawlFetcher,
+        url: str,
+        start_time: float,
+        tier: str,
+        *,
+        action_scripts: dict[str, str] | None = None,
+        download_specs: dict[str, DownloadSpec] | None = None,
+    ) -> FetchResult:
+        """Run one browser tier, retrying transient tab/page timeouts.
+
+        VoidCrawl owns tab pooling; this wrapper only handles a failed fetch result
+        that already escaped the pool as a timeout-shaped page error. Downloads are
+        not retried because a partial click/download may have side effects.
+        """
+        attempts = 1 if download_specs else 3
+        result: FetchResult | None = None
+        for attempt in range(1, attempts + 1):
+            result = await fetcher._do_fetch(
+                url,
+                start_time,
+                tier,
+                action_scripts=action_scripts,
+                download_specs=download_specs,
+            )
+            if not _retryable_browser_timeout(result) or attempt == attempts:
+                return result
+            self._console.print(
+                f'[warning]    ↻ {tier} page timeout for {url} — retrying ({attempt + 1}/{attempts})[/warning]'
+            )
+            await asyncio.sleep(min(4.0, 0.5 * attempt))
+        assert result is not None
+        return result
+
+
+def _retryable_browser_timeout(result: FetchResult) -> bool:
+    """Return True when a browser-tier failed result looks like a transient tab timeout."""
+    if result.html:
+        return False
+    reason = (result.block_reason or '').lower()
+    return any(marker in reason for marker in ('request timed out', 'navigation failed', 'page error'))

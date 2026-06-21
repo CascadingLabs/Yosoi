@@ -228,3 +228,18 @@ def test_push_many_counts_only_newly_accepted_entries() -> None:
     )
 
     assert pushed == 1
+
+
+def test_reprioritize_moves_highest_scored_pending_url_next() -> None:
+    frontier = _frontier()
+    frontier.push('https://example.com/low', depth=0, score=0.1)
+    frontier.push('https://example.com/high', depth=0, score=0.1)
+    frontier.push('https://example.com/mid', depth=0, score=0.1)
+
+    frontier.reprioritize(lambda entry: 0.95 if entry.url.endswith('/high') else entry.score)
+
+    assert [entry.url for entry in frontier.reserve_batch(3)] == [
+        'https://example.com/high',
+        'https://example.com/mid',
+        'https://example.com/low',
+    ]

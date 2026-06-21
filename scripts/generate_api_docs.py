@@ -20,7 +20,10 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import difflib
 import re
+import subprocess
+import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -49,15 +52,133 @@ _GITHUB_ICON = (
 _REPO_ROOT = Path(__file__).parent.parent
 
 
+def _current_git_ref() -> str:
+    """Return the current commit SHA for stable latest-docs source links."""
+    result = subprocess.run(
+        ['git', 'rev-parse', 'HEAD'],
+        cwd=_REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return result.stdout.strip()
+
+
+def _source_path_exists_at_ref(ref: str, rel_path: str) -> bool:
+    """Return True when rel_path exists at ref, preserving git's case sensitivity."""
+    result = subprocess.run(
+        ['git', 'cat-file', '-e', f'{ref}:{rel_path}'],
+        cwd=_REPO_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    return result.returncode == 0
+
+
+def _source_text_at_ref(ref: str, rel_path: str) -> str:
+    """Return file content at ref:path."""
+    result = subprocess.run(
+        ['git', 'show', f'{ref}:{rel_path}'],
+        cwd=_REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return result.stdout
+
+
+def _validate_source_links(content: str, repo_url: str, ref: str) -> None:
+    """Validate generated GitHub source links against the local git database."""
+    link_pattern = re.compile(rf'href="{re.escape(repo_url)}/blob/{re.escape(ref)}/([^"#]+)(?:#L(\d+))?"')
+    heading_pattern = re.compile(
+        rf'^\#\#\#? `([^`]+)`.*?href="{re.escape(repo_url)}/blob/{re.escape(ref)}/([^"#]+)(?:#L(\d+))?"',
+        re.MULTILINE,
+    )
+    missing = sorted(
+        {path for path, _line in link_pattern.findall(content) if not _source_path_exists_at_ref(ref, path)}
+    )
+    if missing:
+        joined = '\n'.join(f'  - {path}' for path in missing)
+        raise SystemExit(f'Source link validation failed for ref {ref}:\n{joined}')
+    bad_lines: list[str] = []
+    for name, path, line in heading_pattern.findall(content):
+        if not line:
+            continue
+        lines = _source_text_at_ref(ref, path).splitlines()
+        lineno = int(line)
+        source_line = lines[lineno - 1].strip() if 0 < lineno <= len(lines) else ''
+        if not re.match(rf'(async\s+def|def|class)\s+{re.escape(name)}\b', source_line):
+            bad_lines.append(f'  - {path}#L{lineno}: {source_line}')
+    if bad_lines:
+        joined = '\n'.join(bad_lines)
+        raise SystemExit(f'Source link line validation failed for ref {ref}:\n{joined}')
+
+
+def _declaration_lineno(obj: Object, rel: Path) -> int | None:
+    """Find the concrete def/class line for a griffe object."""
+    lineno = getattr(obj, 'lineno', None)
+    if not lineno:
+        return None
+    source_path = _REPO_ROOT / rel
+    if not source_path.exists():
+        return lineno
+    name = getattr(obj, 'name', '')
+    keyword = 'class' if isinstance(obj, griffe.Class) else r'(?:async\s+def|def)'
+    pattern = re.compile(rf'^\s*{keyword}\s+{re.escape(name)}\b')
+    lines = source_path.read_text().splitlines()
+    start = max(lineno - 8, 0)
+    stop = min((getattr(obj, 'endlineno', None) or lineno) + 8, len(lines))
+    for index in range(start, stop):
+        if pattern.match(lines[index]):
+            return index + 1
+    return None
+
+
+def _line_is_declaration_at_ref(ref: str, rel: Path, lineno: int, name: str) -> bool:
+    """Return True when ref:path#Llineno points at a declaration."""
+    rel_path = rel.as_posix()
+    if not _source_path_exists_at_ref(ref, rel_path):
+        return False
+    lines = _source_text_at_ref(ref, rel_path).splitlines()
+    source_line = lines[lineno - 1].strip() if 0 < lineno <= len(lines) else ''
+    return bool(re.match(rf'(async\s+def|def|class)\s+{re.escape(name)}\b', source_line))
+
+
+def _check_file(path: Path, expected: str) -> None:
+    """Exit non-zero when path does not match expected content."""
+    if not path.exists():
+        raise SystemExit(f'Generated API reference is missing: {path}')
+    actual = path.read_text()
+    if actual == expected:
+        print(f'OK: {path}')
+        return
+    diff = ''.join(
+        difflib.unified_diff(
+            actual.splitlines(keepends=True),
+            expected.splitlines(keepends=True),
+            fromfile=str(path),
+            tofile=f'{path} (generated)',
+        )
+    )
+    sys.stderr.write(diff)
+    raise SystemExit(f'Generated API reference is out of date: {path}')
+
+
 def _gh_link(obj: Object, repo_url: str, ref: str) -> str:
     """Return an inline HTML GitHub source link for the given object, or '' if unavailable."""
-    lineno = getattr(obj, 'lineno', None)
     filepath = getattr(obj, 'filepath', None)
-    if not lineno or not filepath:
+    if not filepath:
         return ''
     try:
         rel = Path(filepath).relative_to(_REPO_ROOT)
     except ValueError:
+        return ''
+    lineno = _declaration_lineno(obj, rel)
+    if not lineno:
+        return ''
+    name = getattr(obj, 'name', '')
+    if not _line_is_declaration_at_ref(ref, rel, lineno, name):
         return ''
     url = f'{repo_url}/blob/{ref}/{rel.as_posix()}#L{lineno}'
     return (
@@ -353,7 +474,12 @@ def main() -> None:
     parser = argparse.ArgumentParser(description='Generate yosoi API reference markdown.')
     output_group = parser.add_mutually_exclusive_group()
     output_group.add_argument('--output', default='', help='Single output file path (legacy)')
-    output_group.add_argument('--output-dir', default='', help='Directory to write split reference files into')
+    output_group.add_argument(
+        '--output-dir',
+        default='',
+        help='Directory to write split reference files into; defaults to ../YosoiDocs/reference',
+    )
+    parser.add_argument('--check', action='store_true', help='Check committed docs output without writing files')
     parser.add_argument('--version', default='', help='Version string (e.g. v0.1.0)')
     parser.add_argument(
         '--exclude',
@@ -368,7 +494,7 @@ def main() -> None:
     parser.add_argument(
         '--ref',
         default='',
-        help='Git ref (tag/branch/commit) for source links — defaults to the version tag',
+        help='Git ref (tag/branch/commit) for source links; defaults to the current commit SHA',
     )
     args = parser.parse_args()
 
@@ -385,12 +511,17 @@ def main() -> None:
     else:
         version = args.version
 
-    # Tags in this repo have no 'v' prefix (e.g. '0.0.1a11', not 'v0.0.1a11')
-    ref = args.ref or version.lstrip('v')
+    ref = args.ref or _current_git_ref()
 
-    if args.output_dir:
+    if args.output_dir or not args.output:
         files = generate_split(version, exclude, args.github_repo, ref)
-        out_dir = Path(args.output_dir)
+        for content in files.values():
+            _validate_source_links(content, args.github_repo, ref)
+        out_dir = Path(args.output_dir or '../YosoiDocs/reference')
+        if args.check:
+            for filename, content in files.items():
+                _check_file(out_dir / filename, content)
+            return
         out_dir.mkdir(parents=True, exist_ok=True)
         total = 0
         for filename, content in files.items():
@@ -402,7 +533,11 @@ def main() -> None:
     else:
         out_path = args.output or 'api-reference.md'
         content = generate(version, exclude, args.github_repo, ref)
+        _validate_source_links(content, args.github_repo, ref)
         out = Path(out_path)
+        if args.check:
+            _check_file(out, content)
+            return
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(content)
         print(f'Wrote {len(content):,} bytes to {out}')

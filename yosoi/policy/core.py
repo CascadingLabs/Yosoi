@@ -37,9 +37,11 @@ from yosoi.policy.crawl import (
     _PRESET_ALIASES,
     _PRESET_CRAWL_POLICIES,
     CrawlPolicy,
+    CrawlPresetName,
     CrawlRuntimeConfig,
 )
 from yosoi.policy.fingerprint import FingerprintPolicy
+from yosoi.policy.page import PagePolicy, PageRuntimeConfig
 from yosoi.policy.run import (
     DiscoveryPolicy,
     DownloadPolicy,
@@ -86,6 +88,7 @@ class Policy(BaseModel):
     telemetry: TelemetryPolicy | None = None
     output: OutputPolicy | None = None
     download: DownloadPolicy | None = None
+    page: PagePolicy | None = None
     crawl: CrawlPolicy | None = None
     fingerprint: FingerprintPolicy | None = None
 
@@ -107,6 +110,11 @@ class Policy(BaseModel):
             ref = find_secret_ref(model.provider, src) if model.provider is not None else None
             kwargs['model'] = model.model_copy(update={'credential_ref': ref}) if ref is not None else model
         scrape_env_keys = ('YOSOI_FORCE', 'YOSOI_FETCHER_TYPE', 'YOSOI_SELECTOR_LEVEL', 'YOSOI_CROSS_ORIGIN_DOM')
+        page_payload: dict[str, Any] = {}
+        if 'YOSOI_FETCHER_TYPE' in src:
+            page_payload['fetcher_type'] = src['YOSOI_FETCHER_TYPE'].strip().lower()
+        if page_payload:
+            kwargs['page'] = PagePolicy.model_validate(page_payload)
         if any(key in src for key in scrape_env_keys):
             scrape_payload: dict[str, Any] = {}
             if 'YOSOI_FORCE' in src:
@@ -139,10 +147,20 @@ class Policy(BaseModel):
     @classmethod
     def for_crawl(
         cls,
-        preset: str | None = 'crawl.conservative',
+        preset: CrawlPresetName | None = 'crawl.conservative',
         **overrides: Any,
     ) -> Policy:
-        """Build a policy with a resolved crawl preset and validated overrides."""
+        """Build a policy with a resolved crawl preset and validated overrides.
+
+        Presets:
+          - ``crawl.local_single``: one page, depth 0, one worker.
+          - ``crawl.conservative``: bounded crawl, depth 2, low concurrency.
+          - ``crawl.seed_hunt``: broader seed discovery, depth 2, still polite.
+
+        Pass explicit ``budget=``, ``scheduler=``, ``safety=``, or
+        ``fetcher_type=`` overrides when an example needs to show its exact crawl
+        contract instead of relying on preset defaults.
+        """
         crawl = resolve_crawl_policy(preset)
         if overrides:
             crawl_payload = crawl.model_dump()
@@ -246,6 +264,7 @@ class Policy(BaseModel):
         discovery = self.discovery or DiscoveryPolicy()
         output = self.output or OutputPolicy()
         download = self.download or DownloadPolicy()
+        page = self.page_runtime(scrape=scrape)
 
         return ResolvedRunSpec(
             policy_hash=self.policy_hash,
@@ -262,13 +281,14 @@ class Policy(BaseModel):
             debug_html_dir=output.debug_html_dir,
             force=scrape.force,
             skip_verification=scrape.skip_verification,
-            fetcher_type=scrape.fetcher_type,
+            fetcher_type=page.fetcher_type,
             selector_level=scrape.selector_level,
             max_concurrency=scrape.max_concurrency,
             cross_origin_dom=scrape.cross_origin_dom,
             output_formats=output.formats,
             quiet=output.quiet,
             json_output=output.json_output,
+            plain_output=output.plain_output,
             allow_downloads=download.allow,
             allowed_download_types=download.allowed_types,
             download_dir=download.directory,
@@ -281,6 +301,31 @@ class Policy(BaseModel):
             static_mode_warning=discovery.static_mode_warning,
         )
 
+    def page_runtime(
+        self,
+        *,
+        scrape: ScrapePolicy | None = None,
+        crawl: CrawlPolicy | None = None,
+    ) -> PageRuntimeConfig:
+        """Resolve generic page acquisition policy without choosing a runtime."""
+        page = self.page or PagePolicy()
+        updates: dict[str, Any] = {}
+        if scrape is not None and 'fetcher_type' in scrape.model_fields_set:
+            updates['fetcher_type'] = scrape.fetcher_type
+        if crawl is not None:
+            if 'fetcher_type' in crawl.model_fields_set:
+                updates['fetcher_type'] = crawl.fetcher_type
+            if 'scheduler' in crawl.model_fields_set:
+                if 'fetch_timeout_seconds' in crawl.scheduler.model_fields_set:
+                    updates['timeout_seconds'] = crawl.scheduler.fetch_timeout_seconds
+                if 'max_fetch_retries' in crawl.scheduler.model_fields_set:
+                    updates['max_fetch_retries'] = crawl.scheduler.max_fetch_retries
+            if 'safety' in crawl.model_fields_set and 'allow_redirects' in crawl.safety.model_fields_set:
+                updates['allow_redirects'] = crawl.safety.allow_redirects
+        if updates:
+            page = page.model_copy(update=updates)
+        return page.to_runtime_config()
+
     def require_crawl(self) -> CrawlPolicy:
         """Return the crawl policy or fail before a crawl can start."""
         if self.crawl is None:
@@ -291,6 +336,7 @@ class Policy(BaseModel):
         """Dry-run crawl policy validation and runtime config derivation."""
         crawl = self.require_crawl()
         runtime = crawl.to_runtime_config(seeds=seeds)
+        runtime = runtime.model_copy(update={'page': self.page_runtime(crawl=crawl)})
         warnings: list[str] = []
         if runtime.max_workers > runtime.max_pages:
             warnings.append('max_workers exceeds max_pages; some workers will be idle')
@@ -300,16 +346,6 @@ class Policy(BaseModel):
             warnings.append('no allowed_hosts resolved; pass seeds or set safety.allowed_hosts')
         if runtime.per_host_concurrency > 1 and runtime.politeness_delay == 0:
             warnings.append('same-host concurrency without politeness_delay can be impolite')
-        # Honesty: these per-host caps are carried on the policy but the crawl engine does not
-        # enforce them yet (per-host fan-out is bounded only by max_workers + politeness_delay).
-        # Warn so an operator does not assume a tighter per-host limit than they actually get.
-        if runtime.per_host_concurrency < runtime.max_workers:
-            warnings.append(
-                'per_host_concurrency is not yet enforced by the crawl engine; per-host fan-out '
-                'is bounded only by max_workers and politeness_delay'
-            )
-        if runtime.max_pages_per_host is not None:
-            warnings.append('max_pages_per_host is not yet enforced by the crawl engine; it has no effect')
         return PolicyCheck(valid=True, policy_hash=self.policy_hash, warnings=tuple(warnings), runtime=runtime)
 
     @property

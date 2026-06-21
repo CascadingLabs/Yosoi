@@ -38,6 +38,60 @@ YOSOI_MODEL=groq:llama-3.3-70b-versatile \
 uv run python examples/qscrape.dev/l1/eshop/catalog.py
 ```
 
+## Crawl
+
+`crawl_qscrape_articles.py` shows the crawl-to-contract workflow. It seeds from
+the qscrape.dev L1 root, lets `ys.crawl(...)` traverse the small demo domain and
+build the `NewsArticle` URL candidates, then scrapes that list when a model is configured. It sets
+`respect_robots=False` because qscrape.dev is the maintained demo target for
+these examples.
+
+```bash
+uv run python examples/crawl_qscrape_articles.py
+```
+
+`scrape_qscrape_l2_news_articles.py` is the rendered L2 companion. It targets
+the qscrape.dev L2 news archive with the built-in `ys.NewsArticle` contract and
+uses the auto JS waterfall fetcher so extraction happens after rendering.
+
+```bash
+uv run python examples/scrape_qscrape_l2_news_articles.py
+```
+
+`crawl_qscrape_l2_news_articles.py` is the crawl-only rendered L2 companion. It
+starts at `https://qscrape.dev/l2/`, keeps the crawl scoped to qscrape.dev, and
+prints only `NewsArticle` crawl candidates.
+
+```bash
+uv run python examples/crawl_qscrape_l2_news_articles.py
+```
+
+`crawl_yahoo_finance.py` is the finance-news API example. It seeds from Yahoo
+Finance news, runs a quiet host-scoped crawl, and shows only the crawler-built
+`NewsArticle` URL candidates. Set `YOSOI_CRAWL_DEBUG=1` when you want the crawl
+frontier diagnostics.
+
+```bash
+uv run python examples/crawl_yahoo_finance.py
+```
+
+`crawl_public_stress.py` runs 12 bounded public-web crawl cases and renders one
+comparison table. Use it before a release when you want to find crawl policy,
+fetching, and display rough edges across varied real sites.
+
+```bash
+uv run python examples/crawl_public_stress.py
+```
+
+`crawl_policy_article_candidates_usecase.py` is the policy-as-code companion. It
+runs a small live qscrape.dev crawl and shows how crawl budgets, host
+allow-lists, blocked paths, worker limits, path planning, and invalid-policy
+checks behave before a large candidate crawl runs.
+
+```bash
+uv run python examples/crawl_policy_article_candidates_usecase.py
+```
+
 ## Google Search
 
 `google_search/google_search.py` is an offline replay example. It exercises

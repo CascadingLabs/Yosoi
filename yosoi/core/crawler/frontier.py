@@ -6,13 +6,14 @@ import asyncio
 import json
 import logging
 import posixpath
+from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from time import monotonic
 from typing import Literal
 from urllib.parse import parse_qsl, quote, urlencode, urlparse, urlunparse
 
-from yosoi.utils.files import atomic_write_json_async, init_yosoi
+from yosoi.utils.files import atomic_write_json, init_yosoi
 
 logger = logging.getLogger(__name__)
 
@@ -145,6 +146,15 @@ class CrawlFrontier:
                 pushed += 1
         return pushed
 
+    def reprioritize(self, scorer: Callable[[FrontierEntry], float]) -> None:
+        """Update pending entry scores while preserving the frontier's LIFO mechanics."""
+        updated: list[FrontierEntry] = []
+        for entry in self._stack:
+            score = max(entry.score, float(scorer(entry)))
+            updated.append(FrontierEntry(url=entry.url, depth=entry.depth, source_url=entry.source_url, score=score))
+        updated.sort(key=lambda entry: entry.score)
+        self._stack = updated
+
     def reserve_batch(self, limit: int) -> list[FrontierEntry]:
         """Reserve up to ``limit`` URLs in LIFO order for concurrent workers."""
         if limit < 1 or self.pages_fetched >= self.max_pages:
@@ -190,7 +200,7 @@ class CrawlFrontier:
             'policy_blocked': sorted(self._policy_blocked),
             'last_fetch_by_host': self._last_fetch_by_host,
         }
-        await atomic_write_json_async(self._filepath, payload, ensure_ascii=False)
+        atomic_write_json(self._filepath, payload, ensure_ascii=False)
 
     def _load(self) -> None:
         try:

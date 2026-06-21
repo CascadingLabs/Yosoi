@@ -16,6 +16,7 @@ from yosoi.policy import (
     EscalationPolicy,
     ModelPolicy,
     Outcome,
+    PagePolicy,
     Policy,
     SchedulerPolicy,
     ScrapePolicy,
@@ -140,6 +141,26 @@ def test_cascade_later_layer_wins() -> None:
     assert eff.atom_reads is False  # untouched field preserved from the lower layer
 
 
+def test_page_policy_overlays_crawl_runtime_acquisition() -> None:
+    policy = Policy(
+        page=PagePolicy(fetcher_type='headless', clean_html=False),
+        crawl=CrawlPolicy(
+            budget=CrawlBudget(max_pages=1),
+            scheduler=SchedulerPolicy(fetch_timeout_seconds=7, max_fetch_retries=1),
+            safety=CrawlSafety(allow_redirects=False),
+        ),
+    )
+
+    checked = policy.check_crawl(seeds=('https://example.com/',))
+
+    assert checked.runtime is not None
+    assert checked.runtime.page.fetcher_type == 'headless'
+    assert checked.runtime.page.timeout_seconds == 7
+    assert checked.runtime.page.max_fetch_retries == 1
+    assert checked.runtime.page.allow_redirects is False
+    assert checked.runtime.page.clean_html is False
+
+
 def test_cascade_partial_layer_only_changes_set_fields() -> None:
     env = Policy(atom_reads=True, trust_tier='strict')
     contract = Policy(atom_reads=False)  # only atom_reads explicitly set
@@ -260,6 +281,7 @@ def test_crawl_policy_preset_resolves_to_runtime_config() -> None:
     assert check.runtime.per_host_concurrency == 1
     assert check.runtime.allowed_hosts == ('example.com',)
     assert check.runtime.respect_robots is True  # default-respect robots
+    assert check.runtime.allow_redirects is False  # default: frontier URLs do not silently move
 
 
 def test_crawl_policy_arn_preset_resolution() -> None:
@@ -350,6 +372,12 @@ def test_safety_rejects_cross_domain_with_allowed_hosts() -> None:
         CrawlSafety(allow_cross_domain=True, allowed_hosts=('example.com',))
 
 
+def test_safety_can_opt_into_redirects() -> None:
+    safety = CrawlSafety(allow_redirects=True)
+
+    assert safety.allow_redirects is True
+
+
 def test_safety_rejects_path_shaped_host_entries() -> None:
     with pytest.raises(ValidationError, match='host entries may not include paths'):
         CrawlSafety(allowed_hosts=('example.com/news',))
@@ -375,7 +403,7 @@ def test_escalation_rejects_paid_budget_when_paid_scrapers_disabled() -> None:
     'kwargs',
     [
         {'name': 'Article', 'min_fields': False},
-        {'name': 'Article', 'min_confidence': False},
+        {'name': 'Article', 'min_fit_score': False},
         {'name': 'Article', 'max_budget_pages': False},
     ],
 )
@@ -569,9 +597,12 @@ def test_crawl_target_rejects_blank_name() -> None:
         CrawlTarget(name='   ')
 
 
-def test_seed_hunt_rejects_target_contracts() -> None:
-    with pytest.raises(ValidationError, match='seed_hunt'):
-        CrawlPolicy(mode='seed_hunt', target_contracts=(CrawlTarget(name='Article'),))
+def test_crawl_policy_accepts_string_target_contracts() -> None:
+    policy = CrawlPolicy(mode='seed_hunt', target_contracts=('NewsArticle',))
+    runtime = policy.to_runtime_config(seeds=('https://example.com/news/',))
+
+    assert policy.target_contracts == (CrawlTarget(name='NewsArticle'),)
+    assert runtime.target_contracts == (CrawlTarget(name='NewsArticle'),)
 
 
 def test_policy_arn_rejects_blank_parts() -> None:
@@ -677,13 +708,12 @@ def test_resolved_run_spec_never_leaks_secrets_in_repr_or_dump() -> None:
     assert spec.model_dump()['llm_config']['api_key'] == '***REDACTED***'
 
 
-def test_check_crawl_warns_unenforced_per_host_caps() -> None:
+def test_check_crawl_does_not_warn_for_enforced_per_host_caps() -> None:
     policy = Policy.for_crawl('crawl.seed_hunt')
 
     warnings = policy.check_crawl(seeds=('https://x.test/',)).warnings
 
-    assert any('per_host_concurrency is not yet enforced' in w for w in warnings)
-    assert any('max_pages_per_host is not yet enforced' in w for w in warnings)
+    assert warnings == ()
 
 
 def test_redact_secret_configs_handles_none_and_dict_inputs() -> None:

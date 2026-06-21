@@ -18,6 +18,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
+import os
 import random
 import time
 from collections.abc import AsyncGenerator
@@ -126,10 +127,15 @@ class _VoidCrawlFetcher(HTMLFetcher):
 
     async def __aenter__(self) -> _VoidCrawlFetcher:
         BrowserPool, BrowserConfig, PoolConfig = _import_voidcrawl()
+        # CHROME_WS_URLS (voidcrawl's docker convention: comma-separated CDP URLs)
+        # switches the pool from launching Chrome locally to attaching to the
+        # already-running browsers, e.g. a VoidCrawl docker container.
+        ws_urls = [u.strip() for u in os.getenv('CHROME_WS_URLS', '').split(',') if u.strip()]
         config = PoolConfig(
             browsers=1,
             tabs_per_browser=self.max_concurrent,
             tab_max_idle_secs=300,
+            chrome_ws_urls=ws_urls,
             browser=BrowserConfig(**self._browser_config_kwargs(BrowserConfig)),
         )
         self._pool_ctx = BrowserPool(config)
@@ -362,7 +368,15 @@ class _VoidCrawlFetcher(HTMLFetcher):
             await self._apply_identity_geo(tab)
             # Capture the goto PageResponse instead of discarding it — its headers/endpoints feed
             # the waterfall fingerprint's L3 layers (the former blind spot).
-            page_resp = await self._goto_capture(tab, url)
+            async for attempt in get_async_retryer(
+                max_attempts=3,
+                wait_min=0.5,
+                wait_max=4.0,
+                exceptions=(RuntimeError,),
+                log_callback=log_retry,
+            ):
+                with attempt:
+                    page_resp = await self._goto_capture(tab, url)
             resp_headers = getattr(page_resp, 'headers', None) or None
             resp_endpoints = getattr(page_resp, 'endpoints', None) or None
 

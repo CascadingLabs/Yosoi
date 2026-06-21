@@ -1,4 +1,4 @@
-"""Model-free crawl/index primitives."""
+"""Model-free crawl candidate primitives."""
 
 from __future__ import annotations
 
@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING
 from yosoi._lazy import lazy_exports
 
 if TYPE_CHECKING:
+    from yosoi.core.crawler.candidates import CandidateFit as CandidateFit
+    from yosoi.core.crawler.candidates import CrawlCandidateEntry as CrawlCandidateEntry
     from yosoi.core.crawler.coordinator import CrawlCoordinator as CrawlCoordinator
     from yosoi.core.crawler.coordinator import CrawlJob as CrawlJob
     from yosoi.core.crawler.coordinator import CrawlResult as CrawlResult
@@ -20,6 +22,8 @@ if TYPE_CHECKING:
 _LAZY = {
     'CrawlCoordinator': 'yosoi.core.crawler.coordinator',
     'CrawlFrontier': 'yosoi.core.crawler.frontier',
+    'CandidateFit': 'yosoi.core.crawler.candidates',
+    'CrawlCandidateEntry': 'yosoi.core.crawler.candidates',
     'CrawlJob': 'yosoi.core.crawler.coordinator',
     'CrawlLink': 'yosoi.core.crawler.links',
     'CrawlResult': 'yosoi.core.crawler.coordinator',

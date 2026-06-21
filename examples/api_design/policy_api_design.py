@@ -125,7 +125,7 @@ def main() -> None:
 
     # 8. Hand policy straight to public entrypoints:
     #        rows = await ys.scrape(url, Contract, policy=scrape_policy)
-    #        summary = await ys.crawl_index(seeds, policy=crawl_policy)
+    #        summary = await ys.crawl(seeds, policy=crawl_policy)
 
 
 if __name__ == '__main__':

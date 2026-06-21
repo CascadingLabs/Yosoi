@@ -43,7 +43,7 @@ def fingerprint(
     This is the high-level escape hatch for inspecting page shape directly:
     pass raw HTML, or pass an object with ``.html`` plus optional
     ``.ax_snapshot``, ``.headers``, and ``.endpoints`` attributes. It never
-        reads ``.yosoi`` cache files.
+    reads ``.yosoi`` cache files.
     """
     from yosoi.reporting.fingerprint import coerce_fingerprint
 

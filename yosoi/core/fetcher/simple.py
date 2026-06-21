@@ -43,6 +43,7 @@ class SimpleFetcher(HTMLFetcher):
         max_delay: float = 2.0,
         randomize_headers: bool = True,
         user_agent: str | None = None,
+        allow_redirects: bool = True,
     ):
         """Intialize the simple fetcher.
 
@@ -54,6 +55,7 @@ class SimpleFetcher(HTMLFetcher):
             max_delay: Maximum time to pause between fetches
             randomize_headers: If True then will randomize the headers used to fetch
             user_agent: Fixed UA to use instead of per-request UA rotation
+            allow_redirects: Whether HTTP redirects are followed by this fetcher
 
         """
         self.timeout = timeout
@@ -63,6 +65,7 @@ class SimpleFetcher(HTMLFetcher):
         self.max_delay = max_delay
         self.randomize_headers = randomize_headers
         self.user_agent = user_agent
+        self.allow_redirects = allow_redirects
 
         # Client is created lazily in __aenter__ when use_session=True
         self.client: httpx.AsyncClient | None = None
@@ -145,10 +148,14 @@ class SimpleFetcher(HTMLFetcher):
 
             # Use client or direct request
             if self.client:
-                response = await self.client.get(url, headers=headers, timeout=self.timeout, follow_redirects=True)
+                response = await self.client.get(
+                    url, headers=headers, timeout=self.timeout, follow_redirects=self.allow_redirects
+                )
             else:
                 async with httpx.AsyncClient() as client:
-                    response = await client.get(url, headers=headers, timeout=self.timeout, follow_redirects=True)
+                    response = await client.get(
+                        url, headers=headers, timeout=self.timeout, follow_redirects=self.allow_redirects
+                    )
 
             status_code = response.status_code
 
@@ -173,7 +180,7 @@ class SimpleFetcher(HTMLFetcher):
             # Verify we got actual HTML
             if not html or len(html) < 100:
                 return FetchResult(
-                    url=url,
+                    url=str(response.url),
                     html=None,
                     status_code=status_code,
                     is_blocked=True,
@@ -200,7 +207,7 @@ class SimpleFetcher(HTMLFetcher):
             fetch_time = time.time() - start_time
 
             return FetchResult(
-                url=url,
+                url=str(response.url),
                 html=html,
                 status_code=status_code,
                 is_blocked=False,

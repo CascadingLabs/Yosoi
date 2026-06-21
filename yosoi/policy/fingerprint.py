@@ -1,10 +1,12 @@
 """Fingerprint signal-lane sub-policy (CAS-168 item 4).
 
 Governs the **signal lane**: gathering a page-fingerprint/health signal forks off the read
-critical path. **Gathering** is default-on and invisible (off-path). Under backpressure the work
-is **deferred as low-priority background work, not dropped** (``backpressure='defer'``); ``drop``
-is the opt-in for bounded memory. **Acting** on the signal (reuse / quarantine / re-mint) is the
-trust policy — default-deny — and is deliberately *not* part of this lane.
+critical path. The lane is opt-in at ``Policy`` level: no fingerprint sub-policy means no
+background work. Once a caller attaches ``FingerprintPolicy()``, gathering is on and invisible
+(off-path). Under backpressure the work is **deferred as low-priority background work, not
+dropped** (``backpressure='defer'``); ``drop`` is the opt-in for bounded memory. **Acting** on
+the signal (reuse / quarantine / re-mint) is the trust policy — default-deny — and is deliberately
+*not* part of this lane.
 """
 
 from __future__ import annotations
@@ -23,6 +25,6 @@ class FingerprintPolicy(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    signal_lane: bool = True  # gather the signal at all (default-on, invisible, off the hot path)
+    signal_lane: bool = True  # when this sub-policy is attached, gather off the hot path
     backpressure: Backpressure = 'defer'  # full queue → defer (keep) vs drop (bounded memory)
     max_queue: StrictInt = Field(default=256, ge=1, le=1_000_000)

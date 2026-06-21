@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+
 import pytest
 
 from yosoi.core.fetcher.base import ContentAnalyzer
@@ -89,6 +91,62 @@ async def test_update_selector_level_preserves_cached_fetcher(mocker):
     assert fetcher._strategy_cache['qscrape.dev'].fetcher == 'headless'
     assert fetcher._strategy_cache['qscrape.dev'].selector_level == 'xpath'
     fetcher._strategy_storage.save.assert_any_call('qscrape.dev', 'headless', selector_level='xpath', identity_id=None)
+
+
+@pytest.mark.asyncio
+async def test_concurrent_headless_first_use_starts_one_shared_tier(mocker):
+    """Concurrent crawl workers should share one lazily-started VoidCrawl tier."""
+    starts = 0
+
+    class _SlowHeadless:
+        def __init__(self, **_kwargs):  # type: ignore[no-untyped-def]
+            pass
+
+        async def __aenter__(self):  # type: ignore[no-untyped-def]
+            nonlocal starts
+            starts += 1
+            await asyncio.sleep(0.01)
+            return self
+
+    fetcher = JSFetcher(console=_Console())
+    mocker.patch('yosoi.core.fetcher.waterfall.HeadlessFetcher', _SlowHeadless)
+
+    tiers = await asyncio.gather(
+        fetcher._ensure_headless(),
+        fetcher._ensure_headless(),
+        fetcher._ensure_headless(),
+    )
+
+    assert starts == 1
+    assert tiers[0] is tiers[1] is tiers[2]
+
+
+@pytest.mark.asyncio
+async def test_concurrent_headful_first_use_starts_one_shared_tier(mocker):
+    """Headful fallback has the same lazy-start race guard as headless."""
+    starts = 0
+
+    class _SlowHeadful:
+        def __init__(self, **_kwargs):  # type: ignore[no-untyped-def]
+            pass
+
+        async def __aenter__(self):  # type: ignore[no-untyped-def]
+            nonlocal starts
+            starts += 1
+            await asyncio.sleep(0.01)
+            return self
+
+    fetcher = JSFetcher(console=_Console())
+    mocker.patch('yosoi.core.fetcher.waterfall.HeadfulFetcher', _SlowHeadful)
+
+    tiers = await asyncio.gather(
+        fetcher._ensure_headful(),
+        fetcher._ensure_headful(),
+        fetcher._ensure_headful(),
+    )
+
+    assert starts == 1
+    assert tiers[0] is tiers[1] is tiers[2]
 
 
 # ---------------------------------------------------------------------------

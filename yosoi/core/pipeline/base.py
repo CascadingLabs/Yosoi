@@ -327,7 +327,13 @@ class Pipeline(
         ``mocker.patch('yosoi.core.pipeline.base.create_fetcher')`` intercepts calls here.
         """
         try:
+            page_config = self._page_runtime_config(fetcher_type=fetcher_type)
             kwargs: dict[str, Any] = {}
+            page_policy = getattr(getattr(self, '_policy', None), 'page', None)
+            if page_policy is not None and 'timeout_seconds' in page_policy.model_fields_set:
+                kwargs['timeout'] = int(page_config.timeout_seconds)
+            if page_policy is not None and 'allow_redirects' in page_policy.model_fields_set:
+                kwargs['allow_redirects'] = page_config.allow_redirects
             identity = getattr(self, '_identity', None)  # getattr: __new__-based test stubs omit it
             if fetcher_type in ('auto', 'waterfall', 'headless', 'headful'):
                 if console is not None:
@@ -637,28 +643,23 @@ class Pipeline(
         download_specs = self._resolve_download_specs(fetcher)
 
         with observability.span('fetch', url=url, max_retries=max_fetch_retries):
-            result = await self._fetch(
+            snapshot = await self._acquire_page(
                 url,
-                fetcher,
-                max_retries=max_fetch_retries,
+                fetcher=fetcher,
+                max_fetch_retries=max_fetch_retries,
                 action_scripts=js_scripts or None,
                 download_specs=download_specs,
             )
-            if not result:
-                raise RuntimeError(f'Failed to fetch {url}')
+            result = snapshot.fetch_result
             assert result.html is not None
-
-        with observability.span('clean', url=url, raw_chars=len(result.html)):
-            cleaned_html = await self._clean(url, result)
-            if not cleaned_html:
-                raise RuntimeError(f'HTML cleaning failed for {url}')
 
         # Gather the page-fingerprint signal off the hot path (non-blocking; fingerprint computed
         # in the lane drainer). Default-off unless a FingerprintPolicy opts in.
         if self._signal_lane is not None:
             self._signal_lane.offer(
-                PageObservation(url, domain, self.contract.__name__, result.html, result.ax_snapshot)
+                PageObservation(url, domain, self.contract.__name__, snapshot.raw_html, result.ax_snapshot)
             )
+        cleaned_html = snapshot.html_for_discovery
 
         cached_mode = None if force_flag else await self._discovery_strategy.load(domain, self._contract_sig)
         escalate_first = self._force_mcp or cached_mode == 'mcp'

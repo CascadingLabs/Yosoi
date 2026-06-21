@@ -75,6 +75,7 @@ def _comparison_table(left: PageFingerprint, right: PageFingerprint) -> Table:
     table.add_column('verdict')
 
     rows = [
+        ('score', similarity.score, ''),
         ('same_shape', None, 'yes' if similarity.same_shape else 'no'),
         ('skeleton', similarity.skeleton, ''),
         ('semantic', similarity.semantic, ''),

@@ -13,7 +13,7 @@ on:
 
 jobs:
   generate-docs:
-    name: Generate API reference and push to Yosoi-Docs
+    name: Generate API reference and push to YosoiDocs
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -28,27 +28,25 @@ jobs:
           enable-cache: true
           cache-dependency-glob: "**/pyproject.toml"
 
-      - name: Install package (no extras needed for introspection)
-        run: uv sync --no-group tests --no-group dev
-
       - name: Determine version
         id: version
         run: echo "tag=${GITHUB_REF_NAME:-$(uv run python -c 'import yosoi; print(yosoi.__version__)')}" >> "$GITHUB_OUTPUT"
 
       - name: Generate API reference
         run: |
-          uv run python scripts/generate_api_docs.py \
-            --output api-reference.md \
+          uv run --with "griffe>=2" python scripts/generate_api_docs.py \
+            --output-dir reference \
             --version "${{ steps.version.outputs.tag }}" \
+            --ref "${{ steps.version.outputs.tag }}" \
             --exclude "${{ github.event.inputs.exclude || '' }}"
 
       - name: Upload generated docs as artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: api-reference
-          path: api-reference.md
+          path: reference/
 
-      - name: Clone Yosoi-Docs and push
+      - name: Clone YosoiDocs and push
         env:
           DOCS_DEPLOY_TOKEN: ${{ secrets.DOCS_DEPLOY_TOKEN }}
           TAG: ${{ steps.version.outputs.tag }}
@@ -56,24 +54,26 @@ jobs:
           git config --global user.name  "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-          git clone "https://x-access-token:${DOCS_DEPLOY_TOKEN}@github.com/CascadingLabs/Yosoi-Docs.git" yosoi-docs-repo
-          cp api-reference.md yosoi-docs-repo/api-reference.md
+          git clone "https://x-access-token:${DOCS_DEPLOY_TOKEN}@github.com/CascadingLabs/YosoiDocs.git" yosoi-docs-repo
+          mkdir -p yosoi-docs-repo/reference
+          cp reference/*.md yosoi-docs-repo/reference/
+          rm -f yosoi-docs-repo/api-reference.md
 
           cd yosoi-docs-repo
-          git add api-reference.md
+          git add -A api-reference.md reference/
 
           if git diff --cached --quiet; then
             echo "No changes to API reference — skipping commit"
           else
             git commit -m "docs: update API reference for ${TAG}"
             git push origin main
-            echo "Pushed API reference to Yosoi-Docs"
+            echo "Pushed API reference to YosoiDocs"
           fi
 
-          # Always tag so CascadingLabsFE can identify doc versions
-          git tag "${TAG}"
+          # Always tag so CascadingLabsFE can identify doc versions.
+          git tag -f "${TAG}"
           git push origin "${TAG}"
-          echo "Tagged Yosoi-Docs with ${TAG}"
+          echo "Tagged YosoiDocs with ${TAG}"
 
       - name: Trigger submodule update in CascadingLabsFE
         env:

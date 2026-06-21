@@ -133,10 +133,8 @@ async def test_load_returns_none_for_corrupt_json(tmp_path):
     filepath = storage._filepath('corrupt.com')
 
     # Write a syntactically invalid JSON file
-    import aiofiles
-
-    async with aiofiles.open(filepath, 'w') as f:
-        await f.write('{not valid json !!!}')
+    with open(filepath, 'w') as f:
+        f.write('{not valid json !!!}')
 
     result = await storage.load('corrupt.com')
     assert result is None

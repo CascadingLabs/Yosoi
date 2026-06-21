@@ -26,9 +26,6 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import get_args
 
-import aiofiles
-import aiofiles.os
-
 from yosoi.models.selectors import SelectorKind
 from yosoi.utils.files import atomic_write_json_async, init_yosoi, safe_domain
 
@@ -130,24 +127,7 @@ class FetchStrategyStorage:
             FetchStrategy, or None if not cached.
 
         """
-        filepath = self._filepath(domain)
-        if not await aiofiles.os.path.exists(filepath):
-            return None
-        try:
-            async with aiofiles.open(filepath, encoding='utf-8') as f:
-                data = json.loads(await f.read())
-            fetcher = data.get('fetcher')
-            if fetcher in VALID_FETCHERS:
-                selector_level = data.get('selector_level')
-                level = str(selector_level) if selector_level in VALID_SELECTOR_LEVELS else None
-                identity_raw = data.get('identity_id')
-                identity_id = str(identity_raw) if identity_raw is not None else None
-                return FetchStrategy(fetcher=str(fetcher), selector_level=level, identity_id=identity_id)
-            logger.warning('Invalid fetcher value %r in cache for %s', fetcher, domain)
-            return None
-        except (OSError, json.JSONDecodeError) as e:
-            logger.warning('Could not read fetch strategy for %s: %s', domain, e)
-            return None
+        return self._load_strategy_sync(domain)
 
     async def load(self, domain: str) -> str | None:
         """Return the cached fetcher tier for *domain*, or None if unknown."""
@@ -163,16 +143,19 @@ class FetchStrategyStorage:
             Dict mapping domain strings to strategy records.
 
         """
+        return self._load_all_strategies_sync()
+
+    def _load_all_strategies_sync(self) -> dict[str, FetchStrategy]:
         result: dict[str, FetchStrategy] = {}
-        if not await aiofiles.os.path.exists(self._dir):
+        if not os.path.exists(self._dir):
             return result
-        for filename in await aiofiles.os.listdir(self._dir):
+        for filename in os.listdir(self._dir):
             if not (filename.startswith('fetch_') and filename.endswith('.json')):
                 continue
             filepath = os.path.join(self._dir, filename)
             try:
-                async with aiofiles.open(filepath, encoding='utf-8') as f:
-                    data = json.loads(await f.read())
+                with open(filepath, encoding='utf-8') as f:
+                    data = json.loads(f.read())
                 domain = data.get('domain')
                 fetcher = data.get('fetcher')
                 if domain and fetcher in VALID_FETCHERS:
@@ -186,6 +169,26 @@ class FetchStrategyStorage:
         if result:
             logger.info('Loaded fetch strategy cache (%d domains)', len(result))
         return result
+
+    def _load_strategy_sync(self, domain: str) -> FetchStrategy | None:
+        filepath = self._filepath(domain)
+        if not os.path.exists(filepath):
+            return None
+        try:
+            with open(filepath, encoding='utf-8') as f:
+                data = json.loads(f.read())
+            fetcher = data.get('fetcher')
+            if fetcher in VALID_FETCHERS:
+                selector_level = data.get('selector_level')
+                level = str(selector_level) if selector_level in VALID_SELECTOR_LEVELS else None
+                identity_raw = data.get('identity_id')
+                identity_id = str(identity_raw) if identity_raw is not None else None
+                return FetchStrategy(fetcher=str(fetcher), selector_level=level, identity_id=identity_id)
+            logger.warning('Invalid fetcher value %r in cache for %s', fetcher, domain)
+            return None
+        except (OSError, json.JSONDecodeError) as e:
+            logger.warning('Could not read fetch strategy for %s: %s', domain, e)
+            return None
 
     async def load_all(self) -> dict[str, str]:
         """Load every cached fetcher tier into a domain → tier mapping."""

@@ -2,9 +2,8 @@
 
 Builds the :class:`~yosoi.policy.signal_lane.SignalLane` for a scrape and defines its sink: the
 page fingerprint is computed **in the drainer** (off the response path) and recorded. This is the
-*gathering* half only — acting on the signal (drift → reuse/quarantine/re-mint) is the trust policy
-(default-deny) and the similarity-vs-reference comparison is the P5 behavior layer, which needs a
-reference-fingerprint store that does not exist yet.
+*gathering* half only — acting on the signal (drift → reuse/quarantine/re-mint) belongs to the
+default-deny trust policy and any reference-fingerprint comparison layer above this lane.
 """
 
 from __future__ import annotations
@@ -48,8 +47,8 @@ def build_fingerprint_lane(policy: FingerprintPolicy | None) -> SignalLane | Non
     """Build the lane when a contract/call opts in; ``None`` (the Policy default) means off.
 
     A present :class:`FingerprintPolicy` defaults ``signal_lane=True`` — so opting a scrape into
-    gathering is just ``ys.Policy(fingerprint=ys.FingerprintPolicy())``. (Left opt-in rather than
-    globally default-on while no drift consumer reads the signal; flipping the default is one line.)
+    gathering is just ``ys.Policy(fingerprint=ys.FingerprintPolicy())``. Leaving
+    ``Policy.fingerprint`` unset creates no lane and does no background fingerprint work.
     """
     if policy is None or not policy.signal_lane:
         return None

@@ -6,9 +6,6 @@ import json
 import logging
 import os
 
-import aiofiles
-import aiofiles.os
-
 from yosoi.models.replay import DiscoveryLesson, LessonKey, ReplayStatus, utc_now
 from yosoi.utils.files import atomic_write_json_async, init_yosoi
 
@@ -36,16 +33,7 @@ class LessonStorage:
 
     async def load(self, key: LessonKey) -> DiscoveryLesson | None:
         """Load a lesson by key, or return None if absent/corrupt."""
-        filepath = self._filepath(key)
-        if not await aiofiles.os.path.exists(filepath):
-            return None
-        try:
-            async with aiofiles.open(filepath, encoding='utf-8') as f:
-                data = json.loads(await f.read())
-            return DiscoveryLesson.model_validate(data)
-        except (OSError, json.JSONDecodeError, ValueError, TypeError) as exc:
-            logger.warning('Could not load discovery lesson %s: %s', key.storage_key, exc)
-            return None
+        return self._load_sync(key)
 
     async def load_active(self, key: LessonKey) -> DiscoveryLesson | None:
         """Load an active lesson that still meets its validation threshold."""
@@ -91,10 +79,14 @@ class LessonStorage:
         flush observable: callers can report/mark them STALE rather than treat the
         miss as a brand-new contract.
         """
+        return self._list_stale_by_scheme_sync()
+
+    def _list_stale_by_scheme_sync(self) -> list[str]:
+        """Scan the small local lesson cache for stale signature schemes."""
         from yosoi.utils.signatures import SIGNATURE_SCHEME_VERSION
 
         try:
-            names = await aiofiles.os.listdir(self._dir)
+            names = os.listdir(self._dir)
         except OSError:
             return []
         stale: list[str] = []
@@ -102,8 +94,8 @@ class LessonStorage:
             if not (name.startswith('lesson_') and name.endswith('.json')):
                 continue
             try:
-                async with aiofiles.open(os.path.join(self._dir, name), encoding='utf-8') as f:
-                    data = json.loads(await f.read())
+                with open(os.path.join(self._dir, name), encoding='utf-8') as f:
+                    data = json.loads(f.read())
                 key = LessonKey.model_validate(data['key'])
             except (OSError, json.JSONDecodeError, KeyError, ValueError, TypeError):
                 continue
@@ -113,10 +105,25 @@ class LessonStorage:
 
     async def delete(self, key: LessonKey) -> bool:
         """Delete a lesson by key."""
+        return self._delete_sync(key)
+
+    def _load_sync(self, key: LessonKey) -> DiscoveryLesson | None:
         filepath = self._filepath(key)
-        if not await aiofiles.os.path.exists(filepath):
+        if not os.path.exists(filepath):
+            return None
+        try:
+            with open(filepath, encoding='utf-8') as f:
+                data = json.loads(f.read())
+            return DiscoveryLesson.model_validate(data)
+        except (OSError, json.JSONDecodeError, ValueError, TypeError) as exc:
+            logger.warning('Could not load discovery lesson %s: %s', key.storage_key, exc)
+            return None
+
+    def _delete_sync(self, key: LessonKey) -> bool:
+        filepath = self._filepath(key)
+        if not os.path.exists(filepath):
             return False
-        await aiofiles.os.remove(filepath)
+        os.remove(filepath)
         return True
 
     def _filepath(self, key: LessonKey) -> str:

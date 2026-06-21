@@ -30,10 +30,11 @@ class TestSimpleFetcherInit:
 
     def test_custom_params(self):
         """Custom parameters are stored."""
-        f = SimpleFetcher(timeout=10, min_delay=0, max_delay=0, randomize_headers=False)
+        f = SimpleFetcher(timeout=10, min_delay=0, max_delay=0, randomize_headers=False, allow_redirects=False)
         assert f.timeout == 10
         assert f.min_delay == 0
         assert f.randomize_headers is False
+        assert f.allow_redirects is False
 
 
 class TestSimpleFetcherHeaders:
@@ -84,6 +85,24 @@ class TestSimpleFetcherFetch:
         assert result.is_blocked is False
         assert result.html == VALID_HTML
         assert result.metadata is not None
+        assert result.url == str(mock_resp.url)
+
+    @pytest.mark.asyncio
+    async def test_passes_redirect_policy_to_httpx(self, mocker):
+        """Redirect policy is passed through to httpx."""
+        f = SimpleFetcher(use_session=False, min_delay=0, allow_redirects=False)
+        mock_resp = mocker.MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.url = 'https://example.com'
+        mock_resp.text = VALID_HTML
+        mock_resp.content = VALID_HTML.encode()
+        mock_resp.headers = {}
+        get = mocker.patch('httpx.AsyncClient.get', return_value=mock_resp)
+        mocker.patch.object(f, '_apply_request_delay', return_value=None)
+
+        await f.fetch('https://example.com')
+
+        assert get.call_args.kwargs['follow_redirects'] is False
 
     @pytest.mark.asyncio
     async def test_http_error_returns_error_result(self, mocker):

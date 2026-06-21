@@ -5,9 +5,12 @@ from typing import Any, Literal
 
 from yosoi.core.configs import TelemetryConfig as _TelemetryConfig
 from yosoi.core.configs import YosoiConfig as _YosoiConfig
-from yosoi.core.crawler import CrawlRunSummary as CrawlRunSummary
+from yosoi.core.crawler import CandidateFit as CandidateFit
+from yosoi.core.crawler import CrawlCandidateEntry as _CrawlCandidateEntry
 from yosoi.core.discovery import LLMConfig as _LLMConfig
 from yosoi.core.discovery.config import LLMBuilder as LLMBuilder
+from yosoi.core.page import PageAcquisition as PageAcquisition
+from yosoi.core.page import PageSnapshot as PageSnapshot
 from yosoi.core.pipeline import Pipeline as Pipeline
 from yosoi.generalization.fingerprint import PageFingerprint as PageFingerprint
 from yosoi.integrations import ClaudeSDKModel as ClaudeSDKModel
@@ -37,6 +40,9 @@ from yosoi.policy import FingerprintPolicy as _FingerprintPolicy
 from yosoi.policy import ModelPolicy as _ModelPolicy
 from yosoi.policy import Outcome as _Outcome
 from yosoi.policy import OutputPolicy as _OutputPolicy
+from yosoi.policy import PagePolicy as _PagePolicy
+from yosoi.policy import PageRuntimeConfig as _PageRuntimeConfig
+from yosoi.policy import PathPlanningPolicy as _PathPlanningPolicy
 from yosoi.policy import Policy as _Policy
 from yosoi.policy import PolicyCheck as _PolicyCheck
 from yosoi.policy import ResolvedRunSpec as _ResolvedRunSpec
@@ -54,7 +60,51 @@ from yosoi.utils.urls import load_urls_from_file as load_urls_from_file
 TrustTier = Literal['strict', 'yellow']
 CrawlModeName = Literal['seed_hunt', 'contract_focus', 'structure_guarded', 'explorer']
 FetcherName = Literal['auto', 'simple', 'headless', 'headful']
+PageFetcherName = Literal['auto', 'simple', 'headless', 'headful', 'waterfall']
+CrawlPresetName = Literal['crawl.local_single', 'crawl.conservative', 'crawl.seed_hunt']
 DiscoveryMode = Literal['auto', 'static', 'mcp']
+
+class CrawlCandidateEntry(_CrawlCandidateEntry):
+    url: str
+    contract: str
+    score: float
+    fit: CandidateFit
+    source_url: str | None
+    fingerprint: PageFingerprint
+    reasons: tuple[str, ...]
+    evidence: tuple[str, ...]
+    scrape_verified: bool
+
+class CrawlRunSummary:
+    pages_fetched: int
+    attempted_urls: int
+    unique_urls_seen: int
+    duplicates_blocked: int
+    policy_blocked: int
+    failures: int
+    batches: int
+    idle_worker_slots: int
+    wall_time: float
+    contract_candidate_urls: dict[str, list[str]]
+    contract_candidate_entries: dict[str, list[CrawlCandidateEntry]]
+
+    def urls_for(
+        self,
+        contract: object,
+        *,
+        limit: int | None = ...,
+        min_score: float = ...,
+        include_weak: bool = ...,
+    ) -> list[str]: ...
+    def candidates_for(
+        self,
+        contract: object,
+        *,
+        limit: int | None = ...,
+        min_score: float = ...,
+        fit: CandidateFit | None = ...,
+        include_weak: bool = ...,
+    ) -> list[CrawlCandidateEntry]: ...
 
 class CrawlBudget(_CrawlBudget):
     max_pages: int
@@ -92,6 +142,7 @@ class SchedulerPolicy(_SchedulerPolicy):
 
 class CrawlSafety(_CrawlSafety):
     respect_robots: bool
+    allow_redirects: bool
     allow_cross_domain: bool
     allowed_hosts: tuple[str, ...]
     denied_hosts: tuple[str, ...]
@@ -101,6 +152,7 @@ class CrawlSafety(_CrawlSafety):
         self,
         *,
         respect_robots: bool = ...,
+        allow_redirects: bool = ...,
         allow_cross_domain: bool = ...,
         allowed_hosts: tuple[str, ...] = ...,
         denied_hosts: tuple[str, ...] = ...,
@@ -125,7 +177,7 @@ class EscalationPolicy(_EscalationPolicy):
 class CrawlTarget(_CrawlTarget):
     name: str
     min_fields: int
-    min_confidence: float
+    min_fit_score: float
     max_budget_pages: int | None
 
     def __init__(
@@ -133,9 +185,52 @@ class CrawlTarget(_CrawlTarget):
         *,
         name: str,
         min_fields: int = ...,
-        min_confidence: float = ...,
+        min_fit_score: float = ...,
         max_budget_pages: int | None = ...,
     ) -> None: ...
+
+class PathPlanningPolicy(_PathPlanningPolicy):
+    enabled: bool
+    min_similarity: float
+    score_boost: float
+    max_reference_urls: int
+
+    def __init__(
+        self,
+        *,
+        enabled: bool = ...,
+        min_similarity: float = ...,
+        score_boost: float = ...,
+        max_reference_urls: int = ...,
+    ) -> None: ...
+
+class PageRuntimeConfig(_PageRuntimeConfig):
+    fetcher_type: PageFetcherName
+    timeout_seconds: float
+    max_fetch_retries: int
+    allow_redirects: bool
+    clean_html: bool
+    cleaner_profile: Literal['discovery', 'raw']
+
+class PagePolicy(_PagePolicy):
+    fetcher_type: PageFetcherName
+    timeout_seconds: float
+    max_fetch_retries: int
+    allow_redirects: bool
+    clean_html: bool
+    cleaner_profile: Literal['discovery', 'raw']
+
+    def __init__(
+        self,
+        *,
+        fetcher_type: PageFetcherName = ...,
+        timeout_seconds: float = ...,
+        max_fetch_retries: int = ...,
+        allow_redirects: bool = ...,
+        clean_html: bool = ...,
+        cleaner_profile: Literal['discovery', 'raw'] = ...,
+    ) -> None: ...
+    def to_runtime_config(self) -> PageRuntimeConfig: ...
 
 class CrawlRuntimeConfig(_CrawlRuntimeConfig):
     seeds: tuple[str, ...]
@@ -151,10 +246,14 @@ class CrawlRuntimeConfig(_CrawlRuntimeConfig):
     fetch_timeout_seconds: float
     max_fetch_retries: int
     respect_robots: bool
+    allow_redirects: bool
     allow_cross_domain: bool
     allowed_hosts: tuple[str, ...]
     denied_hosts: tuple[str, ...]
     blocked_path_prefixes: tuple[str, ...]
+    path_planning: PathPlanningPolicy
+    target_contracts: tuple[CrawlTarget, ...]
+    page: PageRuntimeConfig
     fetcher_type: FetcherName
 
     def __init__(
@@ -173,10 +272,14 @@ class CrawlRuntimeConfig(_CrawlRuntimeConfig):
         fetch_timeout_seconds: float = ...,
         max_fetch_retries: int = ...,
         respect_robots: bool = ...,
+        allow_redirects: bool = ...,
         allow_cross_domain: bool = ...,
         allowed_hosts: tuple[str, ...] = ...,
         denied_hosts: tuple[str, ...] = ...,
         blocked_path_prefixes: tuple[str, ...] = ...,
+        path_planning: PathPlanningPolicy = ...,
+        target_contracts: Sequence[CrawlTarget | Literal['NewsArticle', 'Product', 'JobPosting', 'Video'] | str] = ...,
+        page: PageRuntimeConfig = ...,
         fetcher_type: FetcherName = ...,
     ) -> None: ...
 
@@ -186,6 +289,7 @@ class CrawlPolicy(_CrawlPolicy):
     scheduler: SchedulerPolicy
     safety: CrawlSafety
     escalation: EscalationPolicy
+    path_planning: PathPlanningPolicy
     target_contracts: tuple[CrawlTarget, ...]
     fetcher_type: FetcherName
 
@@ -197,7 +301,8 @@ class CrawlPolicy(_CrawlPolicy):
         scheduler: SchedulerPolicy = ...,
         safety: CrawlSafety = ...,
         escalation: EscalationPolicy = ...,
-        target_contracts: tuple[CrawlTarget, ...] = ...,
+        path_planning: PathPlanningPolicy = ...,
+        target_contracts: Sequence[CrawlTarget | Literal['NewsArticle', 'Product', 'JobPosting', 'Video'] | str] = ...,
         fetcher_type: FetcherName = ...,
     ) -> None: ...
     def effective_allowed_hosts(self, seeds: tuple[str, ...] = ...) -> tuple[str, ...]: ...
@@ -305,6 +410,7 @@ class OutputPolicy(_OutputPolicy):
     formats: tuple[str, ...]
     quiet: bool
     json_output: bool
+    plain_output: bool
     debug_html: bool
     debug_html_dir: Any
     logs: bool
@@ -324,6 +430,9 @@ class ResolvedRunSpec(_ResolvedRunSpec):
     fetcher_type: str
     selector_level: SelectorLevel
     cross_origin_dom: bool
+    quiet: bool
+    json_output: bool
+    plain_output: bool
 
 class Policy(_Policy):
     atom_reads: bool
@@ -334,6 +443,7 @@ class Policy(_Policy):
     telemetry: TelemetryPolicy | None
     output: OutputPolicy | None
     download: DownloadPolicy | None
+    page: PagePolicy | None
     crawl: CrawlPolicy | None
     fingerprint: FingerprintPolicy | None
 
@@ -348,13 +458,14 @@ class Policy(_Policy):
         telemetry: TelemetryPolicy | None = ...,
         output: OutputPolicy | None = ...,
         download: DownloadPolicy | None = ...,
+        page: PagePolicy | None = ...,
         crawl: CrawlPolicy | None = ...,
         fingerprint: FingerprintPolicy | None = ...,
     ) -> None: ...
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = ...) -> Policy: ...
     @classmethod
-    def for_crawl(cls, preset: str | None = ..., **overrides: Any) -> Policy: ...
+    def for_crawl(cls, preset: CrawlPresetName | None = ..., **overrides: Any) -> Policy: ...
     @classmethod
     def cascade(cls, *layers: _Policy | None) -> Policy: ...
     @property
@@ -363,6 +474,9 @@ class Policy(_Policy):
     def allowed_sources(self) -> frozenset[str] | None: ...
     def require_crawl(self) -> CrawlPolicy: ...
     def resolve_run_spec(self, env: Mapping[str, str] | None = ...) -> ResolvedRunSpec: ...
+    def page_runtime(
+        self, *, scrape: _ScrapePolicy | None = ..., crawl: _CrawlPolicy | None = ...
+    ) -> PageRuntimeConfig: ...
     def check_crawl(self, *, seeds: tuple[str, ...] = ...) -> PolicyCheck: ...
     def source_trust(self, source: str) -> _Trust: ...
     def allows_source(self, source: str) -> bool: ...
@@ -446,12 +560,16 @@ def fingerprint(
     headers: dict[str, str] | None = ...,
     endpoints: Sequence[str] | None = ...,
 ) -> PageFingerprint: ...
-async def crawl_index(
-    seeds: Sequence[str],
+async def crawl(
+    seeds: str | Sequence[str],
     *,
+    contracts: Sequence[type[Contract] | str] | type[Contract] | str | None = ...,
+    limit: int | None = ...,
     policy: Policy | None = ...,
     fetcher_type: str | None = ...,
     persist: bool = ...,
+    progress: bool | None = ...,
+    console: Any | None = ...,
 ) -> CrawlRunSummary: ...
 async def scrape(
     url: str | Sequence[str],

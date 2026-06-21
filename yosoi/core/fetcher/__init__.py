@@ -41,10 +41,12 @@ def create_fetcher(fetcher_type: str = 'auto', **kwargs: Any) -> HTMLFetcher:
     if fetcher_type == 'headless':
         from yosoi.core.fetcher.voiddriver import HeadlessFetcher
 
+        kwargs.pop('allow_redirects', None)
         return HeadlessFetcher(**kwargs)
     if fetcher_type == 'headful':
         from yosoi.core.fetcher.voiddriver import HeadfulFetcher
 
+        kwargs.pop('allow_redirects', None)
         return HeadfulFetcher(**kwargs)
 
     choices = ', '.join(FETCHER_TYPES)

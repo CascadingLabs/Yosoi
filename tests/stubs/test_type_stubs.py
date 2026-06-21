@@ -124,7 +124,7 @@ class TestPolicyStubs:
                     max_depth=2,
                     max_attempts=240,
                     max_pages_per_host=80,
-                    crawl_session_id='sports-news-index-001',
+                    crawl_session_id='sports-news-candidates-001',
                 ),
                 scheduler=ys.SchedulerPolicy(
                     max_workers=5,
@@ -135,6 +135,7 @@ class TestPolicyStubs:
                 ),
                 safety=ys.CrawlSafety(
                     respect_robots=True,
+                    allow_redirects=False,
                     allowed_hosts=('www.espn.com',),
                     blocked_path_prefixes=('/login',),
                 ),
@@ -144,10 +145,57 @@ class TestPolicyStubs:
                     max_llm_calls=0,
                     max_paid_scraper_calls=0,
                 ),
+                target_contracts=['NewsArticle'],
                 fetcher_type='auto',
             )
             check = ys.check_policy(policy, seeds=('https://www.espn.com/nfl/',))
             assert check.runtime is not None
+        """)
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
+
+    def test_crawl_public_api_typechecks(self) -> None:
+        result = _run_mypy(
+            textwrap.dedent("""\
+            import yosoi as ys
+
+            async def main() -> ys.CrawlRunSummary:
+                single = await ys.crawl(
+                    'https://example.com/',
+                    contracts=ys.NewsArticle,
+                    limit=10,
+                    policy=ys.Policy.for_crawl('crawl.conservative'),
+                )
+                await ys.crawl(
+                    ['https://example.com/'],
+                    contracts=[ys.NewsArticle, ys.Product],
+                    limit=10,
+                    policy=ys.Policy.for_crawl('crawl.conservative'),
+                )
+                return single
+        """)
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
+
+    def test_crawl_candidate_api_typechecks(self) -> None:
+        result = _run_mypy(
+            textwrap.dedent("""\
+            import yosoi as ys
+
+            async def main() -> None:
+                summary = await ys.crawl(
+                    'https://example.com/',
+                    contracts=ys.NewsArticle,
+                    policy=ys.Policy.for_crawl('crawl.conservative'),
+                )
+                urls: list[str] = summary.urls_for(ys.NewsArticle)
+                candidates: list[ys.CrawlCandidateEntry] = summary.candidates_for(ys.NewsArticle)
+                for candidate in candidates:
+                    fit: ys.CandidateFit = candidate.fit
+                    reveal_type(candidate.evidence)
+                    reveal_type(candidate.scrape_verified)
+                    assert fit in ('weak', 'possible', 'likely', 'strong')
+                assert urls is not None
         """)
         )
         assert result.returncode == 0, result.stdout + result.stderr

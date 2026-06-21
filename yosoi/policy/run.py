@@ -285,6 +285,7 @@ class OutputPolicy(BaseModel):
     formats: tuple[str, ...] = ()
     quiet: bool = True
     json_output: bool = False
+    plain_output: bool = False
     debug_html: bool = False
     debug_html_dir: Path = Path('.yosoi/debug_html')
     logs: bool = True
@@ -356,6 +357,7 @@ class ResolvedRunSpec(BaseModel):
     output_formats: tuple[str, ...]
     quiet: bool
     json_output: bool
+    plain_output: bool
     allow_downloads: bool
     allowed_download_types: tuple[str, ...]
     download_dir: str | None

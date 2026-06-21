@@ -17,9 +17,6 @@ import os
 from datetime import datetime, timezone
 from typing import Literal
 
-import aiofiles
-import aiofiles.os
-
 from yosoi.utils.files import atomic_write_json_async, init_yosoi, safe_domain
 
 logger = logging.getLogger(__name__)
@@ -54,12 +51,15 @@ class DiscoveryStrategyStorage:
 
     async def load(self, domain: str, contract_sig: str) -> DiscoveryMode | None:
         """Return the cached discovery mode, or None if unknown/corrupt."""
+        return self._load_sync(domain, contract_sig)
+
+    def _load_sync(self, domain: str, contract_sig: str) -> DiscoveryMode | None:
         filepath = self._filepath(domain, contract_sig)
-        if not await aiofiles.os.path.exists(filepath):
+        if not os.path.exists(filepath):
             return None
         try:
-            async with aiofiles.open(filepath, encoding='utf-8') as f:
-                data = json.loads(await f.read())
+            with open(filepath, encoding='utf-8') as f:
+                data = json.loads(f.read())
         except (OSError, json.JSONDecodeError) as e:
             logger.warning('Could not read discovery strategy for %s: %s', domain, e)
             return None

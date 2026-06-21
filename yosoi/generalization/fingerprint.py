@@ -598,8 +598,9 @@ def ax_spine_features(ax_snapshot: Any) -> frozenset[str]:
 
 
 class PageSimilarity(BaseModel):
-    """Per-layer similarity and the conjunctive same-shape verdict between two fingerprints."""
+    """Per-layer similarity, an aggregate score, and the conjunctive same-shape verdict."""
 
+    score: float  # 0..1 aggregate over carried layers; degenerate comparisons score 0.0
     skeleton: float  # L1 structural skeleton Jaccard
     semantic: float  # L2 static landmark / heading / schema Jaccard
     identity: float | None  # L1 identity-attr Jaccard, or None when not carried by both pages
@@ -706,9 +707,9 @@ class PageFingerprint(BaseModel):
         ax = _optional_layer_jaccard(self.ax_spine, other.ax_spine)
         net = _optional_layer_jaccard(self.network, other.network)
         ep = _optional_layer_jaccard(self.endpoints, other.endpoints)
+        non_degenerate = not self.degenerate and not other.degenerate
         same = (
-            not self.degenerate
-            and not other.degenerate
+            non_degenerate
             and sk >= skeleton_threshold
             and se >= semantic_threshold
             and (idn is None or idn >= identity_threshold)
@@ -716,7 +717,18 @@ class PageFingerprint(BaseModel):
             and (net is None or net >= network_threshold)
             and (ep is None or ep >= endpoint_threshold)
         )
-        return PageSimilarity(skeleton=sk, semantic=se, identity=idn, ax=ax, network=net, endpoint=ep, same_shape=same)
+        carried_scores = [score for score in (sk, se, idn, ax, net, ep) if score is not None]
+        score = sum(carried_scores) / len(carried_scores) if non_degenerate else 0.0
+        return PageSimilarity(
+            score=score,
+            skeleton=sk,
+            semantic=se,
+            identity=idn,
+            ax=ax,
+            network=net,
+            endpoint=ep,
+            same_shape=same,
+        )
 
     def matches(
         self,

@@ -1,4 +1,4 @@
-"""The **crawl stack** — declarative crawl/index policy and the executor-facing runtime config.
+"""The **crawl stack** — declarative crawl policy and the executor-facing runtime config.
 
 One pipeline stack expressed as frozen pydantic models over the shared :mod:`yosoi.policy._base`
 primitives. New stacks (e.g. a future ``scrape`` stack) live in sibling modules with the same shape:
@@ -22,13 +22,15 @@ from yosoi.policy._base import (
     _normalize_path_prefix,
     policy_arn,
 )
+from yosoi.policy.page import PagePolicy, PageRuntimeConfig
 
 CrawlModeName = Literal['seed_hunt', 'contract_focus', 'structure_guarded', 'explorer']
 FetcherName = Literal['auto', 'simple', 'headless', 'headful']
+CrawlPresetName = Literal['crawl.local_single', 'crawl.conservative', 'crawl.seed_hunt']
 
 
 class CrawlBudget(BaseModel):
-    """Budget controls and traversal limits for one crawl/index run."""
+    """Budget controls and traversal limits for one crawl run."""
 
     model_config = ConfigDict(frozen=True)
 
@@ -83,6 +85,7 @@ class CrawlSafety(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     respect_robots: bool = True  # default: honor robots.txt; set False to opt out of robots compliance
+    allow_redirects: bool = False
     allow_cross_domain: bool = False
     allowed_hosts: tuple[str, ...] = ()
     denied_hosts: tuple[str, ...] = ()
@@ -133,6 +136,17 @@ class EscalationPolicy(BaseModel):
         return self
 
 
+class PathPlanningPolicy(BaseModel):
+    """URL-shape planning controls for crawl frontier prioritization."""
+
+    model_config = ConfigDict(frozen=True)
+
+    enabled: bool = True
+    min_similarity: StrictFloat = Field(default=0.72, ge=0.0, le=1.0)
+    score_boost: StrictFloat = Field(default=0.20, ge=0.0, le=1.0)
+    max_reference_urls: StrictInt = Field(default=25, ge=1, le=1_000)
+
+
 class CrawlTarget(BaseModel):
     """Contract target constraints for crawl planning and reporting."""
 
@@ -140,7 +154,7 @@ class CrawlTarget(BaseModel):
 
     name: str
     min_fields: StrictInt = Field(default=1, ge=0)
-    min_confidence: StrictFloat = Field(default=0.0, ge=0.0, le=1.0)
+    min_fit_score: StrictFloat = Field(default=0.0, ge=0.0, le=1.0)
     max_budget_pages: StrictOptInt = Field(default=None, ge=1)
 
     @field_validator('name')
@@ -153,7 +167,7 @@ class CrawlTarget(BaseModel):
 
 
 class CrawlPolicy(BaseModel):
-    """Declarative crawl/index policy nested under :class:`~yosoi.policy.core.Policy`."""
+    """Declarative crawl policy nested under :class:`~yosoi.policy.core.Policy`."""
 
     model_config = ConfigDict(frozen=True)
 
@@ -162,13 +176,35 @@ class CrawlPolicy(BaseModel):
     scheduler: SchedulerPolicy = Field(default_factory=SchedulerPolicy)
     safety: CrawlSafety = Field(default_factory=CrawlSafety)
     escalation: EscalationPolicy = Field(default_factory=EscalationPolicy)
+    path_planning: PathPlanningPolicy = Field(default_factory=PathPlanningPolicy)
     target_contracts: tuple[CrawlTarget, ...] = ()
     fetcher_type: FetcherName = 'auto'
 
+    @field_validator('target_contracts', mode='before')
+    @classmethod
+    def _coerce_target_contracts(cls, value: object) -> tuple[CrawlTarget, ...]:
+        if value is None:
+            return ()
+        if isinstance(value, str):
+            return (CrawlTarget(name=value),)
+        if isinstance(value, CrawlTarget):
+            return (value,)
+        try:
+            items: tuple[object, ...] = tuple(value)  # type: ignore[arg-type]
+        except TypeError as exc:
+            raise TypeError('target_contracts must be a string, CrawlTarget, or iterable of those') from exc
+        targets: list[CrawlTarget] = []
+        for item in items:
+            if isinstance(item, CrawlTarget):
+                targets.append(item)
+            elif isinstance(item, str):
+                targets.append(CrawlTarget(name=item))
+            else:
+                targets.append(CrawlTarget.model_validate(item))
+        return tuple(targets)
+
     @model_validator(mode='after')
     def _validate_crawl_policy(self) -> CrawlPolicy:
-        if self.mode == 'seed_hunt' and self.target_contracts:
-            raise ValueError('seed_hunt policies may not declare target_contracts')
         if self.mode != 'seed_hunt' and not self.target_contracts:
             # Contract names are optional at early API edges, but policy presets for crawl execution
             # should be explicit once the crawl is being planned.
@@ -199,12 +235,21 @@ class CrawlPolicy(BaseModel):
             **self.budget.model_dump(),
             **self.scheduler.model_dump(),
             respect_robots=self.safety.respect_robots,
+            allow_redirects=self.safety.allow_redirects,
             allow_cross_domain=self.safety.allow_cross_domain,
             denied_hosts=self.safety.denied_hosts,
             blocked_path_prefixes=self.safety.blocked_path_prefixes,
             allowed_hosts=self.effective_allowed_hosts(seeds),
             seeds=seeds,
             mode=self.mode,
+            path_planning=self.path_planning,
+            target_contracts=self.target_contracts,
+            page=PagePolicy(
+                fetcher_type=self.fetcher_type,
+                timeout_seconds=self.scheduler.fetch_timeout_seconds,
+                max_fetch_retries=self.scheduler.max_fetch_retries,
+                allow_redirects=self.safety.allow_redirects,
+            ).to_runtime_config(),
             fetcher_type=self.fetcher_type,
         )
 
@@ -227,10 +272,14 @@ class CrawlRuntimeConfig(BaseModel):
     fetch_timeout_seconds: float
     max_fetch_retries: int
     respect_robots: bool
+    allow_redirects: bool
     allow_cross_domain: bool
     allowed_hosts: tuple[str, ...]
     denied_hosts: tuple[str, ...]
     blocked_path_prefixes: tuple[str, ...]
+    path_planning: PathPlanningPolicy = Field(default_factory=PathPlanningPolicy)
+    target_contracts: tuple[CrawlTarget, ...] = ()
+    page: PageRuntimeConfig
     fetcher_type: FetcherName
 
 

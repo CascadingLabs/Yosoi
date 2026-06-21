@@ -50,6 +50,9 @@ if TYPE_CHECKING:  # static typing only — no runtime cost
         CrawlPolicy as CrawlPolicy,
     )
     from yosoi.policy.crawl import (
+        CrawlPresetName as CrawlPresetName,
+    )
+    from yosoi.policy.crawl import (
         CrawlRuntimeConfig as CrawlRuntimeConfig,
     )
     from yosoi.policy.crawl import (
@@ -62,10 +65,19 @@ if TYPE_CHECKING:  # static typing only — no runtime cost
         EscalationPolicy as EscalationPolicy,
     )
     from yosoi.policy.crawl import (
+        PathPlanningPolicy as PathPlanningPolicy,
+    )
+    from yosoi.policy.crawl import (
         SchedulerPolicy as SchedulerPolicy,
     )
     from yosoi.policy.fingerprint import (
         FingerprintPolicy as FingerprintPolicy,
+    )
+    from yosoi.policy.page import (
+        PagePolicy as PagePolicy,
+    )
+    from yosoi.policy.page import (
+        PageRuntimeConfig as PageRuntimeConfig,
     )
     from yosoi.policy.run import (
         DiscoveryPolicy as DiscoveryPolicy,
@@ -181,6 +193,8 @@ if TYPE_CHECKING:  # static typing only — no runtime cost
 
 _LAZY = {
     'FingerprintPolicy': 'yosoi.policy.fingerprint',
+    'PagePolicy': 'yosoi.policy.page',
+    'PageRuntimeConfig': 'yosoi.policy.page',
     'DiscoveryPolicy': 'yosoi.policy.run',
     'DownloadPolicy': 'yosoi.policy.run',
     'ModelPolicy': 'yosoi.policy.run',
@@ -230,10 +244,12 @@ _LAZY = {
     'resolve_crawl_policy': 'yosoi.policy.core',
     'CrawlBudget': 'yosoi.policy.crawl',
     'CrawlPolicy': 'yosoi.policy.crawl',
+    'CrawlPresetName': 'yosoi.policy.crawl',
     'CrawlRuntimeConfig': 'yosoi.policy.crawl',
     'CrawlSafety': 'yosoi.policy.crawl',
     'CrawlTarget': 'yosoi.policy.crawl',
     'EscalationPolicy': 'yosoi.policy.crawl',
+    'PathPlanningPolicy': 'yosoi.policy.crawl',
     'SchedulerPolicy': 'yosoi.policy.crawl',
 }
 __all__ = sorted(_LAZY)
