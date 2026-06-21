@@ -334,6 +334,8 @@ class Pipeline(
                 kwargs['timeout'] = int(page_config.timeout_seconds)
             if page_policy is not None and 'allow_redirects' in page_policy.model_fields_set:
                 kwargs['allow_redirects'] = page_config.allow_redirects
+            if page_config.chrome_ws_urls:
+                kwargs['chrome_ws_urls'] = page_config.chrome_ws_urls
             identity = getattr(self, '_identity', None)  # getattr: __new__-based test stubs omit it
             if fetcher_type in ('auto', 'waterfall', 'headless', 'headful'):
                 if console is not None:

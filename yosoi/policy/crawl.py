@@ -179,32 +179,21 @@ class CrawlPolicy(BaseModel):
     escalation: EscalationPolicy = Field(default_factory=EscalationPolicy)
     path_planning: PathPlanningPolicy = Field(default_factory=PathPlanningPolicy)
     target_contracts: tuple[CrawlTarget, ...] = ()
-    scrape_contracts: bool = False
+    scrape_contracts: bool | tuple[CrawlTarget, ...] = False
     scrape_url_limit_per_contract: StrictInt = Field(default=1, ge=1, le=1_000)
     fetcher_type: FetcherName = 'auto'
 
     @field_validator('target_contracts', mode='before')
     @classmethod
     def _coerce_target_contracts(cls, value: object) -> tuple[CrawlTarget, ...]:
-        if value is None:
-            return ()
-        if isinstance(value, str):
-            return (CrawlTarget(name=value),)
-        if isinstance(value, CrawlTarget):
-            return (value,)
-        try:
-            items: tuple[object, ...] = tuple(value)  # type: ignore[arg-type]
-        except TypeError as exc:
-            raise TypeError('target_contracts must be a string, CrawlTarget, or iterable of those') from exc
-        targets: list[CrawlTarget] = []
-        for item in items:
-            if isinstance(item, CrawlTarget):
-                targets.append(item)
-            elif isinstance(item, str):
-                targets.append(CrawlTarget(name=item))
-            else:
-                targets.append(CrawlTarget.model_validate(item))
-        return tuple(targets)
+        return _coerce_crawl_targets(value, label='target_contracts')
+
+    @field_validator('scrape_contracts', mode='before')
+    @classmethod
+    def _coerce_scrape_contracts(cls, value: object) -> bool | tuple[CrawlTarget, ...]:
+        if isinstance(value, bool):
+            return value
+        return _coerce_crawl_targets(value, label='scrape_contracts')
 
     @model_validator(mode='after')
     def _validate_crawl_policy(self) -> CrawlPolicy:
@@ -255,6 +244,33 @@ class CrawlPolicy(BaseModel):
             ).to_runtime_config(),
             fetcher_type=self.fetcher_type,
         )
+
+
+def _coerce_crawl_targets(value: object, *, label: str) -> tuple[CrawlTarget, ...]:
+    if value is None or value is False:
+        return ()
+    if isinstance(value, str):
+        return (CrawlTarget(name=value),)
+    if isinstance(value, CrawlTarget):
+        return (value,)
+    name = getattr(value, '__name__', None)
+    if isinstance(name, str) and name:
+        return (CrawlTarget(name=name),)
+    try:
+        items: tuple[object, ...] = tuple(value)  # type: ignore[arg-type]
+    except TypeError as exc:
+        raise TypeError(f'{label} must be a string, CrawlTarget, Contract class, or iterable of those') from exc
+    targets: list[CrawlTarget] = []
+    for item in items:
+        if isinstance(item, CrawlTarget):
+            targets.append(item)
+        elif isinstance(item, str):
+            targets.append(CrawlTarget(name=item))
+        elif item_name := getattr(item, '__name__', None):
+            targets.append(CrawlTarget(name=str(item_name)))
+        else:
+            targets.append(CrawlTarget.model_validate(item))
+    return tuple(targets)
 
 
 class CrawlRuntimeConfig(BaseModel):

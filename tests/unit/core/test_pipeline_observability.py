@@ -238,20 +238,14 @@ async def test_direct_scrape_emits_session_with_script_tag(pipeline_stub, span_e
 
 @pytest.mark.usefixtures('_active_observability')
 async def test_agent_span_nests_under_discover(span_exporter, mocker):
-    """Real DiscoveryOrchestrator with TestModel: agent span parent === discover span."""
-    from pydantic_ai import Agent
-    from pydantic_ai.models.test import TestModel
-
+    """DiscoveryOrchestrator field-agent span parent chain reaches discover."""
     from yosoi.core.discovery.orchestrator import DiscoveryOrchestrator
-
-    Agent.instrument_all()
+    from yosoi.models.selectors import FieldSelectors
 
     storage = mocker.MagicMock()
     storage.load_snapshots = mocker.AsyncMock(return_value=None)
     storage.save_snapshots = mocker.AsyncMock()
     storage.save_selectors = mocker.AsyncMock()
-    # Use a real provider with a fake key so create_model() succeeds; the
-    # Agent.override(model=TestModel()) below swaps it out before any LLM call.
     from yosoi.core.discovery.config import LLMConfig
 
     llm_config = LLMConfig(provider='groq', model_name='llama-3.3-70b-versatile', api_key='test-key', temperature=0.0)
@@ -261,8 +255,17 @@ async def test_agent_span_nests_under_discover(span_exporter, mocker):
         storage=storage,
     )
 
-    # Swap the underlying pydantic-ai agent's model to TestModel for deterministic output.
-    with orch._agent._agent.override(model=TestModel()), obs.span('discover', url=CANNED_URL):
+    async def _discover_field(field_name, *_args, **_kwargs):
+        with obs.span('agent run', field=field_name):
+            if field_name == 'title':
+                return FieldSelectors(primary='h1')
+            if field_name == 'price':
+                return FieldSelectors(primary='span.price')
+            return None
+
+    mocker.patch.object(orch._agent, 'discover_field', side_effect=_discover_field)
+
+    with obs.span('discover', url=CANNED_URL):
         await orch.discover_selectors(CLEANED_HTML, url=CANNED_URL)
 
     spans = span_exporter.get_finished_spans()

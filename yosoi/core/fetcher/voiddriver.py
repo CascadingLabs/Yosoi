@@ -21,7 +21,7 @@ import logging
 import os
 import random
 import time
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Sequence
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -87,6 +87,7 @@ class _VoidCrawlFetcher(HTMLFetcher):
         accept_language: str | None = None,
         identity: BrowserIdentity | None = None,
         cross_origin_dom: bool = False,
+        chrome_ws_urls: Sequence[str] = (),
         **_kwargs: Any,
     ) -> None:
         self.timeout = timeout
@@ -103,6 +104,7 @@ class _VoidCrawlFetcher(HTMLFetcher):
         self._accept_language = accept_language
         self._identity = identity
         self._cross_origin_dom = cross_origin_dom
+        self._chrome_ws_urls = tuple(str(url).strip() for url in chrome_ws_urls if str(url).strip())
         self._pool: Any = None
         self._pool_ctx: Any = None
         self._a3node_storage = A3NodeStorage() if experimental_a3node else None
@@ -130,7 +132,9 @@ class _VoidCrawlFetcher(HTMLFetcher):
         # CHROME_WS_URLS (voidcrawl's docker convention: comma-separated CDP URLs)
         # switches the pool from launching Chrome locally to attaching to the
         # already-running browsers, e.g. a VoidCrawl docker container.
-        ws_urls = [u.strip() for u in os.getenv('CHROME_WS_URLS', '').split(',') if u.strip()]
+        ws_urls = list(self._chrome_ws_urls) or [
+            u.strip() for u in os.getenv('CHROME_WS_URLS', '').split(',') if u.strip()
+        ]
         config = PoolConfig(
             browsers=1,
             tabs_per_browser=self.max_concurrent,

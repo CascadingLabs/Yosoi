@@ -725,3 +725,10 @@ def test_redact_secret_configs_handles_none_and_dict_inputs() -> None:
         'api_key': '***REDACTED***',
         'other': 1,
     }
+
+
+def test_page_policy_accepts_comma_separated_chrome_ws_urls() -> None:
+    policy = PagePolicy(chrome_ws_urls='http://127.0.0.1:9222, http://127.0.0.1:9223')
+
+    assert policy.chrome_ws_urls == ('http://127.0.0.1:9222', 'http://127.0.0.1:9223')
+    assert policy.to_runtime_config().chrome_ws_urls == policy.chrome_ws_urls

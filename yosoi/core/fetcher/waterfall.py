@@ -85,6 +85,8 @@ class JSFetcher(HTMLFetcher):
         identity_cascade: IdentityCascade | None = None,
         max_live_identities: int = 3,
         cross_origin_dom: bool = False,
+        chrome_ws_urls: tuple[str, ...] = (),
+        accept_simple_requires_js: bool = False,
     ):
         """Initialise the three-tier JS fetcher.
 
@@ -123,6 +125,11 @@ class JSFetcher(HTMLFetcher):
                 (``ScrapePolicy.cross_origin_dom``): disables site-isolation field
                 trials so ``evaluate_js_in_frame`` reaches isolated origins. Off
                 by default; ignored by the simple tier.
+            chrome_ws_urls: Optional CDP endpoints for a pre-running VoidCrawl
+                docker/browser farm. When set, browser tiers attach instead of launching local Chrome.
+            accept_simple_requires_js: Return useful simple-tier HTML even when it
+                is marked JS-required. Intended for crawl discovery, where links
+                and fingerprints are useful without paying browser cost for every page.
 
         """
         self._simple = SimpleFetcher(
@@ -147,6 +154,7 @@ class JSFetcher(HTMLFetcher):
         self._console = console or Console()
         self.logger = logging.getLogger(__name__)
         self._force = force
+        self._accept_simple_requires_js = accept_simple_requires_js
 
         self._chrome_kwargs: dict[str, Any] = {
             'timeout': timeout,
@@ -162,6 +170,7 @@ class JSFetcher(HTMLFetcher):
             'user_agent': voidcrawl_user_agent,
             'accept_language': voidcrawl_accept_language,
             'cross_origin_dom': cross_origin_dom,
+            'chrome_ws_urls': chrome_ws_urls,
         }
 
         # W2 — profile cascade. Built lazily on first block so a run with no
@@ -595,6 +604,12 @@ class JSFetcher(HTMLFetcher):
                 return result
 
             if result and result.html and result.requires_js:
+                framework = getattr(result.metadata, 'js_framework', None) if result.metadata is not None else None
+                if self._accept_simple_requires_js and framework != 'bot-gate':
+                    self._console.print(
+                        '[dim]    ↳ Simple fetcher returned JS-marked HTML; accepting for crawl discovery[/dim]'
+                    )
+                    return result
                 self._console.print('[warning]    ✗ Simple fetcher returned bot gate — JS required[/warning]')
             elif result:
                 self._console.print(

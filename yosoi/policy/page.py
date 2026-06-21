@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from yosoi.policy._base import StrictFloat, StrictInt
 
@@ -23,6 +24,21 @@ class PagePolicy(BaseModel):
     allow_redirects: bool = True
     clean_html: bool = True
     cleaner_profile: CleanerProfileName = 'discovery'
+    chrome_ws_urls: tuple[str, ...] = ()
+
+    @field_validator('chrome_ws_urls', mode='before')
+    @classmethod
+    def _coerce_chrome_ws_urls(cls, value: object) -> tuple[str, ...]:
+        if value is None or value == '':
+            return ()
+        if isinstance(value, str):
+            items: Sequence[object] = value.split(',')
+        elif isinstance(value, Sequence):
+            items = value
+        else:
+            raise TypeError('chrome_ws_urls must be a URL string or iterable of URL strings')
+        cleaned = tuple(str(item).strip() for item in items if str(item).strip())
+        return cleaned
 
     def to_runtime_config(self) -> PageRuntimeConfig:
         """Project public policy into the executor-facing acquisition config."""
@@ -40,6 +56,7 @@ class PageRuntimeConfig(BaseModel):
     allow_redirects: bool
     clean_html: bool
     cleaner_profile: CleanerProfileName
+    chrome_ws_urls: tuple[str, ...]
 
 
 __all__ = ['CleanerProfileName', 'FetcherPolicyName', 'PagePolicy', 'PageRuntimeConfig']

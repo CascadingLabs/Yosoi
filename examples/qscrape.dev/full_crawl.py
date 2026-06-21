@@ -9,6 +9,9 @@ Run crawl + scrape:
 Set ``YOSOI_FULL_CRAWL_SCRAPE_URLS`` when you want to scrape more than the top
 candidate per contract. The default keeps discovery to roughly one scrape target
 per contract, so a cold run should need as few LLM discoveries as possible.
+
+The browser lane is policy-configured for a local VoidCrawl Docker CDP farm.
+Override with ``YOSOI_CHROME_WS_URLS`` if your endpoints differ.
 """
 
 from __future__ import annotations
@@ -21,6 +24,11 @@ import yosoi as ys
 SEED = 'https://qscrape.dev/'
 URLS_ONLY = os.getenv('YOSOI_FULL_CRAWL_URLS_ONLY', '').lower() in {'1', 'true', 'yes'}
 SCRAPE_URLS_PER_CONTRACT = int(os.getenv('YOSOI_FULL_CRAWL_SCRAPE_URLS', '1'))
+CHROME_WS_URLS = tuple(
+    url.strip()
+    for url in os.getenv('YOSOI_CHROME_WS_URLS', 'http://127.0.0.1:9222,http://127.0.0.1:9223').split(',')
+    if url.strip()
+)
 
 
 class NewsArticle(ys.Contract):
@@ -71,8 +79,8 @@ async def main() -> None:
             crawl=ys.CrawlPolicy(
                 budget=ys.CrawlBudget(max_pages=200, max_depth=4, max_attempts=260),
                 scheduler=ys.SchedulerPolicy(
-                    max_workers=4,
-                    per_host_concurrency=4,
+                    max_workers=16,
+                    per_host_concurrency=16,
                     politeness_delay=0,
                     fetch_timeout_seconds=5,
                     max_fetch_retries=1,
@@ -87,12 +95,13 @@ async def main() -> None:
                     allow_model_discovery=not URLS_ONLY,
                     max_llm_calls=0 if URLS_ONLY else len(CONTRACTS),
                 ),
-                scrape_contracts=not URLS_ONLY,
+                scrape_contracts=CONTRACTS if not URLS_ONLY else False,
                 scrape_url_limit_per_contract=SCRAPE_URLS_PER_CONTRACT,
                 fetcher_type='auto',
             ),
         ),
         ys.Policy(
+            page=ys.PagePolicy(chrome_ws_urls=CHROME_WS_URLS),
             scrape=ys.ScrapePolicy(fetcher_type='auto', max_concurrency=4),
             output=ys.OutputPolicy(quiet=False),
         ),

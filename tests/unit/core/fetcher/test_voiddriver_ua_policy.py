@@ -1,6 +1,7 @@
 """Tests for VoidCrawl UA policy wiring."""
 
-from typing import ClassVar
+import asyncio
+from typing import Any, ClassVar
 
 from yosoi.core.fetcher.voiddriver import HeadlessFetcher
 
@@ -44,6 +45,44 @@ def test_browser_config_receives_explicit_yosoi_override_when_supported() -> Non
     assert kwargs['user_agent'] == user_agent
     assert kwargs['locale'] == 'en-US,en;q=0.9'
     assert kwargs['headless'] is True
+
+
+def test_headless_fetcher_uses_policy_chrome_ws_urls(monkeypatch) -> None:
+    captured: dict[str, Any] = {}
+
+    class FakeBrowserPool:
+        def __init__(self, config: Any) -> None:
+            captured['config'] = config
+
+        async def __aenter__(self) -> object:
+            return object()
+
+        async def __aexit__(self, *_args: object) -> None:
+            return None
+
+    class FakeBrowserConfig:
+        model_fields: ClassVar[dict[str, object]] = BrowserConfigWithoutUa.model_fields
+
+        def __init__(self, **kwargs: object) -> None:
+            self.kwargs = kwargs
+
+    class FakePoolConfig:
+        def __init__(self, **kwargs: object) -> None:
+            self.kwargs = kwargs
+
+    monkeypatch.setattr(
+        'yosoi.core.fetcher.voiddriver._import_voidcrawl',
+        lambda: (FakeBrowserPool, FakeBrowserConfig, FakePoolConfig),
+    )
+    fetcher = HeadlessFetcher(chrome_ws_urls=('http://127.0.0.1:9222',))
+
+    async def run() -> None:
+        async with fetcher:
+            pass
+
+    asyncio.run(run())
+
+    assert captured['config'].kwargs['chrome_ws_urls'] == ['http://127.0.0.1:9222']
 
 
 def test_browser_config_skips_identity_for_older_voidcrawl() -> None:

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
 import os
@@ -149,9 +148,8 @@ class SelectorStorage:
         filepath = self._get_content_filepath(url, output_format, contract_sig)
 
         # Output savers include binary/tabular writers (pandas, pyarrow, openpyxl)
-        # that have no async API; offload to a thread so the event loop is never
-        # blocked while keeping a single dispatch path for every format.
-        await asyncio.to_thread(save_formatted_content, filepath, url, domain, content, output_format)
+        # that have no async API; keep one synchronous dispatch path for every format.
+        save_formatted_content(filepath, url, domain, content, output_format)
 
         logger.info('Saved content to: %s', filepath)
         return filepath

@@ -278,7 +278,14 @@ class TelemetryPolicy(BaseModel):
 
 
 class OutputPolicy(BaseModel):
-    """Output policy for saved formats and CLI presentation."""
+    """Controls human and file output for a run.
+
+    Use ``quiet=False`` for examples and demos where Yosoi should show progress,
+    selected URLs, tables, and scrape results. Keep the default ``quiet=True`` for
+    library use where callers consume returned Python values. ``formats`` enables
+    saved artifacts, while ``json_output``/``plain_output`` switch terminal shape
+    for automation.
+    """
 
     model_config = ConfigDict(frozen=True)
 

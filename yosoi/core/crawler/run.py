@@ -5,11 +5,12 @@ from __future__ import annotations
 import re
 from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
-from typing import Any
+from typing import Any, cast
 
 from yosoi.core.crawler.candidates import contract_name
 from yosoi.core.crawler.coordinator import CrawlCoordinator, CrawlRunSummary
 from yosoi.core.fetcher import create_fetcher
+from yosoi.models.contract import Contract
 from yosoi.policy import CrawlPolicy, CrawlTarget, Policy
 from yosoi.reporting import RichCrawlProgress
 
@@ -41,11 +42,22 @@ async def crawl(
     runtime = crawl.to_runtime_config(seeds=seed_tuple)
     page = pol.page_runtime(crawl=crawl)
     runtime = runtime.model_copy(update={'page': page})
-    fetcher = create_fetcher(
-        fetcher_type or page.fetcher_type,
-        timeout=int(page.timeout_seconds),
-        allow_redirects=page.allow_redirects,
-    )
+    resolved_fetcher_type = fetcher_type or page.fetcher_type
+    fetcher_kwargs: dict[str, Any] = {
+        'timeout': int(page.timeout_seconds),
+        'allow_redirects': page.allow_redirects,
+    }
+    if page.chrome_ws_urls:
+        fetcher_kwargs['chrome_ws_urls'] = page.chrome_ws_urls
+    if resolved_fetcher_type in {'auto', 'waterfall'}:
+        # Crawl explores heterogeneous page shapes under one host. The scrape-time
+        # domain strategy cache is too coarse here: one JS-gated URL must not force
+        # every sibling URL through Chrome. Re-run the waterfall per URL so L1 pages
+        # stay on simple HTTP while L2/L3 pages can still escalate emergently.
+        fetcher_kwargs['force'] = True
+        fetcher_kwargs['max_concurrent'] = max(1, crawl.scheduler.per_host_concurrency)
+        fetcher_kwargs['accept_simple_requires_js'] = True
+    fetcher = create_fetcher(resolved_fetcher_type, **fetcher_kwargs)
     async with _fetcher_context(fetcher) as active_fetcher:
         show_progress = _show_crawl_progress(pol) if progress is None else progress
         if show_progress:
@@ -62,10 +74,26 @@ async def crawl(
             summary = await coordinator.run(seeds=seed_tuple)
 
     if crawl.scrape_contracts:
+        scrape_contracts = _resolve_scrape_contracts(crawl.scrape_contracts, contracts)
         await _scrape_crawl_candidates(
-            summary, contracts=contracts, policy=pol, limit=crawl.scrape_url_limit_per_contract
+            summary,
+            contracts=scrape_contracts,
+            policy=pol,
+            limit=crawl.scrape_url_limit_per_contract,
         )
     return summary
+
+
+def _resolve_scrape_contracts(
+    scrape_contracts: bool | Sequence[object], contracts: Sequence[object] | object | None
+) -> Sequence[object] | object | None:
+    if scrape_contracts is True:
+        return contracts
+    if scrape_contracts is False:
+        return None
+    call_site = _contract_items(contracts) if contracts is not None else ()
+    by_name = {contract_name(item): item for item in call_site}
+    return tuple(by_name.get(contract_name(item), item) for item in scrape_contracts)
 
 
 async def _scrape_crawl_candidates(
@@ -84,7 +112,8 @@ async def _scrape_crawl_candidates(
         if not urls:
             summary.scraped_content[name] = []
             continue
-        summary.scraped_content[name] = await scrape(urls, item, policy=policy)
+        scrape_contract = item if isinstance(item, (str, type)) else name
+        summary.scraped_content[name] = await scrape(urls, cast('type[Contract] | str', scrape_contract), policy=policy)
 
 
 def _show_crawl_progress(policy: Policy) -> bool:
@@ -97,10 +126,14 @@ def _show_crawl_progress(policy: Policy) -> bool:
 
 def _with_crawl_targets(policy: Policy, *, contracts: Sequence[object] | object | None, limit: int | None) -> Policy:
     """Apply call-site contract intent while keeping policy as the lever surface."""
+    crawl = policy.require_crawl()
     if contracts is None and limit is None:
+        if isinstance(crawl.scrape_contracts, tuple) and crawl.scrape_contracts and not crawl.target_contracts:
+            crawl_payload = crawl.model_dump()
+            crawl_payload['target_contracts'] = crawl.scrape_contracts
+            return Policy.cascade(policy, Policy(crawl=CrawlPolicy.model_validate(crawl_payload)))
         return policy
 
-    crawl = policy.require_crawl()
     existing = crawl.target_contracts
     if contracts is None:
         targets = tuple(

@@ -214,6 +214,7 @@ class PageRuntimeConfig(_PageRuntimeConfig):
     allow_redirects: bool
     clean_html: bool
     cleaner_profile: Literal['discovery', 'raw']
+    chrome_ws_urls: tuple[str, ...]
 
 class PagePolicy(_PagePolicy):
     fetcher_type: PageFetcherName
@@ -222,6 +223,7 @@ class PagePolicy(_PagePolicy):
     allow_redirects: bool
     clean_html: bool
     cleaner_profile: Literal['discovery', 'raw']
+    chrome_ws_urls: tuple[str, ...]
 
     def __init__(
         self,
@@ -232,6 +234,7 @@ class PagePolicy(_PagePolicy):
         allow_redirects: bool = ...,
         clean_html: bool = ...,
         cleaner_profile: Literal['discovery', 'raw'] = ...,
+        chrome_ws_urls: tuple[str, ...] | str = ...,
     ) -> None: ...
     def to_runtime_config(self) -> PageRuntimeConfig: ...
 
@@ -294,7 +297,7 @@ class CrawlPolicy(_CrawlPolicy):
     escalation: EscalationPolicy
     path_planning: PathPlanningPolicy
     target_contracts: tuple[CrawlTarget, ...]
-    scrape_contracts: bool
+    scrape_contracts: bool | tuple[CrawlTarget, ...]
     scrape_url_limit_per_contract: int
     fetcher_type: FetcherName
 
@@ -308,7 +311,7 @@ class CrawlPolicy(_CrawlPolicy):
         escalation: EscalationPolicy = ...,
         path_planning: PathPlanningPolicy = ...,
         target_contracts: Sequence[CrawlTarget | Literal['NewsArticle', 'Product', 'JobPosting', 'Video'] | str] = ...,
-        scrape_contracts: bool = ...,
+        scrape_contracts: bool | Sequence[CrawlTarget | type[Contract] | str] = ...,
         scrape_url_limit_per_contract: int = ...,
         fetcher_type: FetcherName = ...,
     ) -> None: ...
@@ -414,6 +417,15 @@ class TelemetryPolicy(_TelemetryPolicy):
     ) -> None: ...
 
 class OutputPolicy(_OutputPolicy):
+    """Controls human and file output for a run.
+
+    Use ``quiet=False`` for examples and demos where Yosoi should show progress,
+    selected URLs, tables, and scrape results. Keep the default ``quiet=True`` for
+    library use where callers consume returned Python values. ``formats`` enables
+    saved artifacts, while ``json_output``/``plain_output`` switch terminal shape
+    for automation.
+    """
+
     formats: tuple[str, ...]
     quiet: bool
     json_output: bool

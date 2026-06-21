@@ -7,8 +7,8 @@ return) and runs as low-priority background work, so it must be —
      concurrent computations can't corrupt each other;
   2. **parallelizable** — running across a thread pool yields results identical to serial (lxml
      releases the GIL during parse, so threads give real structural parallelism);
-  3. **async-offloadable** — ``asyncio.to_thread(PageFingerprint.of, html)`` runs WITHOUT blocking
-     the event loop that the extraction/response path is using.
+  3. **async-offloadable** — running ``PageFingerprint.of`` in the event loop's executor runs
+     WITHOUT blocking the event loop that the extraction/response path is using.
 
 These tests lock those three properties; ``tests/benchmarks/test_fingerprint_bench.py`` pins the cost.
 """
@@ -134,7 +134,9 @@ async def test_to_thread_offload_keeps_loop_responsive() -> None:
             await asyncio.sleep(0)  # yield; only advances while the loop is actually running
 
     hb = asyncio.create_task(heartbeat())
-    results = await asyncio.gather(*(asyncio.to_thread(PageFingerprint.of, h) for h in heavy))
+    loop = asyncio.get_running_loop()
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        results = await asyncio.gather(*(loop.run_in_executor(pool, PageFingerprint.of, h) for h in heavy))
     stop = True
     await hb
 
@@ -142,8 +144,9 @@ async def test_to_thread_offload_keeps_loop_responsive() -> None:
     assert ticks > 20  # loop stayed live throughout the offloaded compute → not blocked
 
 
-async def test_gather_many_fingerprints_concurrently() -> None:
+def test_gather_many_fingerprints_concurrently() -> None:
     htmls = [_page(s, 60) for s in range(16)]
     serial = [PageFingerprint.of(h).skeleton for h in htmls]
-    concurrent = await asyncio.gather(*(asyncio.to_thread(_skeleton_of, h) for h in htmls))
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        concurrent = list(pool.map(_skeleton_of, htmls))
     assert concurrent == serial

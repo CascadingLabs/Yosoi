@@ -11,7 +11,7 @@ from yosoi.generalization.capture import observe_html
 from yosoi.generalization.fingerprint import PageFingerprint
 from yosoi.models.defaults import NewsArticle
 from yosoi.models.results import FetchResult
-from yosoi.policy import CrawlBudget, CrawlSafety, OutputPolicy, Policy, SchedulerPolicy
+from yosoi.policy import CrawlBudget, CrawlSafety, OutputPolicy, PagePolicy, Policy, SchedulerPolicy
 
 
 class FakeFetcher:
@@ -175,6 +175,32 @@ async def test_crawl_builds_contract_candidates_for_targets(monkeypatch) -> None
     assert 'https://example.com/news/articles/blocked' not in fetcher.calls
 
 
+async def test_crawl_passes_policy_chrome_ws_urls_to_auto_fetcher(monkeypatch) -> None:
+    fetcher = FakeFetcher({'https://example.com/': '<html><body><h1>Home</h1></body></html>'})
+    calls: list[tuple[str, dict[str, object]]] = []
+
+    def fake_create_fetcher(fetcher_type: str, **kwargs: object) -> FakeFetcher:
+        calls.append((fetcher_type, kwargs))
+        return fetcher
+
+    monkeypatch.setattr('yosoi.core.crawler.run.create_fetcher', fake_create_fetcher)
+    policy = Policy.cascade(
+        Policy.for_crawl(
+            'crawl.local_single',
+            scheduler=SchedulerPolicy(max_workers=1, politeness_delay=0),
+            safety=CrawlSafety(allowed_hosts=('example.com',)),
+            fetcher_type='auto',
+        ),
+        Policy(page=PagePolicy(chrome_ws_urls=('http://127.0.0.1:9222',))),
+    )
+
+    await crawl('https://example.com/', policy=policy, progress=False)
+
+    assert calls[0][0] == 'auto'
+    assert calls[0][1]['chrome_ws_urls'] == ('http://127.0.0.1:9222',)
+    assert calls[0][1]['accept_simple_requires_js'] is True
+
+
 async def test_crawl_policy_can_scrape_selected_contract_candidates(monkeypatch) -> None:
     fetcher = FakeFetcher(
         {
@@ -207,6 +233,80 @@ async def test_crawl_policy_can_scrape_selected_contract_candidates(monkeypatch)
     summary = await crawl('https://example.com/news/', contracts=NewsArticle, policy=policy, progress=False)
 
     assert scraped_calls == [(['https://example.com/story'], NewsArticle)]
+    assert summary.scraped_content == {'NewsArticle': [{'headline': 'Story One'}]}
+
+
+async def test_crawl_policy_scrape_contracts_uses_call_site_contract_classes(monkeypatch) -> None:
+    class LocalArticle(NewsArticle):
+        """Local custom article contract."""
+
+    fetcher = FakeFetcher(
+        {
+            'https://example.com/news/': '<a href="/story">Story One</a>',
+            'https://example.com/story': (
+                '<html><head><script type="application/ld+json">'
+                '{"@type": "NewsArticle"}'
+                '</script></head><body><article><h1>Story One</h1>'
+                '<p>First paragraph.</p><p>Second paragraph.</p><p>Third paragraph.</p>'
+                '</article></body></html>'
+            ),
+        }
+    )
+    scraped_calls: list[tuple[list[str], object]] = []
+
+    async def fake_scrape(urls: list[str], contract: object, **_kwargs: object) -> list[dict[str, str]]:
+        scraped_calls.append((urls, contract))
+        return [{'headline': 'Story One'}]
+
+    _inject(monkeypatch, fetcher)
+    monkeypatch.setattr('yosoi.api.scrape', fake_scrape)
+    policy = Policy.for_crawl(
+        'crawl.conservative',
+        budget=CrawlBudget(max_pages=2, max_depth=1),
+        scheduler=SchedulerPolicy(max_workers=1, politeness_delay=0),
+        safety=CrawlSafety(allowed_hosts=('example.com',)),
+        scrape_contracts=[LocalArticle],
+    )
+
+    summary = await crawl('https://example.com/news/', contracts=[LocalArticle], policy=policy, progress=False)
+
+    assert scraped_calls == [(['https://example.com/story'], LocalArticle)]
+    assert summary.scraped_content == {'LocalArticle': [{'headline': 'Story One'}]}
+
+
+async def test_crawl_policy_scrape_contracts_can_supply_targets(monkeypatch) -> None:
+    fetcher = FakeFetcher(
+        {
+            'https://example.com/news/': '<a href="/story">Story One</a>',
+            'https://example.com/story': (
+                '<html><head><script type="application/ld+json">'
+                '{"@type": "NewsArticle"}'
+                '</script></head><body><article><h1>Story One</h1>'
+                '<p>First paragraph.</p><p>Second paragraph.</p><p>Third paragraph.</p>'
+                '</article></body></html>'
+            ),
+        }
+    )
+    scraped_calls: list[tuple[list[str], object]] = []
+
+    async def fake_scrape(urls: list[str], contract: object, **_kwargs: object) -> list[dict[str, str]]:
+        scraped_calls.append((urls, contract))
+        return [{'headline': 'Story One'}]
+
+    _inject(monkeypatch, fetcher)
+    monkeypatch.setattr('yosoi.api.scrape', fake_scrape)
+    policy = Policy.for_crawl(
+        'crawl.conservative',
+        budget=CrawlBudget(max_pages=2, max_depth=1),
+        scheduler=SchedulerPolicy(max_workers=1, politeness_delay=0),
+        safety=CrawlSafety(allowed_hosts=('example.com',)),
+        scrape_contracts=[NewsArticle],
+    )
+
+    summary = await crawl('https://example.com/news/', policy=policy, progress=False)
+
+    assert summary.urls_for(NewsArticle) == ['https://example.com/story']
+    assert scraped_calls == [(['https://example.com/story'], 'NewsArticle')]
     assert summary.scraped_content == {'NewsArticle': [{'headline': 'Story One'}]}
 
 

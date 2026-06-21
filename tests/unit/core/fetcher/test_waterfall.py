@@ -36,6 +36,23 @@ class _Headless:
 
 
 @pytest.mark.asyncio
+async def test_waterfall_accepts_simple_js_shell_for_crawl_discovery(mocker):
+    fetcher = JSFetcher(console=_Console(), accept_simple_requires_js=True)
+    fetcher._simple = _Simple()
+    fetcher._strategy_storage = mocker.Mock()
+    fetcher._strategy_storage.save = mocker.AsyncMock()
+    fetcher._probe_requires_js = mocker.AsyncMock(return_value=False)
+    fetcher._ensure_headless = mocker.AsyncMock(return_value=_Headless())
+
+    result = await fetcher._fetch_waterfall('https://qscrape.dev/l2/news/?id=MHH-001', 'qscrape.dev', 1.0)
+
+    assert result.html == '<html><body><div data-fw="react"><astro-island></astro-island></div></body></html>'
+    assert 'qscrape.dev' not in fetcher._strategy_cache
+    fetcher._strategy_storage.save.assert_not_called()
+    fetcher._ensure_headless.assert_not_called()
+
+
+@pytest.mark.asyncio
 async def test_waterfall_escalates_astro_shell_instead_of_caching_simple(mocker):
     fetcher = JSFetcher(console=_Console())
     fetcher._simple = _Simple()
