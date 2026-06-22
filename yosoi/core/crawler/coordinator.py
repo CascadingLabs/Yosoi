@@ -9,15 +9,17 @@ from dataclasses import dataclass, field
 from typing import Any, Literal, Protocol
 from urllib.parse import urlparse
 
-from yosoi.core.crawler.candidates import CandidateFit, CrawlCandidateEntry, contract_name, score_contract_fit
+import lxml.html
+
 from yosoi.core.crawler.frontier import CrawlFrontier, FrontierEntry
-from yosoi.core.crawler.links import CrawlLink, LinkExtractor, best_path_similarity
+from yosoi.core.crawler.links import CrawlLink, LinkExtractor
 from yosoi.core.page import PageAcquisition
 from yosoi.generalization.fingerprint import PageFingerprint, PageObservation
 from yosoi.policy import CrawlRuntimeConfig
 from yosoi.policy.robots import RobotsGate
 
 CrawlStatus = Literal['succeeded', 'failed', 'policy_blocked']
+_ROUTE_ARTIFACT_SEGMENTS = frozenset({'agents', 'readme', 'license', 'contributing', 'security', 'code_of_conduct'})
 
 
 @dataclass(frozen=True, slots=True)
@@ -41,6 +43,7 @@ class CrawlResult:
     html: str = ''
     fetch_time: float = 0.0
     error: str | None = None
+    content_type: str | None = None
     fingerprint: PageFingerprint | None = None
     observation: PageObservation | None = None
 
@@ -79,8 +82,6 @@ class CrawlRunSummary:
     idle_worker_slots: int = 0
     wall_time: float = 0.0
     results: list[CrawlResult] = field(default_factory=list)
-    contract_candidate_urls: dict[str, list[str]] = field(default_factory=dict)
-    contract_candidate_entries: dict[str, list[CrawlCandidateEntry]] = field(default_factory=dict)
     scraped_content: dict[str, Any] = field(default_factory=dict)
     _max_workers_seen: int = 1
 
@@ -118,37 +119,56 @@ class CrawlRunSummary:
             lanes[result.status].append(result.job.url)
         return {name: urls for name, urls in lanes.items() if urls}
 
-    def urls_for(
-        self,
-        contract: object,
-        *,
-        limit: int | None = None,
-        min_score: float = 0.0,
-        include_weak: bool = False,
-    ) -> list[str]:
-        """Return ranked URLs likely to satisfy ``contract`` when passed to ``ys.scrape``."""
-        entries = self.candidates_for(contract, limit=limit, min_score=min_score, include_weak=include_weak)
-        return [entry.url for entry in entries]
+    def path_prefix_counts(self, *, depth: int = 1) -> dict[str, int]:
+        """Count succeeded URLs by leading path prefix for crawl coverage inspection."""
+        counts: dict[str, int] = {}
+        for result in self.results:
+            if result.status != 'succeeded':
+                continue
+            path = urlparse(result.job.url).path.strip('/')
+            parts = tuple(part for part in path.split('/') if part)
+            prefix = '/' + '/'.join(parts[:depth]) if parts else '/'
+            counts[prefix] = counts.get(prefix, 0) + 1
+        return dict(sorted(counts.items(), key=lambda item: (-item[1], item[0])))
 
-    def candidates_for(
-        self,
-        contract: object,
-        *,
-        limit: int | None = None,
-        min_score: float = 0.0,
-        fit: CandidateFit | None = None,
-        include_weak: bool = False,
-    ) -> list[CrawlCandidateEntry]:
-        """Return explainable crawl candidate entries for a contract class or name."""
-        name = contract_name(contract)
-        entries = [
-            entry
-            for entry in self.contract_candidate_entries.get(name, ())
-            if entry.score >= min_score
-            and (include_weak or fit == 'weak' or entry.fit != 'weak')
-            and (fit is None or entry.fit == fit)
+    def content_type_counts(self) -> dict[str, int]:
+        """Count succeeded URLs by response content-type family."""
+        counts: dict[str, int] = {}
+        for result in self.results:
+            if result.status != 'succeeded':
+                continue
+            content_type = (result.content_type or 'unknown').split(';', 1)[0].strip().lower() or 'unknown'
+            counts[content_type] = counts.get(content_type, 0) + 1
+        return dict(sorted(counts.items(), key=lambda item: (-item[1], item[0])))
+
+    def representative_urls(self, *, limit: int | None = None, html_only: bool = True) -> list[str]:
+        """Return neutral representative URLs from the crawl inventory.
+
+        Selection is contract-agnostic: choose one URL per observed structural
+        fingerprint/path-shape cluster, then fill from remaining successful pages
+        in crawl order.
+        """
+        results = [result for result in self.results if _representative_eligible(result, html_only=html_only)]
+        return _cluster_representative_urls(results, limit=limit)
+
+    def scrape_target_urls(self, *, limit: int | None = None, html_only: bool = True) -> list[str]:
+        """Return neutral crawl URLs worth trying with scrape/discovery.
+
+        This is not contract-fit scoring. It is neutral inventory sampling: prefer
+        non-seed pages with stronger content evidence and lower outdegree, then
+        dedupe by structural/path cluster. If a crawl only fetched seeds, eligible
+        seeds are returned so single-page crawls remain scrapeable.
+        """
+        non_seed = [
+            result
+            for result in self.results
+            if result.job.depth > 0 and _representative_eligible(result, html_only=html_only)
         ]
-        return list(entries[:limit])
+        source = non_seed or [
+            result for result in self.results if _representative_eligible(result, html_only=html_only)
+        ]
+        ordered = sorted(source, key=_scrape_target_sort_key)
+        return _cluster_representative_urls(ordered, limit=limit)
 
 
 class CrawlCoordinator:
@@ -209,7 +229,6 @@ class CrawlCoordinator:
             and self.frontier.pages_fetched < self.config.max_pages
             and summary.attempted_urls < max_attempts
         ):
-            self._reprioritize_frontier(summary)
             remaining_attempts = max_attempts - summary.attempted_urls
             effective_workers = min(
                 self.config.max_workers,
@@ -279,6 +298,7 @@ class CrawlCoordinator:
                 status='policy_blocked',
                 error=f'redirect blocked by policy: {job.url} -> {snapshot.final_url}',
                 fetch_time=time.monotonic() - started,
+                content_type=_content_type(getattr(snapshot.fetch_result, 'headers', None)),
             )
 
         links: tuple[CrawlLink, ...] = ()
@@ -289,6 +309,7 @@ class CrawlCoordinator:
             links = tuple(extracted)
 
         html_text = snapshot.html_for_discovery
+        content_type = _content_type(getattr(snapshot.fetch_result, 'headers', None))
         if host:
             self._pages_fetched_by_host[host] = self._pages_fetched_by_host.get(host, 0) + 1
 
@@ -299,6 +320,7 @@ class CrawlCoordinator:
             html_chars=len(html_text),
             html=html_text,
             fetch_time=time.monotonic() - started,
+            content_type=content_type,
             fingerprint=snapshot.fingerprint,
             observation=snapshot.observation,
         )
@@ -355,8 +377,6 @@ class CrawlCoordinator:
         summary.attempted_urls = len(summary.results)
         if result.status != 'succeeded':
             return
-        self._index_result(result, summary)
-
         entries = [
             FrontierEntry(
                 url=link.url,
@@ -370,48 +390,8 @@ class CrawlCoordinator:
         pushed = self.frontier.push_many(entries)
         summary.duplicates_blocked += len(result.discovered_links) - pushed
 
-    def _index_result(self, result: CrawlResult, summary: CrawlRunSummary) -> None:
-        if result.fingerprint is None or result.observation is None:
-            return
-        for target in self.config.target_contracts:
-            name = target.name
-            entries = summary.contract_candidate_entries.setdefault(name, [])
-            limit = target.max_budget_pages or self.config.max_pages
-
-            entry = score_contract_fit(
-                target,
-                url=result.job.url,
-                source_url=result.job.source_url,
-                fingerprint=result.fingerprint,
-                observation=result.observation,
-                html=result.html,
-            )
-            if entry is None or entry.score < target.min_fit_score:
-                continue
-            by_url = {existing.url: existing for existing in entries}
-            current = by_url.get(entry.url)
-            if current is None or entry.score > current.score:
-                by_url[entry.url] = entry
-            ranked = sorted(by_url.values(), key=lambda item: item.score, reverse=True)[:limit]
-            summary.contract_candidate_entries[name] = ranked
-            summary.contract_candidate_urls[name] = [item.url for item in ranked if item.fit != 'weak']
-
-    def _reprioritize_frontier(self, summary: CrawlRunSummary) -> None:
-        if not self._path_planning_enabled():
-            return
-        references = self._candidate_reference_urls(summary)
-        if not references:
-            return
-        self.frontier.reprioritize(lambda entry: self._planned_url_score(entry.url, entry.score, references))
-
-    def _planned_link_score(self, link: CrawlLink, summary: CrawlRunSummary) -> float:
-        score = self._target_intent_link_score(link)
-        if not self._path_planning_enabled():
-            return score
-        references = self._candidate_reference_urls(summary)
-        if not references:
-            return score
-        return self._planned_url_score(link.url, score, references)
+    def _planned_link_score(self, link: CrawlLink, _summary: CrawlRunSummary) -> float:
+        return self._target_intent_link_score(link)
 
     def _target_intent_link_score(self, link: CrawlLink) -> float:
         score = link.score
@@ -426,29 +406,96 @@ class CrawlCoordinator:
                 score = max(score, min(1.0, link.score + 0.25))
         return score
 
-    def _planned_url_score(self, url: str, base_score: float, references: tuple[str, ...]) -> float:
-        if not self._path_planning_enabled():
-            return base_score
-        planning = self.config.path_planning
-        similarity = best_path_similarity(url, references)
-        if similarity < planning.min_similarity:
-            return base_score
-        return min(1.0, base_score + (planning.score_boost * similarity))
 
-    def _candidate_reference_urls(self, summary: CrawlRunSummary) -> tuple[str, ...]:
-        planning = self.config.path_planning
-        urls: list[str] = []
-        for entries in summary.contract_candidate_entries.values():
-            for entry in entries:
-                if entry.fit == 'weak':
-                    continue
-                urls.append(entry.url)
-                if len(urls) >= planning.max_reference_urls:
-                    return tuple(urls)
-        return tuple(urls)
+def _cluster_representative_urls(results: list[CrawlResult], *, limit: int | None) -> list[str]:
+    selected: list[CrawlResult] = []
+    used_clusters: set[tuple[str, object]] = set()
+    for result in results:
+        cluster = _representative_cluster(result)
+        if cluster in used_clusters:
+            continue
+        selected.append(result)
+        used_clusters.add(cluster)
+        if limit is not None and len(selected) >= limit:
+            return [item.job.url for item in selected]
 
-    def _path_planning_enabled(self) -> bool:
-        return bool(self.config.path_planning.enabled and self.config.path_planning.score_boost > 0)
+    if limit is None:
+        return [item.job.url for item in selected]
+
+    for result in results:
+        if result in selected:
+            continue
+        selected.append(result)
+        if len(selected) >= limit:
+            break
+    return [item.job.url for item in selected]
+
+
+def _representative_eligible(result: CrawlResult, *, html_only: bool) -> bool:
+    if result.status != 'succeeded':
+        return False
+    if not html_only:
+        return True
+    content_type = (result.content_type or '').split(';', 1)[0].strip().lower()
+    return content_type in {'', 'text/html', 'application/xhtml+xml'}
+
+
+def _scrape_target_sort_key(result: CrawlResult) -> tuple[int, float, int, int]:
+    return (
+        _route_artifact_penalty(result.job.url),
+        -_content_evidence_score(result),
+        len(result.discovered_links),
+        -result.job.depth,
+    )
+
+
+def _route_artifact_penalty(url: str) -> int:
+    parsed = urlparse(url)
+    segments = {part.strip().lower() for part in parsed.path.strip('/').split('/') if part.strip()}
+    return int(bool(segments & _ROUTE_ARTIFACT_SEGMENTS))
+
+
+def _content_evidence_score(result: CrawlResult) -> float:
+    text_len = len(_visible_text(result.html))
+    if text_len == 0:
+        return 0.0
+    text_score = min(1.0, text_len / 1_500)
+    outdegree_penalty = min(0.8, len(result.discovered_links) / 50)
+    return max(0.0, text_score - outdegree_penalty)
+
+
+def _visible_text(html: str) -> str:
+    if not html.strip():
+        return ''
+    try:
+        root = lxml.html.fromstring(html[:200_000])
+    except (TypeError, ValueError):
+        return ''
+    for element in root.xpath('.//script | .//style | .//noscript | .//nav | .//header | .//footer'):
+        element.drop_tree()
+    return ' '.join(root.itertext()).strip()
+
+
+def _representative_cluster(result: CrawlResult) -> tuple[str, object]:
+    if result.fingerprint is not None and result.fingerprint.skeleton:
+        return ('fingerprint', result.fingerprint.skeleton)
+    return ('path_shape', _path_shape(result.job.url))
+
+
+def _path_shape(url: str) -> str:
+    parsed = urlparse(url)
+    parts = [part for part in parsed.path.strip('/').split('/') if part]
+    normalized = [':id' if any(char.isdigit() for char in part) else part for part in parts]
+    return '/' + '/'.join(normalized)
+
+
+def _content_type(headers: Any) -> str | None:
+    if not isinstance(headers, dict):
+        return None
+    for key, value in headers.items():
+        if str(key).lower() == 'content-type':
+            return str(value)
+    return None
 
 
 def _tokens_from_text(text: str) -> set[str]:

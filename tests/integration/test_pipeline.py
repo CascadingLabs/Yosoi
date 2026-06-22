@@ -50,7 +50,7 @@ async def test_pipeline_happy_path(mocker, mock_llm_config, happy_path_html, tmp
     await pipeline.process_url('http://example.com', force=True)
 
     # ASSERT
-    saved = await pipeline.storage.load_selectors('example.com')
+    saved = await pipeline.storage.load_selectors('example.com', contract_sig=pipeline._contract_sig)
     assert saved is not None
     # primary is now a SelectorEntry dict: {'strategy': 'css', 'level': 1, 'value': '...'}
     primary = saved['headline']['primary']
@@ -121,5 +121,5 @@ async def test_pipeline_ai_failure(mocker, mock_llm_config, happy_path_html, tmp
     # ACT + ASSERT — AI failure must raise (Fail Fast)
     with pytest.raises(RuntimeError):
         await pipeline.process_url('http://ai-failure.com', force=True, max_discovery_retries=1)
-    saved = await pipeline.storage.load_selectors('ai-failure.com')
+    saved = await pipeline.storage.load_selectors('ai-failure.com', contract_sig=pipeline._contract_sig)
     assert saved is None

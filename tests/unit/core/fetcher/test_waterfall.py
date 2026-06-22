@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import asyncio
+from typing import ClassVar
 
 import pytest
 
 from yosoi.core.fetcher.base import ContentAnalyzer
-from yosoi.core.fetcher.voiddriver import _VoidCrawlFetcher
+from yosoi.core.fetcher.voiddriver import _crawl_frontier_signature, _VoidCrawlFetcher
 from yosoi.core.fetcher.waterfall import JSFetcher
 from yosoi.models.results import FetchResult
 
@@ -17,13 +18,37 @@ class _Console:
         pass
 
 
+class _HydratingTab:
+    def __init__(self) -> None:
+        self.calls = 0
+
+    async def content(self) -> str:
+        self.calls += 1
+        if self.calls == 1:
+            return '<html><body><main>loading</main></body></html>'
+        return '<html><body><a href="/ready">ready</a></body></html>'
+
+
 class _Simple:
+    def __init__(self, html: str | None = None) -> None:
+        self.html = html or '<html><body><div data-fw="react"><astro-island></astro-island></div></body></html>'
+
     async def fetch(self, url: str) -> FetchResult:
-        html = '<html><body><div data-fw="react"><astro-island></astro-island></div></body></html>'
-        return FetchResult(url=url, html=html, metadata=ContentAnalyzer.analyze(html))
+        return FetchResult(url=url, html=self.html, metadata=ContentAnalyzer.analyze(self.html))
 
 
 class _Headless:
+    def __init__(self, *, crawl_result: FetchResult | None = None) -> None:
+        self.crawl_calls = 0
+        self.full_calls = 0
+        self.crawl_result = crawl_result
+
+    async def _do_fetch_crawl(self, url: str, start_time: float, tier: str) -> FetchResult:
+        self.crawl_calls += 1
+        if self.crawl_result is not None:
+            return self.crawl_result
+        return FetchResult(url=url, html='<html><body><a href="/next">next</a></body></html>', fetch_time=start_time)
+
     async def _do_fetch(
         self,
         url: str,
@@ -32,7 +57,27 @@ class _Headless:
         action_scripts: dict | None = None,
         download_specs: dict | None = None,
     ) -> FetchResult:
+        self.full_calls += 1
         return FetchResult(url=url, html='<html><body><article>rendered</article></body></html>', fetch_time=start_time)
+
+
+def test_crawl_frontier_signature_tracks_href_identity_not_just_count() -> None:
+    first = '<html><body><a href="/aa">A</a></body></html>'
+    second = '<html><body><a href="/bb">A</a></body></html>'
+
+    assert len(first) == len(second)
+    assert _crawl_frontier_signature(first) != _crawl_frontier_signature(second)
+
+
+@pytest.mark.asyncio
+async def test_crawl_frontier_content_waits_for_link_inventory_to_stabilize(mocker):
+    mocker.patch('yosoi.core.fetcher.voiddriver.asyncio.sleep', mocker.AsyncMock())
+    tab = _HydratingTab()
+
+    html = await _VoidCrawlFetcher()._crawl_frontier_content(tab)
+
+    assert html == '<html><body><a href="/ready">ready</a></body></html>'
+    assert tab.calls == 3
 
 
 @pytest.mark.asyncio
@@ -53,7 +98,81 @@ async def test_waterfall_accepts_simple_js_shell_for_crawl_discovery(mocker):
 
 
 @pytest.mark.asyncio
-async def test_waterfall_escalates_astro_shell_instead_of_caching_simple(mocker):
+async def test_waterfall_crawl_frontier_accepts_simple_js_marked_html_with_links(mocker):
+    html = (
+        '<html><body><astro-island data-fw="react">'
+        '<a href="/news/">news</a><a href="/products/">products</a><a href="/scores/">scores</a>'
+        '</astro-island></body></html>'
+    )
+    fetcher = JSFetcher(console=_Console(), crawl_frontier_only=True)
+    fetcher._simple = _Simple(html)
+    fetcher._strategy_storage = mocker.Mock()
+    fetcher._strategy_storage.save = mocker.AsyncMock()
+    fetcher._probe_requires_js = mocker.AsyncMock(return_value=False)
+    fetcher._ensure_headless = mocker.AsyncMock(return_value=_Headless())
+
+    result = await fetcher._fetch_waterfall('https://qscrape.dev/l2/news/?id=MHH-001', 'qscrape.dev', 1.0)
+
+    assert result.html == html
+    fetcher._ensure_headless.assert_not_called()
+    fetcher._strategy_storage.save.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_waterfall_crawl_frontier_renders_js_marked_html_with_only_one_nav_link(mocker):
+    html = '<html><body><astro-island data-fw="react"><a href="/next">next</a></astro-island></body></html>'
+    fetcher = JSFetcher(console=_Console(), crawl_frontier_only=True)
+    headless = _Headless()
+    fetcher._simple = _Simple(html)
+    fetcher._strategy_storage = mocker.Mock()
+    fetcher._strategy_storage.save = mocker.AsyncMock()
+    fetcher._probe_requires_js = mocker.AsyncMock(return_value=False)
+    fetcher._ensure_headless = mocker.AsyncMock(return_value=headless)
+
+    result = await fetcher._fetch_waterfall('https://qscrape.dev/l2/news/?id=MHH-001', 'qscrape.dev', 1.0)
+
+    assert result.html == '<html><body><a href="/next">next</a></body></html>'
+    assert headless.crawl_calls == 1
+
+
+@pytest.mark.asyncio
+async def test_waterfall_browser_tier_can_use_lightweight_crawl_fetch(mocker):
+    fetcher = JSFetcher(console=_Console(), crawl_frontier_only=True)
+    headless = _Headless()
+    fetcher._simple = _Simple()
+    fetcher._strategy_storage = mocker.Mock()
+    fetcher._strategy_storage.save = mocker.AsyncMock()
+    fetcher._probe_requires_js = mocker.AsyncMock(return_value=False)
+    fetcher._ensure_headless = mocker.AsyncMock(return_value=headless)
+
+    result = await fetcher._fetch_waterfall('https://qscrape.dev/l2/news/?id=MHH-001', 'qscrape.dev', 1.0)
+
+    assert result.html == '<html><body><a href="/next">next</a></body></html>'
+    assert headless.crawl_calls == 1
+    assert headless.full_calls == 0
+    fetcher._strategy_storage.save.assert_not_called()
+    assert 'qscrape.dev' not in fetcher._strategy_cache
+
+
+@pytest.mark.asyncio
+async def test_waterfall_crawl_frontier_browser_tier_does_not_retry_timeouts(mocker):
+    timeout_result = FetchResult(url='https://qscrape.dev/slow', html=None, block_reason='request timed out')
+    headless = _Headless(crawl_result=timeout_result)
+    fetcher = JSFetcher(console=_Console(), crawl_frontier_only=True)
+    fetcher._simple = _Simple()
+    fetcher._strategy_storage = mocker.Mock()
+    fetcher._strategy_storage.save = mocker.AsyncMock()
+    fetcher._probe_requires_js = mocker.AsyncMock(return_value=False)
+    fetcher._ensure_headless = mocker.AsyncMock(return_value=headless)
+
+    result = await fetcher._fetch_waterfall('https://qscrape.dev/slow', 'qscrape.dev', 1.0)
+
+    assert result is timeout_result
+    assert headless.crawl_calls == 1
+
+
+@pytest.mark.asyncio
+async def test_waterfall_escalates_astro_shell_by_default_instead_of_caching_simple(mocker):
     fetcher = JSFetcher(console=_Console())
     fetcher._simple = _Simple()
     fetcher._strategy_storage = mocker.Mock()
@@ -95,6 +214,26 @@ def test_jsfetcher_supports_browse_so_downloads_arent_gated_out():
     # Regression: the waterfall escalates to a browser tier and can run ys.File() downloads,
     # so the download gate (Pipeline._resolve_download_specs) must not reject fetcher_type=waterfall.
     assert JSFetcher().supports_browse is True
+
+
+async def test_probe_does_not_force_browser_for_small_non_html_assets(mocker):
+    class _Response:
+        status_code = 200
+        headers: ClassVar[dict[str, str]] = {'content-type': 'application/pdf', 'content-length': '1200'}
+
+    class _Client:
+        async def __aenter__(self):  # type: ignore[no-untyped-def]
+            return self
+
+        async def __aexit__(self, *_args):  # type: ignore[no-untyped-def]
+            return None
+
+        async def head(self, *_args, **_kwargs):  # type: ignore[no-untyped-def]
+            return _Response()
+
+    mocker.patch('yosoi.core.fetcher.waterfall.httpx.AsyncClient', _Client)
+
+    assert await JSFetcher()._probe_requires_js('https://example.com/file.pdf') is False
 
 
 async def test_update_selector_level_preserves_cached_fetcher(mocker):

@@ -5,9 +5,9 @@ from typing import ClassVar
 import pytest
 
 from yosoi.core.crawler import CrawlRunSummary
-from yosoi.core.crawler.candidates import score_contract_fit
+from yosoi.core.crawler.coordinator import CrawlJob, CrawlResult
+from yosoi.core.crawler.links import CrawlLink
 from yosoi.core.crawler.run import crawl
-from yosoi.generalization.capture import observe_html
 from yosoi.generalization.fingerprint import PageFingerprint
 from yosoi.models.defaults import NewsArticle
 from yosoi.models.results import FetchResult
@@ -56,21 +56,6 @@ def _no_persist(tmp_path, monkeypatch):
 
 def _inject(monkeypatch, fetcher: FakeFetcher) -> None:
     monkeypatch.setattr('yosoi.core.crawler.run.create_fetcher', lambda _type, **_kwargs: fetcher)
-
-
-def _score(contract: object, html: str):
-    return _score_url(contract, 'https://example.com/page', html)
-
-
-def _score_url(contract: object, url: str, html: str):
-    return score_contract_fit(
-        contract,
-        url=url,
-        source_url='https://example.com/',
-        fingerprint=PageFingerprint.of(html),
-        observation=observe_html(url, html, row_selector=''),
-        html=html,
-    )
 
 
 class FakeProgress:
@@ -123,23 +108,15 @@ async def test_crawl_returns_summary_with_pages_fetched(monkeypatch) -> None:
     assert fetcher.calls[0] == 'https://example.com/'
 
 
-async def test_crawl_builds_contract_candidates_for_targets(monkeypatch) -> None:
+async def test_crawl_exposes_neutral_representative_urls(monkeypatch) -> None:
     fetcher = FakeFetcher(
         {
             'https://example.com/news/': (
                 '<a href="/news/articles/story-one">Story One</a>'
                 '<a href="/news/articles/blocked">Blocked Story</a>'
                 '<a href="/products/anvil">Anvil</a>'
-                '<a href="/news/about">About</a>'
-                '<a href="/news/rss/">RSS</a>'
             ),
-            'https://example.com/news/articles/story-one': (
-                '<html><head><script type="application/ld+json">'
-                '{"@type": "NewsArticle"}'
-                '</script></head><body><main><article><h1>Story One</h1>'
-                '<p>First paragraph.</p><p>Second paragraph.</p><p>Third paragraph.</p>'
-                '</article></main></body></html>'
-            ),
+            'https://example.com/news/articles/story-one': '<main><article><h1>Story One</h1></article></main>',
             'https://example.com/news/articles/blocked': '<article>Blocked Story</article>',
             'https://example.com/products/anvil': '<main>Anvil</main>',
         }
@@ -155,24 +132,121 @@ async def test_crawl_builds_contract_candidates_for_targets(monkeypatch) -> None
 
     summary = await crawl(['https://example.com/news/'], policy=policy, progress=False)
 
-    assert summary.urls_for('NewsArticle') == ['https://example.com/news/articles/story-one']
-    assert summary.urls_for(NewsArticle, limit=1) == ['https://example.com/news/articles/story-one']
-    entries = summary.candidates_for('NewsArticle')
-    assert entries[0].url == 'https://example.com/news/articles/story-one'
-    assert entries[0].fit == 'strong'
-    assert entries[0].scrape_verified is False
-    assert 'structured data' in entries[0].evidence
-    assert 'article landmark' in entries[0].evidence
-    assert 'headline' in entries[0].evidence
-    assert 'body text' in entries[0].evidence
-    assert 'schema:NewsArticle' in entries[0].reasons
-    assert 'field:headline<-heading' in entries[0].reasons
-    assert 'field:body_text<-prose' in entries[0].reasons
-    assert 'https://example.com/products/anvil' not in summary.urls_for('NewsArticle')
-    assert 'https://example.com/news/articles/blocked' not in summary.urls_for('NewsArticle')
-    assert 'https://example.com/news/about' not in summary.urls_for('NewsArticle')
-    assert 'https://example.com/news/rss/' not in summary.urls_for('NewsArticle')
+    assert summary.representative_urls(limit=1) == ['https://example.com/news/']
+    assert summary.scrape_target_urls(limit=1) == ['https://example.com/news/articles/story-one']
     assert 'https://example.com/news/articles/blocked' not in fetcher.calls
+
+
+async def test_scrape_target_urls_fall_back_to_seed_for_single_page_crawls(monkeypatch) -> None:
+    fetcher = FakeFetcher({'https://example.com/story': '<main><article><h1>Story</h1></article></main>'})
+    _inject(monkeypatch, fetcher)
+    policy = Policy.for_crawl(
+        'crawl.local_single',
+        budget=CrawlBudget(max_pages=1, max_depth=0),
+        scheduler=SchedulerPolicy(max_workers=1, politeness_delay=0),
+        safety=CrawlSafety(allowed_hosts=('example.com',)),
+    )
+
+    summary = await crawl('https://example.com/story', policy=policy, progress=False)
+
+    assert summary.scrape_target_urls() == ['https://example.com/story']
+
+
+def test_scrape_target_urls_does_not_penalize_uppercase_ids_or_skus() -> None:
+    summary = CrawlRunSummary(
+        results=[
+            CrawlResult(
+                job=CrawlJob(url='https://example.com/SKU/ABC123', depth=1, source_url=None, batch_index=0),
+                status='succeeded',
+                html='<main><article><p>' + ('Product content. ' * 20) + '</p></article></main>',
+                content_type='text/html',
+            ),
+            CrawlResult(
+                job=CrawlJob(url='https://example.com/thin', depth=1, source_url=None, batch_index=1),
+                status='succeeded',
+                html='<main>Thin</main>',
+                content_type='text/html',
+            ),
+        ]
+    )
+
+    assert summary.scrape_target_urls(limit=1) == ['https://example.com/SKU/ABC123']
+
+
+def test_scrape_target_urls_deprioritizes_structural_artifact_routes() -> None:
+    summary = CrawlRunSummary(
+        results=[
+            CrawlResult(
+                job=CrawlJob(url='https://example.com/AGENTS/', depth=1, source_url=None, batch_index=0),
+                status='succeeded',
+                html='<main><p>' + ('Large repository instructions. ' * 100) + '</p></main>',
+                content_type='text/html',
+            ),
+            CrawlResult(
+                job=CrawlJob(url='https://example.com/story', depth=1, source_url=None, batch_index=1),
+                status='succeeded',
+                html='<main><article><p>' + ('Useful content. ' * 20) + '</p></article></main>',
+                content_type='text/html',
+            ),
+        ]
+    )
+
+    assert summary.scrape_target_urls(limit=1) == ['https://example.com/story']
+
+
+def test_scrape_target_urls_prefers_pages_with_content_evidence_over_thin_pages() -> None:
+    summary = CrawlRunSummary(
+        results=[
+            CrawlResult(
+                job=CrawlJob(url='https://example.com/thin', depth=1, source_url=None, batch_index=0),
+                status='succeeded',
+                html='<main><a href="/home">Home</a></main>',
+                content_type='text/html',
+            ),
+            CrawlResult(
+                job=CrawlJob(url='https://example.com/listing', depth=1, source_url=None, batch_index=1),
+                status='succeeded',
+                discovered_links=tuple(
+                    CrawlLink(url=f'https://example.com/item/{index}', text=str(index), score=0.5)
+                    for index in range(20)
+                ),
+                html='<main>'
+                + ' '.join(f'<a href="/item/{index}">Item {index}</a>' for index in range(20))
+                + '</main>',
+                content_type='text/html',
+            ),
+            CrawlResult(
+                job=CrawlJob(url='https://example.com/story', depth=1, source_url=None, batch_index=2),
+                status='succeeded',
+                html='<main><article><h1>Story</h1><p>' + ('Useful content. ' * 60) + '</p></article></main>',
+                content_type='text/html',
+            ),
+        ]
+    )
+
+    assert summary.scrape_target_urls(limit=1) == ['https://example.com/story']
+
+
+def test_representative_urls_dedupe_clusters_without_limit() -> None:
+    fingerprint = PageFingerprint.of('<main><article><h1>Story</h1></article></main>')
+    summary = CrawlRunSummary(
+        results=[
+            CrawlResult(
+                job=CrawlJob(url='https://example.com/story/1', depth=1, source_url=None, batch_index=0),
+                status='succeeded',
+                content_type='text/html',
+                fingerprint=fingerprint,
+            ),
+            CrawlResult(
+                job=CrawlJob(url='https://example.com/story/2', depth=1, source_url=None, batch_index=1),
+                status='succeeded',
+                content_type='text/html',
+                fingerprint=fingerprint,
+            ),
+        ]
+    )
+
+    assert summary.representative_urls() == ['https://example.com/story/1']
 
 
 async def test_crawl_passes_policy_chrome_ws_urls_to_auto_fetcher(monkeypatch) -> None:
@@ -198,10 +272,12 @@ async def test_crawl_passes_policy_chrome_ws_urls_to_auto_fetcher(monkeypatch) -
 
     assert calls[0][0] == 'auto'
     assert calls[0][1]['chrome_ws_urls'] == ('http://127.0.0.1:9222',)
-    assert calls[0][1]['accept_simple_requires_js'] is True
+    assert calls[0][1]['max_concurrent'] == 1
+    assert calls[0][1]['crawl_frontier_only'] is True
+    assert 'accept_simple_requires_js' not in calls[0][1]
 
 
-async def test_crawl_policy_can_scrape_selected_contract_candidates(monkeypatch) -> None:
+async def test_crawl_policy_can_scrape_representative_urls(monkeypatch) -> None:
     fetcher = FakeFetcher(
         {
             'https://example.com/news/': '<a href="/story">Story One</a>',
@@ -274,6 +350,21 @@ async def test_crawl_policy_scrape_contracts_uses_call_site_contract_classes(mon
     assert summary.scraped_content == {'LocalArticle': [{'headline': 'Story One'}]}
 
 
+async def test_crawl_policy_scrape_contracts_rejects_multi_contract_without_planner(monkeypatch) -> None:
+    fetcher = FakeFetcher({'https://example.com/': '<a href="/story">Story One</a>'})
+    _inject(monkeypatch, fetcher)
+    policy = Policy.for_crawl(
+        'crawl.conservative',
+        budget=CrawlBudget(max_pages=1, max_depth=0),
+        scheduler=SchedulerPolicy(max_workers=1, politeness_delay=0),
+        safety=CrawlSafety(allowed_hosts=('example.com',)),
+        scrape_contracts=[NewsArticle, 'Product'],
+    )
+
+    with pytest.raises(ValueError, match='cannot route multiple contracts'):
+        await crawl('https://example.com/', contracts=[NewsArticle, 'Product'], policy=policy, progress=False)
+
+
 async def test_crawl_policy_scrape_contracts_can_supply_targets(monkeypatch) -> None:
     fetcher = FakeFetcher(
         {
@@ -305,7 +396,7 @@ async def test_crawl_policy_scrape_contracts_can_supply_targets(monkeypatch) -> 
 
     summary = await crawl('https://example.com/news/', policy=policy, progress=False)
 
-    assert summary.urls_for(NewsArticle) == ['https://example.com/story']
+    assert summary.scrape_target_urls() == ['https://example.com/story']
     assert scraped_calls == [(['https://example.com/story'], 'NewsArticle')]
     assert summary.scraped_content == {'NewsArticle': [{'headline': 'Story One'}]}
 
@@ -334,251 +425,7 @@ async def test_crawl_accepts_contract_classes_at_call_site(monkeypatch) -> None:
 
     summary = await crawl('https://example.com/news/', contracts=NewsArticle, limit=1, policy=policy, progress=False)
 
-    assert summary.urls_for(NewsArticle) == ['https://example.com/story']
-    assert summary.candidates_for(NewsArticle)[0].fit == 'strong'
-
-
-def test_news_article_shape_without_related_content_scores_strong() -> None:
-    html = (
-        '<html><head><script type="application/ld+json">'
-        '{"@type": "NewsArticle", "headline": "Story", "author": "A", "datePublished": "2026-01-01"}'
-        '</script></head><body><main><article><h1>Story</h1>'
-        '<p>One paragraph with enough words for a story.</p>'
-        '<p>Second paragraph with more body text.</p>'
-        '<p>Third paragraph with more body text.</p>'
-        '</article></main></body></html>'
-    )
-
-    entry = _score(NewsArticle, html)
-
-    assert entry is not None
-    assert entry.fit == 'strong'
-    assert 'related_content' not in ''.join(entry.reasons)
-
-
-def test_article_detail_shape_without_schema_or_landmark_scores_strong() -> None:
-    html = (
-        '<html><body><main><h1>Story</h1>'
-        '<p>One paragraph with enough words for a story.</p>'
-        '<p>Second paragraph with more body text.</p>'
-        '<p>Third paragraph with more body text.</p>'
-        '</main></body></html>'
-    )
-
-    entry = _score(NewsArticle, html)
-
-    assert entry is not None
-    assert entry.fit == 'strong'
-    assert 'detail page shape' in entry.evidence
-    assert 'headline' in entry.evidence
-    assert 'body text' in entry.evidence
-    assert 'shape:detail' in entry.reasons
-
-
-def test_legacy_visible_title_and_body_containers_score_strong() -> None:
-    html = (
-        '<html><body><div class="pageTitle">Story One</div>'
-        '<div class="articleBody">'
-        'This article body has enough visible words to look like a detail page. '
-        'It is not a listing, not a loading shell, and not just a headline. '
-        'The crawler should treat this as body evidence without needing site selectors.'
-        '</div></body></html>'
-    )
-
-    entry = _score(NewsArticle, html)
-
-    assert entry is not None
-    assert entry.fit == 'strong'
-    assert 'headline' in entry.evidence
-    assert 'body text' in entry.evidence
-    assert 'field:headline<-visible' in entry.reasons
-    assert 'field:body_text<-visible' in entry.reasons
-
-
-def test_schema_and_headline_without_body_is_not_strong_and_weak_is_debug_only() -> None:
-    html = (
-        '<html><head><script type="application/ld+json">'
-        '{"@type": "NewsArticle", "headline": "Story"}'
-        '</script></head><body><main><h1>Story</h1><div>Short teaser.</div></main></body></html>'
-    )
-
-    entry = _score(NewsArticle, html)
-
-    assert entry is not None
-    assert entry.fit != 'strong'
-
-
-def test_listing_page_with_many_links_is_weak() -> None:
-    links = ''.join(f'<a href="/story-{idx}">Story {idx}</a>' for idx in range(40))
-    html = (
-        '<html><head><script type="application/ld+json">'
-        '{"@type": "NewsArticle"}'
-        '</script></head><body><main><h1>Latest stories</h1>'
-        f'{links}</main></body></html>'
-    )
-
-    entry = _score(NewsArticle, html)
-
-    assert entry is None or entry.fit == 'weak'
-
-
-def test_profile_schema_without_article_structure_is_not_article_candidate() -> None:
-    html = (
-        '<html><head><script type="application/ld+json">'
-        '{"@type": "ProfilePage", "mainEntity": {"@type": "Person", "name": "Reporter"}}'
-        '</script></head><body><main><h1>Reporter</h1>'
-        '<section class="profile-body">'
-        '<p>Reporter writes about markets, technology, leadership, and public companies.</p>'
-        '<p>This page collects recent work and biographical details for readers.</p>'
-        '<p>It has enough prose to look substantive, but it is not an article.</p>'
-        '</section></main></body></html>'
-    )
-
-    entry = _score(NewsArticle, html)
-
-    assert entry is None
-
-
-def test_root_page_without_article_structure_is_not_article_candidate() -> None:
-    html = (
-        '<html><body><main><h1>Latest news</h1>'
-        '<section class="content-body">'
-        '<p>This home page has enough visible body text to look substantial.</p>'
-        '<p>It summarizes markets, technology, politics, and culture.</p>'
-        '<p>But without article structure it should not be a scrape candidate.</p>'
-        '</section></main></body></html>'
-    )
-
-    entry = _score_url(NewsArticle, 'https://example.com/', html)
-
-    assert entry is None
-
-
-def test_archive_grid_container_does_not_score_as_article_body() -> None:
-    rows = ''.join(f'<tr><td>Story {idx}</td><td><a href="/article/{idx}">Read</a></td></tr>' for idx in range(8))
-    html = (
-        f'<html><body><div class="pageTitle">Article Archive</div><table id="articlesGrid">{rows}</table></body></html>'
-    )
-
-    entry = _score(NewsArticle, html)
-
-    assert entry is None or entry.fit != 'strong'
-
-
-def test_candidate_scoring_ignores_invalid_attribute_values(monkeypatch) -> None:
-    class BrokenAttrib(dict):
-        def get(self, _key: object, _default: object = None) -> object:
-            raise ValueError('All strings must be XML compatible')
-
-    class BrokenNode:
-        attrib = BrokenAttrib()
-
-        def xpath(self, query: str):
-            if query == 'name()':
-                return _SelectorResult(['div'])
-            if query.startswith('.//text()'):
-                return _SelectorResult(['Story body text'])
-            return _SelectorResult([])
-
-    class FakeSelector:
-        def __init__(self, *_args: object, **_kwargs: object) -> None:
-            pass
-
-        def css(self, _query: str):
-            return _SelectorResult([])
-
-        def xpath(self, query: str):
-            if query == '//*':
-                return [BrokenNode()]
-            return _SelectorResult([])
-
-    html = '<html><body><div bad="x">Story</div></body></html>'
-    fingerprint = PageFingerprint.of(html)
-    observation = observe_html('https://example.com/page', html, row_selector='')
-    monkeypatch.setattr('parsel.Selector', FakeSelector)
-
-    entry = score_contract_fit(
-        NewsArticle,
-        url='https://example.com/page',
-        source_url='https://example.com/',
-        fingerprint=fingerprint,
-        observation=observation,
-        html=html,
-    )
-
-    assert entry is None or entry.fit != 'strong'
-
-
-class _SelectorResult:
-    def __init__(self, values: list[str]) -> None:
-        self.values = values
-
-    def get(self) -> str | None:
-        return self.values[0] if self.values else None
-
-    def getall(self) -> list[str]:
-        return self.values
-
-
-def test_repeated_card_body_containers_do_not_score_as_article_body() -> None:
-    cards = ''.join(
-        '<div class="articleCard">'
-        f'<div class="featuredContent"><h2>Story {idx}</h2>'
-        '<p>This card teaser has enough words to look substantial in isolation.</p></div>'
-        '<a href="/story">Read</a>'
-        '</div>'
-        for idx in range(8)
-    )
-    html = f'<html><body><main><h1>Latest stories</h1>{cards}</main></body></html>'
-
-    entry = _score(NewsArticle, html)
-
-    assert entry is None or entry.fit != 'strong'
-
-
-def test_large_main_container_alone_does_not_score_as_article_body() -> None:
-    links = ''.join(f'<a href="/story-{idx}">Story {idx}</a>' for idx in range(24))
-    html = (
-        '<html><body><main><h1>News</h1>'
-        '<p>This section has plenty of words about the latest headlines, markets, '
-        'weather, politics, and culture, but it is still an index surface.</p>'
-        f'{links}'
-        '</main></body></html>'
-    )
-
-    entry = _score(NewsArticle, html)
-
-    assert entry is None or entry.fit != 'strong'
-
-
-def test_news_schema_video_without_article_body_is_not_strong() -> None:
-    html = (
-        '<html><head><script type="application/ld+json">'
-        '{"@type": "NewsArticle", "headline": "Clip"}'
-        '</script></head><body><main><h1>Clip</h1><video src="/clip.mp4"></video>'
-        '<p>Watch the latest market update.</p></main></body></html>'
-    )
-
-    entry = _score(NewsArticle, html)
-
-    assert entry is not None
-    assert entry.fit != 'strong'
-
-
-def test_product_schema_with_name_but_no_price_is_below_strong() -> None:
-    from yosoi.models.defaults import Product
-
-    html = (
-        '<html><head><script type="application/ld+json">'
-        '{"@type": "Product", "name": "Anvil"}'
-        '</script></head><body><main><h1>Anvil</h1>'
-        '<p>Forged tool for metalwork.</p></main></body></html>'
-    )
-
-    entry = _score(Product, html)
-
-    assert entry is not None
-    assert entry.fit != 'strong'
+    assert summary.scrape_target_urls() == ['https://example.com/story']
 
 
 async def test_crawl_enters_async_fetcher_context(monkeypatch) -> None:

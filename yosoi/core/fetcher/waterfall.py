@@ -31,6 +31,7 @@ from typing import TYPE_CHECKING, Any
 import httpx
 from rich.console import Console
 
+from yosoi.core.crawler.links import LinkExtractor
 from yosoi.core.fetcher.base import HARD_BLOCK_STATUS, HTMLFetcher
 from yosoi.core.fetcher.identity import (
     BrowserIdentity,
@@ -87,6 +88,7 @@ class JSFetcher(HTMLFetcher):
         cross_origin_dom: bool = False,
         chrome_ws_urls: tuple[str, ...] = (),
         accept_simple_requires_js: bool = False,
+        crawl_frontier_only: bool = False,
     ):
         """Initialise the three-tier JS fetcher.
 
@@ -127,9 +129,11 @@ class JSFetcher(HTMLFetcher):
                 by default; ignored by the simple tier.
             chrome_ws_urls: Optional CDP endpoints for a pre-running VoidCrawl
                 docker/browser farm. When set, browser tiers attach instead of launching local Chrome.
-            accept_simple_requires_js: Return useful simple-tier HTML even when it
-                is marked JS-required. Intended for crawl discovery, where links
-                and fingerprints are useful without paying browser cost for every page.
+            accept_simple_requires_js: Return simple-tier HTML even when it is marked
+                JS-required. Off by default; callers should only use it when partial
+                static HTML is explicitly acceptable.
+            crawl_frontier_only: When browser tiers are needed for crawl discovery,
+                navigate and capture rendered HTML without running scrape-grade DOMLoader.
 
         """
         self._simple = SimpleFetcher(
@@ -155,6 +159,7 @@ class JSFetcher(HTMLFetcher):
         self.logger = logging.getLogger(__name__)
         self._force = force
         self._accept_simple_requires_js = accept_simple_requires_js
+        self._crawl_frontier_only = crawl_frontier_only
 
         self._chrome_kwargs: dict[str, Any] = {
             'timeout': timeout,
@@ -234,6 +239,8 @@ class JSFetcher(HTMLFetcher):
 
     async def _record_success(self, domain: str, tier: str, identity_id: str | None = None) -> None:
         """Save the winning tier (and cascade identity) for *domain* if it changed."""
+        if self._crawl_frontier_only:
+            return
         async with self._strategy_lock:
             current = self._strategy_cache.get(domain)
             if current is None or current.fetcher != tier or current.identity_id != identity_id:
@@ -288,6 +295,10 @@ class JSFetcher(HTMLFetcher):
             if r.status_code in HARD_BLOCK_STATUS:
                 return True
 
+            content_type = headers.get('content-type', '')
+            if content_type and 'html' not in content_type:
+                return False
+
             # Thin content-length on an HTML page = likely a shell with no body
             content_length = int(headers.get('content-length', -1))
             if 0 < content_length < 5_000:
@@ -305,7 +316,6 @@ class JSFetcher(HTMLFetcher):
 
             # No content-length at all + chunked transfer often means streaming SSR
             transfer = headers.get('transfer-encoding', '')
-            content_type = headers.get('content-type', '')
             return 'chunked' in transfer and 'html' in content_type and 'content-length' not in headers
 
         except (httpx.HTTPError, OSError, ValueError):
@@ -591,30 +601,14 @@ class JSFetcher(HTMLFetcher):
         if requires_js:
             self._console.print('[dim]    [1/3] HEAD probe detected JS-rendered page — skipping simple HTTP[/dim]')
         else:
-            self._console.print('[dim]    [1/3] Trying simple HTTP...[/dim]')
-            result: FetchResult | None = None
-            try:
-                result = await self._simple.fetch(url)
-            except BotDetectionError:
-                self._console.print('[warning]    ✗ Simple fetcher blocked by bot protection[/warning]')
-
-            if result and result.html and not result.requires_js:
-                self._console.print('[success]    ✓ Simple fetcher worked[/success]')
-                await self._record_success(domain, 'simple')
-                return result
-
-            if result and result.html and result.requires_js:
-                framework = getattr(result.metadata, 'js_framework', None) if result.metadata is not None else None
-                if self._accept_simple_requires_js and framework != 'bot-gate':
-                    self._console.print(
-                        '[dim]    ↳ Simple fetcher returned JS-marked HTML; accepting for crawl discovery[/dim]'
-                    )
-                    return result
-                self._console.print('[warning]    ✗ Simple fetcher returned bot gate — JS required[/warning]')
-            elif result:
-                self._console.print(
-                    f'[warning]    ✗ Simple fetcher failed ({result.block_reason or "no content"})[/warning]'
-                )
+            simple_result = await self._try_simple_tier(
+                url,
+                domain,
+                action_scripts=action_scripts,
+                download_specs=download_specs,
+            )
+            if simple_result is not None:
+                return simple_result
 
         # Tier 2: Headless
         self._console.print('[dim]    [2/3] Trying headless Chrome...[/dim]')
@@ -635,6 +629,8 @@ class JSFetcher(HTMLFetcher):
             self._console.print(
                 f'[warning]    ✗ Headless Chrome failed ({result.block_reason or "no content"})[/warning]'
             )
+            if self._crawl_frontier_only and not action_scripts and not download_specs:
+                return result
         except BotDetectionError:
             self._console.print('[warning]    ✗ Headless Chrome blocked by bot protection[/warning]')
 
@@ -665,6 +661,67 @@ class JSFetcher(HTMLFetcher):
 
         return result
 
+    async def _try_simple_tier(
+        self,
+        url: str,
+        domain: str,
+        *,
+        action_scripts: dict[str, str] | None,
+        download_specs: dict[str, DownloadSpec] | None,
+    ) -> FetchResult | None:
+        self._console.print('[dim]    [1/3] Trying simple HTTP...[/dim]')
+        try:
+            result = await self._simple.fetch(url)
+        except BotDetectionError:
+            self._console.print('[warning]    ✗ Simple fetcher blocked by bot protection[/warning]')
+            return None
+
+        if result.html and not result.requires_js:
+            self._console.print('[success]    ✓ Simple fetcher worked[/success]')
+            await self._record_success(domain, 'simple')
+            return result
+
+        if result.html and result.requires_js:
+            framework = getattr(result.metadata, 'js_framework', None) if result.metadata is not None else None
+            if self._accept_simple_requires_js and framework != 'bot-gate':
+                self._console.print(
+                    '[dim]    ↳ Simple fetcher returned JS-marked HTML; accepting partial static HTML[/dim]'
+                )
+                return result
+            if self._accept_simple_js_marked_result(
+                result,
+                framework=framework,
+                action_scripts=action_scripts,
+                download_specs=download_specs,
+            ):
+                self._console.print(
+                    '[dim]    ↳ Simple fetcher returned JS-marked HTML with crawl links; accepting frontier HTML[/dim]'
+                )
+                return result
+            self._console.print('[warning]    ✗ Simple fetcher returned bot gate — JS required[/warning]')
+        else:
+            self._console.print(
+                f'[warning]    ✗ Simple fetcher failed ({result.block_reason or "no content"})[/warning]'
+            )
+        return None
+
+    def _accept_simple_js_marked_result(
+        self,
+        result: FetchResult,
+        *,
+        framework: str | None,
+        action_scripts: dict[str, str] | None,
+        download_specs: dict[str, DownloadSpec] | None,
+    ) -> bool:
+        return (
+            self._crawl_frontier_only
+            and not action_scripts
+            and not download_specs
+            and framework != 'bot-gate'
+            and result.html is not None
+            and _has_crawlable_links(result.html, base_url=result.url or '')
+        )
+
     async def _fetch_browser_tier(
         self,
         fetcher: _VoidCrawlFetcher,
@@ -681,16 +738,20 @@ class JSFetcher(HTMLFetcher):
         that already escaped the pool as a timeout-shaped page error. Downloads are
         not retried because a partial click/download may have side effects.
         """
-        attempts = 1 if download_specs else 3
+        use_crawl_frontier = self._crawl_frontier_only and not action_scripts and not download_specs
+        attempts = 1 if download_specs or use_crawl_frontier else 3
         result: FetchResult | None = None
         for attempt in range(1, attempts + 1):
-            result = await fetcher._do_fetch(
-                url,
-                start_time,
-                tier,
-                action_scripts=action_scripts,
-                download_specs=download_specs,
-            )
+            if use_crawl_frontier:
+                result = await fetcher._do_fetch_crawl(url, start_time, tier)
+            else:
+                result = await fetcher._do_fetch(
+                    url,
+                    start_time,
+                    tier,
+                    action_scripts=action_scripts,
+                    download_specs=download_specs,
+                )
             if not _retryable_browser_timeout(result) or attempt == attempts:
                 return result
             self._console.print(
@@ -699,6 +760,10 @@ class JSFetcher(HTMLFetcher):
             await asyncio.sleep(min(4.0, 0.5 * attempt))
         assert result is not None
         return result
+
+
+def _has_crawlable_links(html: str, *, base_url: str) -> bool:
+    return LinkExtractor().has_crawlable_links(html, base_url=base_url, min_links=3, min_path_shapes=2)
 
 
 def _retryable_browser_timeout(result: FetchResult) -> bool:

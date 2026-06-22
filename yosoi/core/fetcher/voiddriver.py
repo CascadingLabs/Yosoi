@@ -25,6 +25,7 @@ from collections.abc import AsyncGenerator, Sequence
 from contextlib import asynccontextmanager
 from typing import Any
 
+import lxml.html
 from rich.console import Console
 
 from yosoi.core.fetcher.base import ContentAnalyzer, HTMLFetcher
@@ -53,6 +54,21 @@ _JS_POLL_INTERVAL_S: float = 0.5
 _JS_MAX_SETTLE_CYCLES: int = 10
 # Max random jitter injected before tab.goto() to stagger concurrent workers.
 _JITTER_MAX_S: float = 1.5
+_CRAWL_LINK_SETTLE_INTERVAL_S: float = 0.2
+_CRAWL_LINK_SETTLE_CYCLES: int = 5
+
+
+def _crawl_frontier_signature(html: str) -> tuple[frozenset[str], int]:
+    try:
+        root = lxml.html.fromstring(html)
+    except (TypeError, ValueError):
+        return (frozenset(), len(html))
+    hrefs = frozenset(
+        str(href).strip()
+        for href in root.xpath('//a/@href')
+        if isinstance(href, str) and str(href).strip() and not str(href).strip().startswith('#')
+    )
+    return (hrefs, len(html))
 
 
 def _import_voidcrawl() -> tuple[Any, Any, Any]:
@@ -336,6 +352,82 @@ class _VoidCrawlFetcher(HTMLFetcher):
             metadata=metadata,
             js_outputs=js_outputs,
         )
+
+    async def _do_fetch_crawl(self, url: str, start_time: float, _tier: str) -> FetchResult:
+        """Lightweight rendered fetch for crawl frontier discovery.
+
+        Crawl only needs the post-navigation DOM for links/canonical/fingerprint.
+        It should not pay scrape-grade DOMLoader/A3Node/action/download/AX costs
+        for every URL in the frontier.
+        """
+        resp_headers: dict[str, str] | None = None
+        resp_endpoints: list[str] | None = None
+        captcha_kind: str | None = None
+        async with self._pool.acquire() as tab:
+            jitter = random.uniform(0, _JITTER_MAX_S)
+            if jitter > 0.05:
+                await asyncio.sleep(jitter)
+            await self._apply_identity_geo(tab)
+            async for attempt in get_async_retryer(
+                max_attempts=1,
+                wait_min=0.5,
+                wait_max=4.0,
+                exceptions=(RuntimeError,),
+                log_callback=log_retry,
+            ):
+                with attempt:
+                    page_resp = await self._goto_capture(tab, url)
+            resp_headers = getattr(page_resp, 'headers', None) or None
+            resp_endpoints = getattr(page_resp, 'endpoints', None) or None
+            html = await self._crawl_frontier_content(tab)
+            captcha_kind = await self._probe_captcha(tab)
+
+        if not html or len(html) < self.min_content_length:
+            return FetchResult(
+                url=url,
+                html=None,
+                status_code=None,
+                is_blocked=False,
+                block_reason=f'Content too short ({len(html or "")} chars)',
+                fetch_time=time.time() - start_time,
+                headers=resp_headers,
+                endpoints=resp_endpoints,
+            )
+
+        is_blocked, indicators = self._check_for_bot_detection(html, 200, {})
+        if is_blocked:
+            raise BotDetectionError(
+                url,
+                200,
+                indicators,
+                identity_id=self._identity.id if self._identity is not None else None,
+                captcha_kind=captcha_kind,
+            )
+
+        return FetchResult(
+            url=url,
+            html=html,
+            status_code=200,
+            is_blocked=False,
+            fetch_time=time.time() - start_time,
+            metadata=ContentAnalyzer.analyze(html),
+            headers=resp_headers,
+            endpoints=resp_endpoints,
+        )
+
+    async def _crawl_frontier_content(self, tab: Any) -> str:
+        """Capture rendered HTML after a short link-inventory settle window."""
+        html = await tab.content()
+        signature = _crawl_frontier_signature(html)
+        for _ in range(_CRAWL_LINK_SETTLE_CYCLES):
+            await asyncio.sleep(_CRAWL_LINK_SETTLE_INTERVAL_S)
+            candidate = await tab.content()
+            next_signature = _crawl_frontier_signature(candidate)
+            if next_signature == signature:
+                return candidate
+            html = candidate
+            signature = next_signature
+        return html
 
     async def _do_fetch(
         self,

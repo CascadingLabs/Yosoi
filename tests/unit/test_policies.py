@@ -402,8 +402,6 @@ def test_escalation_rejects_paid_budget_when_paid_scrapers_disabled() -> None:
 @pytest.mark.parametrize(
     'kwargs',
     [
-        {'name': 'Article', 'min_fields': False},
-        {'name': 'Article', 'min_fit_score': False},
         {'name': 'Article', 'max_budget_pages': False},
     ],
 )

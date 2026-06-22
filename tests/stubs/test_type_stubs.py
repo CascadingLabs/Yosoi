@@ -3,6 +3,7 @@
 import subprocess
 import sys
 import textwrap
+import uuid
 
 from tests.stubs.conftest import SNIPPETS_DIR
 
@@ -10,7 +11,7 @@ from tests.stubs.conftest import SNIPPETS_DIR
 def _run_mypy(code: str) -> subprocess.CompletedProcess[str]:
     """Run mypy on a code snippet, return the result."""
     SNIPPETS_DIR.mkdir(exist_ok=True)
-    snippet_file = SNIPPETS_DIR / '_check.py'
+    snippet_file = SNIPPETS_DIR / f'_check_{uuid.uuid4().hex}.py'
     snippet_file.write_text(code)
     try:
         return subprocess.run(
@@ -177,7 +178,7 @@ class TestPolicyStubs:
         )
         assert result.returncode == 0, result.stdout + result.stderr
 
-    def test_crawl_candidate_api_typechecks(self) -> None:
+    def test_crawl_representative_url_api_typechecks(self) -> None:
         result = _run_mypy(
             textwrap.dedent("""\
             import yosoi as ys
@@ -188,14 +189,10 @@ class TestPolicyStubs:
                     contracts=ys.NewsArticle,
                     policy=ys.Policy.for_crawl('crawl.conservative'),
                 )
-                urls: list[str] = summary.urls_for(ys.NewsArticle)
-                candidates: list[ys.CrawlCandidateEntry] = summary.candidates_for(ys.NewsArticle)
-                for candidate in candidates:
-                    fit: ys.CandidateFit = candidate.fit
-                    reveal_type(candidate.evidence)
-                    reveal_type(candidate.scrape_verified)
-                    assert fit in ('weak', 'possible', 'likely', 'strong')
-                assert urls is not None
+                scrape_targets: list[str] = summary.scrape_target_urls(limit=5)
+                representatives: list[str] = summary.representative_urls(limit=5)
+                assert scrape_targets is not None
+                assert representatives is not None
         """)
         )
         assert result.returncode == 0, result.stdout + result.stderr

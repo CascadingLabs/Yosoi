@@ -65,9 +65,6 @@ if TYPE_CHECKING:  # static typing only — no runtime cost
         EscalationPolicy as EscalationPolicy,
     )
     from yosoi.policy.crawl import (
-        PathPlanningPolicy as PathPlanningPolicy,
-    )
-    from yosoi.policy.crawl import (
         SchedulerPolicy as SchedulerPolicy,
     )
     from yosoi.policy.fingerprint import (
@@ -249,7 +246,6 @@ _LAZY = {
     'CrawlSafety': 'yosoi.policy.crawl',
     'CrawlTarget': 'yosoi.policy.crawl',
     'EscalationPolicy': 'yosoi.policy.crawl',
-    'PathPlanningPolicy': 'yosoi.policy.crawl',
     'SchedulerPolicy': 'yosoi.policy.crawl',
 }
 __all__ = sorted(_LAZY)

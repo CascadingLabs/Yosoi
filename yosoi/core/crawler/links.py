@@ -8,6 +8,7 @@ from difflib import SequenceMatcher
 from pathlib import PurePosixPath
 from urllib.parse import quote, urljoin, urlparse
 
+import lxml.etree
 import lxml.html
 
 from yosoi.core.crawler.frontier import canonicalize_url
@@ -59,19 +60,40 @@ class _NavigationTemplate:
 class LinkExtractor:
     """Extract crawlable links without site-specific selectors."""
 
+    def has_crawlable_links(
+        self,
+        html: str,
+        *,
+        base_url: str,
+        allowed_hosts: set[str] | None = None,
+        min_links: int = 1,
+        min_path_shapes: int = 1,
+    ) -> bool:
+        """Return whether HTML exposes enough HTTP(S) frontier signal."""
+        links = self.extract(html, base_url=base_url, allowed_hosts=allowed_hosts)
+        if len(links) < min_links:
+            return False
+        path_shapes = {_path_signature(link.url) for link in links}
+        return len(path_shapes) >= min_path_shapes
+
     def extract(self, html: str, *, base_url: str, allowed_hosts: set[str] | None = None) -> list[CrawlLink]:
         """Return de-duplicated HTTP(S) links in document order."""
+        seen: set[str] = set()
+        links: list[CrawlLink] = []
+        if _looks_like_xml_feed(html):
+            return self._extract_xml_feed(html, base_url=base_url, allowed_hosts=allowed_hosts, seen=seen)
+        robots_links = _robots_sitemap_links(html, base_url=base_url, allowed_hosts=allowed_hosts, seen=seen)
+        if robots_links:
+            return robots_links
         try:
             root = lxml.html.fromstring(html)
         except (ValueError, TypeError):
             return []
 
-        seen: set[str] = set()
-        links: list[CrawlLink] = []
         js_templates = _navigation_function_templates(html)
         for anchor in root.xpath('//a[@href]'):
             href = anchor.get('href')
-            if not href:
+            if not href or href.strip().startswith('#'):
                 continue
             canonical = canonicalize_url(urljoin(base_url, href))
             if canonical is None or canonical in seen:
@@ -111,6 +133,41 @@ class LinkExtractor:
                 )
             )
             seen.add(canonical)
+        return links
+
+    def _extract_xml_feed(
+        self,
+        xml: str,
+        *,
+        base_url: str,
+        allowed_hosts: set[str] | None,
+        seen: set[str],
+    ) -> list[CrawlLink]:
+        try:
+            parser = lxml.etree.XMLParser(resolve_entities=False, no_network=True, recover=True)
+            root = lxml.etree.fromstring(xml.encode('utf-8', errors='ignore'), parser=parser)
+        except (lxml.etree.XMLSyntaxError, ValueError, TypeError):
+            return []
+
+        links: list[CrawlLink] = []
+        candidates: list[tuple[str, str]] = []
+        for element in root.xpath('//*[local-name()="loc" or local-name()="link"]'):
+            href = element.get('href') if hasattr(element, 'get') else None
+            raw_url = href or ''.join(element.itertext()).strip()
+            if not raw_url:
+                continue
+            label = _xml_link_label(element)
+            candidates.append((raw_url, label))
+
+        for raw_url, label in candidates:
+            canonical = canonicalize_url(urljoin(base_url, raw_url))
+            if canonical is None or canonical in seen:
+                continue
+            host = urlparse(canonical).hostname
+            if allowed_hosts is not None and host not in allowed_hosts:
+                continue
+            seen.add(canonical)
+            links.append(CrawlLink(url=canonical, text=label, score=self._score(canonical, label, False)))
         return links
 
     def _is_pagination(self, anchor: object, text: str) -> bool:
@@ -155,6 +212,53 @@ def best_path_similarity(url: str, references: tuple[str, ...]) -> float:
     if not references:
         return 0.0
     return max(path_similarity(url, reference) for reference in references)
+
+
+def _looks_like_xml_feed(text: object) -> bool:
+    if not isinstance(text, str):
+        return False
+    head = text.lstrip()[:500].lower()
+    return head.startswith('<?xml') or any(marker in head for marker in ('<urlset', '<sitemapindex', '<rss', '<feed'))
+
+
+def _robots_sitemap_links(
+    text: object,
+    *,
+    base_url: str,
+    allowed_hosts: set[str] | None,
+    seen: set[str],
+) -> list[CrawlLink]:
+    if not isinstance(text, str):
+        return []
+    links: list[CrawlLink] = []
+    for line in text.splitlines():
+        name, sep, value = line.partition(':')
+        if not sep or name.strip().lower() != 'sitemap':
+            continue
+        canonical = canonicalize_url(urljoin(base_url, value.strip()))
+        if canonical is None or canonical in seen:
+            continue
+        host = urlparse(canonical).hostname
+        if allowed_hosts is not None and host not in allowed_hosts:
+            continue
+        seen.add(canonical)
+        links.append(CrawlLink(url=canonical, text='sitemap', score=0.95))
+    return links
+
+
+def _xml_link_label(element: object) -> str:
+    try:
+        parent = element.getparent()  # type: ignore[attr-defined]
+    except AttributeError:
+        return ''
+    if parent is None:
+        return ''
+    for child in parent:
+        if not isinstance(child.tag, str):
+            continue
+        if child.tag.rsplit('}', 1)[-1].lower() == 'title':
+            return ' '.join(''.join(child.itertext()).split())
+    return ''
 
 
 def _navigation_function_templates(html: str) -> dict[str, _NavigationTemplate]:

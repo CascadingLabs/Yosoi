@@ -5,11 +5,9 @@ import time
 
 import pytest
 
-from yosoi.core.crawler import CrawlCoordinator, CrawlRunSummary
-from yosoi.core.crawler.candidates import CandidateFit, CrawlCandidateEntry
-from yosoi.generalization.fingerprint import PageFingerprint
+from yosoi.core.crawler import CrawlCoordinator
 from yosoi.models.results import FetchResult
-from yosoi.policy import CrawlBudget, CrawlPolicy, CrawlSafety, PagePolicy, PathPlanningPolicy, Policy, SchedulerPolicy
+from yosoi.policy import CrawlBudget, CrawlPolicy, CrawlSafety, PagePolicy, Policy, SchedulerPolicy
 
 
 class FakeFetcher:
@@ -78,19 +76,6 @@ class RedirectingFetcher(FakeFetcher):
 
 def _runtime(policy: Policy, *seeds: str):
     return policy.check_crawl(seeds=tuple(seeds)).runtime
-
-
-def _candidate(url: str, *, fit: CandidateFit = 'strong') -> CrawlCandidateEntry:
-    return CrawlCandidateEntry(
-        url=url,
-        contract='NewsArticle',
-        score=1.0,
-        fit=fit,
-        source_url=None,
-        fingerprint=PageFingerprint.of('<article><h1>Story</h1><p>Body text for a candidate.</p></article>'),
-        reasons=('shape:detail',),
-        evidence=('detail page shape',),
-    )
 
 
 class RecordingReporter:
@@ -358,94 +343,6 @@ async def test_policy_coordinator_enforces_max_pages_per_host(tmp_path, monkeypa
     assert summary.pages_fetched == 1
     assert summary.policy_blocked == 2
     assert all(result.error == 'host page cap reached by policy: example.com' for result in summary.results[1:])
-
-
-def test_path_planning_boosts_urls_like_existing_candidates(tmp_path) -> None:
-    policy = Policy.for_crawl(
-        'crawl.conservative',
-        budget=CrawlBudget(max_pages=4, max_depth=1),
-        scheduler=SchedulerPolicy(max_workers=1, politeness_delay=0),
-        safety=CrawlSafety(allowed_hosts=('example.com',)),
-    )
-    runtime = _runtime(policy, 'https://example.com/')
-    assert runtime is not None
-    coordinator = CrawlCoordinator(fetcher=FakeFetcher({}), config=runtime, persist_frontier=False)
-
-    score = coordinator._planned_url_score(
-        'https://example.com/news/articles/story-456.html',
-        0.5,
-        ('https://example.com/news/articles/story-123.html',),
-    )
-
-    assert score > 0.5
-
-
-def test_path_planning_leaves_unrelated_urls_at_base_score(tmp_path) -> None:
-    policy = Policy.for_crawl(
-        'crawl.conservative',
-        budget=CrawlBudget(max_pages=4, max_depth=1),
-        scheduler=SchedulerPolicy(max_workers=1, politeness_delay=0),
-        safety=CrawlSafety(allowed_hosts=('example.com',)),
-    )
-    runtime = _runtime(policy, 'https://example.com/')
-    assert runtime is not None
-    coordinator = CrawlCoordinator(fetcher=FakeFetcher({}), config=runtime, persist_frontier=False)
-
-    score = coordinator._planned_url_score(
-        'https://example.com/products/anvil',
-        0.5,
-        ('https://example.com/news/articles/story-123.html',),
-    )
-
-    assert score == 0.5
-
-
-def test_path_planning_can_be_disabled_by_policy(tmp_path) -> None:
-    policy = Policy.for_crawl(
-        'crawl.conservative',
-        budget=CrawlBudget(max_pages=4, max_depth=1),
-        scheduler=SchedulerPolicy(max_workers=1, politeness_delay=0),
-        safety=CrawlSafety(allowed_hosts=('example.com',)),
-        path_planning=PathPlanningPolicy(enabled=False, score_boost=1.0),
-    )
-    runtime = _runtime(policy, 'https://example.com/')
-    assert runtime is not None
-    coordinator = CrawlCoordinator(fetcher=FakeFetcher({}), config=runtime, persist_frontier=False)
-
-    score = coordinator._planned_url_score(
-        'https://example.com/news/articles/story-456.html',
-        0.5,
-        ('https://example.com/news/articles/story-123.html',),
-    )
-
-    assert coordinator._path_planning_enabled() is False
-    assert score == 0.5
-
-
-def test_path_planning_reference_limit_excludes_weak_candidates(tmp_path) -> None:
-    policy = Policy.for_crawl(
-        'crawl.conservative',
-        budget=CrawlBudget(max_pages=4, max_depth=1),
-        scheduler=SchedulerPolicy(max_workers=1, politeness_delay=0),
-        safety=CrawlSafety(allowed_hosts=('example.com',)),
-        path_planning=PathPlanningPolicy(max_reference_urls=1),
-    )
-    runtime = _runtime(policy, 'https://example.com/')
-    assert runtime is not None
-    coordinator = CrawlCoordinator(fetcher=FakeFetcher({}), config=runtime, persist_frontier=False)
-    crawl_summary = CrawlRunSummary(
-        contract_candidate_entries={
-            'NewsArticle': (
-                [
-                    _candidate('https://example.com/news/articles/story-001.html', fit='weak'),
-                    _candidate('https://example.com/news/articles/story-002.html'),
-                    _candidate('https://example.com/news/articles/story-003.html'),
-                ]
-            )
-        }
-    )
-
-    assert coordinator._candidate_reference_urls(crawl_summary) == ('https://example.com/news/articles/story-002.html',)
 
 
 async def test_policy_coordinator_records_fetch_exceptions_as_failures(tmp_path, monkeypatch) -> None:

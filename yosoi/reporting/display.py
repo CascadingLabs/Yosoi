@@ -203,10 +203,6 @@ def show(
 
 
 def _render_tables(value: Any, console: Console) -> bool:
-    if _is_crawl_candidate_entries(value):
-        _render_crawl_candidate_entries(value, console)
-        return True
-
     if _is_records(value):
         _render_record_table(value, console)
         return True
@@ -270,14 +266,29 @@ def _render_crawl_summary(summary: Any, console: Console) -> None:
 
     _render_url_lane_table('Succeeded', summary.outcome_lanes.get('succeeded', ()), console)
 
+    path_counts = summary.path_prefix_counts(depth=2) if hasattr(summary, 'path_prefix_counts') else {}
+    if path_counts:
+        _render_count_table('Crawl path coverage', path_counts, console)
+
+    content_type_counts = summary.content_type_counts() if hasattr(summary, 'content_type_counts') else {}
+    if content_type_counts:
+        _render_count_table('Crawl content types', content_type_counts, console)
+
     discovered = sorted({link.url for result in summary.results for link in result.discovered_links})
     if discovered:
         _render_url_lane_table('Discovered links', discovered, console)
 
-    contract_candidates = getattr(summary, 'contract_candidate_urls', None)
-    if contract_candidates:
-        for contract, urls in contract_candidates.items():
-            _render_url_lane_table(f'{contract} candidates', urls, console)
+    representative = (
+        summary.representative_urls(limit=_CRAWL_LANE_LIMIT) if hasattr(summary, 'representative_urls') else []
+    )
+    if representative:
+        _render_url_lane_table('Representative inventory URLs', representative, console)
+
+    scrape_targets = (
+        summary.scrape_target_urls(limit=_CRAWL_LANE_LIMIT) if hasattr(summary, 'scrape_target_urls') else []
+    )
+    if scrape_targets:
+        _render_url_lane_table('Neutral scrape target URLs', scrape_targets, console)
 
     blocked = summary.outcome_lanes.get('policy_blocked', ())
     if blocked:
@@ -288,52 +299,16 @@ def _render_crawl_summary(summary: Any, console: Console) -> None:
         _render_url_lane_table('Failed', failed, console)
 
 
-def _render_crawl_candidate_entries(entries: Sequence[Any], console: Console) -> None:
-    if not entries:
-        _print_line(console, '  (no rows)')
-        return
-
-    contract = getattr(entries[0], 'contract', 'Contract')
-    table = Table(title=f'{contract} crawl candidates', show_lines=False)
-    table.add_column('URL', overflow='fold', ratio=4)
-    table.add_column('Fit', width=9)
-    table.add_column('Evidence', overflow='fold', ratio=3)
-    table.add_column('Scrape', width=10)
-    for entry in entries:
-        table.add_row(
-            _url_cell(str(entry.url)),
-            str(entry.fit),
-            _candidate_evidence(entry),
-            'verified' if bool(getattr(entry, 'scrape_verified', False)) else 'not run',
-        )
+def _render_count_table(title: str, counts: Mapping[str, int], console: Console) -> None:
+    table = Table(title=title, show_header=True, show_lines=False)
+    table.add_column('bucket', overflow='fold')
+    table.add_column('count', justify='right')
+    for bucket, count in list(counts.items())[:_CRAWL_LANE_LIMIT]:
+        table.add_row(str(bucket), str(count))
+    omitted = len(counts) - _CRAWL_LANE_LIMIT
+    if omitted > 0:
+        table.add_row(f'... {omitted} more', '')
     console.print(table)
-
-
-def _candidate_evidence(entry: Any) -> str:
-    labels = tuple(dict.fromkeys(str(item) for item in getattr(entry, 'evidence', ()) if item))
-    if labels:
-        return ', '.join(labels)
-    return ', '.join(dict.fromkeys(_human_reason(str(reason)) for reason in getattr(entry, 'reasons', ()) if reason))
-
-
-def _human_reason(reason: str) -> str:
-    if reason.startswith('schema:'):
-        return 'structured data'
-    if reason == 'lm:article':
-        return 'article landmark'
-    if reason.startswith('lm:'):
-        return 'landmark'
-    if reason.endswith('<-heading'):
-        return 'headline'
-    if reason.endswith('<-prose'):
-        return 'body text'
-    if reason.endswith('<-schema'):
-        return 'metadata'
-    if reason == 'shape:detail':
-        return 'detail page shape'
-    if reason == 'shape:listing':
-        return 'listing shape'
-    return reason
 
 
 def _render_url_lane_table(title: str, urls: Sequence[str], console: Console) -> None:
@@ -386,12 +361,6 @@ def _is_records(value: Any) -> bool:
     if isinstance(value, (str, bytes)) or not isinstance(value, Sequence):
         return False
     return all(isinstance(item, Mapping) for item in value)
-
-
-def _is_crawl_candidate_entries(value: Any) -> bool:
-    if isinstance(value, (str, bytes)) or not isinstance(value, Sequence):
-        return False
-    return bool(value) and all(item.__class__.__name__ == 'CrawlCandidateEntry' for item in value)
 
 
 def _is_page_fingerprint(value: Any) -> bool:

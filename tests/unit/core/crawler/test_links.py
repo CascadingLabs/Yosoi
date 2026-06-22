@@ -5,6 +5,30 @@ from __future__ import annotations
 from yosoi.core.crawler.links import LinkExtractor, best_path_similarity, path_similarity
 
 
+def test_has_crawlable_links_classifies_href_groups() -> None:
+    extractor = LinkExtractor()
+
+    assert extractor.has_crawlable_links('<a href="https://site.test/a">A</a>', base_url='https://site.test/') is True
+    assert extractor.has_crawlable_links('<a href="/a">A</a>', base_url='https://site.test/') is True
+    assert extractor.has_crawlable_links('<a href="mailto:x@y.test">mail</a>', base_url='https://site.test/') is False
+    assert extractor.has_crawlable_links('<a href="tel:+15555555555">tel</a>', base_url='https://site.test/') is False
+    assert extractor.has_crawlable_links('<a href="javascript:void(0)">js</a>', base_url='https://site.test/') is False
+    assert extractor.has_crawlable_links('<a href="#section">fragment</a>', base_url='https://site.test/') is False
+
+
+def test_has_crawlable_links_can_require_frontier_diversity() -> None:
+    html = '<a href="/news/a">A</a><a href="/news/b">B</a><a href="/products/c">C</a>'
+    shallow_html = '<a href="/news/a">A</a>'
+
+    extractor = LinkExtractor()
+
+    assert extractor.has_crawlable_links(html, base_url='https://site.test/', min_links=3, min_path_shapes=2) is True
+    assert (
+        extractor.has_crawlable_links(shallow_html, base_url='https://site.test/', min_links=3, min_path_shapes=2)
+        is False
+    )
+
+
 def test_extract_dedups_and_resolves_relative_links() -> None:
     html = (
         '<a href="/a">First</a>'
@@ -20,6 +44,61 @@ def test_extract_dedups_and_resolves_relative_links() -> None:
 
 def test_extract_returns_empty_for_unparseable_input() -> None:
     assert LinkExtractor().extract(None, base_url='https://site.test/') == []  # type: ignore[arg-type]
+
+
+def test_extracts_sitemap_xml_locations() -> None:
+    xml = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+        '<url><loc>https://site.test/l1/news/articles</loc></url>'
+        '<url><loc>/l2/scoretap/</loc></url>'
+        '</urlset>'
+    )
+
+    links = LinkExtractor().extract(xml, base_url='https://site.test/sitemap.xml')
+
+    assert [link.url for link in links] == ['https://site.test/l1/news/articles', 'https://site.test/l2/scoretap/']
+
+
+def test_xml_extraction_does_not_expand_external_entities() -> None:
+    xml = (
+        '<?xml version="1.0"?>'
+        '<!DOCTYPE urlset [<!ENTITY xxe SYSTEM "file:///etc/passwd">]>'
+        '<urlset><url><loc>https://site.test/&xxe;</loc></url></urlset>'
+    )
+
+    links = LinkExtractor().extract(xml, base_url='https://site.test/sitemap.xml', allowed_hosts={'site.test'})
+
+    assert all('root:' not in link.url for link in links)
+
+
+def test_extracts_robots_sitemap_links() -> None:
+    robots = 'User-agent: *\nAllow: /\nSitemap: https://site.test/sitemap.xml\nSitemap: /extra-sitemap.xml\n'
+
+    links = LinkExtractor().extract(robots, base_url='https://site.test/robots.txt', allowed_hosts={'site.test'})
+
+    assert [link.url for link in links] == ['https://site.test/sitemap.xml', 'https://site.test/extra-sitemap.xml']
+    assert all(link.text == 'sitemap' for link in links)
+
+
+def test_extracts_rss_and_atom_links() -> None:
+    rss = (
+        '<?xml version="1.0"?>'
+        '<rss><channel>'
+        '<item><title>Story A</title><link>https://site.test/story-a</link></item>'
+        '<item><title>Story B</title><link>/story-b</link></item>'
+        '<entry><title>Story C</title><link href="/story-c" /></entry>'
+        '</channel></rss>'
+    )
+
+    links = LinkExtractor().extract(rss, base_url='https://site.test/feed.xml')
+
+    assert [link.url for link in links] == [
+        'https://site.test/story-a',
+        'https://site.test/story-b',
+        'https://site.test/story-c',
+    ]
+    assert [link.text for link in links] == ['Story A', 'Story B', 'Story C']
 
 
 def test_extract_filters_disallowed_hosts() -> None:

@@ -7,7 +7,6 @@ from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
 from typing import Any, cast
 
-from yosoi.core.crawler.candidates import contract_name
 from yosoi.core.crawler.coordinator import CrawlCoordinator, CrawlRunSummary
 from yosoi.core.fetcher import create_fetcher
 from yosoi.models.contract import Contract
@@ -55,8 +54,11 @@ async def crawl(
         # every sibling URL through Chrome. Re-run the waterfall per URL so L1 pages
         # stay on simple HTTP while L2/L3 pages can still escalate emergently.
         fetcher_kwargs['force'] = True
-        fetcher_kwargs['max_concurrent'] = max(1, crawl.scheduler.per_host_concurrency)
-        fetcher_kwargs['accept_simple_requires_js'] = True
+        browser_slots = max(1, min(crawl.scheduler.per_host_concurrency, 4))
+        if page.chrome_ws_urls:
+            browser_slots = max(1, min(browser_slots, len(page.chrome_ws_urls)))
+        fetcher_kwargs['max_concurrent'] = browser_slots
+        fetcher_kwargs['crawl_frontier_only'] = True
     fetcher = create_fetcher(resolved_fetcher_type, **fetcher_kwargs)
     async with _fetcher_context(fetcher) as active_fetcher:
         show_progress = _show_crawl_progress(pol) if progress is None else progress
@@ -105,10 +107,15 @@ async def _scrape_crawl_candidates(
 ) -> None:
     from yosoi.api import scrape
 
-    contract_items = _contract_items(contracts) if contracts is not None else tuple(summary.contract_candidate_urls)
+    contract_items = _contract_items(contracts) if contracts is not None else ()
+    if len(contract_items) > 1:
+        raise ValueError(
+            'policy-driven crawl scraping cannot route multiple contracts after candidate scoring removal; '
+            'scrape a single contract or use summary.scrape_target_urls() with an explicit planner'
+        )
     for item in contract_items:
         name = contract_name(item)
-        urls = summary.urls_for(item, limit=limit)
+        urls = summary.scrape_target_urls(limit=limit)
         if not urls:
             summary.scraped_content[name] = []
             continue
@@ -143,13 +150,30 @@ def _with_crawl_targets(policy: Policy, *, contracts: Sequence[object] | object 
     else:
         contract_items = _contract_items(contracts)
         targets = tuple(
-            CrawlTarget(name=contract_name(item), max_budget_pages=limit, intent_tokens=_contract_intent_tokens(item))
+            CrawlTarget(
+                name=contract_name(item),
+                max_budget_pages=limit,
+                intent_tokens=_contract_intent_tokens(item),
+            )
             for item in contract_items
         )
 
     crawl_payload = crawl.model_dump()
     crawl_payload['target_contracts'] = targets
     return Policy.cascade(policy, Policy(crawl=CrawlPolicy.model_validate(crawl_payload)))
+
+
+def contract_name(contract: str | type[Contract] | Any) -> str:
+    """Return a stable public name for a contract-like object."""
+    if isinstance(contract, str):
+        return contract
+    target_name = getattr(contract, 'name', None)
+    if isinstance(target_name, str) and target_name:
+        return target_name
+    name = getattr(contract, '__name__', None)
+    if isinstance(name, str) and name:
+        return name
+    return str(contract)
 
 
 def _contract_items(contracts: Sequence[object] | object) -> tuple[object, ...]:
@@ -166,7 +190,7 @@ def _contract_intent_tokens(contract: object) -> tuple[str, ...]:
     doc = getattr(contract, '__doc__', None)
     if isinstance(doc, str):
         tokens.update(_tokens_from_text(doc))
-    fields = getattr(contract, 'model_fields', None)
+    fields = getattr(contract, 'model_fields', None) if isinstance(contract, type) else None
     if isinstance(fields, dict):
         for name, field in fields.items():
             tokens.update(_tokens_from_text(str(name)))

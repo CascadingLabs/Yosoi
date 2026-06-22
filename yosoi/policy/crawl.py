@@ -136,25 +136,12 @@ class EscalationPolicy(BaseModel):
         return self
 
 
-class PathPlanningPolicy(BaseModel):
-    """URL-shape planning controls for crawl frontier prioritization."""
-
-    model_config = ConfigDict(frozen=True)
-
-    enabled: bool = True
-    min_similarity: StrictFloat = Field(default=0.72, ge=0.0, le=1.0)
-    score_boost: StrictFloat = Field(default=0.20, ge=0.0, le=1.0)
-    max_reference_urls: StrictInt = Field(default=25, ge=1, le=1_000)
-
-
 class CrawlTarget(BaseModel):
     """Contract target constraints for crawl planning and reporting."""
 
     model_config = ConfigDict(frozen=True)
 
     name: str
-    min_fields: StrictInt = Field(default=1, ge=0)
-    min_fit_score: StrictFloat = Field(default=0.0, ge=0.0, le=1.0)
     max_budget_pages: StrictOptInt = Field(default=None, ge=1)
     intent_tokens: tuple[str, ...] = ()
 
@@ -177,7 +164,6 @@ class CrawlPolicy(BaseModel):
     scheduler: SchedulerPolicy = Field(default_factory=SchedulerPolicy)
     safety: CrawlSafety = Field(default_factory=CrawlSafety)
     escalation: EscalationPolicy = Field(default_factory=EscalationPolicy)
-    path_planning: PathPlanningPolicy = Field(default_factory=PathPlanningPolicy)
     target_contracts: tuple[CrawlTarget, ...] = ()
     scrape_contracts: bool | tuple[CrawlTarget, ...] = False
     scrape_url_limit_per_contract: StrictInt = Field(default=1, ge=1, le=1_000)
@@ -234,7 +220,6 @@ class CrawlPolicy(BaseModel):
             allowed_hosts=self.effective_allowed_hosts(seeds),
             seeds=seeds,
             mode=self.mode,
-            path_planning=self.path_planning,
             target_contracts=self.target_contracts,
             page=PagePolicy(
                 fetcher_type=self.fetcher_type,
@@ -296,7 +281,6 @@ class CrawlRuntimeConfig(BaseModel):
     allowed_hosts: tuple[str, ...]
     denied_hosts: tuple[str, ...]
     blocked_path_prefixes: tuple[str, ...]
-    path_planning: PathPlanningPolicy = Field(default_factory=PathPlanningPolicy)
     target_contracts: tuple[CrawlTarget, ...] = ()
     page: PageRuntimeConfig
     fetcher_type: FetcherName

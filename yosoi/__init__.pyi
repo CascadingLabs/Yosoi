@@ -5,8 +5,6 @@ from typing import Any, Literal
 
 from yosoi.core.configs import TelemetryConfig as _TelemetryConfig
 from yosoi.core.configs import YosoiConfig as _YosoiConfig
-from yosoi.core.crawler import CandidateFit as CandidateFit
-from yosoi.core.crawler import CrawlCandidateEntry as _CrawlCandidateEntry
 from yosoi.core.discovery import LLMConfig as _LLMConfig
 from yosoi.core.discovery.config import LLMBuilder as LLMBuilder
 from yosoi.core.page import PageAcquisition as PageAcquisition
@@ -42,7 +40,6 @@ from yosoi.policy import Outcome as _Outcome
 from yosoi.policy import OutputPolicy as _OutputPolicy
 from yosoi.policy import PagePolicy as _PagePolicy
 from yosoi.policy import PageRuntimeConfig as _PageRuntimeConfig
-from yosoi.policy import PathPlanningPolicy as _PathPlanningPolicy
 from yosoi.policy import Policy as _Policy
 from yosoi.policy import PolicyCheck as _PolicyCheck
 from yosoi.policy import ResolvedRunSpec as _ResolvedRunSpec
@@ -64,17 +61,6 @@ PageFetcherName = Literal['auto', 'simple', 'headless', 'headful', 'waterfall']
 CrawlPresetName = Literal['crawl.local_single', 'crawl.conservative', 'crawl.seed_hunt']
 DiscoveryMode = Literal['auto', 'static', 'mcp']
 
-class CrawlCandidateEntry(_CrawlCandidateEntry):
-    url: str
-    contract: str
-    score: float
-    fit: CandidateFit
-    source_url: str | None
-    fingerprint: PageFingerprint
-    reasons: tuple[str, ...]
-    evidence: tuple[str, ...]
-    scrape_verified: bool
-
 class CrawlRunSummary:
     pages_fetched: int
     attempted_urls: int
@@ -85,27 +71,12 @@ class CrawlRunSummary:
     batches: int
     idle_worker_slots: int
     wall_time: float
-    contract_candidate_urls: dict[str, list[str]]
-    contract_candidate_entries: dict[str, list[CrawlCandidateEntry]]
     scraped_content: dict[str, Any]
 
-    def urls_for(
-        self,
-        contract: object,
-        *,
-        limit: int | None = ...,
-        min_score: float = ...,
-        include_weak: bool = ...,
-    ) -> list[str]: ...
-    def candidates_for(
-        self,
-        contract: object,
-        *,
-        limit: int | None = ...,
-        min_score: float = ...,
-        fit: CandidateFit | None = ...,
-        include_weak: bool = ...,
-    ) -> list[CrawlCandidateEntry]: ...
+    def path_prefix_counts(self, *, depth: int = ...) -> dict[str, int]: ...
+    def content_type_counts(self) -> dict[str, int]: ...
+    def representative_urls(self, *, limit: int | None = ..., html_only: bool = ...) -> list[str]: ...
+    def scrape_target_urls(self, *, limit: int | None = ..., html_only: bool = ...) -> list[str]: ...
 
 class CrawlBudget(_CrawlBudget):
     max_pages: int
@@ -177,8 +148,6 @@ class EscalationPolicy(_EscalationPolicy):
 
 class CrawlTarget(_CrawlTarget):
     name: str
-    min_fields: int
-    min_fit_score: float
     max_budget_pages: int | None
     intent_tokens: tuple[str, ...]
 
@@ -186,25 +155,8 @@ class CrawlTarget(_CrawlTarget):
         self,
         *,
         name: str,
-        min_fields: int = ...,
-        min_fit_score: float = ...,
         max_budget_pages: int | None = ...,
         intent_tokens: tuple[str, ...] = ...,
-    ) -> None: ...
-
-class PathPlanningPolicy(_PathPlanningPolicy):
-    enabled: bool
-    min_similarity: float
-    score_boost: float
-    max_reference_urls: int
-
-    def __init__(
-        self,
-        *,
-        enabled: bool = ...,
-        min_similarity: float = ...,
-        score_boost: float = ...,
-        max_reference_urls: int = ...,
     ) -> None: ...
 
 class PageRuntimeConfig(_PageRuntimeConfig):
@@ -257,7 +209,6 @@ class CrawlRuntimeConfig(_CrawlRuntimeConfig):
     allowed_hosts: tuple[str, ...]
     denied_hosts: tuple[str, ...]
     blocked_path_prefixes: tuple[str, ...]
-    path_planning: PathPlanningPolicy
     target_contracts: tuple[CrawlTarget, ...]
     page: PageRuntimeConfig
     fetcher_type: FetcherName
@@ -283,7 +234,6 @@ class CrawlRuntimeConfig(_CrawlRuntimeConfig):
         allowed_hosts: tuple[str, ...] = ...,
         denied_hosts: tuple[str, ...] = ...,
         blocked_path_prefixes: tuple[str, ...] = ...,
-        path_planning: PathPlanningPolicy = ...,
         target_contracts: Sequence[CrawlTarget | Literal['NewsArticle', 'Product', 'JobPosting', 'Video'] | str] = ...,
         page: PageRuntimeConfig = ...,
         fetcher_type: FetcherName = ...,
@@ -295,7 +245,6 @@ class CrawlPolicy(_CrawlPolicy):
     scheduler: SchedulerPolicy
     safety: CrawlSafety
     escalation: EscalationPolicy
-    path_planning: PathPlanningPolicy
     target_contracts: tuple[CrawlTarget, ...]
     scrape_contracts: bool | tuple[CrawlTarget, ...]
     scrape_url_limit_per_contract: int
@@ -309,7 +258,6 @@ class CrawlPolicy(_CrawlPolicy):
         scheduler: SchedulerPolicy = ...,
         safety: CrawlSafety = ...,
         escalation: EscalationPolicy = ...,
-        path_planning: PathPlanningPolicy = ...,
         target_contracts: Sequence[CrawlTarget | Literal['NewsArticle', 'Product', 'JobPosting', 'Video'] | str] = ...,
         scrape_contracts: bool | Sequence[CrawlTarget | type[Contract] | str] = ...,
         scrape_url_limit_per_contract: int = ...,

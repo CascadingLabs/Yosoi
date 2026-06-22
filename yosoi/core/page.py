@@ -84,8 +84,9 @@ class PageAcquisition:
         if raw_html is None:
             raise PageAcquisitionError(f'No HTML content received for {url}')
 
+        headers = getattr(result, 'headers', None)
         cleaned_html: str | None = None
-        if self.config.clean_html and self.config.cleaner_profile == 'discovery':
+        if self.config.clean_html and self.config.cleaner_profile == 'discovery' and _should_clean_html(headers):
             cleaned_html = self.cleaner.clean_html(raw_html)
             if not cleaned_html:
                 raise PageAcquisitionError(f'HTML cleaning failed for {url}')
@@ -99,7 +100,7 @@ class PageAcquisition:
                 str(getattr(result, 'url', url)),
                 raw_html,
                 ax_snapshot=getattr(result, 'ax_snapshot', None),
-                headers=getattr(result, 'headers', None),
+                headers=headers,
                 endpoints=getattr(result, 'endpoints', None),
             )
 
@@ -170,6 +171,19 @@ class PageAcquisition:
         except (AttributeError, TypeError, ValueError):
             return None, None
         return fingerprint, observation
+
+
+def _should_clean_html(headers: Mapping[str, str] | None) -> bool:
+    if not headers:
+        return True
+    content_type = ''
+    for key, value in headers.items():
+        if key.lower() == 'content-type':
+            content_type = value.lower()
+            break
+    if not content_type:
+        return True
+    return 'html' in content_type or content_type.startswith('text/plain')
 
 
 __all__ = ['PageAcquisition', 'PageAcquisitionError', 'PageSnapshot']
