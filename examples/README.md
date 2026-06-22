@@ -55,6 +55,18 @@ YOSOI_CHROME_WS_URLS=http://127.0.0.1:9222,http://127.0.0.1:9223 \
 uv run python examples/qscrape.dev/full_crawl.py
 ```
 
+`qscrape.dev/full_crawl_v2.py` extends that inventory into a fingerprint-family
+candidate fanout for multiple explicit contracts. Cold-start v2 planning is still
+neutral: identical URL lists across contracts are expected, rows are labeled
+`neutral_candidate`, and the persisted plan marks `contract_specific=false` and
+`verified=false`. Treat the plan as candidate evidence only until optional
+Yosoi scrape/discovery verification succeeds.
+
+```bash
+YOSOI_CHROME_WS_URLS=http://127.0.0.1:9222,http://127.0.0.1:9223 \
+uv run python examples/qscrape.dev/full_crawl_v2.py
+```
+
 ## Google Search
 
 `google_search/google_search.py` is an offline replay example. It exercises

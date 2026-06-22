@@ -1,45 +1,53 @@
-# PR concerns: ys.crawl candidate-removal pass
+# PR status: full_crawl_v2 fingerprint accuracy review
 
-Reviewed current unstaged diff on `andberg9/policy-crawl-integrated`.
+Reviewed staged local state and generated `.yosoi/full_crawl_v2` artifacts after exemplar-based ranking landed.
 
 ## Verified
 
-- Removed-API scan found no stale `CandidateFit`, `CrawlCandidateEntry`, `candidates_for`, `contract_candidate`, `score_contract_fit`, `PathPlanningPolicy`, `path_planning`, `min_fit_score`, `min_fields`, or `urls_for(` references under `yosoi tests examples README.md docs scripts`.
-- `uv run poe unit` → **3205 passed, 1 skipped, 92 deselected**.
-- `uv run pytest tests/stubs -q` → **18 passed**.
-- `uv run poe integration` → **19 passed, 9 skipped, 3270 deselected**.
-- `uv run poe bench` → **40 passed**.
-- `uv run poe ci-test` → **3223 passed, 1 skipped**, coverage **94.62%** (threshold 93%).
-- `uv run poe coverage` → **3284 passed, 14 skipped**, coverage **96.21%** (threshold 93%).
-- `uv run ruff check .` → **passed**.
+- `uv run pytest tests/unit/examples/test_qscrape_full_crawl_v2.py -q` → **6 passed**.
+- `uv run ruff check examples/qscrape.dev/full_crawl_v2.py examples/qscrape.dev/_fingerprint_plan.py tests/unit/examples/test_qscrape_full_crawl_v2.py` → **passed**.
+- `uv run mypy examples/qscrape.dev/full_crawl_v2.py examples/qscrape.dev/_fingerprint_plan.py tests/unit/examples/test_qscrape_full_crawl_v2.py` → **passed**.
 
-## Status
+## Artifact check
 
-No obvious blocking issue remains for `ys.crawl`. Previously noted blockers are addressed:
-- `examples/qscrape.dev/full_crawl.py` is now crawl-only.
-- Crawl-frontier browser fetch no longer writes the persistent strategy cache.
-- XML parsing uses a hardened parser.
-- Simple JS-marked HTML now needs multiple/diverse crawl links before skipping browser render.
+- `.yosoi/full_crawl_v2/frontier_urls.json`: **255** URLs.
+- `.yosoi/full_crawl_v2/fingerprint_scores.json`: **32,640** rows = unordered all-pairs including self.
+- `.yosoi/full_crawl_v2/fingerprint_target_plan.json` now reports:
+  - `plan_kind`: `validated_fingerprint_exemplar_ranking`
+  - `evidence_scope`: `validated_fingerprint_exemplars`
+  - `contract_specific_ranking`: `true`
+  - `verified`: `false`
 
-## Remaining concerns / follow-ups
+## Accuracy assessment
 
-1. **Uppercase route artifact penalty follow-up is addressed.**
-   - `_route_artifact_penalty()` no longer penalizes any uppercase path segment.
-   - It is limited to repository/documentation artifact segments such as `AGENTS`, `README`, `LICENSE`, etc.
-   - Regression coverage keeps uppercase IDs/SKUs like `/SKU/ABC123` eligible.
+Accuracy is much better now. The plan is no longer neutral identical fanout. Each contract has different top targets, and they line up with qscrape labels:
 
-2. **Neutral scrape ranking is still heuristic-only.**
-   - `scrape_target_urls()` now ranks by route artifact penalty, visible text evidence, outdegree, and depth.
-   - Good enough for crawl inventory, but it is not contract validation. Downstream scrape/discovery must still fail fast and avoid caching selectors from wrong pages.
+- `NewsArticle`: `l3/news/article/MHH-*`
+- `ProductContract`: `l3/eshop/product/VM-*`
+- `ScoreContract`: `l1/scoretap/match/`, `event`, `team`
+- `TaxInfo`: `l3/taxes/viewer/26-*`
 
-3. **Rendered crawl settle is better but still approximate.**
-   - `_crawl_frontier_content()` waits for link-signature stability, which is a reasonable fast path.
-   - A JS app can still stabilize on a nav shell before route data arrives. Worth keeping one live delayed-link regression if/when a fixture exists.
+This is the right shape: all-page fingerprint similarity audit plus contract-specific exemplar ranking.
 
-4. **Example defaults are intentionally heavy.**
-   - `examples/qscrape.dev/full_crawl.py` runs up to `1_000` pages / `1_200` attempts with browser CDP endpoints.
-   - `examples/README.md` now frames it as a full-site crawl inventory stress example, not a quickstart.
+## Remaining concerns
 
-5. **Public API removals need release/deprecation treatment.**
-   - Removed: `ys.CandidateFit`, `ys.CrawlCandidateEntry`, `PathPlanningPolicy`, `CrawlTarget.min_fields`, `CrawlTarget.min_fit_score`, `summary.candidates_for()`, `summary.urls_for()`.
-   - Document in changelog/release notes or provide temporary shims with clear deprecation errors.
+1. **Docstrings/comments still describe the old neutral mode.**
+   - `examples/qscrape.dev/full_crawl_v2.py` headline says `frontier → neutral candidates → optional verified scrape`.
+   - `_fingerprint_plan.py` module docstring still says cold-start neutral fanout and “future validated warm-reference support,” but validated exemplar support now exists.
+   - Update wording to say: default demo uses explicit qscrape exemplar URLs for contract-specific fingerprint ranking; fallback/no-exemplar mode remains neutral.
+
+2. **Exemplar labels are still explicit qscrape supervision.**
+   - This is fine for an example, but be precise: accuracy improved because we introduced validated exemplars, not because cold-start fingerprints can infer contract intent.
+   - Keep artifact metadata honest: `verified=false` still means ranking is not extracted-data success.
+
+3. **Score scale may be saturated.**
+   - Many top rows score `1.0` for News/Product/Tax.
+   - That may be correct for repeated templates, but tie-breaking then controls ordering. If output quality matters, expose tie-break fields clearly (`exemplar_margin`, support ratio/top3 mean are already a good start).
+
+4. **ScoreTap ranking may be broader than the contract.**
+   - Top ScoreContract includes match/event/team pages. Depending on intended contract semantics, event/team may be useful or may be false positives for match/standings extraction.
+   - Verified scrape should be the gate here; if too many fail, narrow exemplars or split ScoreTap contracts.
+
+## Recommendation
+
+Keep this direction. Rename docs from “neutral candidate fanout” to “validated exemplar fingerprint ranking,” and make the neutral mode explicitly a fallback/diagnostic mode.

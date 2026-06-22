@@ -382,12 +382,34 @@ class OutputPolicy(_OutputPolicy):
     debug_html_dir: Any
     logs: bool
 
+    def __init__(
+        self,
+        *,
+        formats: Sequence[str] | str = ...,
+        quiet: bool = ...,
+        json_output: bool = ...,
+        plain_output: bool = ...,
+        debug_html: bool = ...,
+        debug_html_dir: Any = ...,
+        logs: bool = ...,
+    ) -> None: ...
+
 class DownloadPolicy(_DownloadPolicy):
     allow: bool
     allowed_types: tuple[str, ...]
     directory: str | None
     max_bytes: int | None
     keep: bool
+
+    def __init__(
+        self,
+        *,
+        allow: bool = ...,
+        allowed_types: Sequence[str] | str = ...,
+        directory: str | None = ...,
+        max_bytes: int | None = ...,
+        keep: bool = ...,
+    ) -> None: ...
 
 class ResolvedRunSpec(_ResolvedRunSpec):
     policy_hash: str
