@@ -345,6 +345,32 @@ async def test_policy_coordinator_enforces_max_pages_per_host(tmp_path, monkeypa
     assert all(result.error == 'host page cap reached by policy: example.com' for result in summary.results[1:])
 
 
+async def test_policy_coordinator_enforces_max_pages_per_host_with_concurrent_workers(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr('yosoi.core.crawler.frontier.init_yosoi', lambda _name: tmp_path)
+    fetcher = ConcurrentFetcher(
+        {
+            'https://example.com/': '<a href="/a">A</a><a href="/b">B</a><a href="/c">C</a>',
+            'https://example.com/a': '<article>A</article>',
+            'https://example.com/b': '<article>B</article>',
+            'https://example.com/c': '<article>C</article>',
+        }
+    )
+    policy = Policy.for_crawl(
+        'crawl.conservative',
+        budget=CrawlBudget(max_pages=4, max_depth=1, max_pages_per_host=2),
+        scheduler=SchedulerPolicy(max_workers=3, per_host_concurrency=3, politeness_delay=0),
+        safety=CrawlSafety(allowed_hosts=('example.com',)),
+    )
+    runtime = _runtime(policy, 'https://example.com/')
+    assert runtime is not None
+
+    summary = await CrawlCoordinator(fetcher=fetcher, config=runtime, persist_frontier=False).run()
+
+    assert len(fetcher.calls) == 2
+    assert summary.pages_fetched == 2
+    assert summary.policy_blocked == 2
+
+
 async def test_policy_coordinator_records_fetch_exceptions_as_failures(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr('yosoi.core.crawler.frontier.init_yosoi', lambda _name: tmp_path)
 

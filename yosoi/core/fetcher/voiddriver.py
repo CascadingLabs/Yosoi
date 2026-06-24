@@ -417,11 +417,11 @@ class _VoidCrawlFetcher(HTMLFetcher):
 
     async def _crawl_frontier_content(self, tab: Any) -> str:
         """Capture rendered HTML after a short link-inventory settle window."""
-        html = await tab.content()
+        html = str(await tab.content())
         signature = _crawl_frontier_signature(html)
         for _ in range(_CRAWL_LINK_SETTLE_CYCLES):
             await asyncio.sleep(_CRAWL_LINK_SETTLE_INTERVAL_S)
-            candidate = await tab.content()
+            candidate = str(await tab.content())
             next_signature = _crawl_frontier_signature(candidate)
             if next_signature == signature:
                 return candidate

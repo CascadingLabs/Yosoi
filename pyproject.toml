@@ -309,12 +309,12 @@ types = [
 [tool.poe]
 tasks.eval = 'uv run pytest -m "eval"'  # run pydantic-evals eval tests
 tasks.obs-eval = "uv run pytest tests/evals/observability/"  # deterministic observability span-contract eval set (no live LLM)
-tasks.bench = "uv run pytest tests/benchmarks --codspeed"  # run CodSpeed perf benchmarks (walltime locally)
+tasks.bench = "pytest tests/benchmarks --codspeed"  # run CodSpeed perf benchmarks (walltime locally)
 tasks.integration = "uv run pytest -m 'integration'"  # run integration tests
 tasks.unit = "uv run pytest -m 'unit'"  # run unit tests
 tasks.ci-test = """\
-  uv run pytest tests/unit/ tests/stubs/ -m 'not eval' --cov=yosoi --cov=scripts.check_no_hardcoded_selectors \
-  --cov-branch --cov-report=xml\
+  pytest tests/unit/ tests/stubs/ -m 'not eval' --cov=yosoi --cov=scripts.check_no_hardcoded_selectors --cov-branch \
+  --cov-report=xml\
   """  # unit + stub tests with coverage
 tasks.ci-format = "uv run ruff check --fix"
 tasks.coverage = """\

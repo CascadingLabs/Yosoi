@@ -36,5 +36,5 @@ jobs:
         # TODO: pin to a commit SHA (repo convention) once selected.
         uses: CodSpeedHQ/action@v3
         with:
-          run: uv run pytest tests/benchmarks --codspeed
+          run: uv run --group tests pytest tests/benchmarks --codspeed
           token: ${{ secrets.CODSPEED_TOKEN }}

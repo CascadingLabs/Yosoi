@@ -193,6 +193,7 @@ class CrawlCoordinator:
         self._seed_confined_hosts: set[str] = set()
         self._host_fetch_semaphores: dict[str, asyncio.Semaphore] = {}
         self._pages_fetched_by_host: dict[str, int] = {}
+        self._pages_reserved_by_host: dict[str, int] = {}
         session_id = config.crawl_session_id or 'crawl-policy-run'
         self.extractor = extractor or LinkExtractor()
         self.acquisition = PageAcquisition(config.page, fingerprint=True)
@@ -284,15 +285,19 @@ class CrawlCoordinator:
         try:
             semaphore = self._host_fetch_semaphore(host)
             async with semaphore:
-                host_cap_error = self._host_page_cap_error(host)
-                if host_cap_error is not None:
-                    return CrawlResult(job=job, status='policy_blocked', error=host_cap_error)
+                if not self._reserve_host_page_slot(host):
+                    return CrawlResult(job=job, status='policy_blocked', error=self._host_page_cap_message(host))
                 await self.frontier.respect_politeness(job.url)
-                snapshot = await self.acquisition.acquire(job.url, fetcher=self.fetcher)
+                try:
+                    snapshot = await self.acquisition.acquire(job.url, fetcher=self.fetcher)
+                except Exception:
+                    self._release_host_page_slot(host)
+                    raise
         except Exception as exc:  # noqa: BLE001 - record worker failures instead of killing the crawl
             return CrawlResult(job=job, status='failed', error=str(exc), fetch_time=time.monotonic() - started)
 
         if not self.config.allow_redirects and snapshot.final_url != job.url:
+            self._release_host_page_slot(host)
             return CrawlResult(
                 job=job,
                 status='policy_blocked',
@@ -312,6 +317,7 @@ class CrawlCoordinator:
         content_type = _content_type(getattr(snapshot.fetch_result, 'headers', None))
         if host:
             self._pages_fetched_by_host[host] = self._pages_fetched_by_host.get(host, 0) + 1
+            self._release_host_page_slot(host)
 
         return CrawlResult(
             job=job,
@@ -352,9 +358,33 @@ class CrawlCoordinator:
         cap = self.config.max_pages_per_host
         if cap is None or not host:
             return None
-        if self._pages_fetched_by_host.get(host, 0) >= cap:
-            return f'host page cap reached by policy: {host}'
+        if self._host_page_budget_used(host) >= cap:
+            return self._host_page_cap_message(host)
         return None
+
+    def _reserve_host_page_slot(self, host: str) -> bool:
+        cap = self.config.max_pages_per_host
+        if cap is None or not host:
+            return True
+        if self._host_page_budget_used(host) >= cap:
+            return False
+        self._pages_reserved_by_host[host] = self._pages_reserved_by_host.get(host, 0) + 1
+        return True
+
+    def _release_host_page_slot(self, host: str) -> None:
+        if not host:
+            return
+        reserved = self._pages_reserved_by_host.get(host, 0)
+        if reserved <= 1:
+            self._pages_reserved_by_host.pop(host, None)
+        else:
+            self._pages_reserved_by_host[host] = reserved - 1
+
+    def _host_page_budget_used(self, host: str) -> int:
+        return self._pages_fetched_by_host.get(host, 0) + self._pages_reserved_by_host.get(host, 0)
+
+    def _host_page_cap_message(self, host: str) -> str:
+        return f'host page cap reached by policy: {host}'
 
     def _policy_error(self, url: str) -> str | None:
         parsed = urlparse(url)
