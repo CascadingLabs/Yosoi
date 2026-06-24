@@ -1,5 +1,6 @@
 """Terminal reporting helpers for Yosoi."""
 
+from yosoi.reporting.display import RichCrawlProgress as RichCrawlProgress
 from yosoi.reporting.display import ShowFormat as ShowFormat
 from yosoi.reporting.display import show as show
 from yosoi.reporting.fingerprint import coerce_fingerprint as coerce_fingerprint
@@ -10,6 +11,7 @@ from yosoi.reporting.run import report_a3node as report_a3node
 from yosoi.reporting.run import report_selectors as report_selectors
 
 __all__ = [
+    'RichCrawlProgress',
     'ShowFormat',
     'banner',
     'coerce_fingerprint',

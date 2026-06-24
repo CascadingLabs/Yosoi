@@ -9,6 +9,7 @@ from yosoi.core.discovery.mcp_orchestrator import MCPDiscoveryOrchestrator
 from yosoi.models.defaults import NewsArticle
 from yosoi.models.replay import LessonKey
 from yosoi.models.selectors import SelectorEntry
+from yosoi.prompts.mcp_discovery import mcp_discovery_instructions
 from yosoi.storage.lesson import LessonStorage
 from yosoi.utils import observability as obs
 from yosoi.utils.signatures import contract_signature
@@ -153,6 +154,13 @@ class TestValidationGate:
         assert 'author' not in result
         assert 'root' in result  # root is structural, not value-validated
 
+    async def test_rejects_findings_that_do_not_replay_against_cleaned_html(self, llm_config, lesson_storage):
+        orch = _orchestrator(llm_config, lesson_storage, _FakeAgent(_draft_no_root()))
+
+        result = await orch.discover_selectors('<html><body><p>No matching fields here.</p></body></html>', _URL)
+
+        assert result is None
+
     async def test_returns_none_when_all_fields_fail_validation(self, llm_config, lesson_storage, mocker):
         from yosoi.core.verification.semantic import FieldSemanticIssue
 
@@ -184,3 +192,13 @@ class TestValidationGate:
 
         assert result is not None
         assert result['headline']['primary']['value'] == 'h1.title'
+
+
+def test_mcp_prompt_requires_expression_safe_eval_js() -> None:
+    instructions = mcp_discovery_instructions()
+
+    assert 'JavaScript expression, not a statement' in instructions
+    assert '(() => { const out = {}; return out; })()' in instructions
+    assert 'Never send a\ntop-level `return`' in instructions
+    assert 'avoid top-level `const`/`let` names' in instructions
+    assert 'visible document body' in instructions

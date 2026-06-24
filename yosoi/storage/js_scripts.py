@@ -10,9 +10,6 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from typing import Any
 
-import aiofiles
-import aiofiles.os
-
 from yosoi.utils.files import atomic_write_json_async, init_yosoi, safe_domain
 
 logger = logging.getLogger(__name__)
@@ -83,12 +80,15 @@ class JsScriptStorage:
 
     async def load(self, domain: str) -> JsScriptRecord | None:
         """Return the stored record for *domain*, or None."""
+        return self._load_sync(domain)
+
+    def _load_sync(self, domain: str) -> JsScriptRecord | None:
         filepath = self._filepath(domain)
-        if not await aiofiles.os.path.exists(filepath):
+        if not os.path.exists(filepath):
             return None
         try:
-            async with aiofiles.open(filepath, encoding='utf-8') as f:
-                raw: dict[str, Any] = json.loads(await f.read())
+            with open(filepath, encoding='utf-8') as f:
+                raw: dict[str, Any] = json.loads(f.read())
             fields = {name: JsScriptEntry(**entry) for name, entry in raw.get('fields', {}).items()}
             return JsScriptRecord(
                 domain=raw['domain'],

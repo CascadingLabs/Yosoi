@@ -2,6 +2,7 @@
 # Yosoi Project Specific
 # ==========================================
 .yosoi/
+examples/projects/
 primary-sources.json
 test_batch.py
 .batch_progress.json
@@ -21,6 +22,7 @@ TODO.md
 plan.md
 PLAN.md
 .plan.md
+agent_share.md
 
 # ==========================================
 # Environments & Secrets
@@ -80,6 +82,7 @@ coverage.xml
 memray*.bin
 .prof/
 profile/
+spike-results/
 
 # Runners
 .tox/

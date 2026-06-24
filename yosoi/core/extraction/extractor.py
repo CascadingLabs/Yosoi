@@ -402,14 +402,14 @@ class ContentExtractor:
             Extracted content (string, list of strings/dicts), or None if extraction failed.
 
         """
-        import httpx
+        import httpx2
 
         try:
-            async with httpx.AsyncClient() as client:
+            async with httpx2.AsyncClient() as client:
                 response = await client.get(
                     url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=10, follow_redirects=True
                 )
             sel = Selector(text=response.text)
             return self._extract_with_selector(sel, selector, field_type)
-        except (httpx.HTTPError, ValueError):
+        except (httpx2.HTTPError, ValueError):
             return None

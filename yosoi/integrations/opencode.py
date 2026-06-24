@@ -85,7 +85,7 @@ class OpenCodeModel(Model):
         user_prompt: str,
         output_format: dict[str, Any] | None,
     ) -> tuple[str, RequestUsage]:
-        import httpx
+        import httpx2
 
         debug = os.getenv('YOSOI_SDK_DEBUG') == '1'
         t0 = time.monotonic()
@@ -112,7 +112,7 @@ class OpenCodeModel(Model):
             subprovider=self._provider_id,
         ):
             try:
-                async with httpx.AsyncClient(base_url=self._base_url, timeout=180) as client:
+                async with httpx2.AsyncClient(base_url=self._base_url, timeout=180) as client:
                     session_resp = await client.post('/session')
                     session_resp.raise_for_status()
                     session = session_resp.json()

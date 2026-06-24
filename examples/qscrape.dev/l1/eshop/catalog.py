@@ -7,10 +7,8 @@ Run:
 from __future__ import annotations
 
 import asyncio
-import os
 
 import yosoi as ys
-from yosoi.core.discovery import LLMConfig
 
 URLS = [
     'https://qscrape.dev/l1/eshop/catalog/?cat=Forge%20%26%20Smithing',
@@ -30,27 +28,18 @@ class Product(ys.Contract):
     availability: str = ys.Field(description='Stock status')
 
 
-def model_config() -> LLMConfig | str | None:
-    """Choose the discovery model without changing the scraper."""
-    if model := os.getenv('YOSOI_MODEL'):
-        return model
-
-    # Copy-paste provider switch:
-    # return ys.claude_sdk('claude-opus-4-7')
-    # return ys.opencode('openai/gpt-5-codex')
-    # return ys.openrouter('anthropic/claude-3.5-sonnet')
-    # return ys.provider('groq:llama-3.3-70b-versatile')
-    return None
-
-
 async def main() -> None:
+    policy = ys.Policy.cascade(
+        ys.Policy.from_env(),
+        ys.Policy(
+            scrape=ys.ScrapePolicy(fetcher_type='simple'),
+            output=ys.OutputPolicy(quiet=False),
+        ),
+    )
     result = await ys.scrape(
         URLS,
         Product,
-        model=model_config(),
-        fetcher_type='simple',
-        force=os.getenv('YOSOI_FORCE', '').lower() in {'1', 'true', 'yes'},
-        quiet=False,
+        policy=policy,
     )
     ys.show(result)
 

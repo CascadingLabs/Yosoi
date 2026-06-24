@@ -591,7 +591,7 @@ async def test_quick_test_success(mocker):
     mock_client.get.return_value = mock_response
     mock_client.__aenter__ = mocker.AsyncMock(return_value=mock_client)
     mock_client.__aexit__ = mocker.AsyncMock(return_value=False)
-    mocker.patch('httpx.AsyncClient', return_value=mock_client)
+    mocker.patch('httpx2.AsyncClient', return_value=mock_client)
 
     result = await v.quick_test('https://example.com', 'h1')
     assert result is True
@@ -608,7 +608,7 @@ async def test_quick_test_no_match(mocker):
     mock_client.get.return_value = mock_response
     mock_client.__aenter__ = mocker.AsyncMock(return_value=mock_client)
     mock_client.__aexit__ = mocker.AsyncMock(return_value=False)
-    mocker.patch('httpx.AsyncClient', return_value=mock_client)
+    mocker.patch('httpx2.AsyncClient', return_value=mock_client)
 
     result = await v.quick_test('https://example.com', 'h1')
     assert result is False
@@ -617,14 +617,14 @@ async def test_quick_test_no_match(mocker):
 @pytest.mark.asyncio
 async def test_quick_test_http_error(mocker):
     """quick_test returns False on HTTP error."""
-    import httpx
+    import httpx2
 
     v = SelectorVerifier()
     mock_client = mocker.AsyncMock()
-    mock_client.get.side_effect = httpx.ConnectError('failed')
+    mock_client.get.side_effect = httpx2.ConnectError('failed')
     mock_client.__aenter__ = mocker.AsyncMock(return_value=mock_client)
     mock_client.__aexit__ = mocker.AsyncMock(return_value=False)
-    mocker.patch('httpx.AsyncClient', return_value=mock_client)
+    mocker.patch('httpx2.AsyncClient', return_value=mock_client)
 
     result = await v.quick_test('https://example.com', 'h1')
     assert result is False

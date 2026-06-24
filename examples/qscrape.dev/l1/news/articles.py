@@ -7,7 +7,6 @@ Run:
 from __future__ import annotations
 
 import asyncio
-import os
 
 import yosoi as ys
 
@@ -25,13 +24,17 @@ class ArticleSummary(ys.Contract):
 
 
 async def main() -> None:
+    policy = ys.Policy.cascade(
+        ys.Policy.from_env(),
+        ys.Policy(
+            scrape=ys.ScrapePolicy(fetcher_type='simple'),
+            output=ys.OutputPolicy(quiet=False),
+        ),
+    )
     items = await ys.scrape(
         URL,
         ArticleSummary,
-        model=os.getenv('YOSOI_MODEL') or None,
-        fetcher_type='simple',
-        force=os.getenv('YOSOI_FORCE', '').lower() in {'1', 'true', 'yes'},
-        quiet=False,
+        policy=policy,
     )
     ys.show(items)
 

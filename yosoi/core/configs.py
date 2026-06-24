@@ -8,7 +8,7 @@ from typing import Literal
 from pydantic import BaseModel, Field, model_validator
 
 from yosoi.core.discovery import LLMConfig
-from yosoi.core.discovery.config import _PROVIDER_ENV_VARS, NO_API_KEY_REQUIRED_PROVIDERS, _parse_model_string
+from yosoi.core.discovery.config import _PROVIDER_ENV_VARS, NO_API_KEY_REQUIRED_PROVIDERS
 
 log = logging.getLogger(__name__)
 
@@ -61,7 +61,7 @@ class TelemetryConfig(BaseModel):
     """
 
     langfuse_public_key: str | None = None
-    langfuse_secret_key: str | None = None
+    langfuse_secret_key: str | None = Field(default=None, repr=False)  # secret: keep out of repr
     langfuse_host: str | None = None
 
 
@@ -158,13 +158,10 @@ class YosoiConfig(BaseModel):
 
 
 def auto_config(model: str | None = None, debug: bool = False) -> YosoiConfig:
-    """Auto-detect LLM provider and build config.
+    """Resolve policy/env settings and return a legacy config wrapper.
 
-    Resolution order:
-    1. Explicit ``model`` argument (``provider:model-name`` format)
-    2. ``$YOSOI_MODEL`` environment variable
-    3. First provider with an available API key
-    4. Groq default fallback
+    ``Policy`` is the source of truth. This function remains as a compatibility
+    shim for older call sites that still expect ``YosoiConfig``.
 
     Args:
         model: Model string in ``provider:model-name`` format, or None.
@@ -179,32 +176,21 @@ def auto_config(model: str | None = None, debug: bool = False) -> YosoiConfig:
     """
     from dotenv import load_dotenv
 
+    from yosoi.policy import ModelPolicy, OutputPolicy, Policy
+
     load_dotenv()
 
+    call_site: Policy | None = None
     if model:
-        prov, model_name = _parse_model_string(model)
-        llm_config = LLMConfig(provider=prov, model_name=model_name, api_key='')
-    elif yosoi_model := os.getenv('YOSOI_MODEL'):
-        prov, model_name = _parse_model_string(yosoi_model)
-        llm_config = LLMConfig(provider=prov, model_name=model_name, api_key='')
-    else:
-        found = find_available_provider()
-        if found:
-            provider, model_name, _ = found
-            llm_config = LLMConfig(provider=provider, model_name=model_name, api_key='')
-        else:
-            raise ValueError(
-                'No model specified and no API key found. '
-                'Pass a model string (e.g. auto_config(model="groq:llama-3.3-70b-versatile")) '
-                'or set an API key environment variable.'
-            )
+        call_site = Policy(model=ModelPolicy.from_string(model), output=OutputPolicy(debug_html=debug))
+    elif debug:
+        call_site = Policy(output=OutputPolicy(debug_html=True))
 
+    policy = Policy.cascade(Policy.from_env(), call_site)
+    spec = policy.resolve_run_spec()
     return YosoiConfig(
-        llm=llm_config,
-        debug=DebugConfig(save_html=debug),
-        telemetry=TelemetryConfig(
-            langfuse_public_key=os.getenv('LANGFUSE_PUBLIC_KEY'),
-            langfuse_secret_key=os.getenv('LANGFUSE_SECRET_KEY'),
-            langfuse_host=os.getenv('LANGFUSE_BASE_URL') or os.getenv('LANGFUSE_HOST'),
-        ),
+        llm=spec.llm_config,
+        debug=DebugConfig(save_html=spec.debug_html, html_dir=spec.debug_html_dir),
+        telemetry=spec.telemetry_config,
+        force=spec.force,
     )

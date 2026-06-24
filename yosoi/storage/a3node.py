@@ -43,9 +43,6 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
-import aiofiles
-import aiofiles.os
-
 from yosoi.models.selectors import SelectorEntry
 from yosoi.utils.files import atomic_write_json_async, init_yosoi, safe_domain
 
@@ -224,10 +221,10 @@ class A3NodeStorage:
 
         """
         filepath = self._filepath(domain)
-        if not await aiofiles.os.path.exists(filepath):
+        if not self._file_exists_sync(filepath):
             return False
         try:
-            await aiofiles.os.remove(filepath)
+            os.remove(filepath)
             logger.debug('Deleted A3Node for %s', domain)
             return True
         except OSError as e:
@@ -236,22 +233,7 @@ class A3NodeStorage:
 
     async def list_domains(self) -> list[str]:
         """Return all domains with a stored A3Node, sorted alphabetically."""
-        if not await aiofiles.os.path.exists(self._dir):
-            return []
-        domains: list[str] = []
-        for filename in await aiofiles.os.listdir(self._dir):
-            if not (filename.startswith('a3node_') and filename.endswith('.json')):
-                continue
-            filepath = os.path.join(self._dir, filename)
-            try:
-                async with aiofiles.open(filepath, encoding='utf-8') as f:
-                    data = json.loads(await f.read())
-                domain = data.get('domain')
-                if isinstance(domain, str) and domain:
-                    domains.append(domain)
-            except (OSError, json.JSONDecodeError):
-                pass
-        return sorted(domains)
+        return self._list_domains_sync()
 
     async def load_all(self) -> dict[str, A3Node]:
         """Load every stored A3Node into a domain → A3Node mapping.
@@ -278,16 +260,41 @@ class A3NodeStorage:
         return os.path.join(self._dir, f'a3node_{safe}.json')
 
     async def _load_raw(self, domain: str) -> dict[str, Any] | None:
+        return self._load_raw_sync(domain)
+
+    def _list_domains_sync(self) -> list[str]:
+        if not os.path.exists(self._dir):
+            return []
+        domains: list[str] = []
+        for filename in os.listdir(self._dir):
+            if not (filename.startswith('a3node_') and filename.endswith('.json')):
+                continue
+            filepath = os.path.join(self._dir, filename)
+            try:
+                with open(filepath, encoding='utf-8') as f:
+                    data = json.loads(f.read())
+                domain = data.get('domain')
+                if isinstance(domain, str) and domain:
+                    domains.append(domain)
+            except (OSError, json.JSONDecodeError):
+                pass
+        return sorted(domains)
+
+    def _load_raw_sync(self, domain: str) -> dict[str, Any] | None:
         filepath = self._filepath(domain)
-        if not await aiofiles.os.path.exists(filepath):
+        if not os.path.exists(filepath):
             return None
         try:
-            async with aiofiles.open(filepath, encoding='utf-8') as f:
-                data: dict[str, object] = json.loads(await f.read())
+            with open(filepath, encoding='utf-8') as f:
+                data: dict[str, object] = json.loads(f.read())
                 return data
         except (OSError, json.JSONDecodeError) as e:
             logger.warning('Could not read A3Node for %s: %s', domain, e)
             return None
+
+    @staticmethod
+    def _file_exists_sync(filepath: str) -> bool:
+        return os.path.exists(filepath)
 
 
 @dataclass

@@ -43,6 +43,25 @@ def test_fingerprint_accepts_fetch_result_layers() -> None:
     assert fp.endpoints
 
 
+def test_fingerprint_similarity_returns_zero_to_one_score() -> None:
+    html = """
+    <html><body><main class="catalog">
+      <section class="hero"><h1>Catalog</h1><p>Intro</p></section>
+      <section class="filters"><form><input name="q"><button>Go</button></form></section>
+      <section class="grid"><article class="card"><h2>Hammer</h2><a href="/a">View</a><img src="x"></article></section>
+      <aside class="promo"><ul><li>One</li><li>Two</li></ul></aside>
+      <footer><nav><a href="/help">Help</a></nav></footer>
+    </main></body></html>
+    """
+    left = ys.fingerprint(html)
+    right = ys.fingerprint(html.replace('Hammer', 'Mallet'))
+
+    similarity = left.similarity(right)
+
+    assert 0.0 <= similarity.score <= 1.0
+    assert similarity.score == pytest.approx(1.0)
+
+
 def test_fingerprint_rejects_empty_fetch_result() -> None:
     with pytest.raises(ValueError, match=r'non-empty \.html'):
         ys.fingerprint(FetchResult(url='https://example.test', html=None))

@@ -4,12 +4,12 @@ Asserts on the actual span names and GenAI semantic-convention attribute keys
 that the installed ``pydantic-ai`` version emits. If pydantic-ai is bumped and
 the instrumentation regresses, these assertions fail loudly.
 
-Span shape captured during the A2.0 probe (see plan.md "Probe results"):
-    agent run  (root)
+Span shape captured after the pydantic-ai 2.0.0 upgrade:
+    invoke_agent <agent_name>  (root)
       ├── chat <model_name>
 
 GenAI attrs that appear (subset asserted here):
-    agent run  : gen_ai.operation.name='invoke_agent', gen_ai.usage.input_tokens, gen_ai.usage.output_tokens
+    invoke_agent <agent_name> : gen_ai.operation.name='invoke_agent', gen_ai.aggregated_usage.input_tokens, gen_ai.aggregated_usage.output_tokens
     chat test  : gen_ai.system, gen_ai.request.model, gen_ai.operation.name='chat'
 
 Note on session/user propagation: the Langfuse SDK enriches spans with
@@ -54,7 +54,7 @@ def _capturing_propagate(captured: list[dict]):
 
 
 async def test_agent_emits_pinned_span_set(agent_under_propagate, span_exporter, mocker):
-    """The pinned span set ('agent run' + 'chat <model>') is emitted with expected GenAI attrs."""
+    """The pinned span set ('invoke_agent <agent>' + 'chat <model>') has expected GenAI attrs."""
     from langfuse import propagate_attributes
 
     captured: list[dict] = []
@@ -66,16 +66,17 @@ async def test_agent_emits_pinned_span_set(agent_under_propagate, span_exporter,
     spans = span_exporter.get_finished_spans()
     span_names = {s.name for s in spans}
 
-    # Span set: at least one 'agent run' (root) and at least one 'chat <model>' child.
-    assert 'agent run' in span_names, f'expected "agent run" span, got: {span_names}'
+    # Span set: at least one 'invoke_agent <agent>' root and one 'chat <model>' child.
+    agent_spans = [s for s in spans if s.name.startswith('invoke_agent ')]
+    assert len(agent_spans) >= 1, f'expected an "invoke_agent <agent>" span, got: {span_names}'
     chat_spans = [s for s in spans if s.name.startswith('chat ')]
     assert len(chat_spans) >= 1, f'expected a "chat <model>" span, got: {span_names}'
 
-    # 'agent run' attrs (from probe results)
-    agent_span = next(s for s in spans if s.name == 'agent run')
+    # 'invoke_agent <agent>' attrs (from probe results)
+    agent_span = agent_spans[0]
     assert agent_span.attributes.get('gen_ai.operation.name') == 'invoke_agent'
-    assert isinstance(agent_span.attributes.get('gen_ai.usage.input_tokens'), int)
-    assert isinstance(agent_span.attributes.get('gen_ai.usage.output_tokens'), int)
+    assert isinstance(agent_span.attributes.get('gen_ai.aggregated_usage.input_tokens'), int)
+    assert isinstance(agent_span.attributes.get('gen_ai.aggregated_usage.output_tokens'), int)
     assert agent_span.attributes.get('model_name') == 'test'
 
     # 'chat <model>' attrs (from probe results)
@@ -84,7 +85,7 @@ async def test_agent_emits_pinned_span_set(agent_under_propagate, span_exporter,
     assert chat.attributes.get('gen_ai.system') == 'test'
     assert chat.attributes.get('gen_ai.request.model') == 'test'
 
-    # Parent linkage: chat's parent is the agent run span.
+    # Parent linkage: chat's parent is the agent invocation span.
     assert chat.parent is not None
     assert chat.parent.span_id == agent_span.context.span_id
 

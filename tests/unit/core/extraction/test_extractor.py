@@ -666,7 +666,7 @@ async def test_quick_extract_success(mocker):
     mock_client.get.return_value = mock_response
     mock_client.__aenter__ = mocker.AsyncMock(return_value=mock_client)
     mock_client.__aexit__ = mocker.AsyncMock(return_value=False)
-    mocker.patch('httpx.AsyncClient', return_value=mock_client)
+    mocker.patch('httpx2.AsyncClient', return_value=mock_client)
 
     result = await extractor.quick_extract('https://example.com', 'h1', 'text')
     assert result == 'Hello World'
@@ -675,14 +675,14 @@ async def test_quick_extract_success(mocker):
 @pytest.mark.asyncio
 async def test_quick_extract_returns_none_on_http_error(mocker):
     """quick_extract returns None when HTTP error occurs."""
-    import httpx
+    import httpx2
 
     extractor = _make_extractor()
     mock_client = mocker.AsyncMock()
-    mock_client.get.side_effect = httpx.ConnectError('failed')
+    mock_client.get.side_effect = httpx2.ConnectError('failed')
     mock_client.__aenter__ = mocker.AsyncMock(return_value=mock_client)
     mock_client.__aexit__ = mocker.AsyncMock(return_value=False)
-    mocker.patch('httpx.AsyncClient', return_value=mock_client)
+    mocker.patch('httpx2.AsyncClient', return_value=mock_client)
 
     result = await extractor.quick_extract('https://example.com', 'h1')
     assert result is None

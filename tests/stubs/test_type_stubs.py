@@ -3,6 +3,7 @@
 import subprocess
 import sys
 import textwrap
+import uuid
 
 from tests.stubs.conftest import SNIPPETS_DIR
 
@@ -10,7 +11,7 @@ from tests.stubs.conftest import SNIPPETS_DIR
 def _run_mypy(code: str) -> subprocess.CompletedProcess[str]:
     """Run mypy on a code snippet, return the result."""
     SNIPPETS_DIR.mkdir(exist_ok=True)
-    snippet_file = SNIPPETS_DIR / '_check.py'
+    snippet_file = SNIPPETS_DIR / f'_check_{uuid.uuid4().hex}.py'
     snippet_file.write_text(code)
     try:
         return subprocess.run(
@@ -96,26 +97,123 @@ class TestFieldFactoryStubs:
 
 
 class TestProviderStubs:
-    """Verify that provider helpers are seen as returning LLMConfig."""
+    """Verify that provider helpers are seen as returning ModelPolicy."""
 
-    def test_groq_returns_llmconfig(self) -> None:
+    def test_groq_returns_model_policy(self) -> None:
         result = _run_mypy(
             textwrap.dedent("""\
             import yosoi as ys
-            from yosoi.core.discovery.config import LLMConfig
 
-            c: LLMConfig = ys.groq('llama-3.3-70b-versatile')
+            c: ys.ModelPolicy = ys.groq('llama-3.3-70b-versatile')
         """)
         )
         assert result.returncode == 0, result.stdout + result.stderr
 
-    def test_provider_returns_llmconfig(self) -> None:
+
+class TestPolicyStubs:
+    """Verify that top-level policy constructors expose keyword signatures."""
+
+    def test_top_level_policy_kwargs_typecheck(self) -> None:
         result = _run_mypy(
             textwrap.dedent("""\
             import yosoi as ys
-            from yosoi.core.discovery.config import LLMConfig
 
-            c: LLMConfig = ys.provider('groq:llama-3.3-70b-versatile')
+            policy = ys.Policy.for_crawl(
+                'crawl.conservative',
+                budget=ys.CrawlBudget(
+                    max_pages=200,
+                    max_depth=2,
+                    max_attempts=240,
+                    max_pages_per_host=80,
+                    crawl_session_id='sports-news-candidates-001',
+                ),
+                scheduler=ys.SchedulerPolicy(
+                    max_workers=5,
+                    per_host_concurrency=1,
+                    politeness_delay=1.0,
+                    fetch_timeout_seconds=15.0,
+                    max_fetch_retries=2,
+                ),
+                safety=ys.CrawlSafety(
+                    respect_robots=True,
+                    allow_redirects=False,
+                    allowed_hosts=('www.espn.com',),
+                    blocked_path_prefixes=('/login',),
+                ),
+                escalation=ys.EscalationPolicy(
+                    allow_model_discovery=False,
+                    allow_paid_scrapers=False,
+                    max_llm_calls=0,
+                    max_paid_scraper_calls=0,
+                ),
+                target_contracts=['NewsArticle'],
+                fetcher_type='auto',
+            )
+            check = ys.check_policy(policy, seeds=('https://www.espn.com/nfl/',))
+            assert check.runtime is not None
+        """)
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
+
+    def test_crawl_public_api_typechecks(self) -> None:
+        result = _run_mypy(
+            textwrap.dedent("""\
+            import yosoi as ys
+
+            async def main() -> ys.CrawlRunSummary:
+                single = await ys.crawl(
+                    'https://example.com/',
+                    contracts=ys.NewsArticle,
+                    limit=10,
+                    policy=ys.Policy.for_crawl('crawl.conservative'),
+                )
+                await ys.crawl(
+                    ['https://example.com/'],
+                    contracts=[ys.NewsArticle, ys.Product],
+                    limit=10,
+                    policy=ys.Policy.for_crawl('crawl.conservative'),
+                )
+                return single
+        """)
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
+
+    def test_crawl_representative_url_api_typechecks(self) -> None:
+        result = _run_mypy(
+            textwrap.dedent("""\
+            import yosoi as ys
+
+            async def main() -> None:
+                summary = await ys.crawl(
+                    'https://example.com/',
+                    contracts=ys.NewsArticle,
+                    policy=ys.Policy.for_crawl('crawl.conservative'),
+                )
+                scrape_targets: list[str] = summary.scrape_target_urls(limit=5)
+                representatives: list[str] = summary.representative_urls(limit=5)
+                assert scrape_targets is not None
+                assert representatives is not None
+        """)
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
+
+    def test_top_level_policy_kwargs_fail_static_on_misspelling(self) -> None:
+        result = _run_mypy(
+            textwrap.dedent("""\
+            import yosoi as ys
+
+            ys.EscalationPolicy(allow_model_discover=True)
+        """)
+        )
+        assert result.returncode != 0
+        assert 'Unexpected keyword argument "allow_model_discover"' in result.stdout + result.stderr
+
+    def test_provider_returns_model_policy(self) -> None:
+        result = _run_mypy(
+            textwrap.dedent("""\
+            import yosoi as ys
+
+            c: ys.ModelPolicy = ys.provider('groq:llama-3.3-70b-versatile')
         """)
         )
         assert result.returncode == 0, result.stdout + result.stderr
@@ -124,9 +222,8 @@ class TestProviderStubs:
         result = _run_mypy(
             textwrap.dedent("""\
             import yosoi as ys
-            from yosoi.core.discovery.config import LLMConfig
 
-            c: LLMConfig = ys.gemini('gemini-2.0-flash', api_key='test')
+            c: ys.ModelPolicy = ys.gemini('gemini-2.0-flash', api_key='test')
         """)
         )
         assert result.returncode == 0, result.stdout + result.stderr

@@ -101,3 +101,6 @@ the `TYPE_CHECKING` imports, and `_LAZY` in lockstep.
 
 ## Interaction Guidelines
 When working on this repo, generic python solutions often fail. Always check `pyproject.toml` for available scripts and configuration.
+
+## Working Standard
+Always take the hard and productive path. Start from the real failing behavior, read the relevant code and committed guidance, and push through to a verified result. Do not choose cosmetic fixes, shallow explanations, toy reproductions, broad rewrites, or fallback heuristics when the useful work is to understand the system, repair the root cause, and prove it with the right checks.

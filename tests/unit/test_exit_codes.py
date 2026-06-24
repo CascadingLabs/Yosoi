@@ -85,7 +85,6 @@ def mock_pipeline_json(mocker):
     mock_pipe.__aexit__ = mocker.AsyncMock(return_value=False)
 
     mocker.patch('yosoi.Pipeline', return_value=mock_pipe)
-    mocker.patch('yosoi.cli.main.build_yosoi_config', return_value=mocker.MagicMock())
     return mock_pipe
 
 
@@ -106,7 +105,6 @@ class TestJsonFlag:
         monkeypatch.setenv('GROQ_KEY', 'test-key')
         mocker.patch('yosoi.utils.files.is_initialized', return_value=True)
         mocker.patch('yosoi.utils.logging.setup_local_logging', return_value='/tmp/test.log')
-        mocker.patch('yosoi.cli.main.build_yosoi_config', return_value=mocker.MagicMock())
 
         async def _raise(*a, **kw):
             raise RuntimeError('boom')

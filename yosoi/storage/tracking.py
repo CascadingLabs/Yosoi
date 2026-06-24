@@ -8,7 +8,6 @@ import json
 import os
 from typing import Any
 
-import aiofiles
 from pydantic import BaseModel, Field
 
 from yosoi.utils.files import atomic_write_json, atomic_write_json_async, get_tracking_path
@@ -71,9 +70,12 @@ class LLMTracker:
             Empty dict if file doesn't exist or is invalid.
 
         """
+        return self._load_data_sync()
+
+    def _load_data_sync(self) -> dict[str, Any]:
         try:
-            async with aiofiles.open(self.tracking_file) as f:
-                data: dict[str, Any] = json.loads(await f.read())
+            with open(self.tracking_file) as f:
+                data: dict[str, Any] = json.loads(f.read())
                 return data
         except (OSError, json.JSONDecodeError):
             return {}

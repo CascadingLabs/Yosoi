@@ -8,7 +8,7 @@ import random
 import time
 from typing import Any
 
-import httpx
+import httpx2
 
 from yosoi.core.fetcher.base import ContentAnalyzer, HTMLFetcher
 from yosoi.models.results import FetchResult
@@ -25,11 +25,11 @@ class SimpleFetcher(HTMLFetcher):
     Attributes:
         timeout: Request timeout in seconds (how long to wait for response)
         rotate_user_agent: Whether to rotate user agents between requests
-        use_session: Whether to use an httpx.AsyncClient for connection pooling
+        use_session: Whether to use an httpx2.AsyncClient for connection pooling
         min_delay: Minimum delay between requests in seconds
         max_delay: Maximum delay between requests in seconds
         randomize_headers: Whether to randomize request headers
-        client: httpx.AsyncClient instance if use_session is True
+        client: httpx2.AsyncClient instance if use_session is True
         last_request_time: Timestamp of last request for delay calculation
 
     """
@@ -43,6 +43,7 @@ class SimpleFetcher(HTMLFetcher):
         max_delay: float = 2.0,
         randomize_headers: bool = True,
         user_agent: str | None = None,
+        allow_redirects: bool = True,
     ):
         """Intialize the simple fetcher.
 
@@ -54,6 +55,7 @@ class SimpleFetcher(HTMLFetcher):
             max_delay: Maximum time to pause between fetches
             randomize_headers: If True then will randomize the headers used to fetch
             user_agent: Fixed UA to use instead of per-request UA rotation
+            allow_redirects: Whether HTTP redirects are followed by this fetcher
 
         """
         self.timeout = timeout
@@ -63,9 +65,10 @@ class SimpleFetcher(HTMLFetcher):
         self.max_delay = max_delay
         self.randomize_headers = randomize_headers
         self.user_agent = user_agent
+        self.allow_redirects = allow_redirects
 
         # Client is created lazily in __aenter__ when use_session=True
-        self.client: httpx.AsyncClient | None = None
+        self.client: httpx2.AsyncClient | None = None
 
         # Track last request time for delays
         self.last_request_time = 0.0
@@ -145,10 +148,14 @@ class SimpleFetcher(HTMLFetcher):
 
             # Use client or direct request
             if self.client:
-                response = await self.client.get(url, headers=headers, timeout=self.timeout, follow_redirects=True)
+                response = await self.client.get(
+                    url, headers=headers, timeout=self.timeout, follow_redirects=self.allow_redirects
+                )
             else:
-                async with httpx.AsyncClient() as client:
-                    response = await client.get(url, headers=headers, timeout=self.timeout, follow_redirects=True)
+                async with httpx2.AsyncClient() as client:
+                    response = await client.get(
+                        url, headers=headers, timeout=self.timeout, follow_redirects=self.allow_redirects
+                    )
 
             status_code = response.status_code
 
@@ -173,7 +180,7 @@ class SimpleFetcher(HTMLFetcher):
             # Verify we got actual HTML
             if not html or len(html) < 100:
                 return FetchResult(
-                    url=url,
+                    url=str(response.url),
                     html=None,
                     status_code=status_code,
                     is_blocked=True,
@@ -200,7 +207,7 @@ class SimpleFetcher(HTMLFetcher):
             fetch_time = time.time() - start_time
 
             return FetchResult(
-                url=url,
+                url=str(response.url),
                 html=html,
                 status_code=status_code,
                 is_blocked=False,
@@ -212,7 +219,7 @@ class SimpleFetcher(HTMLFetcher):
         except BotDetectionError:
             raise  # Re-raise bot detection errors
 
-        except (httpx.HTTPError, OSError, ValueError) as e:
+        except (httpx2.HTTPError, OSError, ValueError) as e:
             fetch_time = time.time() - start_time
             return FetchResult(
                 url=url, html=None, status_code=None, is_blocked=False, block_reason=str(e), fetch_time=fetch_time
@@ -221,7 +228,7 @@ class SimpleFetcher(HTMLFetcher):
     async def __aenter__(self) -> SimpleFetcher:
         """Async context manager entry. Creates the shared client if use_session=True."""
         if self.use_session and self.client is None:
-            self.client = httpx.AsyncClient()
+            self.client = httpx2.AsyncClient()
         return self
 
     async def __aexit__(

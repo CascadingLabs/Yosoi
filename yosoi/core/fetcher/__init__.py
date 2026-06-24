@@ -7,7 +7,7 @@ the simple-fetch stack) to load at import time. See ``CLAUDE.md`` ("Lazy loading
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias
 
 from yosoi._lazy import lazy_exports
 
@@ -20,10 +20,11 @@ _LAZY: dict[str, str] = {
     'SimpleFetcher': 'yosoi.core.fetcher.simple',
 }
 
+FetcherType: TypeAlias = Literal['auto', 'simple', 'headless', 'headful', 'waterfall']
 AUTO_FETCHER_TYPES = {'auto', 'waterfall'}
-FETCHER_TYPES = ('auto', 'simple', 'headless', 'headful', 'waterfall')
+FETCHER_TYPES: tuple[FetcherType, ...] = ('auto', 'simple', 'headless', 'headful', 'waterfall')
 
-__all__ = ['HTMLFetcher', 'SimpleFetcher', 'create_fetcher']
+__all__ = ['FETCHER_TYPES', 'FetcherType', 'HTMLFetcher', 'SimpleFetcher', 'create_fetcher']
 
 
 def create_fetcher(fetcher_type: str = 'auto', **kwargs: Any) -> HTMLFetcher:
@@ -41,10 +42,12 @@ def create_fetcher(fetcher_type: str = 'auto', **kwargs: Any) -> HTMLFetcher:
     if fetcher_type == 'headless':
         from yosoi.core.fetcher.voiddriver import HeadlessFetcher
 
+        kwargs.pop('allow_redirects', None)
         return HeadlessFetcher(**kwargs)
     if fetcher_type == 'headful':
         from yosoi.core.fetcher.voiddriver import HeadfulFetcher
 
+        kwargs.pop('allow_redirects', None)
         return HeadfulFetcher(**kwargs)
 
     choices = ', '.join(FETCHER_TYPES)

@@ -1,0 +1,6 @@
+ignore:
+  - "benchmarks/**"
+  - "docs/**"
+  - "examples/**"
+  - "scripts/generate_api_docs.py"
+  - "tests/**"

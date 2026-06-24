@@ -19,7 +19,7 @@ from contextlib import ExitStack, nullcontext
 from typing import Any, Literal
 from urllib.parse import urlparse
 
-import httpx
+import httpx2
 from rich.console import Console
 from rich.live import Live
 from rich.table import Table
@@ -35,10 +35,12 @@ from yosoi.core.pipeline.crawler import PipelineCrawlerMixin
 from yosoi.core.pipeline.discovery import PipelineDiscoveryMixin
 from yosoi.core.pipeline.discovery_gate import DiscoveryGate
 from yosoi.core.pipeline.extraction import PipelineExtractionMixin
+from yosoi.core.pipeline.signal import PageObservation, build_fingerprint_lane
 from yosoi.core.pipeline.utils import PipelineUtilsMixin
 from yosoi.core.verification import SelectorVerifier, SemanticValidator, field_rules_for_contract
 from yosoi.models.contract import Contract
 from yosoi.models.selectors import SelectorLevel
+from yosoi.policy import ModelPolicy, Policy
 from yosoi.storage import DebugManager, LLMTracker, SelectorStorage
 from yosoi.storage.discovery_strategy import DiscoveryStrategyStorage
 from yosoi.storage.js_scripts import JsScriptStorage
@@ -100,8 +102,8 @@ class Pipeline(
 
     def __init__(
         self,
-        llm_config: LLMConfig | YosoiConfig | str,
-        contract: type[Contract],
+        llm_config: LLMConfig | YosoiConfig | str | None = None,
+        contract: type[Contract] | None = None,
         debug_mode: bool = False,
         output_format: str | list[str] = 'json',
         force: bool = False,
@@ -118,6 +120,7 @@ class Pipeline(
         keep_downloads: bool = True,
         identity: BrowserIdentity | None = None,
         console: Console | None = None,
+        policy: Policy | None = None,
     ):
         """Initialize the pipeline with LLM configuration.
 
@@ -156,8 +159,32 @@ class Pipeline(
                 console for ``--json`` runs); a default themed console is built when omitted.
             keep_downloads: Keep downloaded files after the run (default). Set False to purge
                 the content-addressed blobs at run end while retaining provenance in index.json.
+            policy: Resolved pipeline :class:`~yosoi.policy.Policy` threaded from the API edge.
+                Stored once (``policy or Policy.from_env()``) as a forward-compat seam so future
+                policy-gated behavior reads ``self._policy`` instead of the environment; the
+                pipeline has no policy-gated branch today.
 
         """
+        if contract is None:
+            raise TypeError('Pipeline requires a contract')
+        if isinstance(llm_config, ModelPolicy):
+            raise TypeError(
+                'Pipeline no longer accepts a ModelPolicy as llm_config; pass policy=Policy(model=...) instead'
+            )
+        # Resolve policy-first construction before applying legacy kwargs.
+        if llm_config is None:
+            spec = (policy or Policy.from_env()).resolve_run_spec()
+            llm_config = spec.llm_config
+            debug_mode = spec.debug_html
+            output_format = list(spec.output_formats)
+            force = spec.force
+            quiet = spec.quiet
+            selector_level = spec.selector_level
+            allow_downloads = spec.allow_downloads
+            allowed_download_types = spec.allowed_download_types
+            download_dir = spec.download_dir
+            max_download_bytes = spec.max_download_bytes
+            keep_downloads = spec.keep_downloads
         self.selector_level = selector_level
         self._experimental_a3node = experimental_a3node
         self._allow_downloads = allow_downloads
@@ -166,6 +193,10 @@ class Pipeline(
         self._max_download_bytes = max_download_bytes
         self._keep_downloads = keep_downloads
         self._identity = identity  # opt-in browser identity (profile/headful/geo) for browser fetchers
+        # Resolve the policy ONCE here (defensive single resolve); stored as a forward-compat seam.
+        self._policy: Policy = policy or Policy.from_env()
+        # Off-path fingerprint signal lane (CAS-168); None unless a FingerprintPolicy opts in.
+        self._signal_lane = build_fingerprint_lane(self._policy.fingerprint)
         self._download_log: list[Any] = []
 
         if isinstance(llm_config, str):
@@ -177,6 +208,9 @@ class Pipeline(
 
         max_concurrent_discovery: int = 5
         replay_verify_threshold: float = 1.0
+        if self._policy.discovery is not None:
+            max_concurrent_discovery = self._policy.discovery.max_concurrent
+            replay_verify_threshold = self._policy.discovery.replay_verify_threshold
 
         if isinstance(llm_config, YosoiConfig):
             yosoi_cfg = llm_config
@@ -187,15 +221,12 @@ class Pipeline(
             replay_verify_threshold = yosoi_cfg.discovery.replay_verify_threshold
             observability.configure(yosoi_cfg.telemetry)
         else:
+            # Policy-resolved telemetry: Policy.from_env() captures LANGFUSE_* as SecretRefs,
+            # so this covers both an explicit policy and the legacy env-only construction.
             from yosoi.core.configs import TelemetryConfig
+            from yosoi.policy.run import resolve_telemetry_values
 
-            observability.configure(
-                TelemetryConfig(
-                    langfuse_public_key=os.getenv('LANGFUSE_PUBLIC_KEY'),
-                    langfuse_secret_key=os.getenv('LANGFUSE_SECRET_KEY'),
-                    langfuse_host=os.getenv('LANGFUSE_BASE_URL') or os.getenv('LANGFUSE_HOST'),
-                )
-            )
+            observability.configure(TelemetryConfig(**resolve_telemetry_values(self._policy.telemetry)))
 
         self.custom_theme = Theme(
             {
@@ -233,7 +264,12 @@ class Pipeline(
         self._mcp_discovery: MCPDiscoveryOrchestrator | None = None
         self._mcp_llm_config: LLMConfig = llm_config
         self._replay_verify_threshold: float = replay_verify_threshold
-        self._force_mcp: bool = os.getenv('YOSOI_DISCOVERY_MODE') == 'mcp'
+        discovery_policy = self._policy.discovery
+        self._force_mcp: bool = (
+            discovery_policy.mode == 'mcp'
+            if discovery_policy is not None
+            else os.getenv('YOSOI_DISCOVERY_MODE') == 'mcp'
+        )
         self._discovery_strategy = DiscoveryStrategyStorage()
         self._js_discovery_orchestrator: Any = None
         self.verifier = SelectorVerifier(console=self.console)
@@ -257,7 +293,7 @@ class Pipeline(
         self.last_selectors: dict[str, Any] | None = None
         self.last_cleaned_html: str | None = None
         self._last_level_distribution: dict[str, int] = {}
-        self._client: httpx.AsyncClient = httpx.AsyncClient()
+        self._client: httpx2.AsyncClient = httpx2.AsyncClient()
 
         self.session_id: str = observability.process_session_id()
 
@@ -273,12 +309,16 @@ class Pipeline(
 
     async def __aenter__(self) -> 'Pipeline':
         """Enter the async context manager, returning self."""
+        if self._signal_lane is not None:
+            await self._signal_lane.start()
         return self
 
     async def __aexit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
         """Exit the async context manager, closing the HTTP client + finalizing downloads."""
         await self._client.aclose()
         self._finalize_downloads()
+        if self._signal_lane is not None:
+            await self._signal_lane.aclose()
 
     def _create_fetcher(self, fetcher_type: str, console: Console | None = None) -> Any | None:
         """Create HTML fetcher instance.
@@ -287,7 +327,15 @@ class Pipeline(
         ``mocker.patch('yosoi.core.pipeline.base.create_fetcher')`` intercepts calls here.
         """
         try:
+            page_config = self._page_runtime_config(fetcher_type=fetcher_type)
             kwargs: dict[str, Any] = {}
+            page_policy = getattr(getattr(self, '_policy', None), 'page', None)
+            if page_policy is not None and 'timeout_seconds' in page_policy.model_fields_set:
+                kwargs['timeout'] = int(page_config.timeout_seconds)
+            if page_policy is not None and 'allow_redirects' in page_policy.model_fields_set:
+                kwargs['allow_redirects'] = page_config.allow_redirects
+            if page_config.chrome_ws_urls:
+                kwargs['chrome_ws_urls'] = page_config.chrome_ws_urls
             identity = getattr(self, '_identity', None)  # getattr: __new__-based test stubs omit it
             if fetcher_type in ('auto', 'waterfall', 'headless', 'headful'):
                 if console is not None:
@@ -295,6 +343,9 @@ class Pipeline(
                 kwargs['experimental_a3node'] = getattr(self, '_experimental_a3node', False)
                 kwargs['allow_downloads'] = getattr(self, '_allow_downloads', False)
                 kwargs['download_dir'] = getattr(self, '_download_dir', None)
+                pipeline_policy: Policy | None = getattr(self, '_policy', None)
+                if pipeline_policy is not None and pipeline_policy.scrape is not None:
+                    kwargs['cross_origin_dom'] = pipeline_policy.scrape.cross_origin_dom
                 if identity is not None:  # opt-in profile/headful/geo (browser only)
                     kwargs['identity'] = identity
             elif fetcher_type == 'simple' and identity is not None:
@@ -594,21 +645,23 @@ class Pipeline(
         download_specs = self._resolve_download_specs(fetcher)
 
         with observability.span('fetch', url=url, max_retries=max_fetch_retries):
-            result = await self._fetch(
+            snapshot = await self._acquire_page(
                 url,
-                fetcher,
-                max_retries=max_fetch_retries,
+                fetcher=fetcher,
+                max_fetch_retries=max_fetch_retries,
                 action_scripts=js_scripts or None,
                 download_specs=download_specs,
             )
-            if not result:
-                raise RuntimeError(f'Failed to fetch {url}')
+            result = snapshot.fetch_result
             assert result.html is not None
 
-        with observability.span('clean', url=url, raw_chars=len(result.html)):
-            cleaned_html = await self._clean(url, result)
-            if not cleaned_html:
-                raise RuntimeError(f'HTML cleaning failed for {url}')
+        # Gather the page-fingerprint signal off the hot path (non-blocking; fingerprint computed
+        # in the lane drainer). Default-off unless a FingerprintPolicy opts in.
+        if self._signal_lane is not None:
+            self._signal_lane.offer(
+                PageObservation(url, domain, self.contract.__name__, snapshot.raw_html, result.ax_snapshot)
+            )
+        cleaned_html = snapshot.html_for_discovery
 
         cached_mode = None if force_flag else await self._discovery_strategy.load(domain, self._contract_sig)
         escalate_first = self._force_mcp or cached_mode == 'mcp'

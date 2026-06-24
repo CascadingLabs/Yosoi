@@ -314,12 +314,51 @@ def test_semantics_extracts_landmarks_and_schema() -> None:
     assert 'schema:FinancialProduct' in feats
 
 
+def test_weighted_jaccard_downweights_generic_semantic_chrome() -> None:
+    from yosoi.generalization.fingerprint import weighted_jaccard
+
+    shared_chrome = frozenset({'lm:header', 'lm:nav', 'lm:footer'})
+    product = shared_chrome | {'schema:Product'}
+    article = shared_chrome | {'schema:Article'}
+
+    raw = len(product & article) / len(product | article)
+    weighted = weighted_jaccard(product, article, layer='semantic')
+
+    assert raw == 0.6
+    assert weighted < raw
+
+
+def test_containment_reports_smaller_set_inclusion() -> None:
+    from yosoi.generalization.fingerprint import containment
+
+    base = frozenset({'lm:main', 'schema:Product'})
+    enriched = base | {'lm:aside', 'h2:mid'}
+
+    assert containment(base, enriched) == 1.0
+    assert containment(base, frozenset({'lm:main', 'schema:Article'})) == 0.5
+
+
 def test_same_shape_conjunctive_true_for_same_template() -> None:
     from yosoi.generalization.fingerprint import PageFingerprint, same_shape
 
     sim = PageFingerprint.of(_listing(5)).similarity(PageFingerprint.of(_listing(40)))
-    assert sim.same_shape  # both layers agree
+    assert sim.same_shape  # both weighted layers agree
+    assert 0.0 <= sim.weighted_score <= 1.0
+    assert 0.0 <= sim.containment_score <= 1.0
+    assert sim.skeleton.containment == 1.0
     assert same_shape(_listing(5), _listing(40))
+
+
+def test_page_similarity_is_nested_by_layer() -> None:
+    from yosoi.generalization.fingerprint import PageFingerprint, SemanticSimilarity, SkeletonSimilarity
+
+    sim = PageFingerprint.of(_listing(5)).similarity(PageFingerprint.of(_listing(40)))
+    dumped = sim.model_dump()
+
+    assert isinstance(sim.skeleton, SkeletonSimilarity)
+    assert isinstance(sim.semantic, SemanticSimilarity)
+    assert set(dumped['skeleton']) == {'jaccard', 'weighted', 'containment'}
+    assert set(dumped['semantic']) == {'jaccard', 'weighted', 'containment'}
 
 
 def test_same_shape_rejects_different_template_even_if_one_layer_high() -> None:

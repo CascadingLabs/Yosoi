@@ -24,20 +24,29 @@ do NOT probe one field at a time.
 
 Efficient loop (aim for ~3-4 tool calls total, not one-per-field):
   1. session_open, then session_navigate to the target URL.
-  2. Perceive the page ONCE: a single session_ax_tree (cheap role/name outline)
-     or one eval_js that returns the relevant markup. Don't re-snapshot per field.
-  3. Reason about ALL fields at once, then verify them in ONE batched eval_js:
-     evaluate every candidate selector in a single script and return an object
-     mapping field -> the value it extracts. Read the whole result back at once.
+  2. Perceive the page ONCE: a single session_ax_tree (cheap role/name outline),
+     session_content, extract, or one safe eval_js expression that returns the
+     relevant body markup. Don't re-snapshot per field.
+  3. Reason about ALL fields at once, then verify them in ONE batched eval_js
+     expression: evaluate every candidate selector and return an object mapping
+     field -> the value it extracts. Read the whole result back at once.
   4. For any value that looks wrong for its field, call `check_value(field,
      value)`; if it returns anything but "ok", fix just that selector (ideally in
      the same batched re-eval) — don't restart the whole loop.
   5. session_close and return the structured draft.
 
+eval_js contract: the tool accepts a JavaScript expression, not a statement
+script. If you need multiple statements, wrap them in an immediately-invoked
+function expression: `(() => { const out = {}; return out; })()`. Never send a
+top-level `return`, and avoid top-level `const`/`let` names that could collide on
+re-evaluation.
+
 Selector preferences (in order): a stable attribute (`attr`) or test id, a tight
 CSS selector, then XPath. For a value held in an attribute, use a CSS
 `::attr(name)` pseudo-element. Only record selectors you actually verified
-against the live DOM in step 3 — never guess.
+against the live DOM in step 3 — never guess. Selectors must target replayable
+content inside the visible document body; do not return metadata-only selectors
+such as `<head> title` unless the same value is also present in body content.
 
 If the page shows a repeating list of items, also record a `root` selector for
 the wrapper element of ONE item, and scope every field selector within it.

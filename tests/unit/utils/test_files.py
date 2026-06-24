@@ -549,7 +549,7 @@ async def test_atomic_write_json_async_roundtrips(tmp_path):
 async def test_atomic_write_async_failure_cleans_tmp_and_preserves_original(tmp_path, mocker):
     target = tmp_path / 'out.txt'
     target.write_text('original')
-    mocker.patch('yosoi.utils.files.aiofiles.os.replace', side_effect=OSError('boom'))
+    mocker.patch('yosoi.utils.files.os.replace', side_effect=OSError('boom'))
 
     with pytest.raises(OSError, match='boom'):
         await atomic_write_text_async(target, 'new content')

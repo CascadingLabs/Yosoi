@@ -18,12 +18,14 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
+import os
 import random
 import time
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Sequence
 from contextlib import asynccontextmanager
 from typing import Any
 
+import lxml.html
 from rich.console import Console
 
 from yosoi.core.fetcher.base import ContentAnalyzer, HTMLFetcher
@@ -52,9 +54,28 @@ _JS_POLL_INTERVAL_S: float = 0.5
 _JS_MAX_SETTLE_CYCLES: int = 10
 # Max random jitter injected before tab.goto() to stagger concurrent workers.
 _JITTER_MAX_S: float = 1.5
+_CRAWL_LINK_SETTLE_INTERVAL_S: float = 0.2
+_CRAWL_LINK_SETTLE_CYCLES: int = 5
+
+
+def _crawl_frontier_signature(html: str) -> tuple[frozenset[str], int]:
+    try:
+        root = lxml.html.fromstring(html)
+    except (TypeError, ValueError):
+        return (frozenset(), len(html))
+    hrefs = frozenset(
+        str(href).strip()
+        for href in root.xpath('//a/@href')
+        if isinstance(href, str) and str(href).strip() and not str(href).strip().startswith('#')
+    )
+    return (hrefs, len(html))
 
 
 def _import_voidcrawl() -> tuple[Any, Any, Any]:
+    # Chromium emits high-volume CDP notifications that older chromiumoxide builds
+    # classify as invalid messages. They are ignored by the driver and should not
+    # shred live crawl output when a Rust tracing subscriber is active.
+    os.environ.setdefault('RUST_LOG', 'info,chromiumoxide::handler=error')
     try:
         from voidcrawl import BrowserConfig, BrowserPool, PoolConfig
 
@@ -85,6 +106,8 @@ class _VoidCrawlFetcher(HTMLFetcher):
         user_agent: str | None = None,
         accept_language: str | None = None,
         identity: BrowserIdentity | None = None,
+        cross_origin_dom: bool = False,
+        chrome_ws_urls: Sequence[str] = (),
         **_kwargs: Any,
     ) -> None:
         self.timeout = timeout
@@ -100,6 +123,8 @@ class _VoidCrawlFetcher(HTMLFetcher):
         self._user_agent = user_agent
         self._accept_language = accept_language
         self._identity = identity
+        self._cross_origin_dom = cross_origin_dom
+        self._chrome_ws_urls = tuple(str(url).strip() for url in chrome_ws_urls if str(url).strip())
         self._pool: Any = None
         self._pool_ctx: Any = None
         self._a3node_storage = A3NodeStorage() if experimental_a3node else None
@@ -124,10 +149,17 @@ class _VoidCrawlFetcher(HTMLFetcher):
 
     async def __aenter__(self) -> _VoidCrawlFetcher:
         BrowserPool, BrowserConfig, PoolConfig = _import_voidcrawl()
+        # CHROME_WS_URLS (voidcrawl's docker convention: comma-separated CDP URLs)
+        # switches the pool from launching Chrome locally to attaching to the
+        # already-running browsers, e.g. a VoidCrawl docker container.
+        ws_urls = list(self._chrome_ws_urls) or [
+            u.strip() for u in os.getenv('CHROME_WS_URLS', '').split(',') if u.strip()
+        ]
         config = PoolConfig(
             browsers=1,
             tabs_per_browser=self.max_concurrent,
             tab_max_idle_secs=300,
+            chrome_ws_urls=ws_urls,
             browser=BrowserConfig(**self._browser_config_kwargs(BrowserConfig)),
         )
         self._pool_ctx = BrowserPool(config)
@@ -171,24 +203,36 @@ class _VoidCrawlFetcher(HTMLFetcher):
         elif self._accept_language is not None and 'accept_language' in fields:
             kwargs['accept_language'] = self._accept_language
 
-        ident = self._identity
-        if ident is not None:
-            if ident.proxy is not None and 'proxy' in fields:
-                kwargs['proxy'] = ident.proxy
-            if ident.locale is not None and 'locale' in fields:
-                kwargs['locale'] = ident.locale
-            if ident.timezone_id is not None and 'timezone_id' in fields:
-                kwargs['timezone_id'] = ident.timezone_id
-            if ident.geo is not None and 'geolocation' in fields:
-                # teleport-at-fetch: only when VoidCrawl's BrowserConfig exposes a geolocation
-                # field. FUTURE: if it never does, apply ident.geo post-launch via the tab's
-                # set_geolocation before the first navigate (Emulation.setGeolocationOverride).
-                kwargs['geolocation'] = {'latitude': ident.geo[0], 'longitude': ident.geo[1]}
-            if ident.profile_dir is not None and 'extra_args' in fields:
-                extra = list(kwargs.get('extra_args', []))
-                extra.extend([f'--user-data-dir={ident.profile_dir}', '--profile-directory=Default'])
-                kwargs['extra_args'] = extra
+        if self._identity is not None:
+            self._apply_identity_kwargs(kwargs, fields, self._identity)
+
+        # Cross-origin DOM opt-in (ScrapePolicy.cross_origin_dom, VoidCrawl >= 0.3.5): disable
+        # Chrome's site-isolation field trials so evaluate_js_in_frame reaches field-trial-
+        # isolated origins. Weakens isolation for the whole pool — never set by default.
+        if self._cross_origin_dom and 'extra_args' in fields:
+            extra = list(kwargs.get('extra_args', []))
+            extra.append('disable-site-isolation-trials')
+            kwargs['extra_args'] = extra
         return kwargs
+
+    @staticmethod
+    def _apply_identity_kwargs(kwargs: dict[str, Any], fields: Any, ident: BrowserIdentity) -> None:
+        """Thread a pinned identity's proxy/locale/timezone/geo/profile into BrowserConfig kwargs."""
+        if ident.proxy is not None and 'proxy' in fields:
+            kwargs['proxy'] = ident.proxy
+        if ident.locale is not None and 'locale' in fields:
+            kwargs['locale'] = ident.locale
+        if ident.timezone_id is not None and 'timezone_id' in fields:
+            kwargs['timezone_id'] = ident.timezone_id
+        if ident.geo is not None and 'geolocation' in fields:
+            # teleport-at-fetch: only when VoidCrawl's BrowserConfig exposes a geolocation
+            # field. FUTURE: if it never does, apply ident.geo post-launch via the tab's
+            # set_geolocation before the first navigate (Emulation.setGeolocationOverride).
+            kwargs['geolocation'] = {'latitude': ident.geo[0], 'longitude': ident.geo[1]}
+        if ident.profile_dir is not None and 'extra_args' in fields:
+            extra = list(kwargs.get('extra_args', []))
+            extra.extend([f'--user-data-dir={ident.profile_dir}', '--profile-directory=Default'])
+            kwargs['extra_args'] = extra
 
     async def _apply_identity_geo(self, tab: Any) -> None:
         """Teleport-at-fetch: spoof geolocation from the pinned identity BEFORE navigating.
@@ -313,6 +357,82 @@ class _VoidCrawlFetcher(HTMLFetcher):
             js_outputs=js_outputs,
         )
 
+    async def _do_fetch_crawl(self, url: str, start_time: float, _tier: str) -> FetchResult:
+        """Lightweight rendered fetch for crawl frontier discovery.
+
+        Crawl only needs the post-navigation DOM for links/canonical/fingerprint.
+        It should not pay scrape-grade DOMLoader/A3Node/action/download/AX costs
+        for every URL in the frontier.
+        """
+        resp_headers: dict[str, str] | None = None
+        resp_endpoints: list[str] | None = None
+        captcha_kind: str | None = None
+        async with self._pool.acquire() as tab:
+            jitter = random.uniform(0, _JITTER_MAX_S)
+            if jitter > 0.05:
+                await asyncio.sleep(jitter)
+            await self._apply_identity_geo(tab)
+            async for attempt in get_async_retryer(
+                max_attempts=1,
+                wait_min=0.5,
+                wait_max=4.0,
+                exceptions=(RuntimeError,),
+                log_callback=log_retry,
+            ):
+                with attempt:
+                    page_resp = await self._goto_capture(tab, url)
+            resp_headers = getattr(page_resp, 'headers', None) or None
+            resp_endpoints = getattr(page_resp, 'endpoints', None) or None
+            html = await self._crawl_frontier_content(tab)
+            captcha_kind = await self._probe_captcha(tab)
+
+        if not html or len(html) < self.min_content_length:
+            return FetchResult(
+                url=url,
+                html=None,
+                status_code=None,
+                is_blocked=False,
+                block_reason=f'Content too short ({len(html or "")} chars)',
+                fetch_time=time.time() - start_time,
+                headers=resp_headers,
+                endpoints=resp_endpoints,
+            )
+
+        is_blocked, indicators = self._check_for_bot_detection(html, 200, {})
+        if is_blocked:
+            raise BotDetectionError(
+                url,
+                200,
+                indicators,
+                identity_id=self._identity.id if self._identity is not None else None,
+                captcha_kind=captcha_kind,
+            )
+
+        return FetchResult(
+            url=url,
+            html=html,
+            status_code=200,
+            is_blocked=False,
+            fetch_time=time.time() - start_time,
+            metadata=ContentAnalyzer.analyze(html),
+            headers=resp_headers,
+            endpoints=resp_endpoints,
+        )
+
+    async def _crawl_frontier_content(self, tab: Any) -> str:
+        """Capture rendered HTML after a short link-inventory settle window."""
+        html = str(await tab.content())
+        signature = _crawl_frontier_signature(html)
+        for _ in range(_CRAWL_LINK_SETTLE_CYCLES):
+            await asyncio.sleep(_CRAWL_LINK_SETTLE_INTERVAL_S)
+            candidate = str(await tab.content())
+            next_signature = _crawl_frontier_signature(candidate)
+            if next_signature == signature:
+                return candidate
+            html = candidate
+            signature = next_signature
+        return html
+
     async def _do_fetch(
         self,
         url: str,
@@ -348,7 +468,15 @@ class _VoidCrawlFetcher(HTMLFetcher):
             await self._apply_identity_geo(tab)
             # Capture the goto PageResponse instead of discarding it — its headers/endpoints feed
             # the waterfall fingerprint's L3 layers (the former blind spot).
-            page_resp = await self._goto_capture(tab, url)
+            async for attempt in get_async_retryer(
+                max_attempts=3,
+                wait_min=0.5,
+                wait_max=4.0,
+                exceptions=(RuntimeError,),
+                log_callback=log_retry,
+            ):
+                with attempt:
+                    page_resp = await self._goto_capture(tab, url)
             resp_headers = getattr(page_resp, 'headers', None) or None
             resp_endpoints = getattr(page_resp, 'endpoints', None) or None
 

@@ -153,10 +153,10 @@ class ContractSpec(BaseModel):
         if self.root is not None:
             from yosoi.models.selectors import SelectorEntry
 
-            cls.root = SelectorEntry.model_validate(self.root)  # type: ignore[attr-defined]
+            cls.root = SelectorEntry.model_validate(self.root)
 
         if validators_cls is not None:
-            cls._validators_cls = validators_cls  # type: ignore[attr-defined]
+            cls._validators_cls = validators_cls
 
         return cls
 

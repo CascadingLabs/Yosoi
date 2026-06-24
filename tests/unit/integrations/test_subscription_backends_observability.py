@@ -23,9 +23,8 @@ real instrumented model emits — so Langfuse renders subscription generations
 identically to API ones, and the two backends 1:1 with each other.
 """
 
-import httpx
+import httpx2
 import pytest
-import respx
 from opentelemetry.sdk.trace import ReadableSpan
 from pydantic import BaseModel
 from pydantic_ai import Agent
@@ -80,28 +79,50 @@ def _genai_keys(span: ReadableSpan) -> set[str]:
     return {k for k in (span.attributes or {}) if k.startswith('gen_ai.')}
 
 
-def _opencode_route() -> None:
+def _patch_opencode_client(monkeypatch, routes: dict[str, httpx2.Response]) -> None:
+    class _Client:
+        def __init__(self, *, base_url: str, timeout: int) -> None:
+            self.base_url = base_url
+            self.timeout = timeout
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_args: object) -> None:
+            return None
+
+        async def post(self, path: str, json: object | None = None) -> httpx2.Response:
+            response = routes[path]
+            response._request = httpx2.Request('POST', f'{self.base_url}{path}')
+            return response
+
+    monkeypatch.setattr(httpx2, 'AsyncClient', _Client)
+
+
+def _opencode_route(monkeypatch) -> None:
     """Mock OpenCode's /session + /session/{id}/message to report 150/50 tokens."""
-    respx.post(f'{_OC_BASE}/session').mock(return_value=httpx.Response(200, json={'id': 'ses_test'}))
-    respx.post(f'{_OC_BASE}/session/ses_test/message').mock(
-        return_value=httpx.Response(
-            200,
-            json={
-                'info': {
-                    'tokens': {'input': 150, 'output': 50, 'reasoning': 0, 'cache': {'read': 0, 'write': 0}},
-                    'cost': 0.0123,
-                    'structured': {'title': 'hello'},
+    _patch_opencode_client(
+        monkeypatch,
+        {
+            '/session': httpx2.Response(200, json={'id': 'ses_test'}),
+            '/session/ses_test/message': httpx2.Response(
+                200,
+                json={
+                    'info': {
+                        'tokens': {'input': 150, 'output': 50, 'reasoning': 0, 'cache': {'read': 0, 'write': 0}},
+                        'cost': 0.0123,
+                        'structured': {'title': 'hello'},
+                    },
+                    'parts': [{'type': 'text', 'text': '{"title": "hello"}'}],
                 },
-                'parts': [{'type': 'text', 'text': '{"title": "hello"}'}],
-            },
-        )
+            ),
+        },
     )
 
 
-@respx.mock
 @pytest.mark.usefixtures('instrumentation')
-async def test_opencode_run_reports_usage(span_exporter):
-    _opencode_route()
+async def test_opencode_run_reports_usage(span_exporter, monkeypatch):
+    _opencode_route(monkeypatch)
     span = await _chat_span(
         OpenCodeModel(provider_id='openai', model_id='gpt-5-codex', base_url=_OC_BASE), span_exporter
     )
@@ -126,9 +147,8 @@ async def test_claude_sdk_run_reports_usage(span_exporter, fake_claude_query):
     assert span.attributes.get('gen_ai.usage.output_tokens') == 50
 
 
-@respx.mock
 @pytest.mark.usefixtures('instrumentation')
-async def test_subscription_spans_match_api_generation_shape(span_exporter, fake_claude_query):
+async def test_subscription_spans_match_api_generation_shape(span_exporter, fake_claude_query, monkeypatch):
     """OpenCode and Claude SDK chat spans carry the same GenAI generation attrs
     as a real instrumented model — and are 1:1 with each other."""
     # API-backed baseline: a real instrumented pydantic-ai model emits the
@@ -137,7 +157,7 @@ async def test_subscription_spans_match_api_generation_shape(span_exporter, fake
     api_keys = _genai_keys(await _chat_span(TestModel(), span_exporter))
     assert api_keys >= _CANONICAL_GENERATION_ATTRS, f'baseline missing: {_CANONICAL_GENERATION_ATTRS - api_keys}'
 
-    _opencode_route()
+    _opencode_route(monkeypatch)
     opencode_keys = _genai_keys(
         await _chat_span(OpenCodeModel(provider_id='openai', model_id='gpt-5-codex', base_url=_OC_BASE), span_exporter)
     )
