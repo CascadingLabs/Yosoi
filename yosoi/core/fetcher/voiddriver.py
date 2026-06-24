@@ -72,6 +72,10 @@ def _crawl_frontier_signature(html: str) -> tuple[frozenset[str], int]:
 
 
 def _import_voidcrawl() -> tuple[Any, Any, Any]:
+    # Chromium emits high-volume CDP notifications that older chromiumoxide builds
+    # classify as invalid messages. They are ignored by the driver and should not
+    # shred live crawl output when a Rust tracing subscriber is active.
+    os.environ.setdefault('RUST_LOG', 'info,chromiumoxide::handler=error')
     try:
         from voidcrawl import BrowserConfig, BrowserPool, PoolConfig
 

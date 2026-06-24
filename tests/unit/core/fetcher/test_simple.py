@@ -17,7 +17,7 @@ class TestSimpleFetcherInit:
 
     @pytest.mark.asyncio
     async def test_aenter_creates_client(self):
-        """Entering context manager creates the httpx client when use_session=True."""
+        """Entering context manager creates the httpx2 client when use_session=True."""
         f = SimpleFetcher(use_session=True)
         assert f.client is None
         async with f:
@@ -62,7 +62,7 @@ class TestSimpleFetcherFetch:
         mock_resp.text = '<html/>'
         mock_resp.content = b'<html/>'
         mock_resp.headers = {}
-        mocker.patch('httpx.AsyncClient.get', return_value=mock_resp)
+        mocker.patch('httpx2.AsyncClient.get', return_value=mock_resp)
         mocker.patch.object(f, '_apply_request_delay', return_value=None)
 
         result = await f.fetch('https://example.com')
@@ -78,7 +78,7 @@ class TestSimpleFetcherFetch:
         mock_resp.text = VALID_HTML
         mock_resp.content = VALID_HTML.encode()
         mock_resp.headers = {}
-        mocker.patch('httpx.AsyncClient.get', return_value=mock_resp)
+        mocker.patch('httpx2.AsyncClient.get', return_value=mock_resp)
         mocker.patch.object(f, '_apply_request_delay', return_value=None)
 
         result = await f.fetch('https://example.com')
@@ -89,7 +89,7 @@ class TestSimpleFetcherFetch:
 
     @pytest.mark.asyncio
     async def test_passes_redirect_policy_to_httpx(self, mocker):
-        """Redirect policy is passed through to httpx."""
+        """Redirect policy is passed through to httpx2."""
         f = SimpleFetcher(use_session=False, min_delay=0, allow_redirects=False)
         mock_resp = mocker.MagicMock()
         mock_resp.status_code = 200
@@ -97,7 +97,7 @@ class TestSimpleFetcherFetch:
         mock_resp.text = VALID_HTML
         mock_resp.content = VALID_HTML.encode()
         mock_resp.headers = {}
-        get = mocker.patch('httpx.AsyncClient.get', return_value=mock_resp)
+        get = mocker.patch('httpx2.AsyncClient.get', return_value=mock_resp)
         mocker.patch.object(f, '_apply_request_delay', return_value=None)
 
         await f.fetch('https://example.com')
@@ -107,10 +107,10 @@ class TestSimpleFetcherFetch:
     @pytest.mark.asyncio
     async def test_http_error_returns_error_result(self, mocker):
         """HTTP errors return a FetchResult with no html and block_reason."""
-        import httpx
+        import httpx2
 
         f = SimpleFetcher(use_session=False, min_delay=0)
-        mocker.patch('httpx.AsyncClient.get', side_effect=httpx.ConnectError('failed'))
+        mocker.patch('httpx2.AsyncClient.get', side_effect=httpx2.ConnectError('failed'))
         mocker.patch.object(f, '_apply_request_delay', return_value=None)
 
         result = await f.fetch('https://example.com')
@@ -131,7 +131,7 @@ class TestSimpleFetcherFetch:
         mock_resp.text = '\x1f\x8b' + 'x' * 200  # starts with gzip magic
         mock_resp.content = compressed
         mock_resp.headers = {}
-        mocker.patch('httpx.AsyncClient.get', return_value=mock_resp)
+        mocker.patch('httpx2.AsyncClient.get', return_value=mock_resp)
         mocker.patch.object(f, '_apply_request_delay', return_value=None)
 
         result = await f.fetch('https://example.com')
@@ -214,7 +214,7 @@ class TestEncodingFallback:
         type(mock_resp).text = mocker.PropertyMock(side_effect=UnicodeDecodeError('utf-8', b'', 0, 1, 'bad'))
         mock_resp.content = VALID_HTML.encode('utf-8')
 
-        mocker.patch('httpx.AsyncClient.get', return_value=mock_resp)
+        mocker.patch('httpx2.AsyncClient.get', return_value=mock_resp)
         mocker.patch.object(f, '_apply_request_delay', return_value=None)
 
         result = await f.fetch('https://example.com')
@@ -243,7 +243,7 @@ class TestEncodingFallback:
         mock_content.decode = fake_decode
         mock_resp.content = mock_content
 
-        mocker.patch('httpx.AsyncClient.get', return_value=mock_resp)
+        mocker.patch('httpx2.AsyncClient.get', return_value=mock_resp)
         mocker.patch.object(f, '_apply_request_delay', return_value=None)
 
         result = await f.fetch('https://example.com')

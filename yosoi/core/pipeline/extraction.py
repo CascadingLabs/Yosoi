@@ -11,7 +11,7 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-import httpx
+import httpx2
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
@@ -181,7 +181,7 @@ class PipelineExtractionMixin:
                         self._handle_bot_detection(e, attempt.retry_state.attempt_number, max_retries)
                         raise
 
-                    except (httpx.HTTPError, OSError, ValueError, RuntimeError) as e:
+                    except (httpx2.HTTPError, OSError, ValueError, RuntimeError) as e:
                         if str(e) not in [
                             'No HTML content received',
                             f'Fetch failed: {getattr(result, "block_reason", "Unknown")}',
@@ -196,7 +196,7 @@ class PipelineExtractionMixin:
         except RetryError:
             self.console.print(f'[danger]All {max_retries} attempts failed[/danger]')
             return None
-        except (httpx.HTTPError, OSError, ValueError, RuntimeError):
+        except (httpx2.HTTPError, OSError, ValueError, RuntimeError):
             return None
 
         return None

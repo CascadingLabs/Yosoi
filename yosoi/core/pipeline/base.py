@@ -19,7 +19,7 @@ from contextlib import ExitStack, nullcontext
 from typing import Any, Literal
 from urllib.parse import urlparse
 
-import httpx
+import httpx2
 from rich.console import Console
 from rich.live import Live
 from rich.table import Table
@@ -293,7 +293,7 @@ class Pipeline(
         self.last_selectors: dict[str, Any] | None = None
         self.last_cleaned_html: str | None = None
         self._last_level_distribution: dict[str, int] = {}
-        self._client: httpx.AsyncClient = httpx.AsyncClient()
+        self._client: httpx2.AsyncClient = httpx2.AsyncClient()
 
         self.session_id: str = observability.process_session_id()
 

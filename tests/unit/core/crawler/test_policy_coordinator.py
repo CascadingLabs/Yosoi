@@ -163,7 +163,7 @@ async def test_policy_coordinator_traverses_raw_links_but_stores_cleaned_html(tm
     assert '<h1>Story</h1>' in summary.results[0].html
 
 
-async def test_policy_coordinator_reports_worker_results_as_they_complete(tmp_path, monkeypatch) -> None:
+async def test_policy_coordinator_reports_worker_results_in_commit_order(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr('yosoi.core.crawler.frontier.init_yosoi', lambda _name: tmp_path)
     fetcher = DelayedFetcher(
         {
@@ -185,8 +185,9 @@ async def test_policy_coordinator_reports_worker_results_as_they_complete(tmp_pa
     summary = await CrawlCoordinator(fetcher=fetcher, config=runtime, persist_frontier=False, reporter=reporter).run()
 
     result_urls = [url for event, url in reporter.events if event == 'result']
-    assert result_urls == ['https://example.com/fast', 'https://example.com/slow']
-    assert [result.job.url for result in summary.results] == [
+    summary_urls = [result.job.url for result in summary.results]
+    assert result_urls == summary_urls
+    assert summary_urls == [
         'https://example.com/slow',
         'https://example.com/fast',
     ]

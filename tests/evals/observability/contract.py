@@ -208,25 +208,45 @@ async def _drive_llm_claude_sdk() -> None:
 
 async def _drive_llm_opencode() -> None:
     """OpenCode backend: emits the unified ``llm.transport`` span with extras."""
-    import httpx
-    import respx
+    import httpx2
 
     from yosoi.integrations.opencode import OpenCodeModel
 
     base = 'http://opencode.eval'
     model = OpenCodeModel(provider_id='openai', model_id='gpt-5-codex', base_url=base)
-    with respx.mock:
-        respx.post(f'{base}/session').mock(return_value=httpx.Response(200, json={'id': 'ses'}))
-        respx.post(f'{base}/session/ses/message').mock(
-            return_value=httpx.Response(
-                200,
-                json={
-                    'info': {'tokens': {'input': 12, 'output': 5, 'cache': {'read': 0, 'write': 0}}},
-                    'parts': [{'type': 'text', 'text': 'hi'}],
-                },
-            )
-        )
+    routes = {
+        '/session': httpx2.Response(200, json={'id': 'ses'}),
+        '/session/ses/message': httpx2.Response(
+            200,
+            json={
+                'info': {'tokens': {'input': 12, 'output': 5, 'cache': {'read': 0, 'write': 0}}},
+                'parts': [{'type': 'text', 'text': 'hi'}],
+            },
+        ),
+    }
+    original_client = httpx2.AsyncClient
+
+    class _Client:
+        def __init__(self, *, base_url: str, timeout: int) -> None:
+            self.base_url = base_url
+            self.timeout = timeout
+
+        async def __aenter__(self) -> _Client:
+            return self
+
+        async def __aexit__(self, *_args: object) -> None:
+            return None
+
+        async def post(self, path: str, json: object | None = None) -> httpx2.Response:
+            response = routes[path]
+            response._request = httpx2.Request('POST', f'{self.base_url}{path}')
+            return response
+
+    httpx2.AsyncClient = _Client  # type: ignore[assignment]
+    try:
         await model.request(_messages(), None, _params())
+    finally:
+        httpx2.AsyncClient = original_client  # type: ignore[assignment]
 
 
 # ---------------------------------------------------------------------------

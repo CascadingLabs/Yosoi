@@ -420,9 +420,9 @@ def scrape(
 
                 cache = build_cache_from_selectors(domain, fp, raw_selectors)
                 # Fetch HTML — use simple HTTP
-                import httpx
+                import httpx2
 
-                async with httpx.AsyncClient() as client:
+                async with httpx2.AsyncClient() as client:
                     resp = await client.get(scrape_url, follow_redirects=True, timeout=30)
                     html = resp.text
 

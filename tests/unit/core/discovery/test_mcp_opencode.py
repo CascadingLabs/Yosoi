@@ -108,7 +108,7 @@ async def test_discover_parses_structured_and_non_structured_payloads(monkeypatc
                     return _Response({'id': 'session-1'})
                 return _Response({'info': {'structured': structured}})
 
-        monkeypatch.setitem(sys.modules, 'httpx', SimpleNamespace(AsyncClient=_Client))
+        monkeypatch.setitem(sys.modules, 'httpx2', SimpleNamespace(AsyncClient=_Client))
         backend = OpenCodeBackend(LLMConfig(provider='opencode', model_name='gpt-5-codex'))
         return await backend._discover('http://127.0.0.1:4096', 'system', 'prompt')
 

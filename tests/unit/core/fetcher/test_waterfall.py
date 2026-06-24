@@ -231,7 +231,7 @@ async def test_probe_does_not_force_browser_for_small_non_html_assets(mocker):
         async def head(self, *_args, **_kwargs):  # type: ignore[no-untyped-def]
             return _Response()
 
-    mocker.patch('yosoi.core.fetcher.waterfall.httpx.AsyncClient', _Client)
+    mocker.patch('yosoi.core.fetcher.waterfall.httpx2.AsyncClient', _Client)
 
     assert await JSFetcher()._probe_requires_js('https://example.com/file.pdf') is False
 

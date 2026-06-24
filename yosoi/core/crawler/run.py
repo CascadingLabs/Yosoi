@@ -7,6 +7,8 @@ from collections.abc import AsyncIterator, Sequence
 from contextlib import asynccontextmanager
 from typing import Any, cast
 
+from rich.console import Console
+
 from yosoi.core.crawler.coordinator import CrawlCoordinator, CrawlRunSummary
 from yosoi.core.fetcher import create_fetcher
 from yosoi.models.contract import Contract
@@ -42,6 +44,7 @@ async def crawl(
     page = pol.page_runtime(crawl=crawl)
     runtime = runtime.model_copy(update={'page': page})
     resolved_fetcher_type = fetcher_type or page.fetcher_type
+    show_progress = _show_crawl_progress(pol) if progress is None else progress
     fetcher_kwargs: dict[str, Any] = {
         'timeout': int(page.timeout_seconds),
         'allow_redirects': page.allow_redirects,
@@ -59,9 +62,10 @@ async def crawl(
             browser_slots = max(1, min(browser_slots, len(page.chrome_ws_urls)))
         fetcher_kwargs['max_concurrent'] = browser_slots
         fetcher_kwargs['crawl_frontier_only'] = True
+    if show_progress and resolved_fetcher_type in {'auto', 'waterfall', 'headless', 'headful'}:
+        fetcher_kwargs['console'] = Console(quiet=True)
     fetcher = create_fetcher(resolved_fetcher_type, **fetcher_kwargs)
     async with _fetcher_context(fetcher) as active_fetcher:
-        show_progress = _show_crawl_progress(pol) if progress is None else progress
         if show_progress:
             with RichCrawlProgress(console=console) as reporter:
                 coordinator = CrawlCoordinator(

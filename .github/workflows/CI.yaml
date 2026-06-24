@@ -54,7 +54,7 @@ jobs:
         run: uv sync --python ${{ matrix.python-version }} --all-extras --group tests --group dev
 
       - name: Run CI Tests
-        run: uv run poe ci-test
+        run: uv run --no-sync poe ci-test
 
       - name: Upload coverage reports to Codecov
         if: matrix.python-version == '3.13'

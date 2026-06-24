@@ -1,7 +1,8 @@
 """Shared fixtures for the subscription-backed Model transport tests.
 
 Both backends are exercised against mocked transports so no server/SDK process
-or network is needed: OpenCode via ``respx`` (HTTP) in the tests themselves,
+or network is needed: OpenCode via patched ``httpx2.AsyncClient`` instances in
+the tests themselves,
 Claude SDK via the ``fake_claude_query`` fixture here (patches the SDK's
 ``query``/``ClaudeAgentOptions`` to emit a single ``ResultMessage``).
 """

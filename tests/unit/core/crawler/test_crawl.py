@@ -63,6 +63,7 @@ class FakeProgress:
 
     def __init__(self, **_kwargs: object) -> None:
         self.events: list[str] = []
+        self.result_metrics: list[tuple[int, int, int, int, int]] = []
         FakeProgress.instances.append(self)
 
     def __enter__(self) -> FakeProgress:
@@ -78,8 +79,17 @@ class FakeProgress:
     def batch(self, *_args: object) -> None:
         self.events.append('batch')
 
-    def result(self, *_args: object) -> None:
+    def result(self, _result: object, summary: CrawlRunSummary) -> None:
         self.events.append('result')
+        self.result_metrics.append(
+            (
+                summary.pages_fetched,
+                summary.attempted_urls,
+                summary.unique_urls_seen,
+                summary.policy_blocked,
+                summary.failures,
+            )
+        )
 
     def finish(self, *_args: object) -> None:
         self.events.append('finish')
@@ -274,7 +284,30 @@ async def test_crawl_passes_policy_chrome_ws_urls_to_auto_fetcher(monkeypatch) -
     assert calls[0][1]['chrome_ws_urls'] == ('http://127.0.0.1:9222',)
     assert calls[0][1]['max_concurrent'] == 1
     assert calls[0][1]['crawl_frontier_only'] is True
+    assert 'console' not in calls[0][1]
     assert 'accept_simple_requires_js' not in calls[0][1]
+
+
+async def test_crawl_quiets_browser_fetcher_diagnostics_when_live_progress_is_enabled(monkeypatch) -> None:
+    fetcher = FakeFetcher({'https://example.com/': '<html><body><h1>Home</h1></body></html>'})
+    calls: list[tuple[str, dict[str, object]]] = []
+
+    def fake_create_fetcher(fetcher_type: str, **kwargs: object) -> FakeFetcher:
+        calls.append((fetcher_type, kwargs))
+        return fetcher
+
+    monkeypatch.setattr('yosoi.core.crawler.run.create_fetcher', fake_create_fetcher)
+    policy = Policy.for_crawl(
+        'crawl.local_single',
+        scheduler=SchedulerPolicy(max_workers=1, politeness_delay=0),
+        safety=CrawlSafety(allowed_hosts=('example.com',)),
+        fetcher_type='auto',
+    )
+
+    await crawl('https://example.com/', policy=policy, progress=True)
+
+    assert calls[0][0] == 'auto'
+    assert calls[0][1]['console'].quiet is True
 
 
 async def test_crawl_policy_can_scrape_representative_urls(monkeypatch) -> None:
@@ -462,6 +495,23 @@ async def test_crawl_uses_rich_progress_by_default(monkeypatch) -> None:
 
     assert len(FakeProgress.instances) == 1
     assert FakeProgress.instances[0].events == ['enter', 'start', 'batch', 'result', 'finish', 'exit']
+
+
+async def test_crawl_progress_result_receives_current_topline_metrics(monkeypatch) -> None:
+    fetcher = FakeFetcher({'https://example.com/': '<article>home</article>'})
+    _inject(monkeypatch, fetcher)
+    FakeProgress.instances.clear()
+    monkeypatch.setattr('yosoi.core.crawler.run.RichCrawlProgress', FakeProgress)
+    policy = Policy.for_crawl(
+        'crawl.conservative',
+        budget=CrawlBudget(max_pages=1, max_depth=0),
+        scheduler=SchedulerPolicy(max_workers=1, politeness_delay=0),
+        safety=CrawlSafety(allowed_hosts=('example.com',)),
+    )
+
+    await crawl(['https://example.com/'], policy=policy)
+
+    assert FakeProgress.instances[0].result_metrics == [(1, 1, 1, 0, 0)]
 
 
 async def test_crawl_plain_output_disables_rich_progress(monkeypatch) -> None:

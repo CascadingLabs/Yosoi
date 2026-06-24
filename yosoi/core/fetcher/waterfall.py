@@ -28,7 +28,7 @@ import logging
 import time
 from typing import TYPE_CHECKING, Any
 
-import httpx
+import httpx2
 from rich.console import Console
 
 from yosoi.core.crawler.links import LinkExtractor
@@ -281,7 +281,7 @@ class JSFetcher(HTMLFetcher):
         is a SPA or dynamically rendered — without downloading the body at all.
         """
         try:
-            async with httpx.AsyncClient() as client:
+            async with httpx2.AsyncClient() as client:
                 r = await client.head(
                     url,
                     timeout=5.0,
@@ -318,7 +318,7 @@ class JSFetcher(HTMLFetcher):
             transfer = headers.get('transfer-encoding', '')
             return 'chunked' in transfer and 'html' in content_type and 'content-length' not in headers
 
-        except (httpx.HTTPError, OSError, ValueError):
+        except (httpx2.HTTPError, OSError, ValueError):
             return False  # probe failed — let the waterfall decide naturally
 
     async def _ensure_headless(self) -> HeadlessFetcher:

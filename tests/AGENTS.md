@@ -20,7 +20,7 @@ This project uses a **Tiered Testing Architecture** to balance speed, cost, and 
 | Level | Type | Directory | Goal | LLM Status | Cost |
 | --- | --- | --- | --- | --- | --- |
 | **1** | **Unit & Logic** | `tests/unit` | Verify schema validation and prompt construction. | **Deterministic** (`TestModel`) | Free |
-| **2** | **Simulated Integration** | `tests/integration` | Verify internal service coordination and I/O logic without real web traffic. | **Mocked** (`respx`, `mocker`) | Free |
+| **2** | **Simulated Integration** | `tests/integration` | Verify internal service coordination and I/O logic without real web traffic. | **Mocked** (`httpx2.MockTransport`, `mocker`) | Free |
 | **3** | **Quality Evals** | `tests/evals` | Verify the intelligence and accuracy of the AI on real-world data (not live web). | **Real** (Groq/Gemini) | $$$ |
 | **4** | **Live Smoke** | `tests/smoke` | Verify end-to-end browser wiring against selected live bot-check targets. | **None** | Network |
 
@@ -76,9 +76,9 @@ async def test_agent_receives_correct_context(mock_selectors):
 ## Level 2: Simulated Integration (The Plumbing Layer)
 
 **Location:** `tests/integration`
-**Tools:** `pytest-mock`, `respx`, `dirty-equals`, `tmp_path`
+**Tools:** `pytest-mock`, `httpx2.MockTransport`, `dirty-equals`, `tmp_path`
 
-These tests verify that Yosoi components talk to each other correctly. **No real web traffic is generated.** We use `respx` to intercept network calls and `tmp_path` to simulate the filesystem.
+These tests verify that Yosoi components talk to each other correctly. **No real web traffic is generated.** We use `httpx2.MockTransport` or patched `httpx2.AsyncClient` instances to intercept network calls and `tmp_path` to simulate the filesystem.
 
 ### What to Test Here:
 
@@ -86,19 +86,18 @@ These tests verify that Yosoi components talk to each other correctly. **No real
 * **Mocked Networking:** Does the code handle simulated 404s or 500s from the "web"?
 * **Storage Logic:** Does the pipeline write to the correct local directory?
 
-### Example: Intercepting Network Calls with RESPX
+### Example: Intercepting Network Calls with `httpx2.MockTransport`
 
 ```python
-import respx
-from httpx import Response
+import httpx2
 from yosoi.pipeline import SelectorDiscoveryPipeline
 
-@respx.mock
 def test_pipeline_handles_mocked_404():
-    # Intercept the call before it leaves your machine
-    respx.get("https://example.com").mock(return_value=Response(404))
+    def handler(request: httpx2.Request) -> httpx2.Response:
+        return httpx2.Response(404, request=request)
 
-    pipeline = SelectorDiscoveryPipeline()
+    transport = httpx2.MockTransport(handler)
+    pipeline = SelectorDiscoveryPipeline(http_client=httpx2.AsyncClient(transport=transport))
     success = pipeline.process_url("https://example.com")
 
     assert success is False
@@ -152,7 +151,7 @@ def test_selector_quality(url, html):
 ## Tooling Reference
 
 * **`pytest-mock`**: Use the `mocker` fixture.
-* **`respx`**: Use `@respx.mock` to simulate HTTP traffic.
+* **`httpx2.MockTransport`**: Use transport handlers or patched clients to simulate HTTP traffic.
 * **`syrupy`**: For snapshot testing via the `snapshot` fixture.
 * **`dirty-equals`**: For flexible pattern matching.
 * **`polyfactory`**: For auto-generating Pydantic model test data.

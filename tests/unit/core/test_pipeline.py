@@ -101,10 +101,10 @@ async def test_normalize_url_adds_https_on_success(mocker):
 
 
 async def test_normalize_url_falls_back_to_http_on_error(mocker):
-    import httpx
+    import httpx2
 
     stub = _make_pipeline_stub(mocker)
-    _mock_async_client(mocker, stub, raise_on_head=httpx.HTTPError('fail'))
+    _mock_async_client(mocker, stub, raise_on_head=httpx2.HTTPError('fail'))
     result = await Pipeline.normalize_url(stub, 'example.com')
     assert result == 'http://example.com'
 
@@ -934,10 +934,10 @@ async def test_normalize_url_prepends_https_exactly(mocker):
 
 
 async def test_normalize_url_prepends_http_on_https_failure(mocker):
-    import httpx
+    import httpx2
 
     stub = _make_pipeline_stub(mocker)
-    _mock_async_client(mocker, stub, raise_on_head=httpx.HTTPError('fail'))
+    _mock_async_client(mocker, stub, raise_on_head=httpx2.HTTPError('fail'))
     result = await Pipeline.normalize_url(stub, 'example.com')
     assert result == 'http://example.com'
 

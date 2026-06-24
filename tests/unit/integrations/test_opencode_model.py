@@ -7,14 +7,36 @@ OpenCode server's ``info.tokens``, and the pure mapping handles cache/reasoning
 and missing-usage responses.
 """
 
-import httpx
-import respx
+import httpx2
+import pytest
 from pydantic_ai.models import ModelRequestParameters
 from pydantic_ai.usage import RequestUsage
 
 from yosoi.integrations.opencode import OpenCodeModel, _usage_from_info
 
 _BASE_URL = 'http://opencode.test'
+
+
+def _patch_opencode_client(monkeypatch, routes: dict[str, httpx2.Response | BaseException]) -> None:
+    class _Client:
+        def __init__(self, *, base_url: str, timeout: int) -> None:
+            self.base_url = base_url
+            self.timeout = timeout
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_args: object) -> None:
+            return None
+
+        async def post(self, path: str, json: object | None = None) -> httpx2.Response:
+            response = routes[path]
+            if isinstance(response, BaseException):
+                raise response
+            response._request = httpx2.Request('POST', f'{self.base_url}{path}')
+            return response
+
+    monkeypatch.setattr(httpx2, 'AsyncClient', _Client)
 
 
 def test_usage_from_info_maps_all_token_buckets():
@@ -42,20 +64,22 @@ def test_usage_from_info_tolerates_missing_tokens():
     assert _usage_from_info({'tokens': None}) == RequestUsage()
 
 
-@respx.mock
-async def test_request_populates_usage_from_server_response():
-    respx.post(f'{_BASE_URL}/session').mock(return_value=httpx.Response(200, json={'id': 'ses_test'}))
-    respx.post(f'{_BASE_URL}/session/ses_test/message').mock(
-        return_value=httpx.Response(
-            200,
-            json={
-                'info': {
-                    'tokens': {'input': 150, 'output': 50, 'reasoning': 0, 'cache': {'read': 0, 'write': 0}},
-                    'cost': 0.0123,
+async def test_request_populates_usage_from_server_response(monkeypatch):
+    _patch_opencode_client(
+        monkeypatch,
+        {
+            '/session': httpx2.Response(200, json={'id': 'ses_test'}),
+            '/session/ses_test/message': httpx2.Response(
+                200,
+                json={
+                    'info': {
+                        'tokens': {'input': 150, 'output': 50, 'reasoning': 0, 'cache': {'read': 0, 'write': 0}},
+                        'cost': 0.0123,
+                    },
+                    'parts': [{'type': 'text', 'text': 'hello'}],
                 },
-                'parts': [{'type': 'text', 'text': 'hello'}],
-            },
-        )
+            ),
+        },
     )
 
     model = OpenCodeModel(provider_id='openai', model_id='gpt-5-codex', base_url=_BASE_URL)
@@ -65,18 +89,19 @@ async def test_request_populates_usage_from_server_response():
     assert response.usage.output_tokens == 50
 
 
-@respx.mock
 async def test_debug_span_emitted_when_sdk_debug_env_set(monkeypatch):
     """Debug obs.span is entered when YOSOI_SDK_DEBUG=1 (lines 87-88)."""
 
     monkeypatch.setenv('YOSOI_SDK_DEBUG', '1')
-
-    respx.post(f'{_BASE_URL}/session').mock(return_value=httpx.Response(200, json={'id': 's1'}))
-    respx.post(f'{_BASE_URL}/session/s1/message').mock(
-        return_value=httpx.Response(
-            200,
-            json={'info': {}, 'parts': [{'type': 'text', 'text': 'ok'}]},
-        )
+    _patch_opencode_client(
+        monkeypatch,
+        {
+            '/session': httpx2.Response(200, json={'id': 's1'}),
+            '/session/s1/message': httpx2.Response(
+                200,
+                json={'info': {}, 'parts': [{'type': 'text', 'text': 'ok'}]},
+            ),
+        },
     )
 
     model = OpenCodeModel(provider_id='openai', model_id='gpt-4o', base_url=_BASE_URL)
@@ -84,18 +109,14 @@ async def test_debug_span_emitted_when_sdk_debug_env_set(monkeypatch):
     assert response is not None
 
 
-@respx.mock
-async def test_request_warns_and_reraises_on_http_failure(mocker):
+async def test_request_warns_and_reraises_on_http_failure(monkeypatch, mocker):
     """obs.warning is called and exception re-raised on HTTP error (lines 132-140)."""
-    import httpx
-    import pytest
-
-    respx.post(f'{_BASE_URL}/session').mock(side_effect=httpx.ConnectError('refused'))
+    _patch_opencode_client(monkeypatch, {'/session': httpx2.ConnectError('refused')})
 
     warn = mocker.patch('yosoi.integrations.opencode.obs.warning')
 
     model = OpenCodeModel(provider_id='openai', model_id='gpt-4o', base_url=_BASE_URL)
-    with pytest.raises(httpx.ConnectError):
+    with pytest.raises(httpx2.ConnectError):
         await model.request([], None, ModelRequestParameters())
 
     warn.assert_called_once()

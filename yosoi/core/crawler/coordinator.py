@@ -251,23 +251,16 @@ class CrawlCoordinator:
                 self.reporter.batch(tuple(jobs), summary)
 
             tasks = [asyncio.create_task(self._run_worker(job)) for job in jobs]
-            results: list[CrawlResult] = []
-            for task in asyncio.as_completed(tasks):
-                result = await task
-                results.append(result)
-                if self.reporter is not None:
-                    self.reporter.result(result, summary)
+            results = [await task for task in asyncio.as_completed(tasks)]
             for result in sorted(results, key=lambda item: item.job.batch_index):
                 self._commit_result(result, summary)
+                if self.reporter is not None:
+                    self.reporter.result(result, summary)
 
         if self.persist_frontier:
             await self.frontier.save()
         summary.wall_time = time.monotonic() - started
-        summary.pages_fetched = self.frontier.pages_fetched
-        summary.attempted_urls = len(summary.results)
-        summary.unique_urls_seen = self.frontier.seen_count
-        summary.failures = self.frontier.failed_count
-        summary.policy_blocked = self.frontier.policy_blocked_count
+        self._refresh_summary_counts(summary)
         if self.reporter is not None:
             self.reporter.finish(summary)
         return summary
@@ -404,7 +397,7 @@ class CrawlCoordinator:
     def _commit_result(self, result: CrawlResult, summary: CrawlRunSummary) -> None:
         self.frontier.commit(result.job.url, result.status)
         summary.results.append(result)
-        summary.attempted_urls = len(summary.results)
+        self._refresh_summary_counts(summary)
         if result.status != 'succeeded':
             return
         entries = [
@@ -419,6 +412,14 @@ class CrawlCoordinator:
         entries.sort(key=lambda entry: entry.score, reverse=True)
         pushed = self.frontier.push_many(entries)
         summary.duplicates_blocked += len(result.discovered_links) - pushed
+        self._refresh_summary_counts(summary)
+
+    def _refresh_summary_counts(self, summary: CrawlRunSummary) -> None:
+        summary.pages_fetched = self.frontier.pages_fetched
+        summary.attempted_urls = len(summary.results)
+        summary.unique_urls_seen = self.frontier.seen_count
+        summary.failures = self.frontier.failed_count
+        summary.policy_blocked = self.frontier.policy_blocked_count
 
     def _planned_link_score(self, link: CrawlLink, _summary: CrawlRunSummary) -> float:
         return self._target_intent_link_score(link)

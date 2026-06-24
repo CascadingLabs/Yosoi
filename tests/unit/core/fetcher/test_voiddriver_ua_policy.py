@@ -1,9 +1,12 @@
 """Tests for VoidCrawl UA policy wiring."""
 
 import asyncio
+import os
+import sys
+import types
 from typing import Any, ClassVar
 
-from yosoi.core.fetcher.voiddriver import HeadlessFetcher
+from yosoi.core.fetcher.voiddriver import HeadlessFetcher, _import_voidcrawl
 
 
 class BrowserConfigWithUa:
@@ -96,3 +99,23 @@ def test_browser_config_skips_identity_for_older_voidcrawl() -> None:
 
     assert 'user_agent' not in kwargs
     assert 'locale' not in kwargs
+
+
+def test_import_voidcrawl_sets_default_rust_log_filter(monkeypatch) -> None:
+    module = types.SimpleNamespace(BrowserConfig=object, BrowserPool=object, PoolConfig=object)
+    monkeypatch.setitem(sys.modules, 'voidcrawl', module)
+    monkeypatch.delenv('RUST_LOG', raising=False)
+
+    _import_voidcrawl()
+
+    assert 'chromiumoxide::handler=error' in os.environ['RUST_LOG']
+
+
+def test_import_voidcrawl_preserves_explicit_rust_log(monkeypatch) -> None:
+    module = types.SimpleNamespace(BrowserConfig=object, BrowserPool=object, PoolConfig=object)
+    monkeypatch.setitem(sys.modules, 'voidcrawl', module)
+    monkeypatch.setenv('RUST_LOG', 'debug')
+
+    _import_voidcrawl()
+
+    assert os.environ['RUST_LOG'] == 'debug'

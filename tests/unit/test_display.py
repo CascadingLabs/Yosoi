@@ -245,6 +245,48 @@ def test_live_crawl_progress_renders_urls_as_terminal_hyperlinks() -> None:
     assert ';https://example.test/story\x1b\\' in out
 
 
+def test_live_crawl_progress_caps_rows_for_stable_terminal_height() -> None:
+    console, buf = _capture()
+    progress = RichCrawlProgress(console=console)
+    summary = CrawlRunSummary()
+    progress.start(seeds=('https://example.test/0',), summary=summary, config=object())
+
+    for idx in range(40):
+        progress.result(
+            CrawlResult(
+                job=CrawlJob(url=f'https://example.test/{idx}', depth=idx % 3, source_url=None, batch_index=idx),
+                status='succeeded',
+                fetch_time=0.01,
+            ),
+            summary,
+        )
+
+    console.print(progress._render())
+
+    out = buf.getvalue()
+    assert 'older rows hidden' in out
+    assert 'https://example.test/39' in out
+    assert 'https://example.test/1' not in out
+
+
+def test_live_crawl_progress_prints_once_when_console_is_not_terminal() -> None:
+    console, buf = _capture()
+    summary = CrawlRunSummary()
+
+    with RichCrawlProgress(console=console) as progress:
+        progress.start(seeds=('https://example.test/story',), summary=summary, config=object())
+        progress.result(
+            CrawlResult(
+                job=CrawlJob(url='https://example.test/story', depth=0, source_url=None, batch_index=0),
+                status='succeeded',
+                fetch_time=0.01,
+            ),
+            summary,
+        )
+
+    assert buf.getvalue().count('Crawl -') == 1
+
+
 def test_show_table_rejects_non_table_values() -> None:
     console, _ = _capture()
 
