@@ -11,7 +11,7 @@ import logging
 import time
 from typing import TYPE_CHECKING, Any
 
-import httpx
+import httpx2
 from rich.console import Console
 from rich.table import Table
 
@@ -52,7 +52,7 @@ class PipelineUtilsMixin:
     selector_level: SelectorLevel
     js_storage: Any
     _contract_sig: str
-    _client: httpx.AsyncClient
+    _client: httpx2.AsyncClient
 
     async def normalize_url(self, url: str) -> str:
         """Add protocol to URL, preferring https."""
@@ -61,7 +61,7 @@ class PipelineUtilsMixin:
                 test_url = 'https://' + url
                 await self._client.head(test_url, timeout=3, follow_redirects=True)
                 return test_url
-            except httpx.HTTPError:
+            except httpx2.HTTPError:
                 return 'http://' + url
         return url
 

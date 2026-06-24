@@ -15,6 +15,7 @@ from yosoi.core.pipeline.discovery_gate import DiscoveryGate
 from yosoi.models.contract import Contract
 from yosoi.models.selectors import SelectorLevel
 from yosoi.models.snapshot import SnapshotMap
+from yosoi.policy import DiscoveryPolicy, DownloadPolicy, ModelPolicy, OutputPolicy, Policy, ScrapePolicy
 from yosoi.storage.recipe_loader import is_recipe_source, load_recipe
 from yosoi.utils import observability as obs
 from yosoi.utils.contracts import resolve_contract
@@ -37,7 +38,13 @@ def fingerprint(
     headers: Mapping[str, str] | None = None,
     endpoints: Sequence[str] | None = None,
 ) -> PageFingerprint:
-    """Compute a page fingerprint from HTML or a Yosoi fetch result."""
+    """Compute a page fingerprint from HTML or a Yosoi fetch result.
+
+    This is the high-level escape hatch for inspecting page shape directly:
+    pass raw HTML, or pass an object with ``.html`` plus optional
+    ``.ax_snapshot``, ``.headers``, and ``.endpoints`` attributes. It never
+    reads ``.yosoi`` cache files.
+    """
     from yosoi.reporting.fingerprint import coerce_fingerprint
 
     return coerce_fingerprint(source, ax_snapshot=ax_snapshot, headers=headers, endpoints=endpoints)
@@ -209,7 +216,7 @@ async def _resolve_contract_and_preload(
 async def scrape(
     url: str | Sequence[str],
     contract: type[Contract] | str | Sequence[type[Contract] | str],
-    model: YosoiConfig | LLMConfig | str | None = None,
+    model: YosoiConfig | LLMConfig | ModelPolicy | str | None = None,
     *,
     selectors: str | dict[str, SnapshotMap] | None = None,
     force: bool = False,
@@ -225,6 +232,7 @@ async def scrape(
     keep_downloads: bool = True,
     identities: Mapping[str, BrowserIdentity] | Callable[[str], BrowserIdentity | None] | None = None,
     max_concurrency: int | None = None,
+    policy: Policy | None = None,
 ) -> list[ContentMap] | dict[str, list[ContentMap]] | dict[str, dict[str, list[ContentMap]]]:
     """Scrape one-or-many URLs with one-or-many contracts.
 
@@ -277,6 +285,7 @@ async def scrape(
         keep_downloads: Keep downloaded files after the run.
         identities: Per-URL browser identities.
         max_concurrency: Cap on concurrent (url, contract) units.
+        policy: Optional resolved Policy; cascades under env and the call-site layer.
 
     Returns:
         - ``scrape(url, Contract)``      → ``list[record]``
@@ -308,19 +317,44 @@ async def scrape(
             return fetcher_type
         return fetcher_type(u) if callable(fetcher_type) else fetcher_type.get(u, 'auto')
 
+    base_call_policy = _compat_policy_layer(
+        model,
+        force=force,
+        skip_verification=skip_verification,
+        fetcher_type=fetcher_type if isinstance(fetcher_type, str) else 'auto',
+        selector_level=selector_level,
+        save_formats=save_formats,
+        quiet=quiet,
+        allow_downloads=allow_downloads,
+        allowed_download_types=allowed_download_types,
+        download_dir=download_dir,
+        max_download_bytes=max_download_bytes,
+        keep_downloads=keep_downloads,
+        max_concurrency=max_concurrency,
+    )
+
+    fanout_policy = Policy.cascade(Policy.from_env(), policy, base_call_policy)
+    effective_max_concurrency = max_concurrency
+    if effective_max_concurrency is None and fanout_policy.scrape is not None:
+        effective_max_concurrency = fanout_policy.scrape.max_concurrency
+
     write_lock = asyncio.Lock() if (multi_url or multi_contract) else None
     discovery_gate = DiscoveryGate()
-    sem = asyncio.Semaphore(max_concurrency) if max_concurrency else None
+    sem = asyncio.Semaphore(effective_max_concurrency) if effective_max_concurrency else None
     pairs = [(u, c) for u in urls for c in contract_clss]
 
     gate_collectors: dict[str, GateCollector] = {u: {} for u in urls}
 
     async def _unit(u: str, c: type[Contract]) -> list[ContentMap]:
         async def _go() -> list[ContentMap]:
+            # A per-URL mapping that resolves to 'auto' (e.g. dict miss) contributes nothing,
+            # so an explicit policy fetcher_type still wins for that URL.
+            per_url_fetcher = _fetcher_for(u)
+            per_url_policy = _per_url_policy(fetcher_type, per_url_fetcher)
             return await _scrape_one(
                 u,
                 c,
-                model,
+                None,
                 force=force,
                 skip_verification=skip_verification,
                 fetcher_type=_fetcher_for(u),
@@ -337,6 +371,7 @@ async def scrape(
                 gate_collect=gate_collectors[u],
                 discovery_gate=discovery_gate,
                 preloaded=preloaded_by_contract.get(c.__name__),
+                policy=Policy.cascade(policy, base_call_policy, per_url_policy),
             )
 
         if sem is None:
@@ -349,6 +384,19 @@ async def scrape(
 
     _run_discrimination_gates(gate_collectors, {c.__name__: c for c in contract_clss})
 
+    return _shape_results(cell, flat, urls, contract_clss, multi_url=multi_url, multi_contract=multi_contract)
+
+
+def _shape_results(
+    cell: dict[tuple[str, str], list[ContentMap]],
+    flat: list[list[ContentMap]],
+    urls: list[str],
+    contract_clss: list[type[Contract]],
+    *,
+    multi_url: bool,
+    multi_contract: bool,
+) -> list[ContentMap] | dict[str, list[ContentMap]] | dict[str, dict[str, list[ContentMap]]]:
+    """Reshape the flat (url, contract) result cells into the return shape scrape() promises."""
     if multi_url and multi_contract:
         return {u: {c.__name__: cell[u, c.__name__] for c in contract_clss} for u in urls}
     if multi_url:
@@ -359,10 +407,124 @@ async def scrape(
     return flat[0]
 
 
+def _per_url_policy(
+    fetcher_type: str | Mapping[str, str] | Callable[[str], str],
+    per_url_fetcher: str,
+) -> Policy | None:
+    if isinstance(fetcher_type, str) or per_url_fetcher == 'auto':
+        return None
+    return Policy(scrape=ScrapePolicy.model_validate({'fetcher_type': per_url_fetcher}))
+
+
+def _edge_policy(contract_cls: type[Contract], call_policy: Policy | None) -> Policy:
+    """Resolve the effective policy ONCE at the api edge via the cascade.
+
+    Precedence ``defaults < env < contract < call-site``: the contract's pinned
+    ``policy`` partial (if any) sits between the env layer and the per-call override.
+    """
+    return Policy.cascade(Policy.from_env(), getattr(contract_cls, 'policy', None), call_policy)
+
+
+def _compat_policy_layer(  # noqa: C901
+    model: YosoiConfig | LLMConfig | ModelPolicy | str | None,
+    *,
+    force: bool,
+    skip_verification: bool,
+    fetcher_type: str = 'auto',
+    selector_level: SelectorLevel,
+    save_formats: Sequence[str],
+    quiet: bool,
+    allow_downloads: bool,
+    allowed_download_types: Sequence[str],
+    download_dir: str | None,
+    max_download_bytes: int | None,
+    keep_downloads: bool,
+    max_concurrency: int | None,
+) -> Policy:
+    """Convert legacy scrape kwargs into a call-site policy layer."""
+    kwargs: dict[str, Any] = {}
+    model_policy: ModelPolicy | None = None
+    if isinstance(model, str):
+        model_policy = ModelPolicy.from_string(model)
+    elif isinstance(model, ModelPolicy):
+        model_policy = model
+    elif isinstance(model, LLMConfig):
+        model_policy = ModelPolicy(
+            provider=model.provider,
+            model_name=model.model_name,
+            temperature=model.temperature,
+            max_tokens=model.max_tokens,
+            extra_params=model.extra_params,
+        )
+        model_policy._runtime_api_key = model.api_key
+    elif isinstance(model, YosoiConfig):
+        model_policy = ModelPolicy(
+            provider=model.llm.provider,
+            model_name=model.llm.model_name,
+            temperature=model.llm.temperature,
+            max_tokens=model.llm.max_tokens,
+            extra_params=model.llm.extra_params,
+        )
+        model_policy._runtime_api_key = model.llm.api_key
+    if model_policy is not None:
+        kwargs['model'] = model_policy
+
+    scrape_payload: dict[str, Any] = {}
+    if force or (isinstance(model, YosoiConfig) and model.force):
+        scrape_payload['force'] = True
+    if skip_verification:
+        scrape_payload['skip_verification'] = skip_verification
+    if fetcher_type != 'auto':
+        scrape_payload['fetcher_type'] = fetcher_type
+    if selector_level != SelectorLevel.CSS:
+        scrape_payload['selector_level'] = selector_level
+    if max_concurrency is not None:
+        scrape_payload['max_concurrency'] = max_concurrency
+    if scrape_payload:
+        kwargs['scrape'] = ScrapePolicy(**scrape_payload)
+
+    if isinstance(model, YosoiConfig):
+        discovery_defaults = DiscoveryPolicy()
+        discovery_payload: dict[str, Any] = {}
+        if model.discovery.max_concurrent != discovery_defaults.max_concurrent:
+            discovery_payload['max_concurrent'] = model.discovery.max_concurrent
+        if model.discovery.replay_verify_threshold != discovery_defaults.replay_verify_threshold:
+            discovery_payload['replay_verify_threshold'] = model.discovery.replay_verify_threshold
+        if discovery_payload:
+            kwargs['discovery'] = DiscoveryPolicy(**discovery_payload)
+
+    output_payload: dict[str, Any] = {}
+    if save_formats:
+        output_payload['formats'] = tuple(save_formats)
+    if not quiet:
+        output_payload['quiet'] = quiet
+    if isinstance(model, YosoiConfig) and model.debug.save_html:
+        output_payload['debug_html'] = True
+        output_payload['debug_html_dir'] = model.debug.html_dir
+    if output_payload:
+        kwargs['output'] = OutputPolicy(**output_payload)
+
+    # Downloads stay default-deny: the sub-settings only mean anything once the caller
+    # opted in via allow_downloads=True, matching the legacy kwarg semantics.
+    if allow_downloads:
+        download_payload: dict[str, Any] = {'allow': True}
+        if allowed_download_types:
+            download_payload['allowed_types'] = tuple(allowed_download_types)
+        if download_dir is not None:
+            download_payload['directory'] = download_dir
+        if max_download_bytes is not None:
+            download_payload['max_bytes'] = max_download_bytes
+        if not keep_downloads:
+            download_payload['keep'] = False
+        kwargs['download'] = DownloadPolicy(**download_payload)
+
+    return Policy(**kwargs)
+
+
 async def _scrape_one(
     url: str,
     contract: type[Contract] | str,
-    model: YosoiConfig | LLMConfig | str | None = None,
+    model: YosoiConfig | LLMConfig | ModelPolicy | str | None = None,
     *,
     force: bool = False,
     skip_verification: bool = False,
@@ -380,11 +542,45 @@ async def _scrape_one(
     gate_collect: GateCollector | None = None,
     discovery_gate: DiscoveryGate | None = None,
     preloaded: dict[str, SnapshotMap] | None = None,
+    policy: Policy | None = None,
 ) -> list[ContentMap]:
-    """One (url, contract) unit — returns list[record]."""
+    """One ``(url, contract)`` unit (returns ``list[record]``).
+
+    ``write_lock`` is the shared per-call lock that :func:`scrape` threads through so
+    concurrent units don't race on per-domain selector writes; ``None`` for a lone scrape.
+    ``identity`` is the opt-in per-URL :class:`BrowserIdentity` (profile/headful/geo).
+    ``gate_collect``, when provided, receives this contract's freshly-discovered selector
+    map + cleaned HTML for the cross-contract discrimination gate (P1.5, advisory).
+    ``preloaded``, when provided, supplies pre-discovered selector snapshots keyed by
+    domain, used instead of fresh discovery for covered domains.
+    ``policy`` is the resolved pipeline policy; this is the edge — resolve ONCE here
+    (``policy or Policy.from_env()``) and hand the concrete Policy down so the core never
+    re-reads the environment (the CAS-119 purity contract).
+    """
     contract_cls = resolve_contract(contract) if isinstance(contract, str) else contract
-    llm_config = _resolve_model(model)
-    save_format_list = list(save_formats)
+    call_policy = _compat_policy_layer(
+        model,
+        force=force,
+        skip_verification=skip_verification,
+        fetcher_type=fetcher_type,
+        selector_level=selector_level,
+        save_formats=save_formats,
+        quiet=quiet,
+        allow_downloads=allow_downloads,
+        allowed_download_types=allowed_download_types,
+        download_dir=download_dir,
+        max_download_bytes=max_download_bytes,
+        keep_downloads=keep_downloads,
+        max_concurrency=None,
+    )
+    effective_policy = _edge_policy(contract_cls, Policy.cascade(policy, call_policy))
+    spec = effective_policy.resolve_run_spec()
+    if isinstance(model, YosoiConfig):
+        spec = spec.model_copy(update={'llm_config': model.llm, 'telemetry_config': model.telemetry})
+    elif isinstance(model, LLMConfig):
+        spec = spec.model_copy(update={'llm_config': model})
+    save_format_list = list(spec.output_formats)
+
     from yosoi.models.snapshot import SnapshotMap
     from yosoi.utils.urls import extract_domain
 
@@ -410,36 +606,37 @@ async def _scrape_one(
         'api.scrape',
         url=url,
         contract=contract_cls.__name__,
-        model=_model_label(llm_config),
-        fetcher_type=fetcher_type,
-        selector_level=selector_level.value,
+        model=_model_label(spec.llm_config),
+        fetcher_type=spec.fetcher_type,
+        selector_level=spec.selector_level.value,
         save_formats=','.join(save_format_list),
     ):
         try:
             async with Pipeline(
-                llm_config=llm_config,
+                llm_config=spec.llm_config,
                 contract=contract_cls,
                 output_format=save_format_list,
-                force=force,
-                quiet=quiet,
-                selector_level=selector_level,
-                allow_downloads=allow_downloads,
-                allowed_download_types=tuple(allowed_download_types),
-                download_dir=download_dir,
-                max_download_bytes=max_download_bytes,
-                keep_downloads=keep_downloads,
+                force=spec.force,
+                quiet=spec.quiet,
+                selector_level=spec.selector_level,
+                allow_downloads=spec.allow_downloads,
+                allowed_download_types=spec.allowed_download_types,
+                download_dir=spec.download_dir,
+                max_download_bytes=spec.max_download_bytes,
+                keep_downloads=spec.keep_downloads,
                 write_lock=write_lock,
                 identity=identity,
                 discovery_gate=discovery_gate,
                 preloaded_snapshots=preloaded_snapshots,
+                policy=effective_policy,
             ) as pipeline:
                 items = [
                     item
                     async for item in pipeline.scrape(
                         url,
-                        force=force,
-                        skip_verification=skip_verification,
-                        fetcher_type=fetcher_type,
+                        force=spec.force,
+                        skip_verification=spec.skip_verification,
+                        fetcher_type=spec.fetcher_type,
                         output_format=save_format_list,
                     )
                 ]
@@ -455,7 +652,7 @@ async def _scrape_one(
 async def scrape_many(
     urls: Sequence[str],
     contract: type[Contract] | str,
-    model: YosoiConfig | LLMConfig | str | None = None,
+    model: YosoiConfig | LLMConfig | ModelPolicy | str | None = None,
     *,
     selectors: str | dict[str, SnapshotMap] | None = None,
     force: bool = False,
@@ -464,6 +661,7 @@ async def scrape_many(
     selector_level: SelectorLevel = SelectorLevel.CSS,
     save_formats: Sequence[str] = (),
     quiet: bool = True,
+    policy: Policy | None = None,
 ) -> dict[str, list[ContentMap]]:
     """Scrape multiple URLs and return items keyed by URL.
 
@@ -478,6 +676,7 @@ async def scrape_many(
         selector_level: Maximum selector strategy level.
         save_formats: Output formats to save.
         quiet: Suppress console output.
+        policy: Optional resolved Policy; cascades under env and the call-site layer.
 
     Returns:
         Dict mapping URL strings to lists of extracted records.
@@ -506,6 +705,7 @@ async def scrape_many(
                     save_formats=save_formats,
                     quiet=quiet,
                     preloaded=preloaded,
+                    policy=policy,
                 )
         except Exception as e:
             obs.warning('API scrape_many URL failed', url=current_url, error=str(e))
@@ -516,7 +716,7 @@ async def scrape_many(
 def scrape_sync(
     url: str,
     contract: type[Contract] | str,
-    model: YosoiConfig | LLMConfig | str | None = None,
+    model: YosoiConfig | LLMConfig | ModelPolicy | str | None = None,
     *,
     selectors: str | dict[str, SnapshotMap] | None = None,
     force: bool = False,
@@ -525,6 +725,7 @@ def scrape_sync(
     selector_level: SelectorLevel = SelectorLevel.CSS,
     save_formats: Sequence[str] = (),
     quiet: bool = True,
+    policy: Policy | None = None,
 ) -> list[ContentMap]:
     """Synchronous wrapper around scrape().
 
@@ -539,6 +740,7 @@ def scrape_sync(
         selector_level: Maximum selector strategy level.
         save_formats: Output formats to save.
         quiet: Suppress console output.
+        policy: Optional resolved Policy; cascades under env and the call-site layer.
 
     Returns:
         List of extracted records.
@@ -566,6 +768,7 @@ def scrape_sync(
                     save_formats=save_formats,
                     quiet=quiet,
                     preloaded=(asyncio.run(_resolve_selectors_only(selectors)) if selectors is not None else None),
+                    policy=policy,
                 )
             )
         error = 'scrape_sync() cannot run inside an active event loop; await scrape() instead.'

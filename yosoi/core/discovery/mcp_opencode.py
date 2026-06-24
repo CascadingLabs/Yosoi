@@ -116,7 +116,7 @@ class OpenCodeBackend:
         return {'$schema': 'https://opencode.ai/config.json', 'mcp': mcp}
 
     async def _discover(self, base_url: str, instructions: str, user_prompt: str) -> object | None:
-        import httpx
+        import httpx2
 
         body = {
             'model': {'providerID': self._provider_id, 'modelID': self._model_id},
@@ -124,7 +124,7 @@ class OpenCodeBackend:
             'parts': [{'type': 'text', 'text': user_prompt}],
             'format': {'type': 'json_schema', 'schema': MCPDiscoveryDraft.model_json_schema()},
         }
-        async with httpx.AsyncClient(base_url=base_url, timeout=300) as client:
+        async with httpx2.AsyncClient(base_url=base_url, timeout=300) as client:
             session_resp = await client.post('/session')
             session_resp.raise_for_status()
             sid = session_resp.json()['id']

@@ -30,6 +30,7 @@ def _make_pipeline_stub(mocker, contract=None):
     stub.discovery.discover_selectors = mocker.AsyncMock()
     stub._mcp_discovery = None
     stub._force_mcp = False
+    stub._signal_lane = None
     stub._discovery_strategy = mocker.MagicMock()
     stub._discovery_strategy.load = mocker.AsyncMock(return_value=None)
     stub._discovery_strategy.save = mocker.AsyncMock()
@@ -100,10 +101,10 @@ async def test_normalize_url_adds_https_on_success(mocker):
 
 
 async def test_normalize_url_falls_back_to_http_on_error(mocker):
-    import httpx
+    import httpx2
 
     stub = _make_pipeline_stub(mocker)
-    _mock_async_client(mocker, stub, raise_on_head=httpx.HTTPError('fail'))
+    _mock_async_client(mocker, stub, raise_on_head=httpx2.HTTPError('fail'))
     result = await Pipeline.normalize_url(stub, 'example.com')
     assert result == 'http://example.com'
 
@@ -160,6 +161,29 @@ def test_pipeline_force_mcp_env_override(mocker, monkeypatch):
     p = Pipeline(llm_config='groq:llama-3.3-70b-versatile', contract=SimpleContract)
     assert p._force_mcp is True
     assert isinstance(p._ensure_mcp_discovery(), MCPDiscoveryOrchestrator)
+
+
+def test_pipeline_stores_resolved_policy(mocker, monkeypatch):
+    from yosoi.policy import Policy
+
+    monkeypatch.setenv('GROQ_KEY', 'test-key')
+    mocker.patch('yosoi.storage.persistence.init_yosoi')
+    mocker.patch('yosoi.storage.discovery_strategy.init_yosoi')
+    mocker.patch('yosoi.storage.tracking.get_tracking_path', return_value='/tmp/tracking.json')
+    mocker.patch('yosoi.utils.files.is_initialized', return_value=True)
+    mocker.patch('yosoi.utils.logging.setup_local_logging', return_value='/tmp/test.log')
+
+    # explicit policy is threaded/stored as-is
+    explicit = Policy(atom_reads=True)
+    p = Pipeline(llm_config='groq:llama-3.3-70b-versatile', contract=SimpleContract, policy=explicit)
+    assert p._policy is explicit
+
+    # no policy → resolved once from env (default strict / atom_reads off)
+    monkeypatch.delenv('YOSOI_ATOM_READS', raising=False)
+    monkeypatch.delenv('YOSOI_ATOM_TRUST', raising=False)
+    d = Pipeline(llm_config='groq:llama-3.3-70b-versatile', contract=SimpleContract)
+    assert d._policy.atom_reads is False
+    assert d._policy.trust_tier == 'strict'
 
 
 class TestEscalationSignal:
@@ -910,10 +934,10 @@ async def test_normalize_url_prepends_https_exactly(mocker):
 
 
 async def test_normalize_url_prepends_http_on_https_failure(mocker):
-    import httpx
+    import httpx2
 
     stub = _make_pipeline_stub(mocker)
-    _mock_async_client(mocker, stub, raise_on_head=httpx.HTTPError('fail'))
+    _mock_async_client(mocker, stub, raise_on_head=httpx2.HTTPError('fail'))
     result = await Pipeline.normalize_url(stub, 'example.com')
     assert result == 'http://example.com'
 
@@ -2185,3 +2209,55 @@ async def test_semantic_refine_stops_when_reextraction_goes_empty(mocker):
         stub, 'https://x.com', '<clean/>', '<raw/>', {'price': {}}, '.card', original, max_retries=3
     )
     assert extracted is original  # prior extraction preserved, not clobbered by the empty re-extract
+
+
+def test_pipeline_configures_telemetry_from_policy(mocker, monkeypatch):
+    """Regression: explicit llm_config + policy must still configure Langfuse telemetry."""
+    mocker.patch('yosoi.storage.persistence.init_yosoi')
+    mocker.patch('yosoi.storage.discovery_strategy.init_yosoi')
+    mocker.patch('yosoi.storage.tracking.get_tracking_path', return_value='/tmp/tracking.json')
+    mocker.patch('yosoi.utils.files.is_initialized', return_value=True)
+    mocker.patch('yosoi.utils.logging.setup_local_logging', return_value='/tmp/test.log')
+    monkeypatch.setenv('GROQ_KEY', 'test-key')
+    monkeypatch.setenv('LANGFUSE_PUBLIC_KEY', 'pk-policy-test')
+    monkeypatch.setenv('LANGFUSE_SECRET_KEY', 'sk-policy-test')
+    configure = mocker.patch('yosoi.utils.observability.configure')
+
+    Pipeline(
+        llm_config='groq:llama-3.3-70b-versatile',
+        contract=SimpleContract,
+        policy=ys.Policy.from_env(),
+    )
+
+    configure.assert_called_once()
+    telemetry_config = configure.call_args.args[0]
+    assert telemetry_config.langfuse_public_key == 'pk-policy-test'
+    assert telemetry_config.langfuse_secret_key == 'sk-policy-test'
+
+
+def test_pipeline_rejects_model_policy_as_llm_config():
+    with pytest.raises(TypeError, match='policy=Policy'):
+        Pipeline(ys.groq('llama-3.3-70b-versatile'), contract=SimpleContract)
+
+
+def test_pipeline_threads_cross_origin_dom_to_browser_fetcher(mocker, monkeypatch):
+    """ScrapePolicy.cross_origin_dom reaches the browser fetcher; default stays off."""
+    mocker.patch('yosoi.storage.persistence.init_yosoi')
+    mocker.patch('yosoi.storage.discovery_strategy.init_yosoi')
+    mocker.patch('yosoi.storage.tracking.get_tracking_path', return_value='/tmp/tracking.json')
+    mocker.patch('yosoi.utils.files.is_initialized', return_value=True)
+    mocker.patch('yosoi.utils.logging.setup_local_logging', return_value='/tmp/test.log')
+    monkeypatch.setenv('GROQ_KEY', 'test-key')
+    create_fetcher = mocker.patch('yosoi.core.pipeline.base.create_fetcher')
+
+    opted_in = Pipeline(
+        llm_config='groq:llama-3.3-70b-versatile',
+        contract=SimpleContract,
+        policy=ys.Policy(scrape=ys.ScrapePolicy(cross_origin_dom=True)),
+    )
+    opted_in._create_fetcher('headless')
+    assert create_fetcher.call_args.kwargs['cross_origin_dom'] is True
+
+    default = Pipeline(llm_config='groq:llama-3.3-70b-versatile', contract=SimpleContract)
+    default._create_fetcher('headless')
+    assert create_fetcher.call_args.kwargs.get('cross_origin_dom', False) is False

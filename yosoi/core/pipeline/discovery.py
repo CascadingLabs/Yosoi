@@ -11,7 +11,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
-import httpx
+import httpx2
 from rich.console import Console
 from tenacity import RetryCallState, RetryError
 
@@ -197,7 +197,7 @@ class PipelineDiscoveryMixin:
 
         except RetryError:
             pass
-        except (httpx.HTTPError, OSError, ValueError, RuntimeError):
+        except (httpx2.HTTPError, OSError, ValueError, RuntimeError):
             pass
 
         self.console.print(f'[danger]All {max_retries} AI attempts failed[/danger]')

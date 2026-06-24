@@ -225,7 +225,7 @@ async def test_simple_fetcher_logs_warning_on_bot_detection(mocker):
     mock_response.headers = {'CF-Ray': 'test-ray'}
     mock_response.content = VALID_HTML.encode()
 
-    mocker.patch('httpx.AsyncClient.get', return_value=mock_response)
+    mocker.patch('httpx2.AsyncClient.get', return_value=mock_response)
     mocker.patch.object(fetcher_instance, '_apply_request_delay', return_value=None)
 
     with pytest.raises(BotDetectionError):
@@ -248,7 +248,7 @@ async def test_simple_fetcher_passes_response_headers_to_check(mocker):
     mock_response.headers = {'cf-mitigated': 'challenge'}
     mock_response.content = VALID_HTML.encode()
 
-    mocker.patch('httpx.AsyncClient.get', return_value=mock_response)
+    mocker.patch('httpx2.AsyncClient.get', return_value=mock_response)
     mocker.patch.object(fetcher_instance, '_apply_request_delay', return_value=None)
 
     with pytest.raises(BotDetectionError) as exc_info:
@@ -268,7 +268,7 @@ async def test_simple_fetcher_no_warning_on_clean_200(mocker):
     mock_response.headers = {}
     mock_response.content = VALID_HTML.encode()
 
-    mocker.patch('httpx.AsyncClient.get', return_value=mock_response)
+    mocker.patch('httpx2.AsyncClient.get', return_value=mock_response)
     mocker.patch.object(fetcher_instance, '_apply_request_delay', return_value=None)
     mocker.patch('yosoi.core.fetcher.simple.ContentAnalyzer.analyze', return_value=mocker.MagicMock())
 

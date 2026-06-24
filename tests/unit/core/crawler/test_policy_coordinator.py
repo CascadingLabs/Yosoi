@@ -1,0 +1,512 @@
+from __future__ import annotations
+
+import asyncio
+import time
+
+import pytest
+
+from yosoi.core.crawler import CrawlCoordinator
+from yosoi.models.results import FetchResult
+from yosoi.policy import CrawlBudget, CrawlPolicy, CrawlSafety, PagePolicy, Policy, SchedulerPolicy
+
+
+class FakeFetcher:
+    def __init__(self, pages: dict[str, str]) -> None:
+        self.pages = pages
+        self.calls: list[str] = []
+
+    async def fetch(self, url: str) -> FetchResult:
+        if url.endswith('/robots.txt'):  # robots gate is default-on; allow-all, don't count it
+            return FetchResult(url=url, html=None, status_code=404)
+        self.calls.append(url)
+        html = self.pages.get(url)
+        if html is None:
+            return FetchResult(url=url, html=None, block_reason='missing fixture')
+        return FetchResult(url=url, html=html, status_code=200, fetch_time=0.01)
+
+
+class TimingFetcher(FakeFetcher):
+    def __init__(self, pages: dict[str, str]) -> None:
+        super().__init__(pages)
+        self.started_at: list[float] = []
+
+    async def fetch(self, url: str) -> FetchResult:
+        if not url.endswith('/robots.txt'):  # don't time the out-of-band robots fetch
+            self.started_at.append(time.monotonic())
+        return await super().fetch(url)
+
+
+class ConcurrentFetcher(FakeFetcher):
+    def __init__(self, pages: dict[str, str]) -> None:
+        super().__init__(pages)
+        self.active = 0
+        self.max_active = 0
+
+    async def fetch(self, url: str) -> FetchResult:
+        if url.endswith('/robots.txt'):
+            return await super().fetch(url)
+        self.active += 1
+        self.max_active = max(self.max_active, self.active)
+        try:
+            await asyncio.sleep(0.01)
+            return await super().fetch(url)
+        finally:
+            self.active -= 1
+
+
+class DelayedFetcher(FakeFetcher):
+    def __init__(self, pages: dict[str, str], delays: dict[str, float]) -> None:
+        super().__init__(pages)
+        self.delays = delays
+
+    async def fetch(self, url: str) -> FetchResult:
+        delay = self.delays.get(url, 0)
+        if delay:
+            await asyncio.sleep(delay)
+        return await super().fetch(url)
+
+
+class RedirectingFetcher(FakeFetcher):
+    async def fetch(self, url: str) -> FetchResult:
+        if url.endswith('/robots.txt'):
+            return FetchResult(url=url, html=None, status_code=404)
+        self.calls.append(url)
+        return FetchResult(url='https://example.com/final', html='<article>moved</article>', status_code=200)
+
+
+def _runtime(policy: Policy, *seeds: str):
+    return policy.check_crawl(seeds=tuple(seeds)).runtime
+
+
+class RecordingReporter:
+    def __init__(self) -> None:
+        self.events: list[tuple[str, str]] = []
+
+    def start(self, **_kwargs: object) -> None:
+        self.events.append(('start', ''))
+
+    def batch(self, jobs: tuple[object, ...], _summary: object) -> None:
+        self.events.extend(('batch', job.url) for job in jobs)
+
+    def result(self, result: object, _summary: object) -> None:
+        self.events.append(('result', result.job.url))
+
+    def finish(self, _summary: object) -> None:
+        self.events.append(('finish', ''))
+
+
+async def test_policy_coordinator_fans_out_after_single_seed(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr('yosoi.core.crawler.frontier.init_yosoi', lambda _name: tmp_path)
+    fetcher = FakeFetcher(
+        {
+            'https://example.com/': '<a href="/a">A</a><a href="/b">B</a><a href="/c">C</a>',
+            'https://example.com/a': '<article>A</article>',
+            'https://example.com/b': '<article>B</article>',
+            'https://example.com/c': '<article>C</article>',
+        }
+    )
+    policy = Policy.for_crawl(
+        'crawl.conservative',
+        budget=CrawlBudget(max_pages=4, max_depth=1),
+        scheduler=SchedulerPolicy(max_workers=3, politeness_delay=0),
+        safety=CrawlSafety(allowed_hosts=('example.com',)),
+    )
+    runtime = _runtime(policy, 'https://example.com/')
+    assert runtime is not None
+
+    summary = await CrawlCoordinator(fetcher=fetcher, config=runtime, persist_frontier=False).run()
+
+    assert fetcher.calls == [
+        'https://example.com/',
+        'https://example.com/a',
+        'https://example.com/b',
+        'https://example.com/c',
+    ]
+    assert [result.job.url for result in summary.results] == fetcher.calls
+    assert summary.pages_fetched == 4
+    assert summary.unique_urls_seen == 4
+    assert summary.batches == 2
+    assert summary.idle_worker_slots == 2
+    assert summary.worker_slots_total == 6
+    assert summary.worker_slots_used == 4
+    assert summary.average_batch_fill == 2
+    assert summary.dispatch_slot_idle_ratio == pytest.approx(2 / 6)
+    assert summary.outcome_lanes['succeeded'] == fetcher.calls
+
+
+async def test_policy_coordinator_traverses_raw_links_but_stores_cleaned_html(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr('yosoi.core.crawler.frontier.init_yosoi', lambda _name: tmp_path)
+    fetcher = FakeFetcher(
+        {
+            'https://example.com/': (
+                '<html><body><nav><a href="/next">Next</a></nav>'
+                '<main><h1>Story</h1><p>Body text.</p></main></body></html>'
+            ),
+            'https://example.com/next': '<main><h1>Next</h1></main>',
+        }
+    )
+    policy = Policy(
+        page=PagePolicy(clean_html=True),
+        crawl=CrawlPolicy(
+            budget=CrawlBudget(max_pages=2, max_depth=1),
+            scheduler=SchedulerPolicy(max_workers=1, politeness_delay=0),
+            safety=CrawlSafety(allowed_hosts=('example.com',)),
+        ),
+    )
+    runtime = policy.check_crawl(seeds=('https://example.com/',)).runtime
+    assert runtime is not None
+
+    summary = await CrawlCoordinator(fetcher=fetcher, config=runtime, persist_frontier=False).run()
+
+    assert fetcher.calls == ['https://example.com/', 'https://example.com/next']
+    assert 'Next</a>' not in summary.results[0].html
+    assert '<h1>Story</h1>' in summary.results[0].html
+
+
+async def test_policy_coordinator_reports_worker_results_in_commit_order(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr('yosoi.core.crawler.frontier.init_yosoi', lambda _name: tmp_path)
+    fetcher = DelayedFetcher(
+        {
+            'https://example.com/fast': '<article>Fast</article>',
+            'https://example.com/slow': '<article>Slow</article>',
+        },
+        delays={'https://example.com/slow': 0.03},
+    )
+    policy = Policy.for_crawl(
+        'crawl.conservative',
+        budget=CrawlBudget(max_pages=2, max_depth=0),
+        scheduler=SchedulerPolicy(max_workers=2, per_host_concurrency=2, politeness_delay=0),
+        safety=CrawlSafety(allowed_hosts=('example.com',)),
+    )
+    runtime = _runtime(policy, 'https://example.com/fast', 'https://example.com/slow')
+    assert runtime is not None
+    reporter = RecordingReporter()
+
+    summary = await CrawlCoordinator(fetcher=fetcher, config=runtime, persist_frontier=False, reporter=reporter).run()
+
+    result_urls = [url for event, url in reporter.events if event == 'result']
+    summary_urls = [result.job.url for result in summary.results]
+    assert result_urls == summary_urls
+    assert summary_urls == [
+        'https://example.com/slow',
+        'https://example.com/fast',
+    ]
+
+
+async def test_policy_coordinator_blocks_denied_paths_before_fetch(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr('yosoi.core.crawler.frontier.init_yosoi', lambda _name: tmp_path)
+    fetcher = FakeFetcher(
+        {
+            'https://example.com/': '<a href="/article/1">Article</a><a href="/login">Login</a>',
+            'https://example.com/article/1': '<article>A</article>',
+        }
+    )
+    policy = Policy.for_crawl(
+        'crawl.conservative',
+        budget=CrawlBudget(max_pages=3, max_depth=1),
+        scheduler=SchedulerPolicy(max_workers=2, politeness_delay=0),
+        safety=CrawlSafety(allowed_hosts=('example.com',), blocked_path_prefixes=('/login',)),
+    )
+    runtime = _runtime(policy, 'https://example.com/')
+    assert runtime is not None
+
+    summary = await CrawlCoordinator(fetcher=fetcher, config=runtime, persist_frontier=False).run()
+
+    assert fetcher.calls == ['https://example.com/', 'https://example.com/article/1']
+    assert summary.pages_fetched == 2
+    assert summary.policy_blocked == 1
+    assert summary.outcome_lanes['policy_blocked'] == ['https://example.com/login']
+    assert summary.results[-1].error == 'path blocked by policy: /login'
+
+
+async def test_policy_coordinator_records_failures_without_blocking_siblings(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr('yosoi.core.crawler.frontier.init_yosoi', lambda _name: tmp_path)
+    fetcher = FakeFetcher(
+        {
+            'https://example.com/': '<a href="/a">A</a><a href="/missing">Missing</a>',
+            'https://example.com/a': '<article>A</article>',
+        }
+    )
+    policy = Policy.for_crawl(
+        'crawl.conservative',
+        budget=CrawlBudget(max_pages=3, max_depth=1),
+        scheduler=SchedulerPolicy(max_workers=2, politeness_delay=0),
+        safety=CrawlSafety(allowed_hosts=('example.com',)),
+    )
+    runtime = _runtime(policy, 'https://example.com/')
+    assert runtime is not None
+
+    summary = await CrawlCoordinator(fetcher=fetcher, config=runtime, persist_frontier=False).run()
+
+    assert fetcher.calls == ['https://example.com/', 'https://example.com/a', 'https://example.com/missing']
+    assert summary.pages_fetched == 2
+    assert summary.attempted_urls == 3
+    assert summary.failures == 1
+    assert summary.outcome_lanes['failed'] == ['https://example.com/missing']
+
+
+async def test_policy_coordinator_attempt_budget_counts_failures(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr('yosoi.core.crawler.frontier.init_yosoi', lambda _name: tmp_path)
+    fetcher = FakeFetcher({})
+    policy = Policy(
+        crawl=CrawlPolicy(
+            budget=CrawlBudget(max_pages=1, max_depth=0, max_attempts=1),
+            scheduler=SchedulerPolicy(max_workers=3, politeness_delay=0),
+            safety=CrawlSafety(allowed_hosts=('example.com',)),
+        )
+    )
+    runtime = _runtime(
+        policy,
+        'https://example.com/a',
+        'https://example.com/b',
+        'https://example.com/c',
+    )
+    assert runtime is not None
+
+    summary = await CrawlCoordinator(fetcher=fetcher, config=runtime, persist_frontier=False).run()
+
+    assert fetcher.calls == ['https://example.com/c']
+    assert summary.attempted_urls == 1
+    assert summary.pages_fetched == 0
+    assert summary.failures == 1
+
+
+async def test_policy_coordinator_enforces_politeness_between_same_host_workers(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr('yosoi.core.crawler.frontier.init_yosoi', lambda _name: tmp_path)
+    fetcher = TimingFetcher(
+        {
+            'https://example.com/': '<a href="/a">A</a><a href="/b">B</a>',
+            'https://example.com/a': '<article>A</article>',
+            'https://example.com/b': '<article>B</article>',
+        }
+    )
+    policy = Policy.for_crawl(
+        'crawl.conservative',
+        budget=CrawlBudget(max_pages=3, max_depth=1),
+        scheduler=SchedulerPolicy(max_workers=2, politeness_delay=0.01),
+        safety=CrawlSafety(allowed_hosts=('example.com',)),
+    )
+    runtime = _runtime(policy, 'https://example.com/')
+    assert runtime is not None
+
+    await CrawlCoordinator(fetcher=fetcher, config=runtime, persist_frontier=False).run()
+
+    assert len(fetcher.started_at) == 3
+    assert fetcher.started_at[1] - fetcher.started_at[0] >= 0.009
+    assert fetcher.started_at[2] - fetcher.started_at[1] >= 0.009
+
+
+async def test_policy_coordinator_enforces_per_host_concurrency(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr('yosoi.core.crawler.frontier.init_yosoi', lambda _name: tmp_path)
+    fetcher = ConcurrentFetcher(
+        {
+            'https://example.com/': '<a href="/a">A</a><a href="/b">B</a><a href="/c">C</a>',
+            'https://example.com/a': '<article>A</article>',
+            'https://example.com/b': '<article>B</article>',
+            'https://example.com/c': '<article>C</article>',
+        }
+    )
+    policy = Policy.for_crawl(
+        'crawl.conservative',
+        budget=CrawlBudget(max_pages=4, max_depth=1),
+        scheduler=SchedulerPolicy(max_workers=3, per_host_concurrency=1, politeness_delay=0),
+        safety=CrawlSafety(allowed_hosts=('example.com',)),
+    )
+    runtime = _runtime(policy, 'https://example.com/')
+    assert runtime is not None
+
+    await CrawlCoordinator(fetcher=fetcher, config=runtime, persist_frontier=False).run()
+
+    assert fetcher.max_active == 1
+
+
+async def test_policy_coordinator_enforces_max_pages_per_host(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr('yosoi.core.crawler.frontier.init_yosoi', lambda _name: tmp_path)
+    fetcher = FakeFetcher(
+        {
+            'https://example.com/': '<a href="/a">A</a><a href="/b">B</a>',
+            'https://example.com/a': '<article>A</article>',
+            'https://example.com/b': '<article>B</article>',
+        }
+    )
+    policy = Policy.for_crawl(
+        'crawl.conservative',
+        budget=CrawlBudget(max_pages=3, max_depth=1, max_pages_per_host=1),
+        scheduler=SchedulerPolicy(max_workers=1, per_host_concurrency=1, politeness_delay=0),
+        safety=CrawlSafety(allowed_hosts=('example.com',)),
+    )
+    runtime = _runtime(policy, 'https://example.com/')
+    assert runtime is not None
+
+    summary = await CrawlCoordinator(fetcher=fetcher, config=runtime, persist_frontier=False).run()
+
+    assert fetcher.calls == ['https://example.com/']
+    assert summary.pages_fetched == 1
+    assert summary.policy_blocked == 2
+    assert all(result.error == 'host page cap reached by policy: example.com' for result in summary.results[1:])
+
+
+async def test_policy_coordinator_enforces_max_pages_per_host_with_concurrent_workers(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr('yosoi.core.crawler.frontier.init_yosoi', lambda _name: tmp_path)
+    fetcher = ConcurrentFetcher(
+        {
+            'https://example.com/': '<a href="/a">A</a><a href="/b">B</a><a href="/c">C</a>',
+            'https://example.com/a': '<article>A</article>',
+            'https://example.com/b': '<article>B</article>',
+            'https://example.com/c': '<article>C</article>',
+        }
+    )
+    policy = Policy.for_crawl(
+        'crawl.conservative',
+        budget=CrawlBudget(max_pages=4, max_depth=1, max_pages_per_host=2),
+        scheduler=SchedulerPolicy(max_workers=3, per_host_concurrency=3, politeness_delay=0),
+        safety=CrawlSafety(allowed_hosts=('example.com',)),
+    )
+    runtime = _runtime(policy, 'https://example.com/')
+    assert runtime is not None
+
+    summary = await CrawlCoordinator(fetcher=fetcher, config=runtime, persist_frontier=False).run()
+
+    assert len(fetcher.calls) == 2
+    assert summary.pages_fetched == 2
+    assert summary.policy_blocked == 2
+
+
+async def test_policy_coordinator_records_fetch_exceptions_as_failures(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr('yosoi.core.crawler.frontier.init_yosoi', lambda _name: tmp_path)
+
+    class ExplodingFetcher(FakeFetcher):
+        async def fetch(self, url: str) -> FetchResult:
+            if url == 'https://example.com/boom':
+                raise RuntimeError('connection torn down')
+            return await super().fetch(url)
+
+    fetcher = ExplodingFetcher({'https://example.com/': '<a href="/boom">boom</a>'})
+    policy = Policy.for_crawl(
+        'crawl.conservative',
+        budget=CrawlBudget(max_pages=3, max_depth=1),
+        scheduler=SchedulerPolicy(max_workers=2, politeness_delay=0),
+        safety=CrawlSafety(allowed_hosts=('example.com',)),
+    )
+    runtime = _runtime(policy, 'https://example.com/')
+    assert runtime is not None
+
+    summary = await CrawlCoordinator(fetcher=fetcher, config=runtime, persist_frontier=False).run()
+
+    assert summary.failures == 1
+    failed = [r for r in summary.results if r.status == 'failed']
+    assert failed[0].error == 'connection torn down'
+
+
+async def test_policy_coordinator_blocks_redirects_by_default(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr('yosoi.core.crawler.frontier.init_yosoi', lambda _name: tmp_path)
+    fetcher = RedirectingFetcher({})
+    policy = Policy.for_crawl(
+        'crawl.conservative',
+        budget=CrawlBudget(max_pages=1),
+        scheduler=SchedulerPolicy(max_workers=1, politeness_delay=0),
+        safety=CrawlSafety(allowed_hosts=('example.com',)),
+    )
+    runtime = _runtime(policy, 'https://example.com/start')
+    assert runtime is not None
+
+    summary = await CrawlCoordinator(fetcher=fetcher, config=runtime, persist_frontier=False).run()
+
+    assert fetcher.calls == ['https://example.com/start']
+    assert summary.pages_fetched == 0
+    assert summary.policy_blocked == 1
+    assert summary.results[0].error == (
+        'redirect blocked by policy: https://example.com/start -> https://example.com/final'
+    )
+
+
+async def test_policy_coordinator_allows_redirects_when_enabled(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr('yosoi.core.crawler.frontier.init_yosoi', lambda _name: tmp_path)
+    fetcher = RedirectingFetcher({})
+    policy = Policy.for_crawl(
+        'crawl.conservative',
+        budget=CrawlBudget(max_pages=1),
+        scheduler=SchedulerPolicy(max_workers=1, politeness_delay=0),
+        safety=CrawlSafety(allow_redirects=True, allowed_hosts=('example.com',)),
+    )
+    runtime = _runtime(policy, 'https://example.com/start')
+    assert runtime is not None
+
+    summary = await CrawlCoordinator(fetcher=fetcher, config=runtime, persist_frontier=False).run()
+
+    assert summary.pages_fetched == 1
+    assert summary.policy_blocked == 0
+    assert summary.outcome_lanes['succeeded'] == ['https://example.com/start']
+
+
+def test_policy_error_denied_host_and_hostless_urls(tmp_path) -> None:
+    policy = Policy.for_crawl(
+        'crawl.conservative',
+        budget=CrawlBudget(max_pages=1),
+        safety=CrawlSafety(denied_hosts=('evil.example',)),
+    )
+    runtime = _runtime(policy, 'https://ok.example/')
+    assert runtime is not None
+    coordinator = CrawlCoordinator(fetcher=FakeFetcher({}), config=runtime, persist_frontier=False)
+
+    assert coordinator._policy_error('https://evil.example/page') == 'host denied by policy: evil.example'
+    # a hostless URL fails the allowed-hosts check (fail closed), not the denied check
+    assert coordinator._policy_error('not-a-url') == 'host not allowed by policy: '
+
+
+def test_idle_worker_ratio_is_alias_for_dispatch_slot_idle_ratio() -> None:
+    from yosoi.core.crawler.coordinator import CrawlRunSummary
+
+    summary = CrawlRunSummary(batches=4, idle_worker_slots=1)
+
+    assert summary.idle_worker_ratio == summary.dispatch_slot_idle_ratio == 0.25
+
+
+async def test_empty_allowlist_confines_to_seed_hosts_fail_closed(tmp_path, monkeypatch) -> None:
+    """allow_cross_domain=False + empty allowed_hosts must not follow links off the seed hosts."""
+    monkeypatch.setattr('yosoi.core.crawler.frontier.init_yosoi', lambda _name: tmp_path)
+    fetcher = FakeFetcher({'https://safe.test/': '<a href="https://evil.test/x">off</a><a href="/ok">on</a>'})
+    # No explicit allowed_hosts, cross-domain disallowed; runtime resolved WITHOUT seeds
+    # so its baked allowed_hosts is empty (the direct-caller fail-open path).
+    policy = Policy.for_crawl(
+        'crawl.conservative',
+        budget=CrawlBudget(max_pages=5, max_depth=1),
+        scheduler=SchedulerPolicy(max_workers=1, politeness_delay=0),
+    )
+    runtime = policy.check_crawl().runtime  # empty allowed_hosts
+    assert runtime is not None
+    assert runtime.allowed_hosts == ()
+    assert runtime.allow_cross_domain is False
+
+    summary = await CrawlCoordinator(fetcher=fetcher, config=runtime, persist_frontier=False).run(
+        seeds=('https://safe.test/',)
+    )
+
+    fetched_hosts = {__import__('urllib.parse', fromlist=['urlparse']).urlparse(u).hostname for u in fetcher.calls}
+    assert 'evil.test' not in fetched_hosts  # confined to seed host
+    assert summary.pages_fetched >= 1
+
+
+async def test_cross_domain_true_still_follows_any_host(tmp_path, monkeypatch) -> None:
+    """The confinement only applies when cross-domain is disallowed — opt-in stays unrestricted."""
+    monkeypatch.setattr('yosoi.core.crawler.frontier.init_yosoi', lambda _name: tmp_path)
+    fetcher = FakeFetcher(
+        {
+            'https://safe.test/': '<a href="https://other.test/x">off</a>',
+            'https://other.test/x': '<p>ok</p>',
+        }
+    )
+    policy = Policy.for_crawl(
+        'crawl.conservative',
+        budget=CrawlBudget(max_pages=5, max_depth=1),
+        scheduler=SchedulerPolicy(max_workers=1, politeness_delay=0),
+        safety=CrawlSafety(allow_cross_domain=True),
+    )
+    runtime = policy.check_crawl().runtime
+    assert runtime is not None
+    assert runtime.allow_cross_domain is True
+
+    await CrawlCoordinator(fetcher=fetcher, config=runtime, persist_frontier=False).run(seeds=('https://safe.test/',))
+
+    fetched_hosts = {__import__('urllib.parse', fromlist=['urlparse']).urlparse(u).hostname for u in fetcher.calls}
+    assert 'other.test' in fetched_hosts  # cross-domain opt-in unrestricted

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
 import os
@@ -163,9 +162,8 @@ class SelectorStorage:
         filepath = self._get_content_filepath(url, output_format, contract_sig)
 
         # Output savers include binary/tabular writers (pandas, pyarrow, openpyxl)
-        # that have no async API; offload to a thread so the event loop is never
-        # blocked while keeping a single dispatch path for every format.
-        await asyncio.to_thread(save_formatted_content, filepath, url, domain, content, output_format)
+        # that have no async API; keep one synchronous dispatch path for every format.
+        save_formatted_content(filepath, url, domain, content, output_format)
 
         logger.info('Saved content to: %s', filepath)
         return filepath
@@ -185,22 +183,7 @@ class SelectorStorage:
         """
         filepath = self._get_content_filepath(url, contract_sig=contract_sig)
 
-        if not await aiofiles.os.path.exists(filepath):
-            return None
-
-        try:
-            async with aiofiles.open(filepath, encoding='utf-8') as f:
-                data: dict[str, Any] = json.loads(await f.read())
-                # Multi-item format uses 'items' key
-                if 'items' in data and isinstance(data['items'], list):
-                    items: list[dict[str, Any]] = data['items']
-                    return items
-                # Single-item format uses 'content' key
-                content: dict[str, Any] = data.get('content', data)
-                return content
-        except (OSError, json.JSONDecodeError, ValueError) as e:
-            logger.error('Error loading content: %s', e)
-            return None
+        return self._load_content_sync(filepath)
 
     async def content_exists(self, url: str, contract_sig: str | None = None) -> bool:
         """Check if extracted content exists for a URL.
@@ -214,7 +197,7 @@ class SelectorStorage:
 
         """
         filepath = self._get_content_filepath(url, contract_sig=contract_sig)
-        return await aiofiles.os.path.exists(filepath)
+        return self._file_exists_sync(filepath)
 
     async def list_domains(self) -> list[str]:
         """List all domains with saved selectors.
@@ -227,24 +210,7 @@ class SelectorStorage:
             Sorted list of domain names with saved selectors.
 
         """
-        if not await aiofiles.os.path.exists(self.storage_dir):
-            return []
-
-        domains = []
-        for filename in await aiofiles.os.listdir(self.storage_dir):
-            if not (filename.startswith('selectors_') and filename.endswith('.json')):
-                continue
-            filepath = os.path.join(self.storage_dir, filename)
-            try:
-                async with aiofiles.open(filepath, encoding='utf-8') as f:
-                    data = json.loads(await f.read())
-                domain = data.get('domain')
-                if isinstance(domain, str) and domain:
-                    domains.append(domain)
-            except (OSError, json.JSONDecodeError):
-                pass
-
-        return sorted(set(domains))
+        return self._list_domains_sync()
 
     async def get_summary(self) -> dict[str, Any]:
         """Get summary of all saved selectors.
@@ -499,15 +465,60 @@ class SelectorStorage:
         """
         filepath = self._get_filepath(domain, contract_sig=contract_sig)
 
-        if not await aiofiles.os.path.exists(filepath):
+        return self._load_file_data_sync(filepath)
+
+    def _load_content_sync(self, filepath: str) -> dict[str, Any] | list[dict[str, Any]] | None:
+        if not os.path.exists(filepath):
             return None
 
         try:
-            async with aiofiles.open(filepath, encoding='utf-8') as f:
-                file_data: dict[str, Any] = json.loads(await f.read())
+            with open(filepath, encoding='utf-8') as f:
+                data: dict[str, Any] = json.loads(f.read())
+                # Multi-item format uses 'items' key
+                if 'items' in data and isinstance(data['items'], list):
+                    items: list[dict[str, Any]] = data['items']
+                    return items
+                # Single-item format uses 'content' key
+                content: dict[str, Any] = data.get('content', data)
+                return content
+        except (OSError, json.JSONDecodeError, ValueError) as e:
+            logger.error('Error loading content: %s', e)
+            return None
+
+    def _list_domains_sync(self) -> list[str]:
+        if not os.path.exists(self.storage_dir):
+            return []
+
+        domains = []
+        for filename in os.listdir(self.storage_dir):
+            if not (filename.startswith('selectors_') and filename.endswith('.json')):
+                continue
+            filepath = os.path.join(self.storage_dir, filename)
+            try:
+                with open(filepath, encoding='utf-8') as f:
+                    data = json.loads(f.read())
+                domain = data.get('domain')
+                if isinstance(domain, str) and domain:
+                    domains.append(domain)
+            except (OSError, json.JSONDecodeError):
+                pass
+
+        return sorted(set(domains))
+
+    def _load_file_data_sync(self, filepath: str) -> dict[str, Any] | None:
+        if not os.path.exists(filepath):
+            return None
+
+        try:
+            with open(filepath, encoding='utf-8') as f:
+                file_data: dict[str, Any] = json.loads(f.read())
                 return file_data
         except (OSError, json.JSONDecodeError):
             return None
+
+    @staticmethod
+    def _file_exists_sync(filepath: str) -> bool:
+        return os.path.exists(filepath)
 
     async def export_summary(self, output_file: str = 'selectors_summary.json') -> str:
         """Export a summary of all selectors to a file.

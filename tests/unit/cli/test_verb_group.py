@@ -21,7 +21,6 @@ def runner():
 def base_mocks(mocker):
     mocker.patch('yosoi.utils.files.is_initialized', return_value=True)
     mocker.patch('yosoi.utils.logging.setup_local_logging', return_value='/tmp/test.log')
-    mocker.patch('yosoi.cli.main.build_yosoi_config', return_value=mocker.MagicMock())
 
 
 class TestSubcommands:

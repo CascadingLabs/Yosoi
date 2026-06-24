@@ -167,7 +167,7 @@ class TestLoad:
 
     async def test_load_returns_none_on_oserror(self, storage, mocker):
         await storage.save('example.com', 'simple')
-        mocker.patch('yosoi.storage.strategy.aiofiles.open', side_effect=OSError('permission denied'))
+        mocker.patch('yosoi.storage.strategy.open', side_effect=OSError('permission denied'))
         assert await storage.load('example.com') is None
 
 

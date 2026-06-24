@@ -51,6 +51,18 @@ class _ConcurrentTab:
         await asyncio.wait_for(self._both_started.wait(), timeout=1)
 
 
+class _FlakyGotoTab:
+    def __init__(self) -> None:
+        self.name = 'flaky-tab'
+        self.goto_calls = 0
+
+    async def goto(self, url: str, timeout: float, capture_endpoints: bool = False) -> object:
+        self.goto_calls += 1
+        if self.goto_calls == 1:
+            raise RuntimeError('navigation failed: Request timed out')
+        return object()
+
+
 class _TabEchoDOMLoader:
     def __init__(self, *_args: Any, **_kwargs: Any) -> None:
         pass
@@ -95,3 +107,19 @@ async def test_same_domain_concurrent_fetches_use_distinct_acquired_tabs(mocker)
         next(t for t in ('tab-a', 'tab-b') if t in first.html),
         next(t for t in ('tab-a', 'tab-b') if t in second.html),
     }
+
+
+@pytest.mark.asyncio
+async def test_fetch_retries_transient_tab_navigation_timeout(mocker) -> None:
+    """A single flaky VoidCrawl tab navigation should retry before failing the worker."""
+    tab = _FlakyGotoTab()
+    pool = _ConcurrentAcquirePool([tab])
+    fetcher = _VoidCrawlFetcher(min_content_length=1)
+    fetcher._pool = pool
+    mocker.patch('yosoi.core.fetcher.voiddriver.DOMLoader', _TabEchoDOMLoader)
+    mocker.patch('yosoi.core.fetcher.voiddriver.random.uniform', return_value=0.0)
+
+    result = await fetcher._do_fetch('https://example.com/retry', time.time(), 'fetch')
+
+    assert tab.goto_calls == 2
+    assert result.html is not None

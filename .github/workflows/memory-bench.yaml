@@ -58,7 +58,7 @@ jobs:
         run: uv venv --python 3.13
 
       - name: Install dependencies
-        run: uv sync --group tests --group dev
+        run: uv sync --python 3.13 --group tests --group dev
 
       - name: Measure voidcrawl memory
         run: >

@@ -120,7 +120,7 @@ async def test_pipeline_fresh_discovery_with_mountainhome_html(mocker, mock_llm_
     pipeline = Pipeline(mock_llm_config, contract=NewsArticle)
     await pipeline.process_url('https://mountainhome.example.com', force=True)
 
-    saved = await pipeline.storage.load_selectors('mountainhome.example.com')
+    saved = await pipeline.storage.load_selectors('mountainhome.example.com', contract_sig=pipeline._contract_sig)
     assert saved is not None
     assert 'headline' in saved
 
@@ -145,7 +145,7 @@ async def test_pipeline_multi_item_catalog_extraction(mocker, mock_llm_config, t
     pipeline = Pipeline(mock_llm_config, contract=ProductContract)
     await pipeline.process_url('https://vaultmart.example.com', force=True)
 
-    saved = await pipeline.storage.load_selectors('vaultmart.example.com')
+    saved = await pipeline.storage.load_selectors('vaultmart.example.com', contract_sig=pipeline._contract_sig)
     assert saved is not None
     assert 'name' in saved
 
@@ -169,6 +169,7 @@ async def test_pipeline_cached_selectors_skip_verification(mocker, mock_llm_conf
     await pipeline.storage.save_snapshots(
         'https://cache-test.example.com/news',
         snapshots,
+        contract_sig=pipeline._contract_sig,
     )
 
     # With skip_verification=True and cached selectors present, pipeline
@@ -207,6 +208,7 @@ async def test_pipeline_cached_selectors_with_fetch_and_verify(mocker, mock_llm_
     await pipeline.storage.save_snapshots(
         'https://verify-test.example.com/news',
         snapshots,
+        contract_sig=pipeline._contract_sig,
     )
 
     # Discovery should not be called when cached selectors are still valid

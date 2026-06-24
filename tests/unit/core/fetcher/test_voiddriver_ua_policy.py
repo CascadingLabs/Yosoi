@@ -1,8 +1,12 @@
 """Tests for VoidCrawl UA policy wiring."""
 
-from typing import ClassVar
+import asyncio
+import os
+import sys
+import types
+from typing import Any, ClassVar
 
-from yosoi.core.fetcher.voiddriver import HeadlessFetcher
+from yosoi.core.fetcher.voiddriver import HeadlessFetcher, _import_voidcrawl
 
 
 class BrowserConfigWithUa:
@@ -46,6 +50,44 @@ def test_browser_config_receives_explicit_yosoi_override_when_supported() -> Non
     assert kwargs['headless'] is True
 
 
+def test_headless_fetcher_uses_policy_chrome_ws_urls(monkeypatch) -> None:
+    captured: dict[str, Any] = {}
+
+    class FakeBrowserPool:
+        def __init__(self, config: Any) -> None:
+            captured['config'] = config
+
+        async def __aenter__(self) -> object:
+            return object()
+
+        async def __aexit__(self, *_args: object) -> None:
+            return None
+
+    class FakeBrowserConfig:
+        model_fields: ClassVar[dict[str, object]] = BrowserConfigWithoutUa.model_fields
+
+        def __init__(self, **kwargs: object) -> None:
+            self.kwargs = kwargs
+
+    class FakePoolConfig:
+        def __init__(self, **kwargs: object) -> None:
+            self.kwargs = kwargs
+
+    monkeypatch.setattr(
+        'yosoi.core.fetcher.voiddriver._import_voidcrawl',
+        lambda: (FakeBrowserPool, FakeBrowserConfig, FakePoolConfig),
+    )
+    fetcher = HeadlessFetcher(chrome_ws_urls=('http://127.0.0.1:9222',))
+
+    async def run() -> None:
+        async with fetcher:
+            pass
+
+    asyncio.run(run())
+
+    assert captured['config'].kwargs['chrome_ws_urls'] == ['http://127.0.0.1:9222']
+
+
 def test_browser_config_skips_identity_for_older_voidcrawl() -> None:
     user_agent = (
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
@@ -57,3 +99,23 @@ def test_browser_config_skips_identity_for_older_voidcrawl() -> None:
 
     assert 'user_agent' not in kwargs
     assert 'locale' not in kwargs
+
+
+def test_import_voidcrawl_sets_default_rust_log_filter(monkeypatch) -> None:
+    module = types.SimpleNamespace(BrowserConfig=object, BrowserPool=object, PoolConfig=object)
+    monkeypatch.setitem(sys.modules, 'voidcrawl', module)
+    monkeypatch.delenv('RUST_LOG', raising=False)
+
+    _import_voidcrawl()
+
+    assert 'chromiumoxide::handler=error' in os.environ['RUST_LOG']
+
+
+def test_import_voidcrawl_preserves_explicit_rust_log(monkeypatch) -> None:
+    module = types.SimpleNamespace(BrowserConfig=object, BrowserPool=object, PoolConfig=object)
+    monkeypatch.setitem(sys.modules, 'voidcrawl', module)
+    monkeypatch.setenv('RUST_LOG', 'debug')
+
+    _import_voidcrawl()
+
+    assert os.environ['RUST_LOG'] == 'debug'

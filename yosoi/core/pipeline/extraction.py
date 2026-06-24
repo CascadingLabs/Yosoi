@@ -6,11 +6,12 @@ _merge_js_outputs, _merge_downloads, _record_downloads, _finalize_downloads.
 
 from __future__ import annotations
 
+import inspect
 import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-import httpx
+import httpx2
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
@@ -18,6 +19,7 @@ from tenacity import RetryCallState, RetryError
 
 from yosoi.models.results import JsOutputs, VerificationResult
 from yosoi.models.selectors import SelectorLevel
+from yosoi.policy import PagePolicy
 from yosoi.utils import observability
 from yosoi.utils.exceptions import BotDetectionError, DownloadError
 from yosoi.utils.retry import get_async_retryer
@@ -51,6 +53,79 @@ class PipelineExtractionMixin:
     _keep_downloads: bool
     _download_dir: str | None
     _url_start: float
+
+    def _page_runtime_config(self, *, fetcher_type: str | None = None, max_fetch_retries: int | None = None) -> Any:
+        """Resolve generic page acquisition config for this pipeline run."""
+        policy = getattr(self, '_policy', None)
+        if policy is not None:
+            config = policy.page_runtime(scrape=getattr(policy, 'scrape', None))
+        else:
+            config = PagePolicy().to_runtime_config()
+        updates: dict[str, Any] = {}
+        if fetcher_type is not None:
+            updates['fetcher_type'] = fetcher_type
+        if max_fetch_retries is not None:
+            updates['max_fetch_retries'] = max_fetch_retries
+        return config.model_copy(update=updates) if updates else config
+
+    def _page_acquisition(self, *, fetcher_type: str | None = None, max_fetch_retries: int | None = None) -> Any:
+        """Build the generic page acquisition runtime for scrape paths."""
+        from yosoi.core.page import PageAcquisition
+
+        return PageAcquisition(
+            self._page_runtime_config(fetcher_type=fetcher_type, max_fetch_retries=max_fetch_retries),
+            cleaner=self.cleaner,
+            console=self.console,
+            save_debug_html=self.debug.save_debug_html,
+            fingerprint=False,
+        )
+
+    async def _acquire_page(
+        self,
+        url: str,
+        *,
+        fetcher: HTMLFetcher,
+        max_fetch_retries: int,
+        action_scripts: dict[str, str] | None = None,
+        download_specs: dict[str, DownloadSpec] | None = None,
+    ) -> Any:
+        """Acquire a page snapshot through the generic runtime.
+
+        Non-async test doubles keep the legacy ``_fetch``/``_clean`` hooks alive while
+        production fetchers use :class:`yosoi.core.page.PageAcquisition`.
+        """
+        fetch_method = getattr(fetcher, 'fetch', None)
+        if not inspect.iscoroutinefunction(fetch_method):
+            from yosoi.core.page import PageSnapshot
+
+            result = await self._fetch(
+                url,
+                fetcher,
+                max_retries=max_fetch_retries,
+                action_scripts=action_scripts,
+                download_specs=download_specs,
+            )
+            if result is None:
+                raise RuntimeError(f'Failed to fetch {url}')
+            assert result.html is not None
+            with observability.span('clean', url=url, raw_chars=len(result.html), mode='fresh'):
+                cleaned_html = await self._clean(url, result)
+            if not cleaned_html:
+                raise RuntimeError(f'HTML cleaning failed for {url}')
+            return PageSnapshot(
+                url=url,
+                final_url=str(getattr(result, 'url', url)),
+                raw_html=result.html,
+                cleaned_html=cleaned_html,
+                fetch_result=result,
+            )
+
+        return await self._page_acquisition(max_fetch_retries=max_fetch_retries).acquire(
+            url,
+            fetcher=fetcher,
+            action_scripts=action_scripts,
+            download_specs=download_specs,
+        )
 
     async def _fetch(
         self,
@@ -106,7 +181,7 @@ class PipelineExtractionMixin:
                         self._handle_bot_detection(e, attempt.retry_state.attempt_number, max_retries)
                         raise
 
-                    except (httpx.HTTPError, OSError, ValueError, RuntimeError) as e:
+                    except (httpx2.HTTPError, OSError, ValueError, RuntimeError) as e:
                         if str(e) not in [
                             'No HTML content received',
                             f'Fetch failed: {getattr(result, "block_reason", "Unknown")}',
@@ -121,7 +196,7 @@ class PipelineExtractionMixin:
         except RetryError:
             self.console.print(f'[danger]All {max_retries} attempts failed[/danger]')
             return None
-        except (httpx.HTTPError, OSError, ValueError, RuntimeError):
+        except (httpx2.HTTPError, OSError, ValueError, RuntimeError):
             return None
 
         return None
@@ -194,15 +269,19 @@ class PipelineExtractionMixin:
         js_scripts = await self._resolve_js_scripts(domain)  # type: ignore[attr-defined]
         download_specs = self._resolve_download_specs(fetcher)  # type: ignore[attr-defined]
         try:
-            result = await fetcher.fetch(url, action_scripts=js_scripts or None, download_specs=download_specs)
+            snapshot = await self._page_acquisition().acquire(
+                url,
+                fetcher=fetcher,
+                action_scripts=js_scripts or None,
+                download_specs=download_specs,
+            )
+            result = snapshot.fetch_result
 
             if not result.success or result.html is None:
                 self.console.print('[warning]⚠ Could not fetch HTML, skipping extraction[/warning]')
                 return None, True
 
-            self.console.print('[step]Cleaning HTML...[/step]')
-            cleaned_html: str = self.cleaner.clean_html(result.html)
-            await self.debug.save_debug_html(url, cleaned_html)
+            cleaned_html = snapshot.html_for_discovery
 
             root_entry = self._resolve_root(existing_selectors)  # type: ignore[attr-defined]
             container_selector = self._root_value(root_entry)  # type: ignore[attr-defined]

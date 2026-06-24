@@ -219,17 +219,17 @@ class SelectorVerifier:
             True if selector finds an element with text content
 
         """
-        import httpx
+        import httpx2
 
         try:
-            async with httpx.AsyncClient() as client:
+            async with httpx2.AsyncClient() as client:
                 response = await client.get(
                     url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=10, follow_redirects=True
                 )
             sel = Selector(text=response.text)
             elements = sel.css(selector)
             return bool(elements) and bool(' '.join(elements[0].xpath('.//text()').getall()).strip())
-        except (httpx.HTTPError, ValueError) as exc:
+        except (httpx2.HTTPError, ValueError) as exc:
             logger.warning('quick_test failed for selector %r on %r: %s', selector, url, exc)
             return False
 

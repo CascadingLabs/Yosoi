@@ -102,7 +102,7 @@ async def _call_sdk(
     *, system_prompt: str, user_prompt: str, model: str, output_format: dict[str, Any] | None
 ) -> tuple[str, RequestUsage]:
     """Drive the Claude Agent SDK and return assistant text or structured JSON text."""
-    from claude_agent_sdk import ClaudeAgentOptions, query  # type: ignore[import-not-found]
+    from claude_agent_sdk import ClaudeAgentOptions, query
 
     debug = os.getenv('YOSOI_SDK_DEBUG') == '1'
     t0 = time.monotonic()

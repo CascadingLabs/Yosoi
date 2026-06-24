@@ -23,35 +23,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from yosoi.policies import Policy
 from yosoi.storage.atoms import AtomStore, FieldAtom
-
-# These helpers are thin views over a Policy resolved from the env layer, so the env switches keep
-# working unchanged while there is ONE source of truth (yosoi.policies, the P6 MVP slice). As
-# similarity-in-reads lands, callers thread a resolved Policy through instead of calling these.
-# (resolve._try_atom_reads already resolves one Policy.)
-
-
-def atom_reads_enabled() -> bool:
-    """Whether atom-backed reads are turned on (env ``YOSOI_ATOM_READS``). Default OFF."""
-    return Policy.from_env().atom_reads
-
-
-def atom_trust_mode() -> str:
-    """Active trust tier (env ``YOSOI_ATOM_TRUST``): ``strict`` (default) | ``yellow``.
-
-    ``strict`` default-denies the risky, fingerprint-generalized atoms (quarantine); ``yellow``
-    ("let it ride") serves every tier. See ``yosoi.policies`` for the alias vocabulary.
-    """
-    return Policy.from_env().trust_tier
-
-
-def allowed_sources() -> frozenset[str] | None:
-    """Which provenance sources the active trust tier will serve; ``None`` means all (yellow).
-
-    Strict serves only the trusted tiers (default-deny the risky); yellow returns None.
-    """
-    return Policy.from_env().allowed_sources
 
 
 class AtomResolution(BaseModel):

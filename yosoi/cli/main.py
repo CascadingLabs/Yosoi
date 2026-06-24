@@ -12,7 +12,7 @@ from rich.console import Console
 from rich.theme import Theme
 
 from yosoi.cli.contract_param import ContractParamType
-from yosoi.cli.setup import build_yosoi_config, print_fetcher_info
+from yosoi.cli.setup import build_policy, print_fetcher_info
 from yosoi.cli.utils import console, load_urls_from_file
 from yosoi.models.contract import Contract
 from yosoi.models.defaults import NewsArticle
@@ -208,11 +208,22 @@ def main(
     if not is_initialized():
         init_yosoi()
 
-    yosoi_config = build_yosoi_config(model, debug)
     log_file = setup_local_logging(level=log_level)
     output_formats = _resolve_output_formats(output)
     resolved_contract = contract if contract else NewsArticle
     resolved_level = _LEVEL_MAP[selector_level.lower()]
+    policy = build_policy(
+        model,
+        debug,
+        force=force,
+        skip_verification=skip_verification,
+        fetcher_type=fetcher,
+        selector_level=resolved_level,
+        output_formats=output_formats,
+        quiet=json_output,
+        json_output=json_output,
+        max_concurrency=workers,
+    )
 
     ui: Console = Console(theme=_THEME, stderr=True) if json_output else console
 
@@ -222,7 +233,7 @@ def main(
         ui.print(f'[cyan]ℹ Selector level:[/cyan] [bold]{selector_level}[/bold]')
 
     if summary:
-        pipeline = Pipeline(yosoi_config, contract=resolved_contract, output_format=list(output_formats))
+        pipeline = Pipeline(policy=policy, contract=resolved_contract, output_format=list(output_formats))
         asyncio.run(pipeline.show_summary())
         return
 
@@ -236,11 +247,12 @@ def main(
 
         stderr_con = Console(theme=_THEME, stderr=True)
         pipeline = Pipeline(
-            yosoi_config,
+            None,
             contract=resolved_contract,
             output_format=output_formats,
             selector_level=resolved_level,
             console=stderr_con,
+            policy=policy,
         )
         try:
             exit_code = asyncio.run(_run_json(pipeline, urls, force, skip_verification, fetcher, list(output_formats)))
@@ -264,10 +276,11 @@ def main(
         ui.print(f'[cyan]ℹ Using {effective_workers} concurrent workers via taskiq[/cyan]')
 
     pipeline = Pipeline(
-        yosoi_config,
+        None,
         contract=resolved_contract,
         output_format=output_formats,
         selector_level=resolved_level,
+        policy=policy,
     )
     asyncio.run(
         pipeline.process_urls(
@@ -350,11 +363,21 @@ def scrape(
     if not is_initialized():
         init_yosoi()
 
-    yosoi_config = build_yosoi_config(model, False)
     log_file = setup_local_logging(level=log_level)
     output_formats = _resolve_output_formats(output)
     resolved_contract = contract if contract else NewsArticle
     resolved_level = _LEVEL_MAP[selector_level.lower()]
+    policy = build_policy(
+        model,
+        False,
+        force=False,
+        skip_verification=skip_verification,
+        fetcher_type=fetcher,
+        selector_level=resolved_level,
+        output_formats=output_formats,
+        quiet=json_output,
+        json_output=json_output,
+    )
 
     ui: Console = Console(theme=_THEME, stderr=True) if json_output else console
     ui.print(f'[cyan]ℹ Log file:[/cyan] [link=file://{log_file}]{log_file}[/link]')
@@ -371,6 +394,7 @@ def scrape(
         from yosoi.cli import exit_codes
         from yosoi.core.resolve import build_cache_from_selectors, resolve
         from yosoi.models.needs_discovery import NeedsDiscovery
+        from yosoi.policy import Policy
         from yosoi.storage import SelectorStorage
 
         def _domain_from_url(u: str) -> str:
@@ -396,13 +420,13 @@ def scrape(
 
                 cache = build_cache_from_selectors(domain, fp, raw_selectors)
                 # Fetch HTML — use simple HTTP
-                import httpx
+                import httpx2
 
-                async with httpx.AsyncClient() as client:
+                async with httpx2.AsyncClient() as client:
                     resp = await client.get(scrape_url, follow_redirects=True, timeout=30)
                     html = resp.text
 
-                result = resolve(spec, html, cache, domain, url=scrape_url)
+                result = resolve(spec, html, cache, domain, url=scrape_url, policy=Policy.from_env())
                 if isinstance(result, NeedsDiscovery):
                     sys.stdout.write(result.to_exit_json() + '\n')
                     sys.stdout.flush()
@@ -428,10 +452,11 @@ def scrape(
     # Non-JSON mode: delegate to the full pipeline (which may still run discovery
     # on a miss until we fully split scrape/discover in the pipeline).
     pipeline = Pipeline(
-        yosoi_config,
+        None,
         contract=resolved_contract,
         output_format=output_formats,
         selector_level=resolved_level,
+        policy=policy,
     )
     asyncio.run(
         pipeline.process_urls(
@@ -511,11 +536,22 @@ def discover(
     if not is_initialized():
         init_yosoi()
 
-    yosoi_config = build_yosoi_config(model, debug)
     log_file = setup_local_logging(level=log_level)
     output_formats = _resolve_output_formats(output)
     resolved_contract = contract if contract else NewsArticle
     resolved_level = _LEVEL_MAP[selector_level.lower()]
+    policy = build_policy(
+        model,
+        debug,
+        force=True,
+        skip_verification=skip_verification,
+        fetcher_type=fetcher,
+        selector_level=resolved_level,
+        output_formats=output_formats,
+        quiet=json_output,
+        json_output=json_output,
+        max_concurrency=workers,
+    )
 
     ui: Console = Console(theme=_THEME, stderr=True) if json_output else console
     ui.print(f'[cyan]ℹ Log file:[/cyan] [link=file://{log_file}]{log_file}[/link]')
@@ -534,11 +570,12 @@ def discover(
 
         stderr_con = Console(theme=_THEME, stderr=True)
         pipeline = Pipeline(
-            yosoi_config,
+            None,
             contract=resolved_contract,
             output_format=output_formats,
             selector_level=resolved_level,
             console=stderr_con,
+            policy=policy,
         )
         try:
             exit_code = asyncio.run(
@@ -551,10 +588,11 @@ def discover(
         sys.exit(exit_code)
 
     pipeline = Pipeline(
-        yosoi_config,
+        None,
         contract=resolved_contract,
         output_format=output_formats,
         selector_level=resolved_level,
+        policy=policy,
     )
     asyncio.run(
         pipeline.process_urls(

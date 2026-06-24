@@ -475,7 +475,7 @@ class TestCreateModelOpenAICompat:
         self._assert_openai_model('fireworks')
 
     def test_together(self):
-        self._assert_openai_model('together')
+        self._assert_openai_model('together', 'meta-llama/Llama-3-70b')
 
     def test_nebius(self):
         self._assert_openai_model('nebius')
@@ -934,5 +934,6 @@ class TestOptionalProviderExtras:
             'pydantic_ai.models.huggingface',
         ):
             monkeypatch.setitem(sys.modules, mod, None)
-        model = create_model(LLMConfig(provider=provider_name, model_name='m', api_key='k'))
+        model_name = 'meta-llama/Llama-3-70b' if provider_name == 'together' else 'm'
+        model = create_model(LLMConfig(provider=provider_name, model_name=model_name, api_key='k'))
         assert 'OpenAI' in type(model).__name__

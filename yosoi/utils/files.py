@@ -9,9 +9,6 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-import aiofiles
-import aiofiles.os
-
 _logger = logging.getLogger(__name__)
 
 
@@ -73,16 +70,9 @@ def atomic_write_json(
 async def atomic_write_text_async(path: str | Path, text: str, *, encoding: str = 'utf-8') -> None:
     """Async, crash-safe write of *text* to *path*.
 
-    The async counterpart of :func:`atomic_write_text`: the file body is
-    written with ``aiofiles`` (off the event loop) and swapped into place with
-    ``aiofiles.os.replace``, which is atomic on POSIX. A concurrent reader or a
-    crash can never observe a torn file — only the old or the complete new
-    contents.
-
-    Note: like the original sync storage writes, this does not ``fsync`` the
-    file (``aiofiles.os`` exposes no async fsync), so durability ordering after
-    a hard power loss is unchanged; the atomic-visibility guarantee comes from
-    the rename, not from fsync.
+    Delegates to the synchronous atomic writer. These writes are small local
+    cache artifacts, and keeping one stdlib implementation avoids runtime
+    differences in async file/threadpool shims.
 
     Args:
         path: Destination file path.
@@ -90,20 +80,7 @@ async def atomic_write_text_async(path: str | Path, text: str, *, encoding: str 
         encoding: Text encoding. Defaults to 'utf-8'.
 
     """
-    path = Path(path)
-    await aiofiles.os.makedirs(str(path.parent), exist_ok=True)
-    # mkstemp is a single fast syscall; the expensive write happens via aiofiles.
-    fd, tmp_name = tempfile.mkstemp(dir=str(path.parent), prefix=f'.{path.name}.', suffix='.tmp')
-    os.close(fd)
-    try:
-        async with aiofiles.open(tmp_name, 'w', encoding=encoding) as f:
-            await f.write(text)
-            await f.flush()
-        await aiofiles.os.replace(tmp_name, str(path))
-    except BaseException:
-        with contextlib.suppress(OSError):
-            await aiofiles.os.remove(tmp_name)
-        raise
+    atomic_write_text(path, text, encoding=encoding)
 
 
 async def atomic_write_json_async(

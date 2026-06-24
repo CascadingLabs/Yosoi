@@ -2,18 +2,81 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Literal, cast
 
 import rich_click as click
+from pydantic import ValidationError
 
-from yosoi.cli.utils import console, console_err
+from yosoi.cli.utils import console
 
 if TYPE_CHECKING:
     from yosoi.core.configs import YosoiConfig
+    from yosoi.models.selectors import SelectorLevel
+    from yosoi.policy import Policy
+
+FetcherName = Literal['auto', 'simple', 'headless', 'headful', 'waterfall']
+
+
+def build_policy(
+    model_arg: str | None,
+    debug: bool,
+    *,
+    force: bool = False,
+    skip_verification: bool = False,
+    fetcher_type: str = 'auto',
+    selector_level: SelectorLevel | None = None,
+    output_formats: Sequence[str] = (),
+    quiet: bool = True,
+    json_output: bool = False,
+    max_concurrency: int | None = None,
+) -> Policy:
+    """Build the CLI call-site policy layer and cascade it with env."""
+    from dotenv import load_dotenv
+
+    from yosoi.policy import ModelPolicy, OutputPolicy, Policy, ScrapePolicy
+
+    load_dotenv()
+    try:
+        # Only set fields that differ from the defaults, so the env layer
+        # (YOSOI_MODEL / YOSOI_FORCE / YOSOI_FETCHER_TYPE / ...) is not clobbered
+        # by CLI flags the user never passed.
+        call_kwargs: dict[str, object] = {}
+        if model_arg:
+            call_kwargs['model'] = ModelPolicy.from_string(model_arg)
+        scrape_defaults = ScrapePolicy()
+        scrape_payload: dict[str, object] = {}
+        if force:
+            scrape_payload['force'] = True
+        if skip_verification:
+            scrape_payload['skip_verification'] = True
+        if fetcher_type != scrape_defaults.fetcher_type:
+            scrape_payload['fetcher_type'] = cast(FetcherName, fetcher_type)
+        if selector_level is not None and selector_level != scrape_defaults.selector_level:
+            scrape_payload['selector_level'] = selector_level
+        if max_concurrency is not None:
+            scrape_payload['max_concurrency'] = max_concurrency
+        if scrape_payload:
+            call_kwargs['scrape'] = ScrapePolicy.model_validate(scrape_payload)
+        call_kwargs['output'] = OutputPolicy(
+            formats=tuple(output_formats),
+            quiet=quiet,
+            json_output=json_output,
+            debug_html=debug,
+        )
+        call_policy = Policy.model_validate(call_kwargs)
+        policy = Policy.cascade(Policy.from_env(), call_policy)
+        spec = policy.resolve_run_spec()
+    except (KeyError, ValueError, ValidationError) as e:
+        raise click.ClickException(str(e)) from e
+    console.print(
+        f'[bold]Using[/bold] [green]{spec.llm_config.provider}[/green] / [cyan]{spec.llm_config.model_name}[/cyan]'
+    )
+    return policy
 
 
 def build_yosoi_config(model_arg: str | None, debug: bool) -> YosoiConfig:
-    """Build a YosoiConfig from CLI args, with provider fallback and user warnings.
+    """Build a legacy YosoiConfig from CLI args.
 
     Thin CLI wrapper around :func:`yosoi.core.configs.auto_config`.
 
@@ -29,27 +92,11 @@ def build_yosoi_config(model_arg: str | None, debug: bool) -> YosoiConfig:
     """
     from yosoi.core.configs import auto_config
 
-    # Capture the requested provider so we can warn about fallbacks
-    original_provider: str | None = None
-    if model_arg:
-        from yosoi.core.discovery.config import _parse_model_string
-
-        try:
-            prov, _ = _parse_model_string(model_arg)
-            original_provider = prov
-        except ValueError:
-            pass
-
     try:
         yosoi_config = auto_config(model=model_arg, debug=debug)
     except ValueError as e:
         raise click.ClickException(str(e)) from e
 
-    if original_provider and yosoi_config.llm.provider != original_provider:
-        console_err.print(
-            f'[yellow]Warning: {original_provider!r} has no API key — '
-            f'fell back to {yosoi_config.llm.provider!r}[/yellow]'
-        )
     console.print(
         f'[bold]Using[/bold] [green]{yosoi_config.llm.provider}[/green] / [cyan]{yosoi_config.llm.model_name}[/cyan]'
     )

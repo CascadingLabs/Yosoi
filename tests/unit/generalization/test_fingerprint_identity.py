@@ -255,10 +255,11 @@ def test_identity_threshold_override_flips_verdict() -> None:
     sim = a.similarity(b)
     assert sim.identity is not None  # both substantively carried
     part = sim.identity
-    assert 0.0 < part < 1.0  # partial overlap (2 shared of 4 union = 0.5)
-    # a threshold below the partial score passes; one above it vetoes — same pair, same structure
-    assert a.matches(b, identity_threshold=part - 0.01) is True
-    assert a.matches(b, identity_threshold=part + 0.01) is False
+    assert 0.0 < part < 1.0  # partial raw overlap (2 shared of 4 union = 0.5)
+    assert 0.0 < part.weighted < 1.0
+    # a threshold below the weighted score passes; one above it vetoes — same pair, same structure
+    assert a.matches(b, identity_threshold=part.weighted - 0.01) is True
+    assert a.matches(b, identity_threshold=part.weighted + 0.01) is False
 
 
 def test_ax_threshold_override_flips_verdict() -> None:
@@ -269,9 +270,10 @@ def test_ax_threshold_override_flips_verdict() -> None:
     sim = a.similarity(b)
     assert sim.ax is not None
     part = sim.ax
-    assert 0.0 < part < 1.0  # partial role-set overlap
-    assert a.matches(b, ax_threshold=part - 0.01) is True
-    assert a.matches(b, ax_threshold=part + 0.01) is False
+    assert 0.0 < part < 1.0  # partial raw role-set overlap
+    assert 0.0 < part.weighted < 1.0
+    assert a.matches(b, ax_threshold=part.weighted - 0.01) is True
+    assert a.matches(b, ax_threshold=part.weighted + 0.01) is False
 
 
 # ── floor boundary: exactly 3 features carries, exactly 2 abstains ────────────

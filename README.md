@@ -66,7 +66,7 @@ async def scrape():
             html = await tab.content()
 ```
 
-See [`examples/README.md`](examples/README.md) for the maintained example set.
+See [`examples/README.md`](examples/README.md) for the maintained example set. For the explainable page-fingerprinting stack behind resilient reuse, see [`docs/fingerprinting-stack.md`](docs/fingerprinting-stack.md).
 
 ## Quick Start
 

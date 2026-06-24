@@ -152,7 +152,7 @@ class TestRealA3NodeStorage:
     async def test_delete_oserror_returns_false(self, real_storage, mocker):
         await real_storage.save('example.com', _acts('load_more'))
         mocker.patch(
-            'yosoi.storage.a3node.aiofiles.os.remove',
+            'yosoi.storage.a3node.os.remove',
             side_effect=OSError('permission denied'),
         )
         # Failure to remove is swallowed and reported as False.

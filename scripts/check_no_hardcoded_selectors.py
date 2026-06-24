@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any
 
 DEFAULT_ROOTS = (Path('examples'),)
+IGNORED_DIR_NAMES = {'.venv', '__pycache__', '.git'}
 
 SELECTOR_FACTORY_NAMES = {'css', 'xpath'}
 SELECTOR_KEYWORDS = {'selector', 'selectors', 'root_selector', 'row_selector'}
@@ -76,7 +77,21 @@ def _literal_string(node: ast.AST) -> str | None:
 
 
 def _literal_strings(node: ast.AST) -> list[str]:
-    return [child.value for child in ast.walk(node) if isinstance(child, ast.Constant) and isinstance(child.value, str)]
+    values: list[str] = []
+
+    def visit(child: ast.AST) -> None:
+        if isinstance(child, ast.Constant) and isinstance(child.value, str):
+            values.append(child.value)
+            return
+        if isinstance(child, ast.FormattedValue):
+            # Format specs such as ``:.2f`` are not selector literals.
+            visit(child.value)
+            return
+        for nested in ast.iter_child_nodes(child):
+            visit(nested)
+
+    visit(node)
+    return values
 
 
 def _constructs_selector(node: ast.AST) -> str | None:
@@ -209,6 +224,10 @@ class SelectorVisitor(ast.NodeVisitor):
                 self._add(node, 'selector-looking string literal', node.value)
         self.generic_visit(node)
 
+    def visit_FormattedValue(self, node: ast.FormattedValue) -> Any:
+        """Check f-string expressions without treating format specs as selectors."""
+        self.visit(node.value)
+
 
 def _target_name(node: ast.AST) -> str | None:
     if isinstance(node, ast.Name):
@@ -229,7 +248,10 @@ def _python_files(paths: list[Path]) -> list[Path]:
 
 
 def _ignored(path: Path) -> bool:
-    return any(part in {'.venv', '__pycache__', '.git'} for part in path.parts)
+    if any(part in IGNORED_DIR_NAMES for part in path.parts):
+        return True
+    parts = path.parts
+    return any(parts[index] == 'examples' and parts[index + 1] == 'projects' for index in range(len(parts) - 1))
 
 
 def check_files(paths: list[Path]) -> list[Violation]:

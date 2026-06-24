@@ -32,7 +32,7 @@ jobs:
         run: uv venv --python ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: uv sync --all-extras --group tests --group dev
+        run: uv sync --python ${{ matrix.python-version }} --all-extras --group tests --group dev
 
       - name: Build package
         run: uv build

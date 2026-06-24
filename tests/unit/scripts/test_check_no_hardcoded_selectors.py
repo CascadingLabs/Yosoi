@@ -282,6 +282,12 @@ def test_allows_non_selector_f_string(tmp_path: Path) -> None:
     assert check_files([path]) == []
 
 
+def test_allows_numeric_f_string_format_spec(tmp_path: Path) -> None:
+    path = _write(tmp_path, "message = f'{seconds:.2f}s'\n")
+
+    assert check_files([path]) == []
+
+
 def test_truncates_long_selector_values(tmp_path: Path) -> None:
     path = _write(tmp_path, f"product_selector = '.{'a' * 120}'\n")
 
@@ -319,11 +325,20 @@ def test_checks_skip_ignored_directories(tmp_path: Path) -> None:
     assert check_files([tmp_path]) == []
 
 
+def test_checks_skip_ignored_example_projects(tmp_path: Path) -> None:
+    ignored = tmp_path / 'examples' / 'projects' / 'scratch'
+    ignored.mkdir(parents=True)
+    (ignored / 'catalog.py').write_text("root = ys.css('.product-card')")
+
+    assert check_files([tmp_path / 'examples']) == []
+
+
 def test_main_defaults_to_examples_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     examples = tmp_path / 'examples'
     examples.mkdir()
     (examples / 'catalog.py').write_text("title = 'Product name'")
     monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr('sys.argv', ['check_no_hardcoded_selectors.py'])
 
     assert main() == 0
 

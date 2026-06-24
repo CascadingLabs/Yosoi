@@ -9,7 +9,10 @@ import pytest
 from rich.console import Console
 
 import yosoi as ys
+from yosoi.core.crawler.coordinator import CrawlJob, CrawlResult, CrawlRunSummary
+from yosoi.core.crawler.links import CrawlLink
 from yosoi.display import show
+from yosoi.reporting.display import RichCrawlProgress
 
 pytestmark = pytest.mark.unit
 
@@ -17,6 +20,11 @@ pytestmark = pytest.mark.unit
 def _capture() -> tuple[Console, io.StringIO]:
     buf = io.StringIO()
     return Console(file=buf, width=200, force_terminal=False), buf
+
+
+def _terminal_capture() -> tuple[Console, io.StringIO]:
+    buf = io.StringIO()
+    return Console(file=buf, width=200, force_terminal=True, color_system='truecolor'), buf
 
 
 def test_show_auto_renders_list_of_records_as_table() -> None:
@@ -31,6 +39,16 @@ def test_show_auto_renders_list_of_records_as_table() -> None:
     assert 'available' in out
     assert 'Forge Hammer' in out
     assert 'Tome' in out
+
+
+def test_show_renders_url_record_cells_as_terminal_hyperlinks() -> None:
+    console, buf = _terminal_capture()
+
+    show([{'url': 'https://example.test/story'}], console=console)
+
+    out = buf.getvalue()
+    assert '\x1b]8;id=' in out
+    assert ';https://example.test/story\x1b\\' in out
 
 
 def test_show_is_available_from_public_lazy_api() -> None:
@@ -111,8 +129,162 @@ def test_show_renders_fingerprint_comparison() -> None:
 
     out = buf.getvalue()
     assert 'Fingerprint comparison' in out
+    assert 'score' in out
     assert 'same_shape' in out
     assert 'yes' in out
+
+
+def test_show_renders_crawl_summary() -> None:
+    console, buf = _capture()
+    summary = CrawlRunSummary(
+        pages_fetched=1,
+        attempted_urls=2,
+        unique_urls_seen=3,
+        policy_blocked=1,
+        wall_time=0.25,
+        results=[
+            CrawlResult(
+                job=CrawlJob(url='https://qscrape.dev/l1/news/articles', depth=0, source_url=None, batch_index=0),
+                status='succeeded',
+                discovered_links=(
+                    CrawlLink(url='https://qscrape.dev/l1/news/articles/story-one', text='Story One', score=0.8),
+                ),
+                content_type='text/html; charset=utf-8',
+            ),
+            CrawlResult(
+                job=CrawlJob(
+                    url='https://qscrape.dev/l1/news/articles/story-one',
+                    depth=1,
+                    source_url='https://qscrape.dev/l1/news/articles',
+                    batch_index=1,
+                ),
+                status='succeeded',
+                content_type='text/html; charset=utf-8',
+            ),
+            CrawlResult(
+                job=CrawlJob(url='https://qscrape.dev/login', depth=1, source_url=None, batch_index=2),
+                status='policy_blocked',
+            ),
+        ],
+    )
+
+    show(summary, console=console)
+
+    out = buf.getvalue()
+    assert 'Crawl summary' in out
+    assert 'pages fetched' in out
+    assert 'https://qscrape.dev/l1/news/articles' in out
+    assert 'Crawl path coverage' in out
+    assert '/l1' in out
+    assert 'Crawl content types' in out
+    assert 'text/html' in out
+    assert 'Discovered links' in out
+    assert 'https://qscrape.dev/l1/news/articles/story-one' in out
+    assert 'Representative inventory URLs' in out
+    assert 'Neutral scrape target URLs' in out
+    assert 'Policy blocked' in out
+
+
+def test_show_caps_long_crawl_lanes() -> None:
+    console, buf = _capture()
+    summary = CrawlRunSummary(
+        pages_fetched=25,
+        attempted_urls=25,
+        unique_urls_seen=25,
+        wall_time=0.25,
+        results=[
+            CrawlResult(
+                job=CrawlJob(url=f'https://example.test/{idx}', depth=0, source_url=None, batch_index=idx),
+                status='succeeded',
+            )
+            for idx in range(25)
+        ],
+    )
+
+    show(summary, console=console)
+
+    out = buf.getvalue()
+    assert 'https://example.test/0' in out
+    assert 'https://example.test/19' in out
+    assert 'https://example.test/20' not in out
+    assert '... 5 more' in out
+
+
+def test_show_renders_crawl_urls_as_terminal_hyperlinks() -> None:
+    console, buf = _terminal_capture()
+    summary = CrawlRunSummary(
+        pages_fetched=1,
+        attempted_urls=1,
+        unique_urls_seen=1,
+        wall_time=0.25,
+        results=[
+            CrawlResult(
+                job=CrawlJob(url='https://example.test/story', depth=0, source_url=None, batch_index=0),
+                status='succeeded',
+            )
+        ],
+    )
+
+    show(summary, console=console)
+
+    out = buf.getvalue()
+    assert '\x1b]8;id=' in out
+    assert ';https://example.test/story\x1b\\' in out
+
+
+def test_live_crawl_progress_renders_urls_as_terminal_hyperlinks() -> None:
+    console, buf = _terminal_capture()
+    progress = RichCrawlProgress(console=console)
+    summary = CrawlRunSummary()
+
+    progress.start(seeds=('https://example.test/story',), summary=summary, config=object())
+    console.print(progress._render())
+
+    out = buf.getvalue()
+    assert '\x1b]8;id=' in out
+    assert ';https://example.test/story\x1b\\' in out
+
+
+def test_live_crawl_progress_caps_rows_for_stable_terminal_height() -> None:
+    console, buf = _capture()
+    progress = RichCrawlProgress(console=console)
+    summary = CrawlRunSummary()
+    progress.start(seeds=('https://example.test/0',), summary=summary, config=object())
+
+    for idx in range(40):
+        progress.result(
+            CrawlResult(
+                job=CrawlJob(url=f'https://example.test/{idx}', depth=idx % 3, source_url=None, batch_index=idx),
+                status='succeeded',
+                fetch_time=0.01,
+            ),
+            summary,
+        )
+
+    console.print(progress._render())
+
+    out = buf.getvalue()
+    assert 'older rows hidden' in out
+    assert 'https://example.test/39' in out
+    assert 'https://example.test/1' not in out
+
+
+def test_live_crawl_progress_prints_once_when_console_is_not_terminal() -> None:
+    console, buf = _capture()
+    summary = CrawlRunSummary()
+
+    with RichCrawlProgress(console=console) as progress:
+        progress.start(seeds=('https://example.test/story',), summary=summary, config=object())
+        progress.result(
+            CrawlResult(
+                job=CrawlJob(url='https://example.test/story', depth=0, source_url=None, batch_index=0),
+                status='succeeded',
+                fetch_time=0.01,
+            ),
+            summary,
+        )
+
+    assert buf.getvalue().count('Crawl -') == 1
 
 
 def test_show_table_rejects_non_table_values() -> None:
