@@ -37,9 +37,10 @@ CHROME_WS_URLS = tuple(
     for url in os.getenv('YOSOI_CHROME_WS_URLS', 'http://127.0.0.1:9222,http://127.0.0.1:9223').split(',')
     if url.strip()
 )
-MIN_EXEMPLAR_SCORE = float(os.getenv('YOSOI_FULL_CRAWL_V2_MIN_EXEMPLAR_SCORE', '0.70'))
+MIN_EXEMPLAR_SCORE = float(os.getenv('YOSOI_FULL_CRAWL_V2_MIN_EXEMPLAR_SCORE', '0.50'))
 MIN_EXEMPLAR_MARGIN = float(os.getenv('YOSOI_FULL_CRAWL_V2_MIN_EXEMPLAR_MARGIN', '0.06'))
 EXEMPLAR_SUPPORT_SCORE = float(os.getenv('YOSOI_FULL_CRAWL_V2_EXEMPLAR_SUPPORT_SCORE', '0.70'))
+CONTRASTIVE_WEIGHT = float(os.getenv('YOSOI_FULL_CRAWL_V2_CONTRASTIVE_WEIGHT', '0.50'))
 
 
 class NewsArticle(ys.Contract):
@@ -94,8 +95,8 @@ QSCRAPE_EXEMPLARS: dict[type[Contract] | str, tuple[str, ...]] = {
         'https://qscrape.dev/l3/news/article/MHH-001/',
         'https://qscrape.dev/l3/news/article/MHH-002/',
         'https://qscrape.dev/l3/news/article/MHH-003/',
-        'https://qscrape.dev/l3/news/article/MHH-004/',
-        'https://qscrape.dev/l3/news/article/MHH-005/',
+        'https://qscrape.dev/l1/news/article?postData=MHH_v1_Kp9rXm2bQsXXXNNNXXXID%3DMHH-001%26HASH%3Dcrawl-XXXNNNXXXtR7vYw1hF3dGXXXNNNXXX',
+        'https://qscrape.dev/l1/news/article?postData=MHH_v1_Kp9rXm2bQsXXXNNNXXXID%3DMHH-003%26HASH%3Dcrawl-XXXNNNXXXtR7vYw1hF3dGXXXNNNXXX',
     ),
     TaxInfo: (
         'https://qscrape.dev/l3/taxes/viewer/26-010033/',
@@ -119,6 +120,19 @@ QSCRAPE_EXEMPLARS: dict[type[Contract] | str, tuple[str, ...]] = {
         'https://qscrape.dev/l3/eshop/product/VM-FDB-005/',
     ),
 }
+
+QSCRAPE_CONTRASTIVE_EXEMPLARS = (
+    'https://qscrape.dev/',
+    'https://qscrape.dev/l3/eshop/',
+    'https://qscrape.dev/l3/eshop/?cat=Forge+%26+Smithing',
+    'https://qscrape.dev/l1/scoretap/',
+    'https://qscrape.dev/l1/scoretap/article/',
+    'https://qscrape.dev/l1/scoretap/article?id=mouz-heroic-semifinal',
+    'https://qscrape.dev/l3/taxes/',
+    'https://qscrape.dev/l1/news/about/',
+    'https://qscrape.dev/l1/news/staff/',
+    'https://qscrape.dev/l2/news/',
+)
 
 
 def _qscrape_oracle_label(url: str) -> str:
@@ -163,7 +177,8 @@ def _write_qscrape_accuracy_eval(result: Any) -> Path:
         **_qscrape_accuracy_summary(
             rows,
             known_urls=result.inventory.urls,
-            exemplar_urls={url for urls in QSCRAPE_EXEMPLARS.values() for url in urls},
+            exemplar_urls={url for urls in QSCRAPE_EXEMPLARS.values() for url in urls}
+            | set(QSCRAPE_CONTRASTIVE_EXEMPLARS),
         ),
     }
     path = OUT / 'qscrape_accuracy_eval.json'
@@ -180,18 +195,22 @@ def _write_qscrape_exemplar_level_eval(result: Any) -> Path:
             CONTRACTS,
             max_targets_per_contract=TOP,
             contract_exemplars=exemplar_subset or None,
+            contrastive_exemplars=QSCRAPE_CONTRASTIVE_EXEMPLARS if exemplar_subset else None,
+            contrastive_weight=CONTRASTIVE_WEIGHT,
             min_exemplar_score=MIN_EXEMPLAR_SCORE,
             min_exemplar_margin=MIN_EXEMPLAR_MARGIN,
             exemplar_support_score=EXEMPLAR_SUPPORT_SCORE,
         )
-        exemplar_urls = {url for urls in exemplar_subset.values() for url in urls}
+        training_urls = {url for urls in exemplar_subset.values() for url in urls}
+        if exemplar_subset:
+            training_urls.update(QSCRAPE_CONTRASTIVE_EXEMPLARS)
         levels.append(
             {
                 'exemplars_per_contract': exemplar_count,
                 'plan_kind': plan.as_output()['plan_kind'],
                 'contract_specific_ranking': plan.as_output()['contract_specific_ranking'],
                 **_qscrape_accuracy_summary(
-                    plan.as_rows(), known_urls=result.inventory.urls, exemplar_urls=exemplar_urls
+                    plan.as_rows(), known_urls=result.inventory.urls, exemplar_urls=training_urls
                 ),
             }
         )
@@ -210,13 +229,16 @@ def _write_qscrape_frontier_generalization_eval(result: Any) -> Path:
     levels: list[dict[str, Any]] = []
     for exemplar_count in (5, 4, 3, 2, 1, 0):
         exemplar_subset = _exemplars_at_level(exemplar_count)
-        exemplar_urls = {url for urls in exemplar_subset.values() for url in urls}
+        training_urls = {url for urls in exemplar_subset.values() for url in urls}
         if exemplar_subset:
+            training_urls.update(QSCRAPE_CONTRASTIVE_EXEMPLARS)
             plan = plan_contract_targets(
                 result.inventory,
                 CONTRACTS,
                 max_targets_per_contract=None,
                 contract_exemplars=exemplar_subset,
+                contrastive_exemplars=QSCRAPE_CONTRASTIVE_EXEMPLARS,
+                contrastive_weight=CONTRASTIVE_WEIGHT,
                 min_exemplar_score=MIN_EXEMPLAR_SCORE,
                 min_exemplar_margin=MIN_EXEMPLAR_MARGIN,
                 exemplar_support_score=EXEMPLAR_SUPPORT_SCORE,
@@ -233,7 +255,7 @@ def _write_qscrape_frontier_generalization_eval(result: Any) -> Path:
                 **_qscrape_frontier_generalization_summary(
                     result.inventory.urls,
                     predictions=predictions,
-                    exemplar_urls=exemplar_urls,
+                    exemplar_urls=training_urls,
                 ),
             }
         )
@@ -281,6 +303,7 @@ def _qscrape_accuracy_summary(
     total = len(rows)
     known_target_urls = {url for url in known_urls if _qscrape_oracle_label(url) != 'Unknown'} - exemplar_urls
     return {
+        'excluded_training_urls': len(exemplar_urls),
         'total_rows': total,
         'correct_rows': correct,
         'wrong_rows': total - correct,
@@ -351,6 +374,7 @@ def _qscrape_frontier_generalization_summary(
     recall = true_positive / (true_positive + false_negative) if true_positive + false_negative else None
     f1 = 2 * precision * recall / (precision + recall) if precision and recall else None
     return {
+        'excluded_training_urls': len(exemplar_urls),
         'total_eval_urls': total,
         'target_urls': target_total,
         'contrastive_urls': contrastive_total,
@@ -418,6 +442,8 @@ async def main() -> None:
         include_query_strings=True,
         max_targets_per_contract=TOP,
         contract_exemplars=QSCRAPE_EXEMPLARS,
+        contrastive_exemplars=QSCRAPE_CONTRASTIVE_EXEMPLARS,
+        contrastive_weight=CONTRASTIVE_WEIGHT,
         min_exemplar_score=MIN_EXEMPLAR_SCORE,
         min_exemplar_margin=MIN_EXEMPLAR_MARGIN,
         exemplar_support_score=EXEMPLAR_SUPPORT_SCORE,

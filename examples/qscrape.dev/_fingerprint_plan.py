@@ -1,16 +1,12 @@
-"""Example-local crawl→fingerprint-family planning for full_crawl_v2.
+"""Example-local crawl→fingerprint planning for full_crawl_v2.
 
 The crawler stays neutral: it fetches pages and computes page fingerprints. This
-helper compares every crawled page fingerprint against every other crawled page
-fingerprint, discovers page families from those similarities, and, when requested,
-fans selected neutral candidates out to explicit contracts for normal
-scrape/discovery verification.
+helper can either produce a cold-start neutral fingerprint-family fanout or rank
+pages against explicit validated positive and contrastive exemplars.
 
 This is advisory. Fingerprints propose scrape targets; they do not authorize
-selector reuse or serving data. Cold-start planning intentionally does not do
-lexical contract/page routing. Identical URL lists across contracts are expected
-neutral evidence, not per-contract success. Contract-specific fingerprint ranking
-belongs to future validated warm-reference support.
+selector reuse or serving data. URL paths and contract/schema words are not used
+for scoring. Verified scrape/discovery remains the extraction-success gate.
 """
 
 from __future__ import annotations
@@ -61,7 +57,7 @@ class CrawlInventory:
 
 @dataclass(frozen=True, slots=True)
 class FingerprintTarget:
-    """One neutral fingerprint candidate fanned out under one contract label."""
+    """One fingerprint target candidate under one contract label."""
 
     contract_name: str
     contract: type[Contract]
@@ -87,6 +83,9 @@ class FingerprintTarget:
     exemplar_support_ratio: float | None = None
     exemplar_margin: float | None = None
     second_contract_name: str | None = None
+    positive_exemplar_score: float | None = None
+    contrastive_score: float | None = None
+    contrastive_weight: float | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -153,16 +152,19 @@ def plan_contract_targets(
     min_fingerprint_score: float = 0.70,
     max_targets_per_contract: int | None = None,
     contract_exemplars: Mapping[type[Contract] | str, Sequence[str]] | None = None,
+    contrastive_exemplars: Sequence[str] | None = None,
+    contrastive_weight: float = 0.0,
     min_exemplar_score: float = 0.70,
     min_exemplar_margin: float = 0.06,
     exemplar_support_score: float = 0.70,
     exclude_exemplars_from_targets: bool = True,
 ) -> FingerprintTargetPlan:
-    """Rank crawled pages as neutral fingerprint candidates for contract fanout.
+    """Rank crawled pages as fingerprint candidates for explicit contract fanout.
 
-    No route hints and no lexical contract/page matching are accepted. Page
-    families are discovered from fingerprints; contracts are only explicit scrape
-    fanout labels. Fingerprints propose; scrape/discovery still verifies.
+    No route hints and no lexical contract/page matching are accepted. Without
+    exemplars, page families are discovered from fingerprints and contracts are
+    only fanout labels. With exemplars, pages are ranked by positive exemplar
+    similarity minus optional contrastive/no-contract similarity.
     """
     inv = inventory if isinstance(inventory, CrawlInventory) else CrawlInventory.from_summary(inventory)
     if contract_exemplars:
@@ -170,6 +172,8 @@ def plan_contract_targets(
             inv,
             contracts,
             contract_exemplars=contract_exemplars,
+            contrastive_exemplars=contrastive_exemplars,
+            contrastive_weight=contrastive_weight,
             min_exemplar_score=min_exemplar_score,
             min_exemplar_margin=min_exemplar_margin,
             exemplar_support_score=exemplar_support_score,
@@ -227,6 +231,8 @@ async def crawl_contract_targets(
     min_fingerprint_score: float = 0.70,
     max_targets_per_contract: int | None = None,
     contract_exemplars: Mapping[type[Contract] | str, Sequence[str]] | None = None,
+    contrastive_exemplars: Sequence[str] | None = None,
+    contrastive_weight: float = 0.0,
     min_exemplar_score: float = 0.70,
     min_exemplar_margin: float = 0.06,
     exemplar_support_score: float = 0.70,
@@ -249,6 +255,8 @@ async def crawl_contract_targets(
         min_fingerprint_score=min_fingerprint_score,
         max_targets_per_contract=max_targets_per_contract,
         contract_exemplars=contract_exemplars,
+        contrastive_exemplars=contrastive_exemplars,
+        contrastive_weight=contrastive_weight,
         min_exemplar_score=min_exemplar_score,
         min_exemplar_margin=min_exemplar_margin,
         exemplar_support_score=exemplar_support_score,
@@ -381,6 +389,7 @@ class _ExemplarScore:
     support_count: int
     support_ratio: float
     best_exemplar_url: str
+    best_same_shape: bool
 
 
 def _plan_with_exemplars(
@@ -388,6 +397,8 @@ def _plan_with_exemplars(
     contracts: Sequence[type[Contract]],
     *,
     contract_exemplars: Mapping[type[Contract] | str, Sequence[str]],
+    contrastive_exemplars: Sequence[str] | None,
+    contrastive_weight: float,
     min_exemplar_score: float,
     min_exemplar_margin: float,
     exemplar_support_score: float,
@@ -406,29 +417,47 @@ def _plan_with_exemplars(
         raise ValueError(f'missing crawled fingerprint exemplars for contracts: {missing}')
 
     exemplar_urls = {item.url for items in exemplars.values() for item in items}
+    contrastives = [by_url[url] for url in contrastive_exemplars or () if url in by_url]
+    contrastive_urls = {item.url for item in contrastives}
     planned: dict[str, list[FingerprintTarget]] = {contract.__name__: [] for contract in contracts}
     for item in inventory.items:
         if item.fingerprint.degenerate:
             continue
-        if exclude_exemplars_from_targets and item.url in exemplar_urls:
+        if exclude_exemplars_from_targets and item.url in exemplar_urls | contrastive_urls:
             continue
+        contrastive_score = (
+            _score_against_exemplars(
+                item,
+                contract_name='NoContract',
+                exemplars=contrastives,
+                support_score=exemplar_support_score,
+            ).score
+            if contrastives and contrastive_weight > 0
+            else 0.0
+        )
         scored = sorted(
             (
-                _score_against_exemplars(
-                    item,
-                    contract_name=contract.__name__,
-                    exemplars=exemplars[contract.__name__],
-                    support_score=exemplar_support_score,
+                (
+                    positive.score - (contrastive_weight * contrastive_score),
+                    positive,
                 )
-                for contract in contracts
+                for positive in (
+                    _score_against_exemplars(
+                        item,
+                        contract_name=contract.__name__,
+                        exemplars=exemplars[contract.__name__],
+                        support_score=exemplar_support_score,
+                    )
+                    for contract in contracts
+                )
             ),
-            key=lambda score: score.score,
+            key=lambda score: score[0],
             reverse=True,
         )
-        winner = scored[0]
-        runner_up = scored[1] if len(scored) > 1 else None
-        margin = winner.score - (runner_up.score if runner_up is not None else 0.0)
-        if winner.score < min_exemplar_score or margin < min_exemplar_margin:
+        winner_score, winner = scored[0]
+        runner_up_score, runner_up = scored[1] if len(scored) > 1 else (0.0, None)
+        margin = winner_score - runner_up_score
+        if winner_score < min_exemplar_score or margin < min_exemplar_margin:
             continue
         contract = next(contract for contract in contracts if contract.__name__ == winner.contract_name)
         planned[winner.contract_name].append(
@@ -437,10 +466,10 @@ def _plan_with_exemplars(
                 contract=contract,
                 url=item.url,
                 family_url=winner.best_exemplar_url,
-                score=winner.score,
+                score=winner_score,
                 weighted_jaccard_score=winner.top3_mean_score,
                 family_cohesion_score=winner.support_ratio,
-                same_shape=True,
+                same_shape=winner.best_same_shape,
                 neutral_candidate=True,
                 family_size=len(exemplars[winner.contract_name]),
                 depth=item.depth,
@@ -450,13 +479,16 @@ def _plan_with_exemplars(
                 evidence_scope='validated_fingerprint_exemplars',
                 contract_specific=True,
                 best_exemplar_url=winner.best_exemplar_url,
-                exemplar_score=winner.score,
+                exemplar_score=winner_score,
                 exemplar_top_score=winner.top_score,
                 exemplar_top3_mean_score=winner.top3_mean_score,
                 exemplar_support_count=winner.support_count,
                 exemplar_support_ratio=winner.support_ratio,
                 exemplar_margin=margin,
                 second_contract_name=runner_up.contract_name if runner_up is not None else None,
+                positive_exemplar_score=winner.score,
+                contrastive_score=contrastive_score if contrastives else None,
+                contrastive_weight=contrastive_weight if contrastives else None,
             )
         )
 
@@ -486,13 +518,17 @@ def _score_against_exemplars(
 ) -> _ExemplarScore:
     similarities = [item.fingerprint.similarity(exemplar.fingerprint) for exemplar in exemplars]
     scored = sorted(
-        ((float(similarity.score), exemplar.url) for similarity, exemplar in zip(similarities, exemplars, strict=True)),
+        (
+            (float(similarity.score), exemplar.url, similarity.same_shape)
+            for similarity, exemplar in zip(similarities, exemplars, strict=True)
+        ),
+        key=lambda row: row[0],
         reverse=True,
     )
-    top_score, best_exemplar_url = scored[0]
-    top_n = [score for score, _ in scored[: min(3, len(scored))]]
+    top_score, best_exemplar_url, best_same_shape = scored[0]
+    top_n = [score for score, _, _ in scored[: min(3, len(scored))]]
     top3_mean = sum(top_n) / len(top_n)
-    support_count = sum(1 for score, _ in scored if score >= support_score)
+    support_count = sum(1 for score, _, _ in scored if score >= support_score)
     support_ratio = support_count / len(scored)
     score = (0.60 * top3_mean) + (0.25 * top_score) + (0.15 * support_ratio)
     return _ExemplarScore(
@@ -503,6 +539,7 @@ def _score_against_exemplars(
         support_count=support_count,
         support_ratio=support_ratio,
         best_exemplar_url=best_exemplar_url,
+        best_same_shape=best_same_shape,
     )
 
 
@@ -702,6 +739,9 @@ def _target_row(target: FingerprintTarget) -> dict[str, Any]:
                 'exemplar_support_ratio': _round_optional(target.exemplar_support_ratio),
                 'exemplar_margin': _round_optional(target.exemplar_margin),
                 'second_contract': target.second_contract_name,
+                'positive_exemplar_score': _round_optional(target.positive_exemplar_score),
+                'contrastive_score': _round_optional(target.contrastive_score),
+                'contrastive_weight': _round_optional(target.contrastive_weight),
             }
         )
     return row

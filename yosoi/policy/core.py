@@ -99,6 +99,10 @@ class Policy(BaseModel):
         Only sets a field when its env var is actually PRESENT, so an unset var contributes nothing
         to a :meth:`cascade` — an absent ``YOSOI_ATOM_TRUST`` can never reset a lower layer's tier.
         """
+        if env is None:
+            from dotenv import load_dotenv
+
+            load_dotenv()
         src = os.environ if env is None else env
         kwargs: dict[str, Any] = {}
         if 'YOSOI_ATOM_READS' in src:
@@ -224,6 +228,10 @@ class Policy(BaseModel):
         from yosoi.core.configs import PROVIDER_FALLBACK_ORDER, TelemetryConfig
         from yosoi.core.discovery.config import _PROVIDER_ENV_VARS, NO_API_KEY_REQUIRED_PROVIDERS, LLMConfig
 
+        if env is None:
+            from dotenv import load_dotenv
+
+            load_dotenv()
         src = os.environ if env is None else env
         model = self.model
         if model is None or model.provider is None or model.model_name is None:

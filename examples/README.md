@@ -55,16 +55,38 @@ YOSOI_CHROME_WS_URLS=http://127.0.0.1:9222,http://127.0.0.1:9223 \
 uv run python examples/qscrape.dev/full_crawl.py
 ```
 
-`qscrape.dev/full_crawl_v2.py` extends that inventory into a fingerprint-family
-candidate fanout for multiple explicit contracts. Cold-start v2 planning is still
-neutral: identical URL lists across contracts are expected, rows are labeled
-`neutral_candidate`, and the persisted plan marks `contract_specific=false` and
-`verified=false`. Treat the plan as candidate evidence only until optional
-Yosoi scrape/discovery verification succeeds.
+`qscrape.dev/full_crawl_v2.py` extends that inventory into validated-exemplar
+fingerprint ranking for multiple explicit contracts. It uses small positive and
+contrastive exemplar sets to rank same-domain target pages without LLM calls on
+the common path, then writes selected-target and all-frontier evaluation artifacts.
+Rows are still `verified=false` until optional Yosoi scrape/discovery verification
+succeeds.
 
 ```bash
 YOSOI_CHROME_WS_URLS=http://127.0.0.1:9222,http://127.0.0.1:9223 \
 uv run python examples/qscrape.dev/full_crawl_v2.py
+```
+
+`qscrape.dev/full_crawl_v2_alt.py` is the harder binary version: it only cares
+about finding `NewsArticle` targets and uses positive NewsArticle exemplars only.
+Every other crawled page is a `NoContract` evaluation label, not a contrastive
+scoring input. This exposes the edge: one to four same-template positives miss
+another news article template, while five diverse positives cover it.
+
+```bash
+YOSOI_CHROME_WS_URLS=http://127.0.0.1:9222,http://127.0.0.1:9223 \
+uv run python examples/qscrape.dev/full_crawl_v2_alt.py
+```
+
+`qscrape.dev/full_crawl_v3.py` adds the end-to-end scrape gate for that binary
+NewsArticle flow. It crawls, classifies NewsArticle candidates, then scrapes every
+accepted candidate with the `NewsArticle` contract and writes a per-URL scrape-gate
+artifact. Set `YOSOI_FULL_CRAWL_V3_SCRAPE=0` to skip the scrape phase.
+
+```bash
+YOSOI_MODEL=groq:llama-3.3-70b-versatile \
+YOSOI_CHROME_WS_URLS=http://127.0.0.1:9222,http://127.0.0.1:9223 \
+uv run python examples/qscrape.dev/full_crawl_v3.py
 ```
 
 ## Google Search

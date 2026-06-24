@@ -202,11 +202,10 @@ class MCPDiscoveryOrchestrator:
         the model reported: when ``html`` is available the discovered selector is
         re-run against it (via the real :class:`ContentExtractor`) and that value
         is what the :class:`SemanticValidator` checks. This keeps a hallucinated
-        ``sample_value`` from ever being cached as a lesson. When re-extraction
-        yields nothing (e.g. a ``:scope`` selector the parser can't replay), we
-        fall back to the model's reported value rather than wrongly rejecting —
-        the agent's in-loop ``check_value`` call already vetted it live. Only
-        validated findings become snapshot entries.
+        ``sample_value`` from ever being cached as a lesson. If cleaned HTML was
+        supplied and Yosoi cannot replay the selector locally, the finding is
+        rejected even if the live browser observed a plausible value. Only
+        replayable, validated findings become snapshot entries.
         """
         now = utc_now()
         merged: SelectorMap = {}
@@ -215,10 +214,15 @@ class MCPDiscoveryOrchestrator:
         rejected = 0
 
         candidates = {f.field: FieldSelectors(primary=f.selector).model_dump(exclude_none=True) for f in draft.fields}
-        reextracted = self._reextract(html, candidates) if html.strip() else {}
+        has_replay_html = bool(html.strip())
+        reextracted = self._reextract(html, candidates) if has_replay_html else {}
 
         for finding in draft.fields:
             reext = reextracted.get(finding.field)
+            if has_replay_html and reext is None:
+                rejected += 1
+                logger.info('Rejected MCP finding for %s: selector did not replay against cleaned HTML', finding.field)
+                continue
             value = reext if reext is not None else finding.sample_value
             rule = self._field_rules.get(finding.field)
             if rule is not None:
@@ -243,8 +247,8 @@ class MCPDiscoveryOrchestrator:
         """Independently re-run each discovered selector against the page HTML.
 
         Returns field -> first extracted value (stringified). Fields whose
-        selector matches nothing are omitted, so the caller can fall back to the
-        model's reported value rather than over-rejecting.
+        selector matches nothing are omitted; callers decide whether missing
+        fields are acceptable for their context.
         """
         from rich.console import Console as _Console
 
