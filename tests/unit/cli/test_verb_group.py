@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from pathlib import Path
 
 import pytest
 import rich_click as click
@@ -20,7 +21,8 @@ def runner():
 
 
 @pytest.fixture
-def base_mocks(mocker):
+def base_mocks(mocker, monkeypatch):
+    monkeypatch.setenv('GROQ_KEY', 'test-key')
     mocker.patch('yosoi.utils.files.is_initialized', return_value=True)
     mocker.patch('yosoi.utils.logging.setup_local_logging', return_value='/tmp/test.log')
 
@@ -288,6 +290,7 @@ class TestCacheStatus:
                 top_level_domains=['example.com'],
                 routes=['/products/'],
                 fields=['name'],
+                urls=['https://example.com/products/1'],
                 field_metrics=[
                     CacheFieldMetric(
                         contract_fingerprint=Product.to_spec().fingerprint,
@@ -313,7 +316,9 @@ class TestCacheStatus:
         assert doc['target_kind'] == 'contract'
         assert doc['contract'] == 'Product'
         assert doc['domains'] == ['example.com']
+        assert doc['urls'] == ['https://example.com/products/1']
         assert doc['field_metrics'][0]['field_name'] == 'name'
+        assert doc['field_metrics'][0]['source_url'] == 'https://example.com/products/1'
 
     def test_cache_status_url_target_routes_to_domain_and_route(self, runner, mocker, base_mocks):
         import yosoi.storage as _store_pkg
@@ -562,15 +567,41 @@ class TestCoverageSensitiveCliBranches:
 
         defaults = runner.invoke(main, ['policy', 'defaults', '--crawl'])
         assert defaults.exit_code == 0, defaults.output
-        assert 'crawl' in defaults.output
+        assert 'crawl:' in defaults.output
+        assert defaults.output.lstrip().startswith('atom_reads: false')
+
+        schema = runner.invoke(main, ['policy', 'schema'])
+        assert schema.exit_code == 0, schema.output
+        assert json.loads(schema.output)['$id'] == 'https://cascadinglabs.com/yosoi/schemas/policy.schema.json'
+
+        listed = runner.invoke(main, ['policy', 'list', '--all', '--json'])
+        assert listed.exit_code == 0, listed.output
+        listed_doc = json.loads(listed.output)
+        assert listed_doc['type'] == 'policy.list'
+        assert any(item['path'].endswith('.yosoi/policy.yaml') for item in listed_doc['files'])
 
         validate = runner.invoke(main, ['policy', 'validate', str(policy_file), '--json'])
         assert validate.exit_code == 0, validate.output
         assert json.loads(validate.output)['status'] == 'ok'
 
-        inspect = runner.invoke(main, ['policy', 'inspect', str(policy_file)])
+        inspect = runner.invoke(main, ['policy', 'inspect', str(policy_file), '--format', 'json'])
         assert inspect.exit_code == 0, inspect.output
         assert json.loads(inspect.output)['model'] is None
+
+        yaml_file = tmp_path / 'policy.yaml'
+        yaml_file.write_text('atom_reads: true\noutput:\n  flat_files: true\n')
+        yaml_inspect = runner.invoke(main, ['policy', 'inspect', str(yaml_file), '--format', 'yaml'])
+        assert yaml_inspect.exit_code == 0, yaml_inspect.output
+        assert 'atom_reads: true' in yaml_inspect.output
+
+        effective = runner.invoke(main, ['policy', 'effective', '--no-discover', '--policy', 'atom_reads: true'])
+        assert effective.exit_code == 0, effective.output
+        assert effective.output.lstrip().startswith('atom_reads: true')
+
+        with runner.isolated_filesystem():
+            init = runner.invoke(main, ['policy', 'init', '--local'])
+            assert init.exit_code == 0, init.output
+            assert Path('.yosoi/policy.yaml').read_text().startswith('# yaml-language-server: $schema=')
 
         bad_file = tmp_path / 'bad.json'
         bad_file.write_text('{bad')

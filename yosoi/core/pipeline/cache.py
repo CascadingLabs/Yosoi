@@ -64,6 +64,10 @@ class PipelineCacheMixin:
             return None
 
         self.console.print(f'[success]✓ Found cached selectors for {domain}[/success]')
+        if getattr(getattr(self, '_policy', None), 'atom_reads', False):
+            self.console.print(
+                '[dim]  ↳ Field atoms armed, but the verified selector cache hit wins; atoms try on cache miss.[/dim]'
+            )
         logger.info('Using cached selectors domain=%s url=%s', domain, url)
 
         if skip_verification or self.contract.file_fields():

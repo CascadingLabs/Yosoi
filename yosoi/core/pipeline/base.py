@@ -79,6 +79,20 @@ ContentItems = list[ContentMap]
 logger = logging.getLogger(__name__)
 
 
+_MODEL_REQUIRED_MESSAGE = (
+    'Discovery requires a Yosoi model. Cached selectors or --atom-reads can run without one, '
+    'but this URL needs discovery; pass --model or set YOSOI_MODEL and a provider API key.'
+)
+
+
+class _DeferredDiscovery:
+    async def preflight(self, *_args: Any, **_kwargs: Any) -> None:
+        return None
+
+    async def discover_selectors(self, *_args: Any, **_kwargs: Any) -> Any:
+        raise RuntimeError(_MODEL_REQUIRED_MESSAGE)
+
+
 class Pipeline(
     PipelineCacheMixin,
     PipelineExtractionMixin,
@@ -100,7 +114,7 @@ class Pipeline(
     _keep_downloads: bool = True
     _discovery_gate: DiscoveryGate | None = None  # class default for __new__-built stubs
 
-    def __init__(
+    def __init__(  # noqa: C901
         self,
         llm_config: LLMConfig | YosoiConfig | str | None = None,
         contract: type[Contract] | None = None,
@@ -177,20 +191,29 @@ class Pipeline(
             )
         # Resolve policy-first construction before applying legacy kwargs.
         self._policy: Policy = policy or Policy.from_env()
+        self._llm_deferred = False
         if llm_config is None:
-            spec = self._policy.resolve_run_spec()
-            llm_config = spec.llm_config
-            debug_mode = spec.debug_html
-            output_format = list(spec.output_formats)
-            flat_files = spec.output_flat_files if flat_files is None else flat_files
-            force = spec.force
-            quiet = spec.quiet
-            selector_level = spec.selector_level
-            allow_downloads = spec.allow_downloads
-            allowed_download_types = spec.allowed_download_types
-            download_dir = spec.download_dir
-            max_download_bytes = spec.max_download_bytes
-            keep_downloads = spec.keep_downloads
+            try:
+                spec = self._policy.resolve_run_spec()
+            except ValueError as exc:
+                if 'No model specified and no API key found' not in str(exc):
+                    raise
+                spec = None
+                self._llm_deferred = True
+                llm_config = LLMConfig(provider='deferred', model_name='model-required')
+            if spec is not None:
+                llm_config = spec.llm_config
+                debug_mode = spec.debug_html
+                output_format = list(spec.output_formats)
+                flat_files = spec.output_flat_files if flat_files is None else flat_files
+                force = spec.force
+                quiet = spec.quiet
+                selector_level = spec.selector_level
+                allow_downloads = spec.allow_downloads
+                allowed_download_types = spec.allowed_download_types
+                download_dir = spec.download_dir
+                max_download_bytes = spec.max_download_bytes
+                keep_downloads = spec.keep_downloads
         if flat_files is None:
             flat_files = bool(self._policy.output.flat_files) if self._policy.output else False
         self.selector_level = selector_level
@@ -258,15 +281,19 @@ class Pipeline(
         self.storage = SelectorStorage(flat_files=self._flat_files)
         self.js_storage = JsScriptStorage()
 
-        self.discovery = DiscoveryOrchestrator(
-            contract=self.contract,
-            llm_config=llm_config,
-            storage=self.storage,
-            console=self.console,
-            target_level=self.selector_level,
-            max_concurrent=max_concurrent_discovery,
-            bus=bus,
-            write_lock=write_lock,
+        self.discovery = (
+            _DeferredDiscovery()
+            if self._llm_deferred
+            else DiscoveryOrchestrator(
+                contract=self.contract,
+                llm_config=llm_config,
+                storage=self.storage,
+                console=self.console,
+                target_level=self.selector_level,
+                max_concurrent=max_concurrent_discovery,
+                bus=bus,
+                write_lock=write_lock,
+            )
         )
         self._mcp_discovery: MCPDiscoveryOrchestrator | None = None
         self._mcp_llm_config: LLMConfig = llm_config
@@ -693,7 +720,7 @@ class Pipeline(
             ):
                 yield item
 
-    async def _scrape_fresh(
+    async def _scrape_fresh(  # noqa: C901
         self,
         url: str,
         domain: str,
@@ -748,6 +775,9 @@ class Pipeline(
             async for item in atom_gen:
                 yield item
             return
+
+        if getattr(self, '_llm_deferred', False):
+            raise RuntimeError(_MODEL_REQUIRED_MESSAGE)
 
         with observability.span(
             'discover', url=url, cleaned_chars=len(cleaned_html), mode='mcp' if escalate_first else 'static'

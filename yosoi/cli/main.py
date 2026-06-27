@@ -6,7 +6,8 @@ import asyncio
 import json
 import os
 import sys
-from typing import Any
+from pathlib import Path
+from typing import Any, cast
 
 import rich_click as click
 from rich.console import Console
@@ -64,6 +65,22 @@ def _effective_workers(requested: int, total: int) -> int:
     if requested == 0:
         return min(total, _DEFAULT_AUTO_WORKERS)
     return min(requested, total)
+
+
+def _print_atom_reads_info(ui: Console, policy: object) -> None:
+    if not getattr(policy, 'atom_reads', False):
+        return
+    trust_tier = getattr(policy, 'trust_tier', 'strict')
+    if trust_tier == 'yellow':
+        ui.print(
+            '[cyan]⚛ Field atoms:[/cyan] [bold yellow]armed, yellow trust[/bold yellow] '
+            '[dim](includes fingerprint-generalized atoms; legacy selector cache still wins)[/dim]'
+        )
+    else:
+        ui.print(
+            '[cyan]⚛ Field atoms:[/cyan] [bold green]armed, strict trust[/bold green] '
+            '[dim](verified/manual/LLM atoms on selector-cache miss)[/dim]'
+        )
 
 
 def _collect_urls(url: tuple[str, ...], file_path: str | None, limit: int | None, ui: Console) -> list[str]:
@@ -139,6 +156,14 @@ async def _run_json(
 )
 @click.option('--flat-files', is_flag=True, help='Also write extracted content to .yosoi/content flat files.')
 @click.option(
+    '--policy',
+    'policy_source',
+    multiple=True,
+    metavar='FILE|YAML|JSON',
+    help='Policy file or inline YAML/JSON. Repeat to layer.',
+)
+@click.option('--atom-reads', is_flag=True, help='Allow policy-gated reads from the field-atom index before discovery.')
+@click.option(
     '-t',
     '--fetcher',
     type=click.Choice(_FETCHER_CHOICES, case_sensitive=False),
@@ -197,6 +222,8 @@ def main(
     skip_verification: bool,
     output: tuple[str, ...],
     flat_files: bool,
+    policy_source: tuple[str, ...],
+    atom_reads: bool,
     fetcher: str,
     log_level: str,
     contract: type[Contract] | None,
@@ -248,6 +275,8 @@ def main(
         json_output=json_output,
         max_concurrency=workers or None,
         flat_files=flat_files,
+        atom_reads=atom_reads,
+        policy_sources=policy_source,
     )
 
     ui: Console = Console(theme=_THEME, stderr=True) if json_output else console
@@ -291,6 +320,7 @@ def main(
 
     if not json_output:
         ui.print(f'[cyan]ℹ Output format(s):[/cyan] [bold]{", ".join(output_formats)}[/bold]')
+        _print_atom_reads_info(ui, policy)
         print_fetcher_info(fetcher)
 
     effective_workers = _effective_workers(workers, len(urls))
@@ -361,6 +391,14 @@ def main(
 )
 @click.option('--flat-files', is_flag=True, help='Also write extracted content to .yosoi/content flat files.')
 @click.option(
+    '--policy',
+    'policy_source',
+    multiple=True,
+    metavar='FILE|YAML|JSON',
+    help='Policy file or inline YAML/JSON. Repeat to layer.',
+)
+@click.option('--atom-reads', is_flag=True, help='Allow policy-gated reads from the field-atom index before discovery.')
+@click.option(
     '-t',
     '--fetcher',
     type=click.Choice(_FETCHER_CHOICES, case_sensitive=False),
@@ -410,6 +448,8 @@ def scrape(
     skip_verification: bool,
     output: tuple[str, ...],
     flat_files: bool,
+    policy_source: tuple[str, ...],
+    atom_reads: bool,
     fetcher: str,
     log_level: str,
     selector_level: str,
@@ -449,6 +489,8 @@ def scrape(
         quiet=json_output or dump_request,
         json_output=json_output,
         flat_files=flat_files,
+        atom_reads=atom_reads,
+        policy_sources=policy_source,
     )
 
     ui: Console = Console(theme=_THEME, stderr=True) if json_output else console
@@ -500,6 +542,7 @@ def scrape(
     if len(request.contracts) != 1:
         raise click.UsageError('Multiple contracts currently require --json or --dump-request')
 
+    _print_atom_reads_info(ui, policy)
     effective_workers = _effective_workers(workers, len(request.urls))
     if workers == 0 and effective_workers > 1:
         ui.print(f'[cyan]ℹ Auto workers:[/cyan] [bold]{effective_workers}[/bold] concurrent URL tasks')
@@ -546,6 +589,14 @@ def scrape(
 @click.option('-o', '--output', multiple=True, default=('json',), metavar='FORMAT')
 @click.option('--flat-files', is_flag=True, help='Also write extracted content to .yosoi/content flat files.')
 @click.option(
+    '--policy',
+    'policy_source',
+    multiple=True,
+    metavar='FILE|YAML|JSON',
+    help='Policy file or inline YAML/JSON. Repeat to layer.',
+)
+@click.option('--atom-reads', is_flag=True, help='Allow policy-gated reads from the field-atom index before discovery.')
+@click.option(
     '-t',
     '--fetcher',
     type=click.Choice(_FETCHER_CHOICES, case_sensitive=False),
@@ -574,6 +625,8 @@ def discover(
     skip_verification: bool,
     output: tuple[str, ...],
     flat_files: bool,
+    policy_source: tuple[str, ...],
+    atom_reads: bool,
     fetcher: str,
     log_level: str,
     selector_level: str,
@@ -612,10 +665,14 @@ def discover(
         json_output=json_output,
         max_concurrency=workers or None,
         flat_files=flat_files,
+        atom_reads=atom_reads,
+        policy_sources=policy_source,
     )
 
     ui: Console = Console(theme=_THEME, stderr=True) if json_output else console
     ui.print(f'[cyan]ℹ Log file:[/cyan] [link=file://{log_file}]{log_file}[/link]')
+    if not json_output:
+        _print_atom_reads_info(ui, policy)
     ui.print('[cyan]ℹ Running LLM discovery (expensive path)...[/cyan]')
 
     all_urls: list[str] = list(urls) + list(url) + (load_urls_from_file(file_path) if file_path else [])
@@ -678,7 +735,13 @@ def discover(
 @click.option('-f', '--file', 'file_path', default=None, help='File containing seed URLs')
 @click.option('-l', '--limit', type=int, default=None)
 @click.option('-C', '--contract', type=ContractParamType(), multiple=True, help='Target contract. Repeat for multiple.')
-@click.option('--policy', 'policy_file', default=None, metavar='FILE', help='Policy JSON file.')
+@click.option(
+    '--policy',
+    'policy_source',
+    multiple=True,
+    metavar='FILE|YAML|JSON',
+    help='Policy file or inline YAML/JSON. Repeat to layer.',
+)
 @click.option('--request', 'request_file', default=None, metavar='FILE', help='CrawlRequest JSON file.')
 @click.option('--dump-request', is_flag=True, help='Print the resolved CrawlRequest JSON and exit.')
 @click.option('-t', '--fetcher', type=click.Choice(_FETCHER_CHOICES, case_sensitive=False), default=None)
@@ -691,7 +754,7 @@ def crawl(
     file_path: str | None,
     limit: int | None,
     contract: tuple[type[Contract], ...],
-    policy_file: str | None,
+    policy_source: tuple[str, ...],
     request_file: str | None,
     dump_request: bool,
     fetcher: str | None,
@@ -705,6 +768,7 @@ def crawl(
     from yosoi.cli import exit_codes
     from yosoi.operations import CrawlRequest, run_crawl
     from yosoi.policy import Policy
+    from yosoi.policy.files import load_policy_layers
 
     if request_file:
         try:
@@ -716,13 +780,9 @@ def crawl(
         all_seeds: list[str] = list(seeds) + list(url) + (load_urls_from_file(file_path) if file_path else [])
         if not all_seeds:
             raise click.UsageError('No seeds provided. Pass seed(s) as arguments or use --url / --file')
-        policy = None
-        if policy_file:
-            try:
-                with open(policy_file, encoding='utf-8') as handle:
-                    policy = Policy.model_validate_json(handle.read())
-            except Exception as exc:
-                raise click.ClickException(f'Cannot parse Policy {policy_file!r}: {exc}') from exc
+        policy = Policy.cascade(
+            Policy.for_crawl('crawl.conservative'), Policy.from_env(), load_policy_layers(policy_source)
+        )
         request = CrawlRequest.from_axes(
             all_seeds,
             list(contract) or None,
@@ -759,56 +819,144 @@ def crawl(
 
 @main.group('policy')
 def policy_group() -> None:
-    """Inspect and validate policy JSON."""
+    """Inspect, validate, and resolve policy JSON/YAML."""
+
+
+@policy_group.command('init')
+@click.option('--global', 'global_config', is_flag=True, help='Create ~/.config/yosoi/policy.yaml.')
+@click.option('--local', 'local_config', is_flag=True, help='Create .yosoi/policy.yaml.')
+@click.option('--force', is_flag=True, help='Overwrite an existing policy file.')
+def policy_init(global_config: bool, local_config: bool, force: bool) -> None:
+    """Create starter policy YAML with a language-server schema directive."""
+    from yosoi.policy.files import init_policy_files
+
+    try:
+        paths = init_policy_files(global_config=global_config, local_config=local_config, force=force)
+    except Exception as exc:
+        raise click.ClickException(str(exc)) from exc
+    for path in paths:
+        console.print(f'[success]✓ Wrote {path}[/success]')
+
+
+@policy_group.command('schema')
+def policy_schema() -> None:
+    """Print the policy JSON Schema for YAML/JSON language servers."""
+    from yosoi.policy.files import dump_policy_schema
+
+    click.echo(dump_policy_schema().rstrip())
+
+
+@policy_group.command('list')
+@click.option(
+    '--all', 'include_missing', is_flag=True, default=False, help='Include candidate paths that do not exist yet.'
+)
+@click.option('--json', 'json_output', is_flag=True, default=False, help='Print machine-readable policy paths.')
+def policy_list(include_missing: bool, json_output: bool) -> None:
+    """List discovered policy files in precedence order."""
+    from yosoi.policy.files import default_global_policy_paths, default_project_policy_paths
+
+    records = [
+        {'scope': scope, 'path': str(path), 'exists': path.is_file()}
+        for scope, paths in (
+            ('global', default_global_policy_paths()),
+            ('project', default_project_policy_paths()),
+        )
+        for path in paths
+    ]
+    if not include_missing:
+        records = [record for record in records if record['exists']]
+    if json_output:
+        echo_json({'type': 'policy.list', 'files': records})
+        return
+    if not records:
+        console.print('[info]No policy files found. Use `yosoi policy list --all` to show candidate paths.[/info]')
+        return
+
+    from rich.markup import escape
+
+    for record in records:
+        marker = '✓' if record['exists'] else '·'
+        style = 'success' if record['exists'] else 'info'
+        path = Path(cast('str', record['path'])).expanduser()
+        uri = path.resolve(strict=False).as_uri()
+        scope = escape(cast('str', record['scope']))
+        label = escape(cast('str', record['path']))
+        console.print(f'[{style}]{marker} {scope}: [link={uri}]{label}[/link][/{style}]')
 
 
 @policy_group.command('defaults')
 @click.option('--crawl', 'crawl_defaults', is_flag=True, help='Show crawl.conservative defaults.')
-@click.option('--json', 'json_output', is_flag=True, default=False)
-def policy_defaults(crawl_defaults: bool, json_output: bool) -> None:
-    """Print default policy JSON."""
+@click.option('--format', 'output_format', type=click.Choice(['json', 'yaml']), default='yaml')
+def policy_defaults(crawl_defaults: bool, output_format: str) -> None:
+    """Print default policy as human-readable YAML by default; use --format json for JSON."""
     from yosoi.policy import Policy
+    from yosoi.policy.files import PolicyFormat, dump_policy
 
-    _ = json_output
     policy = Policy.for_crawl('crawl.conservative') if crawl_defaults else Policy()
-    click.echo(policy.model_dump_json(indent=2))
+    click.echo(dump_policy(policy, fmt=cast('PolicyFormat', output_format)).rstrip())
 
 
 @policy_group.command('validate')
-@click.argument('policy_file')
+@click.argument('policy_source')
 @click.option('--json', 'json_output', is_flag=True, default=False)
-def policy_validate(policy_file: str, json_output: bool) -> None:
-    """Validate a policy JSON file."""
-    from yosoi.policy import Policy
+def policy_validate(policy_source: str, json_output: bool) -> None:
+    """Validate a policy JSON/YAML file or inline document."""
+    from yosoi.policy.files import load_policy_source
 
     try:
-        with open(policy_file, encoding='utf-8') as handle:
-            Policy.model_validate_json(handle.read())
+        load_policy_source(policy_source)
     except Exception as exc:
         if json_output:
-            echo_json({'type': 'error', 'command': 'policy.validate', 'policy_file': policy_file, 'message': str(exc)})
+            echo_json(
+                {'type': 'error', 'command': 'policy.validate', 'policy_source': policy_source, 'message': str(exc)}
+            )
             sys.exit(1)
-        raise click.ClickException(f'Invalid policy {policy_file!r}: {exc}') from exc
+        raise click.ClickException(f'Invalid policy {policy_source!r}: {exc}') from exc
     if json_output:
-        echo_json({'type': 'policy.validate', 'status': 'ok', 'policy_file': policy_file})
+        echo_json({'type': 'policy.validate', 'status': 'ok', 'policy_source': policy_source})
         return
     console.print('[success]✓ Policy valid[/success]')
 
 
 @policy_group.command('inspect')
-@click.argument('policy_file')
-@click.option('--json', 'json_output', is_flag=True, default=False)
-def policy_inspect(policy_file: str, json_output: bool) -> None:
-    """Print a normalized policy JSON file."""
-    from yosoi.policy import Policy
+@click.argument('policy_source')
+@click.option('--format', 'output_format', type=click.Choice(['json', 'yaml']), default='yaml')
+def policy_inspect(policy_source: str, output_format: str) -> None:
+    """Print normalized human-readable YAML by default; use --format json for JSON."""
+    from yosoi.policy.files import PolicyFormat, dump_policy, load_policy_source
 
-    _ = json_output
     try:
-        with open(policy_file, encoding='utf-8') as handle:
-            policy = Policy.model_validate_json(handle.read())
+        policy = load_policy_source(policy_source)
     except Exception as exc:
-        raise click.ClickException(f'Invalid policy {policy_file!r}: {exc}') from exc
-    click.echo(policy.model_dump_json(indent=2))
+        raise click.ClickException(f'Invalid policy {policy_source!r}: {exc}') from exc
+    click.echo(dump_policy(policy, fmt=cast('PolicyFormat', output_format)).rstrip())
+
+
+@policy_group.command('effective')
+@click.option(
+    '--policy',
+    'policy_source',
+    multiple=True,
+    metavar='FILE|YAML|JSON',
+    help='Additional policy file or inline document. Repeat to layer.',
+)
+@click.option('--no-discover', is_flag=True, help='Do not load global/project policy files.')
+@click.option(
+    '--crawl', 'crawl_defaults', is_flag=True, help='Seed the effective policy with crawl.conservative defaults.'
+)
+@click.option('--format', 'output_format', type=click.Choice(['json', 'yaml']), default='yaml')
+def policy_effective(
+    policy_source: tuple[str, ...], no_discover: bool, crawl_defaults: bool, output_format: str
+) -> None:
+    """Print the effective env + global + project + inline policy as YAML by default."""
+    from yosoi.policy import Policy
+    from yosoi.policy.files import PolicyFormat, dump_policy, load_policy_layers
+
+    base = Policy.for_crawl('crawl.conservative') if crawl_defaults else None
+    policy = Policy.cascade(
+        base, Policy.from_env(), load_policy_layers(policy_source, include_discovered=not no_discover)
+    )
+    click.echo(dump_policy(policy, fmt=cast('PolicyFormat', output_format)).rstrip())
 
 
 # ── cache command group ────────────────────────────────────────────────────────
@@ -900,6 +1048,7 @@ def cache_status(
         table = Table(title='Cache field metrics')
         table.add_column('Domain')
         table.add_column('Route')
+        table.add_column('URL')
         table.add_column('Field')
         table.add_column('Status')
         table.add_column('Failures', justify='right')
@@ -908,6 +1057,7 @@ def cache_status(
             table.add_row(
                 str(getattr(row, 'domain', '')),
                 str(getattr(row, 'route_signature', '')),
+                str(getattr(row, 'source_url', None) or '—'),
                 str(getattr(row, 'field_name', '')),
                 str(getattr(row, 'status', '')),
                 str(getattr(row, 'failure_count', 0)),
@@ -947,6 +1097,7 @@ def cache_status(
                     'domains': summary.domains,
                     'top_level_domains': summary.top_level_domains,
                     'routes': summary.routes,
+                    'urls': summary.urls,
                     'fields': summary.fields,
                     'field_metrics': field_metrics,
                 }
@@ -962,6 +1113,7 @@ def cache_status(
                 console.print(f'  URLs: [bold]{summary.url_count}[/bold]')
                 console.print(f'  Domains: {", ".join(summary.domains)}')
                 console.print(f'  Routes: {", ".join(summary.routes)}')
+                console.print(f'  URL list: {", ".join(summary.urls)}')
                 console.print(f'  Fields: {", ".join(summary.fields)}')
                 if summary.event_counts:
                     events = ', '.join(f'{name}={count}' for name, count in sorted(summary.event_counts.items()))
@@ -1009,6 +1161,7 @@ def cache_status(
                 doc['field_metrics'] = [row.__dict__ for row in domain_summary.field_metrics]
                 doc['top_level_domains'] = domain_summary.top_level_domains
                 doc['routes'] = domain_summary.routes
+                doc['urls'] = domain_summary.urls
                 doc['contracts'] = domain_summary.contract_fingerprints
                 doc['counts'] = {
                     'runs': domain_summary.run_count,
@@ -1039,6 +1192,9 @@ def cache_status(
                 if isinstance(counts, dict):
                     console.print(f'  Runs: [bold]{counts.get("runs", 0)}[/bold]')
                     console.print(f'  URLs: [bold]{counts.get("urls", 0)}[/bold]')
+                    metric_urls = doc.get('urls')
+                    if isinstance(metric_urls, list) and metric_urls:
+                        console.print(f'  URL list: {", ".join(str(url) for url in metric_urls)}')
                     events = counts.get('events')
                     if isinstance(events, dict) and events:
                         rendered = ', '.join(f'{name}={count}' for name, count in sorted(events.items()))

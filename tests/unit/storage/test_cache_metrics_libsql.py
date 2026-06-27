@@ -86,6 +86,10 @@ async def test_upsert_snapshots_normalizes_contract_and_field_entities(tmp_path)
     assert contract_columns['spec'] == 'JSON'
     assert field_columns['config'] == 'JSON'
     assert snapshot_columns['selector'] == 'JSON'
+    assert 'domain' not in snapshot_columns
+    assert 'top_level_domain' not in snapshot_columns
+    assert 'domain' not in event_columns
+    assert 'top_level_domain' not in event_columns
     assert event_columns['detail'] == 'JSON'
     assert json_storage_types == ('text', 'text', 'text', 'text')
 
@@ -135,9 +139,11 @@ async def test_upsert_snapshots_is_field_addressable_by_contract_domain_and_rout
     assert summary.fields == ['author', 'headline']
     assert summary.run_count == 2
     assert summary.url_count == 2
+    assert summary.urls == ['https://example.com/l1/news/article/?x=1', 'https://example.com/l1/news/profile/?x=1']
     assert summary.event_counts == {'run': 2, 'write': 3}
     assert {(row.field_name, row.route_signature) for row in summary.field_metrics} == {
         ('author', '/l1/news/article/'),
+        ('headline', '/l1/news/article/'),
         ('headline', '/l1/news/profile/'),
     }
 
@@ -228,6 +234,7 @@ async def test_summarize_domain_returns_domain_centered_counts(tmp_path) -> None
     assert summary.contract_fingerprints == [fp]
     assert summary.routes == ['/article/1']
     assert summary.event_counts == {'hit': 1, 'run': 2, 'write': 1}
+    assert summary.urls == ['https://news.example.com/article/1']
     assert summary.run_count == 2
     assert summary.url_count == 1
 

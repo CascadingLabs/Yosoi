@@ -40,6 +40,7 @@ dependencies = [
   "pydantic>=2",
   "pydantic-ai-slim[google,groq,openai,openrouter]==2",
   "python-dotenv>=1.2.2",
+  "pyyaml>=6.0.3",
   "rich>=14.3",
   "rich-click>=1.9.7",
   "taskiq>=0.12.1",
@@ -84,6 +85,7 @@ dev = [
   "ruff>=0.15",
   "types-aiofiles>=25.1.0.20260518",
   "types-dateparser>=1.4.0.20260328",
+  "types-pyyaml>=6.0.12.20260518",
   "vulture>=2.16",
 ]
 tests = [

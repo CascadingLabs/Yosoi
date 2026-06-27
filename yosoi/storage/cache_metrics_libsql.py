@@ -27,13 +27,11 @@ _CONTRACT_TABLE = 'contracts'
 _CONTRACT_FIELD_TABLE = 'contract_fields'
 _SELECTOR_SNAPSHOT_TABLE = 'selector_snapshots'
 _CACHE_EVENT_TABLE = 'cache_events'
-_SELECTOR_KEY = ('contract_fingerprint', 'field_fingerprint', 'domain')
+_SELECTOR_KEY = ('contract_fingerprint', 'field_fingerprint', 'source_url')
 _SELECTOR_UPDATE_COLUMNS = (
     'field_path',
-    'top_level_domain',
     'route_signature',
     'selector_level',
-    'source_url',
     'status',
     'selector',
     'discovered_at',
@@ -75,6 +73,7 @@ class ContractCacheMetrics:
     fields: list[str]
     field_metrics: list[CacheFieldMetric]
     event_counts: dict[str, int] = field(default_factory=dict)
+    urls: list[str] = field(default_factory=list)
     run_count: int = 0
     url_count: int = 0
     contract_name: str | None = None
@@ -92,6 +91,7 @@ class DomainCacheMetrics:
     fields: list[str]
     field_metrics: list[CacheFieldMetric]
     event_counts: dict[str, int] = field(default_factory=dict)
+    urls: list[str] = field(default_factory=list)
     run_count: int = 0
     url_count: int = 0
 
@@ -139,6 +139,13 @@ def top_level_domain_for_domain(domain: str) -> str:
     return '.'.join(parts[-2:])
 
 
+def _domain_for_url(url: str | None) -> str:
+    if not url:
+        return ''
+    hostname = urlparse(url).hostname or ''
+    return hostname.removeprefix('www.')
+
+
 def _iso(dt: datetime | None) -> str | None:
     if dt is None:
         return None
@@ -176,8 +183,8 @@ def _metric_from_row(columns: tuple[str, ...], row: tuple[Any, ...]) -> CacheFie
         field_fingerprint=values['field_fingerprint'],
         field_name=values['field_path'],
         field_description=values.get('description'),
-        domain=values['domain'],
-        top_level_domain=values['top_level_domain'],
+        domain=_domain_for_url(values['source_url']),
+        top_level_domain=top_level_domain_for_domain(_domain_for_url(values['source_url'])),
         route_signature=values['route_signature'],
         selector_level=values['selector_level'],
         source_url=values['source_url'],
@@ -330,8 +337,6 @@ class LibSQLCacheMetricsStore(YosoiSQLiteStore):
                     'contract_fingerprint': contract_fp,
                     'field_path': field_path,
                     'field_fingerprint': field_entity.fingerprint,
-                    'domain': domain,
-                    'top_level_domain': tld,
                     'route_signature': route,
                     'selector_level': selector_level,
                     'source_url': url,
@@ -371,21 +376,22 @@ class LibSQLCacheMetricsStore(YosoiSQLiteStore):
         client = await self._connect()
         result = await client.execute(
             f"""
-            SELECT field_path, json(selector) AS selector, status, discovered_at, last_verified_at, last_failed_at, failure_count
+            SELECT field_path, source_url, json(selector) AS selector, status, discovered_at, last_verified_at, last_failed_at, failure_count
             FROM {_SELECTOR_SNAPSHOT_TABLE}
-            WHERE domain = :domain
-              AND contract_fingerprint = :contract_fingerprint
+            WHERE contract_fingerprint = :contract_fingerprint
             ORDER BY field_path
             """,
-            {'domain': domain, 'contract_fingerprint': contract_fp},
+            {'contract_fingerprint': contract_fp},
         )
         if not result.rows:
             return None
         snapshots: dict[str, SelectorSnapshot] = {}
         for row in result.rows:
             values = _row_dict(result.columns, row)
+            if _domain_for_url(values.get('source_url')) != domain:
+                continue
             snapshots[str(values['field_path'])] = _snapshot_from_row(values)
-        return snapshots
+        return snapshots or None
 
     async def selector_exists(self, domain: str, contract_fingerprint: str | None = None) -> bool:
         """Return whether current selector snapshots exist for a domain/contract."""
@@ -394,14 +400,13 @@ class LibSQLCacheMetricsStore(YosoiSQLiteStore):
         client = await self._connect()
         result = await client.execute(
             f"""
-            SELECT 1
+            SELECT source_url
             FROM {_SELECTOR_SNAPSHOT_TABLE}
-            WHERE domain = :domain AND contract_fingerprint = :contract_fingerprint
-            LIMIT 1
+            WHERE contract_fingerprint = :contract_fingerprint
             """,
-            {'domain': domain, 'contract_fingerprint': contract_fp},
+            {'contract_fingerprint': contract_fp},
         )
-        return bool(result.rows)
+        return any(_domain_for_url(str(row[0])) == domain for row in result.rows)
 
     async def list_domains(self) -> list[str]:
         """List domains with current selector snapshots."""
@@ -409,12 +414,13 @@ class LibSQLCacheMetricsStore(YosoiSQLiteStore):
         client = await self._connect()
         result = await client.execute(
             f"""
-            SELECT DISTINCT domain
+            SELECT DISTINCT source_url
             FROM {_SELECTOR_SNAPSHOT_TABLE}
-            ORDER BY domain
+            WHERE source_url IS NOT NULL
+            ORDER BY source_url
             """
         )
-        return [str(row[0]) for row in result.rows]
+        return sorted({_domain_for_url(str(row[0])) for row in result.rows if _domain_for_url(str(row[0]))})
 
     async def record_cache_hit(
         self,
@@ -492,17 +498,18 @@ class LibSQLCacheMetricsStore(YosoiSQLiteStore):
         try:
             result = await tx.execute(
                 f"""
-                SELECT field_fingerprint, selector_level, json(selector) AS selector, status, discovered_at,
+                SELECT field_fingerprint, route_signature, selector_level, source_url, json(selector) AS selector, status, discovered_at,
                        last_verified_at, last_failed_at, failure_count
                 FROM {_SELECTOR_SNAPSHOT_TABLE}
                 WHERE contract_fingerprint = :contract_fingerprint
-                  AND domain = :domain
                   AND field_fingerprint = :field_fingerprint
                 """,
                 params,
             )
             for row in result.rows:
                 values = _row_dict(result.columns, row)
+                if _domain_for_url(values.get('source_url')) != domain:
+                    continue
                 snap = _snapshot_from_row(values)
                 if verdict == CacheVerdict.FRESH:
                     snap.last_verified_at = datetime.now(timezone.utc)
@@ -518,10 +525,10 @@ class LibSQLCacheMetricsStore(YosoiSQLiteStore):
                         last_failed_at = :last_failed_at,
                         failure_count = :failure_count,
                         updated_at = :updated_at,
-                        route_signature = COALESCE(:route_signature, route_signature)
+                        route_signature = route_signature
                     WHERE contract_fingerprint = :contract_fingerprint
-                      AND domain = :domain
                       AND field_fingerprint = :field_fingerprint
+                      AND source_url = :source_url
                     """,
                     {
                         'selector': _snapshot_payload(snap),
@@ -529,7 +536,8 @@ class LibSQLCacheMetricsStore(YosoiSQLiteStore):
                         'last_failed_at': _iso(snap.last_failed_at),
                         'failure_count': snap.failure_count,
                         'updated_at': now,
-                        'route_signature': route_signature,
+                        'route_signature': values['route_signature'],
+                        'source_url': values['source_url'],
                         'contract_fingerprint': contract_fp,
                         'domain': domain,
                         'field_path': field_name,
@@ -544,8 +552,9 @@ class LibSQLCacheMetricsStore(YosoiSQLiteStore):
                     field_name=field_name,
                     domain=domain,
                     top_level_domain=top_level_domain_for_domain(domain),
-                    route_signature=route_signature,
+                    route_signature=route_signature or values['route_signature'],
                     selector_level=values['selector_level'],
+                    url=values['source_url'],
                     detail={'verdict': verdict.value},
                 )
             await tx.commit()
@@ -558,12 +567,15 @@ class LibSQLCacheMetricsStore(YosoiSQLiteStore):
         await self._ensure_migrated()
         client = await self._connect()
         result = await client.execute(
-            self._metric_select_sql('WHERE s.contract_fingerprint = :contract_fingerprint', 's.domain, s.field_path'),
+            self._metric_select_sql(
+                'WHERE s.contract_fingerprint = :contract_fingerprint', 's.source_url, s.field_path'
+            ),
             {'contract_fingerprint': contract_fingerprint},
         )
         rows = [_metric_from_row(result.columns, row) for row in result.rows]
         event_counts, event_urls, event_routes = await self._event_summary(contract_fingerprint=contract_fingerprint)
         field_urls = {row.source_url for row in rows if row.source_url}
+        urls = field_urls | event_urls
         contract_row = await self._contract_row(contract_fingerprint)
         return ContractCacheMetrics(
             contract_fingerprint=contract_fingerprint,
@@ -575,8 +587,9 @@ class LibSQLCacheMetricsStore(YosoiSQLiteStore):
             fields=sorted({row.field_name for row in rows}),
             field_metrics=rows,
             event_counts=event_counts,
+            urls=sorted(urls),
             run_count=event_counts.get('run', 0),
-            url_count=len(field_urls | event_urls),
+            url_count=len(urls),
         )
 
     async def summarize_domain(self, domain: str, contract_fingerprint: str | None = None) -> DomainCacheMetrics:
@@ -587,6 +600,7 @@ class LibSQLCacheMetricsStore(YosoiSQLiteStore):
             domain=domain, contract_fingerprint=contract_fingerprint
         )
         field_urls = {row.source_url for row in rows if row.source_url}
+        urls = field_urls | event_urls
         return DomainCacheMetrics(
             domain=domain,
             contract_fingerprints=sorted({row.contract_fingerprint for row in rows}),
@@ -595,8 +609,9 @@ class LibSQLCacheMetricsStore(YosoiSQLiteStore):
             fields=sorted({row.field_name for row in rows}),
             field_metrics=rows,
             event_counts=event_counts,
+            urls=sorted(urls),
             run_count=event_counts.get('run', 0),
-            url_count=len(field_urls | event_urls),
+            url_count=len(urls),
         )
 
     async def list_domain_fields(
@@ -605,17 +620,18 @@ class LibSQLCacheMetricsStore(YosoiSQLiteStore):
         """Return current field metrics for a domain, optionally scoped to one contract."""
         del backfill  # JSON backfill has intentionally been removed.
         await self._ensure_migrated()
-        conditions = ['s.domain = :domain']
-        params: dict[str, Any] = {'domain': domain}
+        conditions: list[str] = []
+        params: dict[str, Any] = {}
         if contract_fingerprint is not None:
             conditions.append('s.contract_fingerprint = :contract_fingerprint')
             params['contract_fingerprint'] = contract_fingerprint
         client = await self._connect()
+        where = f'WHERE {" AND ".join(conditions)}' if conditions else ''
         result = await client.execute(
-            self._metric_select_sql(f'WHERE {" AND ".join(conditions)}', 's.contract_fingerprint, s.field_path'),
+            self._metric_select_sql(where, 's.contract_fingerprint, s.field_path'),
             params,
         )
-        return [_metric_from_row(result.columns, row) for row in result.rows]
+        return [row for row in (_metric_from_row(result.columns, row) for row in result.rows) if row.domain == domain]
 
     async def record_event(
         self,
@@ -760,8 +776,6 @@ class LibSQLCacheMetricsStore(YosoiSQLiteStore):
                 s.field_fingerprint,
                 s.field_path,
                 f.description,
-                s.domain,
-                s.top_level_domain,
                 s.route_signature,
                 s.selector_level,
                 s.source_url,
@@ -796,45 +810,32 @@ class LibSQLCacheMetricsStore(YosoiSQLiteStore):
     ) -> tuple[dict[str, int], set[str], set[str]]:
         conditions: list[str] = []
         params: dict[str, Any] = {}
-        if domain is not None:
-            conditions.append('domain = :domain')
-            params['domain'] = domain
         if contract_fingerprint is not None:
             conditions.append('contract_fingerprint = :contract_fingerprint')
             params['contract_fingerprint'] = contract_fingerprint
         where = f'WHERE {" AND ".join(conditions)}' if conditions else ''
         client = await self._connect()
-        count_result = await client.execute(
+        result = await client.execute(
             f"""
-            SELECT event_type, COUNT(*) AS count
+            SELECT event_type, url, route_signature
             FROM {_CACHE_EVENT_TABLE}
             {where}
-            GROUP BY event_type
             """,
             params,
         )
-        counts = {row[0]: int(row[1]) for row in count_result.rows}
-        url_result = await client.execute(
-            f"""
-            SELECT DISTINCT url
-            FROM {_CACHE_EVENT_TABLE}
-            {where + ' AND' if where else 'WHERE'} url IS NOT NULL
-            """,
-            params,
-        )
-        route_result = await client.execute(
-            f"""
-            SELECT DISTINCT route_signature
-            FROM {_CACHE_EVENT_TABLE}
-            {where + ' AND' if where else 'WHERE'} route_signature IS NOT NULL
-            """,
-            params,
-        )
-        return (
-            counts,
-            {str(row[0]) for row in url_result.rows if row[0]},
-            {str(row[0]) for row in route_result.rows if row[0]},
-        )
+        counts: dict[str, int] = {}
+        urls: set[str] = set()
+        routes: set[str] = set()
+        for row in result.rows:
+            event_type, url, route_signature = row
+            if domain is not None and _domain_for_url(str(url) if url else None) != domain:
+                continue
+            counts[str(event_type)] = counts.get(str(event_type), 0) + 1
+            if url:
+                urls.add(str(url))
+            if route_signature:
+                routes.add(str(route_signature))
+        return counts, urls, routes
 
     async def _record_event_on_executor(
         self,
@@ -851,6 +852,7 @@ class LibSQLCacheMetricsStore(YosoiSQLiteStore):
         url: str | None = None,
         detail: dict[str, Any] | None = None,
     ) -> None:
+        del domain, top_level_domain
         await executor.execute(
             f"""
             INSERT INTO {_CACHE_EVENT_TABLE} (
@@ -858,8 +860,6 @@ class LibSQLCacheMetricsStore(YosoiSQLiteStore):
                 contract_fingerprint,
                 field_fingerprint,
                 field_name,
-                domain,
-                top_level_domain,
                 route_signature,
                 selector_level,
                 url,
@@ -871,8 +871,6 @@ class LibSQLCacheMetricsStore(YosoiSQLiteStore):
                 :contract_fingerprint,
                 :field_fingerprint,
                 :field_name,
-                :domain,
-                :top_level_domain,
                 :route_signature,
                 :selector_level,
                 :url,
@@ -885,8 +883,6 @@ class LibSQLCacheMetricsStore(YosoiSQLiteStore):
                 'contract_fingerprint': contract_fingerprint,
                 'field_fingerprint': field_fingerprint,
                 'field_name': field_name,
-                'domain': domain,
-                'top_level_domain': top_level_domain,
                 'route_signature': route_signature,
                 'selector_level': selector_level,
                 'url': url,
@@ -946,11 +942,9 @@ class LibSQLCacheMetricsStore(YosoiSQLiteStore):
                 contract_fingerprint TEXT NOT NULL,
                 field_fingerprint TEXT NOT NULL,
                 field_path TEXT NOT NULL,
-                domain TEXT NOT NULL,
-                top_level_domain TEXT NOT NULL DEFAULT '',
                 route_signature TEXT NOT NULL,
                 selector_level TEXT NOT NULL,
-                source_url TEXT,
+                source_url TEXT NOT NULL,
                 status TEXT NOT NULL,
                 selector JSON NOT NULL,
                 discovered_at TEXT,
@@ -958,7 +952,7 @@ class LibSQLCacheMetricsStore(YosoiSQLiteStore):
                 last_failed_at TEXT,
                 failure_count INTEGER NOT NULL DEFAULT 0,
                 updated_at TEXT NOT NULL,
-                PRIMARY KEY(contract_fingerprint, field_fingerprint, domain),
+                PRIMARY KEY(contract_fingerprint, field_fingerprint, source_url),
                 FOREIGN KEY(contract_fingerprint) REFERENCES {_CONTRACT_TABLE}(contract_fingerprint),
                 FOREIGN KEY(field_fingerprint) REFERENCES {_FIELD_TABLE}(field_fingerprint)
             )
@@ -967,13 +961,7 @@ class LibSQLCacheMetricsStore(YosoiSQLiteStore):
         await client.execute(
             f"""
             CREATE INDEX IF NOT EXISTS idx_selector_snapshots_contract
-            ON {_SELECTOR_SNAPSHOT_TABLE}(contract_fingerprint, domain)
-            """
-        )
-        await client.execute(
-            f"""
-            CREATE INDEX IF NOT EXISTS idx_selector_snapshots_tld
-            ON {_SELECTOR_SNAPSHOT_TABLE}(top_level_domain, contract_fingerprint)
+            ON {_SELECTOR_SNAPSHOT_TABLE}(contract_fingerprint, source_url)
             """
         )
         await client.execute(
@@ -984,8 +972,6 @@ class LibSQLCacheMetricsStore(YosoiSQLiteStore):
                 contract_fingerprint TEXT,
                 field_fingerprint TEXT,
                 field_name TEXT,
-                domain TEXT,
-                top_level_domain TEXT,
                 route_signature TEXT,
                 selector_level TEXT,
                 url TEXT,
@@ -997,7 +983,7 @@ class LibSQLCacheMetricsStore(YosoiSQLiteStore):
         await client.execute(
             f"""
             CREATE INDEX IF NOT EXISTS idx_cache_events_lookup
-            ON {_CACHE_EVENT_TABLE}(contract_fingerprint, domain, field_name, occurred_at)
+            ON {_CACHE_EVENT_TABLE}(contract_fingerprint, field_name, occurred_at)
             """
         )
         self._migrated = True
@@ -1025,8 +1011,8 @@ class LibSQLCacheMetricsStore(YosoiSQLiteStore):
         removed_columns = {
             _FIELD_TABLE: {'config_json'},
             _CONTRACT_TABLE: {'schema_version', 'spec_json'},
-            _SELECTOR_SNAPSHOT_TABLE: {'selector_json'},
-            _CACHE_EVENT_TABLE: {'detail_json'},
+            _SELECTOR_SNAPSHOT_TABLE: {'selector_json', 'domain', 'top_level_domain'},
+            _CACHE_EVENT_TABLE: {'detail_json', 'domain', 'top_level_domain'},
         }
         for table_name, json_columns in expected_json.items():
             result = await client.execute(f'PRAGMA table_info({table_name})')
@@ -1042,6 +1028,6 @@ class LibSQLCacheMetricsStore(YosoiSQLiteStore):
                     str(row[1])
                     for row in sorted((row for row in result.rows if int(row[5] or 0) > 0), key=lambda r: r[5])
                 ]
-                if pk != ['contract_fingerprint', 'field_fingerprint', 'domain']:
+                if pk != ['contract_fingerprint', 'field_fingerprint', 'source_url']:
                     return True
         return False

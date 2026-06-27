@@ -118,3 +118,32 @@ class TestSessionIdOrdering:
         mock_pipe.process_urls.assert_awaited_once()
         kwargs = mock_pipe.process_urls.await_args.kwargs
         assert kwargs.get('origin') == 'cli'
+
+    def test_atom_reads_flag_is_threaded_into_pipeline_policy(self, runner, monkeypatch, mocker):
+        monkeypatch.setenv('GROQ_KEY', 'test-key')
+        mocker.patch('yosoi.utils.files.is_initialized', return_value=True)
+        mocker.patch('yosoi.utils.logging.setup_local_logging', return_value='/tmp/test.log')
+
+        captured: dict[str, object] = {}
+        mock_pipe = mocker.MagicMock()
+        mock_pipe.process_urls = mocker.AsyncMock(return_value={'successful': [], 'failed': []})
+
+        def _capturing_pipeline(*_args, **kwargs):
+            captured.update(kwargs)
+            return mock_pipe
+
+        mocker.patch('yosoi.Pipeline', side_effect=_capturing_pipeline)
+
+        result = runner.invoke(main, ['--atom-reads', '-u', 'https://example.com'])
+
+        assert result.exit_code == 0, result.output
+        assert captured['policy'].atom_reads is True
+        assert 'Field atoms' in result.output
+        assert 'armed, strict trust' in result.output
+
+    @pytest.mark.parametrize('args', [[], ['scrape'], ['discover']])
+    def test_atom_reads_is_exposed_in_cli_help(self, runner, args):
+        result = runner.invoke(main, [*args, '--help'])
+
+        assert result.exit_code == 0, result.output
+        assert '--atom-reads' in result.output

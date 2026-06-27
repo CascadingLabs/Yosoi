@@ -187,6 +187,19 @@ def test_pipeline_stores_resolved_policy(mocker, monkeypatch):
     assert d._policy.trust_tier == 'strict'
 
 
+def test_pipeline_defers_model_until_discovery_for_cache_or_atom_paths(mocker, monkeypatch):
+    for key in ('GROQ_KEY', 'GROQ_API_KEY', 'YOSOI_MODEL', 'OPENROUTER_API_KEY', 'OPENAI_API_KEY'):
+        monkeypatch.delenv(key, raising=False)
+    mocker.patch('yosoi.storage.persistence.init_yosoi')
+    mocker.patch('yosoi.storage.discovery_strategy.init_yosoi')
+    mocker.patch('yosoi.storage.tracking.get_tracking_path', return_value='/tmp/tracking.json')
+
+    pipeline = Pipeline(None, contract=SimpleContract, policy=ys.Policy(), quiet=True)
+
+    assert pipeline._llm_deferred is True
+    assert pipeline._llm_config.provider == 'deferred'
+
+
 def test_cached_replay_uses_resolve_artifact(mocker):
     stub = _make_pipeline_stub(mocker)
     html = '<html><body><h1>Book</h1><span class="price">$9.99</span></body></html>'
@@ -1662,6 +1675,7 @@ async def test_try_cached_skip_verification_branch(mocker):
     from yosoi.models.snapshot import SelectorSnapshot
 
     stub = _make_pipeline_stub(mocker)
+    stub._policy = ys.Policy(atom_reads=True)
     now = datetime.now(timezone.utc)
     stub.storage.load_snapshots.return_value = {
         'title': SelectorSnapshot(primary={'type': 'css', 'value': 'h1'}, discovered_at=now),
@@ -1680,6 +1694,9 @@ async def test_try_cached_skip_verification_branch(mocker):
     result = await Pipeline._try_cached(stub, 'https://x.com', 'x.com', mock_fetcher, True, ['json'])
     # Result is the async generator returned by _yield_cached_items
     assert result is not None
+    printed = ' '.join(str(c) for c in stub.console.print.call_args_list)
+    assert 'Field atoms armed' in printed
+    assert 'selector cache hit wins' in printed
 
 
 async def test_try_cached_skip_verification_cache_invalid_returns_none(mocker):

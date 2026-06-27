@@ -1,6 +1,8 @@
 """Tests for LLMTracker record/stats."""
 
+import json
 import os
+import sqlite3
 
 import pytest
 
@@ -204,6 +206,38 @@ def test_tracker_creates_sqlite_database_for_legacy_path(tmp_path):
     assert not tracking_file.exists()
     assert os.path.exists(tracker.tracking_file)
     assert tracker.tracking_file.endswith('tracking.sqlite3')
+
+
+def test_tracker_imports_legacy_json_tracking_file(tmp_path):
+    tracking_file = tmp_path / 'legacy.json'
+    tracking_file.write_text(
+        json.dumps(
+            {
+                'example.com': {
+                    'llm_calls': 2,
+                    'url_count': 5,
+                    'level_distribution': {'css': 3},
+                    'total_elapsed': 1.5,
+                    'partial_rediscovery_count': 1,
+                },
+                'ignored.example': 'not-a-stats-dict',
+            }
+        ),
+        encoding='utf-8',
+    )
+
+    tracker = LLMTracker(tracking_file=str(tracking_file))
+
+    assert not tracking_file.exists()
+    with sqlite3.connect(tracker.tracking_file) as db:
+        row = db.execute(
+            'SELECT llm_calls, url_count, level_distribution, total_elapsed, partial_rediscovery_count '
+            'FROM tracking_stats WHERE domain = ?',
+            ('example.com',),
+        ).fetchone()
+        ignored = db.execute('SELECT 1 FROM tracking_stats WHERE domain = ?', ('ignored.example',)).fetchone()
+    assert row == (2, 5, '{"css":3}', 1.5, 1)
+    assert ignored is None
 
 
 async def test_load_data_returns_empty_dict_for_invalid_json(tmp_path):

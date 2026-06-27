@@ -18,6 +18,15 @@ if TYPE_CHECKING:
 FetcherName = Literal['auto', 'simple', 'headless', 'headful', 'waterfall']
 
 
+def _resolve_spec_for_cli(policy: Policy, model_arg: str | None):
+    try:
+        return policy.resolve_run_spec()
+    except ValueError as e:
+        if model_arg or 'No model specified and no API key found' not in str(e):
+            raise
+        return None
+
+
 def build_policy(
     model_arg: str | None,
     debug: bool,
@@ -31,11 +40,14 @@ def build_policy(
     json_output: bool = False,
     max_concurrency: int | None = None,
     flat_files: bool = False,
+    atom_reads: bool = False,
+    policy_sources: Sequence[str] = (),
 ) -> Policy:
-    """Build the CLI call-site policy layer and cascade it with env."""
+    """Build the CLI call-site policy layer and cascade it with env/global/project policy files."""
     from dotenv import load_dotenv
 
     from yosoi.policy import ModelPolicy, OutputPolicy, Policy, ScrapePolicy
+    from yosoi.policy.files import discover_policy_files, load_policy_layers
 
     load_dotenv()
     try:
@@ -45,6 +57,8 @@ def build_policy(
         call_kwargs: dict[str, object] = {}
         if model_arg:
             call_kwargs['model'] = ModelPolicy.from_string(model_arg)
+        if atom_reads:
+            call_kwargs['atom_reads'] = True
         scrape_defaults = ScrapePolicy()
         scrape_payload: dict[str, object] = {}
         if force:
@@ -67,13 +81,18 @@ def build_policy(
             flat_files=flat_files,
         )
         call_policy = Policy.model_validate(call_kwargs)
-        policy = Policy.cascade(Policy.from_env(), call_policy)
-        spec = policy.resolve_run_spec()
+        file_policy = load_policy_layers(policy_sources) if policy_sources or discover_policy_files() else None
+        policy = Policy.cascade(Policy.from_env(), file_policy, call_policy)
+        spec = _resolve_spec_for_cli(policy, model_arg)
     except (KeyError, ValueError, ValidationError) as e:
         raise click.ClickException(str(e)) from e
-    if not quiet and not json_output:
+    if spec is not None and not quiet and not json_output:
         console.print(
             f'[bold]Using[/bold] [green]{spec.llm_config.provider}[/green] / [cyan]{spec.llm_config.model_name}[/cyan]'
+        )
+    elif spec is None and not quiet and not json_output:
+        console.print(
+            '[cyan]ℹ Model:[/cyan] [dim]not configured; cache/atom reads can run, discovery will require one[/dim]'
         )
     return policy
 
