@@ -444,7 +444,9 @@ class PipelineCacheMixin:
                 merged_snapshots[name] = snapshots[name]
             else:
                 merged_snapshots[name] = _to_snap(sel_dict, discovered_at=now, last_verified_at=now)
-        await self.storage.save_snapshots(url, merged_snapshots, contract_sig=self._contract_sig)
+        await self.storage.save_snapshots(
+            url, merged_snapshots, contract_sig=self._contract_sig, contract=self.contract
+        )
         return merged
 
     async def _track_cached_success(self, url: str, domain: str) -> None:

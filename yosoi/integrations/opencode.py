@@ -57,6 +57,20 @@ class OpenCodeModel(Model):
         """Return the pydantic-ai provider system identifier."""
         return 'opencode'
 
+    async def preflight(self) -> None:
+        """Fail fast with an actionable error when the OpenCode server is unreachable."""
+        import httpx2
+
+        try:
+            async with httpx2.AsyncClient(base_url=self._base_url, timeout=5) as client:
+                resp = await client.post('/session')
+                resp.raise_for_status()
+        except Exception as exc:
+            raise RuntimeError(
+                f'OpenCode server unreachable at {self._base_url}. Start `opencode serve`, '
+                'set OPENCODE_BASE_URL, or use a non-opencode provider.'
+            ) from exc
+
     async def request(
         self,
         messages: list[ModelMessage],
@@ -145,7 +159,10 @@ class OpenCodeModel(Model):
                     base_url=self._base_url,
                     error=str(e),
                 )
-                raise
+                raise RuntimeError(
+                    f'OpenCode request failed at {self._base_url}. Start `opencode serve`, '
+                    'set OPENCODE_BASE_URL, or use a non-opencode provider.'
+                ) from e
 
 
 def _json_schema_format(model_request_parameters: ModelRequestParameters) -> dict[str, Any] | None:

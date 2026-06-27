@@ -104,7 +104,12 @@ def _try_atom_reads(
     if not policy.atom_reads:
         return None
 
-    requested = [(name, fspec.yosoi_type) for name, fspec in spec.fields.items()]
+    from yosoi.utils.signatures import field_signature
+
+    requested = [
+        (name, fspec.yosoi_type, field_signature(name, fspec.description or '', fspec.yosoi_type))
+        for name, fspec in spec.fields.items()
+    ]
     if not requested:
         return None
 

@@ -27,7 +27,7 @@ from datetime import datetime
 from typing import get_args
 
 from yosoi.models.selectors import SelectorKind
-from yosoi.utils.files import atomic_write_json_async, init_yosoi, safe_domain
+from yosoi.utils.files import atomic_write_json_async, get_yosoi_storage_path, init_yosoi, safe_domain
 
 logger = logging.getLogger(__name__)
 
@@ -68,13 +68,9 @@ class FetchStrategyStorage:
     """
 
     def __init__(self, storage_dir: str = 'fetch') -> None:
-        """Initialise storage under .yosoi/fetch/.
-
-        Args:
-            storage_dir: Sub-directory name inside .yosoi/. Defaults to 'fetch'.
-
-        """
-        self._dir = str(init_yosoi(storage_dir))
+        """Initialise storage under .yosoi/fetch/ without creating it until write."""
+        self._storage_dir = storage_dir
+        self._dir = str(get_yosoi_storage_path(storage_dir))
 
     # ------------------------------------------------------------------
     # Public API
@@ -103,7 +99,7 @@ class FetchStrategyStorage:
             logger.warning('FetchStrategyStorage.save: unknown selector level %r for %s', selector_level, domain)
             selector_level = None
 
-        filepath = self._filepath(domain)
+        filepath = self._filepath(domain, create=True)
         data = {
             'domain': domain,
             'fetcher': fetcher,
@@ -202,6 +198,8 @@ class FetchStrategyStorage:
     # Internal helpers
     # ------------------------------------------------------------------
 
-    def _filepath(self, domain: str) -> str:
+    def _filepath(self, domain: str, *, create: bool = False) -> str:
+        if create:
+            self._dir = str(init_yosoi(self._storage_dir))
         safe = safe_domain(domain)
         return os.path.join(self._dir, f'fetch_{safe}.json')

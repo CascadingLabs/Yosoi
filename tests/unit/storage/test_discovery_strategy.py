@@ -9,11 +9,26 @@ from yosoi.storage.discovery_strategy import DiscoveryStrategyStorage
 def storage(tmp_path, mocker):
     d = tmp_path / 'discovery'
     d.mkdir()
+    mocker.patch('yosoi.storage.discovery_strategy.get_yosoi_storage_path', return_value=d)
     mocker.patch('yosoi.storage.discovery_strategy.init_yosoi', return_value=d)
     return DiscoveryStrategyStorage()
 
 
 class TestDiscoveryStrategyStorage:
+    async def test_default_dir_is_created_lazily(self, tmp_path, mocker):
+        d = tmp_path / 'discovery'
+        mocker.patch('yosoi.storage.discovery_strategy.get_yosoi_storage_path', return_value=d)
+        mocker.patch('yosoi.storage.discovery_strategy.init_yosoi', return_value=d)
+
+        storage = DiscoveryStrategyStorage()
+
+        assert not d.exists()
+        assert await storage.load('example.com', 'sig1') is None
+        assert not d.exists()
+
+        await storage.save('example.com', 'sig1', 'mcp')
+        assert d.is_dir()
+
     async def test_save_and_load_round_trip(self, storage):
         await storage.save('example.com', 'sig1', 'mcp')
 

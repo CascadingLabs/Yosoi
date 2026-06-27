@@ -294,7 +294,7 @@ class OutputPolicy(BaseModel):
     json_output: bool = False
     plain_output: bool = False
     debug_html: bool = False
-    debug_html_dir: Path = Path('.yosoi/debug_html')
+    debug_html_dir: Path = Path('.yosoi/debug')
     logs: bool = True
 
     @field_validator('formats', mode='before')

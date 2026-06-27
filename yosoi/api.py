@@ -123,7 +123,7 @@ def _internalize_accepted(
         from yosoi.generalization.fingerprint import is_degenerate_shape, page_shape_fp
         from yosoi.models.selectors import coerce_selector_entry
         from yosoi.storage.atoms import derive_atoms
-        from yosoi.utils.signatures import _get_yosoi_type
+        from yosoi.utils.signatures import _get_yosoi_type, field_signature
 
         html = next((h for (_s, h) in collected.values() if h), None)
         if not html:
@@ -136,6 +136,7 @@ def _internalize_accepted(
         minted = reused = 0
         for name, (selectors, _h) in collected.items():
             cls = contract_by_name.get(name)
+            descriptions = cls.field_descriptions() if cls is not None else {}
             fields = []
             for field_name, slot in selectors.items():
                 if field_name in _STRUCTURAL or not isinstance(slot, dict):
@@ -145,7 +146,8 @@ def _internalize_accepted(
                     continue
                 root = coerce_selector_entry(slot.get('root'))
                 yosoi_type = _get_yosoi_type(cls, field_name) if cls else None
-                fields.append((field_name, primary.model_dump(), root.value if root else None, yosoi_type))
+                field_fp = field_signature(field_name, descriptions.get(field_name, ''), yosoi_type)
+                fields.append((field_name, primary.model_dump(), root.value if root else None, yosoi_type, field_fp))
             # Gate-accepted on the real DOM → highest-truth provenance tier.
             atoms = derive_atoms(page_shape, name, domain, fields, source='verified')
             new = store.upsert_all(atoms)

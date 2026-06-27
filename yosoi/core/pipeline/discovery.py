@@ -11,12 +11,12 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
-import httpx2
 from rich.console import Console
 from tenacity import RetryCallState, RetryError
 
 from yosoi.models.selectors import SelectorLevel
 from yosoi.utils import observability
+from yosoi.utils.exceptions import LLMGenerationError
 from yosoi.utils.retry import get_async_retryer
 
 if TYPE_CHECKING:
@@ -168,6 +168,7 @@ class PipelineDiscoveryMixin:
                 exceptions=(Exception,),
                 log_callback=before_ai_sleep_log,
                 reraise=False,
+                non_retry_exceptions=(LLMGenerationError,),
             )
 
             async for attempt in retryer:
@@ -195,10 +196,16 @@ class PipelineDiscoveryMixin:
                     logger.warning('AI discovery failed for %s', url)
                     raise Exception('AI discovery failed')
 
-        except RetryError:
-            pass
-        except (httpx2.HTTPError, OSError, ValueError, RuntimeError):
-            pass
+        except LLMGenerationError as exc:
+            self.console.print(f'[danger]AI discovery failed: {exc}[/danger]')
+            observability.warning('AI discovery failed', url=url, error=str(exc))
+            raise RuntimeError(f'AI discovery failed for {url}: {exc}') from exc
+        except RetryError as exc:
+            last = exc.last_attempt.exception()
+            detail = str(last or exc)
+            self.console.print(f'[danger]All {max_retries} AI attempts failed: {detail}[/danger]')
+            observability.warning('All AI attempts failed', url=url, error=detail)
+            raise RuntimeError(f'AI discovery failed for {url}: {detail}') from (last or exc)
 
         self.console.print(f'[danger]All {max_retries} AI attempts failed[/danger]')
         observability.warning('All AI attempts failed', url=url)

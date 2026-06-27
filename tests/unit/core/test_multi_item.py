@@ -269,6 +269,7 @@ def _make_scrape_stub(mocker, contract=None):
     stub.cleaner = mocker.MagicMock()
     stub.discovery = mocker.MagicMock()
     stub.discovery.discover_selectors = mocker.AsyncMock()
+    stub.discovery.preflight = mocker.AsyncMock()
     stub._mcp_discovery = None
     stub._force_mcp = False
     stub._discovery_strategy = mocker.MagicMock()

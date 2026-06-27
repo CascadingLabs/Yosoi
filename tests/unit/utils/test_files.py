@@ -86,8 +86,9 @@ def test_is_initialized(monkeypatch, tmp_path):
 
     yosoi_dir = project_root / '.yosoi'
     assert yosoi_dir.is_dir()
-    assert (yosoi_dir / 'selectors').is_dir()
-    assert (yosoi_dir / 'debug').is_dir()
+    assert not (yosoi_dir / 'selectors').exists()
+    assert not (yosoi_dir / 'debug').exists()
+    assert not (yosoi_dir / 'logs').exists()
     assert (yosoi_dir / 'stats.json').exists()
     assert (yosoi_dir / '.gitignore').exists()
     assert (yosoi_dir / '.gitignore').read_text() == '# Automatically created by yosoi\n*\n'
@@ -114,9 +115,9 @@ def test_init_yosoi_from_subdirs(monkeypatch, tmp_path):
     monkeypatch.setattr(yosoi.utils.files, 'get_project_root', lambda: project_root)
 
     storage_path = init_yosoi()
-    assert storage_path == project_root / '.yosoi' / 'selectors'
+    assert storage_path == project_root / '.yosoi'
     assert (project_root / '.yosoi').exists()
-    assert (project_root / '.yosoi' / 'selectors').is_dir()
+    assert not (project_root / '.yosoi' / 'selectors').exists()
 
 
 def test_init_yosoi_migrates_tracking(monkeypatch, tmp_path):
@@ -152,7 +153,7 @@ def test_get_logs_path(monkeypatch, tmp_path):
     assert logs_path == project_root / '.yosoi' / 'logs'
 
 
-def test_init_yosoi_creates_logs_dir(monkeypatch, tmp_path):
+def test_init_yosoi_does_not_create_logs_dir_until_requested(monkeypatch, tmp_path):
     project_root = tmp_path / 'project_logs_create'
     project_root.mkdir()
     (project_root / 'pyproject.toml').touch()
@@ -160,10 +161,10 @@ def test_init_yosoi_creates_logs_dir(monkeypatch, tmp_path):
     monkeypatch.setattr(yosoi.utils.files, 'get_project_root', lambda: project_root)
 
     init_yosoi()
-    assert (project_root / '.yosoi' / 'logs').is_dir()
+    assert not (project_root / '.yosoi' / 'logs').exists()
 
 
-def test_init_yosoi_creates_debug_dir(monkeypatch, tmp_path):
+def test_init_yosoi_does_not_create_debug_dir_until_requested(monkeypatch, tmp_path):
     project_root = tmp_path / 'project_debug_create'
     project_root.mkdir()
     (project_root / 'pyproject.toml').touch()
@@ -171,7 +172,7 @@ def test_init_yosoi_creates_debug_dir(monkeypatch, tmp_path):
     monkeypatch.setattr(yosoi.utils.files, 'get_project_root', lambda: project_root)
 
     init_yosoi()
-    assert (project_root / '.yosoi' / 'debug').is_dir()
+    assert not (project_root / '.yosoi' / 'debug').exists()
 
 
 def test_init_yosoi_creates_empty_tracking_json(monkeypatch, tmp_path):
@@ -295,30 +296,28 @@ def test_get_project_root_finds_requirements_txt(monkeypatch, tmp_path):
     assert root == project_root
 
 
-def test_init_yosoi_default_storage_name_is_selectors(monkeypatch, tmp_path):
-    """Default storage_name must be 'selectors', not something else."""
+def test_init_yosoi_default_returns_yosoi_dir(monkeypatch, tmp_path):
+    """Default init creates only the .yosoi root and metadata."""
     project_root = tmp_path / 'proj_default'
     project_root.mkdir()
 
     monkeypatch.setattr(yosoi.utils.files, 'get_project_root', lambda: project_root)
 
     result = init_yosoi()
-    # Default is 'selectors' - verify directory name
-    assert result.name == 'selectors'
-    assert result == project_root / '.yosoi' / 'selectors'
+    assert result.name == '.yosoi'
+    assert result == project_root / '.yosoi'
+    assert not (result / 'selectors').exists()
 
 
-def test_init_yosoi_debug_dir_name_is_debug(monkeypatch, tmp_path):
-    """The debug directory must be named 'debug', not 'debug_html' or other."""
+def test_init_yosoi_does_not_create_dead_debug_html_dir(monkeypatch, tmp_path):
+    """The old debug_html directory must not be created."""
     project_root = tmp_path / 'proj_debug_name'
     project_root.mkdir()
 
     monkeypatch.setattr(yosoi.utils.files, 'get_project_root', lambda: project_root)
 
     init_yosoi()
-    debug_dir = project_root / '.yosoi' / 'debug'
-    assert debug_dir.is_dir()
-    # Must not have created debug_html (wrong name)
+    assert not (project_root / '.yosoi' / 'debug').exists()
     assert not (project_root / '.yosoi' / 'debug_html').exists()
 
 

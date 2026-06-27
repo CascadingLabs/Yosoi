@@ -94,12 +94,11 @@ class SelectorSnapshot(BaseModel):
 
 
 class SnapshotMap(BaseModel):
-    """Top-level model for a domain's selector cache file.
+    """Serializable selector snapshot bundle.
 
-    Each domain scraped by Yosoi gets one JSON cache file
-    (e.g. ``selectors_example_com.json``). ``SnapshotMap`` is the Pydantic
-    model that validates and serialises that file. It maps field names to
-    their ``SelectorSnapshot`` entries.
+    SQLite is the runtime source of truth; this model remains the portable
+    import/export/debug shape for a domain's selector snapshots. It maps field
+    names to their ``SelectorSnapshot`` entries.
 
     Attributes:
         url: The source URL this cache was built from.

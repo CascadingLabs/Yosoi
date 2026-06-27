@@ -10,11 +10,9 @@ from yosoi.storage.persistence import SelectorStorage
 
 @pytest.fixture
 def storage(tmp_path, mocker):
-    selector_dir = tmp_path / 'selectors'
-    content_dir = tmp_path / 'content'
-    selector_dir.mkdir()
-    content_dir.mkdir()
-    mocker.patch('yosoi.storage.persistence.init_yosoi', side_effect=[selector_dir, content_dir])
+    yosoi_dir = tmp_path / '.yosoi'
+    yosoi_dir.mkdir()
+    mocker.patch('yosoi.storage.persistence.init_yosoi', return_value=yosoi_dir)
     return SelectorStorage()
 
 
@@ -232,50 +230,33 @@ def test_get_content_filepath_markdown_extension(storage):
     assert filepath.endswith('.md')
 
 
-def test_storage_init_calls_init_yosoi_twice(mocker, tmp_path):
-    """SelectorStorage.__init__ must call init_yosoi twice (once for each dir)."""
-    selector_dir = tmp_path / 'sel'
-    content_dir = tmp_path / 'cnt'
-    selector_dir.mkdir()
-    content_dir.mkdir()
-    mock_init = mocker.patch('yosoi.storage.persistence.init_yosoi', side_effect=[selector_dir, content_dir])
+def test_storage_init_calls_init_yosoi_once_for_root(mocker, tmp_path):
+    """SelectorStorage.__init__ initializes only the .yosoi root, not child dirs."""
+    yosoi_dir = tmp_path / '.yosoi'
+    yosoi_dir.mkdir()
+    mock_init = mocker.patch('yosoi.storage.persistence.init_yosoi', return_value=yosoi_dir)
     SelectorStorage()
-    assert mock_init.call_count == 2
+    mock_init.assert_called_once_with()
 
 
-def test_storage_init_passes_storage_dir_name(mocker, tmp_path):
-    """SelectorStorage.__init__ must pass storage_dir name to first init_yosoi call."""
-    selector_dir = tmp_path / 'selectors'
-    content_dir = tmp_path / 'content'
-    selector_dir.mkdir()
-    content_dir.mkdir()
-    mock_init = mocker.patch('yosoi.storage.persistence.init_yosoi', side_effect=[selector_dir, content_dir])
-    SelectorStorage(storage_dir='selectors', content_dir='content')
-    calls = mock_init.call_args_list
-    assert calls[0][0][0] == 'selectors'
-    assert calls[1][0][0] == 'content'
-
-
-def test_storage_init_storage_dir_is_str(mocker, tmp_path):
-    """storage_dir attribute must be a string."""
-    selector_dir = tmp_path / 'sel'
-    content_dir = tmp_path / 'cnt'
-    selector_dir.mkdir()
-    content_dir.mkdir()
-    mocker.patch('yosoi.storage.persistence.init_yosoi', side_effect=[selector_dir, content_dir])
-    s = SelectorStorage()
-    assert isinstance(s.storage_dir, str)
-
-
-def test_storage_init_content_dir_is_str(mocker, tmp_path):
-    """content_dir attribute must be a string."""
-    selector_dir = tmp_path / 'sel'
-    content_dir = tmp_path / 'cnt'
-    selector_dir.mkdir()
-    content_dir.mkdir()
-    mocker.patch('yosoi.storage.persistence.init_yosoi', side_effect=[selector_dir, content_dir])
-    s = SelectorStorage()
+def test_storage_init_content_dir_is_lazy_path(mocker, tmp_path):
+    """content_dir is a path under .yosoi but is not created during init."""
+    yosoi_dir = tmp_path / '.yosoi'
+    yosoi_dir.mkdir()
+    mocker.patch('yosoi.storage.persistence.init_yosoi', return_value=yosoi_dir)
+    s = SelectorStorage(content_dir='content')
     assert isinstance(s.content_dir, str)
+    assert s.content_dir == str(yosoi_dir / 'content')
+    assert not (yosoi_dir / 'content').exists()
+
+
+def test_storage_init_database_path_is_sqlite_under_yosoi(mocker, tmp_path):
+    """Selector state lives in .yosoi/yosoi.sqlite3, not .yosoi/selectors/."""
+    yosoi_dir = tmp_path / '.yosoi'
+    yosoi_dir.mkdir()
+    mocker.patch('yosoi.storage.persistence.init_yosoi', return_value=yosoi_dir)
+    s = SelectorStorage()
+    assert s.database_path == yosoi_dir / 'yosoi.sqlite3'
 
 
 def test_extract_domain_removes_www_prefix(storage):
@@ -286,26 +267,6 @@ def test_extract_domain_removes_www_prefix(storage):
 def test_extract_domain_does_not_remove_non_www(storage):
     """Non-www prefixes should not be removed."""
     assert storage._extract_domain('https://blog.example.com/path') == 'blog.example.com'
-
-
-def test_get_selector_filepath_uses_selectors_prefix(storage):
-    """Selector filepath must start with 'selectors_' prefix."""
-    filepath = storage._get_selector_filepath('example.com')
-    filename = os.path.basename(filepath)
-    assert filename.startswith('selectors_')
-
-
-def test_get_selector_filepath_ends_with_json(storage):
-    """Selector filepath must end with '.json'."""
-    filepath = storage._get_selector_filepath('example.com')
-    assert filepath.endswith('.json')
-
-
-def test_get_selector_filepath_dots_replaced_with_underscores(storage):
-    """Dots in domain must be replaced with underscores in filename."""
-    filepath = storage._get_selector_filepath('example.com')
-    filename = os.path.basename(filepath)
-    assert 'example_com' in filename
 
 
 def test_format_selectors_primary_none_when_missing(storage):
@@ -330,8 +291,8 @@ def test_format_selectors_preserves_field_root(storage):
     assert formatted['title']['root'] == {'type': 'css', 'value': '.card'}
 
 
-async def test_load_selectors_returns_selectors_key(storage):
-    """load_selectors must return the 'selectors' value from JSON, not the full dict."""
+async def test_load_selectors_returns_selector_map_only(storage):
+    """load_selectors must return selector content, not storage metadata."""
     selectors = {'headline': {'primary': 'h1', 'fallback': 'NA', 'tertiary': 'NA'}}
     await storage.save_selectors('https://example.com', selectors)
     loaded = await storage.load_selectors('example.com')
@@ -463,28 +424,20 @@ async def test_content_exists_with_contract_sig(storage):
     assert await storage.content_exists(url, contract_sig='testsig')
 
 
-async def test_list_domains_only_returns_selector_files(storage):
-    """list_domains must only return filenames starting with 'selectors_'."""
-    # Save a selector
+async def test_list_domains_reads_sqlite_not_content_files(storage):
+    """list_domains comes from SQLite selector state, not files under content/."""
     selectors = {'title': {'primary': 'h1', 'fallback': 'NA', 'tertiary': 'NA'}}
     await storage.save_selectors('https://example.com', selectors)
-    # Create a non-selector file
-    import pathlib
+    await storage.save_content('https://other.com/page', {'title': 'ignored'}, 'json')
 
-    pathlib.Path(storage.storage_dir, 'other_file.json').write_text('{}')
     domains = await storage.list_domains()
-    # Should not include 'other'
-    assert 'other' not in domains
+
     assert 'example.com' in domains
+    assert 'other.com' not in domains
 
 
-# ---------------------------------------------------------------------------
-# Coverage: lines 79-81 — load_selectors reading from file
-# ---------------------------------------------------------------------------
-
-
-async def test_load_selectors_reads_selectors_key_from_file(storage):
-    """load_selectors returns the 'selectors' sub-dict from the JSON file."""
+async def test_load_selectors_returns_saved_selector_map(storage):
+    """load_selectors returns selector content without storage metadata."""
     selectors = {
         'title': {'primary': 'h1', 'fallback': 'h2', 'tertiary': 'NA'},
         'price': {'primary': '.price', 'fallback': 'NA', 'tertiary': 'NA'},
@@ -525,21 +478,13 @@ async def test_load_content_returns_none_for_corrupt_file(storage):
 
 
 # ---------------------------------------------------------------------------
-# Coverage: line 165 — list_domains when storage_dir doesn't exist
+# Empty SQLite store
 # ---------------------------------------------------------------------------
 
 
-async def test_list_domains_nonexistent_storage_dir(tmp_path, mocker):
-    """list_domains returns empty list when storage_dir doesn't exist."""
-    selector_dir = tmp_path / 'nonexistent_selectors'
-    content_dir = tmp_path / 'content'
-    content_dir.mkdir()
-    mocker.patch('yosoi.storage.persistence.init_yosoi', side_effect=[selector_dir, content_dir])
-    s = SelectorStorage()
-    # storage_dir points to a non-existent path
-    s.storage_dir = str(tmp_path / 'does_not_exist')
-    result = await s.list_domains()
-    assert result == []
+async def test_list_domains_without_saved_selectors_is_empty(storage):
+    """list_domains returns empty list when no selector rows exist."""
+    assert await storage.list_domains() == []
 
 
 # ---------------------------------------------------------------------------
@@ -554,34 +499,11 @@ def test_extract_domain_empty_netloc_returns_empty_string(storage):
     assert isinstance(domain, str)
 
 
-# ---------------------------------------------------------------------------
-# Coverage: lines 331, 337-338 — _load_file_data exception handling
-# ---------------------------------------------------------------------------
-
-
-async def test_load_file_data_returns_none_for_missing_file(storage):
-    """_load_file_data returns None when the file doesn't exist."""
-    result = await storage._load_file_data('nonexistent.com')
-    assert result is None
-
-
-async def test_load_file_data_returns_none_for_corrupt_file(storage):
-    """_load_file_data returns None for a corrupt JSON file."""
-    import pathlib
-
-    filepath = storage._get_filepath('corrupt.com')
-    pathlib.Path(filepath).write_text('NOT VALID JSON')
-    result = await storage._load_file_data('corrupt.com')
-    assert result is None
-
-
-async def test_load_file_data_returns_data_for_valid_file(storage):
-    """_load_file_data returns the JSON content for a valid file."""
+async def test_save_selectors_does_not_create_legacy_selector_dir(storage):
+    """SQLite is the selector source of truth; .yosoi/selectors is not created."""
     selectors = {'title': {'primary': 'h1', 'fallback': 'NA', 'tertiary': 'NA'}}
     await storage.save_selectors('https://example.com', selectors)
-    result = await storage._load_file_data('example.com')
-    assert result is not None
-    assert 'snapshots' in result
+    assert not (storage.database_path.parent / 'selectors').exists()
 
 
 # ---------------------------------------------------------------------------
@@ -617,21 +539,6 @@ async def test_export_summary_empty(storage, tmp_path):
     with open(output_file) as f:
         data = json.load(f)
     assert data['total_domains'] == 0
-
-
-# ---------------------------------------------------------------------------
-# Coverage: lines 79-81 — load_selectors with corrupt JSON
-# ---------------------------------------------------------------------------
-
-
-async def test_load_selectors_corrupt_json_returns_none(storage):
-    """load_selectors returns None for a file containing invalid JSON."""
-    import pathlib
-
-    filepath = storage._get_filepath('corrupt.com')
-    pathlib.Path(filepath).write_text('NOT JSON')
-    result = await storage.load_selectors('corrupt.com')
-    assert result is None
 
 
 # ---------------------------------------------------------------------------
@@ -691,68 +598,4 @@ async def test_load_field_selector_returns_none_for_missing_field(storage):
 
 async def test_load_field_selector_returns_none_for_missing_domain(storage):
     result = await storage.load_field_selector('nothere.com', 'headline')
-    assert result is None
-
-
-# ---------------------------------------------------------------------------
-# list_domains: corrupt selector file is silently skipped (lines 215-216)
-# ---------------------------------------------------------------------------
-
-
-async def test_list_domains_skips_corrupt_json_files(storage):
-    """A malformed selector file must be silently skipped, not raise."""
-    # Write a valid selector so we know one domain shows up
-    selectors = {'title': {'primary': 'h1', 'fallback': None, 'tertiary': None}}
-    await storage.save_selectors('https://example.com', selectors)
-
-    # Inject a corrupt file that matches the expected filename pattern
-    corrupt_path = os.path.join(storage.storage_dir, 'selectors_corrupt.json')
-    with open(corrupt_path, 'w') as f:
-        f.write('NOT VALID JSON')
-
-    domains = await storage.list_domains()
-    # Corrupt file is skipped; valid domain still returned
-    assert 'example.com' in domains
-    # No crash
-
-
-# ---------------------------------------------------------------------------
-# load_snapshots: no 'snapshots' key returns None (line 266)
-# ---------------------------------------------------------------------------
-
-
-async def test_load_snapshots_returns_none_when_no_snapshots_key(storage):
-    """When persisted data has no 'snapshots' key, load_snapshots must return None."""
-    import json
-
-    # Write a legacy-style file with no 'snapshots' key
-    filepath = os.path.join(storage.storage_dir, 'selectors_example_com.json')
-    with open(filepath, 'w') as f:
-        json.dump({'domain': 'example.com', 'fields': {}}, f)
-
-    result = await storage.load_snapshots('example.com')
-    assert result is None
-
-
-# ---------------------------------------------------------------------------
-# load_snapshots: invalid snapshot data returns None (lines 271-272)
-# ---------------------------------------------------------------------------
-
-
-async def test_load_snapshots_returns_none_for_invalid_snapshot_data(storage):
-    """When snapshot data fails model_validate, load_snapshots must return None."""
-    import json
-
-    # Write a file with 'snapshots' key but with structurally invalid data
-    filepath = os.path.join(storage.storage_dir, 'selectors_bad_com.json')
-    with open(filepath, 'w') as f:
-        json.dump(
-            {
-                'domain': 'bad.com',
-                'snapshots': {'field': 'this_is_not_a_valid_snapshot_object'},
-            },
-            f,
-        )
-
-    result = await storage.load_snapshots('bad.com')
     assert result is None

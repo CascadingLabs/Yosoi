@@ -17,7 +17,7 @@ import os
 from datetime import datetime, timezone
 from typing import Literal
 
-from yosoi.utils.files import atomic_write_json_async, init_yosoi, safe_domain
+from yosoi.utils.files import atomic_write_json_async, get_yosoi_storage_path, init_yosoi, safe_domain
 
 logger = logging.getLogger(__name__)
 
@@ -29,8 +29,9 @@ class DiscoveryStrategyStorage:
     """Saves and loads the chosen discovery mode per (domain, contract)."""
 
     def __init__(self, storage_dir: str = 'discovery') -> None:
-        """Initialise storage under ``.yosoi/discovery/``."""
-        self._dir = str(init_yosoi(storage_dir))
+        """Initialise storage under ``.yosoi/discovery/`` without creating it until write."""
+        self._storage_dir = storage_dir
+        self._dir = str(get_yosoi_storage_path(storage_dir))
 
     async def save(self, domain: str, contract_sig: str, mode: DiscoveryMode) -> None:
         """Persist the discovery mode for ``(domain, contract_sig)``."""
@@ -44,7 +45,7 @@ class DiscoveryStrategyStorage:
             'discovered_at': datetime.now(timezone.utc).isoformat(),
         }
         try:
-            await atomic_write_json_async(self._filepath(domain, contract_sig), data)
+            await atomic_write_json_async(self._filepath(domain, contract_sig, create=True), data)
             logger.debug('Saved discovery strategy: %s -> %s', domain, mode)
         except OSError as e:
             logger.warning('Could not save discovery strategy for %s: %s', domain, e)
@@ -68,7 +69,9 @@ class DiscoveryStrategyStorage:
             return mode  # type: ignore[no-any-return]
         return None
 
-    def _filepath(self, domain: str, contract_sig: str) -> str:
+    def _filepath(self, domain: str, contract_sig: str, *, create: bool = False) -> str:
+        if create:
+            self._dir = str(init_yosoi(self._storage_dir))
         safe = safe_domain(domain)
         safe_sig = ''.join(c if c.isalnum() or c in ('-', '_') else '_' for c in contract_sig)
         return os.path.join(self._dir, f'discovery_{safe}__{safe_sig}.json')

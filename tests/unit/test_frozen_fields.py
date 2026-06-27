@@ -94,7 +94,7 @@ class TestFrozenGuardInPipeline:
         # Track what _extract_all_fresh was called with
         captured_fresh: set[str] = set()
 
-        def _extract_all_fresh_spy(url, domain, fetcher, raw_html, snaps, fresh_fields, fmt, *, root_span=None):
+        async def _extract_all_fresh_spy(url, domain, fetcher, raw_html, snaps, fresh_fields, fmt, *, root_span=None):
             captured_fresh.update(fresh_fields)
             return mocker.MagicMock()
 

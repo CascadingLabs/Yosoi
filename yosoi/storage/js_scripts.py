@@ -10,7 +10,7 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from typing import Any
 
-from yosoi.utils.files import atomic_write_json_async, init_yosoi, safe_domain
+from yosoi.utils.files import atomic_write_json_async, get_yosoi_storage_path, init_yosoi, safe_domain
 
 logger = logging.getLogger(__name__)
 
@@ -71,10 +71,13 @@ class JsScriptStorage:
     """
 
     def __init__(self, storage_dir: str = 'js_scripts') -> None:
-        """Initialise storage under .yosoi/js_scripts/."""
-        self._dir = str(init_yosoi(storage_dir))
+        """Initialise storage under .yosoi/js_scripts/ without creating it until write."""
+        self._storage_dir = storage_dir
+        self._dir = str(get_yosoi_storage_path(storage_dir))
 
-    def _filepath(self, domain: str) -> str:
+    def _filepath(self, domain: str, *, create: bool = False) -> str:
+        if create:
+            self._dir = str(init_yosoi(self._storage_dir))
         safe = safe_domain(domain)
         return os.path.join(self._dir, f'js_{safe}.json')
 
@@ -111,7 +114,7 @@ class JsScriptStorage:
             'updated_at': _utc_now(),
         }
         try:
-            await atomic_write_json_async(self._filepath(domain), data)
+            await atomic_write_json_async(self._filepath(domain, create=True), data)
             logger.debug('Saved JS scripts for %s (%d fields)', domain, len(merged))
         except OSError as exc:
             logger.warning('Could not save JS scripts for %s: %s', domain, exc)

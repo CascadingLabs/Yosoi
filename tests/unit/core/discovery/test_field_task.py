@@ -84,22 +84,20 @@ async def test_failed_cache_escalates_to_discovery(mock_agent):
 
 
 @pytest.mark.anyio
-async def test_all_levels_fail_returns_none_selectors(mock_agent):
+async def test_llm_generation_error_propagates(mock_agent):
     mock_agent.discover_field.side_effect = LLMGenerationError('always fails')
 
-    result = await run_field_task(
-        field_name='headline',
-        field_description='Article title',
-        discovery_input=_DISCOVERY_INPUT,
-        html=_HTML,
-        agent=mock_agent,
-        cached_entry=None,
-        max_level=SelectorLevel.CSS,
-        max_retries=1,
-    )
-
-    assert result.selectors is None
-    assert result.from_cache is False
+    with pytest.raises(LLMGenerationError, match='always fails'):
+        await run_field_task(
+            field_name='headline',
+            field_description='Article title',
+            discovery_input=_DISCOVERY_INPUT,
+            html=_HTML,
+            agent=mock_agent,
+            cached_entry=None,
+            max_level=SelectorLevel.CSS,
+            max_retries=1,
+        )
 
 
 @pytest.mark.anyio
@@ -141,7 +139,7 @@ async def test_escalated_level_recorded_in_result(mocker):
         field_name, field_description, discovery_input, target_level, is_container=False, feedback=None
     ):
         if target_level == SelectorLevel.CSS:
-            raise LLMGenerationError('CSS fails')
+            return FieldSelectors(primary='.missing')
         return FieldSelectors(primary='//h1')
 
     agent.discover_field = mock_discover

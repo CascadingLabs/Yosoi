@@ -53,6 +53,7 @@ class EnqueueResult(BaseModel):
     failed: list[str] = Field(default_factory=list)
     skipped: list[str] = Field(default_factory=list)
     elapsed_by_url: dict[str, float] = Field(default_factory=dict)
+    errors: dict[str, str] = Field(default_factory=dict)
 
 
 # FUTURE: support horizontal scaling w/ redis or other message brokers
@@ -133,7 +134,7 @@ def get_pipeline_config() -> PipelineConfig:
     return _pipeline_config
 
 
-@broker.task(retry_on_error=True, max_retries=2)
+@broker.task(retry_on_error=False)
 async def process_url_task(
     url: str,
     force: bool = False,
@@ -331,7 +332,12 @@ def _collect_single_result(
         result: The TaskiqResult or None.
 
     """
-    if result is None or result.is_err:
+    if result is None:
         results.failed.append(url)
+        results.errors[url] = 'task result unavailable; see logs for details'
+    elif result.is_err:
+        results.failed.append(url)
+        err = getattr(result, 'error', None)
+        results.errors[url] = str(err or 'task failed; see logs for details')
     else:
         results.successful.append(url)

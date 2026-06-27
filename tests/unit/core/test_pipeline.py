@@ -28,6 +28,7 @@ def _make_pipeline_stub(mocker, contract=None):
     stub.cleaner = mocker.MagicMock()
     stub.discovery = mocker.MagicMock()
     stub.discovery.discover_selectors = mocker.AsyncMock()
+    stub.discovery.preflight = mocker.AsyncMock()
     stub._mcp_discovery = None
     stub._force_mcp = False
     stub._signal_lane = None
@@ -634,7 +635,7 @@ async def test_discover_returns_selectors_on_ai_success(mocker):
     assert used_llm is True
 
 
-async def test_discover_returns_none_when_all_ai_attempts_fail(mocker):
+async def test_discover_raises_when_all_ai_attempts_fail(mocker):
     stub = _make_pipeline_stub(mocker)
     stub.contract.get_selector_overrides = mocker.MagicMock(return_value={})
     stub.contract.field_descriptions = mocker.MagicMock(return_value={'title': 'The title'})
@@ -645,9 +646,8 @@ async def test_discover_returns_none_when_all_ai_attempts_fail(mocker):
         'yosoi.core.pipeline.discovery.get_async_retryer',
         return_value=AsyncRetrying(stop=stop_after_attempt(1), wait=wait_none(), reraise=False),
     )
-    selectors, used_llm = await Pipeline._discover(stub, 'https://x.com', '<html/>', max_retries=1)
-    assert selectors is None
-    assert used_llm is False
+    with pytest.raises(RuntimeError, match='AI discovery failed'):
+        await Pipeline._discover(stub, 'https://x.com', '<html/>', max_retries=1)
 
 
 async def test_discover_succeeds_at_css(mocker):
@@ -691,6 +691,22 @@ async def test_discover_returns_none_when_all_levels_fail(mocker):
     selectors, used_llm = await Pipeline._discover(stub, 'https://x.com', '<html/>')
     assert selectors is None
     assert used_llm is False
+
+
+async def test_process_url_preflights_provider_before_fetch(mocker):
+    stub = _make_pipeline_stub(mocker)
+    mocker.patch.object(Pipeline, 'normalize_url', return_value='https://x.com')
+    mocker.patch.object(Pipeline, '_extract_domain', return_value='x.com')
+    mocker.patch.object(Pipeline, '_create_fetcher', return_value=mocker.MagicMock())
+    stub.storage.load_selectors.return_value = None
+    stub.discovery.preflight.side_effect = RuntimeError('OpenCode server unreachable')
+    fetch = mocker.patch.object(Pipeline, '_fetch')
+    mocker.patch('yosoi.core.pipeline.base.observability')
+
+    with pytest.raises(RuntimeError, match='OpenCode server unreachable'):
+        await Pipeline.process_url(stub, 'https://x.com')
+
+    fetch.assert_not_called()
 
 
 async def test_process_url_raises_when_fetch_fails(mocker):
@@ -2000,7 +2016,7 @@ async def test_discover_logs_retry_then_succeeds_on_second_attempt(mocker):
     mocker.patch.object(stub.contract, 'field_descriptions', return_value={'title': 'The title'})
     stub.discovery.discover_selectors = mocker.AsyncMock(side_effect=[None, {'title': {'primary': 'h1'}}])
 
-    def _fake_retryer(*, max_attempts, wait_min, wait_max, exceptions, log_callback, reraise):
+    def _fake_retryer(*, max_attempts, wait_min, wait_max, exceptions, log_callback, reraise, **kwargs):
         # Faithful to get_async_retryer but with no wait — keeps before_sleep wired
         # so the in-method retry-log callback is exercised.
         return AsyncRetrying(
@@ -2178,17 +2194,15 @@ def test_print_verification_failure_lists_every_failed_selector(mocker):
     assert 'no_match' in printed
 
 
-async def test_discover_fails_closed_when_retryer_cannot_be_built(mocker):
-    """If the retryer itself raises a transient error, _discover returns (None, False) —
-    it fails closed rather than propagating, consistent with fail-fast/no-fallback."""
+async def test_discover_propagates_when_retryer_cannot_be_built(mocker):
+    """Retryer construction failures are programming/config errors and should propagate."""
     stub = _make_pipeline_stub(mocker)
     mocker.patch.object(stub.contract, 'get_selector_overrides', return_value={})
     mocker.patch.object(stub.contract, 'field_descriptions', return_value={'title': 'The title'})
     mocker.patch('yosoi.core.pipeline.discovery.get_async_retryer', side_effect=ValueError('bad retry config'))
     mocker.patch('yosoi.core.pipeline.discovery.observability')
-    selectors, used_llm = await Pipeline._discover(stub, 'https://x.com', '<html/>', max_retries=2)
-    assert selectors is None
-    assert used_llm is False
+    with pytest.raises(ValueError, match='bad retry config'):
+        await Pipeline._discover(stub, 'https://x.com', '<html/>', max_retries=2)
 
 
 async def test_semantic_refine_stops_when_reextraction_goes_empty(mocker):

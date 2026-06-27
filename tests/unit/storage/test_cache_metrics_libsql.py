@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
-import json
 import sqlite3
 from datetime import datetime, timezone
 
+from pydantic import Field
+
+from yosoi.models.contract import Contract
 from yosoi.models.snapshot import CacheVerdict, SelectorSnapshot
 from yosoi.storage.cache_metrics_libsql import (
     LibSQLCacheMetricsStore,
@@ -29,13 +31,83 @@ def test_top_level_domain_bucket_is_precomputed() -> None:
 
 
 def test_default_db_path_is_metrics_file_under_yosoi_dir(tmp_path, mocker) -> None:
-    selector_dir = tmp_path / '.yosoi' / 'selectors'
-    selector_dir.mkdir(parents=True)
-    mocker.patch('yosoi.storage.cache_metrics_libsql.init_yosoi', return_value=selector_dir)
+    yosoi_dir = tmp_path / '.yosoi'
+    yosoi_dir.mkdir(parents=True)
+    mocker.patch('yosoi.storage.sqlite_store.init_yosoi', return_value=yosoi_dir)
 
     store = LibSQLCacheMetricsStore()
 
-    assert store.db_path == tmp_path / '.yosoi' / 'metrics.sqlite3'
+    assert store.db_path == tmp_path / '.yosoi' / 'yosoi.sqlite3'
+
+
+async def test_upsert_snapshots_normalizes_contract_and_field_entities(tmp_path) -> None:
+    class Article(Contract):
+        """Article extraction contract."""
+
+        headline: str = Field(description='Article headline')
+
+    from yosoi.utils.signatures import contract_signature
+
+    db_path = tmp_path / 'metrics.sqlite3'
+    fp = contract_signature(Article)
+    async with LibSQLCacheMetricsStore(db_path) as store:
+        await store.upsert_snapshots(
+            url='https://example.com/story',
+            domain='example.com',
+            snapshots={'headline': _snapshot('h1')},
+            contract_fingerprint=fp,
+            contract=Article,
+        )
+
+    with sqlite3.connect(db_path) as conn:
+        contract_row = conn.execute(
+            'SELECT name, docstring FROM contracts WHERE contract_fingerprint = ?', (fp,)
+        ).fetchone()
+        field_row = conn.execute('SELECT field_name, description FROM field_entities').fetchone()
+        join_row = conn.execute('SELECT contract_fingerprint, field_path FROM contract_fields').fetchone()
+        contract_columns = {row[1]: row[2].upper() for row in conn.execute('PRAGMA table_info(contracts)')}
+        field_columns = {row[1]: row[2].upper() for row in conn.execute('PRAGMA table_info(field_entities)')}
+        snapshot_columns = {row[1]: row[2].upper() for row in conn.execute('PRAGMA table_info(selector_snapshots)')}
+        event_columns = {row[1]: row[2].upper() for row in conn.execute('PRAGMA table_info(cache_events)')}
+        json_storage_types = conn.execute(
+            """
+            SELECT
+                (SELECT typeof(spec) FROM contracts),
+                (SELECT typeof(config) FROM field_entities),
+                (SELECT typeof(selector) FROM selector_snapshots),
+                (SELECT typeof(detail) FROM cache_events LIMIT 1)
+            """
+        ).fetchone()
+
+    assert contract_row == ('Article', 'Article extraction contract.')
+    assert field_row == ('headline', 'Article headline')
+    assert join_row == (fp, 'headline')
+    assert 'schema_version' not in contract_columns
+    assert contract_columns['spec'] == 'JSON'
+    assert field_columns['config'] == 'JSON'
+    assert snapshot_columns['selector'] == 'JSON'
+    assert event_columns['detail'] == 'JSON'
+    assert json_storage_types == ('text', 'text', 'text', 'text')
+
+
+async def test_old_text_json_schema_is_destructively_reset(tmp_path) -> None:
+    db_path = tmp_path / 'metrics.sqlite3'
+    with sqlite3.connect(db_path) as conn:
+        conn.execute(
+            'CREATE TABLE contracts ('
+            'contract_fingerprint TEXT PRIMARY KEY, schema_version INTEGER, spec_json TEXT, '
+            'created_at TEXT, updated_at TEXT)'
+        )
+
+    async with LibSQLCacheMetricsStore(db_path) as store:
+        await store.backfill_existing()
+
+    with sqlite3.connect(db_path) as conn:
+        columns = {row[1]: row[2].upper() for row in conn.execute('PRAGMA table_info(contracts)')}
+
+    assert 'schema_version' not in columns
+    assert 'spec_json' not in columns
+    assert columns['spec'] == 'JSON'
 
 
 async def test_upsert_snapshots_is_field_addressable_by_contract_domain_and_route(tmp_path) -> None:
@@ -66,7 +138,6 @@ async def test_upsert_snapshots_is_field_addressable_by_contract_domain_and_rout
     assert summary.event_counts == {'run': 2, 'write': 3}
     assert {(row.field_name, row.route_signature) for row in summary.field_metrics} == {
         ('author', '/l1/news/article/'),
-        ('headline', '/l1/news/article/'),
         ('headline', '/l1/news/profile/'),
     }
 
@@ -133,28 +204,15 @@ async def test_summarize_domain_returns_domain_centered_counts(tmp_path) -> None
     assert summary.url_count == 1
 
 
-async def test_backfill_existing_imports_selector_files_once(tmp_path, mocker) -> None:
-    selector_dir = tmp_path / '.yosoi' / 'selectors'
-    selector_dir.mkdir(parents=True)
-    mocker.patch('yosoi.storage.cache_metrics_libsql.init_yosoi', return_value=selector_dir)
+async def test_backfill_existing_is_noop_after_sqlite_becomes_source_of_truth(tmp_path) -> None:
     fp = 'contract-fp'
-    payload = {
-        'url': 'https://example.com/l1/news/article/?x=1',
-        'domain': 'example.com',
-        'contract_sig': fp,
-        'snapshots': {'headline': _snapshot('h1').model_dump(mode='json')},
-    }
-    (selector_dir / f'selectors_example_com_{fp}.json').write_text(json.dumps(payload))
 
     async with LibSQLCacheMetricsStore(tmp_path / 'metrics.sqlite3') as store:
-        first = await store.backfill_existing(contract_fingerprint=fp)
-        second = await store.backfill_existing(contract_fingerprint=fp)
+        result = await store.backfill_existing(contract_fingerprint=fp)
         summary = await store.summarize_contract(fp)
 
-    assert first.scanned_files == 1
-    assert first.imported_files == 1
-    assert first.imported_fields == 1
-    assert second.scanned_files == 1
-    assert second.imported_files == 0
-    assert second.skipped_files == 1
-    assert summary.event_counts == {'backfill': 1}
+    assert result.scanned_files == 0
+    assert result.imported_files == 0
+    assert result.imported_fields == 0
+    assert result.contract_fingerprints == [fp]
+    assert summary.event_counts == {}

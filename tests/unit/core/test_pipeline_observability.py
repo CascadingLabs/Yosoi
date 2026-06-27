@@ -62,6 +62,7 @@ def pipeline_stub(mocker):
     stub.cleaner.clean_html.return_value = CLEANED_HTML
     stub.discovery = mocker.MagicMock()
     stub.discovery.discover_selectors = mocker.AsyncMock(return_value=DISCOVERED_SELECTORS)
+    stub.discovery.preflight = mocker.AsyncMock()
     stub._mcp_discovery = None
     stub._force_mcp = False
     stub._discovery_strategy = mocker.MagicMock()

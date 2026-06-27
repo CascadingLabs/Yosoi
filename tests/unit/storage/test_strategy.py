@@ -7,8 +7,10 @@ import pytest
 
 @pytest.fixture
 def storage(tmp_path, mocker):
-    mocker.patch('yosoi.storage.strategy.init_yosoi', return_value=tmp_path / 'fetch')
-    (tmp_path / 'fetch').mkdir()
+    fetch_dir = tmp_path / 'fetch'
+    mocker.patch('yosoi.storage.strategy.get_yosoi_storage_path', return_value=fetch_dir)
+    mocker.patch('yosoi.storage.strategy.init_yosoi', return_value=fetch_dir)
+    fetch_dir.mkdir()
     from yosoi.storage.strategy import FetchStrategyStorage
 
     return FetchStrategyStorage()
@@ -20,6 +22,21 @@ def storage(tmp_path, mocker):
 
 
 class TestSave:
+    async def test_default_dir_is_created_lazily(self, tmp_path, mocker):
+        fetch_dir = tmp_path / 'fetch'
+        mocker.patch('yosoi.storage.strategy.get_yosoi_storage_path', return_value=fetch_dir)
+        mocker.patch('yosoi.storage.strategy.init_yosoi', return_value=fetch_dir)
+        from yosoi.storage.strategy import FetchStrategyStorage
+
+        storage = FetchStrategyStorage()
+
+        assert not fetch_dir.exists()
+        assert await storage.load('example.com') is None
+        assert not fetch_dir.exists()
+
+        await storage.save('example.com', 'simple')
+        assert fetch_dir.is_dir()
+
     async def test_save_valid_fetcher_creates_file(self, storage):
         import os
 

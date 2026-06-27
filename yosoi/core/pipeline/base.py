@@ -535,7 +535,7 @@ class Pipeline(
             f'{total_elapsed:.1f}s',
             'all concurrent URLs',
         )
-        for url in results.get('successful', ()) + results.get('failed', ()):
+        for url in [*results.get('successful', []), *results.get('failed', [])]:
             status = 'ok' if url in successful else 'failed'
             table.add_row('page', url, '—', '1', f'{elapsed_by_url.get(url, 0.0):.1f}s', status)
         for domain, delta_llm, delta_urls, delta_elapsed, note in domain_rows:
@@ -703,6 +703,11 @@ class Pipeline(
         """Fresh discovery path — fetch, clean, discover, verify, extract, save."""
         observability.annotate_cache(root_span, path=observability.CACHE_FRESH)
 
+        cached_mode = None if force_flag else await self._discovery_strategy.load(domain, self._contract_sig)
+        escalate_first = self._force_mcp or cached_mode == 'mcp'
+        if not escalate_first and self.contract.field_descriptions():
+            await self.discovery.preflight()
+
         await self._discover_js_actions(url, domain, fetcher)
         js_scripts = await self._resolve_js_scripts(domain)
         download_specs = self._resolve_download_specs(fetcher)
@@ -725,9 +730,6 @@ class Pipeline(
                 PageObservation(url, domain, self.contract.__name__, snapshot.raw_html, result.ax_snapshot)
             )
         cleaned_html = snapshot.html_for_discovery
-
-        cached_mode = None if force_flag else await self._discovery_strategy.load(domain, self._contract_sig)
-        escalate_first = self._force_mcp or cached_mode == 'mcp'
 
         with observability.span(
             'discover', url=url, cleaned_chars=len(cleaned_html), mode='mcp' if escalate_first else 'static'
@@ -923,6 +925,12 @@ class Pipeline(
             'skipped': enqueue_result.skipped,
         }
         self._print_summary(results, total_elapsed)
+        if enqueue_result.errors:
+            from rich.markup import escape
+
+            self.console.print('[bold red]Failure reasons:[/bold red]')
+            for url, error in enqueue_result.errors.items():
+                self.console.print(f'  [red]- {escape(url)}: {escape(error)}[/red]')
         if getattr(self, '_show_tracking_summary', False):
             await self._print_concurrent_tracking_summary(
                 results, enqueue_result.elapsed_by_url, url_domains, tracking_baseline

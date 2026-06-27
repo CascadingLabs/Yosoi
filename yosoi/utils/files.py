@@ -140,22 +140,29 @@ def get_project_root() -> Path:
     return current_path
 
 
+def get_yosoi_dir() -> Path:
+    """Return the project-local .yosoi directory path without creating it."""
+    return get_project_root() / '.yosoi'
+
+
+def get_yosoi_storage_path(storage_name: str | Path) -> Path:
+    """Return a child path under .yosoi without creating directories."""
+    return get_yosoi_dir() / Path(storage_name)
+
+
 def get_tracking_path() -> Path:
     """Return the path to the LLM tracking file in .yosoi."""
-    root = get_project_root()
-    return root / '.yosoi' / 'stats.json'
+    return get_yosoi_dir() / 'stats.json'
 
 
 def get_debug_path() -> Path:
     """Return the path to the debug directory in .yosoi."""
-    root = get_project_root()
-    return root / '.yosoi' / 'debug'
+    return get_yosoi_dir() / 'debug'
 
 
 def get_logs_path() -> Path:
     """Return the path to the logs directory in .yosoi."""
-    root = get_project_root()
-    return root / '.yosoi' / 'logs'
+    return get_yosoi_dir() / 'logs'
 
 
 def ensure_tracking_file(yosoi_dir: Path) -> None:
@@ -187,8 +194,7 @@ def ensure_tracking_file(yosoi_dir: Path) -> None:
 
 def is_initialized() -> bool:
     """Check if the .yosoi directory exists in the project root."""
-    root = get_project_root()
-    yosoi_dir = root / '.yosoi'
+    yosoi_dir = get_yosoi_dir()
     if not yosoi_dir.is_dir():
         return False
     # Attempt migration before checking — handles legacy-only workspaces
@@ -196,27 +202,27 @@ def is_initialized() -> bool:
     return (yosoi_dir / 'stats.json').exists()
 
 
-def init_yosoi(storage_name: str = 'selectors') -> Path:
-    """Initialize .yosoi directory and return the storage path."""
-    root = get_project_root()
-    yosoi_dir = root / '.yosoi'
-    storage_dir = yosoi_dir / storage_name
-    debug_dir = yosoi_dir / 'debug'
-    logs_dir = yosoi_dir / 'logs'
+def _ensure_yosoi_gitignore(yosoi_dir: Path) -> None:
+    """Ensure .yosoi has a local ignore file for generated artifacts."""
+    gitignore = yosoi_dir / '.gitignore'
+    if not gitignore.exists():
+        gitignore.write_text('# Automatically created by yosoi\n*\n', encoding='utf-8')
 
-    # Create directory structure
-    storage_dir.mkdir(parents=True, exist_ok=True)
-    debug_dir.mkdir(parents=True, exist_ok=True)
-    logs_dir.mkdir(parents=True, exist_ok=True)
+
+def init_yosoi(storage_name: str | Path | None = None) -> Path:
+    """Initialize .yosoi metadata and optionally one requested child directory."""
+    yosoi_dir = get_yosoi_dir()
+    yosoi_dir.mkdir(parents=True, exist_ok=True)
 
     # Initialize tracking file if it doesn't exist
     ensure_tracking_file(yosoi_dir)
+    _ensure_yosoi_gitignore(yosoi_dir)
 
-    # Ensure .gitignore exists to keep system-generated files out of source control
-    gitignore = yosoi_dir / '.gitignore'
-    if not gitignore.exists():
-        gitignore.write_text('# Automatically created by yosoi\n*\n')
+    if storage_name is None:
+        return yosoi_dir
 
+    storage_dir = yosoi_dir / Path(storage_name)
+    storage_dir.mkdir(parents=True, exist_ok=True)
     return storage_dir
 
 

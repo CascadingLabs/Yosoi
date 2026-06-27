@@ -7,7 +7,7 @@ import logging
 import os
 
 from yosoi.models.replay import DiscoveryLesson, LessonKey, ReplayStatus, utc_now
-from yosoi.utils.files import atomic_write_json_async, init_yosoi
+from yosoi.utils.files import atomic_write_json_async, get_yosoi_storage_path, init_yosoi
 
 logger = logging.getLogger(__name__)
 
@@ -21,12 +21,13 @@ class LessonStorage:
     """
 
     def __init__(self, storage_dir: str = 'lessons') -> None:
-        """Initialise storage under ``.yosoi/lessons``."""
-        self._dir = str(init_yosoi(storage_dir))
+        """Initialise storage under ``.yosoi/lessons`` without creating it until write."""
+        self._storage_dir = storage_dir
+        self._dir = str(get_yosoi_storage_path(storage_dir))
 
     async def save(self, lesson: DiscoveryLesson) -> str:
         """Persist a discovery lesson and return the file path."""
-        filepath = self._filepath(lesson.key)
+        filepath = self._filepath(lesson.key, create=True)
         await atomic_write_json_async(filepath, lesson.model_dump(mode='json'), ensure_ascii=False)
         logger.info('Saved discovery lesson to: %s', filepath)
         return filepath
@@ -126,5 +127,7 @@ class LessonStorage:
         os.remove(filepath)
         return True
 
-    def _filepath(self, key: LessonKey) -> str:
+    def _filepath(self, key: LessonKey, *, create: bool = False) -> str:
+        if create:
+            self._dir = str(init_yosoi(self._storage_dir))
         return os.path.join(self._dir, f'lesson_{key.storage_key}.json')

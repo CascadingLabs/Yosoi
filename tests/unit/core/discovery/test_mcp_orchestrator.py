@@ -65,6 +65,7 @@ def llm_config():
 def lesson_storage(tmp_path, mocker):
     lesson_dir = tmp_path / 'lessons'
     lesson_dir.mkdir()
+    mocker.patch('yosoi.storage.lesson.get_yosoi_storage_path', return_value=lesson_dir)
     mocker.patch('yosoi.storage.lesson.init_yosoi', return_value=lesson_dir)
     return LessonStorage()
 

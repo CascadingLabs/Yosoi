@@ -119,7 +119,7 @@ async def test_discover_selectors_partial_results_preserved(orchestrator, mocker
 
 
 @pytest.mark.anyio
-async def test_failed_fields_are_persisted_as_absent_snapshots(orchestrator, mocker):
+async def test_intentionally_absent_fields_are_persisted_as_absent_snapshots(orchestrator, mocker):
     async def mock_run_field_task(**kwargs):
         from yosoi.core.discovery.field_task import FieldTaskResult
 
@@ -128,7 +128,7 @@ async def test_failed_fields_are_persisted_as_absent_snapshots(orchestrator, moc
             return FieldTaskResult(
                 field_name=name, selectors=FieldSelectors(primary='h1.title'), from_cache=False, escalated_to=None
             )
-        return FieldTaskResult(field_name=name, selectors=None, from_cache=False, escalated_to=None)
+        return FieldTaskResult(field_name=name, selectors=None, from_cache=False, escalated_to=None, absent=True)
 
     mocker.patch('yosoi.core.discovery.orchestrator.run_field_task', new=mock_run_field_task)
     save_spy = mocker.patch.object(orchestrator._storage, 'save_snapshots')
@@ -405,8 +405,8 @@ async def test_orchestrator_adds_discover_task_for_auto_root(llm_config, mock_st
 
 
 @pytest.mark.anyio
-async def test_gather_exception_is_handled_gracefully(orchestrator, mocker):
-    """When asyncio.gather returns a BaseException, the orchestrator logs and skips it."""
+async def test_gather_exception_propagates(orchestrator, mocker):
+    """When a field task crashes, discovery fails instead of saving partial selectors."""
     call_count = 0
 
     async def mock_run_field_task(**kwargs):
@@ -422,10 +422,10 @@ async def test_gather_exception_is_handled_gracefully(orchestrator, mocker):
 
     mocker.patch('yosoi.core.discovery.orchestrator.run_field_task', new=mock_run_field_task)
 
-    result = await orchestrator.discover_selectors(_HTML, 'https://example.com')
-    # Should still return partial results (other fields succeeded)
-    assert result is not None
-    assert 'headline' not in result
+    from yosoi.utils.exceptions import LLMGenerationError
+
+    with pytest.raises(LLMGenerationError, match='unexpected crash'):
+        await orchestrator.discover_selectors(_HTML, 'https://example.com')
 
 
 @pytest.mark.anyio

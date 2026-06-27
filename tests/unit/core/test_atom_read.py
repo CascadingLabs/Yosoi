@@ -37,6 +37,22 @@ def test_missing_field_is_a_miss() -> None:
     assert not res.fully_resolved
 
 
+def test_field_fingerprint_is_runtime_lookup_key() -> None:
+    store = AtomStore()
+    store.upsert(
+        FieldAtom(
+            page_shape=SHAPE,
+            region_role='.r',
+            field_name='url',
+            field_fingerprint='fp-a',
+            yosoi_type='url',
+            selector={'type': 'css', 'value': 'a'},
+        )
+    )
+    assert resolve_via_atoms(SHAPE, [('url', 'url', 'fp-a')], store).fully_resolved
+    assert resolve_via_atoms(SHAPE, [('url', 'url', 'fp-b')], store).misses == ['url']
+
+
 def test_two_regions_make_a_field_ambiguous_fail_closed() -> None:
     # `url` exists for BOTH an ad region and an organic region → cannot reuse blindly.
     store = AtomStore()
