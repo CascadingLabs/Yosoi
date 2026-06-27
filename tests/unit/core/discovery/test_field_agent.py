@@ -32,35 +32,38 @@ def field_selectors():
 from yosoi.core.discovery.field_agent import _extract_provider_error
 
 
+class _ProviderError(RuntimeError):
+    body: object
+
+    def __init__(self, message: str, body: object) -> None:
+        super().__init__(message)
+        self.body = body
+
+
 class TestExtractProviderError:
     def test_returns_none_for_plain_exception(self):
         assert _extract_provider_error(RuntimeError('boom')) is None
 
     def test_extracts_body_error_message(self):
-        exc = RuntimeError('fail')
-        exc.body = {'error': {'message': 'Rate limit exceeded'}}  # type: ignore[attr-defined]
+        exc = _ProviderError('fail', {'error': {'message': 'Rate limit exceeded'}})
         assert _extract_provider_error(exc) == 'Rate limit exceeded'
 
     def test_walks_exception_chain(self):
-        inner = RuntimeError('inner')
-        inner.body = {'error': {'message': 'Model overloaded'}}  # type: ignore[attr-defined]
+        inner = _ProviderError('inner', {'error': {'message': 'Model overloaded'}})
         outer = RuntimeError('outer')
         outer.__cause__ = inner
         assert _extract_provider_error(outer) == 'Model overloaded'
 
     def test_returns_none_for_non_dict_body(self):
-        exc = RuntimeError('fail')
-        exc.body = 'not a dict'  # type: ignore[attr-defined]
+        exc = _ProviderError('fail', 'not a dict')
         assert _extract_provider_error(exc) is None
 
     def test_returns_none_for_empty_error_dict(self):
-        exc = RuntimeError('fail')
-        exc.body = {'error': {}}  # type: ignore[attr-defined]
+        exc = _ProviderError('fail', {'error': {}})
         assert _extract_provider_error(exc) is None
 
     def test_returns_none_for_non_dict_error(self):
-        exc = RuntimeError('fail')
-        exc.body = {'error': 'string error'}  # type: ignore[attr-defined]
+        exc = _ProviderError('fail', {'error': 'string error'})
         assert _extract_provider_error(exc) is None
 
 
@@ -134,8 +137,7 @@ async def test_discover_field_raises_llm_generation_error_on_exception(llm_confi
 async def test_discover_field_error_with_provider_detail(llm_config, discovery_input, mocker):
     """When provider error has body detail, the detail is included in the LLMGenerationError."""
     agent = FieldDiscoveryAgent(llm_config, console=Console(quiet=True))
-    exc = RuntimeError('provider fail')
-    exc.body = {'error': {'message': 'Rate limit exceeded'}}  # type: ignore[attr-defined]
+    exc = _ProviderError('provider fail', {'error': {'message': 'Rate limit exceeded'}})
     mocker.patch.object(agent._agent, 'run', new=mocker.AsyncMock(side_effect=exc))
 
     with pytest.raises(LLMGenerationError, match='Rate limit exceeded'):

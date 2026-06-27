@@ -160,7 +160,7 @@ async def test_scrape_threads_opt_in_identity_per_url(monkeypatch):
     )
 
     assert {unit.url for unit in result.results} == {'https://google.test', 'https://bing.test'}
-    by_url = {i.scrape_kwargs['url']: i for i in FakePipeline.instances}  # type: ignore[index]
+    by_url = {_scrape_kwargs(i)['url']: i for i in FakePipeline.instances}
     assert by_url['https://google.test'].kwargs['identity'] is g  # google gets the trusted profile
     assert by_url['https://bing.test'].kwargs['identity'] is None  # bing opted out -> plain
 
@@ -176,7 +176,7 @@ async def test_scrape_per_url_fetcher_type(monkeypatch):
         model=ys.claude_sdk(),
         fetcher_type={'https://google.test': 'headful', 'https://bing.test': 'headless'},
     )
-    by_url = {i.scrape_kwargs['url']: i for i in FakePipeline.instances}  # type: ignore[index]
+    by_url = {_scrape_kwargs(i)['url']: i for i in FakePipeline.instances}
     assert by_url['https://google.test'].scrape_kwargs['fetcher_type'] == 'headful'
     assert by_url['https://bing.test'].scrape_kwargs['fetcher_type'] == 'headless'
 
@@ -259,7 +259,7 @@ async def test_scrape_defaults_to_auto_fetcher(monkeypatch):
 
     await api.scrape('https://x.test', ApiContract, model=ys.claude_sdk())
 
-    assert FakePipeline.instances[0].scrape_kwargs['fetcher_type'] == 'auto'  # type: ignore[index]
+    assert _scrape_kwargs(FakePipeline.instances[0])['fetcher_type'] == 'auto'
 
 
 async def test_scrape_grid_urls_x_contracts(monkeypatch):
@@ -296,6 +296,11 @@ class FakePipeline:
     async def scrape(self, url: str, **kwargs: object):
         self.scrape_kwargs = {'url': url, **kwargs}
         yield {'title': 'Example'}
+
+
+def _scrape_kwargs(instance: FakePipeline) -> dict[str, object]:
+    assert instance.scrape_kwargs is not None
+    return instance.scrape_kwargs
 
 
 async def test_scrape_returns_result_envelope_without_default_file_output(monkeypatch):
@@ -457,7 +462,7 @@ async def test_scrape_per_url_fetcher_miss_defers_to_policy(monkeypatch):
         fetcher_type={'https://mapped.test': 'headful'},
     )
 
-    by_url = {i.scrape_kwargs['url']: i for i in FakePipeline.instances}  # type: ignore[index]
+    by_url = {_scrape_kwargs(i)['url']: i for i in FakePipeline.instances}
     assert by_url['https://mapped.test'].scrape_kwargs['fetcher_type'] == 'headful'
     assert by_url['https://unmapped.test'].scrape_kwargs['fetcher_type'] == 'simple'
 

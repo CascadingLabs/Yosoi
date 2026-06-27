@@ -405,16 +405,22 @@ def _model_to_dict(m: ProfileModel) -> dict[str, object]:
     }
 
 
+def _float_from_metric(value: object) -> float:
+    if isinstance(value, int | float | str):
+        return float(value)
+    raise TypeError(f'expected numeric metric value, got {type(value).__name__}')
+
+
 def _model_from_dict(d: dict[str, object]) -> ProfileModel:
     return ProfileModel(
         name=str(d['name']),
         results=[],
-        chrome_slope=float(d['chrome_slope']),  # type: ignore[arg-type]
-        chrome_base=float(d['chrome_base']),  # type: ignore[arg-type]
-        inproc_base=float(d['inproc_base']),  # type: ignore[arg-type]
-        boot_floor=float(d['boot_floor']),  # type: ignore[arg-type]
-        inproc_growth=float(d['inproc_growth']),  # type: ignore[arg-type]
-        leak=float(d['leak']),  # type: ignore[arg-type]
+        chrome_slope=_float_from_metric(d['chrome_slope']),
+        chrome_base=_float_from_metric(d['chrome_base']),
+        inproc_base=_float_from_metric(d['inproc_base']),
+        boot_floor=_float_from_metric(d['boot_floor']),
+        inproc_growth=_float_from_metric(d['inproc_growth']),
+        leak=_float_from_metric(d['leak']),
     )
 
 

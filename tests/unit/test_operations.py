@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 
@@ -113,7 +114,7 @@ def test_contract_ref_doors_and_validation(tmp_path: Path):
     with pytest.raises(ValueError, match='non-empty'):
         ContractRef(ref='   ')
     with pytest.raises(TypeError, match='Unsupported'):
-        ContractRef.from_input(object())  # type: ignore[arg-type]
+        ContractRef.from_input(cast(Any, object()))
 
 
 def test_request_validators_and_axes():
@@ -147,6 +148,8 @@ def test_request_validators_and_axes():
         SearchRequest(query='x', max_results=0)
     with pytest.raises(ValueError, match='greater than or equal to 1'):
         SearchRequest(query='x', page=0)
+    with pytest.raises(ValueError, match='boolean values'):
+        SearchRequest(query='x', max_results=True)
 
     search_from_policy = SearchRequest.from_policy(
         'widgets',
@@ -188,6 +191,10 @@ def test_normalize_search_result_shapes_and_malformed_rows():
 
     with pytest.raises(ValueError, match='Malformed ddgs row 1: title'):
         normalize_search_result(request, [{'href': 'https://bad.test', 'body': 'missing title'}])
+    with pytest.raises(ValueError, match='row must be an object'):
+        normalize_search_result(request, cast(Any, ['not-a-row']))
+    with pytest.raises(ValueError, match='absolute HTTP'):
+        normalize_search_result(request, [{'title': 'Bad', 'href': 'javascript:void(0)', 'body': 'bad url'}])
 
 
 async def test_execute_scrape_and_crawl_delegate(monkeypatch, mocker):

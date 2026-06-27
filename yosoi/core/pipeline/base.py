@@ -884,10 +884,11 @@ class Pipeline(
                 url, domain, cleaned_html, result.html, verified, container_selector, root_entry, extracted
             )
             used_llm = used_llm or escalated
-            unmet = self._unsatisfied_required(extracted)
-            if unmet:
-                fields = ', '.join(sorted(unmet))
-                raise RuntimeError(f'Required contract fields still unmet after discovery/escalation: {fields}')
+
+        unmet = self._unsatisfied_required(extracted or {})
+        if unmet:
+            fields = ', '.join(sorted(unmet))
+            raise RuntimeError(f'Required contract fields still unmet after discovery/escalation: {fields}')
 
         selectors_to_save = self._selectors_with_root(verified, root_entry)
 

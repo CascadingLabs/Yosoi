@@ -49,6 +49,16 @@ class TestHelpAndUsage:
         assert result.exit_code != 0
         assert 'No URLs provided' in result.output
 
+    def test_bare_json_no_llm_threads_cache_only_pipeline(self, runner, mock_pipeline, mocker):
+        _mock_pipe, pipeline_cls = mock_pipeline
+        run_json = mocker.patch('yosoi.cli.main._run_json', mocker.AsyncMock(return_value=0))
+
+        result = runner.invoke(main, ['--url', 'https://example.com', '--json', '--no-llm'])
+
+        assert result.exit_code == 0, result.output
+        assert pipeline_cls.call_args.kwargs['allow_llm'] is False
+        run_json.assert_awaited_once()
+
 
 class TestSearchCommand:
     @pytest.fixture(autouse=True)

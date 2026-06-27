@@ -394,6 +394,75 @@ class TestCacheStatus:
         assert doc['route'] == '/l1/news/article/'
         storage_mock.load_snapshots.assert_awaited_once_with('example.com', contract_sig=None)
 
+    def test_status_url_target_reports_scoped_health_metrics(self, runner, mocker, base_mocks):
+        import yosoi.storage as _store_pkg
+        from yosoi.storage.cache_metrics_libsql import CacheFieldMetric, DomainCacheMetrics, ScrapeHealth
+
+        article_metric = CacheFieldMetric(
+            contract_fingerprint='fp',
+            field_name='headline',
+            domain='example.com',
+            top_level_domain='example.com',
+            route_signature='/l1/news/article/',
+            selector_level='css',
+            source_url='https://example.com/l1/news/article/',
+            status='active',
+            discovered_at=None,
+            last_verified_at=None,
+            last_failed_at=None,
+            failure_count=0,
+        )
+        listing_metric = CacheFieldMetric(
+            contract_fingerprint='fp',
+            field_name='headline',
+            domain='example.com',
+            top_level_domain='example.com',
+            route_signature='/l1/news/',
+            selector_level='css',
+            source_url='https://example.com/l1/news/',
+            status='active',
+            discovered_at=None,
+            last_verified_at=None,
+            last_failed_at=None,
+            failure_count=0,
+        )
+        storage_mock = mocker.MagicMock()
+        storage_mock.load_snapshots = mocker.AsyncMock(return_value=None)
+        mocker.patch.object(_store_pkg, 'SelectorStorage', return_value=storage_mock)
+        store_cls = mocker.patch('yosoi.storage.cache_metrics_libsql.LibSQLCacheMetricsStore')
+        store = store_cls.return_value
+        store.__aenter__ = mocker.AsyncMock(return_value=store)
+        store.__aexit__ = mocker.AsyncMock(return_value=None)
+        store.summarize_domain = mocker.AsyncMock(
+            return_value=DomainCacheMetrics(
+                domain='example.com',
+                contract_fingerprints=['fp'],
+                top_level_domains=['example.com'],
+                routes=['/l1/news/', '/l1/news/article/'],
+                fields=['headline'],
+                field_metrics=[listing_metric, article_metric],
+                urls=['https://example.com/l1/news/', 'https://example.com/l1/news/article/'],
+                run_count=2,
+                url_count=2,
+            )
+        )
+        store.scrape_health = mocker.AsyncMock(return_value=ScrapeHealth('healthy', None, [article_metric]))
+
+        result = runner.invoke(main, ['status', 'https://example.com/l1/news/article/?x=1', '--json'])
+
+        assert result.exit_code == 0, result.output
+        doc = json.loads(result.output)
+        assert doc['health'] == 'healthy'
+        assert doc['field_metrics'] == [article_metric.__dict__]
+        assert doc['routes'] == ['/l1/news/article/']
+        assert doc['urls'] == ['https://example.com/l1/news/article/']
+        store.scrape_health.assert_awaited_once_with(
+            contract_fingerprint=None,
+            domain='example.com',
+            url='https://example.com/l1/news/article/?x=1',
+            route_signature='/l1/news/article/',
+        )
+
     def test_cache_status_ambiguous_target_requires_explicit_flag(self, runner, base_mocks):
         result = runner.invoke(main, ['cache', 'status', 'ArticleTest'])
         assert result.exit_code != 0

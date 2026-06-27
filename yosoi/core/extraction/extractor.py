@@ -103,8 +103,10 @@ class ContentExtractor:
                         fields.append(flat_name)
                         child_extra = child_fi.json_schema_extra
                         raw_ytype = child_extra.get('yosoi_type') if isinstance(child_extra, dict) else None
-                        if raw_ytype in ('body_text', 'related_content'):
-                            self._field_modes[flat_name] = raw_ytype  # type: ignore[assignment]
+                        if raw_ytype == 'body_text':
+                            self._field_modes[flat_name] = 'body_text'
+                        elif raw_ytype == 'related_content':
+                            self._field_modes[flat_name] = 'related_content'
                 else:
                     fields.append(name)
                     extra = fi.json_schema_extra
@@ -364,9 +366,9 @@ class ContentExtractor:
             return links if links else None
 
         if mode == 'list':
-            items: list[str] = [_node_text(el) for el in elements]
+            items: list[str | dict[str, str]] = [_node_text(el) for el in elements]
             items = [t for t in items if t]
-            return items if items else None  # type: ignore[return-value]
+            return items if items else None
 
         text = _node_text(elements[0])
         return text if text else None

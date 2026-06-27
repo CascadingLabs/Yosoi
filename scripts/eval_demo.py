@@ -23,6 +23,7 @@ import os
 import sys
 import tempfile
 from pathlib import Path
+from typing import Any, cast
 
 from langfuse import Langfuse, propagate_attributes
 from opentelemetry import trace
@@ -133,7 +134,7 @@ async def _pipeline_demo(*, workers: int, live: bool) -> str:
             return None
 
     original_create_fetcher = _pipeline_mod.create_fetcher
-    _pipeline_mod.create_fetcher = lambda *_a, **_kw: _FakeFetcher()  # type: ignore[assignment]
+    cast(Any, _pipeline_mod).create_fetcher = lambda *_a, **_kw: _FakeFetcher()
 
     # Isolate selector storage in a tempdir so the user's .yosoi/ is never
     # touched and every run sees a cold cache (cold cache → real per-field
@@ -164,7 +165,7 @@ async def _pipeline_demo(*, workers: int, live: bool) -> str:
             with propagate_attributes(tags=['yosoi', 'eval', 'regression']):
                 await pipeline.process_urls(urls, workers=workers, force=True, origin='script')
     finally:
-        _pipeline_mod.create_fetcher = original_create_fetcher  # type: ignore[assignment]
+        cast(Any, _pipeline_mod).create_fetcher = original_create_fetcher
         os.chdir(original_cwd)
 
     obs.flush()

@@ -251,6 +251,13 @@ class SearchRequest(BaseModel):
             raise ValueError('timelimit must be non-empty')
         return value.strip() if value is not None else None
 
+    @field_validator('max_results', 'page', mode='before')
+    @classmethod
+    def _reject_bool_ints(cls, value: object) -> object:
+        if isinstance(value, bool):
+            raise ValueError('boolean values are not valid search numeric settings')
+        return value
+
     @classmethod
     def from_policy(
         cls,
@@ -520,12 +527,22 @@ def _require_text(value: Any, *, field: str, row_index: int) -> str:
     return value.strip()
 
 
+def _require_url(value: Any, *, row_index: int) -> str:
+    url = _require_text(value, field='url', row_index=row_index)
+    parsed = urlparse(url)
+    if parsed.scheme not in {'http', 'https'} or not parsed.netloc:
+        raise ValueError(f'Malformed ddgs row {row_index}: url must be an absolute HTTP(S) URL')
+    return url
+
+
 def normalize_search_result(request: SearchRequest, rows: Sequence[Mapping[str, Any]]) -> SearchResult:
     """Normalize DDGS provider rows into the stable public search envelope."""
     hits: list[SearchHit] = []
     for index, row in enumerate(rows, start=1):
+        if not isinstance(row, Mapping):
+            raise ValueError(f'Malformed ddgs row {index}: row must be an object')
         title = _require_text(row.get('title'), field='title', row_index=index)
-        url = _require_text(row.get('href', row.get('url')), field='url', row_index=index)
+        url = _require_url(row.get('href', row.get('url')), row_index=index)
         snippet = _require_text(row.get('body', row.get('snippet')), field='snippet', row_index=index)
         hits.append(
             SearchHit(

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from typing import ClassVar
+from typing import Any, ClassVar
 
 import pytest
 
@@ -222,13 +222,13 @@ async def test_probe_does_not_force_browser_for_small_non_html_assets(mocker):
         headers: ClassVar[dict[str, str]] = {'content-type': 'application/pdf', 'content-length': '1200'}
 
     class _Client:
-        async def __aenter__(self):  # type: ignore[no-untyped-def]
+        async def __aenter__(self) -> _Client:
             return self
 
-        async def __aexit__(self, *_args):  # type: ignore[no-untyped-def]
+        async def __aexit__(self, *_args: object) -> None:
             return None
 
-        async def head(self, *_args, **_kwargs):  # type: ignore[no-untyped-def]
+        async def head(self, *_args: object, **_kwargs: object) -> _Response:
             return _Response()
 
     mocker.patch('yosoi.core.fetcher.waterfall.httpx2.AsyncClient', _Client)
@@ -255,10 +255,10 @@ async def test_concurrent_headless_first_use_starts_one_shared_tier(mocker):
     starts = 0
 
     class _SlowHeadless:
-        def __init__(self, **_kwargs):  # type: ignore[no-untyped-def]
+        def __init__(self, **_kwargs: object) -> None:
             pass
 
-        async def __aenter__(self):  # type: ignore[no-untyped-def]
+        async def __aenter__(self) -> _SlowHeadless:
             nonlocal starts
             starts += 1
             await asyncio.sleep(0.01)
@@ -283,10 +283,10 @@ async def test_concurrent_headful_first_use_starts_one_shared_tier(mocker):
     starts = 0
 
     class _SlowHeadful:
-        def __init__(self, **_kwargs):  # type: ignore[no-untyped-def]
+        def __init__(self, **_kwargs: object) -> None:
             pass
 
-        async def __aenter__(self):  # type: ignore[no-untyped-def]
+        async def __aenter__(self) -> _SlowHeadful:
             nonlocal starts
             starts += 1
             await asyncio.sleep(0.01)
@@ -313,7 +313,14 @@ async def test_concurrent_headful_first_use_starts_one_shared_tier(mocker):
 class _BlockedHeadless:
     """Headless tier stub that always reports a bot block."""
 
-    async def _do_fetch(self, url, start_time, tier, action_scripts=None, download_specs=None):  # type: ignore[no-untyped-def]
+    async def _do_fetch(
+        self,
+        url: str,
+        start_time: float,
+        tier: str,
+        action_scripts: dict[str, str] | None = None,
+        download_specs: dict[str, Any] | None = None,
+    ) -> FetchResult:
         from yosoi.utils.exceptions import BotDetectionError
 
         raise BotDetectionError(url, 200, ['blocked'])
@@ -333,14 +340,21 @@ async def test_waterfall_terminal_tier_uses_cascade_when_configured(mocker):
     # Cascade: 'fresh' blocks, 'proxy_a' wins.
     from yosoi.utils.exceptions import BotDetectionError
 
-    async def fake_start(identity, base_kwargs):  # type: ignore[no-untyped-def]
+    async def fake_start(identity: BrowserIdentity, base_kwargs: dict[str, Any]) -> object:
         class _Ident:
-            async def _do_fetch(self, url, start_time, tier, action_scripts=None, download_specs=None):  # type: ignore[no-untyped-def]
+            async def _do_fetch(
+                self,
+                url: str,
+                start_time: float,
+                tier: str,
+                action_scripts: dict[str, str] | None = None,
+                download_specs: dict[str, Any] | None = None,
+            ) -> FetchResult:
                 if identity.id == 'fresh':
                     raise BotDetectionError(url, 200, ['recaptcha'], identity_id='fresh')
                 return FetchResult(url=url, html='<html><body>serp results here</body></html>')
 
-            async def close(self):  # type: ignore[no-untyped-def]
+            async def close(self) -> None:
                 pass
 
         return _Ident()
@@ -367,12 +381,19 @@ async def test_waterfall_cascade_exhaustion_raises(mocker):
     fetcher._probe_requires_js = mocker.AsyncMock(return_value=True)
     fetcher._ensure_headless = mocker.AsyncMock(return_value=_BlockedHeadless())
 
-    async def fake_start(identity, base_kwargs):  # type: ignore[no-untyped-def]
+    async def fake_start(identity: BrowserIdentity, base_kwargs: dict[str, Any]) -> object:
         class _Ident:
-            async def _do_fetch(self, url, start_time, tier, action_scripts=None, download_specs=None):  # type: ignore[no-untyped-def]
+            async def _do_fetch(
+                self,
+                url: str,
+                start_time: float,
+                tier: str,
+                action_scripts: dict[str, str] | None = None,
+                download_specs: dict[str, Any] | None = None,
+            ) -> FetchResult:
                 raise BotDetectionError(url, 200, ['blocked'], identity_id=identity.id)
 
-            async def close(self):  # type: ignore[no-untyped-def]
+            async def close(self) -> None:
                 pass
 
         return _Ident()

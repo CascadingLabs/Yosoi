@@ -17,7 +17,7 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from yosoi.models.download import DownloadRecord, DownloadResult, DownloadSpec
 from yosoi.storage.download_store import commit_download
@@ -70,7 +70,10 @@ async def _capture(tab: Any, spec: DownloadSpec, qdir: Path) -> Any:
     """Perform the actual download, returning a voidcrawl ``DownloadOutcome``."""
     # capture_download is exported at runtime but missing from voidcrawl's published
     # .pyi stub (only safe_url is declared) — VoidCrawl stub gap, see CAS-105 notes.
-    from voidcrawl import capture_download, safe_url  # type: ignore[attr-defined]
+    import voidcrawl
+    from voidcrawl import safe_url
+
+    capture_download = cast(Any, voidcrawl).capture_download
 
     max_bytes = spec.max_bytes or _DEFAULT_MAX_BYTES
 

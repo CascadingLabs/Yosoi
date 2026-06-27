@@ -35,7 +35,7 @@ repos:
       # CI: Strictly reports errors, does not modify files
       - id: ruff-check
         name: ruff-ci-check
-        args: [--no-fix, --exit-non-zero-on-fix]
+        args: [--no-fix, --exit-non-zero-on-fix, --extend-select=RUF100]
         exclude: ^old_versions/
         stages: [manual]
 

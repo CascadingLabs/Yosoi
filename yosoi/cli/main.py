@@ -209,7 +209,7 @@ async def _run_json(
     'json_output',
     is_flag=True,
     default=False,
-    help='Emit records as NDJSON on stdout; logs/progress on stderr. Exit 0=records, 2=needs_discovery, 1=error.',
+    help='Emit records as NDJSON on stdout; logs/progress on stderr. Exit 0=records, 1=error.',
 )
 def main(
     ctx: click.Context,
@@ -310,6 +310,7 @@ def main(
             console=stderr_con,
             policy=policy,
             show_tracking_summary=summary,
+            allow_llm=not no_llm,
         )
         try:
             exit_code = asyncio.run(_run_json(pipeline, urls, force, skip_verification, fetcher, list(output_formats)))
@@ -356,7 +357,7 @@ def main(
     )
 
 
-# ── scrape command — replay-only ──────────────────────────────────────────────
+# ── scrape command — cache replay with discovery/repair as needed ─────────────
 
 
 @main.command('search')
@@ -1265,19 +1266,36 @@ def cache_status(
                     )
                 except (AttributeError, TypeError):
                     health = None
-            if domain_summary.field_metrics or domain_summary.event_counts:
-                doc['field_metrics'] = [row.__dict__ for row in domain_summary.field_metrics]
-                doc['top_level_domains'] = domain_summary.top_level_domains
-                doc['routes'] = domain_summary.routes
-                doc['urls'] = domain_summary.urls
-                doc['contracts'] = domain_summary.contract_fingerprints
+            field_metrics = health.field_metrics if health is not None else domain_summary.field_metrics
+            if field_metrics or domain_summary.event_counts:
+                doc['field_metrics'] = [row.__dict__ for row in field_metrics]
+                if health is not None:
+                    top_level_domains = sorted(
+                        {row.top_level_domain for row in field_metrics if row.top_level_domain is not None}
+                    )
+                    routes = sorted({row.route_signature for row in field_metrics if row.route_signature is not None})
+                    metric_urls = sorted({row.source_url for row in field_metrics if row.source_url is not None})
+                    contracts = sorted(
+                        {row.contract_fingerprint for row in field_metrics if row.contract_fingerprint is not None}
+                    )
+                    fields = sorted({row.field_name for row in field_metrics if row.field_name is not None})
+                else:
+                    top_level_domains = domain_summary.top_level_domains
+                    routes = domain_summary.routes
+                    metric_urls = domain_summary.urls
+                    contracts = domain_summary.contract_fingerprints
+                    fields = domain_summary.fields
+                doc['top_level_domains'] = top_level_domains
+                doc['routes'] = routes
+                doc['urls'] = metric_urls
+                doc['contracts'] = contracts
                 doc['counts'] = {
                     'runs': domain_summary.run_count,
-                    'urls': domain_summary.url_count,
-                    'contracts': len(domain_summary.contract_fingerprints),
-                    'top_level_domains': len(domain_summary.top_level_domains),
-                    'routes': len(domain_summary.routes),
-                    'fields': len(domain_summary.fields),
+                    'urls': len(metric_urls) if health is not None else domain_summary.url_count,
+                    'contracts': len(contracts),
+                    'top_level_domains': len(top_level_domains),
+                    'routes': len(routes),
+                    'fields': len(fields),
                     'events': domain_summary.event_counts,
                 }
             if health is not None:
@@ -1304,9 +1322,9 @@ def cache_status(
                 if isinstance(counts, dict):
                     console.print(f'  Runs: [bold]{counts.get("runs", 0)}[/bold]')
                     console.print(f'  URLs: [bold]{counts.get("urls", 0)}[/bold]')
-                    metric_urls = doc.get('urls')
-                    if isinstance(metric_urls, list) and metric_urls:
-                        console.print(f'  URL list: {", ".join(str(url) for url in metric_urls)}')
+                    rendered_urls = doc.get('urls')
+                    if isinstance(rendered_urls, list) and rendered_urls:
+                        console.print(f'  URL list: {", ".join(str(url) for url in rendered_urls)}')
                     events = counts.get('events')
                     if isinstance(events, dict) and events:
                         rendered = ', '.join(f'{name}={count}' for name, count in sorted(events.items()))

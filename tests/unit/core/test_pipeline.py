@@ -862,6 +862,52 @@ async def test_process_url_fails_when_fresh_discovery_extracts_zero_records(mock
     Pipeline._save_and_track.assert_not_called()
 
 
+async def test_scrape_fresh_mcp_first_fails_when_required_fields_unmet(mocker):
+    from types import SimpleNamespace
+
+    stub = _make_pipeline_stub(mocker)
+    stub._force_mcp = True
+    fetch_result = FetchResult(url='https://x.com', html='<html/>', status_code=200)
+    snapshot = SimpleNamespace(fetch_result=fetch_result, raw_html='<html/>', html_for_discovery='<clean/>')
+    fetcher = mocker.MagicMock()
+
+    mocker.patch.object(Pipeline, '_discover_js_actions', mocker.AsyncMock())
+    mocker.patch.object(Pipeline, '_resolve_js_scripts', mocker.AsyncMock(return_value={}))
+    mocker.patch.object(Pipeline, '_resolve_download_specs', return_value={})
+    mocker.patch.object(Pipeline, '_acquire_page', mocker.AsyncMock(return_value=snapshot))
+    mocker.patch.object(
+        Pipeline, '_discover_via_mcp', mocker.AsyncMock(return_value=({'title': {'primary': 'h1'}}, True))
+    )
+    mocker.patch.object(Pipeline, '_resolve_root', return_value=None)
+    mocker.patch.object(Pipeline, '_root_value', return_value=None)
+    mocker.patch.object(Pipeline, '_verify', return_value={'title': {'primary': 'h1'}})
+    mocker.patch.object(Pipeline, '_extract', return_value={'title': 'Book'})
+    mocker.patch.object(Pipeline, '_merge_fetch_outputs', return_value={'title': 'Book'})
+    mocker.patch.object(Pipeline, '_record_downloads')
+    mocker.patch.object(
+        Pipeline, '_semantic_refine', mocker.AsyncMock(return_value=({'title': 'Book'}, {'title': {'primary': 'h1'}}))
+    )
+    mocker.patch.object(Pipeline, '_finish', mocker.AsyncMock())
+    mocker.patch('yosoi.core.pipeline.base.observability')
+
+    with pytest.raises(RuntimeError, match='Required contract fields still unmet'):
+        async for _ in Pipeline._scrape_fresh(
+            stub,
+            url='https://x.com',
+            domain='x.com',
+            fetcher=fetcher,
+            force_flag=False,
+            max_fetch_retries=1,
+            max_discovery_retries=1,
+            skip_verification=False,
+            format_to_use=['json'],
+            root_span=None,
+        ):
+            pass
+
+    Pipeline._finish.assert_not_called()
+
+
 async def test_process_url_raises_when_clean_fails(mocker):
     stub = _make_pipeline_stub(mocker)
     fetch_result = FetchResult(url='https://x.com', html='<html/>', status_code=200)
