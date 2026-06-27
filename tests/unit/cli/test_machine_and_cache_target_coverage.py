@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import importlib
 import json
+from pathlib import Path
 
 import pytest
 import rich_click as click
@@ -108,3 +110,65 @@ def test_machine_readable_command_json_error_and_help_paths():
 
     with pytest.raises(click.ClickException):
         cli.main(args=['child', '--fail', '--json'], standalone_mode=False)
+
+
+def test_human_render_fetch_and_content_results(capsys):
+    cli_main = importlib.import_module('yosoi.cli.main')
+    import yosoi.operations as ops
+
+    fetch_result = ops.FetchResult(
+        status='partial',
+        results=[
+            ops.FetchUnitResult(url='https://bad.test', status='failed', error='blocked'),
+            ops.FetchUnitResult(url='https://one.test', status='ok', content='first'),
+            ops.FetchUnitResult(url='https://two.test', status='ok', content='second'),
+        ],
+    )
+    cli_main._render_fetch_result(fetch_result)
+    fetch_output = capsys.readouterr().out
+    assert 'first' in fetch_output
+    assert 'second' in fetch_output
+    assert '---' in fetch_output
+
+    content_result = ops.ContentResult(
+        status='partial',
+        results=[
+            ops.ContentUnitResult(url='https://bad.test', status='failed', error='blocked'),
+            ops.ContentUnitResult(url='https://one.test', status='ok', text='plain one', markdown='# One'),
+            ops.ContentUnitResult(url='https://two.test', status='ok', text='plain two', markdown='# Two'),
+        ],
+    )
+    cli_main._render_content_result(content_result, 'text')
+    text_output = capsys.readouterr().out
+    assert 'plain one' in text_output
+    assert 'plain two' in text_output
+    assert '---' in text_output
+
+    cli_main._render_content_result(content_result, 'markdown')
+    markdown_output = capsys.readouterr().out
+    assert '# One' in markdown_output
+    assert '# Two' in markdown_output
+
+
+def test_write_fetch_output_file_and_directory(tmp_path: Path):
+    cli_main = importlib.import_module('yosoi.cli.main')
+    import yosoi.operations as ops
+
+    result = ops.FetchResult(
+        status='partial',
+        results=[
+            ops.FetchUnitResult(url='https://one.test/a', final_url='https://one.test/a', status='ok', content='one'),
+            ops.FetchUnitResult(url='https://two.test/b', final_url='https://two.test/b', status='ok', content='two'),
+            ops.FetchUnitResult(url='https://bad.test', status='failed', error='blocked'),
+        ],
+    )
+
+    single_file = tmp_path / 'single.txt'
+    cli_main._write_fetch_output(single_file, ops.FetchResult(status='ok', results=[result.results[0]]))
+    assert single_file.read_text() == 'one'
+
+    output_dir = tmp_path / 'pages'
+    cli_main._write_fetch_output(output_dir, result)
+    written = sorted(path.name for path in output_dir.iterdir())
+    assert written == ['001-one.test-a.txt', '002-two.test-b.txt']
+    assert (output_dir / written[1]).read_text() == 'two'

@@ -1,5 +1,6 @@
 """Tests for Click CLI."""
 
+import importlib
 import json
 
 import click
@@ -32,7 +33,8 @@ def mock_pipeline(mocker):
             llm=mocker.MagicMock(provider='groq', model_name='llama-3.3-70b-versatile'),
         ),
     )
-    mocker.patch('yosoi.cli.main.console')
+    cli_main_module = importlib.import_module('yosoi.cli.main')
+    mocker.patch.object(cli_main_module, 'console')
 
     return mock_pipe, mock_pipeline_cls
 

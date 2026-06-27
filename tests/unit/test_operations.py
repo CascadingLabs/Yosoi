@@ -162,6 +162,15 @@ def test_request_validators_and_axes():
         SearchRequest(query='x', page=0)
     with pytest.raises(ValueError, match='boolean values'):
         SearchRequest(query='x', max_results=True)
+    with pytest.raises(ValueError, match='boolean values'):
+        SearchRequest(query='x', page=True)
+    with pytest.raises(ValueError, match='timelimit'):
+        SearchRequest(query='x', timelimit='  ')
+    assert SearchRequest(query='x', timelimit=' d ').timelimit == 'd'
+    with pytest.raises(ValueError, match='Input should'):
+        FetchRequest(urls=['https://one.test'], view=object())
+    with pytest.raises(ValueError, match='Input should'):
+        FetchRequest(urls=['https://one.test'], include=object())
 
     search_from_policy = SearchRequest.from_policy(
         'widgets',
@@ -209,6 +218,58 @@ def test_normalize_search_result_shapes_and_malformed_rows():
         normalize_search_result(request, [{'title': 'Bad', 'href': 'javascript:void(0)', 'body': 'bad url'}])
 
 
+async def test_execute_scrape_shape_delegates_axis_shape(monkeypatch, mocker):
+    import yosoi.api as api_module
+
+    scrape_impl = mocker.AsyncMock(return_value={'https://one.test': {'OpContract': [{'title': 'ok'}]}})
+    monkeypatch.setattr(api_module, '_scrape_impl', scrape_impl)
+
+    request = ScrapeRequest.from_axes(
+        ['https://one.test'],
+        [OpContract, OpContract2],
+        selector_level='all',
+        allow_llm=False,
+        max_concurrency=2,
+    )
+    result = await ops._execute_scrape_shape(request)
+
+    assert result == {'https://one.test': {'OpContract': [{'title': 'ok'}]}}
+    assert scrape_impl.await_args.args[0] == ['https://one.test']
+    assert [contract.__name__ for contract in scrape_impl.await_args.args[1]] == ['OpContract', 'OpContract2']
+    assert scrape_impl.await_args.kwargs['allow_llm'] is False
+    assert scrape_impl.await_args.kwargs['max_concurrency'] == 2
+
+
+async def test_execute_scrape_failure_paths_and_persist_best_effort(monkeypatch, mocker):
+    import yosoi.api as api_module
+    import yosoi.storage.cache_metrics_libsql as metrics_module
+    from yosoi.utils.exceptions import LLMBlockedError
+
+    outcomes = [LLMBlockedError('cache_miss'), RuntimeError('boom')]
+
+    async def scrape_impl(*_args, **_kwargs):
+        outcome = outcomes.pop(0)
+        raise outcome
+
+    class RaisingStore:
+        async def __aenter__(self):
+            raise RuntimeError('metrics unavailable')
+
+        async def __aexit__(self, *_args):
+            return None
+
+    monkeypatch.setattr(api_module, '_scrape_impl', scrape_impl)
+    monkeypatch.setattr(metrics_module, 'LibSQLCacheMetricsStore', RaisingStore)
+
+    result = await execute_scrape(ScrapeRequest.from_axes(['https://one.test', 'https://two.test'], OpContract))
+
+    assert result.status == 'error'
+    assert [unit.cache_decision for unit in result.results] == ['llm_blocked', 'unknown']
+    assert result.results[0].llm_reason == 'cache_miss'
+    assert result.results[1].error == 'boom'
+    assert result.results[1].quality_issues == ['boom']
+
+
 async def test_execute_scrape_and_crawl_delegate(monkeypatch, mocker):
     import yosoi.api as api_module
 
@@ -253,7 +314,7 @@ async def test_execute_crawl_enforces_deadline(monkeypatch):
 
     monkeypatch.setattr(crawl_run, '_crawl_impl', slow_crawl)
 
-    with pytest.raises(TimeoutError):
+    with pytest.raises((TimeoutError, asyncio.TimeoutError)):
         await execute_crawl(CrawlRequest.from_axes('https://one.test', deadline_seconds=0.01))
 
 
@@ -487,6 +548,18 @@ def test_fetch_request_normalization_and_rich_document_projection():
     assert ops.FetchResult(status='ok', results=[unit]).success is True
 
 
+def test_fetch_html_helpers_degrade_when_parser_raises(monkeypatch):
+    def raise_parse(_html: str):
+        raise ValueError('bad html')
+
+    monkeypatch.setattr(ops.lxml.html, 'fromstring', raise_parse)
+
+    assert ops._text_from_html('<p>fallback</p>') == 'fallback'
+    assert ops._title_from_html('<title>x</title>') is None
+    assert ops._links_from_html('<a href="/x">x</a>', 'https://one.test') == []
+    assert ops._markdown_blocks_from_html('<p>x</p>', 'fallback', 'https://one.test') == 'fallback'
+
+
 def test_fetch_markdown_helpers_cover_sparse_and_fallback_shapes():
     assert ops._text_from_html('') == ''
     assert ops._title_from_html('') is None
@@ -494,10 +567,12 @@ def test_fetch_markdown_helpers_cover_sparse_and_fallback_shapes():
     assert ops._text_from_html('<') == '<'
     assert ops._title_from_html('<') is None
     assert ops._links_from_html('<', 'https://one.test') == []
+    assert ops._markdown_block_for_element(ops.lxml.etree.Comment('comment'), 'https://one.test') is None
+    assert ops._markdown_body_or_text([], 'plain fallback') == 'plain fallback'
 
     html = (
         '<main>'
-        '<p>See <a>plain link</a>.</p>'
+        '<p>See <a>plain link</a> <a href=""></a>.</p>'
         '<ul><li>Item</li></ul>'
         '<blockquote>Quote</blockquote>'
         '<pre>code()</pre>'
@@ -507,6 +582,7 @@ def test_fetch_markdown_helpers_cover_sparse_and_fallback_shapes():
         f'<span>{"x" * 121}</span>'
         '<span><div>block child</div></span>'
         '<p>Currency $99 only appears in extracted body.</p>'
+        '<p><a href="/dup">Same</a><a href="/dup">Same</a></p>'
         '</main>'
     )
     text = 'See plain link. Item Quote code() Standalone Nested inline block child Currency $99 only appears in extracted body.'
@@ -705,6 +781,84 @@ def test_content_result_projection_and_jsonable_helpers():
     }
 
 
+async def test_fetch_static_html_context_manager_and_exception_paths(monkeypatch):
+    import yosoi.core.fetcher as fetcher_module
+    from yosoi.models.results import FetchResult as HtmlFetchResult
+
+    class ContextFetcher:
+        entered = False
+
+        async def __aenter__(self):
+            self.entered = True
+            return self
+
+        async def __aexit__(self, *_args):
+            self.entered = False
+
+        async def fetch(self, url: str) -> HtmlFetchResult:
+            assert self.entered
+            return HtmlFetchResult(url=url, status_code=200, html='<html><body>static</body></html>')
+
+    monkeypatch.setattr(fetcher_module, 'create_fetcher', lambda *_args, **_kwargs: ContextFetcher())
+    assert await ops._fetch_static_html('https://one.test', ys.Policy()) == '<html><body>static</body></html>'
+
+    class RaisingFetcher:
+        async def fetch(self, _url: str) -> HtmlFetchResult:
+            raise RuntimeError('boom')
+
+        async def close(self) -> None:
+            return None
+
+    monkeypatch.setattr(fetcher_module, 'create_fetcher', lambda *_args, **_kwargs: RaisingFetcher())
+    assert await ops._fetch_static_html('https://one.test', ys.Policy()) is None
+
+
+async def test_execute_fetch_unit_context_manager_and_advisory_fingerprint_failure(monkeypatch):
+    import yosoi.core.fetcher as fetcher_module
+    import yosoi.generalization.fingerprint as fingerprint_module
+    from yosoi.models.results import FetchResult as HtmlFetchResult
+
+    class ContextFetcher:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_args):
+            return None
+
+        async def fetch(self, url: str) -> HtmlFetchResult:
+            return HtmlFetchResult(
+                url=url,
+                status_code=200,
+                html='<html><head><title>Ctx</title></head><body><main><p>ok</p></main></body></html>',
+            )
+
+    monkeypatch.setattr(fetcher_module, 'create_fetcher', lambda *_args, **_kwargs: ContextFetcher())
+    monkeypatch.setattr(
+        fingerprint_module.PageFingerprint, 'of', lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError('fp'))
+    )
+
+    result = await execute_fetch(FetchRequest.from_axes('https://ctx.test', view='text'))
+
+    assert result.status == 'ok'
+    assert result.results[0].content == 'ok'
+    assert result.results[0].fingerprint is None
+
+
+async def test_execute_fetch_catches_unexpected_unit_exception(monkeypatch):
+    async def fail_unit(_request, _url):
+        raise RuntimeError('unit exploded')
+
+    monkeypatch.setattr(ops, '_fetch_unit', fail_unit)
+
+    result = await execute_fetch(FetchRequest.from_axes('https://boom.test', view='metadata', page=2, page_size=10))
+
+    assert result.status == 'error'
+    assert result.results[0].view == 'metadata'
+    assert result.results[0].page == 2
+    assert result.results[0].page_size == 10
+    assert result.results[0].error == 'unit exploded'
+
+
 async def test_execute_fetch_failure_and_bundle_paths(monkeypatch, tmp_path):
     import yosoi.core.fetcher as fetcher_module
     from yosoi.models.results import FetchResult as HtmlFetchResult
@@ -785,6 +939,28 @@ async def test_execute_content_failed_fetch_and_exception_paths(monkeypatch):
     raised = await execute_content(ContentRequest.from_axes('https://boom.test'))
     assert raised.status == 'error'
     assert raised.results[0].error == 'boom'
+
+
+async def test_run_crawl_requires_run_id_when_storing(monkeypatch, mocker):
+    from yosoi.core.crawler import run as crawl_run
+
+    @dataclass
+    class Summary:
+        pages: int
+
+    monkeypatch.setattr(crawl_run, '_crawl_impl', mocker.AsyncMock(return_value=Summary(pages=1)))
+
+    with pytest.raises(ValueError, match='run_id is required'):
+        await run_crawl(CrawlRequest.from_axes('https://one.test', store_crawl=True))
+
+
+async def test_run_scrape_alias_delegates(monkeypatch, mocker):
+    execute = mocker.AsyncMock(return_value=ops.ScrapeResult(status='ok', results=[]))
+    monkeypatch.setattr(ops, 'execute_scrape', execute)
+
+    request = ScrapeRequest.from_axes('https://one.test', OpContract)
+    assert await ops.run_scrape(request) == ops.ScrapeResult(status='ok', results=[])
+    execute.assert_awaited_once_with(request)
 
 
 async def test_run_crawl_compact_output_and_persistence(monkeypatch, mocker, tmp_path):

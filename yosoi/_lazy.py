@@ -51,7 +51,15 @@ def lazy_exports(
     def __getattr__(name: str) -> object:
         target = lazy_map.get(name)
         if target is None:
-            raise AttributeError(f'module {module_name!r} has no attribute {name!r}')
+            submodule_name = f'{module_name}.{name}'
+            try:
+                value = importlib.import_module(submodule_name)
+            except ModuleNotFoundError as exc:
+                if exc.name == submodule_name:
+                    raise AttributeError(f'module {module_name!r} has no attribute {name!r}') from None
+                raise
+            module_globals[name] = value
+            return value
         value = getattr(importlib.import_module(target), name)
         module_globals[name] = value  # cache: subsequent access skips __getattr__
         return value
