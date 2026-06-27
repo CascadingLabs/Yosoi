@@ -25,7 +25,7 @@ _option_groups: list[OptionGroupDict] = [
     },
     {
         'name': 'Output',
-        'options': ['--output', '--summary', '--json'],
+        'options': ['--output', '--flat-files', '--summary', '--json'],
     },
     {
         'name': 'Concurrency',

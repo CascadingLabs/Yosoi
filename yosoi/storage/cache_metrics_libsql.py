@@ -27,11 +27,12 @@ _CONTRACT_TABLE = 'contracts'
 _CONTRACT_FIELD_TABLE = 'contract_fields'
 _SELECTOR_SNAPSHOT_TABLE = 'selector_snapshots'
 _CACHE_EVENT_TABLE = 'cache_events'
-_SELECTOR_KEY = ('contract_fingerprint', 'field_fingerprint', 'domain', 'selector_level')
+_SELECTOR_KEY = ('contract_fingerprint', 'field_fingerprint', 'domain')
 _SELECTOR_UPDATE_COLUMNS = (
     'field_path',
     'top_level_domain',
     'route_signature',
+    'selector_level',
     'source_url',
     'status',
     'selector',
@@ -364,6 +365,7 @@ class LibSQLCacheMetricsStore(YosoiSQLiteStore):
         self, domain: str, contract_fingerprint: str | None = None, selector_level: str = _DEFAULT_SELECTOR_LEVEL
     ) -> dict[str, SelectorSnapshot] | None:
         """Load current selector snapshots for a domain and contract fingerprint."""
+        del selector_level  # selector_level is row metadata, not cache identity.
         await self._ensure_migrated()
         contract_fp = contract_fingerprint or ''
         client = await self._connect()
@@ -373,10 +375,9 @@ class LibSQLCacheMetricsStore(YosoiSQLiteStore):
             FROM {_SELECTOR_SNAPSHOT_TABLE}
             WHERE domain = :domain
               AND contract_fingerprint = :contract_fingerprint
-              AND selector_level = :selector_level
             ORDER BY field_path
             """,
-            {'domain': domain, 'contract_fingerprint': contract_fp, 'selector_level': selector_level},
+            {'domain': domain, 'contract_fingerprint': contract_fp},
         )
         if not result.rows:
             return None
@@ -479,15 +480,13 @@ class LibSQLCacheMetricsStore(YosoiSQLiteStore):
         contract_fp = contract_fingerprint or ''
         now = _iso(datetime.now(timezone.utc))
         event_type = 'verify' if verdict == CacheVerdict.FRESH else 'fail'
-        level_condition = 'AND selector_level = :selector_level' if selector_level is not None else ''
+        del selector_level  # selector_level is row metadata, not cache identity.
         params: dict[str, Any] = {
             'contract_fingerprint': contract_fp,
             'domain': domain,
             'field_path': field_name,
             'field_fingerprint': await self._field_fingerprint_for_path(client, contract_fp, field_name),
         }
-        if selector_level is not None:
-            params['selector_level'] = selector_level
 
         tx = client.transaction()
         try:
@@ -499,7 +498,6 @@ class LibSQLCacheMetricsStore(YosoiSQLiteStore):
                 WHERE contract_fingerprint = :contract_fingerprint
                   AND domain = :domain
                   AND field_fingerprint = :field_fingerprint
-                  {level_condition}
                 """,
                 params,
             )
@@ -524,7 +522,6 @@ class LibSQLCacheMetricsStore(YosoiSQLiteStore):
                     WHERE contract_fingerprint = :contract_fingerprint
                       AND domain = :domain
                       AND field_fingerprint = :field_fingerprint
-                      AND selector_level = :selector_level
                     """,
                     {
                         'selector': _snapshot_payload(snap),
@@ -537,7 +534,6 @@ class LibSQLCacheMetricsStore(YosoiSQLiteStore):
                         'domain': domain,
                         'field_path': field_name,
                         'field_fingerprint': values['field_fingerprint'],
-                        'selector_level': values['selector_level'],
                     },
                 )
                 await self._record_event_on_executor(
@@ -962,7 +958,7 @@ class LibSQLCacheMetricsStore(YosoiSQLiteStore):
                 last_failed_at TEXT,
                 failure_count INTEGER NOT NULL DEFAULT 0,
                 updated_at TEXT NOT NULL,
-                PRIMARY KEY(contract_fingerprint, field_fingerprint, domain, selector_level),
+                PRIMARY KEY(contract_fingerprint, field_fingerprint, domain),
                 FOREIGN KEY(contract_fingerprint) REFERENCES {_CONTRACT_TABLE}(contract_fingerprint),
                 FOREIGN KEY(field_fingerprint) REFERENCES {_FIELD_TABLE}(field_fingerprint)
             )
@@ -1046,6 +1042,6 @@ class LibSQLCacheMetricsStore(YosoiSQLiteStore):
                     str(row[1])
                     for row in sorted((row for row in result.rows if int(row[5] or 0) > 0), key=lambda r: r[5])
                 ]
-                if pk != ['contract_fingerprint', 'field_fingerprint', 'domain', 'selector_level']:
+                if pk != ['contract_fingerprint', 'field_fingerprint', 'domain']:
                     return True
         return False

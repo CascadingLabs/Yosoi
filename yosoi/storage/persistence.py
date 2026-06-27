@@ -1,10 +1,12 @@
-"""Handles selector state in SQLite and extracted content on disk."""
+"""Handles selector and extracted-content state in SQLite."""
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import os
+import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -27,23 +29,25 @@ if TYPE_CHECKING:
 
 
 class SelectorStorage:
-    """Manages selector state in `.yosoi/yosoi.sqlite3` and content files on disk.
+    """Manages selector and content state in `.yosoi/yosoi.sqlite3`.
 
     Attributes:
-        content_dir: Directory path where extracted content is stored.
+        content_dir: Directory path where opt-in extracted-content flat files are stored.
 
     """
 
-    def __init__(self, content_dir: str | Path = 'content'):
+    def __init__(self, content_dir: str | Path = 'content', *, flat_files: bool = False):
         """Initialize the storage manager.
 
         Args:
-            content_dir: Directory path for storing extracted content. Defaults to 'content'.
+            content_dir: Directory path for opt-in extracted-content flat files. Defaults to 'content'.
+            flat_files: Also write extracted content as files. SQLite remains the source of truth.
 
         """
         yosoi_dir = init_yosoi()
         self.content_dir = str(yosoi_dir / Path(content_dir))
         self.database_path = yosoi_dir / 'yosoi.sqlite3'
+        self.flat_files = flat_files
 
     async def save_selectors(
         self,
@@ -141,7 +145,7 @@ class SelectorStorage:
         output_format: str = 'json',
         contract_sig: str | None = None,
     ) -> str:
-        """Save extracted content to a file in the specified format.
+        """Save extracted content to SQLite, optionally mirroring to a flat file.
 
         Args:
             url: URL the content was extracted from
@@ -153,22 +157,25 @@ class SelectorStorage:
             Path to the saved file.
 
         """
-        from yosoi.outputs.utils import save_formatted_content
-
         domain = self._extract_domain(url)
+        self._save_content_sqlite(url, domain, content, output_format, contract_sig)
+
         filepath = self._get_content_filepath(url, output_format, contract_sig)
+        if self.flat_files:
+            from yosoi.outputs.utils import save_formatted_content
 
-        # Output savers include binary/tabular writers (pandas, pyarrow, openpyxl)
-        # that have no async API; keep one synchronous dispatch path for every format.
-        save_formatted_content(filepath, url, domain, content, output_format)
+            # Output savers include binary/tabular writers (pandas, pyarrow, openpyxl)
+            # that have no async API; keep one synchronous dispatch path for every format.
+            save_formatted_content(filepath, url, domain, content, output_format)
+            logger.info('Saved content flat file to: %s', filepath)
 
-        logger.info('Saved content to: %s', filepath)
-        return filepath
+        logger.info('Saved content to SQLite: %s', self.database_path)
+        return str(self.database_path)
 
     async def load_content(
         self, url: str, contract_sig: str | None = None
     ) -> dict[str, Any] | list[dict[str, Any]] | None:
-        """Load extracted content from a JSON file.
+        """Load extracted content from SQLite, with legacy JSON-file fallback.
 
         Args:
             url: URL to load content for
@@ -178,8 +185,11 @@ class SelectorStorage:
             Single content dict, list of item dicts for multi-item pages, or None.
 
         """
-        filepath = self._get_content_filepath(url, contract_sig=contract_sig)
+        row = self._load_content_sqlite(url, contract_sig=contract_sig)
+        if row is not None:
+            return row
 
+        filepath = self._get_content_filepath(url, contract_sig=contract_sig)
         return self._load_content_sync(filepath)
 
     async def content_exists(self, url: str, contract_sig: str | None = None) -> bool:
@@ -193,6 +203,8 @@ class SelectorStorage:
             True if content file exists for the URL, False otherwise.
 
         """
+        if self._content_exists_sqlite(url, contract_sig=contract_sig):
+            return True
         filepath = self._get_content_filepath(url, contract_sig=contract_sig)
         return self._file_exists_sync(filepath)
 
@@ -397,6 +409,113 @@ class SelectorStorage:
             filename = f'homepage_{url_hash}.{ext}'
 
         return os.path.join(domain_dir, filename)
+
+    def _save_content_sqlite(
+        self,
+        url: str,
+        domain: str,
+        content: dict[str, Any] | list[dict[str, Any]],
+        output_format: str,
+        contract_sig: str | None,
+    ) -> None:
+        from yosoi.outputs.json import format_json
+
+        payload = format_json(url, domain, content)
+        now = str(payload['extracted_at'])
+        url_hash = hashlib.md5(url.encode()).hexdigest()[:16]
+        contract_fp = contract_sig or ''
+        self._ensure_content_table()
+        with sqlite3.connect(self.database_path) as conn:
+            conn.execute(
+                """
+                INSERT INTO fetch_outputs (
+                    contract_fingerprint, url_hash, output_format, url, domain, extracted_at, content_json, fetch_json, downloads_path
+                )
+                VALUES (?, ?, ?, ?, ?, ?, json(?), json(?), ?)
+                ON CONFLICT(contract_fingerprint, url_hash, output_format) DO UPDATE SET
+                    url = excluded.url,
+                    domain = excluded.domain,
+                    extracted_at = excluded.extracted_at,
+                    content_json = excluded.content_json,
+                    fetch_json = excluded.fetch_json,
+                    downloads_path = excluded.downloads_path
+                """,
+                (
+                    contract_fp,
+                    url_hash,
+                    output_format,
+                    url,
+                    domain,
+                    now,
+                    json.dumps(payload, ensure_ascii=False, sort_keys=True),
+                    json.dumps({}, sort_keys=True),
+                    None,
+                ),
+            )
+
+    def _load_content_sqlite(
+        self, url: str, contract_sig: str | None = None
+    ) -> dict[str, Any] | list[dict[str, Any]] | None:
+        self._ensure_content_table()
+        url_hash = hashlib.md5(url.encode()).hexdigest()[:16]
+        contract_fp = contract_sig or ''
+        with sqlite3.connect(self.database_path) as conn:
+            row = conn.execute(
+                """
+                SELECT content_json FROM fetch_outputs
+                WHERE contract_fingerprint = ? AND url_hash = ? AND output_format = 'json'
+                """,
+                (contract_fp, url_hash),
+            ).fetchone()
+        if row is None:
+            return None
+        data = json.loads(str(row[0]))
+        if 'items' in data and isinstance(data['items'], list):
+            items: list[dict[str, Any]] = data['items']
+            return items
+        content: dict[str, Any] = data.get('content', data)
+        return content
+
+    def _content_exists_sqlite(self, url: str, contract_sig: str | None = None) -> bool:
+        self._ensure_content_table()
+        url_hash = hashlib.md5(url.encode()).hexdigest()[:16]
+        contract_fp = contract_sig or ''
+        with sqlite3.connect(self.database_path) as conn:
+            row = conn.execute(
+                """
+                SELECT 1 FROM fetch_outputs
+                WHERE contract_fingerprint = ? AND url_hash = ?
+                LIMIT 1
+                """,
+                (contract_fp, url_hash),
+            ).fetchone()
+        return row is not None
+
+    def _ensure_content_table(self) -> None:
+        self.database_path.parent.mkdir(parents=True, exist_ok=True)
+        with sqlite3.connect(self.database_path) as conn:
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS fetch_outputs (
+                    contract_fingerprint TEXT NOT NULL,
+                    url_hash TEXT NOT NULL,
+                    output_format TEXT NOT NULL,
+                    url TEXT NOT NULL,
+                    domain TEXT NOT NULL,
+                    extracted_at TEXT NOT NULL,
+                    content_json JSON NOT NULL,
+                    fetch_json JSON NOT NULL DEFAULT '{}',
+                    downloads_path TEXT,
+                    PRIMARY KEY(contract_fingerprint, url_hash, output_format)
+                )
+                """
+            )
+            conn.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_fetch_outputs_contract_domain
+                ON fetch_outputs(contract_fingerprint, domain)
+                """
+            )
 
     def _load_content_sync(self, filepath: str) -> dict[str, Any] | list[dict[str, Any]] | None:
         if not os.path.exists(filepath):

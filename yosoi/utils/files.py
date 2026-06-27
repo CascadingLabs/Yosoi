@@ -4,7 +4,7 @@ import contextlib
 import json
 import logging
 import os
-import shutil
+import sqlite3
 import tempfile
 from pathlib import Path
 from typing import Any
@@ -151,8 +151,8 @@ def get_yosoi_storage_path(storage_name: str | Path) -> Path:
 
 
 def get_tracking_path() -> Path:
-    """Return the path to the LLM tracking file in .yosoi."""
-    return get_yosoi_dir() / 'stats.json'
+    """Deprecated: return the SQLite DB path that now stores tracking data."""
+    return get_yosoi_dir() / 'yosoi.sqlite3'
 
 
 def get_debug_path() -> Path:
@@ -165,31 +165,74 @@ def get_logs_path() -> Path:
     return get_yosoi_dir() / 'logs'
 
 
-def ensure_tracking_file(yosoi_dir: Path) -> None:
-    """Migrate root-level tracking file or create a new one if needed.
+def migrate_legacy_tracking_stats(yosoi_dir: Path) -> None:
+    """Import legacy stats.json files into `.yosoi/yosoi.sqlite3`, then remove them."""
+    legacy_paths = [yosoi_dir.parent / 'stats.json', yosoi_dir / 'stats.json']
+    payloads: list[dict[str, Any]] = []
+    for path in legacy_paths:
+        if not path.exists():
+            continue
+        try:
+            raw = json.loads(path.read_text(encoding='utf-8'))
+            if isinstance(raw, dict):
+                payloads.append(raw)
+        except (OSError, json.JSONDecodeError):
+            _logger.warning('Ignoring unreadable legacy tracking file: %s', path)
+        path.unlink(missing_ok=True)
 
-    Handles two paths:
-    - <root>/stats.json → .yosoi/stats.json (root-level move)
-    - Create new empty .yosoi/stats.json
-
-    Args:
-        yosoi_dir: Path to the .yosoi directory.
-
-    """
-    tracking_file = yosoi_dir / 'stats.json'
-    root_tracking = yosoi_dir.parent / 'stats.json'
-
-    if tracking_file.exists():
+    if not payloads:
         return
 
-    if root_tracking.exists():
-        try:
-            shutil.move(str(root_tracking), str(tracking_file))
-        except Exception:
-            _logger.exception('Failed to migrate root tracking')
-            raise
-    else:
-        atomic_write_json(tracking_file, {})
+    db_path = yosoi_dir / 'yosoi.sqlite3'
+    with sqlite3.connect(db_path) as db:
+        db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS tracking_stats (
+                domain TEXT PRIMARY KEY,
+                llm_calls INTEGER NOT NULL DEFAULT 0,
+                url_count INTEGER NOT NULL DEFAULT 0,
+                level_distribution TEXT NOT NULL DEFAULT '{}',
+                total_elapsed REAL NOT NULL DEFAULT 0,
+                partial_rediscovery_count INTEGER NOT NULL DEFAULT 0,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+        for payload in payloads:
+            for domain, entry in payload.items():
+                if not isinstance(entry, dict):
+                    continue
+                dist = entry.get('level_distribution') if isinstance(entry.get('level_distribution'), dict) else {}
+                db.execute(
+                    """
+                    INSERT INTO tracking_stats (
+                        domain, llm_calls, url_count, level_distribution,
+                        total_elapsed, partial_rediscovery_count, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                    ON CONFLICT(domain) DO UPDATE SET
+                        llm_calls = tracking_stats.llm_calls + excluded.llm_calls,
+                        url_count = tracking_stats.url_count + excluded.url_count,
+                        level_distribution = excluded.level_distribution,
+                        total_elapsed = tracking_stats.total_elapsed + excluded.total_elapsed,
+                        partial_rediscovery_count = (
+                            tracking_stats.partial_rediscovery_count + excluded.partial_rediscovery_count
+                        ),
+                        updated_at = CURRENT_TIMESTAMP
+                    """,
+                    (
+                        str(domain),
+                        int(entry.get('llm_calls') or 0),
+                        int(entry.get('url_count') or 0),
+                        json.dumps(dist, separators=(',', ':')),
+                        float(entry.get('total_elapsed') or 0.0),
+                        int(entry.get('partial_rediscovery_count') or 0),
+                    ),
+                )
+
+
+def ensure_tracking_file(yosoi_dir: Path) -> None:
+    """Deprecated compatibility shim: migrate legacy stats.json into SQLite."""
+    migrate_legacy_tracking_stats(yosoi_dir)
 
 
 def is_initialized() -> bool:
@@ -197,9 +240,8 @@ def is_initialized() -> bool:
     yosoi_dir = get_yosoi_dir()
     if not yosoi_dir.is_dir():
         return False
-    # Attempt migration before checking — handles legacy-only workspaces
-    ensure_tracking_file(yosoi_dir)
-    return (yosoi_dir / 'stats.json').exists()
+    migrate_legacy_tracking_stats(yosoi_dir)
+    return True
 
 
 def _ensure_yosoi_gitignore(yosoi_dir: Path) -> None:
@@ -214,8 +256,7 @@ def init_yosoi(storage_name: str | Path | None = None) -> Path:
     yosoi_dir = get_yosoi_dir()
     yosoi_dir.mkdir(parents=True, exist_ok=True)
 
-    # Initialize tracking file if it doesn't exist
-    ensure_tracking_file(yosoi_dir)
+    migrate_legacy_tracking_stats(yosoi_dir)
     _ensure_yosoi_gitignore(yosoi_dir)
 
     if storage_name is None:

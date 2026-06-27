@@ -121,6 +121,15 @@ class TestBuildPolicy:
         )
         assert policy.output == ys.OutputPolicy(formats=('json', 'csv'), quiet=False, debug_html=True)
 
+    def test_build_policy_sets_flat_files_opt_in(self, monkeypatch):
+        monkeypatch.setenv('GROQ_KEY', 'groq-key')
+
+        policy = build_policy('groq:llama', debug=False, flat_files=True)
+
+        assert policy.output is not None
+        assert policy.output.flat_files is True
+        assert policy.resolve_run_spec().output_flat_files is True
+
     def test_build_policy_explicit_provider_missing_key_does_not_fallback(self, monkeypatch):
         """Policy CLI path fails when the requested provider key is absent."""
         monkeypatch.setenv('GEMINI_KEY', 'gem-key')

@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Any
 
 from rich.console import Console
 
+from yosoi.models.needs_discovery import NeedsDiscovery
 from yosoi.models.selectors import SelectorLevel
 from yosoi.models.snapshot import CacheVerdict, SelectorSnapshot, snapshot_to_selector_dict
 from yosoi.utils import observability
@@ -224,16 +225,15 @@ class PipelineCacheMixin:
         *,
         root_span: Any | None = None,
     ) -> AsyncIterator[ContentMap]:
-        """All cached selectors verified — extract content."""
+        """All cached selectors verified — extract content via the pure replay artifact."""
         self.console.print(f'[success]✓ All {len(fresh_fields)} cached selectors verified[/success]')
         existing = {name: data for name, snap in snapshots.items() if (data := snapshot_to_selector_dict(snap))}
         await self._record_cache_hit_metric(url, domain, fresh_fields)
         root_entry = self._resolve_root(existing)  # type: ignore[attr-defined]
         container_selector = self._root_value(root_entry)  # type: ignore[attr-defined]
         with observability.span('extract', url=url, mode='cache', container=container_selector or 'single'):
-            extracted = self._extract(url, raw_html, existing, container_selector)  # type: ignore[attr-defined]
-        if extracted:
-            items_list: ContentItems = extracted if isinstance(extracted, list) else [extracted]
+            items_list = self._resolve_cached_records(url, domain, raw_html, existing)
+        if items_list:
             return self._yield_cached_items(
                 items_list,
                 url,
@@ -247,6 +247,27 @@ class PipelineCacheMixin:
         return self._yield_cached_items(
             None, url, domain, format_to_use, fetcher=fetcher, root_span=root_span, selectors_payload=existing
         )
+
+    def _resolve_cached_records(
+        self, url: str, domain: str, html: str, selectors: dict[str, Any]
+    ) -> ContentItems | None:
+        """Replay a loaded selector map through ``resolve()`` (CAS-119 SSoT)."""
+        from yosoi.core.resolve import build_cache_from_selectors, resolve
+        from yosoi.policy import Policy
+
+        spec = self.contract.to_spec()
+        result = resolve(
+            spec,
+            html,
+            build_cache_from_selectors(domain, spec.fingerprint, selectors),
+            domain,
+            max_level=self.selector_level,
+            url=url,
+            policy=getattr(self, '_policy', Policy()),
+        )
+        if isinstance(result, NeedsDiscovery):
+            return None
+        return result
 
     async def _record_cache_hit_metric(self, url: str, domain: str, field_names: set[str]) -> None:
         """Record successful cached replay/use without affecting selector write counts."""
@@ -336,6 +357,68 @@ class PipelineCacheMixin:
             )
 
         return _yield_partial()
+
+    def _resolve_atom_records(self, url: str, domain: str, html: str) -> ContentItems | None:
+        """Try policy-gated atom replay through ``resolve()`` on legacy-cache miss."""
+        policy = getattr(self, '_policy', None)
+        if policy is None or not policy.atom_reads or self.contract.file_fields():
+            return None
+
+        from yosoi.core.resolve import resolve
+
+        result = resolve(
+            self.contract.to_spec(),
+            html,
+            {},
+            domain,
+            max_level=self.selector_level,
+            url=url,
+            policy=policy,
+        )
+        if isinstance(result, NeedsDiscovery):
+            return None
+        return result
+
+    def _yield_atom_cached_items(
+        self,
+        url: str,
+        domain: str,
+        html: str,
+        format_to_use: list[str],
+        *,
+        fetcher: HTMLFetcher,
+        root_span: Any | None = None,
+    ) -> AsyncIterator[ContentMap] | None:
+        """Return an atom-cache replay generator, or None when atoms cannot serve."""
+        items = self._resolve_atom_records(url, domain, html)
+        if items is None:
+            return None
+
+        self.console.print('[success]✓ Resolved from field-atom cache (no LLM)[/success]')
+
+        async def _gen() -> AsyncIterator[ContentMap]:
+            replay = self._yield_cached_items(
+                items,
+                url,
+                domain,
+                format_to_use,
+                fetcher=fetcher,
+                root_span=root_span,
+                selectors_payload={},
+            )
+            async for item in replay:
+                yield item
+            observability.set_trace_output(
+                root_span,
+                {
+                    'path': 'atom-cache',
+                    'selectors': {},
+                    'extracted_count': len(items),
+                    'extracted_sample': items[0] if items else None,
+                },
+            )
+
+        return _gen()
 
     def _verify_per_field(self, html: str, snapshots: dict[str, SelectorSnapshot]) -> dict[str, CacheVerdict]:
         """Verify each cached field independently and apply root cascade."""

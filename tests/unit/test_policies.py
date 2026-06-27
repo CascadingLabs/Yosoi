@@ -16,6 +16,7 @@ from yosoi.policy import (
     EscalationPolicy,
     ModelPolicy,
     Outcome,
+    OutputPolicy,
     PagePolicy,
     Policy,
     SchedulerPolicy,
@@ -664,6 +665,15 @@ def test_cross_origin_dom_defaults_off_and_resolves_into_spec() -> None:
 
     assert spec.cross_origin_dom is True
     assert Policy(model=ys.claude_sdk()).resolve_run_spec({}).cross_origin_dom is False
+
+
+def test_flat_files_default_off_and_resolves_into_spec() -> None:
+    assert OutputPolicy().flat_files is False
+
+    policy = Policy(model=ys.claude_sdk(), output=OutputPolicy(flat_files=True))
+
+    assert policy.resolve_run_spec({}).output_flat_files is True
+    assert Policy(model=ys.claude_sdk()).resolve_run_spec({}).output_flat_files is False
 
 
 def test_from_env_reads_cross_origin_dom() -> None:

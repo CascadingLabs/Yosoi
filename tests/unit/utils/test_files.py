@@ -1,4 +1,5 @@
 import json
+import sqlite3
 from pathlib import Path
 
 import pytest
@@ -18,6 +19,11 @@ from yosoi.utils.files import (
     is_initialized,
     safe_domain,
 )
+
+
+def _tracking_row(db_path: Path, domain: str) -> tuple | None:
+    with sqlite3.connect(db_path) as db:
+        return db.execute('SELECT llm_calls, url_count FROM tracking_stats WHERE domain = ?', (domain,)).fetchone()
 
 
 def test_safe_domain_replaces_separators():
@@ -69,7 +75,7 @@ def test_get_tracking_path(monkeypatch, tmp_path):
     monkeypatch.setattr(yosoi.utils.files, 'get_project_root', lambda: project_root)
 
     tracking_path = get_tracking_path()
-    assert tracking_path == project_root / '.yosoi' / 'stats.json'
+    assert tracking_path == project_root / '.yosoi' / 'yosoi.sqlite3'
 
 
 def test_is_initialized(monkeypatch, tmp_path):
@@ -89,7 +95,7 @@ def test_is_initialized(monkeypatch, tmp_path):
     assert not (yosoi_dir / 'selectors').exists()
     assert not (yosoi_dir / 'debug').exists()
     assert not (yosoi_dir / 'logs').exists()
-    assert (yosoi_dir / 'stats.json').exists()
+    assert not (yosoi_dir / 'stats.json').exists()
     assert (yosoi_dir / '.gitignore').exists()
     assert (yosoi_dir / '.gitignore').read_text() == '# Automatically created by yosoi\n*\n'
 
@@ -121,7 +127,7 @@ def test_init_yosoi_from_subdirs(monkeypatch, tmp_path):
 
 
 def test_init_yosoi_migrates_tracking(monkeypatch, tmp_path):
-    """Test that init_yosoi moves stats.json from root to .yosoi."""
+    """Test that init_yosoi imports root stats.json into SQLite and removes it."""
     project_root = tmp_path / 'project_migration'
     project_root.mkdir()
     (project_root / 'pyproject.toml').touch()
@@ -135,12 +141,9 @@ def test_init_yosoi_migrates_tracking(monkeypatch, tmp_path):
     init_yosoi()
 
     assert not root_tracking.exists()
-    yosoi_tracking = project_root / '.yosoi' / 'stats.json'
+    yosoi_tracking = project_root / '.yosoi' / 'yosoi.sqlite3'
     assert yosoi_tracking.exists()
-
-    with open(yosoi_tracking) as f:
-        data = json.load(f)
-        assert data == initial_data
+    assert _tracking_row(yosoi_tracking, 'test.com') == (5, 10)
 
 
 def test_get_logs_path(monkeypatch, tmp_path):
@@ -175,7 +178,7 @@ def test_init_yosoi_does_not_create_debug_dir_until_requested(monkeypatch, tmp_p
     assert not (project_root / '.yosoi' / 'debug').exists()
 
 
-def test_init_yosoi_creates_empty_tracking_json(monkeypatch, tmp_path):
+def test_init_yosoi_does_not_create_tracking_json(monkeypatch, tmp_path):
     project_root = tmp_path / 'project_tracking_new'
     project_root.mkdir()
     (project_root / 'pyproject.toml').touch()
@@ -185,21 +188,16 @@ def test_init_yosoi_creates_empty_tracking_json(monkeypatch, tmp_path):
     init_yosoi()
 
     tracking_file = project_root / '.yosoi' / 'stats.json'
-    assert tracking_file.exists()
-    with open(tracking_file) as f:
-        data = json.load(f)
-    # Should be an empty dict {}
-    assert data == {}
+    assert not tracking_file.exists()
 
 
-def test_init_yosoi_does_not_overwrite_existing_tracking(monkeypatch, tmp_path):
+def test_init_yosoi_migrates_existing_tracking(monkeypatch, tmp_path):
     project_root = tmp_path / 'project_no_overwrite'
     project_root.mkdir()
     (project_root / 'pyproject.toml').touch()
 
     monkeypatch.setattr(yosoi.utils.files, 'get_project_root', lambda: project_root)
 
-    # Create yosoi dir first with data
     yosoi_dir = project_root / '.yosoi'
     yosoi_dir.mkdir()
     tracking_file = yosoi_dir / 'stats.json'
@@ -208,10 +206,8 @@ def test_init_yosoi_does_not_overwrite_existing_tracking(monkeypatch, tmp_path):
 
     init_yosoi()
 
-    with open(tracking_file) as f:
-        data = json.load(f)
-    # Should not overwrite existing tracking
-    assert data == existing_data
+    assert not tracking_file.exists()
+    assert _tracking_row(yosoi_dir / 'yosoi.sqlite3', 'example.com') == (3, 5)
 
 
 def test_init_yosoi_gitignore_content(monkeypatch, tmp_path):
@@ -241,17 +237,15 @@ def test_init_yosoi_returns_storage_dir_path(monkeypatch, tmp_path):
     assert result == project_root / '.yosoi' / 'mystore'
 
 
-def test_is_initialized_creates_tracking_file_if_missing(monkeypatch, tmp_path):
-    """is_initialized auto-creates stats.json via ensure_tracking_file."""
+def test_is_initialized_does_not_create_tracking_json(monkeypatch, tmp_path):
     project_root = tmp_path / 'project_partial'
     project_root.mkdir()
 
     monkeypatch.setattr(yosoi.utils.files, 'get_project_root', lambda: project_root)
 
-    # Create .yosoi dir but no tracking file — is_initialized creates it
     (project_root / '.yosoi').mkdir()
     assert is_initialized()
-    assert (project_root / '.yosoi' / 'stats.json').exists()
+    assert not (project_root / '.yosoi' / 'stats.json').exists()
 
 
 def test_get_project_root_finds_git_marker(monkeypatch, tmp_path):
@@ -321,16 +315,14 @@ def test_init_yosoi_does_not_create_dead_debug_html_dir(monkeypatch, tmp_path):
     assert not (project_root / '.yosoi' / 'debug_html').exists()
 
 
-def test_init_yosoi_tracking_file_name_is_stats_json(monkeypatch, tmp_path):
-    """Tracking file must be 'stats.json', not some other name."""
+def test_init_yosoi_tracking_file_name_is_sqlite(monkeypatch, tmp_path):
     project_root = tmp_path / 'proj_tracking_name'
     project_root.mkdir()
 
     monkeypatch.setattr(yosoi.utils.files, 'get_project_root', lambda: project_root)
 
     init_yosoi()
-    tracking_file = project_root / '.yosoi' / 'stats.json'
-    assert tracking_file.exists()
+    assert not (project_root / '.yosoi' / 'stats.json').exists()
 
 
 def test_init_yosoi_yosoi_dir_name_is_dotted(monkeypatch, tmp_path):
@@ -345,18 +337,14 @@ def test_init_yosoi_yosoi_dir_name_is_dotted(monkeypatch, tmp_path):
     assert not (project_root / 'yosoi').is_dir()
 
 
-def test_init_yosoi_tracking_file_contains_empty_dict(monkeypatch, tmp_path):
-    """New tracking file must contain '{}', not None or empty."""
+def test_init_yosoi_tracking_file_absent_until_sqlite_use(monkeypatch, tmp_path):
     project_root = tmp_path / 'proj_empty_dict'
     project_root.mkdir()
 
     monkeypatch.setattr(yosoi.utils.files, 'get_project_root', lambda: project_root)
 
     init_yosoi()
-    tracking_file = project_root / '.yosoi' / 'stats.json'
-    data = json.loads(tracking_file.read_text())
-    assert data == {}
-    assert isinstance(data, dict)
+    assert not (project_root / '.yosoi' / 'stats.json').exists()
 
 
 def test_init_yosoi_returns_path_object(monkeypatch, tmp_path):
@@ -412,8 +400,7 @@ def test_init_yosoi_gitignore_second_line_is_star(monkeypatch, tmp_path):
     assert lines[1] == '*'
 
 
-def test_init_yosoi_migration_moves_file_not_copies(monkeypatch, tmp_path):
-    """When migrating stats.json, original file must be removed."""
+def test_init_yosoi_migration_removes_json(monkeypatch, tmp_path):
     project_root = tmp_path / 'proj_move_check'
     project_root.mkdir()
 
@@ -424,21 +411,19 @@ def test_init_yosoi_migration_moves_file_not_copies(monkeypatch, tmp_path):
 
     init_yosoi()
 
-    # Original should be gone (moved, not copied)
     assert not root_tracking.exists()
-    # New location should exist
-    assert (project_root / '.yosoi' / 'stats.json').exists()
+    assert not (project_root / '.yosoi' / 'stats.json').exists()
+    assert (project_root / '.yosoi' / 'yosoi.sqlite3').exists()
 
 
-def test_is_initialized_auto_creates_tracking_when_dir_exists(monkeypatch, tmp_path):
-    """is_initialized returns True when .yosoi exists (auto-creates stats.json)."""
+def test_is_initialized_true_when_dir_exists(monkeypatch, tmp_path):
     project_root = tmp_path / 'proj_notinit'
     project_root.mkdir()
 
     monkeypatch.setattr(yosoi.utils.files, 'get_project_root', lambda: project_root)
 
     (project_root / '.yosoi').mkdir()
-    assert is_initialized()  # ensure_tracking_file creates stats.json
+    assert is_initialized()
 
 
 def test_get_debug_path_returns_exact_path(monkeypatch, tmp_path):
@@ -453,14 +438,14 @@ def test_get_debug_path_returns_exact_path(monkeypatch, tmp_path):
 
 
 def test_get_tracking_path_returns_exact_path(monkeypatch, tmp_path):
-    """get_tracking_path must return exactly root / '.yosoi' / 'stats.json'."""
+    """get_tracking_path returns the SQLite DB path used for tracking."""
     project_root = tmp_path / 'proj_tracking_path'
     project_root.mkdir()
 
     monkeypatch.setattr(yosoi.utils.files, 'get_project_root', lambda: project_root)
 
     tracking_path = get_tracking_path()
-    assert tracking_path == project_root / '.yosoi' / 'stats.json'
+    assert tracking_path == project_root / '.yosoi' / 'yosoi.sqlite3'
 
 
 def test_get_logs_path_returns_exact_path(monkeypatch, tmp_path):
@@ -480,18 +465,17 @@ def test_get_logs_path_returns_exact_path(monkeypatch, tmp_path):
 
 
 def test_ensure_tracking_migrates_root_file(tmp_path):
-    """ensure_tracking_file moves <root>/stats.json → .yosoi/stats.json."""
+    """ensure_tracking_file imports <root>/stats.json into SQLite."""
     yosoi_dir = tmp_path / '.yosoi'
     yosoi_dir.mkdir()
     root_tracking = tmp_path / 'stats.json'
-    root_tracking.write_text('{"root": true}')
+    root_tracking.write_text('{"root.com": {"llm_calls": 1, "url_count": 2}}')
 
     ensure_tracking_file(yosoi_dir)
 
-    assert (yosoi_dir / 'stats.json').exists()
+    assert not (yosoi_dir / 'stats.json').exists()
     assert not root_tracking.exists()
-    data = json.loads((yosoi_dir / 'stats.json').read_text())
-    assert data == {'root': True}
+    assert _tracking_row(yosoi_dir / 'yosoi.sqlite3', 'root.com') == (1, 2)
 
 
 # ---------------------------------------------------------------------------
@@ -558,13 +542,12 @@ async def test_atomic_write_async_failure_cleans_tmp_and_preserves_original(tmp_
 
 
 def test_ensure_tracking_file_reraises_on_migration_failure(tmp_path, mocker):
-    """A failed root-level stats.json migration must re-raise, not be swallowed."""
+    """A failed stats.json SQLite import must re-raise."""
     yosoi_dir = tmp_path / '.yosoi'
     yosoi_dir.mkdir()
-    # Stale root-level tracking file that triggers the migration branch.
     (tmp_path / 'stats.json').write_text(json.dumps({'a.com': {}}))
 
-    mocker.patch('yosoi.utils.files.shutil.move', side_effect=OSError('move failed'))
+    mocker.patch('yosoi.utils.files.sqlite3.connect', side_effect=OSError('sqlite failed'))
 
-    with pytest.raises(OSError, match='move failed'):
+    with pytest.raises(OSError, match='sqlite failed'):
         ensure_tracking_file(yosoi_dir)

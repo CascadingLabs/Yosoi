@@ -29,7 +29,17 @@ EXTRACTED = {'title': 'book', 'price': '$10'}
 
 # Expected span set for the fresh-discovery path of the canned input above.
 # Pinned explicitly per plan B3: a vague subset is rejected.
-EXPECTED_CHILD_SPANS = {'fetch', 'clean', 'discover', 'verify', 'extract', 'semantic_refine', 'validate', 'save'}
+EXPECTED_CHILD_SPANS = {
+    'fetch',
+    'clean',
+    'resolve',
+    'discover',
+    'verify',
+    'extract',
+    'semantic_refine',
+    'validate',
+    'save',
+}
 EXPECTED_ROOT_SPAN = 'scrape shop.example.com/x'
 
 

@@ -187,6 +187,40 @@ def test_pipeline_stores_resolved_policy(mocker, monkeypatch):
     assert d._policy.trust_tier == 'strict'
 
 
+def test_cached_replay_uses_resolve_artifact(mocker):
+    stub = _make_pipeline_stub(mocker)
+    html = '<html><body><h1>Book</h1><span class="price">$9.99</span></body></html>'
+
+    items = stub._resolve_cached_records(
+        'https://example.com/book',
+        'example.com',
+        html,
+        {'title': {'primary': 'h1::text'}, 'price': {'primary': '.price::text'}},
+    )
+
+    assert items == [{'title': 'Book', 'price': 9.99}]
+
+
+def test_atom_replay_is_policy_gated_and_uses_empty_legacy_cache(mocker):
+    from yosoi.models.needs_discovery import NeedsDiscovery
+    from yosoi.policy import Policy
+
+    stub = _make_pipeline_stub(mocker)
+    stub._policy = Policy(atom_reads=False)
+    resolver = mocker.patch('yosoi.core.resolve.resolve')
+
+    assert stub._resolve_atom_records('https://example.com', 'example.com', '<html/>') is None
+    resolver.assert_not_called()
+
+    stub._policy = Policy(atom_reads=True)
+    resolver.return_value = NeedsDiscovery(domain='example.com', contract_fingerprint='fp', fields=['title'])
+    assert stub._resolve_atom_records('https://example.com', 'example.com', '<html/>') is None
+    assert resolver.call_args.args[2] == {}
+
+    resolver.return_value = [{'title': 'Book'}]
+    assert stub._resolve_atom_records('https://example.com', 'example.com', '<html/>') == [{'title': 'Book'}]
+
+
 class TestEscalationSignal:
     def test_required_discovery_fields(self, mocker):
         stub = _make_pipeline_stub(mocker)
@@ -1157,7 +1191,7 @@ async def test_extract_with_cached_returns_items_on_success(mocker):
     stub.cleaner.clean_html.return_value = '<html/>'
     vr = _make_verification_result(True, ['title', 'price'])
     stub.verifier.verify.return_value = vr
-    stub.extractor.extract_content_with_html.return_value = {'title': 'Book', 'price': '9.99'}
+    mocker.patch.object(stub, '_resolve_cached_records', return_value=[{'title': 'Book', 'price': '9.99'}])
     items, cache_valid = await Pipeline._extract_with_cached(
         stub,
         'https://x.com',
@@ -1225,7 +1259,7 @@ async def test_extract_with_cached_missing_overridden_field_does_not_trigger_red
     stub.cleaner.clean_html.return_value = '<html/>'
     vr = _make_verification_result(True, ['title'])
     stub.verifier.verify.return_value = vr
-    stub.extractor.extract_content_with_html.return_value = {'title': 'Book'}
+    mocker.patch.object(stub, '_resolve_cached_records', return_value=[{'title': 'Book'}])
     items, cache_valid = await Pipeline._extract_with_cached(
         stub, 'https://x.com', mock_fetcher, {'title': {'primary': 'h1'}}, False
     )

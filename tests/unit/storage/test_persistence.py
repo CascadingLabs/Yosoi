@@ -1,6 +1,7 @@
 """Tests for SelectorStorage save/load/domain extraction."""
 
 import os
+import sqlite3
 
 import pytest
 
@@ -178,10 +179,26 @@ def test_format_selectors_uses_provided_values(storage):
     assert formatted['title']['tertiary'] == 'h3'
 
 
-async def test_save_content_creates_file(storage, tmp_path):
+async def test_save_content_defaults_to_sqlite(storage, tmp_path):
     content = {'title': 'Hello', 'body': 'World'}
     filepath = await storage.save_content('https://example.com/page', content, 'json')
-    assert os.path.exists(filepath)
+    assert filepath == str(storage.database_path)
+    with sqlite3.connect(storage.database_path) as conn:
+        row = conn.execute('SELECT contract_fingerprint, output_format, content_json FROM fetch_outputs').fetchone()
+    assert row is not None
+    assert row[0] == ''
+    assert row[1] == 'json'
+    assert 'Hello' in row[2]
+    assert not os.path.exists(storage._get_content_filepath('https://example.com/page', 'json'))
+
+
+async def test_save_content_flat_files_opt_in(tmp_path, mocker):
+    yosoi_dir = tmp_path / '.yosoi'
+    yosoi_dir.mkdir()
+    mocker.patch('yosoi.storage.persistence.init_yosoi', return_value=yosoi_dir)
+    storage = SelectorStorage(flat_files=True)
+    await storage.save_content('https://example.com/page', {'title': 'Hello'}, 'json')
+    assert os.path.exists(storage._get_content_filepath('https://example.com/page', 'json'))
 
 
 async def test_save_content_returns_filepath(storage):
@@ -409,11 +426,13 @@ def test_contract_sig_same_sig_same_url_same_file(storage):
 
 
 async def test_save_content_with_contract_sig(storage, tmp_path):
-    """save_content accepts contract_sig and produces a file with sig in the name."""
+    """save_content accepts contract_sig and stores it with the SQLite row."""
     content = {'title': 'Test'}
     filepath = await storage.save_content('https://example.com/catalog/?cat=5', content, 'json', contract_sig='testsig')
-    assert os.path.exists(filepath)
-    assert 'testsig' in os.path.basename(filepath)
+    assert filepath == str(storage.database_path)
+    with sqlite3.connect(storage.database_path) as conn:
+        row = conn.execute('SELECT contract_fingerprint FROM fetch_outputs').fetchone()
+    assert row == ('testsig',)
 
 
 async def test_content_exists_with_contract_sig(storage):

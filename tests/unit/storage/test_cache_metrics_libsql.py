@@ -142,6 +142,34 @@ async def test_upsert_snapshots_is_field_addressable_by_contract_domain_and_rout
     }
 
 
+async def test_upsert_snapshots_replaces_selector_level_instead_of_duplicating_field(tmp_path) -> None:
+    fp = 'contract-fp'
+    db_path = tmp_path / 'metrics.sqlite3'
+
+    async with LibSQLCacheMetricsStore(db_path) as store:
+        await store.upsert_snapshots(
+            url='https://example.com/l1/news/article/',
+            domain='example.com',
+            snapshots={'headline': _snapshot('h1')},
+            contract_fingerprint=fp,
+            selector_level='css',
+        )
+        await store.upsert_snapshots(
+            url='https://example.com/l1/news/article/',
+            domain='example.com',
+            snapshots={'headline': _snapshot('h2')},
+            contract_fingerprint=fp,
+            selector_level='all',
+        )
+
+    with sqlite3.connect(db_path) as conn:
+        rows = conn.execute(
+            'SELECT field_path, selector_level, json_extract(selector, "$.primary") FROM selector_snapshots'
+        ).fetchall()
+
+    assert rows == [('headline', 'all', 'h2')]
+
+
 async def test_record_verdict_updates_field_health_and_records_event(tmp_path) -> None:
     db_path = tmp_path / 'metrics.sqlite3'
     fp = 'contract-fp'

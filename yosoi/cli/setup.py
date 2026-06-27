@@ -30,6 +30,7 @@ def build_policy(
     quiet: bool = True,
     json_output: bool = False,
     max_concurrency: int | None = None,
+    flat_files: bool = False,
 ) -> Policy:
     """Build the CLI call-site policy layer and cascade it with env."""
     from dotenv import load_dotenv
@@ -63,6 +64,7 @@ def build_policy(
             quiet=quiet,
             json_output=json_output,
             debug_html=debug,
+            flat_files=flat_files,
         )
         call_policy = Policy.model_validate(call_kwargs)
         policy = Policy.cascade(Policy.from_env(), call_policy)

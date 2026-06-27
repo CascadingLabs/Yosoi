@@ -284,7 +284,6 @@ class PipelineExtractionMixin:
             cleaned_html = snapshot.html_for_discovery
 
             root_entry = self._resolve_root(existing_selectors)  # type: ignore[attr-defined]
-            container_selector = self._root_value(root_entry)  # type: ignore[attr-defined]
 
             if root_entry and not skip_verification:
                 from parsel import Selector as _PS
@@ -328,7 +327,7 @@ class PipelineExtractionMixin:
             else:
                 selectors_to_use = existing_selectors
 
-            extracted = self._extract(url, cleaned_html, selectors_to_use, container_selector)
+            extracted = self._resolve_cached_records(url, domain, result.html, selectors_to_use)  # type: ignore[attr-defined]
             extracted = self._merge_fetch_outputs(extracted, result)
             self._record_downloads(result.downloads)
             if extracted:

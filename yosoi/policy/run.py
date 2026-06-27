@@ -282,9 +282,10 @@ class OutputPolicy(BaseModel):
 
     Use ``quiet=False`` for examples and demos where Yosoi should show progress,
     selected URLs, tables, and scrape results. Keep the default ``quiet=True`` for
-    library use where callers consume returned Python values. ``formats`` enables
-    saved artifacts, while ``json_output``/``plain_output`` switch terminal shape
-    for automation.
+    library use where callers consume returned Python values. ``formats`` chooses
+    persisted output shapes in SQLite; ``flat_files`` additionally mirrors them to
+    `.yosoi/content` files for workflows that need file artifacts. ``json_output``/
+    ``plain_output`` switch terminal shape for automation.
     """
 
     model_config = ConfigDict(frozen=True)
@@ -295,6 +296,7 @@ class OutputPolicy(BaseModel):
     plain_output: bool = False
     debug_html: bool = False
     debug_html_dir: Path = Path('.yosoi/debug')
+    flat_files: bool = False
     logs: bool = True
 
     @field_validator('formats', mode='before')
@@ -362,6 +364,7 @@ class ResolvedRunSpec(BaseModel):
     max_concurrency: int | None
     cross_origin_dom: bool
     output_formats: tuple[str, ...]
+    output_flat_files: bool
     quiet: bool
     json_output: bool
     plain_output: bool

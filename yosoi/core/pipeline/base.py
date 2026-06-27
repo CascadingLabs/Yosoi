@@ -118,6 +118,7 @@ class Pipeline(
         download_dir: str | None = None,
         max_download_bytes: int | None = None,
         keep_downloads: bool = True,
+        flat_files: bool | None = None,
         identity: BrowserIdentity | None = None,
         console: Console | None = None,
         policy: Policy | None = None,
@@ -160,6 +161,7 @@ class Pipeline(
                 console for ``--json`` runs); a default themed console is built when omitted.
             keep_downloads: Keep downloaded files after the run (default). Set False to purge
                 the content-addressed blobs at run end while retaining provenance in index.json.
+            flat_files: Also write extracted content to `.yosoi/content` files. Defaults to policy/output setting.
             policy: Resolved pipeline :class:`~yosoi.policy.Policy` threaded from the API edge.
                 Stored once (``policy or Policy.from_env()``) as a forward-compat seam so future
                 policy-gated behavior reads ``self._policy`` instead of the environment; the
@@ -174,11 +176,13 @@ class Pipeline(
                 'Pipeline no longer accepts a ModelPolicy as llm_config; pass policy=Policy(model=...) instead'
             )
         # Resolve policy-first construction before applying legacy kwargs.
+        self._policy: Policy = policy or Policy.from_env()
         if llm_config is None:
-            spec = (policy or Policy.from_env()).resolve_run_spec()
+            spec = self._policy.resolve_run_spec()
             llm_config = spec.llm_config
             debug_mode = spec.debug_html
             output_format = list(spec.output_formats)
+            flat_files = spec.output_flat_files if flat_files is None else flat_files
             force = spec.force
             quiet = spec.quiet
             selector_level = spec.selector_level
@@ -187,7 +191,10 @@ class Pipeline(
             download_dir = spec.download_dir
             max_download_bytes = spec.max_download_bytes
             keep_downloads = spec.keep_downloads
+        if flat_files is None:
+            flat_files = bool(self._policy.output.flat_files) if self._policy.output else False
         self.selector_level = selector_level
+        self._flat_files = flat_files
         self._experimental_a3node = experimental_a3node
         self._allow_downloads = allow_downloads
         self._allowed_download_types = normalize_allowed_types(allowed_download_types)
@@ -195,8 +202,6 @@ class Pipeline(
         self._max_download_bytes = max_download_bytes
         self._keep_downloads = keep_downloads
         self._identity = identity  # opt-in browser identity (profile/headful/geo) for browser fetchers
-        # Resolve the policy ONCE here (defensive single resolve); stored as a forward-compat seam.
-        self._policy: Policy = policy or Policy.from_env()
         # Off-path fingerprint signal lane (CAS-168); None unless a FingerprintPolicy opts in.
         self._signal_lane = build_fingerprint_lane(self._policy.fingerprint)
         self._download_log: list[Any] = []
@@ -250,7 +255,7 @@ class Pipeline(
         from yosoi.core.cleaning import HTMLCleaner
 
         self.cleaner = HTMLCleaner(console=self.console)
-        self.storage = SelectorStorage()
+        self.storage = SelectorStorage(flat_files=self._flat_files)
         self.js_storage = JsScriptStorage()
 
         self.discovery = DiscoveryOrchestrator(
@@ -730,6 +735,19 @@ class Pipeline(
                 PageObservation(url, domain, self.contract.__name__, snapshot.raw_html, result.ax_snapshot)
             )
         cleaned_html = snapshot.html_for_discovery
+
+        with observability.span('resolve', url=url, mode='atom'):
+            atom_gen = (
+                None
+                if force_flag or escalate_first
+                else self._yield_atom_cached_items(
+                    url, domain, result.html, format_to_use, fetcher=fetcher, root_span=root_span
+                )
+            )
+        if atom_gen is not None:
+            async for item in atom_gen:
+                yield item
+            return
 
         with observability.span(
             'discover', url=url, cleaned_chars=len(cleaned_html), mode='mcp' if escalate_first else 'static'

@@ -1,6 +1,5 @@
 """Tests for LLMTracker record/stats."""
 
-import json
 import os
 
 import pytest
@@ -199,13 +198,12 @@ async def test_print_stats_includes_url_count(tracker, capsys):
     assert '1' in captured.out
 
 
-def test_ensure_file_exists_creates_file(tmp_path):
-    tracking_file = str(tmp_path / 'new' / 'tracking.json')
-    LLMTracker(tracking_file=tracking_file)
-    assert os.path.exists(tracking_file)
-    with open(tracking_file) as f:
-        data = json.load(f)
-    assert data == {}
+def test_tracker_creates_sqlite_database_for_legacy_path(tmp_path):
+    tracking_file = tmp_path / 'new' / 'tracking.json'
+    tracker = LLMTracker(tracking_file=str(tracking_file))
+    assert not tracking_file.exists()
+    assert os.path.exists(tracker.tracking_file)
+    assert tracker.tracking_file.endswith('tracking.sqlite3')
 
 
 async def test_load_data_returns_empty_dict_for_invalid_json(tmp_path):
@@ -222,44 +220,26 @@ async def test_get_stats_returns_zeros_for_unknown_domain(tracker):
     assert stats.url_count == 0
 
 
-def test_tracker_init_with_none_uses_get_tracking_path(mocker, tmp_path):
-    """When tracking_file is None, must use get_tracking_path()."""
-    expected_path = tmp_path / 'tracking.json'
-    mock_path = mocker.patch('yosoi.storage.tracking.get_tracking_path', return_value=expected_path)
+def test_tracker_init_with_none_uses_default_sqlite():
     tracker = LLMTracker(tracking_file=None)
-    mock_path.assert_called_once()
-    assert tracker.tracking_file == str(expected_path)
+    assert tracker.database_url.endswith('.yosoi/yosoi.sqlite3')
 
 
-def test_tracker_init_with_explicit_path_uses_that_path(tmp_path):
-    """When tracking_file is given, must use that path directly."""
-    custom_path = str(tmp_path / 'custom.json')
-    tracker = LLMTracker(tracking_file=custom_path)
-    assert tracker.tracking_file == custom_path
+def test_tracker_init_with_explicit_path_uses_sqlite_sibling(tmp_path):
+    custom_path = tmp_path / 'custom.json'
+    tracker = LLMTracker(tracking_file=str(custom_path))
+    assert tracker.tracking_file == str(tmp_path / 'custom.sqlite3')
 
 
-def test_ensure_file_exists_creates_empty_json_dict(tmp_path):
-    """Created file must contain empty JSON dict '{}'."""
-    tracking_file = str(tmp_path / 'subdir' / 'tracking.json')
-    LLMTracker(tracking_file=tracking_file)
-    with open(tracking_file) as f:
-        data = json.load(f)
-    assert data == {}
+def test_tracker_creates_parent_directories(tmp_path):
+    nested_path = tmp_path / 'deep' / 'nested' / 'tracking.json'
+    tracker = LLMTracker(tracking_file=str(nested_path))
+    assert os.path.exists(tracker.tracking_file)
 
 
-def test_ensure_file_exists_uses_makedirs(tmp_path):
-    """_ensure_file_exists must create parent directories."""
-    nested_path = str(tmp_path / 'deep' / 'nested' / 'tracking.json')
-    LLMTracker(tracking_file=nested_path)
-    assert os.path.exists(nested_path)
-
-
-async def test_save_data_writes_with_indent_2(tracker, tmp_path):
-    """_save_data must use indent=2 for JSON formatting."""
+async def test_save_data_persists_to_sqlite(tracker, tmp_path):
     await tracker._save_data({'test': {'llm_calls': 1, 'url_count': 2}})
-    with open(tracker.tracking_file) as fh:
-        raw = fh.read()
-    assert '  ' in raw
+    assert (await tracker.get_stats('test')).url_count == 2
 
 
 async def test_save_data_uses_ensure_ascii_false(tracker):

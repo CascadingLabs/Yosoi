@@ -6,6 +6,7 @@ import asyncio
 import json
 import os
 import sys
+from typing import Any
 
 import rich_click as click
 from rich.console import Console
@@ -136,6 +137,7 @@ async def _run_json(
     metavar='FORMAT',
     help='Output format(s): json, md, jsonl, ndjson, csv, xlsx, parquet.',
 )
+@click.option('--flat-files', is_flag=True, help='Also write extracted content to .yosoi/content flat files.')
 @click.option(
     '-t',
     '--fetcher',
@@ -194,6 +196,7 @@ def main(
     debug: bool,
     skip_verification: bool,
     output: tuple[str, ...],
+    flat_files: bool,
     fetcher: str,
     log_level: str,
     contract: type[Contract] | None,
@@ -244,6 +247,7 @@ def main(
         quiet=json_output,
         json_output=json_output,
         max_concurrency=workers or None,
+        flat_files=flat_files,
     )
 
     ui: Console = Console(theme=_THEME, stderr=True) if json_output else console
@@ -355,6 +359,7 @@ def main(
     metavar='FORMAT',
     help='Output format(s); repeat or comma-separate.',
 )
+@click.option('--flat-files', is_flag=True, help='Also write extracted content to .yosoi/content flat files.')
 @click.option(
     '-t',
     '--fetcher',
@@ -404,6 +409,7 @@ def scrape(
     summary: bool,
     skip_verification: bool,
     output: tuple[str, ...],
+    flat_files: bool,
     fetcher: str,
     log_level: str,
     selector_level: str,
@@ -442,6 +448,7 @@ def scrape(
         output_formats=output_formats,
         quiet=json_output or dump_request,
         json_output=json_output,
+        flat_files=flat_files,
     )
 
     ui: Console = Console(theme=_THEME, stderr=True) if json_output else console
@@ -537,6 +544,7 @@ def scrape(
 @click.option('-d', '--debug', is_flag=True)
 @click.option('-S', '--skip-verification', is_flag=True)
 @click.option('-o', '--output', multiple=True, default=('json',), metavar='FORMAT')
+@click.option('--flat-files', is_flag=True, help='Also write extracted content to .yosoi/content flat files.')
 @click.option(
     '-t',
     '--fetcher',
@@ -565,6 +573,7 @@ def discover(
     debug: bool,
     skip_verification: bool,
     output: tuple[str, ...],
+    flat_files: bool,
     fetcher: str,
     log_level: str,
     selector_level: str,
@@ -602,6 +611,7 @@ def discover(
         quiet=json_output,
         json_output=json_output,
         max_concurrency=workers or None,
+        flat_files=flat_files,
     )
 
     ui: Console = Console(theme=_THEME, stderr=True) if json_output else console
@@ -911,7 +921,7 @@ def cache_status(
             try:
                 from yosoi.storage.cache_metrics_libsql import LibSQLCacheMetricsStore
 
-                async def _summarize_contract_metrics():
+                async def _summarize_contract_metrics() -> Any:
                     async with LibSQLCacheMetricsStore() as metrics_store:
                         return await metrics_store.summarize_contract(fp)
 
@@ -1084,7 +1094,7 @@ def cache_metrics_backfill(
     if not is_initialized():
         init_yosoi()
 
-    contract_fps = [contract_signature(cls) for cls in contract] or [None]
+    contract_fps: list[str | None] = [contract_signature(cls) for cls in contract] or [None]
 
     async def _backfill() -> dict[str, object]:
         results = []

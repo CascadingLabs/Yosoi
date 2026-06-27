@@ -297,6 +297,7 @@ class Policy(BaseModel):
             max_concurrency=scrape.max_concurrency,
             cross_origin_dom=scrape.cross_origin_dom,
             output_formats=output.formats,
+            output_flat_files=output.flat_files,
             quiet=output.quiet,
             json_output=output.json_output,
             plain_output=output.plain_output,
