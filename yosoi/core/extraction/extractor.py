@@ -10,6 +10,23 @@ from yosoi.models.selectors import SelectorEntry, SelectorLevel, coerce_selector
 
 FieldMode = Literal['body_text', 'related_content', 'text', 'list']
 
+_ROLE_SELECTORS: dict[str, tuple[str, ...]] = {
+    'button': ('button', 'input[type="button"]', 'input[type="submit"]'),
+    'link': ('a[href]',),
+    'textbox': ('input:not([type])', 'input[type="text"]', 'textarea'),
+    'searchbox': ('input[type="search"]',),
+    'heading': ('h1', 'h2', 'h3', 'h4', 'h5', 'h6'),
+    'article': ('article',),
+    'main': ('main',),
+    'navigation': ('nav',),
+    'list': ('ul', 'ol'),
+    'listitem': ('li',),
+    'table': ('table',),
+    'row': ('tr',),
+    'cell': ('td', 'th'),
+    'img': ('img',),
+}
+
 
 def _node_text(el: Selector) -> str:
     """Return the text value of a matched node.
@@ -24,6 +41,37 @@ def _node_text(el: Selector) -> str:
     if isinstance(el.root, str):
         return (el.get() or '').strip()
     return ' '.join(el.xpath('.//text()').getall()).strip()
+
+
+def _accessible_name(el: Selector) -> str:
+    """Best-effort accessible name from static HTML."""
+    for attr in ('aria-label', 'alt', 'title', 'value'):
+        value = el.attrib.get(attr)
+        if value:
+            return value.strip()
+    return _node_text(el)
+
+
+def _role_matches(sel: Selector, entry: SelectorEntry) -> list[Selector]:
+    """Best-effort role/name matching against static HTML."""
+    role = entry.value.strip().lower()
+    selectors = [f'[role="{role}"]', *_ROLE_SELECTORS.get(role, ())]
+    candidates: list[Selector] = []
+    seen: set[int] = set()
+    for css in selectors:
+        for match in sel.css(css):
+            key = id(match.root)
+            if key not in seen:
+                candidates.append(match)
+                seen.add(key)
+
+    name = (entry.name or '').strip().lower()
+    if name:
+        candidates = [match for match in candidates if name in _accessible_name(match).lower()]
+
+    if entry.nth is not None:
+        return [candidates[entry.nth]] if 0 <= entry.nth < len(candidates) else []
+    return candidates
 
 
 class ContentExtractor:
@@ -108,7 +156,7 @@ class ContentExtractor:
         _url: str,
         html: str,
         validated_selectors: dict[str, dict[str, str]],
-        max_level: SelectorLevel = SelectorLevel.CSS,
+        max_level: SelectorLevel = max(SelectorLevel),
     ) -> dict[str, str | list[str | dict[str, str]]] | None:
         """Extract content using validated selectors and provided HTML.
 
@@ -116,7 +164,7 @@ class ContentExtractor:
             _url: URL the content is being extracted from (unused, for API consistency)
             html: Cleaned HTML content to extract from
             validated_selectors: Dictionary of validated selectors (primary, fallback, tertiary)
-            max_level: Maximum selector strategy level to use. Defaults to CSS.
+            max_level: Maximum selector strategy level to use. Defaults to all.
 
         Returns:
             Dictionary of extracted content by field name, or None if extraction failed.
@@ -220,7 +268,12 @@ class ContentExtractor:
             return None
         if entry.type == 'xpath':
             return self._extract_with_xpath_selector(sel, entry.value, field_name)
-        if entry.type in ('regex', 'jsonld'):
+        if entry.type == 'attr':
+            return self._extract_with_selector(sel, f'{entry.value}::attr({entry.name})', field_name)
+        if entry.type == 'role':
+            elements = _role_matches(sel, entry)
+            return self._extract_from_elements(elements, field_name) if elements else None
+        if entry.type in ('regex', 'jsonld', 'global_id', 'visual'):
             return None  # unsupported strategies fail closed
         return self._extract_with_selector(sel, entry.value, field_name)
 
@@ -324,7 +377,7 @@ class ContentExtractor:
         html: str,
         validated_selectors: dict[str, dict[str, str]],
         container_selector: str,
-        max_level: SelectorLevel = SelectorLevel.CSS,
+        max_level: SelectorLevel = max(SelectorLevel),
     ) -> list[dict[str, str | list[str | dict[str, str]]]] | None:
         """Extract multiple items from HTML using a container selector.
 
@@ -336,7 +389,7 @@ class ContentExtractor:
             html: Cleaned HTML content to extract from
             validated_selectors: Dictionary of validated selectors per field
             container_selector: CSS selector matching each repeating item container
-            max_level: Maximum selector strategy level to use. Defaults to CSS.
+            max_level: Maximum selector strategy level to use. Defaults to all.
 
         Returns:
             List of extracted content dicts (one per container), or None if no items found.

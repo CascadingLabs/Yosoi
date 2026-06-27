@@ -163,7 +163,7 @@ def _internalize_accepted(
         logger.debug('field-atom dual-write skipped (url=%s): %s', url, exc)
 
 
-async def scrape(
+async def _scrape_impl(
     url: str | Sequence[str],
     contract: type[Contract] | str | Sequence[type[Contract] | str],
     model: YosoiConfig | LLMConfig | ModelPolicy | str | None = None,
@@ -171,7 +171,7 @@ async def scrape(
     force: bool = False,
     skip_verification: bool = False,
     fetcher_type: str | Mapping[str, str] | Callable[[str], str] = 'auto',
-    selector_level: SelectorLevel = SelectorLevel.CSS,
+    selector_level: SelectorLevel = max(SelectorLevel),
     save_formats: Sequence[str] = (),
     quiet: bool = True,
     allow_downloads: bool = False,
@@ -295,7 +295,7 @@ async def scrape(
             return await _scrape_one(
                 u,
                 c,
-                None,
+                model,
                 force=force,
                 skip_verification=skip_verification,
                 fetcher_type=_fetcher_for(u),
@@ -332,6 +332,78 @@ async def scrape(
     if multi_contract:
         return {c.__name__: cell[urls[0], c.__name__] for c in contract_clss}
     return flat[0]
+
+
+async def scrape(
+    url: str | Sequence[str],
+    contract: type[Contract] | str | Sequence[type[Contract] | str],
+    model: YosoiConfig | LLMConfig | ModelPolicy | str | None = None,
+    *,
+    force: bool = False,
+    skip_verification: bool = False,
+    fetcher_type: str | Mapping[str, str] | Callable[[str], str] = 'auto',
+    selector_level: SelectorLevel = max(SelectorLevel),
+    save_formats: Sequence[str] = (),
+    quiet: bool = True,
+    allow_downloads: bool = False,
+    allowed_download_types: Sequence[str] = (),
+    download_dir: str | None = None,
+    max_download_bytes: int | None = None,
+    keep_downloads: bool = True,
+    identities: Mapping[str, BrowserIdentity] | Callable[[str], BrowserIdentity | None] | None = None,
+    max_concurrency: int | None = None,
+    policy: Policy | None = None,
+) -> Any:
+    """Scrape one-or-many URLs with one-or-many contracts.
+
+    Thin constructor for the canonical :class:`yosoi.operations.ScrapeRequest`.
+    Returns :class:`yosoi.operations.ScrapeResult` rather than axis-shaped data;
+    use ``result.results`` for stable URL x contract units.
+    """
+    from yosoi.operations import ScrapeRequest, execute_scrape, normalize_scrape_result
+
+    request = ScrapeRequest.from_axes(
+        url,
+        contract,
+        model=model if isinstance(model, str) else None,
+        policy=policy,
+        force=force,
+        skip_verification=skip_verification,
+        fetcher_type=fetcher_type,
+        selector_level='all' if selector_level == max(SelectorLevel) else selector_level.name.lower(),
+        save_formats=list(save_formats),
+        quiet=quiet,
+        allow_downloads=allow_downloads,
+        allowed_download_types=list(allowed_download_types),
+        download_dir=download_dir,
+        max_download_bytes=max_download_bytes,
+        keep_downloads=keep_downloads,
+        identities=identities,
+        max_concurrency=max_concurrency,
+    )
+    if model is not None and not isinstance(model, str):
+        # Keep non-JSON-safe model/config objects on the edge by delegating directly.
+        raw = await _scrape_impl(
+            url,
+            contract,
+            model=model,
+            force=force,
+            skip_verification=skip_verification,
+            fetcher_type=fetcher_type,
+            selector_level=selector_level,
+            save_formats=save_formats,
+            quiet=quiet,
+            allow_downloads=allow_downloads,
+            allowed_download_types=allowed_download_types,
+            download_dir=download_dir,
+            max_download_bytes=max_download_bytes,
+            keep_downloads=keep_downloads,
+            identities=identities,
+            max_concurrency=max_concurrency,
+            policy=policy,
+        )
+        return normalize_scrape_result(request, raw)
+    return await execute_scrape(request)
 
 
 def _edge_policy(contract_cls: type[Contract], call_policy: Policy | None) -> Policy:
@@ -394,7 +466,7 @@ def _compat_policy_layer(  # noqa: C901
         scrape_payload['skip_verification'] = skip_verification
     if fetcher_type != 'auto':
         scrape_payload['fetcher_type'] = fetcher_type
-    if selector_level != SelectorLevel.CSS:
+    if selector_level != max(SelectorLevel):
         scrape_payload['selector_level'] = selector_level
     if max_concurrency is not None:
         scrape_payload['max_concurrency'] = max_concurrency
@@ -447,7 +519,7 @@ async def _scrape_one(
     force: bool = False,
     skip_verification: bool = False,
     fetcher_type: str = 'auto',
-    selector_level: SelectorLevel = SelectorLevel.CSS,
+    selector_level: SelectorLevel = max(SelectorLevel),
     save_formats: Sequence[str] = (),
     quiet: bool = True,
     allow_downloads: bool = False,
@@ -552,37 +624,24 @@ async def scrape_many(
     force: bool = False,
     skip_verification: bool = False,
     fetcher_type: str = 'auto',
-    selector_level: SelectorLevel = SelectorLevel.CSS,
+    selector_level: SelectorLevel = max(SelectorLevel),
     save_formats: Sequence[str] = (),
     quiet: bool = True,
     policy: Policy | None = None,
-) -> dict[str, list[ContentMap]]:
-    """Scrape multiple URLs and return items keyed by URL."""
-    url_list = list(urls)
-    with obs.span(
-        'api.scrape_many', urls=len(url_list), contract=contract if isinstance(contract, str) else contract.__name__
-    ):
-        results: dict[str, list[ContentMap]] = {}
-        current_url: str | None = None
-        try:
-            for url in url_list:
-                current_url = url
-                results[url] = await _scrape_one(
-                    url,
-                    contract,
-                    model,
-                    force=force,
-                    skip_verification=skip_verification,
-                    fetcher_type=fetcher_type,
-                    selector_level=selector_level,
-                    save_formats=save_formats,
-                    quiet=quiet,
-                    policy=policy,
-                )
-        except Exception as e:
-            obs.warning('API scrape_many URL failed', url=current_url, error=str(e))
-            raise
-        return results
+) -> Any:
+    """Scrape multiple URLs and return the canonical ScrapeResult envelope."""
+    return await scrape(
+        list(urls),
+        contract,
+        model,
+        force=force,
+        skip_verification=skip_verification,
+        fetcher_type=fetcher_type,
+        selector_level=selector_level,
+        save_formats=save_formats,
+        quiet=quiet,
+        policy=policy,
+    )
 
 
 def scrape_sync(
@@ -593,18 +652,18 @@ def scrape_sync(
     force: bool = False,
     skip_verification: bool = False,
     fetcher_type: str = 'auto',
-    selector_level: SelectorLevel = SelectorLevel.CSS,
+    selector_level: SelectorLevel = max(SelectorLevel),
     save_formats: Sequence[str] = (),
     quiet: bool = True,
     policy: Policy | None = None,
-) -> list[ContentMap]:
+) -> Any:
     """Synchronous wrapper around :func:`scrape`."""
     with obs.span('api.scrape_sync', url=url, contract=contract if isinstance(contract, str) else contract.__name__):
         try:
             asyncio.get_running_loop()
         except RuntimeError:
             return asyncio.run(
-                _scrape_one(
+                scrape(
                     url,
                     contract,
                     model,

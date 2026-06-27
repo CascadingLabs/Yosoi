@@ -44,7 +44,7 @@ click.rich_click.OPTION_GROUPS = {
 
 
 class SchemaParamType(click.ParamType):
-    """Click parameter type that resolves schema names with fuzzy matching."""
+    """Click parameter type that resolves schema names exactly, with suggestions."""
 
     name = 'schema'
 
@@ -62,54 +62,35 @@ class SchemaParamType(click.ParamType):
 
         Resolution order:
         1. Exact match in BUILTIN_SCHEMAS
-        2. Case-insensitive match in BUILTIN_SCHEMAS
-        3. Exact / case-insensitive match in _CONTRACT_REGISTRY (custom schemas)
-        4. Fuzzy match across all known schemas (builtins + registry)
-        5. AST scan of Python files in CWD (exact + fuzzy)
-        6. Dynamic import via ``path:ClassName``
+        2. Exact match in _CONTRACT_REGISTRY (custom schemas)
+        3. AST scan of Python files in CWD (exact only)
+        4. Dynamic import via ``path:ClassName``
+
+        Near/case-insensitive matches are reported as suggestions only; they are never executed.
         """
         # 1. Exact match in builtins
         if value in BUILTIN_SCHEMAS:
             return BUILTIN_SCHEMAS[value]
 
-        # 2. Case-insensitive match in builtins
-        lower_builtin = {k.lower(): k for k in BUILTIN_SCHEMAS}
-        if value.lower() in lower_builtin:
-            return BUILTIN_SCHEMAS[lower_builtin[value.lower()]]
-
-        # 3. Exact / case-insensitive match in registry (custom schemas)
+        # 2. Exact match in registry (custom schemas)
         if value in _CONTRACT_REGISTRY:
             return _CONTRACT_REGISTRY[value]
-        lower_registry = {k.lower(): k for k in _CONTRACT_REGISTRY}
-        if value.lower() in lower_registry:
-            return _CONTRACT_REGISTRY[lower_registry[value.lower()]]
 
-        # 4. Fuzzy match across all known schemas
-        all_names = list(set(BUILTIN_SCHEMAS) | set(_CONTRACT_REGISTRY))
-        close = difflib.get_close_matches(value, all_names, n=1, cutoff=0.6)
-        if close:
-            matched = close[0]
-            source = BUILTIN_SCHEMAS if matched in BUILTIN_SCHEMAS else _CONTRACT_REGISTRY
-            console_err.print(f'[yellow]Warning: fuzzy-matched schema {value!r} → {matched!r}[/yellow]')
-            return source[matched]
-
-        # 4b. Scan .py files in CWD for Contract subclasses
+        # 3. Scan .py files in CWD for Contract subclasses
         file_contracts = scan_for_contracts()
         if value in file_contracts:
             console_err.print(f'[cyan]ℹ Found {value!r} via file scan → {file_contracts[value]}[/cyan]')
             return load_schema(file_contracts[value])
-        close_file = difflib.get_close_matches(value, list(file_contracts), n=1, cutoff=0.6)
-        if close_file:
-            matched = close_file[0]
-            console_err.print(
-                f'[yellow]Warning: fuzzy-matched schema {value!r} → {matched!r} (from {file_contracts[matched]})[/yellow]'
-            )
-            return load_schema(file_contracts[matched])
 
-        # 5. Dynamic import (path:ClassName)
+        # 4. Dynamic import (path:ClassName)
         if ':' in value:
             return load_schema(value)
 
-        available_str = ', '.join(sorted(set(BUILTIN_SCHEMAS) | set(_CONTRACT_REGISTRY) | set(file_contracts)))
-        self.fail(f'Unknown schema {value!r}. Available: {available_str}', param, ctx)
+        available = sorted(set(BUILTIN_SCHEMAS) | set(_CONTRACT_REGISTRY) | set(file_contracts))
+        available_str = ', '.join(available)
+        lower_to_name = {name.lower(): name for name in available}
+        lower_suggestions = difflib.get_close_matches(value.lower(), list(lower_to_name), n=3, cutoff=0.6)
+        suggestions = [lower_to_name[item] for item in lower_suggestions]
+        hint = f' Did you mean: {", ".join(suggestions)}?' if suggestions else ''
+        self.fail(f'Unknown schema {value!r}.{hint} Available: {available_str}', param, ctx)
         raise AssertionError('unreachable')  # self.fail always raises

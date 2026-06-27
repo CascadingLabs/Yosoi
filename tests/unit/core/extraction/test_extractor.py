@@ -556,6 +556,36 @@ def test_resolve_jsonld_strategy_returns_none():
     assert result is None
 
 
+def test_resolve_attr_strategy_extracts_named_attribute():
+    from yosoi.models.selectors import SelectorEntry, SelectorLevel
+
+    extractor = _make_extractor()
+    sel = Selector(text='<time datetime="2026-06-26"></time>')
+    entry = SelectorEntry(type='attr', value='time', name='datetime')
+    result = extractor._resolve(sel, entry, 'date', SelectorLevel.ATTR)
+    assert result == '2026-06-26'
+
+
+def test_resolve_role_strategy_matches_accessible_name():
+    from yosoi.models.selectors import SelectorEntry, SelectorLevel
+
+    extractor = _make_extractor()
+    sel = Selector(text='<button>Cancel</button><button aria-label="Submit order">ignored</button>')
+    entry = SelectorEntry(type='role', value='button', name='Submit')
+    result = extractor._resolve(sel, entry, 'title', SelectorLevel.ROLE)
+    assert result == 'ignored'
+
+
+def test_resolve_visual_strategy_returns_none():
+    from yosoi.models.selectors import SelectorEntry, SelectorLevel
+
+    extractor = _make_extractor()
+    sel = Selector(text='<h1>Title</h1>')
+    entry = SelectorEntry(type='visual', x=10, y=20)
+    result = extractor._resolve(sel, entry, 'title', SelectorLevel.VISUAL)
+    assert result is None
+
+
 # ---------------------------------------------------------------------------
 # Coverage: lines 190, 192-194 — xpath extraction exception handling
 # ---------------------------------------------------------------------------

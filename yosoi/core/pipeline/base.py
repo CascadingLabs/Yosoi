@@ -108,7 +108,7 @@ class Pipeline(
         output_format: str | list[str] = 'json',
         force: bool = False,
         quiet: bool = False,
-        selector_level: SelectorLevel = SelectorLevel.CSS,
+        selector_level: SelectorLevel = max(SelectorLevel),
         bus: DiscoveryBus | None = None,
         write_lock: asyncio.Lock | None = None,
         discovery_gate: DiscoveryGate | None = None,
@@ -121,6 +121,7 @@ class Pipeline(
         identity: BrowserIdentity | None = None,
         console: Console | None = None,
         policy: Policy | None = None,
+        show_tracking_summary: bool = False,
     ):
         """Initialize the pipeline with LLM configuration.
 
@@ -137,7 +138,7 @@ class Pipeline(
             quiet: Suppress console output. Used in concurrent mode where a
                    progress display replaces per-task output. Defaults to False.
             selector_level: Maximum selector strategy level for discovery and extraction.
-                            Defaults to CSS.
+                            Defaults to all.
             bus: Optional shared discovery bus for cross-pipeline field deduplication.
             write_lock: Optional asyncio.Lock to serialize selector writes for the domain.
             discovery_gate: Optional shared single-flight gate so concurrent scrapes of the
@@ -163,6 +164,7 @@ class Pipeline(
                 Stored once (``policy or Policy.from_env()``) as a forward-compat seam so future
                 policy-gated behavior reads ``self._policy`` instead of the environment; the
                 pipeline has no policy-gated branch today.
+            show_tracking_summary: Print the run/page/contract/domain tracking table after each URL.
 
         """
         if contract is None:
@@ -279,6 +281,7 @@ class Pipeline(
 
         self.extractor = ContentExtractor(console=self.console, contract=self.contract)
         self.tracker = LLMTracker()
+        self._show_tracking_summary = show_tracking_summary
         self.debug_mode = debug_mode
         self.debug = DebugManager(console=self.console, enabled=debug_mode)
         self.output_formats: list[str] = [output_format] if isinstance(output_format, str) else list(output_format)
@@ -478,6 +481,66 @@ class Pipeline(
 
         observability.flush()
         return results
+
+    async def _print_concurrent_tracking_summary(
+        self,
+        results: dict[str, list[str]],
+        elapsed_by_url: dict[str, float],
+        url_domains: dict[str, str],
+        baseline_by_domain: dict[str, Any],
+    ) -> None:
+        """Print one tracking table for a concurrent URL run."""
+        table = Table(title='Tracking summary — concurrent run', show_header=True, header_style='bold cyan')
+        table.add_column('Scope')
+        table.add_column('URL / Domain / Contract')
+        table.add_column('LLM calls')
+        table.add_column('URLs')
+        table.add_column('Elapsed')
+        table.add_column('Notes')
+
+        successful = set(results.get('successful', ()))
+        failed = set(results.get('failed', ()))
+        total_elapsed = sum(elapsed_by_url.values())
+        domains = sorted(set(url_domains.values()))
+        run_llm = 0
+        run_urls = 0
+        domain_rows: list[tuple[str, int, int, float, str]] = []
+        for domain in domains:
+            before = baseline_by_domain.get(domain)
+            after = await self.tracker.get_stats(domain)
+            before_llm = getattr(before, 'llm_calls', 0)
+            before_urls = getattr(before, 'url_count', 0)
+            before_elapsed = getattr(before, 'total_elapsed', 0.0)
+            delta_llm = max(0, after.llm_calls - before_llm)
+            delta_urls = max(0, after.url_count - before_urls)
+            delta_elapsed = max(0.0, after.total_elapsed - before_elapsed)
+            run_llm += delta_llm
+            run_urls += delta_urls
+            note = f'historical {after.url_count} URLs / {after.llm_calls} LLM'
+            domain_rows.append((domain, delta_llm, delta_urls, delta_elapsed, note))
+
+        table.add_row(
+            'run',
+            'this invocation',
+            str(run_llm),
+            str(run_urls),
+            f'{total_elapsed:.1f}s',
+            f'{len(successful)} ok / {len(failed)} failed',
+        )
+        table.add_row(
+            'contract',
+            f'{self.contract.__name__} ({self._contract_sig})',
+            str(run_llm),
+            str(run_urls),
+            f'{total_elapsed:.1f}s',
+            'all concurrent URLs',
+        )
+        for url in results.get('successful', ()) + results.get('failed', ()):
+            status = 'ok' if url in successful else 'failed'
+            table.add_row('page', url, '—', '1', f'{elapsed_by_url.get(url, 0.0):.1f}s', status)
+        for domain, delta_llm, delta_urls, delta_elapsed, note in domain_rows:
+            table.add_row('domain', domain, str(delta_llm), str(delta_urls), f'{delta_elapsed:.1f}s', note)
+        self.console.print(table)
 
     async def scrape(
         self,
@@ -820,6 +883,12 @@ class Pipeline(
         if isinstance(sess_id, str):
             os.environ['YOSOI_SESSION_ID'] = sess_id
 
+        tracking_baseline: dict[str, Any] = {}
+        url_domains = {url: self._extract_domain(url if '://' in url else f'https://{url}') for url in urls}
+        if getattr(self, '_show_tracking_summary', False):
+            for domain in set(url_domains.values()):
+                tracking_baseline[domain] = await self.tracker.get_stats(domain)
+
         with observability.detached_span('enqueue', count=len(urls), workers=max_workers, origin=origin):
             await configure_broker(
                 self._llm_config,
@@ -854,6 +923,10 @@ class Pipeline(
             'skipped': enqueue_result.skipped,
         }
         self._print_summary(results, total_elapsed)
+        if getattr(self, '_show_tracking_summary', False):
+            await self._print_concurrent_tracking_summary(
+                results, enqueue_result.elapsed_by_url, url_domains, tracking_baseline
+            )
         self.logger.info(
             'Concurrent processing complete total=%d successful=%d failed=%d skipped=%d workers=%d',
             len(urls),

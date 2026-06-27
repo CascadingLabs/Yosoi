@@ -36,6 +36,7 @@ dependencies = [
   "opentelemetry-exporter-otlp-proto-http>=1.39.1",
   "opentelemetry-sdk>=1.39.1",
   "parsel>=1.11",
+  "peewee>=4.1",
   "pydantic>=2",
   "pydantic-ai-slim[google,groq,openai,openrouter]==2",
   "python-dotenv>=1.2.2",
@@ -211,6 +212,7 @@ ini_options.markers = [
 ]
 
 [tool.coverage]
+run.branch = true
 run.omit = [
   "yosoi/*/*/__init__.py",
   "yosoi/*/__init__.py",
@@ -316,8 +318,8 @@ tasks.ci-test = """\
   """  # unit + stub tests with coverage
 tasks.ci-format = "uv run ruff check --fix"
 tasks.coverage = """\
-  uv run pytest --cov=yosoi --cov=scripts.check_no_hardcoded_selectors --cov-report=term-missing --cov-report=html \
-  tests/\
+  uv run pytest --cov=yosoi --cov=scripts.check_no_hardcoded_selectors --cov-branch --cov-report=term-missing \
+  --cov-report=html tests/\
   """
 tasks.mutmut-run = "uv run mutmut run"
 tasks.mutmut-results = "uv run mutmut results"

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import difflib
 import json
 import os
 from typing import Any
@@ -56,7 +57,29 @@ class ContractParamType(click.ParamType):
     # ── internals ────────────────────────────────────────────────────────────
 
     def _resolve_name(self, name: str, param: click.Parameter | None, ctx: click.Context | None) -> type[Contract]:
+        from yosoi.storage.contracts_store import ContractStore
+
+        store = ContractStore()
+        try:
+            return store.get(name).to_contract()
+        except KeyError:
+            pass
+
         from yosoi.cli.args import SchemaParamType
+        from yosoi.models.contract import _CONTRACT_REGISTRY
+        from yosoi.models.defaults import BUILTIN_SCHEMAS
+
+        if name in BUILTIN_SCHEMAS or name in _CONTRACT_REGISTRY or ':' in name:
+            return SchemaParamType().convert(name, param, ctx)
+
+        aliases = [alias for alias, _fp in store.list_aliases()]
+        lower_to_alias = {alias.lower(): alias for alias in aliases}
+        suggestions = [
+            lower_to_alias[item]
+            for item in difflib.get_close_matches(name.lower(), list(lower_to_alias), n=3, cutoff=0.6)
+        ]
+        if suggestions:
+            self.fail(f'Unknown contract alias {name!r}. Did you mean: {", ".join(suggestions)}?', param, ctx)
 
         return SchemaParamType().convert(name, param, ctx)
 

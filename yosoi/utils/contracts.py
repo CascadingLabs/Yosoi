@@ -140,9 +140,8 @@ def resolve_contract(name: str | dict[str, Any] | ContractSpec) -> type[Contract
     Resolution order:
     1. ContractSpec / dict → rehydrate via ``ContractSpec.to_contract()``
     2. Exact match in BUILTIN_SCHEMAS
-    3. Case-insensitive match in BUILTIN_SCHEMAS
-    4. Exact / case-insensitive match in _CONTRACT_REGISTRY (custom schemas)
-    5. Dynamic import via ``path:ClassName``
+    3. Exact match in _CONTRACT_REGISTRY (custom schemas)
+    4. Dynamic import via ``path:ClassName``
 
     Args:
         name: Contract name, ``path:ClassName`` string, inline ContractSpec, or dict.
@@ -173,19 +172,11 @@ def resolve_contract(name: str | dict[str, Any] | ContractSpec) -> type[Contract
     if name in BUILTIN_SCHEMAS:
         return BUILTIN_SCHEMAS[name]
 
-    # 3. Case-insensitive match in builtins
-    lower_builtin = {k.lower(): k for k in BUILTIN_SCHEMAS}
-    if name.lower() in lower_builtin:
-        return BUILTIN_SCHEMAS[lower_builtin[name.lower()]]
-
-    # 4. Exact / case-insensitive match in registry
+    # 3. Exact match in registry
     if name in _CONTRACT_REGISTRY:
         return _CONTRACT_REGISTRY[name]
-    lower_registry = {k.lower(): k for k in _CONTRACT_REGISTRY}
-    if name.lower() in lower_registry:
-        return _CONTRACT_REGISTRY[lower_registry[name.lower()]]
 
-    # 5. Dynamic import (path:ClassName)
+    # 4. Dynamic import (path:ClassName)
     if ':' in name:
         return _load_contract_from_file(name)
 

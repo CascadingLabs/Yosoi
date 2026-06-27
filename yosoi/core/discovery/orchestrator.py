@@ -100,7 +100,7 @@ class DiscoveryOrchestrator:
         llm_config: LLMConfig,
         storage: SelectorStorage,
         console: Console | None = None,
-        target_level: SelectorLevel = SelectorLevel.CSS,
+        target_level: SelectorLevel = max(SelectorLevel),
         max_concurrent: int = 5,
         bus: DiscoveryBus | None = None,
         write_lock: asyncio.Lock | None = None,
@@ -112,7 +112,7 @@ class DiscoveryOrchestrator:
             llm_config: LLM provider and model configuration
             storage: Selector storage (used for cache reads and the final write)
             console: Optional Rich console for output
-            target_level: Maximum selector strategy level. Defaults to CSS.
+            target_level: Maximum selector strategy level. Defaults to all.
             max_concurrent: Maximum concurrent LLM calls. Defaults to 5.
             bus: Optional shared discovery bus for cross-pipeline field sharing.
             write_lock: Optional asyncio.Lock to serialize selector writes for the domain.
@@ -169,7 +169,7 @@ class DiscoveryOrchestrator:
             feedback: Optional per-field message describing why a previous
                 attempt's selector was semantically wrong. Forwarded to the LLM
                 prompt for those fields (semantic-validation retry).
-            force: Force re-discovery even if selectors exist. Defaults to False.
+            force: Force re-discovery even if cache exist. Defaults to False.
             ax_snapshot: Optional accessibility-tree snapshot; rendered via
                 :func:`format_ax_hint` into an AX hint added to the discovery
                 prompt to guide selector choice.

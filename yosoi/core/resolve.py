@@ -40,7 +40,7 @@ def resolve(
     cache: ContractCache,
     domain: str,
     *,
-    max_level: SelectorLevel = SelectorLevel.CSS,
+    max_level: SelectorLevel = max(SelectorLevel),
     url: str | None = None,
     atom_store: AtomStore | None = None,
     policy: Policy | None = None,
@@ -52,7 +52,7 @@ def resolve(
         html: Pre-fetched (and optionally pre-cleaned) HTML to extract from.
         cache: Content-addressed selector cache, keyed by ``(domain, fingerprint)``.
         domain: Domain name — first part of the cache key (e.g. ``'example.com'``).
-        max_level: Maximum selector strategy level. Defaults to CSS.
+        max_level: Maximum selector strategy level. Defaults to all.
         url: Source URL used for relative-URL resolution in coercions. Defaults to domain.
         atom_store: Optional field-atom index (P3). When ``policy.atom_reads`` is on, a
             legacy-cache miss is retried against this index before falling back to discovery.
@@ -135,7 +135,7 @@ def _extract_from_html(
     selectors: SelectorMap,
     domain: str,
     *,
-    max_level: SelectorLevel = SelectorLevel.CSS,
+    max_level: SelectorLevel = max(SelectorLevel),
     url: str | None = None,
 ) -> list[dict[str, Any]]:
     """Extract and validate records from HTML using cached selectors.

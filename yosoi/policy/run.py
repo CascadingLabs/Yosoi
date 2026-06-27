@@ -246,7 +246,7 @@ class ScrapePolicy(BaseModel):
     force: bool = False
     skip_verification: bool = False
     fetcher_type: FetcherPolicyName = 'auto'
-    selector_level: SelectorLevel = SelectorLevel.CSS
+    selector_level: SelectorLevel = max(SelectorLevel)
     max_concurrency: StrictInt | None = Field(default=None, gt=0)
     # Cross-origin DOM manipulation (VoidCrawl >= 0.3.5): launches browser fetchers with
     # Chrome's site-isolation field trials disabled so `evaluate_js_in_frame` can reach

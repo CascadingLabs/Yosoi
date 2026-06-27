@@ -54,15 +54,15 @@ class TestSchemaParamType:
         result = param_type.convert('NewsArticle', None, None)
         assert result is NewsArticle
 
-    def test_case_insensitive_match(self):
+    def test_case_insensitive_match_suggests_without_resolving(self):
         param_type = SchemaParamType()
-        result = param_type.convert('product', None, None)
-        assert result is Product
+        with pytest.raises(click.exceptions.BadParameter, match='Did you mean'):
+            param_type.convert('product', None, None)
 
-    def test_fuzzy_match(self):
+    def test_near_match_suggests_without_resolving(self):
         param_type = SchemaParamType()
-        result = param_type.convert('Produc', None, None)
-        assert result is Product
+        with pytest.raises(click.exceptions.BadParameter, match='Did you mean'):
+            param_type.convert('Produc', None, None)
 
     def test_unknown_schema_fails(self):
         param_type = SchemaParamType()
@@ -97,6 +97,14 @@ class TestModelFlag:
         result = runner.invoke(main, ['-m', 'groq:llama-3.3-70b-versatile', '-u', 'https://example.com'])
         assert result.exit_code == 0, result.output
         mock_pipe.process_urls.assert_called_once()
+
+    def test_repeated_url_flags_process_all_urls(self, runner, mock_pipeline, monkeypatch):
+        monkeypatch.setenv('GROQ_KEY', 'test-key')
+        mock_pipe, _ = mock_pipeline
+        result = runner.invoke(main, ['-u', 'https://a.example', '-u', 'https://b.example'])
+        assert result.exit_code == 0, result.output
+        assert mock_pipe.process_urls.call_args[0][0] == ['https://a.example', 'https://b.example']
+        assert mock_pipe.process_urls.call_args.kwargs['workers'] == 2
 
     def test_model_flag_invalid_format(self, runner, mock_pipeline, monkeypatch):
         monkeypatch.setenv('GROQ_KEY', 'test-key')

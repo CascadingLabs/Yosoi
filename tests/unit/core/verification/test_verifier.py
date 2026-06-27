@@ -443,6 +443,46 @@ def test_test_selector_jsonld_returns_unsupported(verifier, simple_html):
     assert reason == 'unsupported_strategy'
 
 
+def test_test_selector_attr_dispatches_to_attribute(verifier):
+    from yosoi.models.selectors import SelectorEntry
+
+    sel = Selector(text='<time datetime="2026-06-26"></time>')
+    entry = SelectorEntry(type='attr', value='time', name='datetime')
+    success, reason = verifier._test_selector(sel, entry)
+    assert success is True
+    assert reason == 'found'
+
+
+def test_test_selector_role_matches_name_not_just_tag(verifier):
+    from yosoi.models.selectors import SelectorEntry
+
+    sel = Selector(text='<button>Cancel</button><button aria-label="Submit order"></button>')
+    entry = SelectorEntry(type='role', value='button', name='Submit')
+    success, reason = verifier._test_selector(sel, entry)
+    assert success is True
+    assert reason == 'found'
+
+
+def test_test_selector_role_wrong_name_fails(verifier):
+    from yosoi.models.selectors import SelectorEntry
+
+    sel = Selector(text='<button>Cancel</button>')
+    entry = SelectorEntry(type='role', value='button', name='Submit')
+    success, reason = verifier._test_selector(sel, entry)
+    assert success is False
+    assert reason == 'no_elements_found'
+
+
+def test_test_selector_visual_returns_unsupported(verifier, simple_html):
+    from yosoi.models.selectors import SelectorEntry
+
+    sel = Selector(text=simple_html)
+    entry = SelectorEntry(type='visual', x=10, y=20)
+    success, reason = verifier._test_selector(sel, entry)
+    assert success is False
+    assert reason == 'unsupported_strategy'
+
+
 def test_verify_field_skips_regex_entry(verifier, simple_html):
     from yosoi.models.selectors import FieldSelectors, SelectorEntry, SelectorLevel
 

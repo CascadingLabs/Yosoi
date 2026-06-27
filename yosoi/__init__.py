@@ -30,6 +30,17 @@ _LAZY: dict[str, str] = {
     'scrape': 'yosoi.api',
     'scrape_many': 'yosoi.api',
     'scrape_sync': 'yosoi.api',
+    # operation contracts
+    'ContractRef': 'yosoi.operations',
+    'CrawlRequest': 'yosoi.operations',
+    'CrawlResult': 'yosoi.operations',
+    'ScrapeRequest': 'yosoi.operations',
+    'ScrapeResult': 'yosoi.operations',
+    'ScrapeUnitResult': 'yosoi.operations',
+    'execute_crawl': 'yosoi.operations',
+    'execute_scrape': 'yosoi.operations',
+    'run_crawl': 'yosoi.operations',
+    'run_scrape': 'yosoi.operations',
     # display
     'show': 'yosoi.reporting',
     # policy-first model/provider helpers

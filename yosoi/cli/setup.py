@@ -69,9 +69,10 @@ def build_policy(
         spec = policy.resolve_run_spec()
     except (KeyError, ValueError, ValidationError) as e:
         raise click.ClickException(str(e)) from e
-    console.print(
-        f'[bold]Using[/bold] [green]{spec.llm_config.provider}[/green] / [cyan]{spec.llm_config.model_name}[/cyan]'
-    )
+    if not quiet and not json_output:
+        console.print(
+            f'[bold]Using[/bold] [green]{spec.llm_config.provider}[/green] / [cyan]{spec.llm_config.model_name}[/cyan]'
+        )
     return policy
 
 

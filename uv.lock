@@ -3112,6 +3112,15 @@ wheels = [
 ]
 
 [[package]]
+name = "peewee"
+version = "4.1.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/8e/57/19440fc02ffd66c0c1a92da1f3a28e17bd4fa1099f8152fd08f1bbe43991/peewee-4.1.0.tar.gz", hash = "sha256:58090f75c58a5e9e9e43b6265c5a17a46ae1797c51b7554d24577dcff11e8515", size = 752243, upload-time = "2026-06-16T14:40:05.264Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cd/dd/fbc5bbaf69eea289182e03d3120b301b19559ccc887053105001a2ace155/peewee-4.1.0-py3-none-any.whl", hash = "sha256:222aec3df487045dd5deaff08fd8984f956af538df7e13cc2e63815968e25ac7", size = 155074, upload-time = "2026-06-16T14:40:04.06Z" },
+]
+
+[[package]]
 name = "pip-licenses"
 version = "5.5.5"
 source = { registry = "https://pypi.org/simple" }
@@ -5476,6 +5485,7 @@ dependencies = [
     { name = "opentelemetry-exporter-otlp-proto-http" },
     { name = "opentelemetry-sdk" },
     { name = "parsel" },
+    { name = "peewee" },
     { name = "pydantic" },
     { name = "pydantic-ai-slim", extra = ["google", "groq", "openai", "openrouter"] },
     { name = "python-dotenv" },
@@ -5566,7 +5576,7 @@ requires-dist = [
     { name = "dateparser", specifier = ">=1.4" },
     { name = "fastmcp", specifier = ">=3.3.1" },
     { name = "geopy", specifier = ">=2.4.1" },
-    { name = "httpx2", specifier = ">=2.3.0" },
+    { name = "httpx2", specifier = ">=2.3" },
     { name = "langfuse", specifier = ">=4.5.1" },
     { name = "lxml", specifier = ">=6.0.2" },
     { name = "openpyxl", marker = "extra == 'tabular'", specifier = ">=3.1" },
@@ -5574,6 +5584,7 @@ requires-dist = [
     { name = "opentelemetry-sdk", specifier = ">=1.39.1" },
     { name = "pandas", marker = "extra == 'tabular'", specifier = ">=2" },
     { name = "parsel", specifier = ">=1.11" },
+    { name = "peewee", specifier = ">=4.1.0" },
     { name = "pyarrow", marker = "extra == 'tabular'", specifier = ">=14" },
     { name = "pydantic", specifier = ">=2" },
     { name = "pydantic-ai-slim", extras = ["anthropic"], marker = "extra == 'anthropic'", specifier = "==2" },

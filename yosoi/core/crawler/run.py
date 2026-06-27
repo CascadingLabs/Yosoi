@@ -16,7 +16,7 @@ from yosoi.policy import CrawlPolicy, CrawlTarget, Policy
 from yosoi.reporting import RichCrawlProgress
 
 
-async def crawl(
+async def _crawl_impl(
     seeds: str | Sequence[str],
     *,
     contracts: Sequence[object] | object | None = None,
@@ -88,6 +88,44 @@ async def crawl(
             limit=crawl.scrape_url_limit_per_contract,
         )
     return summary
+
+
+async def crawl(
+    seeds: str | Sequence[str],
+    *,
+    contracts: Sequence[object] | object | None = None,
+    limit: int | None = None,
+    policy: Policy | None = None,
+    fetcher_type: str | None = None,
+    persist: bool = False,
+    progress: bool | None = None,
+    console: Any | None = None,
+) -> CrawlRunSummary:
+    """Crawl from seeds via the canonical :class:`yosoi.operations.CrawlRequest`."""
+    from yosoi.operations import CrawlRequest, execute_crawl
+
+    request = CrawlRequest.from_axes(
+        seeds,
+        contracts,
+        limit=limit,
+        policy=policy,
+        fetcher_type=fetcher_type,
+        persist=persist,
+        progress=progress,
+    )
+    # ``console`` is human-rendering state, not part of the JSON request contract.
+    if console is not None:
+        return await _crawl_impl(
+            seeds,
+            contracts=contracts,
+            limit=limit,
+            policy=policy,
+            fetcher_type=fetcher_type,
+            persist=persist,
+            progress=progress,
+            console=console,
+        )
+    return await execute_crawl(request)
 
 
 def _resolve_scrape_contracts(

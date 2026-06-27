@@ -17,6 +17,21 @@ class ApiContract2(Contract):
     url: str = ys.Url()
 
 
+def _by_contract(result):
+    return {unit.contract: unit.records for unit in result.results}
+
+
+def _by_url(result):
+    return {unit.url: unit.records for unit in result.results}
+
+
+def _grid(result):
+    out = {}
+    for unit in result.results:
+        out.setdefault(unit.url, {})[unit.contract] = unit.records
+    return out
+
+
 async def test_scrape_accepts_a_list_of_contracts(monkeypatch):
     """scrape() with a LIST runs each contract concurrently and returns a name-keyed dict."""
     FakePipeline.instances.clear()
@@ -24,7 +39,7 @@ async def test_scrape_accepts_a_list_of_contracts(monkeypatch):
 
     result = await api.scrape('https://example.com', [ApiContract, ApiContract2], model=ys.claude_sdk())
 
-    assert result == {
+    assert _by_contract(result) == {
         'ApiContract': [{'title': 'Example'}],
         'ApiContract2': [{'title': 'Example'}],
     }
@@ -44,7 +59,7 @@ async def test_scrape_accepts_a_list_of_urls(monkeypatch):
 
     result = await api.scrape(['https://a.example', 'https://b.example'], ApiContract, model=ys.claude_sdk())
 
-    assert result == {
+    assert _by_url(result) == {
         'https://a.example': [{'title': 'Example'}],
         'https://b.example': [{'title': 'Example'}],
     }
@@ -67,7 +82,7 @@ async def test_scrape_threads_opt_in_identity_per_url(monkeypatch):
         identities={'https://google.test': g},
     )
 
-    assert set(result) == {'https://google.test', 'https://bing.test'}
+    assert {unit.url for unit in result.results} == {'https://google.test', 'https://bing.test'}
     by_url = {i.scrape_kwargs['url']: i for i in FakePipeline.instances}  # type: ignore[index]
     assert by_url['https://google.test'].kwargs['identity'] is g  # google gets the trusted profile
     assert by_url['https://bing.test'].kwargs['identity'] is None  # bing opted out -> plain
@@ -89,7 +104,7 @@ async def test_scrape_per_url_fetcher_type(monkeypatch):
     assert by_url['https://bing.test'].scrape_kwargs['fetcher_type'] == 'headless'
 
 
-async def test_scrape_policy_fetcher_not_overwritten_by_default_legacy_fetcher(monkeypatch):
+async def test_scrape_policy_fetcher_not_overwritten_by_default_fetcher(monkeypatch):
     """Default fetcher_type='auto' must not clobber explicit Policy scrape fetcher."""
     FakePipeline.instances.clear()
     monkeypatch.setattr(api, 'Pipeline', FakePipeline)
@@ -179,8 +194,9 @@ async def test_scrape_grid_urls_x_contracts(monkeypatch):
         ['https://a.example', 'https://b.example'], [ApiContract, ApiContract2], model=ys.claude_sdk()
     )
 
-    assert set(result) == {'https://a.example', 'https://b.example'}
-    assert set(result['https://a.example']) == {'ApiContract', 'ApiContract2'}
+    grid = _grid(result)
+    assert set(grid) == {'https://a.example', 'https://b.example'}
+    assert set(grid['https://a.example']) == {'ApiContract', 'ApiContract2'}
     assert len(FakePipeline.instances) == 4  # 2 urls x 2 contracts
 
 
@@ -205,14 +221,14 @@ class FakePipeline:
         yield {'title': 'Example'}
 
 
-async def test_scrape_returns_native_items_without_default_file_output(monkeypatch):
-    """scrape() collects pipeline output and disables file output by default."""
+async def test_scrape_returns_result_envelope_without_default_file_output(monkeypatch):
+    """scrape() returns the canonical envelope and disables file output by default."""
     FakePipeline.instances.clear()
     monkeypatch.setattr(api, 'Pipeline', FakePipeline)
 
     result = await api.scrape('https://example.com', ApiContract, model=ys.opencode())
 
-    assert result == [{'title': 'Example'}]
+    assert result.results[0].records == [{'title': 'Example'}]
     instance = FakePipeline.instances[0]
     assert instance.kwargs['contract'] is ApiContract
     assert instance.kwargs['output_format'] == []
@@ -228,7 +244,7 @@ async def test_scrape_resolves_contract_name(monkeypatch):
 
     result = await api.scrape('https://example.com', 'ApiContract', model=ys.claude_sdk())
 
-    assert result == [{'title': 'Example'}]
+    assert result.results[0].records == [{'title': 'Example'}]
     assert FakePipeline.instances[0].kwargs['contract'] is ApiContract
 
 
@@ -255,16 +271,17 @@ async def test_scrape_propagates_exception_and_logs_warning(monkeypatch):
         await api.scrape('https://example.com', ApiContract, model=ys.opencode())
 
 
-async def test_scrape_many_returns_dict_keyed_by_url(monkeypatch):
-    """scrape_many() returns {url: items} for each URL (lines 83-106)."""
+async def test_scrape_many_returns_result_envelope(monkeypatch):
+    """scrape_many() returns the canonical envelope."""
     FakePipeline.instances.clear()
     monkeypatch.setattr(api, 'Pipeline', FakePipeline)
 
     result = await api.scrape_many(['https://a.com', 'https://b.com'], ApiContract, model=ys.opencode())
 
-    assert set(result.keys()) == {'https://a.com', 'https://b.com'}
-    assert result['https://a.com'] == [{'title': 'Example'}]
-    assert result['https://b.com'] == [{'title': 'Example'}]
+    assert _by_url(result) == {
+        'https://a.com': [{'title': 'Example'}],
+        'https://b.com': [{'title': 'Example'}],
+    }
 
 
 async def test_scrape_many_propagates_url_exception(monkeypatch):
@@ -297,7 +314,7 @@ def test_scrape_sync_without_event_loop(monkeypatch):
 
     result = api.scrape_sync('https://example.com', ApiContract, model=ys.opencode())
 
-    assert result == [{'title': 'Example'}]
+    assert result.results[0].records == [{'title': 'Example'}]
 
 
 async def test_scrape_sync_raises_inside_event_loop(monkeypatch):
@@ -375,7 +392,7 @@ def _compat_layer(model=None, **overrides):
         'force': False,
         'skip_verification': False,
         'fetcher_type': 'auto',
-        'selector_level': SelectorLevel.CSS,
+        'selector_level': max(SelectorLevel),
         'save_formats': (),
         'quiet': True,
         'allow_downloads': False,

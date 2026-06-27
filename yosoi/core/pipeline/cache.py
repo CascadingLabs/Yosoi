@@ -303,7 +303,9 @@ class PipelineCacheMixin:
             stats = await self.tracker.record_url(
                 url, used_llm=True, level_distribution=None, elapsed=elapsed, partial_discovery=True
             )
-            self._print_tracking_stats(domain, stats)  # type: ignore[attr-defined]
+            self._print_tracking_stats(  # type: ignore[attr-defined]
+                url, domain, stats, used_llm=True, elapsed=elapsed, partial_discovery=True
+            )
             self.console.print(f'[dim]  ⏱ {self.last_elapsed:.1f}s elapsed[/dim]')
             observability.set_trace_output(
                 root_span,
@@ -431,4 +433,4 @@ class PipelineCacheMixin:
         """Track successful use of cached selectors."""
         elapsed = time.monotonic() - self._url_start
         stats = await self.tracker.record_url(url, used_llm=False, level_distribution=None, elapsed=elapsed)
-        self._print_tracking_stats(domain, stats)  # type: ignore[attr-defined]
+        self._print_tracking_stats(url, domain, stats, used_llm=False, elapsed=elapsed)  # type: ignore[attr-defined]

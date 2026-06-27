@@ -282,19 +282,56 @@ class PipelineUtilsMixin:
         stats = await self.tracker.record_url(
             url, used_llm=used_llm, level_distribution=level_dist or None, elapsed=elapsed
         )
-        self._print_tracking_stats(domain, stats)
+        self._print_tracking_stats(url, domain, stats, used_llm=used_llm, elapsed=elapsed)
 
-    def _print_tracking_stats(self, domain: str, stats: DomainStats) -> None:
-        """Print LLM tracking statistics for domain."""
-        self.console.print(f'\n[dim]  - Tracking Stats for {domain}:[/dim]')
-        self.console.print(f'[dim]    -- LLM Calls: {stats.llm_calls}[/dim]')
-        self.console.print(f'[dim]    -- URLs Processed: {stats.url_count}[/dim]')
-        if stats.total_elapsed:
-            self.console.print(f'[dim]    -- Total Elapsed: {stats.total_elapsed:.1f}s[/dim]')
-        if stats.llm_calls > 0:
-            efficiency = stats.url_count / stats.llm_calls
-            self.console.print(f'[dim]     • Efficiency: {efficiency:.1f} URLs per LLM call[/dim]')
-        self.console.print()
+    def _print_tracking_stats(
+        self,
+        url: str,
+        domain: str | DomainStats,
+        stats: DomainStats | None = None,
+        *,
+        used_llm: bool = False,
+        elapsed: float | None = None,
+        partial_discovery: bool = False,
+    ) -> None:
+        """Print per-run/per-page/per-contract and cumulative tracking when requested."""
+        force_show = stats is None
+        if stats is None:
+            stats = domain  # type: ignore[assignment]
+            domain = url
+            url = '—'
+        if not (force_show or getattr(self, '_show_tracking_summary', False)):
+            return
+        if force_show:
+            self.console.print(f'Historical LLM calls: {stats.llm_calls}')
+            self.console.print(f'Historical URLs processed: {stats.url_count}')
+            if stats.total_elapsed:
+                self.console.print(f'Historical elapsed: {stats.total_elapsed:.1f}s')
+            if stats.llm_calls:
+                self.console.print(f'Historical efficiency: {stats.url_count / stats.llm_calls:.1f} URLs per LLM call')
+            return
+
+        domain_name = str(domain)
+        contract_name = self.contract.__name__
+        table = Table(title=f'Tracking summary — {domain_name}', show_header=True, header_style='bold cyan')
+        table.add_column('Scope')
+        table.add_column('URL / Domain / Contract')
+        table.add_column('LLM calls')
+        table.add_column('URLs')
+        table.add_column('Elapsed')
+        table.add_column('Notes')
+
+        run_elapsed = f'{elapsed:.1f}s' if elapsed is not None else '—'
+        run_llm = '1' if used_llm else '0'
+        run_note = 'partial rediscovery' if partial_discovery else ('discovery' if used_llm else 'cache replay')
+        table.add_row('run', 'this invocation', run_llm, '1', run_elapsed, run_note)
+        table.add_row('page', url, run_llm, '1', run_elapsed, run_note)
+        table.add_row('contract', f'{contract_name} ({self._contract_sig})', run_llm, '1', run_elapsed, run_note)
+
+        historical_elapsed = f'{stats.total_elapsed:.1f}s' if stats.total_elapsed else '—'
+        efficiency = f'{stats.url_count / stats.llm_calls:.1f} URLs/LLM' if stats.llm_calls else 'no historical LLM'
+        table.add_row('domain', domain_name, str(stats.llm_calls), str(stats.url_count), historical_elapsed, efficiency)
+        self.console.print(table)
 
     def _print_summary(self, results: dict[str, list[str]], total_elapsed: float) -> None:
         """Print a standardised summary of processing results."""

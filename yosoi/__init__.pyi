@@ -26,6 +26,12 @@ from yosoi.models.snapshot import CacheVerdict as CacheVerdict
 from yosoi.models.snapshot import SelectorSnapshot as SelectorSnapshot
 from yosoi.models.snapshot import SnapshotMap as SnapshotMap
 from yosoi.models.snapshot import SnapshotStatus as SnapshotStatus
+from yosoi.operations import ContractRef as ContractRef
+from yosoi.operations import CrawlRequest as CrawlRequest
+from yosoi.operations import CrawlResult as CrawlResult
+from yosoi.operations import ScrapeRequest as ScrapeRequest
+from yosoi.operations import ScrapeResult as ScrapeResult
+from yosoi.operations import ScrapeUnitResult as ScrapeUnitResult
 from yosoi.policy import CrawlBudget as _CrawlBudget
 from yosoi.policy import CrawlPolicy as _CrawlPolicy
 from yosoi.policy import CrawlRuntimeConfig as _CrawlRuntimeConfig
@@ -560,24 +566,28 @@ async def crawl(
     progress: bool | None = ...,
     console: Any | None = ...,
 ) -> CrawlRunSummary: ...
+async def execute_crawl(request: CrawlRequest) -> CrawlRunSummary: ...
+async def execute_scrape(request: ScrapeRequest) -> Any: ...
+async def run_crawl(request: CrawlRequest) -> CrawlResult: ...
+async def run_scrape(request: ScrapeRequest) -> ScrapeResult: ...
 async def scrape(
     url: str | Sequence[str],
     contract: type[Contract] | str | Sequence[type[Contract] | str],
     model: _YosoiConfig | _LLMConfig | ModelPolicy | str | None = ...,
     **kwargs: Any,
-) -> list[dict[str, Any]] | dict[str, list[dict[str, Any]]] | dict[str, dict[str, list[dict[str, Any]]]]: ...
+) -> ScrapeResult: ...
 async def scrape_many(
     urls: list[str] | tuple[str, ...],
     contract: type[Contract] | str,
     model: _YosoiConfig | _LLMConfig | ModelPolicy | str | None = ...,
     **kwargs: Any,
-) -> dict[str, list[dict[str, Any]]]: ...
+) -> ScrapeResult: ...
 def scrape_sync(
     url: str,
     contract: type[Contract] | str,
     model: _YosoiConfig | _LLMConfig | ModelPolicy | str | None = ...,
     **kwargs: Any,
-) -> list[dict[str, Any]]: ...
+) -> ScrapeResult: ...
 def show(
     value: Any,
     *,

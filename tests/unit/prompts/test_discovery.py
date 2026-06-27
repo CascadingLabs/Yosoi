@@ -271,7 +271,7 @@ class TestFieldSinglePageHints:
 class TestFieldDiscoveryDeps:
     def test_default_target_level(self, discovery_input):
         deps = FieldDiscoveryDeps(field_name='title', field_description='Title', input=discovery_input)
-        assert deps.target_level == SelectorLevel.CSS
+        assert deps.target_level == max(SelectorLevel)
         assert deps.is_container is False
 
     def test_custom_values(self, discovery_input):

@@ -63,6 +63,30 @@ async def _invoke_agent(
     return await agent.discover_field(field_name, field_description, discovery_input, level, is_container, feedback)
 
 
+def _selector_strategy_order(max_level: SelectorLevel, discovery_input: DiscoveryInput) -> list[SelectorLevel]:
+    """Rank selector ceilings for discovery attempts.
+
+    Static HTML keeps the historical simple-to-complex order. Browser-rendered
+    L2+ captures include an AX hint, where role/name anchors are usually more
+    stable than class soup, so try the all-strategy/AX ceiling first.
+    """
+    levels = [level for level in SelectorLevel if level <= max_level]
+    if not discovery_input.ax_hint:
+        return levels
+
+    ranked = [
+        SelectorLevel.ROLE,
+        SelectorLevel.CSS,
+        SelectorLevel.ATTR,
+        SelectorLevel.GLOBAL_ID,
+        SelectorLevel.XPATH,
+        SelectorLevel.JSONLD,
+        SelectorLevel.REGEX,
+        SelectorLevel.VISUAL,
+    ]
+    return [level for level in ranked if level in levels]
+
+
 async def _discover_field(
     field_name: str,
     field_description: str,
@@ -116,10 +140,7 @@ async def _discover_field(
             logger.debug('Cached selector for %s is invalid, re-discovering', field_name)
 
     # --- 2. Per-level escalation loop ---
-    for level in SelectorLevel:
-        if level > max_level:
-            break
-
+    for level in _selector_strategy_order(max_level, discovery_input):
         discovered: FieldSelectors | None = None
 
         try:
@@ -157,11 +178,13 @@ async def _discover_field(
         # --- Inline verify ---
         verify_result = verifier._verify_field(parsel_sel, field_name, discovered, max_level)
         if verify_result.status == 'verified':
-            escalated = level if level > SelectorLevel.CSS else None
+            winning_level = discovered.max_level
+            escalated = winning_level if winning_level > SelectorLevel.CSS else None
             logger.info(
-                'Field discovered field=%s level=%s escalated=%s',
+                'Field discovered field=%s level=%s selector_level=%s escalated=%s',
                 field_name,
                 level.name,
+                winning_level.name,
                 escalated is not None,
             )
             return FieldTaskResult(

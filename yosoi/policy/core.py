@@ -129,11 +129,14 @@ class Policy(BaseModel):
                 scrape_payload['fetcher_type'] = src['YOSOI_FETCHER_TYPE'].strip().lower()
             if 'YOSOI_SELECTOR_LEVEL' in src:
                 level = src['YOSOI_SELECTOR_LEVEL'].strip().lower()
-                try:
-                    scrape_payload['selector_level'] = SelectorLevel[level.upper()]
-                except KeyError as exc:
-                    valid = ', '.join(sorted(member.name.lower() for member in SelectorLevel))
-                    raise ValueError(f'Invalid YOSOI_SELECTOR_LEVEL {level!r}; choose one of: {valid}') from exc
+                if level == 'all':
+                    scrape_payload['selector_level'] = max(SelectorLevel)
+                else:
+                    try:
+                        scrape_payload['selector_level'] = SelectorLevel[level.upper()]
+                    except KeyError as exc:
+                        valid = ', '.join(sorted([*(member.name.lower() for member in SelectorLevel), 'all']))
+                        raise ValueError(f'Invalid YOSOI_SELECTOR_LEVEL {level!r}; choose one of: {valid}') from exc
             kwargs['scrape'] = ScrapePolicy.model_validate(scrape_payload)
         if 'YOSOI_DISCOVERY_MODE' in src:
             kwargs['discovery'] = DiscoveryPolicy.model_validate({'mode': src['YOSOI_DISCOVERY_MODE'].strip().lower()})
