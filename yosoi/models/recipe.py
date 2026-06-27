@@ -5,6 +5,8 @@ everything needed to scrape a known web surface with zero LLM calls:
 
 - The contract definition (field names, yosoi types, root selector)
 - The verified selector snapshots, keyed by domain
+- (v2) The page fingerprint each domain's selectors were minted against, used to
+  validate that a live page still matches before trusting the selectors.
 
 Usage::
 
@@ -18,22 +20,24 @@ Usage::
 File format::
 
     {
-        "schema_version": "yosoi.recipe.v1",
+        "schema_version": "yosoi.recipe.v2",
         "recipe_id": "<sha256 of canonical content>",
         "created_at": "2026-06-03T00:00:00Z",
         "contract": { ...ContractSpec... },
         "selectors": {
             "example.com": { ...SnapshotMap... }
+        },
+        "fingerprints": {
+            "example.com": { ...PageFingerprint... }
         }
     }
 
-The ``recipe_id`` is a sha256 of the canonical JSON (keys sorted, no
-whitespace) of the ``contract`` + ``selectors`` fields. It is verified on
-load so a truncated download or accidental edit is caught immediately.
-
-Future: the ``selectors`` dict key will become a structured
-``(domain, contract_sig, page_shape)`` triple once the page fingerprint is
-threaded through the storage layer. For now it is a bare domain string.
+The ``recipe_id`` is a sha256 of the deep-canonical JSON (keys sorted AND nested
+lists sorted, no whitespace) of the ``contract`` + ``selectors`` (+ ``fingerprints``
+when present) fields. It is verified on load so a truncated download or accidental
+edit is caught immediately. The deep-canonical form matters because PageFingerprint's
+frozenset fields dump as JSON lists in arbitrary order — a plain sort_keys would let
+the same fingerprint hash two different ways.
 """
 
 from __future__ import annotations
@@ -45,11 +49,31 @@ from typing import Any
 
 from pydantic import AwareDatetime, BaseModel, Field, model_validator
 
+from yosoi.generalization.fingerprint import PageFingerprint
 from yosoi.models.snapshot import SnapshotMap
 from yosoi.models.spec import ContractSpec
 
-RECIPE_SCHEMA_VERSION = 'yosoi.recipe.v1'
-SUPPORTED_SCHEMA_VERSIONS = frozenset({'yosoi.recipe.v1'})
+RECIPE_SCHEMA_VERSION = 'yosoi.recipe.v2'
+SUPPORTED_SCHEMA_VERSIONS = frozenset({'yosoi.recipe.v1', 'yosoi.recipe.v2'})
+
+
+def _deep_canonical(obj: Any) -> Any:
+    """Recursively sort lists and dict keys so a frozenset->list dump hashes stably.
+
+    pydantic dumps frozenset as a list in arbitrary order. json.dumps(sort_keys=True)
+    sorts dict keys but NOT list elements, so two identical fingerprints can produce
+    different canonical strings -> different recipe_id -> spurious integrity failure.
+    Sorting nested lists makes the hash a function of CONTENT, not insertion order.
+    """
+    if isinstance(obj, dict):
+        return {k: _deep_canonical(obj[k]) for k in sorted(obj)}
+    if isinstance(obj, list):
+        normed = [_deep_canonical(x) for x in obj]
+        try:
+            return sorted(normed, key=lambda x: json.dumps(x, sort_keys=True, separators=(',', ':')))
+        except TypeError:
+            return normed
+    return obj
 
 
 class RecipeBundle(BaseModel):
@@ -63,8 +87,10 @@ class RecipeBundle(BaseModel):
         contract: The serialised contract definition.
         selectors: Per-domain verified selector snapshots.
             Key is the bare domain string (e.g. ``'example.com'``).
-            Future: will become a ``(domain, contract_sig, page_shape)``
-            structured key once page fingerprinting is threaded through.
+        fingerprints: Per-domain page fingerprint captured at mint time, same keys
+            as ``selectors``. Empty for v1 recipes and for any domain not
+            fingerprinted at mint time — such domains skip fingerprint validation
+            at replay (graceful degradation to pre-fingerprint behavior).
     """
 
     schema_version: str = RECIPE_SCHEMA_VERSION
@@ -73,6 +99,7 @@ class RecipeBundle(BaseModel):
     created_by: str = 'yosoi'
     contract: ContractSpec
     selectors: dict[str, SnapshotMap] = Field(default_factory=dict)
+    fingerprints: dict[str, PageFingerprint] = Field(default_factory=dict)
 
     @model_validator(mode='after')
     def _ensure_recipe_id(self) -> RecipeBundle:
@@ -91,6 +118,7 @@ class RecipeBundle(BaseModel):
         contract: type,  # type[Contract] — avoid circular import
         snapshots: dict[str, SnapshotMap],
         *,
+        fingerprints: dict[str, PageFingerprint] | None = None,
         created_by: str = 'yosoi',
     ) -> RecipeBundle:
         """Build a RecipeBundle from a live Contract class and snapshot maps.
@@ -98,6 +126,9 @@ class RecipeBundle(BaseModel):
         Args:
             contract: The Contract subclass used for discovery.
             snapshots: Mapping of domain → SnapshotMap from the selector store.
+            fingerprints: Optional mapping of domain → PageFingerprint captured at
+                mint time. When omitted, the recipe carries no fingerprints and
+                replay skips shape validation (pre-v2 behavior).
             created_by: Optional provenance string.
 
         Returns:
@@ -107,6 +138,7 @@ class RecipeBundle(BaseModel):
         return cls(
             contract=spec,
             selectors=snapshots,
+            fingerprints=fingerprints or {},
             created_by=created_by,
         )
 
@@ -115,12 +147,17 @@ class RecipeBundle(BaseModel):
     # ------------------------------------------------------------------
 
     def _compute_id(self) -> str:
-        """sha256 of canonical JSON of contract + selectors."""
+        """sha256 of deep-canonical JSON of contract + selectors (+ fingerprints if any)."""
+        content: dict[str, Any] = {
+            'contract': self.contract.model_dump(mode='json'),
+            'selectors': {domain: snap_map.model_dump(mode='json') for domain, snap_map in self.selectors.items()},
+        }
+        # Only include fingerprints in the hash when present, so v1 recipe_ids are
+        # byte-for-byte unchanged after this upgrade (no mass re-mint needed).
+        if self.fingerprints:
+            content['fingerprints'] = {d: fp.model_dump(mode='json') for d, fp in self.fingerprints.items()}
         payload = json.dumps(
-            {
-                'contract': self.contract.model_dump(mode='json'),
-                'selectors': {domain: snap_map.model_dump(mode='json') for domain, snap_map in self.selectors.items()},
-            },
+            _deep_canonical(content),
             sort_keys=True,
             separators=(',', ':'),
             ensure_ascii=False,
@@ -192,7 +229,7 @@ class RecipeBundle(BaseModel):
         return [f'Contract field {f!r} has no active selector in any bundled domain.' for f in sorted(missing)]
 
     # ------------------------------------------------------------------
-    # Selector lookup
+    # Selector / fingerprint lookup
     # ------------------------------------------------------------------
 
     def snapshots_for_domain(self, domain: str) -> SnapshotMap | None:
@@ -213,6 +250,23 @@ class RecipeBundle(BaseModel):
         parts = domain.split('.', 1)
         if len(parts) == 2:
             return self.selectors.get(parts[1])
+        return None
+
+    def fingerprint_for_domain(self, domain: str) -> PageFingerprint | None:
+        """Return the minted PageFingerprint for a domain, or None if absent.
+
+        Uses the same one-label subdomain fallback as ``snapshots_for_domain``
+        (www.example.com -> example.com).
+
+        None when this recipe carries no fingerprint for the domain (a v1 recipe, or
+        a domain that wasn't fingerprinted) — replay treats None as "skip fingerprint
+        validation for this domain", preserving pre-v2 behavior.
+        """
+        if domain in self.fingerprints:
+            return self.fingerprints[domain]
+        parts = domain.split('.', 1)
+        if len(parts) == 2:
+            return self.fingerprints.get(parts[1])
         return None
 
     # ------------------------------------------------------------------
@@ -273,4 +327,5 @@ class RecipeBundle(BaseModel):
             'contract': self.contract.name,
             'fields': list(self.contract.fields.keys()),
             'domains': list(self.selectors.keys()),
+            'fingerprinted_domains': list(self.fingerprints.keys()),
         }
