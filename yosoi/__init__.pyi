@@ -10,6 +10,11 @@ from yosoi.core.discovery.config import LLMBuilder as LLMBuilder
 from yosoi.core.page import PageAcquisition as PageAcquisition
 from yosoi.core.page import PageSnapshot as PageSnapshot
 from yosoi.core.pipeline import Pipeline as Pipeline
+from yosoi.core.site_map import MapHost as MapHost
+from yosoi.core.site_map import MapRequest as MapRequest
+from yosoi.core.site_map import MapResult as MapResult
+from yosoi.core.site_map import MapSitemap as MapSitemap
+from yosoi.core.site_map import MapUrl as MapUrl
 from yosoi.generalization.fingerprint import PageFingerprint as PageFingerprint
 from yosoi.integrations import ClaudeSDKModel as ClaudeSDKModel
 from yosoi.integrations import OpenCodeModel as OpenCodeModel
@@ -35,6 +40,7 @@ from yosoi.operations import ScrapeUnitResult as ScrapeUnitResult
 from yosoi.operations import SearchHit as SearchHit
 from yosoi.operations import SearchRequest as SearchRequest
 from yosoi.operations import SearchResult as SearchResult
+from yosoi.policy import BrowserProfilePolicy as _BrowserProfilePolicy
 from yosoi.policy import CrawlBudget as _CrawlBudget
 from yosoi.policy import CrawlPolicy as _CrawlPolicy
 from yosoi.policy import CrawlRuntimeConfig as _CrawlRuntimeConfig
@@ -68,6 +74,22 @@ TrustTier = Literal['strict', 'yellow']
 CrawlModeName = Literal['seed_hunt', 'contract_focus', 'structure_guarded', 'explorer']
 FetcherName = Literal['auto', 'simple', 'headless', 'headful']
 PageFetcherName = Literal['auto', 'simple', 'headless', 'headful', 'waterfall']
+
+class BrowserProfilePolicy(_BrowserProfilePolicy):
+    profile: str | None
+    pool: str | None
+    headful: bool
+    max_live: int
+
+    def __init__(
+        self,
+        *,
+        profile: str | None = ...,
+        pool: str | None = ...,
+        headful: bool = ...,
+        max_live: int = ...,
+    ) -> None: ...
+
 CrawlPresetName = Literal['crawl.local_single', 'crawl.conservative', 'crawl.seed_hunt']
 DiscoveryMode = Literal['auto', 'static', 'mcp']
 
@@ -177,6 +199,7 @@ class PageRuntimeConfig(_PageRuntimeConfig):
     clean_html: bool
     cleaner_profile: Literal['discovery', 'raw']
     chrome_ws_urls: tuple[str, ...]
+    profile: BrowserProfilePolicy | None
 
 class PagePolicy(_PagePolicy):
     fetcher_type: PageFetcherName
@@ -186,6 +209,7 @@ class PagePolicy(_PagePolicy):
     clean_html: bool
     cleaner_profile: Literal['discovery', 'raw']
     chrome_ws_urls: tuple[str, ...]
+    profile: BrowserProfilePolicy | None
 
     def __init__(
         self,
@@ -197,6 +221,7 @@ class PagePolicy(_PagePolicy):
         clean_html: bool = ...,
         cleaner_profile: Literal['discovery', 'raw'] = ...,
         chrome_ws_urls: tuple[str, ...] | str = ...,
+        profile: BrowserProfilePolicy | None = ...,
     ) -> None: ...
     def to_runtime_config(self) -> PageRuntimeConfig: ...
 
@@ -600,10 +625,25 @@ async def crawl(
     progress: bool | None = ...,
     console: Any | None = ...,
 ) -> CrawlRunSummary: ...
+async def map(
+    url: str,
+    *,
+    max_sitemaps: int = ...,
+    max_urls: int = ...,
+    max_subdomains: int = ...,
+    subfinder_bin: str = ...,
+    subfinder_timeout: int = ...,
+    include_robots: bool = ...,
+    include_default_sitemaps: bool = ...,
+    include_subdomains: bool = ...,
+    discover_subdomains: bool = ...,
+) -> MapResult: ...
 async def execute_crawl(request: CrawlRequest) -> CrawlRunSummary: ...
+async def execute_map(request: MapRequest) -> MapResult: ...
 async def execute_search(request: SearchRequest) -> SearchResult: ...
 async def execute_scrape(request: ScrapeRequest) -> Any: ...
 async def run_crawl(request: CrawlRequest) -> CrawlResult: ...
+async def run_map(request: MapRequest) -> MapResult: ...
 async def run_search(request: SearchRequest) -> SearchResult: ...
 async def run_scrape(request: ScrapeRequest) -> ScrapeResult: ...
 async def search(

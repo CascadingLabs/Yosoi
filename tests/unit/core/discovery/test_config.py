@@ -453,10 +453,10 @@ class TestCreateModelNewFirstClass:
 
     def test_opencode_provider_default_provider_id(self):
         """OpenCode provider creates the packaged OpenCode model."""
-        cfg = LLMConfig(provider='opencode', model_name='gpt-5-codex')
+        cfg = LLMConfig(provider='opencode', model_name='gpt-5.3-codex-spark')
         model = create_model(cfg)
         assert type(model).__name__ == 'OpenCodeModel'
-        assert model.model_name == 'openai:gpt-5-codex'
+        assert model.model_name == 'openai:gpt-5.3-codex-spark'
 
     def test_opencode_provider_parses_provider_model_name(self):
         """OpenCode model strings may include provider-id/model-id."""
@@ -757,9 +757,9 @@ class TestNewConvenienceHelpers:
         assert cfg.api_key is None
 
     def test_opencode_helper(self):
-        cfg = opencode('openai/gpt-5-codex')
+        cfg = opencode('openai/gpt-5.3-codex-spark')
         assert cfg.provider == 'opencode'
-        assert cfg.model_name == 'openai/gpt-5-codex'
+        assert cfg.model_name == 'openai/gpt-5.3-codex-spark'
         assert cfg.api_key is None
 
     def test_vertexai_helper(self):
@@ -847,9 +847,9 @@ class TestProviderNewProviders:
         assert cfg.api_key is None
 
     def test_opencode(self):
-        cfg = provider('opencode:openai/gpt-5-codex')
+        cfg = provider('opencode:openai/gpt-5.3-codex-spark')
         assert cfg.provider == 'opencode'
-        assert cfg.model_name == 'openai/gpt-5-codex'
+        assert cfg.model_name == 'openai/gpt-5.3-codex-spark'
         assert cfg.api_key is None
 
     def test_bedrock_colon_in_model_name(self):

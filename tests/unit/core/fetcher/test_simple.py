@@ -70,6 +70,22 @@ class TestSimpleFetcherFetch:
         assert 'too short' in result.block_reason
 
     @pytest.mark.asyncio
+    async def test_lower_min_content_length_accepts_small_text_resources(self, mocker):
+        f = SimpleFetcher(use_session=False, min_delay=0, min_content_length=1)
+        mock_resp = mocker.MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.text = 'Sitemap: https://example.com/sitemap.xml\n'
+        mock_resp.content = mock_resp.text.encode()
+        mock_resp.headers = {}
+        mocker.patch('httpx2.AsyncClient.get', return_value=mock_resp)
+        mocker.patch.object(f, '_apply_request_delay', return_value=None)
+
+        result = await f.fetch('https://example.com/robots.txt')
+
+        assert result.is_blocked is False
+        assert result.html == 'Sitemap: https://example.com/sitemap.xml\n'
+
+    @pytest.mark.asyncio
     async def test_successful_fetch(self, mocker):
         """Successful fetch returns FetchResult with html and metadata."""
         f = SimpleFetcher(use_session=False, min_delay=0)

@@ -670,6 +670,31 @@ def test_list_mode_empty_returns_none():
     assert result is None
 
 
+def test_extract_items_accepts_xpath_container_selector():
+    class ItemContract(Contract):
+        title: str = ys.Title()
+
+    extractor = _make_extractor(ItemContract)
+    html = '<section><article><h2>One</h2></article><article><h2>Two</h2></article></section>'
+    selectors = {'title': {'primary': {'type': 'css', 'value': 'h2'}}}
+
+    result = extractor.extract_items('https://x.com', html, selectors, '//article')
+
+    assert result == [{'title': 'One'}, {'title': 'Two'}]
+
+
+def test_extract_items_invalid_xpath_container_returns_none():
+    class ItemContract(Contract):
+        title: str = ys.Title()
+
+    extractor = _make_extractor(ItemContract)
+    selectors = {'title': {'primary': {'type': 'css', 'value': 'h2'}}}
+
+    result = extractor.extract_items('https://x.com', '<article><h2>One</h2></article>', selectors, '///[[[invalid')
+
+    assert result is None
+
+
 def test_list_mode_assigned_for_list_annotation():
     """list[str] field gets _field_modes[name] = 'list'."""
 

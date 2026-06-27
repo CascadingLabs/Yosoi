@@ -236,7 +236,7 @@ def claude_sdk(model_name: str = 'claude-opus-4-7', **kwargs: Any) -> ModelPolic
     return _model_policy('claude-sdk', model_name, None, **kwargs)
 
 
-def opencode(model_name: str = 'openai/gpt-5-codex', **kwargs: Any) -> ModelPolicy:
+def opencode(model_name: str = 'openai/gpt-5.3-codex-spark', **kwargs: Any) -> ModelPolicy:
     """Create an OpenCode model policy."""
     return _model_policy('opencode', model_name, None, **kwargs)
 
@@ -256,6 +256,20 @@ class ScrapePolicy(BaseModel):
     # field-trial-isolated origins (e.g. embedded google.com frames). This weakens the
     # browser's security posture for the whole session — explicit opt-in, default off.
     cross_origin_dom: bool = False
+
+    @field_validator('selector_level', mode='before')
+    @classmethod
+    def _coerce_selector_level(cls, value: object) -> object:
+        if not isinstance(value, str):
+            return value
+        level = value.strip().lower()
+        if level == 'all':
+            return max(SelectorLevel)
+        try:
+            return SelectorLevel[level.upper()]
+        except KeyError as exc:
+            valid = ', '.join(sorted([*(member.name.lower() for member in SelectorLevel), 'all']))
+            raise ValueError(f'Invalid selector_level {level!r}; choose one of: {valid}') from exc
 
 
 class DiscoveryPolicy(BaseModel):
@@ -283,6 +297,15 @@ class SearchPolicy(BaseModel):
     max_results: StrictInt = Field(default=10, ge=1)
     page: StrictInt = Field(default=1, ge=1)
     timelimit: str | None = None
+
+    @field_validator('safesearch', mode='before')
+    @classmethod
+    def _coerce_safesearch(cls, value: object) -> object:
+        if isinstance(value, bool):
+            return 'on' if value else 'off'
+        if isinstance(value, str):
+            return value.strip().lower()
+        return value
 
     @field_validator('backend', 'region')
     @classmethod

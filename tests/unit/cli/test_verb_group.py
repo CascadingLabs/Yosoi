@@ -215,6 +215,92 @@ class TestScrapeOperationSurface:
         doc = json.loads(result.output[result.output.index('{') :])
         assert doc['allow_llm'] is False
 
+    def test_scrape_profile_pool_flags_compile_page_policy(self, runner, base_mocks):
+        result = runner.invoke(
+            main,
+            [
+                'scrape',
+                'https://example.com',
+                '--profile-pool',
+                'google-serp',
+                '--max-live-profiles',
+                '2',
+                '--dump-request',
+            ],
+        )
+
+        assert result.exit_code == 0, result.output
+
+        doc = json.loads(result.output[result.output.index('{') :])
+        profile = doc['policy']['page']['profile']
+        assert profile['pool'] == 'google-serp'
+        assert profile['profile'] is None
+        assert profile['headful'] is True
+        assert profile['max_live'] == 2
+
+    def test_scrape_rejects_profile_and_pool_together(self, runner, base_mocks):
+        result = runner.invoke(
+            main,
+            [
+                'scrape',
+                'https://example.com',
+                '--profile',
+                'google-001',
+                '--profile-pool',
+                'google-serp',
+                '--dump-request',
+            ],
+        )
+
+        assert result.exit_code != 0
+        assert 'mutually exclusive' in result.output
+
+
+class TestResearchCommands:
+    def test_research_init_observe_status_packet_workflow(self, runner):
+        from yosoi.operations import ScrapeResult, ScrapeUnitResult
+
+        with runner.isolated_filesystem():
+            init_result = runner.invoke(main, ['research', 'init', 'Firecrawl pricing', '--json'])
+            assert init_result.exit_code == 0, init_result.output
+            packet = Path(json.loads(init_result.output)['packet'])
+            assert (packet / 'frontier.json').exists()
+            assert (packet / 'observations.jsonl').exists()
+
+            scrape_path = packet / 'scrape-results' / 'firecrawl.json'
+            scrape_path.write_text(
+                ScrapeResult(
+                    results=[
+                        ScrapeUnitResult(
+                            url='https://www.firecrawl.dev/pricing',
+                            contract='PricingPlan',
+                            contract_fingerprint='pricing-fp',
+                            selector_source='cache',
+                            cache_decision='hit',
+                            llm_used=False,
+                            quality_status='ok',
+                            expected_record_count=4,
+                            record_count=4,
+                            records=[{'name': 'Free'}, {'name': 'Hobby'}, {'name': 'Pro'}, {'name': 'Enterprise'}],
+                        )
+                    ]
+                ).model_dump_json(),
+                encoding='utf-8',
+            )
+
+            observe_result = runner.invoke(
+                main,
+                ['research', 'observe', str(packet), '--from-scrape', str(scrape_path), '--json'],
+            )
+            assert observe_result.exit_code == 0, observe_result.output
+            assert json.loads(observe_result.output)['observations'] == 1
+
+            status_result = runner.invoke(main, ['research', 'status', str(packet), '--json'])
+            assert status_result.exit_code == 0, status_result.output
+            status = json.loads(status_result.output)
+            assert status['contracts']['PricingPlan']['status'] == 'validated'
+            assert status['contracts']['PricingPlan']['latest_record_count'] == 4
+
 
 class TestCacheStatus:
     def test_cache_status_no_cache(self, runner, mocker, base_mocks):
@@ -658,6 +744,57 @@ class TestCoverageSensitiveCliBranches:
         assert doc['limit'] == 1
         assert len(doc['contracts']) == 1
 
+    def test_crawl_stress_flags_build_policy_and_compact_request(self, runner, base_mocks):
+        result = runner.invoke(
+            main,
+            [
+                'crawl',
+                'https://a.example',
+                '--stress',
+                '--run-id',
+                'stress-run-1',
+                '--max-pages',
+                '5',
+                '--max-depth',
+                '1',
+                '--max-attempts',
+                '6',
+                '--workers',
+                '2',
+                '--per-host-concurrency',
+                '1',
+                '--politeness',
+                '0',
+                '--timeout',
+                '4',
+                '--deadline',
+                '8',
+                '--retries',
+                '1',
+                '--no-respect-robots',
+                '--allow-redirects',
+                '--dump-request',
+            ],
+        )
+
+        assert result.exit_code == 0, result.output
+        doc = json.loads(result.output[result.output.index('{') :])
+        crawl = doc['policy']['crawl']
+        assert doc['run_id'] == 'stress-run-1'
+        assert doc['compact'] is True
+        assert doc['store_crawl'] is True
+        assert doc['stress'] is True
+        assert doc['deadline_seconds'] == 8.0
+        assert crawl['budget']['crawl_session_id'] == 'stress-run-1'
+        assert crawl['budget']['max_pages'] == 5
+        assert crawl['budget']['max_depth'] == 1
+        assert crawl['budget']['max_attempts'] == 6
+        assert crawl['scheduler']['max_workers'] == 2
+        assert crawl['scheduler']['fetch_timeout_seconds'] == 4.0
+        assert crawl['scheduler']['max_fetch_retries'] == 1
+        assert crawl['safety']['respect_robots'] is False
+        assert crawl['safety']['allow_redirects'] is True
+
     def test_crawl_json_success_and_error(self, runner, mocker, base_mocks):
         from yosoi.operations import CrawlResult
 
@@ -674,6 +811,53 @@ class TestCoverageSensitiveCliBranches:
         assert bad.exit_code == 1
         assert json.loads(bad.output)['message'] == 'boom'
 
+        mocker.patch('yosoi.operations.run_crawl', mocker.AsyncMock(side_effect=TimeoutError()))
+        timed_out = runner.invoke(main, ['crawl', 'https://example.com', '--json', '--deadline', '0.01'])
+        assert timed_out.exit_code == 1
+        assert json.loads(timed_out.output)['message'] == 'Crawl deadline exceeded after 0.01s'
+
+    def test_crawl_stress_human_renders_compact_table(self, runner, mocker, base_mocks):
+        from yosoi.operations import CrawlResult
+
+        run = mocker.patch(
+            'yosoi.operations.run_crawl',
+            mocker.AsyncMock(
+                return_value=CrawlResult(
+                    status='ok',
+                    summary={
+                        'run_id': 'stress-run-1',
+                        'status': 'ok',
+                        'pages_fetched': 1,
+                        'attempted_urls': 1,
+                        'failures': 0,
+                        'wall_time': 0.1,
+                        'results': [
+                            {
+                                'index': 1,
+                                'url': 'https://example.com',
+                                'status': 'succeeded',
+                                'depth': 0,
+                                'status_code': 200,
+                                'links': 0,
+                                'html_chars': 10,
+                                'fetch_time': 0.1,
+                                'error': None,
+                            }
+                        ],
+                    },
+                )
+            ),
+        )
+
+        result = runner.invoke(main, ['crawl', 'https://example.com', '--stress', '--run-id', 'stress-run-1'])
+
+        assert result.exit_code == 0, result.output
+        assert 'Crawl stress ok' in _plain(result.output)
+        request = run.await_args.args[0]
+        assert request.store_crawl is True
+        assert request.compact is True
+        assert request.run_id == 'stress-run-1'
+
     def test_crawl_human_executes_and_request_file_errors(self, runner, mocker, base_mocks, tmp_path):
         execute = mocker.patch('yosoi.operations.execute_crawl', mocker.AsyncMock(return_value=_CrawlSummary()))
         ok = runner.invoke(main, ['crawl', 'https://example.com'])
@@ -686,6 +870,75 @@ class TestCoverageSensitiveCliBranches:
         bad = runner.invoke(main, ['crawl', '--request', str(bad_request)])
         assert bad.exit_code != 0
         assert 'Cannot parse CrawlRequest' in bad.output
+
+    def test_map_dump_and_json_use_operation_runner(self, runner, mocker, base_mocks):
+        from yosoi.core.site_map import MapHost, MapResult, MapUrl
+
+        dumped = runner.invoke(
+            main,
+            [
+                'map',
+                'example.com',
+                '--subdomains',
+                '--max-subdomains',
+                '2',
+                '--subfinder-bin',
+                'sf',
+                '--subfinder-timeout',
+                '9',
+                '--dump-request',
+            ],
+        )
+        assert dumped.exit_code == 0, dumped.output
+        request_doc = json.loads(dumped.output[dumped.output.index('{') :])
+        assert request_doc['url'] == 'https://example.com/'
+        assert request_doc['discover_subdomains'] is True
+        assert request_doc['max_subdomains'] == 2
+        assert request_doc['subfinder_bin'] == 'sf'
+        assert request_doc['subfinder_timeout'] == 9
+
+        run = mocker.patch(
+            'yosoi.operations.run_map',
+            mocker.AsyncMock(
+                return_value=MapResult(
+                    requested_url='https://example.com/',
+                    root_url='https://example.com/',
+                    root_host='example.com',
+                    urls=[
+                        MapUrl(
+                            url='https://blog.example.com/post',
+                            host='blog.example.com',
+                            path='/post',
+                            subdomain='blog',
+                            source_sitemap='https://example.com/sitemap.xml',
+                        )
+                    ],
+                    hosts=[MapHost(host='blog.example.com', url_count=1, subdomain='blog')],
+                    subdomains=[MapHost(host='blog.example.com', url_count=1, subdomain='blog')],
+                )
+            ),
+        )
+
+        result = runner.invoke(main, ['map', '--url', 'example.com', '--json'])
+        assert result.exit_code == 0, result.output
+        doc = json.loads(result.output)
+        assert doc['root_host'] == 'example.com'
+        assert doc['subdomains'][0]['subdomain'] == 'blog'
+        assert run.await_args.args[0].url == 'https://example.com/'
+        assert run.await_args.args[0].discover_subdomains is False
+
+        run.return_value = MapResult(
+            status='error',
+            requested_url='https://example.com/',
+            root_url='https://example.com/',
+            root_host='example.com',
+            mode='subdomains',
+            errors=['subfinder missing'],
+        )
+        human_error = runner.invoke(main, ['map', '--url', 'example.com', '--subdomains'])
+        assert human_error.exit_code == 1
+        assert 'Map error' in human_error.output
+        assert 'subfinder missing' in human_error.output
 
     def test_policy_commands_cover_success_and_error_json(self, runner, tmp_path):
         from yosoi.policy import Policy

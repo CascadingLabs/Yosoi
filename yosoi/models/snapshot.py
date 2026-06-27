@@ -71,6 +71,8 @@ class SelectorSnapshot(BaseModel):
     root: str | dict[str, Any] | None = None
     status: SnapshotStatus = SnapshotStatus.ACTIVE
     status_reason: str | None = None
+    discovery_record_count: int | None = None
+    discovery_field_coverage: dict[str, int] = Field(default_factory=dict)
 
     @model_validator(mode='before')
     @classmethod
@@ -154,6 +156,8 @@ def selector_dict_to_snapshot(
     source: Literal['discovered', 'pinned', 'override'] = 'discovered',
     parent_root: str | None = None,
     last_verified_at: datetime | None = None,
+    discovery_record_count: int | None = None,
+    discovery_field_coverage: dict[str, int] | None = None,
 ) -> SelectorSnapshot:
     """Wrap a raw selector dict into a SelectorSnapshot."""
     ts = _ensure_utc(discovered_at) or datetime.now(timezone.utc)
@@ -169,4 +173,6 @@ def selector_dict_to_snapshot(
         root=None if status != SnapshotStatus.ACTIVE else field_data.get('root'),
         status=status,
         status_reason='legacy primary=NA sentinel' if status == SnapshotStatus.ABSENT else None,
+        discovery_record_count=discovery_record_count,
+        discovery_field_coverage=discovery_field_coverage or {},
     )

@@ -57,6 +57,8 @@ class SelectorStorage:
         verified: bool = False,
         contract_sig: str | None = None,
         contract: type[Contract] | None = None,
+        expected_record_count: int | None = None,
+        sample_field_coverage: dict[str, int] | None = None,
     ) -> str:
         """Save selectors as snapshot format.
 
@@ -69,6 +71,8 @@ class SelectorStorage:
             verified: When True, stamp each snapshot with ``last_verified_at=now``.
             contract_sig: Optional contract signature for isolated selector cache files.
             contract: Optional Contract class used to persist normalized contract/field entities.
+            expected_record_count: Discovery-time record count to preserve as replay evidence.
+            sample_field_coverage: Discovery-time non-empty field coverage by flat field name.
 
         Returns:
             Path to the saved file.
@@ -79,7 +83,11 @@ class SelectorStorage:
         snapshots: dict[str, SelectorSnapshot] = {}
         for field_name, field_data in formatted.items():
             snapshots[field_name] = selector_dict_to_snapshot(
-                field_data, discovered_at=now, last_verified_at=now if verified else None
+                field_data,
+                discovered_at=now,
+                last_verified_at=now if verified else None,
+                discovery_record_count=expected_record_count,
+                discovery_field_coverage=sample_field_coverage,
             )
         return await self.save_snapshots(url, snapshots, contract_sig=contract_sig, contract=contract)
 

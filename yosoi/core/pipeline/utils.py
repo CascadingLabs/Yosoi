@@ -22,6 +22,7 @@ from yosoi.utils import observability
 if TYPE_CHECKING:
     from yosoi.models.contract import Contract
     from yosoi.models.download import DownloadResult, DownloadSpec
+    from yosoi.models.snapshot import SelectorSnapshot
     from yosoi.storage.tracking import DomainStats
 
 # Type aliases — defined at module level so they exist at runtime (used in cast() calls)
@@ -53,6 +54,9 @@ class PipelineUtilsMixin:
     js_storage: Any
     _contract_sig: str
     _client: httpx2.AsyncClient
+    last_quality_status: str
+    last_quality_issues: list[str]
+    last_expected_record_count: int | None
 
     async def normalize_url(self, url: str) -> str:
         """Add protocol to URL, preferring https."""
@@ -272,7 +276,21 @@ class PipelineUtilsMixin:
         elapsed: float | None = None,
     ) -> None:
         """Save verified selectors, extracted content, and track LLM usage."""
-        await self.storage.save_selectors(url, verified, verified=True, contract_sig=self._contract_sig)
+        expected_record_count, field_coverage = self._quality_evidence_from_content(extracted)
+        await self.storage.save_selectors(
+            url,
+            verified,
+            verified=True,
+            contract_sig=self._contract_sig,
+            contract=self.contract,
+            expected_record_count=expected_record_count,
+            sample_field_coverage=field_coverage,
+        )
+        self._set_quality(
+            status='ok' if expected_record_count else 'unknown',
+            issues=[],
+            expected_record_count=expected_record_count,
+        )
 
         if extracted:
             for fmt in output_format:
@@ -283,6 +301,131 @@ class PipelineUtilsMixin:
             url, used_llm=used_llm, level_distribution=level_dist or None, elapsed=elapsed
         )
         self._print_tracking_stats(url, domain, stats, used_llm=used_llm, elapsed=elapsed)
+
+    def _set_quality(
+        self,
+        *,
+        status: str,
+        issues: list[str] | None = None,
+        expected_record_count: int | None = None,
+    ) -> None:
+        """Store latest scrape quality metadata for operation/API envelopes."""
+        self.last_quality_status = status
+        self.last_quality_issues = list(issues or [])
+        self.last_expected_record_count = expected_record_count
+        for issue in self.last_quality_issues:
+            logger.warning('Scrape quality issue: %s', issue)
+            self.console.print(f'[warning]⚠ Replay quality: {issue}[/warning]')
+
+    def _quality_evidence_from_content(
+        self, content: ContentMap | ContentItems | None
+    ) -> tuple[int | None, dict[str, int]]:
+        """Return discovery-time cardinality and non-empty field coverage evidence."""
+        if content is None:
+            return None, {}
+        items: ContentItems = content if isinstance(content, list) else [content]
+        coverage: dict[str, int] = {}
+        for item in items:
+            for field_name, value in self._flatten_quality_fields(item).items():
+                if self._has_quality_value(value):
+                    coverage[field_name] = coverage.get(field_name, 0) + 1
+        return len(items), coverage
+
+    def _evaluate_replay_quality(
+        self,
+        items: ContentItems | None,
+        snapshots: dict[str, SelectorSnapshot] | None,
+    ) -> None:
+        """Compare cached replay records against persisted discovery evidence."""
+        expected = self._expected_record_count_from_snapshots(snapshots)
+        expected_coverage = self._expected_field_coverage_from_snapshots(snapshots)
+        actual = len(items or [])
+        issues: list[str] = []
+        status = 'ok' if items else 'failed'
+
+        if expected is not None and actual < expected:
+            issues.append(f'record_count dropped from discovery baseline {expected} to {actual}')
+            status = 'failed' if actual == 0 else 'partial'
+
+        required = self._required_quality_fields()
+        actual_coverage: dict[str, int] = {}
+        for item in items or []:
+            for field_name, value in self._flatten_quality_fields(item).items():
+                if self._has_quality_value(value):
+                    actual_coverage[field_name] = actual_coverage.get(field_name, 0) + 1
+
+        for field_name in sorted(required):
+            if actual_coverage.get(field_name, 0) < actual:
+                issues.append(f'required field {field_name!r} missing in cached replay output')
+                status = 'failed' if actual == 0 else 'partial'
+
+        for field_name, baseline_count in sorted(expected_coverage.items()):
+            if field_name in required and actual_coverage.get(field_name, 0) < min(baseline_count, actual):
+                issues.append(
+                    f'required field {field_name!r} coverage dropped from {baseline_count} to '
+                    f'{actual_coverage.get(field_name, 0)}'
+                )
+                status = 'failed' if actual == 0 else 'partial'
+
+        if expected is None and not expected_coverage:
+            status = 'unknown' if items else 'failed'
+
+        self._set_quality(status=status, issues=issues, expected_record_count=expected)
+
+    @staticmethod
+    def _expected_record_count_from_snapshots(snapshots: dict[str, SelectorSnapshot] | None) -> int | None:
+        if not snapshots:
+            return None
+        counts = {
+            snap.discovery_record_count
+            for snap in snapshots.values()
+            if snap.discovery_record_count is not None and snap.discovery_record_count >= 0
+        }
+        return max(counts) if counts else None
+
+    @staticmethod
+    def _expected_field_coverage_from_snapshots(snapshots: dict[str, SelectorSnapshot] | None) -> dict[str, int]:
+        coverage: dict[str, int] = {}
+        for snap in (snapshots or {}).values():
+            for field_name, count in snap.discovery_field_coverage.items():
+                coverage[field_name] = max(coverage.get(field_name, 0), count)
+        return coverage
+
+    def _required_quality_fields(self) -> set[str]:
+        """Return flat required output field names for replay quality checks."""
+        from yosoi.models.contract import Contract as _Contract
+
+        required: set[str] = set()
+        for name, field_info in self.contract.model_fields.items():
+            annotation = field_info.annotation
+            if isinstance(annotation, type) and issubclass(annotation, _Contract):
+                for child_name, child_info in annotation.model_fields.items():
+                    if child_info.is_required():
+                        required.add(f'{name}_{child_name}')
+            elif field_info.is_required():
+                required.add(name)
+        return required - set(self.contract.get_selector_overrides())
+
+    def _flatten_quality_fields(self, item: ContentMap) -> dict[str, object]:
+        flat: dict[str, object] = {}
+        nested = self.contract.nested_contracts()
+        for name, value in item.items():
+            if name in nested and isinstance(value, dict):
+                for child_name, child_value in value.items():
+                    flat[f'{name}_{child_name}'] = child_value
+            else:
+                flat[str(name)] = value
+        return flat
+
+    @staticmethod
+    def _has_quality_value(value: object) -> bool:
+        if value is None:
+            return False
+        if isinstance(value, str):
+            return bool(value.strip())
+        if isinstance(value, (list, tuple, set, dict)):
+            return bool(value)
+        return True
 
     def _print_tracking_stats(
         self,

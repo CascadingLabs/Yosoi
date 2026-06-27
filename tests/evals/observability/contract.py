@@ -214,7 +214,7 @@ async def _drive_llm_opencode() -> None:
     from yosoi.integrations.opencode import OpenCodeModel
 
     base = 'http://opencode.eval'
-    model = OpenCodeModel(provider_id='openai', model_id='gpt-5-codex', base_url=base)
+    model = OpenCodeModel(provider_id='openai', model_id='gpt-5.3-codex-spark', base_url=base)
     routes = {
         '/session': httpx2.Response(200, json={'id': 'ses'}),
         '/session/ses/message': httpx2.Response(
@@ -403,7 +403,7 @@ _CASES: list[Case[Scenario, list[CapturedSpan], tuple[ExpectedSpan, ...]]] = [
                 A.LLM_TRANSPORT_SPAN,
                 {
                     A.ATTR_LLM_BACKEND: A.BACKEND_OPENCODE,
-                    A.ATTR_LLM_MODEL: 'openai:gpt-5-codex',
+                    A.ATTR_LLM_MODEL: 'openai:gpt-5.3-codex-spark',
                     A.ATTR_LLM_STRUCTURED: False,
                 },
             ),

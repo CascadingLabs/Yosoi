@@ -43,12 +43,12 @@ def _stub_voidcrawl_command(mocker):
 
 
 def test_split_model_supports_provider_prefix():
-    assert _split_model('openai/gpt-5-codex') == ('openai', 'gpt-5-codex')
-    assert _split_model('gpt-5-codex') == ('openai', 'gpt-5-codex')
+    assert _split_model('openai/gpt-5.3-codex-spark') == ('openai', 'gpt-5.3-codex-spark')
+    assert _split_model('gpt-5.3-codex-spark') == ('openai', 'gpt-5.3-codex-spark')
 
 
 def test_build_config_includes_validator_server_when_present():
-    backend = OpenCodeBackend(LLMConfig(provider='opencode', model_name='gpt-5-codex'))
+    backend = OpenCodeBackend(LLMConfig(provider='opencode', model_name='gpt-5.3-codex-spark'))
     cfg = backend._build_config(
         StdioServerSpec(
             name='yosoi_validator',
@@ -65,7 +65,7 @@ def test_build_config_includes_validator_server_when_present():
 
 
 async def test_read_url_parses_listening_url_and_raises_on_eof():
-    backend = OpenCodeBackend(LLMConfig(provider='opencode', model_name='gpt-5-codex'))
+    backend = OpenCodeBackend(LLMConfig(provider='opencode', model_name='gpt-5.3-codex-spark'))
     proc = SimpleNamespace(stdout=_Reader([b'booting\n', b'listening on http://127.0.0.1:4096\n']))
     assert await backend._read_url(proc) == 'http://127.0.0.1:4096'
 
@@ -75,7 +75,7 @@ async def test_read_url_parses_listening_url_and_raises_on_eof():
 
 
 async def test_read_url_requires_stdout():
-    backend = OpenCodeBackend(LLMConfig(provider='opencode', model_name='gpt-5-codex'))
+    backend = OpenCodeBackend(LLMConfig(provider='opencode', model_name='gpt-5.3-codex-spark'))
     proc = SimpleNamespace(stdout=None)
     with pytest.raises(RuntimeError):
         await backend._read_url(proc)
@@ -109,7 +109,7 @@ async def test_discover_parses_structured_and_non_structured_payloads(monkeypatc
                 return _Response({'info': {'structured': structured}})
 
         monkeypatch.setitem(sys.modules, 'httpx2', SimpleNamespace(AsyncClient=_Client))
-        backend = OpenCodeBackend(LLMConfig(provider='opencode', model_name='gpt-5-codex'))
+        backend = OpenCodeBackend(LLMConfig(provider='opencode', model_name='gpt-5.3-codex-spark'))
         return await backend._discover('http://127.0.0.1:4096', 'system', 'prompt')
 
     assert await _run({'fields': []}) == {'fields': []}
@@ -117,7 +117,7 @@ async def test_discover_parses_structured_and_non_structured_payloads(monkeypatc
 
 
 async def test_run_success_happy_path(mocker):
-    backend = OpenCodeBackend(LLMConfig(provider='opencode', model_name='gpt-5-codex'))
+    backend = OpenCodeBackend(LLMConfig(provider='opencode', model_name='gpt-5.3-codex-spark'))
 
     async def _create_subprocess(*_args, **_kwargs):
         return _build_proc(b'listening on http://127.0.0.1:4096\n')
@@ -129,7 +129,7 @@ async def test_run_success_happy_path(mocker):
 
 
 async def test_run_raises_on_missing_structured_payload(mocker):
-    backend = OpenCodeBackend(LLMConfig(provider='opencode', model_name='gpt-5-codex'))
+    backend = OpenCodeBackend(LLMConfig(provider='opencode', model_name='gpt-5.3-codex-spark'))
 
     async def _create_subprocess(*_args, **_kwargs):
         return _build_proc(b'listening on http://127.0.0.1:4096\n')
@@ -142,7 +142,7 @@ async def test_run_raises_on_missing_structured_payload(mocker):
 
 
 async def test_run_raises_when_binary_missing(mocker):
-    backend = OpenCodeBackend(LLMConfig(provider='opencode', model_name='gpt-5-codex'))
+    backend = OpenCodeBackend(LLMConfig(provider='opencode', model_name='gpt-5.3-codex-spark'))
 
     async def _missing_binary(*_args, **_kwargs):
         raise FileNotFoundError('missing')

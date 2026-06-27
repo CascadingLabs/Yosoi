@@ -71,6 +71,9 @@ if TYPE_CHECKING:  # static typing only — no runtime cost
         FingerprintPolicy as FingerprintPolicy,
     )
     from yosoi.policy.page import (
+        BrowserProfilePolicy as BrowserProfilePolicy,
+    )
+    from yosoi.policy.page import (
         PagePolicy as PagePolicy,
     )
     from yosoi.policy.page import (
@@ -202,6 +205,7 @@ if TYPE_CHECKING:  # static typing only — no runtime cost
 
 _LAZY = {
     'FingerprintPolicy': 'yosoi.policy.fingerprint',
+    'BrowserProfilePolicy': 'yosoi.policy.page',
     'PagePolicy': 'yosoi.policy.page',
     'PageRuntimeConfig': 'yosoi.policy.page',
     'DiscoveryPolicy': 'yosoi.policy.run',

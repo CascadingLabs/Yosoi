@@ -29,7 +29,7 @@ from yosoi.core.configs import YosoiConfig
 from yosoi.core.discovery import DiscoveryOrchestrator, LLMConfig, MCPDiscoveryOrchestrator
 from yosoi.core.discovery.bus import DiscoveryBus
 from yosoi.core.fetcher import create_fetcher  # re-exported: tests patch yosoi.core.pipeline.base.create_fetcher
-from yosoi.core.fetcher.identity import BrowserIdentity
+from yosoi.core.fetcher.identity import BrowserIdentity, IdentityCascade
 from yosoi.core.pipeline.cache import PipelineCacheMixin
 from yosoi.core.pipeline.crawler import PipelineCrawlerMixin
 from yosoi.core.pipeline.discovery import PipelineDiscoveryMixin
@@ -115,10 +115,15 @@ class Pipeline(
     _keep_downloads: bool = True
     _discovery_gate: DiscoveryGate | None = None  # class default for __new__-built stubs
     _allow_llm: bool = True
+    _identity_cascade: IdentityCascade | None = None
+    _max_live_identities: int = 3
     last_selector_source: str
     last_cache_decision: str
     last_llm_used: bool
     last_llm_reason: str | None
+    last_quality_status: str
+    last_quality_issues: list[str]
+    last_expected_record_count: int | None
 
     def _mark_scrape_decision(
         self,
@@ -154,6 +159,8 @@ class Pipeline(
         keep_downloads: bool = True,
         flat_files: bool | None = None,
         identity: BrowserIdentity | None = None,
+        identity_cascade: IdentityCascade | None = None,
+        max_live_identities: int = 3,
         console: Console | None = None,
         policy: Policy | None = None,
         show_tracking_summary: bool = False,
@@ -192,6 +199,8 @@ class Pipeline(
                 ``max_bytes`` of its own. Falls back to a 25 MiB built-in default when unset.
             identity: Optional opt-in BrowserIdentity (trusted profile / headful / geo teleport /
                 proxy / locale) forwarded to a browser fetcher; ignored by the simple fetcher.
+            identity_cascade: Optional ordered browser identity cascade for profile pools.
+            max_live_identities: Maximum simultaneously-live browser identity fetchers.
             console: Optional pre-built Rich Console to use (e.g. the CLI's themed stderr
                 console for ``--json`` runs); a default themed console is built when omitted.
             keep_downloads: Keep downloaded files after the run (default). Set False to purge
@@ -247,6 +256,8 @@ class Pipeline(
         self._max_download_bytes = max_download_bytes
         self._keep_downloads = keep_downloads
         self._identity = identity  # opt-in browser identity (profile/headful/geo) for browser fetchers
+        self._identity_cascade = identity_cascade
+        self._max_live_identities = max_live_identities
         # Off-path fingerprint signal lane (CAS-168); None unless a FingerprintPolicy opts in.
         self._signal_lane = build_fingerprint_lane(self._policy.fingerprint)
         self._download_log: list[Any] = []
@@ -357,6 +368,9 @@ class Pipeline(
         self.last_cache_decision = 'unknown'
         self.last_llm_used = False
         self.last_llm_reason = None
+        self.last_quality_status = 'unknown'
+        self.last_quality_issues = []
+        self.last_expected_record_count = None
         self._last_level_distribution: dict[str, int] = {}
         self._client: httpx2.AsyncClient = httpx2.AsyncClient()
 
@@ -385,7 +399,7 @@ class Pipeline(
         if self._signal_lane is not None:
             await self._signal_lane.aclose()
 
-    def _create_fetcher(self, fetcher_type: str, console: Console | None = None) -> Any | None:
+    def _create_fetcher(self, fetcher_type: str, console: Console | None = None) -> Any | None:  # noqa: C901
         """Create HTML fetcher instance.
 
         Defined on Pipeline (not the utils mixin) so that
@@ -413,6 +427,16 @@ class Pipeline(
                     kwargs['cross_origin_dom'] = pipeline_policy.scrape.cross_origin_dom
                 if identity is not None:  # opt-in profile/headful/geo (browser only)
                     kwargs['identity'] = identity
+                elif getattr(self, '_identity_cascade', None) is not None:
+                    kwargs['identity_cascade'] = self._identity_cascade
+                    kwargs['max_live_identities'] = self._max_live_identities
+                elif page_config.profile is not None:
+                    from yosoi.core.fetcher.profile_policy import cascade_from_profile_policy
+
+                    identity_cascade, max_live = cascade_from_profile_policy(page_config.profile)
+                    if identity_cascade is not None:
+                        kwargs['identity_cascade'] = identity_cascade
+                        kwargs['max_live_identities'] = max_live
             elif fetcher_type == 'simple' and identity is not None:
                 self.console.print(
                     '[warning]⚠ identity (profile/headful) is ignored by the simple fetcher — '

@@ -82,7 +82,7 @@ async def test_request_populates_usage_from_server_response(monkeypatch):
         },
     )
 
-    model = OpenCodeModel(provider_id='openai', model_id='gpt-5-codex', base_url=_BASE_URL)
+    model = OpenCodeModel(provider_id='openai', model_id='gpt-5.3-codex-spark', base_url=_BASE_URL)
     response = await model.request([], None, ModelRequestParameters())
 
     assert response.usage.input_tokens == 150

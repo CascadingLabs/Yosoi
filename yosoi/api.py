@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any, Literal, cast
 from yosoi.core.configs import YosoiConfig, auto_config
 from yosoi.core.discovery import LLMConfig
 from yosoi.core.fetcher.identity import BrowserIdentity
+from yosoi.core.fetcher.profile_policy import cascade_from_profile_policy
 from yosoi.core.pipeline import ContentMap, Pipeline
 from yosoi.core.pipeline.discovery_gate import DiscoveryGate
 from yosoi.models.contract import Contract
@@ -450,6 +451,37 @@ async def search(
     return await run_search(request)
 
 
+async def map(
+    url: str,
+    *,
+    max_sitemaps: int = 20,
+    max_urls: int = 500,
+    max_subdomains: int = 500,
+    subfinder_bin: str = 'subfinder',
+    subfinder_timeout: int = 60,
+    include_robots: bool = True,
+    include_default_sitemaps: bool = True,
+    include_subdomains: bool = True,
+    discover_subdomains: bool = False,
+) -> Any:
+    """Discover a site's sitemap URLs or enumerate subdomains with subfinder."""
+    from yosoi.operations import MapRequest, run_map
+
+    request = MapRequest(
+        url=url,
+        max_sitemaps=max_sitemaps,
+        max_urls=max_urls,
+        max_subdomains=max_subdomains,
+        subfinder_bin=subfinder_bin,
+        subfinder_timeout=subfinder_timeout,
+        include_robots=include_robots,
+        include_default_sitemaps=include_default_sitemaps,
+        include_subdomains=include_subdomains,
+        discover_subdomains=discover_subdomains,
+    )
+    return await run_map(request)
+
+
 def _edge_policy(contract_cls: type[Contract], call_policy: Policy | None) -> Policy:
     """Resolve the effective policy ONCE at the api edge via the cascade.
 
@@ -608,6 +640,8 @@ async def _scrape_one(
     )
     effective_policy = _edge_policy(contract_cls, Policy.cascade(policy, call_policy))
     spec = effective_policy.resolve_run_spec()
+    page_runtime = effective_policy.page_runtime(scrape=effective_policy.scrape)
+    policy_cascade, policy_max_live = cascade_from_profile_policy(page_runtime.profile)
     if isinstance(model, YosoiConfig):
         spec = spec.model_copy(update={'llm_config': model.llm, 'telemetry_config': model.telemetry})
     elif isinstance(model, LLMConfig):
@@ -637,6 +671,8 @@ async def _scrape_one(
                 keep_downloads=spec.keep_downloads,
                 write_lock=write_lock,
                 identity=identity,
+                identity_cascade=None if identity is not None else policy_cascade,
+                max_live_identities=policy_max_live,
                 discovery_gate=discovery_gate,
                 policy=effective_policy,
                 allow_llm=allow_llm,
@@ -663,6 +699,9 @@ async def _scrape_one(
                         'cache_decision': getattr(pipeline, 'last_cache_decision', 'unknown'),
                         'llm_used': bool(getattr(pipeline, 'last_llm_used', False)),
                         'llm_reason': getattr(pipeline, 'last_llm_reason', None),
+                        'quality_status': getattr(pipeline, 'last_quality_status', 'unknown'),
+                        'quality_issues': list(getattr(pipeline, 'last_quality_issues', [])),
+                        'expected_record_count': getattr(pipeline, 'last_expected_record_count', None),
                     }
                 return items
         except Exception as e:

@@ -373,12 +373,27 @@ class ContentExtractor:
         text = _node_text(elements[0])
         return text if text else None
 
+    def _resolve_container_selector(
+        self, sel: Selector, container_selector: str | dict[str, Any] | SelectorEntry
+    ) -> Any:
+        """Return containers for a repeated-item selector without inferring its type from text."""
+        if isinstance(container_selector, str):
+            return sel.xpath(container_selector) if container_selector.startswith('/') else sel.css(container_selector)
+        entry = coerce_selector_entry(container_selector)
+        if entry is None:
+            return []
+        if entry.type == 'xpath':
+            return sel.xpath(entry.value)
+        if entry.type == 'css':
+            return sel.css(entry.value)
+        return []
+
     def extract_items(
         self,
         _url: str,
         html: str,
         validated_selectors: dict[str, dict[str, str]],
-        container_selector: str,
+        container_selector: str | dict[str, Any] | SelectorEntry,
         max_level: SelectorLevel = max(SelectorLevel),
     ) -> list[dict[str, str | list[str | dict[str, str]]]] | None:
         """Extract multiple items from HTML using a container selector.
@@ -398,7 +413,11 @@ class ContentExtractor:
 
         """
         sel = Selector(text=html)
-        containers = sel.css(container_selector)
+        try:
+            containers = self._resolve_container_selector(sel, container_selector)
+        except Exception as exc:  # noqa: BLE001
+            self.console.print(f'  ✗ Container selector failed ({exc}): {container_selector}')
+            return None
 
         if not containers:
             self.console.print(f'  ✗ No containers matched selector: {container_selector}')

@@ -113,3 +113,10 @@ CLI flags still win for the current run.
 ```bash
 uv run python examples/api_design/policy_api_design.py
 ```
+
+`api_design/map_api.py` shows the public `ys.map(...)` API that mirrors the
+`yosoi map` CLI site-inventory use case and returns a typed `MapResult`.
+
+```bash
+uv run python examples/api_design/map_api.py
+```

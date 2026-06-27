@@ -123,7 +123,14 @@ class PageAcquisition:
         download_specs: dict[str, DownloadSpec] | None,
     ) -> FetchResult:
         def before_sleep_log(retry_state: Any) -> None:
-            observability.warning('Retrying fetch', url=url, attempt=retry_state.attempt_number)
+            exc = retry_state.outcome.exception() if retry_state.outcome is not None else None
+            reason = type(exc).__name__ if exc is not None else 'unknown'
+            observability.warning(
+                f'Retrying fetch url={url} attempt={retry_state.attempt_number} reason={reason}',
+                url=url,
+                attempt=retry_state.attempt_number,
+                reason=reason,
+            )
 
         try:
             retryer = get_async_retryer(

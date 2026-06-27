@@ -307,7 +307,7 @@ class PipelineExtractionMixin:
 
             cleaned_html = snapshot.html_for_discovery
 
-            root_entry = host._resolve_root(existing_selectors)
+            root_entry = host._resolve_root(dict(existing_selectors))
 
             if root_entry and not skip_verification:
                 from parsel import Selector as _PS

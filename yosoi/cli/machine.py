@@ -10,6 +10,8 @@ from typing import Any
 
 import rich_click as click
 
+from yosoi.cli.policy_help import annotate_policy_help
+
 _JSON_FLAGS = {'--json', '-j'}
 _ANSI_RE = re.compile(r'\x1b\[[0-?]*[ -/]*[@-~]')
 
@@ -33,7 +35,7 @@ def _jsonable(value: Any) -> Any:
     return str(value)
 
 
-def _param_doc(param: click.Parameter) -> dict[str, Any]:
+def _param_doc(param: click.Parameter, ctx: click.Context) -> dict[str, Any]:
     base: dict[str, Any] = {
         'name': param.name,
         'required': param.required,
@@ -66,8 +68,9 @@ def _param_doc(param: click.Parameter) -> dict[str, Any]:
 
 def command_doc(command: click.Command, ctx: click.Context) -> dict[str, Any]:
     """Serialize a Click command's public surface."""
-    options = [_param_doc(param) for param in command.params if isinstance(param, click.Option)]
-    arguments = [_param_doc(param) for param in command.params if isinstance(param, click.Argument)]
+    annotate_policy_help(command, ctx)
+    options = [_param_doc(param, ctx) for param in command.params if isinstance(param, click.Option)]
+    arguments = [_param_doc(param, ctx) for param in command.params if isinstance(param, click.Argument)]
     doc: dict[str, Any] = {
         'type': 'help',
         'format': 'yosoi.cli.command.v1',
@@ -110,6 +113,11 @@ def _has_json_help(args: Sequence[str], help_names: Sequence[str], command_names
 
 class MachineReadableCommand(click.RichCommand):
     """Click command with JSON help support via ``-h/--help --json``."""
+
+    def get_help(self, ctx: click.Context) -> str:
+        """Render human help with policy annotations for policy-backed options."""
+        annotate_policy_help(self, ctx)
+        return super().get_help(ctx)
 
     def main(
         self,
@@ -175,6 +183,11 @@ class MachineReadableGroup(click.RichGroup):
     """Click group that propagates machine-readable command behavior."""
 
     command_class = MachineReadableCommand
+
+    def get_help(self, ctx: click.Context) -> str:
+        """Render human help with policy annotations for policy-backed options."""
+        annotate_policy_help(self, ctx)
+        return super().get_help(ctx)
 
     def main(
         self,

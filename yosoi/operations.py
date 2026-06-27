@@ -7,15 +7,18 @@ calling the runtime.
 
 from __future__ import annotations
 
+import asyncio
 import json
 from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, cast
 from urllib.parse import urlparse
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from yosoi.core.fetcher.identity import BrowserIdentity
+from yosoi.core.site_map import MapRequest as MapRequest
+from yosoi.core.site_map import MapResult as MapResult
 from yosoi.models.contract import Contract
 from yosoi.models.defaults import NewsArticle
 from yosoi.models.selectors import SelectorLevel
@@ -27,6 +30,7 @@ ContractInput = str | type[Contract] | ContractSpec | dict[str, Any]
 SearchKind = Literal['text']
 SearchProvider = Literal['ddgs']
 SafeSearch = Literal['on', 'moderate', 'off']
+QualityStatus = Literal['ok', 'partial', 'failed', 'unknown']
 
 
 class ContractRef(BaseModel):
@@ -161,6 +165,9 @@ class ScrapeUnitResult(BaseModel):
     cache_decision: str = 'unknown'
     llm_used: bool = False
     llm_reason: str | None = None
+    quality_status: QualityStatus = 'unknown'
+    quality_issues: list[str] = Field(default_factory=list)
+    expected_record_count: int | None = None
     record_count: int = 0
     records: list[dict[str, Any]] = Field(default_factory=list)
     error: str | None = None
@@ -185,6 +192,14 @@ class CrawlRequest(BaseModel):
     fetcher_type: str | None = None
     persist: bool = False
     progress: bool | None = None
+    run_id: str | None = None
+    compact: bool = False
+    include_html: bool = False
+    include_fingerprints: bool = False
+    store_crawl: bool = False
+    stress: bool = False
+    failure_threshold: int = Field(default=0, ge=0)
+    deadline_seconds: float | None = Field(default=None, gt=0)
 
     @field_validator('seeds')
     @classmethod
@@ -220,7 +235,7 @@ class CrawlRequest(BaseModel):
 class CrawlResult(BaseModel):
     """Machine-readable crawl result envelope."""
 
-    status: Literal['ok', 'error'] = 'ok'
+    status: Literal['ok', 'partial', 'error'] = 'ok'
     summary: dict[str, Any]
 
 
@@ -319,6 +334,10 @@ def _selector_level(value: str) -> SelectorLevel:
         raise ValueError(f'{value!r} is not a valid SelectorLevel') from exc
 
 
+def _quality_status(value: object) -> QualityStatus:
+    return cast('QualityStatus', value if value in {'ok', 'partial', 'failed', 'unknown'} else 'unknown')
+
+
 async def _execute_scrape_shape(request: ScrapeRequest) -> Any:
     """Execute the private scrape engine and return its axis-shaped intermediate."""
     from yosoi.api import _scrape_impl
@@ -364,6 +383,11 @@ def _unit_from_records(
         cache_decision=str(meta.get('cache_decision') or 'unknown'),
         llm_used=bool(meta.get('llm_used', False)),
         llm_reason=meta.get('llm_reason') if meta.get('llm_reason') is not None else None,
+        quality_status=_quality_status(meta.get('quality_status')),
+        quality_issues=[str(issue) for issue in (meta.get('quality_issues') or [])],
+        expected_record_count=(
+            int(meta['expected_record_count']) if meta.get('expected_record_count') is not None else None
+        ),
         record_count=len(record_list),
         records=record_list,
     )
@@ -373,10 +397,11 @@ def _envelope(units: list[ScrapeUnitResult]) -> ScrapeResult:
     if not units:
         return ScrapeResult(status='error', results=[])
     failed = sum(1 for unit in units if unit.status == 'failed')
+    degraded = any(unit.quality_status in {'partial', 'failed'} for unit in units if unit.status == 'ok')
     status: Literal['ok', 'partial', 'error'] = 'ok'
     if failed == len(units):
         status = 'error'
-    elif failed:
+    elif failed or degraded:
         status = 'partial'
     return ScrapeResult(status=status, results=units)
 
@@ -485,6 +510,8 @@ async def execute_scrape(request: ScrapeRequest) -> ScrapeResult:
                     cache_decision='llm_blocked',
                     llm_used=False,
                     llm_reason=exc.reason,
+                    quality_status='failed',
+                    quality_issues=[str(exc)],
                     error=str(exc),
                 )
             except Exception as exc:  # noqa: BLE001
@@ -498,6 +525,8 @@ async def execute_scrape(request: ScrapeRequest) -> ScrapeResult:
                     cache_decision=str(meta.get('cache_decision') or 'unknown'),
                     llm_used=bool(meta.get('llm_used', False)),
                     llm_reason=meta.get('llm_reason') if meta.get('llm_reason') is not None else None,
+                    quality_status='failed',
+                    quality_issues=[str(exc)],
                     error=str(exc),
                 )
             units.append(unit)
@@ -510,7 +539,7 @@ async def execute_crawl(request: CrawlRequest) -> Any:
     from yosoi.core.crawler.run import _crawl_impl
 
     contracts = request.contract_classes()
-    return await _crawl_impl(
+    crawl_coro = _crawl_impl(
         request.seeds if len(request.seeds) != 1 else request.seeds[0],
         contracts=contracts or None,
         limit=request.limit,
@@ -519,6 +548,16 @@ async def execute_crawl(request: CrawlRequest) -> Any:
         persist=request.persist,
         progress=request.progress,
     )
+    if request.deadline_seconds is not None:
+        return await asyncio.wait_for(crawl_coro, timeout=request.deadline_seconds)
+    return await crawl_coro
+
+
+async def execute_map(request: MapRequest) -> MapResult:
+    """Execute the canonical map request and return sitemap inventory."""
+    from yosoi.core.site_map import discover_site_map
+
+    return await discover_site_map(request)
 
 
 def _require_text(value: Any, *, field: str, row_index: int) -> str:
@@ -567,8 +606,36 @@ async def run_crawl(request: CrawlRequest) -> CrawlResult:
     """Execute a crawl request and normalize summary for machine JSON."""
     from dataclasses import asdict
 
+    from yosoi.storage.crawl_runs import CrawlRunsStore, compact_crawl_summary, crawl_run_status
+
     summary = await execute_crawl(request)
-    return CrawlResult(summary=asdict(summary))
+    run_id = request.run_id
+    if request.store_crawl:
+        if run_id is None:
+            raise ValueError('run_id is required when store_crawl=True')
+        async with CrawlRunsStore() as store:
+            await store.save_summary(
+                run_id=run_id,
+                summary=summary,
+                seeds=request.seeds,
+                failure_threshold=request.failure_threshold,
+                stress=request.stress,
+            )
+    status = cast(
+        Literal['ok', 'partial', 'error'], crawl_run_status(summary, failure_threshold=request.failure_threshold)
+    )
+    if request.compact:
+        return CrawlResult(
+            status=status,
+            summary=compact_crawl_summary(
+                summary,
+                run_id=run_id,
+                failure_threshold=request.failure_threshold,
+                include_html=request.include_html,
+                include_fingerprints=request.include_fingerprints,
+            ),
+        )
+    return CrawlResult(status=status, summary=asdict(summary))
 
 
 async def run_scrape(request: ScrapeRequest) -> ScrapeResult:
@@ -579,3 +646,8 @@ async def run_scrape(request: ScrapeRequest) -> ScrapeResult:
 async def run_search(request: SearchRequest) -> SearchResult:
     """Alias for executing a search request through the canonical surface."""
     return await execute_search(request)
+
+
+async def run_map(request: MapRequest) -> MapResult:
+    """Alias for executing a map request through the canonical surface."""
+    return await execute_map(request)

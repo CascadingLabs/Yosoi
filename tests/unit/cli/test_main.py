@@ -1,11 +1,55 @@
 """Tests for yosoi.cli.main — the main CLI command."""
 
+import json
 import os
+import re
+from pathlib import Path
 
 import pytest
 from click.testing import CliRunner
 
 from yosoi.cli.main import _LEVEL_MAP, main
+
+
+def _clear_policy_env(monkeypatch):
+    for key in (
+        'YOSOI_ATOM_READS',
+        'YOSOI_ATOM_TRUST',
+        'YOSOI_MODEL',
+        'YOSOI_FORCE',
+        'YOSOI_FETCHER_TYPE',
+        'YOSOI_SELECTOR_LEVEL',
+        'YOSOI_CROSS_ORIGIN_DOM',
+        'YOSOI_DISCOVERY_MODE',
+        'YOSOI_SEARCH_BACKEND',
+        'YOSOI_SEARCH_REGION',
+        'YOSOI_SEARCH_SAFESEARCH',
+        'YOSOI_SEARCH_MAX_RESULTS',
+        'YOSOI_SEARCH_PAGE',
+        'YOSOI_SEARCH_TIMELIMIT',
+        'LANGFUSE_PUBLIC_KEY',
+        'LANGFUSE_SECRET_KEY',
+        'LANGFUSE_HOST',
+        'LANGFUSE_BASE_URL',
+    ):
+        monkeypatch.delenv(key, raising=False)
+    import dotenv
+
+    def _skip_dotenv() -> bool:
+        return False
+
+    monkeypatch.setattr(dotenv, 'load_dotenv', _skip_dotenv)
+
+
+def _isolate_policy_home(monkeypatch) -> Path:
+    home = Path.cwd() / 'home'
+    home.mkdir()
+    monkeypatch.setenv('HOME', str(home))
+    return home
+
+
+def _plain_help(output: str) -> str:
+    return re.sub(r'\s+', ' ', re.sub(r'[│╭╮╰╯─]', ' ', output))
 
 
 class TestLevelMap:
@@ -147,3 +191,92 @@ class TestSessionIdOrdering:
 
         assert result.exit_code == 0, result.output
         assert '--atom-reads' in result.output
+
+    def test_root_help_shows_effective_policy_values_from_global_and_local_policy(self, runner, monkeypatch):
+        _clear_policy_env(monkeypatch)
+        with runner.isolated_filesystem():
+            home = _isolate_policy_home(monkeypatch)
+            global_policy = home / '.config' / 'yosoi'
+            global_policy.mkdir(parents=True)
+            (global_policy / 'policy.yaml').write_text(
+                'scrape:\n  max_concurrency: 8\n  fetcher_type: simple\n',
+                encoding='utf-8',
+            )
+            Path('.yosoi').mkdir()
+            Path('.yosoi/policy.yaml').write_text(
+                'atom_reads: true\n'
+                'scrape:\n'
+                '  max_concurrency: 12\n'
+                '  selector_level: xpath\n'
+                'page:\n'
+                '  fetcher_type: headless\n'
+                'output:\n'
+                '  formats: [json, csv]\n',
+                encoding='utf-8',
+            )
+
+            result = runner.invoke(main, ['-h'], terminal_width=200)
+
+        assert result.exit_code == 0, result.output
+        help_text = _plain_help(result.output)
+        assert 'policy: 12' in help_text
+        assert 'policy: simple' in help_text
+        assert 'policy: xpath' in help_text
+        assert 'policy: json,csv' in help_text
+        assert 'policy: true' in help_text
+        assert 'policy: none' in help_text
+
+    def test_search_help_shows_search_policy_values(self, runner, monkeypatch):
+        _clear_policy_env(monkeypatch)
+        with runner.isolated_filesystem():
+            _isolate_policy_home(monkeypatch)
+            Path('.yosoi').mkdir()
+            Path('.yosoi/policy.yaml').write_text(
+                'search:\n'
+                '  backend: brave\n'
+                '  region: wt-wt\n'
+                '  safesearch: off\n'
+                '  max_results: 7\n'
+                '  page: 3\n'
+                '  timelimit: w\n',
+                encoding='utf-8',
+            )
+
+            result = runner.invoke(main, ['search', '--help'], terminal_width=200)
+
+        assert result.exit_code == 0, result.output
+        help_text = _plain_help(result.output)
+        assert 'policy: 7' in help_text
+        assert 'policy: brave' in help_text
+        assert 'policy: wt-wt' in help_text
+        assert 'policy: off' in help_text
+        assert 'policy: 3' in help_text
+        assert 'policy: w' in help_text
+
+    def test_json_help_includes_policy_annotations(self, runner, monkeypatch):
+        _clear_policy_env(monkeypatch)
+        with runner.isolated_filesystem():
+            _isolate_policy_home(monkeypatch)
+            Path('.yosoi').mkdir()
+            Path('.yosoi/policy.yaml').write_text('scrape:\n  max_concurrency: 8\n', encoding='utf-8')
+
+            result = runner.invoke(main, ['--help', '--json'])
+
+        assert result.exit_code == 0, result.output
+        doc = json.loads(result.output)
+        workers = next(option for option in doc['options'] if option['name'] == 'workers')
+        assert 'policy: 8' in workers['help']
+
+    def test_help_renders_empty_policy_sequence_as_word(self, runner, monkeypatch):
+        _clear_policy_env(monkeypatch)
+        with runner.isolated_filesystem():
+            _isolate_policy_home(monkeypatch)
+            Path('.yosoi').mkdir()
+            Path('.yosoi/policy.yaml').write_text('output:\n  formats: []\n', encoding='utf-8')
+
+            result = runner.invoke(main, ['scrape', '-h'], terminal_width=200)
+
+        assert result.exit_code == 0, result.output
+        help_text = _plain_help(result.output)
+        assert 'policy: empty' in help_text
+        assert 'Policy: []' not in result.output

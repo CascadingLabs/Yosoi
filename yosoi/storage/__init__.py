@@ -19,6 +19,7 @@ if TYPE_CHECKING:
     from yosoi.storage.cache_metrics_libsql import LibSQLCacheMetricsStore as LibSQLCacheMetricsStore
     from yosoi.storage.cache_metrics_libsql import ScrapeHealth as ScrapeHealth
     from yosoi.storage.cache_metrics_libsql import ScrapeRunMetric as ScrapeRunMetric
+    from yosoi.storage.crawl_runs import CrawlRunsStore as CrawlRunsStore
     from yosoi.storage.debug import DebugManager as DebugManager
     from yosoi.storage.lesson import LessonStorage as LessonStorage
     from yosoi.storage.persistence import SelectorStorage as SelectorStorage
@@ -34,6 +35,7 @@ _LAZY: dict[str, str] = {
     'ContractCacheMetrics': 'yosoi.storage.cache_metrics_libsql',
     'ScrapeHealth': 'yosoi.storage.cache_metrics_libsql',
     'ScrapeRunMetric': 'yosoi.storage.cache_metrics_libsql',
+    'CrawlRunsStore': 'yosoi.storage.crawl_runs',
     'DebugManager': 'yosoi.storage.debug',
     'LessonStorage': 'yosoi.storage.lesson',
     'SelectorStorage': 'yosoi.storage.persistence',

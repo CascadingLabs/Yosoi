@@ -1,0 +1,23 @@
+# yaml-language-server: $schema=https://cascadinglabs.com/yosoi/schemas/policy.schema.json
+# Public-web frontier pass: avoid paid APIs and hosted LLM discovery unless a caller explicitly overrides.
+atom_reads: true
+trust_tier: strict
+search:
+  provider: ddgs
+  backend: google,bing,brave
+  region: us-en
+  safesearch: moderate
+  max_results: 10
+scrape:
+  fetcher_type: auto
+  skip_verification: false
+  max_concurrency: 4
+discovery:
+  mode: static
+  lesson_cache: true
+output:
+  quiet: true
+  formats:
+    - jsonl
+  flat_files: true
+  logs: true

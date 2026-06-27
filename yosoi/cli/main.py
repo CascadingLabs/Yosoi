@@ -6,11 +6,14 @@ import asyncio
 import json
 import os
 import sys
+import uuid
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Literal, cast
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 import rich_click as click
 from rich.console import Console
+from rich.table import Table
 from rich.theme import Theme
 
 from yosoi.cli.contract_param import ContractParamType
@@ -20,6 +23,9 @@ from yosoi.cli.utils import console, load_urls_from_file
 from yosoi.models.contract import Contract
 from yosoi.models.defaults import NewsArticle
 from yosoi.models.selectors import SelectorLevel
+
+if TYPE_CHECKING:
+    from yosoi.policy import Policy
 
 _DEFAULT_SELECTOR_LEVEL = 'all'
 _DEFAULT_AUTO_WORKERS = 4
@@ -43,6 +49,133 @@ _THEME = Theme(
         'step': 'bold blue',
     }
 )
+
+
+def _new_crawl_run_id() -> str:
+    return f'crawl-{datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")}-{uuid.uuid4().hex[:8]}'
+
+
+def _apply_crawl_cli_overrides(
+    policy: Policy,
+    *,
+    run_id: str | None,
+    max_pages: int | None,
+    max_depth: int | None,
+    max_attempts: int | None,
+    max_pages_per_host: int | None,
+    workers: int | None,
+    per_host_concurrency: int | None,
+    politeness: float | None,
+    timeout: float | None,
+    retries: int | None,
+    respect_robots: bool | None,
+    allow_redirects: bool | None,
+) -> Policy:
+    """Layer crawl stress flags over an existing policy object."""
+    from yosoi.policy import CrawlPolicy, Policy
+
+    crawl = policy.require_crawl()
+    payload = crawl.model_dump()
+
+    budget = dict(payload.get('budget') or {})
+    scheduler = dict(payload.get('scheduler') or {})
+    safety = dict(payload.get('safety') or {})
+
+    if max_pages is not None:
+        budget['max_pages'] = max_pages
+    if max_depth is not None:
+        budget['max_depth'] = max_depth
+    if max_attempts is not None:
+        budget['max_attempts'] = max_attempts
+    if max_pages_per_host is not None:
+        budget['max_pages_per_host'] = max_pages_per_host
+    if run_id is not None and not budget.get('crawl_session_id'):
+        budget['crawl_session_id'] = run_id
+
+    if workers is not None:
+        scheduler['max_workers'] = workers
+    if per_host_concurrency is not None:
+        scheduler['per_host_concurrency'] = per_host_concurrency
+    if politeness is not None:
+        scheduler['politeness_delay'] = politeness
+    if timeout is not None:
+        scheduler['fetch_timeout_seconds'] = timeout
+    if retries is not None:
+        scheduler['max_fetch_retries'] = retries
+
+    if respect_robots is not None:
+        safety['respect_robots'] = respect_robots
+    if allow_redirects is not None:
+        safety['allow_redirects'] = allow_redirects
+
+    payload['budget'] = budget
+    payload['scheduler'] = scheduler
+    payload['safety'] = safety
+    return Policy.cascade(policy, Policy(crawl=CrawlPolicy.model_validate(payload)))
+
+
+def _apply_profile_cli_overrides(
+    policy: Policy,
+    *,
+    profile: str | None,
+    profile_pool: str | None,
+    max_live_profiles: int,
+) -> Policy:
+    """Layer scrape browser-profile flags over an existing policy."""
+    if profile is None and profile_pool is None:
+        return policy
+    if profile is not None and profile_pool is not None:
+        raise click.UsageError('--profile and --profile-pool are mutually exclusive')
+    if max_live_profiles < 1:
+        raise click.BadParameter('--max-live-profiles must be >= 1')
+
+    from yosoi.policy import BrowserProfilePolicy, PagePolicy, Policy
+
+    browser_profile = BrowserProfilePolicy(
+        profile=profile,
+        pool=profile_pool,
+        headful=True,
+        max_live=max_live_profiles,
+    )
+    return Policy.cascade(policy, Policy(page=PagePolicy(profile=browser_profile)))
+
+
+def _render_compact_crawl(summary: dict[str, Any]) -> None:
+    rows = list(summary.get('results', []))
+    wall_time = float(summary.get('wall_time') or 0.0)
+    console.print(
+        f'Crawl stress {summary.get("status")}: '
+        f'{summary.get("pages_fetched", 0)}/{summary.get("attempted_urls", 0)} fetched, '
+        f'{summary.get("failures", 0)} failed, {wall_time:.2f}s',
+        markup=False,
+    )
+    has_errors = any(row.get('error') for row in rows)
+    header = f'{"#":>3}  {"status":<12} {"http":>4} {"d":>2} {"l":>3} {"bytes":>7} {"time":>7}  url'
+    if has_errors:
+        header = f'{header}  error'
+    console.print(header, markup=False)
+    if has_errors:
+        console.print('-' * min(140, len(header)), markup=False)
+    for row in rows:
+        status_text = str(row.get('status') or '')
+        status_code_text = str(row.get('status_code') or '')
+        line = (
+            f'{int(row.get("index") or 0):>3}  '
+            f'{status_text:<12.12} '
+            f'{status_code_text:>4.4} '
+            f'{int(row.get("depth") or 0):>2} '
+            f'{int(row.get("links") or 0):>3} '
+            f'{int(row.get("html_chars") or 0):>7} '
+            f'{float(row.get("fetch_time") or 0.0):>6.2f}s  '
+            f'{row.get("url") or ""}'
+        )
+        if has_errors:
+            line = f'{line}  {row.get("error") or ""}'
+        console.print(line, markup=False)
+    if not rows:
+        console.print('  -  error           -  -   -       -      -  (no attempted URLs)', markup=False)
+    if summary.get('run_id'):
+        console.print(f'run_id={summary["run_id"]}', markup=False)
 
 
 def _resolve_output_formats(flag_values: tuple[str, ...]) -> list[str]:
@@ -81,6 +214,64 @@ def _print_atom_reads_info(ui: Console, policy: object) -> None:
             '[cyan]⚛ Field atoms:[/cyan] [bold green]armed, strict trust[/bold green] '
             '[dim](verified/manual/LLM atoms on selector-cache miss)[/dim]'
         )
+
+
+def _print_map_result(result: object) -> None:
+    from yosoi.core.site_map import MapResult
+
+    typed = cast(MapResult, result)
+    if typed.mode == 'subdomains':
+        console.print(
+            f'[cyan]Subdomains:[/cyan] [bold]{typed.root_host}[/bold] [dim]({len(typed.subdomains)} hosts)[/dim]'
+        )
+    else:
+        console.print(
+            f'[cyan]Map:[/cyan] [bold]{typed.root_host}[/bold] '
+            f'[dim]({len(typed.urls)} URLs, {len(typed.sitemaps)} sitemap probes, {len(typed.hosts)} hosts)[/dim]'
+        )
+    if typed.robots_url:
+        status = 'found' if typed.robots_found else 'missing'
+        console.print(f'[cyan]Robots:[/cyan] {typed.robots_url} [dim]{status}[/dim]')
+
+    if typed.hosts:
+        host_table = Table(
+            title='Subdomains' if typed.mode == 'subdomains' else 'Hosts',
+            show_header=True,
+            header_style='bold cyan',
+        )
+        host_table.add_column('Host')
+        if typed.mode != 'subdomains':
+            host_table.add_column('URLs', justify='right')
+        host_table.add_column('Subdomain')
+        for host in typed.hosts:
+            if typed.mode == 'subdomains':
+                host_table.add_row(host.host, host.subdomain or '')
+            else:
+                host_table.add_row(host.host, str(host.url_count), host.subdomain or '')
+        console.print(host_table)
+
+    if typed.sitemaps:
+        sitemap_table = Table(title='Sitemaps', show_header=True, header_style='bold cyan')
+        sitemap_table.add_column('Status')
+        sitemap_table.add_column('Source')
+        sitemap_table.add_column('URLs', justify='right')
+        sitemap_table.add_column('URL')
+        for sitemap in typed.sitemaps[:20]:
+            sitemap_table.add_row(sitemap.status, sitemap.source, str(sitemap.url_count), sitemap.url)
+        console.print(sitemap_table)
+
+    if typed.urls:
+        url_table = Table(title='Discovered URLs', show_header=True, header_style='bold cyan')
+        url_table.add_column('Host')
+        url_table.add_column('Path')
+        url_table.add_column('Subdomain')
+        for map_url in typed.urls[:30]:
+            url_table.add_row(map_url.host, map_url.path, map_url.subdomain or '')
+        console.print(url_table)
+
+    for error in typed.errors:
+        label = 'Map error' if typed.status == 'error' else 'Map warning'
+        console.print(f'[warning]{label}:[/warning] {error}')
 
 
 def _collect_urls(url: tuple[str, ...], file_path: str | None, limit: int | None, ui: Console) -> list[str]:
@@ -451,6 +642,134 @@ def search(
     console.print(table)
 
 
+@main.group('research')
+def research() -> None:
+    """Create and inspect local research-frontier packets."""
+
+
+@research.command('init')
+@click.argument('topic', nargs=-1, required=True)
+@click.option('--packet-dir', type=click.Path(path_type=Path), default=None)
+@click.option('--llm-budget-usd', type=float, default=0.0)
+@click.option('--api-budget-usd', type=float, default=0.0)
+@click.option('--json', 'json_output', is_flag=True, default=False)
+def research_init(
+    topic: tuple[str, ...],
+    packet_dir: Path | None,
+    llm_budget_usd: float,
+    api_budget_usd: float,
+    json_output: bool,
+) -> None:
+    """Create a research packet skeleton under .yosoi/research."""
+    from yosoi.research import create_packet
+
+    topic_text = ' '.join(topic).strip()
+    packet = create_packet(
+        topic_text,
+        packet_dir=packet_dir,
+        llm_budget_usd=llm_budget_usd,
+        api_budget_usd=api_budget_usd,
+    )
+    if json_output:
+        echo_json({'packet': str(packet), 'topic': topic_text})
+        return
+    console.print(str(packet), markup=False)
+
+
+@research.command('observe')
+@click.argument('packet', type=click.Path(path_type=Path))
+@click.option('--from-scrape', 'scrape_artifact', type=click.Path(exists=True, path_type=Path), default=None)
+@click.option('--from-search', 'search_artifact', type=click.Path(exists=True, path_type=Path), default=None)
+@click.option('--from-crawl', 'crawl_artifact', type=click.Path(exists=True, path_type=Path), default=None)
+@click.option('--note', default=None)
+@click.option(
+    '--contract-status',
+    type=click.Choice(['candidate', 'validated', 'provisional', 'rejected', 'production']),
+    default=None,
+)
+@click.option('--json', 'json_output', is_flag=True, default=False)
+def research_observe(
+    packet: Path,
+    scrape_artifact: Path | None,
+    search_artifact: Path | None,
+    crawl_artifact: Path | None,
+    note: str | None,
+    contract_status: str | None,
+    json_output: bool,
+) -> None:
+    """Append structured observations from search, crawl, scrape, or notes."""
+    from yosoi.research import (
+        append_observations,
+        observation_from_artifact,
+        observation_from_note,
+        observations_from_scrape,
+    )
+
+    sources = [value is not None for value in (scrape_artifact, search_artifact, crawl_artifact, note)]
+    if sum(sources) != 1:
+        raise click.UsageError('Pass exactly one of --from-scrape, --from-search, --from-crawl, or --note')
+
+    observations = []
+    if scrape_artifact is not None:
+        observations = observations_from_scrape(scrape_artifact, contract_status=contract_status)  # type: ignore[arg-type]
+    elif search_artifact is not None:
+        observations = [
+            observation_from_artifact('search', search_artifact, contract_status=contract_status or 'candidate')
+        ]  # type: ignore[arg-type]
+    elif crawl_artifact is not None:
+        observations = [
+            observation_from_artifact('crawl', crawl_artifact, contract_status=contract_status or 'candidate')
+        ]  # type: ignore[arg-type]
+    elif note is not None:
+        observations = [observation_from_note(note, contract_status=contract_status or 'candidate')]  # type: ignore[arg-type]
+
+    path = append_observations(packet, observations)
+    payload = {'observations': len(observations), 'path': str(path)}
+    if json_output:
+        echo_json(payload)
+        return
+    console.print(f'Appended {len(observations)} observation(s) to {path}', markup=False)
+
+
+@research.command('status')
+@click.argument('packet', type=click.Path(exists=True, path_type=Path))
+@click.option('--json', 'json_output', is_flag=True, default=False)
+def research_status(packet: Path, json_output: bool) -> None:
+    """Summarize contract promotion states and open quality gaps."""
+    from rich import box
+
+    from yosoi.research import summarize_packet
+
+    summary = summarize_packet(packet)
+    if json_output:
+        echo_json(summary)
+        return
+
+    console.print(f'Research packet: {summary["topic"]}', markup=False)
+    table = Table(box=box.SIMPLE_HEAVY, show_header=True, header_style='bold cyan')
+    table.add_column('Contract')
+    table.add_column('Status')
+    table.add_column('Obs', justify='right')
+    table.add_column('Quality')
+    table.add_column('Records', justify='right')
+    table.add_column('Latest Artifact', overflow='fold')
+    for contract_name, row in summary['contracts'].items():
+        table.add_row(
+            contract_name,
+            str(row.get('status') or ''),
+            str(row.get('observations') or 0),
+            str(row.get('latest_quality_status') or ''),
+            str(row.get('latest_record_count') or ''),
+            str(row.get('latest_artifact') or ''),
+        )
+    console.print(table)
+    gaps = summary.get('open_quality_gaps') or []
+    if gaps:
+        console.print('[warning]Open replay/quality gaps:[/warning]')
+        for gap in gaps:
+            console.print(f'- {gap}', markup=False)
+
+
 @main.command('scrape')
 @click.argument('urls', nargs=-1)
 @click.option(
@@ -530,6 +849,9 @@ def search(
     metavar='N',
     help='Concurrent URL workers. 0=auto, capped at 4; use 1 for sequential.',
 )
+@click.option('--profile-pool', default=None, metavar='NAME', help='VoidCrawl managed profile pool.')
+@click.option('--profile', default=None, metavar='ID', help='VoidCrawl managed profile id.')
+@click.option('--max-live-profiles', type=int, default=3, show_default=True, help='Active profile cap.')
 @click.option('--session-id', default=None)
 def scrape(
     urls: tuple[str, ...],
@@ -552,6 +874,9 @@ def scrape(
     selector_level: str,
     json_output: bool,
     workers: int,
+    profile_pool: str | None,
+    profile: str | None,
+    max_live_profiles: int,
     session_id: str | None,
 ) -> None:
     """Scrape URL(s) through the public ys.scrape operation surface.
@@ -589,6 +914,12 @@ def scrape(
         atom_reads=atom_reads,
         policy_sources=policy_source,
     )
+    policy = _apply_profile_cli_overrides(
+        policy,
+        profile=profile,
+        profile_pool=profile_pool,
+        max_live_profiles=max_live_profiles,
+    )
 
     ui: Console = Console(theme=_THEME, stderr=True) if json_output else console
     if not dump_request:
@@ -606,6 +937,8 @@ def scrape(
             raise click.ClickException(f'Cannot parse ScrapeRequest {request_file!r}: {exc}') from exc
         if no_llm:
             request = request.model_copy(update={'allow_llm': False})
+        if profile is not None or profile_pool is not None:
+            request = request.model_copy(update={'policy': policy})
     else:
         if not all_urls:
             raise click.UsageError('No URLs provided. Pass URL(s) as arguments or use --url / --file')
@@ -847,6 +1180,24 @@ def discover(
 @click.option('-t', '--fetcher', type=click.Choice(_FETCHER_CHOICES, case_sensitive=False), default=None)
 @click.option('--persist', is_flag=True, help='Persist crawl frontier/checkpoint state.')
 @click.option('--progress/--no-progress', default=None)
+@click.option('--stress', is_flag=True, help='Store crawl run metrics and use stress-friendly compact output.')
+@click.option('--run-id', default=None, metavar='ID', help='Stable crawl run/checkpoint id.')
+@click.option('--compact/--full', 'compact_output', default=None, help='Choose compact or full machine crawl output.')
+@click.option('--include-html', is_flag=True, help='Include page HTML in compact crawl JSON.')
+@click.option('--include-fingerprints', is_flag=True, help='Include fingerprints/observations in compact crawl JSON.')
+@click.option('--failure-threshold', type=int, default=0, help='Failures allowed before crawl status becomes partial.')
+@click.option('--max-pages', type=int, default=None, help='Crawl page budget.')
+@click.option('--max-depth', type=int, default=None, help='Maximum crawl depth.')
+@click.option('--max-attempts', type=int, default=None, help='Attempt budget including failed pages.')
+@click.option('--max-pages-per-host', type=int, default=None, help='Per-host page budget.')
+@click.option('--workers', type=int, default=None, help='Maximum crawl workers.')
+@click.option('--per-host-concurrency', type=int, default=None, help='Maximum concurrent fetches per host.')
+@click.option('--politeness', type=float, default=None, help='Per-host politeness delay in seconds.')
+@click.option('--timeout', 'timeout_seconds', type=float, default=None, help='Fetch timeout in seconds.')
+@click.option('--deadline', 'deadline_seconds', type=float, default=None, help='Wall-clock crawl deadline in seconds.')
+@click.option('--retries', type=int, default=None, help='Maximum fetch retries.')
+@click.option('--respect-robots/--no-respect-robots', default=None, help='Honor robots.txt during crawl.')
+@click.option('--allow-redirects/--no-allow-redirects', default=None, help='Allow fetch redirects during crawl.')
 @click.option('--json', 'json_output', is_flag=True, default=False)
 def crawl(
     seeds: tuple[str, ...],
@@ -860,15 +1211,34 @@ def crawl(
     fetcher: str | None,
     persist: bool,
     progress: bool | None,
+    stress: bool,
+    run_id: str | None,
+    compact_output: bool | None,
+    include_html: bool,
+    include_fingerprints: bool,
+    failure_threshold: int,
+    max_pages: int | None,
+    max_depth: int | None,
+    max_attempts: int | None,
+    max_pages_per_host: int | None,
+    workers: int | None,
+    per_host_concurrency: int | None,
+    politeness: float | None,
+    timeout_seconds: float | None,
+    deadline_seconds: float | None,
+    retries: int | None,
+    respect_robots: bool | None,
+    allow_redirects: bool | None,
     json_output: bool,
 ) -> None:
     """Crawl seed URL(s) through the public ys.crawl operation surface."""
-    from dataclasses import asdict
-
     from yosoi.cli import exit_codes
     from yosoi.operations import CrawlRequest, run_crawl
     from yosoi.policy import Policy
     from yosoi.policy.files import load_policy_layers
+
+    if failure_threshold < 0:
+        raise click.BadParameter('--failure-threshold must be >= 0')
 
     if request_file:
         try:
@@ -876,12 +1246,42 @@ def crawl(
                 request = CrawlRequest.model_validate_json(handle.read())
         except Exception as exc:
             raise click.ClickException(f'Cannot parse CrawlRequest {request_file!r}: {exc}') from exc
+        if stress and request.run_id is None:
+            request.run_id = run_id or _new_crawl_run_id()
+            request.store_crawl = True
+            request.stress = True
+            request.compact = compact_output if compact_output is not None else True
+        elif run_id is not None:
+            request.run_id = run_id
+        if compact_output is not None:
+            request.compact = compact_output
+        request.include_html = request.include_html or include_html
+        request.include_fingerprints = request.include_fingerprints or include_fingerprints
+        request.failure_threshold = failure_threshold
+        if deadline_seconds is not None:
+            request.deadline_seconds = deadline_seconds
     else:
         all_seeds: list[str] = list(seeds) + list(url) + (load_urls_from_file(file_path) if file_path else [])
         if not all_seeds:
             raise click.UsageError('No seeds provided. Pass seed(s) as arguments or use --url / --file')
+        resolved_run_id = run_id or (_new_crawl_run_id() if stress or persist else None)
         policy = Policy.cascade(
             Policy.for_crawl('crawl.conservative'), Policy.from_env(), load_policy_layers(policy_source)
+        )
+        policy = _apply_crawl_cli_overrides(
+            policy,
+            run_id=resolved_run_id,
+            max_pages=max_pages,
+            max_depth=max_depth,
+            max_attempts=max_attempts,
+            max_pages_per_host=max_pages_per_host,
+            workers=workers,
+            per_host_concurrency=per_host_concurrency,
+            politeness=politeness,
+            timeout=timeout_seconds,
+            retries=retries,
+            respect_robots=respect_robots,
+            allow_redirects=allow_redirects,
         )
         request = CrawlRequest.from_axes(
             all_seeds,
@@ -891,27 +1291,130 @@ def crawl(
             fetcher_type=fetcher,
             persist=persist,
             progress=progress if progress is not None else (False if json_output else None),
+            run_id=resolved_run_id,
+            compact=compact_output if compact_output is not None else stress,
+            include_html=include_html,
+            include_fingerprints=include_fingerprints,
+            store_crawl=stress,
+            stress=stress,
+            failure_threshold=failure_threshold,
+            deadline_seconds=deadline_seconds,
         )
 
     if dump_request:
         click.echo(request.model_dump_json(indent=2))
         return
 
-    if json_output:
-        try:
+    try:
+        if json_output or request.compact or request.store_crawl:
             result = asyncio.run(run_crawl(request))
-        except Exception as exc:  # noqa: BLE001
-            sys.stdout.write(json.dumps({'type': 'error', 'message': str(exc)}) + '\n')
-            sys.stdout.flush()
-            sys.exit(exit_codes.ERROR)
+        else:
+            from yosoi.operations import execute_crawl
+            from yosoi.reporting import show
+
+            summary = asyncio.run(execute_crawl(request))
+            show(summary)
+            return
+    except (RuntimeError, ValueError, OSError, TypeError) as exc:
+        message = str(exc)
+        if isinstance(exc, TimeoutError):
+            message = f'Crawl deadline exceeded after {request.deadline_seconds}s'
+        sys.stdout.write(json.dumps({'type': 'error', 'message': message}) + '\n')
+        sys.stdout.flush()
+        sys.exit(exit_codes.ERROR)
+
+    if json_output:
         sys.stdout.write(result.model_dump_json() + '\n')
         sys.stdout.flush()
         sys.exit(exit_codes.RECORDS)
 
-    from yosoi.operations import execute_crawl
+    _render_compact_crawl(result.summary)
 
-    summary = asyncio.run(execute_crawl(request))
-    console.print(json.dumps(asdict(summary), default=str, indent=2))
+
+# ── map command — ys.map operation surface ───────────────────────────────────
+
+
+@main.command('map')
+@click.argument('site', required=False)
+@click.option('-u', '--url', 'url_option', default=None, help='Site URL or hostname.')
+@click.option('--request', 'request_file', default=None, metavar='FILE', help='MapRequest JSON file.')
+@click.option('--dump-request', is_flag=True, help='Print the resolved MapRequest JSON and exit.')
+@click.option('--max-sitemaps', type=int, default=20)
+@click.option('--max-urls', type=int, default=500)
+@click.option('--max-subdomains', type=int, default=500)
+@click.option('--subfinder-bin', default='subfinder', help='subfinder executable to run for --subdomains.')
+@click.option('--subfinder-timeout', type=int, default=60, help='Seconds before aborting subfinder.')
+@click.option('--robots/--no-robots', 'include_robots', default=True)
+@click.option('--default-sitemaps/--no-default-sitemaps', 'include_default_sitemaps', default=True)
+@click.option(
+    '--subdomains',
+    'discover_subdomains',
+    is_flag=True,
+    default=False,
+    help='Enumerate subdomains with subfinder instead of sitemap URLs.',
+)
+@click.option('--json', 'json_output', is_flag=True, default=False)
+def map_command(
+    site: str | None,
+    url_option: str | None,
+    request_file: str | None,
+    dump_request: bool,
+    max_sitemaps: int,
+    max_urls: int,
+    max_subdomains: int,
+    subfinder_bin: str,
+    subfinder_timeout: int,
+    include_robots: bool,
+    include_default_sitemaps: bool,
+    discover_subdomains: bool,
+    json_output: bool,
+) -> None:
+    """Map a site's sitemap URLs, or enumerate subdomains with --subdomains."""
+    from yosoi.cli import exit_codes
+    from yosoi.operations import MapRequest, run_map
+
+    if request_file:
+        try:
+            with open(request_file, encoding='utf-8') as handle:
+                request = MapRequest.model_validate_json(handle.read())
+        except Exception as exc:
+            raise click.ClickException(f'Cannot parse MapRequest {request_file!r}: {exc}') from exc
+    else:
+        target = url_option or site
+        if target is None:
+            raise click.UsageError('No site provided. Pass a positional site or --url')
+        request = MapRequest(
+            url=target,
+            max_sitemaps=max_sitemaps,
+            max_urls=max_urls,
+            max_subdomains=max_subdomains,
+            subfinder_bin=subfinder_bin,
+            subfinder_timeout=subfinder_timeout,
+            include_robots=include_robots,
+            include_default_sitemaps=include_default_sitemaps,
+            discover_subdomains=discover_subdomains,
+        )
+
+    if dump_request:
+        click.echo(request.model_dump_json(indent=2))
+        return
+
+    try:
+        result = asyncio.run(run_map(request))
+    except Exception as exc:
+        if json_output:
+            sys.stdout.write(json.dumps({'type': 'error', 'message': str(exc)}) + '\n')
+            sys.stdout.flush()
+            sys.exit(exit_codes.ERROR)
+        raise click.ClickException(str(exc)) from exc
+
+    if json_output:
+        sys.stdout.write(result.model_dump_json() + '\n')
+        sys.stdout.flush()
+        sys.exit(exit_codes.RECORDS if result.status != 'error' else exit_codes.ERROR)
+
+    _print_map_result(result)
+    sys.exit(exit_codes.RECORDS if result.status != 'error' else exit_codes.ERROR)
 
 
 # ── policy command group ──────────────────────────────────────────────────────

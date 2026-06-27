@@ -26,7 +26,7 @@ class OpenCodeModel(Model):
         self,
         *,
         provider_id: str = 'openai',
-        model_id: str = 'gpt-5-codex',
+        model_id: str = 'gpt-5.3-codex-spark',
         base_url: str | None = None,
     ) -> None:
         """Initialize the transport with OpenCode provider, model, and server settings."""

@@ -26,6 +26,13 @@ class BrowserConfigWithoutExtraArgs:
     }
 
 
+class BrowserConfigWithUserDataDir(BrowserConfigWithExtraArgs):
+    model_fields: ClassVar[dict[str, object]] = {
+        **BrowserConfigWithExtraArgs.model_fields,
+        'user_data_dir': object(),
+    }
+
+
 def test_isolation_stays_intact_by_default() -> None:
     kwargs = HeadlessFetcher()._browser_config_kwargs(BrowserConfigWithExtraArgs)
 
@@ -60,6 +67,17 @@ def test_opt_in_composes_with_identity_profile_args() -> None:
 
     assert kwargs['extra_args'][-1] == ISOLATION_ARG
     assert any('--user-data-dir=/tmp/profile' in arg for arg in kwargs['extra_args'])
+
+
+def test_identity_profile_uses_native_voidcrawl_user_data_dir_when_available() -> None:
+    from yosoi.core.fetcher.identity import BrowserIdentity
+
+    fetcher = HeadlessFetcher(identity=BrowserIdentity(id='warm', profile_dir='/tmp/profile'))
+
+    kwargs = fetcher._browser_config_kwargs(BrowserConfigWithUserDataDir)
+
+    assert kwargs['user_data_dir'] == '/tmp/profile'
+    assert '--user-data-dir=/tmp/profile' not in kwargs.get('extra_args', [])
 
 
 def test_jsfetcher_threads_flag_to_chrome_tiers() -> None:

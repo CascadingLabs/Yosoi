@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, cast
@@ -13,17 +14,21 @@ from yosoi.models.contract import Contract
 from yosoi.operations import (
     ContractRef,
     CrawlRequest,
+    MapRequest,
+    MapResult,
     ScrapeRequest,
     ScrapeUnitResult,
     SearchRequest,
     _envelope,
     _selector_level,
     execute_crawl,
+    execute_map,
     execute_scrape,
     execute_search,
     normalize_scrape_result,
     normalize_search_result,
     run_crawl,
+    run_map,
     run_search,
 )
 
@@ -233,6 +238,74 @@ async def test_execute_scrape_and_crawl_delegate(monkeypatch, mocker):
     assert result.summary == {'pages': 7}
 
 
+async def test_execute_crawl_enforces_deadline(monkeypatch):
+    from yosoi.core.crawler import run as crawl_run
+
+    async def slow_crawl(*_args, **_kwargs):
+        await asyncio.sleep(1)
+
+    monkeypatch.setattr(crawl_run, '_crawl_impl', slow_crawl)
+
+    with pytest.raises(TimeoutError):
+        await execute_crawl(CrawlRequest.from_axes('https://one.test', deadline_seconds=0.01))
+
+
+async def test_run_crawl_compact_output_and_persistence(monkeypatch, mocker, tmp_path):
+    from yosoi.core.crawler import run as crawl_run
+    from yosoi.core.crawler.coordinator import CrawlJob, CrawlRunSummary
+    from yosoi.core.crawler.coordinator import CrawlResult as PageResult
+    from yosoi.storage.crawl_runs import CrawlRunsStore
+
+    summary = CrawlRunSummary(
+        results=[
+            PageResult(
+                job=CrawlJob(url='https://one.test', depth=0, source_url=None, batch_index=0),
+                status='failed',
+                html_chars=0,
+                fetch_time=0.1,
+                error='boom',
+            )
+        ],
+        failures=1,
+    )
+    summary.attempted_urls = 1
+    crawl_impl = mocker.AsyncMock(return_value=summary)
+    monkeypatch.setattr(crawl_run, '_crawl_impl', crawl_impl)
+
+    db_path = tmp_path / 'yosoi.sqlite3'
+    mocker.patch('yosoi.storage.crawl_runs.CrawlRunsStore', return_value=CrawlRunsStore(database_url=db_path))
+
+    request = CrawlRequest.from_axes(
+        'https://one.test',
+        compact=True,
+        run_id='run-compact',
+        store_crawl=True,
+        stress=True,
+    )
+    result = await run_crawl(request)
+
+    assert result.status == 'partial'
+    assert result.summary['run_id'] == 'run-compact'
+    assert result.summary['results'][0]['error'] == 'boom'
+    async with CrawlRunsStore(database_url=db_path) as store:
+        stored = await store.load_run('run-compact')
+    assert stored is not None
+    assert stored['status'] == 'partial'
+
+
+async def test_execute_map_delegates_to_site_mapper(monkeypatch, mocker):
+    from yosoi.core import site_map
+
+    expected = MapResult(requested_url='https://example.com/', root_url='https://example.com/', root_host='example.com')
+    discover = mocker.AsyncMock(return_value=expected)
+    monkeypatch.setattr(site_map, 'discover_site_map', discover)
+
+    request = MapRequest(url='example.com', max_urls=10)
+    assert await execute_map(request) == expected
+    assert await run_map(request) == expected
+    assert discover.await_args.args[0].url == 'https://example.com/'
+
+
 async def test_execute_scrape_reports_metadata_and_llm_blocked(monkeypatch, mocker):
     import yosoi.api as api_module
     from yosoi.utils.exceptions import LLMBlockedError
@@ -243,6 +316,9 @@ async def test_execute_scrape_reports_metadata_and_llm_blocked(monkeypatch, mock
             'selector_source': 'cache',
             'cache_decision': 'hit',
             'llm_used': False,
+            'quality_status': 'partial',
+            'quality_issues': ['record_count dropped from discovery baseline 4 to 2'],
+            'expected_record_count': 4,
         }
         return [{'title': 'ok'}]
 
@@ -252,10 +328,13 @@ async def test_execute_scrape_reports_metadata_and_llm_blocked(monkeypatch, mock
     result = await execute_scrape(ScrapeRequest.from_axes('https://one.test', OpContract))
 
     unit = result.results[0]
-    assert result.status == 'ok'
+    assert result.status == 'partial'
     assert unit.selector_source == 'cache'
     assert unit.cache_decision == 'hit'
     assert unit.llm_used is False
+    assert unit.quality_status == 'partial'
+    assert unit.expected_record_count == 4
+    assert unit.quality_issues == ['record_count dropped from discovery baseline 4 to 2']
     persist.assert_awaited_once()
 
     monkeypatch.setattr(api_module, '_scrape_impl', mocker.AsyncMock(side_effect=LLMBlockedError('cache_miss')))

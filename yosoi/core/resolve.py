@@ -17,7 +17,7 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 from yosoi.models.needs_discovery import NeedsDiscovery
-from yosoi.models.selectors import SelectorLevel
+from yosoi.models.selectors import SelectorEntry, SelectorLevel, coerce_selector_entry
 from yosoi.policy import Policy
 
 logger = logging.getLogger(__name__)
@@ -159,7 +159,7 @@ def _extract_from_html(
     cleaned = cleaner.clean_html(html)
 
     extractor = ContentExtractor(console=quiet_console, contract=contract)
-    container_selector = _root_selector_value(contract, selectors)
+    container_selector = _root_selector_entry(contract, selectors)
     raw: dict[str, Any] | list[dict[str, Any]] | None
     if container_selector:
         raw = extractor.extract_items(
@@ -192,24 +192,21 @@ def _extract_from_html(
     return validated
 
 
-def _root_selector_value(contract: type[Any], selectors: SelectorMap) -> str | None:
-    """Return a CSS root selector for grouped replay, if one is configured."""
+def _root_selector_entry(contract: type[Any], selectors: SelectorMap) -> SelectorEntry | None:
+    """Return a typed root selector for grouped replay, if one is configured."""
     contract_root = getattr(contract, 'get_root', lambda: None)()
     if contract_root is not None:
-        value = getattr(contract_root, 'value', None)
-        return value if isinstance(value, str) and value else None
+        return coerce_selector_entry(contract_root)
 
     root_entry = selectors.get('root')
     if not isinstance(root_entry, dict):
         return None
     primary = root_entry.get('primary')
-    if isinstance(primary, str) and primary:
-        return primary
-    if isinstance(primary, dict):
-        value = primary.get('value')
-        return value if isinstance(value, str) and value else None
+    coerced = coerce_selector_entry(primary)
+    if coerced is not None:
+        return coerced
     value = root_entry.get('value')
-    return value if isinstance(value, str) and value else None
+    return coerce_selector_entry(root_entry if isinstance(value, str) and value else None)
 
 
 def build_cache_from_selectors(

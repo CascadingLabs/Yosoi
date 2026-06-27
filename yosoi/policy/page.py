@@ -5,12 +5,29 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from yosoi.policy._base import StrictFloat, StrictInt
 
 FetcherPolicyName = Literal['auto', 'simple', 'headless', 'headful', 'waterfall']
 CleanerProfileName = Literal['discovery', 'raw']
+
+
+class BrowserProfilePolicy(BaseModel):
+    """VoidCrawl-managed browser profile selection."""
+
+    model_config = ConfigDict(frozen=True)
+
+    profile: str | None = None
+    pool: str | None = None
+    headful: bool = False
+    max_live: StrictInt = Field(default=3, ge=1, le=100)
+
+    @model_validator(mode='after')
+    def _exclusive_profile_source(self) -> BrowserProfilePolicy:
+        if self.profile and self.pool:
+            raise ValueError('profile.profile and profile.pool are mutually exclusive')
+        return self
 
 
 class PagePolicy(BaseModel):
@@ -25,6 +42,7 @@ class PagePolicy(BaseModel):
     clean_html: bool = True
     cleaner_profile: CleanerProfileName = 'discovery'
     chrome_ws_urls: tuple[str, ...] = ()
+    profile: BrowserProfilePolicy | None = None
 
     @field_validator('chrome_ws_urls', mode='before')
     @classmethod
@@ -57,6 +75,13 @@ class PageRuntimeConfig(BaseModel):
     clean_html: bool
     cleaner_profile: CleanerProfileName
     chrome_ws_urls: tuple[str, ...]
+    profile: BrowserProfilePolicy | None
 
 
-__all__ = ['CleanerProfileName', 'FetcherPolicyName', 'PagePolicy', 'PageRuntimeConfig']
+__all__ = [
+    'BrowserProfilePolicy',
+    'CleanerProfileName',
+    'FetcherPolicyName',
+    'PagePolicy',
+    'PageRuntimeConfig',
+]

@@ -151,6 +151,7 @@ class PipelineCacheMixin:
                 format_to_use,
                 root_span=root_span,
                 selectors_payload=existing,
+                quality_snapshots=snapshots,
             )
 
         fetch_result = await self._fetch_and_clean_for_cache(url, fetcher)
@@ -166,6 +167,7 @@ class PipelineCacheMixin:
                 format_to_use,
                 root_span=root_span,
                 selectors_payload=existing_for_payload,
+                quality_snapshots=snapshots,
             )
 
         raw_html, cleaned_html = fetch_result
@@ -334,7 +336,7 @@ class PipelineCacheMixin:
         )
         existing = {name: data for name, snap in snapshots.items() if (data := snapshot_to_selector_dict(snap))}
         await self._record_cache_hit_metric(url, domain, fresh_fields)
-        root_entry = host._resolve_root(existing)
+        root_entry = host._resolve_root(dict(existing))
         container_selector = host._root_value(root_entry)
         with observability.span('extract', url=url, mode='cache', container=container_selector or 'single'):
             items_list = self._resolve_cached_records(url, domain, raw_html, existing)
@@ -347,10 +349,18 @@ class PipelineCacheMixin:
                 fetcher=fetcher,
                 root_span=root_span,
                 selectors_payload=existing,
+                quality_snapshots=snapshots,
             )
         self.console.print('[warning]⚠ Extraction failed with cached selectors[/warning]')
         return self._yield_cached_items(
-            None, url, domain, format_to_use, fetcher=fetcher, root_span=root_span, selectors_payload=existing
+            None,
+            url,
+            domain,
+            format_to_use,
+            fetcher=fetcher,
+            root_span=root_span,
+            selectors_payload=existing,
+            quality_snapshots=snapshots,
         )
 
     def _resolve_cached_records(
@@ -451,6 +461,7 @@ class PipelineCacheMixin:
             for v in validated:
                 yield v
             save_content: ContentMap | ContentItems = validated if len(validated) > 1 else validated[0]
+            self._set_quality(status='ok', issues=[], expected_record_count=len(validated))
             for fmt in format_to_use:
                 await self.storage.save_content(url, save_content, fmt, contract_sig=self._contract_sig)
             await host._record_fetch_strategy_selector_level(fetcher, domain)
@@ -583,6 +594,7 @@ class PipelineCacheMixin:
         fetcher: HTMLFetcher | None = None,
         root_span: Any | None = None,
         selectors_payload: dict[str, Any] | None = None,
+        quality_snapshots: dict[str, SelectorSnapshot] | None = None,
     ) -> AsyncIterator[ContentMap]:
         """Wrap cached items into an async generator that tracks and saves."""
         host = cast('_PipelineCacheHost', self)
@@ -592,11 +604,14 @@ class PipelineCacheMixin:
             if items:
                 validated = host._validate_items(items, url)
                 validated_for_output = validated
+                self._evaluate_replay_quality(validated, quality_snapshots)
                 for v in validated:
                     yield v
                 save_content: ContentMap | ContentItems = validated if len(validated) > 1 else validated[0]
                 for fmt in format_to_use:
                     await self.storage.save_content(url, save_content, fmt, contract_sig=self._contract_sig)
+            else:
+                self._evaluate_replay_quality(None, quality_snapshots)
             if fetcher is not None:
                 await host._record_fetch_strategy_selector_level(fetcher, domain)
             await self._track_cached_success(url, domain)
