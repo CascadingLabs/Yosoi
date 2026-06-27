@@ -230,7 +230,7 @@ class TestToContractPaths:
         class RootedContract(Contract):
             title: str = pydantic.Field(description='Title')
 
-        RootedContract.root = SelectorEntry(type='css', value='.card')  # type: ignore[attr-defined]
+        RootedContract.root = SelectorEntry(type='css', value='.card')
 
         spec = ContractSpec.from_contract(RootedContract)
         assert spec.root is not None

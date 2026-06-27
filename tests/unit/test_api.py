@@ -52,6 +52,83 @@ async def test_scrape_accepts_a_list_of_contracts(monkeypatch):
     assert all(i.kwargs.get('bus') is None for i in FakePipeline.instances)
 
 
+async def test_search_builds_request_and_forwards_limit(mocker, monkeypatch):
+    from yosoi.operations import SearchRequest, SearchResult
+
+    monkeypatch.delenv('YOSOI_SEARCH_BACKEND', raising=False)
+    monkeypatch.delenv('YOSOI_SEARCH_REGION', raising=False)
+    monkeypatch.delenv('YOSOI_SEARCH_SAFESEARCH', raising=False)
+    monkeypatch.delenv('YOSOI_SEARCH_MAX_RESULTS', raising=False)
+    monkeypatch.delenv('YOSOI_SEARCH_PAGE', raising=False)
+    monkeypatch.delenv('YOSOI_SEARCH_TIMELIMIT', raising=False)
+    run = mocker.patch(
+        'yosoi.operations.run_search',
+        mocker.AsyncMock(return_value=SearchResult(request=SearchRequest(query='widgets'))),
+    )
+
+    result = await ys.search(
+        'widgets',
+        backend='google,bing,brave',
+        region='us-en',
+        safesearch='off',
+        timelimit='w',
+        limit=4,
+        page=2,
+    )
+
+    assert result.request.query == 'widgets'
+    request = run.await_args.args[0]
+    assert request.backend == 'google,bing,brave'
+    assert request.region == 'us-en'
+    assert request.safesearch == 'off'
+    assert request.timelimit == 'w'
+    assert request.max_results == 4
+    assert request.page == 2
+
+
+async def test_search_uses_policy_defaults_and_call_site_overrides(mocker, monkeypatch):
+    from yosoi.operations import SearchRequest, SearchResult
+
+    monkeypatch.delenv('YOSOI_SEARCH_BACKEND', raising=False)
+    monkeypatch.delenv('YOSOI_SEARCH_REGION', raising=False)
+    monkeypatch.delenv('YOSOI_SEARCH_SAFESEARCH', raising=False)
+    monkeypatch.delenv('YOSOI_SEARCH_MAX_RESULTS', raising=False)
+    monkeypatch.delenv('YOSOI_SEARCH_PAGE', raising=False)
+    monkeypatch.delenv('YOSOI_SEARCH_TIMELIMIT', raising=False)
+    run = mocker.patch(
+        'yosoi.operations.run_search',
+        mocker.AsyncMock(return_value=SearchResult(request=SearchRequest(query='widgets'))),
+    )
+
+    await ys.search(
+        'widgets',
+        policy=ys.Policy(
+            search=ys.SearchPolicy(
+                backend='bing',
+                region='wt-wt',
+                safesearch='off',
+                max_results=7,
+                page=3,
+                timelimit='m',
+            )
+        ),
+        limit=2,
+    )
+
+    request = run.await_args.args[0]
+    assert request.backend == 'bing'
+    assert request.region == 'wt-wt'
+    assert request.safesearch == 'off'
+    assert request.timelimit == 'm'
+    assert request.max_results == 2
+    assert request.page == 3
+
+
+async def test_search_rejects_conflicting_limit_aliases():
+    with pytest.raises(ValueError, match='Pass only one'):
+        await ys.search('widgets', max_results=3, limit=4)
+
+
 async def test_scrape_accepts_a_list_of_urls(monkeypatch):
     """scrape() with a LIST of urls returns a url-keyed dict, one unit per url."""
     FakePipeline.instances.clear()

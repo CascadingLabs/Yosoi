@@ -355,7 +355,7 @@ async def test_orchestrator_field_descriptions_flat_nested(llm_config, mock_stor
     class _NestedProduct(ys.Contract):
         root = ys.css('.product-card')
         name: str = ys.Title()
-        price: _SubPrice = ys.Field(description='Price info')  # type: ignore[assignment]
+        price: _SubPrice = ys.Field(description='Price info')
 
     descs = _NestedProduct.field_descriptions()
     assert 'name' in descs
@@ -377,7 +377,7 @@ async def test_orchestrator_adds_discover_task_for_auto_root(llm_config, mock_st
     class _AutoProduct(ys.Contract):
         root = ys.css('.product-card')
         name: str = ys.Title()
-        price: _AutoPrice = ys.Field(description='Price info')  # type: ignore[assignment]
+        price: _AutoPrice = ys.Field(description='Price info')
 
     orch = DiscoveryOrchestrator(
         contract=_AutoProduct,

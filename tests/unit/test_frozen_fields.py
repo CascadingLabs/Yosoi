@@ -153,6 +153,7 @@ class TestFrozenGuardInPipeline:
             stale,
             fmt,
             max_discovery_retries=3,
+            llm_reason='stale_selector',
             *,
             root_span=None,
         ):

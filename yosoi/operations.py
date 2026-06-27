@@ -11,6 +11,7 @@ import json
 from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from typing import Any, Literal
+from urllib.parse import urlparse
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -19,10 +20,13 @@ from yosoi.models.contract import Contract
 from yosoi.models.defaults import NewsArticle
 from yosoi.models.selectors import SelectorLevel
 from yosoi.models.spec import ContractSpec
-from yosoi.policy import Policy
+from yosoi.policy import Policy, SearchPolicy
 from yosoi.utils.contracts import resolve_contract
 
 ContractInput = str | type[Contract] | ContractSpec | dict[str, Any]
+SearchKind = Literal['text']
+SearchProvider = Literal['ddgs']
+SafeSearch = Literal['on', 'moderate', 'off']
 
 
 class ContractRef(BaseModel):
@@ -102,6 +106,7 @@ class ScrapeRequest(BaseModel):
     max_download_bytes: int | None = None
     keep_downloads: bool = True
     max_concurrency: int | None = None
+    allow_llm: bool = True
 
     @field_validator('urls')
     @classmethod
@@ -128,7 +133,7 @@ class ScrapeRequest(BaseModel):
             isinstance(contracts, type) and issubclass(contracts, Contract)
         ):
             contract_axis_many = False
-            raw_contracts = [contracts]  # type: ignore[list-item]
+            raw_contracts = [contracts]
         else:
             contract_axis_many = True
             raw_contracts = list(contracts)
@@ -151,7 +156,12 @@ class ScrapeUnitResult(BaseModel):
     url: str
     contract: str
     contract_fingerprint: str
-    status: Literal['ok', 'error'] = 'ok'
+    status: Literal['ok', 'failed'] = 'ok'
+    selector_source: str = 'unknown'
+    cache_decision: str = 'unknown'
+    llm_used: bool = False
+    llm_reason: str | None = None
+    record_count: int = 0
     records: list[dict[str, Any]] = Field(default_factory=list)
     error: str | None = None
 
@@ -197,7 +207,7 @@ class CrawlRequest(BaseModel):
         elif isinstance(contracts, (str, ContractSpec, dict)) or (
             isinstance(contracts, type) and issubclass(contracts, Contract)
         ):
-            refs = [ContractRef.from_input(contracts)]  # type: ignore[arg-type]
+            refs = [ContractRef.from_input(contracts)]
         else:
             refs = [ContractRef.from_input(c) for c in contracts]
         return cls(seeds=seed_list, contracts=refs, **kwargs)
@@ -214,13 +224,92 @@ class CrawlResult(BaseModel):
     summary: dict[str, Any]
 
 
+class SearchRequest(BaseModel):
+    """Canonical request for ``ys.search`` / ``yosoi search``."""
+
+    query: str
+    kind: SearchKind = 'text'
+    provider: SearchProvider = 'ddgs'
+    backend: str = 'google,bing,brave'
+    region: str = 'us-en'
+    safesearch: SafeSearch = 'moderate'
+    max_results: int = Field(default=10, ge=1)
+    page: int = Field(default=1, ge=1)
+    timelimit: str | None = None
+
+    @field_validator('query', 'backend', 'region')
+    @classmethod
+    def _non_empty_text(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError('must be non-empty')
+        return value.strip()
+
+    @field_validator('timelimit')
+    @classmethod
+    def _timelimit_non_empty(cls, value: str | None) -> str | None:
+        if value is not None and not value.strip():
+            raise ValueError('timelimit must be non-empty')
+        return value.strip() if value is not None else None
+
+    @classmethod
+    def from_policy(
+        cls,
+        query: str,
+        policy: Policy | None = None,
+        *,
+        kind: SearchKind | None = None,
+        provider: SearchProvider | None = None,
+        backend: str | None = None,
+        region: str | None = None,
+        safesearch: SafeSearch | None = None,
+        max_results: int | None = None,
+        page: int | None = None,
+        timelimit: str | None = None,
+    ) -> SearchRequest:
+        """Build a search request from effective policy plus explicit call-site overrides."""
+        search_policy = policy.search if policy is not None and policy.search is not None else SearchPolicy()
+        payload = search_policy.model_dump()
+        overrides: dict[str, object | None] = {
+            'kind': kind,
+            'provider': provider,
+            'backend': backend,
+            'region': region,
+            'safesearch': safesearch,
+            'max_results': max_results,
+            'page': page,
+            'timelimit': timelimit,
+        }
+        payload.update({key: value for key, value in overrides.items() if value is not None})
+        return cls(query=query, **payload)
+
+
+class SearchHit(BaseModel):
+    """Normalized web search hit."""
+
+    rank: int = Field(ge=1)
+    title: str
+    url: str
+    snippet: str
+    source: SearchProvider = 'ddgs'
+    backend: str
+
+
+class SearchResult(BaseModel):
+    """Machine-readable search result envelope."""
+
+    status: Literal['ok'] = 'ok'
+    request: SearchRequest
+    hits: list[SearchHit] = Field(default_factory=list)
+    urls: list[str] = Field(default_factory=list)
+
+
 def _selector_level(value: str) -> SelectorLevel:
     if value.lower() == 'all':
         return max(SelectorLevel)
     try:
         return SelectorLevel[value.upper()]
-    except KeyError:
-        return SelectorLevel(value)
+    except KeyError as exc:
+        raise ValueError(f'{value!r} is not a valid SelectorLevel') from exc
 
 
 async def _execute_scrape_shape(request: ScrapeRequest) -> Any:
@@ -246,10 +335,48 @@ async def _execute_scrape_shape(request: ScrapeRequest) -> Any:
         identities=request.identities,
         max_concurrency=request.max_concurrency,
         policy=request.policy,
+        allow_llm=request.allow_llm,
     )
 
 
-def normalize_scrape_result(request: ScrapeRequest, raw: Any) -> ScrapeResult:
+def _unit_from_records(
+    *,
+    url: str,
+    contract: type[Contract],
+    records: Any,
+    metadata: Mapping[str, Any] | None = None,
+) -> ScrapeUnitResult:
+    """Build a successful scrape unit from records and pipeline metadata."""
+    meta = dict(metadata or {})
+    record_list = [dict(item) for item in records]
+    return ScrapeUnitResult(
+        url=url,
+        contract=contract.__name__,
+        contract_fingerprint=contract.to_spec().fingerprint,
+        selector_source=str(meta.get('selector_source') or 'unknown'),
+        cache_decision=str(meta.get('cache_decision') or 'unknown'),
+        llm_used=bool(meta.get('llm_used', False)),
+        llm_reason=meta.get('llm_reason') if meta.get('llm_reason') is not None else None,
+        record_count=len(record_list),
+        records=record_list,
+    )
+
+
+def _envelope(units: list[ScrapeUnitResult]) -> ScrapeResult:
+    if not units:
+        return ScrapeResult(status='error', results=[])
+    failed = sum(1 for unit in units if unit.status == 'failed')
+    status: Literal['ok', 'partial', 'error'] = 'ok'
+    if failed == len(units):
+        status = 'error'
+    elif failed:
+        status = 'partial'
+    return ScrapeResult(status=status, results=units)
+
+
+def normalize_scrape_result(
+    request: ScrapeRequest, raw: Any, metadata: Mapping[tuple[str, str], Mapping[str, Any]] | None = None
+) -> ScrapeResult:
     """Normalize private scrape output into the canonical machine envelope."""
     contract_classes = request.contract_classes()
     units: list[ScrapeUnitResult] = []
@@ -259,7 +386,6 @@ def normalize_scrape_result(request: ScrapeRequest, raw: Any) -> ScrapeResult:
     for url in request.urls:
         for contract_cls in contract_classes:
             name = contract_cls.__name__
-            fp = contract_cls.to_spec().fingerprint
             records: Any
             if multi_url and multi_contract:
                 records = raw[url][name]
@@ -270,19 +396,106 @@ def normalize_scrape_result(request: ScrapeRequest, raw: Any) -> ScrapeResult:
             else:
                 records = raw
             units.append(
-                ScrapeUnitResult(
+                _unit_from_records(
                     url=url,
-                    contract=name,
-                    contract_fingerprint=fp,
-                    records=[dict(item) for item in records],
+                    contract=contract_cls,
+                    records=records,
+                    metadata=(metadata or {}).get((url, name)),
                 )
             )
-    return ScrapeResult(results=units)
+    return _envelope(units)
+
+
+async def _persist_scrape_unit(unit: ScrapeUnitResult) -> None:
+    """Best-effort persistence for top-level scrape health."""
+    try:
+        from yosoi.storage.cache_metrics_libsql import LibSQLCacheMetricsStore
+
+        parsed = urlparse(unit.url)
+        domain = (parsed.hostname or '').removeprefix('www.')
+        async with LibSQLCacheMetricsStore() as metrics_store:
+            await metrics_store.record_scrape_run(
+                url=unit.url,
+                domain=domain,
+                contract_fingerprint=unit.contract_fingerprint,
+                status=unit.status,
+                selector_source=unit.selector_source,
+                cache_decision=unit.cache_decision,
+                llm_used=unit.llm_used,
+                llm_reason=unit.llm_reason,
+                record_count=unit.record_count,
+                failure_reason=unit.error,
+            )
+    except Exception:  # noqa: BLE001 - metrics persistence is best-effort
+        pass
 
 
 async def execute_scrape(request: ScrapeRequest) -> ScrapeResult:
     """Execute the canonical scrape request and return the canonical result."""
-    return normalize_scrape_result(request, await _execute_scrape_shape(request))
+    from yosoi.api import _scrape_impl
+    from yosoi.utils.exceptions import LLMBlockedError
+
+    units: list[ScrapeUnitResult] = []
+    contract_classes = request.contract_classes()
+    for url in request.urls:
+        for contract_cls in contract_classes:
+            metadata: dict[tuple[str, str], dict[str, Any]] = {}
+            try:
+                raw = await _scrape_impl(
+                    url,
+                    contract_cls,
+                    model=request.model,
+                    force=request.force,
+                    skip_verification=request.skip_verification,
+                    fetcher_type=request.fetcher_type,
+                    selector_level=_selector_level(request.selector_level),
+                    save_formats=request.save_formats,
+                    quiet=request.quiet,
+                    allow_downloads=request.allow_downloads,
+                    allowed_download_types=request.allowed_download_types,
+                    download_dir=request.download_dir,
+                    max_download_bytes=request.max_download_bytes,
+                    keep_downloads=request.keep_downloads,
+                    identities=request.identities,
+                    max_concurrency=request.max_concurrency,
+                    policy=request.policy,
+                    allow_llm=request.allow_llm,
+                    metadata_collect=metadata,
+                )
+                unit = _unit_from_records(
+                    url=url,
+                    contract=contract_cls,
+                    records=raw,
+                    metadata=metadata.get((url, contract_cls.__name__)),
+                )
+            except LLMBlockedError as exc:
+                unit = ScrapeUnitResult(
+                    url=url,
+                    contract=contract_cls.__name__,
+                    contract_fingerprint=contract_cls.to_spec().fingerprint,
+                    status='failed',
+                    selector_source='none',
+                    cache_decision='llm_blocked',
+                    llm_used=False,
+                    llm_reason=exc.reason,
+                    error=str(exc),
+                )
+            except Exception as exc:  # noqa: BLE001
+                meta = metadata.get((url, contract_cls.__name__), {})
+                unit = ScrapeUnitResult(
+                    url=url,
+                    contract=contract_cls.__name__,
+                    contract_fingerprint=contract_cls.to_spec().fingerprint,
+                    status='failed',
+                    selector_source=str(meta.get('selector_source') or 'unknown'),
+                    cache_decision=str(meta.get('cache_decision') or 'unknown'),
+                    llm_used=bool(meta.get('llm_used', False)),
+                    llm_reason=meta.get('llm_reason') if meta.get('llm_reason') is not None else None,
+                    error=str(exc),
+                )
+            units.append(unit)
+            await _persist_scrape_unit(unit)
+    return _envelope(units)
 
 
 async def execute_crawl(request: CrawlRequest) -> Any:
@@ -301,6 +514,38 @@ async def execute_crawl(request: CrawlRequest) -> Any:
     )
 
 
+def _require_text(value: Any, *, field: str, row_index: int) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f'Malformed ddgs row {row_index}: {field} must be a non-empty string')
+    return value.strip()
+
+
+def normalize_search_result(request: SearchRequest, rows: Sequence[Mapping[str, Any]]) -> SearchResult:
+    """Normalize DDGS provider rows into the stable public search envelope."""
+    hits: list[SearchHit] = []
+    for index, row in enumerate(rows, start=1):
+        title = _require_text(row.get('title'), field='title', row_index=index)
+        url = _require_text(row.get('href', row.get('url')), field='url', row_index=index)
+        snippet = _require_text(row.get('body', row.get('snippet')), field='snippet', row_index=index)
+        hits.append(
+            SearchHit(
+                rank=index,
+                title=title,
+                url=url,
+                snippet=snippet,
+                backend=request.backend,
+            )
+        )
+    return SearchResult(request=request, hits=hits, urls=[hit.url for hit in hits])
+
+
+async def execute_search(request: SearchRequest) -> SearchResult:
+    """Execute the canonical search request and return normalized web hits."""
+    from yosoi.core.fetcher.search import fetch_ddgs_text
+
+    return normalize_search_result(request, await fetch_ddgs_text(request))
+
+
 async def run_crawl(request: CrawlRequest) -> CrawlResult:
     """Execute a crawl request and normalize summary for machine JSON."""
     from dataclasses import asdict
@@ -312,3 +557,8 @@ async def run_crawl(request: CrawlRequest) -> CrawlResult:
 async def run_scrape(request: ScrapeRequest) -> ScrapeResult:
     """Alias for executing a scrape request through the canonical surface."""
     return await execute_scrape(request)
+
+
+async def run_search(request: SearchRequest) -> SearchResult:
+    """Alias for executing a search request through the canonical surface."""
+    return await execute_search(request)

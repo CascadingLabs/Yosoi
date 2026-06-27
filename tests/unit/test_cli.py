@@ -1,5 +1,7 @@
 """Tests for Click CLI."""
 
+import json
+
 import click
 import pytest
 from click.testing import CliRunner
@@ -46,6 +48,151 @@ class TestHelpAndUsage:
         result = runner.invoke(main, [])
         assert result.exit_code != 0
         assert 'No URLs provided' in result.output
+
+
+class TestSearchCommand:
+    @pytest.fixture(autouse=True)
+    def _no_search_policy_env(self, mocker, monkeypatch):
+        mocker.patch('yosoi.policy.files.discover_policy_files', return_value=())
+        monkeypatch.delenv('YOSOI_SEARCH_BACKEND', raising=False)
+        monkeypatch.delenv('YOSOI_SEARCH_REGION', raising=False)
+        monkeypatch.delenv('YOSOI_SEARCH_SAFESEARCH', raising=False)
+        monkeypatch.delenv('YOSOI_SEARCH_MAX_RESULTS', raising=False)
+        monkeypatch.delenv('YOSOI_SEARCH_PAGE', raising=False)
+        monkeypatch.delenv('YOSOI_SEARCH_TIMELIMIT', raising=False)
+
+    def test_search_json_uses_operation_runner(self, runner, mocker):
+        from yosoi.operations import SearchHit, SearchRequest, SearchResult
+
+        run = mocker.patch(
+            'yosoi.operations.run_search',
+            mocker.AsyncMock(
+                return_value=SearchResult(
+                    request=SearchRequest(query='widgets', max_results=2),
+                    hits=[
+                        SearchHit(
+                            rank=1,
+                            title='One',
+                            url='https://one.test',
+                            snippet='First result',
+                            backend='google,bing,brave',
+                        )
+                    ],
+                    urls=['https://one.test'],
+                )
+            ),
+        )
+
+        result = runner.invoke(main, ['search', 'widgets', '--limit', '2', '--json'])
+
+        assert result.exit_code == 0, result.output
+        doc = json.loads(result.output)
+        assert doc['hits'][0]['url'] == 'https://one.test'
+        request = run.await_args.args[0]
+        assert request.query == 'widgets'
+        assert request.max_results == 2
+
+    def test_search_human_output_smoke(self, runner, mocker):
+        from yosoi.operations import SearchHit, SearchRequest, SearchResult
+
+        mocker.patch(
+            'yosoi.operations.run_search',
+            mocker.AsyncMock(
+                return_value=SearchResult(
+                    request=SearchRequest(query='widgets'),
+                    hits=[
+                        SearchHit(
+                            rank=1,
+                            title='One',
+                            url='https://one.test',
+                            snippet='First result',
+                            backend='google,bing,brave',
+                        )
+                    ],
+                    urls=['https://one.test'],
+                )
+            ),
+        )
+
+        result = runner.invoke(main, ['search', 'widgets'])
+
+        assert result.exit_code == 0, result.output
+        assert 'One' in result.output
+        assert 'https://one.test' in result.output
+
+    def test_search_no_query_usage_error(self, runner):
+        result = runner.invoke(main, ['search'])
+
+        assert result.exit_code != 0
+        assert 'No search query provided' in result.output
+
+    def test_search_dump_request(self, runner):
+        result = runner.invoke(
+            main,
+            [
+                'search',
+                'cascading',
+                'labs',
+                '--backend',
+                'google,bing,brave',
+                '--region',
+                'us-en',
+                '--safesearch',
+                'off',
+                '--timelimit',
+                'w',
+                '--page',
+                '2',
+                '--limit',
+                '3',
+                '--dump-request',
+            ],
+        )
+
+        assert result.exit_code == 0, result.output
+        doc = json.loads(result.output)
+        assert doc['query'] == 'cascading labs'
+        assert doc['backend'] == 'google,bing,brave'
+        assert doc['region'] == 'us-en'
+        assert doc['safesearch'] == 'off'
+        assert doc['timelimit'] == 'w'
+        assert doc['page'] == 2
+        assert doc['max_results'] == 3
+
+    def test_search_policy_file_supplies_defaults_and_flags_override(self, runner, mocker, tmp_path):
+        from yosoi.operations import SearchResult
+
+        run = mocker.patch(
+            'yosoi.operations.run_search',
+            mocker.AsyncMock(),
+        )
+        policy_file = tmp_path / 'policy.yaml'
+        policy_file.write_text(
+            'search:\n'
+            '  backend: bing\n'
+            '  region: wt-wt\n'
+            '  safesearch: "off"\n'
+            '  max_results: 7\n'
+            '  page: 3\n'
+            '  timelimit: m\n',
+            encoding='utf-8',
+        )
+
+        def _result(request):
+            return SearchResult(request=request)
+
+        run.side_effect = _result
+
+        result = runner.invoke(main, ['search', 'widgets', '--policy', str(policy_file), '--limit', '2', '--json'])
+
+        assert result.exit_code == 0, result.output
+        request = run.await_args.args[0]
+        assert request.backend == 'bing'
+        assert request.region == 'wt-wt'
+        assert request.safesearch == 'off'
+        assert request.timelimit == 'm'
+        assert request.max_results == 2
+        assert request.page == 3
 
 
 class TestSchemaParamType:

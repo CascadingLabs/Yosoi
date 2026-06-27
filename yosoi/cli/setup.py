@@ -13,12 +13,12 @@ from yosoi.cli.utils import console
 if TYPE_CHECKING:
     from yosoi.core.configs import YosoiConfig
     from yosoi.models.selectors import SelectorLevel
-    from yosoi.policy import Policy
+    from yosoi.policy import Policy, ResolvedRunSpec
 
 FetcherName = Literal['auto', 'simple', 'headless', 'headful', 'waterfall']
 
 
-def _resolve_spec_for_cli(policy: Policy, model_arg: str | None):
+def _resolve_spec_for_cli(policy: Policy, model_arg: str | None) -> ResolvedRunSpec | None:
     try:
         return policy.resolve_run_spec()
     except ValueError as e:

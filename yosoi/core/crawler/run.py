@@ -106,7 +106,7 @@ async def crawl(
 
     request = CrawlRequest.from_axes(
         seeds,
-        contracts,
+        cast('Any', contracts),
         limit=limit,
         policy=policy,
         fetcher_type=fetcher_type,
@@ -125,7 +125,7 @@ async def crawl(
             progress=progress,
             console=console,
         )
-    return await execute_crawl(request)
+    return cast('CrawlRunSummary', await execute_crawl(request))
 
 
 def _resolve_scrape_contracts(

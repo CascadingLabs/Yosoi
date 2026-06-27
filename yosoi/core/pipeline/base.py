@@ -46,6 +46,7 @@ from yosoi.storage.discovery_strategy import DiscoveryStrategyStorage
 from yosoi.storage.js_scripts import JsScriptStorage
 from yosoi.types.filetypes import normalize_allowed_types
 from yosoi.utils import observability
+from yosoi.utils.exceptions import LLMBlockedError
 from yosoi.utils.signatures import contract_signature
 
 _STATUS_STYLES: dict[str, tuple[str, bool]] = {
@@ -113,6 +114,25 @@ class Pipeline(
     _max_download_bytes: int | None = None
     _keep_downloads: bool = True
     _discovery_gate: DiscoveryGate | None = None  # class default for __new__-built stubs
+    _allow_llm: bool = True
+    last_selector_source: str
+    last_cache_decision: str
+    last_llm_used: bool
+    last_llm_reason: str | None
+
+    def _mark_scrape_decision(
+        self,
+        *,
+        selector_source: str,
+        cache_decision: str,
+        llm_used: bool,
+        llm_reason: str | None = None,
+    ) -> None:
+        """Record the decision path for the current URL x contract unit."""
+        self.last_selector_source = selector_source
+        self.last_cache_decision = cache_decision
+        self.last_llm_used = llm_used
+        self.last_llm_reason = llm_reason
 
     def __init__(  # noqa: C901
         self,
@@ -137,6 +157,7 @@ class Pipeline(
         console: Console | None = None,
         policy: Policy | None = None,
         show_tracking_summary: bool = False,
+        allow_llm: bool = True,
     ):
         """Initialize the pipeline with LLM configuration.
 
@@ -181,6 +202,7 @@ class Pipeline(
                 policy-gated behavior reads ``self._policy`` instead of the environment; the
                 pipeline has no policy-gated branch today.
             show_tracking_summary: Print the run/page/contract/domain tracking table after each URL.
+            allow_llm: When False, fail closed if cache replay cannot satisfy the scrape.
 
         """
         if contract is None:
@@ -228,11 +250,14 @@ class Pipeline(
         # Off-path fingerprint signal lane (CAS-168); None unless a FingerprintPolicy opts in.
         self._signal_lane = build_fingerprint_lane(self._policy.fingerprint)
         self._download_log: list[Any] = []
+        self._allow_llm = allow_llm
 
         if isinstance(llm_config, str):
             from yosoi.core.discovery.config import provider
 
             llm_config = provider(llm_config)
+        if llm_config is None:
+            raise RuntimeError(_MODEL_REQUIRED_MESSAGE)
 
         self._llm_config: LLMConfig | YosoiConfig = llm_config
 
@@ -257,6 +282,7 @@ class Pipeline(
             from yosoi.policy.run import resolve_telemetry_values
 
             observability.configure(TelemetryConfig(**resolve_telemetry_values(self._policy.telemetry)))
+        assert isinstance(llm_config, LLMConfig)
 
         self.custom_theme = Theme(
             {
@@ -281,7 +307,7 @@ class Pipeline(
         self.storage = SelectorStorage(flat_files=self._flat_files)
         self.js_storage = JsScriptStorage()
 
-        self.discovery = (
+        self.discovery: Any = (
             _DeferredDiscovery()
             if self._llm_deferred
             else DiscoveryOrchestrator(
@@ -327,6 +353,10 @@ class Pipeline(
         # (a cache hit does not re-internalize, so it leaves these untouched).
         self.last_selectors: dict[str, Any] | None = None
         self.last_cleaned_html: str | None = None
+        self.last_selector_source = 'unknown'
+        self.last_cache_decision = 'unknown'
+        self.last_llm_used = False
+        self.last_llm_reason = None
         self._last_level_distribution: dict[str, int] = {}
         self._client: httpx2.AsyncClient = httpx2.AsyncClient()
 
@@ -587,9 +617,23 @@ class Pipeline(
     ) -> AsyncIterator[ContentMap]:
         """Async generator yielding individual content items from a URL."""
         self._url_start = time.monotonic()
+        self._mark_scrape_decision(
+            selector_source='unknown',
+            cache_decision='forced' if (self.force if force is None else force) else 'miss',
+            llm_used=False,
+            llm_reason=None,
+        )
         _raw = output_format if output_format is not None else self.output_formats
         format_to_use: list[str] = [_raw] if isinstance(_raw, str) else list(_raw)
         force_flag = self.force if force is None else force
+        if force_flag and not getattr(self, '_allow_llm', True):
+            self._mark_scrape_decision(
+                selector_source='none',
+                cache_decision='llm_blocked',
+                llm_used=False,
+                llm_reason='forced_repair',
+            )
+            raise LLMBlockedError('forced_repair')
         url = await self.normalize_url(url)
         parsed = urlparse(url)
         trace_name = f'scrape {parsed.netloc}{parsed.path or "/"}'
@@ -707,6 +751,15 @@ class Pipeline(
                 async for item in cache_gen:
                     yield item
                 return
+            if not getattr(self, '_allow_llm', True):
+                reason = self.last_llm_reason or 'cache_miss'
+                self._mark_scrape_decision(
+                    selector_source='none',
+                    cache_decision='llm_blocked',
+                    llm_used=False,
+                    llm_reason=reason,
+                )
+                raise LLMBlockedError(reason)
             async for item in self._scrape_fresh(
                 url=url,
                 domain=domain,
@@ -734,6 +787,12 @@ class Pipeline(
     ) -> AsyncIterator[ContentMap]:
         """Fresh discovery path — fetch, clean, discover, verify, extract, save."""
         observability.annotate_cache(root_span, path=observability.CACHE_FRESH)
+        self._mark_scrape_decision(
+            selector_source='discovery',
+            cache_decision='forced' if force_flag else 'miss',
+            llm_used=True,
+            llm_reason='forced_repair' if force_flag else 'cache_miss',
+        )
 
         cached_mode = None if force_flag else await self._discovery_strategy.load(domain, self._contract_sig)
         escalate_first = self._force_mcp or cached_mode == 'mcp'
@@ -825,6 +884,10 @@ class Pipeline(
                 url, domain, cleaned_html, result.html, verified, container_selector, root_entry, extracted
             )
             used_llm = used_llm or escalated
+            unmet = self._unsatisfied_required(extracted)
+            if unmet:
+                fields = ', '.join(sorted(unmet))
+                raise RuntimeError(f'Required contract fields still unmet after discovery/escalation: {fields}')
 
         selectors_to_save = self._selectors_with_root(verified, root_entry)
 
@@ -835,8 +898,9 @@ class Pipeline(
         self.last_cleaned_html = cleaned_html
 
         if not extracted:
-            self.console.print('[warning]⚠ Extraction failed, but selectors are valid[/warning]')
-            await self._finish(url, domain, selectors_to_save, None, used_llm, format_to_use)
+            self.console.print(
+                '[warning]⚠ Fresh discovery extracted zero records; selectors were not promoted[/warning]'
+            )
             observability.set_trace_output(
                 root_span,
                 {
@@ -846,7 +910,7 @@ class Pipeline(
                     'extracted_sample': None,
                 },
             )
-            return
+            raise RuntimeError(f'Fresh discovery extracted zero records for {url}')
 
         with observability.span('validate', url=url, items=len(extracted) if isinstance(extracted, list) else 1):
             validated_items = self._validate_items(extracted, url)

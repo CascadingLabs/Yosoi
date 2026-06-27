@@ -2,7 +2,7 @@
 
 from typing import Any, Literal
 
-from parsel import Selector, SelectorList
+from parsel import Selector
 from rich.console import Console
 
 from yosoi.models.contract import Contract, _unwrap_list_annotation
@@ -332,7 +332,7 @@ class ContentExtractor:
 
     def _extract_from_elements(
         self,
-        elements: SelectorList[Selector],
+        elements: Any,
         field_name: str,
     ) -> str | list[str | dict[str, str]] | None:
         """Shared extraction logic given a SelectorList.

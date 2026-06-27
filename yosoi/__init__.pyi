@@ -32,6 +32,9 @@ from yosoi.operations import CrawlResult as CrawlResult
 from yosoi.operations import ScrapeRequest as ScrapeRequest
 from yosoi.operations import ScrapeResult as ScrapeResult
 from yosoi.operations import ScrapeUnitResult as ScrapeUnitResult
+from yosoi.operations import SearchHit as SearchHit
+from yosoi.operations import SearchRequest as SearchRequest
+from yosoi.operations import SearchResult as SearchResult
 from yosoi.policy import CrawlBudget as _CrawlBudget
 from yosoi.policy import CrawlPolicy as _CrawlPolicy
 from yosoi.policy import CrawlRuntimeConfig as _CrawlRuntimeConfig
@@ -51,6 +54,7 @@ from yosoi.policy import PolicyCheck as _PolicyCheck
 from yosoi.policy import ResolvedRunSpec as _ResolvedRunSpec
 from yosoi.policy import SchedulerPolicy as _SchedulerPolicy
 from yosoi.policy import ScrapePolicy as _ScrapePolicy
+from yosoi.policy import SearchPolicy as _SearchPolicy
 from yosoi.policy import SecretRef as _SecretRef
 from yosoi.policy import TelemetryPolicy as _TelemetryPolicy
 from yosoi.policy import Trust as _Trust
@@ -357,6 +361,29 @@ class DiscoveryPolicy(_DiscoveryPolicy):
         static_mode_warning: bool = ...,
     ) -> None: ...
 
+class SearchPolicy(_SearchPolicy):
+    kind: Literal['text']
+    provider: Literal['ddgs']
+    backend: str
+    region: str
+    safesearch: Literal['on', 'moderate', 'off']
+    max_results: int
+    page: int
+    timelimit: str | None
+
+    def __init__(
+        self,
+        *,
+        kind: Literal['text'] = ...,
+        provider: Literal['ddgs'] = ...,
+        backend: str = ...,
+        region: str = ...,
+        safesearch: Literal['on', 'moderate', 'off'] = ...,
+        max_results: int = ...,
+        page: int = ...,
+        timelimit: str | None = ...,
+    ) -> None: ...
+
 class TelemetryPolicy(_TelemetryPolicy):
     langfuse_public_key_ref: SecretRef | None
     langfuse_secret_key_ref: SecretRef | None
@@ -439,6 +466,7 @@ class Policy(_Policy):
     trust_tier: TrustTier
     model: ModelPolicy | None
     scrape: ScrapePolicy | None
+    search: SearchPolicy | None
     discovery: DiscoveryPolicy | None
     telemetry: TelemetryPolicy | None
     output: OutputPolicy | None
@@ -454,6 +482,7 @@ class Policy(_Policy):
         trust_tier: TrustTier = ...,
         model: ModelPolicy | None = ...,
         scrape: ScrapePolicy | None = ...,
+        search: SearchPolicy | None = ...,
         discovery: DiscoveryPolicy | None = ...,
         telemetry: TelemetryPolicy | None = ...,
         output: OutputPolicy | None = ...,
@@ -572,9 +601,25 @@ async def crawl(
     console: Any | None = ...,
 ) -> CrawlRunSummary: ...
 async def execute_crawl(request: CrawlRequest) -> CrawlRunSummary: ...
+async def execute_search(request: SearchRequest) -> SearchResult: ...
 async def execute_scrape(request: ScrapeRequest) -> Any: ...
 async def run_crawl(request: CrawlRequest) -> CrawlResult: ...
+async def run_search(request: SearchRequest) -> SearchResult: ...
 async def run_scrape(request: ScrapeRequest) -> ScrapeResult: ...
+async def search(
+    query: str,
+    *,
+    kind: str | None = ...,
+    provider: str | None = ...,
+    backend: str | None = ...,
+    region: str | None = ...,
+    safesearch: str | None = ...,
+    timelimit: str | None = ...,
+    max_results: int | None = ...,
+    limit: int | None = ...,
+    page: int | None = ...,
+    policy: Policy | None = ...,
+) -> SearchResult: ...
 async def scrape(
     url: str | Sequence[str],
     contract: type[Contract] | str | Sequence[type[Contract] | str],

@@ -210,6 +210,76 @@ async def test_record_verdict_updates_field_health_and_records_event(tmp_path) -
     assert [event[0] for event in events] == ['run', 'write', 'fail', 'run', 'hit']
 
 
+async def test_record_scrape_run_creates_idempotent_health_rows(tmp_path) -> None:
+    db_path = tmp_path / 'metrics.sqlite3'
+    fp = 'contract-fp'
+
+    async with LibSQLCacheMetricsStore(db_path) as store:
+        await store.record_scrape_run(
+            url='https://example.com/products/1?x=1',
+            domain='example.com',
+            contract_fingerprint=fp,
+            status='ok',
+            selector_source='cache',
+            cache_decision='hit',
+            llm_used=False,
+            llm_reason=None,
+            record_count=2,
+        )
+        await store.record_scrape_run(
+            url='https://example.com/products/1?x=1',
+            domain='example.com',
+            contract_fingerprint=fp,
+            status='failed',
+            selector_source='none',
+            cache_decision='llm_blocked',
+            llm_used=False,
+            llm_reason='cache_miss',
+            record_count=0,
+            failure_reason='blocked',
+        )
+
+        latest = await store.latest_scrape_run(
+            contract_fingerprint=fp, domain='example.com', route_signature='/products/1'
+        )
+        health = await store.scrape_health(
+            contract_fingerprint=fp, domain='example.com', url='https://example.com/products/1?x=1'
+        )
+
+    with sqlite3.connect(db_path) as conn:
+        tables = {
+            row[0]
+            for row in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'scrape_runs'")
+        }
+
+    assert tables == {'scrape_runs'}
+    assert latest is not None
+    assert latest.cache_decision == 'llm_blocked'
+    assert latest.llm_reason == 'cache_miss'
+    assert health.health == 'unhealthy'
+    assert health.latest_run == latest
+
+
+async def test_scrape_health_combines_field_snapshot_health(tmp_path) -> None:
+    fp = 'contract-fp'
+    async with LibSQLCacheMetricsStore(tmp_path / 'metrics.sqlite3') as store:
+        assert (await store.scrape_health(contract_fingerprint=fp, domain='example.com')).health == 'unknown'
+        await store.upsert_snapshots(
+            url='https://example.com/a',
+            domain='example.com',
+            snapshots={'headline': _snapshot('h1')},
+            contract_fingerprint=fp,
+        )
+        assert (await store.scrape_health(contract_fingerprint=fp, domain='example.com')).health == 'healthy'
+        await store.record_verdict(
+            domain='example.com',
+            field_name='headline',
+            verdict=CacheVerdict.STALE,
+            contract_fingerprint=fp,
+        )
+        assert (await store.scrape_health(contract_fingerprint=fp, domain='example.com')).health == 'degraded'
+
+
 async def test_summarize_domain_returns_domain_centered_counts(tmp_path) -> None:
     db_path = tmp_path / 'metrics.sqlite3'
     fp = 'contract-fp'

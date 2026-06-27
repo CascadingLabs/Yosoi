@@ -21,3 +21,21 @@ yosoi policy schema > policy.schema.json
 ```
 
 Policy precedence is: environment, discovered global/project files, then explicit `--policy` layers, with later layers overriding earlier fields.
+
+Search uses the same policy tree. Put durable defaults under `search`, then let
+direct CLI flags such as `--limit` or `--backend` override them for one run:
+
+```yaml
+search:
+  provider: ddgs
+  backend: google,bing,brave
+  region: us-en
+  safesearch: "moderate"
+  max_results: 10
+  page: 1
+```
+
+The environment layer also reads `YOSOI_SEARCH_BACKEND`,
+`YOSOI_SEARCH_REGION`, `YOSOI_SEARCH_SAFESEARCH`,
+`YOSOI_SEARCH_MAX_RESULTS`, `YOSOI_SEARCH_PAGE`, and
+`YOSOI_SEARCH_TIMELIMIT`.

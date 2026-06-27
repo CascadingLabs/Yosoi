@@ -9,7 +9,7 @@ _semantic_issues, _selector_values, _js_action_scripts.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from rich.console import Console
 from tenacity import RetryCallState, RetryError
@@ -20,6 +20,8 @@ from yosoi.utils.exceptions import LLMGenerationError
 from yosoi.utils.retry import get_async_retryer
 
 if TYPE_CHECKING:
+    from typing import Protocol
+
     from yosoi.core.discovery import DiscoveryOrchestrator, MCPDiscoveryOrchestrator
     from yosoi.core.fetcher import HTMLFetcher
     from yosoi.core.fetcher.dom.ax import AxSnapshot
@@ -29,6 +31,35 @@ if TYPE_CHECKING:
 # Type aliases — defined at module level so they exist at runtime (used in cast() calls)
 ContentMap = dict[str, object]
 ContentItems = list[dict[str, object]]
+
+
+if TYPE_CHECKING:
+
+    class _PipelineDiscoveryHost(Protocol):
+        """Sibling-mixin surface used by discovery helpers."""
+
+        _llm_config: Any
+
+        def _verify(
+            self,
+            url: str,
+            cleaned_html: str,
+            selectors: dict[str, Any],
+            skip_verification: bool = False,
+        ) -> dict[str, Any] | None: ...
+
+        def _extract(
+            self,
+            url: str,
+            html: str,
+            verified_selectors: dict[str, Any],
+            container_selector: str | None = None,
+        ) -> ContentMap | ContentItems | None: ...
+
+        def _root_value(self, root_entry: dict[str, Any] | None) -> str | None: ...
+
+        def _resolve_root(self, selectors: dict[str, Any]) -> dict[str, Any] | None: ...
+
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +104,7 @@ class PipelineDiscoveryMixin:
 
     async def _discover_js_actions(self, url: str, domain: str, fetcher: HTMLFetcher) -> None:
         """Run JS discovery for action fields that lack a cached script."""
+        host = cast('_PipelineDiscoveryHost', self)
         undiscovered = self.contract.undiscovered_action_fields()
         if not undiscovered:
             return
@@ -93,7 +125,7 @@ class PipelineDiscoveryMixin:
             return
         if self._js_discovery_orchestrator is None:
             self._js_discovery_orchestrator = JsDiscoveryOrchestrator(
-                llm_config=self._llm_config,  # type: ignore[attr-defined]
+                llm_config=host._llm_config,
                 storage=self.js_storage,
                 console=self.console,
             )
@@ -284,6 +316,7 @@ class PipelineDiscoveryMixin:
         """Re-discover fields whose extracted values fail type-aware semantic checks."""
         from yosoi.prompts.discovery import FieldFeedback
 
+        host = cast('_PipelineDiscoveryHost', self)
         for attempt in range(max_retries):
             issues = self._semantic_issues(extracted)
             if not issues:
@@ -308,13 +341,13 @@ class PipelineDiscoveryMixin:
             if not fresh:
                 break
 
-            reverified = self._verify(url, cleaned_html, fresh, skip_verification=False)  # type: ignore[attr-defined]
+            reverified = host._verify(url, cleaned_html, fresh, skip_verification=False)
             improved = {k: v for k, v in (reverified or {}).items() if k != 'root'}
             if not improved:
                 break
 
             verified.update(improved)
-            re_extracted = self._extract(url, raw_html, verified, container_selector)  # type: ignore[attr-defined]
+            re_extracted = host._extract(url, raw_html, verified, container_selector)
             if not re_extracted:
                 break
             extracted = re_extracted
@@ -337,6 +370,7 @@ class PipelineDiscoveryMixin:
         extracted: ContentMap | ContentItems | None,
     ) -> tuple[ContentMap | ContentItems, dict[str, Any], dict[str, Any] | None, str | None, bool]:
         """Escalate to MCP discovery when static left a required field unsatisfied."""
+        host = cast('_PipelineDiscoveryHost', self)
         current = extracted or {}
         unmet = self._unsatisfied_required(current)
         if not unmet:
@@ -350,7 +384,7 @@ class PipelineDiscoveryMixin:
             current, verified, root_entry, improved = await self._escalate_to_mcp(
                 url, cleaned_html, raw_html, verified, container_selector, root_entry, current, unmet
             )
-            container_selector = self._root_value(root_entry)  # type: ignore[attr-defined]
+            container_selector = host._root_value(root_entry)
             if improved:
                 await self._discovery_strategy.save(domain, self._contract_sig, 'mcp')
         return current, verified, root_entry, container_selector, improved
@@ -367,6 +401,7 @@ class PipelineDiscoveryMixin:
         unmet: set[str],
     ) -> tuple[ContentMap | ContentItems, dict[str, Any], dict[str, Any] | None, bool]:
         """Drive MCP discovery once and merge selectors that improve extraction."""
+        host = cast('_PipelineDiscoveryHost', self)
         original_unmet = set(unmet) or self._unsatisfied_required(extracted)
         original_count = len(extracted) if isinstance(extracted, list) else (1 if extracted else 0)
         try:
@@ -379,19 +414,19 @@ class PipelineDiscoveryMixin:
 
         candidate_root = root_entry
         candidate_container = container_selector
-        mcp_root = self._resolve_root(fresh)  # type: ignore[attr-defined]
+        mcp_root = host._resolve_root(fresh)
         if mcp_root:
             candidate_root = mcp_root
-            candidate_container = self._root_value(candidate_root) or candidate_container  # type: ignore[attr-defined]
+            candidate_container = host._root_value(candidate_root) or candidate_container
 
-        reverified = self._verify(url, cleaned_html, fresh, skip_verification=False) or {}  # type: ignore[attr-defined]
+        reverified = host._verify(url, cleaned_html, fresh, skip_verification=False) or {}
         merged = {k: v for k, v in reverified.items() if k != 'root'}
         if not merged:
             return extracted, verified, root_entry, False
 
         candidate_verified = dict(verified)
         candidate_verified.update(merged)
-        re_extracted = self._extract(url, raw_html, candidate_verified, candidate_container)  # type: ignore[attr-defined]
+        re_extracted = host._extract(url, raw_html, candidate_verified, candidate_container)
         if not re_extracted:
             return extracted, verified, root_entry, False
 

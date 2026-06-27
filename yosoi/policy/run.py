@@ -14,6 +14,9 @@ from yosoi.policy._base import StrictFloat, StrictInt
 
 FetcherPolicyName = Literal['auto', 'simple', 'headless', 'headful', 'waterfall']
 DiscoveryMode = Literal['auto', 'static', 'mcp']
+SearchKind = Literal['text']
+SearchProvider = Literal['ddgs']
+SafeSearch = Literal['on', 'moderate', 'off']
 
 
 class SecretRef(BaseModel):
@@ -265,6 +268,35 @@ class DiscoveryPolicy(BaseModel):
     lesson_cache: bool = True
     replay_verify_threshold: StrictFloat = Field(default=1.0, ge=0.0, le=1.0)
     static_mode_warning: bool = True
+
+
+class SearchPolicy(BaseModel):
+    """Policy for web-search discovery signals."""
+
+    model_config = ConfigDict(frozen=True)
+
+    kind: SearchKind = 'text'
+    provider: SearchProvider = 'ddgs'
+    backend: str = 'google,bing,brave'
+    region: str = 'us-en'
+    safesearch: SafeSearch = 'moderate'
+    max_results: StrictInt = Field(default=10, ge=1)
+    page: StrictInt = Field(default=1, ge=1)
+    timelimit: str | None = None
+
+    @field_validator('backend', 'region')
+    @classmethod
+    def _non_empty_text(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError('must be non-empty')
+        return value.strip()
+
+    @field_validator('timelimit')
+    @classmethod
+    def _timelimit_non_empty(cls, value: str | None) -> str | None:
+        if value is not None and not value.strip():
+            raise ValueError('timelimit must be non-empty')
+        return value.strip() if value is not None else None
 
 
 class TelemetryPolicy(BaseModel):

@@ -657,7 +657,7 @@ async def test_discover_returns_overrides_when_no_fields_need_discovery(mocker):
     stub = _make_pipeline_stub(mocker)
 
     class OverrideContract(Contract):
-        title: str = ys.Field(selector='.title')  # type: ignore[assignment]
+        title: str = ys.Field(selector='.title')
 
     stub.contract = OverrideContract
     stub.contract.get_selector_overrides = mocker.MagicMock(return_value={'title': {'primary': '.title'}})
@@ -836,14 +836,14 @@ async def test_process_url_full_success_path(mocker):
     mocker.patch.object(Pipeline, '_clean', return_value='<clean/>')
     mocker.patch.object(Pipeline, '_discover', return_value=({'title': {'primary': 'h1'}}, True))
     mocker.patch.object(Pipeline, '_verify', return_value={'title': {'primary': 'h1'}})
-    mocker.patch.object(Pipeline, '_extract', return_value={'title': 'Book'})
-    mocker.patch.object(Pipeline, '_validate_with_contract', return_value={'title': 'Book'})
+    mocker.patch.object(Pipeline, '_extract', return_value={'title': 'Book', 'price': '9.99'})
+    mocker.patch.object(Pipeline, '_validate_with_contract', return_value={'title': 'Book', 'price': 9.99})
     mocker.patch.object(Pipeline, '_save_and_track')
     mocker.patch('yosoi.core.pipeline.base.observability')
     await Pipeline.process_url(stub, 'https://x.com')
 
 
-async def test_process_url_succeeds_even_when_extraction_fails(mocker):
+async def test_process_url_fails_when_fresh_discovery_extracts_zero_records(mocker):
     stub = _make_pipeline_stub(mocker)
     fetch_result = FetchResult(url='https://x.com', html='<html/>', status_code=200)
     mocker.patch.object(Pipeline, 'normalize_url', return_value='https://x.com')
@@ -857,7 +857,9 @@ async def test_process_url_succeeds_even_when_extraction_fails(mocker):
     mocker.patch.object(Pipeline, '_extract', return_value=None)
     mocker.patch.object(Pipeline, '_save_and_track')
     mocker.patch('yosoi.core.pipeline.base.observability')
-    await Pipeline.process_url(stub, 'https://x.com')
+    with pytest.raises(RuntimeError, match=r'zero records|Required contract fields'):
+        await Pipeline.process_url(stub, 'https://x.com')
+    Pipeline._save_and_track.assert_not_called()
 
 
 async def test_process_url_raises_when_clean_fails(mocker):
@@ -1268,7 +1270,7 @@ async def test_extract_with_cached_missing_overridden_field_does_not_trigger_red
 
     class OverriddenContract(Contract):
         title: str = ys.Title()
-        price: float = YsField(description='Price', selector='p.price')  # type: ignore[assignment]
+        price: float = YsField(description='Price', selector='p.price')
 
     stub = _make_pipeline_stub(mocker, contract=OverriddenContract)
     mock_fetcher = mocker.MagicMock()
@@ -1591,7 +1593,7 @@ class _PriceContract(Contract):
 
 class _CountContract(Contract):
     title: str = ys.Title()
-    count: int = ys.Field(description='Count', default=0)  # type: ignore[assignment]
+    count: int = ys.Field(description='Count', default=0)
 
 
 def test_validate_single_item_drops_isolable_field_to_default(mocker):
@@ -1931,7 +1933,7 @@ class _NestedPrice(ys.Contract):
 
 class _NestedContract(ys.Contract):
     name: str = ys.Title()
-    price: _NestedPrice = ys.Field(description='Price info')  # type: ignore[assignment]
+    price: _NestedPrice = ys.Field(description='Price info')
 
 
 def test_required_discovery_fields_expands_nested_contract(mocker):

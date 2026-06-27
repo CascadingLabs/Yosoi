@@ -30,6 +30,7 @@ _CONTRACT_TABLE = 'contracts'
 _CONTRACT_FIELD_TABLE = 'contract_fields'
 _SELECTOR_SNAPSHOT_TABLE = 'selector_snapshots'
 _CACHE_EVENT_TABLE = 'cache_events'
+_SCRAPE_RUN_TABLE = 'scrape_runs'
 _SELECTOR_KEY = ('contract_fingerprint', 'field_fingerprint', 'source_url')
 _SELECTOR_UPDATE_COLUMNS = (
     'field_path',
@@ -97,6 +98,35 @@ class DomainCacheMetrics:
     urls: list[str] = field(default_factory=list)
     run_count: int = 0
     url_count: int = 0
+
+
+@dataclass(frozen=True)
+class ScrapeRunMetric:
+    """One top-level scrape run health row."""
+
+    id: int
+    url: str
+    domain: str
+    top_level_domain: str
+    route_signature: str
+    contract_fingerprint: str
+    status: str
+    selector_source: str
+    cache_decision: str
+    llm_used: bool
+    llm_reason: str | None
+    record_count: int
+    failure_reason: str | None
+    occurred_at: str
+
+
+@dataclass(frozen=True)
+class ScrapeHealth:
+    """Combined scrape-run and selector-field health."""
+
+    health: str
+    latest_run: ScrapeRunMetric | None
+    field_metrics: list[CacheFieldMetric]
 
 
 @dataclass(frozen=True)
@@ -196,6 +226,26 @@ def _metric_from_row(columns: tuple[str, ...], row: tuple[Any, ...]) -> CacheFie
         last_verified_at=values['last_verified_at'],
         last_failed_at=values['last_failed_at'],
         failure_count=int(values['failure_count']),
+    )
+
+
+def _scrape_run_from_row(columns: tuple[str, ...], row: tuple[Any, ...]) -> ScrapeRunMetric:
+    values = _row_dict(columns, row)
+    return ScrapeRunMetric(
+        id=int(values['id']),
+        url=str(values['url']),
+        domain=str(values['domain']),
+        top_level_domain=str(values['top_level_domain']),
+        route_signature=str(values['route_signature']),
+        contract_fingerprint=str(values['contract_fingerprint']),
+        status=str(values['status']),
+        selector_source=str(values['selector_source']),
+        cache_decision=str(values['cache_decision']),
+        llm_used=bool(values['llm_used']),
+        llm_reason=values['llm_reason'],
+        record_count=int(values['record_count']),
+        failure_reason=values['failure_reason'],
+        occurred_at=str(values['occurred_at']),
     )
 
 
@@ -669,6 +719,149 @@ class LibSQLCacheMetricsStore(YosoiSQLiteStore):
             detail=detail,
         )
 
+    async def record_scrape_run(
+        self,
+        *,
+        url: str,
+        domain: str,
+        contract_fingerprint: str,
+        status: str,
+        selector_source: str,
+        cache_decision: str,
+        llm_used: bool,
+        llm_reason: str | None,
+        record_count: int,
+        failure_reason: str | None = None,
+        route_signature: str | None = None,
+    ) -> None:
+        """Persist one top-level scrape unit health result."""
+        await self._ensure_migrated()
+        client = await self._connect()
+        route = route_signature or route_signature_for_url(url)
+        await client.execute(
+            f"""
+            INSERT INTO {_SCRAPE_RUN_TABLE} (
+                url,
+                domain,
+                top_level_domain,
+                route_signature,
+                contract_fingerprint,
+                status,
+                selector_source,
+                cache_decision,
+                llm_used,
+                llm_reason,
+                record_count,
+                failure_reason,
+                occurred_at
+            )
+            VALUES (
+                :url,
+                :domain,
+                :top_level_domain,
+                :route_signature,
+                :contract_fingerprint,
+                :status,
+                :selector_source,
+                :cache_decision,
+                :llm_used,
+                :llm_reason,
+                :record_count,
+                :failure_reason,
+                :occurred_at
+            )
+            """,
+            {
+                'url': url,
+                'domain': domain,
+                'top_level_domain': top_level_domain_for_domain(domain),
+                'route_signature': route,
+                'contract_fingerprint': contract_fingerprint,
+                'status': status,
+                'selector_source': selector_source,
+                'cache_decision': cache_decision,
+                'llm_used': int(llm_used),
+                'llm_reason': llm_reason,
+                'record_count': record_count,
+                'failure_reason': failure_reason,
+                'occurred_at': _iso(datetime.now(timezone.utc)),
+            },
+        )
+
+    async def latest_scrape_run(
+        self,
+        *,
+        contract_fingerprint: str | None = None,
+        domain: str | None = None,
+        url: str | None = None,
+        route_signature: str | None = None,
+    ) -> ScrapeRunMetric | None:
+        """Return the latest top-level scrape run matching the supplied scope."""
+        await self._ensure_migrated()
+        conditions: list[str] = []
+        params: dict[str, Any] = {}
+        if contract_fingerprint is not None:
+            conditions.append('contract_fingerprint = :contract_fingerprint')
+            params['contract_fingerprint'] = contract_fingerprint
+        if domain is not None:
+            conditions.append('domain = :domain')
+            params['domain'] = domain
+        if url is not None:
+            conditions.append('url = :url')
+            params['url'] = url
+        if route_signature is not None:
+            conditions.append('route_signature = :route_signature')
+            params['route_signature'] = route_signature
+        where = f'WHERE {" AND ".join(conditions)}' if conditions else ''
+        client = await self._connect()
+        result = await client.execute(
+            f"""
+            SELECT id, url, domain, top_level_domain, route_signature, contract_fingerprint, status,
+                   selector_source, cache_decision, llm_used, llm_reason, record_count, failure_reason, occurred_at
+            FROM {_SCRAPE_RUN_TABLE}
+            {where}
+            ORDER BY occurred_at DESC, id DESC
+            LIMIT 1
+            """,
+            params,
+        )
+        if not result.rows:
+            return None
+        return _scrape_run_from_row(result.columns, result.rows[0])
+
+    async def scrape_health(
+        self,
+        *,
+        contract_fingerprint: str | None = None,
+        domain: str | None = None,
+        url: str | None = None,
+        route_signature: str | None = None,
+    ) -> ScrapeHealth:
+        """Combine latest run health with current field snapshot health."""
+        latest = await self.latest_scrape_run(
+            contract_fingerprint=contract_fingerprint,
+            domain=domain,
+            url=url,
+            route_signature=route_signature,
+        )
+        fields = await self.list_domain_fields(domain, contract_fingerprint) if domain is not None else []
+        if route_signature is not None:
+            fields = [row for row in fields if row.route_signature == route_signature]
+        if url is not None:
+            fields = [row for row in fields if row.source_url == url]
+
+        if latest is None and not fields:
+            health = 'unknown'
+        elif latest is not None and latest.status != 'ok':
+            health = 'unhealthy'
+        elif any(row.status != 'active' or row.failure_count > 0 for row in fields):
+            health = 'degraded'
+        elif latest is None:
+            health = 'healthy' if fields else 'unknown'
+        else:
+            health = 'healthy'
+        return ScrapeHealth(health=health, latest_run=latest, field_metrics=fields)
+
     async def backfill_existing(
         self, *, contract_fingerprint: str | None = None, domain: str | None = None
     ) -> CacheBackfillResult:
@@ -989,6 +1182,32 @@ class LibSQLCacheMetricsStore(YosoiSQLiteStore):
             ON {_CACHE_EVENT_TABLE}(contract_fingerprint, field_name, occurred_at)
             """
         )
+        await client.execute(
+            f"""
+            CREATE TABLE IF NOT EXISTS {_SCRAPE_RUN_TABLE} (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                url TEXT NOT NULL,
+                domain TEXT NOT NULL,
+                top_level_domain TEXT NOT NULL,
+                route_signature TEXT NOT NULL,
+                contract_fingerprint TEXT NOT NULL,
+                status TEXT NOT NULL,
+                selector_source TEXT NOT NULL,
+                cache_decision TEXT NOT NULL,
+                llm_used INTEGER NOT NULL,
+                llm_reason TEXT,
+                record_count INTEGER NOT NULL DEFAULT 0,
+                failure_reason TEXT,
+                occurred_at TEXT NOT NULL
+            )
+            """
+        )
+        await client.execute(
+            f"""
+            CREATE INDEX IF NOT EXISTS idx_scrape_runs_scope
+            ON {_SCRAPE_RUN_TABLE}(contract_fingerprint, domain, route_signature, url, occurred_at)
+            """
+        )
         self._migrated = True
 
     async def _reset_incompatible_schema(self, client: SQLiteClient) -> None:
@@ -997,6 +1216,7 @@ class LibSQLCacheMetricsStore(YosoiSQLiteStore):
             return
         for table_name in (
             _CACHE_EVENT_TABLE,
+            _SCRAPE_RUN_TABLE,
             _SELECTOR_SNAPSHOT_TABLE,
             _CONTRACT_FIELD_TABLE,
             _CONTRACT_TABLE,

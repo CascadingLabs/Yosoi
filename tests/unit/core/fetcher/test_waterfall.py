@@ -345,7 +345,7 @@ async def test_waterfall_terminal_tier_uses_cascade_when_configured(mocker):
 
         return _Ident()
 
-    fetcher._start_identity_fetcher = fake_start  # type: ignore[assignment,method-assign]
+    mocker.patch.object(fetcher, '_start_identity_fetcher', fake_start)
 
     result = await fetcher._fetch_waterfall('https://google.com/search?q=x', 'google.com', 1.0)
 
@@ -377,7 +377,7 @@ async def test_waterfall_cascade_exhaustion_raises(mocker):
 
         return _Ident()
 
-    fetcher._start_identity_fetcher = fake_start  # type: ignore[assignment,method-assign]
+    mocker.patch.object(fetcher, '_start_identity_fetcher', fake_start)
 
     with pytest.raises(BotDetectionError) as exc_info:
         await fetcher._fetch_waterfall('https://x.com', 'x.com', 1.0)

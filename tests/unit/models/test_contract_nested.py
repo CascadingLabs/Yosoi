@@ -30,7 +30,7 @@ class _PriceAutoRoot(ys.Contract):
 class _Product(ys.Contract):
     root = ys.css('.product-card')
     name: str = ys.Title()
-    price: _Price = ys.Field(description='Product price info')  # type: ignore[assignment]
+    price: _Price = ys.Field(description='Product price info')
 
 
 # ---------------------------------------------------------------------------
@@ -64,7 +64,7 @@ def test_field_descriptions_expands_nested_flat():
 def test_field_descriptions_pinned_root_adds_within_hint():
     class _ProductPinned(ys.Contract):
         name: str = ys.Title()
-        price: _PricePinned = ys.Field()  # type: ignore[assignment]
+        price: _PricePinned = ys.Field()
 
     descs = _ProductPinned.field_descriptions()
     assert '(within: .price-block)' in descs['price_amount']
@@ -74,7 +74,7 @@ def test_field_descriptions_pinned_root_adds_within_hint():
 def test_field_descriptions_discover_root_adds_scoped_hint():
     class _ProductAuto(ys.Contract):
         name: str = ys.Title()
-        price: _PriceAutoRoot = ys.Field()  # type: ignore[assignment]
+        price: _PriceAutoRoot = ys.Field()
 
     descs = _ProductAuto.field_descriptions()
     assert '(co-located with other price fields)' in descs['price_amount']
@@ -86,11 +86,11 @@ def test_field_descriptions_skips_child_overrides():
 
     class _PriceOverride(ys.Contract):
         amount: float = ys.Price()
-        currency: str = YsField(description='Currency', selector='span.currency')  # type: ignore[assignment]
+        currency: str = YsField(description='Currency', selector='span.currency')
 
     class _ProductOverride(ys.Contract):
         name: str = ys.Title()
-        price: _PriceOverride = ys.Field()  # type: ignore[assignment]
+        price: _PriceOverride = ys.Field()
 
     descs = _ProductOverride.field_descriptions()
     assert 'price_amount' in descs
@@ -124,11 +124,11 @@ def test_get_selector_overrides_includes_child_overrides_as_flat_keys():
 
     class _PriceOverride2(ys.Contract):
         amount: float = ys.Price()
-        currency: str = YsField(description='Currency', selector='span.currency')  # type: ignore[assignment]
+        currency: str = YsField(description='Currency', selector='span.currency')
 
     class _ProductOverride2(ys.Contract):
         name: str = ys.Title()
-        price: _PriceOverride2 = ys.Field()  # type: ignore[assignment]
+        price: _PriceOverride2 = ys.Field()
 
     overrides = _ProductOverride2.get_selector_overrides()
     assert 'price_currency' in overrides
@@ -144,8 +144,8 @@ def test_name_collision_raises_at_class_definition():
     with pytest.raises(TypeError, match='collides with nested expansion'):
 
         class _Bad(ys.Contract):
-            price_amount: str = ys.Field()  # type: ignore[assignment]
-            price: _Price = ys.Field()  # type: ignore[assignment]
+            price_amount: str = ys.Field()
+            price: _Price = ys.Field()
 
 
 # ---------------------------------------------------------------------------
@@ -156,7 +156,7 @@ def test_name_collision_raises_at_class_definition():
 def test_nested_contract_pydantic_validation():
     result = _Product.model_validate({'name': 'Widget', 'price': {'amount': 5.0, 'currency': '£'}})
     assert result.name == 'Widget'
-    assert result.price.currency == '£'  # type: ignore[attr-defined]
+    assert result.price.currency == '£'
 
 
 def test_nested_contract_standalone_still_works():

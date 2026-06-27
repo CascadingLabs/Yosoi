@@ -209,6 +209,12 @@ class TestScrapeOperationSurface:
         assert doc['urls'] == ['https://example.com']
         assert len(doc['contracts']) == 2
 
+    def test_scrape_no_llm_compiles_cache_only_request(self, runner, base_mocks):
+        result = runner.invoke(main, ['scrape', 'https://example.com', '--no-llm', '--dump-request'])
+        assert result.exit_code == 0, result.output
+        doc = json.loads(result.output[result.output.index('{') :])
+        assert doc['allow_llm'] is False
+
 
 class TestCacheStatus:
     def test_cache_status_no_cache(self, runner, mocker, base_mocks):
@@ -256,6 +262,52 @@ class TestCacheStatus:
             'target_kind': 'domain',
             'type': 'cache.status',
         }
+
+    def test_top_level_status_alias_uses_cache_status_view(self, runner, mocker, base_mocks):
+        import yosoi.storage as _store_pkg
+        from yosoi.storage.cache_metrics_libsql import DomainCacheMetrics, ScrapeHealth, ScrapeRunMetric
+
+        storage_mock = mocker.MagicMock()
+        storage_mock.load_snapshots = mocker.AsyncMock(return_value=None)
+        mocker.patch.object(_store_pkg, 'SelectorStorage', return_value=storage_mock)
+        store_cls = mocker.patch('yosoi.storage.cache_metrics_libsql.LibSQLCacheMetricsStore')
+        store = store_cls.return_value
+        store.__aenter__ = mocker.AsyncMock(return_value=store)
+        store.__aexit__ = mocker.AsyncMock(return_value=None)
+        store.summarize_domain = mocker.AsyncMock(
+            return_value=DomainCacheMetrics(
+                domain='example.com',
+                contract_fingerprints=[],
+                top_level_domains=[],
+                routes=[],
+                fields=[],
+                field_metrics=[],
+            )
+        )
+        latest = ScrapeRunMetric(
+            id=1,
+            url='https://example.com/a',
+            domain='example.com',
+            top_level_domain='example.com',
+            route_signature='/a',
+            contract_fingerprint='fp',
+            status='ok',
+            selector_source='cache',
+            cache_decision='hit',
+            llm_used=False,
+            llm_reason=None,
+            record_count=1,
+            failure_reason=None,
+            occurred_at='2026-06-27T00:00:00+00:00',
+        )
+        store.scrape_health = mocker.AsyncMock(return_value=ScrapeHealth('healthy', latest, []))
+
+        result = runner.invoke(main, ['status', 'example.com', '--json'])
+        assert result.exit_code == 0, result.output
+        doc = json.loads(result.output)
+        assert doc['type'] == 'cache.status'
+        assert doc['health'] == 'healthy'
+        assert doc['latest_run']['cache_decision'] == 'hit'
 
     def test_cache_status_contract_only_json(self, runner, mocker, base_mocks):
         from yosoi.storage.cache_metrics_libsql import ContractCacheMetrics

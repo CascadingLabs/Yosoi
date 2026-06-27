@@ -61,8 +61,8 @@ class TestLessonStorage:
         await storage.save(first)
         await storage.save(second)
 
-        assert (await storage.load(first.key)).selectors.keys() == {'title'}  # type: ignore[union-attr]
-        assert (await storage.load(second.key)).selectors.keys() == {'body'}  # type: ignore[union-attr]
+        assert (await storage.load(first.key)).selectors.keys() == {'title'}
+        assert (await storage.load(second.key)).selectors.keys() == {'body'}
 
     async def test_load_missing_returns_none(self, storage):
         assert await storage.load(LessonKey(domain='missing.com', contract_signature='sig')) is None

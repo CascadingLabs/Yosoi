@@ -71,7 +71,7 @@ def _noop_storage(mocker: MockerFixture) -> JsScriptStorage:
     """Storage that never reads or writes (for isolated tests)."""
     s = mocker.MagicMock(spec=JsScriptStorage)
     s.save_entries = mocker.AsyncMock()
-    return s  # type: ignore[return-value]
+    return s
 
 
 # ---------------------------------------------------------------------------

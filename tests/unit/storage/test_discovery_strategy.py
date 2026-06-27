@@ -44,6 +44,6 @@ class TestDiscoveryStrategyStorage:
         assert await storage.load('example.com', 'sigB') is None
 
     async def test_rejects_unknown_mode(self, storage):
-        await storage.save('example.com', 'sig1', 'bogus')  # type: ignore[arg-type]
+        await storage.save('example.com', 'sig1', 'bogus')
 
         assert await storage.load('example.com', 'sig1') is None

@@ -21,6 +21,7 @@ from yosoi.policy import (
     Policy,
     SchedulerPolicy,
     ScrapePolicy,
+    SearchPolicy,
     SecretRef,
     Trust,
     check_policy,
@@ -85,7 +86,7 @@ def test_promote_trust_resolves_quarantined_state() -> None:
 def test_frozen_is_immutable() -> None:
     p = Policy()
     with pytest.raises(ValidationError):
-        p.atom_reads = True  # type: ignore[misc]
+        p.atom_reads = True
 
 
 @pytest.mark.parametrize('raw', ['1', 'true', 'YES', 'On'])
@@ -262,6 +263,28 @@ def test_from_env_reads_scrape_policy() -> None:
     policy = Policy.from_env({'YOSOI_FORCE': '1', 'YOSOI_FETCHER_TYPE': 'headless', 'YOSOI_SELECTOR_LEVEL': 'xpath'})
 
     assert policy.scrape == ScrapePolicy(force=True, fetcher_type='headless', selector_level=ys.SelectorLevel.XPATH)
+
+
+def test_from_env_reads_search_policy() -> None:
+    policy = Policy.from_env(
+        {
+            'YOSOI_SEARCH_BACKEND': 'bing',
+            'YOSOI_SEARCH_REGION': 'wt-wt',
+            'YOSOI_SEARCH_SAFESEARCH': 'off',
+            'YOSOI_SEARCH_MAX_RESULTS': '7',
+            'YOSOI_SEARCH_PAGE': '2',
+            'YOSOI_SEARCH_TIMELIMIT': 'w',
+        }
+    )
+
+    assert policy.search == SearchPolicy(
+        backend='bing',
+        region='wt-wt',
+        safesearch='off',
+        max_results=7,
+        page=2,
+        timelimit='w',
+    )
 
 
 # ── crawl policy: fail-fast config layer ─────────────────────────────────────

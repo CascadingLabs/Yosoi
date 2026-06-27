@@ -7,7 +7,7 @@ import json
 import os
 import sys
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Literal, cast
 
 import rich_click as click
 from rich.console import Console
@@ -163,6 +163,7 @@ async def _run_json(
     help='Policy file or inline YAML/JSON. Repeat to layer.',
 )
 @click.option('--atom-reads', is_flag=True, help='Allow policy-gated reads from the field-atom index before discovery.')
+@click.option('--no-llm', is_flag=True, help='Cache-only guard: fail instead of discovering or repairing selectors.')
 @click.option(
     '-t',
     '--fetcher',
@@ -224,6 +225,7 @@ def main(
     flat_files: bool,
     policy_source: tuple[str, ...],
     atom_reads: bool,
+    no_llm: bool,
     fetcher: str,
     log_level: str,
     contract: type[Contract] | None,
@@ -340,6 +342,7 @@ def main(
         selector_level=resolved_level,
         policy=policy,
         show_tracking_summary=summary,
+        allow_llm=not no_llm,
     )
     asyncio.run(
         pipeline.process_urls(
@@ -354,6 +357,97 @@ def main(
 
 
 # ── scrape command — replay-only ──────────────────────────────────────────────
+
+
+@main.command('search')
+@click.argument('query', nargs=-1)
+@click.option('--limit', type=click.IntRange(1), default=None, help='Maximum number of search results.')
+@click.option('--backend', default=None, help='DDGS backend string.')
+@click.option('--region', default=None, help='Search region, such as us-en.')
+@click.option(
+    '--safesearch',
+    type=click.Choice(['on', 'moderate', 'off'], case_sensitive=False),
+    default=None,
+    help='Safe search setting.',
+)
+@click.option('--timelimit', default=None, help='DDGS time limit, such as d, w, m, y, or a date range.')
+@click.option('--page', type=click.IntRange(1), default=None, help='Search result page.')
+@click.option(
+    '--policy',
+    'policy_source',
+    multiple=True,
+    metavar='FILE|YAML|JSON',
+    help='Policy file or inline YAML/JSON. Repeat to layer.',
+)
+@click.option('--json', 'json_output', is_flag=True, default=False, help='Machine JSON to stdout.')
+@click.option('--dump-request', is_flag=True, help='Print the resolved SearchRequest JSON and exit.')
+def search(
+    query: tuple[str, ...],
+    limit: int | None,
+    backend: str | None,
+    region: str | None,
+    safesearch: str | None,
+    timelimit: str | None,
+    page: int | None,
+    policy_source: tuple[str, ...],
+    json_output: bool,
+    dump_request: bool,
+) -> None:
+    """Search the web and return normalized source URLs."""
+    from rich import box
+    from rich.table import Table
+
+    from yosoi.cli import exit_codes
+    from yosoi.operations import SearchRequest, run_search
+    from yosoi.policy import Policy
+    from yosoi.policy.files import discover_policy_files, load_policy_layers
+
+    query_text = ' '.join(part for part in query if part).strip()
+    if not query_text:
+        raise click.UsageError('No search query provided.')
+
+    safe_search = cast(Literal['on', 'moderate', 'off'], safesearch.lower()) if safesearch is not None else None
+    try:
+        file_policy = load_policy_layers(policy_source) if policy_source or discover_policy_files() else None
+        policy = Policy.cascade(Policy.from_env(), file_policy)
+        request = SearchRequest.from_policy(
+            query_text,
+            policy=policy,
+            backend=backend,
+            region=region,
+            safesearch=safe_search,
+            timelimit=timelimit,
+            max_results=limit,
+            page=page,
+        )
+    except Exception as exc:
+        raise click.ClickException(str(exc)) from exc
+    if dump_request:
+        click.echo(request.model_dump_json(indent=2))
+        return
+
+    try:
+        result = asyncio.run(run_search(request))
+    except Exception as exc:
+        if json_output:
+            sys.stdout.write(json.dumps({'type': 'error', 'message': str(exc)}) + '\n')
+            sys.stdout.flush()
+            sys.exit(exit_codes.ERROR)
+        raise click.ClickException(str(exc)) from exc
+
+    if json_output:
+        sys.stdout.write(result.model_dump_json() + '\n')
+        sys.stdout.flush()
+        sys.exit(exit_codes.RECORDS)
+
+    table = Table(box=box.SIMPLE_HEAVY, show_lines=False)
+    table.add_column('#', justify='right', style='cyan', no_wrap=True)
+    table.add_column('Title', style='bold', overflow='fold')
+    table.add_column('URL', style='blue', overflow='fold')
+    table.add_column('Snippet', style='dim', overflow='fold')
+    for hit in result.hits:
+        table.add_row(str(hit.rank), hit.title, hit.url, hit.snippet)
+    console.print(table)
 
 
 @main.command('scrape')
@@ -398,6 +492,7 @@ def main(
     help='Policy file or inline YAML/JSON. Repeat to layer.',
 )
 @click.option('--atom-reads', is_flag=True, help='Allow policy-gated reads from the field-atom index before discovery.')
+@click.option('--no-llm', is_flag=True, help='Cache-only guard: fail instead of discovering or repairing selectors.')
 @click.option(
     '-t',
     '--fetcher',
@@ -450,6 +545,7 @@ def scrape(
     flat_files: bool,
     policy_source: tuple[str, ...],
     atom_reads: bool,
+    no_llm: bool,
     fetcher: str,
     log_level: str,
     selector_level: str,
@@ -507,6 +603,8 @@ def scrape(
                 request = ScrapeRequest.model_validate_json(handle.read())
         except Exception as exc:
             raise click.ClickException(f'Cannot parse ScrapeRequest {request_file!r}: {exc}') from exc
+        if no_llm:
+            request = request.model_copy(update={'allow_llm': False})
     else:
         if not all_urls:
             raise click.UsageError('No URLs provided. Pass URL(s) as arguments or use --url / --file')
@@ -520,6 +618,7 @@ def scrape(
             fetcher_type=fetcher,
             selector_level=selector_level,
             save_formats=list(output_formats),
+            allow_llm=not no_llm,
         )
 
     if dump_request:
@@ -537,7 +636,7 @@ def scrape(
             sys.exit(exit_codes.ERROR)
         sys.stdout.write(result.model_dump_json() + '\n')
         sys.stdout.flush()
-        sys.exit(exit_codes.RECORDS)
+        sys.exit(exit_codes.RECORDS if result.status == 'ok' else exit_codes.ERROR)
 
     if len(request.contracts) != 1:
         raise click.UsageError('Multiple contracts currently require --json or --dump-request')
@@ -1157,6 +1256,15 @@ def cache_status(
 
             async with LibSQLCacheMetricsStore() as metrics_store:
                 domain_summary = await metrics_store.summarize_domain(domain, contract_sig)
+                try:
+                    health = await metrics_store.scrape_health(
+                        contract_fingerprint=contract_sig,
+                        domain=domain,
+                        url=routed_target.value if routed_target is not None and routed_target.kind == 'url' else None,
+                        route_signature=routed_target.route if routed_target is not None else None,
+                    )
+                except (AttributeError, TypeError):
+                    health = None
             if domain_summary.field_metrics or domain_summary.event_counts:
                 doc['field_metrics'] = [row.__dict__ for row in domain_summary.field_metrics]
                 doc['top_level_domains'] = domain_summary.top_level_domains
@@ -1172,6 +1280,10 @@ def cache_status(
                     'fields': len(domain_summary.fields),
                     'events': domain_summary.event_counts,
                 }
+            if health is not None:
+                doc['health'] = health.health
+            if health is not None and health.latest_run is not None:
+                doc['latest_run'] = health.latest_run.__dict__
         except Exception as exc:  # noqa: BLE001
             doc['metrics_error'] = str(exc)
 
@@ -1223,6 +1335,35 @@ def cache_status(
     doc = asyncio.run(_check())
     if json_output:
         echo_json(doc)
+
+
+@main.command('status')
+@click.argument('target', required=False)
+@click.option('-C', '--contract', type=ContractParamType(), default=None, help='Contract to check fingerprint for')
+@click.option('--domain', 'domain_target', default=None, metavar='DOMAIN', help='Explicit domain target.')
+@click.option('--url', 'url_target', default=None, metavar='URL', help='Explicit URL target.')
+@click.option('--route', 'route_target', default=None, metavar='PATH', help='Explicit route/path target.')
+@click.option('-j', '--json', 'json_output', is_flag=True, default=False)
+def status(
+    target: str | None,
+    contract: type[Contract] | None,
+    domain_target: str | None,
+    url_target: str | None,
+    route_target: str | None,
+    json_output: bool,
+) -> None:
+    """Show scrape/cache health for a contract, domain, URL, or route."""
+    callback = cache_status.callback
+    if callback is None:
+        raise click.ClickException('cache status command is unavailable')
+    callback(
+        target=target,
+        contract=contract,
+        domain_target=domain_target,
+        url_target=url_target,
+        route_target=route_target,
+        json_output=json_output,
+    )
 
 
 @cache_group.group('metrics')

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from collections.abc import Callable, Mapping, Sequence
-from typing import TYPE_CHECKING, Any
+from collections.abc import Callable, Mapping, MutableMapping, Sequence
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 from yosoi.core.configs import YosoiConfig, auto_config
 from yosoi.core.discovery import LLMConfig
@@ -184,6 +184,8 @@ async def _scrape_impl(
     identities: Mapping[str, BrowserIdentity] | Callable[[str], BrowserIdentity | None] | None = None,
     max_concurrency: int | None = None,
     policy: Policy | None = None,
+    allow_llm: bool = True,
+    metadata_collect: MutableMapping[tuple[str, str], dict[str, Any]] | None = None,
 ) -> list[ContentMap] | dict[str, list[ContentMap]] | dict[str, dict[str, list[ContentMap]]]:
     """Scrape one-or-many URLs with one-or-many contracts — the single blessed path.
 
@@ -314,6 +316,8 @@ async def _scrape_impl(
                 gate_collect=gate_collectors[u],
                 discovery_gate=discovery_gate,
                 policy=Policy.cascade(policy, base_call_policy, per_url_policy),
+                allow_llm=allow_llm,
+                metadata_collect=metadata_collect,
             )
 
         if sem is None:
@@ -355,6 +359,7 @@ async def scrape(
     identities: Mapping[str, BrowserIdentity] | Callable[[str], BrowserIdentity | None] | None = None,
     max_concurrency: int | None = None,
     policy: Policy | None = None,
+    allow_llm: bool = True,
 ) -> Any:
     """Scrape one-or-many URLs with one-or-many contracts.
 
@@ -382,6 +387,7 @@ async def scrape(
         keep_downloads=keep_downloads,
         identities=identities,
         max_concurrency=max_concurrency,
+        allow_llm=allow_llm,
     )
     if model is not None and not isinstance(model, str):
         # Keep non-JSON-safe model/config objects on the edge by delegating directly.
@@ -403,9 +409,45 @@ async def scrape(
             identities=identities,
             max_concurrency=max_concurrency,
             policy=policy,
+            allow_llm=allow_llm,
         )
         return normalize_scrape_result(request, raw)
     return await execute_scrape(request)
+
+
+async def search(
+    query: str,
+    *,
+    kind: str | None = None,
+    provider: str | None = None,
+    backend: str | None = None,
+    region: str | None = None,
+    safesearch: str | None = None,
+    timelimit: str | None = None,
+    max_results: int | None = None,
+    limit: int | None = None,
+    page: int | None = None,
+    policy: Policy | None = None,
+) -> Any:
+    """Search the web for normalized discovery/ranking signals."""
+    from yosoi.operations import SearchRequest, run_search
+
+    if max_results is not None and limit is not None and max_results != limit:
+        raise ValueError('Pass only one of max_results or limit')
+    effective_policy = Policy.cascade(Policy.from_env(), policy)
+    request = SearchRequest.from_policy(
+        query=query,
+        policy=effective_policy,
+        kind=cast(Literal['text'], kind) if kind is not None else None,
+        provider=cast(Literal['ddgs'], provider) if provider is not None else None,
+        backend=backend,
+        region=region,
+        safesearch=cast(Literal['on', 'moderate', 'off'], safesearch) if safesearch is not None else None,
+        timelimit=timelimit,
+        max_results=max_results if max_results is not None else limit,
+        page=page,
+    )
+    return await run_search(request)
 
 
 def _edge_policy(contract_cls: type[Contract], call_policy: Policy | None) -> Policy:
@@ -534,6 +576,8 @@ async def _scrape_one(
     gate_collect: GateCollector | None = None,
     discovery_gate: DiscoveryGate | None = None,
     policy: Policy | None = None,
+    allow_llm: bool = True,
+    metadata_collect: MutableMapping[tuple[str, str], dict[str, Any]] | None = None,
 ) -> list[ContentMap]:
     """One ``(url, contract)`` unit (returns ``list[record]``).
 
@@ -595,6 +639,7 @@ async def _scrape_one(
                 identity=identity,
                 discovery_gate=discovery_gate,
                 policy=effective_policy,
+                allow_llm=allow_llm,
             ) as pipeline:
                 items = [
                     item
@@ -612,6 +657,13 @@ async def _scrape_one(
                 last_selectors = getattr(pipeline, 'last_selectors', None)
                 if gate_collect is not None and last_selectors is not None:
                     gate_collect[contract_cls.__name__] = (last_selectors, getattr(pipeline, 'last_cleaned_html', None))
+                if metadata_collect is not None:
+                    metadata_collect[(url, contract_cls.__name__)] = {
+                        'selector_source': getattr(pipeline, 'last_selector_source', 'unknown'),
+                        'cache_decision': getattr(pipeline, 'last_cache_decision', 'unknown'),
+                        'llm_used': bool(getattr(pipeline, 'last_llm_used', False)),
+                        'llm_reason': getattr(pipeline, 'last_llm_reason', None),
+                    }
                 return items
         except Exception as e:
             obs.warning('API scrape failed', url=url, contract=contract_cls.__name__, error=str(e))
@@ -630,6 +682,7 @@ async def scrape_many(
     save_formats: Sequence[str] = (),
     quiet: bool = True,
     policy: Policy | None = None,
+    allow_llm: bool = True,
 ) -> Any:
     """Scrape multiple URLs and return the canonical ScrapeResult envelope."""
     return await scrape(
@@ -643,6 +696,7 @@ async def scrape_many(
         save_formats=save_formats,
         quiet=quiet,
         policy=policy,
+        allow_llm=allow_llm,
     )
 
 
@@ -658,6 +712,7 @@ def scrape_sync(
     save_formats: Sequence[str] = (),
     quiet: bool = True,
     policy: Policy | None = None,
+    allow_llm: bool = True,
 ) -> Any:
     """Synchronous wrapper around :func:`scrape`."""
     with obs.span('api.scrape_sync', url=url, contract=contract if isinstance(contract, str) else contract.__name__):
@@ -676,6 +731,7 @@ def scrape_sync(
                     save_formats=save_formats,
                     quiet=quiet,
                     policy=policy,
+                    allow_llm=allow_llm,
                 )
             )
         error = 'scrape_sync() cannot run inside an active event loop; await scrape() instead.'

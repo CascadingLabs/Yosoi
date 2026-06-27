@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import httpx2
 from rich.console import Console
@@ -297,18 +297,22 @@ class PipelineUtilsMixin:
         """Print per-run/per-page/per-contract and cumulative tracking when requested."""
         force_show = stats is None
         if stats is None:
-            stats = domain  # type: ignore[assignment]
+            stats_value = cast('DomainStats', domain)
             domain = url
             url = '—'
+        else:
+            stats_value = stats
         if not (force_show or getattr(self, '_show_tracking_summary', False)):
             return
         if force_show:
-            self.console.print(f'Historical LLM calls: {stats.llm_calls}')
-            self.console.print(f'Historical URLs processed: {stats.url_count}')
-            if stats.total_elapsed:
-                self.console.print(f'Historical elapsed: {stats.total_elapsed:.1f}s')
-            if stats.llm_calls:
-                self.console.print(f'Historical efficiency: {stats.url_count / stats.llm_calls:.1f} URLs per LLM call')
+            self.console.print(f'Historical LLM calls: {stats_value.llm_calls}')
+            self.console.print(f'Historical URLs processed: {stats_value.url_count}')
+            if stats_value.total_elapsed:
+                self.console.print(f'Historical elapsed: {stats_value.total_elapsed:.1f}s')
+            if stats_value.llm_calls:
+                self.console.print(
+                    f'Historical efficiency: {stats_value.url_count / stats_value.llm_calls:.1f} URLs per LLM call'
+                )
             return
 
         domain_name = str(domain)
@@ -328,9 +332,20 @@ class PipelineUtilsMixin:
         table.add_row('page', url, run_llm, '1', run_elapsed, run_note)
         table.add_row('contract', f'{contract_name} ({self._contract_sig})', run_llm, '1', run_elapsed, run_note)
 
-        historical_elapsed = f'{stats.total_elapsed:.1f}s' if stats.total_elapsed else '—'
-        efficiency = f'{stats.url_count / stats.llm_calls:.1f} URLs/LLM' if stats.llm_calls else 'no historical LLM'
-        table.add_row('domain', domain_name, str(stats.llm_calls), str(stats.url_count), historical_elapsed, efficiency)
+        historical_elapsed = f'{stats_value.total_elapsed:.1f}s' if stats_value.total_elapsed else '—'
+        efficiency = (
+            f'{stats_value.url_count / stats_value.llm_calls:.1f} URLs/LLM'
+            if stats_value.llm_calls
+            else 'no historical LLM'
+        )
+        table.add_row(
+            'domain',
+            domain_name,
+            str(stats_value.llm_calls),
+            str(stats_value.url_count),
+            historical_elapsed,
+            efficiency,
+        )
         self.console.print(table)
 
     def _print_summary(self, results: dict[str, list[str]], total_elapsed: float) -> None:

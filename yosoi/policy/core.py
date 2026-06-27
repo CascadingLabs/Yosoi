@@ -49,6 +49,7 @@ from yosoi.policy.run import (
     OutputPolicy,
     ResolvedRunSpec,
     ScrapePolicy,
+    SearchPolicy,
     SecretRef,
     TelemetryPolicy,
     find_secret_ref,
@@ -84,6 +85,7 @@ class Policy(BaseModel):
     trust_tier: TrustTier = 'strict'
     model: ModelPolicy | None = None
     scrape: ScrapePolicy | None = None
+    search: SearchPolicy | None = None
     discovery: DiscoveryPolicy | None = None
     telemetry: TelemetryPolicy | None = None
     output: OutputPolicy | None = None
@@ -140,6 +142,29 @@ class Policy(BaseModel):
             kwargs['scrape'] = ScrapePolicy.model_validate(scrape_payload)
         if 'YOSOI_DISCOVERY_MODE' in src:
             kwargs['discovery'] = DiscoveryPolicy.model_validate({'mode': src['YOSOI_DISCOVERY_MODE'].strip().lower()})
+        search_env_keys = (
+            'YOSOI_SEARCH_BACKEND',
+            'YOSOI_SEARCH_REGION',
+            'YOSOI_SEARCH_SAFESEARCH',
+            'YOSOI_SEARCH_MAX_RESULTS',
+            'YOSOI_SEARCH_PAGE',
+            'YOSOI_SEARCH_TIMELIMIT',
+        )
+        if any(key in src for key in search_env_keys):
+            search_payload: dict[str, Any] = {}
+            if 'YOSOI_SEARCH_BACKEND' in src:
+                search_payload['backend'] = src['YOSOI_SEARCH_BACKEND'].strip()
+            if 'YOSOI_SEARCH_REGION' in src:
+                search_payload['region'] = src['YOSOI_SEARCH_REGION'].strip()
+            if 'YOSOI_SEARCH_SAFESEARCH' in src:
+                search_payload['safesearch'] = src['YOSOI_SEARCH_SAFESEARCH'].strip().lower()
+            if 'YOSOI_SEARCH_MAX_RESULTS' in src:
+                search_payload['max_results'] = src['YOSOI_SEARCH_MAX_RESULTS'].strip()
+            if 'YOSOI_SEARCH_PAGE' in src:
+                search_payload['page'] = src['YOSOI_SEARCH_PAGE'].strip()
+            if 'YOSOI_SEARCH_TIMELIMIT' in src:
+                search_payload['timelimit'] = src['YOSOI_SEARCH_TIMELIMIT'].strip()
+            kwargs['search'] = SearchPolicy.model_validate(search_payload)
         telemetry_payload: dict[str, Any] = {}
         if 'LANGFUSE_PUBLIC_KEY' in src:
             telemetry_payload['langfuse_public_key_ref'] = SecretRef.env('LANGFUSE_PUBLIC_KEY')

@@ -246,7 +246,7 @@ async def _drive_llm_opencode() -> None:
     try:
         await model.request(_messages(), None, _params())
     finally:
-        httpx2.AsyncClient = original_client  # type: ignore[assignment]
+        httpx2.AsyncClient = original_client
 
 
 # ---------------------------------------------------------------------------

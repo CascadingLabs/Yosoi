@@ -103,8 +103,12 @@ uv run python examples/google_search/google_search.py
 
 `api_design/policy_api_design.py` is a no-network showcase for the full public
 policy tree: `ModelPolicy`, `ScrapePolicy`, `DiscoveryPolicy`, `TelemetryPolicy`,
-`OutputPolicy`, `DownloadPolicy`, and `CrawlPolicy`, plus `SecretRef.env(...)`
-and `ResolvedRunSpec`.
+`OutputPolicy`, `DownloadPolicy`, `SearchPolicy`, and `CrawlPolicy`, plus
+`SecretRef.env(...)` and `ResolvedRunSpec`.
+
+`yosoi search` is policy-backed as well. Durable defaults belong under
+`Policy(search=ys.SearchPolicy(...))` or a policy file's `search:` key; direct
+CLI flags still win for the current run.
 
 ```bash
 uv run python examples/api_design/policy_api_design.py

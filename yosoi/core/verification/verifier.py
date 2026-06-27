@@ -239,6 +239,7 @@ class SelectorVerifier:
             return False, 'na_selector'
 
         try:
+            elements: Any
             if isinstance(selector, SelectorEntry) and strategy == 'attr':
                 elements = sel.css(f'{value}::attr({selector.name})')
             elif isinstance(selector, SelectorEntry) and strategy == 'role':

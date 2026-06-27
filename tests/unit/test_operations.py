@@ -13,11 +13,17 @@ from yosoi.operations import (
     ContractRef,
     CrawlRequest,
     ScrapeRequest,
+    ScrapeUnitResult,
+    SearchRequest,
+    _envelope,
     _selector_level,
     execute_crawl,
     execute_scrape,
+    execute_search,
     normalize_scrape_result,
+    normalize_search_result,
     run_crawl,
+    run_search,
 )
 
 
@@ -71,6 +77,25 @@ def test_normalize_scrape_result_shapes(urls, contracts, raw, expected):
     request = ScrapeRequest.from_axes(urls, contracts)
     result = normalize_scrape_result(request, raw)
     assert [(unit.url, unit.contract, unit.records) for unit in result.results] == expected
+    assert all(unit.status == 'ok' for unit in result.results)
+    assert all(unit.record_count == len(unit.records) for unit in result.results)
+
+
+def test_scrape_envelope_reports_empty_and_partial_states():
+    assert _envelope([]).status == 'error'
+
+    ok = ScrapeUnitResult(url='https://one.test', contract='OpContract', contract_fingerprint='fp', records=[])
+    failed = ScrapeUnitResult(
+        url='https://two.test',
+        contract='OpContract',
+        contract_fingerprint='fp',
+        status='failed',
+        error='boom',
+    )
+
+    assert _envelope([ok]).status == 'ok'
+    assert _envelope([failed]).status == 'error'
+    assert _envelope([ok, failed]).status == 'partial'
 
 
 def test_contract_ref_doors_and_validation(tmp_path: Path):
@@ -106,6 +131,34 @@ def test_request_validators_and_axes():
     assert len(crawl.contract_classes()) == 2
     assert crawl.persist is True
 
+    search = SearchRequest(query='  cascading labs  ')
+    assert search.query == 'cascading labs'
+    assert search.provider == 'ddgs'
+    assert search.kind == 'text'
+    assert search.backend == 'google,bing,brave'
+    assert search.region == 'us-en'
+    assert search.safesearch == 'moderate'
+    assert search.max_results == 10
+    assert search.page == 1
+
+    with pytest.raises(ValueError, match='non-empty'):
+        SearchRequest(query=' ')
+    with pytest.raises(ValueError, match='greater than or equal to 1'):
+        SearchRequest(query='x', max_results=0)
+    with pytest.raises(ValueError, match='greater than or equal to 1'):
+        SearchRequest(query='x', page=0)
+
+    search_from_policy = SearchRequest.from_policy(
+        'widgets',
+        ys.Policy(search=ys.SearchPolicy(backend='bing', region='wt-wt', safesearch='off', max_results=7, page=2)),
+        max_results=3,
+    )
+    assert search_from_policy.backend == 'bing'
+    assert search_from_policy.region == 'wt-wt'
+    assert search_from_policy.safesearch == 'off'
+    assert search_from_policy.max_results == 3
+    assert search_from_policy.page == 2
+
 
 def test_selector_level_accepts_all_name_and_value():
     from yosoi.models.selectors import SelectorLevel
@@ -115,6 +168,26 @@ def test_selector_level_accepts_all_name_and_value():
     assert _selector_level('XPATH') == SelectorLevel.XPATH
     with pytest.raises(ValueError, match='not a valid SelectorLevel'):
         _selector_level('bogus')
+
+
+def test_normalize_search_result_shapes_and_malformed_rows():
+    request = SearchRequest(query='widgets', backend='google,bing,brave')
+    result = normalize_search_result(
+        request,
+        [
+            {'title': 'One', 'href': 'https://one.test', 'body': 'First result'},
+            {'title': 'Two', 'url': 'https://two.test', 'snippet': 'Second result'},
+        ],
+    )
+
+    assert result.urls == ['https://one.test', 'https://two.test']
+    assert [(hit.rank, hit.title, hit.url, hit.snippet, hit.source, hit.backend) for hit in result.hits] == [
+        (1, 'One', 'https://one.test', 'First result', 'ddgs', 'google,bing,brave'),
+        (2, 'Two', 'https://two.test', 'Second result', 'ddgs', 'google,bing,brave'),
+    ]
+
+    with pytest.raises(ValueError, match='Malformed ddgs row 1: title'):
+        normalize_search_result(request, [{'href': 'https://bad.test', 'body': 'missing title'}])
 
 
 async def test_execute_scrape_and_crawl_delegate(monkeypatch, mocker):
@@ -131,6 +204,7 @@ async def test_execute_scrape_and_crawl_delegate(monkeypatch, mocker):
     )
     scrape_result = await execute_scrape(scrape_request)
     assert scrape_result.results[0].records == [{'title': 'ok'}]
+    assert scrape_result.results[0].record_count == 1
     assert scrape_impl.await_args.kwargs['max_concurrency'] == 3
     assert scrape_impl.await_args.kwargs['save_formats'] == ['json']
 
@@ -150,3 +224,92 @@ async def test_execute_scrape_and_crawl_delegate(monkeypatch, mocker):
 
     result = await run_crawl(crawl_request)
     assert result.summary == {'pages': 7}
+
+
+async def test_execute_scrape_reports_metadata_and_llm_blocked(monkeypatch, mocker):
+    import yosoi.api as api_module
+    from yosoi.utils.exceptions import LLMBlockedError
+
+    async def scrape_impl(*args, **kwargs):
+        metadata = kwargs['metadata_collect']
+        metadata[('https://one.test', 'OpContract')] = {
+            'selector_source': 'cache',
+            'cache_decision': 'hit',
+            'llm_used': False,
+        }
+        return [{'title': 'ok'}]
+
+    monkeypatch.setattr(api_module, '_scrape_impl', scrape_impl)
+    persist = mocker.patch('yosoi.operations._persist_scrape_unit', mocker.AsyncMock())
+
+    result = await execute_scrape(ScrapeRequest.from_axes('https://one.test', OpContract))
+
+    unit = result.results[0]
+    assert result.status == 'ok'
+    assert unit.selector_source == 'cache'
+    assert unit.cache_decision == 'hit'
+    assert unit.llm_used is False
+    persist.assert_awaited_once()
+
+    monkeypatch.setattr(api_module, '_scrape_impl', mocker.AsyncMock(side_effect=LLMBlockedError('cache_miss')))
+    blocked = await execute_scrape(ScrapeRequest.from_axes('https://one.test', OpContract, allow_llm=False))
+
+    failed = blocked.results[0]
+    assert blocked.status == 'error'
+    assert failed.status == 'failed'
+    assert failed.cache_decision == 'llm_blocked'
+    assert failed.llm_reason == 'cache_miss'
+
+
+async def test_execute_scrape_reports_generic_failure_metadata(monkeypatch, mocker):
+    import yosoi.api as api_module
+
+    async def scrape_impl(*args, **kwargs):
+        url = args[0]
+        metadata = kwargs['metadata_collect']
+        if url == 'https://one.test':
+            metadata[(url, 'OpContract')] = {
+                'selector_source': 'cache',
+                'cache_decision': 'hit',
+                'llm_used': False,
+            }
+            return [{'title': 'ok'}]
+        metadata[(url, 'OpContract')] = {
+            'selector_source': 'discovery',
+            'cache_decision': 'miss',
+            'llm_used': True,
+            'llm_reason': 'cache_miss',
+        }
+        raise RuntimeError('extraction failed')
+
+    monkeypatch.setattr(api_module, '_scrape_impl', scrape_impl)
+    persist = mocker.patch('yosoi.operations._persist_scrape_unit', mocker.AsyncMock())
+
+    result = await execute_scrape(ScrapeRequest.from_axes(['https://one.test', 'https://two.test'], OpContract))
+
+    assert result.status == 'partial'
+    assert [unit.status for unit in result.results] == ['ok', 'failed']
+    failed = result.results[1]
+    assert failed.selector_source == 'discovery'
+    assert failed.cache_decision == 'miss'
+    assert failed.llm_used is True
+    assert failed.llm_reason == 'cache_miss'
+    assert failed.error == 'extraction failed'
+    assert persist.await_count == 2
+
+
+async def test_execute_search_delegates_and_run_search(monkeypatch, mocker):
+    from yosoi.core.fetcher import search as search_fetcher
+
+    fetch = mocker.AsyncMock(return_value=[{'title': 'One', 'href': 'https://one.test', 'body': 'First result'}])
+    monkeypatch.setattr(search_fetcher, 'fetch_ddgs_text', fetch)
+
+    request = SearchRequest(query='widgets', backend='google,bing,brave', region='us-en', max_results=3)
+    result = await execute_search(request)
+
+    assert result.urls == ['https://one.test']
+    assert fetch.await_args.args == (request,)
+
+    second = await run_search(request)
+    assert second.urls == ['https://one.test']
+    assert fetch.await_count == 2

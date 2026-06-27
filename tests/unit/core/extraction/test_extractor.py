@@ -517,7 +517,7 @@ def test_extract_content_overridden_field_message():
     from yosoi.types.field import Field as YsField
 
     class OverrideContract(Contract):
-        title: str = YsField(description='Title', selector='h1.title')  # type: ignore[assignment]
+        title: str = YsField(description='Title', selector='h1.title')
 
     extractor = _make_extractor(OverrideContract)
     html = '<html><body><h1 class="title">My Title</h1></body></html>'
