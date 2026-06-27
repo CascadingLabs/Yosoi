@@ -281,14 +281,15 @@ class SelectorStorage:
         await atomic_write_json_async(filepath, payload, ensure_ascii=False)
 
         try:
-            from yosoi.storage.cache_metrics_sqlite import SQLiteCacheMetricsStore
+            from yosoi.storage.cache_metrics_libsql import LibSQLCacheMetricsStore
 
-            await SQLiteCacheMetricsStore().upsert_snapshots(
-                url=url,
-                domain=domain,
-                snapshots=snapshots,
-                contract_fingerprint=contract_sig,
-            )
+            async with LibSQLCacheMetricsStore() as metrics_store:
+                await metrics_store.upsert_snapshots(
+                    url=url,
+                    domain=domain,
+                    snapshots=snapshots,
+                    contract_fingerprint=contract_sig,
+                )
         except Exception:  # noqa: BLE001
             logger.warning('Failed to update cache metrics store for %s', domain, exc_info=True)
 
@@ -331,14 +332,15 @@ class SelectorStorage:
         await atomic_write_json_async(filepath, payload, ensure_ascii=False)
 
         try:
-            from yosoi.storage.cache_metrics_sqlite import SQLiteCacheMetricsStore
+            from yosoi.storage.cache_metrics_libsql import LibSQLCacheMetricsStore
 
-            await SQLiteCacheMetricsStore().record_verdict(
-                domain=domain,
-                field_name=field_name,
-                verdict=verdict,
-                contract_fingerprint=contract_sig,
-            )
+            async with LibSQLCacheMetricsStore() as metrics_store:
+                await metrics_store.record_verdict(
+                    domain=domain,
+                    field_name=field_name,
+                    verdict=verdict,
+                    contract_fingerprint=contract_sig,
+                )
         except Exception:  # noqa: BLE001
             logger.warning('Failed to update cache metrics store verdict for %s/%s', domain, field_name, exc_info=True)
 

@@ -216,11 +216,26 @@ class TestCacheStatus:
 
     def test_cache_status_json_no_cache(self, runner, mocker, base_mocks):
         import yosoi.storage as _store_pkg
+        from yosoi.storage.cache_metrics_libsql import DomainCacheMetrics
 
         storage_mock = mocker.MagicMock()
         storage_mock.load_snapshots = mocker.AsyncMock(return_value=None)
         mocker.patch.object(_store_pkg, 'SelectorStorage', return_value=storage_mock)
         mocker.patch('yosoi.utils.files.is_initialized', return_value=True)
+        store_cls = mocker.patch('yosoi.storage.cache_metrics_libsql.LibSQLCacheMetricsStore')
+        store = store_cls.return_value
+        store.__aenter__ = mocker.AsyncMock(return_value=store)
+        store.__aexit__ = mocker.AsyncMock(return_value=None)
+        store.summarize_domain = mocker.AsyncMock(
+            return_value=DomainCacheMetrics(
+                domain='example.com',
+                contract_fingerprints=[],
+                top_level_domains=[],
+                routes=[],
+                fields=[],
+                field_metrics=[],
+            )
+        )
 
         result = runner.invoke(main, ['cache', 'status', 'example.com', '--json'])
         assert result.exit_code == 0
@@ -234,13 +249,17 @@ class TestCacheStatus:
         }
 
     def test_cache_status_contract_only_json(self, runner, mocker, base_mocks):
-        from yosoi.storage.cache_metrics_sqlite import ContractCacheMetrics
+        from yosoi.storage.cache_metrics_libsql import ContractCacheMetrics
 
-        store_cls = mocker.patch('yosoi.storage.cache_metrics_sqlite.SQLiteCacheMetricsStore')
-        store_cls.return_value.summarize_contract = mocker.AsyncMock(
+        store_cls = mocker.patch('yosoi.storage.cache_metrics_libsql.LibSQLCacheMetricsStore')
+        store = store_cls.return_value
+        store.__aenter__ = mocker.AsyncMock(return_value=store)
+        store.__aexit__ = mocker.AsyncMock(return_value=None)
+        store.summarize_contract = mocker.AsyncMock(
             return_value=ContractCacheMetrics(
                 contract_fingerprint=Product.to_spec().fingerprint,
                 domains=[],
+                top_level_domains=[],
                 routes=[],
                 fields=[],
                 field_metrics=[],
@@ -256,13 +275,17 @@ class TestCacheStatus:
         assert doc['domains'] == []
 
     def test_cache_status_contract_target_json(self, runner, mocker, base_mocks):
-        from yosoi.storage.cache_metrics_sqlite import CacheFieldMetric, ContractCacheMetrics
+        from yosoi.storage.cache_metrics_libsql import CacheFieldMetric, ContractCacheMetrics
 
-        store_cls = mocker.patch('yosoi.storage.cache_metrics_sqlite.SQLiteCacheMetricsStore')
-        store_cls.return_value.summarize_contract = mocker.AsyncMock(
+        store_cls = mocker.patch('yosoi.storage.cache_metrics_libsql.LibSQLCacheMetricsStore')
+        store = store_cls.return_value
+        store.__aenter__ = mocker.AsyncMock(return_value=store)
+        store.__aexit__ = mocker.AsyncMock(return_value=None)
+        store.summarize_contract = mocker.AsyncMock(
             return_value=ContractCacheMetrics(
                 contract_fingerprint=Product.to_spec().fingerprint,
                 domains=['example.com'],
+                top_level_domains=['example.com'],
                 routes=['/products/'],
                 fields=['name'],
                 field_metrics=[
@@ -270,6 +293,7 @@ class TestCacheStatus:
                         contract_fingerprint=Product.to_spec().fingerprint,
                         field_name='name',
                         domain='example.com',
+                        top_level_domain='example.com',
                         route_signature='/products/',
                         selector_level='all',
                         source_url='https://example.com/products/1',
@@ -328,6 +352,36 @@ class TestCacheStatus:
         result = runner.invoke(main, ['cache', 'status', 'example.com', '--domain', 'example.com'])
         assert result.exit_code != 0
         assert 'Use either positional TARGET' in result.output
+
+    def test_cache_metrics_backfill_json(self, runner, mocker, base_mocks):
+        from yosoi.storage.cache_metrics_libsql import CacheBackfillResult
+
+        store_cls = mocker.patch('yosoi.storage.cache_metrics_libsql.LibSQLCacheMetricsStore')
+        store = store_cls.return_value
+        store.__aenter__ = mocker.AsyncMock(return_value=store)
+        store.__aexit__ = mocker.AsyncMock(return_value=None)
+        store.backfill_existing = mocker.AsyncMock(
+            return_value=CacheBackfillResult(
+                scanned_files=2,
+                imported_files=1,
+                skipped_files=1,
+                imported_fields=3,
+                domains=['example.com'],
+                contract_fingerprints=['fp'],
+            )
+        )
+
+        result = runner.invoke(main, ['cache', 'metrics', 'backfill', '--all', '--json'])
+        assert result.exit_code == 0, result.output
+        doc = json.loads(result.output)
+        assert doc['type'] == 'cache.metrics.backfill'
+        assert doc['totals']['imported_fields'] == 3
+        store.backfill_existing.assert_awaited_once_with(contract_fingerprint=None, domain=None)
+
+    def test_cache_metrics_backfill_requires_scope(self, runner, base_mocks):
+        result = runner.invoke(main, ['cache', 'metrics', 'backfill'])
+        assert result.exit_code != 0
+        assert 'Pass --all' in result.output
 
     def test_cache_status_with_cache(self, runner, mocker, base_mocks):
         from datetime import datetime, timezone

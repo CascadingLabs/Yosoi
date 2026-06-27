@@ -870,7 +870,7 @@ def cache_status(
             'type': 'cache.status',
             'target': target_value,
             'target_kind': routed_kind,
-            'status': 'cache_metrics_sqlite_unavailable',
+            'status': 'cache_metrics_libsql_unavailable',
             'cached': False,
             'fields': [],
             'message': message,
@@ -882,14 +882,50 @@ def cache_status(
             doc['route'] = routed_target.route
         return doc
 
+    def _print_field_metrics_table(rows: list[object]) -> None:
+        if not rows:
+            return
+        from rich.table import Table
+
+        table = Table(title='Cache field metrics')
+        table.add_column('Domain')
+        table.add_column('Route')
+        table.add_column('Field')
+        table.add_column('Status')
+        table.add_column('Failures', justify='right')
+        table.add_column('Last verified')
+        for row in rows:
+            table.add_row(
+                str(getattr(row, 'domain', '')),
+                str(getattr(row, 'route_signature', '')),
+                str(getattr(row, 'field_name', '')),
+                str(getattr(row, 'status', '')),
+                str(getattr(row, 'failure_count', 0)),
+                str(getattr(row, 'last_verified_at', None) or '—'),
+            )
+        console.print(table)
+
     if domain is None:
         if resolved_contract is not None:
             fp = contract_signature(resolved_contract)
             try:
-                from yosoi.storage.cache_metrics_sqlite import SQLiteCacheMetricsStore
+                from yosoi.storage.cache_metrics_libsql import LibSQLCacheMetricsStore
 
-                summary = asyncio.run(SQLiteCacheMetricsStore().summarize_contract(fp))
+                async def _summarize_contract_metrics():
+                    async with LibSQLCacheMetricsStore() as metrics_store:
+                        return await metrics_store.summarize_contract(fp)
+
+                summary = asyncio.run(_summarize_contract_metrics())
                 field_metrics = [row.__dict__ for row in summary.field_metrics]
+                counts = {
+                    'runs': summary.run_count,
+                    'urls': summary.url_count,
+                    'domains': len(summary.domains),
+                    'top_level_domains': len(summary.top_level_domains),
+                    'routes': len(summary.routes),
+                    'fields': len(summary.fields),
+                    'events': summary.event_counts,
+                }
                 doc: dict[str, object] = {
                     'type': 'cache.status',
                     'target': target_value,
@@ -897,7 +933,9 @@ def cache_status(
                     'contract': resolved_contract.__name__,
                     'contract_fingerprint': fp,
                     'cached': bool(field_metrics),
+                    'counts': counts,
                     'domains': summary.domains,
+                    'top_level_domains': summary.top_level_domains,
                     'routes': summary.routes,
                     'fields': summary.fields,
                     'field_metrics': field_metrics,
@@ -910,9 +948,15 @@ def cache_status(
                 if not field_metrics:
                     console.print('[warning]✗ No cache metrics for this contract[/warning]')
                     return
+                console.print(f'  Runs: [bold]{summary.run_count}[/bold]')
+                console.print(f'  URLs: [bold]{summary.url_count}[/bold]')
                 console.print(f'  Domains: {", ".join(summary.domains)}')
                 console.print(f'  Routes: {", ".join(summary.routes)}')
                 console.print(f'  Fields: {", ".join(summary.fields)}')
+                if summary.event_counts:
+                    events = ', '.join(f'{name}={count}' for name, count in sorted(summary.event_counts.items()))
+                    console.print(f'  Events: {events}')
+                _print_field_metrics_table(summary.field_metrics)
                 return
             except Exception as exc:  # noqa: BLE001
                 doc = _metrics_status_doc(f'Could not read cache metrics DB: {exc}')
@@ -946,6 +990,28 @@ def cache_status(
         }
         if routed_target is not None and routed_target.route is not None:
             doc['route'] = routed_target.route
+        try:
+            from yosoi.storage.cache_metrics_libsql import LibSQLCacheMetricsStore
+
+            async with LibSQLCacheMetricsStore() as metrics_store:
+                domain_summary = await metrics_store.summarize_domain(domain, contract_sig)
+            if domain_summary.field_metrics or domain_summary.event_counts:
+                doc['field_metrics'] = [row.__dict__ for row in domain_summary.field_metrics]
+                doc['top_level_domains'] = domain_summary.top_level_domains
+                doc['routes'] = domain_summary.routes
+                doc['contracts'] = domain_summary.contract_fingerprints
+                doc['counts'] = {
+                    'runs': domain_summary.run_count,
+                    'urls': domain_summary.url_count,
+                    'contracts': len(domain_summary.contract_fingerprints),
+                    'top_level_domains': len(domain_summary.top_level_domains),
+                    'routes': len(domain_summary.routes),
+                    'fields': len(domain_summary.fields),
+                    'events': domain_summary.event_counts,
+                }
+        except Exception as exc:  # noqa: BLE001
+            doc['metrics_error'] = str(exc)
+
         if contract_sig is not None:
             doc['contract'] = resolved_contract.__name__ if resolved_contract is not None else None
             doc['contract_fingerprint'] = contract_sig
@@ -958,6 +1024,20 @@ def cache_status(
         if not json_output:
             console.print(f'[success]✓ Cached selectors for {domain!r}[/success]')
             console.print(f'  Fields: {", ".join(sorted(snapshots))}')
+            if 'counts' in doc:
+                counts = doc['counts']
+                if isinstance(counts, dict):
+                    console.print(f'  Runs: [bold]{counts.get("runs", 0)}[/bold]')
+                    console.print(f'  URLs: [bold]{counts.get("urls", 0)}[/bold]')
+                    events = counts.get('events')
+                    if isinstance(events, dict) and events:
+                        rendered = ', '.join(f'{name}={count}' for name, count in sorted(events.items()))
+                        console.print(f'  Events: {rendered}')
+                metric_rows = doc.get('field_metrics')
+                if isinstance(metric_rows, list):
+                    from types import SimpleNamespace
+
+                    _print_field_metrics_table([SimpleNamespace(**row) for row in metric_rows])
 
         if resolved_contract is not None:
             spec = resolved_contract.to_spec()
@@ -977,6 +1057,66 @@ def cache_status(
     doc = asyncio.run(_check())
     if json_output:
         echo_json(doc)
+
+
+@cache_group.group('metrics')
+def cache_metrics_group() -> None:
+    """Manage cache metrics storage."""
+
+
+@cache_metrics_group.command('backfill')
+@click.option('-C', '--contract', type=ContractParamType(), multiple=True, help='Contract(s) to backfill.')
+@click.option('--domain', 'domain_target', default=None, metavar='DOMAIN', help='Domain to backfill.')
+@click.option('--all', 'all_targets', is_flag=True, help='Backfill all selector cache files.')
+@click.option('-j', '--json', 'json_output', is_flag=True, default=False)
+def cache_metrics_backfill(
+    contract: tuple[type[Contract], ...], domain_target: str | None, all_targets: bool, json_output: bool
+) -> None:
+    """Import existing selector JSON files into the metrics DB as backfill events."""
+    from dataclasses import asdict
+
+    from yosoi.storage.cache_metrics_libsql import LibSQLCacheMetricsStore
+    from yosoi.utils.files import init_yosoi, is_initialized
+    from yosoi.utils.signatures import contract_signature
+
+    if not all_targets and not contract and domain_target is None:
+        raise click.UsageError('Pass --all, --contract, or --domain to choose what to backfill.')
+    if not is_initialized():
+        init_yosoi()
+
+    contract_fps = [contract_signature(cls) for cls in contract] or [None]
+
+    async def _backfill() -> dict[str, object]:
+        results = []
+        async with LibSQLCacheMetricsStore() as metrics_store:
+            for fp in contract_fps:
+                result = await metrics_store.backfill_existing(
+                    contract_fingerprint=None if all_targets else fp,
+                    domain=domain_target,
+                )
+                results.append(asdict(result) | {'contract_fingerprint': None if all_targets else fp})
+                if all_targets:
+                    break
+        totals = {
+            'scanned_files': sum(int(item['scanned_files']) for item in results),
+            'imported_files': sum(int(item['imported_files']) for item in results),
+            'skipped_files': sum(int(item['skipped_files']) for item in results),
+            'imported_fields': sum(int(item['imported_fields']) for item in results),
+        }
+        return {'type': 'cache.metrics.backfill', 'results': results, 'totals': totals}
+
+    doc = asyncio.run(_backfill())
+    if json_output:
+        echo_json(doc)
+        return
+
+    totals = doc['totals']
+    if isinstance(totals, dict):
+        console.print('[success]✓ Cache metrics backfill complete[/success]')
+        console.print(f'  Scanned files: [bold]{totals["scanned_files"]}[/bold]')
+        console.print(f'  Imported files: [bold]{totals["imported_files"]}[/bold]')
+        console.print(f'  Skipped files: [bold]{totals["skipped_files"]}[/bold]')
+        console.print(f'  Imported fields: [bold]{totals["imported_fields"]}[/bold]')
 
 
 # ── contracts command group (CAS-122) ─────────────────────────────────────────

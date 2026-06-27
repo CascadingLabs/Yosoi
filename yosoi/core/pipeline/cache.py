@@ -70,6 +70,7 @@ class PipelineCacheMixin:
             items, cache_valid = await self._extract_with_cached(url, fetcher, existing, skip_verification)  # type: ignore[attr-defined]
             if not cache_valid:
                 return None
+            await self._record_cache_hit_metric(url, domain, set(existing))
             return self._yield_cached_items(
                 items,
                 url,
@@ -84,6 +85,7 @@ class PipelineCacheMixin:
             existing_for_payload = {
                 name: data for name, snap in snapshots.items() if (data := snapshot_to_selector_dict(snap))
             }
+            await self._record_cache_hit_metric(url, domain, set(existing_for_payload))
             return self._yield_cached_items(
                 None,
                 url,
@@ -180,7 +182,7 @@ class PipelineCacheMixin:
 
         if not stale_fields:
             observability.annotate_cache(root_span, path=observability.CACHE_CACHED, fresh_fields=len(fresh_fields))
-            return self._extract_all_fresh(
+            return await self._extract_all_fresh(
                 url, domain, fetcher, raw_html, snapshots, fresh_fields, format_to_use, root_span=root_span
             )
 
@@ -210,7 +212,7 @@ class PipelineCacheMixin:
             root_span=root_span,
         )
 
-    def _extract_all_fresh(
+    async def _extract_all_fresh(
         self,
         url: str,
         domain: str,
@@ -225,6 +227,7 @@ class PipelineCacheMixin:
         """All cached selectors verified — extract content."""
         self.console.print(f'[success]✓ All {len(fresh_fields)} cached selectors verified[/success]')
         existing = {name: data for name, snap in snapshots.items() if (data := snapshot_to_selector_dict(snap))}
+        await self._record_cache_hit_metric(url, domain, fresh_fields)
         root_entry = self._resolve_root(existing)  # type: ignore[attr-defined]
         container_selector = self._root_value(root_entry)  # type: ignore[attr-defined]
         with observability.span('extract', url=url, mode='cache', container=container_selector or 'single'):
@@ -244,6 +247,21 @@ class PipelineCacheMixin:
         return self._yield_cached_items(
             None, url, domain, format_to_use, fetcher=fetcher, root_span=root_span, selectors_payload=existing
         )
+
+    async def _record_cache_hit_metric(self, url: str, domain: str, field_names: set[str]) -> None:
+        """Record successful cached replay/use without affecting selector write counts."""
+        try:
+            from yosoi.storage.cache_metrics_libsql import LibSQLCacheMetricsStore
+
+            async with LibSQLCacheMetricsStore() as metrics_store:
+                await metrics_store.record_cache_hit(
+                    url=url,
+                    domain=domain,
+                    contract_fingerprint=self._contract_sig,
+                    field_names=field_names,
+                )
+        except Exception:  # noqa: BLE001
+            logger.warning('Failed to record cache hit metric for %s', url, exc_info=True)
 
     async def _partial_rediscovery(
         self,
