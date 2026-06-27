@@ -186,6 +186,7 @@ def observation_from_artifact(
         count = len(payload.get('hits') or payload.get('urls') or [])
     elif kind == 'crawl' and isinstance(payload, dict):
         summary = payload.get('summary') if isinstance(payload.get('summary'), dict) else payload
+        assert isinstance(summary, dict)
         count = int(summary.get('pages_fetched') or len(summary.get('results') or []))
     return ResearchObservation(
         observed_at=_now().isoformat(),
@@ -213,11 +214,13 @@ def summarize_packet(packet: Path) -> dict[str, Any]:
     meta = json.loads((packet / 'frontier.json').read_text(encoding='utf-8'))
     observations = _read_observations(packet / 'observations.jsonl')
     contracts: dict[str, dict[str, Any]] = {}
-    gaps: list[str] = []
+    latest_by_scope: dict[tuple[str, str], ResearchObservation] = {}
     latest: list[dict[str, Any]] = []
     for obs in observations:
         latest.append(obs.model_dump(exclude_none=True))
         key = obs.contract or '(unscoped)'
+        scope = obs.url or obs.artifact or obs.summary or ''
+        latest_by_scope[(key, scope)] = obs
         entry = contracts.setdefault(
             key,
             {
@@ -235,10 +238,13 @@ def summarize_packet(packet: Path) -> dict[str, Any]:
         entry['latest_record_count'] = (
             obs.record_count if obs.record_count is not None else entry['latest_record_count']
         )
+    gaps: list[str] = []
+    for (key, scope), obs in latest_by_scope.items():
+        if obs.quality_status == 'ok' and not obs.quality_issues:
+            continue
         for issue in obs.quality_issues:
-            label = f'{key}: {issue}'
-            if label not in gaps:
-                gaps.append(label)
+            target = f'{key} ({scope})' if scope else key
+            gaps.append(f'{target}: {issue}')
     return {
         'packet': str(packet),
         'topic': meta.get('topic'),

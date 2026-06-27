@@ -130,6 +130,19 @@ class TestBuildPolicy:
         assert policy.output.flat_files is True
         assert policy.resolve_run_spec().output_flat_files is True
 
+    def test_build_policy_preserves_policy_flat_files_opt_in_without_cli_flag(self, monkeypatch):
+        monkeypatch.setenv('GROQ_KEY', 'groq-key')
+
+        policy = build_policy(
+            'groq:llama',
+            debug=False,
+            policy_sources=('output:\n  flat_files: true\n',),
+        )
+
+        assert policy.output is not None
+        assert policy.output.flat_files is True
+        assert policy.resolve_run_spec().output_flat_files is True
+
     def test_build_policy_sets_atom_reads_opt_in(self, monkeypatch):
         monkeypatch.setenv('GROQ_KEY', 'groq-key')
 

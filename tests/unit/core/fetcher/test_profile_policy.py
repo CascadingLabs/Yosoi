@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+import sys
+from types import SimpleNamespace
+
+import pytest
+
 from yosoi.core.fetcher.profile_policy import cascade_from_profile_policy
 from yosoi.policy import BrowserProfilePolicy
 
@@ -43,3 +48,46 @@ def test_pool_policy_preserves_order_and_caps_live_count() -> None:
     assert cascade is not None
     assert [identity.id for identity in cascade.ordered()] == ['google-001', 'google-002']
     assert max_live == 1
+
+
+def test_empty_profile_policy_returns_default() -> None:
+    assert cascade_from_profile_policy(None) == (None, 3)
+    assert cascade_from_profile_policy(BrowserProfilePolicy()) == (None, 3)
+
+
+def test_registry_defaults_from_voidcrawl_module(monkeypatch: pytest.MonkeyPatch) -> None:
+    class _ProfileRegistry:
+        @staticmethod
+        def default() -> _Registry:
+            return _Registry()
+
+    monkeypatch.setitem(sys.modules, 'voidcrawl', SimpleNamespace(ProfileRegistry=_ProfileRegistry))
+
+    cascade, max_live = cascade_from_profile_policy(BrowserProfilePolicy(profile='google-001', max_live=2))
+
+    assert cascade is not None
+    assert cascade.ordered()[0].id == 'google-001'
+    assert max_live == 2
+
+
+def test_missing_voidcrawl_profile_registry_raises(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setitem(sys.modules, 'voidcrawl', SimpleNamespace())
+
+    with pytest.raises(RuntimeError, match='ProfileRegistry support'):
+        cascade_from_profile_policy(BrowserProfilePolicy(profile='google-001'))
+
+
+def test_missing_voidcrawl_module_raises(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setitem(sys.modules, 'voidcrawl', None)
+
+    with pytest.raises(RuntimeError, match='ProfileRegistry support'):
+        cascade_from_profile_policy(BrowserProfilePolicy(profile='google-001'))
+
+
+def test_empty_profile_pool_raises() -> None:
+    class EmptyRegistry:
+        def resolve_pool(self, name: str) -> dict[str, object]:
+            return {'pool': {'name': name}, 'profiles': []}
+
+    with pytest.raises(ValueError, match='profile pool'):
+        cascade_from_profile_policy(BrowserProfilePolicy(pool='empty'), registry=EmptyRegistry())

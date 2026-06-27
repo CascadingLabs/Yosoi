@@ -52,6 +52,35 @@ async def test_scrape_accepts_a_list_of_contracts(monkeypatch):
     assert all(i.kwargs.get('bus') is None for i in FakePipeline.instances)
 
 
+async def test_fetch_builds_request_and_forwards_policy(mocker, monkeypatch):
+    from yosoi.operations import FetchResult, FetchUnitResult
+
+    monkeypatch.delenv('YOSOI_PAGE_FETCHER_TYPE', raising=False)
+    run = mocker.patch(
+        'yosoi.operations.run_fetch',
+        mocker.AsyncMock(return_value=FetchResult(results=[FetchUnitResult(url='https://one.test', content='Hello')])),
+    )
+
+    result = await ys.fetch(
+        'https://one.test',
+        view='metadata',
+        fetcher_type='simple',
+        chars=500,
+        include=('headers', 'fingerprint'),
+        contracts=[ApiContract],
+        policy=ys.Policy(),
+    )
+
+    request = run.await_args.args[0]
+    assert result.results[0].content == 'Hello'
+    assert request.urls == ['https://one.test']
+    assert request.view == 'metadata'
+    assert request.fetcher_type == 'simple'
+    assert request.page_size == 500
+    assert request.include == ['headers', 'fingerprint']
+    assert request.contract_classes()[0] is ApiContract
+
+
 async def test_search_builds_request_and_forwards_limit(mocker, monkeypatch):
     from yosoi.operations import SearchRequest, SearchResult
 

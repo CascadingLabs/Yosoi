@@ -72,12 +72,13 @@ class TestMainCLI:
     def runner(self):
         return CliRunner()
 
-    def test_no_urls_error(self, runner, monkeypatch):
-        """No URLs provided raises usage error."""
+    def test_bare_invocation_shows_help(self, runner, monkeypatch):
+        """Bare root command shows help instead of defaulting to scrape."""
         monkeypatch.setenv('GROQ_KEY', 'test-key')
         result = runner.invoke(main, [])
-        assert result.exit_code != 0
-        assert 'No URLs provided' in result.output
+        assert result.exit_code == 0
+        assert 'Usage:' in result.output
+        assert 'No URLs provided' not in result.output
 
     def test_summary_flag(self, runner, monkeypatch, mocker):
         """--summary flag triggers show_summary on Pipeline."""

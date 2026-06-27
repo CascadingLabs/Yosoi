@@ -416,6 +416,44 @@ async def scrape(
     return await execute_scrape(request)
 
 
+async def fetch(
+    url: str | Sequence[str],
+    *,
+    view: str = 'text',
+    fetcher_type: str | None = None,
+    page: int = 1,
+    page_size: int = 12_000,
+    chars: int | None = None,
+    include: Sequence[str] = (),
+    contracts: Any = None,
+    output_dir: str | None = None,
+    policy: Policy | None = None,
+) -> Any:
+    """Fetch one-or-many URLs as bounded page acquisition content.
+
+    This is the contractless inspection surface: no LLM discovery, no selector
+    writes, no scrape replay. Optional ``contracts`` run advisory cache/fingerprint
+    probes only.
+    """
+    from yosoi.operations import FetchRequest, run_fetch
+
+    if chars is not None:
+        page_size = chars
+    effective_policy = Policy.cascade(Policy.from_env(), policy)
+    request = FetchRequest.from_axes(
+        url,
+        contracts,
+        view=view,
+        fetcher_type=fetcher_type,
+        page=page,
+        page_size=page_size,
+        include=list(include),
+        output_dir=output_dir,
+        policy=effective_policy,
+    )
+    return await run_fetch(request)
+
+
 async def search(
     query: str,
     *,

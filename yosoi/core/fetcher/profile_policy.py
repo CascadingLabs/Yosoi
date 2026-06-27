@@ -29,13 +29,19 @@ def cascade_from_profile_policy(
     active_cap = int(policy.max_live)
     if registry is None:
         try:
-            from voidcrawl import ProfileRegistry
+            import voidcrawl
         except ImportError as exc:
             raise RuntimeError(
                 'PagePolicy.profile requires a VoidCrawl build with ProfileRegistry support. '
                 'Install the matching local VoidCrawl checkout or upgrade voidcrawl.'
             ) from exc
 
+        ProfileRegistry = getattr(voidcrawl, 'ProfileRegistry', None)
+        if ProfileRegistry is None:
+            raise RuntimeError(
+                'PagePolicy.profile requires a VoidCrawl build with ProfileRegistry support. '
+                'Install the matching local VoidCrawl checkout or upgrade voidcrawl.'
+            )
         registry = ProfileRegistry.default()
 
     if policy.profile:

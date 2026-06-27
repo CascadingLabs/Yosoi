@@ -5620,7 +5620,7 @@ wheels = [
 
 [[package]]
 name = "yosoi"
-version = "0.0.2a19"
+version = "0.0.2a20"
 source = { editable = "." }
 dependencies = [
     { name = "aiofiles" },
@@ -5755,7 +5755,7 @@ requires-dist = [
     { name = "rich-click", specifier = ">=1.9.7" },
     { name = "taskiq", specifier = ">=0.12.1" },
     { name = "tenacity", specifier = ">=9.1.4" },
-    { name = "voidcrawl", specifier = "==0.3.6" },
+    { name = "voidcrawl", specifier = "==0.3.8" },
 ]
 provides-extras = ["all", "anthropic", "bedrock", "huggingface", "mistral", "tabular", "vertexai", "xai"]
 

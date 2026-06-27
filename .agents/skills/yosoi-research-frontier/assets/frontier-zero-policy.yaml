@@ -19,5 +19,5 @@ output:
   quiet: true
   formats:
     - jsonl
-  flat_files: true
+  flat_files: false
   logs: true

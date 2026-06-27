@@ -27,6 +27,27 @@ def _resolve_spec_for_cli(policy: Policy, model_arg: str | None) -> ResolvedRunS
         return None
 
 
+def _output_policy_for_cli(
+    *,
+    output_formats: Sequence[str],
+    quiet: bool,
+    json_output: bool,
+    debug: bool,
+    flat_files: bool,
+) -> object:
+    from yosoi.policy import OutputPolicy
+
+    output_payload: dict[str, object] = {
+        'formats': tuple(output_formats),
+        'quiet': quiet,
+        'json_output': json_output,
+        'debug_html': debug,
+    }
+    if flat_files:
+        output_payload['flat_files'] = True
+    return OutputPolicy.model_validate(output_payload)
+
+
 def build_policy(
     model_arg: str | None,
     debug: bool,
@@ -46,7 +67,7 @@ def build_policy(
     """Build the CLI call-site policy layer and cascade it with env/global/project policy files."""
     from dotenv import load_dotenv
 
-    from yosoi.policy import ModelPolicy, OutputPolicy, Policy, ScrapePolicy
+    from yosoi.policy import ModelPolicy, Policy, ScrapePolicy
     from yosoi.policy.files import discover_policy_files, load_policy_layers
 
     load_dotenv()
@@ -73,11 +94,11 @@ def build_policy(
             scrape_payload['max_concurrency'] = max_concurrency
         if scrape_payload:
             call_kwargs['scrape'] = ScrapePolicy.model_validate(scrape_payload)
-        call_kwargs['output'] = OutputPolicy(
-            formats=tuple(output_formats),
+        call_kwargs['output'] = _output_policy_for_cli(
+            output_formats=output_formats,
             quiet=quiet,
             json_output=json_output,
-            debug_html=debug,
+            debug=debug,
             flat_files=flat_files,
         )
         call_policy = Policy.model_validate(call_kwargs)

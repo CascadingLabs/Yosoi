@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass
+from importlib import import_module
 from pathlib import Path
 
 import pytest
@@ -16,6 +17,7 @@ from yosoi.cli.contract_param import ContractParamType
 from yosoi.models.defaults import NewsArticle, Product
 
 _ANSI_RE = re.compile(r'\x1b\[[0-?]*[ -/]*[@-~]')
+_CLI_MAIN = import_module('yosoi.cli.main')
 
 
 def _plain(value: str) -> str:
@@ -266,6 +268,7 @@ class TestResearchCommands:
             packet = Path(json.loads(init_result.output)['packet'])
             assert (packet / 'frontier.json').exists()
             assert (packet / 'observations.jsonl').exists()
+            assert 'flat_files: false' in (packet / 'policy.yaml').read_text(encoding='utf-8')
 
             scrape_path = packet / 'scrape-results' / 'firecrawl.json'
             scrape_path.write_text(
@@ -300,6 +303,241 @@ class TestResearchCommands:
             status = json.loads(status_result.output)
             assert status['contracts']['PricingPlan']['status'] == 'validated'
             assert status['contracts']['PricingPlan']['latest_record_count'] == 4
+
+    def test_research_observe_search_crawl_note_and_human_status(self, runner):
+        with runner.isolated_filesystem():
+            init_result = runner.invoke(main, ['research', 'init', 'market map', '--json'])
+            packet = Path(json.loads(init_result.output)['packet'])
+            search_path = packet / 'sources' / 'search.json'
+            search_path.write_text('{"hits": [{"url": "https://one.test"}]}', encoding='utf-8')
+            crawl_path = packet / 'sources' / 'crawl.json'
+            crawl_path.write_text('{"summary": {"results": [{"url": "https://one.test"}]}}', encoding='utf-8')
+
+            search_result = runner.invoke(
+                main,
+                ['research', 'observe', str(packet), '--from-search', str(search_path)],
+            )
+            crawl_result = runner.invoke(
+                main,
+                [
+                    'research',
+                    'observe',
+                    str(packet),
+                    '--from-crawl',
+                    str(crawl_path),
+                    '--contract-status',
+                    'provisional',
+                ],
+            )
+            note_result = runner.invoke(
+                main,
+                [
+                    'research',
+                    'observe',
+                    str(packet),
+                    '--note',
+                    'pricing page blocks replay',
+                    '--contract-status',
+                    'rejected',
+                ],
+            )
+            status_result = runner.invoke(main, ['research', 'status', str(packet)])
+
+            assert search_result.exit_code == 0, search_result.output
+            assert crawl_result.exit_code == 0, crawl_result.output
+            assert note_result.exit_code == 0, note_result.output
+            assert status_result.exit_code == 0, status_result.output
+            assert 'Research packet: market map' in status_result.output
+            assert '(unscoped)' in status_result.output
+
+    def test_research_observe_requires_exactly_one_source(self, runner):
+        with runner.isolated_filesystem():
+            init_result = runner.invoke(main, ['research', 'init', 'market map', '--json'])
+            packet = Path(json.loads(init_result.output)['packet'])
+            search_path = packet / 'sources' / 'search.json'
+            search_path.write_text('{"hits": []}', encoding='utf-8')
+
+            missing = runner.invoke(main, ['research', 'observe', str(packet)])
+            too_many = runner.invoke(
+                main,
+                ['research', 'observe', str(packet), '--from-search', str(search_path), '--note', 'extra'],
+            )
+
+            assert missing.exit_code != 0
+            assert too_many.exit_code != 0
+            assert 'Pass exactly one' in missing.output
+            assert 'Pass exactly one' in too_many.output
+
+
+class TestCliHelperCoverage:
+    def test_crawl_run_id_and_worker_bounds(self):
+        run_id = _CLI_MAIN._new_crawl_run_id()
+
+        assert run_id.startswith('crawl-')
+        assert _CLI_MAIN._effective_workers(0, 10) == 4
+        assert _CLI_MAIN._effective_workers(9, 3) == 3
+        assert _CLI_MAIN._effective_workers(1, 0) == 1
+        with pytest.raises(click.BadParameter, match='workers'):
+            _CLI_MAIN._effective_workers(-1, 3)
+
+    def test_crawl_cli_overrides_layer_every_flag(self):
+        from yosoi.policy import CrawlPolicy, Policy
+
+        policy = Policy(crawl=CrawlPolicy())
+
+        updated = _CLI_MAIN._apply_crawl_cli_overrides(
+            policy,
+            run_id='crawl-test',
+            max_pages=7,
+            max_depth=2,
+            max_attempts=11,
+            max_pages_per_host=5,
+            workers=3,
+            per_host_concurrency=2,
+            politeness=0.25,
+            timeout=6.5,
+            retries=4,
+            respect_robots=False,
+            allow_redirects=False,
+        )
+
+        crawl = updated.require_crawl()
+        assert crawl.budget.max_pages == 7
+        assert crawl.budget.max_depth == 2
+        assert crawl.budget.max_attempts == 11
+        assert crawl.budget.max_pages_per_host == 5
+        assert crawl.budget.crawl_session_id == 'crawl-test'
+        assert crawl.scheduler.max_workers == 3
+        assert crawl.scheduler.per_host_concurrency == 2
+        assert crawl.scheduler.politeness_delay == 0.25
+        assert crawl.scheduler.fetch_timeout_seconds == 6.5
+        assert crawl.scheduler.max_fetch_retries == 4
+        assert crawl.safety.respect_robots is False
+        assert crawl.safety.allow_redirects is False
+
+    def test_profile_cli_override_edges(self):
+        from yosoi.policy import Policy
+
+        policy = Policy()
+
+        assert (
+            _CLI_MAIN._apply_profile_cli_overrides(
+                policy,
+                profile=None,
+                profile_pool=None,
+                max_live_profiles=3,
+            )
+            is policy
+        )
+        with pytest.raises(click.UsageError, match='mutually exclusive'):
+            _CLI_MAIN._apply_profile_cli_overrides(
+                policy,
+                profile='google-001',
+                profile_pool='google-serp',
+                max_live_profiles=3,
+            )
+        with pytest.raises(click.BadParameter, match='max-live-profiles'):
+            _CLI_MAIN._apply_profile_cli_overrides(
+                policy,
+                profile='google-001',
+                profile_pool=None,
+                max_live_profiles=0,
+            )
+
+    def test_render_compact_crawl_covers_empty_and_error_rows(self, mocker):
+        prints = mocker.patch.object(_CLI_MAIN.console, 'print')
+
+        _CLI_MAIN._render_compact_crawl(
+            {
+                'status': 'partial',
+                'pages_fetched': 1,
+                'attempted_urls': 2,
+                'failures': 1,
+                'wall_time': 1.25,
+                'run_id': 'crawl-test',
+                'results': [
+                    {
+                        'index': 1,
+                        'status': 'failed',
+                        'status_code': 503,
+                        'depth': 1,
+                        'links': 0,
+                        'html_chars': 12,
+                        'fetch_time': 0.12,
+                        'url': 'https://example.test',
+                        'error': 'blocked',
+                    }
+                ],
+            }
+        )
+        _CLI_MAIN._render_compact_crawl({'status': 'empty', 'results': []})
+
+        rendered = '\n'.join(str(call.args[0]) for call in prints.call_args_list)
+        assert 'Crawl stress partial' in rendered
+        assert 'blocked' in rendered
+        assert 'run_id=crawl-test' in rendered
+        assert '(no attempted URLs)' in rendered
+
+    def test_print_atom_reads_info_yellow_and_strict(self, mocker):
+        ui = mocker.MagicMock()
+
+        _CLI_MAIN._print_atom_reads_info(ui, type('Policy', (), {'atom_reads': False})())
+        _CLI_MAIN._print_atom_reads_info(ui, type('Policy', (), {'atom_reads': True, 'trust_tier': 'yellow'})())
+        _CLI_MAIN._print_atom_reads_info(ui, type('Policy', (), {'atom_reads': True, 'trust_tier': 'strict'})())
+
+        assert ui.print.call_count == 2
+        assert 'yellow trust' in ui.print.call_args_list[0].args[0]
+        assert 'strict trust' in ui.print.call_args_list[1].args[0]
+
+    def test_print_map_result_covers_tables_and_warnings(self, mocker):
+        from yosoi.core.site_map import MapHost, MapResult, MapSitemap, MapUrl
+
+        prints = mocker.patch.object(_CLI_MAIN.console, 'print')
+        result = MapResult(
+            status='empty',
+            requested_url='https://example.test',
+            root_url='https://example.test',
+            root_host='example.test',
+            robots_url='https://example.test/robots.txt',
+            robots_found=False,
+            hosts=[MapHost(host='example.test', url_count=1)],
+            sitemaps=[
+                MapSitemap(
+                    url='https://example.test/sitemap.xml',
+                    source='robots',
+                    status='ok',
+                    url_count=1,
+                )
+            ],
+            urls=[
+                MapUrl(
+                    url='https://example.test/a',
+                    host='example.test',
+                    path='/a',
+                    source_sitemap='https://example.test/sitemap.xml',
+                )
+            ],
+            errors=['robots unavailable'],
+        )
+        subdomains = result.model_copy(
+            update={
+                'mode': 'subdomains',
+                'hosts': [MapHost(host='www.example.test', url_count=0, subdomain='www')],
+                'subdomains': [MapHost(host='www.example.test', url_count=0, subdomain='www')],
+                'sitemaps': [],
+                'urls': [],
+                'errors': [],
+            }
+        )
+
+        _CLI_MAIN._print_map_result(result)
+        _CLI_MAIN._print_map_result(subdomains)
+
+        rendered = '\n'.join(str(call.args[0]) for call in prints.call_args_list)
+        assert 'Map:' in rendered
+        assert 'Robots:' in rendered
+        assert 'Map warning' in rendered
+        assert 'Subdomains:' in rendered
 
 
 class TestCacheStatus:
@@ -815,6 +1053,70 @@ class TestCoverageSensitiveCliBranches:
         timed_out = runner.invoke(main, ['crawl', 'https://example.com', '--json', '--deadline', '0.01'])
         assert timed_out.exit_code == 1
         assert json.loads(timed_out.output)['message'] == 'Crawl deadline exceeded after 0.01s'
+
+    def test_crawl_json_keeps_stdout_machine_readable_when_runner_prints(self, runner, mocker, base_mocks):
+        from yosoi.operations import CrawlResult
+
+        async def noisy_run(_request):
+            print('progress noise')
+            return CrawlResult(summary={'pages': 1})
+
+        mocker.patch('yosoi.operations.run_crawl', noisy_run)
+
+        result = runner.invoke(main, ['crawl', 'https://example.com', '--json'])
+
+        assert result.exit_code == 0, result.output
+        assert json.loads(result.stdout)['summary'] == {'pages': 1}
+        assert 'progress noise' not in result.stdout
+
+    def test_fetch_command_json_dump_and_text(self, runner, mocker, base_mocks):
+        from yosoi.operations import FetchResult, FetchUnitResult
+
+        dumped = runner.invoke(main, ['fetch', 'https://example.com', '--dump-request'])
+        assert dumped.exit_code == 0, dumped.output
+        request_doc = json.loads(dumped.output)
+        assert request_doc['urls'] == ['https://example.com']
+        assert request_doc['view'] == 'text'
+        assert request_doc['page_size'] == 12000
+
+        removed = runner.invoke(main, ['content', 'https://example.com', '--help'])
+        assert removed.exit_code != 0
+        assert 'No such command' in removed.output
+
+        async def noisy_fetch(_request):
+            print('fetcher noise')
+            return FetchResult(
+                results=[
+                    FetchUnitResult(
+                        url='https://example.com',
+                        final_url='https://example.com',
+                        title='Example',
+                        view='text',
+                        content='Hello',
+                        content_chars=5,
+                        total_chars=5,
+                        text_chars=5,
+                    )
+                ]
+            )
+
+        run = mocker.patch('yosoi.operations.run_fetch', mocker.AsyncMock(side_effect=noisy_fetch))
+
+        json_result = runner.invoke(main, ['fetch', 'https://example.com', '--json'])
+        assert json_result.exit_code == 0, json_result.output
+        json_doc = json.loads(json_result.stdout)
+        assert json_doc['success'] is True
+        assert json_doc['data']['metadata']['source_url'] == 'https://example.com'
+        assert json_doc['documents'][0]['metadata']['title'] == 'Example'
+        assert json_doc['data']['text'] == 'Hello'
+        assert json_doc['results'][0]['content'] == 'Hello'
+        assert 'fetcher noise' not in json_result.stdout
+        assert run.call_args.args[0].urls == ['https://example.com']
+        assert run.call_args.args[0].view == 'text'
+
+        text_result = runner.invoke(main, ['fetch', 'https://example.com'])
+        assert text_result.exit_code == 0, text_result.output
+        assert text_result.output.startswith('Hello')
 
     def test_crawl_stress_human_renders_compact_table(self, runner, mocker, base_mocks):
         from yosoi.operations import CrawlResult

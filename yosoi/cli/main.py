@@ -5,13 +5,17 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import re
 import sys
 import uuid
+from contextlib import redirect_stdout
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, cast
+from urllib.parse import urlparse
 
 import rich_click as click
+from click.core import ParameterSource
 from rich.console import Console
 from rich.table import Table
 from rich.theme import Theme
@@ -53,6 +57,21 @@ _THEME = Theme(
 
 def _new_crawl_run_id() -> str:
     return f'crawl-{datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")}-{uuid.uuid4().hex[:8]}'
+
+
+def _run_crawl_json_safe(run_crawl: Any, request: Any, *, json_output: bool) -> Any:
+    if not json_output:
+        return asyncio.run(run_crawl(request))
+    with redirect_stdout(sys.stderr):
+        return asyncio.run(run_crawl(request))
+
+
+def _has_command_line_root_options(ctx: click.Context) -> bool:
+    """Return whether the root command received explicit CLI options."""
+    return any(
+        param.name is not None and ctx.get_parameter_source(param.name) is ParameterSource.COMMANDLINE
+        for param in ctx.command.params
+    )
 
 
 def _apply_crawl_cli_overrides(
@@ -274,6 +293,56 @@ def _print_map_result(result: object) -> None:
         console.print(f'[warning]{label}:[/warning] {error}')
 
 
+def _render_fetch_result(result: object) -> None:
+    from yosoi.operations import FetchResult
+
+    typed = cast(FetchResult, result)
+    rendered = False
+    for unit in typed.results:
+        if unit.status != 'ok':
+            console.print(f'[warning]Fetch error:[/warning] {unit.url} {unit.error or "failed"}', markup=False)
+            continue
+        if rendered:
+            click.echo('\n---\n')
+        click.echo(unit.content or '')
+        rendered = True
+
+
+def _render_content_result(result: object, output_format: str) -> None:
+    from yosoi.operations import ContentResult
+
+    typed = cast(ContentResult, result)
+    rendered = False
+    for unit in typed.results:
+        if unit.status != 'ok':
+            console.print(f'[warning]Content error:[/warning] {unit.url} {unit.error or "failed"}', markup=False)
+            continue
+        if rendered:
+            click.echo('\n---\n')
+        if output_format == 'text':
+            click.echo(unit.text or '')
+        else:
+            click.echo(unit.markdown or '')
+        rendered = True
+
+
+def _write_fetch_output(path: Path, result: object) -> None:
+    from yosoi.operations import FetchResult
+
+    typed = cast(FetchResult, result)
+    ok_units = [unit for unit in typed.results if unit.status == 'ok']
+    if len(ok_units) == 1 and (path.suffix or not path.exists()):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(ok_units[0].content or '', encoding='utf-8')
+        return
+    path.mkdir(parents=True, exist_ok=True)
+    for index, unit in enumerate(ok_units, start=1):
+        parsed = urlparse(unit.final_url or unit.url)
+        stem = (parsed.hostname or f'page-{index}').removeprefix('www.') + (parsed.path or '/').replace('/', '-')
+        stem = re.sub(r'[^A-Za-z0-9_.-]+', '-', stem).strip('-') or f'page-{index}'
+        (path / f'{index:03d}-{stem}.txt').write_text(unit.content or '', encoding='utf-8')
+
+
 def _collect_urls(url: tuple[str, ...], file_path: str | None, limit: int | None, ui: Console) -> list[str]:
     urls: list[str] = list(url)
     if file_path:
@@ -431,6 +500,8 @@ def main(
 
     yosoi -u https://example.com
 
+    yosoi fetch https://example.com
+
     yosoi scrape -u https://example.com --contract @Product
 
     yosoi discover -u https://example.com --contract @Product
@@ -441,7 +512,11 @@ def main(
         # Sub-command (scrape / discover / cache) will handle everything.
         return
 
-    # ── Legacy / bare invocation ──────────────────────────────────────────────
+    if not _has_command_line_root_options(ctx):
+        click.echo(ctx.get_help())
+        return
+
+    # ── Legacy root options (backward-compatible scrape path) ─────────────────
     if session_id is not None:
         os.environ['YOSOI_SESSION_ID'] = session_id
 
@@ -548,7 +623,127 @@ def main(
     )
 
 
-# ── scrape command — cache replay with discovery/repair as needed ─────────────
+# ── fetch command — URL to clean document surface ────────────────────────────
+
+
+@main.command('fetch')
+@click.argument('urls', nargs=-1)
+@click.option('-u', '--url', multiple=True, help='URL to fetch. Repeat for multiple URLs.')
+@click.option('-f', '--file', 'file_path', default=None, help='File containing URLs.')
+@click.option('-l', '--limit', type=int, default=None, help='Limit number of URLs.')
+@click.option(
+    '--policy',
+    'policy_source',
+    multiple=True,
+    metavar='FILE|YAML|JSON',
+    help='Policy file or inline YAML/JSON. Repeat to layer.',
+)
+@click.option(
+    '-t',
+    '--fetcher',
+    type=click.Choice(_FETCHER_CHOICES, case_sensitive=False),
+    default=None,
+    help='Fetch strategy override. Defaults to policy page.fetcher_type.',
+)
+@click.option(
+    '--view',
+    type=click.Choice(
+        ['text', 'markdown', 'html', 'clean-html', 'raw-html', 'rendered-html', 'ax', 'links', 'metadata', 'bundle'],
+        case_sensitive=False,
+    ),
+    default='text',
+    show_default=True,
+    help='Content view to emit. markdown is deterministic/lossy; text is the safe default.',
+)
+@click.option('--page', 'content_page', type=int, default=1, show_default=True, help='1-indexed content page.')
+@click.option('--page-size', '--chars', type=int, default=12_000, show_default=True, help='Max chars per page.')
+@click.option(
+    '--include',
+    multiple=True,
+    metavar='ITEMS',
+    help='Comma-separated metadata to include: headers,network/endpoints,fingerprint,links,ax.',
+)
+@click.option(
+    '-C',
+    '--contract',
+    type=ContractParamType(),
+    multiple=True,
+    help='Advisory contract probe. Repeat for multiple contracts; does not scrape or call the LLM.',
+)
+@click.option('-o', '--output', 'output_path', default=None, metavar='FILE|DIR', help='Write selected view or bundle.')
+@click.option('--dump-request', is_flag=True, help='Print the resolved fetch request JSON and exit.')
+@click.option('--json', 'json_output', is_flag=True, default=False, help='Emit machine JSON envelope on stdout.')
+def fetch(
+    urls: tuple[str, ...],
+    url: tuple[str, ...],
+    file_path: str | None,
+    limit: int | None,
+    policy_source: tuple[str, ...],
+    fetcher: str | None,
+    view: str,
+    content_page: int,
+    page_size: int,
+    include: tuple[str, ...],
+    contract: tuple[type[Contract], ...],
+    output_path: str | None,
+    dump_request: bool,
+    json_output: bool,
+) -> None:
+    """Fetch URL(s) as bounded page acquisition content without scraping."""
+    from yosoi.cli import exit_codes
+    from yosoi.operations import FetchRequest, run_fetch
+    from yosoi.policy import PagePolicy, Policy
+    from yosoi.policy.files import load_policy_layers
+
+    if content_page < 1:
+        raise click.BadParameter('--page must be >= 1')
+    if page_size < 1:
+        raise click.BadParameter('--page-size/--chars must be >= 1')
+
+    ui: Console = Console(theme=_THEME, stderr=True) if json_output else console
+    all_urls = _collect_urls(tuple(list(urls) + list(url)), file_path, limit, ui)
+    policy = Policy.cascade(Policy.from_env(), load_policy_layers(policy_source))
+    if fetcher is not None:
+        policy = Policy.cascade(policy, Policy(page=PagePolicy(fetcher_type=cast(Any, fetcher))))
+    include_items = [item for raw in include for item in raw.split(',') if item.strip()]
+    normalised_view = view.lower().replace('-', '_')
+    request = FetchRequest.from_axes(
+        all_urls,
+        list(contract) or None,
+        view=normalised_view,
+        policy=policy,
+        fetcher_type=fetcher,
+        page=content_page,
+        page_size=page_size,
+        include=include_items,
+        output_dir=output_path if normalised_view == 'bundle' else None,
+    )
+    if dump_request:
+        click.echo(request.model_dump_json(indent=2))
+        return
+
+    try:
+        with redirect_stdout(sys.stderr):
+            result = asyncio.run(run_fetch(request))
+    except Exception as exc:
+        if json_output:
+            sys.stdout.write(json.dumps({'type': 'error', 'message': str(exc)}) + '\n')
+            sys.stdout.flush()
+            sys.exit(exit_codes.ERROR)
+        raise click.ClickException(str(exc)) from exc
+
+    if output_path and normalised_view != 'bundle':
+        _write_fetch_output(Path(output_path), result)
+
+    if json_output:
+        sys.stdout.write(result.model_dump_json() + '\n')
+        sys.stdout.flush()
+    elif not output_path or normalised_view == 'bundle':
+        _render_fetch_result(result)
+    sys.exit(exit_codes.RECORDS if result.status == 'ok' else exit_codes.ERROR)
+
+
+# ── search command — local web discovery surface ─────────────────────────────
 
 
 @main.command('search')
@@ -699,6 +894,7 @@ def research_observe(
 ) -> None:
     """Append structured observations from search, crawl, scrape, or notes."""
     from yosoi.research import (
+        ContractStatus,
         append_observations,
         observation_from_artifact,
         observation_from_note,
@@ -711,17 +907,17 @@ def research_observe(
 
     observations = []
     if scrape_artifact is not None:
-        observations = observations_from_scrape(scrape_artifact, contract_status=contract_status)  # type: ignore[arg-type]
+        scrape_status = cast('ContractStatus | None', contract_status)
+        observations = observations_from_scrape(scrape_artifact, contract_status=scrape_status)
     elif search_artifact is not None:
-        observations = [
-            observation_from_artifact('search', search_artifact, contract_status=contract_status or 'candidate')
-        ]  # type: ignore[arg-type]
+        resolved_status = cast('ContractStatus', contract_status or 'candidate')
+        observations = [observation_from_artifact('search', search_artifact, contract_status=resolved_status)]
     elif crawl_artifact is not None:
-        observations = [
-            observation_from_artifact('crawl', crawl_artifact, contract_status=contract_status or 'candidate')
-        ]  # type: ignore[arg-type]
+        resolved_status = cast('ContractStatus', contract_status or 'candidate')
+        observations = [observation_from_artifact('crawl', crawl_artifact, contract_status=resolved_status)]
     elif note is not None:
-        observations = [observation_from_note(note, contract_status=contract_status or 'candidate')]  # type: ignore[arg-type]
+        resolved_status = cast('ContractStatus', contract_status or 'candidate')
+        observations = [observation_from_note(note, contract_status=resolved_status)]
 
     path = append_observations(packet, observations)
     payload = {'observations': len(observations), 'path': str(path)}
@@ -1307,7 +1503,7 @@ def crawl(
 
     try:
         if json_output or request.compact or request.store_crawl:
-            result = asyncio.run(run_crawl(request))
+            result = _run_crawl_json_safe(run_crawl, request, json_output=json_output)
         else:
             from yosoi.operations import execute_crawl
             from yosoi.reporting import show

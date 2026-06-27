@@ -461,7 +461,7 @@ class PipelineCacheMixin:
             for v in validated:
                 yield v
             save_content: ContentMap | ContentItems = validated if len(validated) > 1 else validated[0]
-            self._set_quality(status='ok', issues=[], expected_record_count=len(validated))
+            cast('Any', self)._set_quality(status='ok', issues=[], expected_record_count=len(validated))
             for fmt in format_to_use:
                 await self.storage.save_content(url, save_content, fmt, contract_sig=self._contract_sig)
             await host._record_fetch_strategy_selector_level(fetcher, domain)
@@ -604,14 +604,14 @@ class PipelineCacheMixin:
             if items:
                 validated = host._validate_items(items, url)
                 validated_for_output = validated
-                self._evaluate_replay_quality(validated, quality_snapshots)
+                cast('Any', self)._evaluate_replay_quality(validated, quality_snapshots)
                 for v in validated:
                     yield v
                 save_content: ContentMap | ContentItems = validated if len(validated) > 1 else validated[0]
                 for fmt in format_to_use:
                     await self.storage.save_content(url, save_content, fmt, contract_sig=self._contract_sig)
             else:
-                self._evaluate_replay_quality(None, quality_snapshots)
+                cast('Any', self)._evaluate_replay_quality(None, quality_snapshots)
             if fetcher is not None:
                 await host._record_fetch_strategy_selector_level(fetcher, domain)
             await self._track_cached_success(url, domain)

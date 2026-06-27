@@ -43,11 +43,11 @@ class TestHelpAndUsage:
         assert result.exit_code == 0
         assert 'Discover selectors' in result.output
 
-    def test_no_args_shows_usage_error(self, runner, mock_pipeline, monkeypatch):
+    def test_no_args_shows_root_help(self, runner, mock_pipeline, monkeypatch):
         monkeypatch.setenv('GROQ_KEY', 'test-key')
         result = runner.invoke(main, [])
-        assert result.exit_code != 0
-        assert 'No URLs provided' in result.output
+        assert result.exit_code == 0
+        assert 'Discover selectors' in result.output
 
     def test_bare_json_no_llm_threads_cache_only_pipeline(self, runner, mock_pipeline, mocker):
         _mock_pipe, pipeline_cls = mock_pipeline

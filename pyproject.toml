@@ -4,7 +4,7 @@ requires = [ "uv-build>=0.1" ]
 
 [project]
 name = "yosoi"
-version = "0.0.2a19"
+version = "0.0.2a20"
 description = "AI-Powered Selector Discovery - Discover once, scrape forever"
 readme = "README.md"
 license = { file = "LICENSE.md" }
@@ -45,7 +45,7 @@ dependencies = [
   "rich-click>=1.9.7",
   "taskiq>=0.12.1",
   "tenacity>=9.1.4",
-  "voidcrawl==0.3.6",
+  "voidcrawl==0.3.8",
 ]
 optional-dependencies.all = [
   "pydantic-ai-slim[anthropic,bedrock,google,groq,huggingface,mistral,openai,openrouter,xai]==2",

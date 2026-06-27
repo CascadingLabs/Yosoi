@@ -31,9 +31,15 @@ from yosoi.models.snapshot import CacheVerdict as CacheVerdict
 from yosoi.models.snapshot import SelectorSnapshot as SelectorSnapshot
 from yosoi.models.snapshot import SnapshotMap as SnapshotMap
 from yosoi.models.snapshot import SnapshotStatus as SnapshotStatus
+from yosoi.operations import ContentRequest as ContentRequest
+from yosoi.operations import ContentResult as ContentResult
+from yosoi.operations import ContentUnitResult as ContentUnitResult
 from yosoi.operations import ContractRef as ContractRef
 from yosoi.operations import CrawlRequest as CrawlRequest
 from yosoi.operations import CrawlResult as CrawlResult
+from yosoi.operations import FetchRequest as FetchRequest
+from yosoi.operations import FetchResult as FetchResult
+from yosoi.operations import FetchUnitResult as FetchUnitResult
 from yosoi.operations import ScrapeRequest as ScrapeRequest
 from yosoi.operations import ScrapeResult as ScrapeResult
 from yosoi.operations import ScrapeUnitResult as ScrapeUnitResult
@@ -638,14 +644,31 @@ async def map(
     include_subdomains: bool = ...,
     discover_subdomains: bool = ...,
 ) -> MapResult: ...
+async def execute_content(request: ContentRequest) -> ContentResult: ...
 async def execute_crawl(request: CrawlRequest) -> CrawlRunSummary: ...
+async def execute_fetch(request: FetchRequest) -> FetchResult: ...
 async def execute_map(request: MapRequest) -> MapResult: ...
 async def execute_search(request: SearchRequest) -> SearchResult: ...
 async def execute_scrape(request: ScrapeRequest) -> Any: ...
 async def run_crawl(request: CrawlRequest) -> CrawlResult: ...
+async def run_content(request: ContentRequest) -> ContentResult: ...
+async def run_fetch(request: FetchRequest) -> FetchResult: ...
 async def run_map(request: MapRequest) -> MapResult: ...
 async def run_search(request: SearchRequest) -> SearchResult: ...
 async def run_scrape(request: ScrapeRequest) -> ScrapeResult: ...
+async def fetch(
+    url: str | Sequence[str],
+    *,
+    view: str = ...,
+    fetcher_type: str | None = ...,
+    page: int = ...,
+    page_size: int = ...,
+    chars: int | None = ...,
+    include: Sequence[str] = ...,
+    contracts: Any = ...,
+    output_dir: str | None = ...,
+    policy: Policy | None = ...,
+) -> FetchResult: ...
 async def search(
     query: str,
     *,

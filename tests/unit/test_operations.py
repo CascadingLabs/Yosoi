@@ -10,10 +10,13 @@ from typing import Any, cast
 import pytest
 
 import yosoi as ys
+import yosoi.operations as ops
 from yosoi.models.contract import Contract
 from yosoi.operations import (
+    ContentRequest,
     ContractRef,
     CrawlRequest,
+    FetchRequest,
     MapRequest,
     MapResult,
     ScrapeRequest,
@@ -21,13 +24,17 @@ from yosoi.operations import (
     SearchRequest,
     _envelope,
     _selector_level,
+    execute_content,
     execute_crawl,
+    execute_fetch,
     execute_map,
     execute_scrape,
     execute_search,
     normalize_scrape_result,
     normalize_search_result,
+    run_content,
     run_crawl,
+    run_fetch,
     run_map,
     run_search,
 )
@@ -248,6 +255,536 @@ async def test_execute_crawl_enforces_deadline(monkeypatch):
 
     with pytest.raises(TimeoutError):
         await execute_crawl(CrawlRequest.from_axes('https://one.test', deadline_seconds=0.01))
+
+
+async def test_execute_content_fetches_clean_document(monkeypatch):
+    import yosoi.core.fetcher as fetcher_module
+    from yosoi.models.results import FetchResult
+
+    class Fetcher:
+        async def fetch(self, url: str) -> FetchResult:
+            return FetchResult(
+                url=url,
+                status_code=200,
+                html=(
+                    '<html><head><title>Example Page</title><script>bad()</script></head>'
+                    '<body><header>Nav</header><main><h1>Example Page</h1>'
+                    '<p>Hello <a href="/docs">world</a>.</p>'
+                    '<table><tr><th>Plan</th><th>Price</th></tr><tr><td>Starter</td><td>$49</td></tr></table>'
+                    '<div><strong>Freelance</strong><span>$49<span>/mo</span></span></div>'
+                    '</main></body></html>'
+                ),
+                fetch_time=0.5,
+            )
+
+        async def close(self) -> None:
+            return None
+
+    monkeypatch.setattr(fetcher_module, 'create_fetcher', lambda *_args, **_kwargs: Fetcher())
+
+    result = await execute_content(ContentRequest.from_axes('https://one.test', include_html=True))
+    unit = result.results[0]
+
+    assert result.status == 'ok'
+    assert unit.title == 'Example Page'
+    assert unit.status_code == 200
+    assert unit.fetcher_type == 'auto'
+    assert unit.text == 'Example Page Hello world. Plan Price Starter $49 Freelance $49 /mo'
+    assert unit.markdown.startswith('# Example Page\n\nSource: https://one.test\n\n## Example Page\n\n')
+    assert '[world](https://one.test/docs)' in unit.markdown
+    assert '| Plan | Price |' in unit.markdown
+    assert '| --- | --- |' in unit.markdown
+    assert '| Starter | $49 |' in unit.markdown
+    assert '- Freelance' in unit.markdown
+    assert '- $49/mo' in unit.markdown
+    assert unit.html is not None
+    assert '<script>' not in unit.html
+    assert unit.links == [{'text': 'world', 'url': 'https://one.test/docs'}]
+    assert unit.metadata['source_url'] == 'https://one.test'
+    assert unit.metadata['content_hash']
+    assert result.success is True
+    assert result.data is not None
+    assert result.data['markdown'] == unit.markdown
+    assert result.data['metadata']['title'] == 'Example Page'
+    assert result.documents == [unit.data]
+    assert result.errors == []
+
+
+async def test_run_content_reports_partial_failures(monkeypatch):
+    import yosoi.core.fetcher as fetcher_module
+
+    class Fetcher:
+        async def fetch(self, _url: str) -> None:
+            raise RuntimeError('blocked')
+
+        async def close(self) -> None:
+            return None
+
+    monkeypatch.setattr(fetcher_module, 'create_fetcher', lambda *_args, **_kwargs: Fetcher())
+
+    result = await run_content(ContentRequest.from_axes(['https://one.test', 'https://two.test']))
+
+    assert result.status == 'error'
+    assert [unit.status for unit in result.results] == ['failed', 'failed']
+    assert all(unit.error == 'blocked' for unit in result.results)
+
+
+async def test_execute_fetch_paginates_and_includes_metadata(monkeypatch):
+    import yosoi.core.fetcher as fetcher_module
+    from yosoi.models.results import FetchResult as HtmlFetchResult
+
+    class Fetcher:
+        async def fetch(self, url: str) -> HtmlFetchResult:
+            return HtmlFetchResult(
+                url=url,
+                status_code=200,
+                html=(
+                    '<html><head><title>Example Page</title></head>'
+                    '<body><main><h1>Example Page</h1><p>Hello world.</p>'
+                    '<a href="/pricing">Pricing</a></main></body></html>'
+                ),
+                fetch_time=0.25,
+                headers={'content-type': 'text/html'},
+                endpoints=['https://one.test/api/prices'],
+            )
+
+        async def close(self) -> None:
+            return None
+
+    monkeypatch.setattr(fetcher_module, 'create_fetcher', lambda *_args, **_kwargs: Fetcher())
+
+    result = await execute_fetch(
+        FetchRequest.from_axes(
+            'https://one.test',
+            view='text',
+            page_size=12,
+            include=['headers', 'endpoints', 'links', 'fingerprint'],
+        )
+    )
+    unit = result.results[0]
+
+    assert result.status == 'ok'
+    assert unit.content == 'Example Page'
+    assert unit.truncated is True
+    assert unit.next_page == 2
+    assert unit.headers == {'content-type': 'text/html'}
+    assert unit.endpoints == ['https://one.test/api/prices']
+    assert unit.links == [{'text': 'Pricing', 'url': 'https://one.test/pricing'}]
+    assert unit.fingerprint is not None
+    assert result.data is not None
+    assert result.data['text'] == 'Example Page'
+
+
+async def test_execute_fetch_contract_probe_verifies_cached_selectors(monkeypatch, mocker):
+    import yosoi.core.fetcher as fetcher_module
+    from yosoi.models.results import FetchResult as HtmlFetchResult
+    from yosoi.models.snapshot import selector_dict_to_snapshot
+
+    class Fetcher:
+        async def fetch(self, url: str) -> HtmlFetchResult:
+            return HtmlFetchResult(
+                url=url,
+                status_code=200,
+                html='<html><body><main><h1>Headline</h1></main></body></html>',
+            )
+
+        async def close(self) -> None:
+            return None
+
+    class Storage:
+        async def load_snapshots(self, _domain: str, contract_sig: str | None = None):
+            assert contract_sig == OpContract.to_spec().fingerprint
+            return {'title': selector_dict_to_snapshot({'primary': 'h1'})}
+
+    monkeypatch.setattr(fetcher_module, 'create_fetcher', lambda *_args, **_kwargs: Fetcher())
+    mocker.patch('yosoi.storage.persistence.SelectorStorage', return_value=Storage())
+
+    result = await run_fetch(FetchRequest.from_axes('https://one.test/story', contracts=OpContract))
+    probe = result.results[0].contract_probes[0]
+
+    assert probe.contract == 'OpContract'
+    assert probe.cached_fields == ['title']
+    assert probe.verified_fields == ['title']
+    assert probe.fit == 'strong'
+    assert probe.fit_score == 1.0
+
+
+def test_fetch_result_document_projection_and_envelope_statuses():
+    ok = ops.FetchUnitResult(
+        url='https://one.test',
+        final_url='https://one.test/final',
+        title='One',
+        view='html',
+        content='<main>Hello</main>',
+        content_chars=18,
+        total_chars=18,
+        html='<main>Hello</main>',
+        links=[{'text': 'Pricing', 'url': 'https://one.test/pricing'}],
+        artifacts={'markdown.md': '/tmp/markdown.md'},
+    )
+    failed = ops.FetchUnitResult(url='https://bad.test', status='failed', error='blocked')
+
+    assert ok.metadata['source_url'] == 'https://one.test'
+    assert ok.metadata['final_url'] == 'https://one.test/final'
+    assert ok.metadata['content_hash']
+    assert ok.data is not None
+    assert ok.data['html'] == '<main>Hello</main>'
+    assert ok.data['links'][0]['text'] == 'Pricing'
+    assert ok.data['artifacts']['markdown.md'] == '/tmp/markdown.md'
+    assert failed.data is None
+
+    partial = ops.FetchResult(status='partial', results=[ok, failed])
+    assert partial.success is False
+    assert partial.data is None
+    assert partial.documents == [ok.data]
+    assert partial.errors == [{'url': 'https://bad.test', 'error': 'blocked'}]
+    assert ops._fetch_envelope([]).status == 'error'
+    assert ops._fetch_envelope([ok, failed]).status == 'partial'
+    assert ops._fetch_envelope([failed]).status == 'error'
+
+
+def test_fetch_request_normalization_and_rich_document_projection():
+    request = FetchRequest.from_axes(
+        'https://one.test',
+        view='rendered-html',
+        include='network, links, ax',
+        contracts=OpContract,
+    )
+
+    assert request.view == 'rendered_html'
+    assert request.include == ['endpoints', 'links', 'ax']
+    assert [contract.to_contract() for contract in request.contracts] == [OpContract]
+    assert FetchRequest.from_axes('https://one.test', include=None).include == []
+    assert (
+        ops._effective_fetcher_type(FetchRequest.from_axes('https://one.test', fetcher_type='simple'), 'auto')
+        == 'simple'
+    )
+    assert ops._effective_fetcher_type(FetchRequest.from_axes('https://one.test', view='raw_html'), 'auto') == 'simple'
+    assert ops._jsonable(object()).startswith('<object object at ')
+    with pytest.raises(ValueError, match='urls must contain at least one URL'):
+        FetchRequest(urls=[])
+    with pytest.raises(ValueError, match='urls must contain at least one URL'):
+        ContentRequest(urls=[])
+
+    unit = ops.FetchUnitResult(
+        url='https://one.test',
+        view='markdown',
+        content='# One',
+        headers={'content-type': 'text/html'},
+        endpoints=['https://one.test/api'],
+        fingerprint={'shape': 'pricing'},
+        ax_snapshot={'role': 'document'},
+        contract_probes=[ops.ContractProbeResult(contract='OpContract', contract_fingerprint='fp')],
+    )
+
+    assert unit.data is not None
+    assert unit.data['markdown'] == '# One'
+    assert unit.data['headers'] == {'content-type': 'text/html'}
+    assert unit.data['endpoints'] == ['https://one.test/api']
+    assert unit.data['fingerprint'] == {'shape': 'pricing'}
+    assert unit.data['ax_snapshot'] == {'role': 'document'}
+    assert unit.data['contract_probes'][0]['contract'] == 'OpContract'
+    assert ops.FetchResult(status='ok', results=[unit]).success is True
+
+
+def test_fetch_markdown_helpers_cover_sparse_and_fallback_shapes():
+    assert ops._text_from_html('') == ''
+    assert ops._title_from_html('') is None
+    assert ops._links_from_html('', 'https://one.test') == []
+    assert ops._text_from_html('<') == '<'
+    assert ops._title_from_html('<') is None
+    assert ops._links_from_html('<', 'https://one.test') == []
+
+    html = (
+        '<main>'
+        '<p>See <a>plain link</a>.</p>'
+        '<ul><li>Item</li></ul>'
+        '<blockquote>Quote</blockquote>'
+        '<pre>code()</pre>'
+        '<table></table>'
+        '<span>Standalone</span>'
+        '<p><span>Nested inline</span></p>'
+        f'<span>{"x" * 121}</span>'
+        '<span><div>block child</div></span>'
+        '<p>Currency $99 only appears in extracted body.</p>'
+        '</main>'
+    )
+    text = 'See plain link. Item Quote code() Standalone Nested inline block child Currency $99 only appears in extracted body.'
+    markdown = ops._markdown_blocks_from_html(html, text, 'https://one.test')
+
+    assert 'plain link' in markdown
+    assert '- Item' in markdown
+    assert '> Quote' in markdown
+    assert '```\ncode()\n```' in markdown
+    assert '- Standalone' in markdown
+    assert '## Extracted Text' not in markdown
+    assert '## Extracted Text' in ops._markdown_body_or_text(
+        ['Plan name with enough surrounding content'],
+        'Plan name with enough surrounding content $99',
+    )
+    assert ops._markdown_table_for_element(ops.lxml.html.fromstring('<table></table>')) is None
+
+
+def test_fetch_helpers_render_views_metadata_and_bundle(tmp_path):
+    request = FetchRequest.from_axes('https://one.test', view='links', output_dir=str(tmp_path))
+    links = [{'text': 'Pricing', 'url': 'https://one.test/pricing'}]
+    metadata = ops._fetch_metadata_doc(
+        url='https://one.test',
+        final_url='https://one.test/final',
+        status_code=200,
+        title='One',
+        fetcher_type='simple',
+        fetch_time=0.1,
+        raw_html='<html></html>',
+        cleaned_html='<main>Hello</main>',
+        text='Hello',
+        include={'headers', 'endpoints', 'links', 'fingerprint', 'ax'},
+        headers={'content-type': 'text/html'},
+        endpoints=['https://one.test/api'],
+        links=links,
+        fingerprint={'shape': 'abc'},
+        ax_snapshot={'role': 'document'},
+        contract_probes=[ops.ContractProbeResult(contract='OpContract', contract_fingerprint='fp')],
+    )
+
+    assert metadata['headers'] == {'content-type': 'text/html'}
+    assert metadata['endpoints'] == ['https://one.test/api']
+    assert metadata['links'] == links
+    assert metadata['fingerprint'] == {'shape': 'abc'}
+    assert metadata['ax_snapshot'] == {'role': 'document'}
+    assert metadata['contract_probes'][0]['contract'] == 'OpContract'
+    assert ops._view_content(
+        request,
+        raw_html='raw',
+        cleaned_html='clean',
+        text='txt',
+        markdown='md',
+        links=links,
+        metadata=metadata,
+        ax_snapshot={'role': 'document'},
+    ).startswith('[\n')
+    assert ops._view_content(
+        request.model_copy(update={'view': 'metadata'}),
+        raw_html='raw',
+        cleaned_html='clean',
+        text='txt',
+        markdown='md',
+        links=links,
+        metadata=metadata,
+        ax_snapshot=None,
+    ).startswith('{\n')
+    assert ops._view_content(
+        request.model_copy(update={'view': 'ax'}),
+        raw_html='raw',
+        cleaned_html='clean',
+        text='txt',
+        markdown='md',
+        links=links,
+        metadata=metadata,
+        ax_snapshot={'role': 'document'},
+    ).startswith('{\n')
+    assert ops._view_content(
+        request.model_copy(update={'view': 'bundle'}),
+        raw_html='raw',
+        cleaned_html='clean',
+        text='txt',
+        markdown='md',
+        links=links,
+        metadata=metadata,
+        ax_snapshot=None,
+    ).startswith('{\n')
+    assert (
+        ops._view_content(
+            request.model_copy(update={'view': 'raw_html'}),
+            raw_html='raw',
+            cleaned_html='clean',
+            text='txt',
+            markdown='md',
+            links=links,
+            metadata=metadata,
+            ax_snapshot=None,
+        )
+        == 'raw'
+    )
+    assert (
+        ops._view_content(
+            request.model_copy(update={'view': 'clean_html'}),
+            raw_html='raw',
+            cleaned_html='clean',
+            text='txt',
+            markdown='md',
+            links=links,
+            metadata=metadata,
+            ax_snapshot=None,
+        )
+        == 'clean'
+    )
+    assert (
+        ops._view_content(
+            request.model_copy(update={'view': 'markdown'}),
+            raw_html='raw',
+            cleaned_html='clean',
+            text='txt',
+            markdown='md',
+            links=links,
+            metadata=metadata,
+            ax_snapshot=None,
+        )
+        == 'md'
+    )
+
+    page, truncated, next_page = ops._paginate_content('abcdef', page=2, page_size=2)
+    assert (page, truncated, next_page) == ('cd', True, 3)
+    single_dir = ops._fetch_artifact_dir(str(tmp_path / 'single'), 'https://one.test/path', multiple=False)
+    multi_dir = ops._fetch_artifact_dir(str(tmp_path / 'multi'), 'https://www.one.test/path', multiple=True)
+    assert single_dir.exists()
+    assert multi_dir.name.startswith('one.test-path-')
+    files = ops._write_fetch_bundle(
+        request,
+        url='https://one.test',
+        raw_html='raw',
+        static_html='static',
+        cleaned_html='clean',
+        text='txt',
+        markdown='md',
+        links=links,
+        metadata=metadata,
+        headers={'content-type': 'text/html'},
+        endpoints=['https://one.test/api'],
+        fingerprint={'shape': 'abc'},
+        ax_snapshot={'role': 'document'},
+    )
+    assert {
+        'raw.html',
+        'static.html',
+        'rendered.html',
+        'clean.html',
+        'text.txt',
+        'markdown.md',
+        'links.json',
+        'headers.json',
+        'network.json',
+        'metadata.json',
+        'fingerprint.json',
+        'ax.json',
+    } <= set(files)
+
+
+def test_content_result_projection_and_jsonable_helpers():
+    @dataclass
+    class Row:
+        name: str
+        count: int
+
+    ok = ops.ContentUnitResult(
+        url='https://one.test',
+        title='One',
+        markdown='# One',
+        text='One',
+        html='<main>One</main>',
+        links=[{'text': 'Home', 'url': 'https://one.test'}],
+    )
+    failed = ops.ContentUnitResult(url='https://bad.test', status='failed', error='blocked')
+    result = ops.ContentResult(status='partial', results=[ok, failed])
+
+    assert ok.metadata['content_hash']
+    assert ok.data is not None
+    assert ok.data['html'] == '<main>One</main>'
+    assert failed.data is None
+    assert result.success is False
+    assert result.data is None
+    assert result.documents == [ok.data]
+    assert result.errors == [{'url': 'https://bad.test', 'error': 'blocked'}]
+    assert ops._content_envelope([]).status == 'error'
+    assert ops._content_envelope([ok, failed]).status == 'partial'
+    assert ops._content_envelope([failed]).status == 'error'
+    assert ops._jsonable(Row('a', 1)) == {'name': 'a', 'count': 1}
+    assert ops._jsonable({'row': Row('b', 2), 'items': [Row('c', 3)]}) == {
+        'row': {'name': 'b', 'count': 2},
+        'items': [{'name': 'c', 'count': 3}],
+    }
+
+
+async def test_execute_fetch_failure_and_bundle_paths(monkeypatch, tmp_path):
+    import yosoi.core.fetcher as fetcher_module
+    from yosoi.models.results import FetchResult as HtmlFetchResult
+
+    class BlockedFetcher:
+        async def fetch(self, url: str) -> HtmlFetchResult:
+            return HtmlFetchResult(url=url, status_code=403, html=None, is_blocked=True, block_reason='blocked')
+
+        async def close(self) -> None:
+            return None
+
+    monkeypatch.setattr(fetcher_module, 'create_fetcher', lambda *_args, **_kwargs: BlockedFetcher())
+    failed = await execute_fetch(FetchRequest.from_axes('https://blocked.test'))
+
+    assert failed.status == 'error'
+    assert failed.results[0].status == 'failed'
+    assert failed.results[0].error == 'blocked'
+
+    class BundleFetcher:
+        async def fetch(self, url: str) -> HtmlFetchResult:
+            return HtmlFetchResult(
+                url=url,
+                status_code=200,
+                html=(
+                    '<html><head><title>Bundle</title></head><body><main>'
+                    '<h1>Bundle</h1><p>Ready.</p></main></body></html>'
+                ),
+                headers={'x-test': '1'},
+                endpoints=['https://bundle.test/api'],
+            )
+
+        async def close(self) -> None:
+            return None
+
+    monkeypatch.setattr(fetcher_module, 'create_fetcher', lambda *_args, **_kwargs: BundleFetcher())
+    bundled = await execute_fetch(
+        FetchRequest.from_axes(
+            'https://bundle.test',
+            view='bundle',
+            include=['headers', 'endpoints', 'fingerprint'],
+            output_dir=str(tmp_path),
+        )
+    )
+    unit = bundled.results[0]
+
+    assert bundled.status == 'ok'
+    assert unit.content is not None
+    assert '"artifacts"' in unit.content
+    assert unit.artifacts['markdown.md'].endswith('markdown.md')
+    assert unit.data is not None
+    assert unit.data['artifacts'] == unit.artifacts
+
+
+async def test_execute_content_failed_fetch_and_exception_paths(monkeypatch):
+    import yosoi.core.fetcher as fetcher_module
+    from yosoi.models.results import FetchResult as HtmlFetchResult
+
+    class BlockedFetcher:
+        async def fetch(self, url: str) -> HtmlFetchResult:
+            return HtmlFetchResult(url=url, status_code=429, html=None, is_blocked=True, block_reason='rate limited')
+
+        async def close(self) -> None:
+            return None
+
+    monkeypatch.setattr(fetcher_module, 'create_fetcher', lambda *_args, **_kwargs: BlockedFetcher())
+    blocked = await execute_content(ContentRequest.from_axes('https://blocked.test'))
+    assert blocked.status == 'error'
+    assert blocked.results[0].error == 'rate limited'
+
+    class RaisingFetcher:
+        async def fetch(self, _url: str) -> HtmlFetchResult:
+            raise RuntimeError('boom')
+
+        async def close(self) -> None:
+            return None
+
+    monkeypatch.setattr(fetcher_module, 'create_fetcher', lambda *_args, **_kwargs: RaisingFetcher())
+    raised = await execute_content(ContentRequest.from_axes('https://boom.test'))
+    assert raised.status == 'error'
+    assert raised.results[0].error == 'boom'
 
 
 async def test_run_crawl_compact_output_and_persistence(monkeypatch, mocker, tmp_path):
