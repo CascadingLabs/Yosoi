@@ -2378,3 +2378,234 @@ def test_pipeline_threads_cross_origin_dom_to_browser_fetcher(mocker, monkeypatc
     default = Pipeline(llm_config='groq:llama-3.3-70b-versatile', contract=SimpleContract)
     default._create_fetcher('headless')
     assert create_fetcher.call_args.kwargs.get('cross_origin_dom', False) is False
+
+
+async def test_concurrent_tracking_summary_prints_run_page_contract_and_domain_rows(mocker):
+    stub = _make_pipeline_stub(mocker)
+    before = DomainStats(llm_calls=2, url_count=5, total_elapsed=10.0)
+    after = DomainStats(llm_calls=5, url_count=9, total_elapsed=16.5)
+    stub.tracker.get_stats = mocker.AsyncMock(return_value=after)
+
+    await Pipeline._print_concurrent_tracking_summary(
+        stub,
+        {'successful': ['https://example.com/a'], 'failed': ['https://example.com/b']},
+        {'https://example.com/a': 1.25, 'https://example.com/b': 2.75},
+        {'https://example.com/a': 'example.com', 'https://example.com/b': 'example.com'},
+        {'example.com': before},
+    )
+
+    table = stub.console.print.call_args.args[0]
+    assert table.title == 'Tracking summary — concurrent run'
+    assert len(table.rows) == 5
+    stub.tracker.get_stats.assert_awaited_once_with('example.com')
+
+
+async def test_gated_fresh_replays_cache_after_single_flight(mocker):
+    stub = _make_pipeline_stub(mocker)
+    cached_items = [{'title': 'Cached'}]
+
+    async def _cached(*_args, **_kwargs):
+        async def _gen():
+            yield cached_items[0]
+
+        return _gen()
+
+    stub._try_cached = mocker.AsyncMock(side_effect=_cached)
+    stub._scrape_fresh = mocker.MagicMock()
+    stub._allow_llm = True
+
+    out = [
+        item
+        async for item in Pipeline._gated_fresh(
+            stub,
+            url='https://example.com/a',
+            domain='example.com',
+            fetcher=mocker.MagicMock(),
+            force_flag=False,
+            max_fetch_retries=1,
+            max_discovery_retries=1,
+            skip_verification=False,
+            format_to_use=['json'],
+            root_span=None,
+        )
+    ]
+
+    assert out == cached_items
+    stub._scrape_fresh.assert_not_called()
+
+
+async def test_gated_fresh_blocks_llm_when_cache_miss_and_model_disallowed(mocker):
+    from yosoi.utils.exceptions import LLMBlockedError
+
+    stub = _make_pipeline_stub(mocker)
+    stub._try_cached = mocker.AsyncMock(return_value=None)
+    stub._allow_llm = False
+    stub.last_llm_reason = 'stale_selector'
+    stub._mark_scrape_decision = mocker.MagicMock()
+
+    with pytest.raises(LLMBlockedError, match='stale_selector'):
+        [
+            item
+            async for item in Pipeline._gated_fresh(
+                stub,
+                url='https://example.com/a',
+                domain='example.com',
+                fetcher=mocker.MagicMock(),
+                force_flag=False,
+                max_fetch_retries=1,
+                max_discovery_retries=1,
+                skip_verification=False,
+                format_to_use=['json'],
+                root_span=None,
+            )
+        ]
+
+    stub._mark_scrape_decision.assert_called_once_with(
+        selector_source='none', cache_decision='llm_blocked', llm_used=False, llm_reason='stale_selector'
+    )
+
+
+async def test_fetch_and_clean_for_cache_rejects_too_short_html_and_saves_debug_for_long_html(mocker):
+    stub = _make_pipeline_stub(mocker)
+    fetcher = mocker.MagicMock()
+    stub._fetch = mocker.AsyncMock(return_value=FetchResult(url='https://example.com', html='<html>raw</html>'))
+    stub.cleaner.clean_html.return_value = '<html>short</html>'
+
+    assert await Pipeline._fetch_and_clean_for_cache(stub, 'https://example.com', fetcher) is None
+    stub.debug.save_debug_html.assert_not_awaited()
+
+    long_html = '<html>' + ('x' * 1000) + '</html>'
+    stub.cleaner.clean_html.return_value = long_html
+    assert await Pipeline._fetch_and_clean_for_cache(stub, 'https://example.com', fetcher) == (
+        '<html>raw</html>',
+        long_html,
+    )
+    stub.debug.save_debug_html.assert_awaited_once_with('https://example.com', long_html)
+
+
+async def test_fetch_and_clean_for_cache_returns_none_on_missing_html_and_reraises_bot_detection(mocker):
+    stub = _make_pipeline_stub(mocker)
+    fetcher = mocker.MagicMock()
+    stub._fetch = mocker.AsyncMock(return_value=FetchResult(url='https://example.com', html=None))
+
+    assert await Pipeline._fetch_and_clean_for_cache(stub, 'https://example.com', fetcher) is None
+
+    stub._fetch.side_effect = BotDetectionError('https://example.com', 403, ['captcha'])
+    with pytest.raises(BotDetectionError):
+        await Pipeline._fetch_and_clean_for_cache(stub, 'https://example.com', fetcher)
+
+
+async def test_record_cache_hit_metric_swallows_store_failures(mocker):
+    stub = _make_pipeline_stub(mocker)
+    stub._contract_sig = 'contract-fp'
+    mocker.patch('yosoi.storage.cache_metrics_libsql.LibSQLCacheMetricsStore', side_effect=RuntimeError('db down'))
+
+    await Pipeline._record_cache_hit_metric(stub, 'https://example.com/a', 'example.com', {'title'})
+
+
+async def test_partial_rediscovery_returns_none_when_initial_or_refined_extract_empty(mocker):
+    from datetime import datetime, timezone
+
+    from yosoi.models.snapshot import SelectorSnapshot
+
+    stub = _make_pipeline_stub(mocker)
+    stub._url_start = 0.0
+    snapshots = {
+        'title': SelectorSnapshot(primary={'type': 'css', 'value': 'h1'}, discovered_at=datetime.now(timezone.utc))
+    }
+    stub.discovery.discover_selectors.return_value = {'price': {'primary': '.price'}}
+    stub._merge_and_save_snapshots = mocker.AsyncMock(
+        return_value={'title': {'primary': 'h1'}, 'price': {'primary': '.price'}}
+    )
+    stub._resolve_root = mocker.MagicMock(return_value=None)
+    stub._root_value = mocker.MagicMock(return_value=None)
+    stub._extract = mocker.MagicMock(return_value=None)
+
+    result = await Pipeline._partial_rediscovery(
+        stub,
+        'https://example.com/a',
+        'example.com',
+        '<html/>',
+        '<html/>',
+        mocker.MagicMock(),
+        snapshots,
+        {'title'},
+        {'price'},
+        ['json'],
+    )
+    assert result is None
+
+    stub._extract.return_value = {'title': 'T'}
+    stub._semantic_refine = mocker.AsyncMock(return_value=(None, {'title': {'primary': 'h1'}}))
+    result = await Pipeline._partial_rediscovery(
+        stub,
+        'https://example.com/a',
+        'example.com',
+        '<html/>',
+        '<html/>',
+        mocker.MagicMock(),
+        snapshots,
+        {'title'},
+        {'price'},
+        ['json'],
+    )
+    assert result is None
+
+
+def test_root_helpers_cover_dict_primary_and_contract_root_override(mocker):
+    selectors = {'root': {'primary': {'type': 'css', 'value': 'article'}}, 'title': {'primary': 'h1'}}
+    assert Pipeline._pop_root(selectors) == {'primary': {'type': 'css', 'value': 'article'}}
+    assert selectors == {'title': {'primary': 'h1'}}
+    assert Pipeline._root_value({'primary': {'value': 'main'}}) == 'main'
+    assert Pipeline._root_value({'primary': {'value': ''}}) is None
+
+    class RootedContract(Contract):
+        root = ys.css('section.card')
+        title: str = ys.Title()
+
+    stub = _make_pipeline_stub(mocker, contract=RootedContract)
+    selectors = {'root': {'primary': 'article'}, 'title': {'primary': 'h1'}}
+    resolved_root = Pipeline._resolve_root(stub, selectors)
+    assert resolved_root is not None
+    assert resolved_root['primary']['type'] == 'css'
+    assert resolved_root['primary']['value'] == 'section.card'
+    assert 'root' not in selectors
+
+
+def test_file_download_specs_intersect_field_and_global_allowlists(mocker):
+    class FileContract(Contract):
+        rows: list[dict] = ys.File(trigger='a.export', allowed_types=['csv', 'pdf'], max_bytes=42)
+        raw: bytes = ys.File(href='a.raw')
+
+    stub = _make_pipeline_stub(mocker, contract=FileContract)
+    stub._allowed_download_types = ('csv', 'json')
+    stub._max_download_bytes = 99
+
+    specs = Pipeline._file_download_specs(stub)
+
+    assert specs['rows'].allowed_types == ('csv',)
+    assert specs['rows'].max_bytes == 42
+    assert specs['rows'].output == 'parsed'
+    assert specs['raw'].allowed_types == ('csv', 'json')
+    assert specs['raw'].max_bytes == 99
+    assert specs['raw'].output == 'bytes'
+
+
+def test_print_tracking_stats_with_summary_table_and_efficiency(mocker):
+    stub = _make_pipeline_stub(mocker)
+    stub._show_tracking_summary = True
+    stats = DomainStats(llm_calls=2, url_count=6, total_elapsed=12.5)
+
+    Pipeline._print_tracking_stats(
+        stub,
+        'https://example.com/a',
+        'example.com',
+        stats,
+        used_llm=True,
+        elapsed=1.5,
+        partial_discovery=True,
+    )
+
+    table = stub.console.print.call_args.args[0]
+    assert table.title == 'Tracking summary — example.com'
+    assert len(table.rows) == 4
