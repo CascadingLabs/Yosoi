@@ -188,8 +188,12 @@ def test_pipeline_stores_resolved_policy(mocker, monkeypatch):
 
 
 def test_pipeline_defers_model_until_discovery_for_cache_or_atom_paths(mocker, monkeypatch):
-    for key in ('GROQ_KEY', 'GROQ_API_KEY', 'YOSOI_MODEL', 'OPENROUTER_API_KEY', 'OPENAI_API_KEY'):
-        monkeypatch.delenv(key, raising=False)
+    from yosoi.core.discovery.config import _PROVIDER_ENV_VARS
+
+    provider_env_vars = {key for keys in _PROVIDER_ENV_VARS.values() for key in keys}
+    for key in provider_env_vars:
+        monkeypatch.setenv(key, '')
+    monkeypatch.delenv('YOSOI_MODEL', raising=False)
     mocker.patch('yosoi.storage.persistence.init_yosoi')
     mocker.patch('yosoi.storage.discovery_strategy.init_yosoi')
     mocker.patch('yosoi.storage.tracking.get_tracking_path', return_value='/tmp/tracking.json')

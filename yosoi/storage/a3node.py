@@ -26,12 +26,11 @@ from __future__ import annotations
 
 import json
 import logging
+import sqlite3
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any
-
-from libsql_client import LibsqlError
 
 from yosoi.models.selectors import SelectorEntry
 from yosoi.storage.sqlite_store import YosoiSQLiteStore
@@ -145,7 +144,7 @@ class A3NodeStorage(YosoiSQLiteStore):
                 params,
             )
             logger.debug('Saved A3Node for %s (%d acts)', domain, len(acts))
-        except LibsqlError as e:
+        except sqlite3.Error as e:
             logger.warning('Could not save A3Node for %s: %s', domain, e)
 
     async def load(self, domain: str) -> A3Node | None:

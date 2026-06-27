@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -13,6 +14,12 @@ from click.testing import CliRunner
 from yosoi.cli import main
 from yosoi.cli.contract_param import ContractParamType
 from yosoi.models.defaults import NewsArticle, Product
+
+_ANSI_RE = re.compile(r'\x1b\[[0-?]*[ -/]*[@-~]')
+
+
+def _plain(value: str) -> str:
+    return _ANSI_RE.sub('', value)
 
 
 @pytest.fixture
@@ -338,7 +345,7 @@ class TestCacheStatus:
     def test_cache_status_ambiguous_target_requires_explicit_flag(self, runner, base_mocks):
         result = runner.invoke(main, ['cache', 'status', 'ArticleTest'])
         assert result.exit_code != 0
-        assert '--contract/--domain/--url/--route' in result.output
+        assert '--contract/--domain/--url/--route' in _plain(result.output)
 
     def test_cache_status_explicit_domain_fallback(self, runner, mocker, base_mocks):
         import yosoi.storage as _store_pkg
@@ -386,7 +393,7 @@ class TestCacheStatus:
     def test_cache_metrics_backfill_requires_scope(self, runner, base_mocks):
         result = runner.invoke(main, ['cache', 'metrics', 'backfill'])
         assert result.exit_code != 0
-        assert 'Pass --all' in result.output
+        assert 'Pass --all' in _plain(result.output)
 
     def test_cache_status_with_cache(self, runner, mocker, base_mocks):
         from datetime import datetime, timezone

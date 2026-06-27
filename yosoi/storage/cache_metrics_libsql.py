@@ -11,10 +11,13 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 from urllib.parse import urlparse
 
-from libsql_client import Client
-
 from yosoi.models.snapshot import CacheVerdict, SelectorSnapshot
-from yosoi.storage.sqlite_store import YosoiSQLiteStore, default_sqlite_database_url, normalize_database_url
+from yosoi.storage.sqlite_store import (
+    SQLiteClient,
+    YosoiSQLiteStore,
+    default_sqlite_database_url,
+    normalize_database_url,
+)
 from yosoi.utils.signatures import contract_signature, field_signature
 
 if TYPE_CHECKING:
@@ -988,7 +991,7 @@ class LibSQLCacheMetricsStore(YosoiSQLiteStore):
         )
         self._migrated = True
 
-    async def _reset_incompatible_schema(self, client: Client) -> None:
+    async def _reset_incompatible_schema(self, client: SQLiteClient) -> None:
         """Destructively reset old alpha schemas; no migration/backfill is attempted."""
         if not await self._schema_needs_reset(client):
             return
@@ -1001,7 +1004,7 @@ class LibSQLCacheMetricsStore(YosoiSQLiteStore):
         ):
             await client.execute(f'DROP TABLE IF EXISTS {table_name}')
 
-    async def _schema_needs_reset(self, client: Client) -> bool:
+    async def _schema_needs_reset(self, client: SQLiteClient) -> bool:
         expected_json = {
             _FIELD_TABLE: ('config',),
             _CONTRACT_TABLE: ('spec',),
