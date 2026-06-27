@@ -22,8 +22,8 @@ class OverrideContract(Contract):
     """Contract with a mix of AI-discovered and selector-overridden fields."""
 
     title: str = Field(description='The item title')
-    price: float = YsField(description='The item price', selector='p.price_color')  # type: ignore[assignment]
-    rating: str = YsField(description='Star rating', selector='p.star-rating')  # type: ignore[assignment]
+    price: float = YsField(description='The item price', selector='p.price_color')
+    rating: str = YsField(description='Star rating', selector='p.star-rating')
 
 
 class BookContract(Contract):
@@ -108,8 +108,8 @@ def test_fully_overridden_contract_produces_empty_selector_model():
     """A contract where every field is overridden yields an empty selector model."""
 
     class AllOverride(Contract):
-        name: str = YsField(description='Name', selector='h1')  # type: ignore[assignment]
-        desc: str = YsField(description='Desc', selector='p.desc')  # type: ignore[assignment]
+        name: str = YsField(description='Name', selector='h1')
+        desc: str = YsField(description='Desc', selector='p.desc')
 
     SelectorModel = AllOverride.to_selector_model()
     assert AllOverride.field_descriptions() == {}
@@ -557,7 +557,7 @@ def test_action_fields_returns_js_action_config():
 
     class TechContract(Contract):
         title: str = ys.Title()
-        signals: dict = ys.js('(() => ({has_alita: true}))()', default=None)  # type: ignore[assignment]
+        signals: dict = ys.js('(() => ({has_alita: true}))()', default=None)
 
     actions = TechContract.action_fields()
     assert 'signals' in actions
@@ -571,7 +571,7 @@ def test_action_fields_excluded_from_discovery():
 
     class TechContract(Contract):
         title: str = ys.Title()
-        signals: dict = ys.js('(() => ({}))()', default=None)  # type: ignore[assignment]
+        signals: dict = ys.js('(() => ({}))()', default=None)
 
     names = TechContract.discovery_field_names()
     assert 'title' in names
@@ -583,7 +583,7 @@ def test_action_fields_excluded_from_field_descriptions():
 
     class TechContract(Contract):
         title: str = ys.Title(description='Main title')
-        signals: dict = ys.js('(() => ({}))()', default=None)  # type: ignore[assignment]
+        signals: dict = ys.js('(() => ({}))()', default=None)
 
     descs = TechContract.field_descriptions()
     assert 'title' in descs
@@ -693,7 +693,7 @@ def test_discovery_field_names_expands_nested_contract_fields():
         author: str = ys.Author()
 
     class _ParentContract(Contract):
-        article: _ChildContract = ys.Field()  # type: ignore[assignment]
+        article: _ChildContract = ys.Field()
         date: str = ys.Field()
 
     names = _ParentContract.discovery_field_names()
@@ -711,7 +711,7 @@ def test_to_selector_model_skips_overridden_nested_child_fields():
         author: str = ys.Author()
 
     class _ParentContract(Contract):
-        article: _ChildContract = ys.Field()  # type: ignore[assignment]
+        article: _ChildContract = ys.Field()
         title: str = ys.Field(selector='h1')  # overridden at parent level
 
     model = _ParentContract.to_selector_model()

@@ -98,7 +98,7 @@ def test_field_selectors_coerces_str_to_entry():
 def test_field_selectors_coerces_fallback_str():
     fs = FieldSelectors(primary='h1', fallback='h2')
     assert isinstance(fs.fallback, SelectorEntry)
-    assert fs.fallback.value == 'h2'  # type: ignore[union-attr]
+    assert fs.fallback.value == 'h2'
 
 
 def test_field_selectors_accepts_selector_entry_directly():

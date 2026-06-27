@@ -5,7 +5,7 @@ import importlib.util
 import pytest
 
 from yosoi.models.contract import Contract
-from yosoi.models.defaults import NewsArticle, Product
+from yosoi.models.defaults import Product
 from yosoi.utils.contracts import (
     _find_contract_classes,
     _load_contract_from_file,
@@ -75,7 +75,7 @@ def _load_module(filepath: object, module_name: str) -> object:
     assert spec is not None
     assert spec.loader is not None
     mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)  # type: ignore[union-attr]
+    spec.loader.exec_module(mod)
     return mod
 
 
@@ -171,23 +171,25 @@ class TestResolveContract:
         result = resolve_contract('RegistryTestSchema')
         assert result is RegistryTestSchema
 
-    def test_registry_case_insensitive_match(self):
-        """resolve_contract matches registry schemas case-insensitively."""
+    def test_registry_case_insensitive_match_fails(self):
+        """resolve_contract requires exact registry names."""
 
         class CiRegistrySchema(Contract):
             value: str
 
-        result = resolve_contract('ciregistryschema')
-        assert result is CiRegistrySchema
+        with pytest.raises(ValueError, match='Unknown contract'):
+            resolve_contract('ciregistryschema')
 
     def test_builtin_exact_match(self):
         """Exact builtin name resolves correctly."""
         assert resolve_contract('Product') is Product
 
-    def test_builtin_case_insensitive(self):
-        """Case-insensitive builtin match works."""
-        assert resolve_contract('product') is Product
-        assert resolve_contract('NEWSARTICLE') is NewsArticle
+    def test_builtin_case_insensitive_fails(self):
+        """resolve_contract requires exact built-in names."""
+        with pytest.raises(ValueError, match='Unknown contract'):
+            resolve_contract('product')
+        with pytest.raises(ValueError, match='Unknown contract'):
+            resolve_contract('NEWSARTICLE')
 
     def test_unknown_name_raises(self):
         """Unknown name with no matches raises ValueError."""

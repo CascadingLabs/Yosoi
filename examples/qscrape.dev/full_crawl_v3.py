@@ -12,7 +12,7 @@ scrape-gate failures.
 
 Unlike ``full_crawl_v2_alt.py``, this script intentionally performs scraping by
 default. Scrape discovery defaults to OpenCode with Codex
-(``opencode:openai/gpt-5-codex``), so the first run can spend LLM calls creating
+(``opencode:openai/gpt-5.3-codex-spark``), so the first run can spend LLM calls creating
 selectors while later replay runs can set ``YOSOI_FULL_CRAWL_V3_REPLAY_ONLY=1``
 to forbid model discovery. Set ``YOSOI_FULL_CRAWL_V3_SCRAPE=0`` to run only
 crawl/classification.
@@ -48,7 +48,7 @@ CHROME_WS_URLS = tuple(
     for url in os.getenv('YOSOI_CHROME_WS_URLS', 'http://127.0.0.1:9222,http://127.0.0.1:9223').split(',')
     if url.strip()
 )
-OPENCODE_MODEL = os.getenv('YOSOI_FULL_CRAWL_V3_OPENCODE_MODEL', 'openai/gpt-5-codex')
+OPENCODE_MODEL = os.getenv('YOSOI_FULL_CRAWL_V3_OPENCODE_MODEL', 'openai/gpt-5.3-codex-spark')
 
 
 class NewsArticle(ys.Contract):

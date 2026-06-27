@@ -10,6 +10,11 @@ from yosoi.core.discovery.config import LLMBuilder as LLMBuilder
 from yosoi.core.page import PageAcquisition as PageAcquisition
 from yosoi.core.page import PageSnapshot as PageSnapshot
 from yosoi.core.pipeline import Pipeline as Pipeline
+from yosoi.core.site_map import MapHost as MapHost
+from yosoi.core.site_map import MapRequest as MapRequest
+from yosoi.core.site_map import MapResult as MapResult
+from yosoi.core.site_map import MapSitemap as MapSitemap
+from yosoi.core.site_map import MapUrl as MapUrl
 from yosoi.generalization.fingerprint import PageFingerprint as PageFingerprint
 from yosoi.integrations import ClaudeSDKModel as ClaudeSDKModel
 from yosoi.integrations import OpenCodeModel as OpenCodeModel
@@ -26,6 +31,22 @@ from yosoi.models.snapshot import CacheVerdict as CacheVerdict
 from yosoi.models.snapshot import SelectorSnapshot as SelectorSnapshot
 from yosoi.models.snapshot import SnapshotMap as SnapshotMap
 from yosoi.models.snapshot import SnapshotStatus as SnapshotStatus
+from yosoi.operations import ContentRequest as ContentRequest
+from yosoi.operations import ContentResult as ContentResult
+from yosoi.operations import ContentUnitResult as ContentUnitResult
+from yosoi.operations import ContractRef as ContractRef
+from yosoi.operations import CrawlRequest as CrawlRequest
+from yosoi.operations import CrawlResult as CrawlResult
+from yosoi.operations import FetchRequest as FetchRequest
+from yosoi.operations import FetchResult as FetchResult
+from yosoi.operations import FetchUnitResult as FetchUnitResult
+from yosoi.operations import ScrapeRequest as ScrapeRequest
+from yosoi.operations import ScrapeResult as ScrapeResult
+from yosoi.operations import ScrapeUnitResult as ScrapeUnitResult
+from yosoi.operations import SearchHit as SearchHit
+from yosoi.operations import SearchRequest as SearchRequest
+from yosoi.operations import SearchResult as SearchResult
+from yosoi.policy import BrowserProfilePolicy as _BrowserProfilePolicy
 from yosoi.policy import CrawlBudget as _CrawlBudget
 from yosoi.policy import CrawlPolicy as _CrawlPolicy
 from yosoi.policy import CrawlRuntimeConfig as _CrawlRuntimeConfig
@@ -45,6 +66,7 @@ from yosoi.policy import PolicyCheck as _PolicyCheck
 from yosoi.policy import ResolvedRunSpec as _ResolvedRunSpec
 from yosoi.policy import SchedulerPolicy as _SchedulerPolicy
 from yosoi.policy import ScrapePolicy as _ScrapePolicy
+from yosoi.policy import SearchPolicy as _SearchPolicy
 from yosoi.policy import SecretRef as _SecretRef
 from yosoi.policy import TelemetryPolicy as _TelemetryPolicy
 from yosoi.policy import Trust as _Trust
@@ -58,6 +80,22 @@ TrustTier = Literal['strict', 'yellow']
 CrawlModeName = Literal['seed_hunt', 'contract_focus', 'structure_guarded', 'explorer']
 FetcherName = Literal['auto', 'simple', 'headless', 'headful']
 PageFetcherName = Literal['auto', 'simple', 'headless', 'headful', 'waterfall']
+
+class BrowserProfilePolicy(_BrowserProfilePolicy):
+    profile: str | None
+    pool: str | None
+    headful: bool
+    max_live: int
+
+    def __init__(
+        self,
+        *,
+        profile: str | None = ...,
+        pool: str | None = ...,
+        headful: bool = ...,
+        max_live: int = ...,
+    ) -> None: ...
+
 CrawlPresetName = Literal['crawl.local_single', 'crawl.conservative', 'crawl.seed_hunt']
 DiscoveryMode = Literal['auto', 'static', 'mcp']
 
@@ -167,6 +205,7 @@ class PageRuntimeConfig(_PageRuntimeConfig):
     clean_html: bool
     cleaner_profile: Literal['discovery', 'raw']
     chrome_ws_urls: tuple[str, ...]
+    profile: BrowserProfilePolicy | None
 
 class PagePolicy(_PagePolicy):
     fetcher_type: PageFetcherName
@@ -176,6 +215,7 @@ class PagePolicy(_PagePolicy):
     clean_html: bool
     cleaner_profile: Literal['discovery', 'raw']
     chrome_ws_urls: tuple[str, ...]
+    profile: BrowserProfilePolicy | None
 
     def __init__(
         self,
@@ -187,6 +227,7 @@ class PagePolicy(_PagePolicy):
         clean_html: bool = ...,
         cleaner_profile: Literal['discovery', 'raw'] = ...,
         chrome_ws_urls: tuple[str, ...] | str = ...,
+        profile: BrowserProfilePolicy | None = ...,
     ) -> None: ...
     def to_runtime_config(self) -> PageRuntimeConfig: ...
 
@@ -351,6 +392,29 @@ class DiscoveryPolicy(_DiscoveryPolicy):
         static_mode_warning: bool = ...,
     ) -> None: ...
 
+class SearchPolicy(_SearchPolicy):
+    kind: Literal['text']
+    provider: Literal['ddgs']
+    backend: str
+    region: str
+    safesearch: Literal['on', 'moderate', 'off']
+    max_results: int
+    page: int
+    timelimit: str | None
+
+    def __init__(
+        self,
+        *,
+        kind: Literal['text'] = ...,
+        provider: Literal['ddgs'] = ...,
+        backend: str = ...,
+        region: str = ...,
+        safesearch: Literal['on', 'moderate', 'off'] = ...,
+        max_results: int = ...,
+        page: int = ...,
+        timelimit: str | None = ...,
+    ) -> None: ...
+
 class TelemetryPolicy(_TelemetryPolicy):
     langfuse_public_key_ref: SecretRef | None
     langfuse_secret_key_ref: SecretRef | None
@@ -369,9 +433,10 @@ class OutputPolicy(_OutputPolicy):
 
     Use ``quiet=False`` for examples and demos where Yosoi should show progress,
     selected URLs, tables, and scrape results. Keep the default ``quiet=True`` for
-    library use where callers consume returned Python values. ``formats`` enables
-    saved artifacts, while ``json_output``/``plain_output`` switch terminal shape
-    for automation.
+    library use where callers consume returned Python values. ``formats`` chooses
+    persisted output shapes in SQLite; ``flat_files`` additionally mirrors them to
+    `.yosoi/content` files for workflows that need file artifacts. ``json_output``/
+    ``plain_output`` switch terminal shape for automation.
     """
 
     formats: tuple[str, ...]
@@ -380,6 +445,7 @@ class OutputPolicy(_OutputPolicy):
     plain_output: bool
     debug_html: bool
     debug_html_dir: Any
+    flat_files: bool
     logs: bool
 
     def __init__(
@@ -391,6 +457,7 @@ class OutputPolicy(_OutputPolicy):
         plain_output: bool = ...,
         debug_html: bool = ...,
         debug_html_dir: Any = ...,
+        flat_files: bool = ...,
         logs: bool = ...,
     ) -> None: ...
 
@@ -419,6 +486,8 @@ class ResolvedRunSpec(_ResolvedRunSpec):
     fetcher_type: str
     selector_level: SelectorLevel
     cross_origin_dom: bool
+    output_formats: tuple[str, ...]
+    output_flat_files: bool
     quiet: bool
     json_output: bool
     plain_output: bool
@@ -428,6 +497,7 @@ class Policy(_Policy):
     trust_tier: TrustTier
     model: ModelPolicy | None
     scrape: ScrapePolicy | None
+    search: SearchPolicy | None
     discovery: DiscoveryPolicy | None
     telemetry: TelemetryPolicy | None
     output: OutputPolicy | None
@@ -443,6 +513,7 @@ class Policy(_Policy):
         trust_tier: TrustTier = ...,
         model: ModelPolicy | None = ...,
         scrape: ScrapePolicy | None = ...,
+        search: SearchPolicy | None = ...,
         discovery: DiscoveryPolicy | None = ...,
         telemetry: TelemetryPolicy | None = ...,
         output: OutputPolicy | None = ...,
@@ -560,24 +631,76 @@ async def crawl(
     progress: bool | None = ...,
     console: Any | None = ...,
 ) -> CrawlRunSummary: ...
+async def map(
+    url: str,
+    *,
+    max_sitemaps: int = ...,
+    max_urls: int = ...,
+    max_subdomains: int = ...,
+    subfinder_bin: str = ...,
+    subfinder_timeout: int = ...,
+    include_robots: bool = ...,
+    include_default_sitemaps: bool = ...,
+    include_subdomains: bool = ...,
+    discover_subdomains: bool = ...,
+) -> MapResult: ...
+async def execute_content(request: ContentRequest) -> ContentResult: ...
+async def execute_crawl(request: CrawlRequest) -> CrawlRunSummary: ...
+async def execute_fetch(request: FetchRequest) -> FetchResult: ...
+async def execute_map(request: MapRequest) -> MapResult: ...
+async def execute_search(request: SearchRequest) -> SearchResult: ...
+async def execute_scrape(request: ScrapeRequest) -> Any: ...
+async def run_crawl(request: CrawlRequest) -> CrawlResult: ...
+async def run_content(request: ContentRequest) -> ContentResult: ...
+async def run_fetch(request: FetchRequest) -> FetchResult: ...
+async def run_map(request: MapRequest) -> MapResult: ...
+async def run_search(request: SearchRequest) -> SearchResult: ...
+async def run_scrape(request: ScrapeRequest) -> ScrapeResult: ...
+async def fetch(
+    url: str | Sequence[str],
+    *,
+    view: str = ...,
+    fetcher_type: str | None = ...,
+    page: int = ...,
+    page_size: int = ...,
+    chars: int | None = ...,
+    include: Sequence[str] = ...,
+    contracts: Any = ...,
+    output_dir: str | None = ...,
+    policy: Policy | None = ...,
+) -> FetchResult: ...
+async def search(
+    query: str,
+    *,
+    kind: str | None = ...,
+    provider: str | None = ...,
+    backend: str | None = ...,
+    region: str | None = ...,
+    safesearch: str | None = ...,
+    timelimit: str | None = ...,
+    max_results: int | None = ...,
+    limit: int | None = ...,
+    page: int | None = ...,
+    policy: Policy | None = ...,
+) -> SearchResult: ...
 async def scrape(
     url: str | Sequence[str],
     contract: type[Contract] | str | Sequence[type[Contract] | str],
     model: _YosoiConfig | _LLMConfig | ModelPolicy | str | None = ...,
     **kwargs: Any,
-) -> list[dict[str, Any]] | dict[str, list[dict[str, Any]]] | dict[str, dict[str, list[dict[str, Any]]]]: ...
+) -> ScrapeResult: ...
 async def scrape_many(
     urls: list[str] | tuple[str, ...],
     contract: type[Contract] | str,
     model: _YosoiConfig | _LLMConfig | ModelPolicy | str | None = ...,
     **kwargs: Any,
-) -> dict[str, list[dict[str, Any]]]: ...
+) -> ScrapeResult: ...
 def scrape_sync(
     url: str,
     contract: type[Contract] | str,
     model: _YosoiConfig | _LLMConfig | ModelPolicy | str | None = ...,
     **kwargs: Any,
-) -> list[dict[str, Any]]: ...
+) -> ScrapeResult: ...
 def show(
     value: Any,
     *,

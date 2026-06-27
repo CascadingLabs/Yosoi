@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from pydantic_ai import Agent
 from rich.console import Console
@@ -23,8 +23,13 @@ from yosoi.utils import observability as obs
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+    from contextlib import AbstractAsyncContextManager
+    from typing import Protocol
 
     from yosoi.core.fetcher.base import HTMLFetcher
+
+    class _BrowsableFetcher(Protocol):
+        def browse(self, url: str) -> AbstractAsyncContextManager[Any]: ...
 
 # A per-field validator is ``contract.coerce_field(name, value) -> coerced`` — it
 # raises on a type/validator failure. This lets JS discovery reject a script whose
@@ -145,7 +150,7 @@ class JsDiscoveryOrchestrator:
         discovered: dict[str, str] = {}
         attempt_counts: dict[str, int] = {}
 
-        async with fetcher.browse(url) as tab:  # type: ignore[attr-defined]
+        async with cast('_BrowsableFetcher', fetcher).browse(url) as tab:
             dom_context = await self._pre_probe(tab)
             if dom_context is None:
                 self._console.print('[warning]  ✗ JS discovery: pre-probe eval failed[/warning]')

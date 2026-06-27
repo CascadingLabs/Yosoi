@@ -517,7 +517,7 @@ def test_extract_content_overridden_field_message():
     from yosoi.types.field import Field as YsField
 
     class OverrideContract(Contract):
-        title: str = YsField(description='Title', selector='h1.title')  # type: ignore[assignment]
+        title: str = YsField(description='Title', selector='h1.title')
 
     extractor = _make_extractor(OverrideContract)
     html = '<html><body><h1 class="title">My Title</h1></body></html>'
@@ -553,6 +553,36 @@ def test_resolve_jsonld_strategy_returns_none():
     sel = Selector(text=html)
     entry = SelectorEntry(type='jsonld', value='$.title')
     result = extractor._resolve(sel, entry, 'title', SelectorLevel.JSONLD)
+    assert result is None
+
+
+def test_resolve_attr_strategy_extracts_named_attribute():
+    from yosoi.models.selectors import SelectorEntry, SelectorLevel
+
+    extractor = _make_extractor()
+    sel = Selector(text='<time datetime="2026-06-26"></time>')
+    entry = SelectorEntry(type='attr', value='time', name='datetime')
+    result = extractor._resolve(sel, entry, 'date', SelectorLevel.ATTR)
+    assert result == '2026-06-26'
+
+
+def test_resolve_role_strategy_matches_accessible_name():
+    from yosoi.models.selectors import SelectorEntry, SelectorLevel
+
+    extractor = _make_extractor()
+    sel = Selector(text='<button>Cancel</button><button aria-label="Submit order">ignored</button>')
+    entry = SelectorEntry(type='role', value='button', name='Submit')
+    result = extractor._resolve(sel, entry, 'title', SelectorLevel.ROLE)
+    assert result == 'ignored'
+
+
+def test_resolve_visual_strategy_returns_none():
+    from yosoi.models.selectors import SelectorEntry, SelectorLevel
+
+    extractor = _make_extractor()
+    sel = Selector(text='<h1>Title</h1>')
+    entry = SelectorEntry(type='visual', x=10, y=20)
+    result = extractor._resolve(sel, entry, 'title', SelectorLevel.VISUAL)
     assert result is None
 
 
@@ -637,6 +667,31 @@ def test_list_mode_empty_returns_none():
     html = '<div></div>'
     sel = Selector(text=html)
     result = extractor._extract_with_selector(sel, 'span.author', 'authors')
+    assert result is None
+
+
+def test_extract_items_accepts_xpath_container_selector():
+    class ItemContract(Contract):
+        title: str = ys.Title()
+
+    extractor = _make_extractor(ItemContract)
+    html = '<section><article><h2>One</h2></article><article><h2>Two</h2></article></section>'
+    selectors = {'title': {'primary': {'type': 'css', 'value': 'h2'}}}
+
+    result = extractor.extract_items('https://x.com', html, selectors, '//article')
+
+    assert result == [{'title': 'One'}, {'title': 'Two'}]
+
+
+def test_extract_items_invalid_xpath_container_returns_none():
+    class ItemContract(Contract):
+        title: str = ys.Title()
+
+    extractor = _make_extractor(ItemContract)
+    selectors = {'title': {'primary': {'type': 'css', 'value': 'h2'}}}
+
+    result = extractor.extract_items('https://x.com', '<article><h2>One</h2></article>', selectors, '///[[[invalid')
+
     assert result is None
 
 

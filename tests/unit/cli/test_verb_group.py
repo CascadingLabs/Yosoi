@@ -3,13 +3,25 @@
 from __future__ import annotations
 
 import json
+import re
+from dataclasses import dataclass
+from importlib import import_module
+from pathlib import Path
 
 import pytest
+import rich_click as click
 from click.testing import CliRunner
 
 from yosoi.cli import main
 from yosoi.cli.contract_param import ContractParamType
 from yosoi.models.defaults import NewsArticle, Product
+
+_ANSI_RE = re.compile(r'\x1b\[[0-?]*[ -/]*[@-~]')
+_CLI_MAIN = import_module('yosoi.cli.main')
+
+
+def _plain(value: str) -> str:
+    return _ANSI_RE.sub('', value)
 
 
 @pytest.fixture
@@ -18,7 +30,8 @@ def runner():
 
 
 @pytest.fixture
-def base_mocks(mocker):
+def base_mocks(mocker, monkeypatch):
+    monkeypatch.setenv('GROQ_KEY', 'test-key')
     mocker.patch('yosoi.utils.files.is_initialized', return_value=True)
     mocker.patch('yosoi.utils.logging.setup_local_logging', return_value='/tmp/test.log')
 
@@ -29,6 +42,43 @@ class TestSubcommands:
         assert result.exit_code == 0
         assert 'scrape' in result.output.lower() or 'replay' in result.output.lower()
 
+    def test_short_help_alias_is_global(self, runner):
+        assert runner.invoke(main, ['-h']).exit_code == 0
+        assert runner.invoke(main, ['scrape', '-h']).exit_code == 0
+        assert runner.invoke(main, ['policy', 'validate', '-h']).exit_code == 0
+
+    def test_json_help_is_machine_readable_without_removing_human_rich_help(self, runner):
+        human = runner.invoke(main, ['-h'])
+        assert human.exit_code == 0
+        assert 'Options' in human.output
+
+        result = runner.invoke(main, ['-h', '--json'])
+        assert result.exit_code == 0
+        doc = json.loads(result.output)
+        assert doc['type'] == 'help'
+        assert doc['format'] == 'yosoi.cli.command.v1'
+        assert 'commands' in doc
+        assert '\x1b' not in doc['usage']
+
+        alias_result = runner.invoke(main, ['-h', '-j'])
+        assert alias_result.exit_code == 0
+        assert json.loads(alias_result.output)['type'] == 'help'
+
+    def test_subcommand_json_help(self, runner):
+        result = runner.invoke(main, ['cache', 'status', '-h', '--json'])
+        assert result.exit_code == 0
+        doc = json.loads(result.output)
+        assert doc['command_path'].endswith('cache status')
+        assert any(opt['name'] == 'json_output' for opt in doc['options'])
+
+    def test_json_usage_errors_are_machine_readable(self, runner, base_mocks, monkeypatch):
+        monkeypatch.setenv('GROQ_KEY', 'test-key')
+        result = runner.invoke(main, ['--json'])
+        assert result.exit_code != 0
+        doc = json.loads(result.stdout)
+        assert doc['type'] == 'error'
+        assert 'No URLs provided' in doc['message']
+
     def test_discover_help(self, runner):
         result = runner.invoke(main, ['discover', '--help'])
         assert result.exit_code == 0
@@ -36,6 +86,17 @@ class TestSubcommands:
     def test_cache_help(self, runner):
         result = runner.invoke(main, ['cache', '--help'])
         assert result.exit_code == 0
+
+    def test_contract_alias_help(self, runner):
+        result = runner.invoke(main, ['contract', '--help'])
+        assert result.exit_code == 0
+        assert 'local content-addressed contracts store' in result.output.lower()
+
+    def test_contract_alias_is_hidden_from_root_help(self, runner):
+        result = runner.invoke(main, ['-h'])
+        assert result.exit_code == 0
+        assert 'contracts' in result.output
+        assert '│ contract ' not in result.output
 
     def test_cache_status_help(self, runner):
         result = runner.invoke(main, ['cache', 'status', '--help'])
@@ -50,10 +111,10 @@ class TestContractParamType:
         result = param.convert('@NewsArticle', None, None)
         assert result is NewsArticle
 
-    def test_at_name_resolves_case_insensitive(self):
+    def test_at_name_case_insensitive_suggests_without_resolving(self):
         param = ContractParamType()
-        result = param.convert('@product', None, None)
-        assert result is Product
+        with pytest.raises(click.exceptions.BadParameter, match='Did you mean'):
+            param.convert('@product', None, None)
 
     def test_inline_json_resolves(self):
         param = ContractParamType()
@@ -75,6 +136,15 @@ class TestContractParamType:
         mocker.patch('yosoi.cli.args.SchemaParamType.convert', return_value=NewsArticle)
         result = param.convert('mymodule:MyContract', None, None)
         assert result is NewsArticle
+
+    def test_at_name_resolves_local_contract_store_alias(self, tmp_path, monkeypatch):
+        from yosoi.storage.contracts_store import ContractStore
+
+        monkeypatch.chdir(tmp_path)
+        ContractStore().add(Product.to_spec(), name='ArticleTest')
+
+        result = ContractParamType().convert('@ArticleTest', None, None)
+        assert result.to_spec().fingerprint == Product.to_spec().fingerprint
 
 
 class TestTripleDoorFingerprint:
@@ -100,26 +170,374 @@ class TestTripleDoorFingerprint:
         assert cls_inline.to_spec().fingerprint == fp_expected
 
 
-class TestScrapeReplayOnly:
-    """scrape --json returns needs_discovery on cache miss."""
+class TestScrapeOperationSurface:
+    """scrape --json builds ScrapeRequest and runs the canonical operation."""
 
-    def test_scrape_json_needs_discovery_on_miss(self, runner, mocker, base_mocks, monkeypatch):
-        monkeypatch.setenv('GROQ_KEY', 'test-key')
-        import yosoi.storage as _store_pkg
+    def test_scrape_json_uses_operation_runner(self, runner, mocker, base_mocks):
+        from yosoi.operations import ScrapeResult, ScrapeUnitResult
 
-        storage_instance = mocker.MagicMock()
-        storage_instance.load_selectors = mocker.AsyncMock(return_value=None)
-        mocker.patch.object(_store_pkg, 'SelectorStorage', return_value=storage_instance)
+        run = mocker.patch(
+            'yosoi.operations.run_scrape',
+            mocker.AsyncMock(
+                return_value=ScrapeResult(
+                    results=[
+                        ScrapeUnitResult(
+                            url='https://example.com',
+                            contract='NewsArticle',
+                            contract_fingerprint=NewsArticle.to_spec().fingerprint,
+                            records=[{'title': 'Example'}],
+                        )
+                    ]
+                )
+            ),
+        )
 
         result = runner.invoke(main, ['scrape', 'https://example.com', '--json'])
-        json_lines = [ln for ln in result.output.splitlines() if ln.strip().startswith('{')]
-        assert len(json_lines) >= 1, f'Expected JSON output, got: {result.output!r} err={result.exception}'
-        doc = json.loads(json_lines[0])
-        assert doc['type'] == 'needs_discovery'
-        assert result.exit_code == 2  # NEEDS_DISCOVERY
-        storage_instance.load_selectors.assert_awaited_once_with(
-            'example.com', contract_sig=NewsArticle.to_spec().fingerprint
+        assert result.exit_code == 0, result.output
+        doc = json.loads(next(ln for ln in result.output.splitlines() if ln.strip().startswith('{')))
+        assert doc['status'] == 'ok'
+        assert doc['results'][0]['url'] == 'https://example.com'
+        request = run.await_args.args[0]
+        assert request.urls == ['https://example.com']
+        assert request.contract_classes() == [NewsArticle]
+
+    def test_scrape_dump_request_preserves_url_contract_grid(self, runner, base_mocks):
+        result = runner.invoke(
+            main,
+            ['scrape', 'https://example.com', '--contract', '@NewsArticle', '--contract', '@Product', '--dump-request'],
         )
+        assert result.exit_code == 0, result.output
+        doc = json.loads(result.output[result.output.index('{') :])
+        assert doc['urls'] == ['https://example.com']
+        assert len(doc['contracts']) == 2
+
+    def test_scrape_no_llm_compiles_cache_only_request(self, runner, base_mocks):
+        result = runner.invoke(main, ['scrape', 'https://example.com', '--no-llm', '--dump-request'])
+        assert result.exit_code == 0, result.output
+        doc = json.loads(result.output[result.output.index('{') :])
+        assert doc['allow_llm'] is False
+
+    def test_scrape_profile_pool_flags_compile_page_policy(self, runner, base_mocks):
+        result = runner.invoke(
+            main,
+            [
+                'scrape',
+                'https://example.com',
+                '--profile-pool',
+                'google-serp',
+                '--max-live-profiles',
+                '2',
+                '--dump-request',
+            ],
+        )
+
+        assert result.exit_code == 0, result.output
+
+        doc = json.loads(result.output[result.output.index('{') :])
+        profile = doc['policy']['page']['profile']
+        assert profile['pool'] == 'google-serp'
+        assert profile['profile'] is None
+        assert profile['headful'] is True
+        assert profile['max_live'] == 2
+
+    def test_scrape_rejects_profile_and_pool_together(self, runner, base_mocks):
+        result = runner.invoke(
+            main,
+            [
+                'scrape',
+                'https://example.com',
+                '--profile',
+                'google-001',
+                '--profile-pool',
+                'google-serp',
+                '--dump-request',
+            ],
+        )
+
+        assert result.exit_code != 0
+        assert 'mutually exclusive' in result.output
+
+
+class TestResearchCommands:
+    def test_research_init_observe_status_packet_workflow(self, runner):
+        from yosoi.operations import ScrapeResult, ScrapeUnitResult
+
+        with runner.isolated_filesystem():
+            init_result = runner.invoke(main, ['research', 'init', 'Firecrawl pricing', '--json'])
+            assert init_result.exit_code == 0, init_result.output
+            packet = Path(json.loads(init_result.output)['packet'])
+            assert (packet / 'frontier.json').exists()
+            assert (packet / 'observations.jsonl').exists()
+            assert 'flat_files: false' in (packet / 'policy.yaml').read_text(encoding='utf-8')
+
+            scrape_path = packet / 'scrape-results' / 'firecrawl.json'
+            scrape_path.write_text(
+                ScrapeResult(
+                    results=[
+                        ScrapeUnitResult(
+                            url='https://www.firecrawl.dev/pricing',
+                            contract='PricingPlan',
+                            contract_fingerprint='pricing-fp',
+                            selector_source='cache',
+                            cache_decision='hit',
+                            llm_used=False,
+                            quality_status='ok',
+                            expected_record_count=4,
+                            record_count=4,
+                            records=[{'name': 'Free'}, {'name': 'Hobby'}, {'name': 'Pro'}, {'name': 'Enterprise'}],
+                        )
+                    ]
+                ).model_dump_json(),
+                encoding='utf-8',
+            )
+
+            observe_result = runner.invoke(
+                main,
+                ['research', 'observe', str(packet), '--from-scrape', str(scrape_path), '--json'],
+            )
+            assert observe_result.exit_code == 0, observe_result.output
+            assert json.loads(observe_result.output)['observations'] == 1
+
+            status_result = runner.invoke(main, ['research', 'status', str(packet), '--json'])
+            assert status_result.exit_code == 0, status_result.output
+            status = json.loads(status_result.output)
+            assert status['contracts']['PricingPlan']['status'] == 'validated'
+            assert status['contracts']['PricingPlan']['latest_record_count'] == 4
+
+    def test_research_observe_search_crawl_note_and_human_status(self, runner):
+        with runner.isolated_filesystem():
+            init_result = runner.invoke(main, ['research', 'init', 'market map', '--json'])
+            packet = Path(json.loads(init_result.output)['packet'])
+            search_path = packet / 'sources' / 'search.json'
+            search_path.write_text('{"hits": [{"url": "https://one.test"}]}', encoding='utf-8')
+            crawl_path = packet / 'sources' / 'crawl.json'
+            crawl_path.write_text('{"summary": {"results": [{"url": "https://one.test"}]}}', encoding='utf-8')
+
+            search_result = runner.invoke(
+                main,
+                ['research', 'observe', str(packet), '--from-search', str(search_path)],
+            )
+            crawl_result = runner.invoke(
+                main,
+                [
+                    'research',
+                    'observe',
+                    str(packet),
+                    '--from-crawl',
+                    str(crawl_path),
+                    '--contract-status',
+                    'provisional',
+                ],
+            )
+            note_result = runner.invoke(
+                main,
+                [
+                    'research',
+                    'observe',
+                    str(packet),
+                    '--note',
+                    'pricing page blocks replay',
+                    '--contract-status',
+                    'rejected',
+                ],
+            )
+            status_result = runner.invoke(main, ['research', 'status', str(packet)])
+
+            assert search_result.exit_code == 0, search_result.output
+            assert crawl_result.exit_code == 0, crawl_result.output
+            assert note_result.exit_code == 0, note_result.output
+            assert status_result.exit_code == 0, status_result.output
+            assert 'Research packet: market map' in status_result.output
+            assert '(unscoped)' in status_result.output
+
+    def test_research_observe_requires_exactly_one_source(self, runner):
+        with runner.isolated_filesystem():
+            init_result = runner.invoke(main, ['research', 'init', 'market map', '--json'])
+            packet = Path(json.loads(init_result.output)['packet'])
+            search_path = packet / 'sources' / 'search.json'
+            search_path.write_text('{"hits": []}', encoding='utf-8')
+
+            missing = runner.invoke(main, ['research', 'observe', str(packet)])
+            too_many = runner.invoke(
+                main,
+                ['research', 'observe', str(packet), '--from-search', str(search_path), '--note', 'extra'],
+            )
+
+            assert missing.exit_code != 0
+            assert too_many.exit_code != 0
+            assert 'Pass exactly one' in missing.output
+            assert 'Pass exactly one' in too_many.output
+
+
+class TestCliHelperCoverage:
+    def test_crawl_run_id_and_worker_bounds(self):
+        run_id = _CLI_MAIN._new_crawl_run_id()
+
+        assert run_id.startswith('crawl-')
+        assert _CLI_MAIN._effective_workers(0, 10) == 4
+        assert _CLI_MAIN._effective_workers(9, 3) == 3
+        assert _CLI_MAIN._effective_workers(1, 0) == 1
+        with pytest.raises(click.BadParameter, match='workers'):
+            _CLI_MAIN._effective_workers(-1, 3)
+
+    def test_crawl_cli_overrides_layer_every_flag(self):
+        from yosoi.policy import CrawlPolicy, Policy
+
+        policy = Policy(crawl=CrawlPolicy())
+
+        updated = _CLI_MAIN._apply_crawl_cli_overrides(
+            policy,
+            run_id='crawl-test',
+            max_pages=7,
+            max_depth=2,
+            max_attempts=11,
+            max_pages_per_host=5,
+            workers=3,
+            per_host_concurrency=2,
+            politeness=0.25,
+            timeout=6.5,
+            retries=4,
+            respect_robots=False,
+            allow_redirects=False,
+        )
+
+        crawl = updated.require_crawl()
+        assert crawl.budget.max_pages == 7
+        assert crawl.budget.max_depth == 2
+        assert crawl.budget.max_attempts == 11
+        assert crawl.budget.max_pages_per_host == 5
+        assert crawl.budget.crawl_session_id == 'crawl-test'
+        assert crawl.scheduler.max_workers == 3
+        assert crawl.scheduler.per_host_concurrency == 2
+        assert crawl.scheduler.politeness_delay == 0.25
+        assert crawl.scheduler.fetch_timeout_seconds == 6.5
+        assert crawl.scheduler.max_fetch_retries == 4
+        assert crawl.safety.respect_robots is False
+        assert crawl.safety.allow_redirects is False
+
+    def test_profile_cli_override_edges(self):
+        from yosoi.policy import Policy
+
+        policy = Policy()
+
+        assert (
+            _CLI_MAIN._apply_profile_cli_overrides(
+                policy,
+                profile=None,
+                profile_pool=None,
+                max_live_profiles=3,
+            )
+            is policy
+        )
+        with pytest.raises(click.UsageError, match='mutually exclusive'):
+            _CLI_MAIN._apply_profile_cli_overrides(
+                policy,
+                profile='google-001',
+                profile_pool='google-serp',
+                max_live_profiles=3,
+            )
+        with pytest.raises(click.BadParameter, match='max-live-profiles'):
+            _CLI_MAIN._apply_profile_cli_overrides(
+                policy,
+                profile='google-001',
+                profile_pool=None,
+                max_live_profiles=0,
+            )
+
+    def test_render_compact_crawl_covers_empty_and_error_rows(self, mocker):
+        prints = mocker.patch.object(_CLI_MAIN.console, 'print')
+
+        _CLI_MAIN._render_compact_crawl(
+            {
+                'status': 'partial',
+                'pages_fetched': 1,
+                'attempted_urls': 2,
+                'failures': 1,
+                'wall_time': 1.25,
+                'run_id': 'crawl-test',
+                'results': [
+                    {
+                        'index': 1,
+                        'status': 'failed',
+                        'status_code': 503,
+                        'depth': 1,
+                        'links': 0,
+                        'html_chars': 12,
+                        'fetch_time': 0.12,
+                        'url': 'https://example.test',
+                        'error': 'blocked',
+                    }
+                ],
+            }
+        )
+        _CLI_MAIN._render_compact_crawl({'status': 'empty', 'results': []})
+
+        rendered = '\n'.join(str(call.args[0]) for call in prints.call_args_list)
+        assert 'Crawl stress partial' in rendered
+        assert 'blocked' in rendered
+        assert 'run_id=crawl-test' in rendered
+        assert '(no attempted URLs)' in rendered
+
+    def test_print_atom_reads_info_yellow_and_strict(self, mocker):
+        ui = mocker.MagicMock()
+
+        _CLI_MAIN._print_atom_reads_info(ui, type('Policy', (), {'atom_reads': False})())
+        _CLI_MAIN._print_atom_reads_info(ui, type('Policy', (), {'atom_reads': True, 'trust_tier': 'yellow'})())
+        _CLI_MAIN._print_atom_reads_info(ui, type('Policy', (), {'atom_reads': True, 'trust_tier': 'strict'})())
+
+        assert ui.print.call_count == 2
+        assert 'yellow trust' in ui.print.call_args_list[0].args[0]
+        assert 'strict trust' in ui.print.call_args_list[1].args[0]
+
+    def test_print_map_result_covers_tables_and_warnings(self, mocker):
+        from yosoi.core.site_map import MapHost, MapResult, MapSitemap, MapUrl
+
+        prints = mocker.patch.object(_CLI_MAIN.console, 'print')
+        result = MapResult(
+            status='empty',
+            requested_url='https://example.test',
+            root_url='https://example.test',
+            root_host='example.test',
+            robots_url='https://example.test/robots.txt',
+            robots_found=False,
+            hosts=[MapHost(host='example.test', url_count=1)],
+            sitemaps=[
+                MapSitemap(
+                    url='https://example.test/sitemap.xml',
+                    source='robots',
+                    status='ok',
+                    url_count=1,
+                )
+            ],
+            urls=[
+                MapUrl(
+                    url='https://example.test/a',
+                    host='example.test',
+                    path='/a',
+                    source_sitemap='https://example.test/sitemap.xml',
+                )
+            ],
+            errors=['robots unavailable'],
+        )
+        subdomains = result.model_copy(
+            update={
+                'mode': 'subdomains',
+                'hosts': [MapHost(host='www.example.test', url_count=0, subdomain='www')],
+                'subdomains': [MapHost(host='www.example.test', url_count=0, subdomain='www')],
+                'sitemaps': [],
+                'urls': [],
+                'errors': [],
+            }
+        )
+
+        _CLI_MAIN._print_map_result(result)
+        _CLI_MAIN._print_map_result(subdomains)
+
+        rendered = '\n'.join(str(call.args[0]) for call in prints.call_args_list)
+        assert 'Map:' in rendered
+        assert 'Robots:' in rendered
+        assert 'Map warning' in rendered
+        assert 'Subdomains:' in rendered
 
 
 class TestCacheStatus:
@@ -134,6 +552,293 @@ class TestCacheStatus:
         result = runner.invoke(main, ['cache', 'status', 'example.com'])
         assert result.exit_code == 0
         assert 'No cached' in result.output or 'example.com' in result.output
+
+    def test_cache_status_json_no_cache(self, runner, mocker, base_mocks):
+        import yosoi.storage as _store_pkg
+        from yosoi.storage.cache_metrics_libsql import DomainCacheMetrics
+
+        storage_mock = mocker.MagicMock()
+        storage_mock.load_snapshots = mocker.AsyncMock(return_value=None)
+        mocker.patch.object(_store_pkg, 'SelectorStorage', return_value=storage_mock)
+        mocker.patch('yosoi.utils.files.is_initialized', return_value=True)
+        store_cls = mocker.patch('yosoi.storage.cache_metrics_libsql.LibSQLCacheMetricsStore')
+        store = store_cls.return_value
+        store.__aenter__ = mocker.AsyncMock(return_value=store)
+        store.__aexit__ = mocker.AsyncMock(return_value=None)
+        store.summarize_domain = mocker.AsyncMock(
+            return_value=DomainCacheMetrics(
+                domain='example.com',
+                contract_fingerprints=[],
+                top_level_domains=[],
+                routes=[],
+                fields=[],
+                field_metrics=[],
+            )
+        )
+
+        result = runner.invoke(main, ['cache', 'status', 'example.com', '--json'])
+        assert result.exit_code == 0
+        assert json.loads(result.output) == {
+            'cached': False,
+            'domain': 'example.com',
+            'fields': [],
+            'target': 'example.com',
+            'target_kind': 'domain',
+            'type': 'cache.status',
+        }
+
+    def test_top_level_status_alias_uses_cache_status_view(self, runner, mocker, base_mocks):
+        import yosoi.storage as _store_pkg
+        from yosoi.storage.cache_metrics_libsql import DomainCacheMetrics, ScrapeHealth, ScrapeRunMetric
+
+        storage_mock = mocker.MagicMock()
+        storage_mock.load_snapshots = mocker.AsyncMock(return_value=None)
+        mocker.patch.object(_store_pkg, 'SelectorStorage', return_value=storage_mock)
+        store_cls = mocker.patch('yosoi.storage.cache_metrics_libsql.LibSQLCacheMetricsStore')
+        store = store_cls.return_value
+        store.__aenter__ = mocker.AsyncMock(return_value=store)
+        store.__aexit__ = mocker.AsyncMock(return_value=None)
+        store.summarize_domain = mocker.AsyncMock(
+            return_value=DomainCacheMetrics(
+                domain='example.com',
+                contract_fingerprints=[],
+                top_level_domains=[],
+                routes=[],
+                fields=[],
+                field_metrics=[],
+            )
+        )
+        latest = ScrapeRunMetric(
+            id=1,
+            url='https://example.com/a',
+            domain='example.com',
+            top_level_domain='example.com',
+            route_signature='/a',
+            contract_fingerprint='fp',
+            status='ok',
+            selector_source='cache',
+            cache_decision='hit',
+            llm_used=False,
+            llm_reason=None,
+            record_count=1,
+            failure_reason=None,
+            occurred_at='2026-06-27T00:00:00+00:00',
+        )
+        store.scrape_health = mocker.AsyncMock(return_value=ScrapeHealth('healthy', latest, []))
+
+        result = runner.invoke(main, ['status', 'example.com', '--json'])
+        assert result.exit_code == 0, result.output
+        doc = json.loads(result.output)
+        assert doc['type'] == 'cache.status'
+        assert doc['health'] == 'healthy'
+        assert doc['latest_run']['cache_decision'] == 'hit'
+
+    def test_cache_status_contract_only_json(self, runner, mocker, base_mocks):
+        from yosoi.storage.cache_metrics_libsql import ContractCacheMetrics
+
+        store_cls = mocker.patch('yosoi.storage.cache_metrics_libsql.LibSQLCacheMetricsStore')
+        store = store_cls.return_value
+        store.__aenter__ = mocker.AsyncMock(return_value=store)
+        store.__aexit__ = mocker.AsyncMock(return_value=None)
+        store.summarize_contract = mocker.AsyncMock(
+            return_value=ContractCacheMetrics(
+                contract_fingerprint=Product.to_spec().fingerprint,
+                domains=[],
+                top_level_domains=[],
+                routes=[],
+                fields=[],
+                field_metrics=[],
+            )
+        )
+
+        result = runner.invoke(main, ['cache', 'status', '-C', '@Product', '-j'])
+        assert result.exit_code == 0, result.output
+        doc = json.loads(result.output)
+        assert doc['target_kind'] == 'contract'
+        assert doc['contract'] == 'Product'
+        assert doc['cached'] is False
+        assert doc['domains'] == []
+
+    def test_cache_status_contract_target_json(self, runner, mocker, base_mocks):
+        from yosoi.storage.cache_metrics_libsql import CacheFieldMetric, ContractCacheMetrics
+
+        store_cls = mocker.patch('yosoi.storage.cache_metrics_libsql.LibSQLCacheMetricsStore')
+        store = store_cls.return_value
+        store.__aenter__ = mocker.AsyncMock(return_value=store)
+        store.__aexit__ = mocker.AsyncMock(return_value=None)
+        store.summarize_contract = mocker.AsyncMock(
+            return_value=ContractCacheMetrics(
+                contract_fingerprint=Product.to_spec().fingerprint,
+                domains=['example.com'],
+                top_level_domains=['example.com'],
+                routes=['/products/'],
+                fields=['name'],
+                urls=['https://example.com/products/1'],
+                field_metrics=[
+                    CacheFieldMetric(
+                        contract_fingerprint=Product.to_spec().fingerprint,
+                        field_name='name',
+                        domain='example.com',
+                        top_level_domain='example.com',
+                        route_signature='/products/',
+                        selector_level='all',
+                        source_url='https://example.com/products/1',
+                        status='active',
+                        discovered_at=None,
+                        last_verified_at=None,
+                        last_failed_at=None,
+                        failure_count=0,
+                    )
+                ],
+            )
+        )
+
+        result = runner.invoke(main, ['cache', 'status', '@Product', '--json'])
+        assert result.exit_code == 0, result.output
+        doc = json.loads(result.output)
+        assert doc['target_kind'] == 'contract'
+        assert doc['contract'] == 'Product'
+        assert doc['domains'] == ['example.com']
+        assert doc['urls'] == ['https://example.com/products/1']
+        assert doc['field_metrics'][0]['field_name'] == 'name'
+        assert doc['field_metrics'][0]['source_url'] == 'https://example.com/products/1'
+
+    def test_cache_status_url_target_routes_to_domain_and_route(self, runner, mocker, base_mocks):
+        import yosoi.storage as _store_pkg
+
+        storage_mock = mocker.MagicMock()
+        storage_mock.load_snapshots = mocker.AsyncMock(return_value=None)
+        mocker.patch.object(_store_pkg, 'SelectorStorage', return_value=storage_mock)
+
+        result = runner.invoke(main, ['cache', 'status', 'https://www.example.com/l1/news/article/?x=1', '--json'])
+        assert result.exit_code == 0, result.output
+        doc = json.loads(result.output)
+        assert doc['target_kind'] == 'url'
+        assert doc['domain'] == 'example.com'
+        assert doc['route'] == '/l1/news/article/'
+        storage_mock.load_snapshots.assert_awaited_once_with('example.com', contract_sig=None)
+
+    def test_status_url_target_reports_scoped_health_metrics(self, runner, mocker, base_mocks):
+        import yosoi.storage as _store_pkg
+        from yosoi.storage.cache_metrics_libsql import CacheFieldMetric, DomainCacheMetrics, ScrapeHealth
+
+        article_metric = CacheFieldMetric(
+            contract_fingerprint='fp',
+            field_name='headline',
+            domain='example.com',
+            top_level_domain='example.com',
+            route_signature='/l1/news/article/',
+            selector_level='css',
+            source_url='https://example.com/l1/news/article/',
+            status='active',
+            discovered_at=None,
+            last_verified_at=None,
+            last_failed_at=None,
+            failure_count=0,
+        )
+        listing_metric = CacheFieldMetric(
+            contract_fingerprint='fp',
+            field_name='headline',
+            domain='example.com',
+            top_level_domain='example.com',
+            route_signature='/l1/news/',
+            selector_level='css',
+            source_url='https://example.com/l1/news/',
+            status='active',
+            discovered_at=None,
+            last_verified_at=None,
+            last_failed_at=None,
+            failure_count=0,
+        )
+        storage_mock = mocker.MagicMock()
+        storage_mock.load_snapshots = mocker.AsyncMock(return_value=None)
+        mocker.patch.object(_store_pkg, 'SelectorStorage', return_value=storage_mock)
+        store_cls = mocker.patch('yosoi.storage.cache_metrics_libsql.LibSQLCacheMetricsStore')
+        store = store_cls.return_value
+        store.__aenter__ = mocker.AsyncMock(return_value=store)
+        store.__aexit__ = mocker.AsyncMock(return_value=None)
+        store.summarize_domain = mocker.AsyncMock(
+            return_value=DomainCacheMetrics(
+                domain='example.com',
+                contract_fingerprints=['fp'],
+                top_level_domains=['example.com'],
+                routes=['/l1/news/', '/l1/news/article/'],
+                fields=['headline'],
+                field_metrics=[listing_metric, article_metric],
+                urls=['https://example.com/l1/news/', 'https://example.com/l1/news/article/'],
+                run_count=2,
+                url_count=2,
+            )
+        )
+        store.scrape_health = mocker.AsyncMock(return_value=ScrapeHealth('healthy', None, [article_metric]))
+
+        result = runner.invoke(main, ['status', 'https://example.com/l1/news/article/?x=1', '--json'])
+
+        assert result.exit_code == 0, result.output
+        doc = json.loads(result.output)
+        assert doc['health'] == 'healthy'
+        assert doc['field_metrics'] == [article_metric.__dict__]
+        assert doc['routes'] == ['/l1/news/article/']
+        assert doc['urls'] == ['https://example.com/l1/news/article/']
+        store.scrape_health.assert_awaited_once_with(
+            contract_fingerprint=None,
+            domain='example.com',
+            url='https://example.com/l1/news/article/?x=1',
+            route_signature='/l1/news/article/',
+        )
+
+    def test_cache_status_ambiguous_target_requires_explicit_flag(self, runner, base_mocks):
+        result = runner.invoke(main, ['cache', 'status', 'ArticleTest'])
+        assert result.exit_code != 0
+        assert '--contract/--domain/--url/--route' in _plain(result.output)
+
+    def test_cache_status_explicit_domain_fallback(self, runner, mocker, base_mocks):
+        import yosoi.storage as _store_pkg
+
+        storage_mock = mocker.MagicMock()
+        storage_mock.load_snapshots = mocker.AsyncMock(return_value=None)
+        mocker.patch.object(_store_pkg, 'SelectorStorage', return_value=storage_mock)
+
+        result = runner.invoke(main, ['cache', 'status', '--domain', 'internal-host', '--json'])
+        assert result.exit_code == 0, result.output
+        doc = json.loads(result.output)
+        assert doc['target_kind'] == 'domain'
+        assert doc['domain'] == 'internal-host'
+
+    def test_cache_status_rejects_positional_plus_explicit_target(self, runner, base_mocks):
+        result = runner.invoke(main, ['cache', 'status', 'example.com', '--domain', 'example.com'])
+        assert result.exit_code != 0
+        assert 'Use either positional TARGET' in result.output
+
+    def test_cache_metrics_backfill_json(self, runner, mocker, base_mocks):
+        from yosoi.storage.cache_metrics_libsql import CacheBackfillResult
+
+        store_cls = mocker.patch('yosoi.storage.cache_metrics_libsql.LibSQLCacheMetricsStore')
+        store = store_cls.return_value
+        store.__aenter__ = mocker.AsyncMock(return_value=store)
+        store.__aexit__ = mocker.AsyncMock(return_value=None)
+        store.backfill_existing = mocker.AsyncMock(
+            return_value=CacheBackfillResult(
+                scanned_files=2,
+                imported_files=1,
+                skipped_files=1,
+                imported_fields=3,
+                domains=['example.com'],
+                contract_fingerprints=['fp'],
+            )
+        )
+
+        result = runner.invoke(main, ['cache', 'metrics', 'backfill', '--all', '--json'])
+        assert result.exit_code == 0, result.output
+        doc = json.loads(result.output)
+        assert doc['type'] == 'cache.metrics.backfill'
+        assert doc['totals']['imported_fields'] == 3
+        store.backfill_existing.assert_awaited_once_with(contract_fingerprint=None, domain=None)
+
+    def test_cache_metrics_backfill_requires_scope(self, runner, base_mocks):
+        result = runner.invoke(main, ['cache', 'metrics', 'backfill'])
+        assert result.exit_code != 0
+        assert 'Pass --all' in _plain(result.output)
 
     def test_cache_status_with_cache(self, runner, mocker, base_mocks):
         from datetime import datetime, timezone
@@ -155,10 +860,18 @@ class TestCacheStatus:
 class TestContractsCLI:
     """Basic smoke tests for yosoi contracts verbs."""
 
-    def test_contracts_list_empty(self, runner, tmp_path):
+    def test_contracts_list_shows_builtins_without_local_store(self, runner, tmp_path):
         result = runner.invoke(main, ['contracts', 'list', '--store', str(tmp_path / 'c')])
         assert result.exit_code == 0
-        assert 'No contracts' in result.output
+        assert 'Available contracts' in result.output
+        assert 'NewsArticle' in result.output
+
+    def test_contracts_list_json(self, runner, tmp_path):
+        result = runner.invoke(main, ['contracts', 'list', '--store', str(tmp_path / 'c'), '--json'])
+        assert result.exit_code == 0
+        doc = json.loads(result.output)
+        assert doc['type'] == 'contracts.list'
+        assert any(item['name'] == 'NewsArticle' for item in doc['builtins'])
 
     def test_contracts_add_and_list(self, runner, tmp_path):
         spec = NewsArticle.to_spec()
@@ -239,3 +952,406 @@ class TestContractsCLI:
         result = runner.invoke(main, ['cache', 'status', 'example.com', '-C', '@Product'])
         assert result.exit_code == 0
         assert 'fingerprint' in result.output.lower() or 'Missing' in result.output or 'cached' in result.output.lower()
+
+
+@dataclass
+class _CrawlSummary:
+    pages: int = 1
+    records: int = 2
+
+
+class TestCoverageSensitiveCliBranches:
+    def test_crawl_dump_request_builds_axes(self, runner, base_mocks):
+        result = runner.invoke(
+            main,
+            [
+                'crawl',
+                'https://a.example',
+                '--url',
+                'https://b.example',
+                '-C',
+                '@Product',
+                '--limit',
+                '1',
+                '--dump-request',
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        doc = json.loads(result.output[result.output.index('{') :])
+        assert doc['seeds'] == ['https://a.example', 'https://b.example']
+        assert doc['limit'] == 1
+        assert len(doc['contracts']) == 1
+
+    def test_crawl_stress_flags_build_policy_and_compact_request(self, runner, base_mocks):
+        result = runner.invoke(
+            main,
+            [
+                'crawl',
+                'https://a.example',
+                '--stress',
+                '--run-id',
+                'stress-run-1',
+                '--max-pages',
+                '5',
+                '--max-depth',
+                '1',
+                '--max-attempts',
+                '6',
+                '--workers',
+                '2',
+                '--per-host-concurrency',
+                '1',
+                '--politeness',
+                '0',
+                '--timeout',
+                '4',
+                '--deadline',
+                '8',
+                '--retries',
+                '1',
+                '--no-respect-robots',
+                '--allow-redirects',
+                '--dump-request',
+            ],
+        )
+
+        assert result.exit_code == 0, result.output
+        doc = json.loads(result.output[result.output.index('{') :])
+        crawl = doc['policy']['crawl']
+        assert doc['run_id'] == 'stress-run-1'
+        assert doc['compact'] is True
+        assert doc['store_crawl'] is True
+        assert doc['stress'] is True
+        assert doc['deadline_seconds'] == 8.0
+        assert crawl['budget']['crawl_session_id'] == 'stress-run-1'
+        assert crawl['budget']['max_pages'] == 5
+        assert crawl['budget']['max_depth'] == 1
+        assert crawl['budget']['max_attempts'] == 6
+        assert crawl['scheduler']['max_workers'] == 2
+        assert crawl['scheduler']['fetch_timeout_seconds'] == 4.0
+        assert crawl['scheduler']['max_fetch_retries'] == 1
+        assert crawl['safety']['respect_robots'] is False
+        assert crawl['safety']['allow_redirects'] is True
+
+    def test_crawl_json_success_and_error(self, runner, mocker, base_mocks):
+        from yosoi.operations import CrawlResult
+
+        run = mocker.patch(
+            'yosoi.operations.run_crawl', mocker.AsyncMock(return_value=CrawlResult(summary={'pages': 1}))
+        )
+        ok = runner.invoke(main, ['crawl', 'https://example.com', '--json'])
+        assert ok.exit_code == 0, ok.output
+        assert json.loads(ok.output)['summary'] == {'pages': 1}
+        assert run.await_args.args[0].progress is False
+
+        mocker.patch('yosoi.operations.run_crawl', mocker.AsyncMock(side_effect=RuntimeError('boom')))
+        bad = runner.invoke(main, ['crawl', 'https://example.com', '--json'])
+        assert bad.exit_code == 1
+        assert json.loads(bad.output)['message'] == 'boom'
+
+        mocker.patch('yosoi.operations.run_crawl', mocker.AsyncMock(side_effect=TimeoutError()))
+        timed_out = runner.invoke(main, ['crawl', 'https://example.com', '--json', '--deadline', '0.01'])
+        assert timed_out.exit_code == 1
+        assert json.loads(timed_out.output)['message'] == 'Crawl deadline exceeded after 0.01s'
+
+    def test_crawl_json_keeps_stdout_machine_readable_when_runner_prints(self, runner, mocker, base_mocks):
+        from yosoi.operations import CrawlResult
+
+        async def noisy_run(_request):
+            print('progress noise')
+            return CrawlResult(summary={'pages': 1})
+
+        mocker.patch('yosoi.operations.run_crawl', noisy_run)
+
+        result = runner.invoke(main, ['crawl', 'https://example.com', '--json'])
+
+        assert result.exit_code == 0, result.output
+        assert json.loads(result.stdout)['summary'] == {'pages': 1}
+        assert 'progress noise' not in result.stdout
+
+    def test_fetch_command_json_dump_and_text(self, runner, mocker, base_mocks):
+        from yosoi.operations import FetchResult, FetchUnitResult
+
+        dumped = runner.invoke(main, ['fetch', 'https://example.com', '--dump-request'])
+        assert dumped.exit_code == 0, dumped.output
+        request_doc = json.loads(dumped.output)
+        assert request_doc['urls'] == ['https://example.com']
+        assert request_doc['view'] == 'text'
+        assert request_doc['page_size'] == 12000
+
+        removed = runner.invoke(main, ['content', 'https://example.com', '--help'])
+        assert removed.exit_code != 0
+        assert 'No such command' in removed.output
+
+        async def noisy_fetch(_request):
+            print('fetcher noise')
+            return FetchResult(
+                results=[
+                    FetchUnitResult(
+                        url='https://example.com',
+                        final_url='https://example.com',
+                        title='Example',
+                        view='text',
+                        content='Hello',
+                        content_chars=5,
+                        total_chars=5,
+                        text_chars=5,
+                    )
+                ]
+            )
+
+        run = mocker.patch('yosoi.operations.run_fetch', mocker.AsyncMock(side_effect=noisy_fetch))
+
+        json_result = runner.invoke(main, ['fetch', 'https://example.com', '--json'])
+        assert json_result.exit_code == 0, json_result.output
+        json_doc = json.loads(json_result.stdout)
+        assert json_doc['success'] is True
+        assert json_doc['data']['metadata']['source_url'] == 'https://example.com'
+        assert json_doc['documents'][0]['metadata']['title'] == 'Example'
+        assert json_doc['data']['text'] == 'Hello'
+        assert json_doc['results'][0]['content'] == 'Hello'
+        assert 'fetcher noise' not in json_result.stdout
+        assert run.call_args.args[0].urls == ['https://example.com']
+        assert run.call_args.args[0].view == 'text'
+
+        text_result = runner.invoke(main, ['fetch', 'https://example.com'])
+        assert text_result.exit_code == 0, text_result.output
+        assert text_result.output.startswith('Hello')
+
+    def test_crawl_stress_human_renders_compact_table(self, runner, mocker, base_mocks):
+        from yosoi.operations import CrawlResult
+
+        run = mocker.patch(
+            'yosoi.operations.run_crawl',
+            mocker.AsyncMock(
+                return_value=CrawlResult(
+                    status='ok',
+                    summary={
+                        'run_id': 'stress-run-1',
+                        'status': 'ok',
+                        'pages_fetched': 1,
+                        'attempted_urls': 1,
+                        'failures': 0,
+                        'wall_time': 0.1,
+                        'results': [
+                            {
+                                'index': 1,
+                                'url': 'https://example.com',
+                                'status': 'succeeded',
+                                'depth': 0,
+                                'status_code': 200,
+                                'links': 0,
+                                'html_chars': 10,
+                                'fetch_time': 0.1,
+                                'error': None,
+                            }
+                        ],
+                    },
+                )
+            ),
+        )
+
+        result = runner.invoke(main, ['crawl', 'https://example.com', '--stress', '--run-id', 'stress-run-1'])
+
+        assert result.exit_code == 0, result.output
+        assert 'Crawl stress ok' in _plain(result.output)
+        request = run.await_args.args[0]
+        assert request.store_crawl is True
+        assert request.compact is True
+        assert request.run_id == 'stress-run-1'
+
+    def test_crawl_human_executes_and_request_file_errors(self, runner, mocker, base_mocks, tmp_path):
+        execute = mocker.patch('yosoi.operations.execute_crawl', mocker.AsyncMock(return_value=_CrawlSummary()))
+        ok = runner.invoke(main, ['crawl', 'https://example.com'])
+        assert ok.exit_code == 0, ok.output
+        assert 'pages' in ok.output
+        assert execute.await_args.args[0].seeds == ['https://example.com']
+
+        bad_request = tmp_path / 'request.json'
+        bad_request.write_text('{bad')
+        bad = runner.invoke(main, ['crawl', '--request', str(bad_request)])
+        assert bad.exit_code != 0
+        assert 'Cannot parse CrawlRequest' in bad.output
+
+    def test_map_dump_and_json_use_operation_runner(self, runner, mocker, base_mocks):
+        from yosoi.core.site_map import MapHost, MapResult, MapUrl
+
+        dumped = runner.invoke(
+            main,
+            [
+                'map',
+                'example.com',
+                '--subdomains',
+                '--max-subdomains',
+                '2',
+                '--subfinder-bin',
+                'sf',
+                '--subfinder-timeout',
+                '9',
+                '--dump-request',
+            ],
+        )
+        assert dumped.exit_code == 0, dumped.output
+        request_doc = json.loads(dumped.output[dumped.output.index('{') :])
+        assert request_doc['url'] == 'https://example.com/'
+        assert request_doc['discover_subdomains'] is True
+        assert request_doc['max_subdomains'] == 2
+        assert request_doc['subfinder_bin'] == 'sf'
+        assert request_doc['subfinder_timeout'] == 9
+
+        run = mocker.patch(
+            'yosoi.operations.run_map',
+            mocker.AsyncMock(
+                return_value=MapResult(
+                    requested_url='https://example.com/',
+                    root_url='https://example.com/',
+                    root_host='example.com',
+                    urls=[
+                        MapUrl(
+                            url='https://blog.example.com/post',
+                            host='blog.example.com',
+                            path='/post',
+                            subdomain='blog',
+                            source_sitemap='https://example.com/sitemap.xml',
+                        )
+                    ],
+                    hosts=[MapHost(host='blog.example.com', url_count=1, subdomain='blog')],
+                    subdomains=[MapHost(host='blog.example.com', url_count=1, subdomain='blog')],
+                )
+            ),
+        )
+
+        result = runner.invoke(main, ['map', '--url', 'example.com', '--json'])
+        assert result.exit_code == 0, result.output
+        doc = json.loads(result.output)
+        assert doc['root_host'] == 'example.com'
+        assert doc['subdomains'][0]['subdomain'] == 'blog'
+        assert run.await_args.args[0].url == 'https://example.com/'
+        assert run.await_args.args[0].discover_subdomains is False
+
+        run.return_value = MapResult(
+            status='error',
+            requested_url='https://example.com/',
+            root_url='https://example.com/',
+            root_host='example.com',
+            mode='subdomains',
+            errors=['subfinder missing'],
+        )
+        human_error = runner.invoke(main, ['map', '--url', 'example.com', '--subdomains'])
+        assert human_error.exit_code == 1
+        assert 'Map error' in human_error.output
+        assert 'subfinder missing' in human_error.output
+
+    def test_policy_commands_cover_success_and_error_json(self, runner, tmp_path):
+        from yosoi.policy import Policy
+
+        policy_file = tmp_path / 'policy.json'
+        policy_file.write_text(Policy().model_dump_json())
+
+        defaults = runner.invoke(main, ['policy', 'defaults', '--crawl'])
+        assert defaults.exit_code == 0, defaults.output
+        assert 'crawl:' in defaults.output
+        assert defaults.output.lstrip().startswith('atom_reads: false')
+
+        schema = runner.invoke(main, ['policy', 'schema'])
+        assert schema.exit_code == 0, schema.output
+        assert json.loads(schema.output)['$id'] == 'https://cascadinglabs.com/yosoi/schemas/policy.schema.json'
+
+        listed = runner.invoke(main, ['policy', 'list', '--all', '--json'])
+        assert listed.exit_code == 0, listed.output
+        listed_doc = json.loads(listed.output)
+        assert listed_doc['type'] == 'policy.list'
+        assert any(item['path'].endswith('.yosoi/policy.yaml') for item in listed_doc['files'])
+
+        validate = runner.invoke(main, ['policy', 'validate', str(policy_file), '--json'])
+        assert validate.exit_code == 0, validate.output
+        assert json.loads(validate.output)['status'] == 'ok'
+
+        inspect = runner.invoke(main, ['policy', 'inspect', str(policy_file), '--format', 'json'])
+        assert inspect.exit_code == 0, inspect.output
+        assert json.loads(inspect.output)['model'] is None
+
+        yaml_file = tmp_path / 'policy.yaml'
+        yaml_file.write_text('atom_reads: true\noutput:\n  flat_files: true\n')
+        yaml_inspect = runner.invoke(main, ['policy', 'inspect', str(yaml_file), '--format', 'yaml'])
+        assert yaml_inspect.exit_code == 0, yaml_inspect.output
+        assert 'atom_reads: true' in yaml_inspect.output
+
+        effective = runner.invoke(main, ['policy', 'effective', '--no-discover', '--policy', 'atom_reads: true'])
+        assert effective.exit_code == 0, effective.output
+        assert effective.output.lstrip().startswith('atom_reads: true')
+
+        with runner.isolated_filesystem():
+            init = runner.invoke(main, ['policy', 'init', '--local'])
+            assert init.exit_code == 0, init.output
+            assert Path('.yosoi/policy.yaml').read_text().startswith('# yaml-language-server: $schema=')
+
+        bad_file = tmp_path / 'bad.json'
+        bad_file.write_text('{bad')
+        invalid = runner.invoke(main, ['policy', 'validate', str(bad_file), '--json'])
+        assert invalid.exit_code == 1
+        assert json.loads(invalid.output)['type'] == 'error'
+
+    def test_cache_status_contract_conflict_route_and_all_fields(self, runner, mocker, base_mocks):
+        from datetime import datetime, timezone
+
+        import yosoi.storage as _store_pkg
+        from yosoi.models.snapshot import SelectorSnapshot, SnapshotStatus
+
+        conflict = runner.invoke(main, ['cache', 'status', '@Product', '-C', '@NewsArticle'])
+        assert conflict.exit_code != 0
+        assert 'conflicts' in conflict.output
+
+        route = runner.invoke(main, ['cache', 'status', '--route', '/products'])
+        assert route.exit_code == 0, route.output
+        assert 'Route' in route.output
+
+        snap = SelectorSnapshot(primary='x', discovered_at=datetime.now(timezone.utc), status=SnapshotStatus.ACTIVE)
+        storage_mock = mocker.MagicMock()
+        storage_mock.load_snapshots = mocker.AsyncMock(
+            return_value=dict.fromkeys(Product.discovery_field_names(), snap)
+        )
+        mocker.patch.object(_store_pkg, 'SelectorStorage', return_value=storage_mock)
+        cached = runner.invoke(main, ['cache', 'status', 'example.com', '-C', '@Product'])
+        assert cached.exit_code == 0, cached.output
+        assert 'All contract fields cached' in cached.output
+
+    def test_contracts_json_alias_lint_and_migrate_branches(self, runner, mocker, tmp_path):
+        spec = Product.to_spec()
+        spec_file = tmp_path / 'product.json'
+        spec_file.write_text(spec.model_dump_json())
+        store_dir = str(tmp_path / 'store')
+
+        added = runner.invoke(
+            main, ['contracts', 'add', str(spec_file), '--name', 'LocalProduct', '--store', store_dir, '--json']
+        )
+        assert added.exit_code == 0, added.output
+        assert json.loads(added.output)['alias'] == 'LocalProduct'
+
+        listed = runner.invoke(main, ['contracts', 'list', '--store', store_dir])
+        assert listed.exit_code == 0, listed.output
+        assert 'Local aliases' in listed.output
+
+        lint_ok = runner.invoke(main, ['contracts', 'lint', str(spec_file), '--json'])
+        assert lint_ok.exit_code == 0, lint_ok.output
+        assert json.loads(lint_ok.output)['status'] == 'ok'
+
+        mocker.patch('yosoi.storage.contracts_store.ContractStore.lint', return_value=['bad selector'])
+        lint_bad = runner.invoke(main, ['contracts', 'lint', str(spec_file), '--json'])
+        assert lint_bad.exit_code == 1
+        assert json.loads(lint_bad.output)['errors'] == ['bad selector']
+
+        migrated = runner.invoke(main, ['contracts', 'migrate', str(spec_file), '--in-place', '--json'])
+        assert migrated.exit_code == 0, migrated.output
+        assert json.loads(migrated.output)['in_place'] is True
+
+    def test_contracts_show_unknown_and_parse_errors(self, runner, tmp_path):
+        missing = runner.invoke(main, ['contracts', 'show', 'NoSuchContract'])
+        assert missing.exit_code != 0
+
+        bad = tmp_path / 'bad.json'
+        bad.write_text('{bad')
+        for command in ('add', 'lint', 'migrate'):
+            result = runner.invoke(main, ['contracts', command, str(bad)])
+            assert result.exit_code != 0
+            assert 'Cannot parse' in result.output

@@ -1,56 +1,46 @@
-"""Per-domain A3Node storage — DOM stability recipes.
+"""Per-domain A3Node storage — DOM stability recipes in Yosoi SQLite.
 
 After DOMLoader finishes driving a page to a fully-loaded state, the sequence
-of actions that succeeded is persisted here as a "stability recipe". On the
-next visit to the same domain the recipe is replayed directly, skipping the
-probe phase entirely and reaching page stability at significantly higher speed.
+of actions that succeeded is persisted as a "stability recipe". On the next
+visit to the same domain the recipe is replayed directly, skipping probe work.
 
-Storage location: .yosoi/a3nodes/a3node_<domain>.json
+Storage location: `.yosoi/yosoi.sqlite3`, table `a3nodes`.
 
-File format (format 2)::
+Schema shape::
 
-    {
-      "format": 2,
-      "domain": "finance.yahoo.com",
-      "acts": [
-        {"kind": "load_more", "cycles": 7,
-         "target": {"type": "role", "value": "button", "name": "Load more", "nth": 0}}
-      ],
-      "discovered_at": "2026-05-23T14:00:00",
-      "replay_count": 3,
-      "last_replayed_at": "2026-05-23T15:00:00"
-    }
+    domain TEXT PRIMARY KEY
+    format INTEGER
+    acts JSON
+    discovered_at TEXT
+    replay_count INTEGER
+    last_replayed_at TEXT
+    updated_at TEXT
 
-``acts`` is an ordered list — replay executes them in the stored order.
-An empty ``acts`` list means the domain was probed but needed no action.
-``replay_count`` tracks how often the stored recipe was used successfully.
-
-``target`` (added in format 2) is the concrete winning selector — a serialised
-:class:`~yosoi.models.selectors.SelectorEntry` — so replay clicks it directly instead
-of re-running the discovery catalogues. The hand-maintained catalogues are only the
-cold-start *seed* and the fallback. An act with no ``target`` (a format-1 recipe, or a
-text-match act with no stable selector) falls back to a catalogue re-probe on replay.
-A missing ``format`` key is treated as format 1. Recipe identity for replay_count
-preservation is the ``(kind, cycles)`` sequence, so refining a target keeps the stats.
+``acts`` is readable SQLite JSON text: an ordered list of
+:class:`ActRecord` objects. An empty ``acts`` list means the domain was probed
+but needed no action. ``replay_count`` tracks how often the stored recipe was
+used successfully.
 """
 
 from __future__ import annotations
 
 import json
 import logging
-import os
+import sqlite3
 from dataclasses import dataclass
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 from yosoi.models.selectors import SelectorEntry
-from yosoi.utils.files import atomic_write_json_async, init_yosoi, safe_domain
+from yosoi.storage.sqlite_store import YosoiSQLiteStore
 
 logger = logging.getLogger(__name__)
 
 # On-disk recipe format. 1 = {kind, cycles} only; 2 = adds a concrete `target` per act
 # so replay skips the discovery catalogues. A file with no `format` key is format 1.
 _A3NODE_FORMAT = 2
+_A3NODE_TABLE = 'a3nodes'
 
 
 def _acts_shape(acts: list[dict[str, Any]]) -> list[tuple[object, object]]:
@@ -92,87 +82,73 @@ class ActRecord:
         return cls(kind=str(d['kind']), cycles=int(d['cycles']), target=target)
 
 
-class A3NodeStorage:
-    """Saves and loads per-domain DOM stability recipes.
+class A3NodeStorage(YosoiSQLiteStore):
+    """Saves and loads per-domain DOM stability recipes from Yosoi SQLite."""
 
-    Usage::
+    def __init__(
+        self,
+        storage_dir: str | Path | None = None,
+        *,
+        database_url: str | Path | None = None,
+        auth_token: str | None = None,
+    ) -> None:
+        """Initialise storage.
 
-        storage = A3NodeStorage()
-
-        # After a successful DOMLoader run:
-        storage.save("finance.yahoo.com", acts)
-
-        # Before the next fetch — try replay:
-        node = storage.load("finance.yahoo.com")
-        if node is not None:
-            # node.acts is the ordered sequence to replay
-            ...
-
-    """
-
-    def __init__(self, storage_dir: str = 'a3nodes') -> None:
-        """Initialise storage under .yosoi/a3nodes/.
-
-        Args:
-            storage_dir: Sub-directory name inside .yosoi/. Defaults to 'a3nodes'.
-
+        ``storage_dir`` is accepted for source compatibility with the old JSON-file
+        implementation but is intentionally ignored: A3Nodes now live in SQLite.
         """
-        self._dir = str(init_yosoi(storage_dir))
-
-    # ------------------------------------------------------------------
-    # Public API
-    # ------------------------------------------------------------------
+        del storage_dir
+        super().__init__(database_url=database_url, auth_token=auth_token)
 
     async def save(self, domain: str, acts: list[ActRecord]) -> None:
         """Persist the stability recipe for *domain*.
 
-        If a recipe already exists for this domain, it is overwritten with
-        the fresh acts sequence. ``replay_count`` is reset to 0 since the
-        stored acts have changed.
-
-        Args:
-            domain: Bare domain string (e.g. 'finance.yahoo.com').
-            acts: Ordered list of ActRecord objects from this DOMLoader run.
-                  May be empty — that is a valid recipe meaning "no action needed".
-
+        If the recipe's ``(kind, cycles)`` shape changed, replay stats reset. Target
+        refinements preserve replay stats.
         """
-        filepath = self._filepath(domain)
+        await self._ensure_migrated()
+        client = await self._connect()
         now = datetime.now().isoformat()
 
-        # Preserve replay stats when the recipe's (kind, cycles) shape is unchanged.
-        # Comparing shape (not the full dict) keeps replay_count across a target refinement
-        # and across the format-1 -> format-2 upgrade; a real kind/cycles change resets it.
         existing = await self._load_raw(domain)
         existing_acts = existing.get('acts', []) if existing else []
         new_acts_dicts = [a.to_dict() for a in acts]
         same = _acts_shape(existing_acts) == _acts_shape(new_acts_dicts)
 
-        data: dict[str, object] = {
-            'format': _A3NODE_FORMAT,
+        params: dict[str, object] = {
             'domain': domain,
-            'acts': new_acts_dicts,
+            'format': _A3NODE_FORMAT,
+            'acts': json.dumps(new_acts_dicts, sort_keys=True),
             'discovered_at': existing.get('discovered_at', now) if existing else now,
             'replay_count': existing.get('replay_count', 0) if (existing and same) else 0,
             'last_replayed_at': existing.get('last_replayed_at') if existing else None,
             'updated_at': now,
         }
-
         try:
-            await atomic_write_json_async(filepath, data)
+            await client.execute(
+                f"""
+                INSERT INTO {_A3NODE_TABLE} (
+                    domain, format, acts, discovered_at, replay_count, last_replayed_at, updated_at
+                )
+                VALUES (
+                    :domain, :format, json(:acts), :discovered_at, :replay_count, :last_replayed_at, :updated_at
+                )
+                ON CONFLICT(domain) DO UPDATE SET
+                    format = excluded.format,
+                    acts = excluded.acts,
+                    discovered_at = excluded.discovered_at,
+                    replay_count = excluded.replay_count,
+                    last_replayed_at = excluded.last_replayed_at,
+                    updated_at = excluded.updated_at
+                """,
+                params,
+            )
             logger.debug('Saved A3Node for %s (%d acts)', domain, len(acts))
-        except OSError as e:
+        except sqlite3.Error as e:
             logger.warning('Could not save A3Node for %s: %s', domain, e)
 
     async def load(self, domain: str) -> A3Node | None:
-        """Return the stored A3Node for *domain*, or None if not found.
-
-        Args:
-            domain: Bare domain string.
-
-        Returns:
-            A3Node with the stability recipe, or None if no recipe exists.
-
-        """
+        """Return the stored A3Node for *domain*, or None if not found."""
         raw = await self._load_raw(domain)
         if raw is None:
             return None
@@ -190,60 +166,43 @@ class A3NodeStorage:
             return None
 
     async def record_replay(self, domain: str) -> None:
-        """Increment the replay count and update last_replayed_at timestamp.
-
-        Call this after a successful replay so the UI and future heuristics
-        know how battle-tested the stored recipe is.
-
-        Args:
-            domain: Bare domain string.
-
-        """
-        raw = await self._load_raw(domain)
-        if raw is None:
-            return
-        raw['replay_count'] = int(raw.get('replay_count', 0)) + 1
-        raw['last_replayed_at'] = datetime.now().isoformat()
-        filepath = self._filepath(domain)
-        try:
-            await atomic_write_json_async(filepath, raw)
-        except OSError as e:
-            logger.warning('Could not update A3Node replay count for %s: %s', domain, e)
+        """Increment replay count and update ``last_replayed_at`` after successful replay."""
+        await self._ensure_migrated()
+        client = await self._connect()
+        await client.execute(
+            f"""
+            UPDATE {_A3NODE_TABLE}
+            SET replay_count = replay_count + 1,
+                last_replayed_at = :last_replayed_at,
+                updated_at = :updated_at
+            WHERE domain = :domain
+            """,
+            {
+                'domain': domain,
+                'last_replayed_at': datetime.now().isoformat(),
+                'updated_at': datetime.now().isoformat(),
+            },
+        )
 
     async def delete(self, domain: str) -> bool:
-        """Delete the stored A3Node for *domain*.
-
-        Args:
-            domain: Bare domain string.
-
-        Returns:
-            True if a file was deleted, False if nothing existed.
-
-        """
-        filepath = self._filepath(domain)
-        if not self._file_exists_sync(filepath):
+        """Delete the stored A3Node for *domain*."""
+        await self._ensure_migrated()
+        if await self._load_raw(domain) is None:
             return False
-        try:
-            os.remove(filepath)
-            logger.debug('Deleted A3Node for %s', domain)
-            return True
-        except OSError as e:
-            logger.warning('Could not delete A3Node for %s: %s', domain, e)
-            return False
+        client = await self._connect()
+        await client.execute(f'DELETE FROM {_A3NODE_TABLE} WHERE domain = :domain', {'domain': domain})
+        logger.debug('Deleted A3Node for %s', domain)
+        return True
 
     async def list_domains(self) -> list[str]:
         """Return all domains with a stored A3Node, sorted alphabetically."""
-        return self._list_domains_sync()
+        await self._ensure_migrated()
+        client = await self._connect()
+        result = await client.execute(f'SELECT domain FROM {_A3NODE_TABLE} ORDER BY domain')
+        return [str(row[0]) for row in result.rows]
 
     async def load_all(self) -> dict[str, A3Node]:
-        """Load every stored A3Node into a domain → A3Node mapping.
-
-        Useful for pre-populating an in-memory cache at fetcher startup.
-
-        Returns:
-            Dict mapping domain strings to A3Node instances.
-
-        """
+        """Load every stored A3Node into a domain → A3Node mapping."""
         result: dict[str, A3Node] = {}
         for domain in await self.list_domains():
             node = await self.load(domain)
@@ -251,50 +210,66 @@ class A3NodeStorage:
                 result[domain] = node
         return result
 
-    # ------------------------------------------------------------------
-    # Internal helpers
-    # ------------------------------------------------------------------
-
-    def _filepath(self, domain: str) -> str:
-        safe = safe_domain(domain)
-        return os.path.join(self._dir, f'a3node_{safe}.json')
-
     async def _load_raw(self, domain: str) -> dict[str, Any] | None:
-        return self._load_raw_sync(domain)
-
-    def _list_domains_sync(self) -> list[str]:
-        if not os.path.exists(self._dir):
-            return []
-        domains: list[str] = []
-        for filename in os.listdir(self._dir):
-            if not (filename.startswith('a3node_') and filename.endswith('.json')):
-                continue
-            filepath = os.path.join(self._dir, filename)
-            try:
-                with open(filepath, encoding='utf-8') as f:
-                    data = json.loads(f.read())
-                domain = data.get('domain')
-                if isinstance(domain, str) and domain:
-                    domains.append(domain)
-            except (OSError, json.JSONDecodeError):
-                pass
-        return sorted(domains)
-
-    def _load_raw_sync(self, domain: str) -> dict[str, Any] | None:
-        filepath = self._filepath(domain)
-        if not os.path.exists(filepath):
+        await self._ensure_migrated()
+        client = await self._connect()
+        result = await client.execute(
+            f"""
+            SELECT domain, format, json(acts) AS acts, discovered_at, replay_count, last_replayed_at, updated_at
+            FROM {_A3NODE_TABLE}
+            WHERE domain = :domain
+            LIMIT 1
+            """,
+            {'domain': domain},
+        )
+        if not result.rows:
             return None
+        values = dict(zip(result.columns, result.rows[0], strict=True))
         try:
-            with open(filepath, encoding='utf-8') as f:
-                data: dict[str, object] = json.loads(f.read())
-                return data
-        except (OSError, json.JSONDecodeError) as e:
+            values['acts'] = json.loads(str(values['acts']))
+        except json.JSONDecodeError as e:
             logger.warning('Could not read A3Node for %s: %s', domain, e)
             return None
+        return values
 
-    @staticmethod
-    def _file_exists_sync(filepath: str) -> bool:
-        return os.path.exists(filepath)
+    async def _ensure_migrated(self) -> None:
+        if self._migrated:
+            await self._connect()
+            return
+        client = await self._connect()
+        if await self._schema_needs_reset():
+            await client.execute(f'DROP TABLE IF EXISTS {_A3NODE_TABLE}')
+        await client.execute(
+            f"""
+            CREATE TABLE IF NOT EXISTS {_A3NODE_TABLE} (
+                domain TEXT PRIMARY KEY,
+                format INTEGER NOT NULL DEFAULT {_A3NODE_FORMAT},
+                acts JSON NOT NULL,
+                discovered_at TEXT NOT NULL,
+                replay_count INTEGER NOT NULL DEFAULT 0,
+                last_replayed_at TEXT,
+                updated_at TEXT NOT NULL
+            )
+            """
+        )
+        self._migrated = True
+
+    async def _schema_needs_reset(self) -> bool:
+        client = await self._connect()
+        result = await client.execute(f'PRAGMA table_info({_A3NODE_TABLE})')
+        if not result.rows:
+            return False
+        columns = {str(row[1]): str(row[2]).upper() for row in result.rows}
+        required = {
+            'domain': 'TEXT',
+            'format': 'INTEGER',
+            'acts': 'JSON',
+            'discovered_at': 'TEXT',
+            'replay_count': 'INTEGER',
+            'last_replayed_at': 'TEXT',
+            'updated_at': 'TEXT',
+        }
+        return any(columns.get(name) != column_type for name, column_type in required.items())
 
 
 @dataclass

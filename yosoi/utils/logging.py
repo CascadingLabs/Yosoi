@@ -7,14 +7,14 @@ from pathlib import Path
 from yosoi.utils.files import get_logs_path
 
 
-def setup_local_logging(level: str = 'DEBUG') -> Path:
+def setup_local_logging(level: str = 'INFO') -> Path:
     """Set up local file-based logging.
 
     Creates a log file in .yosoi/logs/ and configures the root logger
     to write to it. Consoles output is kept minimal.
 
     Args:
-        level: Logging level (e.g., 'DEBUG', 'INFO'). Defaults to 'DEBUG'.
+        level: Logging level (e.g., 'DEBUG', 'INFO'). Defaults to 'INFO'.
 
     Returns:
         Path: The path to the created log file.
@@ -30,7 +30,7 @@ def setup_local_logging(level: str = 'DEBUG') -> Path:
     if level.upper() == 'ALL':
         numeric_level = logging.NOTSET
     else:
-        numeric_level = getattr(logging, level.upper(), logging.DEBUG)
+        numeric_level = getattr(logging, level.upper(), logging.INFO)
 
     # Configure root logger
     root_logger = logging.getLogger()

@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+import pytest
 from rich.console import Console
 
 from yosoi.core.page import PageAcquisition, PageSnapshot
 from yosoi.models.results import FetchResult
-from yosoi.policy import PagePolicy
+from yosoi.policy import BrowserProfilePolicy, PagePolicy
 
 
 class FakeFetcher:
@@ -72,3 +73,17 @@ def test_page_policy_projects_runtime_without_runtime_choice() -> None:
     assert runtime.fetcher_type == 'headless'
     assert runtime.timeout_seconds == 12
     assert runtime.allow_redirects is False
+
+
+def test_page_policy_projects_browser_profile_policy() -> None:
+    runtime = PagePolicy(profile=BrowserProfilePolicy(pool='google-serp', headful=True, max_live=2)).to_runtime_config()
+
+    assert runtime.profile is not None
+    assert runtime.profile.pool == 'google-serp'
+    assert runtime.profile.headful is True
+    assert runtime.profile.max_live == 2
+
+
+def test_browser_profile_policy_rejects_profile_and_pool() -> None:
+    with pytest.raises(ValueError, match='mutually exclusive'):
+        BrowserProfilePolicy(profile='google-001', pool='google-serp')

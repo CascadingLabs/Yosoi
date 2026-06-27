@@ -60,10 +60,10 @@ def test_setup_local_logging_creates_directory(tmp_path, monkeypatch):
     _cleanup_handlers(log_file)
 
 
-def test_setup_local_logging_sets_debug_level_by_default(tmp_path, monkeypatch):
+def test_setup_local_logging_sets_info_level_by_default(tmp_path, monkeypatch):
     import yosoi.utils.logging as log_mod
 
-    logs_dir = tmp_path / 'logs_debug'
+    logs_dir = tmp_path / 'logs_default'
     monkeypatch.setattr(log_mod, 'get_logs_path', lambda: logs_dir)
 
     from yosoi.utils.logging import setup_local_logging
@@ -71,7 +71,7 @@ def test_setup_local_logging_sets_debug_level_by_default(tmp_path, monkeypatch):
     log_file = setup_local_logging()
 
     root = logging.getLogger()
-    assert root.level == logging.DEBUG
+    assert root.level == logging.INFO
 
     _cleanup_handlers(log_file)
 
@@ -122,7 +122,7 @@ def test_setup_local_logging_adds_file_handler(tmp_path, monkeypatch):
     root = logging.getLogger()
     file_handlers = [h for h in root.handlers if isinstance(h, logging.FileHandler) and str(log_file) in h.baseFilename]
     assert len(file_handlers) == 1
-    assert file_handlers[0].level == logging.DEBUG
+    assert file_handlers[0].level == logging.INFO
 
     _cleanup_handlers(log_file)
 

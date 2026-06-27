@@ -69,12 +69,12 @@ class TestSchemaParamType:
             assert issubclass(result, Contract)
             break  # just test one
 
-    def test_case_insensitive_builtin(self):
-        """Case-insensitive builtin match works."""
+    def test_case_insensitive_builtin_suggests_without_resolving(self):
+        """Case-insensitive builtin names fail with suggestions."""
         param_type = SchemaParamType()
         first_name = next(iter(BUILTIN_SCHEMAS))
-        result = param_type.convert(first_name.upper(), None, None)
-        assert issubclass(result, Contract)
+        with pytest.raises(click.exceptions.BadParameter, match='Did you mean'):
+            param_type.convert(first_name.upper(), None, None)
 
     def test_unknown_schema_fails(self):
         """Unknown schema name raises."""
@@ -118,8 +118,8 @@ class TestSchemaParamType:
         finally:
             _CONTRACT_REGISTRY.pop('_RegistryTestContract', None)
 
-    def test_case_insensitive_registry_match(self):
-        """Case-insensitive match in _CONTRACT_REGISTRY resolves correctly (line 85)."""
+    def test_case_insensitive_registry_match_suggests_without_resolving(self):
+        """Case-insensitive registry names fail with suggestions."""
         from yosoi.models.contract import _CONTRACT_REGISTRY
 
         class _CiRegistryContract(Contract):
@@ -127,8 +127,8 @@ class TestSchemaParamType:
 
         try:
             param_type = SchemaParamType()
-            result = param_type.convert('_CIREGISTRYCONTRACT', None, None)
-            assert issubclass(result, Contract)
+            with pytest.raises(click.exceptions.BadParameter, match='Did you mean'):
+                param_type.convert('_CIREGISTRYCONTRACT', None, None)
         finally:
             _CONTRACT_REGISTRY.pop('_CiRegistryContract', None)
 

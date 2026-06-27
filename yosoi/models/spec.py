@@ -5,16 +5,16 @@ A ContractSpec is a JSON-round-trippable description of a Contract that:
   - Can be rehydrated into a working Contract subclass via ``to_contract()``.
   - Is accepted by ``resolve_contract()`` alongside names and ``path:Class`` strings.
 
-Fingerprint inputs (P0 — mirrors the v2 ``contract_signature`` semantics so the
-ContractCache/resolve path discriminates the same way the LessonStore path does):
+Fingerprint inputs:
   contract ``name`` + normalized ``doc`` (the discovery-time disambiguator — two
   structurally identical contracts with different NL intent, e.g. ``AdLink`` vs
   ``OrganicLink`` both ``{url, title}``, MUST get distinct cache slots)
-  + schema_version + sorted field names + per-field (yosoi_type, selector, delimiter,
-  frozen) + root selector + nested fingerprints + validators ref.
+  + schema_version + sorted field entities + root selector + nested fingerprints
+  + validators ref.
 
-Per-FIELD ``description`` stays EXCLUDED — it's advisory/stochastic and has no
-enforcement teeth. Only the contract-level ``name``/``doc`` carry identity.
+Per-FIELD ``description`` is INCLUDED through each field entity fingerprint. Fields
+are first-class schema entities; a contract is identified by the collection of field
+fingerprints it references plus its own name/docstring intent.
 """
 
 from __future__ import annotations
@@ -37,7 +37,7 @@ class FieldSpec(BaseModel):
     """Serializable description of one contract field."""
 
     yosoi_type: str | None = None
-    description: str | None = None  # advisory/provenance — excluded from fingerprint
+    description: str | None = None  # field-entity prose — included in fingerprint
     selector: str | None = None  # yosoi_selector override
     delimiter: str | None = None  # yosoi_delimiter
     frozen: bool = False  # yosoi_frozen
@@ -45,9 +45,16 @@ class FieldSpec(BaseModel):
     python_type: str = 'str'  # type annotation string used when rehydrating
     action: dict[str, Any] | None = None  # yosoi_action config (action fields only)
 
+    @property
+    def fingerprint(self) -> str:
+        """Stable field-entity fingerprint including its description."""
+        payload = json.dumps(self.fingerprint_dict(), sort_keys=True, separators=(',', ':'))
+        return hashlib.sha256(payload.encode()).hexdigest()[:16]
+
     def fingerprint_dict(self) -> dict[str, Any]:
-        """Return the subset of this field that contributes to the contract fingerprint."""
+        """Return the subset of this field that contributes to its fingerprint."""
         return {
+            'description': _normalize(self.description),
             'yosoi_type': self.yosoi_type,
             'selector': self.selector,
             'delimiter': self.delimiter,
@@ -79,15 +86,11 @@ class ContractSpec(BaseModel):
 
     @property
     def fingerprint(self) -> str:
-        """Stable 16-hex identity fingerprint: structure + contract name + normalized doc.
+        """Stable 16-hex identity fingerprint for this contract schema.
 
-        Two structurally identical contracts that differ only by ``name`` or by their
-        contract-level ``doc`` (NL intent) produce DIFFERENT fingerprints and get
-        distinct selector cache slots — e.g. ``AdLink`` vs ``OrganicLink``, both
-        ``{url, title}``. This mirrors the ``contract_signature`` (v2) semantics used by
-        the LessonStore path, so both cache systems discriminate identically.
-
-        Per-FIELD ``description`` remains excluded (advisory, stochastic, no teeth).
+        Two structurally identical contracts that differ by ``name`` or contract-level
+        ``doc`` produce DIFFERENT fingerprints. Per-field descriptions also contribute
+        through field fingerprints because fields are first-class schema entities.
         """
         payload = json.dumps(
             {
@@ -224,7 +227,7 @@ class ContractSpec(BaseModel):
 def _fingerprint_dict(spec: ContractSpec) -> dict[str, Any]:
     return {
         'v': spec.schema_version,
-        'fields': {name: fspec.fingerprint_dict() for name, fspec in sorted(spec.fields.items())},
+        'fields': {name: fspec.fingerprint for name, fspec in sorted(spec.fields.items())},
         'root': spec.root,
         'nested': {name: _fingerprint_dict(ns) for name, ns in sorted(spec.nested.items())},
         'validators': spec.validators,

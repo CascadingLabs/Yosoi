@@ -14,6 +14,12 @@ if TYPE_CHECKING:
     from yosoi.storage.a3node import A3Node as A3Node
     from yosoi.storage.a3node import A3NodeStorage as A3NodeStorage
     from yosoi.storage.a3node import ActRecord as ActRecord
+    from yosoi.storage.cache_metrics_libsql import CacheFieldMetric as CacheFieldMetric
+    from yosoi.storage.cache_metrics_libsql import ContractCacheMetrics as ContractCacheMetrics
+    from yosoi.storage.cache_metrics_libsql import LibSQLCacheMetricsStore as LibSQLCacheMetricsStore
+    from yosoi.storage.cache_metrics_libsql import ScrapeHealth as ScrapeHealth
+    from yosoi.storage.cache_metrics_libsql import ScrapeRunMetric as ScrapeRunMetric
+    from yosoi.storage.crawl_runs import CrawlRunsStore as CrawlRunsStore
     from yosoi.storage.debug import DebugManager as DebugManager
     from yosoi.storage.lesson import LessonStorage as LessonStorage
     from yosoi.storage.persistence import SelectorStorage as SelectorStorage
@@ -24,6 +30,12 @@ _LAZY: dict[str, str] = {
     'A3Node': 'yosoi.storage.a3node',
     'A3NodeStorage': 'yosoi.storage.a3node',
     'ActRecord': 'yosoi.storage.a3node',
+    'CacheFieldMetric': 'yosoi.storage.cache_metrics_libsql',
+    'LibSQLCacheMetricsStore': 'yosoi.storage.cache_metrics_libsql',
+    'ContractCacheMetrics': 'yosoi.storage.cache_metrics_libsql',
+    'ScrapeHealth': 'yosoi.storage.cache_metrics_libsql',
+    'ScrapeRunMetric': 'yosoi.storage.cache_metrics_libsql',
+    'CrawlRunsStore': 'yosoi.storage.crawl_runs',
     'DebugManager': 'yosoi.storage.debug',
     'LessonStorage': 'yosoi.storage.lesson',
     'SelectorStorage': 'yosoi.storage.persistence',

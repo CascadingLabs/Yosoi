@@ -254,6 +254,6 @@ def test_check_field_rule_returns_none_when_no_rule_applies():
         custom_field: str = ''  # no yosoi type → no semantic rule
 
     validator = SemanticValidator()
-    rules = {'custom_field': None}  # type: ignore[dict-item]
+    rules = {'custom_field': None}
     issues = validator.validate({'custom_field': 'anything'}, rules)
     assert issues == []

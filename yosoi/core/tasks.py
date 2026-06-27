@@ -8,7 +8,7 @@ import logging
 from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING, Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from taskiq import InMemoryBroker
 from taskiq.middlewares import SmartRetryMiddleware
 
@@ -49,9 +49,11 @@ class TaskResult(BaseModel, frozen=True):
 class EnqueueResult(BaseModel):
     """Return type of enqueue_urls."""
 
-    successful: list[str] = []
-    failed: list[str] = []
-    skipped: list[str] = []
+    successful: list[str] = Field(default_factory=list)
+    failed: list[str] = Field(default_factory=list)
+    skipped: list[str] = Field(default_factory=list)
+    elapsed_by_url: dict[str, float] = Field(default_factory=dict)
+    errors: dict[str, str] = Field(default_factory=dict)
 
 
 # FUTURE: support horizontal scaling w/ redis or other message brokers
@@ -87,7 +89,7 @@ async def configure_broker(
         contract: Contract subclass for scraping fields.
         output_format: Output format(s): json, markdown, jsonl, ndjson, csv, xlsx, parquet.
         max_workers: Maximum concurrent tasks.
-        selector_level: Maximum selector strategy level. Defaults to CSS.
+        selector_level: Maximum selector strategy level. Defaults to all.
         experimental_a3node: Propagate A3Node opt-in to worker pipelines.
 
     """
@@ -97,7 +99,7 @@ async def configure_broker(
         contract=contract,
         output_format=output_format,
         max_workers=max_workers,
-        selector_level=selector_level or SelectorLevel.CSS,
+        selector_level=selector_level or max(SelectorLevel),
         experimental_a3node=experimental_a3node,
     )
     _semaphore = asyncio.Semaphore(max_workers)
@@ -132,7 +134,7 @@ def get_pipeline_config() -> PipelineConfig:
     return _pipeline_config
 
 
-@broker.task(retry_on_error=True, max_retries=2)
+@broker.task(retry_on_error=False)
 async def process_url_task(
     url: str,
     force: bool = False,
@@ -285,9 +287,10 @@ async def enqueue_urls(
     for handle, url in zip(handles, enqueued_urls, strict=True):
         task_result = await _wait_for_handle(handle, url)
         _collect_single_result(results, handle, url, task_result)
+        success = task_result is not None and not task_result.is_err
+        elapsed = task_result.return_value.elapsed if task_result and success else 0.0
+        results.elapsed_by_url[url] = elapsed
         if on_complete is not None:
-            success = task_result is not None and not task_result.is_err
-            elapsed = task_result.return_value.elapsed if task_result and success else 0.0
             await on_complete(url, success, elapsed)
 
     return results
@@ -329,7 +332,12 @@ def _collect_single_result(
         result: The TaskiqResult or None.
 
     """
-    if result is None or result.is_err:
+    if result is None:
         results.failed.append(url)
+        results.errors[url] = 'task result unavailable; see logs for details'
+    elif result.is_err:
+        results.failed.append(url)
+        err = getattr(result, 'error', None)
+        results.errors[url] = str(err or 'task failed; see logs for details')
     else:
         results.successful.append(url)

@@ -31,7 +31,7 @@ QUIET_CONSOLE = Console(quiet=True)
 
 
 class BookContract(Contract):
-    """Catalog item — matches .yosoi/selectors/selectors_books_toscrape_com.json."""
+    """Catalog item — mirrors the cached books.toscrape.com selector shape."""
 
     title: str = ys.Title()
     price: float = ys.Price()

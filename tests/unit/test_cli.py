@@ -1,5 +1,8 @@
 """Tests for Click CLI."""
 
+import importlib
+import json
+
 import click
 import pytest
 from click.testing import CliRunner
@@ -30,7 +33,8 @@ def mock_pipeline(mocker):
             llm=mocker.MagicMock(provider='groq', model_name='llama-3.3-70b-versatile'),
         ),
     )
-    mocker.patch('yosoi.cli.main.console')
+    cli_main_module = importlib.import_module('yosoi.cli.main')
+    mocker.patch.object(cli_main_module, 'console')
 
     return mock_pipe, mock_pipeline_cls
 
@@ -41,11 +45,166 @@ class TestHelpAndUsage:
         assert result.exit_code == 0
         assert 'Discover selectors' in result.output
 
-    def test_no_args_shows_usage_error(self, runner, mock_pipeline, monkeypatch):
+    def test_no_args_shows_root_help(self, runner, mock_pipeline, monkeypatch):
         monkeypatch.setenv('GROQ_KEY', 'test-key')
         result = runner.invoke(main, [])
+        assert result.exit_code == 0
+        assert 'Discover selectors' in result.output
+
+    def test_bare_json_no_llm_threads_cache_only_pipeline(self, runner, mock_pipeline, mocker):
+        _mock_pipe, pipeline_cls = mock_pipeline
+        run_json = mocker.patch('yosoi.cli.main._run_json', mocker.AsyncMock(return_value=0))
+
+        result = runner.invoke(main, ['--url', 'https://example.com', '--json', '--no-llm'])
+
+        assert result.exit_code == 0, result.output
+        assert pipeline_cls.call_args.kwargs['allow_llm'] is False
+        run_json.assert_awaited_once()
+
+
+class TestSearchCommand:
+    @pytest.fixture(autouse=True)
+    def _no_search_policy_env(self, mocker, monkeypatch):
+        mocker.patch('yosoi.policy.files.discover_policy_files', return_value=())
+        monkeypatch.delenv('YOSOI_SEARCH_BACKEND', raising=False)
+        monkeypatch.delenv('YOSOI_SEARCH_REGION', raising=False)
+        monkeypatch.delenv('YOSOI_SEARCH_SAFESEARCH', raising=False)
+        monkeypatch.delenv('YOSOI_SEARCH_MAX_RESULTS', raising=False)
+        monkeypatch.delenv('YOSOI_SEARCH_PAGE', raising=False)
+        monkeypatch.delenv('YOSOI_SEARCH_TIMELIMIT', raising=False)
+
+    def test_search_json_uses_operation_runner(self, runner, mocker):
+        from yosoi.operations import SearchHit, SearchRequest, SearchResult
+
+        run = mocker.patch(
+            'yosoi.operations.run_search',
+            mocker.AsyncMock(
+                return_value=SearchResult(
+                    request=SearchRequest(query='widgets', max_results=2),
+                    hits=[
+                        SearchHit(
+                            rank=1,
+                            title='One',
+                            url='https://one.test',
+                            snippet='First result',
+                            backend='google,bing,brave',
+                        )
+                    ],
+                    urls=['https://one.test'],
+                )
+            ),
+        )
+
+        result = runner.invoke(main, ['search', 'widgets', '--limit', '2', '--json'])
+
+        assert result.exit_code == 0, result.output
+        doc = json.loads(result.output)
+        assert doc['hits'][0]['url'] == 'https://one.test'
+        request = run.await_args.args[0]
+        assert request.query == 'widgets'
+        assert request.max_results == 2
+
+    def test_search_human_output_smoke(self, runner, mocker):
+        from yosoi.operations import SearchHit, SearchRequest, SearchResult
+
+        mocker.patch(
+            'yosoi.operations.run_search',
+            mocker.AsyncMock(
+                return_value=SearchResult(
+                    request=SearchRequest(query='widgets'),
+                    hits=[
+                        SearchHit(
+                            rank=1,
+                            title='One',
+                            url='https://one.test',
+                            snippet='First result',
+                            backend='google,bing,brave',
+                        )
+                    ],
+                    urls=['https://one.test'],
+                )
+            ),
+        )
+
+        result = runner.invoke(main, ['search', 'widgets'])
+
+        assert result.exit_code == 0, result.output
+        assert 'One' in result.output
+        assert 'https://one.test' in result.output
+
+    def test_search_no_query_usage_error(self, runner):
+        result = runner.invoke(main, ['search'])
+
         assert result.exit_code != 0
-        assert 'No URLs provided' in result.output
+        assert 'No search query provided' in result.output
+
+    def test_search_dump_request(self, runner):
+        result = runner.invoke(
+            main,
+            [
+                'search',
+                'cascading',
+                'labs',
+                '--backend',
+                'google,bing,brave',
+                '--region',
+                'us-en',
+                '--safesearch',
+                'off',
+                '--timelimit',
+                'w',
+                '--page',
+                '2',
+                '--limit',
+                '3',
+                '--dump-request',
+            ],
+        )
+
+        assert result.exit_code == 0, result.output
+        doc = json.loads(result.output)
+        assert doc['query'] == 'cascading labs'
+        assert doc['backend'] == 'google,bing,brave'
+        assert doc['region'] == 'us-en'
+        assert doc['safesearch'] == 'off'
+        assert doc['timelimit'] == 'w'
+        assert doc['page'] == 2
+        assert doc['max_results'] == 3
+
+    def test_search_policy_file_supplies_defaults_and_flags_override(self, runner, mocker, tmp_path):
+        from yosoi.operations import SearchResult
+
+        run = mocker.patch(
+            'yosoi.operations.run_search',
+            mocker.AsyncMock(),
+        )
+        policy_file = tmp_path / 'policy.yaml'
+        policy_file.write_text(
+            'search:\n'
+            '  backend: bing\n'
+            '  region: wt-wt\n'
+            '  safesearch: "off"\n'
+            '  max_results: 7\n'
+            '  page: 3\n'
+            '  timelimit: m\n',
+            encoding='utf-8',
+        )
+
+        def _result(request):
+            return SearchResult(request=request)
+
+        run.side_effect = _result
+
+        result = runner.invoke(main, ['search', 'widgets', '--policy', str(policy_file), '--limit', '2', '--json'])
+
+        assert result.exit_code == 0, result.output
+        request = run.await_args.args[0]
+        assert request.backend == 'bing'
+        assert request.region == 'wt-wt'
+        assert request.safesearch == 'off'
+        assert request.timelimit == 'm'
+        assert request.max_results == 2
+        assert request.page == 3
 
 
 class TestSchemaParamType:
@@ -54,15 +213,15 @@ class TestSchemaParamType:
         result = param_type.convert('NewsArticle', None, None)
         assert result is NewsArticle
 
-    def test_case_insensitive_match(self):
+    def test_case_insensitive_match_suggests_without_resolving(self):
         param_type = SchemaParamType()
-        result = param_type.convert('product', None, None)
-        assert result is Product
+        with pytest.raises(click.exceptions.BadParameter, match='Did you mean'):
+            param_type.convert('product', None, None)
 
-    def test_fuzzy_match(self):
+    def test_near_match_suggests_without_resolving(self):
         param_type = SchemaParamType()
-        result = param_type.convert('Produc', None, None)
-        assert result is Product
+        with pytest.raises(click.exceptions.BadParameter, match='Did you mean'):
+            param_type.convert('Produc', None, None)
 
     def test_unknown_schema_fails(self):
         param_type = SchemaParamType()
@@ -97,6 +256,14 @@ class TestModelFlag:
         result = runner.invoke(main, ['-m', 'groq:llama-3.3-70b-versatile', '-u', 'https://example.com'])
         assert result.exit_code == 0, result.output
         mock_pipe.process_urls.assert_called_once()
+
+    def test_repeated_url_flags_process_all_urls(self, runner, mock_pipeline, monkeypatch):
+        monkeypatch.setenv('GROQ_KEY', 'test-key')
+        mock_pipe, _ = mock_pipeline
+        result = runner.invoke(main, ['-u', 'https://a.example', '-u', 'https://b.example'])
+        assert result.exit_code == 0, result.output
+        assert mock_pipe.process_urls.call_args[0][0] == ['https://a.example', 'https://b.example']
+        assert mock_pipe.process_urls.call_args.kwargs['workers'] == 2
 
     def test_model_flag_invalid_format(self, runner, mock_pipeline, monkeypatch):
         monkeypatch.setenv('GROQ_KEY', 'test-key')

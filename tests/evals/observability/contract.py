@@ -22,7 +22,7 @@ import time
 import types
 from contextlib import asynccontextmanager, contextmanager
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, cast
 
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
@@ -76,12 +76,13 @@ def capture_obs_spans():
     fake = types.SimpleNamespace(
         tracer=provider.get_tracer('yosoi-obs-eval'), sdk=types.SimpleNamespace(flush=lambda: None)
     )
+    langfuse_client_cls = cast(Any, obs.LangfuseClient)
     prev = obs.LangfuseClient._instance
-    obs.LangfuseClient._instance = fake  # type: ignore[assignment]
+    langfuse_client_cls._instance = fake
     try:
         yield exporter
     finally:
-        obs.LangfuseClient._instance = prev
+        langfuse_client_cls._instance = prev
 
 
 @contextmanager
@@ -156,7 +157,7 @@ async def _drive_llm_api() -> None:
     cfg = LLMConfig(provider='groq', model_name='llama-3.3-70b-versatile', api_key='test-key', temperature=0.0)
     with _patch(fa_mod, 'create_model', lambda _cfg: TestModel()):
         agent = fa_mod.FieldDiscoveryAgent(cfg)
-    agent._agent = _FakeAgent(FieldSelectors(primary='h1.title', fallback=None, tertiary=None))  # type: ignore[assignment]
+    cast(Any, agent)._agent = _FakeAgent(FieldSelectors(primary='h1.title', fallback=None, tertiary=None))
     await agent.discover_field(
         field_name='headline',
         field_description='the article headline',
@@ -183,8 +184,8 @@ def _fake_claude_agent_sdk(*, text: str, usage: dict[str, Any] | None):
         yield ResultMessage()
 
     mod = types.ModuleType('claude_agent_sdk')
-    mod.ClaudeAgentOptions = lambda **_k: None  # type: ignore[attr-defined]
-    mod.query = query  # type: ignore[attr-defined]
+    cast(Any, mod).ClaudeAgentOptions = lambda **_k: None
+    cast(Any, mod).query = query
     prev = sys.modules.get('claude_agent_sdk')
     sys.modules['claude_agent_sdk'] = mod
     try:
@@ -213,7 +214,7 @@ async def _drive_llm_opencode() -> None:
     from yosoi.integrations.opencode import OpenCodeModel
 
     base = 'http://opencode.eval'
-    model = OpenCodeModel(provider_id='openai', model_id='gpt-5-codex', base_url=base)
+    model = OpenCodeModel(provider_id='openai', model_id='gpt-5.3-codex-spark', base_url=base)
     routes = {
         '/session': httpx2.Response(200, json={'id': 'ses'}),
         '/session/ses/message': httpx2.Response(
@@ -242,11 +243,11 @@ async def _drive_llm_opencode() -> None:
             response._request = httpx2.Request('POST', f'{self.base_url}{path}')
             return response
 
-    httpx2.AsyncClient = _Client  # type: ignore[assignment]
+    cast(Any, httpx2).AsyncClient = _Client
     try:
         await model.request(_messages(), None, _params())
     finally:
-        httpx2.AsyncClient = original_client  # type: ignore[assignment]
+        httpx2.AsyncClient = original_client
 
 
 # ---------------------------------------------------------------------------
@@ -328,7 +329,7 @@ async def _drive_a3node(*, experimental: bool, stored_acts: list[Any] | None, re
     fetcher = vd.HeadlessFetcher(experimental_a3node=experimental, min_content_length=10)
     fetcher._pool = _FakePool(_HTML)
     if experimental:
-        fetcher._a3node_storage = _FakeStorage()  # type: ignore[assignment]
+        cast(Any, fetcher)._a3node_storage = _FakeStorage()
         if stored_acts is not None:
             fetcher._a3node_cache = {
                 domain: A3Node(domain=domain, acts=list(stored_acts), discovered_at='2026-01-01T00:00:00+00:00')
@@ -402,7 +403,7 @@ _CASES: list[Case[Scenario, list[CapturedSpan], tuple[ExpectedSpan, ...]]] = [
                 A.LLM_TRANSPORT_SPAN,
                 {
                     A.ATTR_LLM_BACKEND: A.BACKEND_OPENCODE,
-                    A.ATTR_LLM_MODEL: 'openai:gpt-5-codex',
+                    A.ATTR_LLM_MODEL: 'openai:gpt-5.3-codex-spark',
                     A.ATTR_LLM_STRUCTURED: False,
                 },
             ),

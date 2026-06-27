@@ -56,6 +56,17 @@ _LEVEL_JSONLD_ALLOWED: Final = (
     'Use JSON-LD for fields available in <script type="application/ld+json"> blocks.'
 )
 
+_LEVEL_ALL_ALLOWED: Final = (
+    'All selector strategies are allowed: css, xpath, regex, jsonld, attr, global_id, role/AX, and visual. '
+    'Choose by evidence instead of forcing the cheapest level: CSS is usually best for concrete static HTML; '
+    'role/AX selectors are usually best for rendered L2+ pages when the accessibility outline exposes a stable '
+    'role/name; attr/global_id are best for stable data attributes or shared ID tokens; JSON-LD is best when '
+    'structured data contains the field; XPath is for relationships CSS cannot express; JS-backed extraction is best '
+    'for niche runtime-only fields when the contract asks for it; regex and visual are niche fallbacks for '
+    'unstructured text or replay-only targets. Do not constrain yourself to CSS when the page evidence '
+    'clearly points to a better strategy.'
+)
+
 _HINT_TESTID: Final = 'Page uses data-testid attributes — prefer them over class names (they are more stable).'
 
 _HINT_JSON_LD: Final = (
@@ -131,7 +142,7 @@ class DiscoveryDeps:
 
     contract: type['Contract']
     input: DiscoveryInput
-    target_level: SelectorLevel = field(default=SelectorLevel.CSS)
+    target_level: SelectorLevel = field(default_factory=lambda: max(SelectorLevel))
 
 
 # ---------------------------------------------------------------------------
@@ -178,6 +189,8 @@ def contract_intent_instructions(ctx: RunContext['DiscoveryDeps']) -> str:
 
 def level_instructions(ctx: RunContext['DiscoveryDeps']) -> str:
     """Explain which selector strategies are allowed based on target_level."""
+    if ctx.deps.target_level >= SelectorLevel.ATTR:
+        return _LEVEL_ALL_ALLOWED
     if ctx.deps.target_level >= SelectorLevel.JSONLD:
         return _LEVEL_JSONLD_ALLOWED
     if ctx.deps.target_level >= SelectorLevel.REGEX:
@@ -241,7 +254,7 @@ class FieldDiscoveryDeps:
     field_name: str
     field_description: str
     input: DiscoveryInput
-    target_level: SelectorLevel = field(default=SelectorLevel.CSS)
+    target_level: SelectorLevel = field(default_factory=lambda: max(SelectorLevel))
     is_container: bool = False
     forbidden_selectors: tuple[str, ...] = ()
 
@@ -275,6 +288,8 @@ def field_single_intent_instructions(ctx: RunContext['FieldDiscoveryDeps']) -> s
 
 def field_single_level_instructions(ctx: RunContext['FieldDiscoveryDeps']) -> str:
     """Explain which selector strategies are allowed based on target_level."""
+    if ctx.deps.target_level >= SelectorLevel.ATTR:
+        return _LEVEL_ALL_ALLOWED
     if ctx.deps.target_level >= SelectorLevel.JSONLD:
         return _LEVEL_JSONLD_ALLOWED
     if ctx.deps.target_level >= SelectorLevel.REGEX:

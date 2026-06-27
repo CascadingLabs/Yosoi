@@ -10,11 +10,9 @@ from yosoi.storage.persistence import SelectorStorage
 
 @pytest.fixture
 def storage(tmp_path, mocker):
-    selector_dir = tmp_path / 'selectors'
-    content_dir = tmp_path / 'content'
-    selector_dir.mkdir()
-    content_dir.mkdir()
-    mocker.patch('yosoi.storage.persistence.init_yosoi', side_effect=[selector_dir, content_dir])
+    yosoi_dir = tmp_path / '.yosoi'
+    yosoi_dir.mkdir()
+    mocker.patch('yosoi.storage.persistence.init_yosoi', return_value=yosoi_dir)
     return SelectorStorage()
 
 
@@ -46,15 +44,12 @@ class TestSaveLoadSnapshots:
     async def test_load_nonexistent_returns_none(self, storage):
         assert await storage.load_snapshots('nonexistent.com') is None
 
-    def test_contract_scoped_snapshot_paths_do_not_share_domain_file(self, storage):
-        catalog_path = storage._get_selector_filepath('qscrape.dev', contract_sig='catalog')
-        taxes_path = storage._get_selector_filepath('qscrape.dev', contract_sig='taxes')
-        legacy_path = storage._get_selector_filepath('qscrape.dev')
+    async def test_contract_scoped_snapshots_do_not_share_rows(self, storage):
+        await storage.save_selectors('https://qscrape.dev/page', {'title': {'primary': 'h1'}}, contract_sig='catalog')
+        await storage.save_selectors('https://qscrape.dev/page', {'total': {'primary': '.tax'}}, contract_sig='taxes')
 
-        assert catalog_path.endswith('selectors_qscrape_dev_catalog.json')
-        assert taxes_path.endswith('selectors_qscrape_dev_taxes.json')
-        assert legacy_path.endswith('selectors_qscrape_dev.json')
-        assert len({catalog_path, taxes_path, legacy_path}) == 3
+        assert await storage.load_selectors('qscrape.dev', contract_sig='catalog') == {'title': {'primary': 'h1'}}
+        assert await storage.load_selectors('qscrape.dev', contract_sig='taxes') == {'total': {'primary': '.tax'}}
 
     async def test_legacy_na_primary_loads_as_absent_snapshot(self, storage):
         now = datetime.now(timezone.utc)

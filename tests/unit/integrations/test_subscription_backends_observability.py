@@ -124,7 +124,7 @@ def _opencode_route(monkeypatch) -> None:
 async def test_opencode_run_reports_usage(span_exporter, monkeypatch):
     _opencode_route(monkeypatch)
     span = await _chat_span(
-        OpenCodeModel(provider_id='openai', model_id='gpt-5-codex', base_url=_OC_BASE), span_exporter
+        OpenCodeModel(provider_id='openai', model_id='gpt-5.3-codex-spark', base_url=_OC_BASE), span_exporter
     )
     assert span.attributes.get('gen_ai.usage.input_tokens') == 150
     assert span.attributes.get('gen_ai.usage.output_tokens') == 50
@@ -159,7 +159,9 @@ async def test_subscription_spans_match_api_generation_shape(span_exporter, fake
 
     _opencode_route(monkeypatch)
     opencode_keys = _genai_keys(
-        await _chat_span(OpenCodeModel(provider_id='openai', model_id='gpt-5-codex', base_url=_OC_BASE), span_exporter)
+        await _chat_span(
+            OpenCodeModel(provider_id='openai', model_id='gpt-5.3-codex-spark', base_url=_OC_BASE), span_exporter
+        )
     )
 
     fake_claude_query(

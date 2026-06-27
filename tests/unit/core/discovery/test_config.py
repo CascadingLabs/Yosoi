@@ -1,5 +1,6 @@
 """Tests for yosoi.core.discovery.config — LLMConfig, create_model, LLMBuilder, convenience helpers."""
 
+import importlib
 import sys
 
 import pytest
@@ -51,6 +52,13 @@ def stub_gcp_adc(mocker):
     no credentials raises ``DefaultCredentialsError``.
     """
     mocker.patch('google.auth.default', return_value=(mocker.MagicMock(), 'stub-project'))
+
+
+def _skip_if_optional_provider_missing(backing_module: str) -> None:
+    try:
+        importlib.import_module(backing_module)
+    except ImportError as exc:
+        pytest.skip(f'optional provider SDK missing for {backing_module}: {exc}')
 
 
 # ---------------------------------------------------------------------------
@@ -360,30 +368,35 @@ class TestCreateAgent:
 class TestCreateModelNewFirstClass:
     def test_anthropic_provider(self):
         """Anthropic provider creates an AnthropicModel."""
+        _skip_if_optional_provider_missing('pydantic_ai.models.anthropic')
         cfg = LLMConfig(provider='anthropic', model_name='claude-opus-4-5', api_key='k')
         model = create_model(cfg)
         assert 'Anthropic' in type(model).__name__
 
     def test_claude_alias(self):
         """'claude' is an alias for anthropic."""
+        _skip_if_optional_provider_missing('pydantic_ai.models.anthropic')
         cfg = LLMConfig(provider='claude', model_name='claude-opus-4-5', api_key='k')
         model = create_model(cfg)
         assert 'Anthropic' in type(model).__name__
 
     def test_mistral_provider(self):
         """Mistral provider creates a MistralModel."""
+        _skip_if_optional_provider_missing('pydantic_ai.models.mistral')
         cfg = LLMConfig(provider='mistral', model_name='mistral-large-latest', api_key='k')
         model = create_model(cfg)
         assert 'Mistral' in type(model).__name__
 
     def test_xai_provider(self):
         """xAI provider creates an XaiModel."""
+        _skip_if_optional_provider_missing('pydantic_ai.models.xai')
         cfg = LLMConfig(provider='xai', model_name='grok-3', api_key='k')
         model = create_model(cfg)
         assert 'Xai' in type(model).__name__
 
     def test_bedrock_provider(self):
         """Bedrock provider creates a BedrockConverseModel (region required)."""
+        _skip_if_optional_provider_missing('pydantic_ai.models.bedrock')
         cfg = LLMConfig(
             provider='bedrock',
             model_name='anthropic.claude-3-5-sonnet',
@@ -395,6 +408,7 @@ class TestCreateModelNewFirstClass:
 
     def test_aws_alias(self):
         """'aws' is an alias for bedrock."""
+        _skip_if_optional_provider_missing('pydantic_ai.models.bedrock')
         cfg = LLMConfig(
             provider='aws',
             model_name='anthropic.claude-3-5-sonnet',
@@ -406,12 +420,14 @@ class TestCreateModelNewFirstClass:
 
     def test_huggingface_provider(self):
         """HuggingFace provider creates a HuggingFaceModel."""
+        _skip_if_optional_provider_missing('pydantic_ai.models.huggingface')
         cfg = LLMConfig(provider='huggingface', model_name='Qwen/Qwen3-235B-A22B', api_key='k')
         model = create_model(cfg)
         assert 'HuggingFace' in type(model).__name__
 
     def test_hf_alias(self):
         """'hf' is an alias for huggingface."""
+        _skip_if_optional_provider_missing('pydantic_ai.models.huggingface')
         cfg = LLMConfig(provider='hf', model_name='Qwen/Qwen3-235B-A22B', api_key='k')
         model = create_model(cfg)
         assert 'HuggingFace' in type(model).__name__
@@ -437,10 +453,10 @@ class TestCreateModelNewFirstClass:
 
     def test_opencode_provider_default_provider_id(self):
         """OpenCode provider creates the packaged OpenCode model."""
-        cfg = LLMConfig(provider='opencode', model_name='gpt-5-codex')
+        cfg = LLMConfig(provider='opencode', model_name='gpt-5.3-codex-spark')
         model = create_model(cfg)
         assert type(model).__name__ == 'OpenCodeModel'
-        assert model.model_name == 'openai:gpt-5-codex'
+        assert model.model_name == 'openai:gpt-5.3-codex-spark'
 
     def test_opencode_provider_parses_provider_model_name(self):
         """OpenCode model strings may include provider-id/model-id."""
@@ -488,6 +504,7 @@ class TestCreateModelOpenAICompat:
 
     def test_grok(self):
         """grok emits a deprecation warning and delegates to xai (XaiModel)."""
+        _skip_if_optional_provider_missing('pydantic_ai.models.xai')
         cfg = LLMConfig(provider='grok', model_name='grok-3', api_key='k')
         with pytest.warns(DeprecationWarning, match="'grok' is deprecated"):
             model = create_model(cfg)
@@ -535,6 +552,7 @@ class TestCreateModelOpenAICompat:
 class TestSpecialProviderBehaviour:
     def test_bedrock_extra_params_forwarded(self):
         """Bedrock passes aws_secret_access_key and region_name from extra_params."""
+        _skip_if_optional_provider_missing('pydantic_ai.models.bedrock')
         cfg = LLMConfig(
             provider='bedrock',
             model_name='anthropic.claude-3-5-sonnet',
@@ -569,6 +587,7 @@ class TestSpecialProviderBehaviour:
 
     def test_huggingface_provider_name_extra_param(self):
         """HuggingFace forwards provider_name from extra_params."""
+        _skip_if_optional_provider_missing('pydantic_ai.models.huggingface')
         cfg = LLMConfig(
             provider='huggingface',
             model_name='Qwen/Qwen3-235B-A22B',
@@ -738,9 +757,9 @@ class TestNewConvenienceHelpers:
         assert cfg.api_key is None
 
     def test_opencode_helper(self):
-        cfg = opencode('openai/gpt-5-codex')
+        cfg = opencode('openai/gpt-5.3-codex-spark')
         assert cfg.provider == 'opencode'
-        assert cfg.model_name == 'openai/gpt-5-codex'
+        assert cfg.model_name == 'openai/gpt-5.3-codex-spark'
         assert cfg.api_key is None
 
     def test_vertexai_helper(self):
@@ -805,6 +824,7 @@ class TestProviderNewProviders:
         cfg = provider('grok:grok-3', api_key='k')
         assert cfg.provider == 'grok'
         assert cfg.model_name == 'grok-3'
+        _skip_if_optional_provider_missing('pydantic_ai.models.xai')
         with pytest.warns(DeprecationWarning, match="'grok' is deprecated"):
             create_model(cfg)
 
@@ -827,9 +847,9 @@ class TestProviderNewProviders:
         assert cfg.api_key is None
 
     def test_opencode(self):
-        cfg = provider('opencode:openai/gpt-5-codex')
+        cfg = provider('opencode:openai/gpt-5.3-codex-spark')
         assert cfg.provider == 'opencode'
-        assert cfg.model_name == 'openai/gpt-5-codex'
+        assert cfg.model_name == 'openai/gpt-5.3-codex-spark'
         assert cfg.api_key is None
 
     def test_bedrock_colon_in_model_name(self):

@@ -19,7 +19,7 @@ class _Price(ys.Contract):
 class _ProductContract(ys.Contract):
     root = ys.css('.product-card')
     name: str = ys.Title()
-    price: _Price = ys.Field(description='Product price info')  # type: ignore[assignment]
+    price: _Price = ys.Field(description='Product price info')
 
 
 @pytest.fixture
@@ -87,8 +87,8 @@ def test_extract_content_with_html_nested(extractor: ContentExtractor) -> None:
     assert result is not None
     assert result['name'] == 'Anvil'
     assert isinstance(result['price'], dict)
-    assert result['price']['amount'] == '£25'  # type: ignore[index]
-    assert result['price']['currency'] == '£'  # type: ignore[index]
+    assert result['price']['amount'] == '£25'
+    assert result['price']['currency'] == '£'
 
 
 # ---------------------------------------------------------------------------

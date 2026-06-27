@@ -13,6 +13,7 @@ from yosoi.storage.lesson import LessonStorage
 def storage(tmp_path, mocker):
     lesson_dir = tmp_path / 'lessons'
     lesson_dir.mkdir()
+    mocker.patch('yosoi.storage.lesson.get_yosoi_storage_path', return_value=lesson_dir)
     mocker.patch('yosoi.storage.lesson.init_yosoi', return_value=lesson_dir)
     return LessonStorage()
 
@@ -27,6 +28,21 @@ def _lesson(domain: str = 'example.com', contract_sig: str = 'sig') -> Discovery
 
 
 class TestLessonStorage:
+    async def test_default_dir_is_created_lazily(self, tmp_path, mocker):
+        lesson_dir = tmp_path / 'lessons'
+        mocker.patch('yosoi.storage.lesson.get_yosoi_storage_path', return_value=lesson_dir)
+        mocker.patch('yosoi.storage.lesson.init_yosoi', return_value=lesson_dir)
+
+        storage = LessonStorage()
+        lesson = _lesson()
+
+        assert not lesson_dir.exists()
+        assert await storage.load(lesson.key) is None
+        assert not lesson_dir.exists()
+
+        await storage.save(lesson)
+        assert lesson_dir.is_dir()
+
     async def test_save_and_load_round_trip(self, storage):
         lesson = _lesson()
         await storage.save(lesson)
@@ -45,32 +61,26 @@ class TestLessonStorage:
         await storage.save(first)
         await storage.save(second)
 
-        assert (await storage.load(first.key)).selectors.keys() == {'title'}  # type: ignore[union-attr]
-        assert (await storage.load(second.key)).selectors.keys() == {'body'}  # type: ignore[union-attr]
+        assert (await storage.load(first.key)).selectors.keys() == {'title'}
+        assert (await storage.load(second.key)).selectors.keys() == {'body'}
 
     async def test_load_missing_returns_none(self, storage):
         assert await storage.load(LessonKey(domain='missing.com', contract_signature='sig')) is None
 
-    async def test_list_stale_by_scheme_flags_old_version(self, storage):
-        """A signature-scheme bump must be observable: old-scheme lessons are reported STALE.
-
-        Regression for the W5 'silent mass cache flush' risk — without the
-        sig_version stamp a scheme change is an unobservable load-miss.
-        """
+    async def test_list_stale_by_scheme_keeps_alpha_v1_bare_signatures_current(self, storage):
+        """Alpha reset: bare signatures and explicit v1 signatures are both current."""
         from yosoi.utils.signatures import SIGNATURE_SCHEME_VERSION
 
-        # A v1 (pre-versioning) lesson: bare signature -> sig_version derived as 'v1'.
-        old = _lesson(domain='old.com', contract_sig='abc123def4567890')
-        assert old.key.sig_version == 'v1'
-        await storage.save(old)
+        bare = _lesson(domain='old.com', contract_sig='abc123def4567890')
+        assert bare.key.sig_version == 'v1'
+        await storage.save(bare)
 
-        # A current-scheme lesson.
         current = _lesson(domain='new.com', contract_sig=f'{SIGNATURE_SCHEME_VERSION}:abc123def4567890')
         assert current.key.sig_version == SIGNATURE_SCHEME_VERSION
         await storage.save(current)
 
         stale = await storage.list_stale_by_scheme()
-        assert old.key.storage_key in stale
+        assert bare.key.storage_key not in stale
         assert current.key.storage_key not in stale
 
     async def test_load_active_omits_stale(self, storage):

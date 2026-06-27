@@ -32,6 +32,12 @@ def test_derive_region_from_root_and_name_fallback() -> None:
     assert rootless[0].region_role == 'name:OrganicResult'
 
 
+def test_field_fingerprint_disambiguates_same_name_and_type() -> None:
+    a = derive_atoms(SHAPE, 'A', 'a.com', [('url', _primary('x'), '.r', 'url', 'field-fp-a')])[0]
+    b = derive_atoms(SHAPE, 'B', 'b.com', [('url', _primary('x'), '.r', 'url', 'field-fp-b')])[0]
+    assert a.key != b.key
+
+
 def test_upsert_new_then_merge_provenance() -> None:
     store = AtomStore()
     [atom] = derive_atoms(SHAPE, 'OrganicResult', 'google.com', [('url', _primary('a::attr(href)'), '.MjjYud', 'url')])
@@ -196,7 +202,7 @@ def test_list_stale_by_scheme_reports_old_and_unversioned() -> None:
 
 def test_monolith_and_domain_are_not_atom_identity() -> None:
     # P4: contract_signature (monolith) and the literal domain are NOT part of atom identity —
-    # same (shape, region, field, type) from different contracts/domains share ONE key.
+    # same (shape, region, field fingerprint) from different contracts/domains share ONE key.
     a = derive_atoms(SHAPE, 'AdContract', 'a.com', [('url', _primary('x'), '.r', 'url')])[0]
     b = derive_atoms(SHAPE, 'OtherContract', 'b.co.uk', [('url', _primary('x'), '.r', 'url')])[0]
     assert a.key == b.key

@@ -49,7 +49,7 @@ class DebugConfig(BaseModel):
     """Configuration for debug output."""
 
     save_html: bool = False
-    html_dir: Path = Field(default_factory=lambda: Path('.yosoi/debug_html'))
+    html_dir: Path = Field(default_factory=lambda: Path('.yosoi/debug'))
 
 
 class TelemetryConfig(BaseModel):

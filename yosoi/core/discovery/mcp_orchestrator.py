@@ -214,8 +214,12 @@ class MCPDiscoveryOrchestrator:
         rejected = 0
 
         candidates = {f.field: FieldSelectors(primary=f.selector).model_dump(exclude_none=True) for f in draft.fields}
+        replay_candidates = dict(candidates)
+        if draft.root is not None:
+            root = draft.root.model_dump(exclude_none=True)
+            replay_candidates = {name: {**entry, 'root': root} for name, entry in candidates.items()}
         has_replay_html = bool(html.strip())
-        reextracted = self._reextract(html, candidates) if has_replay_html else {}
+        reextracted = self._reextract(html, replay_candidates) if has_replay_html else {}
 
         for finding in draft.fields:
             reext = reextracted.get(finding.field)

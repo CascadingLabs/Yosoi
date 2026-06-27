@@ -1161,7 +1161,7 @@ def claude_sdk(model_name: str = 'claude-opus-4-7', **kwargs: Any) -> LLMConfig:
     return LLMConfig(provider='claude-sdk', model_name=model_name, api_key=None, **kwargs)
 
 
-def opencode(model_name: str = 'openai/gpt-5-codex', **kwargs: Any) -> LLMConfig:
+def opencode(model_name: str = 'openai/gpt-5.3-codex-spark', **kwargs: Any) -> LLMConfig:
     """Quick config for a running OpenCode server transport."""
     return LLMConfig(provider='opencode', model_name=model_name, api_key=None, **kwargs)
 

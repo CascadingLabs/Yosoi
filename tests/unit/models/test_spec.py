@@ -103,14 +103,14 @@ class TestFingerprint:
 
         assert AdLink.to_spec().fingerprint != OrganicLink.to_spec().fingerprint
 
-    def test_same_fields_different_field_description_same_fingerprint(self):
-        # Per-FIELD description stays advisory/excluded — only contract name+doc carry identity.
+    def test_same_fields_different_field_description_different_fingerprint(self):
+        # Per-field descriptions are part of field-entity identity.
         spec_a = NewsArticle.to_spec()
         new_fields = dict(spec_a.fields)
         f = new_fields['headline']
         new_fields['headline'] = FieldSpec(**{**f.model_dump(), 'description': 'A very different description!'})
         spec_b = spec_a.model_copy(update={'fields': new_fields})
-        assert spec_a.fingerprint == spec_b.fingerprint
+        assert spec_a.fingerprint != spec_b.fingerprint
 
     def test_one_field_difference_different_fingerprint(self):
         spec_a = NewsArticle.to_spec()
@@ -230,7 +230,7 @@ class TestToContractPaths:
         class RootedContract(Contract):
             title: str = pydantic.Field(description='Title')
 
-        RootedContract.root = SelectorEntry(type='css', value='.card')  # type: ignore[attr-defined]
+        RootedContract.root = SelectorEntry(type='css', value='.card')
 
         spec = ContractSpec.from_contract(RootedContract)
         assert spec.root is not None

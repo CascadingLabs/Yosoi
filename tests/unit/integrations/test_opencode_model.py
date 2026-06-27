@@ -82,7 +82,7 @@ async def test_request_populates_usage_from_server_response(monkeypatch):
         },
     )
 
-    model = OpenCodeModel(provider_id='openai', model_id='gpt-5-codex', base_url=_BASE_URL)
+    model = OpenCodeModel(provider_id='openai', model_id='gpt-5.3-codex-spark', base_url=_BASE_URL)
     response = await model.request([], None, ModelRequestParameters())
 
     assert response.usage.input_tokens == 150
@@ -109,17 +109,26 @@ async def test_debug_span_emitted_when_sdk_debug_env_set(monkeypatch):
     assert response is not None
 
 
-async def test_request_warns_and_reraises_on_http_failure(monkeypatch, mocker):
-    """obs.warning is called and exception re-raised on HTTP error (lines 132-140)."""
+async def test_request_warns_and_raises_actionable_error_on_http_failure(monkeypatch, mocker):
+    """obs.warning is called and HTTP transport failures become actionable errors."""
     _patch_opencode_client(monkeypatch, {'/session': httpx2.ConnectError('refused')})
 
     warn = mocker.patch('yosoi.integrations.opencode.obs.warning')
 
     model = OpenCodeModel(provider_id='openai', model_id='gpt-4o', base_url=_BASE_URL)
-    with pytest.raises(httpx2.ConnectError):
+    with pytest.raises(RuntimeError, match='OpenCode request failed'):
         await model.request([], None, ModelRequestParameters())
 
     warn.assert_called_once()
+
+
+async def test_preflight_raises_actionable_error_when_server_unreachable(monkeypatch):
+    _patch_opencode_client(monkeypatch, {'/session': httpx2.ConnectError('refused')})
+
+    model = OpenCodeModel(provider_id='openai', model_id='gpt-4o', base_url=_BASE_URL)
+
+    with pytest.raises(RuntimeError, match='OpenCode server unreachable'):
+        await model.preflight()
 
 
 def test_usage_from_info_falls_back_when_cache_is_not_dict():

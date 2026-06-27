@@ -11,6 +11,59 @@ logger = logging.getLogger(__name__)
 from yosoi.models import FieldSelectors, FieldVerificationResult, SelectorFailure, VerificationResult
 from yosoi.models.selectors import SelectorEntry, SelectorLevel, coerce_selector_entry
 
+_ROLE_SELECTORS: dict[str, tuple[str, ...]] = {
+    'button': ('button', 'input[type="button"]', 'input[type="submit"]'),
+    'link': ('a[href]',),
+    'textbox': ('input:not([type])', 'input[type="text"]', 'textarea'),
+    'searchbox': ('input[type="search"]',),
+    'heading': ('h1', 'h2', 'h3', 'h4', 'h5', 'h6'),
+    'article': ('article',),
+    'main': ('main',),
+    'navigation': ('nav',),
+    'list': ('ul', 'ol'),
+    'listitem': ('li',),
+    'table': ('table',),
+    'row': ('tr',),
+    'cell': ('td', 'th'),
+    'img': ('img',),
+}
+
+
+def _accessible_name(el: Selector) -> str:
+    """Best-effort accessible name from static HTML."""
+    for attr in ('aria-label', 'alt', 'title', 'value'):
+        value = el.attrib.get(attr)
+        if value:
+            return value.strip()
+    return ' '.join(el.xpath('.//text()').getall()).strip()
+
+
+def _role_matches(sel: Selector, entry: SelectorEntry) -> list[Selector]:
+    """Best-effort role/name matching against static HTML.
+
+    Browser AX snapshots are the stronger L2+ signal, but verifier replay only
+    sees HTML. Support explicit roles and common implicit-role tags, and require
+    the accessible name when the selector provides one.
+    """
+    role = entry.value.strip().lower()
+    selectors = [f'[role="{role}"]', *_ROLE_SELECTORS.get(role, ())]
+    candidates: list[Selector] = []
+    seen: set[int] = set()
+    for css in selectors:
+        for match in sel.css(css):
+            key = id(match.root)
+            if key not in seen:
+                candidates.append(match)
+                seen.add(key)
+
+    name = (entry.name or '').strip().lower()
+    if name:
+        candidates = [match for match in candidates if name in _accessible_name(match).lower()]
+
+    if entry.nth is not None:
+        return [candidates[entry.nth]] if 0 <= entry.nth < len(candidates) else []
+    return candidates
+
 
 class SelectorVerifier:
     """Verifies selectors by testing them against HTML content.
@@ -31,14 +84,14 @@ class SelectorVerifier:
         self,
         html: str,
         selectors: dict[str, FieldSelectors] | dict[str, dict[str, str]],
-        max_level: SelectorLevel = SelectorLevel.CSS,
+        max_level: SelectorLevel = max(SelectorLevel),
     ) -> VerificationResult:
         """Verify all selectors against HTML content.
 
         Args:
             html: HTML content to verify selectors against
             selectors: Dict mapping field names to FieldSelectors models or raw dicts
-            max_level: Maximum selector strategy level to test. Defaults to CSS.
+            max_level: Maximum selector strategy level to test. Defaults to all.
 
         Returns:
             VerificationResult with per-field verification status
@@ -90,7 +143,7 @@ class SelectorVerifier:
         sel: Selector,
         field_name: str,
         field_data: FieldSelectors | dict[str, str],
-        max_level: SelectorLevel = SelectorLevel.CSS,
+        max_level: SelectorLevel = max(SelectorLevel),
     ) -> FieldVerificationResult:
         """Verify a single field's selectors.
 
@@ -179,14 +232,20 @@ class SelectorVerifier:
         else:
             value, strategy = selector.value, selector.type
 
+        if strategy in ('regex', 'jsonld', 'global_id', 'visual'):
+            return False, 'unsupported_strategy'
+
         if not value or value == 'NA':
             return False, 'na_selector'
 
-        if strategy in ('regex', 'jsonld'):
-            return False, 'unsupported_strategy'
-
         try:
-            elements = sel.xpath(value) if strategy == 'xpath' else sel.css(value)
+            elements: Any
+            if isinstance(selector, SelectorEntry) and strategy == 'attr':
+                elements = sel.css(f'{value}::attr({selector.name})')
+            elif isinstance(selector, SelectorEntry) and strategy == 'role':
+                elements = _role_matches(sel, selector)
+            else:
+                elements = sel.xpath(value) if strategy == 'xpath' else sel.css(value)
             if elements:
                 return True, 'found'
             return False, 'no_elements_found'

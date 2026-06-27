@@ -61,7 +61,7 @@ class TestBackendSelection:
         assert isinstance(backend_for(cfg), ClaudeSDKBackend)
 
     def test_opencode_provider_uses_opencode_backend(self):
-        cfg = LLMConfig(provider='opencode', model_name='openai/gpt-5-codex')
+        cfg = LLMConfig(provider='opencode', model_name='openai/gpt-5.3-codex-spark')
 
         assert isinstance(backend_for(cfg), OpenCodeBackend)
 

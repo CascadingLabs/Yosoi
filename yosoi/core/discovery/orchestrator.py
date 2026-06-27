@@ -20,6 +20,7 @@ from yosoi.models.snapshot import SelectorSnapshot, SnapshotStatus, selector_dic
 from yosoi.prompts.discovery import DiscoveryInput, FieldFeedback
 from yosoi.storage.persistence import SelectorStorage
 from yosoi.utils import observability as obs
+from yosoi.utils.exceptions import LLMGenerationError
 from yosoi.utils.signatures import _get_yosoi_type
 
 # Selector dict: field name → {primary, fallback, tertiary} selectors
@@ -100,7 +101,7 @@ class DiscoveryOrchestrator:
         llm_config: LLMConfig,
         storage: SelectorStorage,
         console: Console | None = None,
-        target_level: SelectorLevel = SelectorLevel.CSS,
+        target_level: SelectorLevel = max(SelectorLevel),
         max_concurrent: int = 5,
         bus: DiscoveryBus | None = None,
         write_lock: asyncio.Lock | None = None,
@@ -112,7 +113,7 @@ class DiscoveryOrchestrator:
             llm_config: LLM provider and model configuration
             storage: Selector storage (used for cache reads and the final write)
             console: Optional Rich console for output
-            target_level: Maximum selector strategy level. Defaults to CSS.
+            target_level: Maximum selector strategy level. Defaults to all.
             max_concurrent: Maximum concurrent LLM calls. Defaults to 5.
             bus: Optional shared discovery bus for cross-pipeline field sharing.
             write_lock: Optional asyncio.Lock to serialize selector writes for the domain.
@@ -137,6 +138,10 @@ class DiscoveryOrchestrator:
     @target_level.setter
     def target_level(self, value: SelectorLevel) -> None:
         self._target_level = value
+
+    async def preflight(self) -> None:
+        """Run an optional provider transport preflight before costly page work."""
+        await self._agent.preflight()
 
     @property
     def max_concurrent(self) -> int:
@@ -169,7 +174,7 @@ class DiscoveryOrchestrator:
             feedback: Optional per-field message describing why a previous
                 attempt's selector was semantically wrong. Forwarded to the LLM
                 prompt for those fields (semantic-validation retry).
-            force: Force re-discovery even if selectors exist. Defaults to False.
+            force: Force re-discovery even if cache exist. Defaults to False.
             ax_snapshot: Optional accessibility-tree snapshot; rendered via
                 :func:`format_ax_hint` into an AX hint added to the discovery
                 prompt to guide selector choice.
@@ -281,6 +286,8 @@ class DiscoveryOrchestrator:
     ) -> SelectorMap | None:
         field_descs = self._contract.field_descriptions()
 
+        await self._agent.preflight()
+
         semaphore = asyncio.Semaphore(self._max_concurrent)
 
         # Load the full domain selector map once — avoids N redundant file reads.
@@ -316,8 +323,9 @@ class DiscoveryOrchestrator:
         ]
 
         raw_results: list[FieldTaskResult | BaseException] = await asyncio.gather(*coroutines, return_exceptions=True)
+        self._raise_field_task_errors(raw_results)
 
-        merged, cached_count, escalated_count, absent_fields = self._merge_results(raw_results, overrides, task_specs)
+        merged, cached_count, escalated_count, absent_fields = self._merge_results(raw_results, overrides)
 
         # Persist contract-pinned root so the cache is self-contained
         contract_root = self._contract.get_root()
@@ -335,9 +343,9 @@ class DiscoveryOrchestrator:
             if url and stale_fields is None and persisted_snapshots:
                 if self._write_lock is not None:
                     async with self._write_lock:
-                        await self._storage.save_snapshots(url, persisted_snapshots)
+                        await self._storage.save_snapshots(url, persisted_snapshots, contract=self._contract)
                 else:
-                    await self._storage.save_snapshots(url, persisted_snapshots)
+                    await self._storage.save_snapshots(url, persisted_snapshots, contract=self._contract)
             return None
 
         logger.info(
@@ -367,9 +375,9 @@ class DiscoveryOrchestrator:
         if url and stale_fields is None and persisted_snapshots is not None:
             if self._write_lock is not None:
                 async with self._write_lock:
-                    await self._storage.save_snapshots(url, persisted_snapshots)
+                    await self._storage.save_snapshots(url, persisted_snapshots, contract=self._contract)
             else:
-                await self._storage.save_snapshots(url, persisted_snapshots)
+                await self._storage.save_snapshots(url, persisted_snapshots, contract=self._contract)
 
         return merged
 
@@ -388,23 +396,30 @@ class DiscoveryOrchestrator:
             )
         return snapshots
 
+    @staticmethod
+    def _raise_field_task_errors(raw_results: list[FieldTaskResult | BaseException]) -> None:
+        """Fail the discovery attempt if any field task raised unexpectedly."""
+        errors = [raw for raw in raw_results if isinstance(raw, BaseException)]
+        if not errors:
+            return
+        first = errors[0]
+        detail = str(first) or first.__class__.__name__
+        raise LLMGenerationError(f'{len(errors)} field task(s) failed; first error: {detail}') from first
+
     def _merge_results(
         self,
         raw_results: list[FieldTaskResult | BaseException],
         overrides: dict[str, dict[str, Any]],
-        task_specs: list[dict[str, object]],
     ) -> tuple[SelectorMap, int, int, set[str]]:
         """Merge field task results into a selector map.
 
         Combines successful field discoveries, logs unexpected exceptions,
-        applies manual overrides, and writes NA sentinels for fields that
-        failed so they are not re-attempted on future runs.
+        applies manual overrides, and writes absent sentinels only for fields
+        that completed as intentionally absent (not for hard exceptions).
 
         Args:
             raw_results: Raw asyncio.gather output — mix of FieldTaskResult and exceptions.
             overrides: Manual selector overrides from the contract (always take precedence).
-            task_specs: The task specs used to build the coroutines, used to determine
-                which fields were attempted so NA sentinels can be written for failures.
 
         Returns:
             Tuple of (merged selector map, cached field count, escalated field count, absent field names).
@@ -413,12 +428,15 @@ class DiscoveryOrchestrator:
         merged: SelectorMap = {}
         cached_count = 0
         escalated_count = 0
+        absent_fields: set[str] = set()
 
         for raw in raw_results:
             if isinstance(raw, BaseException):
                 logger.warning('Field task raised unexpectedly: %s', raw)
                 continue
             result: FieldTaskResult = raw
+            if result.absent:
+                absent_fields.add(result.field_name)
             if result.selectors is not None:
                 merged[result.field_name] = result.selectors.model_dump(exclude_none=True)
                 if result.from_cache:
@@ -430,8 +448,7 @@ class DiscoveryOrchestrator:
         for field_name, override_dict in overrides.items():
             merged[field_name] = override_dict
 
-        all_attempted = {str(spec['field_name']) for spec in task_specs}
-        absent_fields = {field_name for field_name in all_attempted if field_name not in merged}
+        absent_fields -= set(merged)
 
         return merged, cached_count, escalated_count, absent_fields
 

@@ -63,6 +63,15 @@ class LLMGenerationError(YosoiError):
     pass
 
 
+class LLMBlockedError(YosoiError):
+    """Raised when a cache-only scrape would need LLM discovery or repair."""
+
+    def __init__(self, reason: str, message: str | None = None):
+        """Initialize with a machine-readable block reason."""
+        self.reason = reason
+        super().__init__(message or f'LLM use blocked by --no-llm: {reason}')
+
+
 class DownloadError(YosoiError):
     """Raised when a ``ys.File`` download fails or is rejected.
 

@@ -441,8 +441,8 @@ def weighted_jaccard(a: frozenset[str], b: frozenset[str], *, layer: str = 'gene
     union = a | b
     if not union:
         return 1.0
-    numerator = sum(_feature_weight(feature, layer=layer) for feature in a & b)
-    denominator = sum(_feature_weight(feature, layer=layer) for feature in union)
+    numerator = math.fsum(_feature_weight(feature, layer=layer) for feature in a & b)
+    denominator = math.fsum(_feature_weight(feature, layer=layer) for feature in union)
     return numerator / denominator if denominator else 1.0
 
 
@@ -726,39 +726,50 @@ class FingerprintLayerSimilarity(BaseModel):
         """Backward-readable raw layer score."""
         return self.jaccard
 
-    def __float__(self) -> float:  # noqa: D105
+    def __float__(self) -> float:
+        """Return the raw Jaccard score."""
         return self.jaccard
 
-    def __format__(self, spec: str) -> str:  # noqa: D105
+    def __format__(self, spec: str) -> str:
+        """Format the raw Jaccard score."""
         return format(self.jaccard, spec)
 
-    def __lt__(self, other: object) -> bool:  # noqa: D105
+    def __lt__(self, other: object) -> bool:
+        """Compare the raw Jaccard score."""
         return self.jaccard < _coerce_score(other)
 
-    def __le__(self, other: object) -> bool:  # noqa: D105
+    def __le__(self, other: object) -> bool:
+        """Compare the raw Jaccard score."""
         return self.jaccard <= _coerce_score(other)
 
-    def __gt__(self, other: object) -> bool:  # noqa: D105
+    def __gt__(self, other: object) -> bool:
+        """Compare the raw Jaccard score."""
         return self.jaccard > _coerce_score(other)
 
-    def __ge__(self, other: object) -> bool:  # noqa: D105
+    def __ge__(self, other: object) -> bool:
+        """Compare the raw Jaccard score."""
         return self.jaccard >= _coerce_score(other)
 
-    def __eq__(self, other: object) -> bool:  # noqa: D105
+    def __eq__(self, other: object) -> bool:
+        """Compare the raw Jaccard score to a number."""
         if isinstance(other, (int, float)):
             return self.jaccard == float(other)
         return super().__eq__(other)
 
-    def __sub__(self, other: object) -> float:  # noqa: D105
+    def __sub__(self, other: object) -> float:
+        """Subtract another score from the raw Jaccard score."""
         return self.jaccard - _coerce_score(other)
 
-    def __rsub__(self, other: object) -> float:  # noqa: D105
+    def __rsub__(self, other: object) -> float:
+        """Subtract the raw Jaccard score from another score."""
         return _coerce_score(other) - self.jaccard
 
-    def __add__(self, other: object) -> float:  # noqa: D105
+    def __add__(self, other: object) -> float:
+        """Add another score to the raw Jaccard score."""
         return self.jaccard + _coerce_score(other)
 
-    def __radd__(self, other: object) -> float:  # noqa: D105
+    def __radd__(self, other: object) -> float:
+        """Add the raw Jaccard score to another score."""
         return _coerce_score(other) + self.jaccard
 
 

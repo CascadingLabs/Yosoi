@@ -1,0 +1,24 @@
+# yaml-language-server: $schema=https://cascadinglabs.com/yosoi/schemas/policy.schema.json
+# Budgeted frontier pass: allow selector discovery and richer extraction, but keep outputs local and auditable.
+atom_reads: true
+trust_tier: strict
+search:
+  provider: ddgs
+  backend: google,bing,brave
+  region: us-en
+  safesearch: moderate
+  max_results: 20
+scrape:
+  fetcher_type: auto
+  skip_verification: false
+  max_concurrency: 4
+discovery:
+  mode: auto
+  lesson_cache: true
+  max_concurrent: 5
+output:
+  quiet: true
+  formats:
+    - jsonl
+  flat_files: false
+  logs: true

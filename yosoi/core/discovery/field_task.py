@@ -35,6 +35,7 @@ class FieldTaskResult:
         selectors: Discovered and inline-verified selectors, or None if failed
         from_cache: True if selectors came from the domain cache
         escalated_to: The SelectorLevel that succeeded (None if CSS or cache hit)
+        absent: True only when the model intentionally returned NA for this field.
 
     """
 
@@ -42,6 +43,7 @@ class FieldTaskResult:
     selectors: FieldSelectors | None
     from_cache: bool
     escalated_to: SelectorLevel | None
+    absent: bool = False
 
 
 async def _invoke_agent(
@@ -61,6 +63,86 @@ async def _invoke_agent(
                 field_name, field_description, discovery_input, level, is_container, feedback
             )
     return await agent.discover_field(field_name, field_description, discovery_input, level, is_container, feedback)
+
+
+def _selector_strategy_order(max_level: SelectorLevel, discovery_input: DiscoveryInput) -> list[SelectorLevel]:
+    """Rank selector ceilings for discovery attempts.
+
+    Static HTML keeps the historical simple-to-complex order. Browser-rendered
+    L2+ captures include an AX hint, where role/name anchors are usually more
+    stable than class soup, so try the all-strategy/AX ceiling first.
+    """
+    levels = [level for level in SelectorLevel if level <= max_level]
+    if not discovery_input.ax_hint:
+        return levels
+
+    ranked = [
+        SelectorLevel.ROLE,
+        SelectorLevel.CSS,
+        SelectorLevel.ATTR,
+        SelectorLevel.GLOBAL_ID,
+        SelectorLevel.XPATH,
+        SelectorLevel.JSONLD,
+        SelectorLevel.REGEX,
+        SelectorLevel.VISUAL,
+    ]
+    return [level for level in ranked if level in levels]
+
+
+def _retry_error_detail(exc: RetryError) -> str:
+    """Return the underlying final exception message from a tenacity RetryError."""
+    last = exc.last_attempt.exception()
+    return str(last or exc)
+
+
+async def _discover_at_level(
+    *,
+    field_name: str,
+    field_description: str,
+    discovery_input: DiscoveryInput,
+    agent: FieldDiscoveryAgent,
+    level: SelectorLevel,
+    max_retries: int,
+    is_container: bool,
+    semaphore: asyncio.Semaphore | None,
+    feedback: FieldFeedback | None,
+) -> tuple[FieldSelectors | None, bool]:
+    """Run bounded LLM discovery for one selector level; return (selectors, saw_na)."""
+    discovered: FieldSelectors | None = None
+    saw_absent = False
+    try:
+        retryer = get_async_retryer(
+            max_attempts=max_retries,
+            wait_min=1,
+            wait_max=10,
+            exceptions=(LLMGenerationError,),
+            reraise=True,
+        )
+        async for attempt in retryer:
+            with attempt:
+                llm_result = await _invoke_agent(
+                    agent,
+                    field_name,
+                    field_description,
+                    discovery_input,
+                    level,
+                    is_container,
+                    semaphore,
+                    feedback,
+                )
+                if llm_result is None:
+                    saw_absent = True
+                    break
+                discovered = llm_result
+    except RetryError as exc:
+        logger.debug('All retries exhausted for %s at level %s', field_name, level.name)
+        raise LLMGenerationError(
+            f'LLM discovery failed for `{field_name}` after {max_retries} attempt(s): {_retry_error_detail(exc)}'
+        ) from exc
+    except LLMGenerationError:
+        logger.debug('LLM discovery failed for %s at level %s', field_name, level.name)
+        raise
+    return discovered, saw_absent
 
 
 async def _discover_field(
@@ -116,52 +198,33 @@ async def _discover_field(
             logger.debug('Cached selector for %s is invalid, re-discovering', field_name)
 
     # --- 2. Per-level escalation loop ---
-    for level in SelectorLevel:
-        if level > max_level:
-            break
-
-        discovered: FieldSelectors | None = None
-
-        try:
-            retryer = get_async_retryer(
-                max_attempts=max_retries,
-                wait_min=1,
-                wait_max=10,
-                exceptions=(LLMGenerationError,),
-                reraise=True,
-            )
-            async for attempt in retryer:
-                with attempt:
-                    llm_result = await _invoke_agent(
-                        agent,
-                        field_name,
-                        field_description,
-                        discovery_input,
-                        level,
-                        is_container,
-                        semaphore,
-                        feedback,
-                    )
-                    if llm_result is None:
-                        # LLM returned NA — not retryable, skip to next level
-                        break
-                    discovered = llm_result
-
-        except (LLMGenerationError, RetryError):
-            logger.debug('All retries exhausted for %s at level %s', field_name, level.name)
-            continue  # try next level
-
+    saw_absent = False
+    for level in _selector_strategy_order(max_level, discovery_input):
+        discovered, absent_at_level = await _discover_at_level(
+            field_name=field_name,
+            field_description=field_description,
+            discovery_input=discovery_input,
+            agent=agent,
+            level=level,
+            max_retries=max_retries,
+            is_container=is_container,
+            semaphore=semaphore,
+            feedback=feedback,
+        )
+        saw_absent = saw_absent or absent_at_level
         if discovered is None:
             continue
 
         # --- Inline verify ---
         verify_result = verifier._verify_field(parsel_sel, field_name, discovered, max_level)
         if verify_result.status == 'verified':
-            escalated = level if level > SelectorLevel.CSS else None
+            winning_level = discovered.max_level
+            escalated = winning_level if winning_level > SelectorLevel.CSS else None
             logger.info(
-                'Field discovered field=%s level=%s escalated=%s',
+                'Field discovered field=%s level=%s selector_level=%s escalated=%s',
                 field_name,
                 level.name,
+                winning_level.name,
                 escalated is not None,
             )
             return FieldTaskResult(
@@ -174,6 +237,8 @@ async def _discover_field(
         logger.debug('Selector for %s at level %s failed verification', field_name, level.name)
 
     obs.warning('Field discovery failed all levels', field=field_name, max_level=max_level.name)
+    if saw_absent:
+        return FieldTaskResult(field_name=field_name, selectors=None, from_cache=False, escalated_to=None, absent=True)
     return failure
 
 

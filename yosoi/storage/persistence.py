@@ -1,12 +1,15 @@
-"""Handles saving and loading selector data to/from JSON files."""
+"""Handles selector and extracted-content state in SQLite."""
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import os
+import sqlite3
 from datetime import datetime, timezone
-from typing import Any
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
@@ -14,7 +17,6 @@ logger = logging.getLogger(__name__)
 from yosoi.models.snapshot import (
     CacheVerdict,
     SelectorSnapshot,
-    SnapshotMap,
     SnapshotStatus,
     selector_dict_to_snapshot,
     snapshot_to_selector_dict,
@@ -22,40 +24,55 @@ from yosoi.models.snapshot import (
 from yosoi.utils.files import atomic_write_json_async, init_yosoi, safe_domain
 from yosoi.utils.urls import extract_domain
 
+if TYPE_CHECKING:
+    from yosoi.models.contract import Contract
+
 
 class SelectorStorage:
-    """Manages selector storage in JSON files.
+    """Manages selector and content state in `.yosoi/yosoi.sqlite3`.
 
     Attributes:
-        storage_dir: Directory path where selector files are stored
-        content_dir: Directory path where extracted content is stored
+        content_dir: Directory path where opt-in extracted-content flat files are stored.
 
     """
 
-    def __init__(self, storage_dir: str = 'selectors', content_dir: str = 'content'):
+    def __init__(self, content_dir: str | Path = 'content', *, flat_files: bool = False):
         """Initialize the storage manager.
 
         Args:
-            storage_dir: Directory path for storing selector files. Defaults to 'selectors'.
-            content_dir: Directory path for storing extracted content. Defaults to 'content'.
+            content_dir: Directory path for opt-in extracted-content flat files. Defaults to 'content'.
+            flat_files: Also write extracted content as files. SQLite remains the source of truth.
 
         """
-        self.storage_dir = str(init_yosoi(storage_dir))
-        self.content_dir = str(init_yosoi(content_dir))
+        yosoi_dir = init_yosoi()
+        self.content_dir = str(yosoi_dir / Path(content_dir))
+        self.database_path = yosoi_dir / 'yosoi.sqlite3'
+        self.flat_files = flat_files
 
     async def save_selectors(
-        self, url: str, selectors: dict[str, Any], *, verified: bool = False, contract_sig: str | None = None
+        self,
+        url: str,
+        selectors: dict[str, Any],
+        *,
+        verified: bool = False,
+        contract_sig: str | None = None,
+        contract: type[Contract] | None = None,
+        expected_record_count: int | None = None,
+        sample_field_coverage: dict[str, int] | None = None,
     ) -> str:
         """Save selectors as snapshot format.
 
         Wraps each field's selector dict in a SelectorSnapshot with a
-        ``discovered_at`` timestamp, then writes the SnapshotMap to disk.
+        ``discovered_at`` timestamp, then writes the snapshots to SQLite.
 
         Args:
             url: URL the selectors were discovered from
             selectors: Dictionary of validated selectors
             verified: When True, stamp each snapshot with ``last_verified_at=now``.
             contract_sig: Optional contract signature for isolated selector cache files.
+            contract: Optional Contract class used to persist normalized contract/field entities.
+            expected_record_count: Discovery-time record count to preserve as replay evidence.
+            sample_field_coverage: Discovery-time non-empty field coverage by flat field name.
 
         Returns:
             Path to the saved file.
@@ -66,12 +83,16 @@ class SelectorStorage:
         snapshots: dict[str, SelectorSnapshot] = {}
         for field_name, field_data in formatted.items():
             snapshots[field_name] = selector_dict_to_snapshot(
-                field_data, discovered_at=now, last_verified_at=now if verified else None
+                field_data,
+                discovered_at=now,
+                last_verified_at=now if verified else None,
+                discovery_record_count=expected_record_count,
+                discovery_field_coverage=sample_field_coverage,
             )
-        return await self.save_snapshots(url, snapshots, contract_sig=contract_sig)
+        return await self.save_snapshots(url, snapshots, contract_sig=contract_sig, contract=contract)
 
     async def load_selectors(self, domain: str, contract_sig: str | None = None) -> dict[str, Any] | None:
-        """Load selectors from a snapshot file.
+        """Load selectors from the SQLite snapshot store.
 
         Strips audit metadata — callers receive
         ``{field: {primary, fallback, tertiary}}`` shape.
@@ -120,8 +141,10 @@ class SelectorStorage:
             True if selector file exists for the domain, False otherwise.
 
         """
-        filepath = self._get_filepath(domain, contract_sig=contract_sig)
-        return self._file_exists_sync(filepath)
+        from yosoi.storage.cache_metrics_libsql import LibSQLCacheMetricsStore
+
+        async with LibSQLCacheMetricsStore(self.database_path) as metrics_store:
+            return await metrics_store.selector_exists(domain, contract_fingerprint=contract_sig)
 
     async def save_content(
         self,
@@ -130,7 +153,7 @@ class SelectorStorage:
         output_format: str = 'json',
         contract_sig: str | None = None,
     ) -> str:
-        """Save extracted content to a file in the specified format.
+        """Save extracted content to SQLite, optionally mirroring to a flat file.
 
         Args:
             url: URL the content was extracted from
@@ -142,22 +165,25 @@ class SelectorStorage:
             Path to the saved file.
 
         """
-        from yosoi.outputs.utils import save_formatted_content
-
         domain = self._extract_domain(url)
+        self._save_content_sqlite(url, domain, content, output_format, contract_sig)
+
         filepath = self._get_content_filepath(url, output_format, contract_sig)
+        if self.flat_files:
+            from yosoi.outputs.utils import save_formatted_content
 
-        # Output savers include binary/tabular writers (pandas, pyarrow, openpyxl)
-        # that have no async API; keep one synchronous dispatch path for every format.
-        save_formatted_content(filepath, url, domain, content, output_format)
+            # Output savers include binary/tabular writers (pandas, pyarrow, openpyxl)
+            # that have no async API; keep one synchronous dispatch path for every format.
+            save_formatted_content(filepath, url, domain, content, output_format)
+            logger.info('Saved content flat file to: %s', filepath)
 
-        logger.info('Saved content to: %s', filepath)
-        return filepath
+        logger.info('Saved content to SQLite: %s', self.database_path)
+        return str(self.database_path)
 
     async def load_content(
         self, url: str, contract_sig: str | None = None
     ) -> dict[str, Any] | list[dict[str, Any]] | None:
-        """Load extracted content from a JSON file.
+        """Load extracted content from SQLite, with legacy JSON-file fallback.
 
         Args:
             url: URL to load content for
@@ -167,8 +193,11 @@ class SelectorStorage:
             Single content dict, list of item dicts for multi-item pages, or None.
 
         """
-        filepath = self._get_content_filepath(url, contract_sig=contract_sig)
+        row = self._load_content_sqlite(url, contract_sig=contract_sig)
+        if row is not None:
+            return row
 
+        filepath = self._get_content_filepath(url, contract_sig=contract_sig)
         return self._load_content_sync(filepath)
 
     async def content_exists(self, url: str, contract_sig: str | None = None) -> bool:
@@ -182,21 +211,24 @@ class SelectorStorage:
             True if content file exists for the URL, False otherwise.
 
         """
+        if self._content_exists_sqlite(url, contract_sig=contract_sig):
+            return True
         filepath = self._get_content_filepath(url, contract_sig=contract_sig)
         return self._file_exists_sync(filepath)
 
     async def list_domains(self) -> list[str]:
         """List all domains with saved selectors.
 
-        Reads the ``domain`` field from each snapshot file rather than
-        reversing filename mangling, so domains with underscores round-trip
-        correctly.
+        Reads the current selector snapshot rows from the local SQLite database.
 
         Returns:
             Sorted list of domain names with saved selectors.
 
         """
-        return self._list_domains_sync()
+        from yosoi.storage.cache_metrics_libsql import LibSQLCacheMetricsStore
+
+        async with LibSQLCacheMetricsStore(self.database_path) as metrics_store:
+            return await metrics_store.list_domains()
 
     async def get_summary(self) -> dict[str, Any]:
         """Get summary of all saved selectors.
@@ -234,7 +266,7 @@ class SelectorStorage:
     # ------------------------------------------------------------------
 
     async def load_snapshots(self, domain: str, contract_sig: str | None = None) -> dict[str, SelectorSnapshot] | None:
-        """Load full snapshots with audit metadata for a domain.
+        """Load full SQLite snapshots with audit metadata for a domain.
 
         Args:
             domain: Domain name (e.g., 'example.com')
@@ -244,44 +276,46 @@ class SelectorStorage:
             Dict mapping field names to SelectorSnapshot, or None if not found.
 
         """
-        data = await self._load_file_data(domain, contract_sig=contract_sig)
-        if data is None:
-            return None
+        from yosoi.storage.cache_metrics_libsql import LibSQLCacheMetricsStore
 
-        if 'snapshots' not in data:
-            return None
-
-        try:
-            snap_map = SnapshotMap.model_validate(data)
-            return dict(snap_map.snapshots) if snap_map.snapshots else None
-        except (ValueError, TypeError):
-            return None
+        async with LibSQLCacheMetricsStore(self.database_path) as metrics_store:
+            return await metrics_store.load_snapshots(domain, contract_fingerprint=contract_sig)
 
     async def save_snapshots(
-        self, url: str, snapshots: dict[str, SelectorSnapshot], contract_sig: str | None = None
+        self,
+        url: str,
+        snapshots: dict[str, SelectorSnapshot],
+        contract_sig: str | None = None,
+        contract: type[Contract] | None = None,
     ) -> str:
-        """Write v2 snapshot format to disk.
+        """Write current selector snapshots to the local SQLite database.
 
         Args:
             url: URL the selectors were discovered from
             snapshots: Dict mapping field names to SelectorSnapshot
             contract_sig: Optional contract signature for isolated selector cache files.
+            contract: Optional Contract class used to persist normalized contract/field entities.
 
         Returns:
             Path to the saved file.
 
         """
         domain = self._extract_domain(url)
-        filepath = self._get_selector_filepath(domain, contract_sig=contract_sig)
+        from yosoi.storage.cache_metrics_libsql import LibSQLCacheMetricsStore
+        from yosoi.utils.signatures import contract_signature
 
-        snap_map = SnapshotMap(url=url, domain=domain, snapshots=snapshots)
-        payload = snap_map.model_dump(mode='json')
-        if contract_sig:
-            payload['contract_sig'] = contract_sig
-        await atomic_write_json_async(filepath, payload, ensure_ascii=False)
+        contract_fp = contract_sig or (contract_signature(contract) if contract is not None else None)
+        async with LibSQLCacheMetricsStore(self.database_path) as metrics_store:
+            await metrics_store.upsert_snapshots(
+                url=url,
+                domain=domain,
+                snapshots=snapshots,
+                contract_fingerprint=contract_fp,
+                contract=contract,
+            )
 
-        logger.info('Saved snapshots to: %s', filepath)
-        return filepath
+        logger.info('Saved snapshots for %s to: %s', domain, self.database_path)
+        return str(self.database_path)
 
     async def record_verdict(
         self, domain: str, field_name: str, verdict: CacheVerdict, contract_sig: str | None = None
@@ -295,28 +329,15 @@ class SelectorStorage:
             contract_sig: Optional contract signature for isolated selector cache files.
 
         """
-        data = await self._load_file_data(domain, contract_sig=contract_sig)
-        if data is None or 'snapshots' not in data:
-            return
+        from yosoi.storage.cache_metrics_libsql import LibSQLCacheMetricsStore
 
-        snap_map = SnapshotMap.model_validate(data)
-        snap = snap_map.snapshots.get(field_name)
-        if snap is None:
-            return
-
-        now = datetime.now(timezone.utc)
-        if verdict == CacheVerdict.FRESH:
-            snap.last_verified_at = now
-            snap.failure_count = 0
-        else:  # STALE or DEGRADED
-            snap.last_failed_at = now
-            snap.failure_count += 1
-
-        filepath = self._get_filepath(domain, contract_sig=contract_sig)
-        payload = snap_map.model_dump(mode='json')
-        if contract_sig:
-            payload['contract_sig'] = contract_sig
-        await atomic_write_json_async(filepath, payload, ensure_ascii=False)
+        async with LibSQLCacheMetricsStore(self.database_path) as metrics_store:
+            await metrics_store.record_verdict(
+                domain=domain,
+                field_name=field_name,
+                verdict=verdict,
+                contract_fingerprint=contract_sig,
+            )
 
     def _format_selectors(self, selectors: dict[str, Any]) -> dict[str, dict[str, Any]]:
         """Format selectors for storage.
@@ -345,35 +366,6 @@ class SelectorStorage:
     def _extract_domain(self, url: str) -> str:
         """Extract the normalized domain from a URL (single source of truth)."""
         return extract_domain(url)
-
-    def _get_filepath(self, domain: str, contract_sig: str | None = None) -> str:
-        """Get filepath for a domain's selectors (always JSON).
-
-        Args:
-            domain: Domain name
-            contract_sig: Optional contract signature for isolated selector cache files.
-
-        Returns:
-            Full file path for the domain's selector file (JSON).
-
-        """
-        return self._get_selector_filepath(domain, contract_sig=contract_sig)
-
-    def _get_selector_filepath(self, domain: str, contract_sig: str | None = None) -> str:
-        """Get filepath for a domain's selectors (always JSON).
-
-        Args:
-            domain: Domain name
-            contract_sig: Optional contract signature for isolated selector cache files.
-
-        Returns:
-            Full file path for the domain's selector file.
-
-        """
-        safe = safe_domain(domain)
-        if contract_sig:
-            safe = f'{safe}_{contract_sig}'
-        return os.path.join(self.storage_dir, f'selectors_{safe}.json')
 
     def _get_content_filepath(self, url: str, output_format: str = 'json', contract_sig: str | None = None) -> str:
         """Get filepath for a URL's extracted content.
@@ -426,21 +418,112 @@ class SelectorStorage:
 
         return os.path.join(domain_dir, filename)
 
-    async def _load_file_data(self, domain: str, contract_sig: str | None = None) -> dict[str, Any] | None:
-        """Load complete file data for a domain.
+    def _save_content_sqlite(
+        self,
+        url: str,
+        domain: str,
+        content: dict[str, Any] | list[dict[str, Any]],
+        output_format: str,
+        contract_sig: str | None,
+    ) -> None:
+        from yosoi.outputs.json import format_json
 
-        Args:
-            domain: Domain name
-            contract_sig: Optional contract signature for isolated selector cache files.
+        payload = format_json(url, domain, content)
+        now = str(payload['extracted_at'])
+        url_hash = hashlib.md5(url.encode()).hexdigest()[:16]
+        contract_fp = contract_sig or ''
+        self._ensure_content_table()
+        with sqlite3.connect(self.database_path) as conn:
+            conn.execute(
+                """
+                INSERT INTO fetch_outputs (
+                    contract_fingerprint, url_hash, output_format, url, domain, extracted_at, content_json, fetch_json, downloads_path
+                )
+                VALUES (?, ?, ?, ?, ?, ?, json(?), json(?), ?)
+                ON CONFLICT(contract_fingerprint, url_hash, output_format) DO UPDATE SET
+                    url = excluded.url,
+                    domain = excluded.domain,
+                    extracted_at = excluded.extracted_at,
+                    content_json = excluded.content_json,
+                    fetch_json = excluded.fetch_json,
+                    downloads_path = excluded.downloads_path
+                """,
+                (
+                    contract_fp,
+                    url_hash,
+                    output_format,
+                    url,
+                    domain,
+                    now,
+                    json.dumps(payload, ensure_ascii=False, sort_keys=True),
+                    json.dumps({}, sort_keys=True),
+                    None,
+                ),
+            )
 
-        Returns:
-            Dictionary with full JSON structure (url, domain, discovered_at, selectors),
-            or None if not found or error occurred.
+    def _load_content_sqlite(
+        self, url: str, contract_sig: str | None = None
+    ) -> dict[str, Any] | list[dict[str, Any]] | None:
+        self._ensure_content_table()
+        url_hash = hashlib.md5(url.encode()).hexdigest()[:16]
+        contract_fp = contract_sig or ''
+        with sqlite3.connect(self.database_path) as conn:
+            row = conn.execute(
+                """
+                SELECT content_json FROM fetch_outputs
+                WHERE contract_fingerprint = ? AND url_hash = ? AND output_format = 'json'
+                """,
+                (contract_fp, url_hash),
+            ).fetchone()
+        if row is None:
+            return None
+        data = json.loads(str(row[0]))
+        if 'items' in data and isinstance(data['items'], list):
+            items: list[dict[str, Any]] = data['items']
+            return items
+        content: dict[str, Any] = data.get('content', data)
+        return content
 
-        """
-        filepath = self._get_filepath(domain, contract_sig=contract_sig)
+    def _content_exists_sqlite(self, url: str, contract_sig: str | None = None) -> bool:
+        self._ensure_content_table()
+        url_hash = hashlib.md5(url.encode()).hexdigest()[:16]
+        contract_fp = contract_sig or ''
+        with sqlite3.connect(self.database_path) as conn:
+            row = conn.execute(
+                """
+                SELECT 1 FROM fetch_outputs
+                WHERE contract_fingerprint = ? AND url_hash = ?
+                LIMIT 1
+                """,
+                (contract_fp, url_hash),
+            ).fetchone()
+        return row is not None
 
-        return self._load_file_data_sync(filepath)
+    def _ensure_content_table(self) -> None:
+        self.database_path.parent.mkdir(parents=True, exist_ok=True)
+        with sqlite3.connect(self.database_path) as conn:
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS fetch_outputs (
+                    contract_fingerprint TEXT NOT NULL,
+                    url_hash TEXT NOT NULL,
+                    output_format TEXT NOT NULL,
+                    url TEXT NOT NULL,
+                    domain TEXT NOT NULL,
+                    extracted_at TEXT NOT NULL,
+                    content_json JSON NOT NULL,
+                    fetch_json JSON NOT NULL DEFAULT '{}',
+                    downloads_path TEXT,
+                    PRIMARY KEY(contract_fingerprint, url_hash, output_format)
+                )
+                """
+            )
+            conn.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_fetch_outputs_contract_domain
+                ON fetch_outputs(contract_fingerprint, domain)
+                """
+            )
 
     def _load_content_sync(self, filepath: str) -> dict[str, Any] | list[dict[str, Any]] | None:
         if not os.path.exists(filepath):
@@ -458,37 +541,6 @@ class SelectorStorage:
                 return content
         except (OSError, json.JSONDecodeError, ValueError) as e:
             logger.error('Error loading content: %s', e)
-            return None
-
-    def _list_domains_sync(self) -> list[str]:
-        if not os.path.exists(self.storage_dir):
-            return []
-
-        domains = []
-        for filename in os.listdir(self.storage_dir):
-            if not (filename.startswith('selectors_') and filename.endswith('.json')):
-                continue
-            filepath = os.path.join(self.storage_dir, filename)
-            try:
-                with open(filepath, encoding='utf-8') as f:
-                    data = json.loads(f.read())
-                domain = data.get('domain')
-                if isinstance(domain, str) and domain:
-                    domains.append(domain)
-            except (OSError, json.JSONDecodeError):
-                pass
-
-        return sorted(set(domains))
-
-    def _load_file_data_sync(self, filepath: str) -> dict[str, Any] | None:
-        if not os.path.exists(filepath):
-            return None
-
-        try:
-            with open(filepath, encoding='utf-8') as f:
-                file_data: dict[str, Any] = json.loads(f.read())
-                return file_data
-        except (OSError, json.JSONDecodeError):
             return None
 
     @staticmethod

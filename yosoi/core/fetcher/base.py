@@ -359,7 +359,7 @@ class HTMLFetcher(ABC):
                 found.append(message)
 
     def _check_for_bot_detection(
-        self, html: str, status_code: int, headers: dict[str, str] | None = None
+        self, html: str, status_code: int, headers: dict[str, str] | None = None, *, min_html_length: int = 100
     ) -> tuple[bool, list[str]]:
         """Check if HTML indicates bot detection.
 
@@ -367,6 +367,8 @@ class HTMLFetcher(ABC):
             html: The HTML of the URL
             status_code: The status code of the URL returned
             headers: Optional response headers for additional signal detection
+            min_html_length: Minimum body length before a response is classified
+                as too short.
 
         Returns:
             Tuple of (is_blocked, indicators) where is_blocked is True if bot
@@ -374,7 +376,7 @@ class HTMLFetcher(ABC):
             Returns (False, []) if no blocking detected.
 
         """
-        if not html or len(html) < 100:
+        if not html or len(html) < min_html_length:
             return True, ['HTML too short']
 
         headers_lower: dict[str, str] = {k.lower(): v for k, v in (headers or {}).items()}

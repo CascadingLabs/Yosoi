@@ -71,6 +71,9 @@ if TYPE_CHECKING:  # static typing only — no runtime cost
         FingerprintPolicy as FingerprintPolicy,
     )
     from yosoi.policy.page import (
+        BrowserProfilePolicy as BrowserProfilePolicy,
+    )
+    from yosoi.policy.page import (
         PagePolicy as PagePolicy,
     )
     from yosoi.policy.page import (
@@ -92,7 +95,19 @@ if TYPE_CHECKING:  # static typing only — no runtime cost
         ResolvedRunSpec as ResolvedRunSpec,
     )
     from yosoi.policy.run import (
+        SafeSearch as SafeSearch,
+    )
+    from yosoi.policy.run import (
         ScrapePolicy as ScrapePolicy,
+    )
+    from yosoi.policy.run import (
+        SearchKind as SearchKind,
+    )
+    from yosoi.policy.run import (
+        SearchPolicy as SearchPolicy,
+    )
+    from yosoi.policy.run import (
+        SearchProvider as SearchProvider,
     )
     from yosoi.policy.run import (
         SecretRef as SecretRef,
@@ -190,6 +205,7 @@ if TYPE_CHECKING:  # static typing only — no runtime cost
 
 _LAZY = {
     'FingerprintPolicy': 'yosoi.policy.fingerprint',
+    'BrowserProfilePolicy': 'yosoi.policy.page',
     'PagePolicy': 'yosoi.policy.page',
     'PageRuntimeConfig': 'yosoi.policy.page',
     'DiscoveryPolicy': 'yosoi.policy.run',
@@ -198,6 +214,10 @@ _LAZY = {
     'OutputPolicy': 'yosoi.policy.run',
     'ResolvedRunSpec': 'yosoi.policy.run',
     'ScrapePolicy': 'yosoi.policy.run',
+    'SearchPolicy': 'yosoi.policy.run',
+    'SafeSearch': 'yosoi.policy.run',
+    'SearchKind': 'yosoi.policy.run',
+    'SearchProvider': 'yosoi.policy.run',
     'SecretRef': 'yosoi.policy.run',
     'TelemetryPolicy': 'yosoi.policy.run',
     'alibaba': 'yosoi.policy.run',

@@ -44,6 +44,7 @@ class SimpleFetcher(HTMLFetcher):
         randomize_headers: bool = True,
         user_agent: str | None = None,
         allow_redirects: bool = True,
+        min_content_length: int = 100,
     ):
         """Intialize the simple fetcher.
 
@@ -56,6 +57,9 @@ class SimpleFetcher(HTMLFetcher):
             randomize_headers: If True then will randomize the headers used to fetch
             user_agent: Fixed UA to use instead of per-request UA rotation
             allow_redirects: Whether HTTP redirects are followed by this fetcher
+            min_content_length: Minimum accepted text length before a response is
+                treated as too short. ``robots.txt`` and sitemap probes can lower
+                this while normal page fetches keep the conservative default.
 
         """
         self.timeout = timeout
@@ -66,6 +70,7 @@ class SimpleFetcher(HTMLFetcher):
         self.randomize_headers = randomize_headers
         self.user_agent = user_agent
         self.allow_redirects = allow_redirects
+        self.min_content_length = min_content_length
 
         # Client is created lazily in __aenter__ when use_session=True
         self.client: httpx2.AsyncClient | None = None
@@ -178,7 +183,7 @@ class SimpleFetcher(HTMLFetcher):
                     html = response.content.decode('latin-1', errors='replace')
 
             # Verify we got actual HTML
-            if not html or len(html) < 100:
+            if not html or len(html) < self.min_content_length:
                 return FetchResult(
                     url=str(response.url),
                     html=None,
@@ -190,7 +195,9 @@ class SimpleFetcher(HTMLFetcher):
 
             # Check for bot detection
             response_headers = dict(response.headers)
-            is_blocked, indicators = self._check_for_bot_detection(html, status_code, response_headers)
+            is_blocked, indicators = self._check_for_bot_detection(
+                html, status_code, response_headers, min_html_length=self.min_content_length
+            )
 
             if is_blocked:
                 self.logger.warning(

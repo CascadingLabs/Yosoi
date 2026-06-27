@@ -7,7 +7,7 @@ to a *bundle* of atoms; many contracts over the same shape + region SHARE atoms 
 organic ``url``/``title`` is discovered once and replayed by every contract that asks
 for it, on every mirror/locale of the same template).
 
-Atom key (content-addressed): ``(page_shape, region_role, field_name, yosoi_type)``.
+Atom key (content-addressed): ``(page_shape, region_role, field_fingerprint)``.
 The literal domain is demoted to *provenance* (``domains_seen``), not identity.
 
 P2 scope (this module + its gated dual-write):
@@ -22,12 +22,14 @@ fail-closed cross-shape reuse gate) arrive in P3.
 from __future__ import annotations
 
 import logging
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
 from yosoi.utils.files import atomic_write_text, get_project_root
+from yosoi.utils.signatures import field_signature
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +61,9 @@ def _resolve_store_path(path: str | Path) -> Path:
 #                   page) → lowest trust, DEFAULT-QUARANTINED. The fingerprint proposes; the
 #                   trust policy (see yosoi.core.atom_read) decides what is actually served.
 AtomSource = Literal['verified', 'llm', 'manual', 'fingerprint']
+AtomFieldInput = (
+    tuple[str, dict[str, Any], str | None, str | None] | tuple[str, dict[str, Any], str | None, str | None, str | None]
+)
 SOURCE_TRUST: dict[str, int] = {'verified': 3, 'manual': 2, 'llm': 2, 'fingerprint': 1}
 
 # Atom-corpus identity scheme (P4). Bump when the atom KEY or the fingerprint that feeds it
@@ -66,7 +71,7 @@ SOURCE_TRUST: dict[str, int] = {'verified': 3, 'manual': 2, 'llm': 2, 'fingerpri
 # STALE (→ lazy re-mint) instead of silently re-discovering — mirrors the lesson store's
 # SIGNATURE_SCHEME_VERSION discipline. NOTE: in the atom model the monolithic
 # ``contract_signature`` and the literal domain are NOT identity — atoms key on
-# (page_shape, region, field, type); domain lives in ``domains_seen`` provenance only.
+# (page_shape, region, field_fingerprint); domain lives in ``domains_seen`` provenance only.
 ATOM_SCHEME_VERSION = 'a1'
 
 
@@ -95,6 +100,7 @@ class FieldAtom(BaseModel):
         page_shape: The ``page_shape_fp`` bucket the field was observed in (URL-independent).
         region_role: The verified disjoint region (root selector, or ``name:<contract>``).
         field_name: The contract field this selector fills.
+        field_fingerprint: Field-entity fingerprint used for runtime identity.
         yosoi_type: The field's semantic type (``url``/``title``/…), or None.
         selector: The field's primary selector entry (``{type, value}``), root-relative.
         source: Provenance trust tier — how this selector was obtained (see ``SOURCE_TRUST``).
@@ -107,6 +113,7 @@ class FieldAtom(BaseModel):
     page_shape: str = Field(min_length=1)
     region_role: str = Field(min_length=1)
     field_name: str = Field(min_length=1)
+    field_fingerprint: str | None = None
     yosoi_type: str | None = None
     selector: dict[str, Any]
     source: AtomSource = 'llm'
@@ -125,14 +132,15 @@ class FieldAtom(BaseModel):
     @property
     def key(self) -> str:
         """The content-addressed identity (domain-independent)."""
-        return _SEP.join([self.page_shape, self.region_role, self.field_name, self.yosoi_type or ''])
+        field_fp = self.field_fingerprint or field_signature(self.field_name, '', self.yosoi_type)
+        return _SEP.join([self.page_shape, self.region_role, field_fp])
 
 
 def derive_atoms(
     page_shape: str,
     contract_name: str,
     domain: str | None,
-    fields: list[tuple[str, dict[str, Any], str | None, str | None]],
+    fields: Sequence[AtomFieldInput],
     source: AtomSource = 'llm',
 ) -> list[FieldAtom]:
     """Build the atoms a single (accepted) contract contributes on a page.
@@ -141,8 +149,8 @@ def derive_atoms(
         page_shape: The page's ``page_shape_fp`` bucket.
         contract_name: The contract being internalized (provenance + rootless region role).
         domain: The literal domain (provenance only), or None.
-        fields: ``(field_name, primary_selector, root_selector, yosoi_type)`` per content
-            field — ``primary_selector`` is the stored ``{type, value}`` dict.
+        fields: ``(field_name, primary_selector, root_selector, yosoi_type[, field_fingerprint])``
+            per content field — ``primary_selector`` is the stored ``{type, value}`` dict.
         source: Provenance trust tier for these selectors (see ``SOURCE_TRUST``). Gate-accepted
             discovery passes ``'verified'``; default ``'llm'``.
 
@@ -150,12 +158,18 @@ def derive_atoms(
         One :class:`FieldAtom` per field, region keyed by that field's root.
     """
     atoms: list[FieldAtom] = []
-    for field_name, primary, root_selector, yosoi_type in fields:
+    for field in fields:
+        if len(field) == 5:
+            field_name, primary, root_selector, yosoi_type, field_fp = field
+        else:
+            field_name, primary, root_selector, yosoi_type = field
+            field_fp = field_signature(field_name, '', yosoi_type)
         atoms.append(
             FieldAtom(
                 page_shape=page_shape,
                 region_role=_normalize_region(root_selector, contract_name),
                 field_name=field_name,
+                field_fingerprint=field_fp,
                 yosoi_type=yosoi_type,
                 selector=primary,
                 source=source,

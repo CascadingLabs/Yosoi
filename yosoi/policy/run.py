@@ -14,6 +14,9 @@ from yosoi.policy._base import StrictFloat, StrictInt
 
 FetcherPolicyName = Literal['auto', 'simple', 'headless', 'headful', 'waterfall']
 DiscoveryMode = Literal['auto', 'static', 'mcp']
+SearchKind = Literal['text']
+SearchProvider = Literal['ddgs']
+SafeSearch = Literal['on', 'moderate', 'off']
 
 
 class SecretRef(BaseModel):
@@ -233,7 +236,7 @@ def claude_sdk(model_name: str = 'claude-opus-4-7', **kwargs: Any) -> ModelPolic
     return _model_policy('claude-sdk', model_name, None, **kwargs)
 
 
-def opencode(model_name: str = 'openai/gpt-5-codex', **kwargs: Any) -> ModelPolicy:
+def opencode(model_name: str = 'openai/gpt-5.3-codex-spark', **kwargs: Any) -> ModelPolicy:
     """Create an OpenCode model policy."""
     return _model_policy('opencode', model_name, None, **kwargs)
 
@@ -246,13 +249,27 @@ class ScrapePolicy(BaseModel):
     force: bool = False
     skip_verification: bool = False
     fetcher_type: FetcherPolicyName = 'auto'
-    selector_level: SelectorLevel = SelectorLevel.CSS
+    selector_level: SelectorLevel = max(SelectorLevel)
     max_concurrency: StrictInt | None = Field(default=None, gt=0)
     # Cross-origin DOM manipulation (VoidCrawl >= 0.3.5): launches browser fetchers with
     # Chrome's site-isolation field trials disabled so `evaluate_js_in_frame` can reach
     # field-trial-isolated origins (e.g. embedded google.com frames). This weakens the
     # browser's security posture for the whole session — explicit opt-in, default off.
     cross_origin_dom: bool = False
+
+    @field_validator('selector_level', mode='before')
+    @classmethod
+    def _coerce_selector_level(cls, value: object) -> object:
+        if not isinstance(value, str):
+            return value
+        level = value.strip().lower()
+        if level == 'all':
+            return max(SelectorLevel)
+        try:
+            return SelectorLevel[level.upper()]
+        except KeyError as exc:
+            valid = ', '.join(sorted([*(member.name.lower() for member in SelectorLevel), 'all']))
+            raise ValueError(f'Invalid selector_level {level!r}; choose one of: {valid}') from exc
 
 
 class DiscoveryPolicy(BaseModel):
@@ -265,6 +282,44 @@ class DiscoveryPolicy(BaseModel):
     lesson_cache: bool = True
     replay_verify_threshold: StrictFloat = Field(default=1.0, ge=0.0, le=1.0)
     static_mode_warning: bool = True
+
+
+class SearchPolicy(BaseModel):
+    """Policy for web-search discovery signals."""
+
+    model_config = ConfigDict(frozen=True)
+
+    kind: SearchKind = 'text'
+    provider: SearchProvider = 'ddgs'
+    backend: str = 'google,bing,brave'
+    region: str = 'us-en'
+    safesearch: SafeSearch = 'moderate'
+    max_results: StrictInt = Field(default=10, ge=1)
+    page: StrictInt = Field(default=1, ge=1)
+    timelimit: str | None = None
+
+    @field_validator('safesearch', mode='before')
+    @classmethod
+    def _coerce_safesearch(cls, value: object) -> object:
+        if isinstance(value, bool):
+            return 'on' if value else 'off'
+        if isinstance(value, str):
+            return value.strip().lower()
+        return value
+
+    @field_validator('backend', 'region')
+    @classmethod
+    def _non_empty_text(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError('must be non-empty')
+        return value.strip()
+
+    @field_validator('timelimit')
+    @classmethod
+    def _timelimit_non_empty(cls, value: str | None) -> str | None:
+        if value is not None and not value.strip():
+            raise ValueError('timelimit must be non-empty')
+        return value.strip() if value is not None else None
 
 
 class TelemetryPolicy(BaseModel):
@@ -282,9 +337,10 @@ class OutputPolicy(BaseModel):
 
     Use ``quiet=False`` for examples and demos where Yosoi should show progress,
     selected URLs, tables, and scrape results. Keep the default ``quiet=True`` for
-    library use where callers consume returned Python values. ``formats`` enables
-    saved artifacts, while ``json_output``/``plain_output`` switch terminal shape
-    for automation.
+    library use where callers consume returned Python values. ``formats`` chooses
+    persisted output shapes in SQLite; ``flat_files`` additionally mirrors them to
+    `.yosoi/content` files for workflows that need file artifacts. ``json_output``/
+    ``plain_output`` switch terminal shape for automation.
     """
 
     model_config = ConfigDict(frozen=True)
@@ -294,7 +350,8 @@ class OutputPolicy(BaseModel):
     json_output: bool = False
     plain_output: bool = False
     debug_html: bool = False
-    debug_html_dir: Path = Path('.yosoi/debug_html')
+    debug_html_dir: Path = Path('.yosoi/debug')
+    flat_files: bool = False
     logs: bool = True
 
     @field_validator('formats', mode='before')
@@ -362,6 +419,7 @@ class ResolvedRunSpec(BaseModel):
     max_concurrency: int | None
     cross_origin_dom: bool
     output_formats: tuple[str, ...]
+    output_flat_files: bool
     quiet: bool
     json_output: bool
     plain_output: bool

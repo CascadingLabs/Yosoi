@@ -263,6 +263,25 @@ class TestTryCachedGranular:
         result = await stub._try_cached('https://example.com', 'example.com', mock_fetcher, False, ['json'])
         assert result is None
 
+    async def test_no_llm_blocks_stale_cache_before_discovery(self, stub, mocker):
+        from yosoi.utils.exceptions import LLMBlockedError
+
+        stub._allow_llm = False
+        stub.storage.load_snapshots.return_value = {
+            'title': _make_snapshot('h1.title'),
+            'price': _make_snapshot('.price'),
+        }
+        html = '<html></html>'
+        stub._fetch_and_clean_for_cache = mocker.AsyncMock(return_value=(html, html))
+        stub.verifier._verify_field.return_value = FieldVerificationResult(
+            field_name='any', status='failed', failed_selectors=[]
+        )
+
+        with pytest.raises(LLMBlockedError, match='stale_selector'):
+            await stub._try_cached('https://example.com', 'example.com', mocker.AsyncMock(), False, ['json'])
+
+        stub.discovery.discover_selectors.assert_not_called()
+
     async def test_partial_stale_triggers_partial_discovery(self, stub, mocker):
         """When some fields are stale, should trigger partial rediscovery."""
         stub._url_start = time.monotonic()

@@ -29,7 +29,7 @@ from yosoi.core.configs import YosoiConfig
 from yosoi.core.discovery import DiscoveryOrchestrator, LLMConfig, MCPDiscoveryOrchestrator
 from yosoi.core.discovery.bus import DiscoveryBus
 from yosoi.core.fetcher import create_fetcher  # re-exported: tests patch yosoi.core.pipeline.base.create_fetcher
-from yosoi.core.fetcher.identity import BrowserIdentity
+from yosoi.core.fetcher.identity import BrowserIdentity, IdentityCascade
 from yosoi.core.pipeline.cache import PipelineCacheMixin
 from yosoi.core.pipeline.crawler import PipelineCrawlerMixin
 from yosoi.core.pipeline.discovery import PipelineDiscoveryMixin
@@ -46,6 +46,7 @@ from yosoi.storage.discovery_strategy import DiscoveryStrategyStorage
 from yosoi.storage.js_scripts import JsScriptStorage
 from yosoi.types.filetypes import normalize_allowed_types
 from yosoi.utils import observability
+from yosoi.utils.exceptions import LLMBlockedError
 from yosoi.utils.signatures import contract_signature
 
 _STATUS_STYLES: dict[str, tuple[str, bool]] = {
@@ -79,6 +80,20 @@ ContentItems = list[ContentMap]
 logger = logging.getLogger(__name__)
 
 
+_MODEL_REQUIRED_MESSAGE = (
+    'Discovery requires a Yosoi model. Cached selectors or --atom-reads can run without one, '
+    'but this URL needs discovery; pass --model or set YOSOI_MODEL and a provider API key.'
+)
+
+
+class _DeferredDiscovery:
+    async def preflight(self, *_args: Any, **_kwargs: Any) -> None:
+        return None
+
+    async def discover_selectors(self, *_args: Any, **_kwargs: Any) -> Any:
+        raise RuntimeError(_MODEL_REQUIRED_MESSAGE)
+
+
 class Pipeline(
     PipelineCacheMixin,
     PipelineExtractionMixin,
@@ -99,8 +114,32 @@ class Pipeline(
     _max_download_bytes: int | None = None
     _keep_downloads: bool = True
     _discovery_gate: DiscoveryGate | None = None  # class default for __new__-built stubs
+    _allow_llm: bool = True
+    _identity_cascade: IdentityCascade | None = None
+    _max_live_identities: int = 3
+    last_selector_source: str
+    last_cache_decision: str
+    last_llm_used: bool
+    last_llm_reason: str | None
+    last_quality_status: str
+    last_quality_issues: list[str]
+    last_expected_record_count: int | None
 
-    def __init__(
+    def _mark_scrape_decision(
+        self,
+        *,
+        selector_source: str,
+        cache_decision: str,
+        llm_used: bool,
+        llm_reason: str | None = None,
+    ) -> None:
+        """Record the decision path for the current URL x contract unit."""
+        self.last_selector_source = selector_source
+        self.last_cache_decision = cache_decision
+        self.last_llm_used = llm_used
+        self.last_llm_reason = llm_reason
+
+    def __init__(  # noqa: C901
         self,
         llm_config: LLMConfig | YosoiConfig | str | None = None,
         contract: type[Contract] | None = None,
@@ -108,7 +147,7 @@ class Pipeline(
         output_format: str | list[str] = 'json',
         force: bool = False,
         quiet: bool = False,
-        selector_level: SelectorLevel = SelectorLevel.CSS,
+        selector_level: SelectorLevel = max(SelectorLevel),
         bus: DiscoveryBus | None = None,
         write_lock: asyncio.Lock | None = None,
         discovery_gate: DiscoveryGate | None = None,
@@ -118,9 +157,14 @@ class Pipeline(
         download_dir: str | None = None,
         max_download_bytes: int | None = None,
         keep_downloads: bool = True,
+        flat_files: bool | None = None,
         identity: BrowserIdentity | None = None,
+        identity_cascade: IdentityCascade | None = None,
+        max_live_identities: int = 3,
         console: Console | None = None,
         policy: Policy | None = None,
+        show_tracking_summary: bool = False,
+        allow_llm: bool = True,
     ):
         """Initialize the pipeline with LLM configuration.
 
@@ -137,7 +181,7 @@ class Pipeline(
             quiet: Suppress console output. Used in concurrent mode where a
                    progress display replaces per-task output. Defaults to False.
             selector_level: Maximum selector strategy level for discovery and extraction.
-                            Defaults to CSS.
+                            Defaults to all.
             bus: Optional shared discovery bus for cross-pipeline field deduplication.
             write_lock: Optional asyncio.Lock to serialize selector writes for the domain.
             discovery_gate: Optional shared single-flight gate so concurrent scrapes of the
@@ -155,14 +199,19 @@ class Pipeline(
                 ``max_bytes`` of its own. Falls back to a 25 MiB built-in default when unset.
             identity: Optional opt-in BrowserIdentity (trusted profile / headful / geo teleport /
                 proxy / locale) forwarded to a browser fetcher; ignored by the simple fetcher.
+            identity_cascade: Optional ordered browser identity cascade for profile pools.
+            max_live_identities: Maximum simultaneously-live browser identity fetchers.
             console: Optional pre-built Rich Console to use (e.g. the CLI's themed stderr
                 console for ``--json`` runs); a default themed console is built when omitted.
             keep_downloads: Keep downloaded files after the run (default). Set False to purge
                 the content-addressed blobs at run end while retaining provenance in index.json.
+            flat_files: Also write extracted content to `.yosoi/content` files. Defaults to policy/output setting.
             policy: Resolved pipeline :class:`~yosoi.policy.Policy` threaded from the API edge.
                 Stored once (``policy or Policy.from_env()``) as a forward-compat seam so future
                 policy-gated behavior reads ``self._policy`` instead of the environment; the
                 pipeline has no policy-gated branch today.
+            show_tracking_summary: Print the run/page/contract/domain tracking table after each URL.
+            allow_llm: When False, fail closed if cache replay cannot satisfy the scrape.
 
         """
         if contract is None:
@@ -172,20 +221,34 @@ class Pipeline(
                 'Pipeline no longer accepts a ModelPolicy as llm_config; pass policy=Policy(model=...) instead'
             )
         # Resolve policy-first construction before applying legacy kwargs.
+        self._policy: Policy = policy or Policy.from_env()
+        self._llm_deferred = False
         if llm_config is None:
-            spec = (policy or Policy.from_env()).resolve_run_spec()
-            llm_config = spec.llm_config
-            debug_mode = spec.debug_html
-            output_format = list(spec.output_formats)
-            force = spec.force
-            quiet = spec.quiet
-            selector_level = spec.selector_level
-            allow_downloads = spec.allow_downloads
-            allowed_download_types = spec.allowed_download_types
-            download_dir = spec.download_dir
-            max_download_bytes = spec.max_download_bytes
-            keep_downloads = spec.keep_downloads
+            try:
+                spec = self._policy.resolve_run_spec()
+            except ValueError as exc:
+                if 'No model specified and no API key found' not in str(exc):
+                    raise
+                spec = None
+                self._llm_deferred = True
+                llm_config = LLMConfig(provider='deferred', model_name='model-required')
+            if spec is not None:
+                llm_config = spec.llm_config
+                debug_mode = spec.debug_html
+                output_format = list(spec.output_formats)
+                flat_files = spec.output_flat_files if flat_files is None else flat_files
+                force = spec.force
+                quiet = spec.quiet
+                selector_level = spec.selector_level
+                allow_downloads = spec.allow_downloads
+                allowed_download_types = spec.allowed_download_types
+                download_dir = spec.download_dir
+                max_download_bytes = spec.max_download_bytes
+                keep_downloads = spec.keep_downloads
+        if flat_files is None:
+            flat_files = bool(self._policy.output.flat_files) if self._policy.output else False
         self.selector_level = selector_level
+        self._flat_files = flat_files
         self._experimental_a3node = experimental_a3node
         self._allow_downloads = allow_downloads
         self._allowed_download_types = normalize_allowed_types(allowed_download_types)
@@ -193,16 +256,19 @@ class Pipeline(
         self._max_download_bytes = max_download_bytes
         self._keep_downloads = keep_downloads
         self._identity = identity  # opt-in browser identity (profile/headful/geo) for browser fetchers
-        # Resolve the policy ONCE here (defensive single resolve); stored as a forward-compat seam.
-        self._policy: Policy = policy or Policy.from_env()
+        self._identity_cascade = identity_cascade
+        self._max_live_identities = max_live_identities
         # Off-path fingerprint signal lane (CAS-168); None unless a FingerprintPolicy opts in.
         self._signal_lane = build_fingerprint_lane(self._policy.fingerprint)
         self._download_log: list[Any] = []
+        self._allow_llm = allow_llm
 
         if isinstance(llm_config, str):
             from yosoi.core.discovery.config import provider
 
             llm_config = provider(llm_config)
+        if llm_config is None:
+            raise RuntimeError(_MODEL_REQUIRED_MESSAGE)
 
         self._llm_config: LLMConfig | YosoiConfig = llm_config
 
@@ -227,6 +293,7 @@ class Pipeline(
             from yosoi.policy.run import resolve_telemetry_values
 
             observability.configure(TelemetryConfig(**resolve_telemetry_values(self._policy.telemetry)))
+        assert isinstance(llm_config, LLMConfig)
 
         self.custom_theme = Theme(
             {
@@ -248,18 +315,22 @@ class Pipeline(
         from yosoi.core.cleaning import HTMLCleaner
 
         self.cleaner = HTMLCleaner(console=self.console)
-        self.storage = SelectorStorage()
+        self.storage = SelectorStorage(flat_files=self._flat_files)
         self.js_storage = JsScriptStorage()
 
-        self.discovery = DiscoveryOrchestrator(
-            contract=self.contract,
-            llm_config=llm_config,
-            storage=self.storage,
-            console=self.console,
-            target_level=self.selector_level,
-            max_concurrent=max_concurrent_discovery,
-            bus=bus,
-            write_lock=write_lock,
+        self.discovery: Any = (
+            _DeferredDiscovery()
+            if self._llm_deferred
+            else DiscoveryOrchestrator(
+                contract=self.contract,
+                llm_config=llm_config,
+                storage=self.storage,
+                console=self.console,
+                target_level=self.selector_level,
+                max_concurrent=max_concurrent_discovery,
+                bus=bus,
+                write_lock=write_lock,
+            )
         )
         self._mcp_discovery: MCPDiscoveryOrchestrator | None = None
         self._mcp_llm_config: LLMConfig = llm_config
@@ -279,6 +350,7 @@ class Pipeline(
 
         self.extractor = ContentExtractor(console=self.console, contract=self.contract)
         self.tracker = LLMTracker()
+        self._show_tracking_summary = show_tracking_summary
         self.debug_mode = debug_mode
         self.debug = DebugManager(console=self.console, enabled=debug_mode)
         self.output_formats: list[str] = [output_format] if isinstance(output_format, str) else list(output_format)
@@ -292,6 +364,13 @@ class Pipeline(
         # (a cache hit does not re-internalize, so it leaves these untouched).
         self.last_selectors: dict[str, Any] | None = None
         self.last_cleaned_html: str | None = None
+        self.last_selector_source = 'unknown'
+        self.last_cache_decision = 'unknown'
+        self.last_llm_used = False
+        self.last_llm_reason = None
+        self.last_quality_status = 'unknown'
+        self.last_quality_issues = []
+        self.last_expected_record_count = None
         self._last_level_distribution: dict[str, int] = {}
         self._client: httpx2.AsyncClient = httpx2.AsyncClient()
 
@@ -320,7 +399,7 @@ class Pipeline(
         if self._signal_lane is not None:
             await self._signal_lane.aclose()
 
-    def _create_fetcher(self, fetcher_type: str, console: Console | None = None) -> Any | None:
+    def _create_fetcher(self, fetcher_type: str, console: Console | None = None) -> Any | None:  # noqa: C901
         """Create HTML fetcher instance.
 
         Defined on Pipeline (not the utils mixin) so that
@@ -348,6 +427,16 @@ class Pipeline(
                     kwargs['cross_origin_dom'] = pipeline_policy.scrape.cross_origin_dom
                 if identity is not None:  # opt-in profile/headful/geo (browser only)
                     kwargs['identity'] = identity
+                elif getattr(self, '_identity_cascade', None) is not None:
+                    kwargs['identity_cascade'] = self._identity_cascade
+                    kwargs['max_live_identities'] = self._max_live_identities
+                elif page_config.profile is not None:
+                    from yosoi.core.fetcher.profile_policy import cascade_from_profile_policy
+
+                    identity_cascade, max_live = cascade_from_profile_policy(page_config.profile)
+                    if identity_cascade is not None:
+                        kwargs['identity_cascade'] = identity_cascade
+                        kwargs['max_live_identities'] = max_live
             elif fetcher_type == 'simple' and identity is not None:
                 self.console.print(
                     '[warning]⚠ identity (profile/headful) is ignored by the simple fetcher — '
@@ -479,6 +568,66 @@ class Pipeline(
         observability.flush()
         return results
 
+    async def _print_concurrent_tracking_summary(
+        self,
+        results: dict[str, list[str]],
+        elapsed_by_url: dict[str, float],
+        url_domains: dict[str, str],
+        baseline_by_domain: dict[str, Any],
+    ) -> None:
+        """Print one tracking table for a concurrent URL run."""
+        table = Table(title='Tracking summary — concurrent run', show_header=True, header_style='bold cyan')
+        table.add_column('Scope')
+        table.add_column('URL / Domain / Contract')
+        table.add_column('LLM calls')
+        table.add_column('URLs')
+        table.add_column('Elapsed')
+        table.add_column('Notes')
+
+        successful = set(results.get('successful', ()))
+        failed = set(results.get('failed', ()))
+        total_elapsed = sum(elapsed_by_url.values())
+        domains = sorted(set(url_domains.values()))
+        run_llm = 0
+        run_urls = 0
+        domain_rows: list[tuple[str, int, int, float, str]] = []
+        for domain in domains:
+            before = baseline_by_domain.get(domain)
+            after = await self.tracker.get_stats(domain)
+            before_llm = getattr(before, 'llm_calls', 0)
+            before_urls = getattr(before, 'url_count', 0)
+            before_elapsed = getattr(before, 'total_elapsed', 0.0)
+            delta_llm = max(0, after.llm_calls - before_llm)
+            delta_urls = max(0, after.url_count - before_urls)
+            delta_elapsed = max(0.0, after.total_elapsed - before_elapsed)
+            run_llm += delta_llm
+            run_urls += delta_urls
+            note = f'historical {after.url_count} URLs / {after.llm_calls} LLM'
+            domain_rows.append((domain, delta_llm, delta_urls, delta_elapsed, note))
+
+        table.add_row(
+            'run',
+            'this invocation',
+            str(run_llm),
+            str(run_urls),
+            f'{total_elapsed:.1f}s',
+            f'{len(successful)} ok / {len(failed)} failed',
+        )
+        table.add_row(
+            'contract',
+            f'{self.contract.__name__} ({self._contract_sig})',
+            str(run_llm),
+            str(run_urls),
+            f'{total_elapsed:.1f}s',
+            'all concurrent URLs',
+        )
+        for url in [*results.get('successful', []), *results.get('failed', [])]:
+            status = 'ok' if url in successful else 'failed'
+            table.add_row('page', url, '—', '1', f'{elapsed_by_url.get(url, 0.0):.1f}s', status)
+        for domain, delta_llm, delta_urls, delta_elapsed, note in domain_rows:
+            table.add_row('domain', domain, str(delta_llm), str(delta_urls), f'{delta_elapsed:.1f}s', note)
+        self.console.print(table)
+
     async def scrape(
         self,
         url: str,
@@ -492,9 +641,23 @@ class Pipeline(
     ) -> AsyncIterator[ContentMap]:
         """Async generator yielding individual content items from a URL."""
         self._url_start = time.monotonic()
+        self._mark_scrape_decision(
+            selector_source='unknown',
+            cache_decision='forced' if (self.force if force is None else force) else 'miss',
+            llm_used=False,
+            llm_reason=None,
+        )
         _raw = output_format if output_format is not None else self.output_formats
         format_to_use: list[str] = [_raw] if isinstance(_raw, str) else list(_raw)
         force_flag = self.force if force is None else force
+        if force_flag and not getattr(self, '_allow_llm', True):
+            self._mark_scrape_decision(
+                selector_source='none',
+                cache_decision='llm_blocked',
+                llm_used=False,
+                llm_reason='forced_repair',
+            )
+            raise LLMBlockedError('forced_repair')
         url = await self.normalize_url(url)
         parsed = urlparse(url)
         trace_name = f'scrape {parsed.netloc}{parsed.path or "/"}'
@@ -612,6 +775,15 @@ class Pipeline(
                 async for item in cache_gen:
                     yield item
                 return
+            if not getattr(self, '_allow_llm', True):
+                reason = self.last_llm_reason or 'cache_miss'
+                self._mark_scrape_decision(
+                    selector_source='none',
+                    cache_decision='llm_blocked',
+                    llm_used=False,
+                    llm_reason=reason,
+                )
+                raise LLMBlockedError(reason)
             async for item in self._scrape_fresh(
                 url=url,
                 domain=domain,
@@ -625,7 +797,7 @@ class Pipeline(
             ):
                 yield item
 
-    async def _scrape_fresh(
+    async def _scrape_fresh(  # noqa: C901
         self,
         url: str,
         domain: str,
@@ -639,6 +811,17 @@ class Pipeline(
     ) -> AsyncIterator[ContentMap]:
         """Fresh discovery path — fetch, clean, discover, verify, extract, save."""
         observability.annotate_cache(root_span, path=observability.CACHE_FRESH)
+        self._mark_scrape_decision(
+            selector_source='discovery',
+            cache_decision='forced' if force_flag else 'miss',
+            llm_used=True,
+            llm_reason='forced_repair' if force_flag else 'cache_miss',
+        )
+
+        cached_mode = None if force_flag else await self._discovery_strategy.load(domain, self._contract_sig)
+        escalate_first = self._force_mcp or cached_mode == 'mcp'
+        if not escalate_first and self.contract.field_descriptions():
+            await self.discovery.preflight()
 
         await self._discover_js_actions(url, domain, fetcher)
         js_scripts = await self._resolve_js_scripts(domain)
@@ -663,8 +846,21 @@ class Pipeline(
             )
         cleaned_html = snapshot.html_for_discovery
 
-        cached_mode = None if force_flag else await self._discovery_strategy.load(domain, self._contract_sig)
-        escalate_first = self._force_mcp or cached_mode == 'mcp'
+        with observability.span('resolve', url=url, mode='atom'):
+            atom_gen = (
+                None
+                if force_flag or escalate_first
+                else self._yield_atom_cached_items(
+                    url, domain, result.html, format_to_use, fetcher=fetcher, root_span=root_span
+                )
+            )
+        if atom_gen is not None:
+            async for item in atom_gen:
+                yield item
+            return
+
+        if getattr(self, '_llm_deferred', False):
+            raise RuntimeError(_MODEL_REQUIRED_MESSAGE)
 
         with observability.span(
             'discover', url=url, cleaned_chars=len(cleaned_html), mode='mcp' if escalate_first else 'static'
@@ -713,6 +909,11 @@ class Pipeline(
             )
             used_llm = used_llm or escalated
 
+        unmet = self._unsatisfied_required(extracted or {})
+        if unmet:
+            fields = ', '.join(sorted(unmet))
+            raise RuntimeError(f'Required contract fields still unmet after discovery/escalation: {fields}')
+
         selectors_to_save = self._selectors_with_root(verified, root_entry)
 
         # P1.5: expose the freshly-accepted selector map + cleaned HTML so the
@@ -722,8 +923,9 @@ class Pipeline(
         self.last_cleaned_html = cleaned_html
 
         if not extracted:
-            self.console.print('[warning]⚠ Extraction failed, but selectors are valid[/warning]')
-            await self._finish(url, domain, selectors_to_save, None, used_llm, format_to_use)
+            self.console.print(
+                '[warning]⚠ Fresh discovery extracted zero records; selectors were not promoted[/warning]'
+            )
             observability.set_trace_output(
                 root_span,
                 {
@@ -733,7 +935,7 @@ class Pipeline(
                     'extracted_sample': None,
                 },
             )
-            return
+            raise RuntimeError(f'Fresh discovery extracted zero records for {url}')
 
         with observability.span('validate', url=url, items=len(extracted) if isinstance(extracted, list) else 1):
             validated_items = self._validate_items(extracted, url)
@@ -820,6 +1022,12 @@ class Pipeline(
         if isinstance(sess_id, str):
             os.environ['YOSOI_SESSION_ID'] = sess_id
 
+        tracking_baseline: dict[str, Any] = {}
+        url_domains = {url: self._extract_domain(url if '://' in url else f'https://{url}') for url in urls}
+        if getattr(self, '_show_tracking_summary', False):
+            for domain in set(url_domains.values()):
+                tracking_baseline[domain] = await self.tracker.get_stats(domain)
+
         with observability.detached_span('enqueue', count=len(urls), workers=max_workers, origin=origin):
             await configure_broker(
                 self._llm_config,
@@ -854,6 +1062,16 @@ class Pipeline(
             'skipped': enqueue_result.skipped,
         }
         self._print_summary(results, total_elapsed)
+        if enqueue_result.errors:
+            from rich.markup import escape
+
+            self.console.print('[bold red]Failure reasons:[/bold red]')
+            for url, error in enqueue_result.errors.items():
+                self.console.print(f'  [red]- {escape(url)}: {escape(error)}[/red]')
+        if getattr(self, '_show_tracking_summary', False):
+            await self._print_concurrent_tracking_summary(
+                results, enqueue_result.elapsed_by_url, url_domains, tracking_baseline
+            )
         self.logger.info(
             'Concurrent processing complete total=%d successful=%d failed=%d skipped=%d workers=%d',
             len(urls),

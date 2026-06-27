@@ -1,21 +1,17 @@
-"""Tests for the REAL yosoi.storage.a3node module.
+"""Tests for SQLite-backed A3Node storage."""
 
-Add these to tests/unit/storage/test_a3node.py.
-The existing tests in that file use an inline stub — these test the real class.
-"""
+from __future__ import annotations
 
-import json
+import sqlite3
 
 import pytest
 
 
 @pytest.fixture
-def real_storage(tmp_path, mocker):
-    mocker.patch('yosoi.storage.a3node.init_yosoi', return_value=tmp_path / 'a3nodes')
-    (tmp_path / 'a3nodes').mkdir()
+def real_storage(tmp_path):
     from yosoi.storage.a3node import A3NodeStorage
 
-    return A3NodeStorage()
+    return A3NodeStorage(database_url=tmp_path / 'yosoi.sqlite3')
 
 
 def _acts(*kinds):
@@ -25,6 +21,20 @@ def _acts(*kinds):
 
 
 class TestRealA3NodeStorage:
+    async def test_storage_dir_is_ignored_and_db_is_created_lazily(self, tmp_path):
+        from yosoi.storage.a3node import A3NodeStorage
+
+        storage = A3NodeStorage(storage_dir=tmp_path / 'a3nodes', database_url=tmp_path / 'yosoi.sqlite3')
+
+        assert not (tmp_path / 'a3nodes').exists()
+        assert await storage.load('example.com') is None
+        assert not (tmp_path / 'a3nodes').exists()
+
+        await storage.save('example.com', _acts('load_more'))
+        assert storage.db_path == tmp_path / 'yosoi.sqlite3'
+        assert storage.db_path.exists()
+        assert not (tmp_path / 'a3nodes').exists()
+
     async def test_save_and_load_round_trip(self, real_storage):
         await real_storage.save('example.com', _acts('load_more'))
         node = await real_storage.load('example.com')
@@ -35,34 +45,55 @@ class TestRealA3NodeStorage:
     async def test_load_returns_none_for_unknown_domain(self, real_storage):
         assert await real_storage.load('unknown.com') is None
 
-    async def test_load_returns_none_for_corrupt_json(self, real_storage):
-        fp = real_storage._filepath('bad.com')
-        with open(fp, 'w') as f:
-            f.write('NOT VALID JSON{{{')
-        assert await real_storage.load('bad.com') is None
+    async def test_sqlite_schema_uses_readable_json(self, real_storage):
+        await real_storage.save('example.com', _acts('load_more'))
 
-    async def test_load_returns_none_for_missing_domain_key(self, real_storage):
-        fp = real_storage._filepath('bad.com')
-        with open(fp, 'w') as f:
-            json.dump({'acts': [], 'discovered_at': '2024'}, f)
-        assert await real_storage.load('bad.com') is None
+        with sqlite3.connect(real_storage.db_path) as conn:
+            columns = {row[1]: row[2].upper() for row in conn.execute('PRAGMA table_info(a3nodes)')}
+            row = conn.execute(
+                'SELECT format, typeof(acts), acts FROM a3nodes WHERE domain = ?', ('example.com',)
+            ).fetchone()
+
+        assert columns['acts'] == 'JSON'
+        assert row[0] == 2
+        assert row[1] == 'text'
+        assert 'load_more' in row[2]
+
+    async def test_old_a3node_table_is_destructively_reset(self, tmp_path):
+        from yosoi.storage.a3node import A3NodeStorage
+
+        db_path = tmp_path / 'yosoi.sqlite3'
+        with sqlite3.connect(db_path) as conn:
+            conn.execute('CREATE TABLE a3nodes (domain TEXT PRIMARY KEY, acts TEXT)')
+            conn.execute('INSERT INTO a3nodes VALUES (?, ?)', ('legacy.com', '[]'))
+
+        storage = A3NodeStorage(database_url=db_path)
+        assert await storage.list_domains() == []
+
+        with sqlite3.connect(db_path) as conn:
+            columns = {row[1]: row[2].upper() for row in conn.execute('PRAGMA table_info(a3nodes)')}
+        assert columns['acts'] == 'JSON'
+        assert columns['format'] == 'INTEGER'
 
     async def test_save_preserves_replay_count_when_acts_unchanged(self, real_storage):
         acts = _acts('load_more')
         await real_storage.save('example.com', acts)
         await real_storage.record_replay('example.com')
         await real_storage.record_replay('example.com')
-        await real_storage.save('example.com', acts)  # same acts
-        assert (await real_storage.load('example.com')).replay_count == 2
+        await real_storage.save('example.com', acts)
+        node = await real_storage.load('example.com')
+        assert node is not None
+        assert node.replay_count == 2
 
     async def test_save_resets_replay_count_when_acts_change(self, real_storage):
         await real_storage.save('example.com', _acts('load_more'))
         await real_storage.record_replay('example.com')
-        await real_storage.save('example.com', _acts('cookie'))  # different acts
-        assert (await real_storage.load('example.com')).replay_count == 0
+        await real_storage.save('example.com', _acts('cookie'))
+        node = await real_storage.load('example.com')
+        assert node is not None
+        assert node.replay_count == 0
 
     async def test_act_target_round_trips(self, real_storage):
-        """A concrete SelectorEntry target survives save -> load (format 2)."""
         from yosoi.models.selectors import SelectorEntry
         from yosoi.storage.a3node import ActRecord
 
@@ -72,76 +103,32 @@ class TestRealA3NodeStorage:
         assert node is not None
         assert node.acts[0].target == target
 
-    async def test_save_writes_format_version(self, real_storage):
-        import os
-
-        await real_storage.save('example.com', _acts('load_more'))
-        with open(real_storage._filepath('example.com'), encoding='utf-8') as f:
-            assert json.load(f)['format'] == 2
-        assert os.path.exists(real_storage._filepath('example.com'))
-
     async def test_adding_target_preserves_replay_count(self, real_storage):
-        """Format-1 -> format-2 upgrade (same kind/cycles, target added) keeps stats."""
         from yosoi.models.selectors import SelectorEntry
         from yosoi.storage.a3node import ActRecord
 
-        await real_storage.save('example.com', [ActRecord('load_more', 3)])  # no target
+        await real_storage.save('example.com', [ActRecord('load_more', 3)])
         await real_storage.record_replay('example.com')
         await real_storage.record_replay('example.com')
         target = SelectorEntry(type='role', value='button', name='Load more', nth=0)
-        await real_storage.save('example.com', [ActRecord('load_more', 3, target=target)])  # refined
-        assert (await real_storage.load('example.com')).replay_count == 2
-
-    async def test_legacy_record_without_target_loads(self, real_storage):
-        """A format-1 file on disk (no 'format', no 'target') still loads cleanly."""
-        path = real_storage._filepath('legacy.com')
-        with open(path, 'w', encoding='utf-8') as f:
-            json.dump({'domain': 'legacy.com', 'acts': [{'kind': 'load_more', 'cycles': 4}]}, f)
-        node = await real_storage.load('legacy.com')
+        await real_storage.save('example.com', [ActRecord('load_more', 3, target=target)])
+        node = await real_storage.load('example.com')
         assert node is not None
-        assert node.acts[0].kind == 'load_more'
-        assert node.acts[0].target is None
+        assert node.replay_count == 2
 
-    async def test_save_oserror_does_not_raise(self, real_storage, mocker):
-        mocker.patch(
-            'yosoi.storage.a3node.atomic_write_json_async',
-            side_effect=OSError('disk full'),
-        )
-        await real_storage.save('example.com', _acts('load_more'))  # should not raise
-
-    async def test_record_replay_increments_count(self, real_storage):
+    async def test_record_replay_increments_count_and_timestamp(self, real_storage):
         await real_storage.save('example.com', _acts('load_more'))
         await real_storage.record_replay('example.com')
-        assert (await real_storage.load('example.com')).replay_count == 1
-
-    async def test_record_replay_sets_last_replayed_at(self, real_storage):
-        await real_storage.save('example.com', _acts('load_more'))
-        await real_storage.record_replay('example.com')
-        assert (await real_storage.load('example.com')).last_replayed_at is not None
+        node = await real_storage.load('example.com')
+        assert node is not None
+        assert node.replay_count == 1
+        assert node.last_replayed_at is not None
 
     async def test_record_replay_noop_for_unknown_domain(self, real_storage):
-        await real_storage.record_replay('nonexistent.com')  # should not raise
+        await real_storage.record_replay('nonexistent.com')
+        assert await real_storage.load('nonexistent.com') is None
 
-    async def test_record_replay_oserror_does_not_raise(self, real_storage, mocker):
-        await real_storage.save('example.com', _acts('load_more'))
-        mocker.patch(
-            'yosoi.storage.a3node.atomic_write_json_async',
-            side_effect=OSError('disk full'),
-        )
-        # OSError on write is swallowed and logged.
-        await real_storage.record_replay('example.com')  # should not raise
-
-    async def test_record_replay_oserror_logs_warning(self, real_storage, mocker):
-        await real_storage.save('example.com', _acts('load_more'))
-        mocker.patch(
-            'yosoi.storage.a3node.atomic_write_json_async',
-            side_effect=OSError('disk full'),
-        )
-        mock_warn = mocker.patch('yosoi.storage.a3node.logger.warning')
-        await real_storage.record_replay('example.com')
-        mock_warn.assert_called_once()
-
-    async def test_delete_returns_true_and_removes_file(self, real_storage):
+    async def test_delete_returns_true_and_removes_row(self, real_storage):
         await real_storage.save('example.com', _acts('load_more'))
         assert await real_storage.delete('example.com') is True
         assert await real_storage.load('example.com') is None
@@ -149,74 +136,19 @@ class TestRealA3NodeStorage:
     async def test_delete_returns_false_for_nonexistent(self, real_storage):
         assert await real_storage.delete('nonexistent.com') is False
 
-    async def test_delete_oserror_returns_false(self, real_storage, mocker):
-        await real_storage.save('example.com', _acts('load_more'))
-        mocker.patch(
-            'yosoi.storage.a3node.os.remove',
-            side_effect=OSError('permission denied'),
-        )
-        # Failure to remove is swallowed and reported as False.
-        assert await real_storage.delete('example.com') is False
-
-    async def test_list_domains_empty(self, real_storage):
-        assert await real_storage.list_domains() == []
-
     async def test_list_domains_returns_saved_sorted(self, real_storage):
         await real_storage.save('beta.com', _acts('load_more'))
         await real_storage.save('alpha.com', _acts('load_more'))
-        domains = await real_storage.list_domains()
-        assert domains == ['alpha.com', 'beta.com']
-
-    async def test_list_domains_skips_non_a3node_files(self, real_storage, tmp_path):
-        other = tmp_path / 'a3nodes' / 'other_file.json'
-        other.write_text(json.dumps({'domain': 'intruder.com'}))
-        assert 'intruder.com' not in await real_storage.list_domains()
-
-    async def test_list_domains_skips_corrupt_files(self, real_storage, tmp_path):
-        await real_storage.save('good.com', _acts('load_more'))
-        bad = tmp_path / 'a3nodes' / 'a3node_bad_com.json'
-        bad.write_text('NOT JSON')
-        domains = await real_storage.list_domains()
-        assert 'good.com' in domains
-        assert 'bad.com' not in domains
-
-    async def test_list_domains_returns_empty_when_dir_missing(self, real_storage):
-        real_storage._dir = '/nonexistent/path/that/does/not/exist'
-        assert await real_storage.list_domains() == []
-
-    async def test_list_domains_skips_files_with_missing_domain_key(self, real_storage, tmp_path):
-        await real_storage.save('good.com', _acts('load_more'))
-        # Valid a3node-prefixed JSON but no usable 'domain' value — must be skipped.
-        empty_domain = tmp_path / 'a3nodes' / 'a3node_empty.json'
-        empty_domain.write_text(json.dumps({'domain': '', 'acts': []}))
-        no_domain = tmp_path / 'a3nodes' / 'a3node_none.json'
-        no_domain.write_text(json.dumps({'acts': []}))
-        domains = await real_storage.list_domains()
-        assert domains == ['good.com']
-
-    async def test_load_all_skips_unloadable_nodes(self, real_storage, tmp_path):
-        await real_storage.save('good.com', _acts('load_more'))
-        # A file that list_domains accepts (has a domain) but load() rejects as
-        # corrupt because 'acts' is not iterable into ActRecords.
-        bad = tmp_path / 'a3nodes' / 'a3node_broken_com.json'
-        bad.write_text(json.dumps({'domain': 'broken.com', 'acts': [{'kind': 'x'}]}))
-        result = await real_storage.load_all()
-        assert 'good.com' in result
-        assert 'broken.com' not in result
+        assert await real_storage.list_domains() == ['alpha.com', 'beta.com']
 
     async def test_load_all_returns_all_nodes(self, real_storage):
         await real_storage.save('a.com', _acts('load_more'))
         await real_storage.save('b.com', _acts('cookie'))
         result = await real_storage.load_all()
-        assert set(result.keys()) == {'a.com', 'b.com'}
+        assert set(result) == {'a.com', 'b.com'}
 
-    async def test_load_all_empty_when_no_files(self, real_storage):
+    async def test_load_all_empty_when_no_rows(self, real_storage):
         assert await real_storage.load_all() == {}
-
-    def test_filepath_replaces_dots_with_underscores(self, real_storage):
-        fp = real_storage._filepath('finance.yahoo.com')
-        assert 'finance_yahoo_com' in fp
-        assert fp.endswith('.json')
 
     async def test_load_raw_returns_none_for_missing(self, real_storage):
         assert await real_storage._load_raw('nonexistent.com') is None

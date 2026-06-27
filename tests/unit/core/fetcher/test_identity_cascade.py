@@ -34,9 +34,10 @@ Instrument via the per-(identity, query-index) block log this module's
 
 from __future__ import annotations
 
-from typing import ClassVar
+from typing import Any, ClassVar, cast
 
 import pytest
+from pytest_mock import MockerFixture
 
 from yosoi.core.fetcher.identity import (
     BrowserIdentity,
@@ -124,12 +125,12 @@ class _MockFetcher:
 def _make_pool(max_live: int = 3) -> tuple[IdentityFetcherPool, dict[str, _MockFetcher]]:
     started: dict[str, _MockFetcher] = {}
 
-    async def factory(identity: BrowserIdentity, base_kwargs: dict) -> _MockFetcher:  # type: ignore[type-arg]
+    async def factory(identity: BrowserIdentity, base_kwargs: dict[str, Any]) -> Any:
         f = _MockFetcher(identity)
         started[identity.id] = f
         return f
 
-    pool = IdentityFetcherPool(factory=factory, max_live=max_live)  # type: ignore[arg-type]
+    pool = IdentityFetcherPool(factory=factory, max_live=max_live)
     return pool, started
 
 
@@ -173,11 +174,11 @@ async def test_pool_close_closes_all() -> None:
 
 @pytest.mark.asyncio
 async def test_pool_rejects_zero_cap() -> None:
-    async def _noop_factory(identity: BrowserIdentity, base_kwargs: dict) -> object:  # type: ignore[type-arg]
+    async def _noop_factory(identity: BrowserIdentity, base_kwargs: dict[str, Any]) -> Any:
         return object()
 
     with pytest.raises(ValueError, match='max_live'):
-        IdentityFetcherPool(factory=_noop_factory, max_live=0)  # type: ignore[arg-type]
+        IdentityFetcherPool(factory=_noop_factory, max_live=0)
 
 
 # ---------------------------------------------------------------------------
@@ -200,7 +201,7 @@ async def test_run_cascade_first_identity_wins() -> None:
         calls.append(ident.id)
         return _Result('<html>ok</html>')
 
-    result, winner = await run_cascade(cascade=cascade, pool=pool, do_fetch=do_fetch)  # type: ignore[arg-type]
+    result, winner = await run_cascade(cascade=cascade, pool=pool, do_fetch=cast(Any, do_fetch))
     assert winner.id == 'a'
     assert result.html == '<html>ok</html>'
     assert calls == ['a']  # second identity never tried
@@ -218,7 +219,7 @@ async def test_run_cascade_rotates_past_blocked_identity() -> None:
             raise BotDetectionError('https://google.com', 200, ['recaptcha'], identity_id=ident.id)
         return _Result('<html>serp</html>')
 
-    result, winner = await run_cascade(cascade=cascade, pool=pool, do_fetch=do_fetch)  # type: ignore[arg-type]
+    result, winner = await run_cascade(cascade=cascade, pool=pool, do_fetch=cast(Any, do_fetch))
     assert calls == ['fresh', 'trusted', 'proxy']
     assert winner.id == 'proxy'
     assert result.html == '<html>serp</html>'
@@ -234,7 +235,7 @@ async def test_run_cascade_prefers_cached_winner_first() -> None:
         calls.append(ident.id)
         return _Result('<html>ok</html>')
 
-    _result, winner = await run_cascade(cascade=cascade, pool=pool, do_fetch=do_fetch, prefer='c')  # type: ignore[arg-type]
+    _result, winner = await run_cascade(cascade=cascade, pool=pool, do_fetch=cast(Any, do_fetch), prefer='c')
     assert winner.id == 'c'
     assert calls == ['c']  # cached winner retried first, won immediately
 
@@ -251,7 +252,7 @@ async def test_run_cascade_exhaustion_raises_fail_fast() -> None:
         raise BotDetectionError('https://x.com', 200, ['blocked'], identity_id=ident.id)
 
     with pytest.raises(BotDetectionError) as exc_info:
-        await run_cascade(cascade=cascade, pool=pool, do_fetch=do_fetch)  # type: ignore[arg-type]
+        await run_cascade(cascade=cascade, pool=pool, do_fetch=cast(Any, do_fetch))
     # reraise=True surfaces the LAST identity's block, attributed.
     assert exc_info.value.identity_id == 'b'
     assert calls == ['a', 'b']
@@ -271,7 +272,7 @@ async def test_run_cascade_index_does_not_desync_on_distinct_identities() -> Non
             raise BotDetectionError('https://x.com', 200, ['b'], identity_id=ident.id)
         return _Result('<html>ok</html>')
 
-    _result, winner = await run_cascade(cascade=cascade, pool=pool, do_fetch=do_fetch)  # type: ignore[arg-type]
+    _result, winner = await run_cascade(cascade=cascade, pool=pool, do_fetch=cast(Any, do_fetch))
     assert seen == ['id0', 'id1', 'id2', 'id3']  # each exactly once, in order
     assert winner.id == 'id3'
 
@@ -318,7 +319,7 @@ class _FakeBlockingTab:
 
 
 @pytest.mark.asyncio
-async def test_do_fetch_attributes_block_to_identity_and_captcha(mocker) -> None:  # type: ignore[no-untyped-def]
+async def test_do_fetch_attributes_block_to_identity_and_captcha(mocker: MockerFixture) -> None:
     """A block on a real _do_fetch carries identity_id + captcha_kind (probed live)."""
     from yosoi.core.fetcher.voiddriver import HeadlessFetcher
 
@@ -355,7 +356,7 @@ async def test_do_fetch_attributes_block_to_identity_and_captcha(mocker) -> None
 
 
 @pytest.mark.asyncio
-async def test_do_fetch_soft_marker_block_has_none_captcha(mocker) -> None:  # type: ignore[no-untyped-def]
+async def test_do_fetch_soft_marker_block_has_none_captcha(mocker: MockerFixture) -> None:
     """Soft block (markers, no DOM captcha) -> captcha_kind None, its own bucket."""
     from yosoi.core.fetcher.voiddriver import HeadlessFetcher
 
@@ -384,7 +385,7 @@ async def test_do_fetch_soft_marker_block_has_none_captcha(mocker) -> None:  # t
 
 
 @pytest.mark.asyncio
-async def test_browser_config_kwargs_threads_identity(mocker) -> None:  # type: ignore[no-untyped-def]
+async def test_browser_config_kwargs_threads_identity(mocker: MockerFixture) -> None:
     """Identity proxy/profile_dir/locale/headful are threaded into BrowserConfig kwargs."""
     from yosoi.core.fetcher.voiddriver import HeadlessFetcher
 

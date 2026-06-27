@@ -229,7 +229,9 @@ class _VoidCrawlFetcher(HTMLFetcher):
             # field. FUTURE: if it never does, apply ident.geo post-launch via the tab's
             # set_geolocation before the first navigate (Emulation.setGeolocationOverride).
             kwargs['geolocation'] = {'latitude': ident.geo[0], 'longitude': ident.geo[1]}
-        if ident.profile_dir is not None and 'extra_args' in fields:
+        if ident.profile_dir is not None and 'user_data_dir' in fields:
+            kwargs['user_data_dir'] = ident.profile_dir
+        elif ident.profile_dir is not None and 'extra_args' in fields:
             extra = list(kwargs.get('extra_args', []))
             extra.extend([f'--user-data-dir={ident.profile_dir}', '--profile-directory=Default'])
             kwargs['extra_args'] = extra

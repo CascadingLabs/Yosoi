@@ -44,6 +44,7 @@ class CrawlResult:
     fetch_time: float = 0.0
     error: str | None = None
     content_type: str | None = None
+    status_code: int | None = None
     fingerprint: PageFingerprint | None = None
     observation: PageObservation | None = None
 
@@ -297,6 +298,7 @@ class CrawlCoordinator:
                 error=f'redirect blocked by policy: {job.url} -> {snapshot.final_url}',
                 fetch_time=time.monotonic() - started,
                 content_type=_content_type(getattr(snapshot.fetch_result, 'headers', None)),
+                status_code=getattr(snapshot.fetch_result, 'status_code', None),
             )
 
         links: tuple[CrawlLink, ...] = ()
@@ -320,6 +322,7 @@ class CrawlCoordinator:
             html=html_text,
             fetch_time=time.monotonic() - started,
             content_type=content_type,
+            status_code=getattr(snapshot.fetch_result, 'status_code', None),
             fingerprint=snapshot.fingerprint,
             observation=snapshot.observation,
         )

@@ -30,6 +30,22 @@ async def test_load_returns_none_for_missing_domain(tmp_path):
 
 
 @pytest.mark.asyncio
+async def test_default_dir_is_created_lazily(tmp_path, mocker):
+    js_dir = tmp_path / 'js_scripts'
+    mocker.patch('yosoi.storage.js_scripts.get_yosoi_storage_path', return_value=js_dir)
+    mocker.patch('yosoi.storage.js_scripts.init_yosoi', return_value=js_dir)
+
+    storage = JsScriptStorage()
+
+    assert not js_dir.exists()
+    assert await storage.load('example.com') is None
+    assert not js_dir.exists()
+
+    await storage.save_entries('example.com', {'signals': _entry()})
+    assert js_dir.is_dir()
+
+
+@pytest.mark.asyncio
 async def test_save_and_load_round_trip(tmp_path):
     storage = JsScriptStorage(storage_dir=str(tmp_path))
     await storage.save_entries('example.com', {'signals': _entry('(() => ({x:1}))()')})

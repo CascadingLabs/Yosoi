@@ -269,6 +269,7 @@ def _make_scrape_stub(mocker, contract=None):
     stub.cleaner = mocker.MagicMock()
     stub.discovery = mocker.MagicMock()
     stub.discovery.discover_selectors = mocker.AsyncMock()
+    stub.discovery.preflight = mocker.AsyncMock()
     stub._mcp_discovery = None
     stub._force_mcp = False
     stub._discovery_strategy = mocker.MagicMock()
@@ -368,7 +369,10 @@ async def test_scrape_cached_verification_failure_falls_through(mocker):
     # CRITICAL: Returns ONLY the dict. No tuple!
     stub.discovery.target_level = stub.selector_level
     stub.discovery.discover_selectors = mocker.AsyncMock(
-        return_value={'title': {'primary': 'h1', 'fallback': None, 'tertiary': None}}
+        return_value={
+            'title': {'primary': 'h1', 'fallback': None, 'tertiary': None},
+            'price': {'primary': '.price', 'fallback': None, 'tertiary': None},
+        }
     )
 
     # 6. VERIFIER (Fresh Path - SYNC)
@@ -378,14 +382,17 @@ async def test_scrape_cached_verification_failure_falls_through(mocker):
         results={
             'title': FieldVerificationResult(
                 field_name='title', status='verified', matched_selector='h1', failed_selectors=[]
-            )
+            ),
+            'price': FieldVerificationResult(
+                field_name='price', status='verified', matched_selector='.price', failed_selectors=[]
+            ),
         },
     )
 
     # 7. WRAPPERS
     # Bypass internal extraction/validation to guarantee item survival
-    mocker.patch.object(stub, '_extract', return_value=[{'title': 'Hello'}])
-    mocker.patch.object(stub, '_validate_items', return_value=[{'title': 'Hello'}])
+    mocker.patch.object(stub, '_extract', return_value=[{'title': 'Hello', 'price': '9.99'}])
+    mocker.patch.object(stub, '_validate_items', return_value=[{'title': 'Hello', 'price': 9.99}])
 
     # 8. FINISH
     mocker.patch.object(stub, '_finish', new_callable=mocker.AsyncMock)
@@ -431,7 +438,10 @@ async def test_scrape_force_skips_cache(mocker):
 
     stub.discovery.target_level = stub.selector_level
     stub.discovery.discover_selectors = mocker.AsyncMock(
-        return_value={'title': {'primary': 'h1', 'fallback': None, 'tertiary': None}}
+        return_value={
+            'title': {'primary': 'h1', 'fallback': None, 'tertiary': None},
+            'price': {'primary': '.price', 'fallback': None, 'tertiary': None},
+        }
     )
 
     stub.verifier.verify.return_value = VerificationResult(
@@ -440,11 +450,14 @@ async def test_scrape_force_skips_cache(mocker):
         results={
             'title': FieldVerificationResult(
                 field_name='title', status='verified', matched_selector='h1', failed_selectors=[]
-            )
+            ),
+            'price': FieldVerificationResult(
+                field_name='price', status='verified', matched_selector='.price', failed_selectors=[]
+            ),
         },
     )
 
-    stub.extractor.extract_content_with_html.return_value = {'title': 'Fresh'}
+    stub.extractor.extract_content_with_html.return_value = {'title': 'Fresh', 'price': '9.99'}
 
     items = [item async for item in stub.scrape('https://example.com', force=True)]
     assert len(items) == 1
@@ -480,7 +493,10 @@ async def test_scrape_sets_last_elapsed(mocker):
 
     stub.discovery.target_level = stub.selector_level
     stub.discovery.discover_selectors = mocker.AsyncMock(
-        return_value={'title': {'primary': 'h1', 'fallback': None, 'tertiary': None}}
+        return_value={
+            'title': {'primary': 'h1', 'fallback': None, 'tertiary': None},
+            'price': {'primary': '.price', 'fallback': None, 'tertiary': None},
+        }
     )
     stub.verifier.verify.return_value = VerificationResult(
         total_fields=1,
@@ -488,10 +504,13 @@ async def test_scrape_sets_last_elapsed(mocker):
         results={
             'title': FieldVerificationResult(
                 field_name='title', status='verified', matched_selector='h1', failed_selectors=[]
-            )
+            ),
+            'price': FieldVerificationResult(
+                field_name='price', status='verified', matched_selector='.price', failed_selectors=[]
+            ),
         },
     )
-    stub.extractor.extract_content_with_html.return_value = {'title': 'Test'}
+    stub.extractor.extract_content_with_html.return_value = {'title': 'Test', 'price': '9.99'}
 
     async for _ in stub.scrape('https://example.com'):
         pass
@@ -519,7 +538,10 @@ async def test_scrape_offers_page_observation_to_signal_lane(mocker):
     stub.cleaner.clean_html.return_value = '<h1>Fresh</h1>'
     stub.discovery.target_level = stub.selector_level
     stub.discovery.discover_selectors = mocker.AsyncMock(
-        return_value={'title': {'primary': 'h1', 'fallback': None, 'tertiary': None}}
+        return_value={
+            'title': {'primary': 'h1', 'fallback': None, 'tertiary': None},
+            'price': {'primary': '.price', 'fallback': None, 'tertiary': None},
+        }
     )
     stub.verifier.verify.return_value = VerificationResult(
         total_fields=1,
@@ -527,10 +549,13 @@ async def test_scrape_offers_page_observation_to_signal_lane(mocker):
         results={
             'title': FieldVerificationResult(
                 field_name='title', status='verified', matched_selector='h1', failed_selectors=[]
-            )
+            ),
+            'price': FieldVerificationResult(
+                field_name='price', status='verified', matched_selector='.price', failed_selectors=[]
+            ),
         },
     )
-    stub.extractor.extract_content_with_html.return_value = {'title': 'Fresh'}
+    stub.extractor.extract_content_with_html.return_value = {'title': 'Fresh', 'price': '9.99'}
 
     items = [item async for item in stub.scrape('https://example.com')]
 

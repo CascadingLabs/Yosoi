@@ -9,7 +9,7 @@ from __future__ import annotations
 import inspect
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import httpx2
 from rich.console import Console
@@ -25,6 +25,8 @@ from yosoi.utils.exceptions import BotDetectionError, DownloadError
 from yosoi.utils.retry import get_async_retryer
 
 if TYPE_CHECKING:
+    from typing import Protocol
+
     from yosoi.core.fetcher import HTMLFetcher
     from yosoi.models.contract import Contract
     from yosoi.models.download import DownloadResult, DownloadSpec
@@ -33,6 +35,27 @@ if TYPE_CHECKING:
 # Type aliases — defined at module level so they exist at runtime (used in cast() calls)
 ContentMap = dict[str, object]
 ContentItems = list[dict[str, object]]
+
+
+if TYPE_CHECKING:
+
+    class _PipelineExtractionHost(Protocol):
+        """Sibling-mixin surface used by extraction helpers."""
+
+        def _extract_domain(self, url: str) -> str: ...
+
+        async def _discover_js_actions(self, url: str, domain: str, fetcher: HTMLFetcher) -> None: ...
+
+        async def _resolve_js_scripts(self, domain: str) -> dict[str, str]: ...
+
+        def _resolve_download_specs(self, fetcher: HTMLFetcher | None = None) -> dict[str, DownloadSpec] | None: ...
+
+        def _resolve_root(self, selectors: dict[str, Any]) -> dict[str, Any] | None: ...
+
+        def _resolve_cached_records(
+            self, url: str, domain: str, html: str, selectors: dict[str, Any]
+        ) -> ContentItems | None: ...
+
 
 logger = logging.getLogger(__name__)
 
@@ -264,10 +287,11 @@ class PipelineExtractionMixin:
         )
         self.console.print(f'[step]{step}[/step]')
 
-        domain = self._extract_domain(url)  # type: ignore[attr-defined]
-        await self._discover_js_actions(url, domain, fetcher)  # type: ignore[attr-defined]
-        js_scripts = await self._resolve_js_scripts(domain)  # type: ignore[attr-defined]
-        download_specs = self._resolve_download_specs(fetcher)  # type: ignore[attr-defined]
+        host = cast('_PipelineExtractionHost', self)
+        domain = host._extract_domain(url)
+        await host._discover_js_actions(url, domain, fetcher)
+        js_scripts = await host._resolve_js_scripts(domain)
+        download_specs = host._resolve_download_specs(fetcher)
         try:
             snapshot = await self._page_acquisition().acquire(
                 url,
@@ -283,8 +307,7 @@ class PipelineExtractionMixin:
 
             cleaned_html = snapshot.html_for_discovery
 
-            root_entry = self._resolve_root(existing_selectors)  # type: ignore[attr-defined]
-            container_selector = self._root_value(root_entry)  # type: ignore[attr-defined]
+            root_entry = host._resolve_root(dict(existing_selectors))
 
             if root_entry and not skip_verification:
                 from parsel import Selector as _PS
@@ -328,8 +351,8 @@ class PipelineExtractionMixin:
             else:
                 selectors_to_use = existing_selectors
 
-            extracted = self._extract(url, cleaned_html, selectors_to_use, container_selector)
-            extracted = self._merge_fetch_outputs(extracted, result)
+            cached = host._resolve_cached_records(url, domain, result.html, selectors_to_use)
+            extracted = self._merge_fetch_outputs(cached, result)
             self._record_downloads(result.downloads)
             if extracted:
                 if isinstance(extracted, list):

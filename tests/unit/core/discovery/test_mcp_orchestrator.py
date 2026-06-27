@@ -56,6 +56,15 @@ def _draft_no_root() -> MCPDiscoveryDraft:
     )
 
 
+def _draft_relative_to_root() -> MCPDiscoveryDraft:
+    return MCPDiscoveryDraft(
+        fields=[
+            MCPFieldFinding(field='headline', selector=SelectorEntry(type='css', value='h1'), sample_value='Title'),
+        ],
+        root=SelectorEntry(type='css', value='article.card'),
+    )
+
+
 @pytest.fixture
 def llm_config():
     return LLMConfig(provider='groq', model_name='test-model', api_key='test-key', temperature=0.0)
@@ -65,6 +74,7 @@ def llm_config():
 def lesson_storage(tmp_path, mocker):
     lesson_dir = tmp_path / 'lessons'
     lesson_dir.mkdir()
+    mocker.patch('yosoi.storage.lesson.get_yosoi_storage_path', return_value=lesson_dir)
     mocker.patch('yosoi.storage.lesson.init_yosoi', return_value=lesson_dir)
     return LessonStorage()
 
@@ -160,6 +170,21 @@ class TestValidationGate:
         result = await orch.discover_selectors('<html><body><p>No matching fields here.</p></body></html>', _URL)
 
         assert result is None
+
+    async def test_replay_validation_uses_discovered_root(self, llm_config, lesson_storage):
+        orch = _orchestrator(llm_config, lesson_storage, _FakeAgent(_draft_relative_to_root()))
+        html = '<main><h1>Wrong page title</h1><article class="card"><h1>Title</h1></article></main>'
+
+        result = await orch.discover_selectors(html, _URL)
+
+        assert result is not None
+        key = LessonKey(
+            domain=obs.normalize_user_id(_URL) or 'unknown',
+            contract_signature=contract_signature(NewsArticle),
+        )
+        lesson = await lesson_storage.load_active(key)
+        assert lesson is not None
+        assert lesson.validation.sample_values['headline'] == 'Title'
 
     async def test_returns_none_when_all_fields_fail_validation(self, llm_config, lesson_storage, mocker):
         from yosoi.core.verification.semantic import FieldSemanticIssue

@@ -121,6 +121,59 @@ class TestBuildPolicy:
         )
         assert policy.output == ys.OutputPolicy(formats=('json', 'csv'), quiet=False, debug_html=True)
 
+    def test_build_policy_sets_flat_files_opt_in(self, monkeypatch):
+        monkeypatch.setenv('GROQ_KEY', 'groq-key')
+
+        policy = build_policy('groq:llama', debug=False, flat_files=True)
+
+        assert policy.output is not None
+        assert policy.output.flat_files is True
+        assert policy.resolve_run_spec().output_flat_files is True
+
+    def test_build_policy_preserves_policy_flat_files_opt_in_without_cli_flag(self, monkeypatch):
+        monkeypatch.setenv('GROQ_KEY', 'groq-key')
+
+        policy = build_policy(
+            'groq:llama',
+            debug=False,
+            policy_sources=('output:\n  flat_files: true\n',),
+        )
+
+        assert policy.output is not None
+        assert policy.output.flat_files is True
+        assert policy.resolve_run_spec().output_flat_files is True
+
+    def test_build_policy_sets_atom_reads_opt_in(self, monkeypatch):
+        monkeypatch.setenv('GROQ_KEY', 'groq-key')
+
+        policy = build_policy('groq:llama', debug=False, atom_reads=True)
+
+        assert policy.atom_reads is True
+
+    def test_build_policy_allows_no_model_for_cache_or_atom_reads(self, monkeypatch):
+        for key in ('GROQ_KEY', 'GROQ_API_KEY', 'YOSOI_MODEL', 'OPENROUTER_API_KEY', 'OPENAI_API_KEY'):
+            monkeypatch.delenv(key, raising=False)
+
+        policy = build_policy(None, debug=False, atom_reads=True)
+        cache_only_policy = build_policy(None, debug=False)
+
+        assert policy.atom_reads is True
+        assert cache_only_policy.atom_reads is False
+
+    def test_build_policy_layers_policy_sources_below_cli_flags(self, monkeypatch):
+        monkeypatch.setenv('GROQ_KEY', 'groq-key')
+
+        policy = build_policy(
+            'groq:llama',
+            debug=False,
+            flat_files=True,
+            policy_sources=('atom_reads: true\noutput:\n  flat_files: false\n',),
+        )
+
+        assert policy.atom_reads is True
+        assert policy.output is not None
+        assert policy.output.flat_files is True
+
     def test_build_policy_explicit_provider_missing_key_does_not_fallback(self, monkeypatch):
         """Policy CLI path fails when the requested provider key is absent."""
         monkeypatch.setenv('GEMINI_KEY', 'gem-key')
@@ -156,6 +209,7 @@ class TestBuildPolicy:
 
     def test_build_policy_honors_yosoi_model_env_without_model_flag(self, monkeypatch):
         """Regression: no -m flag must not clobber the YOSOI_MODEL env layer."""
+        monkeypatch.setattr('yosoi.policy.files.discover_policy_files', lambda: ())
         monkeypatch.setenv('YOSOI_MODEL', 'anthropic:claude-x')
         monkeypatch.setenv('ANTHROPIC_API_KEY', 'sk-ant-test')
         monkeypatch.setenv('GROQ_KEY', 'groq-test')
@@ -170,6 +224,7 @@ class TestBuildPolicy:
 
     def test_build_policy_honors_scrape_env_layer_with_default_flags(self, monkeypatch):
         """Regression: default CLI flags must not clobber YOSOI_FORCE / YOSOI_FETCHER_TYPE."""
+        monkeypatch.setattr('yosoi.policy.files.discover_policy_files', lambda: ())
         monkeypatch.setenv('GROQ_KEY', 'groq-test')
         monkeypatch.setenv('YOSOI_FORCE', '1')
         monkeypatch.setenv('YOSOI_FETCHER_TYPE', 'headless')

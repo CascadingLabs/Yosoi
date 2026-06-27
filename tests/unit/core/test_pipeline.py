@@ -28,6 +28,7 @@ def _make_pipeline_stub(mocker, contract=None):
     stub.cleaner = mocker.MagicMock()
     stub.discovery = mocker.MagicMock()
     stub.discovery.discover_selectors = mocker.AsyncMock()
+    stub.discovery.preflight = mocker.AsyncMock()
     stub._mcp_discovery = None
     stub._force_mcp = False
     stub._signal_lane = None
@@ -184,6 +185,57 @@ def test_pipeline_stores_resolved_policy(mocker, monkeypatch):
     d = Pipeline(llm_config='groq:llama-3.3-70b-versatile', contract=SimpleContract)
     assert d._policy.atom_reads is False
     assert d._policy.trust_tier == 'strict'
+
+
+def test_pipeline_defers_model_until_discovery_for_cache_or_atom_paths(mocker, monkeypatch):
+    from yosoi.core.discovery.config import _PROVIDER_ENV_VARS
+
+    provider_env_vars = {key for keys in _PROVIDER_ENV_VARS.values() for key in keys}
+    for key in provider_env_vars:
+        monkeypatch.setenv(key, '')
+    monkeypatch.delenv('YOSOI_MODEL', raising=False)
+    mocker.patch('yosoi.storage.persistence.init_yosoi')
+    mocker.patch('yosoi.storage.discovery_strategy.init_yosoi')
+    mocker.patch('yosoi.storage.tracking.get_tracking_path', return_value='/tmp/tracking.json')
+
+    pipeline = Pipeline(None, contract=SimpleContract, policy=ys.Policy(), quiet=True)
+
+    assert pipeline._llm_deferred is True
+    assert pipeline._llm_config.provider == 'deferred'
+
+
+def test_cached_replay_uses_resolve_artifact(mocker):
+    stub = _make_pipeline_stub(mocker)
+    html = '<html><body><h1>Book</h1><span class="price">$9.99</span></body></html>'
+
+    items = stub._resolve_cached_records(
+        'https://example.com/book',
+        'example.com',
+        html,
+        {'title': {'primary': 'h1::text'}, 'price': {'primary': '.price::text'}},
+    )
+
+    assert items == [{'title': 'Book', 'price': 9.99}]
+
+
+def test_atom_replay_is_policy_gated_and_uses_empty_legacy_cache(mocker):
+    from yosoi.models.needs_discovery import NeedsDiscovery
+    from yosoi.policy import Policy
+
+    stub = _make_pipeline_stub(mocker)
+    stub._policy = Policy(atom_reads=False)
+    resolver = mocker.patch('yosoi.core.resolve.resolve')
+
+    assert stub._resolve_atom_records('https://example.com', 'example.com', '<html/>') is None
+    resolver.assert_not_called()
+
+    stub._policy = Policy(atom_reads=True)
+    resolver.return_value = NeedsDiscovery(domain='example.com', contract_fingerprint='fp', fields=['title'])
+    assert stub._resolve_atom_records('https://example.com', 'example.com', '<html/>') is None
+    assert resolver.call_args.args[2] == {}
+
+    resolver.return_value = [{'title': 'Book'}]
+    assert stub._resolve_atom_records('https://example.com', 'example.com', '<html/>') == [{'title': 'Book'}]
 
 
 class TestEscalationSignal:
@@ -605,7 +657,7 @@ async def test_discover_returns_overrides_when_no_fields_need_discovery(mocker):
     stub = _make_pipeline_stub(mocker)
 
     class OverrideContract(Contract):
-        title: str = ys.Field(selector='.title')  # type: ignore[assignment]
+        title: str = ys.Field(selector='.title')
 
     stub.contract = OverrideContract
     stub.contract.get_selector_overrides = mocker.MagicMock(return_value={'title': {'primary': '.title'}})
@@ -634,7 +686,7 @@ async def test_discover_returns_selectors_on_ai_success(mocker):
     assert used_llm is True
 
 
-async def test_discover_returns_none_when_all_ai_attempts_fail(mocker):
+async def test_discover_raises_when_all_ai_attempts_fail(mocker):
     stub = _make_pipeline_stub(mocker)
     stub.contract.get_selector_overrides = mocker.MagicMock(return_value={})
     stub.contract.field_descriptions = mocker.MagicMock(return_value={'title': 'The title'})
@@ -645,9 +697,8 @@ async def test_discover_returns_none_when_all_ai_attempts_fail(mocker):
         'yosoi.core.pipeline.discovery.get_async_retryer',
         return_value=AsyncRetrying(stop=stop_after_attempt(1), wait=wait_none(), reraise=False),
     )
-    selectors, used_llm = await Pipeline._discover(stub, 'https://x.com', '<html/>', max_retries=1)
-    assert selectors is None
-    assert used_llm is False
+    with pytest.raises(RuntimeError, match='AI discovery failed'):
+        await Pipeline._discover(stub, 'https://x.com', '<html/>', max_retries=1)
 
 
 async def test_discover_succeeds_at_css(mocker):
@@ -691,6 +742,22 @@ async def test_discover_returns_none_when_all_levels_fail(mocker):
     selectors, used_llm = await Pipeline._discover(stub, 'https://x.com', '<html/>')
     assert selectors is None
     assert used_llm is False
+
+
+async def test_process_url_preflights_provider_before_fetch(mocker):
+    stub = _make_pipeline_stub(mocker)
+    mocker.patch.object(Pipeline, 'normalize_url', return_value='https://x.com')
+    mocker.patch.object(Pipeline, '_extract_domain', return_value='x.com')
+    mocker.patch.object(Pipeline, '_create_fetcher', return_value=mocker.MagicMock())
+    stub.storage.load_selectors.return_value = None
+    stub.discovery.preflight.side_effect = RuntimeError('OpenCode server unreachable')
+    fetch = mocker.patch.object(Pipeline, '_fetch')
+    mocker.patch('yosoi.core.pipeline.base.observability')
+
+    with pytest.raises(RuntimeError, match='OpenCode server unreachable'):
+        await Pipeline.process_url(stub, 'https://x.com')
+
+    fetch.assert_not_called()
 
 
 async def test_process_url_raises_when_fetch_fails(mocker):
@@ -769,14 +836,14 @@ async def test_process_url_full_success_path(mocker):
     mocker.patch.object(Pipeline, '_clean', return_value='<clean/>')
     mocker.patch.object(Pipeline, '_discover', return_value=({'title': {'primary': 'h1'}}, True))
     mocker.patch.object(Pipeline, '_verify', return_value={'title': {'primary': 'h1'}})
-    mocker.patch.object(Pipeline, '_extract', return_value={'title': 'Book'})
-    mocker.patch.object(Pipeline, '_validate_with_contract', return_value={'title': 'Book'})
+    mocker.patch.object(Pipeline, '_extract', return_value={'title': 'Book', 'price': '9.99'})
+    mocker.patch.object(Pipeline, '_validate_with_contract', return_value={'title': 'Book', 'price': 9.99})
     mocker.patch.object(Pipeline, '_save_and_track')
     mocker.patch('yosoi.core.pipeline.base.observability')
     await Pipeline.process_url(stub, 'https://x.com')
 
 
-async def test_process_url_succeeds_even_when_extraction_fails(mocker):
+async def test_process_url_fails_when_fresh_discovery_extracts_zero_records(mocker):
     stub = _make_pipeline_stub(mocker)
     fetch_result = FetchResult(url='https://x.com', html='<html/>', status_code=200)
     mocker.patch.object(Pipeline, 'normalize_url', return_value='https://x.com')
@@ -790,7 +857,55 @@ async def test_process_url_succeeds_even_when_extraction_fails(mocker):
     mocker.patch.object(Pipeline, '_extract', return_value=None)
     mocker.patch.object(Pipeline, '_save_and_track')
     mocker.patch('yosoi.core.pipeline.base.observability')
-    await Pipeline.process_url(stub, 'https://x.com')
+    with pytest.raises(RuntimeError, match=r'zero records|Required contract fields'):
+        await Pipeline.process_url(stub, 'https://x.com')
+    Pipeline._save_and_track.assert_not_called()
+
+
+async def test_scrape_fresh_mcp_first_fails_when_required_fields_unmet(mocker):
+    from types import SimpleNamespace
+
+    stub = _make_pipeline_stub(mocker)
+    stub._force_mcp = True
+    fetch_result = FetchResult(url='https://x.com', html='<html/>', status_code=200)
+    snapshot = SimpleNamespace(fetch_result=fetch_result, raw_html='<html/>', html_for_discovery='<clean/>')
+    fetcher = mocker.MagicMock()
+
+    mocker.patch.object(Pipeline, '_discover_js_actions', mocker.AsyncMock())
+    mocker.patch.object(Pipeline, '_resolve_js_scripts', mocker.AsyncMock(return_value={}))
+    mocker.patch.object(Pipeline, '_resolve_download_specs', return_value={})
+    mocker.patch.object(Pipeline, '_acquire_page', mocker.AsyncMock(return_value=snapshot))
+    mocker.patch.object(
+        Pipeline, '_discover_via_mcp', mocker.AsyncMock(return_value=({'title': {'primary': 'h1'}}, True))
+    )
+    mocker.patch.object(Pipeline, '_resolve_root', return_value=None)
+    mocker.patch.object(Pipeline, '_root_value', return_value=None)
+    mocker.patch.object(Pipeline, '_verify', return_value={'title': {'primary': 'h1'}})
+    mocker.patch.object(Pipeline, '_extract', return_value={'title': 'Book'})
+    mocker.patch.object(Pipeline, '_merge_fetch_outputs', return_value={'title': 'Book'})
+    mocker.patch.object(Pipeline, '_record_downloads')
+    mocker.patch.object(
+        Pipeline, '_semantic_refine', mocker.AsyncMock(return_value=({'title': 'Book'}, {'title': {'primary': 'h1'}}))
+    )
+    mocker.patch.object(Pipeline, '_finish', mocker.AsyncMock())
+    mocker.patch('yosoi.core.pipeline.base.observability')
+
+    with pytest.raises(RuntimeError, match='Required contract fields still unmet'):
+        async for _ in Pipeline._scrape_fresh(
+            stub,
+            url='https://x.com',
+            domain='x.com',
+            fetcher=fetcher,
+            force_flag=False,
+            max_fetch_retries=1,
+            max_discovery_retries=1,
+            skip_verification=False,
+            format_to_use=['json'],
+            root_span=None,
+        ):
+            pass
+
+    Pipeline._finish.assert_not_called()
 
 
 async def test_process_url_raises_when_clean_fails(mocker):
@@ -1141,7 +1256,7 @@ async def test_extract_with_cached_returns_items_on_success(mocker):
     stub.cleaner.clean_html.return_value = '<html/>'
     vr = _make_verification_result(True, ['title', 'price'])
     stub.verifier.verify.return_value = vr
-    stub.extractor.extract_content_with_html.return_value = {'title': 'Book', 'price': '9.99'}
+    mocker.patch.object(stub, '_resolve_cached_records', return_value=[{'title': 'Book', 'price': '9.99'}])
     items, cache_valid = await Pipeline._extract_with_cached(
         stub,
         'https://x.com',
@@ -1201,7 +1316,7 @@ async def test_extract_with_cached_missing_overridden_field_does_not_trigger_red
 
     class OverriddenContract(Contract):
         title: str = ys.Title()
-        price: float = YsField(description='Price', selector='p.price')  # type: ignore[assignment]
+        price: float = YsField(description='Price', selector='p.price')
 
     stub = _make_pipeline_stub(mocker, contract=OverriddenContract)
     mock_fetcher = mocker.MagicMock()
@@ -1209,7 +1324,7 @@ async def test_extract_with_cached_missing_overridden_field_does_not_trigger_red
     stub.cleaner.clean_html.return_value = '<html/>'
     vr = _make_verification_result(True, ['title'])
     stub.verifier.verify.return_value = vr
-    stub.extractor.extract_content_with_html.return_value = {'title': 'Book'}
+    mocker.patch.object(stub, '_resolve_cached_records', return_value=[{'title': 'Book'}])
     items, cache_valid = await Pipeline._extract_with_cached(
         stub, 'https://x.com', mock_fetcher, {'title': {'primary': 'h1'}}, False
     )
@@ -1524,7 +1639,7 @@ class _PriceContract(Contract):
 
 class _CountContract(Contract):
     title: str = ys.Title()
-    count: int = ys.Field(description='Count', default=0)  # type: ignore[assignment]
+    count: int = ys.Field(description='Count', default=0)
 
 
 def test_validate_single_item_drops_isolable_field_to_default(mocker):
@@ -1612,6 +1727,7 @@ async def test_try_cached_skip_verification_branch(mocker):
     from yosoi.models.snapshot import SelectorSnapshot
 
     stub = _make_pipeline_stub(mocker)
+    stub._policy = ys.Policy(atom_reads=True)
     now = datetime.now(timezone.utc)
     stub.storage.load_snapshots.return_value = {
         'title': SelectorSnapshot(primary={'type': 'css', 'value': 'h1'}, discovered_at=now),
@@ -1630,6 +1746,9 @@ async def test_try_cached_skip_verification_branch(mocker):
     result = await Pipeline._try_cached(stub, 'https://x.com', 'x.com', mock_fetcher, True, ['json'])
     # Result is the async generator returned by _yield_cached_items
     assert result is not None
+    printed = ' '.join(str(c) for c in stub.console.print.call_args_list)
+    assert 'Field atoms armed' in printed
+    assert 'selector cache hit wins' in printed
 
 
 async def test_try_cached_skip_verification_cache_invalid_returns_none(mocker):
@@ -1860,7 +1979,7 @@ class _NestedPrice(ys.Contract):
 
 class _NestedContract(ys.Contract):
     name: str = ys.Title()
-    price: _NestedPrice = ys.Field(description='Price info')  # type: ignore[assignment]
+    price: _NestedPrice = ys.Field(description='Price info')
 
 
 def test_required_discovery_fields_expands_nested_contract(mocker):
@@ -2000,7 +2119,7 @@ async def test_discover_logs_retry_then_succeeds_on_second_attempt(mocker):
     mocker.patch.object(stub.contract, 'field_descriptions', return_value={'title': 'The title'})
     stub.discovery.discover_selectors = mocker.AsyncMock(side_effect=[None, {'title': {'primary': 'h1'}}])
 
-    def _fake_retryer(*, max_attempts, wait_min, wait_max, exceptions, log_callback, reraise):
+    def _fake_retryer(*, max_attempts, wait_min, wait_max, exceptions, log_callback, reraise, **kwargs):
         # Faithful to get_async_retryer but with no wait — keeps before_sleep wired
         # so the in-method retry-log callback is exercised.
         return AsyncRetrying(
@@ -2178,17 +2297,15 @@ def test_print_verification_failure_lists_every_failed_selector(mocker):
     assert 'no_match' in printed
 
 
-async def test_discover_fails_closed_when_retryer_cannot_be_built(mocker):
-    """If the retryer itself raises a transient error, _discover returns (None, False) —
-    it fails closed rather than propagating, consistent with fail-fast/no-fallback."""
+async def test_discover_propagates_when_retryer_cannot_be_built(mocker):
+    """Retryer construction failures are programming/config errors and should propagate."""
     stub = _make_pipeline_stub(mocker)
     mocker.patch.object(stub.contract, 'get_selector_overrides', return_value={})
     mocker.patch.object(stub.contract, 'field_descriptions', return_value={'title': 'The title'})
     mocker.patch('yosoi.core.pipeline.discovery.get_async_retryer', side_effect=ValueError('bad retry config'))
     mocker.patch('yosoi.core.pipeline.discovery.observability')
-    selectors, used_llm = await Pipeline._discover(stub, 'https://x.com', '<html/>', max_retries=2)
-    assert selectors is None
-    assert used_llm is False
+    with pytest.raises(ValueError, match='bad retry config'):
+        await Pipeline._discover(stub, 'https://x.com', '<html/>', max_retries=2)
 
 
 async def test_semantic_refine_stops_when_reextraction_goes_empty(mocker):
@@ -2261,3 +2378,234 @@ def test_pipeline_threads_cross_origin_dom_to_browser_fetcher(mocker, monkeypatc
     default = Pipeline(llm_config='groq:llama-3.3-70b-versatile', contract=SimpleContract)
     default._create_fetcher('headless')
     assert create_fetcher.call_args.kwargs.get('cross_origin_dom', False) is False
+
+
+async def test_concurrent_tracking_summary_prints_run_page_contract_and_domain_rows(mocker):
+    stub = _make_pipeline_stub(mocker)
+    before = DomainStats(llm_calls=2, url_count=5, total_elapsed=10.0)
+    after = DomainStats(llm_calls=5, url_count=9, total_elapsed=16.5)
+    stub.tracker.get_stats = mocker.AsyncMock(return_value=after)
+
+    await Pipeline._print_concurrent_tracking_summary(
+        stub,
+        {'successful': ['https://example.com/a'], 'failed': ['https://example.com/b']},
+        {'https://example.com/a': 1.25, 'https://example.com/b': 2.75},
+        {'https://example.com/a': 'example.com', 'https://example.com/b': 'example.com'},
+        {'example.com': before},
+    )
+
+    table = stub.console.print.call_args.args[0]
+    assert table.title == 'Tracking summary — concurrent run'
+    assert len(table.rows) == 5
+    stub.tracker.get_stats.assert_awaited_once_with('example.com')
+
+
+async def test_gated_fresh_replays_cache_after_single_flight(mocker):
+    stub = _make_pipeline_stub(mocker)
+    cached_items = [{'title': 'Cached'}]
+
+    async def _cached(*_args, **_kwargs):
+        async def _gen():
+            yield cached_items[0]
+
+        return _gen()
+
+    stub._try_cached = mocker.AsyncMock(side_effect=_cached)
+    stub._scrape_fresh = mocker.MagicMock()
+    stub._allow_llm = True
+
+    out = [
+        item
+        async for item in Pipeline._gated_fresh(
+            stub,
+            url='https://example.com/a',
+            domain='example.com',
+            fetcher=mocker.MagicMock(),
+            force_flag=False,
+            max_fetch_retries=1,
+            max_discovery_retries=1,
+            skip_verification=False,
+            format_to_use=['json'],
+            root_span=None,
+        )
+    ]
+
+    assert out == cached_items
+    stub._scrape_fresh.assert_not_called()
+
+
+async def test_gated_fresh_blocks_llm_when_cache_miss_and_model_disallowed(mocker):
+    from yosoi.utils.exceptions import LLMBlockedError
+
+    stub = _make_pipeline_stub(mocker)
+    stub._try_cached = mocker.AsyncMock(return_value=None)
+    stub._allow_llm = False
+    stub.last_llm_reason = 'stale_selector'
+    stub._mark_scrape_decision = mocker.MagicMock()
+
+    with pytest.raises(LLMBlockedError, match='stale_selector'):
+        [
+            item
+            async for item in Pipeline._gated_fresh(
+                stub,
+                url='https://example.com/a',
+                domain='example.com',
+                fetcher=mocker.MagicMock(),
+                force_flag=False,
+                max_fetch_retries=1,
+                max_discovery_retries=1,
+                skip_verification=False,
+                format_to_use=['json'],
+                root_span=None,
+            )
+        ]
+
+    stub._mark_scrape_decision.assert_called_once_with(
+        selector_source='none', cache_decision='llm_blocked', llm_used=False, llm_reason='stale_selector'
+    )
+
+
+async def test_fetch_and_clean_for_cache_rejects_too_short_html_and_saves_debug_for_long_html(mocker):
+    stub = _make_pipeline_stub(mocker)
+    fetcher = mocker.MagicMock()
+    stub._fetch = mocker.AsyncMock(return_value=FetchResult(url='https://example.com', html='<html>raw</html>'))
+    stub.cleaner.clean_html.return_value = '<html>short</html>'
+
+    assert await Pipeline._fetch_and_clean_for_cache(stub, 'https://example.com', fetcher) is None
+    stub.debug.save_debug_html.assert_not_awaited()
+
+    long_html = '<html>' + ('x' * 1000) + '</html>'
+    stub.cleaner.clean_html.return_value = long_html
+    assert await Pipeline._fetch_and_clean_for_cache(stub, 'https://example.com', fetcher) == (
+        '<html>raw</html>',
+        long_html,
+    )
+    stub.debug.save_debug_html.assert_awaited_once_with('https://example.com', long_html)
+
+
+async def test_fetch_and_clean_for_cache_returns_none_on_missing_html_and_reraises_bot_detection(mocker):
+    stub = _make_pipeline_stub(mocker)
+    fetcher = mocker.MagicMock()
+    stub._fetch = mocker.AsyncMock(return_value=FetchResult(url='https://example.com', html=None))
+
+    assert await Pipeline._fetch_and_clean_for_cache(stub, 'https://example.com', fetcher) is None
+
+    stub._fetch.side_effect = BotDetectionError('https://example.com', 403, ['captcha'])
+    with pytest.raises(BotDetectionError):
+        await Pipeline._fetch_and_clean_for_cache(stub, 'https://example.com', fetcher)
+
+
+async def test_record_cache_hit_metric_swallows_store_failures(mocker):
+    stub = _make_pipeline_stub(mocker)
+    stub._contract_sig = 'contract-fp'
+    mocker.patch('yosoi.storage.cache_metrics_libsql.LibSQLCacheMetricsStore', side_effect=RuntimeError('db down'))
+
+    await Pipeline._record_cache_hit_metric(stub, 'https://example.com/a', 'example.com', {'title'})
+
+
+async def test_partial_rediscovery_returns_none_when_initial_or_refined_extract_empty(mocker):
+    from datetime import datetime, timezone
+
+    from yosoi.models.snapshot import SelectorSnapshot
+
+    stub = _make_pipeline_stub(mocker)
+    stub._url_start = 0.0
+    snapshots = {
+        'title': SelectorSnapshot(primary={'type': 'css', 'value': 'h1'}, discovered_at=datetime.now(timezone.utc))
+    }
+    stub.discovery.discover_selectors.return_value = {'price': {'primary': '.price'}}
+    stub._merge_and_save_snapshots = mocker.AsyncMock(
+        return_value={'title': {'primary': 'h1'}, 'price': {'primary': '.price'}}
+    )
+    stub._resolve_root = mocker.MagicMock(return_value=None)
+    stub._root_value = mocker.MagicMock(return_value=None)
+    stub._extract = mocker.MagicMock(return_value=None)
+
+    result = await Pipeline._partial_rediscovery(
+        stub,
+        'https://example.com/a',
+        'example.com',
+        '<html/>',
+        '<html/>',
+        mocker.MagicMock(),
+        snapshots,
+        {'title'},
+        {'price'},
+        ['json'],
+    )
+    assert result is None
+
+    stub._extract.return_value = {'title': 'T'}
+    stub._semantic_refine = mocker.AsyncMock(return_value=(None, {'title': {'primary': 'h1'}}))
+    result = await Pipeline._partial_rediscovery(
+        stub,
+        'https://example.com/a',
+        'example.com',
+        '<html/>',
+        '<html/>',
+        mocker.MagicMock(),
+        snapshots,
+        {'title'},
+        {'price'},
+        ['json'],
+    )
+    assert result is None
+
+
+def test_root_helpers_cover_dict_primary_and_contract_root_override(mocker):
+    selectors = {'root': {'primary': {'type': 'css', 'value': 'article'}}, 'title': {'primary': 'h1'}}
+    assert Pipeline._pop_root(selectors) == {'primary': {'type': 'css', 'value': 'article'}}
+    assert selectors == {'title': {'primary': 'h1'}}
+    assert Pipeline._root_value({'primary': {'value': 'main'}}) == 'main'
+    assert Pipeline._root_value({'primary': {'value': ''}}) is None
+
+    class RootedContract(Contract):
+        root = ys.css('section.card')
+        title: str = ys.Title()
+
+    stub = _make_pipeline_stub(mocker, contract=RootedContract)
+    selectors = {'root': {'primary': 'article'}, 'title': {'primary': 'h1'}}
+    resolved_root = Pipeline._resolve_root(stub, selectors)
+    assert resolved_root is not None
+    assert resolved_root['primary']['type'] == 'css'
+    assert resolved_root['primary']['value'] == 'section.card'
+    assert 'root' not in selectors
+
+
+def test_file_download_specs_intersect_field_and_global_allowlists(mocker):
+    class FileContract(Contract):
+        rows: list[dict] = ys.File(trigger='a.export', allowed_types=['csv', 'pdf'], max_bytes=42)
+        raw: bytes = ys.File(href='a.raw')
+
+    stub = _make_pipeline_stub(mocker, contract=FileContract)
+    stub._allowed_download_types = ('csv', 'json')
+    stub._max_download_bytes = 99
+
+    specs = Pipeline._file_download_specs(stub)
+
+    assert specs['rows'].allowed_types == ('csv',)
+    assert specs['rows'].max_bytes == 42
+    assert specs['rows'].output == 'parsed'
+    assert specs['raw'].allowed_types == ('csv', 'json')
+    assert specs['raw'].max_bytes == 99
+    assert specs['raw'].output == 'bytes'
+
+
+def test_print_tracking_stats_with_summary_table_and_efficiency(mocker):
+    stub = _make_pipeline_stub(mocker)
+    stub._show_tracking_summary = True
+    stats = DomainStats(llm_calls=2, url_count=6, total_elapsed=12.5)
+
+    Pipeline._print_tracking_stats(
+        stub,
+        'https://example.com/a',
+        'example.com',
+        stats,
+        used_llm=True,
+        elapsed=1.5,
+        partial_discovery=True,
+    )
+
+    table = stub.console.print.call_args.args[0]
+    assert table.title == 'Tracking summary — example.com'
+    assert len(table.rows) == 4

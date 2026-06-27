@@ -2,7 +2,7 @@
 
 P2 builds the atom corpus (gated dual-write). P3 lets it SERVE reads — behind a flag,
 fail closed. A contract is a query: for each field we look up its atom by
-``(page_shape, field_name, yosoi_type)`` and reuse the cached selector instead of
+``(page_shape, field_fingerprint)`` and reuse the cached selector instead of
 re-discovering. Misses fall through to the normal discovery path, so a contract that
 GROWS by one field discovers exactly that one atom and replays the rest.
 
@@ -10,7 +10,7 @@ Fail-closed safety:
   * EXACT page-shape only — a field is never served from a different (even similar) shape
     bucket. Near-shape reuse (the cas-85 ALLOW/REFUSE/ABSTAIN recommender) is a deliberate
     follow-up; until then any non-identical shape is REFUSED by construction.
-  * UNAMBIGUOUS only — if a (field, type) has atoms in more than one region on this shape
+  * UNAMBIGUOUS only — if a field fingerprint has atoms in more than one region on this shape
     (e.g. ``url`` exists for both an ad region and an organic region), the read ABSTAINS
     and the field is discovered, because we cannot know which region this contract means
     without the discrimination step. Reusing the wrong region is the exact silent-
@@ -19,11 +19,15 @@ Fail-closed safety:
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Any
 
 from pydantic import BaseModel, Field
 
 from yosoi.storage.atoms import AtomStore, FieldAtom
+from yosoi.utils.signatures import field_signature
+
+RequestedAtomField = tuple[str, str | None] | tuple[str, str | None, str]
 
 
 class AtomResolution(BaseModel):
@@ -46,11 +50,14 @@ class AtomResolution(BaseModel):
 
 def resolve_via_atoms(
     page_shape: str,
-    requested: list[tuple[str, str | None]],
+    requested: Sequence[RequestedAtomField],
     store: AtomStore,
     allowed: frozenset[str] | None = None,
 ) -> AtomResolution:
-    """Resolve ``requested`` ``(field_name, yosoi_type)`` pairs against the atom index.
+    """Resolve requested fields against the atom index.
+
+    ``requested`` entries may be legacy ``(field_name, yosoi_type)`` pairs or
+    ``(field_name, yosoi_type, field_fingerprint)`` triples.
 
     Exact ``page_shape`` only; a field served only when exactly one region on this shape
     holds it (fail closed on 0 and on >1). ``allowed`` restricts which provenance ``source``
@@ -62,19 +69,22 @@ def resolve_via_atoms(
     res = AtomResolution()
     if is_degenerate_shape(page_shape):
         # a too-thin page collapses to a shared degenerate bucket — never reuse across it
-        res.misses.extend(name for name, _ in requested)
+        res.misses.extend(field[0] for field in requested)
         return res
 
-    by_field: dict[tuple[str, str | None], list[FieldAtom]] = {}
+    by_field: dict[str, list[FieldAtom]] = {}
     for atom in store.all():
         if atom.page_shape != page_shape:
             continue
         if allowed is not None and atom.source not in allowed:
             continue  # quarantined source under the active trust mode → not eligible
-        by_field.setdefault((atom.field_name, atom.yosoi_type), []).append(atom)
+        atom_fp = atom.field_fingerprint or field_signature(atom.field_name, '', atom.yosoi_type)
+        by_field.setdefault(atom_fp, []).append(atom)
 
-    for field_name, yosoi_type in requested:
-        candidates = by_field.get((field_name, yosoi_type), [])
+    for field in requested:
+        field_name, yosoi_type = field[0], field[1]
+        field_fp = field[2] if len(field) == 3 else field_signature(field_name, '', yosoi_type)
+        candidates = by_field.get(field_fp, [])
         if len(candidates) == 1:
             res.hits[field_name] = candidates[0]
         elif not candidates:

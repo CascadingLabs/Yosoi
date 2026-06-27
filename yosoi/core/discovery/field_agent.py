@@ -1,5 +1,6 @@
 """Single-field AI discovery agent wrapping a narrow pydantic-ai Agent."""
 
+import inspect
 import logging
 
 from pydantic_ai import Agent, ModelRetry, RunContext
@@ -94,9 +95,11 @@ class FieldDiscoveryAgent:
 
         """
         model = create_model(llm_config)
+        self._model = model
         self.model_name = llm_config.model_name
         self.provider = llm_config.provider
         self.console = console or Console()
+        self._preflight_checked = False
 
         self._agent: Agent[FieldDiscoveryDeps, FieldSelectors] = Agent(
             model,
@@ -112,6 +115,22 @@ class FieldDiscoveryAgent:
         self._agent.system_prompt(field_single_ax_hints)
         self._agent.system_prompt(field_single_page_hints)
         self._agent.output_validator(_reject_forbidden_selectors)
+
+    async def preflight(self) -> None:
+        """Run an optional provider transport preflight before field fan-out."""
+        if self._preflight_checked:
+            return
+        check = getattr(self._model, 'preflight', None)
+        if not callable(check):
+            self._preflight_checked = True
+            return
+        try:
+            result = check()
+            if inspect.isawaitable(result):
+                await result
+            self._preflight_checked = True
+        except Exception as exc:
+            raise LLMGenerationError(str(exc)) from exc
 
     async def discover_field(
         self,

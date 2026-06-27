@@ -89,9 +89,10 @@ the `TYPE_CHECKING` imports, and `_LAZY` in lockstep.
 - `yosoi/`: The core python package.
 - `tests/`: Integration and unit tests.
 - `examples/`: Usage examples.
-- `.yosoi/`: Local storage for selectors, debug HTML, and logs (gitignored).
-    - `logs/`: Contains run logs in `run_YYYYMMDD_HHMMSS.log` format.
-    - `debug_html/`: Extracted HTML for debugging.
+- `.yosoi/`: Local generated state (gitignored), created lazily.
+    - `yosoi.sqlite3`: Selector/cache state.
+    - `logs/`: Run logs, created only when logging is configured.
+    - `debug/`: Extracted HTML/selectors, created only when debug output is enabled.
 
 ## Logging & Observability
 - **Local Logs**: Every run generates a log file in `.yosoi/logs/`. These logs contain detailed debug information and full tracebacks.
