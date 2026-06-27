@@ -441,8 +441,8 @@ def weighted_jaccard(a: frozenset[str], b: frozenset[str], *, layer: str = 'gene
     union = a | b
     if not union:
         return 1.0
-    numerator = sum(_feature_weight(feature, layer=layer) for feature in a & b)
-    denominator = sum(_feature_weight(feature, layer=layer) for feature in union)
+    numerator = math.fsum(_feature_weight(feature, layer=layer) for feature in a & b)
+    denominator = math.fsum(_feature_weight(feature, layer=layer) for feature in union)
     return numerator / denominator if denominator else 1.0
 
 
