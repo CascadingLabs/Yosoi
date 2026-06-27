@@ -146,7 +146,7 @@ def _internalize_accepted(
 async def _resolve_contract_and_preload(
     contract,  # type[Contract] | str
     selectors: str | dict[str, SnapshotMap] | None = None,
-) -> tuple[type[Contract], dict[str, SnapshotMap] | None]:
+) -> tuple[type[Contract], dict[str, SnapshotMap] | None, dict[str, Any] | None]:
     """Resolve a contract and optionally load selectors from a separate source.
 
     Handles four cases:
@@ -162,7 +162,11 @@ async def _resolve_contract_and_preload(
             have come from a recipe bundle.
 
     Returns:
-        (contract_cls, preloaded_snapshots_or_None)
+        ``(contract_cls, preloaded_snapshots_or_None, preloaded_fingerprints_or_None)``.
+        Fingerprints are only ever non-None on the recipe path (case 1) — a bare
+        selector source (cases 3/4) carries no page fingerprint. The value is the
+        recipe bundle's ``{domain: PageFingerprint}`` map (possibly empty for a v1
+        recipe), used downstream to validate the live page against the recipe.
     """
     from yosoi.utils.contract_io import is_contract_source, load_contract
     from yosoi.utils.selector_io import is_selector_source, load_selectors
@@ -174,7 +178,8 @@ async def _resolve_contract_and_preload(
         bundle = await load_recipe(contract)
         Pipeline._recipe_source = contract
         contract_cls = bundle.contract.to_contract()
-        return contract_cls, bundle.selectors
+        # v1 recipes have no `fingerprints` attr; getattr keeps this backward-compatible.
+        return contract_cls, bundle.selectors, getattr(bundle, 'fingerprints', None) or None
 
     # Case 2: contract is a standalone contract JSON/URL
     if isinstance(contract, str) and is_contract_source(contract):
@@ -210,7 +215,8 @@ async def _resolve_contract_and_preload(
                 f'selectors must be a string (path/URL) or dict[domain, SnapshotMap], got {type(selectors).__name__}.'
             )
 
-    return contract_cls, preloaded
+    # A bare selector source has no associated page fingerprint — only recipes do.
+    return contract_cls, preloaded, None
 
 
 async def scrape(
@@ -298,11 +304,13 @@ async def scrape(
 
     contract_clss = []
     preloaded_by_contract: dict[str, dict[str, SnapshotMap] | None] = {}
+    fingerprints_by_contract: dict[str, dict[str, Any] | None] = {}
 
     for raw in raw_contracts:
-        cls, preloaded = await _resolve_contract_and_preload(raw, selectors)
+        cls, preloaded, fingerprints = await _resolve_contract_and_preload(raw, selectors)
         contract_clss.append(cls)
         preloaded_by_contract[cls.__name__] = preloaded
+        fingerprints_by_contract[cls.__name__] = fingerprints
 
     multi_url = not isinstance(url, str)
     multi_contract = not isinstance(contract, (str, type))
@@ -371,6 +379,7 @@ async def scrape(
                 gate_collect=gate_collectors[u],
                 discovery_gate=discovery_gate,
                 preloaded=preloaded_by_contract.get(c.__name__),
+                fingerprints=fingerprints_by_contract.get(c.__name__),
                 policy=Policy.cascade(policy, base_call_policy, per_url_policy),
             )
 
@@ -521,6 +530,56 @@ def _compat_policy_layer(  # noqa: C901
     return Policy(**kwargs)
 
 
+def _build_preloaded_snapshots(url: str, preloaded: dict[str, Any] | None) -> dict[str, SnapshotMap] | None:
+    """Validate a preloaded selector mapping into ``{domain: SnapshotMap}`` for one URL.
+
+    Raises ValueError when the source covers no selectors for the URL's domain (with the
+    same one-label subdomain fallback the storage layer uses). Returns None when nothing
+    was preloaded.
+    """
+    if preloaded is None:
+        return None
+
+    from yosoi.utils.urls import extract_domain
+
+    domain = extract_domain(url)
+    covered = domain in preloaded or any(domain.endswith('.' + k) or k.endswith('.' + domain) for k in preloaded)
+    if not covered:
+        raise ValueError(
+            f'Selector source does not cover domain {domain!r}.\n'
+            f'The provided selectors cover: {list(preloaded.keys())}.\n'
+            f'Re-fetch selectors targeting {domain!r}, or scrape a URL '
+            f'from one of the covered domains.'
+        )
+    snapshots: dict[str, SnapshotMap] = {}
+    for domain_key, value in preloaded.items():
+        if isinstance(value, SnapshotMap):
+            snapshots[domain_key] = value
+        elif isinstance(value, dict):
+            snapshots[domain_key] = SnapshotMap.model_validate(value)
+    return snapshots
+
+
+def _build_preloaded_fingerprints(fingerprints: dict[str, Any] | None) -> dict[str, Any] | None:
+    """Validate a recipe's fingerprint mapping into ``{domain: PageFingerprint}``.
+
+    Returns None for a v1 recipe / non-recipe source (no fingerprints), so the pipeline
+    simply skips fingerprint validation.
+    """
+    if not fingerprints:
+        return None
+
+    from yosoi.generalization.fingerprint import PageFingerprint
+
+    out: dict[str, Any] = {}
+    for domain_key, value in fingerprints.items():
+        if isinstance(value, PageFingerprint):
+            out[domain_key] = value
+        elif isinstance(value, dict):
+            out[domain_key] = PageFingerprint.model_validate(value)
+    return out
+
+
 async def _scrape_one(
     url: str,
     contract: type[Contract] | str,
@@ -542,6 +601,7 @@ async def _scrape_one(
     gate_collect: GateCollector | None = None,
     discovery_gate: DiscoveryGate | None = None,
     preloaded: dict[str, SnapshotMap] | None = None,
+    fingerprints: dict[str, Any] | None = None,
     policy: Policy | None = None,
 ) -> list[ContentMap]:
     """One ``(url, contract)`` unit (returns ``list[record]``).
@@ -553,6 +613,9 @@ async def _scrape_one(
     map + cleaned HTML for the cross-contract discrimination gate (P1.5, advisory).
     ``preloaded``, when provided, supplies pre-discovered selector snapshots keyed by
     domain, used instead of fresh discovery for covered domains.
+    ``fingerprints``, when provided, is the recipe's ``{domain: PageFingerprint}`` map,
+    threaded to the pipeline so the cache path can validate the live page's shape against
+    the recipe before replaying its selectors.
     ``policy`` is the resolved pipeline policy; this is the edge — resolve ONCE here
     (``policy or Policy.from_env()``) and hand the concrete Policy down so the core never
     re-reads the environment (the CAS-119 purity contract).
@@ -581,26 +644,8 @@ async def _scrape_one(
         spec = spec.model_copy(update={'llm_config': model})
     save_format_list = list(spec.output_formats)
 
-    from yosoi.models.snapshot import SnapshotMap
-    from yosoi.utils.urls import extract_domain
-
-    preloaded_snapshots = None
-    if preloaded is not None:
-        domain = extract_domain(url)
-        covered = domain in preloaded or any(domain.endswith('.' + k) or k.endswith('.' + domain) for k in preloaded)
-        if not covered:
-            raise ValueError(
-                f'Selector source does not cover domain {domain!r}.\n'
-                f'The provided selectors cover: {list(preloaded.keys())}.\n'
-                f'Re-fetch selectors targeting {domain!r}, or scrape a URL '
-                f'from one of the covered domains.'
-            )
-        preloaded_snapshots = {}
-        for domain_key, value in preloaded.items():
-            if isinstance(value, SnapshotMap):
-                preloaded_snapshots[domain_key] = value
-            elif isinstance(value, dict):
-                preloaded_snapshots[domain_key] = SnapshotMap.model_validate(value)
+    preloaded_snapshots = _build_preloaded_snapshots(url, preloaded)
+    preloaded_fingerprints = _build_preloaded_fingerprints(fingerprints)
 
     with obs.span(
         'api.scrape',
@@ -628,6 +673,7 @@ async def _scrape_one(
                 identity=identity,
                 discovery_gate=discovery_gate,
                 preloaded_snapshots=preloaded_snapshots,
+                preloaded_fingerprints=preloaded_fingerprints,
                 policy=effective_policy,
             ) as pipeline:
                 items = [
@@ -691,7 +737,7 @@ async def scrape_many(
         current_url: str | None = None
         try:
             # Resolve contract + selectors once, reuse across all URLs
-            contract_cls, preloaded = await _resolve_contract_and_preload(contract, selectors)
+            contract_cls, preloaded, fingerprints = await _resolve_contract_and_preload(contract, selectors)
             for url in url_list:
                 current_url = url
                 results[url] = await _scrape_one(
@@ -705,6 +751,7 @@ async def scrape_many(
                     save_formats=save_formats,
                     quiet=quiet,
                     preloaded=preloaded,
+                    fingerprints=fingerprints,
                     policy=policy,
                 )
         except Exception as e:

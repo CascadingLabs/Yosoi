@@ -45,6 +45,11 @@ class PipelineCacheMixin:
     last_elapsed: float
     _contract_sig: str
     _last_level_distribution: dict[str, int]
+    # Recipe page fingerprints keyed by domain, set on the Pipeline by the api edge
+    # (empty for non-recipe / v1-recipe runs). Used to gate recipe replay on page-shape drift.
+    _recipe_fingerprints: dict[str, Any]
+    # Resolved pipeline policy (set on the Pipeline by base.py); read here for the recipe-match mode.
+    _policy: Any
 
     async def _try_cached(
         self,
@@ -155,6 +160,19 @@ class PipelineCacheMixin:
         root_span: Any | None = None,
     ) -> AsyncIterator[ContentMap] | None:
         """Verify cached fields, branch on fresh/stale/partial."""
+        # Recipe fingerprint gate (structural pre-check). Before per-field selector
+        # verification, if this domain's selectors came from a recipe that carried a
+        # page fingerprint, compare the live page's shape to the recipe's. A drifted
+        # shape is an early, cross-field signal that the recipe has rotted — caught
+        # here it avoids grinding through per-field checks that will all fail anyway,
+        # and (unlike selector-level STALE) it can fire before any single selector
+        # visibly breaks. Uses cleaned_html already in hand — no extra fetch. Returning
+        # None falls through to fresh discovery; FAIL mode raises; OFF / v1-recipe /
+        # non-recipe / degenerate-live all no-op straight through to verification.
+        gate = await self._recipe_fingerprint_gate(domain, cleaned_html)
+        if gate is False:
+            return None  # WARN_FALLTHROUGH on drift → re-discover
+
         with observability.span('verify', url=url, mode='per_field_cache', fields=len(snapshots)):
             verdicts = self._verify_per_field(cleaned_html, snapshots)
 
@@ -231,6 +249,68 @@ class PipelineCacheMixin:
             max_discovery_retries,
             root_span=root_span,
         )
+
+    async def _recipe_fingerprint_gate(self, domain: str, cleaned_html: str) -> bool | None:
+        """Validate the live page's fingerprint against the recipe's, if one exists.
+
+        Returns:
+            None  — no gate applies (not a preloaded recipe, no fingerprint for this
+                    domain, OFF mode, or a degenerate live page): proceed normally.
+            True  — fingerprint matched (or WARN_USE on mismatch): proceed with the recipe.
+            False — WARN_FALLTHROUGH on mismatch: caller should re-discover.
+
+        Raises:
+            RecipeFingerprintMismatch — FAIL mode on a genuine shape mismatch.
+
+        Delegates the actual comparison to ``evaluate_recipe_fingerprint`` (which calls
+        ``PageFingerprint.matches`` — the conjunctive, fail-closed matcher). This method
+        only resolves the policy mode and the per-domain fingerprint, then maps the
+        helper's bool to the (None/True/False) the caller branches on.
+        """
+        recipe_fingerprints = getattr(self, '_recipe_fingerprints', None)
+        if not recipe_fingerprints:
+            return None
+
+        # Only gate when the served selectors actually came from the recipe, not a
+        # stale on-disk cache that happens to exist for the same domain.
+        source = await self.storage.selector_source(domain, self._contract_sig)
+        if source != 'preloaded':
+            return None
+
+        recipe_fp = self._fingerprint_for_domain(recipe_fingerprints, domain)
+        if recipe_fp is None:
+            return None
+
+        from yosoi.storage.recipe_fingerprint import RecipeMatchMode, evaluate_recipe_fingerprint
+
+        fp_policy = getattr(self._policy, 'fingerprint', None)  # type: ignore[attr-defined]
+        mode = getattr(fp_policy, 'recipe_match', RecipeMatchMode.OFF) if fp_policy is not None else RecipeMatchMode.OFF
+        if mode is RecipeMatchMode.OFF:
+            return None
+
+        recipe_ref = getattr(self, '_recipe_source', None) or domain
+        used = evaluate_recipe_fingerprint(
+            recipe_fp=recipe_fp,
+            live_html=cleaned_html,
+            domain=domain,
+            source=recipe_ref,
+            mode=mode,
+        )
+        return used  # True → use recipe; False → fall through to discovery
+
+    @staticmethod
+    def _fingerprint_for_domain(fingerprints: dict[str, Any], domain: str) -> Any | None:
+        """Look up a domain's recipe fingerprint with the one-label subdomain fallback.
+
+        Mirrors ``SelectorStorage._preloaded_for_domain`` / ``RecipeBundle`` lookup so
+        ``www.example.com`` matches an ``example.com`` fingerprint.
+        """
+        if domain in fingerprints:
+            return fingerprints[domain]
+        parts = domain.split('.', 1)
+        if len(parts) == 2:
+            return fingerprints.get(parts[1])
+        return None
 
     def _extract_all_fresh(
         self,

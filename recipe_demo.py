@@ -7,6 +7,7 @@ import yosoi as ys
 from yosoi.models.recipe import RecipeBundle
 from yosoi.models.snapshot import SnapshotMap
 from yosoi.storage.persistence import SelectorStorage
+from yosoi.utils.signatures import contract_signature
 from yosoi.utils.urls import extract_domain
 
 URL = 'https://qscrape.dev/l1/eshop/catalog/?cat=Forge%20%26%20Smithing'
@@ -29,7 +30,7 @@ async def main():
     print('\n--- Step 2: Mint recipe from discovered selectors ---')
     storage = SelectorStorage()
     domain = extract_domain(URL)
-    snapshots = await storage.load_snapshots(domain)
+    snapshots = await storage.load_snapshots(domain, contract_sig=contract_signature(Product))
     assert snapshots, 'No snapshots found — Step 1 must have failed'
     snap_map = SnapshotMap(url=URL, domain=domain, snapshots=snapshots)
     bundle = RecipeBundle.from_parts(Product, {domain: snap_map})

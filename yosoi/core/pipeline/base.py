@@ -122,6 +122,7 @@ class Pipeline(
         identity: BrowserIdentity | None = None,
         console: Console | None = None,
         preloaded_snapshots: dict[str, SnapshotMap] | None = None,
+        preloaded_fingerprints: dict[str, Any] | None = None,
         policy: Policy | None = None,
     ):
         """Initialize the pipeline with LLM configuration.
@@ -164,6 +165,11 @@ class Pipeline(
             preloaded_snapshots: Optional ``{domain: SnapshotMap}`` of pre-discovered selector
                 snapshots (e.g. loaded from a recipe). When provided, the storage layer serves
                 these domains directly so cached replay skips LLM discovery entirely.
+            preloaded_fingerprints: Optional ``{domain: PageFingerprint}`` captured when the recipe
+                was minted. When present, the cache path validates the live page's fingerprint
+                against the recipe's before replaying its selectors (per the recipe-match policy),
+                catching page-shape drift that per-field verification alone might miss. Empty/None
+                for v1 recipes and non-recipe sources, which skip fingerprint validation.
             policy: Resolved pipeline :class:`~yosoi.policy.Policy` threaded from the API edge.
                 Stored once (``policy or Policy.from_env()``) as a forward-compat seam so future
                 policy-gated behavior reads ``self._policy`` instead of the environment; the
@@ -254,6 +260,9 @@ class Pipeline(
 
         self.cleaner = HTMLCleaner(console=self.console)
         self.storage = SelectorStorage(preloaded=preloaded_snapshots)
+        # Recipe page fingerprints keyed by domain (concurrency-safe instance attr — unlike
+        # the legacy class-level _recipe_source). Read by the cache mixin to gate recipe replay.
+        self._recipe_fingerprints: dict[str, Any] = preloaded_fingerprints or {}
         self.js_storage = JsScriptStorage()
 
         self.discovery = DiscoveryOrchestrator(
