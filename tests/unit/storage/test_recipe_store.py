@@ -8,7 +8,13 @@ import pytest
 from yosoi.models.recipe import Recipe, RecipeMetadata
 from yosoi.models.snapshot import SelectorSnapshot, SnapshotMap
 from yosoi.models.spec import ContractSpec, FieldSpec
-from yosoi.storage.recipe_store import install_recipe, load_recipe, parse_selectors_file, resolve_recipe_ref
+from yosoi.storage.recipe_store import (
+    install_recipe,
+    load_recipe,
+    parse_selectors_file,
+    publish_recipe_gist,
+    resolve_recipe_ref,
+)
 
 
 def _snapshot(selector: str) -> SelectorSnapshot:
@@ -88,6 +94,12 @@ def test_resolve_recipe_ref_defaults_to_main() -> None:
     )
 
 
+def test_resolve_recipe_ref_rewrites_github_blob_url() -> None:
+    assert resolve_recipe_ref('https://github.com/owner/repo/blob/main/recipes/foo.json') == (
+        'https://raw.githubusercontent.com/owner/repo/main/recipes/foo.json'
+    )
+
+
 def test_parse_selectors_file_accepts_single_snapshot_map(tmp_path) -> None:
     path = tmp_path / 'selectors.json'
     path.write_text(_snap_map().model_dump_json(), encoding='utf-8')
@@ -106,3 +118,58 @@ def test_install_recipe_writes_hash_named_cache_file(tmp_path) -> None:
     assert result.recipe.recipe_id == recipe.recipe_id
     assert result.path == cache / f'{recipe.recipe_id.removeprefix("sha256:")}.json'
     assert load_recipe(str(result.path)).recipe_id == recipe.recipe_id
+
+
+def test_publish_recipe_gist_posts_secret_unlisted_payload(monkeypatch) -> None:
+    recipe = _recipe()
+    captured = {}
+
+    class _Response:
+        def __init__(self) -> None:
+            self.headers: dict[str, str] = {}
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self, size: int = -1) -> bytes:
+            return (
+                b'{"html_url":"https://gist.github.com/user/abc123",'
+                b'"files":{"product.recipe.json":'
+                b'{"raw_url":"https://gist.githubusercontent.com/user/abc123/raw/product.recipe.json"}}}'
+            )
+
+    def _fake_urlopen(request, timeout):
+        captured['url'] = request.full_url
+        captured['method'] = request.get_method()
+        captured['payload'] = json.loads(request.data.decode('utf-8'))
+        captured['content_type'] = request.get_header('Content-type')
+        captured['timeout'] = timeout
+        return _Response()
+
+    monkeypatch.setattr('yosoi.storage.recipe_store.urlopen', _fake_urlopen)
+
+    result = publish_recipe_gist(recipe, filename='product.recipe.json', token='ghp_test')
+
+    assert result.html_url == 'https://gist.github.com/user/abc123'
+    assert result.raw_url == 'https://gist.githubusercontent.com/user/abc123/raw/product.recipe.json'
+    assert result.public is False
+    assert captured['url'] == 'https://api.github.com/gists'
+    assert captured['method'] == 'POST'
+    assert captured['payload']['public'] is False
+    assert captured['content_type'] == 'application/json'
+    assert 'product.recipe.json' in captured['payload']['files']
+    assert recipe.recipe_id in captured['payload']['files']['product.recipe.json']['content']
+
+
+def test_publish_recipe_gist_rejects_tampered_in_memory_recipe(monkeypatch) -> None:
+    def _fail_urlopen(request, timeout):
+        raise AssertionError('network should not be called for a tampered recipe')
+
+    monkeypatch.setattr('yosoi.storage.recipe_store.urlopen', _fail_urlopen)
+    tampered = _recipe().model_copy(update={'contract': _contract().model_copy(update={'name': 'Tampered'})})
+
+    with pytest.raises(ValueError, match='integrity'):
+        publish_recipe_gist(tampered, filename='bad.recipe.json', token='ghp_test')

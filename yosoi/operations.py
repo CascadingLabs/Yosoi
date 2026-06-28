@@ -131,6 +131,7 @@ class ScrapeRequest(BaseModel):
     keep_downloads: bool = True
     max_concurrency: int | None = None
     allow_llm: bool = True
+    experimental_a3node: bool = False
 
     @field_validator('urls')
     @classmethod
@@ -375,6 +376,7 @@ class FetchRequest(BaseModel):
     include: list[FetchInclude] = Field(default_factory=list)
     contracts: list[ContractRef] = Field(default_factory=list)
     output_dir: str | None = None
+    experimental_a3node: bool = False
 
     @field_validator('urls')
     @classmethod
@@ -699,6 +701,7 @@ async def _execute_scrape_shape(request: ScrapeRequest) -> Any:
         max_concurrency=request.max_concurrency,
         policy=request.policy,
         allow_llm=request.allow_llm,
+        experimental_a3node=request.experimental_a3node,
     )
 
 
@@ -829,6 +832,7 @@ async def execute_scrape(request: ScrapeRequest) -> ScrapeResult:
                     max_concurrency=request.max_concurrency,
                     policy=request.policy,
                     allow_llm=request.allow_llm,
+                    experimental_a3node=request.experimental_a3node,
                     metadata_collect=metadata,
                 )
                 unit = _unit_from_records(
@@ -1425,7 +1429,10 @@ async def _fetch_unit(request: FetchRequest, url: str) -> FetchUnitResult:
     policy = request.policy or Policy()
     page = policy.page_runtime()
     fetcher_type = _effective_fetcher_type(request, page.fetcher_type)
-    fetcher = create_fetcher(fetcher_type, **_content_fetcher_kwargs(policy, fetcher_type))
+    fetcher_kwargs = _content_fetcher_kwargs(policy, fetcher_type)
+    if request.experimental_a3node and fetcher_type in {'auto', 'waterfall', 'headless', 'headful'}:
+        fetcher_kwargs['experimental_a3node'] = True
+    fetcher = create_fetcher(fetcher_type, **fetcher_kwargs)
     try:
         if hasattr(fetcher, '__aenter__') and hasattr(fetcher, '__aexit__'):
             async with fetcher:

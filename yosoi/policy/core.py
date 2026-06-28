@@ -42,6 +42,7 @@ from yosoi.policy.crawl import (
 )
 from yosoi.policy.fingerprint import FingerprintPolicy
 from yosoi.policy.page import PagePolicy, PageRuntimeConfig
+from yosoi.policy.recipe import RecipePolicy
 from yosoi.policy.run import (
     DiscoveryPolicy,
     DownloadPolicy,
@@ -93,6 +94,7 @@ class Policy(BaseModel):
     page: PagePolicy | None = None
     crawl: CrawlPolicy | None = None
     fingerprint: FingerprintPolicy | None = None
+    recipe: RecipePolicy | None = None
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> Policy:  # noqa: C901

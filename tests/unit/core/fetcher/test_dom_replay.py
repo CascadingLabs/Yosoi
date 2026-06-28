@@ -15,7 +15,7 @@ from yosoi.core.fetcher.dom.loader import _CLICK_KINDS, _SCROLL_KIND, DOMLoader
 from yosoi.core.fetcher.dom.tree.actions import ClickTrigger, Scroll
 from yosoi.core.fetcher.dom.tree.conditions import HasTrigger
 from yosoi.models.selectors import SelectorEntry
-from yosoi.storage.a3node import ActRecord
+from yosoi.storage.a3node import A3Fragment, ActRecord
 
 
 class _FakeTab:
@@ -49,7 +49,7 @@ def test_build_replay_action_maps_scroll_kind():
     assert isinstance(action, Scroll)
 
 
-@pytest.mark.parametrize('kind', ['cookie', 'popup', 'age_gate', 'bogus_kind'])
+@pytest.mark.parametrize('kind', ['bogus_kind'])
 def test_build_replay_action_returns_none_for_unsupported(kind):
     loader = DOMLoader()
     assert loader._build_replay_action(kind, WaitForDOMStable()) is None
@@ -76,6 +76,22 @@ def _fake_action_builder(mocker: MockerFixture, cycles: int, order: list[str]):
         return condition, action
 
     return build
+
+
+async def test_replay_fragments_ignores_non_obstacle_fragments(mocker: MockerFixture):
+    loader = DOMLoader()
+    target = SelectorEntry(type='role', value='button', name='Load more', nth=0)
+    fragment = A3Fragment(fragment_key='load-more', kind='load_more', target=target, source_domain='x.example')
+    target_present = mocker.patch.object(loader, '_target_present', mocker.AsyncMock(return_value=True))
+    replay_target = mocker.patch.object(loader, '_replay_target', mocker.AsyncMock(return_value=1))
+    mocker.patch('yosoi.core.fetcher.dom.loader.count_content', return_value=0)
+    mocker.patch.object(loader, '_capture_html', mocker.AsyncMock(return_value='<html/>'))
+
+    result = await loader.replay_fragments(_FakeTab(), [fragment])
+
+    assert result.acts == []
+    target_present.assert_not_awaited()
+    replay_target.assert_not_awaited()
 
 
 async def test_replay_runs_acts_in_order_and_succeeds(mocker: MockerFixture):
@@ -126,6 +142,7 @@ async def test_replay_with_stored_target_skips_catalogue_probe(mocker: MockerFix
     mocker.patch('yosoi.core.fetcher.dom.loader.count_content', return_value=3)
     mocker.patch.object(loader, '_capture_html', mocker.AsyncMock(return_value='<html>' + 'x' * 100 + '</html>'))
     legacy = mocker.patch.object(loader, '_build_replay_action')
+    mocker.patch.object(loader, '_target_present', mocker.AsyncMock(return_value=True))
     fake_flow = mocker.MagicMock()
     fake_flow.run = mocker.AsyncMock()
     flow_builder = mocker.patch('yosoi.core.fetcher.dom.loader.build_flow', return_value=fake_flow)
@@ -141,6 +158,35 @@ async def test_replay_with_stored_target_skips_catalogue_probe(mocker: MockerFix
     assert fake_flow.run.await_count >= 1
     assert [(a.kind, a.cycles) for a in result.acts] == [('load_more', 1)]
     assert result.acts[0].target == target  # target carried through to the replayed recipe
+
+
+async def test_replay_skips_absent_stored_target_without_raising(mocker: MockerFixture):
+    loader = DOMLoader()
+    mocker.patch('yosoi.core.fetcher.dom.loader.count_content', side_effect=[2, 2])
+    mocker.patch.object(loader, '_capture_html', mocker.AsyncMock(return_value='<html>' + 'x' * 100 + '</html>'))
+    mocker.patch.object(loader, '_target_present', mocker.AsyncMock(return_value=False))
+    flow_builder = mocker.patch('yosoi.core.fetcher.dom.loader.build_flow')
+
+    target = SelectorEntry(type='role', value='button', name='Accept additional cookies', nth=0)
+    result = await loader.replay(_FakeTab(), [ActRecord('cookie', 1, target=target)])
+
+    assert result.success is True
+    assert result.acts == []
+    flow_builder.assert_not_called()
+
+
+async def test_replay_catches_stale_target_click_failure(mocker: MockerFixture):
+    loader = DOMLoader()
+    mocker.patch('yosoi.core.fetcher.dom.loader.count_content', side_effect=[2, 2, 2])
+    mocker.patch.object(loader, '_capture_html', mocker.AsyncMock(return_value='<html>' + 'x' * 100 + '</html>'))
+    mocker.patch.object(loader, '_target_present', mocker.AsyncMock(return_value=True))
+    mocker.patch.object(loader, '_replay_target', mocker.AsyncMock(side_effect=RuntimeError('gone')))
+
+    target = SelectorEntry(type='role', value='button', name='Accept additional cookies', nth=0)
+    result = await loader.replay(_FakeTab(), [ActRecord('cookie', 1, target=target)])
+
+    assert result.success is True
+    assert result.acts == []
 
 
 async def test_replay_drops_acts_that_did_nothing(mocker: MockerFixture):

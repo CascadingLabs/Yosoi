@@ -186,6 +186,7 @@ async def _scrape_impl(
     max_concurrency: int | None = None,
     policy: Policy | None = None,
     allow_llm: bool = True,
+    experimental_a3node: bool = False,
     metadata_collect: MutableMapping[tuple[str, str], dict[str, Any]] | None = None,
 ) -> list[ContentMap] | dict[str, list[ContentMap]] | dict[str, dict[str, list[ContentMap]]]:
     """Scrape one-or-many URLs with one-or-many contracts — the single blessed path.
@@ -320,6 +321,7 @@ async def _scrape_impl(
                 discovery_gate=discovery_gate,
                 policy=Policy.cascade(policy, base_call_policy, per_url_policy),
                 allow_llm=allow_llm,
+                experimental_a3node=experimental_a3node,
                 metadata_collect=metadata_collect,
             )
 
@@ -363,6 +365,7 @@ async def scrape(
     max_concurrency: int | None = None,
     policy: Policy | None = None,
     allow_llm: bool = True,
+    experimental_a3node: bool = False,
 ) -> Any:
     """Scrape one-or-many URLs with one-or-many contracts.
 
@@ -391,6 +394,7 @@ async def scrape(
         identities=identities,
         max_concurrency=max_concurrency,
         allow_llm=allow_llm,
+        experimental_a3node=experimental_a3node,
     )
     if model is not None and not isinstance(model, str):
         # Keep non-JSON-safe model/config objects on the edge by delegating directly.
@@ -413,6 +417,7 @@ async def scrape(
             max_concurrency=max_concurrency,
             policy=policy,
             allow_llm=allow_llm,
+            experimental_a3node=experimental_a3node,
         )
         return normalize_scrape_result(request, raw)
     return await execute_scrape(request)
@@ -430,6 +435,7 @@ async def fetch(
     contracts: Any = None,
     output_dir: str | None = None,
     policy: Policy | None = None,
+    experimental_a3node: bool = False,
 ) -> Any:
     """Fetch one-or-many URLs as bounded page acquisition content.
 
@@ -452,6 +458,7 @@ async def fetch(
         include=list(include),
         output_dir=output_dir,
         policy=effective_policy,
+        experimental_a3node=experimental_a3node,
     )
     return await run_fetch(request)
 
@@ -649,6 +656,7 @@ async def _scrape_one(
     discovery_gate: DiscoveryGate | None = None,
     policy: Policy | None = None,
     allow_llm: bool = True,
+    experimental_a3node: bool = False,
     metadata_collect: MutableMapping[tuple[str, str], dict[str, Any]] | None = None,
 ) -> list[ContentMap]:
     """One ``(url, contract)`` unit (returns ``list[record]``).
@@ -714,6 +722,7 @@ async def _scrape_one(
                 identity_cascade=None if identity is not None else policy_cascade,
                 max_live_identities=policy_max_live,
                 discovery_gate=discovery_gate,
+                experimental_a3node=experimental_a3node,
                 policy=effective_policy,
                 allow_llm=allow_llm,
             ) as pipeline:

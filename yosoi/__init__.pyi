@@ -63,6 +63,7 @@ from yosoi.policy import PagePolicy as _PagePolicy
 from yosoi.policy import PageRuntimeConfig as _PageRuntimeConfig
 from yosoi.policy import Policy as _Policy
 from yosoi.policy import PolicyCheck as _PolicyCheck
+from yosoi.policy import RecipePolicy as _RecipePolicy
 from yosoi.policy import ResolvedRunSpec as _ResolvedRunSpec
 from yosoi.policy import SchedulerPolicy as _SchedulerPolicy
 from yosoi.policy import ScrapePolicy as _ScrapePolicy
@@ -70,6 +71,14 @@ from yosoi.policy import SearchPolicy as _SearchPolicy
 from yosoi.policy import SecretRef as _SecretRef
 from yosoi.policy import TelemetryPolicy as _TelemetryPolicy
 from yosoi.policy import Trust as _Trust
+from yosoi.recipe import Recipe as Recipe
+from yosoi.recipe import RecipeMetadata as RecipeMetadata
+from yosoi.recipe import RecipeTrust as RecipeTrust
+from yosoi.recipe import RecipeValidation as RecipeValidation
+from yosoi.recipe import install_recipe as install_recipe
+from yosoi.recipe import load_recipe as load_recipe
+from yosoi.recipe import mint_recipe as mint_recipe
+from yosoi.recipe import selector_map as selector_map
 from yosoi.types.field import Field as Field
 from yosoi.types.field import js as js
 from yosoi.types.registry import register_coercion as register_coercion
@@ -80,6 +89,22 @@ TrustTier = Literal['strict', 'yellow']
 CrawlModeName = Literal['seed_hunt', 'contract_focus', 'structure_guarded', 'explorer']
 FetcherName = Literal['auto', 'simple', 'headless', 'headful']
 PageFetcherName = Literal['auto', 'simple', 'headless', 'headful', 'waterfall']
+
+class RecipePolicy(_RecipePolicy):
+    allow_local: bool
+    allowed_hosts: frozenset[str]
+    allowed_github_owners: frozenset[str]
+    allowed_recipe_ids: frozenset[str]
+    allowed_contract_fingerprints: frozenset[str]
+
+    @classmethod
+    def local_only(cls) -> RecipePolicy: ...
+    @classmethod
+    def github(cls, *owners: str) -> RecipePolicy: ...
+    @classmethod
+    def hosts(cls, *hosts: str) -> RecipePolicy: ...
+    def recipe_ids(self, *recipe_ids: str) -> RecipePolicy: ...
+    def contracts(self, *contracts: type[Contract] | str) -> RecipePolicy: ...
 
 class BrowserProfilePolicy(_BrowserProfilePolicy):
     profile: str | None
@@ -504,6 +529,7 @@ class Policy(_Policy):
     download: DownloadPolicy | None
     page: PagePolicy | None
     crawl: CrawlPolicy | None
+    recipe: RecipePolicy | None
     fingerprint: FingerprintPolicy | None
 
     def __init__(
@@ -520,6 +546,7 @@ class Policy(_Policy):
         download: DownloadPolicy | None = ...,
         page: PagePolicy | None = ...,
         crawl: CrawlPolicy | None = ...,
+        recipe: RecipePolicy | None = ...,
         fingerprint: FingerprintPolicy | None = ...,
     ) -> None: ...
     @classmethod

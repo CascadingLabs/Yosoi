@@ -7,7 +7,9 @@ from pytest_mock import MockerFixture
 from yosoi.core.fetcher.dom.loader import LoadResult
 from yosoi.core.fetcher.identity import BrowserIdentity
 from yosoi.core.fetcher.voiddriver import HeadlessFetcher
-from yosoi.storage.a3node import A3Node, ActRecord
+from yosoi.models.download import DownloadSpec
+from yosoi.models.selectors import SelectorEntry
+from yosoi.storage.a3node import A3Fragment, A3Node, ActRecord
 
 
 def _fetcher(mocker: MockerFixture) -> HeadlessFetcher:
@@ -20,6 +22,50 @@ def _fetcher(mocker: MockerFixture) -> HeadlessFetcher:
 
 def _node(acts: list[ActRecord]) -> A3Node:
     return A3Node(domain='x.com', acts=acts, discovered_at='2026-01-01', replay_count=0)
+
+
+async def test_probe_tries_fragment_bank_before_full_domloader_and_mints_new_fragments(mocker: MockerFixture):
+    f = _fetcher(mocker)
+    target = SelectorEntry(type='role', value='button', name='Accept additional cookies', nth=0)
+    fragment = A3Fragment(
+        fragment_key='frag-cookie',
+        kind='cookie',
+        target=target,
+        source_domain='learned.example',
+    )
+    fragment_act = ActRecord('cookie', 1, target=target)
+    probe_act = ActRecord('load_more', 2)
+    f._a3node_storage.load_fragments = mocker.AsyncMock(return_value=[fragment])
+    f._a3node_storage.record_fragment_replay = mocker.AsyncMock()
+    f._a3node_storage.save_fragments_from_acts = mocker.AsyncMock()
+    f._a3node_storage.save = mocker.AsyncMock()
+    f._a3node_storage.load = mocker.AsyncMock(return_value=_node([fragment_act, probe_act]))
+
+    loader = mocker.MagicMock()
+    loader.replay_fragments = mocker.AsyncMock(
+        return_value=LoadResult(success=True, content_start=0, content_final=0, elapsed_ms=1, acts=[fragment_act])
+    )
+    loader.run = mocker.AsyncMock(
+        return_value=LoadResult(
+            success=True,
+            content_start=0,
+            content_final=5,
+            elapsed_ms=2,
+            html='<html>' + 'x' * 100 + '</html>',
+            acts=[probe_act],
+        )
+    )
+    mocker.patch('yosoi.core.fetcher.voiddriver.DOMLoader', return_value=loader)
+    tab = object()
+
+    html = await f._fetch_with_probe(tab, 'fresh.example')
+
+    assert html is not None
+    f._a3node_storage.load_fragments.assert_awaited_once_with(kinds={'age_gate', 'cookie', 'popup'}, limit=8)
+    loader.replay_fragments.assert_awaited_once_with(tab, [fragment])
+    f._a3node_storage.record_fragment_replay.assert_awaited_once_with('frag-cookie')
+    f._a3node_storage.save.assert_awaited_once_with('fresh.example', [fragment_act, probe_act])
+    f._a3node_storage.save_fragments_from_acts.assert_awaited_once_with('fresh.example', [fragment_act, probe_act])
 
 
 def test_a3node_scope_splits_paths_contract_intent_and_browser_profile():
@@ -37,6 +83,33 @@ def test_a3node_scope_splits_paths_contract_intent_and_browser_profile():
     assert same_shape.scope_key == same_shape_other_value.scope_key
     assert (
         len({same_shape.scope_key, other_path.scope_key, other_contract_scope.scope_key, headful_scope.scope_key}) == 4
+    )
+
+
+def test_a3node_scope_splits_action_and_download_intent():
+    fetcher = HeadlessFetcher(experimental_a3node=True, min_content_length=10, a3node_intent='sig:a')
+    url = 'https://example.com/a?q=one'
+
+    base = fetcher._a3node_scope(url, 'example.com', 'headless', None, None)
+    action_a = fetcher._a3node_scope(url, 'example.com', 'headless', {'field': 'window.a'}, None)
+    action_b = fetcher._a3node_scope(url, 'example.com', 'headless', {'field': 'window.b'}, None)
+    download_a = fetcher._a3node_scope(
+        url,
+        'example.com',
+        'headless',
+        None,
+        {'file': DownloadSpec(field='file', url='https://example.com/a.pdf', allowed_types=('application/pdf',))},
+    )
+    download_b = fetcher._a3node_scope(
+        url,
+        'example.com',
+        'headless',
+        None,
+        {'file': DownloadSpec(field='file', url='https://example.com/b.pdf', allowed_types=('application/pdf',))},
+    )
+
+    assert (
+        len({base.scope_key, action_a.scope_key, action_b.scope_key, download_a.scope_key, download_b.scope_key}) == 5
     )
 
 

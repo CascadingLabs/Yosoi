@@ -40,7 +40,7 @@ from yosoi.core.fetcher.identity import BrowserIdentity
 from yosoi.models.download import DownloadResult, DownloadSpec
 from yosoi.models.replay import ReplayPlan
 from yosoi.models.results import FetchResult, JsOutputs
-from yosoi.storage.a3node import A3Node, A3NodeScope, A3NodeStorage, ActRecord
+from yosoi.storage.a3node import A3_FRAGMENT_BANK_KINDS, A3Fragment, A3Node, A3NodeScope, A3NodeStorage, ActRecord
 from yosoi.utils import observability as obs
 from yosoi.utils.exceptions import BotDetectionError, DownloadError
 from yosoi.utils.retry import get_async_retryer, log_retry
@@ -305,9 +305,10 @@ class _VoidCrawlFetcher(HTMLFetcher):
     def _a3node_browser_fingerprint(self, tier: str) -> str:
         """Fingerprint browser-tier/profile inputs that can affect rendered DOM shape."""
         ident = self._identity
+        headless = bool(getattr(self, '_headless', tier == 'headless'))
         payload: dict[str, object] = {
             'tier': tier,
-            'headless': self._headless,
+            'headless': headless,
             'identity_id': ident.id if ident is not None else '',
             'profile_dir_hash': self._stable_short_hash(ident.profile_dir, prefix='profile-dir')
             if ident is not None and ident.profile_dir
@@ -799,14 +800,25 @@ class _VoidCrawlFetcher(HTMLFetcher):
         return await self._fetch_with_probe(tab, scope)
 
     async def _fetch_with_probe(self, tab: object, scope: A3NodeScope | str) -> str | None:
-        """Run the full DOMLoader probe and persist the resulting scoped recipe."""
-        probe_result = await DOMLoader(console=self._console).run(tab)
+        """Run fragment-bank replay, then full DOMLoader probe, and persist the scoped recipe."""
+        loader = DOMLoader(console=self._console)
+        fragments = await self._load_a3_fragments(limit=8)
+        fragment_acts: list[ActRecord] = []
+        if fragments:
+            fragment_result = await loader.replay_fragments(tab, fragments)
+            fragment_acts = fragment_result.acts
+            await self._record_fragment_replays(fragments, fragment_acts)
+
+        probe_result = await loader.run(tab)
         html = probe_result.html
+        acts = [*fragment_acts, *probe_result.acts]
 
         # Persist the acts regardless of content length — even "no action needed"
-        # is a valid and useful recipe to store
+        # is a valid and useful recipe to store. Also mint domain-free fragments from
+        # concrete targets so later scopes can try the same A3 action with the LLM off.
         if self._a3node_storage is not None and probe_result.success:
-            await self._a3node_storage.save(scope, probe_result.acts)
+            await self._a3node_storage.save(scope, acts)
+            await self._save_a3_fragments_from_acts(scope, acts)
             # Update in-memory cache
             node = await self._a3node_storage.load(scope)
             if node is not None:
@@ -817,6 +829,49 @@ class _VoidCrawlFetcher(HTMLFetcher):
                 self._console.print(f'[success]  ✓ A3Node {verb} for {display}[/success]')
 
         return html
+
+    async def _load_a3_fragments(self, *, limit: int) -> list[A3Fragment]:
+        """Load reusable A3 fragments, tolerating older/mocked storage objects."""
+        import inspect
+
+        if self._a3node_storage is None:
+            return []
+        load_fragments = getattr(self._a3node_storage, 'load_fragments', None)
+        if not callable(load_fragments):
+            return []
+        maybe_fragments = load_fragments(kinds=set(A3_FRAGMENT_BANK_KINDS), limit=limit)
+        loaded = await maybe_fragments if inspect.isawaitable(maybe_fragments) else maybe_fragments
+        return loaded if isinstance(loaded, list) else []
+
+    async def _record_fragment_replays(self, fragments: list[A3Fragment], acts: list[ActRecord]) -> None:
+        """Update fragment replay stats for successfully applied acts."""
+        import inspect
+
+        if self._a3node_storage is None:
+            return
+        record_fragment_replay = getattr(self._a3node_storage, 'record_fragment_replay', None)
+        if not callable(record_fragment_replay):
+            return
+        for act in acts:
+            for fragment in fragments:
+                if fragment.kind == act.kind and fragment.target == act.target:
+                    maybe_recorded = record_fragment_replay(fragment.fragment_key)
+                    if inspect.isawaitable(maybe_recorded):
+                        await maybe_recorded
+                    break
+
+    async def _save_a3_fragments_from_acts(self, scope: A3NodeScope | str, acts: list[ActRecord]) -> None:
+        """Mint reusable fragments when storage supports the fragment bank."""
+        import inspect
+
+        if self._a3node_storage is None:
+            return
+        save_fragments = getattr(self._a3node_storage, 'save_fragments_from_acts', None)
+        if not callable(save_fragments):
+            return
+        maybe_saved = save_fragments(scope, acts)
+        if inspect.isawaitable(maybe_saved):
+            await maybe_saved
 
 
 class HeadlessFetcher(_VoidCrawlFetcher):

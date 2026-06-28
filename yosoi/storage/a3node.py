@@ -56,7 +56,10 @@ logger = logging.getLogger(__name__)
 # so replay skips the discovery catalogues. A file with no `format` key is format 1.
 _A3NODE_FORMAT = 2
 _A3NODE_TABLE = 'a3nodes'
+_A3FRAGMENT_TABLE = 'a3fragments'
 _A3NODE_SCOPE_SCHEMA = 'a3scope:v1'
+_A3FRAGMENT_SCHEMA = 'a3fragment:v1'
+A3_FRAGMENT_BANK_KINDS = frozenset({'cookie', 'popup', 'age_gate'})
 _LEGACY_PAGE_PROFILE = 'legacy-domain'
 _DEFAULT_ROUTE = '/'
 
@@ -80,6 +83,17 @@ def _scope_fingerprint(payload: dict[str, object]) -> str:
     """Return a versioned SQLite-safe fingerprint for an A3Node scope payload."""
     digest = hashlib.sha256(_canonical_json(payload).encode('utf-8')).hexdigest()[:32]
     return f'{_A3NODE_SCOPE_SCHEMA}:{digest}'
+
+
+def _target_signature(kind: str, target: SelectorEntry) -> str:
+    """Return the domain-free structural identity for one replayable target."""
+    payload: dict[str, object] = {
+        'schema': _A3FRAGMENT_SCHEMA,
+        'kind': kind,
+        'target': target.model_dump(mode='json', exclude_none=True),
+    }
+    digest = hashlib.sha256(_canonical_json(payload).encode('utf-8')).hexdigest()[:32]
+    return f'{_A3FRAGMENT_SCHEMA}:{digest}'
 
 
 def _route_signature_for_url(url: str) -> str:
@@ -203,6 +217,39 @@ class ActRecord:
         raw_target = d.get('target')
         target = SelectorEntry.model_validate(raw_target) if raw_target else None
         return cls(kind=str(d['kind']), cycles=int(d['cycles']), target=target)
+
+
+@dataclass(frozen=True)
+class A3Fragment:
+    """Domain-free reusable A3 action fragment keyed by structural target."""
+
+    fragment_key: str
+    kind: str
+    target: SelectorEntry
+    source_domain: str
+    evidence_count: int = 1
+    replay_count: int = 0
+    created_at: str = ''
+    updated_at: str = ''
+    last_replayed_at: str | None = None
+
+    @classmethod
+    def from_act(cls, scope: A3NodeScope, act: ActRecord, *, now: str) -> A3Fragment | None:
+        """Mint a reusable fragment from a scoped act when it has a durable target."""
+        if act.kind not in A3_FRAGMENT_BANK_KINDS or act.target is None:
+            return None
+        return cls(
+            fragment_key=_target_signature(act.kind, act.target),
+            kind=act.kind,
+            target=act.target,
+            source_domain=scope.domain,
+            created_at=now,
+            updated_at=now,
+        )
+
+    def to_act(self) -> ActRecord:
+        """Return a one-cycle act suitable for direct replay before scoped probing."""
+        return ActRecord(kind=self.kind, cycles=1, target=self.target)
 
 
 class A3NodeStorage(YosoiSQLiteStore):
@@ -356,6 +403,104 @@ class A3NodeStorage(YosoiSQLiteStore):
                 result[scope_key] = node
         return result
 
+    async def save_fragments_from_acts(self, scope: A3NodeScope | str, acts: list[ActRecord]) -> list[A3Fragment]:
+        """Mint or refresh reusable domain-free fragments from successful scoped acts."""
+        await self._ensure_migrated()
+        resolved = _coerce_scope(scope)
+        now = datetime.now().isoformat()
+        fragments = [fragment for act in acts if (fragment := A3Fragment.from_act(resolved, act, now=now)) is not None]
+        if not fragments:
+            return []
+        client = await self._connect()
+        for fragment in fragments:
+            params: dict[str, object] = {
+                'fragment_key': fragment.fragment_key,
+                'kind': fragment.kind,
+                'target_signature': fragment.fragment_key,
+                'target': json.dumps(fragment.target.model_dump(mode='json', exclude_none=True), sort_keys=True),
+                'source_domain': fragment.source_domain,
+                'created_at': fragment.created_at,
+                'updated_at': fragment.updated_at,
+            }
+            await client.execute(
+                f"""
+                INSERT INTO {_A3FRAGMENT_TABLE} (
+                    fragment_key, kind, target_signature, target, source_domain,
+                    evidence_count, replay_count, created_at, updated_at
+                ) VALUES (
+                    :fragment_key, :kind, :target_signature, json(:target), :source_domain,
+                    1, 0, :created_at, :updated_at
+                )
+                ON CONFLICT(fragment_key) DO UPDATE SET
+                    evidence_count = evidence_count + 1,
+                    source_domain = excluded.source_domain,
+                    updated_at = excluded.updated_at
+                """,
+                params,
+            )
+        return fragments
+
+    async def load_fragments(self, *, kinds: set[str] | None = None, limit: int = 20) -> list[A3Fragment]:
+        """Return reusable obstacle fragments, best candidates first, optionally filtered by kind."""
+        await self._ensure_migrated()
+        client = await self._connect()
+        allowed = A3_FRAGMENT_BANK_KINDS if kinds is None else kinds & A3_FRAGMENT_BANK_KINDS
+        if not allowed:
+            return []
+        kind_params = {f'kind_{idx}': kind for idx, kind in enumerate(sorted(allowed))}
+        placeholders = ', '.join(f':{name}' for name in kind_params)
+        result = await client.execute(
+            f"""
+            SELECT fragment_key, kind, json(target) AS target, source_domain, evidence_count,
+                   replay_count, created_at, updated_at, last_replayed_at
+            FROM {_A3FRAGMENT_TABLE}
+            WHERE kind IN ({placeholders})
+            ORDER BY replay_count DESC, evidence_count DESC, updated_at DESC
+            LIMIT :limit
+            """,
+            {'limit': max(1, limit), **kind_params},
+        )
+        fragments: list[A3Fragment] = []
+        for row in result.rows:
+            raw = dict(zip(result.columns, row, strict=True))
+            fragment = self._fragment_from_raw(raw)
+            if fragment is not None:
+                fragments.append(fragment)
+        return fragments
+
+    async def record_fragment_replay(self, fragment_key: str) -> None:
+        """Increment replay stats for a successful reusable fragment."""
+        await self._ensure_migrated()
+        client = await self._connect()
+        now = datetime.now().isoformat()
+        await client.execute(
+            f"""
+            UPDATE {_A3FRAGMENT_TABLE}
+            SET replay_count = replay_count + 1,
+                last_replayed_at = :last_replayed_at,
+                updated_at = :updated_at
+            WHERE fragment_key = :fragment_key
+            """,
+            {'fragment_key': fragment_key, 'last_replayed_at': now, 'updated_at': now},
+        )
+
+    def _fragment_from_raw(self, raw: dict[str, Any]) -> A3Fragment | None:
+        try:
+            return A3Fragment(
+                fragment_key=str(raw['fragment_key']),
+                kind=str(raw['kind']),
+                target=SelectorEntry.model_validate(json.loads(str(raw['target']))),
+                source_domain=str(raw.get('source_domain', '')),
+                evidence_count=int(raw.get('evidence_count', 1)),
+                replay_count=int(raw.get('replay_count', 0)),
+                created_at=str(raw.get('created_at', '')),
+                updated_at=str(raw.get('updated_at', '')),
+                last_replayed_at=raw.get('last_replayed_at'),
+            )
+        except (KeyError, TypeError, ValueError, json.JSONDecodeError) as e:
+            logger.warning('Corrupt A3 fragment %s — ignoring: %s', raw.get('fragment_key'), e)
+            return None
+
     def _node_from_raw(self, raw: dict[str, Any], scope_key: str) -> A3Node | None:
         try:
             acts = [ActRecord.from_dict(a) for a in raw.get('acts', [])]
@@ -445,6 +590,23 @@ class A3NodeStorage(YosoiSQLiteStore):
             ON {_A3NODE_TABLE}(domain, page_profile, intent, browser_fingerprint)
             """
         )
+        await client.execute(
+            f"""
+            CREATE TABLE IF NOT EXISTS {_A3FRAGMENT_TABLE} (
+                fragment_key TEXT PRIMARY KEY,
+                kind TEXT NOT NULL,
+                target_signature TEXT NOT NULL,
+                target JSON NOT NULL,
+                source_domain TEXT NOT NULL DEFAULT '',
+                evidence_count INTEGER NOT NULL DEFAULT 1,
+                replay_count INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                last_replayed_at TEXT
+            )
+            """
+        )
+        await client.execute(f'CREATE INDEX IF NOT EXISTS idx_a3fragments_kind ON {_A3FRAGMENT_TABLE}(kind)')
 
     async def _table_columns(self) -> dict[str, str]:
         client = await self._connect()

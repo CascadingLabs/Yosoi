@@ -90,6 +90,27 @@ class Recipe(BaseModel):
         """Return stable pretty JSON for storage and review."""
         return canonical_json_text(self.model_dump(mode='json'), indent=2) + '\n'
 
+    def to_contract(self) -> type[Any]:
+        """Return this recipe's contract as a live ``ys.Contract`` subclass."""
+        return self.contract.to_contract()
+
+    def selectors_for(self, domain: str) -> SnapshotMap | None:
+        """Return selectors for a domain, with one-label subdomain fallback."""
+        if domain in self.selectors:
+            return self.selectors[domain]
+        parts = domain.split('.', 1)
+        if len(parts) == 2:
+            return self.selectors.get(parts[1])
+        return None
+
+    def fixture_urls(self) -> list[str]:
+        """Return validation fixture URLs carried by the recipe."""
+        return list(self.validation.fixture_urls)
+
+    def selector_domains(self) -> list[str]:
+        """Return domains covered by bundled selectors."""
+        return sorted(self.selectors)
+
 
 def _strip_selector_provenance(value: Any) -> None:
     """Remove volatile selector audit fields from an identity payload in place."""

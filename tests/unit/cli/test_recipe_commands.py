@@ -58,3 +58,59 @@ def test_recipe_mint_inspect_check_and_install(tmp_path) -> None:
     assert install.exit_code == 0, install.output
     installed = json.loads(install.output)
     assert installed['recipe_id'] == minted['recipe_id']
+
+
+def test_recipe_install_remote_requires_recipe_id() -> None:
+    result = CliRunner().invoke(main, ['recipe', 'install', 'gh:owner/repo/recipe.json@main'])
+
+    assert result.exit_code != 0
+    assert 'Remote recipe installs require --recipe-id' in result.output
+
+
+def test_recipe_gist_json_outputs_raw_and_html_urls(tmp_path, monkeypatch) -> None:
+    recipe_path = tmp_path / 'recipe.json'
+    contract = ContractSpec(name='Product', fields={'title': FieldSpec(yosoi_type='title')})
+    snap_map = SnapshotMap(
+        url='https://example.com/products/1',
+        domain='example.com',
+        snapshots={'title': SelectorSnapshot(primary='h1', discovered_at=datetime.now(timezone.utc))},
+    )
+    from yosoi.models.recipe import Recipe
+
+    recipe = Recipe(contract=contract, selectors={'example.com': snap_map})
+    recipe_path.write_text(recipe.canonical_json(), encoding='utf-8')
+
+    class _Response:
+        def __init__(self) -> None:
+            self.headers: dict[str, str] = {}
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self, size: int = -1) -> bytes:
+            return (
+                b'{"html_url":"https://gist.github.com/user/abc123",'
+                b'"files":{"product.recipe.json":'
+                b'{"raw_url":"https://gist.githubusercontent.com/user/abc123/raw/product.recipe.json"}}}'
+            )
+
+    def _fake_urlopen(request, timeout):
+        return _Response()
+
+    monkeypatch.setenv('GITHUB_TOKEN', 'ghp_test')
+    monkeypatch.setattr('yosoi.storage.recipe_store.urlopen', _fake_urlopen)
+
+    result = CliRunner().invoke(
+        main,
+        ['recipe', 'gist', str(recipe_path), '--filename', 'product.recipe.json', '--json'],
+    )
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload['url'] == 'https://gist.githubusercontent.com/user/abc123/raw/product.recipe.json'
+    assert payload['raw_url'] == payload['url']
+    assert payload['html_url'] == 'https://gist.github.com/user/abc123'
+    assert payload['visibility'] == 'secret'

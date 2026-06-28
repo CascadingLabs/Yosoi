@@ -419,9 +419,10 @@ class Pipeline(
             if fetcher_type in ('auto', 'waterfall', 'headless', 'headful'):
                 if console is not None:
                     kwargs['console'] = console
-                kwargs['experimental_a3node'] = getattr(self, '_experimental_a3node', False)
+                experimental_a3node = getattr(self, '_experimental_a3node', False)
+                kwargs['experimental_a3node'] = experimental_a3node
                 contract_sig = getattr(self, '_contract_sig', None)
-                if contract_sig is not None:
+                if experimental_a3node and contract_sig is not None:
                     kwargs['a3node_intent'] = contract_sig
                 kwargs['allow_downloads'] = getattr(self, '_allow_downloads', False)
                 kwargs['download_dir'] = getattr(self, '_download_dir', None)

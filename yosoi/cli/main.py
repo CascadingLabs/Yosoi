@@ -671,6 +671,7 @@ def main(
     help='Advisory contract probe. Repeat for multiple contracts; does not scrape or call the LLM.',
 )
 @click.option('-o', '--output', 'output_path', default=None, metavar='FILE|DIR', help='Write selected view or bundle.')
+@click.option('--a3node', is_flag=True, help='Enable experimental A3Node acquisition recipe replay/minting.')
 @click.option('--dump-request', is_flag=True, help='Print the resolved fetch request JSON and exit.')
 @click.option('--json', 'json_output', is_flag=True, default=False, help='Emit machine JSON envelope on stdout.')
 def fetch(
@@ -686,6 +687,7 @@ def fetch(
     include: tuple[str, ...],
     contract: tuple[type[Contract], ...],
     output_path: str | None,
+    a3node: bool,
     dump_request: bool,
     json_output: bool,
 ) -> None:
@@ -717,6 +719,7 @@ def fetch(
         page_size=page_size,
         include=include_items,
         output_dir=output_path if normalised_view == 'bundle' else None,
+        experimental_a3node=a3node,
     )
     if dump_request:
         click.echo(request.model_dump_json(indent=2))
@@ -1045,6 +1048,7 @@ def research_status(packet: Path, json_output: bool) -> None:
     metavar='N',
     help='Concurrent URL workers. 0=auto, capped at 4; use 1 for sequential.',
 )
+@click.option('--a3node', is_flag=True, help='Enable experimental A3Node acquisition recipe replay/minting.')
 @click.option('--profile-pool', default=None, metavar='NAME', help='VoidCrawl managed profile pool.')
 @click.option('--profile', default=None, metavar='ID', help='VoidCrawl managed profile id.')
 @click.option('--max-live-profiles', type=int, default=3, show_default=True, help='Active profile cap.')
@@ -1070,6 +1074,7 @@ def scrape(
     selector_level: str,
     json_output: bool,
     workers: int,
+    a3node: bool,
     profile_pool: str | None,
     profile: str | None,
     max_live_profiles: int,
@@ -1131,8 +1136,13 @@ def scrape(
                 request = ScrapeRequest.model_validate_json(handle.read())
         except Exception as exc:
             raise click.ClickException(f'Cannot parse ScrapeRequest {request_file!r}: {exc}') from exc
+        updates: dict[str, object] = {}
         if no_llm:
-            request = request.model_copy(update={'allow_llm': False})
+            updates['allow_llm'] = False
+        if a3node:
+            updates['experimental_a3node'] = True
+        if updates:
+            request = request.model_copy(update=updates)
         if profile is not None or profile_pool is not None:
             request = request.model_copy(update={'policy': policy})
     else:
@@ -1149,6 +1159,7 @@ def scrape(
             selector_level=selector_level,
             save_formats=list(output_formats),
             allow_llm=not no_llm,
+            experimental_a3node=a3node,
         )
 
     if dump_request:
@@ -1184,6 +1195,7 @@ def scrape(
         selector_level=resolved_level,
         policy=policy,
         show_tracking_summary=summary,
+        experimental_a3node=a3node,
     )
     asyncio.run(
         pipeline.process_urls(
@@ -2239,6 +2251,11 @@ def recipe_install(source: str, recipe_id: str | None, cache_dir: str | None, js
     """Fetch, verify, and cache a local/HTTPS/gh: flat recipe JSON."""
     from yosoi.storage.recipe_store import install_recipe
 
+    if source.startswith(('http://', 'https://', 'gh:')) and recipe_id is None:
+        raise click.UsageError(
+            'Remote recipe installs require --recipe-id sha256:... until CLI RecipePolicy flags land.'
+        )
+
     try:
         result = install_recipe(source, expected_recipe_id=recipe_id, cache_dir=cache_dir)
     except Exception as exc:
@@ -2333,6 +2350,53 @@ def recipe_publish(
         return
     console.print(f'[success]✓ Published recipe[/success] {recipe.recipe_id}')
     console.print(url)
+
+
+@recipe_group.command('gist')
+@click.argument('recipe_file')
+@click.option('--filename', default=None, metavar='NAME.json', help='Gist filename. Defaults to recipe hash.')
+@click.option('--description', default=None, metavar='TEXT', help='Gist description.')
+@click.option(
+    '--public',
+    'public_gist',
+    is_flag=True,
+    default=False,
+    help='Create a public gist. Default is secret/unlisted (not access-controlled private).',
+)
+@click.option('--json', 'json_output', is_flag=True, default=False)
+def recipe_gist(
+    recipe_file: str,
+    filename: str | None,
+    description: str | None,
+    public_gist: bool,
+    json_output: bool,
+) -> None:
+    """Publish a flat recipe JSON to a GitHub Gist. Secret/unlisted by default."""
+    from yosoi.storage.recipe_store import load_recipe, publish_recipe_gist
+
+    try:
+        recipe = load_recipe(recipe_file)
+        result = publish_recipe_gist(recipe, filename=filename, description=description, public=public_gist)
+    except Exception as exc:
+        raise click.ClickException(str(exc)) from exc
+    doc = {
+        'type': 'recipe.gist',
+        'status': 'ok',
+        'recipe_id': recipe.recipe_id,
+        'url': result.raw_url,
+        'raw_url': result.raw_url,
+        'html_url': result.html_url,
+        'filename': result.filename,
+        'visibility': 'public' if public_gist else 'secret',
+        'public': public_gist,
+    }
+    if json_output:
+        echo_json(doc)
+        return
+    visibility = 'public' if public_gist else 'secret/unlisted'
+    console.print(f'[success]✓ Published {visibility} recipe gist[/success] {recipe.recipe_id}')
+    console.print(result.raw_url)
+    console.print(f'[dim]HTML: {result.html_url}[/dim]')
 
 
 # ── contracts command group (CAS-122) ─────────────────────────────────────────

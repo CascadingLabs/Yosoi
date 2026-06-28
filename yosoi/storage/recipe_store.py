@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
 from urllib.request import Request, urlopen
 
 from tenacity import Retrying, retry_if_exception_type, stop_after_attempt, wait_exponential
@@ -32,20 +32,37 @@ class RecipeInstallResult:
     path: Path
 
 
+@dataclass(frozen=True)
+class GistPublishResult:
+    """Result of publishing a recipe JSON file as a GitHub Gist."""
+
+    raw_url: str
+    html_url: str
+    filename: str
+    public: bool
+
+
 def resolve_recipe_ref(source: str) -> str:
-    """Resolve ``gh:owner/repo/path@ref`` to a raw GitHub HTTPS URL."""
-    if not source.startswith(GH_PREFIX):
-        return source
-    body = source[len(GH_PREFIX) :]
-    if '@' in body:
-        path_part, _, ref = body.rpartition('@')
-    else:
-        path_part, ref = body, 'main'
-    parts = [part for part in path_part.split('/') if part]
-    if len(parts) < 3 or not ref:
-        raise ValueError('Expected gh:owner/repo/path/to/recipe.json[@ref]')
-    owner, repo, *rest = parts
-    return f'https://raw.githubusercontent.com/{owner}/{repo}/{ref}/{"/".join(rest)}'
+    """Resolve GitHub shorthand/blob refs to raw HTTPS JSON URLs."""
+    if source.startswith(GH_PREFIX):
+        body = source[len(GH_PREFIX) :]
+        if '@' in body:
+            path_part, _, ref = body.rpartition('@')
+        else:
+            path_part, ref = body, 'main'
+        parts = [part for part in path_part.split('/') if part]
+        if len(parts) < 3 or not ref:
+            raise ValueError('Expected gh:owner/repo/path/to/recipe.json[@ref]')
+        owner, repo, *rest = parts
+        return f'https://raw.githubusercontent.com/{owner}/{repo}/{ref}/{"/".join(rest)}'
+
+    parsed = urlparse(source)
+    if parsed.scheme == 'https' and parsed.netloc.lower() == 'github.com':
+        parts = [part for part in parsed.path.split('/') if part]
+        if len(parts) >= 5 and parts[2] == 'blob':
+            owner, repo, _blob, ref, *rest = parts
+            return f'https://raw.githubusercontent.com/{owner}/{repo}/{ref}/{"/".join(rest)}'
+    return source
 
 
 def load_recipe(source: str, *, expected_recipe_id: str | None = None) -> Recipe:
@@ -127,7 +144,8 @@ def publish_recipe_github(
     token: str | None = None,
     message: str | None = None,
 ) -> str:
-    """Publish one flat recipe JSON file through GitHub's Contents API."""
+    """Publish one verified flat recipe JSON file through GitHub's Contents API."""
+    recipe.verify_integrity()
     token = token or os.getenv('GITHUB_TOKEN') or os.getenv('GH_TOKEN')
     if not token:
         raise ValueError('GitHub publish requires GITHUB_TOKEN or GH_TOKEN')
@@ -148,6 +166,41 @@ def publish_recipe_github(
     content = response.get('content') if isinstance(response, dict) else None
     html_url = content.get('html_url') if isinstance(content, dict) else None
     return str(html_url or f'https://github.com/{owner_repo}/blob/{branch}/{path.lstrip("/")}')
+
+
+def publish_recipe_gist(
+    recipe: Recipe,
+    *,
+    filename: str | None = None,
+    description: str | None = None,
+    public: bool = False,
+    token: str | None = None,
+) -> GistPublishResult:
+    """Publish one flat recipe JSON file as a GitHub Gist.
+
+    Gists are secret/unlisted by default, not access-controlled private. Anyone
+    with the returned URL can read the recipe. Pass ``public=True`` intentionally.
+    """
+    recipe.verify_integrity()
+    token = token or os.getenv('GITHUB_TOKEN') or os.getenv('GH_TOKEN')
+    if not token:
+        raise ValueError('GitHub Gist publish requires GITHUB_TOKEN or GH_TOKEN')
+    name = filename or f'yosoi-recipe-{recipe.recipe_id.removeprefix("sha256:")[:12]}.json'
+    payload: dict[str, Any] = {
+        'description': description or f'Yosoi recipe {recipe.recipe_id}',
+        'public': public,
+        'files': {name: {'content': recipe.canonical_json()}},
+    }
+    response = _request_json('https://api.github.com/gists', method='POST', token=token, payload=payload)
+    if not isinstance(response, dict):
+        raise ValueError('GitHub Gist publish response was not a JSON object')
+    files = response.get('files')
+    file_info = files.get(name) if isinstance(files, dict) else None
+    raw_url = file_info.get('raw_url') if isinstance(file_info, dict) else None
+    if not raw_url:
+        raise ValueError('GitHub Gist publish response did not include files[filename].raw_url')
+    html_url = str(response.get('html_url') or f'https://gist.github.com/{response.get("id", "")}'.rstrip('/'))
+    return GistPublishResult(raw_url=str(raw_url), html_url=html_url, filename=name, public=public)
 
 
 def _fetch_text(source: str) -> str:
@@ -204,6 +257,7 @@ def _request_json(url: str, *, method: str, token: str, payload: dict[str, Any] 
         headers={
             'Accept': 'application/vnd.github+json',
             'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json',
             'X-GitHub-Api-Version': '2022-11-28',
         },
     )
