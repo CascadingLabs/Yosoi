@@ -9,6 +9,7 @@ from yosoi.models.recipe import Recipe, RecipeMetadata
 from yosoi.models.snapshot import SelectorSnapshot, SnapshotMap
 from yosoi.models.spec import ContractSpec, FieldSpec
 from yosoi.storage.recipe_store import (
+    _normalize_github_repo,
     install_recipe,
     load_recipe,
     parse_selectors_file,
@@ -48,6 +49,16 @@ def test_recipe_id_is_stable_across_json_round_trip() -> None:
     reloaded.verify_integrity()
 
 
+def test_recipe_json_starts_with_instructions_and_omits_redundant_shape_fields() -> None:
+    payload = json.loads(_recipe().canonical_json())
+    assert next(iter(payload)) == 'instructions'
+    assert 'schema_version' not in payload
+    assert 'artifact_kind' not in payload
+    assert 'domain' not in payload['selectors']['example.com']
+    assert 'url' not in payload['selectors']['example.com']
+    assert any('yosoi recipe check' in line for line in payload['instructions'])
+
+
 def test_recipe_id_ignores_provenance_metadata() -> None:
     first = _recipe()
     second = _recipe().model_copy(
@@ -65,10 +76,10 @@ def test_recipe_integrity_fails_when_tampered() -> None:
         tampered.verify_integrity()
 
 
-def test_recipe_schema_version_rejects_unknown() -> None:
+def test_recipe_id_version_rejects_unknown() -> None:
     payload = json.loads(_recipe().canonical_json())
-    payload['schema_version'] = 'yosoi.recipe.v99'
-    with pytest.raises(ValueError, match='schema_version'):
+    payload['recipe_id'] = payload['recipe_id'].replace('v1:', 'v99:', 1)
+    with pytest.raises(ValueError, match='recipe_id'):
         Recipe.model_validate(payload)
 
 
@@ -116,8 +127,14 @@ def test_install_recipe_writes_hash_named_cache_file(tmp_path) -> None:
     result = install_recipe(str(source), cache_dir=cache)
 
     assert result.recipe.recipe_id == recipe.recipe_id
-    assert result.path == cache / f'{recipe.recipe_id.removeprefix("sha256:")}.json'
+    assert result.path == cache / f'{recipe.recipe_id.replace(":", "-")}.json'
     assert load_recipe(str(result.path)).recipe_id == recipe.recipe_id
+
+
+def test_normalize_github_repo_accepts_url_and_shorthand() -> None:
+    assert _normalize_github_repo('owner/repo') == 'owner/repo'
+    assert _normalize_github_repo('https://github.com/CascadingLabs/YosoiRecipes') == 'CascadingLabs/YosoiRecipes'
+    assert _normalize_github_repo('https://github.com/CascadingLabs/YosoiRecipes.git') == 'CascadingLabs/YosoiRecipes'
 
 
 def test_publish_recipe_gist_posts_secret_unlisted_payload(monkeypatch) -> None:
@@ -162,6 +179,42 @@ def test_publish_recipe_gist_posts_secret_unlisted_payload(monkeypatch) -> None:
     assert captured['content_type'] == 'application/json'
     assert 'product.recipe.json' in captured['payload']['files']
     assert recipe.recipe_id in captured['payload']['files']['product.recipe.json']['content']
+
+
+def test_publish_recipe_github_uses_gh_auth_token(monkeypatch) -> None:
+    recipe = _recipe()
+    captured = {}
+
+    def _fake_run(args, check, capture_output, text, timeout):
+        captured['args'] = args
+
+        class _Result:
+            stdout = 'gh_auth_token\n'
+
+        return _Result()
+
+    def _fake_existing_sha(api_url, *, branch, token):
+        captured['existing_token'] = token
+
+    def _fake_request_json(url, *, method, token, payload, auth_header='Authorization'):
+        captured['request_token'] = token
+        captured['payload'] = payload
+        return {'content': {'html_url': 'https://github.com/owner/repo/blob/main/recipe.json'}}
+
+    monkeypatch.delenv('GITHUB_TOKEN', raising=False)
+    monkeypatch.delenv('GH_TOKEN', raising=False)
+    monkeypatch.setattr('yosoi.storage.recipe_store.subprocess.run', _fake_run)
+    monkeypatch.setattr('yosoi.storage.recipe_store._github_existing_sha', _fake_existing_sha)
+    monkeypatch.setattr('yosoi.storage.recipe_store._request_json', _fake_request_json)
+
+    from yosoi.storage.recipe_store import publish_recipe_github
+
+    url = publish_recipe_github(recipe, repo='owner/repo', path='recipe.json')
+
+    assert url == 'https://github.com/owner/repo/blob/main/recipe.json'
+    assert captured['args'] == ['gh', 'auth', 'token']
+    assert captured['existing_token'] == 'gh_auth_token'
+    assert captured['request_token'] == 'gh_auth_token'
 
 
 def test_publish_recipe_gist_rejects_tampered_in_memory_recipe(monkeypatch) -> None:

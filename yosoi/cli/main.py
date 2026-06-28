@@ -17,7 +17,9 @@ from urllib.parse import urlparse
 import rich_click as click
 from click.core import ParameterSource
 from rich.console import Console
+from rich.live import Live
 from rich.table import Table
+from rich.text import Text
 from rich.theme import Theme
 
 from yosoi.cli.contract_param import ContractParamType
@@ -29,6 +31,7 @@ from yosoi.models.defaults import NewsArticle
 from yosoi.models.selectors import SelectorLevel
 
 if TYPE_CHECKING:
+    from yosoi.models.snapshot import SnapshotMap
     from yosoi.policy import Policy
 
 _DEFAULT_SELECTOR_LEVEL = 'all'
@@ -2158,6 +2161,266 @@ def cache_metrics_backfill(
 # ── recipe command group (CAS-152) ───────────────────────────────────────────
 
 
+async def _recipe_selectors_from_cache(
+    *,
+    contract: type[Contract],
+    cache_url: str | None = None,
+    domains: tuple[str, ...] = (),
+    source_urls: tuple[str, ...] = (),
+    url_patterns: tuple[str, ...] = (),
+) -> dict[str, SnapshotMap]:
+    """Load selector snapshots for a contract from the local SQLite cache."""
+    from yosoi.models.snapshot import SnapshotMap
+    from yosoi.storage.persistence import SelectorStorage
+    from yosoi.utils.signatures import contract_signature
+    from yosoi.utils.urls import extract_domain
+
+    storage = SelectorStorage()
+    contract_sig = contract_signature(contract)
+    source_url_by_domain: dict[str, str] = {}
+
+    if cache_url is not None:
+        domain = extract_domain(cache_url)
+        target_domains = [domain]
+        source_url_by_domain[domain] = cache_url
+    elif domains:
+        target_domains = list(domains)
+    else:
+        target_domains = await storage.list_domains()
+
+    selectors: dict[str, SnapshotMap] = {}
+    for domain in target_domains:
+        snapshots = await storage.load_snapshots(domain, contract_sig=contract_sig)
+        if not snapshots:
+            continue
+        source_url = source_url_by_domain.get(domain) or _recipe_source_url_for_domain(
+            domain, source_urls, url_patterns
+        )
+        selectors[domain] = SnapshotMap(url=source_url, domain=domain, snapshots=snapshots)
+
+    if not selectors:
+        scope = cache_url or ', '.join(domains) or 'any cached domain'
+        raise click.ClickException(
+            f'No cached selectors found for {scope!r} and contract {contract.__name__!r} ({contract_sig}). '
+            'Run a successful scrape first, or pass --selectors FILE.'
+        )
+    return selectors
+
+
+def _recipe_source_url_for_domain(domain: str, source_urls: tuple[str, ...], url_patterns: tuple[str, ...]) -> str:
+    """Choose a representative source URL for cache-minted selector snapshots."""
+    for url in source_urls:
+        if domain in url:
+            return url
+    for pattern in url_patterns:
+        if domain in pattern:
+            return pattern.replace('*', '').rstrip('/') or f'https://{domain}/'
+    return f'https://{domain}/'
+
+
+def _recipe_stem(recipe: Any) -> str:
+    """Return stable human-readable filename stem for a recipe."""
+    label = recipe.metadata.name or recipe.contract.name or 'recipe'
+    return re.sub(r'[^A-Za-z0-9_.-]+', '-', str(label).strip()).strip('-').lower() or 'recipe'
+
+
+def _recipe_output_path(out_path: str, recipe: Any) -> Path:
+    """Resolve --out FILE-or-DIR to a concrete recipe JSON file path."""
+    path = Path(out_path)
+    is_dir_intent = out_path.endswith(('/', os.sep)) or (path.exists() and path.is_dir()) or path.suffix == ''
+    if not is_dir_intent:
+        return path
+
+    recipe_hash = str(recipe.recipe_id).split(':')[-1]
+    return path / f'{_recipe_stem(recipe)}-{recipe_hash[:12]}.recipe.json'
+
+
+def _recipe_default_remote_path(recipe: Any) -> str:
+    """Return default repository path for recipe publish."""
+    recipe_hash = str(recipe.recipe_id).split(':')[-1]
+    return f'recipes/{_recipe_stem(recipe)}-{recipe_hash[:12]}.recipe.json'
+
+
+def _recipe_paths() -> list[Path]:
+    """Return local recipe JSON files from the default recipe cache."""
+    root = Path('.yosoi/recipes')
+    if not root.exists():
+        return []
+    return sorted(root.glob('*.json'))
+
+
+def _recipe_summary(path: Path) -> dict[str, Any]:
+    """Load one recipe path into a compact list/selection summary."""
+    from yosoi.storage.recipe_store import load_recipe
+
+    recipe = load_recipe(str(path))
+    return {
+        'path': str(path),
+        'recipe_id': recipe.recipe_id,
+        'contract': recipe.contract.name,
+        'domains': sorted(recipe.selectors),
+        'fields': sorted(recipe.contract.fields),
+    }
+
+
+def _recipe_summary_or_error(path: Path) -> dict[str, Any]:
+    """Return a recipe summary row, preserving invalid files as rows."""
+    try:
+        return _recipe_summary(path)
+    except (OSError, ValueError) as exc:
+        return {'path': str(path), 'status': 'error', 'error': str(exc)}
+
+
+def _render_recipe_picker(paths: list[Path]) -> None:
+    """Render local recipe choices."""
+    rows = [_recipe_summary_or_error(path) for path in paths]
+    table = Table(title='Local recipes')
+    table.add_column('#', justify='right')
+    table.add_column('contract')
+    table.add_column('domains')
+    table.add_column('recipe_id')
+    table.add_column('path')
+    for index, row in enumerate(rows, start=1):
+        table.add_row(
+            str(index),
+            str(row.get('contract', '(invalid)')),
+            ', '.join(row.get('domains', [])) if isinstance(row.get('domains'), list) else '',
+            str(row.get('recipe_id', '(invalid)'))[:22] + '…'
+            if ':sha256:' in str(row.get('recipe_id', ''))
+            else str(row.get('recipe_id', '(invalid)')),
+            str(row['path']),
+        )
+    console.print(table)
+
+
+def _recipe_picker_paths(*, json_output: bool = False) -> list[Path]:
+    paths = _recipe_paths()
+    if not paths:
+        raise click.ClickException('No local recipes found in .yosoi/recipes. Run `yosoi recipe mint` first.')
+    if json_output:
+        raise click.UsageError('SOURCE is required when --json is used.')
+    _render_recipe_picker(paths)
+    return paths
+
+
+def _pick_recipe_source(*, json_output: bool = False) -> str:
+    """Interactively choose one local recipe file when a command source is omitted."""
+    paths = _recipe_picker_paths(json_output=json_output)
+    choice = click.prompt('Select recipe', type=click.IntRange(1, len(paths)), default=1, show_default=True)
+    return str(paths[choice - 1])
+
+
+def _pick_publish_targets() -> list[str]:
+    """Interactively choose one or more publish targets with the shared checkbox picker."""
+    targets = ['gist', 'github']
+    selected = _checkbox_picker('Publish target(s)', targets, multi=True)
+    return [targets[index] for index in selected]
+
+
+def _pick_recipe_sources(*, json_output: bool = False) -> list[str]:
+    """Interactively choose one or more local recipe files with the shared checkbox picker."""
+    paths = _recipe_paths()
+    if not paths:
+        raise click.ClickException('No local recipes found in .yosoi/recipes. Run `yosoi recipe mint` first.')
+    if json_output:
+        raise click.UsageError('SOURCE is required when --json is used.')
+    labels = [_recipe_picker_label(_recipe_summary_or_error(path)) for path in paths]
+    selected = _checkbox_picker('Select recipe(s)', labels, multi=True)
+    return [str(paths[index]) for index in selected]
+
+
+def _checkbox_picker(title: str, options: list[str], *, multi: bool) -> list[int]:
+    """Small ANSI checkbox picker. Returns selected option indexes."""
+    if not options:
+        raise click.BadParameter('No options available')
+    selected = {0}
+    cursor = 0
+
+    def render() -> Text:
+        return _checkbox_picker_text(title, options, selected, cursor, multi=multi)
+
+    with Live(
+        render(),
+        console=console,
+        screen=False,
+        auto_refresh=False,
+        transient=True,
+        redirect_stdout=False,
+        redirect_stderr=False,
+        vertical_overflow='visible',
+    ) as live:
+        while True:
+            key = _recipe_picker_key()
+            if key in ('\r', '\n'):
+                break
+            if key == ' ':
+                if multi:
+                    selected.remove(cursor) if cursor in selected else selected.add(cursor)
+                else:
+                    selected = {cursor}
+                    break
+            elif multi and key.lower() == 'a':
+                selected = set(range(len(options))) if len(selected) != len(options) else set()
+            elif key.lower() in {'j', 's'} or key in {'\x1b[B', '\x1bOB'}:
+                cursor = min(cursor + 1, len(options) - 1)
+                if not multi:
+                    selected = {cursor}
+            elif key.lower() in {'k', 'w'} or key in {'\x1b[A', '\x1bOA'}:
+                cursor = max(cursor - 1, 0)
+                if not multi:
+                    selected = {cursor}
+            elif key.isdigit():
+                index = int(key) - 1
+                if 0 <= index < len(options):
+                    cursor = index
+                    selected = selected | {index} if multi else {index}
+                    if not multi:
+                        break
+            elif key in {'\x03', 'q'}:
+                raise click.Abort()
+            live.update(render(), refresh=True)
+
+    if not selected:
+        raise click.BadParameter('Select at least one option')
+    return sorted(selected)
+
+
+def _recipe_picker_key() -> str:
+    """Read one picker key, including common arrow escape sequences."""
+    key = click.getchar()
+    if key == '\x1b':
+        key += click.getchar()
+        if key[-1] in {'[', 'O'}:
+            key += click.getchar()
+    return key
+
+
+def _checkbox_picker_text(title: str, options: list[str], selected: set[int], cursor: int, *, multi: bool) -> Text:
+    """Return a compact Rich checkbox list; [x] is literal Text, not markup."""
+    hint = (
+        'space=toggle, ↑/↓=move, a=all, enter=continue, q=abort' if multi else 'space/enter=select, ↑/↓=move, q=abort'
+    )
+    text = Text(f'{title} ({hint})\n', style='bold')
+    for index, option in enumerate(options):
+        style = 'bold cyan' if index == cursor else ''
+        pointer = '›' if index == cursor else ' '
+        checked = '[x]' if index in selected else '[ ]'
+        text.append(f'{pointer} {checked} {index + 1}. {option}', style=style)
+        if index != len(options) - 1:
+            text.append('\n')
+    return text
+
+
+def _recipe_picker_label(row: dict[str, Any]) -> str:
+    """Return one compact label for the checkbox picker."""
+    if row.get('status') == 'error':
+        return f'(invalid) {row["path"]}'
+    domains = ', '.join(row.get('domains', [])) if isinstance(row.get('domains'), list) else ''
+    rid = str(row.get('recipe_id', ''))
+    rid_short = rid[:22] + '…' if ':sha256:' in rid else rid
+    return f'{row.get("contract", "?")} [{domains}] {rid_short} — {row["path"]}'
+
+
 @main.group('recipe')
 def recipe_group() -> None:
     """Mint, install, inspect, and publish flat Yosoi recipe JSON artifacts."""
@@ -2165,37 +2428,67 @@ def recipe_group() -> None:
 
 @recipe_group.command('mint')
 @click.option(
+    '-C',
     '--contract',
     'contract_source',
     required=True,
     metavar='FILE|@NAME|PATH:CLASS',
     help='Contract source to canonicalize.',
 )
-@click.option('--selectors', 'selectors_source', required=True, metavar='FILE', help='Selector SnapshotMap JSON file.')
+@click.option('--selectors', 'selectors_source', default=None, metavar='FILE', help='Selector SnapshotMap JSON file.')
+@click.option(
+    '--from-cache',
+    'cache_url',
+    default=None,
+    metavar='URL',
+    help='Mint selectors from the local SQLite cache for this URL/domain + contract.',
+)
 @click.option('--a3nodes', 'a3nodes_source', default=None, metavar='FILE', help='Optional A3Node/action JSON file.')
 @click.option(
     '--validation', 'validation_source', default=None, metavar='FILE', help='Optional validation evidence JSON file.'
 )
-@click.option('--out', 'out_path', required=True, metavar='FILE', help='Output recipe JSON path.')
+@click.option(
+    '-o',
+    '--out',
+    'out_path',
+    default='.yosoi/recipes/',
+    show_default=True,
+    metavar='FILE|DIR',
+    help='Output recipe JSON file or directory.',
+)
 @click.option('--name', default=None, metavar='NAME', help='Human-readable recipe name.')
 @click.option(
     '--domain', 'domains', multiple=True, metavar='DOMAIN', help='Domain scope. Defaults to selector domains.'
 )
+@click.option('--url', 'source_urls', multiple=True, metavar='URL', help='Source/sample URL covered by this recipe.')
 @click.option(
     '--url-pattern', 'url_patterns', multiple=True, metavar='PATTERN', help='URL pattern covered by this recipe.'
 )
 @click.option('--notes', default=None, metavar='TEXT', help='Optional recipe notes.')
+@click.option('-y', '-Y', '--yes', is_flag=True, default=False, help='Overwrite existing output without prompting.')
+@click.option(
+    '-N',
+    '--no',
+    'no_overwrite',
+    is_flag=True,
+    default=False,
+    help='Refuse to overwrite existing output without prompting.',
+)
 @click.option('--json', 'json_output', is_flag=True, default=False)
 def recipe_mint(
     contract_source: str,
-    selectors_source: str,
+    selectors_source: str | None,
+    cache_url: str | None,
     a3nodes_source: str | None,
     validation_source: str | None,
     out_path: str,
     name: str | None,
     domains: tuple[str, ...],
+    source_urls: tuple[str, ...],
     url_patterns: tuple[str, ...],
     notes: str | None,
+    yes: bool,
+    no_overwrite: bool,
     json_output: bool,
 ) -> None:
     """Create a deterministic flat recipe JSON from contract and selectors."""
@@ -2207,9 +2500,24 @@ def recipe_mint(
     try:
         if contract_source.endswith('.json') and Path(contract_source).is_file():
             contract_spec = parse_contract_file(contract_source)
+            contract_cls = contract_spec.to_contract()
         else:
-            contract_spec = resolve_contract(contract_source.removeprefix('@')).to_spec()
-        selectors = parse_selectors_file(selectors_source)
+            contract_cls = resolve_contract(contract_source.removeprefix('@'))
+            contract_spec = contract_cls.to_spec()
+        if selectors_source is not None and cache_url is not None:
+            raise click.ClickException('Use either --selectors or --from-cache, not both.')
+        if selectors_source is not None:
+            selectors = parse_selectors_file(selectors_source)
+        else:
+            selectors = asyncio.run(
+                _recipe_selectors_from_cache(
+                    contract=contract_cls,
+                    cache_url=cache_url,
+                    domains=domains,
+                    source_urls=source_urls,
+                    url_patterns=url_patterns,
+                )
+            )
         a3nodes_raw = parse_json_file(a3nodes_source) if a3nodes_source else []
         validation_raw = parse_json_file(validation_source) if validation_source else {}
         if not isinstance(a3nodes_raw, list):
@@ -2224,36 +2532,52 @@ def recipe_mint(
             metadata=RecipeMetadata(
                 name=name or contract_spec.name,
                 domain_scope=list(domains) or sorted(selectors),
+                source_urls=list(source_urls) or ([cache_url] if cache_url else []),
                 url_patterns=list(url_patterns),
                 notes=notes,
             ),
         )
         recipe.verify_integrity()
-        atomic_write_text(out_path, recipe.canonical_json())
+        resolved_out = _recipe_output_path(out_path, recipe)
+        if yes and no_overwrite:
+            raise click.ClickException('Use only one of --yes/-Y or --no/-N.')
+        if resolved_out.exists() and not yes:
+            if no_overwrite:
+                raise click.ClickException(f'Recipe file already exists and --no was passed: {resolved_out}')
+            console.print(f'[warning]⚠ Recipe file already exists:[/warning] {resolved_out}')
+            if not click.confirm('Overwrite?', default=True):
+                raise click.Abort()
+        atomic_write_text(resolved_out, recipe.canonical_json())
     except click.ClickException:
         raise
     except Exception as exc:
         raise click.ClickException(str(exc)) from exc
 
-    doc = {'type': 'recipe.mint', 'status': 'ok', 'recipe_id': recipe.recipe_id, 'path': out_path}
+    doc = {'type': 'recipe.mint', 'status': 'ok', 'recipe_id': recipe.recipe_id, 'path': str(resolved_out)}
     if json_output:
         echo_json(doc)
         return
-    console.print(f'[success]✓ Minted recipe[/success] {recipe.recipe_id} → {out_path}')
+    recipe_display_path = resolved_out.resolve()
+    console.print(
+        f'[success]✓ Minted recipe[/success] {recipe.recipe_id} → '
+        f'[link={recipe_display_path.as_uri()}]{resolved_out}[/link]'
+    )
 
 
 @recipe_group.command('install')
-@click.argument('source')
-@click.option('--recipe-id', default=None, metavar='sha256:...', help='Expected pinned recipe id.')
+@click.argument('source', required=False)
+@click.option('--recipe-id', default=None, metavar='v1:sha256:...', help='Expected pinned recipe id.')
 @click.option('--cache-dir', default=None, metavar='DIR', help='Override install cache directory.')
 @click.option('--json', 'json_output', is_flag=True, default=False)
-def recipe_install(source: str, recipe_id: str | None, cache_dir: str | None, json_output: bool) -> None:
+def recipe_install(source: str | None, recipe_id: str | None, cache_dir: str | None, json_output: bool) -> None:
     """Fetch, verify, and cache a local/HTTPS/gh: flat recipe JSON."""
     from yosoi.storage.recipe_store import install_recipe
 
+    source = source or _pick_recipe_source(json_output=json_output)
+
     if source.startswith(('http://', 'https://', 'gh:')) and recipe_id is None:
         raise click.UsageError(
-            'Remote recipe installs require --recipe-id sha256:... until CLI RecipePolicy flags land.'
+            'Remote recipe installs require --recipe-id v1:sha256:... until CLI RecipePolicy flags land.'
         )
 
     try:
@@ -2267,14 +2591,44 @@ def recipe_install(source: str, recipe_id: str | None, cache_dir: str | None, js
     console.print(f'[success]✓ Installed recipe[/success] {result.recipe.recipe_id} → {result.path}')
 
 
-@recipe_group.command('inspect')
-@click.argument('source')
+@recipe_group.command('list')
 @click.option('--json', 'json_output', is_flag=True, default=False)
-def recipe_inspect(source: str, json_output: bool) -> None:
+def recipe_list(json_output: bool) -> None:
+    """List local recipes in .yosoi/recipes."""
+    rows = [_recipe_summary_or_error(path) for path in _recipe_paths()]
+    if json_output:
+        echo_json({'type': 'recipe.list', 'recipes': rows})
+        return
+    if not rows:
+        console.print('[warning]No local recipes found in .yosoi/recipes[/warning]')
+        return
+    table = Table(title='Local recipes')
+    table.add_column('contract')
+    table.add_column('domains')
+    table.add_column('recipe_id')
+    table.add_column('path')
+    for row in rows:
+        if row.get('status') == 'error':
+            table.add_row('(invalid)', '', str(row.get('error', '')), str(row['path']))
+        else:
+            table.add_row(
+                str(row['contract']),
+                ', '.join(row['domains']),
+                str(row['recipe_id']),
+                str(row['path']),
+            )
+    console.print(table)
+
+
+@recipe_group.command('inspect')
+@click.argument('source', required=False)
+@click.option('--json', 'json_output', is_flag=True, default=False)
+def recipe_inspect(source: str | None, json_output: bool) -> None:
     """Load and summarize a flat recipe JSON artifact."""
     from yosoi.storage.recipe_store import load_recipe
 
     try:
+        source = source or _pick_recipe_source(json_output=json_output)
         recipe = load_recipe(source)
     except Exception as exc:
         raise click.ClickException(str(exc)) from exc
@@ -2283,7 +2637,6 @@ def recipe_inspect(source: str, json_output: bool) -> None:
     doc = {
         'type': 'recipe.inspect',
         'recipe_id': recipe.recipe_id,
-        'schema_version': recipe.schema_version,
         'contract': recipe.contract.name,
         'domains': domain_names,
         'fields': field_names,
@@ -2302,14 +2655,15 @@ def recipe_inspect(source: str, json_output: bool) -> None:
 
 
 @recipe_group.command('check')
-@click.argument('source')
-@click.option('--recipe-id', default=None, metavar='sha256:...', help='Expected pinned recipe id.')
+@click.argument('source', required=False)
+@click.option('--recipe-id', default=None, metavar='v1:sha256:...', help='Expected pinned recipe id.')
 @click.option('--json', 'json_output', is_flag=True, default=False)
-def recipe_check(source: str, recipe_id: str | None, json_output: bool) -> None:
+def recipe_check(source: str | None, recipe_id: str | None, json_output: bool) -> None:
     """Verify recipe schema and deterministic identity."""
     from yosoi.storage.recipe_store import load_recipe
 
     try:
+        source = source or _pick_recipe_source(json_output=json_output)
         recipe = load_recipe(source, expected_recipe_id=recipe_id)
     except Exception as exc:
         if json_output:
@@ -2322,38 +2676,122 @@ def recipe_check(source: str, recipe_id: str | None, json_output: bool) -> None:
 
 
 @recipe_group.command('publish')
-@click.argument('recipe_file')
-@click.option('--repo', required=True, metavar='OWNER/REPO', help='GitHub repository to publish to.')
-@click.option('--path', 'remote_path', required=True, metavar='PATH', help='Repository path for recipe JSON.')
-@click.option('--branch', default='main', show_default=True, metavar='REF', help='Target branch.')
+@click.argument('recipe_file', required=False)
+@click.option('-r', '--repo', default=None, metavar='OWNER/REPO', help='Publish to a GitHub repository.')
+@click.option('--gist', is_flag=True, default=False, help='Publish to a GitHub Gist instead of a repository.')
+@click.option('--path', 'remote_path', default=None, metavar='PATH', help='Repository path. Defaults from recipe id.')
+@click.option('--filename', default=None, metavar='NAME.json', help='Gist filename. Defaults from recipe id.')
+@click.option('--description', default=None, metavar='TEXT', help='Gist description.')
+@click.option(
+    '--public', 'public_gist', is_flag=True, default=False, help='Create a public gist (default secret/unlisted).'
+)
+@click.option(
+    '--branch', default='main', show_default=True, metavar='REF', help='Target branch for repository publish.'
+)
 @click.option('--message', default=None, metavar='TEXT', help='Commit message.')
+@click.option('--direct', is_flag=True, default=False, help='Commit directly to GitHub repo instead of opening a PR.')
 @click.option('--json', 'json_output', is_flag=True, default=False)
 def recipe_publish(
-    recipe_file: str,
-    repo: str,
-    remote_path: str,
+    recipe_file: str | None,
+    repo: str | None,
+    gist: bool,
+    remote_path: str | None,
+    filename: str | None,
+    description: str | None,
+    public_gist: bool,
     branch: str,
     message: str | None,
+    direct: bool,
     json_output: bool,
 ) -> None:
-    """Publish a flat recipe JSON to GitHub via the Contents API."""
-    from yosoi.storage.recipe_store import load_recipe, publish_recipe_github
+    """Publish a flat recipe JSON to GitHub or GitHub Gist."""
+    from yosoi.storage.recipe_store import (
+        load_recipe,
+        publish_recipe_gist,
+        publish_recipe_github,
+        publish_recipe_github_pr,
+    )
 
     try:
-        recipe = load_recipe(recipe_file)
-        url = publish_recipe_github(recipe, repo=repo, path=remote_path, branch=branch, message=message)
+        targets: list[str] = []
+        if gist:
+            targets.append('gist')
+        if repo:
+            targets.append('github')
+        if not targets and not json_output:
+            targets = _pick_publish_targets()
+            if 'github' in targets:
+                repo = click.prompt('GitHub repo', type=str)
+        if not targets:
+            raise click.ClickException('Choose at least one publish target: --repo or --gist.')
+        recipe_files = [recipe_file] if recipe_file else _pick_recipe_sources(json_output=json_output)
+        if remote_path is not None and len(recipe_files) > 1:
+            raise click.ClickException('--path can only be used when publishing one recipe.')
+
+        docs: list[dict[str, Any]] = []
+        for source in recipe_files:
+            recipe = load_recipe(source)
+            for target in targets:
+                if target == 'gist':
+                    result = publish_recipe_gist(recipe, filename=filename, description=description, public=public_gist)
+                    doc = {
+                        'type': 'recipe.publish',
+                        'backend': 'gist',
+                        'status': 'ok',
+                        'source': source,
+                        'recipe_id': recipe.recipe_id,
+                        'url': result.raw_url,
+                        'raw_url': result.raw_url,
+                        'html_url': result.html_url,
+                        'filename': result.filename,
+                        'visibility': 'public' if public_gist else 'secret',
+                        'public': public_gist,
+                    }
+                else:
+                    path = remote_path or _recipe_default_remote_path(recipe)
+                    if direct:
+                        url = publish_recipe_github(recipe, repo=repo or '', path=path, branch=branch, message=message)
+                        doc = {
+                            'type': 'recipe.publish',
+                            'backend': 'github',
+                            'mode': 'direct',
+                            'status': 'ok',
+                            'source': source,
+                            'recipe_id': recipe.recipe_id,
+                            'url': url,
+                            'path': path,
+                        }
+                    else:
+                        pr_result = publish_recipe_github_pr(
+                            recipe, repo=repo or '', path=path, branch=branch, message=message
+                        )
+                        doc = {
+                            'type': 'recipe.publish',
+                            'backend': 'github',
+                            'mode': 'pr',
+                            'status': 'ok',
+                            'source': source,
+                            'recipe_id': recipe.recipe_id,
+                            'url': pr_result.html_url,
+                            'branch': pr_result.branch,
+                            'fork_repo': pr_result.fork_repo,
+                            'path': pr_result.path,
+                        }
+                docs.append(doc)
+    except click.ClickException:
+        raise
     except Exception as exc:
         raise click.ClickException(str(exc)) from exc
-    doc = {'type': 'recipe.publish', 'status': 'ok', 'recipe_id': recipe.recipe_id, 'url': url}
     if json_output:
-        echo_json(doc)
+        echo_json(docs[0] if len(docs) == 1 else {'type': 'recipe.publish.batch', 'recipes': docs})
         return
-    console.print(f'[success]✓ Published recipe[/success] {recipe.recipe_id}')
-    console.print(url)
+    for doc in docs:
+        console.print(f'[success]✓ Published recipe[/success] {doc["recipe_id"]}')
+        console.print(str(doc['url']))
 
 
 @recipe_group.command('gist')
-@click.argument('recipe_file')
+@click.argument('recipe_file', required=False)
 @click.option('--filename', default=None, metavar='NAME.json', help='Gist filename. Defaults to recipe hash.')
 @click.option('--description', default=None, metavar='TEXT', help='Gist description.')
 @click.option(
@@ -2365,7 +2803,7 @@ def recipe_publish(
 )
 @click.option('--json', 'json_output', is_flag=True, default=False)
 def recipe_gist(
-    recipe_file: str,
+    recipe_file: str | None,
     filename: str | None,
     description: str | None,
     public_gist: bool,
@@ -2375,6 +2813,7 @@ def recipe_gist(
     from yosoi.storage.recipe_store import load_recipe, publish_recipe_gist
 
     try:
+        recipe_file = recipe_file or _pick_recipe_source(json_output=json_output)
         recipe = load_recipe(recipe_file)
         result = publish_recipe_gist(recipe, filename=filename, description=description, public=public_gist)
     except Exception as exc:

@@ -12,8 +12,8 @@ from pydantic import AwareDatetime, BaseModel, Field, model_validator
 from yosoi.models.snapshot import SnapshotMap
 from yosoi.models.spec import ContractSpec
 
-RECIPE_SCHEMA_VERSION: Literal['yosoi.recipe.v1'] = 'yosoi.recipe.v1'
-RecipeArtifactKind = Literal['flat-json']
+RECIPE_SCHEMA_VERSION: Literal['v1'] = 'v1'
+RECIPE_ID_PREFIX = 'v1:sha256:'
 
 
 class RecipeMetadata(BaseModel):
@@ -21,6 +21,7 @@ class RecipeMetadata(BaseModel):
 
     name: str | None = None
     domain_scope: list[str] = Field(default_factory=list)
+    source_urls: list[str] = Field(default_factory=list)
     url_patterns: list[str] = Field(default_factory=list)
     created_at: AwareDatetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     created_by: str = 'yosoi recipe mint'
@@ -43,20 +44,46 @@ class Recipe(BaseModel):
     ``recipe_id`` field itself. Duplicate content therefore mints the same ID.
     """
 
-    schema_version: Literal['yosoi.recipe.v1'] = RECIPE_SCHEMA_VERSION
-    artifact_kind: RecipeArtifactKind = 'flat-json'
     recipe_id: str = ''
+    instructions: list[str] = Field(default_factory=list)
     contract: ContractSpec
     selectors: dict[str, SnapshotMap] = Field(default_factory=dict)
     a3nodes: list[dict[str, Any]] = Field(default_factory=list)
     validation: RecipeValidation = Field(default_factory=RecipeValidation)
     metadata: RecipeMetadata = Field(default_factory=RecipeMetadata)
 
+    @model_validator(mode='before')
+    @classmethod
+    def _fill_selector_domains(cls, data: Any) -> Any:
+        """Allow compact recipe JSON where selector domain is implied by key."""
+        if not isinstance(data, dict):
+            return data
+        selectors = data.get('selectors')
+        if not isinstance(selectors, dict):
+            return data
+        metadata = data.get('metadata') if isinstance(data.get('metadata'), dict) else {}
+        source_urls = metadata.get('source_urls') if isinstance(metadata, dict) else []
+        url_patterns = metadata.get('url_patterns') if isinstance(metadata, dict) else []
+        updated = dict(data)
+        updated_selectors = {}
+        for domain, value in selectors.items():
+            if isinstance(value, dict):
+                value = dict(value)
+                value.setdefault('domain', domain)
+                value.setdefault('url', _source_url_for_domain(domain, source_urls, url_patterns))
+            updated_selectors[domain] = value
+        updated['selectors'] = updated_selectors
+        return updated
+
     @model_validator(mode='after')
     def _fill_recipe_id(self) -> Recipe:
-        """Compute identity on construction when absent."""
+        """Compute identity and human runbook instructions when absent."""
         if not self.recipe_id:
             object.__setattr__(self, 'recipe_id', self.compute_id())
+        elif not self.recipe_id.startswith(RECIPE_ID_PREFIX):
+            raise ValueError(f'recipe_id must start with {RECIPE_ID_PREFIX!r}')
+        if not self.instructions:
+            object.__setattr__(self, 'instructions', self.default_instructions())
         return self
 
     def identity_payload(self) -> dict[str, Any]:
@@ -67,6 +94,7 @@ class Recipe(BaseModel):
         """
         payload = self.model_dump(mode='json')
         payload.pop('recipe_id', None)
+        payload.pop('instructions', None)
         metadata = payload.get('metadata')
         if isinstance(metadata, dict):
             metadata.pop('created_at', None)
@@ -78,7 +106,7 @@ class Recipe(BaseModel):
     def compute_id(self) -> str:
         """Return the stable sha256 recipe identity for this artifact."""
         encoded = canonical_json_bytes(self.identity_payload())
-        return 'sha256:' + hashlib.sha256(encoded).hexdigest()
+        return RECIPE_ID_PREFIX + hashlib.sha256(encoded).hexdigest()
 
     def verify_integrity(self) -> None:
         """Fail if ``recipe_id`` does not match the canonical payload."""
@@ -87,8 +115,26 @@ class Recipe(BaseModel):
             raise ValueError(f'Recipe integrity check failed: stored {self.recipe_id!r}, computed {expected!r}')
 
     def canonical_json(self) -> str:
-        """Return stable pretty JSON for storage and review."""
-        return canonical_json_text(self.model_dump(mode='json'), indent=2) + '\n'
+        """Return stable pretty JSON for storage and review.
+
+        JSON has no comments, so recipes carry a top-level ``instructions``
+        runbook instead. It is emitted first for humans and excluded from the
+        identity hash so operational guidance can evolve without changing the
+        recipe's semantic identity.
+        """
+        return _recipe_review_json(_compact_recipe_payload(self.model_dump(mode='json'))) + '\n'
+
+    def default_instructions(self) -> list[str]:
+        """Return human instructions embedded at the top of minted recipes."""
+        return [
+            'Yosoi recipe JSON. JSON does not support comments; these instructions are data, not identity.',
+            'Inspect: yosoi recipe inspect <this-file>',
+            f'Verify: yosoi recipe check <this-file> --recipe-id {self.recipe_id}',
+            'Install locally: yosoi recipe install <this-file>',
+            'Publish to GitHub: yosoi recipe publish <this-file> -r OWNER/REPO',
+            'Publish to secret/unlisted Gist: yosoi recipe publish <this-file> --gist',
+            f'Remote install: yosoi recipe install <raw-url-or-gh-ref> --recipe-id {self.recipe_id}',
+        ]
 
     def to_contract(self) -> type[Any]:
         """Return this recipe's contract as a live ``ys.Contract`` subclass."""
@@ -112,6 +158,19 @@ class Recipe(BaseModel):
         return sorted(self.selectors)
 
 
+def _source_url_for_domain(domain: str, source_urls: Any, url_patterns: Any) -> str:
+    """Pick a source URL for legacy SnapshotMap compatibility."""
+    if isinstance(source_urls, list):
+        for url in source_urls:
+            if isinstance(url, str) and domain in url:
+                return url
+    if isinstance(url_patterns, list):
+        for pattern in url_patterns:
+            if isinstance(pattern, str) and domain in pattern:
+                return pattern.replace('*', '').rstrip('/') or f'https://{domain}/'
+    return f'https://{domain}/'
+
+
 def _strip_selector_provenance(value: Any) -> None:
     """Remove volatile selector audit fields from an identity payload in place."""
     if not isinstance(value, dict):
@@ -129,6 +188,8 @@ def _strip_selector_provenance(value: Any) -> None:
     for snap_map in value.values():
         if not isinstance(snap_map, dict):
             continue
+        snap_map.pop('domain', None)
+        snap_map.pop('url', None)
         snapshots = snap_map.get('snapshots')
         if not isinstance(snapshots, dict):
             continue
@@ -145,6 +206,41 @@ def _deep_canonical(value: Any) -> Any:
     if isinstance(value, list):
         return [_deep_canonical(item) for item in value]
     return value
+
+
+def _compact_recipe_payload(value: dict[str, Any]) -> dict[str, Any]:
+    """Remove fields that are redundant in recipe JSON but restorable on load."""
+    compact = dict(value)
+    selectors = compact.get('selectors')
+    if isinstance(selectors, dict):
+        compact_selectors = {}
+        for domain, snap_map in selectors.items():
+            if isinstance(snap_map, dict):
+                snap_map = dict(snap_map)
+                if snap_map.get('domain') == domain:
+                    snap_map.pop('domain', None)
+                snap_map.pop('url', None)
+            compact_selectors[domain] = snap_map
+        compact['selectors'] = compact_selectors
+    return compact
+
+
+def _recipe_review_json(value: dict[str, Any]) -> str:
+    """Serialize a recipe for human review with instructions first."""
+    order = (
+        'instructions',
+        'recipe_id',
+        'contract',
+        'selectors',
+        'a3nodes',
+        'validation',
+        'metadata',
+    )
+    ordered = {key: _deep_canonical(value[key]) for key in order if key in value}
+    for key in sorted(value):
+        if key not in ordered:
+            ordered[key] = _deep_canonical(value[key])
+    return json.dumps(ordered, ensure_ascii=False, indent=2)
 
 
 def canonical_json_text(value: Any, *, indent: int | None = None) -> str:

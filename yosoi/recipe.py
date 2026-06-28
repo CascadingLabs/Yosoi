@@ -159,6 +159,7 @@ def mint(
     validation: RecipeValidation | Mapping[str, Any] | None = None,
     name: str | None = None,
     domain_scope: Sequence[str] = (),
+    source_urls: Sequence[str] = (),
     url_patterns: Sequence[str] = (),
     notes: str | None = None,
 ) -> Recipe:
@@ -180,6 +181,7 @@ def mint(
         metadata=RecipeMetadata(
             name=name or contract_spec.name,
             domain_scope=list(domain_scope) or sorted(selector_bundle),
+            source_urls=list(source_urls),
             url_patterns=list(url_patterns),
             notes=notes,
         ),
@@ -200,6 +202,7 @@ def mint_recipe(
     validation: RecipeValidation | Mapping[str, Any] | None = None,
     name: str | None = None,
     domain_scope: Sequence[str] = (),
+    source_urls: Sequence[str] = (),
     url_patterns: Sequence[str] = (),
     notes: str | None = None,
 ) -> Recipe:
@@ -212,6 +215,7 @@ def mint_recipe(
         validation=validation,
         name=name,
         domain_scope=domain_scope,
+        source_urls=source_urls,
         url_patterns=url_patterns,
         notes=notes,
     )
@@ -270,7 +274,7 @@ def install(
     recipe = load_recipe(source, recipe_id=recipe_id, trust=trust, policy=policy)
     recipes_dir = Path(cache_dir) if cache_dir is not None else init_yosoi('recipes')
     recipes_dir.mkdir(parents=True, exist_ok=True)
-    path = recipes_dir / f'{recipe.recipe_id.removeprefix("sha256:")}.json'
+    path = recipes_dir / f'{recipe.recipe_id.replace(":", "-")}.json'
     atomic_write_text(path, recipe.canonical_json())
     return RecipeInstallResult(recipe, path)
 
