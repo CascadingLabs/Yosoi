@@ -237,19 +237,19 @@ class FieldSelectors(BaseModel):
     @field_validator('primary', mode='before')
     @classmethod
     def _coerce_primary(cls, v: object) -> object:
-        """Coerce bare string to SelectorEntry."""
+        """Coerce bare/JSON selector strings to SelectorEntry; keep primary 'NA' sentinel valid."""
         if isinstance(v, str):
-            return SelectorEntry(value=v)
+            if v.upper() == 'NA':
+                return SelectorEntry(value='NA')
+            return coerce_selector_entry(v) or v
         return v
 
     @field_validator('fallback', 'tertiary', 'root', mode='before')
     @classmethod
     def _coerce_optional(cls, v: object) -> object:
-        """Coerce bare string to SelectorEntry for optional fields; treat 'NA' as None."""
+        """Coerce bare/JSON selector strings to SelectorEntry; treat 'NA' as None."""
         if isinstance(v, str):
-            if not v or v.upper() == 'NA':
-                return None
-            return SelectorEntry(value=v)
+            return coerce_selector_entry(v)
         return v
 
     @model_validator(mode='after')

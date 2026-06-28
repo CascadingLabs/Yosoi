@@ -22,7 +22,7 @@ CrawlStatus = Literal['succeeded', 'failed', 'policy_blocked']
 _ROUTE_ARTIFACT_SEGMENTS = frozenset({'agents', 'readme', 'license', 'contributing', 'security', 'code_of_conduct'})
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class CrawlJob:
     """A worker assignment reserved from the shared frontier."""
 
@@ -32,7 +32,7 @@ class CrawlJob:
     batch_index: int
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class CrawlResult:
     """A worker result returned to the coordinator bridge."""
 
@@ -69,7 +69,7 @@ class CrawlReporter(Protocol):
         ...
 
 
-@dataclass(slots=True)
+@dataclass
 class CrawlRunSummary:
     """Aggregated measurements for crawler policy and scheduler decisions."""
 

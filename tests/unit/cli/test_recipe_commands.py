@@ -5,8 +5,10 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
+import pytest
 from click.testing import CliRunner
 
+import yosoi as ys
 from yosoi.cli.main import main
 from yosoi.models.snapshot import SelectorSnapshot, SnapshotMap
 from yosoi.models.spec import ContractSpec, FieldSpec
@@ -96,6 +98,39 @@ def test_recipe_mint_can_use_cached_selectors(tmp_path, monkeypatch) -> None:
     payload = json.loads(result.output)
     assert payload['recipe_id'].startswith('v1:sha256:')
     assert recipe_path.exists()
+
+
+@pytest.mark.asyncio
+async def test_recipe_selectors_from_cache_filters_by_source_url(monkeypatch) -> None:
+    class Product(ys.Contract):
+        title: str = ys.Title(description='Title')
+
+    calls = []
+
+    class _Storage:
+        async def list_domains(self):
+            return ['example.com', 'other.test']
+
+        async def load_snapshots(self, domain, contract_sig=None, *, url=None):
+            calls.append((domain, url))
+            if domain == 'example.com' and url == 'https://example.com/products/1':
+                return {'title': SelectorSnapshot(primary='h1', discovered_at=datetime.now(timezone.utc))}
+            if domain == 'example.com':
+                return {'title': SelectorSnapshot(primary='.broad', discovered_at=datetime.now(timezone.utc))}
+            return {'title': SelectorSnapshot(primary='.wrong-domain', discovered_at=datetime.now(timezone.utc))}
+
+    monkeypatch.setattr('yosoi.storage.persistence.SelectorStorage', _Storage)
+    cli_main_module = importlib.import_module('yosoi.cli.main')
+
+    selectors = await cli_main_module._recipe_selectors_from_cache(
+        contract=Product,
+        source_urls=('https://example.com/products/1',),
+    )
+
+    assert list(selectors) == ['example.com']
+    assert selectors['example.com'].url == 'https://example.com/products/1'
+    assert selectors['example.com'].snapshots['title'].primary == 'h1'
+    assert calls == [('example.com', 'https://example.com/products/1')]
 
 
 def test_recipe_mint_out_can_be_directory(tmp_path, monkeypatch) -> None:

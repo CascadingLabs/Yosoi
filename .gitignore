@@ -117,3 +117,4 @@ Thumbs.db
 yosoi_driver/target/
 .claude/scheduled_tasks.lock
 article.json
+tests/stubs/snippets/_check_*.py

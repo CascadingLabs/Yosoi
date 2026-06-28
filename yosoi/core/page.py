@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 DebugSaveHtml = Callable[[str, str], Awaitable[None]]
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class PageSnapshot:
     """Acquired page data before crawl/scrape-specific interpretation."""
 

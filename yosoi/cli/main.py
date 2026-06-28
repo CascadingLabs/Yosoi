@@ -2126,11 +2126,7 @@ def cache_status(
 
     async def _check() -> dict[str, object]:
         contract_sig = contract_signature(resolved_contract) if resolved_contract is not None else None
-        snapshots = await storage.load_snapshots(
-            domain,
-            contract_sig=contract_sig,
-            url=routed_target.value if routed_target is not None and routed_target.kind == 'url' else None,
-        )
+        snapshots = await storage.load_snapshots(domain, contract_sig=contract_sig)
         doc: dict[str, object] = {
             'type': 'cache.status',
             'target': target_value,
@@ -2360,17 +2356,18 @@ async def _recipe_selectors_from_cache(
         source_url_by_domain[domain] = cache_url
     elif domains:
         target_domains = list(domains)
+    elif source_urls:
+        target_domains = sorted({extract_domain(url) for url in source_urls})
     else:
         target_domains = await storage.list_domains()
 
     selectors: dict[str, SnapshotMap] = {}
     for domain in target_domains:
-        snapshots = await storage.load_snapshots(domain, contract_sig=contract_sig)
+        route_filter_url = source_url_by_domain.get(domain) or next((url for url in source_urls if domain in url), None)
+        source_url = route_filter_url or _recipe_source_url_for_domain(domain, source_urls, url_patterns)
+        snapshots = await storage.load_snapshots(domain, contract_sig=contract_sig, url=route_filter_url)
         if not snapshots:
             continue
-        source_url = source_url_by_domain.get(domain) or _recipe_source_url_for_domain(
-            domain, source_urls, url_patterns
-        )
         selectors[domain] = SnapshotMap(url=source_url, domain=domain, snapshots=snapshots)
 
     if not selectors:
