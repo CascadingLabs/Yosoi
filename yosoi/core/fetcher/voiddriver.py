@@ -514,7 +514,11 @@ class _VoidCrawlFetcher(HTMLFetcher):
     ) -> FetchResult:
         domain = extract_domain(url)
         scope = self._a3node_scope(url, domain, _tier, action_scripts, download_specs)
-        stored_node = self._a3node_cache.get(scope.scope_key) if self._experimental_a3node else None
+        stored_node = (
+            self._a3node_cache.get(scope.scope_key) or self._a3node_cache.get(domain)
+            if self._experimental_a3node
+            else None
+        )
 
         js_outputs: JsOutputs | None = None
         downloads: dict[str, DownloadResult] | None = None
