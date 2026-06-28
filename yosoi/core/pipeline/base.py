@@ -420,13 +420,20 @@ class Pipeline(
                 if console is not None:
                     kwargs['console'] = console
                 kwargs['experimental_a3node'] = getattr(self, '_experimental_a3node', False)
+                contract_sig = getattr(self, '_contract_sig', None)
+                if contract_sig is not None:
+                    kwargs['a3node_intent'] = contract_sig
                 kwargs['allow_downloads'] = getattr(self, '_allow_downloads', False)
                 kwargs['download_dir'] = getattr(self, '_download_dir', None)
                 pipeline_policy: Policy | None = getattr(self, '_policy', None)
                 if pipeline_policy is not None and pipeline_policy.scrape is not None:
                     kwargs['cross_origin_dom'] = pipeline_policy.scrape.cross_origin_dom
                 if identity is not None:  # opt-in profile/headful/geo (browser only)
-                    kwargs['identity'] = identity
+                    if fetcher_type in ('auto', 'waterfall'):
+                        kwargs['identity_cascade'] = IdentityCascade((identity,))
+                        kwargs['max_live_identities'] = 1
+                    else:
+                        kwargs['identity'] = identity
                 elif getattr(self, '_identity_cascade', None) is not None:
                     kwargs['identity_cascade'] = self._identity_cascade
                     kwargs['max_live_identities'] = self._max_live_identities

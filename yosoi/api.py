@@ -222,8 +222,10 @@ async def _scrape_impl(
     ``headful``, a ``geo`` teleport, ``proxy``/``locale``/``timezone_id`` — PER URL, so e.g. a
     google tab runs headful+profile while bing/brave tabs run plain headless, all concurrently.
     Default ``None`` keeps today's behavior exactly. An identity needs a browser
-    ``fetcher_type`` (``auto``/``headless``/``headful``); the ``simple`` fetcher ignores it
-    (and warns).
+    ``fetcher_type`` (``auto``/``waterfall``/``headless``/``headful``); the ``simple`` fetcher
+    ignores it (and warns). Direct browser tiers (``headless``/``headful``) receive the single
+    identity as-is; the waterfall tiers (``auto``/``waterfall``) wrap it as a one-item identity
+    cascade so it composes with profile-cascade recovery.
 
     By default this API does not write files. Pass ``save_formats=('json',)`` for file output.
     ``ys.File()`` download fields need ``allow_downloads=True`` + a browser-capable

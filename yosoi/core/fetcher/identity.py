@@ -62,9 +62,11 @@ real Google account AND sidesteps VoidCrawl's exclusive ``.voidcrawl.lock``
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from collections import OrderedDict
-from collections.abc import Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable
+from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
@@ -179,6 +181,10 @@ class IdentityFetcherPool:
         self._max_live = max_live
         # OrderedDict as an LRU: most-recently-used moved to the end.
         self._fetchers: OrderedDict[str, _VoidCrawlFetcher] = OrderedDict()
+        self._leases: dict[str, int] = {}
+        self._condition = asyncio.Condition()
+        self._closing = False
+        self._closed = False
 
     @property
     def live_ids(self) -> list[str]:
@@ -186,24 +192,76 @@ class IdentityFetcherPool:
         return list(self._fetchers.keys())
 
     async def get(self, identity: BrowserIdentity) -> _VoidCrawlFetcher:
-        """Return the (lazily started) fetcher for *identity*, evicting LRU losers."""
+        """Return the (lazily started) fetcher for *identity*, evicting LRU losers.
+
+        This lookup/start helper is concurrency-safe for creation and LRU state.
+        Use :meth:`borrow` around actual fetch work so eviction and close can see
+        active use and avoid closing a fetcher mid-flight.
+        """
+        async with self._condition:
+            return await self._get_locked(identity)
+
+    @asynccontextmanager
+    async def borrow(self, identity: BrowserIdentity) -> AsyncIterator[_VoidCrawlFetcher]:
+        """Yield a live fetcher and mark it active until the context exits."""
+        fetcher = await self._acquire(identity)
+        try:
+            yield fetcher
+        finally:
+            await self._release(identity.id)
+
+    async def _acquire(self, identity: BrowserIdentity) -> _VoidCrawlFetcher:
+        """Return a fetcher and increment its active lease count."""
+        async with self._condition:
+            fetcher = await self._get_locked(identity)
+            self._leases[identity.id] = self._leases.get(identity.id, 0) + 1
+            return fetcher
+
+    async def _get_locked(self, identity: BrowserIdentity) -> _VoidCrawlFetcher:
+        """Return/create a fetcher while holding ``_condition``."""
+        while self._closing:
+            await self._condition.wait()
+        if self._closed:
+            raise RuntimeError('IdentityFetcherPool is closed')
+
         existing = self._fetchers.get(identity.id)
         if existing is not None:
             self._fetchers.move_to_end(identity.id)
             return existing
 
-        # Evict before starting a new one so we never exceed the process budget.
-        await self._evict_to(self._max_live - 1)
+        # Evict before starting a new one so we usually stay within the process
+        # budget. Active leases are skipped, so we may temporarily exceed the cap
+        # rather than close a fetcher another coroutine is using.
+        await self._evict_to_locked(self._max_live - 1)
         fetcher = await self._factory(identity, dict(self._base_kwargs))
         self._fetchers[identity.id] = fetcher
         self._fetchers.move_to_end(identity.id)
         logger.info('Started identity fetcher %r (live=%d)', identity.id, len(self._fetchers))
         return fetcher
 
-    async def _evict_to(self, target: int) -> None:
-        """Close LRU fetchers until at most *target* remain live."""
-        while len(self._fetchers) > max(target, 0):
-            ident_id, fetcher = self._fetchers.popitem(last=False)
+    async def _release(self, ident_id: str) -> None:
+        """Release one active lease and trim any temporary over-cap fetchers."""
+        async with self._condition:
+            count = self._leases.get(ident_id, 0)
+            if count <= 1:
+                self._leases.pop(ident_id, None)
+            else:
+                self._leases[ident_id] = count - 1
+
+            if not self._closing:
+                await self._evict_to_locked(self._max_live)
+            self._condition.notify_all()
+
+    async def _evict_to_locked(self, target: int) -> None:
+        """Close inactive LRU fetchers until at most *target* remain live."""
+        target = max(target, 0)
+        while len(self._fetchers) > target:
+            ident_id = next((ident for ident in self._fetchers if self._leases.get(ident, 0) == 0), None)
+            if ident_id is None:
+                return
+
+            fetcher = self._fetchers.pop(ident_id)
+            self._leases.pop(ident_id, None)
             logger.info('Evicting LRU identity fetcher %r', ident_id)
             try:
                 await fetcher.close()
@@ -211,8 +269,21 @@ class IdentityFetcherPool:
                 logger.warning('Error closing identity fetcher %r: %s', ident_id, exc)
 
     async def close(self) -> None:
-        """Close every live identity fetcher."""
-        await self._evict_to(0)
+        """Close every live identity fetcher after active leases finish."""
+        async with self._condition:
+            while self._closing:
+                await self._condition.wait()
+            if self._closed:
+                return
+            self._closing = True
+            try:
+                while self._leases:
+                    await self._condition.wait()
+                await self._evict_to_locked(0)
+                self._closed = True
+            finally:
+                self._closing = False
+                self._condition.notify_all()
 
 
 async def run_cascade(
@@ -253,8 +324,8 @@ async def run_cascade(
             # Bind the NEXT identity off the cursor — independent of tenacity's
             # internal attempt_number, so an internal retry cannot skip one.
             ident = next(cursor)
-            fetcher = await pool.get(ident)
-            res = await do_fetch(fetcher, ident)
+            async with pool.borrow(ident) as fetcher:
+                res = await do_fetch(fetcher, ident)
             result_box['result'] = res
             result_box['identity'] = ident
 

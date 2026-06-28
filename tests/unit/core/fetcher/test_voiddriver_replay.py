@@ -5,6 +5,7 @@ from __future__ import annotations
 from pytest_mock import MockerFixture
 
 from yosoi.core.fetcher.dom.loader import LoadResult
+from yosoi.core.fetcher.identity import BrowserIdentity
 from yosoi.core.fetcher.voiddriver import HeadlessFetcher
 from yosoi.storage.a3node import A3Node, ActRecord
 
@@ -19,6 +20,60 @@ def _fetcher(mocker: MockerFixture) -> HeadlessFetcher:
 
 def _node(acts: list[ActRecord]) -> A3Node:
     return A3Node(domain='x.com', acts=acts, discovered_at='2026-01-01', replay_count=0)
+
+
+def test_a3node_scope_splits_paths_contract_intent_and_browser_profile():
+    first = HeadlessFetcher(experimental_a3node=True, min_content_length=10, a3node_intent='sig:a')
+    same_shape = first._a3node_scope('https://example.com/a?q=one', 'example.com', 'headless', None, None)
+    same_shape_other_value = first._a3node_scope('https://example.com/a?q=two', 'example.com', 'headless', None, None)
+    other_path = first._a3node_scope('https://example.com/b?q=one', 'example.com', 'headless', None, None)
+    other_contract = HeadlessFetcher(experimental_a3node=True, min_content_length=10, a3node_intent='sig:b')
+    other_contract_scope = other_contract._a3node_scope(
+        'https://example.com/a?q=one', 'example.com', 'headless', None, None
+    )
+    headful = HeadlessFetcher(experimental_a3node=True, min_content_length=10, a3node_intent='sig:a')
+    headful_scope = headful._a3node_scope('https://example.com/a?q=one', 'example.com', 'headful', None, None)
+
+    assert same_shape.scope_key == same_shape_other_value.scope_key
+    assert (
+        len({same_shape.scope_key, other_path.scope_key, other_contract_scope.scope_key, headful_scope.scope_key}) == 4
+    )
+
+
+def test_a3node_browser_fingerprint_splits_custom_ua_proxy_and_geo():
+    url = 'https://example.com/a?q=one'
+    ua_a = HeadlessFetcher(experimental_a3node=True, min_content_length=10, user_agent='ua-a')
+    ua_b = HeadlessFetcher(experimental_a3node=True, min_content_length=10, user_agent='ua-b')
+    proxy_a = HeadlessFetcher(
+        experimental_a3node=True,
+        min_content_length=10,
+        identity=BrowserIdentity(id='same', proxy='http://proxy-a'),
+    )
+    proxy_b = HeadlessFetcher(
+        experimental_a3node=True,
+        min_content_length=10,
+        identity=BrowserIdentity(id='same', proxy='http://proxy-b'),
+    )
+    geo_a = HeadlessFetcher(
+        experimental_a3node=True,
+        min_content_length=10,
+        identity=BrowserIdentity(id='same', geo=(38.2527, -85.7585)),
+    )
+    geo_b = HeadlessFetcher(
+        experimental_a3node=True,
+        min_content_length=10,
+        identity=BrowserIdentity(id='same', geo=(40.7128, -74.0060)),
+    )
+
+    scopes = {
+        ua_a._a3node_scope(url, 'example.com', 'headless', None, None).scope_key,
+        ua_b._a3node_scope(url, 'example.com', 'headless', None, None).scope_key,
+        proxy_a._a3node_scope(url, 'example.com', 'headless', None, None).scope_key,
+        proxy_b._a3node_scope(url, 'example.com', 'headless', None, None).scope_key,
+        geo_a._a3node_scope(url, 'example.com', 'headless', None, None).scope_key,
+        geo_b._a3node_scope(url, 'example.com', 'headless', None, None).scope_key,
+    }
+    assert len(scopes) == 6
 
 
 async def test_replay_success_records_replay(mocker: MockerFixture):

@@ -29,6 +29,9 @@
 
 > **Discover once, scrape forever**
 
+> [!WARNING]
+> Yosoi is research tooling for API design and web reverse engineering. **You assume all legal risk for how you use it.** Respect `robots.txt`, rate limits, and IP bans; and please don't bypass them with Tor or a VPN. Read [DISCLAIMER.md](DISCLAIMER.md) before pointing it at anything.
+
 Give Yosoi a URL, domain, or group of URLs, and it uses AI to automatically discover the best selectors for structured content.
 
 ## Installation
@@ -105,6 +108,10 @@ If you use **yosoi** in your research or projects, please cite it using the meta
 <p align="center">
     <img src="media/citationExample.png" alt="Citation" width="800">
 </p>
+
+## Community
+
+- **Responsible use:** see [DISCLAIMER.md](DISCLAIMER.md)
 
 ## Contact
 

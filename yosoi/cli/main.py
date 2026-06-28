@@ -2143,6 +2143,198 @@ def cache_metrics_backfill(
         console.print(f'  Imported fields: [bold]{totals["imported_fields"]}[/bold]')
 
 
+# ── recipe command group (CAS-152) ───────────────────────────────────────────
+
+
+@main.group('recipe')
+def recipe_group() -> None:
+    """Mint, install, inspect, and publish flat Yosoi recipe JSON artifacts."""
+
+
+@recipe_group.command('mint')
+@click.option(
+    '--contract',
+    'contract_source',
+    required=True,
+    metavar='FILE|@NAME|PATH:CLASS',
+    help='Contract source to canonicalize.',
+)
+@click.option('--selectors', 'selectors_source', required=True, metavar='FILE', help='Selector SnapshotMap JSON file.')
+@click.option('--a3nodes', 'a3nodes_source', default=None, metavar='FILE', help='Optional A3Node/action JSON file.')
+@click.option(
+    '--validation', 'validation_source', default=None, metavar='FILE', help='Optional validation evidence JSON file.'
+)
+@click.option('--out', 'out_path', required=True, metavar='FILE', help='Output recipe JSON path.')
+@click.option('--name', default=None, metavar='NAME', help='Human-readable recipe name.')
+@click.option(
+    '--domain', 'domains', multiple=True, metavar='DOMAIN', help='Domain scope. Defaults to selector domains.'
+)
+@click.option(
+    '--url-pattern', 'url_patterns', multiple=True, metavar='PATTERN', help='URL pattern covered by this recipe.'
+)
+@click.option('--notes', default=None, metavar='TEXT', help='Optional recipe notes.')
+@click.option('--json', 'json_output', is_flag=True, default=False)
+def recipe_mint(
+    contract_source: str,
+    selectors_source: str,
+    a3nodes_source: str | None,
+    validation_source: str | None,
+    out_path: str,
+    name: str | None,
+    domains: tuple[str, ...],
+    url_patterns: tuple[str, ...],
+    notes: str | None,
+    json_output: bool,
+) -> None:
+    """Create a deterministic flat recipe JSON from contract and selectors."""
+    from yosoi.models.recipe import Recipe, RecipeMetadata, RecipeValidation
+    from yosoi.storage.recipe_store import parse_contract_file, parse_json_file, parse_selectors_file
+    from yosoi.utils.contracts import resolve_contract
+    from yosoi.utils.files import atomic_write_text
+
+    try:
+        if contract_source.endswith('.json') and Path(contract_source).is_file():
+            contract_spec = parse_contract_file(contract_source)
+        else:
+            contract_spec = resolve_contract(contract_source.removeprefix('@')).to_spec()
+        selectors = parse_selectors_file(selectors_source)
+        a3nodes_raw = parse_json_file(a3nodes_source) if a3nodes_source else []
+        validation_raw = parse_json_file(validation_source) if validation_source else {}
+        if not isinstance(a3nodes_raw, list):
+            raise click.ClickException('--a3nodes must be a JSON array')
+        if not isinstance(validation_raw, dict):
+            raise click.ClickException('--validation must be a JSON object')
+        recipe = Recipe(
+            contract=contract_spec,
+            selectors=selectors,
+            a3nodes=a3nodes_raw,
+            validation=RecipeValidation.model_validate(validation_raw),
+            metadata=RecipeMetadata(
+                name=name or contract_spec.name,
+                domain_scope=list(domains) or sorted(selectors),
+                url_patterns=list(url_patterns),
+                notes=notes,
+            ),
+        )
+        recipe.verify_integrity()
+        atomic_write_text(out_path, recipe.canonical_json())
+    except click.ClickException:
+        raise
+    except Exception as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    doc = {'type': 'recipe.mint', 'status': 'ok', 'recipe_id': recipe.recipe_id, 'path': out_path}
+    if json_output:
+        echo_json(doc)
+        return
+    console.print(f'[success]✓ Minted recipe[/success] {recipe.recipe_id} → {out_path}')
+
+
+@recipe_group.command('install')
+@click.argument('source')
+@click.option('--recipe-id', default=None, metavar='sha256:...', help='Expected pinned recipe id.')
+@click.option('--cache-dir', default=None, metavar='DIR', help='Override install cache directory.')
+@click.option('--json', 'json_output', is_flag=True, default=False)
+def recipe_install(source: str, recipe_id: str | None, cache_dir: str | None, json_output: bool) -> None:
+    """Fetch, verify, and cache a local/HTTPS/gh: flat recipe JSON."""
+    from yosoi.storage.recipe_store import install_recipe
+
+    try:
+        result = install_recipe(source, expected_recipe_id=recipe_id, cache_dir=cache_dir)
+    except Exception as exc:
+        raise click.ClickException(str(exc)) from exc
+    doc = {'type': 'recipe.install', 'status': 'ok', 'recipe_id': result.recipe.recipe_id, 'path': str(result.path)}
+    if json_output:
+        echo_json(doc)
+        return
+    console.print(f'[success]✓ Installed recipe[/success] {result.recipe.recipe_id} → {result.path}')
+
+
+@recipe_group.command('inspect')
+@click.argument('source')
+@click.option('--json', 'json_output', is_flag=True, default=False)
+def recipe_inspect(source: str, json_output: bool) -> None:
+    """Load and summarize a flat recipe JSON artifact."""
+    from yosoi.storage.recipe_store import load_recipe
+
+    try:
+        recipe = load_recipe(source)
+    except Exception as exc:
+        raise click.ClickException(str(exc)) from exc
+    domain_names = sorted(recipe.selectors)
+    field_names = sorted(recipe.contract.fields)
+    doc = {
+        'type': 'recipe.inspect',
+        'recipe_id': recipe.recipe_id,
+        'schema_version': recipe.schema_version,
+        'contract': recipe.contract.name,
+        'domains': domain_names,
+        'fields': field_names,
+        'a3nodes': len(recipe.a3nodes),
+        'validation_urls': len(recipe.validation.fixture_urls),
+    }
+    if json_output:
+        echo_json(doc)
+        return
+    console.print(f'[bold]Recipe[/bold] {doc["recipe_id"]}')
+    console.print(f'  contract: {doc["contract"]}')
+    console.print(f'  domains: {", ".join(domain_names) or "(none)"}')
+    console.print(f'  fields: {", ".join(field_names) or "(none)"}')
+    console.print(f'  a3nodes: {doc["a3nodes"]}')
+    console.print(f'  validation fixture urls: {doc["validation_urls"]}')
+
+
+@recipe_group.command('check')
+@click.argument('source')
+@click.option('--recipe-id', default=None, metavar='sha256:...', help='Expected pinned recipe id.')
+@click.option('--json', 'json_output', is_flag=True, default=False)
+def recipe_check(source: str, recipe_id: str | None, json_output: bool) -> None:
+    """Verify recipe schema and deterministic identity."""
+    from yosoi.storage.recipe_store import load_recipe
+
+    try:
+        recipe = load_recipe(source, expected_recipe_id=recipe_id)
+    except Exception as exc:
+        if json_output:
+            echo_json({'type': 'recipe.check', 'status': 'error', 'source': source, 'error': str(exc)})
+        raise click.ClickException(str(exc)) from exc
+    if json_output:
+        echo_json({'type': 'recipe.check', 'status': 'ok', 'source': source, 'recipe_id': recipe.recipe_id})
+        return
+    console.print(f'[success]✓ Recipe OK[/success] {recipe.recipe_id}')
+
+
+@recipe_group.command('publish')
+@click.argument('recipe_file')
+@click.option('--repo', required=True, metavar='OWNER/REPO', help='GitHub repository to publish to.')
+@click.option('--path', 'remote_path', required=True, metavar='PATH', help='Repository path for recipe JSON.')
+@click.option('--branch', default='main', show_default=True, metavar='REF', help='Target branch.')
+@click.option('--message', default=None, metavar='TEXT', help='Commit message.')
+@click.option('--json', 'json_output', is_flag=True, default=False)
+def recipe_publish(
+    recipe_file: str,
+    repo: str,
+    remote_path: str,
+    branch: str,
+    message: str | None,
+    json_output: bool,
+) -> None:
+    """Publish a flat recipe JSON to GitHub via the Contents API."""
+    from yosoi.storage.recipe_store import load_recipe, publish_recipe_github
+
+    try:
+        recipe = load_recipe(recipe_file)
+        url = publish_recipe_github(recipe, repo=repo, path=remote_path, branch=branch, message=message)
+    except Exception as exc:
+        raise click.ClickException(str(exc)) from exc
+    doc = {'type': 'recipe.publish', 'status': 'ok', 'recipe_id': recipe.recipe_id, 'url': url}
+    if json_output:
+        echo_json(doc)
+        return
+    console.print(f'[success]✓ Published recipe[/success] {recipe.recipe_id}')
+    console.print(url)
+
+
 # ── contracts command group (CAS-122) ─────────────────────────────────────────
 
 

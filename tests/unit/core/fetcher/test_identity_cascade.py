@@ -34,6 +34,7 @@ Instrument via the per-(identity, query-index) block log this module's
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any, ClassVar, cast
 
 import pytest
@@ -152,7 +153,7 @@ async def test_pool_lazy_starts_and_reuses() -> None:
 @pytest.mark.asyncio
 async def test_pool_evicts_lru_when_over_cap() -> None:
     pool, started = _make_pool(max_live=2)
-    fa = await pool.get(BrowserIdentity(id='a'))
+    fa = cast(_MockFetcher, await pool.get(BrowserIdentity(id='a')))
     await pool.get(BrowserIdentity(id='b'))
     # Touch 'a' so 'b' becomes the LRU.
     await pool.get(BrowserIdentity(id='a'))
@@ -160,6 +161,106 @@ async def test_pool_evicts_lru_when_over_cap() -> None:
     assert pool.live_ids == ['a', 'c']
     assert started['b'].closed is True
     assert fa.closed is False
+
+
+@pytest.mark.asyncio
+async def test_pool_concurrent_same_identity_starts_once() -> None:
+    started = 0
+    entered_factory = asyncio.Event()
+    release_factory = asyncio.Event()
+
+    async def factory(identity: BrowserIdentity, base_kwargs: dict[str, Any]) -> Any:
+        nonlocal started
+        started += 1
+        entered_factory.set()
+        await release_factory.wait()
+        return _MockFetcher(identity)
+
+    pool = IdentityFetcherPool(factory=factory, max_live=2)
+    tasks = [asyncio.create_task(pool.get(BrowserIdentity(id='a'))) for _ in range(8)]
+    await asyncio.wait_for(entered_factory.wait(), timeout=1)
+    assert started == 1
+
+    release_factory.set()
+    fetchers = await asyncio.gather(*tasks)
+
+    assert started == 1
+    assert len({id(fetcher) for fetcher in fetchers}) == 1
+    assert pool.live_ids == ['a']
+
+
+@pytest.mark.asyncio
+async def test_pool_does_not_evict_active_fetcher_under_cap_pressure() -> None:
+    pool, started = _make_pool(max_live=1)
+
+    async with pool.borrow(BrowserIdentity(id='a')) as active:
+        active_fetcher = cast(_MockFetcher, active)
+        await pool.get(BrowserIdentity(id='b'))
+        assert active_fetcher.closed is False
+        assert pool.live_ids == ['a', 'b']
+
+    assert started['a'].closed is True
+    assert started['b'].closed is False
+    assert pool.live_ids == ['b']
+
+
+@pytest.mark.asyncio
+async def test_pool_close_waits_for_active_lease() -> None:
+    pool, started = _make_pool(max_live=2)
+    lease_entered = asyncio.Event()
+    release_lease = asyncio.Event()
+
+    async def hold_lease() -> None:
+        async with pool.borrow(BrowserIdentity(id='a')) as active:
+            active_fetcher = cast(_MockFetcher, active)
+            lease_entered.set()
+            await release_lease.wait()
+            assert active_fetcher.closed is False
+
+    lease_task = asyncio.create_task(hold_lease())
+    await asyncio.wait_for(lease_entered.wait(), timeout=1)
+
+    close_task = asyncio.create_task(pool.close())
+    await asyncio.sleep(0)
+    assert close_task.done() is False
+    assert started['a'].closed is False
+
+    release_lease.set()
+    await asyncio.wait_for(lease_task, timeout=1)
+    await asyncio.wait_for(close_task, timeout=1)
+
+    assert started['a'].closed is True
+    assert pool.live_ids == []
+
+
+@pytest.mark.asyncio
+async def test_pool_close_rejects_late_borrow_and_stays_empty() -> None:
+    pool, _started = _make_pool(max_live=1)
+    lease_entered = asyncio.Event()
+    release_lease = asyncio.Event()
+
+    async def hold_lease() -> None:
+        async with pool.borrow(BrowserIdentity(id='a')):
+            lease_entered.set()
+            await release_lease.wait()
+
+    async def late_borrow() -> None:
+        async with pool.borrow(BrowserIdentity(id='b')):
+            pass
+
+    lease_task = asyncio.create_task(hold_lease())
+    await asyncio.wait_for(lease_entered.wait(), timeout=1)
+    close_task = asyncio.create_task(pool.close())
+    await asyncio.sleep(0)
+
+    late_task = asyncio.create_task(late_borrow())
+    release_lease.set()
+
+    await asyncio.wait_for(lease_task, timeout=1)
+    await asyncio.wait_for(close_task, timeout=1)
+    with pytest.raises(RuntimeError, match='closed'):
+        await asyncio.wait_for(late_task, timeout=1)
+    assert pool.live_ids == []
 
 
 @pytest.mark.asyncio
