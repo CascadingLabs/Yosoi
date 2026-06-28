@@ -290,10 +290,11 @@ class DiscoveryOrchestrator:
 
         semaphore = asyncio.Semaphore(self._max_concurrent)
 
-        # Load the full domain selector map once — avoids N redundant file reads.
+        # Load the route-scoped selector map once — avoids N redundant file reads
+        # without mixing unrelated recipes/templates that share a domain.
         # Keep snapshot health metadata so absent/failed fields are not mistaken
         # for malformed selector payloads.
-        snapshots = await self._storage.load_snapshots(domain) or {}
+        snapshots = await self._storage.load_snapshots(domain, url=url) or {}
         from yosoi.models.snapshot import snapshot_to_cache_entry
 
         existing = {name: snapshot_to_cache_entry(snapshot) for name, snapshot in snapshots.items()}

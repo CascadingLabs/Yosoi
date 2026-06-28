@@ -29,6 +29,9 @@
 
 > **Discover once, scrape forever**
 
+> [!WARNING]
+> Yosoi is research tooling for API design and web reverse engineering. **You assume all legal risk for how you use it.** Respect `robots.txt`, rate limits, and IP bans; and please don't bypass them with Tor or a VPN. Read [DISCLAIMER.md](DISCLAIMER.md) before pointing it at anything.
+
 Give Yosoi a URL, domain, or group of URLs, and it uses AI to automatically discover the best selectors for structured content.
 
 ## Installation
@@ -68,6 +71,29 @@ async def scrape():
 
 See [`examples/README.md`](examples/README.md) for the maintained example set. For the explainable page-fingerprinting stack behind resilient reuse, see [`docs/fingerprinting-stack.md`](docs/fingerprinting-stack.md).
 
+## Portable recipes
+
+Recipes package a contract, verified selectors, optional A3Node browser actions, and validation evidence into deterministic JSON for review and replay:
+
+```bash
+uv run yosoi recipe mint --contract @Product --from-cache https://example.com/product/1 --out .yosoi/recipes/ --yes
+uv run yosoi recipe validate .yosoi/recipes/product.recipe.json --url https://example.com/product/1 --write
+uv run yosoi scrape https://example.com/product/2 --recipe .yosoi/recipes/product.recipe.json --recipe-id v1:sha256:...
+```
+
+Remote recipes are pin-required and trust-gated. See [`docs/recipes.md`](docs/recipes.md).
+
+## Agent workflows
+
+Install Yosoi fetch/search/crawl/research skills into supported coding agents:
+
+```bash
+uvx yosoi agents install --target pi
+uvx yosoi agents install --target agents
+```
+
+See [`docs/agent-workflows.md`](docs/agent-workflows.md).
+
 ## Quick Start
 
 ### API Key
@@ -105,6 +131,10 @@ If you use **yosoi** in your research or projects, please cite it using the meta
 <p align="center">
     <img src="media/citationExample.png" alt="Citation" width="800">
 </p>
+
+## Community
+
+- **Responsible use:** see [DISCLAIMER.md](DISCLAIMER.md)
 
 ## Contact
 

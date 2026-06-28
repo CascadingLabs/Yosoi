@@ -101,13 +101,13 @@ class MapResult(BaseModel):
     errors: list[str] = Field(default_factory=list)
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class _QueuedSitemap:
     url: str
     source: SitemapSource
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class _SubfinderRun:
     stdout: str
     stderr: str
@@ -541,7 +541,7 @@ def _result_status(result: object) -> int | None:
     return value if isinstance(value, int) else None
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class _ParsedSitemap:
     urls: tuple[str, ...] = ()
     sitemaps: tuple[str, ...] = ()

@@ -453,7 +453,7 @@ async def test_execute_fetch_contract_probe_verifies_cached_selectors(monkeypatc
             return None
 
     class Storage:
-        async def load_snapshots(self, _domain: str, contract_sig: str | None = None):
+        async def load_snapshots(self, _domain: str, contract_sig: str | None = None, *, url: str | None = None):
             assert contract_sig == OpContract.to_spec().fingerprint
             return {'title': selector_dict_to_snapshot({'primary': 'h1'})}
 

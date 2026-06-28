@@ -3,8 +3,9 @@
 A3Node replay
 -------------
 On each fetch the caller (_VoidCrawlFetcher) checks A3NodeStorage for a
-stored stability recipe. If one exists, the acts are replayed in order
-before capturing HTML — skipping the full probe phase entirely.
+stored scoped stability recipe. If one exists for the exact URL/intent/profile
+scope, the acts are replayed in order before capturing HTML — skipping the full
+probe phase entirely.
 
 If replay produces less content than the stored recipe previously achieved
 (or the recipe is empty / no acts needed), the result is accepted as-is.
@@ -17,6 +18,8 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import hashlib
+import json
 import logging
 import os
 import random
@@ -37,7 +40,7 @@ from yosoi.core.fetcher.identity import BrowserIdentity
 from yosoi.models.download import DownloadResult, DownloadSpec
 from yosoi.models.replay import ReplayPlan
 from yosoi.models.results import FetchResult, JsOutputs
-from yosoi.storage.a3node import A3Node, A3NodeStorage, ActRecord
+from yosoi.storage.a3node import A3_FRAGMENT_BANK_KINDS, A3Fragment, A3Node, A3NodeScope, A3NodeStorage, ActRecord
 from yosoi.utils import observability as obs
 from yosoi.utils.exceptions import BotDetectionError, DownloadError
 from yosoi.utils.retry import get_async_retryer, log_retry
@@ -108,6 +111,7 @@ class _VoidCrawlFetcher(HTMLFetcher):
         identity: BrowserIdentity | None = None,
         cross_origin_dom: bool = False,
         chrome_ws_urls: Sequence[str] = (),
+        a3node_intent: str | None = None,
         **_kwargs: Any,
     ) -> None:
         self.timeout = timeout
@@ -125,6 +129,7 @@ class _VoidCrawlFetcher(HTMLFetcher):
         self._identity = identity
         self._cross_origin_dom = cross_origin_dom
         self._chrome_ws_urls = tuple(str(url).strip() for url in chrome_ws_urls if str(url).strip())
+        self._a3node_intent = a3node_intent or 'fetch'
         self._pool: Any = None
         self._pool_ctx: Any = None
         self._a3node_storage = A3NodeStorage() if experimental_a3node else None
@@ -291,6 +296,69 @@ class _VoidCrawlFetcher(HTMLFetcher):
                     await tab.goto(url, timeout=float(self.timeout))
             yield tab
 
+    @staticmethod
+    def _stable_short_hash(payload: object, *, prefix: str) -> str:
+        """Return a compact stable fingerprint for A3Node scope components."""
+        raw = json.dumps(payload, sort_keys=True, separators=(',', ':'), default=str)
+        return f'{prefix}:{hashlib.sha256(raw.encode("utf-8")).hexdigest()[:24]}'
+
+    def _a3node_browser_fingerprint(self, tier: str) -> str:
+        """Fingerprint browser-tier/profile inputs that can affect rendered DOM shape."""
+        ident = self._identity
+        headless = bool(getattr(self, '_headless', tier == 'headless'))
+        payload: dict[str, object] = {
+            'tier': tier,
+            'headless': headless,
+            'identity_id': ident.id if ident is not None else '',
+            'profile_dir_hash': self._stable_short_hash(ident.profile_dir, prefix='profile-dir')
+            if ident is not None and ident.profile_dir
+            else '',
+            'profile_name': ident.profile_name if ident is not None and ident.profile_name else '',
+            'headful': bool(ident.headful) if ident is not None else False,
+            'locale': ident.locale if ident is not None else '',
+            'timezone_id': ident.timezone_id if ident is not None else '',
+            'geo_hash': self._stable_short_hash(ident.geo, prefix='geo') if ident is not None and ident.geo else '',
+            'proxy_hash': self._stable_short_hash(ident.proxy, prefix='proxy')
+            if ident is not None and ident.proxy
+            else '',
+            'user_agent_hash': self._stable_short_hash(self._user_agent, prefix='ua') if self._user_agent else '',
+            'accept_language': self._accept_language or '',
+        }
+        return self._stable_short_hash(payload, prefix='browser')
+
+    def _a3node_scope_intent(
+        self,
+        action_scripts: dict[str, str] | None,
+        download_specs: dict[str, DownloadSpec] | None,
+    ) -> str:
+        """Fingerprint the contract/replay/action/download intent for A3Node replay."""
+        payload: dict[str, object] = {
+            'base': self._a3node_intent,
+            'action_fields': sorted(action_scripts) if action_scripts else [],
+            'action_scripts_hash': self._stable_short_hash(action_scripts, prefix='actions') if action_scripts else '',
+            'download_fields': sorted(download_specs) if download_specs else [],
+            'download_specs_hash': self._stable_short_hash(download_specs, prefix='downloads')
+            if download_specs
+            else '',
+        }
+        return self._stable_short_hash(payload, prefix='intent')
+
+    def _a3node_scope(
+        self,
+        url: str,
+        domain: str,
+        tier: str,
+        action_scripts: dict[str, str] | None,
+        download_specs: dict[str, DownloadSpec] | None,
+    ) -> A3NodeScope:
+        """Build the exact A3Node scope for this fetch attempt."""
+        return A3NodeScope.for_url(
+            url,
+            domain=domain,
+            intent=self._a3node_scope_intent(action_scripts, download_specs),
+            browser_fingerprint=self._a3node_browser_fingerprint(tier),
+        )
+
     async def fetch(
         self,
         url: str,
@@ -298,7 +366,8 @@ class _VoidCrawlFetcher(HTMLFetcher):
         download_specs: dict[str, DownloadSpec] | None = None,
     ) -> FetchResult:
         start = time.time()
-        return await self._do_fetch(url, start, 'fetch', action_scripts=action_scripts, download_specs=download_specs)
+        tier = 'headless' if self._headless else 'headful'
+        return await self._do_fetch(url, start, tier, action_scripts=action_scripts, download_specs=download_specs)
 
     async def fetch_with_plan(
         self,
@@ -444,7 +513,12 @@ class _VoidCrawlFetcher(HTMLFetcher):
         download_specs: dict[str, DownloadSpec] | None = None,
     ) -> FetchResult:
         domain = extract_domain(url)
-        stored_node = self._a3node_cache.get(domain) if self._experimental_a3node else None
+        scope = self._a3node_scope(url, domain, _tier, action_scripts, download_specs)
+        stored_node = (
+            self._a3node_cache.get(scope.scope_key) or self._a3node_cache.get(domain)
+            if self._experimental_a3node
+            else None
+        )
 
         js_outputs: JsOutputs | None = None
         downloads: dict[str, DownloadResult] | None = None
@@ -483,13 +557,13 @@ class _VoidCrawlFetcher(HTMLFetcher):
             resp_endpoints = getattr(page_resp, 'endpoints', None) or None
 
             if stored_node is not None:
-                html = await self._fetch_with_replay(tab, domain, stored_node)
+                html = await self._fetch_with_replay(tab, scope, stored_node)
             else:
                 if not self._experimental_a3node:
                     obs.annotate_a3node(obs.current_span(), mode=obs.A3_MODE_DISABLED)
                 else:
                     obs.annotate_a3node(obs.current_span(), mode=obs.A3_MODE_PROBE)
-                html = await self._fetch_with_probe(tab, domain)
+                html = await self._fetch_with_probe(tab, scope)
 
             if action_scripts:
                 js_outputs, wait_cycles = await self._eval_with_settle(tab, action_scripts)
@@ -507,7 +581,7 @@ class _VoidCrawlFetcher(HTMLFetcher):
                     # Amend A3Node: record the settle cycles so replay skips
                     # the probe and just waits settle_seconds before content().
                     if self._a3node_storage is not None and self._experimental_a3node:
-                        await self._amend_a3node_settle(domain, wait_cycles)
+                        await self._amend_a3node_settle(scope, wait_cycles)
 
             # ys.File() downloads — run on the live tab (a download needs the open
             # browser context). Gated by the allow_downloads opt-in.
@@ -633,22 +707,24 @@ class _VoidCrawlFetcher(HTMLFetcher):
         outputs = await self._eval_action_scripts(tab, scripts)
         return outputs, _JS_MAX_SETTLE_CYCLES
 
-    async def _amend_a3node_settle(self, domain: str, wait_cycles: int) -> None:
-        """Append or update the wait_for_js act in the domain's A3Node recipe."""
+    async def _amend_a3node_settle(self, scope: A3NodeScope | str, wait_cycles: int) -> None:
+        """Append or update the wait_for_js act in the scoped A3Node recipe."""
         if self._a3node_storage is None:
             return
-        node = self._a3node_cache.get(domain)
+        cache_key = scope.scope_key if isinstance(scope, A3NodeScope) else scope
+        display = scope.domain if isinstance(scope, A3NodeScope) else scope
+        node = self._a3node_cache.get(cache_key)
         existing = list(node.acts) if node else []
         # Replace any previous wait_for_js with the fresh measurement
         domloader_only = [a for a in existing if a.kind != _WAIT_FOR_JS_ACT]
         amended = [*domloader_only, ActRecord(kind=_WAIT_FOR_JS_ACT, cycles=wait_cycles)]
-        await self._a3node_storage.save(domain, amended)
-        loaded = await self._a3node_storage.load(domain)
+        await self._a3node_storage.save(scope, amended)
+        loaded = await self._a3node_storage.load(scope)
         if loaded is not None:
-            self._a3node_cache[domain] = loaded
+            self._a3node_cache[cache_key] = loaded
         settle_s = wait_cycles * _JS_POLL_INTERVAL_S
         self._console.print(
-            f'[success]  ✓ A3Node settle recorded for {domain}: '
+            f'[success]  ✓ A3Node settle recorded for {display}: '
             f'{wait_cycles} cycle(s) × {_JS_POLL_INTERVAL_S:.1f}s = {settle_s:.1f}s[/success]'
         )
 
@@ -664,7 +740,7 @@ class _VoidCrawlFetcher(HTMLFetcher):
             logger.warning('action_scripts eval failed: %s', exc)
             return {}
 
-    async def _fetch_with_replay(self, tab: Any, domain: str, node: A3Node) -> str | None:
+    async def _fetch_with_replay(self, tab: Any, scope: A3NodeScope | str, node: A3Node) -> str | None:
         """Replay a stored A3Node recipe, falling back to a full probe on failure.
 
         Empty recipe → the page needed no actions, so just capture the current
@@ -673,9 +749,10 @@ class _VoidCrawlFetcher(HTMLFetcher):
         successful replay records the replay so ``replay_count``/``battle_tested``
         advance; an insufficient result re-probes and re-saves the fresh recipe.
         """
+        display = scope.domain if isinstance(scope, A3NodeScope) else scope
         if self._a3node_storage is None:
             obs.annotate_a3node(obs.current_span(), mode=obs.A3_MODE_DISABLED)
-            return await self._fetch_with_probe(tab, domain)
+            return await self._fetch_with_probe(tab, scope)
 
         settle_s = node.settle_seconds
         dl_acts = node.domloader_acts
@@ -690,20 +767,20 @@ class _VoidCrawlFetcher(HTMLFetcher):
 
         if node.is_empty:
             settle_label = f', settle={settle_s:.1f}s' if settle_s else ''
-            self._console.print(f'[dim]  ↻ A3Node replay: {domain} needs no DOMLoader actions{settle_label}[/dim]')
+            self._console.print(f'[dim]  ↻ A3Node replay: {display} needs no DOMLoader actions{settle_label}[/dim]')
             try:
                 if settle_s > 0:
                     await asyncio.sleep(settle_s)
                 html: str = await tab.content()
                 if html and len(html) >= self.min_content_length:
-                    await self._a3node_storage.record_replay(domain)
+                    await self._a3node_storage.record_replay(scope)
                     obs.annotate_a3node(span, replayed=True, **replay_attrs)
                     return html
             except (RuntimeError, OSError, ValueError) as exc:
                 logger.debug('A3Node empty-recipe content capture failed: %s', exc)
         else:
             self._console.print(
-                f'[dim]  ↻ A3Node replay: {domain} ({len(dl_acts)} act(s), replayed {node.replay_count}×)[/dim]'
+                f'[dim]  ↻ A3Node replay: {display} ({len(dl_acts)} act(s), replayed {node.replay_count}×)[/dim]'
             )
             result = await DOMLoader(console=self._console).replay(tab, dl_acts)
             if result.success:
@@ -718,31 +795,87 @@ class _VoidCrawlFetcher(HTMLFetcher):
                 else:
                     html_candidate = result.html
                 if html_candidate and len(html_candidate) >= self.min_content_length:
-                    await self._a3node_storage.record_replay(domain)
+                    await self._a3node_storage.record_replay(scope)
                     obs.annotate_a3node(span, replayed=True, **replay_attrs)
                     return html_candidate
 
-        self._console.print(f'[warning]  ✗ A3Node replay fell short for {domain} — re-probing[/warning]')
+        self._console.print(f'[warning]  ✗ A3Node replay fell short for {display} — re-probing[/warning]')
         obs.annotate_a3node(span, fell_back=True, **replay_attrs)
-        return await self._fetch_with_probe(tab, domain)
+        return await self._fetch_with_probe(tab, scope)
 
-    async def _fetch_with_probe(self, tab: object, domain: str) -> str | None:
-        """Run the full DOMLoader probe and persist the resulting recipe."""
-        probe_result = await DOMLoader(console=self._console).run(tab)
+    async def _fetch_with_probe(self, tab: object, scope: A3NodeScope | str) -> str | None:
+        """Run fragment-bank replay, then full DOMLoader probe, and persist the scoped recipe."""
+        loader = DOMLoader(console=self._console)
+        fragments = await self._load_a3_fragments(limit=8)
+        fragment_acts: list[ActRecord] = []
+        if fragments:
+            fragment_result = await loader.replay_fragments(tab, fragments)
+            fragment_acts = fragment_result.acts
+            await self._record_fragment_replays(fragments, fragment_acts)
+
+        probe_result = await loader.run(tab)
         html = probe_result.html
+        acts = [*fragment_acts, *probe_result.acts]
 
         # Persist the acts regardless of content length — even "no action needed"
-        # is a valid and useful recipe to store
+        # is a valid and useful recipe to store. Also mint domain-free fragments from
+        # concrete targets so later scopes can try the same A3 action with the LLM off.
         if self._a3node_storage is not None and probe_result.success:
-            await self._a3node_storage.save(domain, probe_result.acts)
+            await self._a3node_storage.save(scope, acts)
+            await self._save_a3_fragments_from_acts(scope, acts)
             # Update in-memory cache
-            node = await self._a3node_storage.load(domain)
+            node = await self._a3node_storage.load(scope)
             if node is not None:
-                self._a3node_cache[domain] = node
+                cache_key = scope.scope_key if isinstance(scope, A3NodeScope) else scope
+                display = scope.domain if isinstance(scope, A3NodeScope) else scope
+                self._a3node_cache[cache_key] = node
                 verb = 'stored (no actions needed)' if node.is_empty else f'stored ({len(node.acts)} acts)'
-                self._console.print(f'[success]  ✓ A3Node {verb} for {domain}[/success]')
+                self._console.print(f'[success]  ✓ A3Node {verb} for {display}[/success]')
 
         return html
+
+    async def _load_a3_fragments(self, *, limit: int) -> list[A3Fragment]:
+        """Load reusable A3 fragments, tolerating older/mocked storage objects."""
+        import inspect
+
+        if self._a3node_storage is None:
+            return []
+        load_fragments = getattr(self._a3node_storage, 'load_fragments', None)
+        if not callable(load_fragments):
+            return []
+        maybe_fragments = load_fragments(kinds=set(A3_FRAGMENT_BANK_KINDS), limit=limit)
+        loaded = await maybe_fragments if inspect.isawaitable(maybe_fragments) else maybe_fragments
+        return loaded if isinstance(loaded, list) else []
+
+    async def _record_fragment_replays(self, fragments: list[A3Fragment], acts: list[ActRecord]) -> None:
+        """Update fragment replay stats for successfully applied acts."""
+        import inspect
+
+        if self._a3node_storage is None:
+            return
+        record_fragment_replay = getattr(self._a3node_storage, 'record_fragment_replay', None)
+        if not callable(record_fragment_replay):
+            return
+        for act in acts:
+            for fragment in fragments:
+                if fragment.kind == act.kind and fragment.target == act.target:
+                    maybe_recorded = record_fragment_replay(fragment.fragment_key)
+                    if inspect.isawaitable(maybe_recorded):
+                        await maybe_recorded
+                    break
+
+    async def _save_a3_fragments_from_acts(self, scope: A3NodeScope | str, acts: list[ActRecord]) -> None:
+        """Mint reusable fragments when storage supports the fragment bank."""
+        import inspect
+
+        if self._a3node_storage is None:
+            return
+        save_fragments = getattr(self._a3node_storage, 'save_fragments_from_acts', None)
+        if not callable(save_fragments):
+            return
+        maybe_saved = save_fragments(scope, acts)
+        if inspect.isawaitable(maybe_saved):
+            await maybe_saved
 
 
 class HeadlessFetcher(_VoidCrawlFetcher):

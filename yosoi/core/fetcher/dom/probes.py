@@ -20,6 +20,7 @@ from yosoi.core.fetcher.dom.catalogues import (
     ACCORDION_SELECTORS,
     AGE_GATE_SELECTORS,
     CONTENT_SELECTOR,
+    COOKIE_ACCEPT_TEXTS,
     COOKIE_SELECTORS,
     LOAD_MORE_TEXTS,
     NEXT_PAGE_TEXTS,
@@ -139,6 +140,12 @@ def _snippet_text(snippet: object) -> str:
 
 async def probe_cookie(tab: Any) -> DetectedTrigger | None:
     """Detect a cookie consent banner with an actionable button."""
+    snap = await capture_ax_snapshot(tab)
+    if snap is not None:
+        target = find_target(snap, roles={'button'}, names=tuple(COOKIE_ACCEPT_TEXTS))
+        if target is not None:
+            return DetectedTrigger(TriggerKind.COOKIE, 'ax:button', target.name, ax_target=target)
+
     try:
         for sel in COOKIE_SELECTORS:
             if await tab.query_selector(sel):

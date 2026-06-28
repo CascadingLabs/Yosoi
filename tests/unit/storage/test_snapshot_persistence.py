@@ -51,6 +51,33 @@ class TestSaveLoadSnapshots:
         assert await storage.load_selectors('qscrape.dev', contract_sig='catalog') == {'title': {'primary': 'h1'}}
         assert await storage.load_selectors('qscrape.dev', contract_sig='taxes') == {'total': {'primary': '.tax'}}
 
+    async def test_route_scoped_snapshots_do_not_mix_domain_surfaces(self, storage):
+        now = datetime.now(timezone.utc)
+        await storage.save_snapshots(
+            'https://qscrape.dev/l1/news/article/?id=1',
+            {'headline': SelectorSnapshot(primary='h1.article', discovered_at=now)},
+            contract_sig='news',
+        )
+        await storage.save_snapshots(
+            'https://qscrape.dev/l2/eshop/?sku=1',
+            {'name': SelectorSnapshot(primary='h1.product', discovered_at=now)},
+            contract_sig='news',
+        )
+
+        article = await storage.load_snapshots(
+            'qscrape.dev', contract_sig='news', url='https://qscrape.dev/l1/news/article/?id=2'
+        )
+        product = await storage.load_snapshots(
+            'qscrape.dev', contract_sig='news', url='https://qscrape.dev/l2/eshop/?sku=2'
+        )
+        missing = await storage.load_snapshots('qscrape.dev', contract_sig='news', url='https://qscrape.dev/l3/other/')
+
+        assert article is not None
+        assert set(article) == {'headline'}
+        assert product is not None
+        assert set(product) == {'name'}
+        assert missing is None
+
     async def test_legacy_na_primary_loads_as_absent_snapshot(self, storage):
         now = datetime.now(timezone.utc)
         snapshots = {

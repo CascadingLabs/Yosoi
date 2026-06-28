@@ -817,12 +817,18 @@ class TestBuildDefaultTree:
         max_scroll_cycles: int = 10,
     ):
         stable = _make_fake_stable(mocker)
+        has_cookie = HasTrigger(TriggerKind.COOKIE, content_selector)
+        has_popup = HasTrigger(TriggerKind.POPUP, content_selector)
+        has_age_gate = HasTrigger(TriggerKind.AGE_GATE, content_selector)
         has_load_more = HasTrigger(TriggerKind.LOAD_MORE, content_selector)
         has_accordion = HasTrigger(TriggerKind.ACCORDION, content_selector)
         has_tab = HasTrigger(TriggerKind.TAB, content_selector)
         has_pagination = HasTrigger(TriggerKind.PAGINATION, content_selector)
         has_scroll = HasTrigger(TriggerKind.INFINITE_SCROLL, content_selector)
 
+        click_cookie = ClickTrigger(has_cookie, stable, max_click_cycles)
+        click_popup = ClickTrigger(has_popup, stable, max_click_cycles)
+        click_age_gate = ClickTrigger(has_age_gate, stable, max_click_cycles)
         click_load_more = ClickTrigger(has_load_more, stable, max_click_cycles)
         click_accordion = ClickTrigger(has_accordion, stable, max_click_cycles)
         click_tab = ClickTrigger(has_tab, stable, max_click_cycles)
@@ -830,6 +836,9 @@ class TestBuildDefaultTree:
         scroll = Scroll(has_scroll, stable, max_scroll_cycles)
 
         logs = [
+            click_cookie.log,
+            click_popup.log,
+            click_age_gate.log,
             click_load_more.log,
             click_accordion.log,
             click_tab.log,
@@ -838,6 +847,9 @@ class TestBuildDefaultTree:
         ]
         tree = Selector(
             Sequence(HasOverlay(), Selector(Sequence(HasCloseButton(), ClickClose()), Skip())),
+            Sequence(has_cookie, click_cookie),
+            Sequence(has_popup, click_popup),
+            Sequence(has_age_gate, click_age_gate),
             Sequence(has_load_more, click_load_more),
             Sequence(has_accordion, click_accordion),
             Sequence(has_tab, click_tab),
@@ -859,13 +871,16 @@ class TestBuildDefaultTree:
         _, logs = self._build(mocker)
         assert isinstance(logs, list)
 
-    def test_logs_has_5_entries(self, mocker: MockerFixture):
+    def test_logs_has_8_entries(self, mocker: MockerFixture):
         _, logs = self._build(mocker)
-        assert len(logs) == 5
+        assert len(logs) == 8
 
     def test_log_kinds(self, mocker: MockerFixture):
         _, logs = self._build(mocker)
         kinds = [log.kind for log in logs]
+        assert 'cookie' in kinds
+        assert 'popup' in kinds
+        assert 'age_gate' in kinds
         assert 'load_more' in kinds
         assert 'accordion' in kinds
         assert 'tab' in kinds

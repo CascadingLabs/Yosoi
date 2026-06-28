@@ -2357,6 +2357,35 @@ def test_pipeline_rejects_model_policy_as_llm_config():
         Pipeline(ys.groq('llama-3.3-70b-versatile'), contract=SimpleContract)
 
 
+def test_pipeline_wraps_waterfall_identity_as_single_item_cascade(mocker, monkeypatch):
+    """Waterfall construction receives an identity cascade, not direct identity=."""
+    from yosoi.core.fetcher.identity import BrowserIdentity, IdentityCascade
+
+    mocker.patch('yosoi.storage.persistence.init_yosoi')
+    mocker.patch('yosoi.storage.discovery_strategy.init_yosoi')
+    mocker.patch('yosoi.storage.tracking.get_tracking_path', return_value='/tmp/tracking.json')
+    mocker.patch('yosoi.utils.files.is_initialized', return_value=True)
+    mocker.patch('yosoi.utils.logging.setup_local_logging', return_value='/tmp/test.log')
+    monkeypatch.setenv('GROQ_KEY', 'test-key')
+    create_fetcher = mocker.patch('yosoi.core.pipeline.base.create_fetcher')
+
+    identity = BrowserIdentity(id='geo-us', headful=True, profile_dir='/tmp/prof')
+    pipeline = Pipeline(llm_config='groq:llama-3.3-70b-versatile', contract=SimpleContract, identity=identity)
+
+    pipeline._create_fetcher('waterfall')
+
+    assert 'identity' not in create_fetcher.call_args.kwargs
+    cascade = create_fetcher.call_args.kwargs['identity_cascade']
+    assert isinstance(cascade, IdentityCascade)
+    assert cascade.identities == (identity,)
+    assert create_fetcher.call_args.kwargs['max_live_identities'] == 1
+
+    create_fetcher.reset_mock()
+    pipeline._create_fetcher('headless')
+    assert create_fetcher.call_args.kwargs['identity'] is identity
+    assert 'identity_cascade' not in create_fetcher.call_args.kwargs
+
+
 def test_pipeline_threads_cross_origin_dom_to_browser_fetcher(mocker, monkeypatch):
     """ScrapePolicy.cross_origin_dom reaches the browser fetcher; default stays off."""
     mocker.patch('yosoi.storage.persistence.init_yosoi')

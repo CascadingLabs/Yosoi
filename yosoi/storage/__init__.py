@@ -11,6 +11,8 @@ from typing import TYPE_CHECKING
 from yosoi._lazy import lazy_exports
 
 if TYPE_CHECKING:
+    from yosoi.storage.a3node import A3_FRAGMENT_BANK_KINDS as A3_FRAGMENT_BANK_KINDS
+    from yosoi.storage.a3node import A3Fragment as A3Fragment
     from yosoi.storage.a3node import A3Node as A3Node
     from yosoi.storage.a3node import A3NodeStorage as A3NodeStorage
     from yosoi.storage.a3node import ActRecord as ActRecord
@@ -27,6 +29,8 @@ if TYPE_CHECKING:
     from yosoi.storage.tracking import LLMTracker as LLMTracker
 
 _LAZY: dict[str, str] = {
+    'A3_FRAGMENT_BANK_KINDS': 'yosoi.storage.a3node',
+    'A3Fragment': 'yosoi.storage.a3node',
     'A3Node': 'yosoi.storage.a3node',
     'A3NodeStorage': 'yosoi.storage.a3node',
     'ActRecord': 'yosoi.storage.a3node',

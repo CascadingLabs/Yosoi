@@ -79,6 +79,9 @@ if TYPE_CHECKING:  # static typing only — no runtime cost
     from yosoi.policy.page import (
         PageRuntimeConfig as PageRuntimeConfig,
     )
+    from yosoi.policy.recipe import (
+        RecipePolicy as RecipePolicy,
+    )
     from yosoi.policy.run import (
         DiscoveryPolicy as DiscoveryPolicy,
     )
@@ -218,6 +221,7 @@ _LAZY = {
     'SafeSearch': 'yosoi.policy.run',
     'SearchKind': 'yosoi.policy.run',
     'SearchProvider': 'yosoi.policy.run',
+    'RecipePolicy': 'yosoi.policy.recipe',
     'SecretRef': 'yosoi.policy.run',
     'TelemetryPolicy': 'yosoi.policy.run',
     'alibaba': 'yosoi.policy.run',

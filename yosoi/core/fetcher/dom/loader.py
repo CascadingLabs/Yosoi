@@ -26,11 +26,14 @@ from yosoi.core.fetcher.dom.tree.conditions import HasTrigger
 from yosoi.core.fetcher.dom.tree.default import build_default_tree
 from yosoi.core.fetcher.dom.tree.nodes import Status
 from yosoi.models.selectors import SelectorEntry
-from yosoi.storage.a3node import ActRecord
+from yosoi.storage.a3node import A3_FRAGMENT_BANK_KINDS, A3Fragment, ActRecord
 
 # Trigger kinds that appear in a stored recipe (the ones that carry an ActionLog).
-# Overlay/cookie dismissals are not recorded as acts and are re-handled by probe.
+# Concrete targets are replayed directly; targetless legacy acts still re-probe.
 _CLICK_KINDS = {
+    TriggerKind.COOKIE.value,
+    TriggerKind.POPUP.value,
+    TriggerKind.AGE_GATE.value,
     TriggerKind.LOAD_MORE.value,
     TriggerKind.ACCORDION.value,
     TriggerKind.TAB.value,
@@ -157,6 +160,47 @@ class DOMLoader:
             acts=acts,
         )
 
+    async def replay_fragments(self, tab: Any, fragments: list[A3Fragment]) -> LoadResult:
+        """Apply reusable domain-free fragments before scoped probing.
+
+        Fragments are assess/act/assert in miniature: assess is the durable target
+        still being present, act is the stored click target, and assert is that the
+        click executed without raising. The normal DOMLoader probe runs after this,
+        so a fragment miss or stale candidate never becomes the only path to content.
+        """
+        start = time.perf_counter()
+        stable = WaitForDOMStable(quiet_ms=self._quiet_ms)
+        content_start = await count_content(tab, self._content_selector)
+        executed: list[ActRecord] = []
+
+        for fragment in fragments:
+            act = fragment.to_act()
+            if act.target is None or act.kind not in A3_FRAGMENT_BANK_KINDS:
+                continue
+            if not await self._target_present(tab, act.target):
+                continue
+            try:
+                cycles = await self._replay_target(tab, act.kind, act.target, stable)
+            except (RuntimeError, OSError, ValueError, TypeError) as exc:
+                logger.debug('fragment replay failed for %s: %s', fragment.fragment_key, exc)
+                continue
+            if cycles > 0:
+                executed.append(ActRecord(kind=act.kind, cycles=cycles, target=act.target))
+                self._log(f'fragment: {act.kind} ran {cycles} cycle(s) via reusable target')
+
+        html = await self._capture_html(tab)
+        content_final = await count_content(tab, self._content_selector)
+        elapsed_ms = (time.perf_counter() - start) * 1000
+        return LoadResult(
+            success=html is not None,
+            content_start=content_start,
+            content_final=content_final,
+            elapsed_ms=elapsed_ms,
+            action_log=[{'kind': a.kind, 'cycles': a.cycles} for a in executed],
+            html=html,
+            acts=executed,
+        )
+
     async def replay(self, tab: Any, acts: list[ActRecord]) -> LoadResult:
         """Re-execute a stored act sequence directly, skipping trigger discovery.
 
@@ -191,7 +235,14 @@ class DOMLoader:
             # Selector-level replay: a stored concrete target is clicked directly, so the
             # hand-maintained discovery catalogues never run on the replay hot path (CAS-94).
             if act.target is not None and act.kind in _CLICK_KINDS:
-                cycles = await self._replay_target(tab, act.kind, act.target, stable)
+                if not await self._target_present(tab, act.target):
+                    self._log(f'replay: {act.kind} stored target absent — skipping')
+                    continue
+                try:
+                    cycles = await self._replay_target(tab, act.kind, act.target, stable)
+                except (RuntimeError, OSError, ValueError, TypeError) as exc:
+                    logger.debug('stored-target replay failed for %s: %s', act.kind, exc)
+                    continue
                 if cycles > 0:
                     executed.append(ActRecord(kind=act.kind, cycles=cycles, target=act.target))
                     self._log(f'replay: {act.kind} ran {cycles} cycle(s) via stored target')
@@ -234,8 +285,7 @@ class DOMLoader:
     ) -> tuple[HasTrigger, ClickTrigger | Scroll] | None:
         """Build the (condition, action) pair that re-executes one stored act kind.
 
-        Returns None for kinds that are not replayable triggers (e.g. cookie /
-        overlay dismissals, which are not recorded as acts).
+        Returns None for kinds that are not replayable triggers.
         """
         if kind == _SCROLL_KIND:
             condition = HasTrigger(TriggerKind.INFINITE_SCROLL, self._content_selector)
@@ -244,6 +294,24 @@ class DOMLoader:
             condition = HasTrigger(TriggerKind(kind), self._content_selector)
             return condition, ClickTrigger(condition, stable, self._max_click_cycles)
         return None
+
+    async def _target_present(self, tab: Any, target: SelectorEntry) -> bool:
+        """Return whether a stored fragment target is present before acting."""
+        try:
+            if target.type == 'css':
+                return bool(await tab.query_selector(target.value))
+            if target.type == 'role':
+                from yosoi.core.fetcher.dom.probes import capture_ax_snapshot
+
+                snap = await capture_ax_snapshot(tab)
+                if snap is None:
+                    return False
+                nth = target.nth or 0
+                matches = [t for t in snap.targets if t.role == target.value and t.name == (target.name or '')]
+                return len(matches) > nth
+        except (RuntimeError, OSError, ValueError, TypeError):
+            return False
+        return False
 
     async def _replay_target(self, tab: Any, kind: str, target: SelectorEntry, stable: WaitForDOMStable) -> int:
         """Replay one click act against its stored target — no probe, no catalogues.

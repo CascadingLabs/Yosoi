@@ -194,6 +194,27 @@ async def test_scrape_threads_opt_in_identity_per_url(monkeypatch):
     assert by_url['https://bing.test'].kwargs['identity'] is None  # bing opted out -> plain
 
 
+async def test_scrape_public_api_constructs_waterfall_with_identity(monkeypatch):
+    """ys.scrape(..., fetcher_type='waterfall', identities=...) constructs cleanly."""
+    from yosoi.core.fetcher.identity import BrowserIdentity
+
+    FakePipeline.instances.clear()
+    monkeypatch.setattr(api, 'Pipeline', FakePipeline)
+
+    identity = BrowserIdentity(id='geo-us', headful=True, profile_dir='/tmp/prof')
+    await api.scrape(
+        'https://google.test',
+        ApiContract,
+        model=ys.claude_sdk(),
+        fetcher_type='waterfall',
+        identities={'https://google.test': identity},
+    )
+
+    instance = FakePipeline.instances[0]
+    assert instance.kwargs['identity'] is identity
+    assert _scrape_kwargs(instance)['fetcher_type'] == 'waterfall'
+
+
 async def test_scrape_per_url_fetcher_type(monkeypatch):
     """fetcher_type can be a {url: tier} map — each url's pipeline gets its own tier."""
     FakePipeline.instances.clear()
