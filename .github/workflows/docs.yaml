@@ -60,7 +60,8 @@ jobs:
           rm -f yosoi-docs-repo/api-reference.md
 
           cd yosoi-docs-repo
-          git add -A api-reference.md reference/
+          git rm -f --ignore-unmatch api-reference.md
+          git add -A -- reference/
 
           if git diff --cached --quiet; then
             echo "No changes to API reference — skipping commit"
