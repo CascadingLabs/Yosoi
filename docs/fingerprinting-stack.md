@@ -112,15 +112,22 @@ Narration:
 - Cross-tier comparison is intentionally cautious: richer browser evidence should not be treated as mandatory unless both pages carry it.
 - MinHash is a future performance/indexing optimization only: shortlist candidate references, then run exact nested similarity for the auditable decision.
 - SimHash and learned classifiers belong to production health checks, not page-template reuse authority: SimHash is better suited to extracted/body content drift and near-duplicate checks; classifiers need labeled reuse outcomes.
+- Selector cache reads are route-scoped when a URL is available, so unrelated templates on the same domain do not mix fields.
+- A3Node browser-action replay is scoped by URL shape, replay intent, and browser/profile fingerprint; reusable obstacle fragments are advisory and skipped when stale.
 
 ## Code map
 
 - `yosoi/generalization/fingerprint.py` — fingerprint extraction, layer comparison, thresholds, `PageSimilarity`.
-- `yosoi/core/fetcher/voiddriver.py` — VoidCrawl browser fetcher; carries AX snapshots, response headers, endpoints.
+- `yosoi/core/fetcher/voiddriver.py` — VoidCrawl browser fetcher; carries AX snapshots, response headers, endpoints, and scoped A3Node replay.
+- `yosoi/core/fetcher/dom/loader.py` — DOM action probing, stored-target replay, and reusable A3 fragment replay.
+- `yosoi/storage/a3node.py` — scoped A3Node recipes and domain-free obstacle fragments.
+- `yosoi/storage/cache_metrics_libsql.py` — route-scoped selector snapshots and cache metrics.
 - `yosoi/models/results.py` — fetch result fields that transport AX/header/endpoint evidence.
 - `yosoi/policy/fingerprint.py` — opt-in off-path fingerprint signal lane policy.
 - `yosoi/core/pipeline/signal.py` — background fingerprint gathering, not trust/action.
 - `yosoi/storage/atoms.py` — source trust model; `fingerprint` source is lowest trust and default-quarantined.
+
+See [`a3node-replay.md`](a3node-replay.md) for the replay/fragment layer.
 
 ## Monday demo checklist
 

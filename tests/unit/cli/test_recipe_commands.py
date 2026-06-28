@@ -197,7 +197,98 @@ def test_recipe_list_and_check_picker(tmp_path, monkeypatch) -> None:
     assert 'Recipe OK' in checked.output
 
 
-def test_recipe_install_remote_requires_recipe_id() -> None:
+def test_recipe_validate_cli_json_success_and_failure(tmp_path, monkeypatch) -> None:
+    recipe_path = tmp_path / 'recipe.json'
+    out_path = tmp_path / 'validated.recipe.json'
+    contract = ContractSpec(name='Product', fields={'title': FieldSpec(yosoi_type='title')})
+    snap_map = SnapshotMap(
+        url='https://example.com/products/1',
+        domain='example.com',
+        snapshots={'title': SelectorSnapshot(primary='h1', discovered_at=datetime.now(timezone.utc))},
+    )
+    from yosoi.models.recipe import Recipe, RecipeValidation
+    from yosoi.recipe import RecipeValidateResult
+
+    recipe = Recipe(contract=contract, selectors={'example.com': snap_map})
+    recipe_path.write_text(recipe.canonical_json(), encoding='utf-8')
+
+    def _fake_success(source, urls, **kwargs):
+        updated = Recipe(
+            contract=contract,
+            selectors={'example.com': snap_map},
+            validation=RecipeValidation(
+                fixture_urls=list(urls),
+                expected_shape={'title': 'str'},
+                summary={'status': 'passed', 'record_count': 1},
+            ),
+        )
+        out = Path(kwargs['out'])
+        out.write_text(updated.canonical_json(), encoding='utf-8')
+        return RecipeValidateResult(recipe=updated, validation=updated.validation, status='passed', path=out)
+
+    monkeypatch.setattr('yosoi.recipe.validate_sync', _fake_success)
+    ok = CliRunner().invoke(
+        main,
+        [
+            'recipe',
+            'validate',
+            str(recipe_path),
+            '--url',
+            'https://example.com/products/1',
+            '-o',
+            str(out_path),
+            '--json',
+        ],
+    )
+    assert ok.exit_code == 0, ok.output
+    assert json.loads(ok.output)['status'] == 'passed'
+    assert out_path.exists()
+
+    def _fake_failed(source, urls, **kwargs):
+        failed = Recipe(
+            contract=contract,
+            selectors={'example.com': snap_map},
+            validation=RecipeValidation(fixture_urls=list(urls), summary={'status': 'failed', 'record_count': 0}),
+        )
+        return RecipeValidateResult(recipe=failed, validation=failed.validation, status='failed')
+
+    monkeypatch.setattr('yosoi.recipe.validate_sync', _fake_failed)
+    bad = CliRunner().invoke(
+        main, ['recipe', 'validate', str(recipe_path), '--url', 'https://example.com/products/1', '--json']
+    )
+    assert bad.exit_code == 1, bad.output
+    assert json.loads(bad.output)['status'] == 'failed'
+
+    recipe_path = tmp_path / 'recipe.json'
+    contract_py = tmp_path / 'contract.py'
+    compiled_json = tmp_path / 'contract.json'
+    contract = ContractSpec(name='Product', fields={'title': FieldSpec(yosoi_type='title')})
+    snap_map = SnapshotMap(
+        url='https://example.com/products/1',
+        domain='example.com',
+        snapshots={'title': SelectorSnapshot(primary='h1', discovered_at=datetime.now(timezone.utc))},
+    )
+    from yosoi.models.recipe import Recipe
+
+    recipe = Recipe(contract=contract, selectors={'example.com': snap_map})
+    recipe_path.write_text(recipe.canonical_json(), encoding='utf-8')
+
+    runner = CliRunner()
+    exported = runner.invoke(main, ['recipe', 'contract', 'export', str(recipe_path), '-o', str(contract_py), '--json'])
+    assert exported.exit_code == 0, exported.output
+    assert contract_py.exists()
+    assert 'class Product(ys.Contract):' in contract_py.read_text(encoding='utf-8')
+
+    compiled = runner.invoke(
+        main,
+        ['recipe', 'contract', 'compile', f'{contract_py}:Product', '-o', str(compiled_json), '--json'],
+    )
+    assert compiled.exit_code == 0, compiled.output
+    assert compiled_json.exists()
+    assert (
+        ContractSpec.model_validate_json(compiled_json.read_text(encoding='utf-8')).fingerprint == contract.fingerprint
+    )
+
     result = CliRunner().invoke(main, ['recipe', 'install', 'gh:owner/repo/recipe.json@main'])
 
     assert result.exit_code != 0
@@ -242,7 +333,16 @@ def test_recipe_publish_gist_json_outputs_raw_and_html_urls(tmp_path, monkeypatc
 
     result = CliRunner().invoke(
         main,
-        ['recipe', 'publish', str(recipe_path), '--gist', '--filename', 'product.recipe.json', '--json'],
+        [
+            'recipe',
+            'publish',
+            str(recipe_path),
+            '--gist',
+            '--filename',
+            'product.recipe.json',
+            '--allow-unvalidated',
+            '--json',
+        ],
     )
 
     assert result.exit_code == 0, result.output
@@ -292,7 +392,7 @@ def test_recipe_gist_json_outputs_raw_and_html_urls(tmp_path, monkeypatch) -> No
 
     result = CliRunner().invoke(
         main,
-        ['recipe', 'gist', str(recipe_path), '--filename', 'product.recipe.json', '--json'],
+        ['recipe', 'gist', str(recipe_path), '--filename', 'product.recipe.json', '--allow-unvalidated', '--json'],
     )
 
     assert result.exit_code == 0, result.output

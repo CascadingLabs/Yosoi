@@ -37,6 +37,72 @@ class RecipeValidation(BaseModel):
     summary: dict[str, Any] = Field(default_factory=dict)
 
 
+class RecipeA3Scope(BaseModel):
+    """Portable A3Node replay scope keyed before navigation."""
+
+    schema_version: Literal['yosoi.a3node.scope.v1'] = 'yosoi.a3node.scope.v1'
+    scope_key: str
+    domain: str
+    page_profile: str
+    intent: str = 'fetch'
+    browser_fingerprint: str = 'default'
+    route_signature: str = ''
+    query_signature: str = ''
+
+
+class RecipeA3Act(BaseModel):
+    """Portable DOM stabilization action."""
+
+    kind: str
+    cycles: int = 1
+    target: dict[str, Any] | None = None
+    timeout_ms: int | None = None
+    retry: dict[str, Any] = Field(default_factory=dict)
+    assert_: dict[str, Any] = Field(default_factory=dict, alias='assert')
+
+
+class RecipeA3Node(BaseModel):
+    """Stable A3Node export embedded in a flat recipe."""
+
+    schema_version: Literal['yosoi.a3node.v1'] = 'yosoi.a3node.v1'
+    scope: RecipeA3Scope
+    acts: list[RecipeA3Act] = Field(default_factory=list)
+    provenance: dict[str, Any] = Field(default_factory=dict)
+    safety: dict[str, Any] = Field(
+        default_factory=lambda: {
+            'no_cookies': True,
+            'no_local_paths': True,
+            'no_secrets': True,
+            'no_screenshots': True,
+        }
+    )
+
+    @model_validator(mode='before')
+    @classmethod
+    def _migrate_legacy_node(cls, data: Any) -> Any:
+        if not isinstance(data, dict) or 'scope' in data:
+            return data
+        if {'scope_key', 'domain', 'acts'} & set(data):
+            return {
+                'scope': {
+                    'scope_key': str(data.get('scope_key') or data.get('domain') or 'legacy'),
+                    'domain': str(data.get('domain') or ''),
+                    'page_profile': str(data.get('page_profile') or 'legacy-domain'),
+                    'intent': str(data.get('intent') or 'legacy-domain'),
+                    'browser_fingerprint': str(data.get('browser_fingerprint') or 'legacy-domain'),
+                    'route_signature': str(data.get('route_signature') or ''),
+                    'query_signature': str(data.get('query_signature') or ''),
+                },
+                'acts': data.get('acts') or [],
+                'provenance': {
+                    key: value
+                    for key, value in data.items()
+                    if key in {'discovered_at', 'replay_count', 'last_replayed_at'}
+                },
+            }
+        return data
+
+
 class Recipe(BaseModel):
     """Flat shareable recipe: contract + selectors + optional actions + evidence.
 
@@ -48,7 +114,7 @@ class Recipe(BaseModel):
     instructions: list[str] = Field(default_factory=list)
     contract: ContractSpec
     selectors: dict[str, SnapshotMap] = Field(default_factory=dict)
-    a3nodes: list[dict[str, Any]] = Field(default_factory=list)
+    a3nodes: list[RecipeA3Node] = Field(default_factory=list)
     validation: RecipeValidation = Field(default_factory=RecipeValidation)
     metadata: RecipeMetadata = Field(default_factory=RecipeMetadata)
 
@@ -92,7 +158,7 @@ class Recipe(BaseModel):
         Provenance metadata is intentionally excluded so re-minting the same
         contract/selectors/evidence later produces the same ``recipe_id``.
         """
-        payload = self.model_dump(mode='json')
+        payload = self.model_dump(mode='json', by_alias=True)
         payload.pop('recipe_id', None)
         payload.pop('instructions', None)
         metadata = payload.get('metadata')
@@ -101,6 +167,7 @@ class Recipe(BaseModel):
             metadata.pop('created_by', None)
             metadata.pop('notes', None)
         _strip_selector_provenance(payload.get('selectors'))
+        _strip_a3node_provenance(payload.get('a3nodes'))
         return payload
 
     def compute_id(self) -> str:
@@ -122,7 +189,7 @@ class Recipe(BaseModel):
         identity hash so operational guidance can evolve without changing the
         recipe's semantic identity.
         """
-        return _recipe_review_json(_compact_recipe_payload(self.model_dump(mode='json'))) + '\n'
+        return _recipe_review_json(_compact_recipe_payload(self.model_dump(mode='json', by_alias=True))) + '\n'
 
     def default_instructions(self) -> list[str]:
         """Return human instructions embedded at the top of minted recipes."""
@@ -197,6 +264,15 @@ def _strip_selector_provenance(value: Any) -> None:
             if isinstance(snapshot, dict):
                 for key in volatile:
                     snapshot.pop(key, None)
+
+
+def _strip_a3node_provenance(value: Any) -> None:
+    """Remove volatile A3Node audit fields from identity in place."""
+    if not isinstance(value, list):
+        return
+    for node in value:
+        if isinstance(node, dict):
+            node.pop('provenance', None)
 
 
 def _deep_canonical(value: Any) -> Any:

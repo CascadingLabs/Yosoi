@@ -420,21 +420,28 @@ class LibSQLCacheMetricsStore(YosoiSQLiteStore):
             raise
 
     async def load_snapshots(
-        self, domain: str, contract_fingerprint: str | None = None, selector_level: str = _DEFAULT_SELECTOR_LEVEL
+        self,
+        domain: str,
+        contract_fingerprint: str | None = None,
+        selector_level: str = _DEFAULT_SELECTOR_LEVEL,
+        *,
+        url: str | None = None,
     ) -> dict[str, SelectorSnapshot] | None:
-        """Load current selector snapshots for a domain and contract fingerprint."""
+        """Load current selector snapshots for a domain/contract and optional route."""
         del selector_level  # selector_level is row metadata, not cache identity.
         await self._ensure_migrated()
         contract_fp = contract_fingerprint or ''
+        route = route_signature_for_url(url) if url else None
         client = await self._connect()
         result = await client.execute(
             f"""
-            SELECT field_path, source_url, json(selector) AS selector, status, discovered_at, last_verified_at, last_failed_at, failure_count
+            SELECT field_path, route_signature, source_url, json(selector) AS selector, status, discovered_at, last_verified_at, last_failed_at, failure_count
             FROM {_SELECTOR_SNAPSHOT_TABLE}
             WHERE contract_fingerprint = :contract_fingerprint
-            ORDER BY field_path
+              AND (:route_signature IS NULL OR route_signature = :route_signature)
+            ORDER BY field_path, updated_at
             """,
-            {'contract_fingerprint': contract_fp},
+            {'contract_fingerprint': contract_fp, 'route_signature': route},
         )
         if not result.rows:
             return None

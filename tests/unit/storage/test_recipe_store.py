@@ -93,9 +93,26 @@ def test_load_recipe_requires_recipe_id(tmp_path) -> None:
 
 
 def test_a3node_order_is_preserved_and_identity_sensitive() -> None:
-    first = _recipe().model_copy(update={'a3nodes': [{'acts': [{'step': 'first'}, {'step': 'second'}]}]})
-    second = _recipe().model_copy(update={'a3nodes': [{'acts': [{'step': 'second'}, {'step': 'first'}]}]})
-    assert json.loads(first.canonical_json())['a3nodes'][0]['acts'] == [{'step': 'first'}, {'step': 'second'}]
+    base = {
+        'scope': {
+            'scope_key': 'a3scope:v1:test',
+            'domain': 'example.com',
+            'page_profile': '/items',
+            'intent': 'fetch',
+            'browser_fingerprint': 'default',
+        }
+    }
+    first = Recipe.model_validate(
+        _recipe().model_dump(mode='json')
+        | {'a3nodes': [base | {'acts': [{'kind': 'cookie', 'cycles': 1}, {'kind': 'load_more', 'cycles': 1}]}]}
+    )
+    second = Recipe.model_validate(
+        _recipe().model_dump(mode='json')
+        | {'a3nodes': [base | {'acts': [{'kind': 'load_more', 'cycles': 1}, {'kind': 'cookie', 'cycles': 1}]}]}
+    )
+    acts = json.loads(first.canonical_json())['a3nodes'][0]['acts']
+    assert [act['kind'] for act in acts] == ['cookie', 'load_more']
+    assert all('assert' in act and 'assert_' not in act for act in acts)
     assert first.compute_id() != second.compute_id()
 
 

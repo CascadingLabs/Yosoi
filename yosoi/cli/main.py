@@ -46,6 +46,42 @@ _VALID_FORMATS = {'json', 'md', 'markdown', 'jsonl', 'ndjson', 'csv', 'xlsx', 'p
 _FETCHER_CHOICES = ['auto', 'simple', 'headless', 'headful', 'waterfall']  # waterfall aliases auto
 
 _CONTEXT_SETTINGS = {'help_option_names': ['-h', '--help'], 'show_default': True}
+_PICK_RECIPE = '__yosoi_pick_recipe__'
+
+
+class OptionalRecipeOption(click.Option):
+    """Click option that accepts ``--recipe`` or ``--recipe SOURCE``."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Initialize the optional-value flag shape."""
+        kwargs['is_flag'] = True
+        kwargs['flag_value'] = _PICK_RECIPE
+        super().__init__(*args, **kwargs)
+
+    def add_to_parser(self, parser: Any, ctx: click.Context) -> None:
+        """Patch Click's parser so the next token may be consumed as a value."""
+        super().add_to_parser(parser, ctx)
+        for opt in self.opts:
+            parser_opt = parser._long_opt.get(opt) or parser._short_opt.get(opt)
+            if parser_opt is None:
+                continue
+            original_process = parser_opt.process
+
+            def process(
+                value: Any,
+                state: Any,
+                *,
+                parser_opt: Any = parser_opt,
+                original_process: Any = original_process,
+            ) -> None:
+                if state.rargs and not str(state.rargs[0]).startswith('-'):
+                    state.opts[parser_opt.dest] = state.rargs.pop(0)
+                    state.order.append(parser_opt.obj)
+                else:
+                    original_process(value, state)
+
+            parser_opt.process = process
+
 
 _THEME = Theme(
     {
@@ -994,6 +1030,16 @@ def research_status(packet: Path, json_output: bool) -> None:
     help='Contract: @name, path/to/file.json, inline JSON, or path:Class. Repeat for multiple contracts.',
 )
 @click.option('--request', 'request_file', default=None, metavar='FILE', help='ScrapeRequest JSON file.')
+@click.option(
+    '--recipe',
+    'recipe_source',
+    cls=OptionalRecipeOption,
+    default=None,
+    metavar='SOURCE',
+    help='Run using a local/remote recipe. Omit SOURCE to choose from local recipes.',
+)
+@click.option('--recipe-id', default=None, metavar='v1:sha256:...', help='Expected pinned recipe id for --recipe.')
+@click.option('--allow-llm-with-recipe', is_flag=True, default=False, help='Allow discovery if recipe selectors miss.')
 @click.option('--dump-request', is_flag=True, help='Print the resolved ScrapeRequest JSON and exit.')
 @click.option('-s', '--summary', is_flag=True, help='Show run/page/contract/domain tracking summary.')
 @click.option('-S', '--skip-verification', is_flag=True, help='Skip selector verification after extraction.')
@@ -1064,6 +1110,9 @@ def scrape(
     model: str | None,
     contract: tuple[type[Contract], ...],
     request_file: str | None,
+    recipe_source: str | None,
+    recipe_id: str | None,
+    allow_llm_with_recipe: bool,
     dump_request: bool,
     summary: bool,
     skip_verification: bool,
@@ -1101,7 +1150,20 @@ def scrape(
 
     log_file = setup_local_logging(level=log_level)
     output_formats = _resolve_output_formats(output)
-    resolved_contracts = list(contract) or [NewsArticle]
+    recipe_artifact = None
+    if recipe_source is not None:
+        if request_file:
+            raise click.UsageError('--recipe cannot be combined with --request')
+        from yosoi.storage.recipe_store import load_recipe as load_recipe_artifact
+
+        if recipe_source == _PICK_RECIPE:
+            recipe_source = _pick_recipe_source(json_output=json_output)
+        if recipe_source.startswith(('http://', 'https://', 'gh:')) and recipe_id is None:
+            raise click.UsageError('Remote --recipe requires --recipe-id v1:sha256:...')
+        recipe_artifact = load_recipe_artifact(recipe_source, expected_recipe_id=recipe_id)
+    resolved_contracts = (
+        [recipe_artifact.to_contract()] if recipe_artifact is not None else list(contract) or [NewsArticle]
+    )
     resolved_contract = resolved_contracts[0]
     resolved_level = _LEVEL_MAP[selector_level.lower()]
     policy = build_policy(
@@ -1132,6 +1194,12 @@ def scrape(
     all_urls: list[str] = list(urls) + list(url) + (load_urls_from_file(file_path) if file_path else [])
     if limit is not None:
         all_urls = all_urls[: max(1, limit)]
+
+    if recipe_artifact is not None:
+        if not all_urls:
+            raise click.UsageError('No URLs provided. Pass URL(s) as arguments or use --url / --file')
+        no_llm = no_llm or not allow_llm_with_recipe
+        a3node = a3node or bool(recipe_artifact.a3nodes)
 
     if request_file:
         try:
@@ -1168,6 +1236,12 @@ def scrape(
     if dump_request:
         click.echo(request.model_dump_json(indent=2))
         return
+
+    if recipe_artifact is not None:
+        from yosoi.recipe import _seed_recipe_a3nodes, _seed_recipe_selectors
+
+        asyncio.run(_seed_recipe_selectors(recipe_artifact, request.urls))
+        asyncio.run(_seed_recipe_a3nodes(recipe_artifact))
 
     if json_output:
         from yosoi.cli import exit_codes
@@ -1628,6 +1702,103 @@ def map_command(
     sys.exit(exit_codes.RECORDS if result.status != 'error' else exit_codes.ERROR)
 
 
+# ── agents command group ─────────────────────────────────────────────────────
+
+
+@main.group('agents')
+def agents_group() -> None:
+    """Install Yosoi skills/extensions for coding agents."""
+
+
+_AGENT_TARGET_CHOICES = ['pi', 'agents', 'claude', 'codex', 'opencode', 'all']
+
+
+def _run_agents_install(
+    *,
+    targets: tuple[str, ...],
+    scope: str,
+    force: bool,
+    dry_run: bool,
+    json_output: bool,
+    command_type: str,
+) -> None:
+    from yosoi.agents import AgentInstallError, expand_targets, install_agent_assets
+
+    try:
+        result = install_agent_assets(
+            targets=expand_targets(tuple(t.lower() for t in targets)),
+            scope=cast(Any, scope),
+            force=force,
+            dry_run=dry_run,
+        )
+    except AgentInstallError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    records = [record.__dict__ for record in result.records]
+    if json_output:
+        echo_json({'type': command_type, 'written': result.written, 'skipped': result.skipped, 'records': records})
+        return
+
+    for record in result.records:
+        marker = 'would write' if record.status == 'would-write' else record.status
+        console.print(f'{marker}: [{record.target}] {record.kind} {record.path}', markup=False)
+    console.print('Reload/restart the target agent after install. Pi: run /reload.', markup=False)
+
+
+@agents_group.command('install')
+@click.option(
+    '--target',
+    'targets',
+    multiple=True,
+    type=click.Choice(_AGENT_TARGET_CHOICES, case_sensitive=False),
+    default=('pi',),
+    help='Agent target to install into. Repeat or pass all.',
+)
+@click.option('--scope', type=click.Choice(['user', 'project']), default='user', help='Install globally or into cwd.')
+@click.option('--force', is_flag=True, help='Overwrite existing installed assets.')
+@click.option('--dry-run', is_flag=True, help='Show files that would be written without changing disk.')
+@click.option('--json', 'json_output', is_flag=True, default=False)
+def agents_install(targets: tuple[str, ...], scope: str, force: bool, dry_run: bool, json_output: bool) -> None:
+    """Install Yosoi agent workflows.
+
+    Try locally first, then promote globally:
+
+        uvx yosoi agents install --scope project --target pi --force
+        uvx yosoi agents update --target pi
+    """
+    _run_agents_install(
+        targets=targets,
+        scope=scope,
+        force=force,
+        dry_run=dry_run,
+        json_output=json_output,
+        command_type='agents.install',
+    )
+
+
+@agents_group.command('update')
+@click.option(
+    '--target',
+    'targets',
+    multiple=True,
+    type=click.Choice(_AGENT_TARGET_CHOICES, case_sensitive=False),
+    default=('pi',),
+    help='Agent target to update. Repeat or pass all.',
+)
+@click.option('--scope', type=click.Choice(['user', 'project']), default='user', help='Update globally or in cwd.')
+@click.option('--dry-run', is_flag=True, help='Show files that would be written without changing disk.')
+@click.option('--json', 'json_output', is_flag=True, default=False)
+def agents_update(targets: tuple[str, ...], scope: str, dry_run: bool, json_output: bool) -> None:
+    """Update installed Yosoi agent workflows by overwriting existing assets."""
+    _run_agents_install(
+        targets=targets, scope=scope, force=True, dry_run=dry_run, json_output=json_output, command_type='agents.update'
+    )
+
+
+# Back-compatible singular alias.
+main.add_command(agents_group, 'agent')
+
+
 # ── policy command group ──────────────────────────────────────────────────────
 
 
@@ -1955,7 +2126,11 @@ def cache_status(
 
     async def _check() -> dict[str, object]:
         contract_sig = contract_signature(resolved_contract) if resolved_contract is not None else None
-        snapshots = await storage.load_snapshots(domain, contract_sig=contract_sig)
+        snapshots = await storage.load_snapshots(
+            domain,
+            contract_sig=contract_sig,
+            url=routed_target.value if routed_target is not None and routed_target.kind == 'url' else None,
+        )
         doc: dict[str, object] = {
             'type': 'cache.status',
             'target': target_value,
@@ -2304,10 +2479,19 @@ def _recipe_picker_paths(*, json_output: bool = False) -> list[Path]:
 
 
 def _pick_recipe_source(*, json_output: bool = False) -> str:
-    """Interactively choose one local recipe file when a command source is omitted."""
-    paths = _recipe_picker_paths(json_output=json_output)
-    choice = click.prompt('Select recipe', type=click.IntRange(1, len(paths)), default=1, show_default=True)
-    return str(paths[choice - 1])
+    """Interactively choose one local recipe file with the shared checkbox picker."""
+    paths = _recipe_paths()
+    if not paths:
+        raise click.ClickException('No local recipes found in .yosoi/recipes. Run `yosoi recipe mint` first.')
+    if json_output:
+        raise click.UsageError('SOURCE is required when --json is used.')
+    if not sys.stdin.isatty():
+        _render_recipe_picker(paths)
+        choice = click.prompt('Select recipe', type=click.IntRange(1, len(paths)), default=1, show_default=True)
+        return str(paths[choice - 1])
+    labels = [_recipe_picker_label(_recipe_summary_or_error(path)) for path in paths]
+    selected = _checkbox_picker('Select recipe', labels, multi=False)
+    return str(paths[selected[0]])
 
 
 def _pick_publish_targets() -> list[str]:
@@ -2333,6 +2517,8 @@ def _checkbox_picker(title: str, options: list[str], *, multi: bool) -> list[int
     """Small ANSI checkbox picker. Returns selected option indexes."""
     if not options:
         raise click.BadParameter('No options available')
+    if not sys.stdin.isatty():
+        raise click.UsageError(f'{title} requires an interactive terminal; pass an explicit value instead.')
     selected = {0}
     cursor = 0
 
@@ -2445,6 +2631,9 @@ def recipe_group() -> None:
 )
 @click.option('--a3nodes', 'a3nodes_source', default=None, metavar='FILE', help='Optional A3Node/action JSON file.')
 @click.option(
+    '--include-a3nodes', is_flag=True, default=False, help='Export matching local A3Node cache entries into the recipe.'
+)
+@click.option(
     '--validation', 'validation_source', default=None, metavar='FILE', help='Optional validation evidence JSON file.'
 )
 @click.option(
@@ -2480,6 +2669,7 @@ def recipe_mint(
     selectors_source: str | None,
     cache_url: str | None,
     a3nodes_source: str | None,
+    include_a3nodes: bool,
     validation_source: str | None,
     out_path: str,
     name: str | None,
@@ -2519,6 +2709,15 @@ def recipe_mint(
                 )
             )
         a3nodes_raw = parse_json_file(a3nodes_source) if a3nodes_source else []
+        if include_a3nodes:
+            if a3nodes_source is not None:
+                raise click.ClickException('Use either --a3nodes or --include-a3nodes, not both.')
+            from yosoi.recipe import export_a3nodes_sync
+
+            a3nodes_raw = [
+                node.model_dump(mode='json')
+                for node in export_a3nodes_sync(domains=domains or tuple(selectors), source_urls=source_urls)
+            ]
         validation_raw = parse_json_file(validation_source) if validation_source else {}
         if not isinstance(a3nodes_raw, list):
             raise click.ClickException('--a3nodes must be a JSON array')
@@ -2642,6 +2841,7 @@ def recipe_inspect(source: str | None, json_output: bool) -> None:
         'fields': field_names,
         'a3nodes': len(recipe.a3nodes),
         'validation_urls': len(recipe.validation.fixture_urls),
+        'validation_status': recipe.validation.summary.get('status'),
     }
     if json_output:
         echo_json(doc)
@@ -2652,6 +2852,7 @@ def recipe_inspect(source: str | None, json_output: bool) -> None:
     console.print(f'  fields: {", ".join(field_names) or "(none)"}')
     console.print(f'  a3nodes: {doc["a3nodes"]}')
     console.print(f'  validation fixture urls: {doc["validation_urls"]}')
+    console.print(f'  validation status: {doc["validation_status"] or "(missing)"}')
 
 
 @recipe_group.command('check')
@@ -2675,6 +2876,114 @@ def recipe_check(source: str | None, recipe_id: str | None, json_output: bool) -
     console.print(f'[success]✓ Recipe OK[/success] {recipe.recipe_id}')
 
 
+@recipe_group.group('contract')
+def recipe_contract_group() -> None:
+    """Compile and render recipe contract JSON/Python mirrors."""
+
+
+@recipe_contract_group.command('compile')
+@click.argument('source')
+@click.option('-o', '--out', default=None, metavar='FILE', help='Write canonical ContractSpec JSON.')
+@click.option('--json', 'json_output', is_flag=True, default=False)
+def recipe_contract_compile(source: str, out: str | None, json_output: bool) -> None:
+    """Compile path.py:Class or contract JSON to canonical contract JSON."""
+    from yosoi.recipe import compile_contract
+    from yosoi.utils.files import atomic_write_text
+
+    try:
+        spec = compile_contract(source)
+        payload = spec.model_dump_json(indent=2)
+        if out is not None:
+            atomic_write_text(out, payload + '\n')
+    except Exception as exc:
+        raise click.ClickException(str(exc)) from exc
+    if json_output:
+        echo_json({'type': 'recipe.contract.compile', 'status': 'ok', 'fingerprint': spec.fingerprint, 'path': out})
+        return
+    console.print(f'[success]✓ Contract compiled[/success] {spec.name} {spec.fingerprint}')
+    if out is not None:
+        console.print(f'  wrote: {out}')
+    else:
+        click.echo(payload)
+
+
+@recipe_contract_group.command('export')
+@click.argument('source')
+@click.option('-o', '--out', default=None, metavar='FILE', help='Write generated Python contract mirror.')
+@click.option('--json', 'json_output', is_flag=True, default=False)
+def recipe_contract_export(source: str, out: str | None, json_output: bool) -> None:
+    """Render recipe JSON or ContractSpec JSON as importable Python."""
+    from yosoi.recipe import render_contract_py
+    from yosoi.utils.files import atomic_write_text
+
+    try:
+        rendered = render_contract_py(source)
+        if out is not None:
+            atomic_write_text(out, rendered)
+    except Exception as exc:
+        raise click.ClickException(str(exc)) from exc
+    if json_output:
+        echo_json({'type': 'recipe.contract.export', 'status': 'ok', 'path': out})
+        return
+    if out is not None:
+        console.print(f'[success]✓ Contract Python rendered[/success] {out}')
+    else:
+        click.echo(rendered)
+
+
+@recipe_group.command('validate')
+@click.argument('source', required=False)
+@click.option('--url', 'urls', multiple=True, required=True, metavar='URL', help='Fixture URL to replay. Repeatable.')
+@click.option('--recipe-id', default=None, metavar='v1:sha256:...', help='Expected pinned recipe id.')
+@click.option('--write', is_flag=True, default=False, help='Write validation evidence back to the recipe JSON.')
+@click.option('-o', '--out', default=None, metavar='FILE', help='Write updated recipe JSON to this file.')
+@click.option('--allow-llm', is_flag=True, default=False, help='Allow discovery while validating recipe replay.')
+@click.option('--json', 'json_output', is_flag=True, default=False)
+def recipe_validate(
+    source: str | None,
+    urls: tuple[str, ...],
+    recipe_id: str | None,
+    write: bool,
+    out: str | None,
+    allow_llm: bool,
+    json_output: bool,
+) -> None:
+    """Replay a recipe against fixture URL(s) and record validation evidence."""
+    from yosoi.recipe import validate_sync
+
+    try:
+        source = source or _pick_recipe_source(json_output=json_output)
+        result = validate_sync(source, urls, recipe_id=recipe_id, write=write, out=out, allow_llm=allow_llm)
+    except Exception as exc:
+        raise click.ClickException(str(exc)) from exc
+    doc = {
+        'type': 'recipe.validate',
+        'status': result.status,
+        'recipe_id': result.recipe.recipe_id,
+        'fixture_urls': result.validation.fixture_urls,
+        'path': str(result.path) if result.path is not None else None,
+        'summary': result.validation.summary,
+    }
+    if json_output:
+        echo_json(doc)
+        if result.status != 'passed':
+            sys.exit(1)
+        return
+    if result.status == 'passed':
+        console.print(f'[success]✓ Recipe validation passed[/success] {result.recipe.recipe_id}')
+    else:
+        console.print(f'[warning]✗ Recipe validation failed[/warning] {result.recipe.recipe_id}')
+    if result.path is not None:
+        console.print(f'  wrote: {result.path}')
+    console.print(f'  fixtures: {len(result.validation.fixture_urls)}')
+    console.print(f'  records: {result.validation.summary.get("record_count", 0)}')
+    missing = result.validation.summary.get('missing_fields')
+    if isinstance(missing, list) and missing:
+        console.print(f'  [warning]missing fields: {", ".join(str(field) for field in missing)}[/warning]')
+    if result.status != 'passed':
+        sys.exit(1)
+
+
 @recipe_group.command('publish')
 @click.argument('recipe_file', required=False)
 @click.option('-r', '--repo', default=None, metavar='OWNER/REPO', help='Publish to a GitHub repository.')
@@ -2690,6 +2999,9 @@ def recipe_check(source: str | None, recipe_id: str | None, json_output: bool) -
 )
 @click.option('--message', default=None, metavar='TEXT', help='Commit message.')
 @click.option('--direct', is_flag=True, default=False, help='Commit directly to GitHub repo instead of opening a PR.')
+@click.option(
+    '--allow-unvalidated', is_flag=True, default=False, help='Publish even when validation evidence is missing.'
+)
 @click.option('--json', 'json_output', is_flag=True, default=False)
 def recipe_publish(
     recipe_file: str | None,
@@ -2702,6 +3014,7 @@ def recipe_publish(
     branch: str,
     message: str | None,
     direct: bool,
+    allow_unvalidated: bool,
     json_output: bool,
 ) -> None:
     """Publish a flat recipe JSON to GitHub or GitHub Gist."""
@@ -2731,6 +3044,13 @@ def recipe_publish(
         docs: list[dict[str, Any]] = []
         for source in recipe_files:
             recipe = load_recipe(source)
+            if not allow_unvalidated and not (
+                recipe.validation.fixture_urls and recipe.validation.summary.get('status') == 'passed'
+            ):
+                raise click.ClickException(
+                    f'Recipe {recipe.recipe_id} has no validation evidence; run `yosoi recipe validate ... --write` '
+                    'or pass --allow-unvalidated.'
+                )
             for target in targets:
                 if target == 'gist':
                     result = publish_recipe_gist(recipe, filename=filename, description=description, public=public_gist)
@@ -2801,12 +3121,16 @@ def recipe_publish(
     default=False,
     help='Create a public gist. Default is secret/unlisted (not access-controlled private).',
 )
+@click.option(
+    '--allow-unvalidated', is_flag=True, default=False, help='Publish even when validation evidence is missing.'
+)
 @click.option('--json', 'json_output', is_flag=True, default=False)
 def recipe_gist(
     recipe_file: str | None,
     filename: str | None,
     description: str | None,
     public_gist: bool,
+    allow_unvalidated: bool,
     json_output: bool,
 ) -> None:
     """Publish a flat recipe JSON to a GitHub Gist. Secret/unlisted by default."""
@@ -2815,6 +3139,13 @@ def recipe_gist(
     try:
         recipe_file = recipe_file or _pick_recipe_source(json_output=json_output)
         recipe = load_recipe(recipe_file)
+        if not allow_unvalidated and not (
+            recipe.validation.fixture_urls and recipe.validation.summary.get('status') == 'passed'
+        ):
+            raise click.ClickException(
+                f'Recipe {recipe.recipe_id} has no validation evidence; run `yosoi recipe validate ... --write` '
+                'or pass --allow-unvalidated.'
+            )
         result = publish_recipe_gist(recipe, filename=filename, description=description, public=public_gist)
     except Exception as exc:
         raise click.ClickException(str(exc)) from exc

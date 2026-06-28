@@ -71,6 +71,29 @@ async def scrape():
 
 See [`examples/README.md`](examples/README.md) for the maintained example set. For the explainable page-fingerprinting stack behind resilient reuse, see [`docs/fingerprinting-stack.md`](docs/fingerprinting-stack.md).
 
+## Portable recipes
+
+Recipes package a contract, verified selectors, optional A3Node browser actions, and validation evidence into deterministic JSON for review and replay:
+
+```bash
+uv run yosoi recipe mint --contract @Product --from-cache https://example.com/product/1 --out .yosoi/recipes/ --yes
+uv run yosoi recipe validate .yosoi/recipes/product.recipe.json --url https://example.com/product/1 --write
+uv run yosoi scrape https://example.com/product/2 --recipe .yosoi/recipes/product.recipe.json --recipe-id v1:sha256:...
+```
+
+Remote recipes are pin-required and trust-gated. See [`docs/recipes.md`](docs/recipes.md).
+
+## Agent workflows
+
+Install Yosoi fetch/search/crawl/research skills into supported coding agents:
+
+```bash
+uvx yosoi agents install --target pi
+uvx yosoi agents install --target agents
+```
+
+See [`docs/agent-workflows.md`](docs/agent-workflows.md).
+
 ## Quick Start
 
 ### API Key

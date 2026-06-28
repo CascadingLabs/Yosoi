@@ -8,7 +8,7 @@ Equivalent CLI:
 
 Design intent:
 - contracts look like normal Yosoi contracts;
-- recipe actions mirror the CLI as `ys.recipe.mint/load/install/...`;
+- recipe actions mirror the CLI as `ys.recipe.mint/load/install/run/publish`;
 - recipe acceptance is deny-by-default for remote refs unless a tight trust policy
   is supplied;
 - a recipe can be consumed as pieces: contract, selectors, A3Nodes, or URLs.
@@ -49,6 +49,7 @@ def main() -> None:
         out=recipe_path,
         name='example.com/products',
         domain_scope=['example.com'],
+        source_urls=['https://example.com/products/sku-1'],
         url_patterns=['https://example.com/products/*'],
         a3nodes=[
             {
@@ -79,8 +80,13 @@ def main() -> None:
     print('remote install shape:')
     print("  ys.recipe.install('gh:owner/yosoi-recipes/recipes/example.com/products/v1/recipe.json@main',")
     print("                    policy=ys.Policy(recipe=ys.RecipePolicy.github('owner').contracts(Product)))")
-    print('gist publish shape:')
-    print("  ys.recipe.gist(recipe, filename='product.recipe.json', description='Yosoi product recipe')")
+    print('run shape:')
+    print('  await ys.recipe.run(recipe, "https://example.com/products/sku-2")')
+    print('publish shapes:')
+    print("  ys.recipe.publish(recipe, repo='https://github.com/owner/yosoi-recipes')  # opens PR by default")
+    print("  ys.recipe.publish(recipe, repo='owner/yosoi-recipes', direct=True)       # direct commit override")
+    print("  ys.recipe.publish(recipe, gist=True, filename='product.recipe.json')")
+    print("  ys.recipe.publish(recipe, repo='owner/yosoi-recipes', gist=True)       # multi-target")
 
     # Consume pieces instead of all-or-nothing replay.
     RecipeContract = loaded.to_contract()

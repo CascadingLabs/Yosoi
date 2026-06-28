@@ -1,5 +1,6 @@
 """Pydantic models for structured CSS selector data."""
 
+import json
 from enum import IntEnum
 from typing import Any, Literal
 
@@ -190,7 +191,18 @@ def coerce_selector_entry(v: object) -> SelectorEntry | None:
     if isinstance(v, dict):
         return SelectorEntry.model_validate(v)
     if isinstance(v, str):
-        return SelectorEntry(value=v) if v and v.upper() != 'NA' else None
+        if not v or v.upper() == 'NA':
+            return None
+        stripped = v.strip()
+        if stripped.startswith('{'):
+            try:
+                parsed = json.loads(stripped)
+            except json.JSONDecodeError:
+                pass
+            else:
+                if isinstance(parsed, dict):
+                    return SelectorEntry.model_validate(parsed)
+        return SelectorEntry(value=v)
     return None
 
 

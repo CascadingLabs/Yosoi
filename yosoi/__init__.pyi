@@ -31,6 +31,7 @@ from yosoi.models.snapshot import CacheVerdict as CacheVerdict
 from yosoi.models.snapshot import SelectorSnapshot as SelectorSnapshot
 from yosoi.models.snapshot import SnapshotMap as SnapshotMap
 from yosoi.models.snapshot import SnapshotStatus as SnapshotStatus
+from yosoi.models.spec import ContractSpec as ContractSpec
 from yosoi.operations import ContentRequest as ContentRequest
 from yosoi.operations import ContentResult as ContentResult
 from yosoi.operations import ContentUnitResult as ContentUnitResult
@@ -73,12 +74,20 @@ from yosoi.policy import TelemetryPolicy as _TelemetryPolicy
 from yosoi.policy import Trust as _Trust
 from yosoi.recipe import Recipe as Recipe
 from yosoi.recipe import RecipeMetadata as RecipeMetadata
+from yosoi.recipe import RecipePublishResult as RecipePublishResult
 from yosoi.recipe import RecipeTrust as RecipeTrust
+from yosoi.recipe import RecipeValidateResult as RecipeValidateResult
 from yosoi.recipe import RecipeValidation as RecipeValidation
+from yosoi.recipe import compile_contract as compile_contract
+from yosoi.recipe import export_a3nodes as export_a3nodes
+from yosoi.recipe import export_a3nodes_sync as export_a3nodes_sync
 from yosoi.recipe import install_recipe as install_recipe
 from yosoi.recipe import load_recipe as load_recipe
 from yosoi.recipe import mint_recipe as mint_recipe
+from yosoi.recipe import render_contract_py as render_contract_py
+from yosoi.recipe import run_recipe as run_recipe
 from yosoi.recipe import selector_map as selector_map
+from yosoi.recipe import validate_recipe as validate_recipe
 from yosoi.types.field import Field as Field
 from yosoi.types.field import js as js
 from yosoi.types.registry import register_coercion as register_coercion
@@ -104,7 +113,7 @@ class RecipePolicy(_RecipePolicy):
     @classmethod
     def hosts(cls, *hosts: str) -> RecipePolicy: ...
     def recipe_ids(self, *recipe_ids: str) -> RecipePolicy: ...
-    def contracts(self, *contracts: type[Contract] | str) -> RecipePolicy: ...
+    def contracts(self, *contracts: type[Contract] | str | ContractSpec) -> RecipePolicy: ...
 
 class BrowserProfilePolicy(_BrowserProfilePolicy):
     profile: str | None

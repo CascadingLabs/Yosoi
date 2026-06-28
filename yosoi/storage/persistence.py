@@ -265,12 +265,15 @@ class SelectorStorage:
     # Snapshot API (v2)
     # ------------------------------------------------------------------
 
-    async def load_snapshots(self, domain: str, contract_sig: str | None = None) -> dict[str, SelectorSnapshot] | None:
-        """Load full SQLite snapshots with audit metadata for a domain.
+    async def load_snapshots(
+        self, domain: str, contract_sig: str | None = None, *, url: str | None = None
+    ) -> dict[str, SelectorSnapshot] | None:
+        """Load full SQLite snapshots with audit metadata for a domain and optional route.
 
         Args:
             domain: Domain name (e.g., 'example.com')
             contract_sig: Optional contract signature for isolated selector cache files.
+            url: Optional URL whose route signature must match the selector snapshots.
 
         Returns:
             Dict mapping field names to SelectorSnapshot, or None if not found.
@@ -279,7 +282,7 @@ class SelectorStorage:
         from yosoi.storage.cache_metrics_libsql import LibSQLCacheMetricsStore
 
         async with LibSQLCacheMetricsStore(self.database_path) as metrics_store:
-            return await metrics_store.load_snapshots(domain, contract_fingerprint=contract_sig)
+            return await metrics_store.load_snapshots(domain, contract_fingerprint=contract_sig, url=url)
 
     async def save_snapshots(
         self,
