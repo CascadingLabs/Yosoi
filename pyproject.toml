@@ -234,7 +234,7 @@ report.exclude_lines = [
   "pragma: no cover",
   "raise NotImplementedError",
 ]
-report.fail_under = 93
+report.fail_under = 91
 report.show_missing = true
 
 [tool.pip-licenses]

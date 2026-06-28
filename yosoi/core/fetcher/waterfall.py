@@ -89,6 +89,7 @@ class JSFetcher(HTMLFetcher):
         chrome_ws_urls: tuple[str, ...] = (),
         accept_simple_requires_js: bool = False,
         crawl_frontier_only: bool = False,
+        a3node_intent: str | None = None,
     ):
         """Initialise the three-tier JS fetcher.
 
@@ -134,6 +135,7 @@ class JSFetcher(HTMLFetcher):
                 static HTML is explicitly acceptable.
             crawl_frontier_only: When browser tiers are needed for crawl discovery,
                 navigate and capture rendered HTML without running scrape-grade DOMLoader.
+            a3node_intent: Optional contract/replay intent forwarded into A3Node scope keys.
 
         """
         self._simple = SimpleFetcher(
@@ -176,6 +178,7 @@ class JSFetcher(HTMLFetcher):
             'accept_language': voidcrawl_accept_language,
             'cross_origin_dom': cross_origin_dom,
             'chrome_ws_urls': chrome_ws_urls,
+            'a3node_intent': a3node_intent,
         }
 
         # W2 — profile cascade. Built lazily on first block so a run with no

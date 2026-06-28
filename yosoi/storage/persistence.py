@@ -7,6 +7,7 @@ import json
 import logging
 import os
 import sqlite3
+from contextlib import closing
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -265,12 +266,15 @@ class SelectorStorage:
     # Snapshot API (v2)
     # ------------------------------------------------------------------
 
-    async def load_snapshots(self, domain: str, contract_sig: str | None = None) -> dict[str, SelectorSnapshot] | None:
-        """Load full SQLite snapshots with audit metadata for a domain.
+    async def load_snapshots(
+        self, domain: str, contract_sig: str | None = None, *, url: str | None = None
+    ) -> dict[str, SelectorSnapshot] | None:
+        """Load full SQLite snapshots with audit metadata for a domain and optional route.
 
         Args:
             domain: Domain name (e.g., 'example.com')
             contract_sig: Optional contract signature for isolated selector cache files.
+            url: Optional URL whose route signature must match the selector snapshots.
 
         Returns:
             Dict mapping field names to SelectorSnapshot, or None if not found.
@@ -279,7 +283,7 @@ class SelectorStorage:
         from yosoi.storage.cache_metrics_libsql import LibSQLCacheMetricsStore
 
         async with LibSQLCacheMetricsStore(self.database_path) as metrics_store:
-            return await metrics_store.load_snapshots(domain, contract_fingerprint=contract_sig)
+            return await metrics_store.load_snapshots(domain, contract_fingerprint=contract_sig, url=url)
 
     async def save_snapshots(
         self,
@@ -433,7 +437,7 @@ class SelectorStorage:
         url_hash = hashlib.md5(url.encode()).hexdigest()[:16]
         contract_fp = contract_sig or ''
         self._ensure_content_table()
-        with sqlite3.connect(self.database_path) as conn:
+        with closing(sqlite3.connect(self.database_path)) as conn, conn:
             conn.execute(
                 """
                 INSERT INTO fetch_outputs (
@@ -467,7 +471,7 @@ class SelectorStorage:
         self._ensure_content_table()
         url_hash = hashlib.md5(url.encode()).hexdigest()[:16]
         contract_fp = contract_sig or ''
-        with sqlite3.connect(self.database_path) as conn:
+        with closing(sqlite3.connect(self.database_path)) as conn:
             row = conn.execute(
                 """
                 SELECT content_json FROM fetch_outputs
@@ -488,7 +492,7 @@ class SelectorStorage:
         self._ensure_content_table()
         url_hash = hashlib.md5(url.encode()).hexdigest()[:16]
         contract_fp = contract_sig or ''
-        with sqlite3.connect(self.database_path) as conn:
+        with closing(sqlite3.connect(self.database_path)) as conn:
             row = conn.execute(
                 """
                 SELECT 1 FROM fetch_outputs
@@ -501,7 +505,7 @@ class SelectorStorage:
 
     def _ensure_content_table(self) -> None:
         self.database_path.parent.mkdir(parents=True, exist_ok=True)
-        with sqlite3.connect(self.database_path) as conn:
+        with closing(sqlite3.connect(self.database_path)) as conn, conn:
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS fetch_outputs (

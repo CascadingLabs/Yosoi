@@ -19,7 +19,17 @@ using this module as examples instead of relying on hand-maintained lists.
 # Obstacle patterns — things blocking content before scraping can start
 # ---------------------------------------------------------------------------
 
+COOKIE_ACCEPT_TEXTS = (
+    'accept additional cookies',
+    'accept all cookies',
+    'accept cookies',
+    'allow all cookies',
+    'agree',
+)
+
 COOKIE_SELECTORS = (
+    '[data-accept-cookies="true"]',
+    '[data-cookie-types="all"]',
     '[id*="cookie"] button',
     '[class*="cookie"] button',
     '[id*="consent"] button',

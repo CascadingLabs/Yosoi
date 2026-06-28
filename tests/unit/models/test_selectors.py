@@ -107,6 +107,22 @@ def test_field_selectors_accepts_selector_entry_directly():
     assert fs.primary.type == 'xpath'
 
 
+def test_field_selectors_parses_json_selector_strings():
+    fs = FieldSelectors(
+        primary='{"type":"xpath","value":"//h1"}',
+        fallback='{"type":"role","value":"heading","name":"Product","nth":0}',
+        root='{"type":"css","value":"main"}',
+    )
+
+    assert fs.primary.type == 'xpath'
+    assert fs.primary.value == '//h1'
+    assert fs.fallback is not None
+    assert fs.fallback.type == 'role'
+    assert fs.fallback.name == 'Product'
+    assert fs.root is not None
+    assert fs.root.value == 'main'
+
+
 def test_field_selectors_fallback_none_by_default():
     fs = FieldSelectors(primary='h1')
     assert fs.fallback is None

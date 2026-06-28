@@ -2,6 +2,7 @@
 
 import os
 import sqlite3
+from contextlib import closing
 
 import pytest
 
@@ -183,7 +184,7 @@ async def test_save_content_defaults_to_sqlite(storage, tmp_path):
     content = {'title': 'Hello', 'body': 'World'}
     filepath = await storage.save_content('https://example.com/page', content, 'json')
     assert filepath == str(storage.database_path)
-    with sqlite3.connect(storage.database_path) as conn:
+    with closing(sqlite3.connect(storage.database_path)) as conn:
         row = conn.execute('SELECT contract_fingerprint, output_format, content_json FROM fetch_outputs').fetchone()
     assert row is not None
     assert row[0] == ''
@@ -430,7 +431,7 @@ async def test_save_content_with_contract_sig(storage, tmp_path):
     content = {'title': 'Test'}
     filepath = await storage.save_content('https://example.com/catalog/?cat=5', content, 'json', contract_sig='testsig')
     assert filepath == str(storage.database_path)
-    with sqlite3.connect(storage.database_path) as conn:
+    with closing(sqlite3.connect(storage.database_path)) as conn:
         row = conn.execute('SELECT contract_fingerprint FROM fetch_outputs').fetchone()
     assert row == ('testsig',)
 

@@ -217,6 +217,18 @@ class TestScrapeOperationSurface:
         doc = json.loads(result.output[result.output.index('{') :])
         assert doc['allow_llm'] is False
 
+    def test_scrape_a3node_compiles_request(self, runner, base_mocks):
+        result = runner.invoke(main, ['scrape', 'https://example.com', '--a3node', '--dump-request'])
+        assert result.exit_code == 0, result.output
+        doc = json.loads(result.output[result.output.index('{') :])
+        assert doc['experimental_a3node'] is True
+
+    def test_fetch_a3node_compiles_request(self, runner, base_mocks):
+        result = runner.invoke(main, ['fetch', 'https://example.com', '--a3node', '--dump-request'])
+        assert result.exit_code == 0, result.output
+        doc = json.loads(result.output[result.output.index('{') :])
+        assert doc['experimental_a3node'] is True
+
     def test_scrape_profile_pool_flags_compile_page_policy(self, runner, base_mocks):
         result = runner.invoke(
             main,

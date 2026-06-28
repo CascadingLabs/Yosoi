@@ -47,6 +47,9 @@ def build_default_tree(
     stable = WaitForDOMStable(quiet_ms=quiet_ms)
 
     # --- Conditions (stateful — track exhaustion) ---
+    has_cookie = HasTrigger(TriggerKind.COOKIE, content_selector)
+    has_popup = HasTrigger(TriggerKind.POPUP, content_selector)
+    has_age_gate = HasTrigger(TriggerKind.AGE_GATE, content_selector)
     has_load_more = HasTrigger(TriggerKind.LOAD_MORE, content_selector)
     has_accordion = HasTrigger(TriggerKind.ACCORDION, content_selector)
     has_tab = HasTrigger(TriggerKind.TAB, content_selector)
@@ -54,6 +57,9 @@ def build_default_tree(
     has_scroll = HasTrigger(TriggerKind.INFINITE_SCROLL, content_selector)
 
     # --- Actions (paired with their conditions) ---
+    click_cookie = ClickTrigger(has_cookie, stable, max_click_cycles)
+    click_popup = ClickTrigger(has_popup, stable, max_click_cycles)
+    click_age_gate = ClickTrigger(has_age_gate, stable, max_click_cycles)
     click_load_more = ClickTrigger(has_load_more, stable, max_click_cycles)
     click_accordion = ClickTrigger(has_accordion, stable, max_click_cycles)
     click_tab = ClickTrigger(has_tab, stable, max_click_cycles)
@@ -61,6 +67,9 @@ def build_default_tree(
     scroll = Scroll(has_scroll, stable, max_scroll_cycles)
 
     logs = [
+        click_cookie.log,
+        click_popup.log,
+        click_age_gate.log,
         click_load_more.log,
         click_accordion.log,
         click_tab.log,
@@ -78,15 +87,19 @@ def build_default_tree(
                 Skip(),  # overlay has form inputs — leave it
             ),
         ),
-        # 2. Exhaust load more
+        # 2. Clear known consent/interstitial triggers and record concrete targets
+        Sequence(has_cookie, click_cookie),
+        Sequence(has_popup, click_popup),
+        Sequence(has_age_gate, click_age_gate),
+        # 3. Exhaust load more
         Sequence(has_load_more, click_load_more),
-        # 3. Expand accordions
+        # 4. Expand accordions
         Sequence(has_accordion, click_accordion),
-        # 4. Activate tabs
+        # 5. Activate tabs
         Sequence(has_tab, click_tab),
-        # 5. Paginate
+        # 6. Paginate
         Sequence(has_pagination, click_pagination),
-        # 6. Infinite scroll (last — least specific signal)
+        # 7. Infinite scroll (last — least specific signal)
         Sequence(has_scroll, scroll),
     )
 

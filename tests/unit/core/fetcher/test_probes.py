@@ -7,6 +7,7 @@ from yosoi.core.fetcher.dom.probes import (
     DetectedTrigger,
     TriggerKind,
     detected_trigger_to_selector_entry,
+    probe_cookie,
     probe_infinite_scroll,
     selector_entry_to_detected_trigger,
 )
@@ -26,6 +27,25 @@ class _ScrollTab:
 
 class _NoEvalTab:
     """Fake tab with no eval_js method — probe must degrade to None, not raise."""
+
+
+class _AxCookieTab:
+    async def get_full_ax_tree(self):
+        return [
+            {'role': {'value': 'button'}, 'name': {'value': 'Accept additional cookies'}, 'ignored': False},
+            {'role': {'value': 'link'}, 'name': {'value': 'View cookies'}, 'ignored': False},
+        ]
+
+    async def query_selector(self, _selector: str):
+        raise AssertionError('AX cookie probe should run before CSS fallbacks')
+
+
+@pytest.mark.asyncio
+async def test_cookie_probe_prefers_ax_accept_button():
+    trigger = await probe_cookie(_AxCookieTab())
+    assert trigger is not None
+    assert trigger.kind == TriggerKind.COOKIE
+    assert trigger.ax_target == AxTarget('button', 'Accept additional cookies', 0)
 
 
 @pytest.mark.asyncio

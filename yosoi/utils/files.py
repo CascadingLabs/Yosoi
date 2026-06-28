@@ -184,7 +184,7 @@ def migrate_legacy_tracking_stats(yosoi_dir: Path) -> None:
         return
 
     db_path = yosoi_dir / 'yosoi.sqlite3'
-    with sqlite3.connect(db_path) as db:
+    with contextlib.closing(sqlite3.connect(db_path)) as db, db:
         db.execute(
             """
             CREATE TABLE IF NOT EXISTS tracking_stats (

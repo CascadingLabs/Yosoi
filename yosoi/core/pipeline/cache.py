@@ -115,7 +115,7 @@ class PipelineCacheMixin:
     ) -> AsyncIterator[ContentMap] | None:
         """Attempt cached-selector path with per-field granularity."""
         host = cast('_PipelineCacheHost', self)
-        snapshots = await self.storage.load_snapshots(domain, contract_sig=self._contract_sig)
+        snapshots = await self.storage.load_snapshots(domain, contract_sig=self._contract_sig, url=url)
         if not snapshots:
             host._mark_scrape_decision(
                 selector_source='none',
