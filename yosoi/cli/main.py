@@ -2772,9 +2772,10 @@ def recipe_install(source: str | None, recipe_id: str | None, cache_dir: str | N
     source = source or _pick_recipe_source(json_output=json_output)
 
     if source.startswith(('http://', 'https://', 'gh:')) and recipe_id is None:
-        raise click.ClickException(
-            'Remote recipe installs require --recipe-id v1:sha256:... until CLI RecipePolicy flags land.'
-        )
+        message = 'Remote recipe installs require --recipe-id v1:sha256:... until CLI RecipePolicy flags land.'
+        if not json_output:
+            click.echo(message, err=True)
+        raise click.ClickException(message)
 
     try:
         result = install_recipe(source, expected_recipe_id=recipe_id, cache_dir=cache_dir)

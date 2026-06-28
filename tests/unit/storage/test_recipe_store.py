@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import io
 import json
+import subprocess
 from datetime import datetime, timezone
+from urllib.error import HTTPError
 
 import pytest
 
@@ -9,11 +12,29 @@ from yosoi.models.recipe import Recipe, RecipeMetadata
 from yosoi.models.snapshot import SelectorSnapshot, SnapshotMap
 from yosoi.models.spec import ContractSpec, FieldSpec
 from yosoi.storage.recipe_store import (
+    _cli_auth_token,
+    _fetch_https_text,
+    _fetch_text,
+    _github_branch_sha,
+    _github_create_branch,
+    _github_ensure_fork,
+    _github_error_detail,
+    _github_existing_pr,
+    _github_existing_sha,
+    _github_token,
+    _github_user_login,
+    _http_error_detail,
     _normalize_github_repo,
+    _recipe_pr_branch,
+    _request_json,
     install_recipe,
     load_recipe,
+    parse_contract_file,
+    parse_json_file,
     parse_selectors_file,
     publish_recipe_gist,
+    publish_recipe_github,
+    publish_recipe_github_pr,
     resolve_recipe_ref,
 )
 
@@ -243,3 +264,335 @@ def test_publish_recipe_gist_rejects_tampered_in_memory_recipe(monkeypatch) -> N
 
     with pytest.raises(ValueError, match='integrity'):
         publish_recipe_gist(tampered, filename='bad.recipe.json', token='ghp_test')
+
+
+def _http_error(code: int, body: bytes = b'{"message":"boom"}') -> HTTPError:
+    return HTTPError('https://api.github.com/test', code, 'reason', {}, io.BytesIO(body))
+
+
+def _return(value):
+    def _inner(*_args, **_kwargs):
+        return value
+
+    return _inner
+
+
+def _raise_http(code: int, body: bytes = b'{"message":"boom"}'):
+    def _inner(*_args, **_kwargs):
+        raise _http_error(code, body)
+
+    return _inner
+
+
+def _token_or_default(token=None):
+    return token or 'tok'
+
+
+class _BytesResponse:
+    def __init__(self, body: bytes, *, headers: dict[str, str] | None = None) -> None:
+        self._body = body
+        self.headers = headers or {}
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
+
+    def read(self, size: int = -1) -> bytes:
+        return self._body if size < 0 else self._body[:size]
+
+
+def test_resolve_recipe_ref_rejects_malformed_github_shorthand() -> None:
+    with pytest.raises(ValueError, match='Expected gh:owner/repo'):
+        resolve_recipe_ref('gh:owner/repo')
+    assert resolve_recipe_ref('gh:owner/repo/path.json@dev') == (
+        'https://raw.githubusercontent.com/owner/repo/dev/path.json'
+    )
+
+
+def test_load_recipe_rejects_invalid_json_non_object_and_id_mismatch(tmp_path) -> None:
+    invalid = tmp_path / 'invalid.json'
+    invalid.write_text('{nope', encoding='utf-8')
+    with pytest.raises(ValueError, match='invalid JSON'):
+        load_recipe(str(invalid))
+
+    array = tmp_path / 'array.json'
+    array.write_text('[]', encoding='utf-8')
+    with pytest.raises(ValueError, match='must be a JSON object'):
+        load_recipe(str(array))
+
+    recipe = _recipe()
+    source = tmp_path / 'recipe.json'
+    source.write_text(recipe.canonical_json(), encoding='utf-8')
+    with pytest.raises(ValueError, match='refusing install'):
+        load_recipe(str(source), expected_recipe_id='v1:sha256:not-it')
+
+
+def test_json_parsers_cover_domain_maps_contracts_and_errors(tmp_path) -> None:
+    selectors = tmp_path / 'selectors.json'
+    selectors.write_text(json.dumps({'example.com': _snap_map().model_dump(mode='json')}), encoding='utf-8')
+    assert sorted(parse_selectors_file(selectors)) == ['example.com']
+
+    contract = tmp_path / 'contract.json'
+    contract.write_text(_contract().model_dump_json(), encoding='utf-8')
+    assert parse_contract_file(contract).name == 'Product'
+    assert parse_json_file(contract)['name'] == 'Product'
+
+    empty = tmp_path / 'empty.json'
+    empty.write_text('{}', encoding='utf-8')
+    with pytest.raises(ValueError, match='at least one domain'):
+        parse_selectors_file(empty)
+
+    bad_entry = tmp_path / 'bad-entry.json'
+    bad_entry.write_text('{"example.com": 1}', encoding='utf-8')
+    with pytest.raises(ValueError, match='must be an object'):
+        parse_selectors_file(bad_entry)
+
+    missing = tmp_path / 'missing.json'
+    with pytest.raises(FileNotFoundError, match='Cannot read'):
+        parse_json_file(missing)
+
+
+def test_fetch_text_rejects_plain_http_and_missing_files() -> None:
+    with pytest.raises(ValueError, match='Refusing plaintext'):
+        _fetch_text('http://example.com/recipe.json')
+    with pytest.raises(FileNotFoundError, match='Recipe file not found'):
+        _fetch_text('/does/not/exist.json')
+
+
+def test_fetch_https_text_enforces_declared_and_actual_size(monkeypatch) -> None:
+    def _declared_too_large(request, timeout):
+        return _BytesResponse(b'', headers={'content-length': str(6 * 1024 * 1024)})
+
+    monkeypatch.setattr('yosoi.storage.recipe_store.urlopen', _declared_too_large)
+    with pytest.raises(ValueError, match='too large'):
+        _fetch_https_text('https://example.com/recipe.json')
+
+    def _actual_too_large(request, timeout):
+        return _BytesResponse(b'x' * (5 * 1024 * 1024 + 2))
+
+    monkeypatch.setattr('yosoi.storage.recipe_store.urlopen', _actual_too_large)
+    with pytest.raises(ValueError, match='exceeds'):
+        _fetch_https_text('https://example.com/recipe.json')
+
+
+def test_github_repo_and_token_helpers_cover_error_paths(monkeypatch) -> None:
+    with pytest.raises(ValueError, match=r'github\.com'):
+        _normalize_github_repo('https://gitlab.com/owner/repo')
+    with pytest.raises(ValueError, match='owner/repo'):
+        _normalize_github_repo('owner/repo/extra')
+
+    assert _github_token('explicit') == 'explicit'
+    monkeypatch.setenv('GH_TOKEN', 'env-token')
+    assert _github_token() == 'env-token'
+    monkeypatch.delenv('GH_TOKEN')
+    monkeypatch.delenv('GITHUB_TOKEN', raising=False)
+
+    def _raise(*_args, **_kwargs):
+        raise subprocess.TimeoutExpired(cmd=['gh'], timeout=5)
+
+    monkeypatch.setattr('yosoi.storage.recipe_store.subprocess.run', _raise)
+    assert _cli_auth_token(['gh', 'auth', 'token']) is None
+    assert _github_token() is None
+
+
+def test_github_branch_and_user_helpers(monkeypatch) -> None:
+    calls: list[tuple[str, str, str]] = []
+
+    def _fake_request(url, *, method, token, payload, auth_header='Authorization'):
+        calls.append((url, method, token))
+        if url.endswith('/user'):
+            return {'login': 'octo'}
+        return {'object': {'sha': 'abc123'}}
+
+    monkeypatch.setattr('yosoi.storage.recipe_store._request_json', _fake_request)
+    assert _github_user_login('tok') == 'octo'
+    assert _github_branch_sha('owner/repo', branch='main', token='tok') == 'abc123'
+    assert calls[0] == ('https://api.github.com/user', 'GET', 'tok')
+
+    monkeypatch.setattr('yosoi.storage.recipe_store._request_json', _return({}))
+    with pytest.raises(ValueError, match='authenticated user'):
+        _github_user_login('tok')
+    with pytest.raises(ValueError, match='did not return a SHA'):
+        _github_branch_sha('owner/repo', branch='main', token='tok')
+
+
+def test_github_fork_branch_pr_helpers(monkeypatch) -> None:
+    seen: list[str] = []
+
+    def _request_existing(url, *, method, token, payload, auth_header='Authorization'):
+        seen.append(url)
+        return {'ok': True}
+
+    monkeypatch.setattr('yosoi.storage.recipe_store._request_json', _request_existing)
+    assert _github_ensure_fork('owner/repo', login='me', token='tok') == 'me/repo'
+    assert seen == ['https://api.github.com/repos/me/repo']
+
+    attempts = {'fork': 0}
+
+    def _request_create(url, *, method, token, payload, auth_header='Authorization'):
+        if url == 'https://api.github.com/repos/me/repo' and attempts['fork'] == 0:
+            attempts['fork'] += 1
+            raise _http_error(404)
+        seen.append(url)
+        return {'ok': True}
+
+    seen.clear()
+    monkeypatch.setattr('yosoi.storage.recipe_store._request_json', _request_create)
+    assert _github_ensure_fork('owner/repo', login='me', token='tok') == 'me/repo'
+    assert 'https://api.github.com/repos/owner/repo/forks' in seen
+
+    monkeypatch.setattr('yosoi.storage.recipe_store._request_json', _return([{'html_url': 'pr'}]))
+    assert _github_existing_pr('owner/repo', head='me:branch', base='main', token='tok') == {'html_url': 'pr'}
+    monkeypatch.setattr('yosoi.storage.recipe_store._request_json', _return([]))
+    assert _github_existing_pr('owner/repo', head='me:branch', base='main', token='tok') is None
+
+
+def test_github_create_branch_and_existing_sha_errors(monkeypatch) -> None:
+    monkeypatch.setattr('yosoi.storage.recipe_store._request_json', _raise_http(422))
+    _github_create_branch('owner/repo', branch='branch', sha='abc', token='tok')
+
+    monkeypatch.setattr('yosoi.storage.recipe_store._request_json', _raise_http(500))
+    with pytest.raises(HTTPError):
+        _github_create_branch('owner/repo', branch='branch', sha='abc', token='tok')
+    with pytest.raises(HTTPError):
+        _github_existing_sha('https://api.github.com/repos/owner/repo/contents/r.json', branch='main', token='tok')
+
+    monkeypatch.setattr('yosoi.storage.recipe_store._request_json', _raise_http(404))
+    assert (
+        _github_existing_sha('https://api.github.com/repos/owner/repo/contents/r.json', branch='main', token='tok')
+        is None
+    )
+    monkeypatch.setattr('yosoi.storage.recipe_store._request_json', _return({'sha': 'abc'}))
+    assert (
+        _github_existing_sha('https://api.github.com/repos/owner/repo/contents/r.json', branch='main', token='tok')
+        == 'abc'
+    )
+
+
+def test_request_json_builds_headers_and_handles_empty_response(monkeypatch) -> None:
+    captured: dict[str, object] = {}
+
+    def _fake_urlopen(request, timeout):
+        captured['auth'] = request.get_header('X-api-key')
+        captured['method'] = request.get_method()
+        captured['payload'] = request.data
+        captured['timeout'] = timeout
+        return _BytesResponse(b'')
+
+    monkeypatch.setattr('yosoi.storage.recipe_store.urlopen', _fake_urlopen)
+    assert (
+        _request_json('https://api.example.test', method='POST', token='tok', payload={'a': 1}, auth_header='X-API-Key')
+        == {}
+    )
+    assert captured == {'auth': 'tok', 'method': 'POST', 'payload': b'{"a": 1}', 'timeout': 30.0}
+
+
+def test_github_error_detail_formats_structured_and_plain_errors() -> None:
+    body = json.dumps({'message': 'Validation Failed', 'errors': [{'resource': 'PullRequest', 'field': 'head'}]})
+    assert _github_error_detail(body) == 'Validation Failed: PullRequest head'
+    assert _github_error_detail('[1]') == '[1]'
+    assert _github_error_detail('plain text') == 'plain text'
+    assert _http_error_detail(_http_error(422, body.encode('utf-8'))) == 'Validation Failed: PullRequest head'
+
+
+def test_publish_recipe_gist_error_paths(monkeypatch) -> None:
+    recipe = _recipe()
+    monkeypatch.delenv('GITHUB_TOKEN', raising=False)
+    monkeypatch.delenv('GH_TOKEN', raising=False)
+    monkeypatch.setattr('yosoi.storage.recipe_store._cli_auth_token', _return(None))
+    with pytest.raises(ValueError, match='Gist publish requires'):
+        publish_recipe_gist(recipe)
+
+    monkeypatch.setattr('yosoi.storage.recipe_store._request_json', _return([]))
+    with pytest.raises(ValueError, match='not a JSON object'):
+        publish_recipe_gist(recipe, token='tok')
+
+    monkeypatch.setattr('yosoi.storage.recipe_store._request_json', _return({'files': {}}))
+    with pytest.raises(ValueError, match='raw_url'):
+        publish_recipe_gist(recipe, token='tok')
+
+
+def test_publish_recipe_github_paths(monkeypatch) -> None:
+    recipe = _recipe()
+    monkeypatch.setattr('yosoi.storage.recipe_store._github_token', _return(None))
+    with pytest.raises(ValueError, match='GitHub publish requires'):
+        publish_recipe_github(recipe, repo='owner/repo', path='recipe.json')
+
+    captured: dict[str, object] = {}
+    monkeypatch.setattr('yosoi.storage.recipe_store._github_token', _token_or_default)
+    monkeypatch.setattr('yosoi.storage.recipe_store._github_existing_sha', _return('sha123'))
+
+    def _request(url, *, method, token, payload, auth_header='Authorization'):
+        captured.update({'url': url, 'payload': payload, 'token': token})
+        return {}
+
+    monkeypatch.setattr('yosoi.storage.recipe_store._request_json', _request)
+    assert publish_recipe_github(recipe, repo='owner/repo', path='/recipes/product.json', token='tok') == (
+        'https://github.com/owner/repo/blob/main/recipes/product.json'
+    )
+    assert captured['payload']['sha'] == 'sha123'
+    assert captured['payload']['branch'] == 'main'
+
+
+def test_publish_recipe_github_pr_success_and_422_reuse(monkeypatch) -> None:
+    recipe = _recipe()
+    calls: list[str] = []
+    monkeypatch.setattr('yosoi.storage.recipe_store._github_token', _token_or_default)
+    monkeypatch.setattr('yosoi.storage.recipe_store._github_user_login', _return('me'))
+
+    def _fork(_owner_repo, *, login, token):
+        return f'{login}/repo'
+
+    def _create_branch(_owner_repo, *, branch, sha, token):
+        calls.append(f'branch:{branch}:{sha}')
+
+    def _publish(*_args, **_kwargs):
+        calls.append('publish')
+        return 'url'
+
+    monkeypatch.setattr('yosoi.storage.recipe_store._github_ensure_fork', _fork)
+    monkeypatch.setattr('yosoi.storage.recipe_store._github_branch_sha', _return('base-sha'))
+    monkeypatch.setattr('yosoi.storage.recipe_store._github_create_branch', _create_branch)
+    monkeypatch.setattr('yosoi.storage.recipe_store.publish_recipe_github', _publish)
+    monkeypatch.setattr(
+        'yosoi.storage.recipe_store._request_json', _return({'html_url': 'https://github.com/owner/repo/pull/1'})
+    )
+
+    result = publish_recipe_github_pr(recipe, repo='owner/repo', path='recipes/product.json', pr_branch='recipe-branch')
+
+    assert result.html_url == 'https://github.com/owner/repo/pull/1'
+    assert result.branch == 'recipe-branch'
+    assert result.fork_repo == 'me/repo'
+    assert calls == ['branch:recipe-branch:base-sha', 'publish']
+
+    monkeypatch.setattr('yosoi.storage.recipe_store._request_json', _raise_http(422))
+    monkeypatch.setattr('yosoi.storage.recipe_store._github_existing_pr', _return({'html_url': 'existing-pr'}))
+    assert publish_recipe_github_pr(recipe, repo='owner/repo', path='recipes/product.json').html_url == 'existing-pr'
+
+    monkeypatch.setattr('yosoi.storage.recipe_store._github_existing_pr', _return(None))
+    with pytest.raises(ValueError, match='GitHub PR publish failed'):
+        publish_recipe_github_pr(recipe, repo='owner/repo', path='recipes/product.json')
+
+
+def test_publish_recipe_github_pr_token_and_non_422_errors(monkeypatch) -> None:
+    recipe = _recipe()
+    monkeypatch.setattr('yosoi.storage.recipe_store._github_token', _return(None))
+    with pytest.raises(ValueError, match='GitHub PR publish requires'):
+        publish_recipe_github_pr(recipe, repo='owner/repo', path='recipes/product.json')
+
+    monkeypatch.setattr('yosoi.storage.recipe_store._github_token', _return('tok'))
+    monkeypatch.setattr('yosoi.storage.recipe_store._github_user_login', _return('me'))
+    monkeypatch.setattr('yosoi.storage.recipe_store._github_ensure_fork', _return('me/repo'))
+    monkeypatch.setattr('yosoi.storage.recipe_store._github_branch_sha', _return('sha'))
+    monkeypatch.setattr('yosoi.storage.recipe_store._github_create_branch', _return(None))
+    monkeypatch.setattr('yosoi.storage.recipe_store.publish_recipe_github', _return('url'))
+    monkeypatch.setattr('yosoi.storage.recipe_store._request_json', _raise_http(500, b'plain'))
+    with pytest.raises(ValueError, match='500'):
+        publish_recipe_github_pr(recipe, repo='owner/repo', path='recipes/product.json')
+
+
+def test_recipe_pr_branch_sanitizes_contract_name() -> None:
+    recipe = _recipe().model_copy(update={'contract': _contract().model_copy(update={'name': 'Product Card!'})})
+    assert _recipe_pr_branch(recipe).startswith('yosoi/product-card-')
