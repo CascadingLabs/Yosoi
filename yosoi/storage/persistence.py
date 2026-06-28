@@ -7,6 +7,7 @@ import json
 import logging
 import os
 import sqlite3
+from contextlib import closing
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -436,7 +437,7 @@ class SelectorStorage:
         url_hash = hashlib.md5(url.encode()).hexdigest()[:16]
         contract_fp = contract_sig or ''
         self._ensure_content_table()
-        with sqlite3.connect(self.database_path) as conn:
+        with closing(sqlite3.connect(self.database_path)) as conn, conn:
             conn.execute(
                 """
                 INSERT INTO fetch_outputs (
@@ -470,7 +471,7 @@ class SelectorStorage:
         self._ensure_content_table()
         url_hash = hashlib.md5(url.encode()).hexdigest()[:16]
         contract_fp = contract_sig or ''
-        with sqlite3.connect(self.database_path) as conn:
+        with closing(sqlite3.connect(self.database_path)) as conn:
             row = conn.execute(
                 """
                 SELECT content_json FROM fetch_outputs
@@ -491,7 +492,7 @@ class SelectorStorage:
         self._ensure_content_table()
         url_hash = hashlib.md5(url.encode()).hexdigest()[:16]
         contract_fp = contract_sig or ''
-        with sqlite3.connect(self.database_path) as conn:
+        with closing(sqlite3.connect(self.database_path)) as conn:
             row = conn.execute(
                 """
                 SELECT 1 FROM fetch_outputs
@@ -504,7 +505,7 @@ class SelectorStorage:
 
     def _ensure_content_table(self) -> None:
         self.database_path.parent.mkdir(parents=True, exist_ok=True)
-        with sqlite3.connect(self.database_path) as conn:
+        with closing(sqlite3.connect(self.database_path)) as conn, conn:
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS fetch_outputs (

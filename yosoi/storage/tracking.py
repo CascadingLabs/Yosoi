@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import sqlite3
+from contextlib import closing
 from pathlib import Path
 from typing import Any
 
@@ -65,7 +66,7 @@ class LLMTracker(YosoiSQLiteStore):
             path.unlink(missing_ok=True)
             LLMTracker._ensure_sqlite_file(db_path)
             return db_path
-        with sqlite3.connect(db_path) as db:
+        with closing(sqlite3.connect(db_path)) as db, db:
             db.execute(
                 f"""
                 CREATE TABLE IF NOT EXISTS {_TRACKING_TABLE} (
@@ -106,7 +107,7 @@ class LLMTracker(YosoiSQLiteStore):
     def _ensure_sqlite_file(db_path: Path) -> None:
         """Create an empty tracking SQLite database."""
         db_path.parent.mkdir(parents=True, exist_ok=True)
-        with sqlite3.connect(db_path) as db:
+        with closing(sqlite3.connect(db_path)) as db, db:
             db.execute(
                 f"""
                 CREATE TABLE IF NOT EXISTS {_TRACKING_TABLE} (
