@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import sqlite3
+import weakref
 from abc import ABC, abstractmethod
 from contextlib import suppress
 from dataclasses import dataclass
@@ -35,7 +36,8 @@ class SQLiteClient:
             raise ValueError('Only local file: SQLite URLs are supported by the built-in Yosoi store')
         self.db_path = Path(database_url.removeprefix('file:'))
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
-        self._conn = sqlite3.connect(self.db_path, isolation_level=None)
+        self._conn: sqlite3.Connection | None = sqlite3.connect(self.db_path, isolation_level=None)
+        self._finalizer = weakref.finalize(self, self._conn.close)
 
     async def execute(self, sql: str, params: dict[str, Any] | None = None) -> SQLiteResult:
         """Execute one statement and return fetched rows when present."""
@@ -47,14 +49,26 @@ class SQLiteClient:
 
     async def close(self) -> None:
         """Close the underlying SQLite connection."""
-        self._conn.close()
+        self.close_sync()
+
+    def close_sync(self) -> None:
+        """Close the underlying SQLite connection from sync cleanup paths."""
+        conn = getattr(self, '_conn', None)
+        if conn is not None:
+            conn.close()
+            self._conn = None
+        finalizer = getattr(self, '_finalizer', None)
+        if finalizer is not None and finalizer.alive:
+            finalizer.detach()
 
     def __del__(self) -> None:
         """Close the connection if callers did not explicitly close the store."""
         with suppress(Exception):
-            self._conn.close()
+            self.close_sync()
 
     def _execute_sync(self, sql: str, params: dict[str, Any]) -> SQLiteResult:
+        if self._conn is None:
+            raise ValueError('SQLite connection is closed')
         cursor = self._conn.execute(sql, params)
         if cursor.description is None:
             return SQLiteResult(rows=[], columns=())
@@ -75,6 +89,8 @@ class SQLiteTransaction:
     async def execute(self, sql: str, params: dict[str, Any] | None = None) -> SQLiteResult:
         """Execute one statement inside the transaction."""
         if not self._begun:
+            if self._client._conn is None:
+                raise ValueError('SQLite connection is closed')
             self._client._conn.execute('BEGIN')
             self._begun = True
         return self._client._execute_sync(sql, params or {})
@@ -82,12 +98,16 @@ class SQLiteTransaction:
     async def commit(self) -> None:
         """Commit the transaction if it started."""
         if self._begun and not self._closed:
+            if self._client._conn is None:
+                raise ValueError('SQLite connection is closed')
             self._client._conn.commit()
         self._closed = True
 
     async def rollback(self) -> None:
         """Rollback the transaction if it started."""
         if self._begun and not self._closed:
+            if self._client._conn is None:
+                raise ValueError('SQLite connection is closed')
             self._client._conn.rollback()
         self._closed = True
 
@@ -135,6 +155,13 @@ class YosoiSQLiteStore(ABC):
         if self._client is not None:
             await self._client.close()
             self._client = None
+
+    def __del__(self) -> None:
+        """Best-effort close for tests and short-lived CLI objects that forget await close()."""
+        with suppress(Exception):
+            if self._client is not None:
+                self._client.close_sync()
+                self._client = None
 
     async def _connect(self) -> SQLiteClient:
         if self._client is None:

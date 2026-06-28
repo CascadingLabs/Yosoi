@@ -2466,22 +2466,22 @@ def _render_recipe_picker(paths: list[Path]) -> None:
 
 
 def _recipe_picker_paths(*, json_output: bool = False) -> list[Path]:
+    if json_output:
+        raise click.UsageError('SOURCE is required when --json is used.')
     paths = _recipe_paths()
     if not paths:
         raise click.ClickException('No local recipes found in .yosoi/recipes. Run `yosoi recipe mint` first.')
-    if json_output:
-        raise click.UsageError('SOURCE is required when --json is used.')
     _render_recipe_picker(paths)
     return paths
 
 
 def _pick_recipe_source(*, json_output: bool = False) -> str:
     """Interactively choose one local recipe file with the shared checkbox picker."""
+    if json_output:
+        raise click.UsageError('SOURCE is required when --json is used.')
     paths = _recipe_paths()
     if not paths:
         raise click.ClickException('No local recipes found in .yosoi/recipes. Run `yosoi recipe mint` first.')
-    if json_output:
-        raise click.UsageError('SOURCE is required when --json is used.')
     if not sys.stdin.isatty():
         _render_recipe_picker(paths)
         choice = click.prompt('Select recipe', type=click.IntRange(1, len(paths)), default=1, show_default=True)
@@ -2500,11 +2500,11 @@ def _pick_publish_targets() -> list[str]:
 
 def _pick_recipe_sources(*, json_output: bool = False) -> list[str]:
     """Interactively choose one or more local recipe files with the shared checkbox picker."""
+    if json_output:
+        raise click.UsageError('SOURCE is required when --json is used.')
     paths = _recipe_paths()
     if not paths:
         raise click.ClickException('No local recipes found in .yosoi/recipes. Run `yosoi recipe mint` first.')
-    if json_output:
-        raise click.UsageError('SOURCE is required when --json is used.')
     labels = [_recipe_picker_label(_recipe_summary_or_error(path)) for path in paths]
     selected = _checkbox_picker('Select recipe(s)', labels, multi=True)
     return [str(paths[index]) for index in selected]

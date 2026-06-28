@@ -351,3 +351,107 @@ def test_recipe_policy_github_owner_accepts_gist_raw_url() -> None:
         ys.RecipePolicy.github('other').to_trust().verify_source(
             'https://gist.githubusercontent.com/user/abc123/raw/product.recipe.json'
         )
+
+
+def test_recipe_trust_allowlists_and_aliases(tmp_path) -> None:
+    selectors = ys.recipe.selector_map('https://example.com/products/1', title='h1')
+    recipe_path = tmp_path / 'recipe.json'
+    recipe = ys.recipe.mint(Product, selectors=selectors, out=recipe_path)
+
+    with pytest.raises(PermissionError, match='local recipes are not trusted'):
+        ys.recipe.Trust(allow_local=False).verify_source(str(recipe_path))
+    with pytest.raises(PermissionError, match='trusted remote origin'):
+        ys.recipe.Trust.local_only().verify_source('https://example.com/recipe.json')
+    with pytest.raises(PermissionError, match='GitHub owner'):
+        ys.recipe.Trust.github('trusted-owner').verify_source('gh:other/repo/recipe.json')
+    with pytest.raises(PermissionError, match='Recipe host'):
+        ys.recipe.Trust.hosts('recipes.example.com').verify_source('https://other.example.com/recipe.json')
+    with pytest.raises(PermissionError, match='recipe id allowlist'):
+        ys.recipe.Trust.local_only().recipe_ids('v1:sha256:not-it').verify_artifact(recipe)
+    with pytest.raises(PermissionError, match='contract allowlist'):
+        ys.recipe.Trust.local_only().contracts(OtherProduct).verify_artifact(recipe)
+
+    trust = ys.recipe.Trust.hosts('raw.githubusercontent.com').recipe_ids(recipe.recipe_id).contracts(Product)
+    trust.verify('https://raw.githubusercontent.com/owner/repo/main/recipe.json', recipe)
+
+    assert ys.recipe.load_recipe(str(recipe_path), recipe_id=recipe.recipe_id).recipe_id == recipe.recipe_id
+    assert ys.recipe.check(str(recipe_path)).recipe_id == recipe.recipe_id
+    installed = ys.recipe.install_recipe(str(recipe_path), cache_dir=tmp_path / 'cache')
+    assert installed.path.exists()
+
+
+def test_recipe_render_contract_edge_cases_and_helpers(tmp_path) -> None:
+    from yosoi.models.spec import FieldSpec
+
+    spec = ys.ContractSpec(
+        name='123 weird-name',
+        fields={
+            'class': FieldSpec(
+                python_type='tuple[str]',
+                yosoi_type='title',
+                description='Keyword field',
+                selector='h1',
+                delimiter=',',
+                frozen=True,
+                required=False,
+                action={'type': 'text'},
+            )
+        },
+        nested={'child item': ys.ContractSpec(name='Child Item', fields={})},
+    )
+    rendered = ys.recipe.render_contract_py(spec)
+
+    assert 'class RecipeContract(ys.Contract):' in rendered
+    assert 'class Child Item' not in rendered
+    assert 'class_field: str = ys.Field(' in rendered
+    assert 'delimiter=' in rendered
+    assert "'yosoi_action': {'type': 'text'}" in rendered
+
+    contract_json = tmp_path / 'contract.json'
+    contract_json.write_text(spec.model_dump_json(), encoding='utf-8')
+    assert ys.recipe.compile_contract(contract_json).name == spec.name
+    assert ys.recipe.render_contract_py(contract_json).startswith('from __future__ import annotations')
+
+    empty = ys.ContractSpec(name='123')
+    assert 'class RecipeContract(ys.Contract):' in ys.recipe.render_contract_py(empty)
+    with pytest.raises(ValueError, match='normalized'):
+        ys.recipe.render_contract_py(
+            ys.ContractSpec(name='BadRoot', root={'type': 'css', 'value': 'main', 'attribute': None})
+        )
+
+
+def test_recipe_sync_wrappers_and_publish_validation_errors(monkeypatch) -> None:
+    recipe = ys.recipe.mint(Product, selectors=ys.recipe.selector_map('https://example.com/1', title='h1'))
+
+    with pytest.raises(ValueError, match='Choose at least one'):
+        ys.recipe.publish(recipe, allow_unvalidated=True)
+    with pytest.raises(ValueError, match='no validation evidence'):
+        ys.recipe.gist(recipe)
+    with pytest.raises(ValueError, match='no validation evidence'):
+        ys.recipe.publish(recipe, gist=True)
+
+    def _fake_gist(artifact, *, filename=None, description=None, public=False, token=None):
+        from yosoi.storage.recipe_store import GistPublishResult
+
+        return GistPublishResult(raw_url='raw', html_url='html', filename=filename or 'recipe.json', public=public)
+
+    monkeypatch.setattr(ys.recipe, 'publish_recipe_gist', _fake_gist)
+    result = ys.recipe.gist(recipe, allow_unvalidated=True, public=True)
+    assert result.public is True
+
+    async def _fake_validate(*args, **kwargs):
+        return ys.recipe.RecipeValidateResult(recipe=recipe, validation=recipe.validation, status='passed')
+
+    async def _fake_run(*args, **kwargs):
+        return {'ok': True}
+
+    async def _fake_export(*, domains=(), source_urls=()):
+        return []
+
+    monkeypatch.setattr(ys.recipe, 'validate', _fake_validate)
+    monkeypatch.setattr(ys.recipe, 'run', _fake_run)
+    monkeypatch.setattr(ys.recipe, 'export_a3nodes', _fake_export)
+
+    assert ys.recipe.validate_sync(recipe, 'https://example.com/1').status == 'passed'
+    assert ys.recipe.run_sync(recipe, 'https://example.com/1') == {'ok': True}
+    assert ys.recipe.export_a3nodes_sync(domains=['example.com']) == []
