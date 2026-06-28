@@ -618,7 +618,9 @@ def main(
             allow_llm=not no_llm,
         )
         try:
-            exit_code = asyncio.run(_run_json(pipeline, urls, force, skip_verification, fetcher, list(output_formats)))
+            group_run_json = getattr(main, '_run_json', _ORIGINAL_RUN_JSON)
+            run_json = _run_json if group_run_json is _ORIGINAL_RUN_JSON else group_run_json
+            exit_code = asyncio.run(run_json(pipeline, urls, force, skip_verification, fetcher, list(output_formats)))
         except Exception as exc:  # noqa: BLE001
             err_doc = json.dumps({'type': 'error', 'message': str(exc)})
             sys.stdout.write(err_doc + '\n')
@@ -660,6 +662,13 @@ def main(
             origin='cli',
         )
     )
+
+
+# Compatibility for Python 3.10 unittest.mock dotted-path resolution: yosoi.cli
+# re-exports this Click group as ``main``, so patch('yosoi.cli.main._run_json')
+# may resolve to the group object rather than the submodule.
+_ORIGINAL_RUN_JSON = _run_json
+main._run_json = _ORIGINAL_RUN_JSON  # type: ignore[attr-defined]
 
 
 # ── fetch command — URL to clean document surface ────────────────────────────
