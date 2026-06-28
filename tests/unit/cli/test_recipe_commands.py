@@ -536,7 +536,7 @@ def test_recipe_source_pickers_json_noninteractive_and_publish_targets(monkeypat
     with pytest.raises(Exception, match='SOURCE is required'):
         cli_main_module._pick_recipe_sources(json_output=True)
 
-    monkeypatch.setattr(cli_main_module, '_checkbox_picker', lambda _title, _options, _multi: [1, 0])
+    monkeypatch.setattr(cli_main_module, '_checkbox_picker', lambda _title, _options, *, multi: [1, 0])  # noqa: ARG005
     assert cli_main_module._pick_publish_targets() == ['github', 'gist']
     assert cli_main_module._pick_recipe_sources() == ['two.json', 'one.json']
 
@@ -560,3 +560,91 @@ def test_checkbox_picker_text_key_and_error_paths(monkeypatch) -> None:
     chars = iter(['\x1b', '[', 'B'])
     monkeypatch.setattr(cli_main_module.click, 'getchar', lambda: next(chars))
     assert cli_main_module._recipe_picker_key() == '\x1b[B'
+
+
+def test_recipe_publish_cli_github_direct_pr_batch_and_errors(tmp_path, monkeypatch) -> None:
+    from yosoi.models.recipe import Recipe, RecipeValidation
+    from yosoi.storage.recipe_store import GitHubPrPublishResult
+
+    contract = ContractSpec(name='Product', fields={'title': FieldSpec(yosoi_type='title')})
+    snap_map = SnapshotMap(
+        url='https://example.com/products/1',
+        domain='example.com',
+        snapshots={'title': SelectorSnapshot(primary='h1', discovered_at=datetime.now(timezone.utc))},
+    )
+    validation = RecipeValidation(
+        fixture_urls=['https://example.com/products/1'],
+        summary={'status': 'passed', 'record_count': 1},
+    )
+    one = tmp_path / 'one.recipe.json'
+    two = tmp_path / 'two.recipe.json'
+    recipe = Recipe(contract=contract, selectors={'example.com': snap_map}, validation=validation)
+    one.write_text(recipe.canonical_json(), encoding='utf-8')
+    two.write_text(recipe.canonical_json(), encoding='utf-8')
+
+    direct_calls: list[dict[str, object]] = []
+    pr_calls: list[dict[str, object]] = []
+
+    def _direct(recipe_arg, *, repo, path, branch, message):
+        direct_calls.append({'repo': repo, 'path': path, 'branch': branch, 'message': message})
+        return f'https://github.com/{repo}/blob/{branch}/{path}'
+
+    def _pr(recipe_arg, *, repo, path, branch, message):
+        pr_calls.append({'repo': repo, 'path': path, 'branch': branch, 'message': message})
+        return GitHubPrPublishResult(
+            html_url=f'https://github.com/{repo}/pull/1', branch='yosoi/branch', fork_repo='me/repo', path=path
+        )
+
+    monkeypatch.setattr('yosoi.storage.recipe_store.publish_recipe_github', _direct)
+    monkeypatch.setattr('yosoi.storage.recipe_store.publish_recipe_github_pr', _pr)
+    runner = CliRunner()
+
+    direct = runner.invoke(
+        main,
+        [
+            'recipe',
+            'publish',
+            str(one),
+            '--repo',
+            'owner/repo',
+            '--direct',
+            '--path',
+            'recipes/product.json',
+            '--branch',
+            'dev',
+            '--message',
+            'publish recipe',
+            '--json',
+        ],
+    )
+    assert direct.exit_code == 0, direct.output
+    assert json.loads(direct.output)['mode'] == 'direct'
+    assert direct_calls == [
+        {'repo': 'owner/repo', 'path': 'recipes/product.json', 'branch': 'dev', 'message': 'publish recipe'}
+    ]
+
+    batch = runner.invoke(main, ['recipe', 'publish', '--repo', 'owner/repo', '--allow-unvalidated', '--json'])
+    assert batch.exit_code != 0
+    assert 'SOURCE is required' in batch.output
+
+    monkeypatch.setattr(
+        importlib.import_module('yosoi.cli.main'),
+        '_pick_recipe_sources',
+        lambda json_output=False: [str(one), str(two)],  # noqa: ARG005
+    )
+    pr = runner.invoke(main, ['recipe', 'publish', '--repo', 'owner/repo', '--json'])
+    assert pr.exit_code == 0, pr.output
+    payload = json.loads(pr.output)
+    assert payload['type'] == 'recipe.publish.batch'
+    assert len(payload['recipes']) == 2
+    assert all(call['path'].startswith('recipes/') for call in pr_calls)
+
+    bad_path = runner.invoke(
+        main, ['recipe', 'publish', '--repo', 'owner/repo', '--path', 'recipes/one.json', '--json']
+    )
+    assert bad_path.exit_code != 0
+    assert '--path can only be used' in bad_path.output
+
+    no_target = runner.invoke(main, ['recipe', 'publish', str(one), '--json'])
+    assert no_target.exit_code != 0
+    assert 'Choose at least one publish target' in no_target.output
