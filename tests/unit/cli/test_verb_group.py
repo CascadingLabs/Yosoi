@@ -1130,6 +1130,15 @@ class TestCoverageSensitiveCliBranches:
         assert text_result.exit_code == 0, text_result.output
         assert text_result.output.startswith('Hello')
 
+    def test_fetch_command_json_reports_request_validation_errors(self, runner, base_mocks):
+        result = runner.invoke(main, ['fetch', '--url', 'example.com/bad path', '--json'])
+
+        assert result.exit_code != 0
+        doc = json.loads(result.stdout)
+        assert doc['type'] == 'error'
+        assert 'whitespace' in doc['message']
+        assert 'Traceback' not in result.output
+
     def test_crawl_stress_human_renders_compact_table(self, runner, mocker, base_mocks):
         from yosoi.operations import CrawlResult
 

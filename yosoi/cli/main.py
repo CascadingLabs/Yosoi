@@ -757,23 +757,23 @@ def fetch(
         policy = Policy.cascade(policy, Policy(page=PagePolicy(fetcher_type=cast(Any, fetcher))))
     include_items = [item for raw in include for item in raw.split(',') if item.strip()]
     normalised_view = view.lower().replace('-', '_')
-    request = FetchRequest.from_axes(
-        all_urls,
-        list(contract) or None,
-        view=normalised_view,
-        policy=policy,
-        fetcher_type=fetcher,
-        page=content_page,
-        page_size=page_size,
-        include=include_items,
-        output_dir=output_path if normalised_view == 'bundle' else None,
-        experimental_a3node=a3node,
-    )
-    if dump_request:
-        click.echo(request.model_dump_json(indent=2))
-        return
-
     try:
+        request = FetchRequest.from_axes(
+            all_urls,
+            list(contract) or None,
+            view=normalised_view,
+            policy=policy,
+            fetcher_type=fetcher,
+            page=content_page,
+            page_size=page_size,
+            include=include_items,
+            output_dir=output_path if normalised_view == 'bundle' else None,
+            experimental_a3node=a3node,
+        )
+        if dump_request:
+            click.echo(request.model_dump_json(indent=2))
+            return
+
         with redirect_stdout(sys.stderr):
             result = asyncio.run(run_fetch(request))
     except Exception as exc:

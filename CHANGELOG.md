@@ -1,3 +1,16 @@
+## 0.0.3a21 (2026-07-02)
+
+### Fix
+
+- **fetch**: make `yosoi fetch` normalize browser-style schemeless URLs before acquisition.
+- **fetch**: keep `auto` on the simple HTTP tier for static pages with bot-vendor citations instead of escalating to Chrome.
+- **fetch**: use a lightweight browser path for fetch-only rendered fallback, skipping scrape-grade DOM loading unless AX or bundle evidence is requested.
+- **cli**: return machine-readable JSON errors for fetch request validation failures.
+
+### Test
+
+- Add live fetch benchmark harness at `scripts/bench_fetch_online.py` for release smoke checks.
+
 ## 0.0.2a19 (2026-06-04)
 
 ### Fix

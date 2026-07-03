@@ -112,6 +112,7 @@ class _VoidCrawlFetcher(HTMLFetcher):
         cross_origin_dom: bool = False,
         chrome_ws_urls: Sequence[str] = (),
         a3node_intent: str | None = None,
+        lightweight_fetch: bool = False,
         **_kwargs: Any,
     ) -> None:
         self.timeout = timeout
@@ -130,6 +131,7 @@ class _VoidCrawlFetcher(HTMLFetcher):
         self._cross_origin_dom = cross_origin_dom
         self._chrome_ws_urls = tuple(str(url).strip() for url in chrome_ws_urls if str(url).strip())
         self._a3node_intent = a3node_intent or 'fetch'
+        self._lightweight_fetch = lightweight_fetch
         self._pool: Any = None
         self._pool_ctx: Any = None
         self._a3node_storage = A3NodeStorage() if experimental_a3node else None
@@ -367,6 +369,8 @@ class _VoidCrawlFetcher(HTMLFetcher):
     ) -> FetchResult:
         start = time.time()
         tier = 'headless' if self._headless else 'headful'
+        if self._lightweight_fetch and not action_scripts and not download_specs:
+            return await self._do_fetch_crawl(url, start, tier)
         return await self._do_fetch(url, start, tier, action_scripts=action_scripts, download_specs=download_specs)
 
     async def fetch_with_plan(

@@ -89,6 +89,7 @@ class JSFetcher(HTMLFetcher):
         chrome_ws_urls: tuple[str, ...] = (),
         accept_simple_requires_js: bool = False,
         crawl_frontier_only: bool = False,
+        simple_first: bool = False,
         a3node_intent: str | None = None,
     ):
         """Initialise the three-tier JS fetcher.
@@ -135,6 +136,9 @@ class JSFetcher(HTMLFetcher):
                 static HTML is explicitly acceptable.
             crawl_frontier_only: When browser tiers are needed for crawl discovery,
                 navigate and capture rendered HTML without running scrape-grade DOMLoader.
+            simple_first: Ignore cached browser-tier winners and retry the simple tier first.
+                Contractless fetch/content uses this to avoid stale browser-cache poison while
+                keeping scrape/discovery cache wins intact.
             a3node_intent: Optional contract/replay intent forwarded into A3Node scope keys.
 
         """
@@ -162,6 +166,7 @@ class JSFetcher(HTMLFetcher):
         self._force = force
         self._accept_simple_requires_js = accept_simple_requires_js
         self._crawl_frontier_only = crawl_frontier_only
+        self._simple_first = simple_first
 
         self._chrome_kwargs: dict[str, Any] = {
             'timeout': timeout,
@@ -454,6 +459,8 @@ class JSFetcher(HTMLFetcher):
         start_time = time.time()
         domain = extract_domain(url)
         cached_strategy = None if self._force else self._preferred_strategy(domain)
+        if self._simple_first and cached_strategy is not None and cached_strategy.fetcher != 'simple':
+            cached_strategy = None
 
         if cached_strategy is not None:
             level_msg = f', selector level {cached_strategy.selector_level}' if cached_strategy.selector_level else ''

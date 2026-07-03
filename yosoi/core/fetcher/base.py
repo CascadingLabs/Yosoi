@@ -120,6 +120,10 @@ class ContentAnalyzer:
             True if the page is a bot protection gate requiring JS
 
         """
+        # Bot-gate markers are part of the challenge shell/head. Scanning the
+        # whole document turns normal content into false positives, e.g. a
+        # Wikipedia citation to DataDome made auto-fetch escalate to Chrome.
+        challenge_window = html_lower[:3_000]
         _BOT_GATE_PATTERNS = [
             # Akamai Bot Manager (businesswire, PR Newswire, etc.)
             'ak_bmsc',
@@ -141,17 +145,28 @@ class ContentAnalyzer:
             'javascript is disabled',
             'enable javascript to continue',
             'requires javascript to function',
-            # DataDome
-            'datadome',
             # PerimeterX / HUMAN
             'px-captcha',
-            '_pxParam',
+            '_pxparam',
             # Imperva / Incapsula
             'incap_ses',
             'visid_incap',
             '_utmz',
         ]
-        return any(pattern in html_lower for pattern in _BOT_GATE_PATTERNS)
+        if any(pattern in challenge_window for pattern in _BOT_GATE_PATTERNS):
+            return True
+
+        # DataDome is both a bot vendor and a commonly cited company. Require
+        # challenge-script/cookie markers rather than the brand name alone.
+        _DATADOME_GATE_PATTERNS = [
+            'datadome.js',
+            'captcha-delivery.com',
+            'ddcid',
+            'dd_cookie',
+            'ddjskey',
+            'ddoptions',
+        ]
+        return any(pattern in challenge_window for pattern in _DATADOME_GATE_PATTERNS)
 
     @staticmethod
     def _detect_javascript_heavy(html_lower: str) -> JSDetectionResult:

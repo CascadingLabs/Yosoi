@@ -515,6 +515,17 @@ def test_fetch_request_normalization_and_rich_document_projection():
     assert request.view == 'rendered_html'
     assert request.include == ['endpoints', 'links', 'ax']
     assert [contract.to_contract() for contract in request.contracts] == [OpContract]
+    assert FetchRequest.from_axes('en.wikipedia.org/wiki/Web_scraping').urls == [
+        'https://en.wikipedia.org/wiki/Web_scraping'
+    ]
+    assert FetchRequest.from_axes('//en.wikipedia.org/wiki/Web_scraping?oldid=1#History').urls == [
+        'https://en.wikipedia.org/wiki/Web_scraping?oldid=1#History'
+    ]
+    assert ContentRequest.from_axes('one.test/docs').urls == ['https://one.test/docs']
+    with pytest.raises(ValueError, match='whitespace'):
+        FetchRequest.from_axes('en.wikipedia.org/wiki/Web scraping')
+    with pytest.raises(ValueError, match='absolute HTTP'):
+        FetchRequest.from_axes('ftp://example.com/file')
     assert FetchRequest.from_axes('https://one.test', include=None).include == []
     assert (
         ops._effective_fetcher_type(FetchRequest.from_axes('https://one.test', fetcher_type='simple'), 'auto')
@@ -522,6 +533,12 @@ def test_fetch_request_normalization_and_rich_document_projection():
     )
     assert ops._effective_fetcher_type(FetchRequest.from_axes('https://one.test', view='raw_html'), 'auto') == 'simple'
     assert ops._jsonable(object()).startswith('<object object at ')
+    auto_fast = ops._content_fetcher_kwargs(ys.Policy(), 'auto', fast_fetch=True)
+    assert auto_fast['simple_first'] is True
+    assert auto_fast['crawl_frontier_only'] is True
+    headless_fast = ops._content_fetcher_kwargs(ys.Policy(), 'headless', fast_fetch=True)
+    assert headless_fast['lightweight_fetch'] is True
+    assert 'lightweight_fetch' not in ops._content_fetcher_kwargs(ys.Policy(), 'headless')
     with pytest.raises(ValueError, match='urls must contain at least one URL'):
         FetchRequest(urls=[])
     with pytest.raises(ValueError, match='urls must contain at least one URL'):

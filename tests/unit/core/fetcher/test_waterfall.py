@@ -11,6 +11,7 @@ from yosoi.core.fetcher.base import ContentAnalyzer
 from yosoi.core.fetcher.voiddriver import _crawl_frontier_signature, _VoidCrawlFetcher
 from yosoi.core.fetcher.waterfall import JSFetcher
 from yosoi.models.results import FetchResult
+from yosoi.storage.strategy import FetchStrategy
 
 
 class _Console:
@@ -190,12 +191,49 @@ async def test_waterfall_escalates_astro_shell_by_default_instead_of_caching_sim
     )
 
 
+@pytest.mark.asyncio
+async def test_waterfall_simple_first_ignores_cached_browser_tier(mocker):
+    html = '<html><body><main><p>static article</p></main></body></html>'
+    fetcher = JSFetcher(console=_Console(), simple_first=True)
+    fetcher._strategy_cache['example.com'] = FetchStrategy('headless')
+    fetcher._simple = _Simple(html)
+    fetcher._strategy_storage = mocker.Mock()
+    fetcher._strategy_storage.save = mocker.AsyncMock()
+    fetcher._probe_requires_js = mocker.AsyncMock(return_value=False)
+    fetcher._ensure_headless = mocker.AsyncMock(return_value=_Headless())
+
+    result = await fetcher.fetch('https://example.com/article')
+
+    assert result.html == html
+    fetcher._ensure_headless.assert_not_called()
+    fetcher._strategy_storage.save.assert_called_once_with(
+        'example.com', 'simple', selector_level=None, identity_id=None
+    )
+
+
+@pytest.mark.asyncio
+async def test_voidcrawl_fetch_can_use_lightweight_fetch(mocker):
+    fetcher = _VoidCrawlFetcher(lightweight_fetch=True)
+    fetcher._headless = True
+    fetcher._do_fetch_crawl = mocker.AsyncMock(
+        return_value=FetchResult(url='https://example.com', html='<html><body>fast</body></html>')
+    )
+    fetcher._do_fetch = mocker.AsyncMock()
+
+    result = await fetcher.fetch('https://example.com')
+
+    assert result.html == '<html><body>fast</body></html>'
+    fetcher._do_fetch_crawl.assert_awaited_once()
+    fetcher._do_fetch.assert_not_called()
+
+
 def test_a3node_is_disabled_by_default_on_browser_fetcher():
     fetcher = _VoidCrawlFetcher()
 
     assert fetcher._experimental_a3node is False
     assert fetcher._a3node_storage is None
     assert fetcher._a3node_cache == {}
+    assert fetcher._lightweight_fetch is False
 
 
 def test_browser_executable_path_is_retained_for_browser_config():

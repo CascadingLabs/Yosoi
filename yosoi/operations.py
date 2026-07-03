@@ -15,7 +15,7 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import asdict, is_dataclass
 from pathlib import Path
 from typing import Any, Literal, cast
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin, urlparse, urlunparse
 
 import lxml.html
 from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator
@@ -51,6 +51,34 @@ FetchView = Literal[
     'bundle',
 ]
 FetchInclude = Literal['headers', 'endpoints', 'fingerprint', 'links', 'ax', 'contract_probe']
+
+
+def _normalize_fetch_url(value: str) -> str:
+    """Normalize fetch/content URL input, accepting browser-style schemeless URLs."""
+    raw = value.strip()
+    if not raw:
+        raise ValueError('url must be non-empty')
+    if any(char.isspace() for char in raw):
+        raise ValueError('url must not contain whitespace')
+    if raw.startswith('//'):
+        raw = f'https:{raw}'
+    elif '://' not in raw:
+        raw = f'https://{raw}'
+    parsed = urlparse(raw)
+    if parsed.scheme not in {'http', 'https'} or not parsed.netloc:
+        raise ValueError('url must be an absolute HTTP(S) URL')
+    return urlunparse((parsed.scheme.lower(), parsed.netloc.lower(), parsed.path, '', parsed.query, parsed.fragment))
+
+
+def _normalize_fetch_urls(value: object) -> object:
+    if isinstance(value, str):
+        return [_normalize_fetch_url(value)]
+    if isinstance(value, Sequence) and not isinstance(value, (bytes, bytearray)):
+        items = list(value)
+        if not items:
+            raise ValueError('urls must contain at least one URL')
+        return [_normalize_fetch_url(str(item)) for item in items]
+    return value
 
 
 class ContractRef(BaseModel):
@@ -378,12 +406,10 @@ class FetchRequest(BaseModel):
     output_dir: str | None = None
     experimental_a3node: bool = False
 
-    @field_validator('urls')
+    @field_validator('urls', mode='before')
     @classmethod
-    def _urls_non_empty(cls, value: list[str]) -> list[str]:
-        if not value:
-            raise ValueError('urls must contain at least one URL')
-        return value
+    def _urls_non_empty(cls, value: object) -> object:
+        return _normalize_fetch_urls(value)
 
     @field_validator('view', mode='before')
     @classmethod
@@ -565,12 +591,10 @@ class ContentRequest(BaseModel):
     include_html: bool = False
     max_text_chars: int | None = Field(default=None, gt=0)
 
-    @field_validator('urls')
+    @field_validator('urls', mode='before')
     @classmethod
-    def _urls_non_empty(cls, value: list[str]) -> list[str]:
-        if not value:
-            raise ValueError('urls must contain at least one URL')
-        return value
+    def _urls_non_empty(cls, value: object) -> object:
+        return _normalize_fetch_urls(value)
 
     @classmethod
     def from_axes(cls, urls: str | Sequence[str], **kwargs: Any) -> ContentRequest:
@@ -1128,7 +1152,7 @@ def _content_envelope(units: list[ContentUnitResult]) -> ContentResult:
     return ContentResult(status=status, results=units)
 
 
-def _content_fetcher_kwargs(policy: Policy, fetcher_type: str) -> dict[str, Any]:
+def _content_fetcher_kwargs(policy: Policy, fetcher_type: str, *, fast_fetch: bool = False) -> dict[str, Any]:
     from yosoi.core.fetcher.profile_policy import cascade_from_profile_policy
 
     page = policy.page_runtime()
@@ -1144,6 +1168,12 @@ def _content_fetcher_kwargs(policy: Policy, fetcher_type: str) -> dict[str, Any]
         if identity_cascade is not None:
             kwargs['identity_cascade'] = identity_cascade
             kwargs['max_live_identities'] = max_live
+        if fast_fetch:
+            if fetcher_type in {'auto', 'waterfall'}:
+                kwargs['simple_first'] = True
+                kwargs['crawl_frontier_only'] = True
+            else:
+                kwargs['lightweight_fetch'] = True
     return kwargs
 
 
@@ -1429,7 +1459,9 @@ async def _fetch_unit(request: FetchRequest, url: str) -> FetchUnitResult:
     policy = request.policy or Policy()
     page = policy.page_runtime()
     fetcher_type = _effective_fetcher_type(request, page.fetcher_type)
-    fetcher_kwargs = _content_fetcher_kwargs(policy, fetcher_type)
+    include = set(request.include)
+    fast_fetch = request.view not in {'ax', 'bundle'} and 'ax' not in include
+    fetcher_kwargs = _content_fetcher_kwargs(policy, fetcher_type, fast_fetch=fast_fetch)
     if request.experimental_a3node and fetcher_type in {'auto', 'waterfall', 'headless', 'headful'}:
         fetcher_kwargs['experimental_a3node'] = True
     fetcher = create_fetcher(fetcher_type, **fetcher_kwargs)
@@ -1466,7 +1498,6 @@ async def _fetch_unit(request: FetchRequest, url: str) -> FetchUnitResult:
     text = _text_from_html(cleaned_html)
     markdown = _markdown_document(url=final_url, title=title, text=text, html=cleaned_html)
     links = cast('list[dict[str, Any]]', _links_from_html(cleaned_html, final_url))
-    include = set(request.include)
     if request.view == 'bundle':
         include.update({'headers', 'endpoints', 'links', 'fingerprint', 'ax'})
     ax_snapshot = _jsonable(getattr(fetched, 'ax_snapshot', None)) if 'ax' in include or request.view == 'ax' else None
@@ -1588,7 +1619,7 @@ async def _fetch_content_unit(request: ContentRequest, url: str) -> ContentUnitR
     policy = request.policy or Policy()
     page = policy.page_runtime()
     fetcher_type = request.fetcher_type or page.fetcher_type
-    fetcher = create_fetcher(fetcher_type, **_content_fetcher_kwargs(policy, fetcher_type))
+    fetcher = create_fetcher(fetcher_type, **_content_fetcher_kwargs(policy, fetcher_type, fast_fetch=True))
     try:
         if hasattr(fetcher, '__aenter__') and hasattr(fetcher, '__aexit__'):
             async with fetcher:

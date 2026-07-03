@@ -106,6 +106,29 @@ class TestContentAnalyzer:
         meta = ContentAnalyzer.analyze(html)
         assert meta.requires_js is True
 
+    def test_late_bot_vendor_citation_does_not_trigger_requires_js(self):
+        """Bot vendor names in normal article content should not force Chrome fallback."""
+        html = (
+            '<html><body><main>'
+            + ('<p>static article content</p>' * 300)
+            + '<p>DataDome guide cited.</p></main></body></html>'
+        )
+        meta = ContentAnalyzer.analyze(html)
+        assert meta.requires_js is False
+
+    def test_early_datadome_brand_without_gate_marker_does_not_trigger_requires_js(self):
+        """DataDome company text alone is not a challenge signal."""
+        html = '<html><body><main><p>DataDome publishes bot mitigation research.</p></main></body></html>'
+        meta = ContentAnalyzer.analyze(html)
+        assert meta.requires_js is False
+
+    def test_early_datadome_gate_still_triggers_requires_js(self):
+        """Challenge-shell markers near the top still request browser escalation."""
+        html = '<html><head><script src="/datadome.js"></script></head><body>Checking your browser</body></html>'
+        meta = ContentAnalyzer.analyze(html)
+        assert meta.requires_js is True
+        assert meta.js_framework == 'bot-gate'
+
     def test_no_body_tag_still_works(self):
         """When there's no <body> tag, still analyzes content."""
         html = '<html><div data-reactroot>tiny</div></html>'
