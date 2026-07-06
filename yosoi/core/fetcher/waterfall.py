@@ -583,6 +583,12 @@ class JSFetcher(HTMLFetcher):
 
         return None
 
+    # Browser-tier failures surface as these types (navigation timeouts, dropped
+    # CDP connections, driver runtime errors). Catching them per-tier lets one
+    # tier fail without aborting the whole waterfall — while still not swallowing
+    # unrelated programming errors.
+    _BROWSER_TIER_ERRORS = (RuntimeError, OSError, asyncio.TimeoutError, ConnectionError)
+
     async def _fetch_waterfall(
         self,
         url: str,
@@ -593,34 +599,88 @@ class JSFetcher(HTMLFetcher):
     ) -> FetchResult:
         """Run the full Simple → Headless → Headful waterfall for a new domain.
 
-        Args:
-            url: The URL to fetch.
-            domain: Extracted domain name.
-            start_time: Monotonic start time for fetch timing.
-            action_scripts: Optional {field: js_expression} map forwarded to L2 tiers.
-            download_specs: Optional ys.File() download specs forwarded to L2 tiers.
+        Simple HTTP is tried first (unless a download forces a browser tab); the
+        JS probe is treated as a hint, not a hard gate. If simple is insufficient,
+        the browser tiers run, each isolated so one failing doesn't abort the rest.
+        As a last resort a working simple result is retried, since a probe that
+        forced the browser tiers may simply have been wrong.
 
         Returns:
-            FetchResult from whichever tier succeeded, or an empty result
-            if all three tiers failed.
+            FetchResult from whichever tier succeeded, or an empty result if all
+            tiers failed.
 
         """
-        # ys.File() downloads need a browser tab — never settle on the simple HTTP tier.
+        # ys.File() downloads need a browser tab — never settle on the simple tier.
         requires_js = bool(download_specs) or await self._probe_requires_js(url)
 
-        if requires_js:
-            self._console.print('[dim]    [1/3] HEAD probe detected JS-rendered page — skipping simple HTTP[/dim]')
-        else:
-            simple_result = await self._try_simple_tier(
-                url,
-                domain,
-                action_scripts=action_scripts,
-                download_specs=download_specs,
-            )
-            if simple_result is not None:
-                return simple_result
+        simple_result = await self._waterfall_simple_first(url, domain, requires_js, action_scripts, download_specs)
+        if simple_result is not None:
+            return simple_result
 
-        # Tier 2: Headless
+        result = await self._waterfall_headless(url, domain, start_time, action_scripts, download_specs)
+        if result is not None and result.html:
+            return result
+        # In crawl-frontier-only mode, accept the headless result as-is (even if
+        # empty) rather than escalating to headful.
+        if result is not None and self._crawl_frontier_only and not action_scripts and not download_specs:
+            return result
+        headless_result = result
+
+        result = await self._waterfall_headful(url, domain, start_time, action_scripts, download_specs)
+        if result is not None and result.html:
+            return result
+
+        # Last resort: the JS probe forced the browser tiers, but they all failed —
+        # the probe was probably wrong, so try simple HTTP once more.
+        if requires_js and not download_specs:
+            self._console.print('[dim]    [fallback] Browser tiers failed — retrying simple HTTP...[/dim]')
+            retry = await self._try_simple_tier(
+                url, domain, action_scripts=action_scripts, download_specs=download_specs
+            )
+            if retry is not None and retry.html:
+                self._console.print('[success]    ✓ Simple HTTP worked after all[/success]')
+                return retry
+
+        final = result or headless_result
+        if final is not None and final.html:
+            return final
+        self._console.print(f'[warning]    ✗ All tiers failed for {domain}[/warning]')
+        return final if final is not None else FetchResult(url=url, html='', status_code=None)
+
+    async def _waterfall_simple_first(
+        self,
+        url: str,
+        domain: str,
+        requires_js: bool,
+        action_scripts: dict[str, str] | None,
+        download_specs: dict[str, DownloadSpec] | None,
+    ) -> FetchResult | None:
+        """Tier 1: try simple HTTP first unless a download forces a browser tab.
+
+        Returns a usable FetchResult, or None to escalate to the browser tiers.
+        """
+        if download_specs:
+            return None
+        simple_result = await self._try_simple_tier(
+            url, domain, action_scripts=action_scripts, download_specs=download_specs
+        )
+        if simple_result is not None and simple_result.html:
+            if requires_js:
+                self._console.print('[dim]    [1/3] Simple HTTP returned content despite JS probe — using it[/dim]')
+            return simple_result
+        if requires_js:
+            self._console.print('[dim]    [1/3] Simple HTTP insufficient — escalating to browser[/dim]')
+        return None
+
+    async def _waterfall_headless(
+        self,
+        url: str,
+        domain: str,
+        start_time: float,
+        action_scripts: dict[str, str] | None,
+        download_specs: dict[str, DownloadSpec] | None,
+    ) -> FetchResult | None:
+        """Tier 2: headless Chrome. Returns a FetchResult (possibly empty) or None on failure."""
         self._console.print('[dim]    [2/3] Trying headless Chrome...[/dim]')
         try:
             headless = await self._ensure_headless()
@@ -632,43 +692,63 @@ class JSFetcher(HTMLFetcher):
                 action_scripts=action_scripts,
                 download_specs=download_specs,
             )
-            if result.html:
-                self._console.print('[success]    ✓ Headless Chrome worked[/success]')
-                await self._record_success(domain, 'headless')
-                return result
+        except BotDetectionError:
+            self._console.print('[warning]    ✗ Headless Chrome blocked by bot protection[/warning]')
+            return None
+        except self._BROWSER_TIER_ERRORS as exc:
+            self._console.print(
+                f'[warning]    ✗ Headless Chrome failed ({type(exc).__name__}: {str(exc)[:60]}) — continuing[/warning]'
+            )
+            return None
+        if result.html:
+            self._console.print('[success]    ✓ Headless Chrome worked[/success]')
+            await self._record_success(domain, 'headless')
+        else:
             self._console.print(
                 f'[warning]    ✗ Headless Chrome failed ({result.block_reason or "no content"})[/warning]'
             )
-            if self._crawl_frontier_only and not action_scripts and not download_specs:
-                return result
-        except BotDetectionError:
-            self._console.print('[warning]    ✗ Headless Chrome blocked by bot protection[/warning]')
+        return result
 
-        # Tier 3: Headful — or, when an identity cascade is configured, rotate
-        # profiles/proxies on a block (W2) instead of best-effort single identity.
-        if self._identity_cascade is not None:
-            self._console.print('[dim]    [3/3] Escalating to profile cascade...[/dim]')
-            return await self._fetch_cascade(
-                url, domain, start_time, action_scripts=action_scripts, download_specs=download_specs
+    async def _waterfall_headful(
+        self,
+        url: str,
+        domain: str,
+        start_time: float,
+        action_scripts: dict[str, str] | None,
+        download_specs: dict[str, DownloadSpec] | None,
+    ) -> FetchResult | None:
+        """Tier 3: headful Chrome, or a profile/proxy cascade when configured."""
+        try:
+            if self._identity_cascade is not None:
+                self._console.print('[dim]    [3/3] Escalating to profile cascade...[/dim]')
+                return await self._fetch_cascade(
+                    url,
+                    domain,
+                    start_time,
+                    action_scripts=action_scripts,
+                    download_specs=download_specs,
+                )
+            self._console.print('[dim]    [3/3] Trying headful Chrome...[/dim]')
+            headful = await self._ensure_headful()
+            result = await self._fetch_browser_tier(
+                headful,
+                url,
+                start_time,
+                'headful',
+                action_scripts=action_scripts,
+                download_specs=download_specs,
             )
-
-        self._console.print('[dim]    [3/3] Trying headful Chrome...[/dim]')
-        headful = await self._ensure_headful()
-        result = await self._fetch_browser_tier(
-            headful,
-            url,
-            start_time,
-            'headful',
-            action_scripts=action_scripts,
-            download_specs=download_specs,
-        )
-
+        except BotDetectionError:
+            self._console.print('[warning]    ✗ Headful Chrome blocked by bot protection[/warning]')
+            return None
+        except self._BROWSER_TIER_ERRORS as exc:
+            self._console.print(
+                f'[warning]    ✗ Headful Chrome failed ({type(exc).__name__}: {str(exc)[:60]}) — continuing[/warning]'
+            )
+            return None
         if result.html:
             self._console.print('[success]    ✓ Headful Chrome worked[/success]')
             await self._record_success(domain, 'headful')
-        else:
-            self._console.print(f'[warning]    ✗ All three tiers failed for {domain}[/warning]')
-
         return result
 
     async def _try_simple_tier(
@@ -706,6 +786,23 @@ class JSFetcher(HTMLFetcher):
             ):
                 self._console.print(
                     '[dim]    ↳ Simple fetcher returned JS-marked HTML with crawl links; accepting frontier HTML[/dim]'
+                )
+                return result
+            # The requires_js / bot-gate flags are heuristics and can false-positive
+            # on pages that actually served complete content over plain HTTP (e.g.
+            # a static list page carrying an unrelated JS challenge snippet). If the
+            # response body is substantial and we're not doing JS/download work,
+            # accept it — downstream discovery+verification will catch a genuinely
+            # empty shell far more reliably than this flag does.
+            if (
+                not action_scripts
+                and not download_specs
+                and result.html is not None
+                and len(result.html) >= getattr(self._simple, 'min_content_length', 500)
+            ):
+                self._console.print(
+                    '[dim]    ↳ Simple fetcher flagged JS but returned substantial HTML — '
+                    'accepting (verification will catch an empty shell)[/dim]'
                 )
                 return result
             self._console.print('[warning]    ✗ Simple fetcher returned bot gate — JS required[/warning]')
