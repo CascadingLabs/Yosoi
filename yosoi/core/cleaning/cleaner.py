@@ -72,8 +72,15 @@ class HTMLCleaner:
         for tag in tree.xpath('.//script | .//style | .//noscript | .//iframe'):
             _drop(tag)
 
-        # Step 2: Remove header, nav, footer
-        for tag in tree.xpath('.//header | .//nav | .//footer'):
+        # Step 2: Remove nav, footer, and site-level headers (not article headers)
+        for tag in tree.xpath('.//nav | .//footer'):
+            _drop(tag)
+        # Only strip <header> tags that are NOT inside an <article> or content area
+        for tag in tree.xpath('.//header'):
+            if tag.xpath('ancestor::article'):
+                continue  # article header — keep it
+            if tag.find('.//h1') is not None:
+                continue  # contains the page title — keep it
             _drop(tag)
 
         # Step 3: Remove common chrome/ad boilerplate. Deliberately conservative —

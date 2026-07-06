@@ -894,6 +894,10 @@ class Pipeline(
             if not verified:
                 raise RuntimeError(f'Selector verification failed for {url}')
 
+        # Safety net: drop root if field selectors don't resolve inside it
+        if container_selector:
+            container_selector = self._validate_root_covers_fields(cleaned_html, container_selector, verified)
+
         with observability.span('extract', url=url, container=container_selector or 'single'):
             extracted = self._extract(url, result.html, verified, container_selector)
             extracted = self._merge_fetch_outputs(extracted, result)
@@ -1090,3 +1094,61 @@ class Pipeline(
         )
         observability.flush()
         return results
+
+    @staticmethod
+    def _css_primary(entry: object) -> str | None:
+        """Pull the CSS string from a field's primary selector, if it is CSS."""
+        if not isinstance(entry, dict):
+            return None
+        primary = entry.get('primary')
+        if isinstance(primary, dict):
+            return primary.get('value') if primary.get('type') == 'css' else None
+        if isinstance(primary, str):
+            return primary
+        return None
+
+    def _validate_root_covers_fields(self, html: str, root_selector: str, field_selectors: dict) -> str | None:
+        """Drop the container root if the field selectors don't resolve inside it.
+
+        On a single-item page the LLM sometimes returns a repeating ``root`` (a
+        related-posts or sidebar block) whose items don't contain the actual field
+        selectors. Extracting per-item then yields nothing. When fewer than half the
+        fields resolve inside the first container element, treat the root as wrong and
+        return None so extraction falls back to whole-page (single-item) mode.
+        """
+        from cssselect.parser import SelectorError
+        from parsel import Selector
+
+        sel = Selector(text=html)
+        try:
+            containers = sel.css(root_selector)
+        except (SelectorError, ValueError):
+            return root_selector  # unparseable root — leave it alone
+        if not containers:
+            return None
+        first = containers[0]
+
+        testable = 0
+        hits = 0
+        for name, entry in field_selectors.items():
+            if name == 'root':
+                continue
+            css = self._css_primary(entry)
+            if not css:
+                continue
+            testable += 1
+            try:
+                if first.css(css):
+                    hits += 1
+            except (SelectorError, ValueError):
+                continue
+
+        if testable > 0 and hits < testable / 2:
+            if hasattr(self, 'console'):
+                self.console.print(
+                    f'[warning]⚠ Container {root_selector!r} does not contain '
+                    f'most field selectors ({hits}/{testable}) — falling back to '
+                    f'single-item extraction[/warning]'
+                )
+            return None
+        return root_selector

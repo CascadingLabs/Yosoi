@@ -78,19 +78,23 @@ _HINT_DATA_QA: Final = 'Page uses data-qa/data-cy test attributes — they are s
 
 _CONTAINER_GUIDANCE: Final = (
     'If the page contains multiple repeating items (e.g., product cards, article listings, '
-    'search results), also provide a `root` selector for the repeating wrapper element '
-    'that contains one complete item — the smallest element that wraps exactly one complete '
-    'item and matches each item on the page. '
-    'If the page shows a single item, set `root` to null.'
+    'search results) AND those items are what the other field selectors describe, '
+    'provide a `root` selector for the repeating wrapper element '
+    'that contains one complete item. '
+    'If the page shows a SINGLE main item with its own headline, body, or detail fields '
+    '(e.g., one article, one product detail page), set `root` to null — '
+    'even if the page has a sidebar or related-items section that repeats. '
+    'The root should wrap the content the OTHER selectors target, not any repeating block on the page.'
 )
 
 _MULTI_ITEM_FIELD_GUIDANCE: Final = (
     'IMPORTANT — repeating-item scoping: if the HTML contains multiple repeating items '
-    '(product cards, listings, search results, table rows), this field belongs to ONE item, '
-    'so your selector MUST match the value *inside a single repeating item* and resolve once '
-    'per item. Even when the field is named "title" or "heading", prefer the per-item element '
-    'over any page-level element that appears once for the whole page. When in doubt, scope the '
-    'selector under the repeating item wrapper.'
+    '(product cards, listings, search results) AND this field belongs to those items, '
+    'your selector MUST match the value *inside a single repeating item* and resolve once '
+    'per item. '
+    'However, if the page is a SINGLE article or detail page, prefer the main page-level '
+    'element (the h1, the byline, the article body) over any per-card element in a '
+    'sidebar or related-items section.'
 )
 
 _FIELD_ROOT_GUIDANCE: Final = (
