@@ -92,7 +92,7 @@ uvx yosoi agents install --target pi
 uvx yosoi agents install --target agents
 ```
 
-See [`docs/agent-workflows.md`](docs/agent-workflows.md).
+See [`docs/agent-workflows.md`](docs/agent-workflows.md). For direct, bounded multi-URL page acquisition, see [`docs/fetch.md`](docs/fetch.md).
 
 ## Quick Start
 

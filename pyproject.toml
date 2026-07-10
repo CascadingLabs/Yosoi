@@ -4,7 +4,7 @@ requires = [ "uv-build>=0.1" ]
 
 [project]
 name = "yosoi"
-version = "0.0.3a21"
+version = "0.0.3a22"
 description = "AI-Powered Selector Discovery - Discover once, scrape forever"
 readme = "README.md"
 license = { file = "LICENSE.md" }
@@ -288,7 +288,7 @@ entropy = 4.5
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-tag_format = "$version"
+tag_format = "v$version"
 version_scheme = "pep440"
 version_provider = "pep621"  # Reads/updates version in [project] section of pyproject.toml
 version_files = [ "CITATION.cff:^version" ]

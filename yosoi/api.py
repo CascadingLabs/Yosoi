@@ -436,6 +436,7 @@ async def fetch(
     output_dir: str | None = None,
     policy: Policy | None = None,
     experimental_a3node: bool = False,
+    max_concurrency: int = 5,
 ) -> Any:
     """Fetch one-or-many URLs as bounded page acquisition content.
 
@@ -459,12 +460,13 @@ async def fetch(
         output_dir=output_dir,
         policy=effective_policy,
         experimental_a3node=experimental_a3node,
+        max_concurrency=max_concurrency,
     )
     return await run_fetch(request)
 
 
 async def search(
-    query: str,
+    query: str | Sequence[str],
     *,
     kind: str | None = None,
     provider: str | None = None,
@@ -476,26 +478,37 @@ async def search(
     limit: int | None = None,
     page: int | None = None,
     policy: Policy | None = None,
+    max_concurrency: int = 5,
 ) -> Any:
-    """Search the web for normalized discovery/ranking signals."""
-    from yosoi.operations import SearchRequest, run_search
+    """Search one query or a bounded concurrent sequence of independent queries."""
+    from yosoi.operations import SearchRequest, run_search, run_searches
 
     if max_results is not None and limit is not None and max_results != limit:
         raise ValueError('Pass only one of max_results or limit')
+    if isinstance(max_concurrency, bool) or max_concurrency < 1:
+        raise ValueError('max_concurrency must be >= 1')
     effective_policy = Policy.cascade(Policy.from_env(), policy)
-    request = SearchRequest.from_policy(
-        query=query,
-        policy=effective_policy,
-        kind=cast(Literal['text'], kind) if kind is not None else None,
-        provider=cast(Literal['ddgs'], provider) if provider is not None else None,
-        backend=backend,
-        region=region,
-        safesearch=cast(Literal['on', 'moderate', 'off'], safesearch) if safesearch is not None else None,
-        timelimit=timelimit,
-        max_results=max_results if max_results is not None else limit,
-        page=page,
-    )
-    return await run_search(request)
+    queries = [query] if isinstance(query, str) else list(query)
+    if not queries:
+        raise ValueError('query sequence must not be empty')
+    requests = [
+        SearchRequest.from_policy(
+            query=item,
+            policy=effective_policy,
+            kind=cast(Literal['text'], kind) if kind is not None else None,
+            provider=cast(Literal['ddgs'], provider) if provider is not None else None,
+            backend=backend,
+            region=region,
+            safesearch=cast(Literal['on', 'moderate', 'off'], safesearch) if safesearch is not None else None,
+            timelimit=timelimit,
+            max_results=max_results if max_results is not None else limit,
+            page=page,
+        )
+        for item in queries
+    ]
+    if len(requests) == 1:
+        return await run_search(requests[0])
+    return await run_searches(requests, max_concurrency=max_concurrency)
 
 
 async def map(

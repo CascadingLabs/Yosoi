@@ -21,7 +21,22 @@ def test_agents_install_pi_writes_skills_and_extension(tmp_path, monkeypatch) ->
     assert (tmp_path / '.pi' / 'agent' / 'skills' / 'yosoi-research-frontier' / 'SKILL.md').exists()
     extension = tmp_path / '.pi' / 'agent' / 'extensions' / 'yosoi-workflows.ts'
     assert extension.exists()
-    assert 'uvx yosoi' in extension.read_text(encoding='utf-8')
+    extension_text = extension.read_text(encoding='utf-8')
+    assert 'uvx yosoi' in extension_text
+    assert '--concurrency 5' in extension_text
+    assert 'fetchInputSummary' in extension_text
+    assert 'file URLs' in extension_text
+    assert 'batches ≤${run.concurrency}' in extension_text
+
+
+def test_project_agent_assets_match_packaged_assets() -> None:
+    root = Path(__file__).parents[3]
+    assert (root / '.pi/extensions/yosoi-workflows.ts').read_text(encoding='utf-8') == (
+        root / 'yosoi/agent_assets/pi/yosoi-workflows.ts'
+    ).read_text(encoding='utf-8')
+    assert (root / '.agents/skills/yosoi-fetch/SKILL.md').read_text(encoding='utf-8') == (
+        root / 'yosoi/agent_assets/skills/yosoi-fetch/SKILL.md'
+    ).read_text(encoding='utf-8')
 
 
 def test_agent_alias_and_dry_run_do_not_write(tmp_path, monkeypatch) -> None:

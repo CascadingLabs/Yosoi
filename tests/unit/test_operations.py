@@ -30,6 +30,7 @@ from yosoi.operations import (
     execute_map,
     execute_scrape,
     execute_search,
+    execute_searches,
     normalize_scrape_result,
     normalize_search_result,
     run_content,
@@ -388,6 +389,60 @@ async def test_run_content_reports_partial_failures(monkeypatch):
     assert result.status == 'error'
     assert [unit.status for unit in result.results] == ['failed', 'failed']
     assert all(unit.error == 'blocked' for unit in result.results)
+
+
+async def test_execute_fetch_batches_urls_concurrently_and_preserves_order(monkeypatch):
+    import yosoi.core.fetcher as fetcher_module
+    from yosoi.models.results import FetchResult as HtmlFetchResult
+
+    active = 0
+    peak_active = 0
+
+    class Fetcher:
+        async def fetch(self, url: str) -> HtmlFetchResult:
+            nonlocal active, peak_active
+            active += 1
+            peak_active = max(peak_active, active)
+            try:
+                await asyncio.sleep(0.01)
+                return HtmlFetchResult(url=url, status_code=200, html=f'<html><body>{url}</body></html>')
+            finally:
+                active -= 1
+
+        async def close(self) -> None:
+            return None
+
+    monkeypatch.setattr(fetcher_module, 'create_fetcher', lambda *_args, **_kwargs: Fetcher())
+    urls = ['https://one.test', 'https://two.test', 'https://three.test']
+
+    result = await execute_fetch(FetchRequest.from_axes(urls, max_concurrency=2))
+
+    assert peak_active == 2
+    assert [unit.url for unit in result.results] == urls
+
+
+async def test_execute_fetch_continues_after_a_failed_batch_unit(monkeypatch):
+    import yosoi.core.fetcher as fetcher_module
+    from yosoi.models.results import FetchResult as HtmlFetchResult
+
+    class Fetcher:
+        async def fetch(self, url: str) -> HtmlFetchResult:
+            if url == 'https://two.test':
+                raise RuntimeError('blocked')
+            return HtmlFetchResult(url=url, status_code=200, html=f'<html><body>{url}</body></html>')
+
+        async def close(self) -> None:
+            return None
+
+    monkeypatch.setattr(fetcher_module, 'create_fetcher', lambda *_args, **_kwargs: Fetcher())
+
+    result = await execute_fetch(
+        FetchRequest.from_axes(['https://one.test', 'https://two.test', 'https://three.test'], max_concurrency=2)
+    )
+
+    assert [unit.status for unit in result.results] == ['ok', 'failed', 'ok']
+    assert result.results[1].error == 'blocked'
+    assert result.status == 'partial'
 
 
 async def test_execute_fetch_paginates_and_includes_metadata(monkeypatch):
@@ -1112,6 +1167,43 @@ async def test_execute_scrape_reports_generic_failure_metadata(monkeypatch, mock
     assert failed.llm_reason == 'cache_miss'
     assert failed.error == 'extraction failed'
     assert persist.await_count == 2
+
+
+async def test_execute_searches_rejects_empty_or_invalid_batches():
+    with pytest.raises(ValueError, match='requests must not be empty'):
+        await execute_searches([])
+    with pytest.raises(ValueError, match='max_concurrency must be >= 1'):
+        await execute_searches([SearchRequest(query='one')], max_concurrency=0)
+    with pytest.raises(ValueError, match='max_concurrency must be >= 1'):
+        await execute_searches([SearchRequest(query='one')], max_concurrency=True)
+
+
+async def test_execute_searches_limits_fanout_preserves_order_and_isolates_failures(monkeypatch):
+    active = 0
+    peak_active = 0
+
+    async def fake_execute(request):
+        nonlocal active, peak_active
+        active += 1
+        peak_active = max(peak_active, active)
+        try:
+            await asyncio.sleep(0.01)
+            if request.query == 'two':
+                raise RuntimeError('backend unavailable')
+            return ops.SearchResult(request=request)
+        finally:
+            active -= 1
+
+    monkeypatch.setattr(ops, 'execute_search', fake_execute)
+    requests = [SearchRequest(query=query) for query in ('one', 'two', 'three')]
+
+    result = await execute_searches(requests, max_concurrency=2)
+
+    assert peak_active == 2
+    assert [unit.query for unit in result.results] == ['one', 'two', 'three']
+    assert [unit.status for unit in result.results] == ['ok', 'failed', 'ok']
+    assert result.results[1].error == 'backend unavailable'
+    assert result.status == 'partial'
 
 
 async def test_execute_search_delegates_and_run_search(monkeypatch, mocker):
