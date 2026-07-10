@@ -29,6 +29,17 @@ uv run yosoi fetch --file urls.txt --concurrency 10 --view text --json
 
 Results remain in input order. A failed or blocked URL is reported in its result unit and does not stop the remaining URLs. Keep the default for browser-heavy or unfamiliar sites; raise the limit only when the selected fetcher and target sites can safely handle the parallel load.
 
+### CLI batch controls
+
+| Option | Default | Behavior |
+| --- | --- | --- |
+| `--concurrency N` | `5` | Run at most `N` URL acquisitions in an ordered batch. Values must be integers `>= 1`. |
+| `--url URL` | none | Repeat for more URLs without shell positional arguments. |
+| `--file PATH` | none | Read URLs from a file, then apply the same concurrency limit. |
+| `--limit N` | none | Trim the combined positional, `--url`, and file URL list before acquisition. |
+
+`--concurrency` does not change the per-page `--page-size`/`--chars` bound, nor does it turn `fetch` into a crawler.
+
 ## Choose a view
 
 ```bash
