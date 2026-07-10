@@ -788,23 +788,6 @@ class JSFetcher(HTMLFetcher):
                     '[dim]    ↳ Simple fetcher returned JS-marked HTML with crawl links; accepting frontier HTML[/dim]'
                 )
                 return result
-            # The requires_js / bot-gate flags are heuristics and can false-positive
-            # on pages that actually served complete content over plain HTTP (e.g.
-            # a static list page carrying an unrelated JS challenge snippet). If the
-            # response body is substantial and we're not doing JS/download work,
-            # accept it — downstream discovery+verification will catch a genuinely
-            # empty shell far more reliably than this flag does.
-            if (
-                not action_scripts
-                and not download_specs
-                and result.html is not None
-                and len(result.html) >= getattr(self._simple, 'min_content_length', 500)
-            ):
-                self._console.print(
-                    '[dim]    ↳ Simple fetcher flagged JS but returned substantial HTML — '
-                    'accepting (verification will catch an empty shell)[/dim]'
-                )
-                return result
             self._console.print('[warning]    ✗ Simple fetcher returned bot gate — JS required[/warning]')
         else:
             self._console.print(
