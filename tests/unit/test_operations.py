@@ -6,6 +6,7 @@ import asyncio
 import json
 from dataclasses import dataclass
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, cast
 
 import pytest
@@ -523,6 +524,41 @@ async def test_execute_fetch_contract_probe_verifies_cached_selectors(monkeypatc
     assert probe.verified_fields == ['title']
     assert probe.fit == 'strong'
     assert probe.fit_score == 1.0
+
+
+def test_fetch_interrupt_helpers_preserve_and_generate_handoff_metadata() -> None:
+    from yosoi.utils.exceptions import BotDetectionError
+
+    detected = ops._interrupt_from_bot_detection(BotDetectionError('https://wall.test', 403, ['HTTP 403']))
+    assert detected['kind'] == 'bot_wall'
+    assert 'attach' not in detected
+
+    existing = ops._interrupt_from_fetch_result(
+        SimpleNamespace(interrupt={'kind': 'manual', 'attach': {'target_id': 'tab-1'}}, is_blocked=False),
+        'https://one.test',
+        'ignored',
+    )
+    assert existing == {'kind': 'manual', 'attach': {'target_id': 'tab-1'}}
+
+    generated = ops._interrupt_from_fetch_result(
+        SimpleNamespace(
+            interrupt=None,
+            is_blocked=True,
+            url='https://wall.test/final',
+            status_code=403,
+            attach={'target_id': 'tab-2'},
+        ),
+        'https://wall.test',
+        'bot wall',
+    )
+    assert generated is not None
+    assert generated['url'] == 'https://wall.test/final'
+    assert generated['attach'] == {'target_id': 'tab-2'}
+
+    assert (
+        ops._interrupt_from_fetch_result(SimpleNamespace(interrupt=None, is_blocked=False), 'https://one.test', 'ok')
+        is None
+    )
 
 
 def test_fetch_result_document_projection_and_envelope_statuses():
