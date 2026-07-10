@@ -2,6 +2,8 @@
 
 `yosoi fetch` acquires bounded page evidence without selector discovery, cache writes, or structured scraping. Use it to inspect pages, save artifacts, and decide whether `crawl`, `discover`, or `scrape` is appropriate.
 
+Implementation: [PR #105](https://github.com/CascadingLabs/Yosoi/pull/105).
+
 ## Fetch one page
 
 ```bash
