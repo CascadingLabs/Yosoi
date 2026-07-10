@@ -19,7 +19,6 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import hashlib
-import inspect
 import json
 import logging
 import os
@@ -28,7 +27,6 @@ import time
 from collections.abc import AsyncGenerator, Sequence
 from contextlib import asynccontextmanager
 from typing import Any
-from urllib.parse import urlparse, urlunparse
 
 import lxml.html
 from rich.console import Console
@@ -74,22 +72,6 @@ def _crawl_frontier_signature(html: str) -> tuple[frozenset[str], int]:
         if isinstance(href, str) and str(href).strip() and not str(href).strip().startswith('#')
     )
     return (hrefs, len(html))
-
-
-def _first_env(*names: str) -> str | None:
-    for name in names:
-        value = os.getenv(name)
-        if value:
-            return value
-    return None
-
-
-def _default_kernel_live_view_url(chrome_ws_url: str) -> str | None:
-    parsed = urlparse(chrome_ws_url)
-    host = parsed.hostname or ''
-    if host not in {'127.0.0.1', 'localhost', '::1'}:
-        return None
-    return urlunparse(('http', '127.0.0.1:3069', '', '', '', ''))
 
 
 def _import_voidcrawl() -> tuple[Any, Any, Any]:
@@ -148,7 +130,6 @@ class _VoidCrawlFetcher(HTMLFetcher):
         self._identity = identity
         self._cross_origin_dom = cross_origin_dom
         self._chrome_ws_urls = tuple(str(url).strip() for url in chrome_ws_urls if str(url).strip())
-        self._attached_chrome_ws_urls: tuple[str, ...] = ()
         self._a3node_intent = a3node_intent or 'fetch'
         self._lightweight_fetch = lightweight_fetch
         self._pool: Any = None
@@ -179,11 +160,8 @@ class _VoidCrawlFetcher(HTMLFetcher):
         # switches the pool from launching Chrome locally to attaching to the
         # already-running browsers, e.g. a VoidCrawl docker container.
         ws_urls = list(self._chrome_ws_urls) or [
-            u.strip()
-            for raw in (os.getenv('YOSOI_CHROME_WS_URLS') or os.getenv('CHROME_WS_URLS') or '').split(',')
-            if (u := raw.strip())
+            u.strip() for u in os.getenv('CHROME_WS_URLS', '').split(',') if u.strip()
         ]
-        self._attached_chrome_ws_urls = tuple(ws_urls)
         config = PoolConfig(
             browsers=1,
             tabs_per_browser=self.max_concurrent,
@@ -464,7 +442,6 @@ class _VoidCrawlFetcher(HTMLFetcher):
         resp_headers: dict[str, str] | None = None
         resp_endpoints: list[str] | None = None
         captcha_kind: str | None = None
-        attach_metadata: dict[str, Any] | None = None
         async with self._pool.acquire() as tab:
             jitter = random.uniform(0, _JITTER_MAX_S)
             if jitter > 0.05:
@@ -483,7 +460,6 @@ class _VoidCrawlFetcher(HTMLFetcher):
             resp_endpoints = getattr(page_resp, 'endpoints', None) or None
             html = await self._crawl_frontier_content(tab)
             captcha_kind = await self._probe_captcha(tab)
-            attach_metadata = await self._kernel_attach_metadata(tab)
 
         if not html or len(html) < self.min_content_length:
             return FetchResult(
@@ -505,7 +481,6 @@ class _VoidCrawlFetcher(HTMLFetcher):
                 indicators,
                 identity_id=self._identity.id if self._identity is not None else None,
                 captcha_kind=captcha_kind,
-                attach=attach_metadata,
             )
 
         return FetchResult(
@@ -563,7 +538,6 @@ class _VoidCrawlFetcher(HTMLFetcher):
         # conflated. Captured inside the acquire() block because the DOM probe
         # needs a live tab/Page (a PooledTab may not even bind detect_captcha).
         captcha_kind: str | None = None
-        attach_metadata: dict[str, Any] | None = None
         async with self._pool.acquire() as tab:
             # Jitter: stagger concurrent workers so they don't land simultaneously
             # on the same origin and trigger bot-detection rate limiting.
@@ -626,7 +600,6 @@ class _VoidCrawlFetcher(HTMLFetcher):
             # so probe defensively — absence yields None (its own attribution
             # bucket), it is NOT treated as "no block".
             captcha_kind = await self._probe_captcha(tab)
-            attach_metadata = await self._kernel_attach_metadata(tab)
 
         if not html or len(html) < self.min_content_length:
             return FetchResult(
@@ -648,7 +621,6 @@ class _VoidCrawlFetcher(HTMLFetcher):
                 indicators,
                 identity_id=self._identity.id if self._identity is not None else None,
                 captcha_kind=captcha_kind,
-                attach=attach_metadata,
             )
 
         metadata = ContentAnalyzer.analyze(html)
@@ -665,44 +637,6 @@ class _VoidCrawlFetcher(HTMLFetcher):
             headers=resp_headers,
             endpoints=resp_endpoints,
         )
-
-    async def _kernel_attach_metadata(self, tab: Any | None) -> dict[str, Any] | None:
-        """Build Kernel-compatible same-browser handoff metadata for attached Chrome."""
-        if not self._attached_chrome_ws_urls:
-            return None
-        attach: dict[str, Any] = {'websocket_url': self._attached_chrome_ws_urls[0]}
-        target_id = await self._tab_target_id(tab)
-        if target_id:
-            attach['target_id'] = target_id
-        handoff_url = _first_env('YOSOI_HANDOFF_URL', 'VOIDCRAWL_HANDOFF_URL')
-        remote_browser_url = _first_env(
-            'YOSOI_REMOTE_BROWSER_URL',
-            'VOIDCRAWL_REMOTE_BROWSER_URL',
-            'YOSOI_KERNEL_LIVE_VIEW_URL',
-            'VOIDCRAWL_KERNEL_LIVE_VIEW_URL',
-            'KERNEL_LIVE_VIEW_URL',
-        )
-        if handoff_url is None and remote_browser_url is None:
-            remote_browser_url = _default_kernel_live_view_url(self._attached_chrome_ws_urls[0])
-            handoff_url = remote_browser_url
-        if handoff_url:
-            attach['handoff_url'] = handoff_url
-        if remote_browser_url:
-            attach['remote_browser_url'] = remote_browser_url
-        return attach
-
-    async def _tab_target_id(self, tab: Any | None) -> str | None:
-        if tab is None:
-            return None
-        candidate = getattr(tab, 'target_id', None)
-        try:
-            value = candidate() if callable(candidate) else candidate
-            if inspect.isawaitable(value):
-                value = await value
-        except Exception as exc:  # noqa: BLE001 - handoff metadata is best-effort
-            logger.debug('target_id extraction failed: %s', exc)
-            return None
-        return str(value) if value else None
 
     async def _probe_captcha(self, tab: Any) -> str | None:
         """Best-effort live-tab captcha probe for block attribution (W2).

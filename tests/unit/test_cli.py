@@ -104,6 +104,33 @@ class TestSearchCommand:
         assert request.query == 'widgets'
         assert request.max_results == 2
 
+    def test_search_batches_repeated_and_file_queries(self, runner, mocker, tmp_path):
+        from yosoi.operations import SearchBatchResult, SearchUnitResult
+
+        queries_file = tmp_path / 'queries.txt'
+        queries_file.write_text('three\n', encoding='utf-8')
+        run = mocker.patch(
+            'yosoi.operations.run_searches',
+            mocker.AsyncMock(
+                return_value=SearchBatchResult(
+                    results=[
+                        SearchUnitResult(query='one'),
+                        SearchUnitResult(query='two'),
+                        SearchUnitResult(query='three'),
+                    ]
+                )
+            ),
+        )
+
+        result = runner.invoke(
+            main,
+            ['search', '--query', 'one', '--query', 'two', '--file', str(queries_file), '--concurrency', '2', '--json'],
+        )
+
+        assert result.exit_code == 0, result.output
+        assert [request.query for request in run.await_args.args[0]] == ['one', 'two', 'three']
+        assert run.await_args.kwargs['max_concurrency'] == 2
+
     def test_search_human_output_smoke(self, runner, mocker):
         from yosoi.operations import SearchHit, SearchRequest, SearchResult
 
@@ -135,7 +162,7 @@ class TestSearchCommand:
     def test_search_no_query_usage_error(self, runner):
         result = runner.invoke(main, ['search'])
 
-        assert result.exit_code != 0
+        assert result.exit_code == 2
         assert 'No search query provided' in result.output
 
     def test_search_dump_request(self, runner):

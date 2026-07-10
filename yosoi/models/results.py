@@ -58,12 +58,6 @@ class FetchResult:
     fetch_time: float = 0.0
     js_outputs: JsOutputs | None = None
 
-    # Resumable human/agent intervention envelope for acquisition blockers
-    # (captcha, bot wall, policy denial, OAuth, etc.). When set with
-    # is_blocked=True, public operation envelopes report status='blocked'
-    # instead of collapsing the unit into a generic failure.
-    interrupt: dict[str, Any] | None = None
-
     # Files pulled by ys.File() action fields during the live-tab phase, keyed by
     # field name. None when no download specs ran. Merged into the record post-extraction.
     downloads: dict[str, DownloadResult] | None = None

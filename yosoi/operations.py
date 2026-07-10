@@ -374,6 +374,27 @@ class SearchResult(BaseModel):
     urls: list[str] = Field(default_factory=list)
 
 
+class SearchUnitResult(BaseModel):
+    """One query outcome within a bounded concurrent search batch."""
+
+    query: str
+    status: Literal['ok', 'failed'] = 'ok'
+    result: SearchResult | None = None
+    error: str | None = None
+
+
+class SearchBatchResult(BaseModel):
+    """Machine-readable envelope for concurrent search queries."""
+
+    status: Literal['ok', 'partial', 'error'] = 'ok'
+    results: list[SearchUnitResult] = Field(default_factory=list)
+
+    @computed_field
+    def success(self) -> bool:
+        """Whether every query completed successfully."""
+        return self.status == 'ok'
+
+
 class ContractProbeResult(BaseModel):
     """Advisory fit signal for a contract against an acquired page."""
 
@@ -460,7 +481,7 @@ class FetchUnitResult(BaseModel):
 
     url: str
     final_url: str | None = None
-    status: Literal['ok', 'failed', 'blocked'] = 'ok'
+    status: Literal['ok', 'failed'] = 'ok'
     status_code: int | None = None
     title: str | None = None
     view: FetchView = 'text'
@@ -487,7 +508,6 @@ class FetchUnitResult(BaseModel):
     contract_probes: list[ContractProbeResult] = Field(default_factory=list)
     artifacts: dict[str, str] = Field(default_factory=dict)
     error: str | None = None
-    interrupt: dict[str, Any] | None = None
 
     def _metadata_doc(self) -> dict[str, Any]:
         return {
@@ -556,7 +576,7 @@ class FetchUnitResult(BaseModel):
 class FetchResult(BaseModel):
     """Machine-readable contractless page acquisition envelope."""
 
-    status: Literal['ok', 'partial', 'error', 'blocked'] = 'ok'
+    status: Literal['ok', 'partial', 'error'] = 'ok'
     results: list[FetchUnitResult] = Field(default_factory=list)
 
     @computed_field
@@ -580,11 +600,6 @@ class FetchResult(BaseModel):
     def errors(self) -> list[dict[str, str]]:
         """Failed URL diagnostics in a compact, machine-friendly shape."""
         return [{'url': unit.url, 'error': unit.error or 'failed'} for unit in self.results if unit.status == 'failed']
-
-    @computed_field
-    def interrupts(self) -> list[dict[str, Any]]:
-        """Blocked URL interrupts with resumable handoff metadata."""
-        return [unit.interrupt for unit in self.results if unit.status == 'blocked' and unit.interrupt is not None]
 
 
 class ContentRequest(BaseModel):
@@ -1217,59 +1232,14 @@ def _paginate_content(content: str, *, page: int, page_size: int) -> tuple[str, 
     return page_content, next_page is not None, next_page
 
 
-def _interrupt_from_bot_detection(exc: Any) -> dict[str, Any]:
-    captcha_kind = getattr(exc, 'captcha_kind', None)
-    interrupt: dict[str, Any] = {
-        'source': 'yosoi.fetch.bot_detection',
-        'kind': 'captcha' if captcha_kind else 'bot_wall',
-        'subkind': captcha_kind,
-        'blocking': True,
-        'url': str(getattr(exc, 'url', '') or ''),
-        'evidence': {
-            'status_code': getattr(exc, 'status_code', None),
-            'indicators': list(getattr(exc, 'indicators', []) or []),
-            'identity_id': getattr(exc, 'identity_id', None),
-        },
-        'resume_hint': {'strategy': 'rerun_after_resolution'},
-    }
-    attach = getattr(exc, 'attach', None)
-    if isinstance(attach, Mapping):
-        interrupt['attach'] = _jsonable(attach)
-    return interrupt
-
-
-def _interrupt_from_fetch_result(fetched: Any, url: str, reason: str) -> dict[str, Any] | None:
-    interrupt = getattr(fetched, 'interrupt', None)
-    if isinstance(interrupt, Mapping):
-        return cast('dict[str, Any]', _jsonable(interrupt))
-    if getattr(fetched, 'is_blocked', False):
-        generated: dict[str, Any] = {
-            'source': 'yosoi.fetch',
-            'kind': 'bot_wall',
-            'subkind': None,
-            'blocking': True,
-            'url': str(getattr(fetched, 'url', url) or url),
-            'evidence': {'reason': reason, 'status_code': getattr(fetched, 'status_code', None)},
-            'resume_hint': {'strategy': 'rerun_after_resolution'},
-        }
-        attach = getattr(fetched, 'attach', None)
-        if isinstance(attach, Mapping):
-            generated['attach'] = _jsonable(attach)
-        return generated
-    return None
-
-
 def _fetch_envelope(units: list[FetchUnitResult]) -> FetchResult:
     if not units:
         return FetchResult(status='error', results=[])
     failed = sum(1 for unit in units if unit.status == 'failed')
-    blocked = sum(1 for unit in units if unit.status == 'blocked')
-    status: Literal['ok', 'partial', 'error', 'blocked'] = 'ok'
-    if blocked == len(units):
-        status = 'blocked'
-    elif failed == len(units):
+    status: Literal['ok', 'partial', 'error'] = 'ok'
+    if failed == len(units):
         status = 'error'
-    elif failed or blocked:
+    elif failed:
         status = 'partial'
     return FetchResult(status=status, results=units)
 
@@ -1529,11 +1499,10 @@ async def _fetch_unit(request: FetchRequest, url: str) -> FetchUnitResult:
 
     if not fetched.success or not fetched.html:
         reason = fetched.block_reason or 'fetch failed'
-        interrupt = _interrupt_from_fetch_result(fetched, url, reason)
         return FetchUnitResult(
             url=url,
             final_url=str(getattr(fetched, 'url', url)),
-            status='blocked' if interrupt is not None else 'failed',
+            status='failed',
             status_code=fetched.status_code,
             raw_html_chars=len(fetched.html or ''),
             fetch_time=fetched.fetch_time,
@@ -1542,7 +1511,6 @@ async def _fetch_unit(request: FetchRequest, url: str) -> FetchUnitResult:
             page=request.page,
             page_size=request.page_size,
             error=reason,
-            interrupt=interrupt,
         )
 
     raw_html = fetched.html
@@ -1722,23 +1690,10 @@ async def _fetch_content_unit(request: ContentRequest, url: str) -> ContentUnitR
 
 async def execute_fetch(request: FetchRequest) -> FetchResult:
     """Fetch URLs concurrently in bounded batches, preserving request order."""
-    from yosoi.utils.exceptions import BotDetectionError
 
     async def _unit(url: str) -> FetchUnitResult:
         try:
             return await _fetch_unit(request, url)
-        except BotDetectionError as exc:
-            return FetchUnitResult(
-                url=url,
-                final_url=getattr(exc, 'url', url),
-                status='blocked',
-                status_code=getattr(exc, 'status_code', None),
-                view=request.view,
-                page=request.page,
-                page_size=request.page_size,
-                error=str(exc),
-                interrupt=_interrupt_from_bot_detection(exc),
-            )
         except Exception as exc:  # noqa: BLE001
             return FetchUnitResult(
                 url=url,
@@ -1774,6 +1729,31 @@ async def execute_search(request: SearchRequest) -> SearchResult:
     from yosoi.core.fetcher.search import fetch_ddgs_text
 
     return normalize_search_result(request, await fetch_ddgs_text(request))
+
+
+async def execute_searches(requests: Sequence[SearchRequest], *, max_concurrency: int = 5) -> SearchBatchResult:
+    """Execute independent search queries concurrently with a bounded fan-out."""
+    if isinstance(max_concurrency, bool) or max_concurrency < 1:
+        raise ValueError('max_concurrency must be >= 1')
+    if not requests:
+        raise ValueError('requests must not be empty')
+
+    async def _unit(request: SearchRequest) -> SearchUnitResult:
+        try:
+            return SearchUnitResult(query=request.query, result=await execute_search(request))
+        except Exception as exc:  # noqa: BLE001 - individual query failures are batch-local
+            return SearchUnitResult(query=request.query, status='failed', error=str(exc))
+
+    units: list[SearchUnitResult] = []
+    for start in range(0, len(requests), max_concurrency):
+        units.extend(await asyncio.gather(*(_unit(request) for request in requests[start : start + max_concurrency])))
+    failed = sum(unit.status == 'failed' for unit in units)
+    status: Literal['ok', 'partial', 'error'] = 'ok'
+    if failed == len(units):
+        status = 'error'
+    elif failed:
+        status = 'partial'
+    return SearchBatchResult(status=status, results=units)
 
 
 async def run_crawl(request: CrawlRequest) -> CrawlResult:
@@ -1818,6 +1798,11 @@ async def run_scrape(request: ScrapeRequest) -> ScrapeResult:
 async def run_search(request: SearchRequest) -> SearchResult:
     """Alias for executing a search request through the canonical surface."""
     return await execute_search(request)
+
+
+async def run_searches(requests: Sequence[SearchRequest], *, max_concurrency: int = 5) -> SearchBatchResult:
+    """Alias for executing a bounded concurrent batch of search requests."""
+    return await execute_searches(requests, max_concurrency=max_concurrency)
 
 
 async def run_fetch(request: FetchRequest) -> FetchResult:

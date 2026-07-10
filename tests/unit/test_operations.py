@@ -3,10 +3,8 @@
 from __future__ import annotations
 
 import asyncio
-import json
 from dataclasses import dataclass
 from pathlib import Path
-from types import SimpleNamespace
 from typing import Any, cast
 
 import pytest
@@ -32,6 +30,7 @@ from yosoi.operations import (
     execute_map,
     execute_scrape,
     execute_search,
+    execute_searches,
     normalize_scrape_result,
     normalize_search_result,
     run_content,
@@ -526,41 +525,6 @@ async def test_execute_fetch_contract_probe_verifies_cached_selectors(monkeypatc
     assert probe.fit_score == 1.0
 
 
-def test_fetch_interrupt_helpers_preserve_and_generate_handoff_metadata() -> None:
-    from yosoi.utils.exceptions import BotDetectionError
-
-    detected = ops._interrupt_from_bot_detection(BotDetectionError('https://wall.test', 403, ['HTTP 403']))
-    assert detected['kind'] == 'bot_wall'
-    assert 'attach' not in detected
-
-    existing = ops._interrupt_from_fetch_result(
-        SimpleNamespace(interrupt={'kind': 'manual', 'attach': {'target_id': 'tab-1'}}, is_blocked=False),
-        'https://one.test',
-        'ignored',
-    )
-    assert existing == {'kind': 'manual', 'attach': {'target_id': 'tab-1'}}
-
-    generated = ops._interrupt_from_fetch_result(
-        SimpleNamespace(
-            interrupt=None,
-            is_blocked=True,
-            url='https://wall.test/final',
-            status_code=403,
-            attach={'target_id': 'tab-2'},
-        ),
-        'https://wall.test',
-        'bot wall',
-    )
-    assert generated is not None
-    assert generated['url'] == 'https://wall.test/final'
-    assert generated['attach'] == {'target_id': 'tab-2'}
-
-    assert (
-        ops._interrupt_from_fetch_result(SimpleNamespace(interrupt=None, is_blocked=False), 'https://one.test', 'ok')
-        is None
-    )
-
-
 def test_fetch_result_document_projection_and_envelope_statuses():
     ok = ops.FetchUnitResult(
         url='https://one.test',
@@ -593,35 +557,6 @@ def test_fetch_result_document_projection_and_envelope_statuses():
     assert ops._fetch_envelope([]).status == 'error'
     assert ops._fetch_envelope([ok, failed]).status == 'partial'
     assert ops._fetch_envelope([failed]).status == 'error'
-
-    blocked = ops.FetchUnitResult(
-        url='https://wall.test',
-        status='blocked',
-        error='captcha',
-        interrupt={'kind': 'captcha', 'blocking': True, 'url': 'https://wall.test'},
-    )
-    blocked_result = ops.FetchResult(status='blocked', results=[blocked])
-    assert blocked_result.success is False
-    assert blocked_result.errors == []
-    assert blocked_result.interrupts == [{'kind': 'captcha', 'blocking': True, 'url': 'https://wall.test'}]
-    assert ops._fetch_envelope([blocked]).status == 'blocked'
-    assert ops._fetch_envelope([ok, blocked]).status == 'partial'
-
-
-def test_fetch_result_accepts_shared_interrupt_fixture() -> None:
-    fixture = json.loads((Path(__file__).parents[2] / 'docs/fixtures/interrupts/voidcrawl-captcha.json').read_text())
-    unit = ops.FetchUnitResult(
-        url=fixture['interrupt']['url'],
-        status='blocked',
-        error='captcha',
-        interrupt=fixture['interrupt'] | {'future_field': 'ignored'},
-    )
-    result = ops.FetchResult(status='blocked', results=[unit])
-
-    assert result.success is False
-    assert result.errors == []
-    assert result.interrupts[0]['id'] == 'fixture-voidcrawl-captcha'
-    assert result.model_dump(mode='json')['interrupts'][0]['future_field'] == 'ignored'
 
 
 def test_fetch_request_normalization_and_rich_document_projection():
@@ -996,39 +931,6 @@ async def test_execute_fetch_catches_unexpected_unit_exception(monkeypatch):
     assert result.results[0].error == 'unit exploded'
 
 
-async def test_execute_fetch_maps_bot_detection_to_interrupt(monkeypatch):
-    from yosoi.utils.exceptions import BotDetectionError
-
-    async def blocked_unit(_request, _url):
-        raise BotDetectionError(
-            'https://captcha.test',
-            403,
-            ['HTTP 403'],
-            identity_id='profile-1',
-            captcha_kind='recaptcha',
-            attach={
-                'websocket_url': 'http://127.0.0.1:19222',
-                'target_id': 'target-1',
-                'handoff_url': 'http://127.0.0.1:3069',
-                'remote_browser_url': 'http://127.0.0.1:3069',
-            },
-        )
-
-    monkeypatch.setattr(ops, '_fetch_unit', blocked_unit)
-
-    result = await execute_fetch(FetchRequest.from_axes('https://captcha.test'))
-
-    assert result.status == 'blocked'
-    assert result.errors == []
-    assert result.interrupts[0]['kind'] == 'captcha'
-    assert result.interrupts[0]['subkind'] == 'recaptcha'
-    assert result.interrupts[0]['evidence']['identity_id'] == 'profile-1'
-    assert result.interrupts[0]['attach']['websocket_url'] == 'http://127.0.0.1:19222'
-    assert result.interrupts[0]['attach']['target_id'] == 'target-1'
-    assert result.interrupts[0]['attach']['handoff_url'] == 'http://127.0.0.1:3069'
-    assert result.interrupts[0]['attach']['remote_browser_url'] == 'http://127.0.0.1:3069'
-
-
 async def test_execute_fetch_failure_and_bundle_paths(monkeypatch, tmp_path):
     import yosoi.core.fetcher as fetcher_module
     from yosoi.models.results import FetchResult as HtmlFetchResult
@@ -1043,11 +945,9 @@ async def test_execute_fetch_failure_and_bundle_paths(monkeypatch, tmp_path):
     monkeypatch.setattr(fetcher_module, 'create_fetcher', lambda *_args, **_kwargs: BlockedFetcher())
     failed = await execute_fetch(FetchRequest.from_axes('https://blocked.test'))
 
-    assert failed.status == 'blocked'
-    assert failed.results[0].status == 'blocked'
+    assert failed.status == 'error'
+    assert failed.results[0].status == 'failed'
     assert failed.results[0].error == 'blocked'
-    assert failed.errors == []
-    assert failed.interrupts[0]['kind'] == 'bot_wall'
 
     class BundleFetcher:
         async def fetch(self, url: str) -> HtmlFetchResult:
@@ -1267,6 +1167,43 @@ async def test_execute_scrape_reports_generic_failure_metadata(monkeypatch, mock
     assert failed.llm_reason == 'cache_miss'
     assert failed.error == 'extraction failed'
     assert persist.await_count == 2
+
+
+async def test_execute_searches_rejects_empty_or_invalid_batches():
+    with pytest.raises(ValueError, match='requests must not be empty'):
+        await execute_searches([])
+    with pytest.raises(ValueError, match='max_concurrency must be >= 1'):
+        await execute_searches([SearchRequest(query='one')], max_concurrency=0)
+    with pytest.raises(ValueError, match='max_concurrency must be >= 1'):
+        await execute_searches([SearchRequest(query='one')], max_concurrency=True)
+
+
+async def test_execute_searches_limits_fanout_preserves_order_and_isolates_failures(monkeypatch):
+    active = 0
+    peak_active = 0
+
+    async def fake_execute(request):
+        nonlocal active, peak_active
+        active += 1
+        peak_active = max(peak_active, active)
+        try:
+            await asyncio.sleep(0.01)
+            if request.query == 'two':
+                raise RuntimeError('backend unavailable')
+            return ops.SearchResult(request=request)
+        finally:
+            active -= 1
+
+    monkeypatch.setattr(ops, 'execute_search', fake_execute)
+    requests = [SearchRequest(query=query) for query in ('one', 'two', 'three')]
+
+    result = await execute_searches(requests, max_concurrency=2)
+
+    assert peak_active == 2
+    assert [unit.query for unit in result.results] == ['one', 'two', 'three']
+    assert [unit.status for unit in result.results] == ['ok', 'failed', 'ok']
+    assert result.results[1].error == 'backend unavailable'
+    assert result.status == 'partial'
 
 
 async def test_execute_search_delegates_and_run_search(monkeypatch, mocker):

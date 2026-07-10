@@ -62,6 +62,8 @@ Follow .agents/skills/yosoi-web-workflows/SKILL.md.
 Start with:
 uvx yosoi search "${target || "QUERY"}" --limit 10 --json > .yosoi/search-results.json
 
+For independent queries, use repeated --query options or --file queries.txt with --concurrency 5 (default). Results preserve query order and per-query failures.
+
 Then inspect candidate URLs, fetch promising pages before making content claims, and report source quality/gaps.`,
 
   fetch: (target) => `Use Yosoi fetch for bounded page evidence, not scraping.

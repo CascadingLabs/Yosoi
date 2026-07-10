@@ -3,7 +3,7 @@
 ### Feat
 
 - **fetch**: add configurable bounded concurrent batches for multi-URL acquisition via `--concurrency`.
-- **fetch**: return structured blocked/captcha interrupts with same-browser handoff metadata when available.
+- **search**: add bounded concurrent batches for repeated or file-backed queries.
 - **agents**: surface fetch batch concurrency in the Pi dashboard and packaged fetch workflow guidance.
 
 ### Docs

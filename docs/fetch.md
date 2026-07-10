@@ -27,7 +27,7 @@ uv run yosoi fetch \
 uv run yosoi fetch --file urls.txt --concurrency 10 --view text --json
 ```
 
-Results remain in input order. A failed or blocked URL is reported in its result unit and does not stop the remaining URLs. Keep the default for browser-heavy or unfamiliar sites; raise the limit only when the selected fetcher and target sites can safely handle the parallel load.
+Results remain in input order. A failed URL is reported in its result unit and does not stop the remaining URLs. Keep the default for browser-heavy or unfamiliar sites; raise the limit only when the selected fetcher and target sites can safely handle the parallel load.
 
 ### CLI batch controls
 
@@ -54,10 +54,6 @@ uv run yosoi fetch URL --view bundle --output .yosoi/fetches/example --json
 ```
 
 Use `raw-html` for static source fidelity, `rendered-html` for JavaScript pages, and `bundle` when artifacts must be retained for review.
-
-## Blocked pages
-
-A bot wall or captcha is returned as `status: "blocked"` on the result unit. The envelope contains an `interrupts` list with the detection evidence and, for an attached browser when available, same-browser handoff metadata. Treat this as a request for human resolution or a policy/profile change; do not silently claim that content was acquired.
 
 ## Python API
 
