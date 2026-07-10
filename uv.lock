@@ -5623,7 +5623,7 @@ wheels = [
 
 [[package]]
 name = "yosoi"
-version = "0.1.0"
+version = "0.0.3a22"
 source = { editable = "." }
 dependencies = [
     { name = "aiofiles" },
