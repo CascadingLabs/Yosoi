@@ -436,6 +436,7 @@ async def fetch(
     output_dir: str | None = None,
     policy: Policy | None = None,
     experimental_a3node: bool = False,
+    max_concurrency: int = 5,
 ) -> Any:
     """Fetch one-or-many URLs as bounded page acquisition content.
 
@@ -459,6 +460,7 @@ async def fetch(
         output_dir=output_dir,
         policy=effective_policy,
         experimental_a3node=experimental_a3node,
+        max_concurrency=max_concurrency,
     )
     return await run_fetch(request)
 

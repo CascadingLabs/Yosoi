@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, cast
@@ -390,6 +391,60 @@ async def test_run_content_reports_partial_failures(monkeypatch):
     assert all(unit.error == 'blocked' for unit in result.results)
 
 
+async def test_execute_fetch_batches_urls_concurrently_and_preserves_order(monkeypatch):
+    import yosoi.core.fetcher as fetcher_module
+    from yosoi.models.results import FetchResult as HtmlFetchResult
+
+    active = 0
+    peak_active = 0
+
+    class Fetcher:
+        async def fetch(self, url: str) -> HtmlFetchResult:
+            nonlocal active, peak_active
+            active += 1
+            peak_active = max(peak_active, active)
+            try:
+                await asyncio.sleep(0.01)
+                return HtmlFetchResult(url=url, status_code=200, html=f'<html><body>{url}</body></html>')
+            finally:
+                active -= 1
+
+        async def close(self) -> None:
+            return None
+
+    monkeypatch.setattr(fetcher_module, 'create_fetcher', lambda *_args, **_kwargs: Fetcher())
+    urls = ['https://one.test', 'https://two.test', 'https://three.test']
+
+    result = await execute_fetch(FetchRequest.from_axes(urls, max_concurrency=2))
+
+    assert peak_active == 2
+    assert [unit.url for unit in result.results] == urls
+
+
+async def test_execute_fetch_continues_after_a_failed_batch_unit(monkeypatch):
+    import yosoi.core.fetcher as fetcher_module
+    from yosoi.models.results import FetchResult as HtmlFetchResult
+
+    class Fetcher:
+        async def fetch(self, url: str) -> HtmlFetchResult:
+            if url == 'https://two.test':
+                raise RuntimeError('blocked')
+            return HtmlFetchResult(url=url, status_code=200, html=f'<html><body>{url}</body></html>')
+
+        async def close(self) -> None:
+            return None
+
+    monkeypatch.setattr(fetcher_module, 'create_fetcher', lambda *_args, **_kwargs: Fetcher())
+
+    result = await execute_fetch(
+        FetchRequest.from_axes(['https://one.test', 'https://two.test', 'https://three.test'], max_concurrency=2)
+    )
+
+    assert [unit.status for unit in result.results] == ['ok', 'failed', 'ok']
+    assert result.results[1].error == 'blocked'
+    assert result.status == 'partial'
+
+
 async def test_execute_fetch_paginates_and_includes_metadata(monkeypatch):
     import yosoi.core.fetcher as fetcher_module
     from yosoi.models.results import FetchResult as HtmlFetchResult
@@ -502,6 +557,35 @@ def test_fetch_result_document_projection_and_envelope_statuses():
     assert ops._fetch_envelope([]).status == 'error'
     assert ops._fetch_envelope([ok, failed]).status == 'partial'
     assert ops._fetch_envelope([failed]).status == 'error'
+
+    blocked = ops.FetchUnitResult(
+        url='https://wall.test',
+        status='blocked',
+        error='captcha',
+        interrupt={'kind': 'captcha', 'blocking': True, 'url': 'https://wall.test'},
+    )
+    blocked_result = ops.FetchResult(status='blocked', results=[blocked])
+    assert blocked_result.success is False
+    assert blocked_result.errors == []
+    assert blocked_result.interrupts == [{'kind': 'captcha', 'blocking': True, 'url': 'https://wall.test'}]
+    assert ops._fetch_envelope([blocked]).status == 'blocked'
+    assert ops._fetch_envelope([ok, blocked]).status == 'partial'
+
+
+def test_fetch_result_accepts_shared_interrupt_fixture() -> None:
+    fixture = json.loads((Path(__file__).parents[2] / 'docs/fixtures/interrupts/voidcrawl-captcha.json').read_text())
+    unit = ops.FetchUnitResult(
+        url=fixture['interrupt']['url'],
+        status='blocked',
+        error='captcha',
+        interrupt=fixture['interrupt'] | {'future_field': 'ignored'},
+    )
+    result = ops.FetchResult(status='blocked', results=[unit])
+
+    assert result.success is False
+    assert result.errors == []
+    assert result.interrupts[0]['id'] == 'fixture-voidcrawl-captcha'
+    assert result.model_dump(mode='json')['interrupts'][0]['future_field'] == 'ignored'
 
 
 def test_fetch_request_normalization_and_rich_document_projection():
@@ -876,6 +960,39 @@ async def test_execute_fetch_catches_unexpected_unit_exception(monkeypatch):
     assert result.results[0].error == 'unit exploded'
 
 
+async def test_execute_fetch_maps_bot_detection_to_interrupt(monkeypatch):
+    from yosoi.utils.exceptions import BotDetectionError
+
+    async def blocked_unit(_request, _url):
+        raise BotDetectionError(
+            'https://captcha.test',
+            403,
+            ['HTTP 403'],
+            identity_id='profile-1',
+            captcha_kind='recaptcha',
+            attach={
+                'websocket_url': 'http://127.0.0.1:19222',
+                'target_id': 'target-1',
+                'handoff_url': 'http://127.0.0.1:3069',
+                'remote_browser_url': 'http://127.0.0.1:3069',
+            },
+        )
+
+    monkeypatch.setattr(ops, '_fetch_unit', blocked_unit)
+
+    result = await execute_fetch(FetchRequest.from_axes('https://captcha.test'))
+
+    assert result.status == 'blocked'
+    assert result.errors == []
+    assert result.interrupts[0]['kind'] == 'captcha'
+    assert result.interrupts[0]['subkind'] == 'recaptcha'
+    assert result.interrupts[0]['evidence']['identity_id'] == 'profile-1'
+    assert result.interrupts[0]['attach']['websocket_url'] == 'http://127.0.0.1:19222'
+    assert result.interrupts[0]['attach']['target_id'] == 'target-1'
+    assert result.interrupts[0]['attach']['handoff_url'] == 'http://127.0.0.1:3069'
+    assert result.interrupts[0]['attach']['remote_browser_url'] == 'http://127.0.0.1:3069'
+
+
 async def test_execute_fetch_failure_and_bundle_paths(monkeypatch, tmp_path):
     import yosoi.core.fetcher as fetcher_module
     from yosoi.models.results import FetchResult as HtmlFetchResult
@@ -890,9 +1007,11 @@ async def test_execute_fetch_failure_and_bundle_paths(monkeypatch, tmp_path):
     monkeypatch.setattr(fetcher_module, 'create_fetcher', lambda *_args, **_kwargs: BlockedFetcher())
     failed = await execute_fetch(FetchRequest.from_axes('https://blocked.test'))
 
-    assert failed.status == 'error'
-    assert failed.results[0].status == 'failed'
+    assert failed.status == 'blocked'
+    assert failed.results[0].status == 'blocked'
     assert failed.results[0].error == 'blocked'
+    assert failed.errors == []
+    assert failed.interrupts[0]['kind'] == 'bot_wall'
 
     class BundleFetcher:
         async def fetch(self, url: str) -> HtmlFetchResult:

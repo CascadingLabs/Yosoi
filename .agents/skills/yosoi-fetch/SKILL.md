@@ -67,6 +67,7 @@ yosoi fetch URL...
   --chars N
   --page N
   --page-size N
+  --concurrency N             # concurrent URLs per batch; default 5
   --include headers,network,endpoints,fingerprint,links,ax
   --contract @Contract
   --output FILE|DIR
@@ -78,10 +79,21 @@ Notes:
 
 - `--chars` is an alias for `--page-size`.
 - `--page` is 1-indexed.
+- `--concurrency` defaults to 5; multi-URL fetches run in ordered batches of at most that many URLs.
 - `network` is accepted as an alias for `endpoints`.
 - `--json` emits the full machine envelope.
 - Human stdout emits only the selected bounded `content`.
 - `yosoi content` has been removed. Use `yosoi fetch`.
+
+## Multi-URL Concurrency
+
+For independent page evidence, pass URLs together and choose a bounded batch size:
+
+```bash
+uvx yosoi fetch URL1 URL2 URL3 --concurrency 5 --view metadata --json
+```
+
+Results preserve input order; an individual failure does not prevent other URLs in its batch or later batches from returning results. Keep the default for browser-heavy or unfamiliar targets. Raise it only for fetchers and sites that can safely absorb the parallel load.
 
 ## Views
 

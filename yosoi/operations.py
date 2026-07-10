@@ -405,6 +405,7 @@ class FetchRequest(BaseModel):
     contracts: list[ContractRef] = Field(default_factory=list)
     output_dir: str | None = None
     experimental_a3node: bool = False
+    max_concurrency: int = Field(default=5, ge=1)
 
     @field_validator('urls', mode='before')
     @classmethod
@@ -459,7 +460,7 @@ class FetchUnitResult(BaseModel):
 
     url: str
     final_url: str | None = None
-    status: Literal['ok', 'failed'] = 'ok'
+    status: Literal['ok', 'failed', 'blocked'] = 'ok'
     status_code: int | None = None
     title: str | None = None
     view: FetchView = 'text'
@@ -486,6 +487,7 @@ class FetchUnitResult(BaseModel):
     contract_probes: list[ContractProbeResult] = Field(default_factory=list)
     artifacts: dict[str, str] = Field(default_factory=dict)
     error: str | None = None
+    interrupt: dict[str, Any] | None = None
 
     def _metadata_doc(self) -> dict[str, Any]:
         return {
@@ -554,7 +556,7 @@ class FetchUnitResult(BaseModel):
 class FetchResult(BaseModel):
     """Machine-readable contractless page acquisition envelope."""
 
-    status: Literal['ok', 'partial', 'error'] = 'ok'
+    status: Literal['ok', 'partial', 'error', 'blocked'] = 'ok'
     results: list[FetchUnitResult] = Field(default_factory=list)
 
     @computed_field
@@ -578,6 +580,11 @@ class FetchResult(BaseModel):
     def errors(self) -> list[dict[str, str]]:
         """Failed URL diagnostics in a compact, machine-friendly shape."""
         return [{'url': unit.url, 'error': unit.error or 'failed'} for unit in self.results if unit.status == 'failed']
+
+    @computed_field
+    def interrupts(self) -> list[dict[str, Any]]:
+        """Blocked URL interrupts with resumable handoff metadata."""
+        return [unit.interrupt for unit in self.results if unit.status == 'blocked' and unit.interrupt is not None]
 
 
 class ContentRequest(BaseModel):
@@ -1210,14 +1217,59 @@ def _paginate_content(content: str, *, page: int, page_size: int) -> tuple[str, 
     return page_content, next_page is not None, next_page
 
 
+def _interrupt_from_bot_detection(exc: Any) -> dict[str, Any]:
+    captcha_kind = getattr(exc, 'captcha_kind', None)
+    interrupt: dict[str, Any] = {
+        'source': 'yosoi.fetch.bot_detection',
+        'kind': 'captcha' if captcha_kind else 'bot_wall',
+        'subkind': captcha_kind,
+        'blocking': True,
+        'url': str(getattr(exc, 'url', '') or ''),
+        'evidence': {
+            'status_code': getattr(exc, 'status_code', None),
+            'indicators': list(getattr(exc, 'indicators', []) or []),
+            'identity_id': getattr(exc, 'identity_id', None),
+        },
+        'resume_hint': {'strategy': 'rerun_after_resolution'},
+    }
+    attach = getattr(exc, 'attach', None)
+    if isinstance(attach, Mapping):
+        interrupt['attach'] = _jsonable(attach)
+    return interrupt
+
+
+def _interrupt_from_fetch_result(fetched: Any, url: str, reason: str) -> dict[str, Any] | None:
+    interrupt = getattr(fetched, 'interrupt', None)
+    if isinstance(interrupt, Mapping):
+        return cast('dict[str, Any]', _jsonable(interrupt))
+    if getattr(fetched, 'is_blocked', False):
+        generated: dict[str, Any] = {
+            'source': 'yosoi.fetch',
+            'kind': 'bot_wall',
+            'subkind': None,
+            'blocking': True,
+            'url': str(getattr(fetched, 'url', url) or url),
+            'evidence': {'reason': reason, 'status_code': getattr(fetched, 'status_code', None)},
+            'resume_hint': {'strategy': 'rerun_after_resolution'},
+        }
+        attach = getattr(fetched, 'attach', None)
+        if isinstance(attach, Mapping):
+            generated['attach'] = _jsonable(attach)
+        return generated
+    return None
+
+
 def _fetch_envelope(units: list[FetchUnitResult]) -> FetchResult:
     if not units:
         return FetchResult(status='error', results=[])
     failed = sum(1 for unit in units if unit.status == 'failed')
-    status: Literal['ok', 'partial', 'error'] = 'ok'
-    if failed == len(units):
+    blocked = sum(1 for unit in units if unit.status == 'blocked')
+    status: Literal['ok', 'partial', 'error', 'blocked'] = 'ok'
+    if blocked == len(units):
+        status = 'blocked'
+    elif failed == len(units):
         status = 'error'
-    elif failed:
+    elif failed or blocked:
         status = 'partial'
     return FetchResult(status=status, results=units)
 
@@ -1477,10 +1529,11 @@ async def _fetch_unit(request: FetchRequest, url: str) -> FetchUnitResult:
 
     if not fetched.success or not fetched.html:
         reason = fetched.block_reason or 'fetch failed'
+        interrupt = _interrupt_from_fetch_result(fetched, url, reason)
         return FetchUnitResult(
             url=url,
             final_url=str(getattr(fetched, 'url', url)),
-            status='failed',
+            status='blocked' if interrupt is not None else 'failed',
             status_code=fetched.status_code,
             raw_html_chars=len(fetched.html or ''),
             fetch_time=fetched.fetch_time,
@@ -1489,6 +1542,7 @@ async def _fetch_unit(request: FetchRequest, url: str) -> FetchUnitResult:
             page=request.page,
             page_size=request.page_size,
             error=reason,
+            interrupt=interrupt,
         )
 
     raw_html = fetched.html
@@ -1667,13 +1721,26 @@ async def _fetch_content_unit(request: ContentRequest, url: str) -> ContentUnitR
 
 
 async def execute_fetch(request: FetchRequest) -> FetchResult:
-    """Fetch URLs and return bounded page acquisition content."""
-    units: list[FetchUnitResult] = []
-    for url in request.urls:
+    """Fetch URLs concurrently in bounded batches, preserving request order."""
+    from yosoi.utils.exceptions import BotDetectionError
+
+    async def _unit(url: str) -> FetchUnitResult:
         try:
-            unit = await _fetch_unit(request, url)
+            return await _fetch_unit(request, url)
+        except BotDetectionError as exc:
+            return FetchUnitResult(
+                url=url,
+                final_url=getattr(exc, 'url', url),
+                status='blocked',
+                status_code=getattr(exc, 'status_code', None),
+                view=request.view,
+                page=request.page,
+                page_size=request.page_size,
+                error=str(exc),
+                interrupt=_interrupt_from_bot_detection(exc),
+            )
         except Exception as exc:  # noqa: BLE001
-            unit = FetchUnitResult(
+            return FetchUnitResult(
                 url=url,
                 status='failed',
                 view=request.view,
@@ -1681,7 +1748,12 @@ async def execute_fetch(request: FetchRequest) -> FetchResult:
                 page_size=request.page_size,
                 error=str(exc),
             )
-        units.append(unit)
+
+    units: list[FetchUnitResult] = []
+    for start in range(0, len(request.urls), request.max_concurrency):
+        units.extend(
+            await asyncio.gather(*(_unit(url) for url in request.urls[start : start + request.max_concurrency]))
+        )
     return _fetch_envelope(units)
 
 

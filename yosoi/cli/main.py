@@ -680,6 +680,9 @@ main._run_json = _ORIGINAL_RUN_JSON  # type: ignore[attr-defined]
 @click.option('-f', '--file', 'file_path', default=None, help='File containing URLs.')
 @click.option('-l', '--limit', type=int, default=None, help='Limit number of URLs.')
 @click.option(
+    '--concurrency', type=click.IntRange(1), default=5, show_default=True, help='URLs to fetch concurrently per batch.'
+)
+@click.option(
     '--policy',
     'policy_source',
     multiple=True,
@@ -727,6 +730,7 @@ def fetch(
     url: tuple[str, ...],
     file_path: str | None,
     limit: int | None,
+    concurrency: int,
     policy_source: tuple[str, ...],
     fetcher: str | None,
     view: str,
@@ -769,6 +773,7 @@ def fetch(
             include=include_items,
             output_dir=output_path if normalised_view == 'bundle' else None,
             experimental_a3node=a3node,
+            max_concurrency=concurrency,
         )
         if dump_request:
             click.echo(request.model_dump_json(indent=2))

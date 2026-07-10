@@ -1,0 +1,15 @@
+{
+  "version": "interrupt.v1",
+  "status": "waiting",
+  "interrupt": {
+    "id": "fixture-oauth-human-required",
+    "source": "oauth.login",
+    "kind": "oauth",
+    "subkind": "human_required",
+    "blocking": true,
+    "url": "https://accounts.example.test/login",
+    "attach": {"session_id": "oauth-session"},
+    "evidence": {"source": "oauth.login", "data": {"provider": "example"}},
+    "resume_hint": {"strategy": "continue_after_callback"}
+  }
+}

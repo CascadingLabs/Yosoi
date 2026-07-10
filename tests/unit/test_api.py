@@ -69,6 +69,7 @@ async def test_fetch_builds_request_and_forwards_policy(mocker, monkeypatch):
         include=('headers', 'fingerprint'),
         contracts=[ApiContract],
         policy=ys.Policy(),
+        max_concurrency=2,
     )
 
     request = run.await_args.args[0]
@@ -78,6 +79,7 @@ async def test_fetch_builds_request_and_forwards_policy(mocker, monkeypatch):
     assert request.fetcher_type == 'simple'
     assert request.page_size == 500
     assert request.include == ['headers', 'fingerprint']
+    assert request.max_concurrency == 2
     assert request.contract_classes()[0] is ApiContract
 
 

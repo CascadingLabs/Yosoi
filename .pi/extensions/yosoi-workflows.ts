@@ -16,6 +16,8 @@ interface YosoiRun {
   command: string;
   workflow: string;
   urls: string[];
+  inputSummary?: string;
+  concurrency?: number;
   startedAt: number;
   endedAt?: number;
   status: RunStatus;
@@ -68,9 +70,9 @@ URL(s): ${target || "<fill URL>"}
 
 Follow .agents/skills/yosoi-web-workflows/SKILL.md and .agents/skills/yosoi-fetch/SKILL.md.
 Start with:
-uvx yosoi fetch "${target || "URL"}" --view text --chars 12000 --json
+uvx yosoi fetch ${target || 'URL'} --view text --chars 12000 --concurrency 5 --json
 
-If JS/source fidelity matters, compare raw/rendered or save a bundle. Report status, fetcher, truncation, artifacts, and next step.`,
+For multiple URLs, fetch runs in ordered batches of up to --concurrency URLs (default 5). Increase only when the selected fetcher and target sites can safely handle it. If JS/source fidelity matters, compare raw/rendered or save a bundle. Report status, fetcher, truncation, artifacts, and next step.`,
 
   crawl: (target) => `Use Yosoi crawl for a bounded site/frontier traversal.
 
@@ -134,6 +136,20 @@ function extractWorkflow(command: string): string {
   const match = command.match(/(?:^|[\s;&|()])(?:(?:uv\s+run|uvx)\s+)?yosoi\s+([\w-]+)(?:\s+([\w-]+))?/);
   if (!match) return "yosoi";
   return match[1] === "research" && match[2] ? `research ${match[2]}` : match[1];
+}
+
+function extractConcurrency(command: string, workflow: string): number | undefined {
+  if (workflow !== "fetch") return undefined;
+  const match = command.match(/--concurrency(?:\s+|=)(\d+)/);
+  if (!match) return 5;
+  const value = Number(match[1]);
+  return Number.isSafeInteger(value) && value > 0 ? value : undefined;
+}
+
+function fetchInputSummary(command: string, urls: string[]): string {
+  const fileInput = /(?:^|\s)(?:-f|--file)(?:\s|=)/.test(command);
+  if (fileInput) return urls.length ? `≥${urls.length} URLs + file` : "file URLs";
+  return urls.length ? `${urls.length} URL${urls.length === 1 ? "" : "s"}` : "URL input";
 }
 
 function unique(values: string[]): string[] {
@@ -301,7 +317,10 @@ function runTarget(run: YosoiRun, cwd: string, width: number): string {
 
 function renderRunRow(run: YosoiRun, width: number, cwd: string): string {
   const code = run.httpStatusCodes.length ? run.httpStatusCodes.join(",") : run.exitCode !== undefined ? `exit ${run.exitCode}` : "—";
-  const detail = [code, run.fetcher, run.summary, formatDuration(run), formatTokens(run.contextTokens)].filter(Boolean).join(" • ");
+  const batch = run.concurrency ? `${run.inputSummary ?? "URL input"} • batches ≤${run.concurrency}` : undefined;
+  const detail = [code, batch, run.fetcher, run.summary, formatDuration(run), formatTokens(run.contextTokens)]
+    .filter(Boolean)
+    .join(" • ");
   const prefix = `${statusGlyph(run)} ${run.workflow} ${detail} `;
   if (prefix.length >= width) return truncateToWidth(prefix, width, "…");
   return prefix + runTarget(run, cwd, width - prefix.length);
@@ -393,11 +412,15 @@ export default function (pi: ExtensionAPI) {
     const command = String((event.input as { command?: unknown }).command ?? "");
     if (!isYosoiShellCommand(command)) return;
 
+    const workflow = extractWorkflow(command);
+    const urls = extractUrls(command);
     const run: YosoiRun = {
       id: event.toolCallId,
       command,
-      workflow: extractWorkflow(command),
-      urls: extractUrls(command),
+      workflow,
+      urls,
+      inputSummary: workflow === "fetch" ? fetchInputSummary(command, urls) : undefined,
+      concurrency: extractConcurrency(command, workflow),
       startedAt: Date.now(),
       status: "running",
       httpStatusCodes: [],

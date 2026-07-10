@@ -1090,6 +1090,13 @@ class TestCoverageSensitiveCliBranches:
         assert request_doc['urls'] == ['https://example.com']
         assert request_doc['view'] == 'text'
         assert request_doc['page_size'] == 12000
+        assert request_doc['max_concurrency'] == 5
+
+        concurrency_dumped = runner.invoke(
+            main, ['fetch', 'https://example.com', '--concurrency', '2', '--dump-request']
+        )
+        assert concurrency_dumped.exit_code == 0, concurrency_dumped.output
+        assert json.loads(concurrency_dumped.output)['max_concurrency'] == 2
 
         removed = runner.invoke(main, ['content', 'https://example.com', '--help'])
         assert removed.exit_code != 0

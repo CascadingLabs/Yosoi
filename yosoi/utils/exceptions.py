@@ -1,5 +1,7 @@
 """Custom exceptions for Yosoi."""
 
+from typing import Any
+
 
 class YosoiError(Exception):
     """Base class for all Yosoi exceptions."""
@@ -30,6 +32,7 @@ class BotDetectionError(YosoiError):
         indicators: list[str],
         identity_id: str | None = None,
         captcha_kind: str | None = None,
+        attach: dict[str, Any] | None = None,
     ):
         """Initialize bot detection error.
 
@@ -42,6 +45,8 @@ class BotDetectionError(YosoiError):
             captcha_kind: Optional captcha kind from a live DOM probe
                 (``Page.detect_captcha``). ``None`` when no named captcha was
                 detected — distinct from the marker heuristic in ``indicators``.
+            attach: Optional same-browser handoff metadata for a live human/operator
+                resolution path.
 
         """
         self.url = url
@@ -49,6 +54,7 @@ class BotDetectionError(YosoiError):
         self.indicators = indicators
         self.identity_id = identity_id
         self.captcha_kind = captcha_kind
+        self.attach = attach
         suffix = ''
         if identity_id is not None:
             suffix += f' [identity={identity_id}]'

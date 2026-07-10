@@ -1,3 +1,15 @@
+## 0.1.0 (2026-07-09)
+
+### Feat
+
+- **fetch**: add configurable bounded concurrent batches for multi-URL acquisition via `--concurrency`.
+- **fetch**: return structured blocked/captcha interrupts with same-browser handoff metadata when available.
+- **agents**: surface fetch batch concurrency in the Pi dashboard and packaged fetch workflow guidance.
+
+### Docs
+
+- Add a fetch guide covering bounded multi-URL acquisition, output semantics, and validation commands.
+
 ## 0.0.3a21 (2026-07-02)
 
 ### Fix

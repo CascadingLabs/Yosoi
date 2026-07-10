@@ -1,0 +1,15 @@
+{
+  "version": "interrupt.v1",
+  "status": "blocked",
+  "interrupt": {
+    "id": "fixture-voidcrawl-captcha",
+    "source": "voidcrawl.capture_challenge",
+    "kind": "captcha",
+    "subkind": "recaptcha",
+    "blocking": true,
+    "url": "https://example.test/captcha",
+    "attach": {"websocket_url": "ws://127.0.0.1:19222/devtools/browser/fixture", "target_id": "target-1", "session_id": "session-1", "handoff_url": "http://127.0.0.1:3069", "remote_browser_url": "http://127.0.0.1:3069"},
+    "evidence": {"source": "voidcrawl.capture_challenge", "data": {"dom_captcha": {"kind": "recaptcha", "active": true}}},
+    "resume_hint": {"strategy": "same_tab_after_resolution", "context": {"event_id": "fixture-voidcrawl-captcha"}}
+  }
+}
