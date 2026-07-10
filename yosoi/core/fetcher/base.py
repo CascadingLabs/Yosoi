@@ -60,25 +60,43 @@ class ContentAnalyzer:
 
     @staticmethod
     def _detect_js_shell(html: str) -> bool:
-        """Detect JS-rendered shells by visible text ratio.
+        """Detect an unrendered client-side shell by an essentially empty body.
 
-        A page with lots of HTML but almost no readable text is almost
-        certainly a client-side rendered shell waiting for JS to populate it.
+        A page whose <body> carries almost no readable text is almost certainly a
+        client-side-rendered shell waiting for JS to populate a mount node. This
+        is a fast, conservative pre-check: it flags only the unambiguous empty
+        body, leaving borderline pages for the pipeline to confirm by extraction.
         """
-        # FUTURE: watch for false positives — markup-heavy / image-only pages with little
-        # visible text can trip this and over-escalate to Chrome. Tune thresholds against
-        # the bake-off harness (CAS-44) before relying on it broadly.
+        import lxml.etree
         import lxml.html
 
-        head = html[:50_000]
-        if not head.strip():
+        if not html.strip():
             return False
-        tree = lxml.html.document_fromstring(head)
+        # Parse the whole document rather than a fixed-size head slice: real
+        # content can sit past an arbitrary byte offset (large <head>, inline CSS,
+        # nav), and a truncated sample misreads a populated page as an empty shell.
+        try:
+            tree = lxml.html.document_fromstring(html)
+        except (lxml.etree.ParserError, ValueError):
+            return False
         for tag in tree.xpath('.//script | .//style | .//noscript'):
             tag.drop_tree()
-        text = ' '.join(tree.itertext()).strip()
-        text_ratio = len(text) / max(len(html), 1)
-        return len(html) > 5000 and (len(text) < 500 or text_ratio < 0.02)
+        # Measure text inside <body> only — a long <title> or meta in <head> must
+        # not count as page content.
+        body = tree.find('.//body')
+        text = ' '.join((body if body is not None else tree).itertext()).strip()
+
+        # A shell is defined by emptiness, not size or ratio. qscrape-style shells
+        # are *small* (a bare mount node), so a size gate misses them; and their
+        # tiny markup means the text ratio isn't low either, so a ratio test misses
+        # them too. The one signal that separates an unrendered shell from a short
+        # real article is whether the body carries essentially *no* text at all.
+        # This is deliberately conservative — it flags only the unambiguous empty
+        # body and leaves borderline pages (a genuinely short article) alone.
+        # Confirming that simple HTTP actually yields extractable content for the
+        # borderline range is the pipeline's job (escalate if extraction is empty),
+        # not this fast pre-check's.
+        return len(text) < 25
 
     @staticmethod
     def _detect_rss(html_lower: str) -> bool:
