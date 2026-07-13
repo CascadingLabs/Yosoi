@@ -65,7 +65,11 @@ Use when the target is unclear or you need candidate sources.
 
 ```bash
 uvx yosoi search "QUERY" --limit 10 --json > .yosoi/search-query.json
+# Batch independent queries in order, with bounded concurrency (default: 5).
+uvx yosoi search --file queries.txt --concurrency 5 --json > .yosoi/search-batch.json
 ```
+
+`queries.txt` contains one query per line. Alternatively, repeat `--query QUERY`. A batch result keeps each query's result or failure in input order; backend fallbacks for a single query remain sequential.
 
 Then:
 

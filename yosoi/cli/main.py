@@ -382,6 +382,19 @@ def _write_fetch_output(path: Path, result: object) -> None:
         (path / f'{index:03d}-{stem}.txt').write_text(unit.content or '', encoding='utf-8')
 
 
+def _collect_search_queries(query: tuple[str, ...], queries: tuple[str, ...], file_path: str | None) -> list[str]:
+    """Combine one positional query with repeated or file-backed query inputs."""
+    collected = [' '.join(query).strip()] if query else []
+    collected.extend(item.strip() for item in queries if item.strip())
+    if file_path:
+        collected.extend(
+            line.strip() for line in Path(file_path).read_text(encoding='utf-8').splitlines() if line.strip()
+        )
+    if not collected:
+        raise click.UsageError('No search query provided. Use QUERY, --query, or --file.')
+    return collected
+
+
 def _collect_urls(url: tuple[str, ...], file_path: str | None, limit: int | None, ui: Console) -> list[str]:
     urls: list[str] = list(url)
     if file_path:
@@ -680,6 +693,9 @@ main._run_json = _ORIGINAL_RUN_JSON  # type: ignore[attr-defined]
 @click.option('-f', '--file', 'file_path', default=None, help='File containing URLs.')
 @click.option('-l', '--limit', type=int, default=None, help='Limit number of URLs.')
 @click.option(
+    '--concurrency', type=click.IntRange(1), default=5, show_default=True, help='URLs to fetch concurrently per batch.'
+)
+@click.option(
     '--policy',
     'policy_source',
     multiple=True,
@@ -727,6 +743,7 @@ def fetch(
     url: tuple[str, ...],
     file_path: str | None,
     limit: int | None,
+    concurrency: int,
     policy_source: tuple[str, ...],
     fetcher: str | None,
     view: str,
@@ -769,6 +786,7 @@ def fetch(
             include=include_items,
             output_dir=output_path if normalised_view == 'bundle' else None,
             experimental_a3node=a3node,
+            max_concurrency=concurrency,
         )
         if dump_request:
             click.echo(request.model_dump_json(indent=2))
@@ -798,7 +816,10 @@ def fetch(
 
 
 @main.command('search')
-@click.argument('query', nargs=-1)
+@click.argument('query', nargs=-1, required=False)
+@click.option('-q', '--query', 'queries', multiple=True, help='Search query. Repeat for concurrent queries.')
+@click.option('-f', '--file', 'file_path', default=None, help='File containing one search query per line.')
+@click.option('--concurrency', type=click.IntRange(1), default=5, show_default=True, help='Concurrent search queries.')
 @click.option('--limit', type=click.IntRange(1), default=None, help='Maximum number of search results.')
 @click.option('--backend', default=None, help='DDGS backend string.')
 @click.option('--region', default=None, help='Search region, such as us-en.')
@@ -821,6 +842,9 @@ def fetch(
 @click.option('--dump-request', is_flag=True, help='Print the resolved SearchRequest JSON and exit.')
 def search(
     query: tuple[str, ...],
+    queries: tuple[str, ...],
+    file_path: str | None,
+    concurrency: int,
     limit: int | None,
     backend: str | None,
     region: str | None,
@@ -836,36 +860,49 @@ def search(
     from rich.table import Table
 
     from yosoi.cli import exit_codes
-    from yosoi.operations import SearchRequest, run_search
+    from yosoi.operations import SearchBatchResult, SearchRequest, SearchResult, run_search, run_searches
     from yosoi.policy import Policy
     from yosoi.policy.files import discover_policy_files, load_policy_layers
 
-    query_text = ' '.join(part for part in query if part).strip()
-    if not query_text:
-        raise click.UsageError('No search query provided.')
-
     safe_search = cast(Literal['on', 'moderate', 'off'], safesearch.lower()) if safesearch is not None else None
+    query_texts = _collect_search_queries(query, queries, file_path)
     try:
         file_policy = load_policy_layers(policy_source) if policy_source or discover_policy_files() else None
         policy = Policy.cascade(Policy.from_env(), file_policy)
-        request = SearchRequest.from_policy(
-            query_text,
-            policy=policy,
-            backend=backend,
-            region=region,
-            safesearch=safe_search,
-            timelimit=timelimit,
-            max_results=limit,
-            page=page,
-        )
+        requests = [
+            SearchRequest.from_policy(
+                query_text,
+                policy=policy,
+                backend=backend,
+                region=region,
+                safesearch=safe_search,
+                timelimit=timelimit,
+                max_results=limit,
+                page=page,
+            )
+            for query_text in query_texts
+        ]
     except Exception as exc:
         raise click.ClickException(str(exc)) from exc
     if dump_request:
-        click.echo(request.model_dump_json(indent=2))
+        payload: SearchRequest | list[SearchRequest] = requests[0] if len(requests) == 1 else requests
+        click.echo(
+            json.dumps(
+                [request.model_dump(mode='json') for request in payload]
+                if isinstance(payload, list)
+                else payload.model_dump(mode='json'),
+                indent=2,
+            )
+        )
         return
 
     try:
-        result = asyncio.run(run_search(request))
+        result = cast(
+            SearchResult | SearchBatchResult,
+            asyncio.run(
+                run_search(requests[0]) if len(requests) == 1 else run_searches(requests, max_concurrency=concurrency)
+            ),
+        )
     except Exception as exc:
         if json_output:
             sys.stdout.write(json.dumps({'type': 'error', 'message': str(exc)}) + '\n')
@@ -876,16 +913,26 @@ def search(
     if json_output:
         sys.stdout.write(result.model_dump_json() + '\n')
         sys.stdout.flush()
-        sys.exit(exit_codes.RECORDS)
+        sys.exit(exit_codes.RECORDS if result.status == 'ok' else exit_codes.ERROR)
 
-    table = Table(box=box.SIMPLE_HEAVY, show_lines=False)
-    table.add_column('#', justify='right', style='cyan', no_wrap=True)
-    table.add_column('Title', style='bold', overflow='fold')
-    table.add_column('URL', style='blue', overflow='fold')
-    table.add_column('Snippet', style='dim', overflow='fold')
-    for hit in result.hits:
-        table.add_row(str(hit.rank), hit.title, hit.url, hit.snippet)
-    console.print(table)
+    results = [result] if isinstance(result, SearchResult) else [unit.result for unit in result.results if unit.result]
+    for index, search_result in enumerate(results):
+        if index:
+            console.print()
+        if len(results) > 1:
+            console.print(f'[bold]Query:[/bold] {search_result.request.query}', markup=False)
+        table = Table(box=box.SIMPLE_HEAVY, show_lines=False)
+        table.add_column('#', justify='right', style='cyan', no_wrap=True)
+        table.add_column('Title', style='bold', overflow='fold')
+        table.add_column('URL', style='blue', overflow='fold')
+        table.add_column('Snippet', style='dim', overflow='fold')
+        for hit in search_result.hits:
+            table.add_row(str(hit.rank), hit.title, hit.url, hit.snippet)
+        console.print(table)
+    if isinstance(result, SearchBatchResult):
+        for unit in result.results:
+            if unit.status == 'failed':
+                console.print(f'[warning]Search error:[/warning] {unit.query} {unit.error or "failed"}', markup=False)
 
 
 @main.group('research')

@@ -69,6 +69,7 @@ async def test_fetch_builds_request_and_forwards_policy(mocker, monkeypatch):
         include=('headers', 'fingerprint'),
         contracts=[ApiContract],
         policy=ys.Policy(),
+        max_concurrency=2,
     )
 
     request = run.await_args.args[0]
@@ -78,7 +79,24 @@ async def test_fetch_builds_request_and_forwards_policy(mocker, monkeypatch):
     assert request.fetcher_type == 'simple'
     assert request.page_size == 500
     assert request.include == ['headers', 'fingerprint']
+    assert request.max_concurrency == 2
     assert request.contract_classes()[0] is ApiContract
+
+
+async def test_search_batches_queries_with_a_concurrency_cap(mocker, monkeypatch):
+    from yosoi.operations import SearchBatchResult
+
+    monkeypatch.delenv('YOSOI_SEARCH_BACKEND', raising=False)
+    run = mocker.patch(
+        'yosoi.operations.run_searches',
+        mocker.AsyncMock(return_value=SearchBatchResult()),
+    )
+
+    result = await ys.search(['one', 'two'], max_concurrency=2)
+
+    assert result.results == []
+    assert [request.query for request in run.await_args.args[0]] == ['one', 'two']
+    assert run.await_args.kwargs['max_concurrency'] == 2
 
 
 async def test_search_builds_request_and_forwards_limit(mocker, monkeypatch):

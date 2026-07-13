@@ -374,6 +374,27 @@ class SearchResult(BaseModel):
     urls: list[str] = Field(default_factory=list)
 
 
+class SearchUnitResult(BaseModel):
+    """One query outcome within a bounded concurrent search batch."""
+
+    query: str
+    status: Literal['ok', 'failed'] = 'ok'
+    result: SearchResult | None = None
+    error: str | None = None
+
+
+class SearchBatchResult(BaseModel):
+    """Machine-readable envelope for concurrent search queries."""
+
+    status: Literal['ok', 'partial', 'error'] = 'ok'
+    results: list[SearchUnitResult] = Field(default_factory=list)
+
+    @computed_field
+    def success(self) -> bool:
+        """Whether every query completed successfully."""
+        return self.status == 'ok'
+
+
 class ContractProbeResult(BaseModel):
     """Advisory fit signal for a contract against an acquired page."""
 
@@ -405,6 +426,7 @@ class FetchRequest(BaseModel):
     contracts: list[ContractRef] = Field(default_factory=list)
     output_dir: str | None = None
     experimental_a3node: bool = False
+    max_concurrency: int = Field(default=5, ge=1)
 
     @field_validator('urls', mode='before')
     @classmethod
@@ -1667,13 +1689,13 @@ async def _fetch_content_unit(request: ContentRequest, url: str) -> ContentUnitR
 
 
 async def execute_fetch(request: FetchRequest) -> FetchResult:
-    """Fetch URLs and return bounded page acquisition content."""
-    units: list[FetchUnitResult] = []
-    for url in request.urls:
+    """Fetch URLs concurrently in bounded batches, preserving request order."""
+
+    async def _unit(url: str) -> FetchUnitResult:
         try:
-            unit = await _fetch_unit(request, url)
+            return await _fetch_unit(request, url)
         except Exception as exc:  # noqa: BLE001
-            unit = FetchUnitResult(
+            return FetchUnitResult(
                 url=url,
                 status='failed',
                 view=request.view,
@@ -1681,7 +1703,12 @@ async def execute_fetch(request: FetchRequest) -> FetchResult:
                 page_size=request.page_size,
                 error=str(exc),
             )
-        units.append(unit)
+
+    units: list[FetchUnitResult] = []
+    for start in range(0, len(request.urls), request.max_concurrency):
+        units.extend(
+            await asyncio.gather(*(_unit(url) for url in request.urls[start : start + request.max_concurrency]))
+        )
     return _fetch_envelope(units)
 
 
@@ -1702,6 +1729,31 @@ async def execute_search(request: SearchRequest) -> SearchResult:
     from yosoi.core.fetcher.search import fetch_ddgs_text
 
     return normalize_search_result(request, await fetch_ddgs_text(request))
+
+
+async def execute_searches(requests: Sequence[SearchRequest], *, max_concurrency: int = 5) -> SearchBatchResult:
+    """Execute independent search queries concurrently with a bounded fan-out."""
+    if isinstance(max_concurrency, bool) or max_concurrency < 1:
+        raise ValueError('max_concurrency must be >= 1')
+    if not requests:
+        raise ValueError('requests must not be empty')
+
+    async def _unit(request: SearchRequest) -> SearchUnitResult:
+        try:
+            return SearchUnitResult(query=request.query, result=await execute_search(request))
+        except Exception as exc:  # noqa: BLE001 - individual query failures are batch-local
+            return SearchUnitResult(query=request.query, status='failed', error=str(exc))
+
+    units: list[SearchUnitResult] = []
+    for start in range(0, len(requests), max_concurrency):
+        units.extend(await asyncio.gather(*(_unit(request) for request in requests[start : start + max_concurrency])))
+    failed = sum(unit.status == 'failed' for unit in units)
+    status: Literal['ok', 'partial', 'error'] = 'ok'
+    if failed == len(units):
+        status = 'error'
+    elif failed:
+        status = 'partial'
+    return SearchBatchResult(status=status, results=units)
 
 
 async def run_crawl(request: CrawlRequest) -> CrawlResult:
@@ -1746,6 +1798,11 @@ async def run_scrape(request: ScrapeRequest) -> ScrapeResult:
 async def run_search(request: SearchRequest) -> SearchResult:
     """Alias for executing a search request through the canonical surface."""
     return await execute_search(request)
+
+
+async def run_searches(requests: Sequence[SearchRequest], *, max_concurrency: int = 5) -> SearchBatchResult:
+    """Alias for executing a bounded concurrent batch of search requests."""
+    return await execute_searches(requests, max_concurrency=max_concurrency)
 
 
 async def run_fetch(request: FetchRequest) -> FetchResult:
