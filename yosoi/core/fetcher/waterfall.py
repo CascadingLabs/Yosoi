@@ -241,10 +241,6 @@ class JSFetcher(HTMLFetcher):
     # Strategy cache helpers
     # ------------------------------------------------------------------
 
-    def _preferred_strategy(self, domain: str) -> FetchStrategy | None:
-        """Return the cached strategy for *domain*, or None if unknown."""
-        return self._strategy_cache.get(domain)
-
     async def _record_success(self, domain: str, tier: str, identity_id: str | None = None) -> None:
         """Save the winning tier (and cascade identity) for *domain* if it changed."""
         if self._crawl_frontier_only:
@@ -430,10 +426,6 @@ class JSFetcher(HTMLFetcher):
     # Public fetch interface
     # ------------------------------------------------------------------
 
-    # ------------------------------------------------------------------
-    # Public fetch interface
-    # ------------------------------------------------------------------
-
     async def fetch(
         self,
         url: str,
@@ -458,7 +450,7 @@ class JSFetcher(HTMLFetcher):
         """
         start_time = time.time()
         domain = extract_domain(url)
-        cached_strategy = None if self._force else self._preferred_strategy(domain)
+        cached_strategy = None if self._force else self._strategy_cache.get(domain)
         if self._simple_first and cached_strategy is not None and cached_strategy.fetcher != 'simple':
             cached_strategy = None
 
