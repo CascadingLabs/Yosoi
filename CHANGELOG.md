@@ -1,3 +1,13 @@
+## 0.0.3a24 (2026-07-20)
+
+### Fix
+
+- **deps**: require VoidCrawl 0.4 or newer and lock 0.4.0.
+
+### Test
+
+- **stubs**: reuse the warmed mypy cache across snippet checks to prevent `ci-check` from appearing stalled.
+
 ## 0.0.3a23 (2026-07-20)
 
 ### Feat
