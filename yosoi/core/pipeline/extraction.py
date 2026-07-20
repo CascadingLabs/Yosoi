@@ -52,7 +52,7 @@ if TYPE_CHECKING:
 
         def _resolve_root(self, selectors: dict[str, Any]) -> dict[str, Any] | None: ...
 
-        def _resolve_cached_records(
+        async def _resolve_cached_records(
             self, url: str, domain: str, html: str, selectors: dict[str, Any]
         ) -> ContentItems | None: ...
 
@@ -239,7 +239,7 @@ class PipelineExtractionMixin:
         self.console.print(f'[success]Cleaned HTML ready ({len(cleaned_html):,} chars)[/success]')
         return cleaned_html
 
-    def _extract(
+    async def _extract(
         self,
         url: str,
         html: str,
@@ -250,7 +250,7 @@ class PipelineExtractionMixin:
         self.console.print('[step]Step 4: Extracting content using verified selectors...[/step]')
 
         if container_selector:
-            raw_items = self.extractor.extract_items(
+            raw_items = await self.extractor.extract_items_async(
                 url, html, verified_selectors, container_selector, max_level=self.selector_level
             )
             if not raw_items:
@@ -260,7 +260,7 @@ class PipelineExtractionMixin:
             self.console.print(f'[success]Extracted {len(items)} items successfully[/success]')
             return items
 
-        raw_extracted = self.extractor.extract_content_with_html(
+        raw_extracted = await self.extractor.extract_content_with_html_async(
             url, html, verified_selectors, max_level=self.selector_level
         )
 
@@ -351,7 +351,7 @@ class PipelineExtractionMixin:
             else:
                 selectors_to_use = existing_selectors
 
-            cached = host._resolve_cached_records(url, domain, result.html, selectors_to_use)
+            cached = await host._resolve_cached_records(url, domain, result.html, selectors_to_use)
             extracted = self._merge_fetch_outputs(cached, result)
             self._record_downloads(result.downloads)
             if extracted:

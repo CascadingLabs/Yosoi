@@ -3,7 +3,7 @@
 from yosoi.types.author import Author
 from yosoi.types.body_text import BodyText
 from yosoi.types.datetime import Datetime
-from yosoi.types.field import Field, File, js
+from yosoi.types.field import Extractor, Field, File, js
 from yosoi.types.price import Price
 from yosoi.types.rating import Rating
 from yosoi.types.registry import register_coercion
@@ -15,6 +15,7 @@ __all__ = [
     'Author',
     'BodyText',
     'Datetime',
+    'Extractor',
     'Field',
     'File',
     'Price',

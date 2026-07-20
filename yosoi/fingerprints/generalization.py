@@ -11,13 +11,17 @@ from __future__ import annotations
 import re
 from urllib.parse import urlsplit
 
+from pydantic import BaseModel, ConfigDict, Field
+
 from yosoi.fingerprints.models import (
+    ExtractorStrategyRecord,
     FieldGeneralizationSimilarity,
     FingerprintFieldReferenceRecord,
     RootKind,
     RootScopeRecord,
 )
 from yosoi.generalization.fingerprint import PageFingerprint
+from yosoi.models.extraction import ExtractorFingerprint, RowFingerprint
 from yosoi.models.selectors import SelectorEntry, coerce_selector_entry
 
 _ID_SEG_RE = re.compile(r'^(?:[0-9]+|[0-9a-f]{8,}|[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})$', re.IGNORECASE)
@@ -70,6 +74,146 @@ def root_signature(root: SelectorEntry | dict[str, object] | str | None, *, cont
     return root_scope(root, contract_name=contract_name).signature
 
 
+class ExtractorGeneralizationSimilarity(BaseModel):
+    """Fail-closed compatibility evidence for one extractor strategy proposal."""
+
+    model_config = ConfigDict(frozen=True)
+
+    score: float = Field(ge=0.0, le=1.0)
+    compatible: bool
+    page_score: float = Field(ge=0.0, le=1.0)
+    route_match: bool
+    root_match: bool
+    output_match: bool
+    resolver_match: bool
+    operation_match: bool
+    row_score: float = Field(ge=0.0, le=1.0)
+
+
+def compare_extractor_reference(
+    *,
+    candidate_fingerprint: PageFingerprint,
+    candidate_url: str,
+    candidate_root: SelectorEntry | dict[str, object] | str | None,
+    candidate_output_annotation: str,
+    candidate_resolver_id: str,
+    candidate_resolver_version: str,
+    candidate_operations: tuple[str, ...],
+    candidate_row: RowFingerprint,
+    reference: FingerprintFieldReferenceRecord,
+    candidate_contract_name: str | None = None,
+) -> ExtractorGeneralizationSimilarity:
+    """Compare a current row with a stored extractor strategy, never a stored value."""
+    strategy = reference.extractor
+    if strategy is None:
+        raise ValueError('compare_extractor_reference requires an extractor strategy reference')
+    page = candidate_fingerprint.similarity(reference.fingerprint)
+    route_match = route_template(candidate_url) == reference.route_template
+    scope = root_scope(candidate_root, contract_name=candidate_contract_name)
+    root_match = scope.kind == reference.root.kind and scope.signature == reference.root.signature
+    output_match = candidate_output_annotation == strategy.output_annotation
+    resolver_match = (
+        candidate_resolver_id == strategy.extractor.resolver_id
+        and candidate_resolver_version == strategy.extractor.version
+    )
+    operation_match = candidate_operations == strategy.operations
+    row_score = candidate_row.similarity(strategy.row)
+    compatible = (
+        page.same_shape
+        and route_match
+        and root_match
+        and output_match
+        and resolver_match
+        and row_score == 1.0
+        and operation_match
+    )
+    operation_score = 0.5 if strategy.opaque and operation_match else float(operation_match)
+    parts = [
+        page.score,
+        float(route_match),
+        float(root_match),
+        float(output_match),
+        float(resolver_match),
+        operation_score,
+        row_score,
+    ]
+    return ExtractorGeneralizationSimilarity(
+        score=sum(parts) / len(parts),
+        compatible=compatible,
+        page_score=page.score,
+        route_match=route_match,
+        root_match=root_match,
+        output_match=output_match,
+        resolver_match=resolver_match,
+        operation_match=operation_match,
+        row_score=row_score,
+    )
+
+
+def select_extractor_reference(
+    references: list[FingerprintFieldReferenceRecord],
+    *,
+    candidate_fingerprint: PageFingerprint,
+    candidate_url: str,
+    candidate_root: SelectorEntry | dict[str, object] | str | None,
+    candidate_output_annotation: str,
+    candidate_resolver_id: str,
+    candidate_resolver_version: str,
+    candidate_operations: tuple[str, ...],
+    candidate_row: RowFingerprint,
+    candidate_contract_name: str | None = None,
+) -> FingerprintFieldReferenceRecord | None:
+    """Select one compatible strategy or abstain when candidates conflict."""
+    compatible = [
+        reference
+        for reference in references
+        if reference.extractor is not None
+        and compare_extractor_reference(
+            candidate_fingerprint=candidate_fingerprint,
+            candidate_url=candidate_url,
+            candidate_root=candidate_root,
+            candidate_output_annotation=candidate_output_annotation,
+            candidate_resolver_id=candidate_resolver_id,
+            candidate_resolver_version=candidate_resolver_version,
+            candidate_operations=candidate_operations,
+            candidate_row=candidate_row,
+            reference=reference,
+            candidate_contract_name=candidate_contract_name,
+        ).compatible
+    ]
+    if not compatible:
+        return None
+    strategy_ids = {
+        (reference.extractor.extractor.fingerprint, reference.extractor.operations)
+        for reference in compatible
+        if reference.extractor is not None
+    }
+    return compatible[0] if len(strategy_ids) == 1 else None
+
+
+def extractor_strategy_from_fingerprint(
+    fingerprint: ExtractorFingerprint,
+    *,
+    spec: object,
+    output_annotation: str,
+) -> ExtractorStrategyRecord:
+    """Build a reusable strategy payload from one successful runtime observation."""
+    from yosoi.models.extraction import ExtractorSpec
+
+    if not isinstance(spec, ExtractorSpec):
+        raise TypeError('spec must be an ExtractorSpec')
+    if fingerprint.validation_result != 'valid':
+        raise ValueError('only validated extractor executions can become strategy references')
+    return ExtractorStrategyRecord(
+        extractor=spec,
+        output_annotation=output_annotation,
+        row=fingerprint.row,
+        evidence_sources=fingerprint.evidence_sources,
+        operations=fingerprint.operations,
+        opaque=fingerprint.opaque,
+    )
+
+
 def compare_field_reference(
     *,
     candidate_fingerprint: PageFingerprint,
@@ -86,6 +230,8 @@ def compare_field_reference(
     The result is explicit enough for matrix printing and audit JSONL: page layers,
     route match, field type/name, root match, and contract match are all preserved.
     """
+    if reference.selector is None:
+        raise ValueError('compare_field_reference requires a selector strategy reference')
     page = candidate_fingerprint.similarity(reference.fingerprint)
     candidate_route = route_template(candidate_url)
     scope = root_scope(candidate_root, contract_name=candidate_contract_name)
@@ -142,4 +288,13 @@ def _contract_score(
     return 0.0
 
 
-__all__ = ['compare_field_reference', 'root_scope', 'root_signature', 'route_template']
+__all__ = [
+    'ExtractorGeneralizationSimilarity',
+    'compare_extractor_reference',
+    'compare_field_reference',
+    'extractor_strategy_from_fingerprint',
+    'root_scope',
+    'root_signature',
+    'route_template',
+    'select_extractor_reference',
+]

@@ -1,14 +1,38 @@
-"""Extracts content from web pages using validated selectors."""
+"""Extracts selector-backed and deterministic fields within one row boundary."""
 
-from typing import Any, Literal
+from __future__ import annotations
+
+import hashlib
+import logging
+from collections.abc import Mapping, Sequence
+from typing import TYPE_CHECKING, Any, Literal
 
 from parsel import Selector
 from rich.console import Console
 
 from yosoi.models.contract import Contract, _unwrap_list_annotation
+from yosoi.models.extraction import (
+    ExtractionEvidence,
+    ExtractionRow,
+    ExtractorBinding,
+    ExtractorFieldError,
+    ExtractorFingerprint,
+    ExtractorNoMatch,
+    annotation_identity,
+    extractor_spec_for_callable,
+    resolve_extractor_bindings,
+    runtime_fingerprint,
+)
 from yosoi.models.selectors import SelectorEntry, SelectorLevel, coerce_selector_entry
 
+if TYPE_CHECKING:
+    from yosoi.fingerprints.models import FingerprintFieldReferenceRecord
+    from yosoi.fingerprints.store import FingerprintStore
+    from yosoi.policy import Policy
+
 FieldMode = Literal['body_text', 'related_content', 'text', 'list']
+
+logger = logging.getLogger(__name__)
 
 _ROLE_SELECTORS: dict[str, tuple[str, ...]] = {
     'button': ('button', 'input[type="button"]', 'input[type="submit"]'),
@@ -82,45 +106,84 @@ class ContentExtractor:
 
     """
 
-    def __init__(self, console: Console | None = None, contract: type[Contract] | None = None):
-        """Initialize the extractor.
+    def __init__(  # noqa: C901
+        self,
+        console: Console | None = None,
+        contract: type[Contract] | None = None,
+        *,
+        policy: Policy | None = None,
+        fingerprint_store: FingerprintStore | None = None,
+    ):
+        """Initialize selector and deterministic extraction coordination.
 
-        Args:
-            console: Rich console instance for formatted output. Defaults to None (creates new Console).
-            contract: Contract subclass defining expected fields. Defaults to None.
-
+        Fingerprint reference I/O is opt-in through ``policy.extractor``. Callers
+        that need an otherwise pure boundary should pass an explicit store.
         """
+        from yosoi.policy import Policy
+
         self.console = console or Console()
+        self.contract = contract
+        self._policy = policy or Policy()
+        extractor_policy = self._policy.extractor
+        self._reference_writes = bool(extractor_policy and extractor_policy.reference_writes)
+        self._generalized_reads = bool(
+            extractor_policy and extractor_policy.generalized_reads and self._policy.allows_source('fingerprint')
+        )
+        self._allow_opaque_generalization = bool(extractor_policy and extractor_policy.allow_opaque)
+        self._allowed_extractor_references = frozenset(extractor_policy.allowed_references if extractor_policy else ())
+        self._fingerprint_store = fingerprint_store
+        if self._fingerprint_store is None and (self._reference_writes or self._generalized_reads):
+            from yosoi.fingerprints.store import FingerprintStore
+
+            self._fingerprint_store = FingerprintStore()
         self._field_modes: dict[str, FieldMode] = {}
         self._nested_prefixes: frozenset[str] = frozenset()
+        self._extractor_bindings = (
+            resolve_extractor_bindings(contract, fail_required=not self._generalized_reads)
+            if contract is not None
+            else {}
+        )
+        self.last_extractor_fingerprints: list[ExtractorFingerprint] = []
+        self.last_extractor_diagnostics: list[dict[str, str | int]] = []
+        self._pending_extractor_references: list[FingerprintFieldReferenceRecord] = []
+        self._field_fingerprints: dict[str, str] = {}
         if contract is not None:
-            fields: list[str] = []
+            fields = contract.discovery_field_names()
+            ordered_fields: list[str] = []
             for name, fi in contract.model_fields.items():
                 ann = fi.annotation
                 if isinstance(ann, type) and issubclass(ann, Contract):
                     for child_name, child_fi in ann.model_fields.items():
                         flat_name = f'{name}_{child_name}'
-                        fields.append(flat_name)
+                        if flat_name not in fields:
+                            continue
+                        ordered_fields.append(flat_name)
                         child_extra = child_fi.json_schema_extra
                         raw_ytype = child_extra.get('yosoi_type') if isinstance(child_extra, dict) else None
                         if raw_ytype == 'body_text':
                             self._field_modes[flat_name] = 'body_text'
                         elif raw_ytype == 'related_content':
                             self._field_modes[flat_name] = 'related_content'
-                else:
-                    fields.append(name)
+                elif name in fields:
+                    ordered_fields.append(name)
                     extra = fi.json_schema_extra
                     raw_ytype = extra.get('yosoi_type') if isinstance(extra, dict) else None
                     if raw_ytype == 'body_text':
                         self._field_modes[name] = 'body_text'
                     elif raw_ytype == 'related_content':
                         self._field_modes[name] = 'related_content'
-                    elif name not in self._field_modes and _unwrap_list_annotation(fi.annotation) is not None:
+                    elif _unwrap_list_annotation(fi.annotation) is not None:
                         self._field_modes[name] = 'list'
-            self.expected_fields = tuple(fields)
+            self.expected_fields = tuple(ordered_fields)
             self._nested_prefixes = frozenset(contract.nested_contracts().keys())
+            spec = contract.to_spec()
+            self._contract_fingerprint = spec.fingerprint
+            self._field_fingerprints = {
+                name: spec.fields[name].fingerprint for name in contract.extractor_fields() if name in spec.fields
+            }
         else:
             self.expected_fields = ()
+            self._contract_fingerprint = ''
         self._overridden_fields: frozenset[str] = (
             frozenset(contract.get_selector_overrides().keys()) if contract is not None else frozenset()
         )
@@ -159,6 +222,31 @@ class ContentExtractor:
         html: str,
         validated_selectors: dict[str, dict[str, str]],
         max_level: SelectorLevel = max(SelectorLevel),
+        *,
+        runtime_evidence: Mapping[str, Sequence[str]] | None = None,
+    ) -> dict[str, str | list[str | dict[str, str]]] | None:
+        """Synchronous convenience wrapper; async callers must use the async variant."""
+        from yosoi.models.extraction import run_extraction_sync
+
+        return run_extraction_sync(
+            self.extract_content_with_html_async(
+                _url,
+                html,
+                validated_selectors,
+                max_level,
+                runtime_evidence=runtime_evidence,
+            ),
+            async_name='ContentExtractor.extract_content_with_html_async(...)',
+        )
+
+    async def extract_content_with_html_async(
+        self,
+        _url: str,
+        html: str,
+        validated_selectors: dict[str, dict[str, str]],
+        max_level: SelectorLevel = max(SelectorLevel),
+        *,
+        runtime_evidence: Mapping[str, Sequence[str]] | None = None,
     ) -> dict[str, str | list[str | dict[str, str]]] | None:
         """Extract content using validated selectors and provided HTML.
 
@@ -167,12 +255,16 @@ class ContentExtractor:
             html: Cleaned HTML content to extract from
             validated_selectors: Dictionary of validated selectors (primary, fallback, tertiary)
             max_level: Maximum selector strategy level to use. Defaults to all.
+            runtime_evidence: Named values observed during the existing page acquisition.
 
         Returns:
             Dictionary of extracted content by field name, or None if extraction failed.
             Each field contains extracted text, list of texts, or list of dicts (for related_content).
 
         """
+        self.last_extractor_fingerprints.clear()
+        self.last_extractor_diagnostics.clear()
+        self._pending_extractor_references.clear()
         self.console.print(f'  ↻ Extracting {len(self.expected_fields)} fields using validated selectors...')
 
         sel = Selector(text=html)
@@ -226,6 +318,16 @@ class ContentExtractor:
         extracted_count = len(extracted)
         self.console.print(f'  ↻ Summary: {extracted_count}/{total} fields extracted successfully')
 
+        extracted.update(
+            await self._extract_deterministic_fields(
+                row_html=html,
+                page_html=html,
+                url=_url,
+                row_index=0,
+                root_scope='rootless',
+                runtime_evidence=runtime_evidence,
+            )
+        )
         if not extracted:
             return None
         return self._unflatten(extracted, self._nested_prefixes)
@@ -388,6 +490,20 @@ class ContentExtractor:
             return sel.css(entry.value)
         return []
 
+    @staticmethod
+    def _root_scope_fingerprint(container_selector: str | dict[str, Any] | SelectorEntry) -> str:
+        """Hash one canonical root identity consistently across extraction entry points."""
+        entry: SelectorEntry | None
+        if isinstance(container_selector, str):
+            entry = SelectorEntry(
+                type='xpath' if container_selector.startswith('/') else 'css',
+                value=container_selector,
+            )
+        else:
+            entry = coerce_selector_entry(container_selector)
+        payload = entry.model_dump_json() if entry is not None else repr(container_selector)
+        return hashlib.sha256(payload.encode()).hexdigest()[:16]
+
     def extract_items(
         self,
         _url: str,
@@ -395,6 +511,33 @@ class ContentExtractor:
         validated_selectors: dict[str, dict[str, str]],
         container_selector: str | dict[str, Any] | SelectorEntry,
         max_level: SelectorLevel = max(SelectorLevel),
+        *,
+        runtime_evidence: Mapping[str, Sequence[str]] | None = None,
+    ) -> list[dict[str, str | list[str | dict[str, str]]]] | None:
+        """Synchronous convenience wrapper; async callers must use the async variant."""
+        from yosoi.models.extraction import run_extraction_sync
+
+        return run_extraction_sync(
+            self.extract_items_async(
+                _url,
+                html,
+                validated_selectors,
+                container_selector,
+                max_level,
+                runtime_evidence=runtime_evidence,
+            ),
+            async_name='ContentExtractor.extract_items_async(...)',
+        )
+
+    async def extract_items_async(
+        self,
+        _url: str,
+        html: str,
+        validated_selectors: dict[str, dict[str, str]],
+        container_selector: str | dict[str, Any] | SelectorEntry,
+        max_level: SelectorLevel = max(SelectorLevel),
+        *,
+        runtime_evidence: Mapping[str, Sequence[str]] | None = None,
     ) -> list[dict[str, str | list[str | dict[str, str]]]] | None:
         """Extract multiple items from HTML using a container selector.
 
@@ -407,11 +550,15 @@ class ContentExtractor:
             validated_selectors: Dictionary of validated selectors per field
             container_selector: CSS selector matching each repeating item container
             max_level: Maximum selector strategy level to use. Defaults to all.
+            runtime_evidence: Named values observed during the existing page acquisition.
 
         Returns:
             List of extracted content dicts (one per container), or None if no items found.
 
         """
+        self.last_extractor_fingerprints.clear()
+        self.last_extractor_diagnostics.clear()
+        self._pending_extractor_references.clear()
         sel = Selector(text=html)
         try:
             containers = self._resolve_container_selector(sel, container_selector)
@@ -427,8 +574,9 @@ class ContentExtractor:
 
         items: list[dict[str, str | list[str | dict[str, str]]]] = []
         seen_items: set[tuple[tuple[str, str], ...]] = set()
-        for container in containers:
-            item: dict[str, str | list[str | dict[str, str]]] = {}
+        root_scope = self._root_scope_fingerprint(container_selector)
+        for row_index, container in enumerate(containers):
+            item: dict[str, Any] = {}
 
             for field_name in self.expected_fields:
                 if field_name not in validated_selectors:
@@ -449,6 +597,17 @@ class ContentExtractor:
                         item[field_name] = content
                         break
 
+            item.update(
+                await self._extract_deterministic_fields(
+                    row_html=container.get(),
+                    page_html=html,
+                    url=_url,
+                    row_index=row_index,
+                    root_scope=root_scope,
+                    runtime_evidence=runtime_evidence,
+                )
+            )
+
             if item:
                 unflattened = self._unflatten(item, self._nested_prefixes)
                 key = tuple(sorted((name, repr(value)) for name, value in unflattened.items()))
@@ -459,6 +618,327 @@ class ContentExtractor:
 
         self.console.print(f'  ↻ Extracted {len(items)} non-empty items')
         return items if items else None
+
+    async def _extract_deterministic_fields(  # noqa: C901
+        self,
+        *,
+        row_html: str,
+        page_html: str,
+        url: str,
+        row_index: int,
+        root_scope: str,
+        runtime_evidence: Mapping[str, Sequence[str]] | None = None,
+    ) -> dict[str, Any]:
+        """Run extractor fields once for this row and validate before acceptance."""
+        if self.contract is None or not self._extractor_bindings:
+            return {}
+        row = ExtractionRow(
+            row_html,
+            url=url,
+            index=row_index,
+            root_scope=root_scope,
+            runtime_evidence=runtime_evidence,
+        )
+        values: dict[str, Any] = {}
+        batch_cache: dict[str, tuple[Any, tuple[ExtractionEvidence, ...]] | BaseException] = {}
+        for field_name, local_binding in self._extractor_bindings.items():
+            field_info = self.contract.model_fields[field_name]
+            generalized_reference: FingerprintFieldReferenceRecord | None = None
+            binding = local_binding
+            if binding is None:
+                binding, generalized_reference = self._generalized_binding(
+                    field_name=field_name,
+                    page_html=page_html,
+                    row_html=row_html,
+                    url=url,
+                    root_scope=root_scope,
+                    row_index=row_index,
+                )
+            if binding is None:
+                self.last_extractor_diagnostics.append(
+                    {
+                        'row': row_index,
+                        'field': field_name,
+                        'resolver_id': 'none',
+                        'category': 'unresolved',
+                    }
+                )
+                if field_info.is_required():
+                    raise ExtractorFieldError(
+                        field_name,
+                        row_index,
+                        'none',
+                        'unresolved',
+                        'no trusted deterministic extractor strategy matched this row',
+                    )
+                values[field_name] = self.contract.field_default(field_name)
+                continue
+            try:
+                raw_value, evidence = await binding.execute(row, batch_cache=batch_cache)
+            except ExtractorNoMatch as exc:
+                self.last_extractor_diagnostics.append(
+                    {
+                        'row': row_index,
+                        'field': field_name,
+                        'resolver_id': binding.spec.resolver_id,
+                        'category': 'no_match',
+                    }
+                )
+                if field_info.is_required():
+                    raise ExtractorFieldError(
+                        field_name,
+                        row_index,
+                        binding.spec.resolver_id,
+                        'no_match',
+                        'extractor reported no match',
+                    ) from exc
+                values[field_name] = self.contract.field_default(field_name)
+                continue
+            try:
+                value = self.contract.coerce_field(field_name, raw_value, source_url=url)
+            except (TypeError, ValueError) as exc:
+                self.last_extractor_diagnostics.append(
+                    {
+                        'row': row_index,
+                        'field': field_name,
+                        'resolver_id': binding.spec.resolver_id,
+                        'category': 'validation_failure',
+                    }
+                )
+                if field_info.is_required():
+                    raise ExtractorFieldError(
+                        field_name,
+                        row_index,
+                        binding.spec.resolver_id,
+                        'validation_failure',
+                        f'output did not satisfy the field annotation ({type(exc).__name__})',
+                    ) from None
+                values[field_name] = self.contract.field_default(field_name)
+                continue
+
+            fingerprint = runtime_fingerprint(
+                page_html=page_html,
+                row_html=row_html,
+                url=url,
+                root_scope=root_scope,
+                field_fingerprint=self._field_fingerprints[field_name],
+                binding=binding,
+                evidence=evidence,
+                validation_result='valid',
+                value=value,
+            )
+            if generalized_reference is not None:
+                strategy = generalized_reference.extractor
+                if strategy is None or fingerprint.operations != strategy.operations:
+                    self.last_extractor_diagnostics.append(
+                        {
+                            'row': row_index,
+                            'field': field_name,
+                            'resolver_id': binding.spec.resolver_id,
+                            'category': 'generalization_mismatch',
+                        }
+                    )
+                    if field_info.is_required():
+                        raise ExtractorFieldError(
+                            field_name,
+                            row_index,
+                            binding.spec.resolver_id,
+                            'generalization_mismatch',
+                            'current-row evidence did not match the proposed strategy',
+                        )
+                    values[field_name] = self.contract.field_default(field_name)
+                    continue
+
+            values[field_name] = value
+            self.last_extractor_diagnostics.append(
+                {
+                    'row': row_index,
+                    'field': field_name,
+                    'resolver_id': binding.spec.resolver_id,
+                    'category': 'success',
+                }
+            )
+            self.last_extractor_fingerprints.append(fingerprint)
+            if local_binding is not None:
+                self._persist_extractor_reference(
+                    field_name=field_name,
+                    binding=binding,
+                    fingerprint=fingerprint,
+                    page_html=page_html,
+                    url=url,
+                    root_scope=root_scope,
+                )
+        return values
+
+    def _generalized_binding(  # noqa: C901
+        self,
+        *,
+        field_name: str,
+        page_html: str,
+        row_html: str,
+        url: str,
+        root_scope: str,
+        row_index: int,
+    ) -> tuple[ExtractorBinding | None, FingerprintFieldReferenceRecord | None]:
+        """Resolve one exact, trusted stored strategy or abstain on conflict."""
+        if not self._generalized_reads or self._fingerprint_store is None or self.contract is None:
+            return None, None
+
+        from yosoi.fingerprints.generalization import route_template
+        from yosoi.generalization.fingerprint import PageFingerprint
+        from yosoi.models.extraction import RowFingerprint
+
+        annotation = annotation_identity(self.contract.model_fields[field_name].annotation)
+        extra = self.contract.model_fields[field_name].json_schema_extra
+        yosoi_type = extra.get('yosoi_type') if isinstance(extra, dict) else None
+        page_fingerprint = PageFingerprint.of(page_html)
+        row_fingerprint = RowFingerprint.of(row_html)
+        route = route_template(url)
+        candidates: list[FingerprintFieldReferenceRecord] = []
+        for reference in self._fingerprint_store.list_field_references(field_name=field_name):
+            strategy = reference.extractor
+            if strategy is None or not strategy.extractor.portable or strategy.extractor.plan is not None:
+                continue
+            if strategy.extractor.reference not in self._allowed_extractor_references:
+                continue
+            if strategy.opaque and not self._allow_opaque_generalization:
+                continue
+            if strategy.output_annotation != annotation:
+                continue
+            if (reference.yosoi_type or None) != (yosoi_type or None):
+                continue
+            if reference.route_template != route or reference.root.signature != root_scope:
+                continue
+            if strategy.row.similarity(row_fingerprint) != 1.0:
+                continue
+            if not page_fingerprint.similarity(reference.fingerprint).same_shape:
+                continue
+            candidates.append(reference)
+
+        strategy_ids = {
+            (reference.extractor.extractor.fingerprint, reference.extractor.operations)
+            for reference in candidates
+            if reference.extractor is not None
+        }
+        if len(strategy_ids) != 1:
+            if candidates:
+                self.last_extractor_diagnostics.append(
+                    {
+                        'row': row_index,
+                        'field': field_name,
+                        'resolver_id': 'fingerprint',
+                        'category': 'generalization_conflict',
+                    }
+                )
+            return None, None
+
+        reference = candidates[0]
+        strategy = reference.extractor
+        if strategy is None:  # pragma: no cover - narrowed above
+            return None, None
+        try:
+            spec, fn = extractor_spec_for_callable(
+                strategy.extractor.reference,
+                source='generalized',
+                key=strategy.extractor.resolver_id,
+                version=strategy.extractor.version,
+                config=strategy.extractor.config,
+            )
+        except (TypeError, ValueError) as exc:
+            logger.debug('stored extractor strategy could not be loaded: %s', exc)
+            return None, None
+        spec = spec.model_copy(
+            update={
+                'opaque': strategy.opaque,
+                'batch_fields': strategy.extractor.batch_fields,
+            }
+        )
+        return ExtractorBinding(
+            field_name=field_name,
+            fn=fn,
+            spec=spec,
+            batch_fields=strategy.extractor.batch_fields,
+        ), reference
+
+    def _persist_extractor_reference(
+        self,
+        *,
+        field_name: str,
+        binding: ExtractorBinding,
+        fingerprint: ExtractorFingerprint,
+        page_html: str,
+        url: str,
+        root_scope: str,
+    ) -> None:
+        """Persist validated local strategy evidence without extracted values."""
+        if (
+            not self._reference_writes
+            or self._fingerprint_store is None
+            or self.contract is None
+            or not binding.spec.portable
+            or binding.spec.source == 'generalized'
+        ):
+            return
+
+        from yosoi.fingerprints.generalization import extractor_strategy_from_fingerprint, route_template
+        from yosoi.fingerprints.models import FingerprintFieldReferenceRecord, RootScopeRecord
+        from yosoi.generalization.fingerprint import PageFingerprint
+
+        annotation = annotation_identity(self.contract.model_fields[field_name].annotation)
+        extra = self.contract.model_fields[field_name].json_schema_extra
+        yosoi_type = extra.get('yosoi_type') if isinstance(extra, dict) else None
+        route = route_template(url)
+        reference_material = '\x1f'.join(
+            (
+                field_name,
+                binding.spec.fingerprint,
+                route,
+                root_scope,
+                fingerprint.page_structure,
+                fingerprint.row.structure,
+                fingerprint.field_fingerprint,
+                *fingerprint.operations,
+            )
+        )
+        reference_id = 'extractor-' + hashlib.sha256(reference_material.encode()).hexdigest()[:24]
+        record = FingerprintFieldReferenceRecord(
+            reference_id=reference_id,
+            label=f'{self.contract.__name__}.{field_name}:{binding.spec.resolver_id}',
+            url=route,
+            route_template=route,
+            fingerprint=PageFingerprint.of(page_html),
+            contract_name=self.contract.__name__,
+            contract_fingerprint=self._contract_fingerprint,
+            field_name=field_name,
+            yosoi_type=yosoi_type if isinstance(yosoi_type, str) else None,
+            root=RootScopeRecord(
+                kind='rootless' if root_scope == 'rootless' else 'dom',
+                signature=root_scope,
+            ),
+            extractor=extractor_strategy_from_fingerprint(
+                fingerprint,
+                spec=binding.spec,
+                output_annotation=annotation,
+            ),
+        )
+        self._pending_extractor_references.append(record)
+
+    def persist_validated_references(self) -> None:
+        """Persist queued strategy references only after full-contract validation succeeds."""
+        pending = tuple(self._pending_extractor_references)
+        self._pending_extractor_references.clear()
+        if self._fingerprint_store is None:
+            return
+        for record in pending:
+            self._save_extractor_reference(record)
+
+    def _save_extractor_reference(self, record: FingerprintFieldReferenceRecord) -> None:
+        """Persist one queued reference while keeping storage failure non-fatal."""
+        assert self._fingerprint_store is not None
+        try:
+            self._fingerprint_store.save_field_reference(record)
+        except (OSError, ValueError) as exc:
+            logger.warning('could not persist extractor fingerprint reference: %s', exc)
 
     async def quick_extract(
         self, url: str, selector: str, field_type: str = 'text'

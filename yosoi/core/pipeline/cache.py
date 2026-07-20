@@ -64,7 +64,7 @@ if TYPE_CHECKING:
 
         def _root_value(self, root_entry: dict[str, Any] | None) -> str | None: ...
 
-        def _extract(
+        async def _extract(
             self,
             url: str,
             html: str,
@@ -339,7 +339,7 @@ class PipelineCacheMixin:
         root_entry = host._resolve_root(dict(existing))
         container_selector = host._root_value(root_entry)
         with observability.span('extract', url=url, mode='cache', container=container_selector or 'single'):
-            items_list = self._resolve_cached_records(url, domain, raw_html, existing)
+            items_list = await self._resolve_cached_records(url, domain, raw_html, existing)
         if items_list:
             return self._yield_cached_items(
                 items_list,
@@ -363,15 +363,15 @@ class PipelineCacheMixin:
             quality_snapshots=snapshots,
         )
 
-    def _resolve_cached_records(
+    async def _resolve_cached_records(
         self, url: str, domain: str, html: str, selectors: dict[str, Any]
     ) -> ContentItems | None:
         """Replay a loaded selector map through ``resolve()`` (CAS-119 SSoT)."""
-        from yosoi.core.resolve import build_cache_from_selectors, resolve
+        from yosoi.core.resolve import build_cache_from_selectors, resolve_async
         from yosoi.policy import Policy
 
         spec = self.contract.to_spec()
-        result = resolve(
+        result = await resolve_async(
             spec,
             html,
             build_cache_from_selectors(domain, spec.fingerprint, selectors),
@@ -433,7 +433,7 @@ class PipelineCacheMixin:
 
         root_entry = host._resolve_root(merged)
         container_selector = host._root_value(root_entry)
-        extracted = host._extract(url, raw_html, merged, container_selector)
+        extracted = await host._extract(url, raw_html, merged, container_selector)
 
         if not extracted:
             self.console.print('[warning]⚠ Extraction failed after partial rediscovery[/warning]')
@@ -484,15 +484,15 @@ class PipelineCacheMixin:
 
         return _yield_partial()
 
-    def _resolve_atom_records(self, url: str, domain: str, html: str) -> ContentItems | None:
+    async def _resolve_atom_records(self, url: str, domain: str, html: str) -> ContentItems | None:
         """Try policy-gated atom replay through ``resolve()`` on legacy-cache miss."""
         policy = getattr(self, '_policy', None)
         if policy is None or not policy.atom_reads or self.contract.file_fields():
             return None
 
-        from yosoi.core.resolve import resolve
+        from yosoi.core.resolve import resolve_async
 
-        result = resolve(
+        result = await resolve_async(
             self.contract.to_spec(),
             html,
             {},
@@ -505,7 +505,7 @@ class PipelineCacheMixin:
             return None
         return result
 
-    def _yield_atom_cached_items(
+    async def _yield_atom_cached_items(
         self,
         url: str,
         domain: str,
@@ -516,7 +516,7 @@ class PipelineCacheMixin:
         root_span: Any | None = None,
     ) -> AsyncIterator[ContentMap] | None:
         """Return an atom-cache replay generator, or None when atoms cannot serve."""
-        items = self._resolve_atom_records(url, domain, html)
+        items = await self._resolve_atom_records(url, domain, html)
         if items is None:
             return None
 

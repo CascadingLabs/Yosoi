@@ -1,5 +1,7 @@
 """Pydantic models for structured CSS selector data."""
 
+from __future__ import annotations
+
 import json
 from enum import IntEnum
 from typing import Any, Literal
@@ -96,7 +98,7 @@ class SelectorEntry(BaseModel):
     y: float | None = None
 
     @model_validator(mode='after')
-    def _validate_payload(self) -> 'SelectorEntry':
+    def _validate_payload(self) -> SelectorEntry:
         """Require enough payload to evaluate each selector kind."""
         if self.type == 'visual':
             if self.x is None or self.y is None:
@@ -119,6 +121,20 @@ class SelectorEntry(BaseModel):
     def key(self) -> tuple[object, ...]:
         """Return a stable identity tuple for deduping action/extraction targets."""
         return (self.type, self.value, self.name, self.nth, self.x, self.y, self.regex)
+
+    def text(self) -> Any:
+        """Create a typed extractor plan returning text scoped to this selector."""
+        from yosoi.types.field import extractor_plan_field
+
+        return extractor_plan_field(self, operation='text')
+
+    def attr(self, name: str) -> Any:
+        """Create a typed extractor plan returning one attribute from matching nodes."""
+        if not name:
+            raise ValueError('extractor attribute name must not be empty')
+        from yosoi.types.field import extractor_plan_field
+
+        return extractor_plan_field(self, operation='attribute', attribute=name)
 
 
 def css(value: str) -> SelectorEntry:
@@ -253,7 +269,7 @@ class FieldSelectors(BaseModel):
         return v
 
     @model_validator(mode='after')
-    def _deduplicate(self) -> 'FieldSelectors':
+    def _deduplicate(self) -> FieldSelectors:
         """Remove fallback/tertiary if their value duplicates any earlier level."""
         if self.fallback and self.fallback.key() == self.primary.key():
             self.fallback = None

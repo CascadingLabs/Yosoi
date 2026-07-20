@@ -14,6 +14,7 @@ from yosoi.policy import (
     CrawlSafety,
     CrawlTarget,
     EscalationPolicy,
+    ExtractorPolicy,
     ModelPolicy,
     Outcome,
     OutputPolicy,
@@ -38,6 +39,48 @@ def test_defaults_are_deny() -> None:
     # strict serves only the positive trusted allow-list
     assert p.allowed_sources == TRUSTED_SOURCES
     assert 'fingerprint' not in (p.allowed_sources or frozenset())
+
+
+def test_extractor_policy_is_opt_in_and_cascades_by_field() -> None:
+    assert Policy().extractor is None
+    assert ys.ExtractorPolicy() == ExtractorPolicy()
+    assert ExtractorPolicy().model_dump() == {
+        'reference_writes': False,
+        'generalized_reads': False,
+        'allowed_references': (),
+        'allow_opaque': False,
+    }
+
+    effective = Policy.cascade(
+        Policy(extractor=ExtractorPolicy(reference_writes=True)),
+        Policy(
+            extractor=ExtractorPolicy(
+                generalized_reads=True,
+                allowed_references=('tests.extractors:links',),
+            )
+        ),
+    )
+    assert effective.extractor == ExtractorPolicy(
+        reference_writes=True,
+        generalized_reads=True,
+        allowed_references=('tests.extractors:links',),
+    )
+
+    with pytest.raises(ValidationError, match='allowed_references'):
+        ExtractorPolicy(generalized_reads=True)
+
+
+def test_run_spec_can_defer_model_only_when_explicitly_requested() -> None:
+    with pytest.raises(ValueError, match='No model specified'):
+        Policy().resolve_run_spec({})
+
+    spec = Policy().resolve_run_spec({}, require_model=False)
+    assert spec.llm_config is None
+    unresolved_credentials = Policy(model=ModelPolicy.from_string('openai:gpt-4o')).resolve_run_spec(
+        {},
+        require_model=False,
+    )
+    assert unresolved_credentials.llm_config is None
 
 
 def test_strict_allowlist_is_positive_and_partitions_all_sources() -> None:

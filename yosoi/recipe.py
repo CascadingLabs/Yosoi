@@ -201,7 +201,7 @@ def render_contract_py(source: Recipe | ContractSpec | ContractInput | str | Pat
         'from __future__ import annotations',
         '',
         'import importlib',
-        'from typing import Any',
+        'from typing import Annotated, Any',
         '',
         'import yosoi as ys',
         '',
@@ -878,22 +878,72 @@ def _render_contract_class(spec: ContractSpec, lines: list[str], *, rendered: se
     if not spec.doc and spec.root is None and spec.validators is None and not spec.fields and not spec.nested:
         lines.append('    pass')
     for field_name, field in spec.fields.items():
-        lines.append(
-            f'    {_safe_field_name(field_name)}: {_annotation_expr(field.python_type)} = {_field_expr(field)}'
-        )
+        annotation = field.annotation.render() if field.annotation is not None else _annotation_expr(field.python_type)
+        if field.annotation_metadata:
+            metadata = ', '.join(item.render() for item in field.annotation_metadata)
+            annotation = f'Annotated[{annotation}, {metadata}]'
+        lines.append(f'    {_safe_field_name(field_name)}: {annotation} = {_field_expr(field)}')
     for field_name, nested in spec.nested.items():
         lines.append(f'    {_safe_field_name(field_name)}: {_safe_class_name(nested.name)}')
     lines.append('')
     if spec.validators is not None:
         lines.append(f'{class_name}._validators_cls = _load_ref({spec.validators!r})')
-        lines.append('')
+    if any(field.annotation is not None for field in spec.fields.values()):
+        lines.append(f'{class_name}.model_rebuild(force=True, _types_namespace=globals())')
     lines.append('')
+
+
+def _extractor_plan_expr(extractor: Any) -> str:
+    """Render one data-only fluent extraction plan."""
+    plan = extractor.plan
+    selector = plan.get('selector')
+    if not isinstance(selector, dict) or selector.get('type') not in {'css', 'xpath'}:
+        raise ValueError(f'cannot render invalid extractor plan {extractor.resolver_id!r}')
+    expression = f'ys.{selector["type"]}({selector.get("value")!r})'
+    if plan.get('operation') == 'text':
+        expression += '.text()'
+    elif plan.get('operation') == 'attribute':
+        expression += f'.attr({plan.get("attribute")!r})'
+    else:
+        raise ValueError(f'cannot render unknown extractor plan operation {plan.get("operation")!r}')
+    for reference in plan.get('maps') or ():
+        expression += f'.map(_load_ref({reference!r}))'
+    if plan.get('compact'):
+        expression += '.compact()'
+    return expression
+
+
+def _extractor_field_expr(field: Any, kwargs: list[str]) -> str:
+    """Render one schema-v2 deterministic extractor marker."""
+    extractor = field.extractor
+    if extractor.plan is not None:
+        return _extractor_plan_expr(extractor)
+    if not extractor.portable:
+        raise ValueError(f'cannot render process-local extractor {extractor.resolver_id!r}; use an importable callable')
+    if extractor.reference != 'unresolved':
+        kwargs.append(f'using=_load_ref({extractor.reference!r})')
+    if extractor.resolver_id != extractor.reference and not extractor.resolver_id.startswith('unresolved:'):
+        kwargs.append(f'key={extractor.resolver_id!r}')
+    kwargs.append(f'version={extractor.version!r}')
+    if extractor.config:
+        kwargs.append(f'config={extractor.config!r}')
+    factory = 'ys.Extractor'
+    if extractor.batch_fields:
+        factory = "_load_ref('yosoi.types.field:_extractor_batch')"
+        kwargs.append(f'batch_fields={extractor.batch_fields!r}')
+    if field.default_factory is not None:
+        kwargs.append(f'default_factory=_load_ref({field.default_factory!r})')
+    elif field.has_default:
+        kwargs.append(f'default={field.default!r}')
+    return f'{factory}({", ".join(kwargs)})'
 
 
 def _field_expr(field: Any) -> str:
     kwargs: list[str] = []
     if field.description is not None:
         kwargs.append(f'description={field.description!r}')
+    if field.extractor is not None:
+        return _extractor_field_expr(field, kwargs)
     if field.selector is not None:
         kwargs.append(f'selector={field.selector!r}')
     if field.delimiter is not None:

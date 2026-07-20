@@ -77,6 +77,16 @@ spec = ys.recipe.compile_contract('path/to/contracts.py:Product')
 source = ys.recipe.render_contract_py(spec)
 ```
 
+### Extractor field portability
+
+ContractSpec schema v2 preserves `ys.Extractor()` declarations, fluent CSS/XPath plans, multi-field bindings, structured generic annotations, defaults, JSON-compatible configuration, and resolver identity/version. Export renders plans back to fluent expressions; decorated callbacks render as equivalent explicit callable bindings.
+
+Plan `.map(...)` functions and extractor callbacks must resolve through an importable `module:qualname`. Module-level functions, module-level contract methods, annotated model hooks, and exact registered extractors are portable. Process-local closures/lambdas may run with explicit `key=` and `version=`, but contract export rejects them because another process cannot recreate the callable safely.
+
+Recipes contain extractor **strategy metadata**, not extracted values or raw row evidence. A recipe does not weaken extractor fingerprint trust: generalized strategy reads remain controlled by `ExtractorPolicy` and `trust_tier`.
+
+See [`extractors.md`](extractors.md) for complete semantics and limitations.
+
 ## Inspect, check, validate, and install
 
 ```bash

@@ -67,6 +67,9 @@ if TYPE_CHECKING:  # static typing only — no runtime cost
     from yosoi.policy.crawl import (
         SchedulerPolicy as SchedulerPolicy,
     )
+    from yosoi.policy.extractor import (
+        ExtractorPolicy as ExtractorPolicy,
+    )
     from yosoi.policy.fingerprint import (
         FingerprintPolicy as FingerprintPolicy,
     )
@@ -207,6 +210,7 @@ if TYPE_CHECKING:  # static typing only — no runtime cost
     )
 
 _LAZY = {
+    'ExtractorPolicy': 'yosoi.policy.extractor',
     'FingerprintPolicy': 'yosoi.policy.fingerprint',
     'BrowserProfilePolicy': 'yosoi.policy.page',
     'PagePolicy': 'yosoi.policy.page',
