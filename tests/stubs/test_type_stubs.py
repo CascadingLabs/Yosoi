@@ -83,6 +83,26 @@ class TestFieldFactoryStubs:
         )
         assert result.returncode == 0, result.stdout + result.stderr
 
+    def test_extractor_plans_and_bound_decorators(self) -> None:
+        result = _run_mypy(
+            textwrap.dedent("""\
+            import yosoi as ys
+
+            def normalize(value: str) -> str:
+                return value.strip()
+
+            class Company(ys.Contract):
+                name: str = ys.css('h1').text()
+                links: list[str] = ys.css('a[href]').attr('href').map(normalize)
+                industry: str = ys.Extractor()
+
+                @ys.extraction(industry)
+                async def industry_value(row: ys.ExtractionRow) -> str:
+                    return str(row.text('.industry'))
+        """)
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
+
     def test_body_text_and_author(self) -> None:
         result = _run_mypy(
             textwrap.dedent("""\

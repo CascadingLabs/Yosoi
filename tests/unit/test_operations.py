@@ -525,6 +525,39 @@ async def test_execute_fetch_contract_probe_verifies_cached_selectors(monkeypatc
     assert probe.fit_score == 1.0
 
 
+async def test_execute_fetch_contract_probe_does_not_report_strong_with_unresolved_extractor(monkeypatch, mocker):
+    import yosoi.core.fetcher as fetcher_module
+    from yosoi.models.results import FetchResult as HtmlFetchResult
+    from yosoi.models.snapshot import selector_dict_to_snapshot
+
+    class MixedProbeContract(Contract):
+        title: str = ys.Title()
+        author: str = ys.Extractor()
+
+    class Fetcher:
+        async def fetch(self, url: str) -> HtmlFetchResult:
+            return HtmlFetchResult(url=url, status_code=200, html='<html><body><h1>Headline</h1></body></html>')
+
+        async def close(self) -> None:
+            return None
+
+    class Storage:
+        async def load_snapshots(self, _domain: str, contract_sig: str | None = None, *, url: str | None = None):
+            assert contract_sig == MixedProbeContract.to_spec().fingerprint
+            return {'title': selector_dict_to_snapshot({'primary': 'h1'})}
+
+    monkeypatch.setattr(fetcher_module, 'create_fetcher', lambda *_args, **_kwargs: Fetcher())
+    mocker.patch('yosoi.storage.persistence.SelectorStorage', return_value=Storage())
+
+    result = await run_fetch(FetchRequest.from_axes('https://one.test/story', contracts=MixedProbeContract))
+    probe = result.results[0].contract_probes[0]
+
+    assert probe.required_fields == ['author', 'title']
+    assert probe.resolvable_extractor_fields == []
+    assert probe.fit == 'partial'
+    assert probe.fit_score == 0.5
+
+
 def test_fetch_result_document_projection_and_envelope_statuses():
     ok = ops.FetchUnitResult(
         url='https://one.test',

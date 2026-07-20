@@ -217,30 +217,30 @@ def test_validate_with_contract_handles_single_dict(mocker):
 # ---------------------------------------------------------------------------
 
 
-def test_extract_dispatches_to_extract_items_when_container(mocker):
+async def test_extract_dispatches_to_extract_items_when_container(mocker):
     stub = _make_pipeline_stub(mocker, SimpleContract)
     stub.extractor = mocker.MagicMock()
-    stub.extractor.extract_items.return_value = [{'title': 'A', 'price': '1'}]
+    stub.extractor.extract_items_async = mocker.AsyncMock(return_value=[{'title': 'A', 'price': '1'}])
     from yosoi.models.selectors import SelectorLevel
 
     stub.selector_level = SelectorLevel.CSS
 
-    result = stub._extract('https://x.com', '<html></html>', {'title': {'primary': 'h1'}}, '.card')
+    result = await stub._extract('https://x.com', '<html></html>', {'title': {'primary': 'h1'}}, '.card')
     assert isinstance(result, list)
-    stub.extractor.extract_items.assert_called_once()
+    stub.extractor.extract_items_async.assert_awaited_once()
 
 
-def test_extract_falls_back_to_single_when_no_container(mocker):
+async def test_extract_falls_back_to_single_when_no_container(mocker):
     stub = _make_pipeline_stub(mocker, SimpleContract)
     stub.extractor = mocker.MagicMock()
-    stub.extractor.extract_content_with_html.return_value = {'title': 'A'}
+    stub.extractor.extract_content_with_html_async = mocker.AsyncMock(return_value={'title': 'A'})
     from yosoi.models.selectors import SelectorLevel
 
     stub.selector_level = SelectorLevel.CSS
 
-    result = stub._extract('https://x.com', '<html></html>', {'title': {'primary': 'h1'}})
+    result = await stub._extract('https://x.com', '<html></html>', {'title': {'primary': 'h1'}})
     assert isinstance(result, dict)
-    stub.extractor.extract_content_with_html.assert_called_once()
+    stub.extractor.extract_content_with_html_async.assert_awaited_once()
 
 
 # ---------------------------------------------------------------------------
@@ -457,7 +457,7 @@ async def test_scrape_force_skips_cache(mocker):
         },
     )
 
-    stub.extractor.extract_content_with_html.return_value = {'title': 'Fresh', 'price': '9.99'}
+    stub.extractor.extract_content_with_html_async = mocker.AsyncMock(return_value={'title': 'Fresh', 'price': '9.99'})
 
     items = [item async for item in stub.scrape('https://example.com', force=True)]
     assert len(items) == 1
@@ -510,7 +510,7 @@ async def test_scrape_sets_last_elapsed(mocker):
             ),
         },
     )
-    stub.extractor.extract_content_with_html.return_value = {'title': 'Test', 'price': '9.99'}
+    stub.extractor.extract_content_with_html_async = mocker.AsyncMock(return_value={'title': 'Test', 'price': '9.99'})
 
     async for _ in stub.scrape('https://example.com'):
         pass
@@ -555,7 +555,7 @@ async def test_scrape_offers_page_observation_to_signal_lane(mocker):
             ),
         },
     )
-    stub.extractor.extract_content_with_html.return_value = {'title': 'Fresh', 'price': '9.99'}
+    stub.extractor.extract_content_with_html_async = mocker.AsyncMock(return_value={'title': 'Fresh', 'price': '9.99'})
 
     items = [item async for item in stub.scrape('https://example.com')]
 

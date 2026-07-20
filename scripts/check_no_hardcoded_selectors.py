@@ -17,6 +17,7 @@ from typing import Any
 
 DEFAULT_ROOTS = (Path('examples'),)
 IGNORED_DIR_NAMES = {'.venv', '__pycache__', '.git'}
+ALLOW_DIRECTIVE = '# yosoi: allow-hardcoded-selectors'
 
 SELECTOR_FACTORY_NAMES = {'css', 'xpath'}
 SELECTOR_KEYWORDS = {'selector', 'selectors', 'root_selector', 'row_selector'}
@@ -258,8 +259,11 @@ def check_files(paths: list[Path]) -> list[Violation]:
     """Return hard-coded selector violations under the provided files or directories."""
     violations: list[Violation] = []
     for path in _python_files(paths):
+        source = path.read_text(encoding='utf-8')
+        if any(line.startswith(ALLOW_DIRECTIVE) for line in source.splitlines()[:5]):
+            continue
         try:
-            tree = ast.parse(path.read_text(encoding='utf-8'), filename=str(path))
+            tree = ast.parse(source, filename=str(path))
         except SyntaxError as exc:
             violations.append(Violation(path, exc.lineno or 1, exc.offset or 1, 'syntax error', exc.msg))
             continue

@@ -22,6 +22,7 @@ from yosoi.utils.contracts import resolve_contract
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
+    from yosoi.fingerprints.store import FingerprintStore
     from yosoi.generalization.fingerprint import PageFingerprint
 
 # Per-contract capture for the cross-contract discrimination gate: contract name ->
@@ -30,6 +31,97 @@ GateCollector = dict[str, tuple[dict[str, Any], str | None]]
 
 # Default on-disk field-atom corpus (P2 dual-write target). Gitignored like .yosoi/.
 _ATOM_STORE_PATH = '.yosoi/atoms.jsonl'
+
+
+async def extract(
+    html: str,
+    contract: type[Contract] | str,
+    *,
+    url: str = '',
+    selectors: Mapping[str, Mapping[str, Any]] | None = None,
+    root: Any = None,
+    runtime_evidence: Mapping[str, Sequence[str]] | None = None,
+    policy: Policy | None = None,
+    fingerprint_store: FingerprintStore | None = None,
+) -> list[ContentMap]:
+    """Extract validated records from pre-fetched HTML without acquisition or discovery.
+
+    Deterministic extractor-only contracts need no selector data. Mixed contracts
+    must provide selectors (field overrides declared on the contract are merged
+    automatically). A discovered root must be supplied explicitly because this API
+    never invokes an LLM. ``runtime_evidence`` carries already-observed values such
+    as resource URLs or browser endpoints; extractors cannot acquire more evidence.
+    """
+    from rich.console import Console
+
+    from yosoi.core.extraction import ContentExtractor
+    from yosoi.models.selectors import is_discover_sentinel
+
+    contract_cls = resolve_contract(contract) if isinstance(contract, str) else contract
+    if not isinstance(contract_cls, type) or not issubclass(contract_cls, Contract):
+        raise TypeError('ys.extract() contract must be a ys.Contract subclass or registered contract name')
+    action_fields = sorted(contract_cls.action_fields())
+    if action_fields:
+        raise ValueError('ys.extract() cannot execute browser or download action fields: ' + ', '.join(action_fields))
+    resolved_selectors: dict[str, dict[str, Any]] = {name: dict(value) for name, value in (selectors or {}).items()}
+    for name, value in contract_cls.get_selector_overrides().items():
+        resolved_selectors.setdefault(name, value)
+
+    missing = contract_cls.required_discovery_field_names() - set(resolved_selectors)
+    if missing:
+        raise ValueError(
+            'ys.extract() does not discover selectors; provide selector data for required field(s): '
+            + ', '.join(sorted(missing))
+        )
+
+    resolved_root = root if root is not None else contract_cls.get_root()
+    if is_discover_sentinel(resolved_root):
+        raise ValueError('ys.extract() cannot discover a contract root; pass root= with an explicit selector')
+
+    effective_policy = policy or Policy()
+    extractor_policy = effective_policy.extractor
+    if (
+        extractor_policy is not None
+        and (extractor_policy.reference_writes or extractor_policy.generalized_reads)
+        and fingerprint_store is None
+    ):
+        raise ValueError('ys.extract() requires fingerprint_store= when extractor reference I/O is enabled')
+    coordinator = ContentExtractor(
+        console=Console(quiet=True),
+        contract=contract_cls,
+        policy=effective_policy,
+        fingerprint_store=fingerprint_store,
+    )
+    raw = (
+        await coordinator.extract_items_async(
+            url,
+            html,
+            resolved_selectors,
+            resolved_root,
+            runtime_evidence=runtime_evidence,
+        )
+        if resolved_root is not None
+        else await coordinator.extract_content_with_html_async(
+            url,
+            html,
+            resolved_selectors,
+            runtime_evidence=runtime_evidence,
+        )
+    )
+    if raw is None:
+        return []
+    records = raw if isinstance(raw, list) else [raw]
+    validated: list[ContentMap] = []
+    for row_index, record in enumerate(records):
+        try:
+            value = contract_cls.model_validate(record, context={'source_url': url}).model_dump()
+        except Exception as exc:  # public boundary adds row context and never returns raw values
+            if contract_cls.extractor_fields():
+                raise ValueError(f'{contract_cls.__name__} validation failed for extracted row {row_index}') from None
+            raise ValueError(f'{contract_cls.__name__} validation failed for extracted row {row_index}: {exc}') from exc
+        validated.append(cast(ContentMap, value))
+    coordinator.persist_validated_references()
+    return validated
 
 
 def fingerprint(
@@ -700,7 +792,9 @@ async def _scrape_one(
         max_concurrency=None,
     )
     effective_policy = _edge_policy(contract_cls, Policy.cascade(policy, call_policy))
-    spec = effective_policy.resolve_run_spec()
+    # Pure/cache/extractor paths do not need model credentials. Discovery remains
+    # fail-closed inside Pipeline if it is actually reached without a model.
+    spec = effective_policy.resolve_run_spec(require_model=False)
     page_runtime = effective_policy.page_runtime(scrape=effective_policy.scrape)
     policy_cascade, policy_max_live = cascade_from_profile_policy(page_runtime.profile)
     if isinstance(model, YosoiConfig):
@@ -756,6 +850,9 @@ async def _scrape_one(
                 if gate_collect is not None and last_selectors is not None:
                     gate_collect[contract_cls.__name__] = (last_selectors, getattr(pipeline, 'last_cleaned_html', None))
                 if metadata_collect is not None:
+                    extractor_runtime = getattr(pipeline, 'extractor', None)
+                    extractor_diagnostics = list(getattr(extractor_runtime, 'last_extractor_diagnostics', []))
+                    extractor_fingerprints = list(getattr(extractor_runtime, 'last_extractor_fingerprints', []))
                     metadata_collect[(url, contract_cls.__name__)] = {
                         'selector_source': getattr(pipeline, 'last_selector_source', 'unknown'),
                         'cache_decision': getattr(pipeline, 'last_cache_decision', 'unknown'),
@@ -764,6 +861,26 @@ async def _scrape_one(
                         'quality_status': getattr(pipeline, 'last_quality_status', 'unknown'),
                         'quality_issues': list(getattr(pipeline, 'last_quality_issues', [])),
                         'expected_record_count': getattr(pipeline, 'last_expected_record_count', None),
+                        'extractor_field_count': len(contract_cls.extractor_fields()),
+                        'extractor_success_count': sum(
+                            entry.get('category') == 'success' for entry in extractor_diagnostics
+                        ),
+                        'extractor_no_match_count': sum(
+                            entry.get('category') == 'no_match' for entry in extractor_diagnostics
+                        ),
+                        'extractor_validation_failure_count': sum(
+                            entry.get('category') == 'validation_failure' for entry in extractor_diagnostics
+                        ),
+                        'extractor_resolver_ids': sorted(
+                            {
+                                str(entry.get('resolver_id'))
+                                for entry in extractor_diagnostics
+                                if entry.get('resolver_id')
+                            }
+                        ),
+                        'extractor_fingerprint_version': (
+                            extractor_fingerprints[0].scheme if extractor_fingerprints else None
+                        ),
                     }
                 return items
         except Exception as e:
@@ -848,6 +965,8 @@ def _resolve_model(model: YosoiConfig | LLMConfig | str | None) -> YosoiConfig |
     return model
 
 
-def _model_label(model: YosoiConfig | LLMConfig) -> str:
+def _model_label(model: YosoiConfig | LLMConfig | None) -> str:
+    if model is None:
+        return 'deferred:model-required'
     llm = model.llm if isinstance(model, YosoiConfig) else model
     return f'{llm.provider}:{llm.model_name}'

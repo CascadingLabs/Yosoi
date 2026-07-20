@@ -23,6 +23,7 @@ from yosoi.policy import Policy
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
+    from yosoi.fingerprints.store import FingerprintStore
     from yosoi.models.spec import ContractSpec
     from yosoi.storage.atoms import AtomStore
 
@@ -44,6 +45,38 @@ def resolve(
     url: str | None = None,
     atom_store: AtomStore | None = None,
     policy: Policy | None = None,
+    fingerprint_store: FingerprintStore | None = None,
+) -> ResolveResult:
+    """Run :func:`resolve_async` from synchronous code outside an event loop."""
+    from yosoi.models.extraction import run_extraction_sync
+
+    return run_extraction_sync(
+        resolve_async(
+            spec,
+            html,
+            cache,
+            domain,
+            max_level=max_level,
+            url=url,
+            atom_store=atom_store,
+            policy=policy,
+            fingerprint_store=fingerprint_store,
+        ),
+        async_name='resolve_async(...)',
+    )
+
+
+async def resolve_async(
+    spec: ContractSpec,
+    html: str,
+    cache: ContractCache,
+    domain: str,
+    *,
+    max_level: SelectorLevel = max(SelectorLevel),
+    url: str | None = None,
+    atom_store: AtomStore | None = None,
+    policy: Policy | None = None,
+    fingerprint_store: FingerprintStore | None = None,
 ) -> ResolveResult:
     """Replay cached selectors against ``html`` and return records or a cache-miss signal.
 
@@ -60,6 +93,8 @@ def resolve(
             Resolved ONCE here (``policy or Policy.from_env()``) — this is the single env-read
             site for the read path, after which the deep core takes config as an explicit value
             (the CAS-119 purity contract). Pass an explicit Policy to override the env layer.
+        fingerprint_store: Explicit reference store required when extractor reference reads
+            or writes are enabled, preserving ``resolve`` as an input-driven boundary.
 
     Returns:
         ``list[dict]`` of extracted records on a cache hit, or a :class:`NeedsDiscovery`
@@ -68,24 +103,59 @@ def resolve(
     effective_policy = policy or Policy.from_env()
     fingerprint = spec.fingerprint
     selectors = cache.get((domain, fingerprint))
+    contract = spec.to_contract()
 
     if selectors is None:
         # P3: behind policy.atom_reads, try the field-atom index before discovery. A full,
         # unambiguous, same-shape resolution extracts directly; anything less falls through.
-        atom_records = _try_atom_reads(spec, html, domain, url, atom_store, max_level, effective_policy)
+        atom_records = await _try_atom_reads(
+            spec,
+            html,
+            domain,
+            url,
+            atom_store,
+            max_level,
+            effective_policy,
+            fingerprint_store,
+        )
         if atom_records is not None:
             return atom_records
-        contract = spec.to_contract()
+        from yosoi.models.selectors import is_discover_sentinel
+
+        overrides = contract.get_selector_overrides()
+        unresolved = contract.discovery_field_names() - set(overrides)
+        if is_discover_sentinel(contract.get_root()):
+            unresolved.add('root')
+        if not unresolved and (contract.extractor_fields() or overrides or contract.get_root() is not None):
+            return await _extract_from_html(
+                spec,
+                html,
+                overrides,
+                domain,
+                max_level=max_level,
+                url=url,
+                policy=effective_policy,
+                fingerprint_store=fingerprint_store,
+            )
         return NeedsDiscovery(
             domain=domain,
             contract_fingerprint=fingerprint,
-            fields=sorted(contract.discovery_field_names()),
+            fields=sorted(unresolved),
         )
 
-    return _extract_from_html(spec, html, selectors, domain, max_level=max_level, url=url)
+    return await _extract_from_html(
+        spec,
+        html,
+        selectors,
+        domain,
+        max_level=max_level,
+        url=url,
+        policy=effective_policy,
+        fingerprint_store=fingerprint_store,
+    )
 
 
-def _try_atom_reads(
+async def _try_atom_reads(
     spec: ContractSpec,
     html: str,
     domain: str,
@@ -93,6 +163,7 @@ def _try_atom_reads(
     atom_store: AtomStore | None,
     max_level: SelectorLevel,
     policy: Policy,
+    fingerprint_store: FingerprintStore | None,
 ) -> list[dict[str, Any]] | None:
     """Attempt to serve a contract entirely from the field-atom index (P3, policy-gated).
 
@@ -106,9 +177,15 @@ def _try_atom_reads(
 
     from yosoi.utils.signatures import field_signature
 
+    contract = spec.to_contract()
     requested = [
-        (name, fspec.yosoi_type, field_signature(name, fspec.description or '', fspec.yosoi_type))
-        for name, fspec in spec.fields.items()
+        (
+            name,
+            spec.fields[name].yosoi_type,
+            field_signature(name, spec.fields[name].description or '', spec.fields[name].yosoi_type),
+        )
+        for name in sorted(contract.discovery_field_names())
+        if name in spec.fields
     ]
     if not requested:
         return None
@@ -128,13 +205,22 @@ def _try_atom_reads(
         if not resolution.fully_resolved:
             return None
         selectors = selector_map_from_atoms(resolution.hits)
-        return _extract_from_html(spec, html, selectors, domain, max_level=max_level, url=url)
+        return await _extract_from_html(
+            spec,
+            html,
+            selectors,
+            domain,
+            max_level=max_level,
+            url=url,
+            policy=policy,
+            fingerprint_store=fingerprint_store,
+        )
     except Exception as exc:  # noqa: BLE001 — atom reads must fail closed to legacy discovery
         logger.debug('atom read failed, falling back to discovery: %s', exc)
         return None
 
 
-def _extract_from_html(
+async def _extract_from_html(
     spec: ContractSpec,
     html: str,
     selectors: SelectorMap,
@@ -142,6 +228,8 @@ def _extract_from_html(
     *,
     max_level: SelectorLevel = max(SelectorLevel),
     url: str | None = None,
+    policy: Policy | None = None,
+    fingerprint_store: FingerprintStore | None = None,
 ) -> list[dict[str, Any]]:
     """Extract and validate records from HTML using cached selectors.
 
@@ -150,29 +238,38 @@ def _extract_from_html(
     """
     from rich.console import Console
 
-    from yosoi.core.cleaning import HTMLCleaner
     from yosoi.core.extraction import ContentExtractor
 
     contract = spec.to_contract()
+    effective_policy = policy or Policy()
+    extractor_policy = effective_policy.extractor
+    if (
+        extractor_policy is not None
+        and (extractor_policy.reference_writes or extractor_policy.generalized_reads)
+        and fingerprint_store is None
+    ):
+        raise ValueError('resolve() requires fingerprint_store= when extractor reference I/O is enabled')
     quiet_console = Console(quiet=True)
-    cleaner = HTMLCleaner(console=quiet_console)
-    cleaned = cleaner.clean_html(html)
-
-    extractor = ContentExtractor(console=quiet_console, contract=contract)
+    extractor = ContentExtractor(
+        console=quiet_console,
+        contract=contract,
+        policy=effective_policy,
+        fingerprint_store=fingerprint_store,
+    )
     container_selector = _root_selector_entry(contract, selectors)
     raw: dict[str, Any] | list[dict[str, Any]] | None
     if container_selector:
-        raw = extractor.extract_items(
+        raw = await extractor.extract_items_async(
             url or domain,
-            cleaned,
+            html,
             selectors,
             container_selector,
             max_level=max_level,
         )
     else:
-        raw = extractor.extract_content_with_html(
+        raw = await extractor.extract_content_with_html_async(
             url or domain,
-            cleaned,
+            html,
             selectors,
             max_level=max_level,
         )
@@ -188,14 +285,19 @@ def _extract_from_html(
             obj = contract.model_validate(item, context={'source_url': source_url})
             validated.append(obj.model_dump())
         except Exception:  # noqa: BLE001, PERF203
+            if contract.extractor_fields():
+                raise ValueError(f'{contract.__name__} failed full-contract validation after extraction') from None
             validated.append(item)
+    extractor.persist_validated_references()
     return validated
 
 
 def _root_selector_entry(contract: type[Any], selectors: SelectorMap) -> SelectorEntry | None:
     """Return a typed root selector for grouped replay, if one is configured."""
+    from yosoi.models.selectors import is_discover_sentinel
+
     contract_root = getattr(contract, 'get_root', lambda: None)()
-    if contract_root is not None:
+    if contract_root is not None and not is_discover_sentinel(contract_root):
         return coerce_selector_entry(contract_root)
 
     root_entry = selectors.get('root')

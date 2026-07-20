@@ -164,7 +164,7 @@ class MCPDiscoveryOrchestrator:
         fields = self._contract.field_descriptions()
         draft = await self._agent.discover(url=url, fields=fields, field_rules=self._field_rules)
 
-        merged, snapshots, sample_values, rejected = self._distill(draft, html)
+        merged, snapshots, sample_values, rejected = await self._distill(draft, html)
 
         if not any(name != 'root' for name in merged):
             obs.warning('MCP discovery produced no verified fields', url=url)
@@ -191,7 +191,7 @@ class MCPDiscoveryOrchestrator:
         logger.info('MCP discovery complete url=%s verified=%d rejected=%d', url, verified_fields, rejected)
         return merged
 
-    def _distill(
+    async def _distill(
         self,
         draft: MCPDiscoveryDraft,
         html: str,
@@ -219,7 +219,7 @@ class MCPDiscoveryOrchestrator:
             root = draft.root.model_dump(exclude_none=True)
             replay_candidates = {name: {**entry, 'root': root} for name, entry in candidates.items()}
         has_replay_html = bool(html.strip())
-        reextracted = self._reextract(html, replay_candidates) if has_replay_html else {}
+        reextracted = await self._reextract(html, replay_candidates) if has_replay_html else {}
 
         for finding in draft.fields:
             reext = reextracted.get(finding.field)
@@ -247,7 +247,7 @@ class MCPDiscoveryOrchestrator:
 
         return merged, snapshots, sample_values, rejected
 
-    def _reextract(self, html: str, candidates: SelectorMap) -> dict[str, str]:
+    async def _reextract(self, html: str, candidates: SelectorMap) -> dict[str, str]:
         """Independently re-run each discovered selector against the page HTML.
 
         Returns field -> first extracted value (stringified). Fields whose
@@ -263,7 +263,12 @@ class MCPDiscoveryOrchestrator:
         if not candidates:
             return {}
         try:
-            extracted = extractor.extract_content_with_html('', html, candidates, max_level=SelectorLevel.VISUAL)
+            extracted = await extractor.extract_content_with_html_async(
+                '',
+                html,
+                candidates,
+                max_level=SelectorLevel.VISUAL,
+            )
         except Exception as exc:  # noqa: BLE001 — extraction is a best-effort oracle, never fatal
             logger.info('Re-extraction oracle failed, falling back to reported values: %s', exc)
             return {}

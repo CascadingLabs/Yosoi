@@ -48,7 +48,7 @@ if TYPE_CHECKING:
             skip_verification: bool = False,
         ) -> dict[str, Any] | None: ...
 
-        def _extract(
+        async def _extract(
             self,
             url: str,
             html: str,
@@ -245,18 +245,7 @@ class PipelineDiscoveryMixin:
 
     def _required_discovery_fields(self) -> set[str]:
         """Flat names of required (no-default) contract discovery fields."""
-        from yosoi.models.contract import Contract as _Contract
-
-        required: set[str] = set()
-        for name, fi in self.contract.model_fields.items():
-            annotation = fi.annotation
-            if isinstance(annotation, type) and issubclass(annotation, _Contract):
-                for child_name, child_fi in annotation.model_fields.items():
-                    if child_fi.is_required():
-                        required.add(f'{name}_{child_name}')
-            elif fi.is_required():
-                required.add(name)
-        return required
+        return self.contract.required_discovery_field_names()
 
     @staticmethod
     def _representative_item(extracted: ContentMap | ContentItems) -> ContentMap:
@@ -347,7 +336,7 @@ class PipelineDiscoveryMixin:
                 break
 
             verified.update(improved)
-            re_extracted = host._extract(url, raw_html, verified, container_selector)
+            re_extracted = await host._extract(url, raw_html, verified, container_selector)
             if not re_extracted:
                 break
             extracted = re_extracted
@@ -426,7 +415,7 @@ class PipelineDiscoveryMixin:
 
         candidate_verified = dict(verified)
         candidate_verified.update(merged)
-        re_extracted = host._extract(url, raw_html, candidate_verified, candidate_container)
+        re_extracted = await host._extract(url, raw_html, candidate_verified, candidate_container)
         if not re_extracted:
             return extracted, verified, root_entry, False
 

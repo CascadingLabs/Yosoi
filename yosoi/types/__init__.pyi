@@ -3,6 +3,7 @@
 from collections.abc import Iterable
 from typing import Any
 
+from yosoi.types.field import Extractor as Extractor
 from yosoi.types.field import Field as Field
 from yosoi.types.field import js as js
 from yosoi.types.registry import register_coercion as register_coercion

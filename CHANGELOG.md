@@ -1,3 +1,14 @@
+## 0.0.3a23 (2026-07-20)
+
+### Feat
+
+- **CAS-235**: add async per-row extractor fields, fluent `ys.css()`/`ys.xpath()` plans, field-bound and multi-field extraction decorators, pure pre-fetched extraction, content-free fingerprints, and default-deny strategy reuse.
+- **policy**: add `ExtractorPolicy` and allow deterministic/cache-only runs to defer model resolution until discovery is actually required.
+
+### Docs
+
+- Document deterministic extractors, fingerprint privacy/generalization, recipe portability, and the complete policy tree.
+
 ## 0.0.3a22 (2026-07-09)
 
 ### Feat

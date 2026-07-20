@@ -12,6 +12,12 @@ from yosoi._lazy import lazy_exports
 
 if TYPE_CHECKING:
     from yosoi.fingerprints.generalization import (
+        ExtractorGeneralizationSimilarity as ExtractorGeneralizationSimilarity,
+    )
+    from yosoi.fingerprints.generalization import (
+        compare_extractor_reference as compare_extractor_reference,
+    )
+    from yosoi.fingerprints.generalization import (
         compare_field_reference as compare_field_reference,
     )
     from yosoi.fingerprints.generalization import (
@@ -19,6 +25,12 @@ if TYPE_CHECKING:
     )
     from yosoi.fingerprints.generalization import (
         route_template as route_template,
+    )
+    from yosoi.fingerprints.generalization import (
+        select_extractor_reference as select_extractor_reference,
+    )
+    from yosoi.fingerprints.models import (
+        ExtractorStrategyRecord as ExtractorStrategyRecord,
     )
     from yosoi.fingerprints.models import (
         FieldGeneralizationSimilarity as FieldGeneralizationSimilarity,
@@ -41,6 +53,8 @@ if TYPE_CHECKING:
     from yosoi.fingerprints.store import FingerprintStore as FingerprintStore
 
 _LAZY = {
+    'ExtractorGeneralizationSimilarity': 'yosoi.fingerprints.generalization',
+    'ExtractorStrategyRecord': 'yosoi.fingerprints.models',
     'FieldGeneralizationSimilarity': 'yosoi.fingerprints.models',
     'FingerprintClassificationRecord': 'yosoi.fingerprints.models',
     'FingerprintFieldReferenceRecord': 'yosoi.fingerprints.models',
@@ -48,8 +62,10 @@ _LAZY = {
     'FingerprintReferenceRecord': 'yosoi.fingerprints.models',
     'FingerprintStore': 'yosoi.fingerprints.store',
     'RootScopeRecord': 'yosoi.fingerprints.models',
+    'compare_extractor_reference': 'yosoi.fingerprints.generalization',
     'compare_field_reference': 'yosoi.fingerprints.generalization',
     'root_scope': 'yosoi.fingerprints.generalization',
+    'select_extractor_reference': 'yosoi.fingerprints.generalization',
     'route_template': 'yosoi.fingerprints.generalization',
 }
 

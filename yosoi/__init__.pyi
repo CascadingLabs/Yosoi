@@ -15,6 +15,7 @@ from yosoi.core.site_map import MapRequest as MapRequest
 from yosoi.core.site_map import MapResult as MapResult
 from yosoi.core.site_map import MapSitemap as MapSitemap
 from yosoi.core.site_map import MapUrl as MapUrl
+from yosoi.fingerprints import FingerprintStore as _FingerprintStore
 from yosoi.generalization.fingerprint import PageFingerprint as PageFingerprint
 from yosoi.integrations import ClaudeSDKModel as ClaudeSDKModel
 from yosoi.integrations import OpenCodeModel as OpenCodeModel
@@ -24,6 +25,19 @@ from yosoi.models.defaults import NewsArticle as NewsArticle
 from yosoi.models.defaults import Product as Product
 from yosoi.models.defaults import Video as Video
 from yosoi.models.download import DownloadRecord as DownloadRecord
+from yosoi.models.extraction import ExtractionEvidence as ExtractionEvidence
+from yosoi.models.extraction import ExtractionOutcome as ExtractionOutcome
+from yosoi.models.extraction import ExtractionRow as ExtractionRow
+from yosoi.models.extraction import ExtractorFieldError as ExtractorFieldError
+from yosoi.models.extraction import ExtractorFingerprint as ExtractorFingerprint
+from yosoi.models.extraction import ExtractorNoMatch as ExtractorNoMatch
+from yosoi.models.extraction import ExtractorResolutionError as ExtractorResolutionError
+from yosoi.models.extraction import ExtractorSpec as ExtractorSpec
+from yosoi.models.extraction import RowFingerprint as RowFingerprint
+from yosoi.models.extraction import extraction as extraction
+from yosoi.models.extraction import extractions as extractions
+from yosoi.models.extraction import register_extractor as register_extractor
+from yosoi.models.extraction import values as values
 from yosoi.models.selectors import FieldSelectors as FieldSelectors
 from yosoi.models.selectors import SelectorEntry as SelectorEntry
 from yosoi.models.selectors import SelectorLevel as SelectorLevel
@@ -58,6 +72,7 @@ from yosoi.policy import CrawlTarget as _CrawlTarget
 from yosoi.policy import DiscoveryPolicy as _DiscoveryPolicy
 from yosoi.policy import DownloadPolicy as _DownloadPolicy
 from yosoi.policy import EscalationPolicy as _EscalationPolicy
+from yosoi.policy import ExtractorPolicy as _ExtractorPolicy
 from yosoi.policy import FingerprintPolicy as _FingerprintPolicy
 from yosoi.policy import ModelPolicy as _ModelPolicy
 from yosoi.policy import Outcome as _Outcome
@@ -90,6 +105,7 @@ from yosoi.recipe import render_contract_py as render_contract_py
 from yosoi.recipe import run_recipe as run_recipe
 from yosoi.recipe import selector_map as selector_map
 from yosoi.recipe import validate_recipe as validate_recipe
+from yosoi.types.field import Extractor as Extractor
 from yosoi.types.field import Field as Field
 from yosoi.types.field import js as js
 from yosoi.types.registry import register_coercion as register_coercion
@@ -349,6 +365,21 @@ class PolicyCheck(_PolicyCheck):
     warnings: tuple[str, ...]
     runtime: CrawlRuntimeConfig | None
 
+class ExtractorPolicy(_ExtractorPolicy):
+    reference_writes: bool
+    generalized_reads: bool
+    allowed_references: tuple[str, ...]
+    allow_opaque: bool
+
+    def __init__(
+        self,
+        *,
+        reference_writes: bool = ...,
+        generalized_reads: bool = ...,
+        allowed_references: tuple[str, ...] = ...,
+        allow_opaque: bool = ...,
+    ) -> None: ...
+
 class FingerprintPolicy(_FingerprintPolicy):
     signal_lane: bool
     backpressure: Literal['defer', 'drop']
@@ -516,7 +547,7 @@ class DownloadPolicy(_DownloadPolicy):
 
 class ResolvedRunSpec(_ResolvedRunSpec):
     policy_hash: str
-    llm_config: _LLMConfig
+    llm_config: _LLMConfig | None
     telemetry_config: _TelemetryConfig
     force: bool
     fetcher_type: str
@@ -542,6 +573,7 @@ class Policy(_Policy):
     crawl: CrawlPolicy | None
     recipe: RecipePolicy | None
     fingerprint: FingerprintPolicy | None
+    extractor: ExtractorPolicy | None
 
     def __init__(
         self,
@@ -559,6 +591,7 @@ class Policy(_Policy):
         crawl: CrawlPolicy | None = ...,
         recipe: RecipePolicy | None = ...,
         fingerprint: FingerprintPolicy | None = ...,
+        extractor: ExtractorPolicy | None = ...,
     ) -> None: ...
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = ...) -> Policy: ...
@@ -571,7 +604,9 @@ class Policy(_Policy):
     @property
     def allowed_sources(self) -> frozenset[str] | None: ...
     def require_crawl(self) -> CrawlPolicy: ...
-    def resolve_run_spec(self, env: Mapping[str, str] | None = ...) -> ResolvedRunSpec: ...
+    def resolve_run_spec(
+        self, env: Mapping[str, str] | None = ..., *, require_model: bool = ...
+    ) -> ResolvedRunSpec: ...
     def page_runtime(
         self, *, scrape: _ScrapePolicy | None = ..., crawl: _CrawlPolicy | None = ...
     ) -> PageRuntimeConfig: ...
@@ -696,6 +731,17 @@ async def run_map(request: MapRequest) -> MapResult: ...
 async def run_search(request: SearchRequest) -> SearchResult: ...
 async def run_searches(requests: Sequence[SearchRequest], *, max_concurrency: int = ...) -> SearchBatchResult: ...
 async def run_scrape(request: ScrapeRequest) -> ScrapeResult: ...
+async def extract(
+    html: str,
+    contract: type[Contract] | str,
+    *,
+    url: str = ...,
+    selectors: Mapping[str, Mapping[str, Any]] | None = ...,
+    root: SelectorEntry | Mapping[str, Any] | str | None = ...,
+    runtime_evidence: Mapping[str, Sequence[str]] | None = ...,
+    policy: Policy | None = ...,
+    fingerprint_store: _FingerprintStore | None = ...,
+) -> list[dict[str, Any]]: ...
 async def fetch(
     url: str | Sequence[str],
     *,

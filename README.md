@@ -43,33 +43,52 @@ uv add yosoi
 
 ## Browser Fetcher (JavaScript-heavy pages)
 
-Yosoi supports a browser-based HTML fetcher powered by [void_crawl](https://github.com/CascadingLabs/Void-Crawl) — a Rust-native CDP client that renders JavaScript-heavy pages via Chrome DevTools Protocol.
-
-Install `void_crawl` from the [Void-Crawl repo](https://github.com/CascadingLabs/Void-Crawl) (requires Rust ≥ 1.86, maturin ≥ 1.7, Chrome/Chromium), then use it via the `create_fetcher` API or the `yosoi.vc` convenience module:
+Yosoi uses [VoidCrawl](https://github.com/CascadingLabs/VoidCrawl), its Rust-native Chrome DevTools Protocol backend, for rendered `headless`, `headful`, and waterfall acquisition. The pinned VoidCrawl wheel is installed with Yosoi; building from source is optional.
 
 ```python
-# Fetcher interface
 from yosoi.core.fetcher import create_fetcher
 
-async def scrape():
-    fetcher = create_fetcher("browser", no_sandbox=True)
+
+async def fetch_rendered():
+    fetcher = create_fetcher('headless', no_sandbox=True)
     async with fetcher:
-        result = await fetcher.fetch("https://example.com")
+        result = await fetcher.fetch('https://example.com')
         print(result.html)
 ```
 
-```python
-# vc convenience module — pool-based (recommended)
-from yosoi import vc
+For direct VoidCrawl usage, use its current pool API:
 
-async def scrape():
-    async with vc.pool() as pool:
-        async with await pool.acquire() as tab:
-            await tab.navigate("https://example.com")
-            html = await tab.content()
+```python
+from voidcrawl import BrowserPool, PoolConfig
+
+
+async def fetch_directly():
+    async with BrowserPool(PoolConfig()) as pool:
+        async with pool.acquire() as tab:
+            response = await tab.goto('https://example.com', capture_endpoints=True)
+            print(response.html, response.endpoints)
 ```
 
-See [`examples/README.md`](examples/README.md) for the maintained example set. For the explainable page-fingerprinting stack behind resilient reuse, see [`docs/fingerprinting-stack.md`](docs/fingerprinting-stack.md).
+See [`docs/voidcrawl.md`](docs/voidcrawl.md), the [official VoidCrawl documentation](https://cascadinglabs.com/voidcrawl/), and [`docs/fingerprinting-stack.md`](docs/fingerprinting-stack.md).
+
+## Deterministic extractor fields
+
+Use fluent selector plans or `ys.Extractor()` callbacks for async, per-row scraper logic that consumes already-acquired evidence without an LLM:
+
+```python
+import yosoi as ys
+
+
+class Company(ys.Contract):
+    # Without a root, the full page is one row. Collection plans naturally return [].
+    name: str = ys.css('h1').text()
+    links: list[str] = ys.css('a[href]').attr('href')
+
+
+records = await ys.extract(html, Company, url='https://example.com/')
+```
+
+The annotation supplies cardinality and remains the model value type. `@ys.extraction(field)` binds custom logic without static methods or naming conventions; `@ys.extractions(...)` executes one callback for several fields. Extractor fingerprints contain strategy/structure evidence, never extracted values. See [`docs/extractors.md`](docs/extractors.md) and [`examples/extractor_fields.py`](examples/extractor_fields.py).
 
 ## Portable recipes
 

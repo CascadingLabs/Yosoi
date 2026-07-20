@@ -139,7 +139,7 @@ class Pipeline(
         self.last_llm_used = llm_used
         self.last_llm_reason = llm_reason
 
-    def __init__(  # noqa: C901
+    def __init__(
         self,
         llm_config: LLMConfig | YosoiConfig | str | None = None,
         contract: type[Contract] | None = None,
@@ -224,27 +224,22 @@ class Pipeline(
         self._policy: Policy = policy or Policy.from_env()
         self._llm_deferred = False
         if llm_config is None:
-            try:
-                spec = self._policy.resolve_run_spec()
-            except ValueError as exc:
-                if 'No model specified and no API key found' not in str(exc):
-                    raise
-                spec = None
+            spec = self._policy.resolve_run_spec(require_model=False)
+            llm_config = spec.llm_config
+            debug_mode = spec.debug_html
+            output_format = list(spec.output_formats)
+            flat_files = spec.output_flat_files if flat_files is None else flat_files
+            force = spec.force
+            quiet = spec.quiet
+            selector_level = spec.selector_level
+            allow_downloads = spec.allow_downloads
+            allowed_download_types = spec.allowed_download_types
+            download_dir = spec.download_dir
+            max_download_bytes = spec.max_download_bytes
+            keep_downloads = spec.keep_downloads
+            if llm_config is None:
                 self._llm_deferred = True
                 llm_config = LLMConfig(provider='deferred', model_name='model-required')
-            if spec is not None:
-                llm_config = spec.llm_config
-                debug_mode = spec.debug_html
-                output_format = list(spec.output_formats)
-                flat_files = spec.output_flat_files if flat_files is None else flat_files
-                force = spec.force
-                quiet = spec.quiet
-                selector_level = spec.selector_level
-                allow_downloads = spec.allow_downloads
-                allowed_download_types = spec.allowed_download_types
-                download_dir = spec.download_dir
-                max_download_bytes = spec.max_download_bytes
-                keep_downloads = spec.keep_downloads
         if flat_files is None:
             flat_files = bool(self._policy.output.flat_files) if self._policy.output else False
         self.selector_level = selector_level
@@ -348,7 +343,7 @@ class Pipeline(
         self._field_rules = field_rules_for_contract(self.contract)
         from yosoi.core.extraction import ContentExtractor
 
-        self.extractor = ContentExtractor(console=self.console, contract=self.contract)
+        self.extractor = ContentExtractor(console=self.console, contract=self.contract, policy=self._policy)
         self.tracker = LLMTracker()
         self._show_tracking_summary = show_tracking_summary
         self.debug_mode = debug_mode
@@ -636,7 +631,7 @@ class Pipeline(
             table.add_row('domain', domain, str(delta_llm), str(delta_urls), f'{delta_elapsed:.1f}s', note)
         self.console.print(table)
 
-    async def scrape(
+    async def scrape(  # noqa: C901
         self,
         url: str,
         force: bool | None = None,
@@ -658,7 +653,8 @@ class Pipeline(
         _raw = output_format if output_format is not None else self.output_formats
         format_to_use: list[str] = [_raw] if isinstance(_raw, str) else list(_raw)
         force_flag = self.force if force is None else force
-        if force_flag and not getattr(self, '_allow_llm', True):
+        deterministic_only = self._is_extractor_only()
+        if force_flag and not getattr(self, '_allow_llm', True) and not deterministic_only:
             self._mark_scrape_decision(
                 selector_source='none',
                 cache_decision='llm_blocked',
@@ -705,6 +701,18 @@ class Pipeline(
             ctx = fetcher if _owns_fetcher else nullcontext(fetcher)
 
             async with ctx:
+                if deterministic_only:
+                    async for item in self._scrape_extractor_only(
+                        url=url,
+                        domain=domain,
+                        fetcher=fetcher,
+                        max_fetch_retries=max_fetch_retries,
+                        format_to_use=format_to_use,
+                        root_span=root_span,
+                    ):
+                        yield item
+                    return
+
                 if not force_flag:
                     cache_gen = await self._try_cached(
                         url,
@@ -749,6 +757,78 @@ class Pipeline(
                     root_span=root_span,
                 ):
                     yield item
+
+    def _is_extractor_only(self) -> bool:
+        """Return whether this contract can run with no selector/discovery path."""
+        from yosoi.models.selectors import is_discover_sentinel
+
+        return (
+            bool(self.contract.extractor_fields())
+            and not self.contract.discovery_field_names()
+            and not is_discover_sentinel(self.contract.get_root())
+        )
+
+    async def _scrape_extractor_only(
+        self,
+        *,
+        url: str,
+        domain: str,
+        fetcher: Any,
+        max_fetch_retries: int,
+        format_to_use: list[str],
+        root_span: Any | None,
+    ) -> AsyncIterator[ContentMap]:
+        """Acquire once and run deterministic fields without selector cache/LLM work."""
+        observability.annotate_cache(root_span, path='extractor-only')
+        self._mark_scrape_decision(
+            selector_source='extractor',
+            cache_decision='not_applicable',
+            llm_used=False,
+            llm_reason=None,
+        )
+        if self.contract.undiscovered_action_fields():
+            if not getattr(self, '_allow_llm', True):
+                raise LLMBlockedError('action_discovery')
+            await self._discover_js_actions(url, domain, fetcher)
+        js_scripts = await self._resolve_js_scripts(domain)
+        download_specs = self._resolve_download_specs(fetcher)
+        snapshot = await self._acquire_page(
+            url,
+            fetcher=fetcher,
+            max_fetch_retries=max_fetch_retries,
+            action_scripts=js_scripts or None,
+            download_specs=download_specs,
+        )
+        result = snapshot.fetch_result
+        assert result.html is not None
+        root_entry = self._resolve_root({})
+        container_selector = self._root_value(root_entry)
+        with observability.span('extract', url=url, mode='deterministic', container=container_selector or 'single'):
+            extracted = await self._extract(url, result.html, {}, container_selector)
+            extracted = self._merge_fetch_outputs(extracted, result)
+            self._record_downloads(result.downloads)
+        if not extracted:
+            raise RuntimeError(f'Deterministic extraction produced zero records for {url}')
+        unmet = self._unsatisfied_required(extracted)
+        if unmet:
+            raise RuntimeError(f'Required deterministic fields unmet: {", ".join(sorted(unmet))}')
+        validated_items = self._validate_items(extracted, url)
+        for item in validated_items:
+            yield item
+        save_all: ContentMap | ContentItems = validated_items if len(validated_items) > 1 else validated_items[0]
+        await self._finish(url, domain, {}, save_all, False, format_to_use)
+        await self._record_fetch_strategy_selector_level(fetcher, domain)
+        self.last_extractor_fingerprints = list(self.extractor.last_extractor_fingerprints)
+        self.last_extractor_diagnostics = list(self.extractor.last_extractor_diagnostics)
+        observability.set_trace_output(
+            root_span,
+            {
+                'path': 'extractor-only',
+                'extractor_fields': len(self.contract.extractor_fields()),
+                'extracted_count': len(validated_items),
+                'llm_used': False,
+            },
+        )
 
     async def _gated_fresh(
         self,
@@ -855,13 +935,16 @@ class Pipeline(
         cleaned_html = snapshot.html_for_discovery
 
         with observability.span('resolve', url=url, mode='atom'):
-            atom_gen = (
-                None
-                if force_flag or escalate_first
-                else self._yield_atom_cached_items(
-                    url, domain, result.html, format_to_use, fetcher=fetcher, root_span=root_span
+            atom_gen = None
+            if not force_flag and not escalate_first:
+                atom_gen = await self._yield_atom_cached_items(
+                    url,
+                    domain,
+                    result.html,
+                    format_to_use,
+                    fetcher=fetcher,
+                    root_span=root_span,
                 )
-            )
         if atom_gen is not None:
             async for item in atom_gen:
                 yield item
@@ -899,7 +982,7 @@ class Pipeline(
             container_selector = self._validate_root_covers_fields(cleaned_html, container_selector, verified)
 
         with observability.span('extract', url=url, container=container_selector or 'single'):
-            extracted = self._extract(url, result.html, verified, container_selector)
+            extracted = await self._extract(url, result.html, verified, container_selector)
             extracted = self._merge_fetch_outputs(extracted, result)
             self._record_downloads(result.downloads)
 

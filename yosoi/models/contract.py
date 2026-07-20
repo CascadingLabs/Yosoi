@@ -130,7 +130,7 @@ class Contract(BaseModel):
         _CONTRACT_REGISTRY[cls.__name__] = cls  # pragma: no mutate
 
     @classmethod
-    def __pydantic_init_subclass__(cls, **kwargs: Any) -> None:
+    def __pydantic_init_subclass__(cls, **kwargs: Any) -> None:  # noqa: C901
         """Fail loudly at class definition time for invalid field configurations.
 
         Called by Pydantic after model_fields is fully populated — safe to inspect fields here.
@@ -147,6 +147,29 @@ class Contract(BaseModel):
                 inferred_optional_defaults = True
         if inferred_optional_defaults:
             cls.model_rebuild(force=True)
+
+        from yosoi.models.extraction import bind_extraction_methods
+
+        bind_extraction_methods(cls)
+
+        for name, fi in cls.model_fields.items():
+            annotation = fi.annotation
+            nested_contract = annotation if isinstance(annotation, type) and issubclass(annotation, Contract) else None
+            is_nested = nested_contract is not None
+            if nested_contract is not None and nested_contract.extractor_fields():
+                nested_fields = ', '.join(sorted(nested_contract.extractor_fields()))
+                raise TypeError(
+                    f'{cls.__name__}.{name}: nested Contracts containing extractor fields are not supported '
+                    f'({nested_fields}); declare those extractor fields on {cls.__name__} instead'
+                )
+            extra = fi.json_schema_extra if isinstance(fi.json_schema_extra, dict) else {}
+            if 'yosoi_extractor' not in extra:
+                continue
+            conflicts = [key for key in ('yosoi_action', 'yosoi_selector') if key in extra]
+            if conflicts:
+                raise TypeError(f'{cls.__name__}.{name}: ys.Extractor() cannot also configure {", ".join(conflicts)}')
+            if is_nested:
+                raise TypeError(f'{cls.__name__}.{name}: nested Contract fields cannot be extractor fields')
 
         # Cache Validators class at class definition time to avoid per-call MRO walk
         cls._validators_cls = next(
@@ -317,6 +340,22 @@ class Contract(BaseModel):
         return result
 
     @classmethod
+    def extractor_fields(cls) -> dict[str, dict[str, Any]]:
+        """Return deterministic per-row extractor field configuration.
+
+        Extractor fields remain ordinary Pydantic output fields, but are excluded
+        from selector discovery, verification, overrides, and snapshots.
+        """
+        result: dict[str, dict[str, Any]] = {}
+        for name, fi in cls.model_fields.items():
+            extra = fi.json_schema_extra
+            if isinstance(extra, dict):
+                config = extra.get('yosoi_extractor')
+                if isinstance(config, dict):
+                    result[name] = config
+        return result
+
+    @classmethod
     def action_fields(cls) -> dict[str, dict[str, Any]]:
         """Return {field_name: action_config} for fields annotated with yosoi_action.
 
@@ -369,20 +408,34 @@ class Contract(BaseModel):
         Non-Contract fields keep their original name; nested Contract fields are
         expanded to ``{parent}_{child}`` keys.  This matches the key format used
         by snapshots, ``field_descriptions()``, and ``get_selector_overrides()``.
-        Action fields (yosoi_action) are excluded — they have no CSS selector.
+        Action and extractor fields are excluded — they have no CSS selector.
         """
-        action_names = set(cls.action_fields().keys())
+        action_names = set(cls.action_fields().keys()) | set(cls.extractor_fields())
         names: set[str] = set()
         for name, fi in cls.model_fields.items():
             if name in action_names:
                 continue
             ann = fi.annotation
             if isinstance(ann, type) and issubclass(ann, Contract):
-                for child_name in ann.model_fields:
+                for child_name in ann.discovery_field_names():
                     names.add(f'{name}_{child_name}')
             else:
                 names.add(name)
         return names
+
+    @classmethod
+    def required_discovery_field_names(cls) -> set[str]:
+        """Return flattened selector-backed fields with no declared default."""
+        required: set[str] = set()
+        for name, fi in cls.model_fields.items():
+            annotation = fi.annotation
+            if isinstance(annotation, type) and issubclass(annotation, Contract):
+                for child_name, child_fi in annotation.model_fields.items():
+                    if child_fi.is_required():
+                        required.add(f'{name}_{child_name}')
+            elif fi.is_required():
+                required.add(name)
+        return required & cls.discovery_field_names()
 
     @classmethod
     def to_selector_model(cls) -> type[BaseModel]:
@@ -397,17 +450,19 @@ class Contract(BaseModel):
         from yosoi.models.selectors import FieldSelectors
 
         overridden = cls.get_selector_overrides()
+        non_selector_fields = set(cls.action_fields()) | set(cls.extractor_fields())
         field_defs: dict[str, Any] = {}
         for name, field_info in cls.model_fields.items():
-            if name in overridden:
+            if name in overridden or name in non_selector_fields:
                 continue
 
             ann = field_info.annotation
             if isinstance(ann, type) and issubclass(ann, Contract):
                 child_overridden = ann.get_selector_overrides()
+                child_non_selector = set(ann.action_fields()) | set(ann.extractor_fields())
                 for child_name, child_fi in ann.model_fields.items():
                     flat_name = f'{name}_{child_name}'
-                    if flat_name in overridden or child_name in child_overridden:
+                    if flat_name in overridden or child_name in child_overridden or child_name in child_non_selector:
                         continue
                     child_desc = child_fi.description or f'Selectors for {flat_name}'
                     field_defs[flat_name] = (FieldSelectors, Field(description=child_desc))
@@ -464,18 +519,19 @@ class Contract(BaseModel):
         from yosoi.models.selectors import is_discover_sentinel
 
         overridden = cls.get_selector_overrides()
-        action_names = set(cls.action_fields().keys())
+        non_selector_names = set(cls.action_fields()) | set(cls.extractor_fields())
         result: dict[str, str] = {}
         for name, fi in cls.model_fields.items():
-            if name in overridden or name in action_names:
+            if name in overridden or name in non_selector_names:
                 continue
             ann = fi.annotation
             if isinstance(ann, type) and issubclass(ann, Contract):
                 child_overridden = ann.get_selector_overrides()
+                child_non_selector = set(ann.action_fields()) | set(ann.extractor_fields())
                 child_root = ann.root
                 for child_name, child_fi in ann.model_fields.items():
                     key = f'{name}_{child_name}'
-                    if key in overridden or child_name in child_overridden:
+                    if key in overridden or child_name in child_overridden or child_name in child_non_selector:
                         continue
                     desc = child_fi.description or child_name
                     if child_root is not None and not is_discover_sentinel(child_root):
@@ -498,7 +554,15 @@ class Contract(BaseModel):
             lines.append(f'> {cls.__doc__.strip()}\n')
         lines.append('| Field | Semantic Type | Required | Config | Description | Selector Override |')
         lines.append('|-------|---------------|----------|--------|-------------|-------------------|')
-        _SKIP_KEYS = ('yosoi_type', 'yosoi_frozen', 'yosoi_selector')
+        _SKIP_KEYS = ('yosoi_type', 'yosoi_frozen', 'yosoi_selector', 'yosoi_extractor')
+        extractor_bindings: dict[str, Any] = {}
+        if cls.extractor_fields():
+            from yosoi.models.extraction import ExtractorResolutionError, resolve_extractor_bindings
+
+            try:
+                extractor_bindings = resolve_extractor_bindings(cls, fail_required=False)
+            except ExtractorResolutionError:
+                extractor_bindings = {}
         for name, field_info in cls.model_fields.items():
             raw_extra = field_info.json_schema_extra
             extra: dict[str, Any] = raw_extra if isinstance(raw_extra, dict) else {}
@@ -506,6 +570,11 @@ class Contract(BaseModel):
             description = field_info.description or '—'
             required = 'Yes' if field_info.is_required() else 'No'
             config_items = {k: v for k, v in extra.items() if k not in _SKIP_KEYS}
+            binding = extractor_bindings.get(name)
+            if binding is not None:
+                config_items['extractor'] = f'{binding.spec.source}:{binding.spec.resolver_id}@{binding.spec.version}'
+            elif name in cls.extractor_fields():
+                config_items['extractor'] = 'unresolved'
             config_str = ', '.join(f'{k}={v!r}' for k, v in config_items.items()) or '—'
             override = f'`{extra["yosoi_selector"]}`' if extra.get('yosoi_selector') else '—'
             lines.append(f'| `{name}` | `{yosoi_type}` | {required} | {config_str} | {description} | {override} |')

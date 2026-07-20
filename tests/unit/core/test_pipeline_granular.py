@@ -221,7 +221,9 @@ class TestTryCachedGranular:
         )
 
         # Mock extraction
-        stub.extractor.extract_content_with_html.return_value = {'title': 'Test', 'price': '$10'}
+        stub.extractor.extract_content_with_html_async = mocker.AsyncMock(
+            return_value={'title': 'Test', 'price': '$10'}
+        )
 
         # Mock contract validation
         stub.contract = SimpleContract
@@ -322,7 +324,9 @@ class TestTryCachedGranular:
         )
 
         # Mock extraction
-        stub.extractor.extract_content_with_html.return_value = {'title': 'Test', 'price': '$20'}
+        stub.extractor.extract_content_with_html_async = mocker.AsyncMock(
+            return_value={'title': 'Test', 'price': '$20'}
+        )
         stub._semantic_refine = mocker.AsyncMock(
             return_value=(
                 {'title': 'Test', 'price': '$20'},
