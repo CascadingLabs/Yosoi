@@ -90,6 +90,7 @@ class JSFetcher(HTMLFetcher):
         accept_simple_requires_js: bool = False,
         crawl_frontier_only: bool = False,
         simple_first: bool = False,
+        probe_all_tiers: bool = False,
         a3node_intent: str | None = None,
     ):
         """Initialise the three-tier JS fetcher.
@@ -139,6 +140,9 @@ class JSFetcher(HTMLFetcher):
             simple_first: Ignore cached browser-tier winners and retry the simple tier first.
                 Contractless fetch/content uses this to avoid stale browser-cache poison while
                 keeping scrape/discovery cache wins intact.
+            probe_all_tiers: On first contact with a domain, fetch with every tier
+                and cache whichever returns the most content, instead of predicting
+                which tier is needed. Runs once per domain; the winner is reused.
             a3node_intent: Optional contract/replay intent forwarded into A3Node scope keys.
 
         """
@@ -167,6 +171,7 @@ class JSFetcher(HTMLFetcher):
         self._accept_simple_requires_js = accept_simple_requires_js
         self._crawl_frontier_only = crawl_frontier_only
         self._simple_first = simple_first
+        self._probe_all_tiers_enabled = probe_all_tiers
 
         self._chrome_kwargs: dict[str, Any] = {
             'timeout': timeout,
@@ -240,6 +245,10 @@ class JSFetcher(HTMLFetcher):
     # ------------------------------------------------------------------
     # Strategy cache helpers
     # ------------------------------------------------------------------
+
+    def _preferred_strategy(self, domain: str) -> FetchStrategy | None:
+        """Return the cached strategy for *domain*, or None if unknown."""
+        return self._strategy_cache.get(domain)
 
     async def _record_success(self, domain: str, tier: str, identity_id: str | None = None) -> None:
         """Save the winning tier (and cascade identity) for *domain* if it changed."""
@@ -450,7 +459,7 @@ class JSFetcher(HTMLFetcher):
         """
         start_time = time.time()
         domain = extract_domain(url)
-        cached_strategy = None if self._force else self._strategy_cache.get(domain)
+        cached_strategy = None if self._force else self._preferred_strategy(domain)
         if self._simple_first and cached_strategy is not None and cached_strategy.fetcher != 'simple':
             cached_strategy = None
 
@@ -470,9 +479,73 @@ class JSFetcher(HTMLFetcher):
             if cached_result is not None:
                 return cached_result
 
+        if self._probe_all_tiers_enabled and not download_specs and not action_scripts:
+            return await self._probe_all_tiers(url, domain, start_time)
+
         return await self._fetch_waterfall(
             url, domain, start_time, action_scripts=action_scripts, download_specs=download_specs
         )
+
+    @staticmethod
+    def _content_score(html: str | None) -> int:
+        """Length of visible <body> text — used to compare tiers against each other.
+
+        Comparative, so there is no threshold to tune: whichever tier returns more
+        readable text wins.
+        """
+        if not html or not html.strip():
+            return 0
+        import lxml.etree
+        import lxml.html
+
+        try:
+            tree = lxml.html.document_fromstring(html)
+        except (lxml.etree.ParserError, ValueError):
+            return 0
+        for tag in tree.xpath('.//script | .//style | .//noscript'):
+            tag.drop_tree()
+        body = tree.find('.//body')
+        text = ' '.join((body if body is not None else tree).itertext())
+        return len(text.strip())
+
+    async def _probe_all_tiers(self, url: str, domain: str, start_time: float) -> FetchResult:
+        """Fetch with every tier, keep whichever returned the most content.
+
+        Measures what each tier actually returns instead of predicting whether the
+        page needs JS. Runs once per domain — the winner is cached and reused — so
+        the extra cost is paid on first contact, not per page. Sequential rather
+        than raced, to avoid three simultaneous hits from one IP.
+        """
+        candidates: list[tuple[str, FetchResult, int]] = []
+
+        simple_result = await self._try_simple_tier(url, domain, action_scripts=None, download_specs=None, record=False)
+        if simple_result is not None and simple_result.html:
+            candidates.append(('simple', simple_result, self._content_score(simple_result.html)))
+
+        for tier_name, runner in (
+            ('headless', self._waterfall_headless),
+            ('headful', self._waterfall_headful),
+        ):
+            result = await runner(url, domain, start_time, None, None, record=False)
+            if result is not None and result.html:
+                candidates.append((tier_name, result, self._content_score(result.html)))
+
+        if not candidates:
+            self._console.print(f'[warning]    ✗ All tiers failed for {domain}[/warning]')
+            return FetchResult(url=url, html='', status_code=None)
+
+        for tier, _, score in candidates:
+            self._console.print(f'[dim]    [probe] {tier}: {score:,} chars[/dim]')
+
+        # Cheapest tier within MARGIN of the best, not the raw max: a browser can
+        # return marginally more text on a static page (JS-injected widgets), which
+        # isn't worth routing every future page through Chrome for. A JS shell loses
+        # by an order of magnitude, so it still escalates.
+        threshold = max(score for _, _, score in candidates) * self._PROBE_MARGIN
+        best_tier, best_result, best_score = next(c for c in candidates if c[2] >= threshold)
+        self._console.print(f'[success]    ✓ {best_tier} wins for {domain} ({best_score:,} chars)[/success]')
+        await self._record_success(domain, best_tier)
+        return best_result
 
     async def _fetch_cached_tier(
         self,
@@ -581,6 +654,10 @@ class JSFetcher(HTMLFetcher):
     # unrelated programming errors.
     _BROWSER_TIER_ERRORS = (RuntimeError, OSError, asyncio.TimeoutError, ConnectionError)
 
+    # A tier must score at least this fraction of the best to be preferred over a
+    # more expensive one.
+    _PROBE_MARGIN = 0.9
+
     async def _fetch_waterfall(
         self,
         url: str,
@@ -671,8 +748,13 @@ class JSFetcher(HTMLFetcher):
         start_time: float,
         action_scripts: dict[str, str] | None,
         download_specs: dict[str, DownloadSpec] | None,
+        record: bool = True,
     ) -> FetchResult | None:
-        """Tier 2: headless Chrome. Returns a FetchResult (possibly empty) or None on failure."""
+        """Tier 2: headless Chrome. Returns a FetchResult (possibly empty) or None on failure.
+
+        ``record=False`` suppresses caching this tier as the domain's winner — used
+        by the probe, where only the final comparison should decide the winner.
+        """
         self._console.print('[dim]    [2/3] Trying headless Chrome...[/dim]')
         try:
             headless = await self._ensure_headless()
@@ -694,7 +776,8 @@ class JSFetcher(HTMLFetcher):
             return None
         if result.html:
             self._console.print('[success]    ✓ Headless Chrome worked[/success]')
-            await self._record_success(domain, 'headless')
+            if record:
+                await self._record_success(domain, 'headless')
         else:
             self._console.print(
                 f'[warning]    ✗ Headless Chrome failed ({result.block_reason or "no content"})[/warning]'
@@ -708,8 +791,12 @@ class JSFetcher(HTMLFetcher):
         start_time: float,
         action_scripts: dict[str, str] | None,
         download_specs: dict[str, DownloadSpec] | None,
+        record: bool = True,
     ) -> FetchResult | None:
-        """Tier 3: headful Chrome, or a profile/proxy cascade when configured."""
+        """Tier 3: headful Chrome, or a profile/proxy cascade when configured.
+
+        ``record=False`` suppresses caching this tier as the domain's winner.
+        """
         try:
             if self._identity_cascade is not None:
                 self._console.print('[dim]    [3/3] Escalating to profile cascade...[/dim]')
@@ -740,7 +827,8 @@ class JSFetcher(HTMLFetcher):
             return None
         if result.html:
             self._console.print('[success]    ✓ Headful Chrome worked[/success]')
-            await self._record_success(domain, 'headful')
+            if record:
+                await self._record_success(domain, 'headful')
         return result
 
     async def _try_simple_tier(
@@ -750,6 +838,7 @@ class JSFetcher(HTMLFetcher):
         *,
         action_scripts: dict[str, str] | None,
         download_specs: dict[str, DownloadSpec] | None,
+        record: bool = True,
     ) -> FetchResult | None:
         self._console.print('[dim]    [1/3] Trying simple HTTP...[/dim]')
         try:
@@ -760,7 +849,8 @@ class JSFetcher(HTMLFetcher):
 
         if result.html and not result.requires_js:
             self._console.print('[success]    ✓ Simple fetcher worked[/success]')
-            await self._record_success(domain, 'simple')
+            if record:
+                await self._record_success(domain, 'simple')
             return result
 
         if result.html and result.requires_js:
