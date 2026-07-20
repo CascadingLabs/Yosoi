@@ -15,7 +15,7 @@ def _run_mypy(code: str) -> subprocess.CompletedProcess[str]:
     snippet_file.write_text(code)
     try:
         return subprocess.run(
-            [sys.executable, '-m', 'mypy', '--strict', '--no-incremental', '--no-error-summary', str(snippet_file)],
+            [sys.executable, '-m', 'mypy', '--strict', '--no-error-summary', str(snippet_file)],
             capture_output=True,
             text=True,
             timeout=60,
