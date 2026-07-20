@@ -371,6 +371,13 @@ class PipelineCacheMixin:
         from yosoi.policy import Policy
 
         spec = self.contract.to_spec()
+        policy = getattr(self, '_policy', Policy())
+        fingerprint_store = None
+        extractor_policy = policy.extractor
+        if extractor_policy is not None and (extractor_policy.reference_writes or extractor_policy.generalized_reads):
+            from yosoi.fingerprints.store import FingerprintStore
+
+            fingerprint_store = FingerprintStore()
         result = await resolve_async(
             spec,
             html,
@@ -378,7 +385,8 @@ class PipelineCacheMixin:
             domain,
             max_level=self.selector_level,
             url=url,
-            policy=getattr(self, '_policy', Policy()),
+            policy=policy,
+            fingerprint_store=fingerprint_store,
         )
         if isinstance(result, NeedsDiscovery):
             return None

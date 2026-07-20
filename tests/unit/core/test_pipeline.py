@@ -218,6 +218,27 @@ async def test_cached_replay_uses_resolve_artifact(mocker):
     assert items == [{'title': 'Book', 'price': 9.99}]
 
 
+async def test_cached_replay_supplies_store_for_extractor_reference_io(mocker):
+    stub = _make_pipeline_stub(mocker)
+    stub._policy = ys.Policy(extractor=ys.ExtractorPolicy(reference_writes=True))
+    store = mocker.patch('yosoi.fingerprints.store.FingerprintStore', autospec=True).return_value
+    resolver = mocker.patch(
+        'yosoi.core.resolve.resolve_async',
+        new_callable=mocker.AsyncMock,
+        return_value=[{'title': 'Book', 'price': 9.99}],
+    )
+
+    items = await stub._resolve_cached_records(
+        'https://example.com/book',
+        'example.com',
+        '<html><body><h1>Book</h1></body></html>',
+        {'title': {'primary': 'h1::text'}},
+    )
+
+    assert items == [{'title': 'Book', 'price': 9.99}]
+    assert resolver.call_args.kwargs['fingerprint_store'] is store
+
+
 async def test_atom_replay_is_policy_gated_and_uses_empty_legacy_cache(mocker):
     from yosoi.models.needs_discovery import NeedsDiscovery
     from yosoi.policy import Policy

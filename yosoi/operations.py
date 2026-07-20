@@ -1469,15 +1469,25 @@ async def _contract_probes(
         else:
             notes.append('no cached selectors for this domain/contract')
 
-        required_set = set(required)
-        verified_required = required_set & set(verified_fields)
-        fit_score = (len(verified_required) / len(required_set)) if required_set else 0.0
+        required_selector_set = set(required)
+        required_action_set = set(required_actions)
+        required_extractor_set = set(required_extractors)
+        required_set = required_selector_set | required_action_set | required_extractor_set
+        resolved_required = (required_selector_set & set(verified_fields)) | (
+            required_extractor_set & set(resolvable_extractors)
+        )
+        fit_score = (len(resolved_required) / len(required_set)) if required_set else 0.0
         atom_matches = sum(
             1
             for atom in atoms
             if page_shape is not None and atom.page_shape == page_shape and contract_cls.__name__ in atom.contracts
         )
-        if not required and required_extractors and set(required_extractors) <= set(resolvable_extractors):
+        if (
+            not required
+            and not required_actions
+            and required_extractors
+            and set(required_extractors) <= set(resolvable_extractors)
+        ):
             fit: Literal['strong', 'partial', 'stale', 'candidate', 'uncached', 'unknown'] = 'candidate'
             notes.append('required extractor fields are locally resolvable; values will be recomputed per row')
         elif not snapshots and atom_matches:
