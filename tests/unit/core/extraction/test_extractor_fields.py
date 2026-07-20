@@ -924,6 +924,133 @@ def test_decorator_rejects_reused_field_marker() -> None:
                 return str(row.text('h1'))
 
 
+def test_extraction_row_json_ld_and_context_helpers_are_network_free() -> None:
+    html = """
+    <main><h1> Acme </h1><a href='/one'>One</a>
+      <script type='application/ld+json'>{"org":{"name":"Acme","people":[{"name":"Ada"}]}}</script>
+      <script type='application/ld+json'>not-json</script>
+    </main>
+    """
+    row = ys.ExtractionRow(
+        html,
+        url='https://example.test/acme',
+        index=2,
+        root_scope='scope',
+        config={'nested': {'items': [1, 2]}, 'flags': {'a'}},
+        runtime_evidence={'urls': ['one', 'two'], 'single': 'three'},
+    )
+
+    assert row.url == 'https://example.test/acme'
+    assert row.index == 2
+    assert row.root_scope == 'scope'
+    assert row.html == html
+    assert row.raw_html == html
+    assert row.css('h1::text').get().strip() == 'Acme'
+    assert row.xpath('.//a/@href').get() == '/one'
+    assert row.attribute('a', 'href') == ['/one']
+    assert row.attribute('.//a', 'href', xpath=True) == ['/one']
+    assert row.text('h1') == 'Acme'
+    assert row.text('.//h1', xpath=True, all=True) == ['Acme']
+    assert row.json_ld() == [{'org': {'name': 'Acme', 'people': [{'name': 'Ada'}]}}]
+    assert row.json_ld('org.name') == ['Acme']
+    assert row.json_ld('org.people.*.name') == ['Ada']
+    assert row.json_ld('org.people.0.name') == ['Ada']
+    assert {'name': 'Ada'} in row.json_ld_mappings()
+    assert row.runtime_values() == ['one', 'two', 'three']
+    assert row.runtime_values('single') == ['three']
+    assert row.config['nested']['items'] == (1, 2)
+    assert row.config['flags'] == frozenset({'a'})
+    assert {item.source for item in row.evidence} >= {'raw_html', 'dom', 'attribute', 'text', 'json_ld', 'runtime'}
+
+
+@pytest.mark.parametrize(
+    ('plan', 'message'),
+    [
+        ({'extra': True}, 'unexpected key'),
+        ({}, 'missing its selector'),
+        ({'selector': {'type': 'regex', 'value': 'x'}, 'operation': 'text'}, 'requires a CSS or XPath selector'),
+        ({'selector': {'type': 'css', 'value': 'h1'}, 'operation': 'missing'}, 'unknown extractor plan'),
+        (
+            {'selector': {'type': 'css', 'value': 'a'}, 'operation': 'attribute'},
+            'requires an attribute name',
+        ),
+        (
+            {'selector': {'type': 'css', 'value': 'h1'}, 'operation': 'text', 'attribute': 'x'},
+            'cannot configure an attribute',
+        ),
+        (
+            {'selector': {'type': 'css', 'value': 'h1'}, 'operation': 'text', 'maps': 'bad'},
+            'maps must be a list',
+        ),
+        (
+            {'selector': {'type': 'css', 'value': 'h1'}, 'operation': 'text', 'compact': 'yes'},
+            'compact must be a boolean',
+        ),
+    ],
+)
+def test_validate_extraction_plan_rejects_every_malformed_shape(plan, message) -> None:
+    from yosoi.models.extraction import validate_extraction_plan
+
+    with pytest.raises(ExtractorResolutionError, match=message):
+        validate_extraction_plan(plan)
+
+
+def test_extractor_annotation_identity_and_cardinality_helpers_cover_nested_shapes() -> None:
+    import types
+    from collections.abc import Sequence as AbcSequence
+
+    from yosoi.models.extraction import (
+        _cardinality_band,
+        _hook_type,
+        _plan_has_many_outputs,
+        _value_cardinality_band,
+        annotation_identity,
+    )
+
+    assert annotation_identity(str) == 'builtins:str'
+    assert annotation_identity(type(None)) == 'builtins:None'
+    assert annotation_identity(list[str]) == 'builtins:list[builtins:str]'
+    assert annotation_identity(str | None).startswith('union[')
+    assert _plan_has_many_outputs(list[str]) is True
+    assert _plan_has_many_outputs(AbcSequence[str] | None) is True
+    assert _plan_has_many_outputs(str) is False
+    assert _hook_type(list[str]) is str
+    assert _hook_type(str | None) is str
+    assert _hook_type(str | int) is None
+    assert _hook_type(types.GenericAlias(list, ())) is None
+    assert [_cardinality_band(value) for value in (0, 1, 2, 5, 17)] == ['0', '1', '2-4', '5-16', '17+']
+    assert [_value_cardinality_band(value) for value in (None, 'x', {}, [1, 2], iter([1]))] == [
+        '0',
+        '1',
+        '1',
+        '2-4',
+        'many',
+    ]
+
+
+def test_callable_loading_and_signature_validation_fail_closed() -> None:
+    from yosoi.models.extraction import _load_callable, _validate_callable, callable_reference
+
+    def invalid_keyword_only(row, *, required):
+        return row, required
+
+    assert _load_callable('tests.unit.core.extraction.test_extractor_fields:explicit_links') is explicit_links
+    assert callable_reference(explicit_links).endswith(':explicit_links')
+    for reference, message in [
+        ('missing', 'module:qualname'),
+        ('missing_package:fn', 'cannot import extractor'),
+        ('yosoi.models.extraction:_PLAN_CONFIG_KEY', 'not callable'),
+    ]:
+        with pytest.raises(ExtractorResolutionError, match=message):
+            _load_callable(reference)
+    with pytest.raises(ExtractorResolutionError, match='importable module-level'):
+        callable_reference(lambda row: row)
+    with pytest.raises(ExtractorResolutionError, match='exactly one positional'):
+        _validate_callable(lambda: None, 'zero')
+    with pytest.raises(ExtractorResolutionError, match='exactly one positional'):
+        _validate_callable(invalid_keyword_only, 'kwonly')
+
+
 def test_decorator_rejects_duplicate_explicit_strategy() -> None:
     with pytest.raises(TypeError, match='cannot be combined'):
 
