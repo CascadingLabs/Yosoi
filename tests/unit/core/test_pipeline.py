@@ -204,11 +204,11 @@ def test_pipeline_defers_model_until_discovery_for_cache_or_atom_paths(mocker, m
     assert pipeline._llm_config.provider == 'deferred'
 
 
-def test_cached_replay_uses_resolve_artifact(mocker):
+async def test_cached_replay_uses_resolve_artifact(mocker):
     stub = _make_pipeline_stub(mocker)
     html = '<html><body><h1>Book</h1><span class="price">$9.99</span></body></html>'
 
-    items = stub._resolve_cached_records(
+    items = await stub._resolve_cached_records(
         'https://example.com/book',
         'example.com',
         html,
@@ -218,24 +218,45 @@ def test_cached_replay_uses_resolve_artifact(mocker):
     assert items == [{'title': 'Book', 'price': 9.99}]
 
 
-def test_atom_replay_is_policy_gated_and_uses_empty_legacy_cache(mocker):
+async def test_cached_replay_supplies_store_for_extractor_reference_io(mocker):
+    stub = _make_pipeline_stub(mocker)
+    stub._policy = ys.Policy(extractor=ys.ExtractorPolicy(reference_writes=True))
+    store = mocker.patch('yosoi.fingerprints.store.FingerprintStore', autospec=True).return_value
+    resolver = mocker.patch(
+        'yosoi.core.resolve.resolve_async',
+        new_callable=mocker.AsyncMock,
+        return_value=[{'title': 'Book', 'price': 9.99}],
+    )
+
+    items = await stub._resolve_cached_records(
+        'https://example.com/book',
+        'example.com',
+        '<html><body><h1>Book</h1></body></html>',
+        {'title': {'primary': 'h1::text'}},
+    )
+
+    assert items == [{'title': 'Book', 'price': 9.99}]
+    assert resolver.call_args.kwargs['fingerprint_store'] is store
+
+
+async def test_atom_replay_is_policy_gated_and_uses_empty_legacy_cache(mocker):
     from yosoi.models.needs_discovery import NeedsDiscovery
     from yosoi.policy import Policy
 
     stub = _make_pipeline_stub(mocker)
     stub._policy = Policy(atom_reads=False)
-    resolver = mocker.patch('yosoi.core.resolve.resolve')
+    resolver = mocker.patch('yosoi.core.resolve.resolve_async', new_callable=mocker.AsyncMock)
 
-    assert stub._resolve_atom_records('https://example.com', 'example.com', '<html/>') is None
+    assert await stub._resolve_atom_records('https://example.com', 'example.com', '<html/>') is None
     resolver.assert_not_called()
 
     stub._policy = Policy(atom_reads=True)
     resolver.return_value = NeedsDiscovery(domain='example.com', contract_fingerprint='fp', fields=['title'])
-    assert stub._resolve_atom_records('https://example.com', 'example.com', '<html/>') is None
+    assert await stub._resolve_atom_records('https://example.com', 'example.com', '<html/>') is None
     assert resolver.call_args.args[2] == {}
 
     resolver.return_value = [{'title': 'Book'}]
-    assert stub._resolve_atom_records('https://example.com', 'example.com', '<html/>') == [{'title': 'Book'}]
+    assert await stub._resolve_atom_records('https://example.com', 'example.com', '<html/>') == [{'title': 'Book'}]
 
 
 class TestEscalationSignal:
@@ -419,17 +440,17 @@ def test_verify_partial_failure_prints_partial_warning(mocker):
     stub.console.print.assert_called()
 
 
-def test_extract_returns_content_dict(mocker):
+async def test_extract_returns_content_dict(mocker):
     stub = _make_pipeline_stub(mocker)
-    stub.extractor.extract_content_with_html.return_value = {'title': 'Book'}
-    result = Pipeline._extract(stub, 'https://x.com', '<html/>', {'title': {'primary': 'h1'}})
+    stub.extractor.extract_content_with_html_async = mocker.AsyncMock(return_value={'title': 'Book'})
+    result = await Pipeline._extract(stub, 'https://x.com', '<html/>', {'title': {'primary': 'h1'}})
     assert result == {'title': 'Book'}
 
 
-def test_extract_returns_none_when_extractor_fails(mocker):
+async def test_extract_returns_none_when_extractor_fails(mocker):
     stub = _make_pipeline_stub(mocker)
-    stub.extractor.extract_content_with_html.return_value = None
-    result = Pipeline._extract(stub, 'https://x.com', '<html/>', {'title': {'primary': 'h1'}})
+    stub.extractor.extract_content_with_html_async = mocker.AsyncMock(return_value=None)
+    result = await Pipeline._extract(stub, 'https://x.com', '<html/>', {'title': {'primary': 'h1'}})
     assert result is None
 
 
@@ -586,7 +607,7 @@ async def test_extract_with_cached_skips_verification_when_flag_set(mocker):
     mock_fetcher = mocker.MagicMock()
     mock_fetcher.fetch = mocker.AsyncMock(return_value=FetchResult(url='https://x.com', html='<html/>'))
     stub.cleaner.clean_html.return_value = '<html/>'
-    stub.extractor.extract_content_with_html.return_value = None
+    stub.extractor.extract_content_with_html_async = mocker.AsyncMock(return_value=None)
     _items, cache_valid = await Pipeline._extract_with_cached(
         stub, 'https://x.com', mock_fetcher, {'title': {'primary': 'h1'}}, True
     )
@@ -1332,13 +1353,13 @@ async def test_extract_with_cached_missing_overridden_field_does_not_trigger_red
     assert items == [{'title': 'Book'}]
 
 
-def test_extract_calls_extractor_with_correct_args(mocker):
+async def test_extract_calls_extractor_with_correct_args(mocker):
     stub = _make_pipeline_stub(mocker)
-    stub.extractor.extract_content_with_html.return_value = {'title': 'Book'}
-    Pipeline._extract(stub, 'https://x.com', '<html>content</html>', {'title': {'primary': 'h1'}})
+    stub.extractor.extract_content_with_html_async = mocker.AsyncMock(return_value={'title': 'Book'})
+    await Pipeline._extract(stub, 'https://x.com', '<html>content</html>', {'title': {'primary': 'h1'}})
     from yosoi.models.selectors import SelectorLevel
 
-    stub.extractor.extract_content_with_html.assert_called_once_with(
+    stub.extractor.extract_content_with_html_async.assert_awaited_once_with(
         'https://x.com', '<html>content</html>', {'title': {'primary': 'h1'}}, max_level=SelectorLevel.CSS
     )
 
@@ -1642,6 +1663,14 @@ class _CountContract(Contract):
     count: int = ys.Field(description='Count', default=0)
 
 
+def _extract_count(_row: ys.ExtractionRow) -> int:
+    return 1
+
+
+class _ExtractorContract(Contract):
+    count: int = ys.Extractor(using=_extract_count)
+
+
 def test_validate_single_item_drops_isolable_field_to_default(mocker):
     """A FIELD-level validation error is isolated: only the bad field is reset to its
     default, the good fields survive, and the item re-validates.
@@ -1653,6 +1682,13 @@ def test_validate_single_item_drops_isolable_field_to_default(mocker):
     stub = _make_pipeline_stub(mocker, _CountContract)
     result = Pipeline._validate_single_item(stub, {'title': 'Book', 'count': 'not-a-number'}, url='')
     assert result == {'title': 'Book', 'count': 0}  # count -> its default, title preserved
+
+
+def test_validate_single_item_never_returns_raw_for_extractor_contract(mocker):
+    stub = _make_pipeline_stub(mocker, _ExtractorContract)
+
+    with pytest.raises(ValueError, match='failed full-contract validation after extraction'):
+        Pipeline._validate_single_item(stub, {'count': 'not-a-number'}, url='')
 
 
 def test_validate_items_summarizes_defaulted_fields(mocker):
@@ -2241,14 +2277,14 @@ def test_merge_downloads_injects_file_values_into_each_shape(mocker):
     ]
 
 
-def test_extract_returns_none_when_container_yields_no_items(mocker):
+async def test_extract_returns_none_when_container_yields_no_items(mocker):
     """Multi-item extraction with a container selector returns None (not []) when the
     extractor finds nothing — the caller treats None as 'extraction failed'."""
     stub = _make_pipeline_stub(mocker)
-    stub.extractor.extract_items = mocker.MagicMock(return_value=[])
-    result = Pipeline._extract(stub, 'https://x.com', '<html/>', {'title': {'primary': 'h1'}}, '.card')
+    stub.extractor.extract_items_async = mocker.AsyncMock(return_value=[])
+    result = await Pipeline._extract(stub, 'https://x.com', '<html/>', {'title': {'primary': 'h1'}}, '.card')
     assert result is None
-    stub.extractor.extract_items.assert_called_once()
+    stub.extractor.extract_items_async.assert_awaited_once()
 
 
 async def test_fetch_and_clean_for_cache_returns_none_on_fetch_error(mocker):
@@ -2548,7 +2584,7 @@ async def test_partial_rediscovery_returns_none_when_initial_or_refined_extract_
     )
     stub._resolve_root = mocker.MagicMock(return_value=None)
     stub._root_value = mocker.MagicMock(return_value=None)
-    stub._extract = mocker.MagicMock(return_value=None)
+    stub._extract = mocker.AsyncMock(return_value=None)
 
     result = await Pipeline._partial_rediscovery(
         stub,

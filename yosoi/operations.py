@@ -217,6 +217,12 @@ class ScrapeUnitResult(BaseModel):
     quality_status: QualityStatus = 'unknown'
     quality_issues: list[str] = Field(default_factory=list)
     expected_record_count: int | None = None
+    extractor_field_count: int = 0
+    extractor_success_count: int = 0
+    extractor_no_match_count: int = 0
+    extractor_validation_failure_count: int = 0
+    extractor_resolver_ids: list[str] = Field(default_factory=list)
+    extractor_fingerprint_version: str | None = None
     record_count: int = 0
     records: list[dict[str, Any]] = Field(default_factory=list)
     error: str | None = None
@@ -401,6 +407,10 @@ class ContractProbeResult(BaseModel):
     contract: str
     contract_fingerprint: str
     required_fields: list[str] = Field(default_factory=list)
+    required_selector_fields: list[str] = Field(default_factory=list)
+    required_action_fields: list[str] = Field(default_factory=list)
+    required_extractor_fields: list[str] = Field(default_factory=list)
+    resolvable_extractor_fields: list[str] = Field(default_factory=list)
     cached_fields: list[str] = Field(default_factory=list)
     verified_fields: list[str] = Field(default_factory=list)
     fit_score: float = 0.0
@@ -773,6 +783,16 @@ def _unit_from_records(
         quality_issues=[str(issue) for issue in (meta.get('quality_issues') or [])],
         expected_record_count=(
             int(meta['expected_record_count']) if meta.get('expected_record_count') is not None else None
+        ),
+        extractor_field_count=int(meta.get('extractor_field_count') or 0),
+        extractor_success_count=int(meta.get('extractor_success_count') or 0),
+        extractor_no_match_count=int(meta.get('extractor_no_match_count') or 0),
+        extractor_validation_failure_count=int(meta.get('extractor_validation_failure_count') or 0),
+        extractor_resolver_ids=[str(value) for value in (meta.get('extractor_resolver_ids') or [])],
+        extractor_fingerprint_version=(
+            str(meta['extractor_fingerprint_version'])
+            if meta.get('extractor_fingerprint_version') is not None
+            else None
         ),
         record_count=len(record_list),
         records=record_list,
@@ -1420,7 +1440,18 @@ async def _contract_probes(
     probes: list[ContractProbeResult] = []
     for contract_cls in request.contract_classes():
         spec = contract_cls.to_spec()
-        required = sorted(contract_cls.discovery_field_names())
+        required = sorted(contract_cls.required_discovery_field_names())
+        required_actions = sorted(
+            name for name in contract_cls.action_fields() if contract_cls.model_fields[name].is_required()
+        )
+        required_extractors = sorted(
+            name for name in contract_cls.extractor_fields() if contract_cls.model_fields[name].is_required()
+        )
+        from yosoi.models.extraction import resolve_extractor_bindings
+
+        bindings = resolve_extractor_bindings(contract_cls, fail_required=False)
+        resolvable_extractors = sorted(name for name, binding in bindings.items() if binding is not None)
+        unresolved_extractors = sorted(name for name, binding in bindings.items() if binding is None)
         snapshots = await storage.load_snapshots(domain, contract_sig=spec.fingerprint)
         selectors = {
             name: data for name, snap in (snapshots or {}).items() if (data := snapshot_to_selector_dict(snap))
@@ -1428,6 +1459,8 @@ async def _contract_probes(
         cached_fields = sorted(selectors)
         verified_fields: list[str] = []
         notes: list[str] = []
+        if unresolved_extractors:
+            notes.append(f'extractor binding unresolved: {", ".join(unresolved_extractors)}')
         if selectors:
             verification = verifier.verify(cleaned_html, selectors)
             verified_fields = sorted(
@@ -1436,16 +1469,29 @@ async def _contract_probes(
         else:
             notes.append('no cached selectors for this domain/contract')
 
-        required_set = set(required)
-        verified_required = required_set & set(verified_fields)
-        fit_score = (len(verified_required) / len(required_set)) if required_set else 0.0
+        required_selector_set = set(required)
+        required_action_set = set(required_actions)
+        required_extractor_set = set(required_extractors)
+        required_set = required_selector_set | required_action_set | required_extractor_set
+        resolved_required = (required_selector_set & set(verified_fields)) | (
+            required_extractor_set & set(resolvable_extractors)
+        )
+        fit_score = (len(resolved_required) / len(required_set)) if required_set else 0.0
         atom_matches = sum(
             1
             for atom in atoms
             if page_shape is not None and atom.page_shape == page_shape and contract_cls.__name__ in atom.contracts
         )
-        if not snapshots and atom_matches:
+        if (
+            not required
+            and not required_actions
+            and required_extractors
+            and set(required_extractors) <= set(resolvable_extractors)
+        ):
             fit: Literal['strong', 'partial', 'stale', 'candidate', 'uncached', 'unknown'] = 'candidate'
+            notes.append('required extractor fields are locally resolvable; values will be recomputed per row')
+        elif not snapshots and atom_matches:
+            fit = 'candidate'
             notes.append('same-shape field atoms exist; run discover/scrape to verify before reuse')
         elif not snapshots:
             fit = 'uncached'
@@ -1459,7 +1505,11 @@ async def _contract_probes(
             ContractProbeResult(
                 contract=contract_cls.__name__,
                 contract_fingerprint=spec.fingerprint,
-                required_fields=required,
+                required_fields=sorted([*required, *required_actions, *required_extractors]),
+                required_selector_fields=required,
+                required_action_fields=required_actions,
+                required_extractor_fields=required_extractors,
+                resolvable_extractor_fields=resolvable_extractors,
                 cached_fields=cached_fields,
                 verified_fields=verified_fields,
                 fit_score=round(fit_score, 6),

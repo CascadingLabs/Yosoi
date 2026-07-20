@@ -265,3 +265,88 @@ class TestToContractPaths:
         extra = rehydrated.model_fields['signals'].json_schema_extra
         assert isinstance(extra, dict)
         assert 'yosoi_action' in extra
+
+
+def test_annotation_spec_rehydrates_and_renders_all_supported_shapes():
+    from yosoi.models.spec import AnnotationSpec
+
+    cases = [
+        (AnnotationSpec(kind='any'), 'Any'),
+        (AnnotationSpec(kind='none'), 'None'),
+        (AnnotationSpec(kind='ellipsis'), '...'),
+        (AnnotationSpec(kind='reference', module='builtins', qualname='str'), 'str'),
+        (
+            AnnotationSpec(
+                kind='generic',
+                module='builtins',
+                qualname='list',
+                args=[AnnotationSpec(kind='reference', module='builtins', qualname='int')],
+            ),
+            'list[int]',
+        ),
+        (AnnotationSpec(kind='literal', literal_values=['x', 2]), "_load_ref('typing:Literal')['x', 2]"),
+        (
+            AnnotationSpec(
+                kind='union',
+                args=[
+                    AnnotationSpec(kind='reference', module='builtins', qualname='str'),
+                    AnnotationSpec(kind='none'),
+                ],
+            ),
+            'str | None',
+        ),
+    ]
+
+    for spec, rendered in cases:
+        assert spec.render() == rendered
+        assert spec.to_annotation() is not None
+
+
+def test_annotation_spec_rejects_malformed_or_stale_shapes():
+    from yosoi.models.spec import AnnotationSpec
+
+    with pytest.raises(ImportError, match='Literal annotation has no values'):
+        AnnotationSpec(kind='literal').to_annotation()
+    with pytest.raises(ImportError, match='union has no members'):
+        AnnotationSpec(kind='union').to_annotation()
+    with pytest.raises(ImportError, match='requires module and qualname'):
+        AnnotationSpec(kind='reference').to_annotation()
+    with pytest.raises(ImportError, match='Cannot rehydrate extractor annotation'):
+        AnnotationSpec(kind='reference', module='missing_package', qualname='Thing').to_annotation()
+    with pytest.raises(ImportError, match='cannot apply annotation arguments'):
+        AnnotationSpec(
+            kind='generic',
+            module='builtins',
+            qualname='int',
+            args=[AnnotationSpec(kind='reference', module='builtins', qualname='str')],
+        ).to_annotation()
+
+
+def test_annotation_metadata_values_round_trip_and_fail_closed():
+    from yosoi.models.spec import AnnotationMetadataSpec, AnnotationMetadataValueSpec, AnnotationSpec
+
+    json_value = AnnotationMetadataValueSpec(kind='json', value={'min': 1})
+    callable_value = AnnotationMetadataValueSpec(kind='callable', reference='builtins:str')
+    annotation_value = AnnotationMetadataValueSpec(
+        kind='annotation',
+        annotation=AnnotationSpec(kind='reference', module='builtins', qualname='int'),
+    )
+    assert json_value.to_value() == {'min': 1}
+    assert json_value.render() == "{'min': 1}"
+    assert callable_value.to_value() is str
+    assert callable_value.render() == "_load_ref('builtins:str')"
+    assert annotation_value.to_value() is int
+    assert annotation_value.render() == 'int'
+
+    marker = AnnotationMetadataSpec(
+        reference='annotated_types:Gt', kwargs={'gt': AnnotationMetadataValueSpec(kind='json', value=0)}
+    )
+    assert marker.to_metadata().gt == 0
+    assert marker.render() == "_load_ref('annotated_types:Gt')(gt=0)"
+
+    with pytest.raises(ImportError, match='requires a reference'):
+        AnnotationMetadataValueSpec(kind='callable').to_value()
+    with pytest.raises(ImportError, match='requires an annotation'):
+        AnnotationMetadataValueSpec(kind='annotation').to_value()
+    with pytest.raises(ImportError, match='cannot reconstruct annotation metadata'):
+        AnnotationMetadataSpec(reference='annotated_types:Gt').to_metadata()

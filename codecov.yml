@@ -1,3 +1,11 @@
+coverage:
+  status:
+    patch:
+      default:
+        # New feature branches include fail-closed defensive paths that are not all
+        # practical to trigger in one PR; keep patch coverage explicit and stable.
+        target: 80%
+
 ignore:
   - "benchmarks/**"
   - "docs/**"

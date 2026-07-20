@@ -103,6 +103,33 @@ Narration:
 - `same_shape=True` means “eligible to propose reuse,” not “serve without verification.”
 - `same_shape=False` should show which layer vetoed the match.
 
+## Deterministic extractor fingerprints
+
+`ys.Extractor()` adds a row-scoped fingerprint layer for deterministic scraper code. A successful execution produces an `ExtractorFingerprint` from:
+
+- the page fingerprint and a fragment-safe `RowFingerprint`;
+- normalized route and root scope;
+- field/output annotation identity;
+- resolver ID/version;
+- evidence source kinds and hashes of operations/targets;
+- validation outcome and a cardinality band.
+
+The fingerprint excludes the extracted value, raw HTML, text, attribute values, runtime evidence values, and URL queries. It records **how evidence was found**, never **what was found**.
+
+Validated portable strategies can be persisted as `ExtractorStrategyRecord` field references. Reuse is more conservative than ordinary comparison:
+
+1. `ExtractorPolicy.generalized_reads` must be enabled;
+2. yellow trust must permit the quarantined `fingerprint` source;
+3. the exact callable reference must be policy-allowlisted;
+4. field, type, route, root, non-degenerate page shape, and row shape must match;
+5. compatible references must agree on one importable strategy;
+6. opaque strategies require a separate `allow_opaque` opt-in;
+7. current-row operations and output validation must match before serving.
+
+The strategy is rerun on the new row. No extracted value is cached. Pure `ys.extract`/`resolve` callers must pass an explicit `FingerprintStore`; scrape pipelines use the default store only when reference I/O is opted in.
+
+See [`extractors.md`](extractors.md) for the field API and [`policy-files.md`](policy-files.md) for trust gates.
+
 ## Current safety boundaries
 
 - No Playwright path exists in Yosoi. Browser evidence comes from VoidCrawl-backed fetchers.
@@ -123,7 +150,10 @@ Narration:
 - `yosoi/storage/a3node.py` — scoped A3Node recipes and domain-free obstacle fragments.
 - `yosoi/storage/cache_metrics_libsql.py` — route-scoped selector snapshots and cache metrics.
 - `yosoi/models/results.py` — fetch result fields that transport AX/header/endpoint evidence.
-- `yosoi/policy/fingerprint.py` — opt-in off-path fingerprint signal lane policy.
+- `yosoi/models/extraction.py` — row context, resolver identities, and content-free extractor fingerprints.
+- `yosoi/core/extraction/extractor.py` — per-row execution, validation, reference writes, and exact generalized reads.
+- `yosoi/policy/extractor.py` — opt-in extractor reference I/O and opaque-reuse controls.
+- `yosoi/policy/fingerprint.py` — opt-in off-path page-fingerprint signal lane policy.
 - `yosoi/core/pipeline/signal.py` — background fingerprint gathering, not trust/action.
 - `yosoi/storage/atoms.py` — source trust model; `fingerprint` source is lowest trust and default-quarantined.
 

@@ -25,6 +25,20 @@ class Product(ys.Contract):
     assert check_files([path]) == []
 
 
+def test_allows_explicitly_documented_deterministic_extractor_example(tmp_path: Path) -> None:
+    path = _write(
+        tmp_path,
+        """# yosoi: allow-hardcoded-selectors -- deterministic extraction plans require selectors.
+import yosoi as ys
+
+class Product(ys.Contract):
+    name: str = ys.css('h1').text()
+""",
+    )
+
+    assert check_files([path]) == []
+
+
 def test_rejects_selector_literal_inside_unresolved_call(tmp_path: Path) -> None:
     path = _write(tmp_path, "factory['css']('.product-card')\n")
 

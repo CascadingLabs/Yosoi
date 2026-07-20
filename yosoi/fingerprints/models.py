@@ -11,10 +11,11 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Literal, TypeAlias
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from yosoi.core.fetcher import FetcherType
 from yosoi.generalization.fingerprint import FingerprintLayerSimilarity, PageFingerprint, PageSimilarity
+from yosoi.models.extraction import EvidenceSource, ExtractorSpec, RowFingerprint
 from yosoi.models.selectors import SelectorEntry
 
 FINGERPRINT_RECORD_VERSION = 'fp1'
@@ -76,8 +77,22 @@ class RootScopeRecord(BaseModel):
     selector: SelectorEntry | None = None
 
 
+class ExtractorStrategyRecord(BaseModel):
+    """Reusable extractor strategy evidence; never an extracted value."""
+
+    model_config = ConfigDict(frozen=True)
+
+    scheme: str = 'yef1'
+    extractor: ExtractorSpec
+    output_annotation: str = Field(min_length=1)
+    row: RowFingerprint
+    evidence_sources: tuple[EvidenceSource, ...] = ()
+    operations: tuple[str, ...] = ()
+    opaque: bool = False
+
+
 class FingerprintFieldReferenceRecord(BaseModel):
-    """A field/root-scoped reference for selector generalization."""
+    """A field/root-scoped selector or extractor strategy reference."""
 
     model_config = ConfigDict(frozen=True)
 
@@ -95,7 +110,14 @@ class FingerprintFieldReferenceRecord(BaseModel):
     yosoi_type: str | None = None
     root: RootScopeRecord
     selector: SelectorEntry | None = None
+    extractor: ExtractorStrategyRecord | None = None
     notes: str | None = None
+
+    @model_validator(mode='after')
+    def _exactly_one_strategy(self) -> FingerprintFieldReferenceRecord:
+        if (self.selector is None) == (self.extractor is None):
+            raise ValueError('field references require exactly one strategy kind: selector or extractor')
+        return self
 
 
 class ScoreNode(BaseModel):
@@ -314,6 +336,7 @@ class FingerprintClassificationRecord(BaseModel):
 __all__ = [
     'FINGERPRINT_RECORD_VERSION',
     'Decision',
+    'ExtractorStrategyRecord',
     'FetchTier',
     'FieldGeneralizationSimilarity',
     'FieldScopeSimilarity',

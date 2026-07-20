@@ -10,16 +10,20 @@ import pytest
 
 import yosoi as ys
 from yosoi.fingerprints import (
+    ExtractorStrategyRecord,
     FingerprintClassificationRecord,
     FingerprintFieldReferenceRecord,
     FingerprintPageRecord,
     FingerprintReferenceRecord,
     FingerprintStore,
+    compare_extractor_reference,
     compare_field_reference,
     root_scope,
     route_template,
+    select_extractor_reference,
 )
 from yosoi.fingerprints.store import fingerprint_store_path
+from yosoi.models.extraction import ExtractorSpec, RowFingerprint
 from yosoi.models.selectors import SelectorEntry
 
 pytestmark = pytest.mark.unit
@@ -139,6 +143,110 @@ def test_field_reference_records_round_trip_and_compare(tmp_path: Path) -> None:
     assert similarity.page.skeleton.score == 1.0
     assert similarity.field_scope.root.score == 1.0
     assert similarity.field_scope.same_field_scope is True
+
+
+def test_extractor_references_round_trip_compare_and_fail_closed_on_conflict(tmp_path: Path) -> None:
+    store = FingerprintStore(tmp_path)
+    page = ys.fingerprint(_RICH_HTML)
+    row = RowFingerprint.of('<article><a href="mailto:private@example.test">Contact</a></article>')
+    spec = ExtractorSpec(
+        resolver_id='company.emails',
+        version='1',
+        source='registry',
+        reference='tests.unit.fingerprints.test_store:test_extractor_references_round_trip_compare_and_fail_closed_on_conflict',
+    )
+    strategy = ExtractorStrategyRecord(
+        extractor=spec,
+        output_annotation='builtins:list[builtins:str]',
+        row=row,
+        evidence_sources=('attribute',),
+        operations=('operation-hash',),
+    )
+    reference = FingerprintFieldReferenceRecord(
+        reference_id='company-emails',
+        label='Company emails',
+        url='https://example.test/companies/12345',
+        route_template=route_template('https://example.test/companies/12345'),
+        fingerprint=page,
+        contract_name='Company',
+        contract_fingerprint='company-fp',
+        field_name='emails',
+        root=root_scope('.company', contract_name='Company'),
+        extractor=strategy,
+    )
+
+    path = store.save_field_reference(reference)
+    loaded = store.load_field_reference('company-emails', field_name='emails', contract_fingerprint='company-fp')
+    similarity = compare_extractor_reference(
+        candidate_fingerprint=page,
+        candidate_url='https://example.test/companies/99999?email=private@example.test',
+        candidate_root='.company',
+        candidate_output_annotation='builtins:list[builtins:str]',
+        candidate_resolver_id='company.emails',
+        candidate_resolver_version='1',
+        candidate_operations=('operation-hash',),
+        candidate_row=row,
+        candidate_contract_name='Company',
+        reference=reference,
+    )
+
+    assert loaded == reference
+    assert similarity.compatible is True
+    assert 'private@example.test' not in path.read_text(encoding='utf-8')
+
+    opaque_strategy = strategy.model_copy(update={'evidence_sources': (), 'operations': (), 'opaque': True})
+    opaque_reference = reference.model_copy(update={'extractor': opaque_strategy})
+    opaque_similarity = compare_extractor_reference(
+        candidate_fingerprint=page,
+        candidate_url='https://example.test/companies/99999',
+        candidate_root='.company',
+        candidate_output_annotation='builtins:list[builtins:str]',
+        candidate_resolver_id='company.emails',
+        candidate_resolver_version='1',
+        candidate_operations=(),
+        candidate_row=row,
+        candidate_contract_name='Company',
+        reference=opaque_reference,
+    )
+    assert opaque_similarity.compatible is True
+    assert opaque_similarity.operation_match is True
+    assert opaque_similarity.score < 1.0
+
+    conflicting_strategy = strategy.model_copy(
+        update={'extractor': spec.model_copy(update={'config': {'mode': 'different'}})}
+    )
+    conflicting = reference.model_copy(
+        update={'reference_id': 'company-emails-conflict', 'extractor': conflicting_strategy}
+    )
+    with pytest.raises(ValueError, match='conflicting extractor strategy'):
+        store.save_field_reference(conflicting.model_copy(update={'reference_id': reference.reference_id}))
+
+    selected = select_extractor_reference(
+        [reference, conflicting],
+        candidate_fingerprint=page,
+        candidate_url='https://example.test/companies/99999',
+        candidate_root='.company',
+        candidate_output_annotation='builtins:list[builtins:str]',
+        candidate_resolver_id='company.emails',
+        candidate_resolver_version='1',
+        candidate_operations=('operation-hash',),
+        candidate_row=row,
+        candidate_contract_name='Company',
+    )
+    assert selected is None
+
+
+def test_field_references_require_exactly_one_strategy_kind() -> None:
+    with pytest.raises(ValueError, match='exactly one strategy kind'):
+        FingerprintFieldReferenceRecord(
+            reference_id='invalid',
+            label='Invalid',
+            url='https://example.test/',
+            route_template='example.test/',
+            fingerprint=ys.fingerprint(_RICH_HTML),
+            field_name='name',
+            root=root_scope(None),
+        )
 
 
 def test_classification_audit_appends_jsonl_events(tmp_path: Path) -> None:

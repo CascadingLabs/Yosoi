@@ -1,12 +1,158 @@
 """Yosoi-aware Field wrapper."""
 
-from collections.abc import Iterable
+import json
+from collections.abc import Callable, Iterable, Mapping
 from typing import Any, cast
 
 import pydantic
 import pydantic.fields
+from pydantic_core import PydanticUndefined
+from typing_extensions import Self
 
 from yosoi.types.filetypes import normalize_allowed_types
+
+_PLAN_CONFIG_KEY = '__yosoi_plan__'
+
+
+class ExtractorPlanField(pydantic.fields.FieldInfo):
+    """FieldInfo carrying fluent plan operations until Pydantic copies the field."""
+
+    # Pydantic marks FieldInfo final for static consumers. This private implementation
+    # subtype is required so fluent methods remain available while the assigned value is
+    # still genuine field metadata rather than a model default.
+    def __init__(self, plan: Mapping[str, Any]) -> None:
+        """Create required Pydantic field metadata from one plan snapshot."""
+        super().__init__(
+            default=PydanticUndefined,
+            json_schema_extra={
+                'yosoi_extractor': {
+                    'reference': None,
+                    'key': None,
+                    'version': '1',
+                    'config': {_PLAN_CONFIG_KEY: dict(plan)},
+                }
+            },
+        )
+
+    @property
+    def plan(self) -> dict[str, Any]:
+        """Return a copy of the serialized extraction plan."""
+        extra = self.json_schema_extra
+        marker = extra.get('yosoi_extractor') if isinstance(extra, dict) else None
+        config = marker.get('config') if isinstance(marker, dict) else None
+        plan = config.get(_PLAN_CONFIG_KEY) if isinstance(config, dict) else None
+        return dict(plan) if isinstance(plan, dict) else {}
+
+    def map(self, using: Callable[[Any], Any] | str) -> Self:
+        """Map each selected value through one importable deterministic callable."""
+        from yosoi.models.extraction import callable_reference
+
+        reference = using if isinstance(using, str) else callable_reference(using)
+        plan = self.plan
+        maps = list(plan.get('maps') or [])
+        maps.append(reference)
+        plan['maps'] = maps
+        return type(self)(plan)
+
+    def compact(self) -> Self:
+        """Discard ``None`` values after mapping; an empty collection remains valid."""
+        plan = self.plan
+        plan['compact'] = True
+        return type(self)(plan)
+
+
+def extractor_plan_field(
+    selector: Any,
+    *,
+    operation: str,
+    attribute: str | None = None,
+) -> ExtractorPlanField:
+    """Build fluent extractor metadata from a CSS/XPath selector terminal."""
+    if getattr(selector, 'type', None) not in {'css', 'xpath'}:
+        raise TypeError('fluent extractor plans currently support only ys.css() and ys.xpath()')
+    return ExtractorPlanField(
+        {
+            'selector': selector.model_dump(mode='json'),
+            'operation': operation,
+            'attribute': attribute,
+            'maps': [],
+            'compact': False,
+        }
+    )
+
+
+def Extractor(
+    default: Any = PydanticUndefined,
+    *,
+    default_factory: Callable[[], Any] | None = None,
+    using: Callable[[Any], Any] | str | None = None,
+    key: str | None = None,
+    version: str | None = None,
+    config: Mapping[str, Any] | None = None,
+    **kwargs: Any,
+) -> pydantic.fields.FieldInfo:
+    """Declare an async-capable, deterministic extractor field.
+
+    The annotation remains the field's real value type. This marker stores only
+    extraction configuration; it never becomes a model value and never performs
+    fetching, browser actions, or LLM discovery.
+
+    A fluent selector plan, ``using=`` callable, or ``@ys.extraction`` binding is
+    explicit. Without one, resolution falls back to legacy ``extract_<field>``
+    methods, output-type ``__yosoi_extract__`` hooks, then an exact registry entry.
+    """
+    from yosoi.models.extraction import extractor_spec_for_callable
+
+    if default is not PydanticUndefined and default_factory is not None:
+        raise TypeError('ys.Extractor() cannot specify both default and default_factory')
+
+    resolved_config = dict(config or {})
+    try:
+        json.dumps(resolved_config, sort_keys=True)
+    except (TypeError, ValueError) as exc:
+        raise TypeError('extractor config must be JSON-serializable') from exc
+
+    reference: str | None = None
+    resolved_key = key
+    resolved_version = version
+    if using is not None:
+        spec, _fn = extractor_spec_for_callable(
+            using,
+            source='explicit',
+            key=key,
+            version=version,
+            config=config,
+        )
+        reference = spec.reference
+        resolved_key = spec.resolver_id if key is not None else None
+        resolved_version = spec.version
+
+    extra: dict[str, Any] = dict(kwargs.pop('json_schema_extra', {}) or {})
+    if 'yosoi_action' in extra or 'yosoi_selector' in extra:
+        raise TypeError('ys.Extractor() cannot also be configured as an action or selector field')
+    extra['yosoi_extractor'] = {
+        'reference': reference,
+        'key': resolved_key,
+        'version': resolved_version,
+        'config': resolved_config,
+    }
+
+    field_kwargs: dict[str, Any] = {**kwargs, 'json_schema_extra': extra}
+    if default_factory is not None:
+        field_kwargs['default_factory'] = default_factory
+        return cast(pydantic.fields.FieldInfo, pydantic.Field(**field_kwargs))
+    return cast(pydantic.fields.FieldInfo, pydantic.Field(default, **field_kwargs))
+
+
+def _extractor_batch(*, batch_fields: tuple[str, ...], **kwargs: Any) -> pydantic.fields.FieldInfo:
+    """Rehydrate recipe batch metadata without expanding the public ``Extractor`` API."""
+    field_info = Extractor(**kwargs)
+    extra = field_info.json_schema_extra
+    marker = extra.get('yosoi_extractor') if isinstance(extra, dict) else None
+    if not isinstance(marker, dict):  # pragma: no cover - Extractor invariant
+        raise TypeError('batch extractor metadata could not be initialized')
+    marker['batch_fields'] = batch_fields
+    return field_info
 
 
 def js(

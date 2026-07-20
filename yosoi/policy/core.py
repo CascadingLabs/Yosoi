@@ -40,6 +40,7 @@ from yosoi.policy.crawl import (
     CrawlPresetName,
     CrawlRuntimeConfig,
 )
+from yosoi.policy.extractor import ExtractorPolicy
 from yosoi.policy.fingerprint import FingerprintPolicy
 from yosoi.policy.page import PagePolicy, PageRuntimeConfig
 from yosoi.policy.recipe import RecipePolicy
@@ -78,6 +79,8 @@ class Policy(BaseModel):
             fingerprint-generalized reuse); ``yellow`` ("let it ride") serves every tier.
         crawl: Optional crawl-stack sub-policy (see :mod:`yosoi.policy.crawl`).
         fingerprint: Optional signal-lane sub-policy (see :mod:`yosoi.policy.fingerprint`).
+        extractor: Optional deterministic extractor reference policy
+            (see :mod:`yosoi.policy.extractor`).
     """
 
     model_config = ConfigDict(frozen=True)
@@ -94,6 +97,7 @@ class Policy(BaseModel):
     page: PagePolicy | None = None
     crawl: CrawlPolicy | None = None
     fingerprint: FingerprintPolicy | None = None
+    extractor: ExtractorPolicy | None = None
     recipe: RecipePolicy | None = None
 
     @classmethod
@@ -253,8 +257,18 @@ class Policy(BaseModel):
         encoded = json.dumps(payload, sort_keys=True, separators=(',', ':')).encode()
         return hashlib.sha256(encoded).hexdigest()[:16]
 
-    def resolve_run_spec(self, env: Mapping[str, str] | None = None) -> ResolvedRunSpec:
-        """Resolve runtime-only values, including raw secrets, from this public policy."""
+    def resolve_run_spec(  # noqa: C901
+        self,
+        env: Mapping[str, str] | None = None,
+        *,
+        require_model: bool = True,
+    ) -> ResolvedRunSpec:
+        """Resolve runtime-only values, including raw secrets, from this public policy.
+
+        ``require_model=False`` supports deterministic/cache-only execution at API
+        edges. The returned ``llm_config`` is then ``None`` when no model is configured;
+        a later discovery attempt remains responsible for failing closed.
+        """
         from yosoi.core.configs import PROVIDER_FALLBACK_ORDER, TelemetryConfig
         from yosoi.core.discovery.config import _PROVIDER_ENV_VARS, NO_API_KEY_REQUIRED_PROVIDERS, LLMConfig
 
@@ -274,28 +288,46 @@ class Policy(BaseModel):
                 if found is not None:
                     break
             if found is None:
-                raise ValueError(
-                    'No model specified and no API key found. '
-                    'Pass policy=ys.Policy(model=ys.ModelPolicy.from_string("groq:...")) '
-                    'or set YOSOI_MODEL and a provider API key.'
+                if require_model:
+                    raise ValueError(
+                        'No model specified and no API key found. '
+                        'Pass policy=ys.Policy(model=ys.ModelPolicy.from_string("groq:...")) '
+                        'or set YOSOI_MODEL and a provider API key.'
+                    )
+            else:
+                provider, model_name, _key = found
+                model = ModelPolicy(
+                    provider=provider,
+                    model_name=model_name,
+                    credential_ref=find_secret_ref(provider, src),
                 )
-            provider, model_name, _key = found
-            model = ModelPolicy(provider=provider, model_name=model_name, credential_ref=find_secret_ref(provider, src))
 
-        provider_name = model.provider
-        model_name_value = model.model_name
-        if provider_name is None or model_name_value is None:  # pragma: no cover - validator enforces the pair
-            raise ValueError('model.provider and model.model_name must be resolved before execution')
+        llm_config: LLMConfig | None = None
+        if model is not None:
+            provider_name = model.provider
+            model_name_value = model.model_name
+            if provider_name is None or model_name_value is None:  # pragma: no cover - validator enforces the pair
+                raise ValueError('model.provider and model.model_name must be resolved before execution')
 
-        api_key = model._runtime_api_key
-        if api_key is None and model.credential_ref is not None:
-            api_key = model.credential_ref.resolve(src)
-        if api_key is None and provider_name not in NO_API_KEY_REQUIRED_PROVIDERS:
-            ref = find_secret_ref(provider_name, src)
-            api_key = ref.resolve(src) if ref is not None else None
-        if api_key is None and provider_name not in NO_API_KEY_REQUIRED_PROVIDERS:
-            expected = ', '.join(_PROVIDER_ENV_VARS.get(provider_name, ())) or 'a provider-specific API key'
-            raise ValueError(f'No API key found for explicit provider {provider_name!r}; set {expected}')
+            api_key = model._runtime_api_key
+            if api_key is None and model.credential_ref is not None:
+                api_key = model.credential_ref.resolve(src)
+            if api_key is None and provider_name not in NO_API_KEY_REQUIRED_PROVIDERS:
+                ref = find_secret_ref(provider_name, src)
+                api_key = ref.resolve(src) if ref is not None else None
+            missing_required_key = api_key is None and provider_name not in NO_API_KEY_REQUIRED_PROVIDERS
+            if missing_required_key and require_model:
+                expected = ', '.join(_PROVIDER_ENV_VARS.get(provider_name, ())) or 'a provider-specific API key'
+                raise ValueError(f'No API key found for explicit provider {provider_name!r}; set {expected}')
+            if not missing_required_key:
+                llm_config = LLMConfig(
+                    provider=provider_name,
+                    model_name=model_name_value,
+                    api_key=api_key,
+                    temperature=model.temperature,
+                    max_tokens=model.max_tokens,
+                    extra_params=dict(model.extra_params) if model.extra_params is not None else None,
+                )
 
         telemetry = self.telemetry
         scrape = self.scrape or ScrapePolicy()
@@ -306,14 +338,7 @@ class Policy(BaseModel):
 
         return ResolvedRunSpec(
             policy_hash=self.policy_hash,
-            llm_config=LLMConfig(
-                provider=provider_name,
-                model_name=model_name_value,
-                api_key=api_key,
-                temperature=model.temperature,
-                max_tokens=model.max_tokens,
-                extra_params=dict(model.extra_params) if model.extra_params is not None else None,
-            ),
+            llm_config=llm_config,
             telemetry_config=TelemetryConfig(**resolve_telemetry_values(telemetry, src)),
             debug_html=output.debug_html,
             debug_html_dir=output.debug_html_dir,

@@ -164,6 +164,9 @@ class PipelineUtilsMixin:
                 '[warning]⚠ Contract validation defaulted invalid field(s): '
                 f'{", ".join(parts)}. Check the selector or field type if this was unexpected.[/warning]'
             )
+        extractor = getattr(self, 'extractor', None)
+        if extractor is not None:
+            extractor.persist_validated_references()
         return validated
 
     def _dedupe_validated_items(self, items: ContentItems) -> ContentItems:
@@ -223,6 +226,8 @@ class PipelineUtilsMixin:
         try:
             return self.contract.model_validate(item, context={'source_url': url}).model_dump()
         except ValidationError as e:
+            if self.contract.extractor_fields():
+                raise ValueError(f'{self.contract.__name__} failed full-contract validation after extraction') from None
             offending = {str(err['loc'][0]) for err in e.errors() if err.get('loc')} & set(item)
             if not offending:
                 logger.warning('Contract validation failed (unisolable), using raw data: %s', e)
@@ -238,6 +243,8 @@ class PipelineUtilsMixin:
                 logger.warning('Validation still failing after dropping fields, using raw: %s', e2)
                 return item
         except (ValueError, TypeError) as e:
+            if self.contract.extractor_fields():
+                raise ValueError(f'{self.contract.__name__} failed full-contract validation after extraction') from None
             logger.warning('Contract validation failed, using raw data: %s', e)
             self.console.print(f'[warning]⚠ Validation skipped: {e}[/warning]')
             return item

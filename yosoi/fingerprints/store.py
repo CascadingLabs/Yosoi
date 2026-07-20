@@ -103,12 +103,20 @@ class FingerprintStore:
         return [FingerprintReferenceRecord.model_validate_json(path.read_text(encoding='utf-8')) for path in paths]
 
     def save_field_reference(self, record: FingerprintFieldReferenceRecord) -> Path:
-        """Persist a field/root-scoped reference under contract + field namespaces."""
+        """Persist a field/root-scoped reference without overwriting extractor conflicts."""
         path = self.field_reference_path(
             record.reference_id,
             field_name=record.field_name,
             contract_fingerprint=record.contract_fingerprint,
         )
+        if path.exists():
+            existing = FingerprintFieldReferenceRecord.model_validate_json(path.read_text(encoding='utf-8'))
+            if (existing.extractor is not None or record.extractor is not None) and (
+                existing.extractor != record.extractor or existing.selector != record.selector
+            ):
+                raise ValueError(
+                    f'conflicting extractor strategy for reference {record.reference_id!r}; use a distinct reference id'
+                )
         _write_model(path, record)
         return path
 
