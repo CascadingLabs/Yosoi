@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 import math
-import re
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, cast
@@ -14,20 +12,6 @@ import pydantic
 from pydantic_core import PydanticUndefined
 
 from yosoi.types.field import js as js_field
-
-_IMPORT_RE = re.compile(r"^\s*import\s+\{[^}]+\}\s+from\s+['\"]([^'\"]+)['\"]\s*;?\s*$", re.MULTILINE)
-_REEXPORT_RE = re.compile(r"^\s*export\s+\{[^}]+\}\s+from\s+['\"]([^'\"]+)['\"]\s*;?\s*$", re.MULTILINE)
-_NAMED_DEPENDENCY_RE = re.compile(
-    r"^\s*(?:import|export)\s+\{([^}]+)\}\s+from\s+['\"]([^'\"]+)['\"]\s*;?\s*$",
-    re.MULTILINE,
-)
-_LOCAL_EXPORT_RE = re.compile(r'^\s*export\s+\{[^}]+\}\s*;?\s*$', re.MULTILINE)
-_NAMED_BINDINGS_RE = re.compile(r'^\s*(?:import|export)\s+\{[^}]+\}', re.MULTILINE)
-_EXPORT_DECL_RE = re.compile(
-    r'^\s*export\s+(?=(?:async\s+)?function\b|(?:const|let|var|class)\b)',
-    re.MULTILINE,
-)
-_MAX_MODULE_BYTES = 512_000
 
 
 @dataclass(frozen=True)
@@ -107,21 +91,6 @@ class JavaScriptFunction:
         return f'({self.expression})({payload})'
 
 
-def _declares_named_export(source: str, name: str) -> bool:
-    direct = re.compile(
-        rf'^\s*export\s+(?:(?:async\s+)?function|const|let|var|class)\s+{re.escape(name)}\b',
-        re.MULTILINE,
-    )
-    if direct.search(source):
-        return True
-    for match in re.finditer(r'\bexport\s*\{([^}]+)\}', source):
-        for item in match.group(1).split(','):
-            parts = re.split(r'\s+as\s+', item.strip())
-            if parts and parts[-1] == name:
-                return True
-    return False
-
-
 class JavaScriptModules:
     """Confined loader for small static relative ESM module trees."""
 
@@ -132,69 +101,11 @@ class JavaScriptModules:
             raise ValueError(f'JavaScript module root is not a directory: {self.root}')
 
     def function(self, module: str, *, export: str) -> JavaScriptFunction:
-        """Bundle one named function export and its static relative imports."""
-        if not export.isidentifier():
-            raise ValueError(f'invalid JavaScript export name: {export!r}')
-        entry = self._resolve(self.root / module)
-        entry_text = self._read(entry)
-        if not _declares_named_export(entry_text, export):
-            raise ValueError(f'export {export!r} was not found in {module!r}')
-        chunks: list[tuple[Path, str]] = []
-        visited: set[Path] = set()
-        self._visit(entry, visited, chunks)
-        source = '\n'.join(f'// {path.relative_to(self.root).as_posix()}\n{text}' for path, text in chunks)
-        if re.search(rf'\b(?:function|const|let|var|class)\s+{re.escape(export)}\b', source) is None:
-            raise ValueError(f'export {export!r} has no callable declaration in {module!r}')
-        expression = f'(args => {{\n{source}\nreturn {export}(args);\n}})'
-        fingerprint = hashlib.sha256(expression.encode('utf-8')).hexdigest()
-        return JavaScriptFunction(expression, entry.relative_to(self.root).as_posix(), export, fingerprint)
+        """Link one named function export and its static relative imports."""
+        from yosoi._javascript_modules import JavaScriptModuleLinker
 
-    def _visit(self, path: Path, visited: set[Path], chunks: list[tuple[Path, str]]) -> None:
-        path = self._resolve(path)
-        if path in visited:
-            return
-        visited.add(path)
-        text = self._read(path)
-        for statement in _NAMED_BINDINGS_RE.findall(text):
-            if re.search(r'\bas\b', statement):
-                raise ValueError(f'named JavaScript import/export aliases are not supported: {path}')
-        for bindings, spec in _NAMED_DEPENDENCY_RE.findall(text):
-            if not spec.startswith('.'):
-                raise ValueError(f'only relative JavaScript imports are supported: {spec!r}')
-            dependency = path.parent / spec
-            if dependency.suffix not in {'.js', '.mjs'}:
-                dependency = dependency.with_suffix('.mjs')
-            dependency = self._resolve(dependency)
-            dependency_text = self._read(dependency)
-            for binding in bindings.split(','):
-                name = binding.strip()
-                if name and not _declares_named_export(dependency_text, name):
-                    raise ValueError(f'export {name!r} was not found in {spec!r}')
-            self._visit(dependency, visited, chunks)
-        stripped = _IMPORT_RE.sub('', text)
-        stripped = _REEXPORT_RE.sub('', stripped)
-        stripped = _LOCAL_EXPORT_RE.sub('', stripped)
-        stripped = _EXPORT_DECL_RE.sub('', stripped)
-        if re.search(r'\bimport\s*\(', stripped) or re.search(r'^\s*(?:import|export)\b', stripped, re.MULTILINE):
-            raise ValueError(f'unsupported JavaScript import/export syntax: {path}')
-        chunks.append((path, stripped.strip()))
-
-    def _read(self, path: Path) -> str:
-        if path.stat().st_size > _MAX_MODULE_BYTES:
-            raise ValueError(f'JavaScript module exceeds {_MAX_MODULE_BYTES} bytes: {path}')
-        return path.read_text(encoding='utf-8')
-
-    def _resolve(self, path: Path) -> Path:
-        resolved = path.resolve()
-        try:
-            resolved.relative_to(self.root)
-        except ValueError as exc:
-            raise ValueError(f'JavaScript module escapes configured root: {path}') from exc
-        if resolved.suffix not in {'.js', '.mjs'}:
-            raise ValueError(f'JavaScript modules must use .js or .mjs: {resolved}')
-        if not resolved.is_file():
-            raise ValueError(f'JavaScript module does not exist: {resolved}')
-        return resolved
+        bundle = JavaScriptModuleLinker(self.root).function(module, export=export)
+        return JavaScriptFunction(bundle.expression, bundle.module, bundle.export, bundle.fingerprint)
 
 
 def _encode_refs(value: Any) -> Any:

@@ -80,16 +80,18 @@ class Cards(ys.Contract):
 
 The loader:
 
+- parses each file with the Tree-sitter JavaScript grammar before linking;
 - confines every file beneath the declared root;
 - accepts `.js` and `.mjs` files;
 - supports named function exports and static relative named imports/re-exports without binding aliases;
-- rejects path traversal, package imports, default imports, and dynamic imports;
-- fingerprints the complete bundled function expression;
-- sends bundled source to the browser, never a local path.
+- preserves each module's private scope, including repeated private binding names;
+- rejects syntax errors, cycles, mutable live bindings, path traversal, package imports,
+  default imports, and dynamic imports before browser execution;
+- caps each file at 512 KB, the graph at 128 files and 2 MB, and the linked output at 2 MB;
+- fingerprints the complete linked function expression;
+- sends linked source to the browser, never a local path.
 
-This is intentionally a small ESM subset, not a general JavaScript build system.
-Modules are flattened into one function scope, so private and exported binding names
-must remain unique across the loaded graph.
+This is intentionally an AST-backed ESM subset, not a general JavaScript build system.
 
 ## Handwritten A3 flows
 
@@ -181,7 +183,7 @@ edit business data, or use a persistent browser profile.
 - Executor scope is page-level only.
 - Flow classes currently compile a flat A3 sequence; public Sequence, Selector, and
   Reaction authoring helpers remain future work.
-- Local module loading implements a constrained ESM subset, rejects named import/export aliases, and requires unique binding names across the flattened graph.
+- Local module loading implements a constrained, acyclic ESM subset and rejects named import/export aliases, mutable live bindings, side-effect-only imports, and top-level await.
 - Flow declarations do not yet automatically mint or install recipes.
 - The Google Maps Flow intentionally omits per-review Share-dialog URL enrichment;
   the older specialized example retains that slower workflow.
