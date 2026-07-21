@@ -91,8 +91,12 @@ class _FlowMeta(type):
     def __new__(mcls, name: str, bases: tuple[type[Any], ...], namespace: dict[str, Any]) -> type[Any]:
         cls: Any = super().__new__(mcls, name, bases, namespace)
         inherited: list[_Declaration] = []
+        inherited_names: set[str] = set()
         for base in bases:
-            inherited.extend(getattr(base, '_flow_declarations', ()))
+            for declaration in getattr(base, '_flow_declarations', ()):
+                if declaration.name not in inherited_names:
+                    inherited.append(declaration)
+                    inherited_names.add(declaration.name)
 
         try:
             annotations = inspect.get_annotations(cls, eval_str=True)

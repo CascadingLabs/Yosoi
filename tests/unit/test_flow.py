@@ -57,6 +57,24 @@ def test_flow_compiles_to_existing_replay_plan() -> None:
     assert plan.nodes[3].act.script.endswith('({"value":7})')
 
 
+def test_flow_deduplicates_diamond_inheritance_by_stable_node_id() -> None:
+    class Shared(ys.Flow):
+        shared = ys.click(ys.css('#shared'))
+
+    class Left(Shared):
+        left = ys.click(ys.css('#left'))
+
+    class Right(Shared):
+        right = ys.click(ys.css('#right'))
+
+    class Combined(Left, Right):
+        final = ys.click(ys.css('#final'))
+
+    plan = Combined.compile('https://example.test')
+
+    assert [node.id for node in plan.nodes] == ['navigate', 'shared', 'left', 'right', 'final']
+
+
 def test_state_requires_a_supported_condition() -> None:
     with pytest.raises(TypeError, match=r'State\.condition must be a selector or Flow condition'):
 
