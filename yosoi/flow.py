@@ -223,7 +223,9 @@ def _compile_declaration(declaration: _Declaration, inputs: dict[str, Any]) -> R
             script=bind_executor_action(config, inputs),
             output_field=declaration.name,
             repeat=should_settle,
-            max_repeats=max(1, math.ceil(settle_timeout / settle_poll)) if should_settle and settle_poll > 0 else 1,
+            max_repeats=max(1, math.floor(settle_timeout / settle_poll) + 1)
+            if should_settle and settle_poll > 0
+            else 1,
             dwell_ms=max(0, int(settle_poll * 1000)) if should_settle else 0,
             metadata={'until_non_null': True} if should_settle else {},
         )

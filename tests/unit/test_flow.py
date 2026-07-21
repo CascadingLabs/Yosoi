@@ -50,7 +50,7 @@ def test_flow_compiles_to_existing_replay_plan() -> None:
     assert plan.nodes[2].act.max_repeats == 4
     assert plan.nodes[3].act.output_field == 'value'
     assert plan.nodes[3].act.repeat is True
-    assert plan.nodes[3].act.max_repeats == 4
+    assert plan.nodes[3].act.max_repeats == 5
     assert plan.nodes[3].act.dwell_ms == 250
     assert plan.nodes[3].act.metadata == {'until_non_null': True}
     assert plan.nodes[3].act.script is not None
