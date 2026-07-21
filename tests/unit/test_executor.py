@@ -74,6 +74,7 @@ def test_javascript_modules_reject_runtime_module_syntax(tmp_path) -> None:
         "export function run() { return import('./other.mjs'); }",
         'export function run() { return import.meta.url; }',
         'await Promise.resolve(); export function run() { return true; }',
+        'for await (const value of values) {} export function run() { return true; }',
         'return; export function run() { return true; }',
         'export function run(value) { with (value) { return true; } }',
     )

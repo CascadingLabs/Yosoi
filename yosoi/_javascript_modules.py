@@ -452,6 +452,7 @@ def _reject_runtime_module_syntax(root: Node, path: Path) -> None:
         if not in_function and (
             node.type in {'await_expression', 'return_statement', 'yield_expression'}
             or (node.type == 'identifier' and _node_text(node) == 'arguments')
+            or (node.type == 'for_in_statement' and any(child.type == 'await' for child in node.children))
         ):
             JavaScriptModuleLinker._unsupported(node, path)
         child_in_function = in_function or node.type in _FUNCTION_SCOPES
