@@ -88,6 +88,8 @@ The loader:
 - sends bundled source to the browser, never a local path.
 
 This is intentionally a small ESM subset, not a general JavaScript build system.
+Modules are flattened into one function scope, so private and exported binding names
+must remain unique across the loaded graph.
 
 ## Handwritten A3 flows
 
@@ -179,7 +181,7 @@ edit business data, or use a persistent browser profile.
 - Executor scope is page-level only.
 - Flow classes currently compile a flat A3 sequence; public Sequence, Selector, and
   Reaction authoring helpers remain future work.
-- Local module loading implements a constrained ESM subset and rejects named import/export aliases.
+- Local module loading implements a constrained ESM subset, rejects named import/export aliases, and requires unique binding names across the flattened graph.
 - Flow declarations do not yet automatically mint or install recipes.
 - The Google Maps Flow intentionally omits per-review Share-dialog URL enrichment;
   the older specialized example retains that slower workflow.
