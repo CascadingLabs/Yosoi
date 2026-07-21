@@ -248,7 +248,6 @@ class PrepareReviews(ys.Flow):
     load_reviews: ys.Expect[ReviewLimitLoaded] = ys.scroll_until(
         ys.nearest_scroll_parent(REVIEW_CARD),
         max_scrolls=ys.input('max_scrolls'),
-        stop_when='no_growth',
     )
 
     expand_reviews = ys.click_all(

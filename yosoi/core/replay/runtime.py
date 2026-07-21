@@ -342,10 +342,12 @@ async def _execute_act(tab: Any, act: ReplayAct, expect: ReplayCondition) -> Any
         last_output = await _execute_once(tab, act)
         if until_non_null and last_output is not None:
             return last_output
-        if not until_non_null and (not act.repeat or await _condition_holds(tab, expect)):
+        if not act.repeat:
             return last_output
         if act.dwell_ms:
             await asyncio.sleep(act.dwell_ms / 1000)
+        if not until_non_null and await _condition_holds(tab, expect):
+            return last_output
     if until_non_null:
         raise ReplayExecutionError(f'{act.kind.value} output remained null after {repeats} settle attempt(s)')
     return last_output
@@ -439,11 +441,19 @@ async def _exec_click(tab: Any, act: ReplayAct) -> Any:
 
 async def _click_all(tab: Any, act: ReplayAct) -> int:
     """Click matching elements in bounded CSS row scopes through one JS act."""
-    if not act.targets:
-        raise ReplayExecutionError('click_all requires at least one target')
+    if len(act.targets) != 1:
+        raise ReplayExecutionError('click_all requires exactly one target')
     target = act.targets[0]
     within = act.metadata.get('within_selector')
-    limit = int(act.metadata.get('limit') or 1)
+    raw_limit = act.metadata.get('limit')
+    if raw_limit is None:
+        raise ReplayExecutionError('click_all limit must be an integer')
+    try:
+        limit = int(raw_limit)
+    except (TypeError, ValueError) as exc:
+        raise ReplayExecutionError('click_all limit must be an integer') from exc
+    if limit < 1:
+        raise ReplayExecutionError('click_all limit must be >= 1')
     if target.type == 'role':
         candidate_selector = 'button,[role="button"]' if target.value == 'button' else f'[role="{target.value}"]'
         name = (target.name or '').casefold()
@@ -455,21 +465,30 @@ async def _click_all(tab: Any, act: ReplayAct) -> int:
         predicate = 'true'
     else:
         raise ReplayExecutionError(f'{target.type} click_all targets are not supported')
-    scopes = (
-        f'Array.from(document.querySelectorAll({json.dumps(str(within))})).slice(0, {limit})'
-        if within
-        else '[document]'
-    )
-    script = f"""(() => {{
-      const scopes = {scopes};
-      let clicked = 0;
-      for (const scope of scopes) {{
-        for (const el of scope.querySelectorAll({json.dumps(candidate_selector)})) {{
-          if ({predicate}) {{ el.click(); clicked += 1; break; }}
-        }}
-      }}
-      return clicked;
-    }})()"""
+    if within:
+        scopes = f'Array.from(document.querySelectorAll({json.dumps(str(within))})).slice(0, {limit})'
+        script = f"""(() => {{
+          const scopes = {scopes};
+          let clicked = 0;
+          for (const scope of scopes) {{
+            for (const el of scope.querySelectorAll({json.dumps(candidate_selector)})) {{
+              if ({predicate}) {{ el.click(); clicked += 1; break; }}
+            }}
+          }}
+          return clicked;
+        }})()"""
+    else:
+        script = f"""(() => {{
+          let clicked = 0;
+          for (const el of document.querySelectorAll({json.dumps(candidate_selector)})) {{
+            if ({predicate}) {{
+              el.click();
+              clicked += 1;
+              if (clicked >= {limit}) return clicked;
+            }}
+          }}
+          return clicked;
+        }})()"""
     result = await _eval(tab, script)
     return int(result or 0)
 
@@ -731,9 +750,11 @@ async def _click_target(tab: Any, target: SelectorEntry) -> None:
                         f'no AX node with role={target.value!r} containing name={target.name!r} at index {index}'
                     )
                 # VoidCrawl click_by_role performs exact accessible-name matching. Resolve
-                # our resilient substring target through the AX tree, then click that exact
-                # name. Passing the substring directly can assess true and still fail click.
-                await _call(tab, 'click_by_role', target.value, matches[index], 0)
+                # our resilient substring target through the AX tree, then preserve the
+                # occurrence index when duplicate nodes share that exact accessible name.
+                exact_name = matches[index]
+                exact_index = matches[:index].count(exact_name)
+                await _call(tab, 'click_by_role', target.value, exact_name, exact_index)
                 return
         await _call(tab, 'click_by_role', target.value, target.name, target.nth or 0)
         return

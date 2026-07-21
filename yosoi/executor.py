@@ -16,6 +16,8 @@ from yosoi.types.field import js as js_field
 
 _IMPORT_RE = re.compile(r"^\s*import\s+\{[^}]+\}\s+from\s+['\"]([^'\"]+)['\"]\s*;?\s*$", re.MULTILINE)
 _REEXPORT_RE = re.compile(r"^\s*export\s+\{[^}]+\}\s+from\s+['\"]([^'\"]+)['\"]\s*;?\s*$", re.MULTILINE)
+_LOCAL_EXPORT_RE = re.compile(r'^\s*export\s+\{[^}]+\}\s*;?\s*$', re.MULTILINE)
+_NAMED_BINDINGS_RE = re.compile(r'^\s*(?:import|export)\s+\{[^}]+\}', re.MULTILINE)
 _EXPORT_DECL_RE = re.compile(r'\bexport\s+(?=(?:async\s+)?function\b|(?:const|let|var|class)\b)')
 _MAX_MODULE_BYTES = 512_000
 
@@ -87,6 +89,18 @@ class JavaScriptFunction:
         return f'({self.expression})({payload})'
 
 
+def _declares_named_export(source: str, name: str) -> bool:
+    direct = re.compile(rf'\bexport\s+(?:(?:async\s+)?function|const|let|var|class)\s+{re.escape(name)}\b')
+    if direct.search(source):
+        return True
+    for match in re.finditer(r'\bexport\s*\{([^}]+)\}', source):
+        for item in match.group(1).split(','):
+            parts = re.split(r'\s+as\s+', item.strip())
+            if parts and parts[-1] == name:
+                return True
+    return False
+
+
 class JavaScriptModules:
     """Confined loader for small static relative ESM module trees."""
 
@@ -101,12 +115,15 @@ class JavaScriptModules:
         if not export.isidentifier():
             raise ValueError(f'invalid JavaScript export name: {export!r}')
         entry = self._resolve(self.root / module)
+        entry_text = entry.read_text(encoding='utf-8')
+        if not _declares_named_export(entry_text, export):
+            raise ValueError(f'export {export!r} was not found in {module!r}')
         chunks: list[tuple[Path, str]] = []
         visited: set[Path] = set()
         self._visit(entry, visited, chunks)
         source = '\n'.join(f'// {path.relative_to(self.root).as_posix()}\n{text}' for path, text in chunks)
         if re.search(rf'\b(?:function|const|let|var|class)\s+{re.escape(export)}\b', source) is None:
-            raise ValueError(f'export {export!r} was not found in {module!r}')
+            raise ValueError(f'export {export!r} has no callable declaration in {module!r}')
         expression = f'(args => {{\n{source}\nreturn {export}(args);\n}})'
         fingerprint = hashlib.sha256(expression.encode('utf-8')).hexdigest()
         return JavaScriptFunction(expression, entry.relative_to(self.root).as_posix(), export, fingerprint)
@@ -119,6 +136,9 @@ class JavaScriptModules:
         if path.stat().st_size > _MAX_MODULE_BYTES:
             raise ValueError(f'JavaScript module exceeds {_MAX_MODULE_BYTES} bytes: {path}')
         text = path.read_text(encoding='utf-8')
+        for statement in _NAMED_BINDINGS_RE.findall(text):
+            if re.search(r'\bas\b', statement):
+                raise ValueError(f'named JavaScript import/export aliases are not supported: {path}')
         dependency_specs = [*_IMPORT_RE.findall(text), *_REEXPORT_RE.findall(text)]
         for spec in dependency_specs:
             if not spec.startswith('.'):
@@ -129,9 +149,10 @@ class JavaScriptModules:
             self._visit(dependency, visited, chunks)
         stripped = _IMPORT_RE.sub('', text)
         stripped = _REEXPORT_RE.sub('', stripped)
+        stripped = _LOCAL_EXPORT_RE.sub('', stripped)
         stripped = _EXPORT_DECL_RE.sub('', stripped)
-        if re.search(r'\b(?:import|export)\s*\(', stripped) or re.search(r"\bimport\s+[^'{]", stripped):
-            raise ValueError(f'dynamic/default JavaScript imports are not supported: {path}')
+        if re.search(r'\bimport\s*\(', stripped) or re.search(r'^\s*(?:import|export)\b', stripped, re.MULTILINE):
+            raise ValueError(f'unsupported JavaScript import/export syntax: {path}')
         chunks.append((path, stripped.strip()))
 
     def _resolve(self, path: Path) -> Path:

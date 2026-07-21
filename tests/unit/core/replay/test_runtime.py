@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+
 import pytest
 
 from yosoi.core.replay.runtime import ReplayExecutionError, execute_plan, verify_plan
@@ -104,6 +106,25 @@ async def test_execute_plan_resolves_role_substring_to_exact_ax_name_before_clic
     assert tab.calls == [('click_by_role', ('tab', 'Reviews for Example Place', 0))]
 
 
+async def test_execute_plan_preserves_nth_for_duplicate_exact_ax_names():
+    tab = FakeTab()
+    tab.ax_nodes = [
+        {'role': {'value': 'button'}, 'name': {'value': 'Save changes'}},
+        {'role': {'value': 'button'}, 'name': {'value': 'Save changes'}},
+    ]
+    plan = _plan(
+        ReplayNode(
+            id='save-second',
+            intent='save the second row',
+            act=ReplayAct(kind=ActKind.CLICK, targets=[role('button', 'Save', nth=1)]),
+        )
+    )
+
+    await execute_plan(tab, plan)
+
+    assert tab.calls == [('click_by_role', ('button', 'Save changes', 1))]
+
+
 async def test_execute_plan_click_all_uses_bounded_row_scopes():
     tab = FakeTab()
     plan = _plan(
@@ -123,6 +144,63 @@ async def test_execute_plan_click_all_uses_bounded_row_scopes():
     script = next(args[0] for name, args in tab.calls if name == 'evaluate')
     assert 'document.querySelectorAll("[data-row]")' in script
     assert '.slice(0, 3)' in script
+
+
+async def test_execute_plan_click_all_without_row_scopes_honours_limit():
+    tab = FakeTab()
+    plan = _plan(
+        ReplayNode(
+            id='expand',
+            intent='expand visible controls',
+            act=ReplayAct(
+                kind=ActKind.CLICK,
+                targets=[css('button.more')],
+                metadata={'click_all': True, 'limit': 3},
+            ),
+        )
+    )
+
+    await execute_plan(tab, plan)
+
+    script = next(args[0] for name, args in tab.calls if name == 'evaluate')
+    assert 'if (clicked >= 3) return clicked;' in script
+
+
+class _DelayedReadyTab(FakeTab):
+    def __init__(self) -> None:
+        super().__init__()
+        self.ready = False
+        self.clicks = 0
+
+    async def click_element(self, selector: str) -> None:
+        self.clicks += 1
+        asyncio.get_running_loop().call_later(0.01, setattr, self, 'ready', True)
+        await super().click_element(selector)
+
+    async def query_selector(self, selector: str) -> object | None:
+        return object() if selector == '.ready' and self.ready else None
+
+
+async def test_repeated_action_waits_before_rechecking_expectation():
+    tab = _DelayedReadyTab()
+    plan = _plan(
+        ReplayNode(
+            id='open',
+            intent='open delayed panel',
+            act=ReplayAct(
+                kind=ActKind.CLICK,
+                targets=[css('button.open')],
+                repeat=True,
+                max_repeats=2,
+                dwell_ms=20,
+            ),
+            expect=ReplayCondition(kind=AssertKind.SELECTOR, selector=css('.ready')),
+        )
+    )
+
+    await execute_plan(tab, plan)
+
+    assert tab.clicks == 1
 
 
 class _SettlingTab(FakeTab):

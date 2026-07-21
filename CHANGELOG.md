@@ -6,6 +6,12 @@
 - Add class-declared `ys.Flow` programs that compile into the existing deterministic A3Node replay runtime.
 - Add named `ys.State` expectations, runtime inputs, bounded wait/scroll/click-all actions, and live headless/headful Flow execution.
 
+### Fix
+
+- Fail fast on unsupported JavaScript module aliases and non-exported entry functions instead of deferring invalid bundles to browser execution.
+- Preserve accessibility-node indexes for duplicate exact names, honor page-scoped `click_all` limits, and wait the configured dwell before repeating actions whose expectations become ready asynchronously.
+- Reject the unimplemented `scroll_until(..., stop_when='no_growth')` mode instead of silently treating it as expectation-driven scrolling.
+
 ### Docs
 
 - Document Executor.js, handwritten A3 flows, module safety constraints, alpha limitations, and the runnable Google Maps experiment.

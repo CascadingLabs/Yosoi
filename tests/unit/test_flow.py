@@ -81,6 +81,15 @@ def test_flow_rejects_invalid_dynamic_bounds() -> None:
         ys.click_all(ys.css('button'), limit=0)
 
 
+def test_flow_rejects_unimplemented_no_growth_scroll_stop() -> None:
+    with pytest.raises(ValueError, match="currently supports only 'expectation'"):
+        ys.scroll_until(
+            ys.nearest_scroll_parent(ys.css('.row')),
+            max_scrolls=3,
+            stop_when='no_growth',
+        )
+
+
 def test_flow_validates_executor_outputs_from_annotations() -> None:
     assert ExampleFlow.validate_outputs({'value': '7'}) == {'value': 7}
     with pytest.raises(ValueError, match='produced no output'):

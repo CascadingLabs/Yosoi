@@ -80,7 +80,7 @@ The loader:
 
 - confines every file beneath the declared root;
 - accepts `.js` and `.mjs` files;
-- supports named function exports and static relative named imports/re-exports;
+- supports named function exports and static relative named imports/re-exports without binding aliases;
 - rejects path traversal, package imports, default imports, and dynamic imports;
 - fingerprints the complete bundled function expression;
 - sends bundled source to the browser, never a local path.
@@ -175,7 +175,7 @@ edit business data, or use a persistent browser profile.
 - Executor scope is page-level only.
 - Flow classes currently compile a flat A3 sequence; public Sequence, Selector, and
   Reaction authoring helpers remain future work.
-- Local module loading implements a constrained ESM subset.
+- Local module loading implements a constrained ESM subset and rejects named import/export aliases.
 - Flow declarations do not yet automatically mint or install recipes.
 - The Google Maps Flow intentionally omits per-review Share-dialog URL enrichment;
   the older specialized example retains that slower workflow.

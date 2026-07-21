@@ -35,6 +35,25 @@ def test_javascript_modules_reject_root_escape(tmp_path) -> None:
         JavaScriptModules(tmp_path).function('../outside.mjs', export='run')
 
 
+def test_javascript_modules_rejects_non_exported_entry_function(tmp_path) -> None:
+    (tmp_path / 'entry.mjs').write_text(
+        'function privateHelper() { return 1; }\nexport function run() { return privateHelper(); }'
+    )
+
+    with pytest.raises(ValueError, match="export 'privateHelper' was not found"):
+        JavaScriptModules(tmp_path).function('entry.mjs', export='privateHelper')
+
+
+def test_javascript_modules_rejects_named_import_aliases_before_browser_execution(tmp_path) -> None:
+    (tmp_path / 'helper.mjs').write_text('export function original() { return 1; }')
+    (tmp_path / 'entry.mjs').write_text(
+        "import {original as renamed} from './helper.mjs';\nexport function run() { return renamed(); }"
+    )
+
+    with pytest.raises(ValueError, match='aliases are not supported'):
+        JavaScriptModules(tmp_path).function('entry.mjs', export='run')
+
+
 def test_executor_js_binds_literal_args_for_inline_contract_function() -> None:
     class Page(ys.Contract):
         count: int = ys.Executor.js('(args) => args.count', args={'count': 4})

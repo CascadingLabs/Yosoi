@@ -289,20 +289,21 @@ def click(target: SelectorEntry | tuple[SelectorEntry, ...] | list[SelectorEntry
 
 
 def click_all(
-    target: SelectorEntry | tuple[SelectorEntry, ...] | list[SelectorEntry],
+    target: SelectorEntry,
     *,
     limit: int | InputRef,
     within: SelectorEntry | None = None,
 ) -> _Action:
-    """Click every matching target once, optionally within bounded row scopes."""
-    targets = tuple(target) if isinstance(target, (tuple, list)) else (target,)
+    """Click matching targets up to a limit, or one target per bounded row scope."""
+    if not isinstance(target, SelectorEntry):
+        raise TypeError('click_all requires exactly one selector target')
     if isinstance(limit, int):
         _positive_int(limit, name='click_all limit')
     if within is not None and within.type != 'css':
         raise TypeError('click_all within currently requires a CSS selector')
     return _Action(
         ActKind.CLICK,
-        targets=targets,
+        targets=(target,),
         metadata={
             'click_all': True,
             'limit': {'$input': limit.name} if isinstance(limit, InputRef) else limit,
@@ -337,13 +338,13 @@ def scroll_until(
     stop_when: str = 'expectation',
 ) -> _Action:
     """Create a repeated A3 SCROLL act gated by the annotated expectation."""
-    if stop_when not in {'expectation', 'no_growth'}:
-        raise ValueError("stop_when must be 'expectation' or 'no_growth'")
+    if stop_when != 'expectation':
+        raise ValueError("scroll_until stop_when currently supports only 'expectation'")
     return _Action(
         ActKind.SCROLL,
         repeat=True,
         max_repeats=max_scrolls,
-        metadata={'anchor_selector': container.anchor.value, 'stop_when': stop_when},
+        metadata={'anchor_selector': container.anchor.value},
     )
 
 
