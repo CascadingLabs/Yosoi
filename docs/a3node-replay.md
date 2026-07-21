@@ -11,6 +11,28 @@ uv run yosoi scrape https://example.com/products/sku-1 --contract @Product --a3n
 
 Recipe replay also enables A3Node automatically when the recipe carries `a3nodes`.
 
+## Handwritten flows
+
+`ys.Flow` is the experimental manual authoring surface for the same replay model.
+Class-definition order becomes sequence order, each public attribute becomes a
+stable node ID, and `ys.Expect[...]` supplies the post-action assertion:
+
+```python
+import yosoi as ys
+
+
+class ResultsVisible(ys.State):
+    condition = ys.css('.results')
+
+
+class RevealResults(ys.Flow):
+    open_results: ys.Expect[ResultsVisible] = ys.click(ys.role('tab', name='Results'))
+```
+
+A Flow compiles to `ReplayPlan`; it does not introduce another browser driver or
+execution path. See [`executor-js-flow.md`](executor-js-flow.md) for executors,
+module trees, live execution, and current alpha limitations.
+
 ## Scoped replay
 
 A3Node recipes are no longer domain-only. New scope keys include:

@@ -163,6 +163,14 @@ class Contract(BaseModel):
                     f'({nested_fields}); declare those extractor fields on {cls.__name__} instead'
                 )
             extra = fi.json_schema_extra if isinstance(fi.json_schema_extra, dict) else {}
+            action = extra.get('yosoi_action')
+            flow_inputs = action.get('flow_inputs') if isinstance(action, dict) else None
+            if isinstance(flow_inputs, list) and flow_inputs:
+                inputs = ', '.join(str(item) for item in flow_inputs)
+                raise TypeError(
+                    f'{cls.__name__}.{name}: Executor.js runtime inputs are valid only on ys.Flow fields '
+                    f'({inputs}); Contract fields require literal args'
+                )
             if 'yosoi_extractor' not in extra:
                 continue
             conflicts = [key for key in ('yosoi_action', 'yosoi_selector') if key in extra]

@@ -56,6 +56,8 @@ class AssertKind(str, Enum):
     COUNT = 'count'
     DOM_STABLE = 'dom_stable'
     AX_TARGET = 'ax_target'
+    ABSENT = 'absent'
+    ABSENT_AX_TARGET = 'absent_ax_target'
     DOWNLOAD_OK = 'download_ok'  # a verified download was captured for the node's act
     CAPTCHA = 'captcha'  # trigger guard (W1): a rendered antibot/captcha wall is present
     NONE = 'none'

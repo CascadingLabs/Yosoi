@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+import json
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from typing import Any
@@ -335,15 +336,18 @@ def _fail(report: VerifyReport, message: str) -> None:
 
 async def _execute_act(tab: Any, act: ReplayAct, expect: ReplayCondition) -> Any:
     repeats = act.max_repeats if act.repeat else 1
+    until_non_null = bool(act.metadata.get('until_non_null'))
     last_output: Any = None
-    for idx in range(repeats):
+    for _idx in range(repeats):
         last_output = await _execute_once(tab, act)
+        if until_non_null and last_output is not None:
+            return last_output
+        if not until_non_null and (not act.repeat or await _condition_holds(tab, expect)):
+            return last_output
         if act.dwell_ms:
             await asyncio.sleep(act.dwell_ms / 1000)
-        if not act.repeat or await _condition_holds(tab, expect):
-            return last_output
-        if idx == repeats - 1:
-            return last_output
+    if until_non_null:
+        raise ReplayExecutionError(f'{act.kind.value} output remained null after {repeats} settle attempt(s)')
     return last_output
 
 
@@ -427,8 +431,47 @@ def _raise_if_challenged(response: Any, url: str | None) -> None:
 
 
 async def _exec_click(tab: Any, act: ReplayAct) -> Any:
+    if act.metadata.get('click_all'):
+        return await _click_all(tab, act)
     await _click_first(tab, act.targets)
     return None
+
+
+async def _click_all(tab: Any, act: ReplayAct) -> int:
+    """Click matching elements in bounded CSS row scopes through one JS act."""
+    if not act.targets:
+        raise ReplayExecutionError('click_all requires at least one target')
+    target = act.targets[0]
+    within = act.metadata.get('within_selector')
+    limit = int(act.metadata.get('limit') or 1)
+    if target.type == 'role':
+        candidate_selector = 'button,[role="button"]' if target.value == 'button' else f'[role="{target.value}"]'
+        name = (target.name or '').casefold()
+        predicate = (
+            f"((el.getAttribute('aria-label') || el.innerText || '').trim().toLowerCase().includes({json.dumps(name)}))"
+        )
+    elif target.type == 'css':
+        candidate_selector = target.value
+        predicate = 'true'
+    else:
+        raise ReplayExecutionError(f'{target.type} click_all targets are not supported')
+    scopes = (
+        f'Array.from(document.querySelectorAll({json.dumps(str(within))})).slice(0, {limit})'
+        if within
+        else '[document]'
+    )
+    script = f"""(() => {{
+      const scopes = {scopes};
+      let clicked = 0;
+      for (const scope of scopes) {{
+        for (const el of scope.querySelectorAll({json.dumps(candidate_selector)})) {{
+          if ({predicate}) {{ el.click(); clicked += 1; break; }}
+        }}
+      }}
+      return clicked;
+    }})()"""
+    result = await _eval(tab, script)
+    return int(result or 0)
 
 
 async def _exec_type(tab: Any, act: ReplayAct) -> Any:
@@ -567,16 +610,25 @@ async def _condition_holds(tab: Any, condition: ReplayCondition) -> bool:
     if condition.kind == AssertKind.DOM_STABLE:
         await _wait_for_dom_stable(tab, condition)
         return True
-    if condition.kind == AssertKind.AX_TARGET:
-        if condition.selector is None:
-            return False
-        return await _ax_target_exists(tab, condition.selector)
+    if condition.kind in {AssertKind.AX_TARGET, AssertKind.ABSENT, AssertKind.ABSENT_AX_TARGET}:
+        return await _target_condition(tab, condition)
     if condition.kind == AssertKind.CAPTCHA:
         return await _captcha_condition(tab)
     # DOWNLOAD_OK: the DOWNLOAD act fails-fast internally (allowed_types/min-size via
     # run_download), so reaching the expect step means a verified download was captured.
     # FUTURE: thread the captured result here to assert content-type/min-size vs condition.value.
     return condition.kind == AssertKind.DOWNLOAD_OK
+
+
+async def _target_condition(tab: Any, condition: ReplayCondition) -> bool:
+    """Evaluate present/absent DOM or accessibility targets."""
+    if condition.selector is None:
+        return False
+    if condition.kind == AssertKind.AX_TARGET:
+        return await _ax_target_exists(tab, condition.selector)
+    if condition.kind == AssertKind.ABSENT_AX_TARGET:
+        return not await _ax_target_exists(tab, condition.selector)
+    return not await _selector_exists(tab, condition.selector)
 
 
 async def _captcha_condition(tab: Any) -> bool:
@@ -632,18 +684,22 @@ async def _selector_count(tab: Any, selector: SelectorEntry) -> int:
 
 
 async def _ax_target_exists(tab: Any, selector: SelectorEntry) -> bool:
+    return bool(await _matching_ax_targets(tab, selector))
+
+
+async def _matching_ax_targets(tab: Any, selector: SelectorEntry) -> list[str]:
+    """Return exact AX names matching one role/name substring selector."""
     if selector.type != 'role':
         raise ReplayExecutionError(f'{selector.type} AX conditions are not supported by replay runtime')
     if not hasattr(tab, 'get_full_ax_tree'):
-        return False
+        return []
     nodes = await _call(tab, 'get_full_ax_tree')
     name = (selector.name or '').lower()
-    for node in nodes or []:
-        role = _ax_value(node, 'role')
-        node_name = _ax_value(node, 'name').lower()
-        if role == selector.value and name in node_name:
-            return True
-    return False
+    return [
+        exact_name
+        for node in nodes or []
+        if _ax_value(node, 'role') == selector.value and name in (exact_name := _ax_value(node, 'name')).lower()
+    ]
 
 
 async def _click_first(tab: Any, targets: list[SelectorEntry]) -> None:
@@ -666,6 +722,19 @@ async def _try_click_target(tab: Any, target: SelectorEntry) -> str | None:
 
 async def _click_target(tab: Any, target: SelectorEntry) -> None:
     if target.type == 'role':
+        if hasattr(tab, 'get_full_ax_tree'):
+            matches = await _matching_ax_targets(tab, target)
+            index = target.nth or 0
+            if matches:
+                if index >= len(matches):
+                    raise ReplayExecutionError(
+                        f'no AX node with role={target.value!r} containing name={target.name!r} at index {index}'
+                    )
+                # VoidCrawl click_by_role performs exact accessible-name matching. Resolve
+                # our resilient substring target through the AX tree, then click that exact
+                # name. Passing the substring directly can assess true and still fail click.
+                await _call(tab, 'click_by_role', target.value, matches[index], 0)
+                return
         await _call(tab, 'click_by_role', target.value, target.name, target.nth or 0)
         return
     if target.type == 'css':
@@ -701,6 +770,26 @@ async def _type_first(tab: Any, targets: list[SelectorEntry], text: str) -> None
 
 async def _scroll(tab: Any, act: ReplayAct) -> None:
     pixels = int(act.metadata.get('pixels', 1200))
+    anchor_selector = act.metadata.get('anchor_selector')
+    if isinstance(anchor_selector, str) and anchor_selector:
+        selector = json.dumps(anchor_selector)
+        await _eval(
+            tab,
+            f"""(() => {{
+              const anchor = document.querySelector({selector});
+              if (!anchor) return false;
+              let node = anchor;
+              while (node) {{
+                if (node.scrollHeight > node.clientHeight + 100) {{
+                  node.scrollTop = node.scrollHeight;
+                  return true;
+                }}
+                node = node.parentElement;
+              }}
+              return false;
+            }})()""",
+        )
+        return
     await _eval(tab, f'window.scrollBy(0, {pixels})')
 
 

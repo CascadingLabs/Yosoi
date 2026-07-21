@@ -1,3 +1,15 @@
+## Unreleased
+
+### Feat
+
+- Add experimental typed `ys.Executor.js` fields with confined local `.js`/`.mjs` module trees.
+- Add class-declared `ys.Flow` programs that compile into the existing deterministic A3Node replay runtime.
+- Add named `ys.State` expectations, runtime inputs, bounded wait/scroll/click-all actions, and live headless/headful Flow execution.
+
+### Docs
+
+- Document Executor.js, handwritten A3 flows, module safety constraints, alpha limitations, and the runnable Google Maps experiment.
+
 ## 0.0.3a24 (2026-07-20)
 
 ### Fix

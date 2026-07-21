@@ -88,6 +88,95 @@ async def test_execute_plan_clicks_first_working_target():
     assert tab.calls == [('click_by_role', ('button', 'More', 0))]
 
 
+async def test_execute_plan_resolves_role_substring_to_exact_ax_name_before_click():
+    tab = FakeTab()
+    tab.ax_nodes = [{'role': {'value': 'tab'}, 'name': {'value': 'Reviews for Example Place'}}]
+    plan = _plan(
+        ReplayNode(
+            id='reviews',
+            intent='open reviews',
+            act=ReplayAct(kind=ActKind.CLICK, targets=[role('tab', 'Reviews')]),
+        )
+    )
+
+    await execute_plan(tab, plan)
+
+    assert tab.calls == [('click_by_role', ('tab', 'Reviews for Example Place', 0))]
+
+
+async def test_execute_plan_click_all_uses_bounded_row_scopes():
+    tab = FakeTab()
+    plan = _plan(
+        ReplayNode(
+            id='expand',
+            intent='expand rows',
+            act=ReplayAct(
+                kind=ActKind.CLICK,
+                targets=[role('button', 'More')],
+                metadata={'click_all': True, 'limit': 3, 'within_selector': '[data-row]'},
+            ),
+        )
+    )
+
+    await execute_plan(tab, plan)
+
+    script = next(args[0] for name, args in tab.calls if name == 'evaluate')
+    assert 'document.querySelectorAll("[data-row]")' in script
+    assert '.slice(0, 3)' in script
+
+
+class _SettlingTab(FakeTab):
+    def __init__(self, values: list[object]) -> None:
+        super().__init__()
+        self.values = values
+
+    async def evaluate(self, script: str) -> object:
+        self.calls.append(('evaluate', (script,)))
+        return self.values.pop(0)
+
+
+async def test_execute_plan_retries_eval_until_non_null():
+    tab = _SettlingTab([None, 'ready'])
+    plan = _plan(
+        ReplayNode(
+            id='capture',
+            intent='capture settled value',
+            act=ReplayAct(
+                kind=ActKind.EVAL,
+                script='window.value',
+                repeat=True,
+                max_repeats=3,
+                metadata={'until_non_null': True},
+                output_field='value',
+            ),
+        )
+    )
+
+    result = await execute_plan(tab, plan)
+
+    assert result.extracted_actions == {'value': 'ready'}
+
+
+async def test_execute_plan_fails_when_eval_never_settles():
+    tab = _SettlingTab([None, None])
+    plan = _plan(
+        ReplayNode(
+            id='capture',
+            intent='capture settled value',
+            act=ReplayAct(
+                kind=ActKind.EVAL,
+                script='window.value',
+                repeat=True,
+                max_repeats=2,
+                metadata={'until_non_null': True},
+            ),
+        )
+    )
+
+    with pytest.raises(ReplayExecutionError, match='remained null after 2 settle attempt'):
+        await execute_plan(tab, plan)
+
+
 async def test_execute_plan_supports_visual_click_target():
     tab = FakeTab()
     plan = _plan(

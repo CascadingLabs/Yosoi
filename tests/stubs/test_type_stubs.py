@@ -116,6 +116,29 @@ class TestFieldFactoryStubs:
         assert result.returncode == 0, result.stdout + result.stderr
 
 
+class TestExecutorFlowStubs:
+    """Verify typed Executor.js fields and named Flow states."""
+
+    def test_executor_and_flow_declarations(self) -> None:
+        result = _run_mypy(
+            textwrap.dedent("""\
+            import yosoi as ys
+
+            class Ready(ys.State):
+                condition = ys.css('.ready')
+
+            class Demo(ys.Flow):
+                open_panel: ys.Expect[Ready] = ys.click(ys.css('#open'))
+                title: str = ys.Executor.js('document.title')
+
+            async def run() -> str:
+                result = await Demo.run('https://example.com')
+                return str(result.values['title'])
+        """)
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
+
+
 class TestProviderStubs:
     """Verify that provider helpers are seen as returning ModelPolicy."""
 
