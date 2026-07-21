@@ -223,31 +223,26 @@ class PipelineUtilsMixin:
         """Validate a single content dict through the Contract."""
         from pydantic import ValidationError
 
+        message = f'{self.contract.__name__} failed full-contract validation after extraction'
         try:
             return self.contract.model_validate(item, context={'source_url': url}).model_dump()
         except ValidationError as e:
             if self.contract.extractor_fields():
-                raise ValueError(f'{self.contract.__name__} failed full-contract validation after extraction') from None
-            offending = {str(err['loc'][0]) for err in e.errors() if err.get('loc')} & set(item)
+                raise ValueError(message) from e
+            offending = {str(err['loc'][0]) for err in e.errors() if len(err.get('loc', ())) == 1} & set(item)
             if not offending:
-                logger.warning('Contract validation failed (unisolable), using raw data: %s', e)
-                return item
-            data: dict[str, Any] = dict(item)
-            for field_name in offending:
-                data[field_name] = self.contract.field_default(field_name)
-                if dropped_counts is not None:
-                    dropped_counts[field_name] = dropped_counts.get(field_name, 0) + 1
+                raise ValueError(message) from e
             try:
+                data: dict[str, Any] = dict(item)
+                for field_name in offending:
+                    data[field_name] = self.contract.field_default(field_name)
+                    if dropped_counts is not None:
+                        dropped_counts[field_name] = dropped_counts.get(field_name, 0) + 1
                 return self.contract.model_validate(data, context={'source_url': url}).model_dump()
-            except ValidationError as e2:
-                logger.warning('Validation still failing after dropping fields, using raw: %s', e2)
-                return item
-        except (ValueError, TypeError) as e:
-            if self.contract.extractor_fields():
-                raise ValueError(f'{self.contract.__name__} failed full-contract validation after extraction') from None
-            logger.warning('Contract validation failed, using raw data: %s', e)
-            self.console.print(f'[warning]⚠ Validation skipped: {e}[/warning]')
-            return item
+            except (ValidationError, ValueError, TypeError) as retry_error:
+                raise ValueError(message) from retry_error
+        except (ValueError, TypeError) as error:
+            raise ValueError(message) from error
 
     @staticmethod
     def _selectors_with_root(verified: dict[str, Any], root_entry: dict[str, Any] | None) -> dict[str, Any]:
@@ -557,7 +552,11 @@ class PipelineUtilsMixin:
             url: Source URL injected into validation context for relative URL resolution.
 
         Returns:
-            Validated and transformed data, or the original if validation fails.
+            Validated and transformed data.
+
+        Raises:
+            ValueError: If extracted data cannot satisfy the contract, including after
+                isolable invalid fields are reset to their declared defaults.
 
         """
         if isinstance(extracted, list):

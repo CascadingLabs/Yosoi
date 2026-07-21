@@ -265,7 +265,7 @@ def create_vertexai_model(config: LLMConfig) -> GoogleModel:
     if 'service_account_file' in extra:
         from google.oauth2 import service_account
 
-        # google-auth ships no type stubs, so this call is untyped under strict mypy.
+        # google-auth ships no type stubs, so static analysis cannot type this call precisely.
         kwargs['credentials'] = service_account.Credentials.from_service_account_file(  # type: ignore[no-untyped-call]
             extra['service_account_file']
         )

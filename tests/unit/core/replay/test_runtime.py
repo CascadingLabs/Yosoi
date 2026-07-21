@@ -88,6 +88,22 @@ async def test_execute_plan_clicks_first_working_target():
     assert tab.calls == [('click_by_role', ('button', 'More', 0))]
 
 
+async def test_execute_plan_resolves_role_substring_to_exact_ax_name_before_click():
+    tab = FakeTab()
+    tab.ax_nodes = [{'role': {'value': 'tab'}, 'name': {'value': 'Reviews for Example Place'}}]
+    plan = _plan(
+        ReplayNode(
+            id='reviews',
+            intent='open reviews',
+            act=ReplayAct(kind=ActKind.CLICK, targets=[role('tab', 'Reviews')]),
+        )
+    )
+
+    await execute_plan(tab, plan)
+
+    assert tab.calls == [('click_by_role', ('tab', 'Reviews for Example Place', 0))]
+
+
 async def test_execute_plan_supports_visual_click_target():
     tab = FakeTab()
     plan = _plan(

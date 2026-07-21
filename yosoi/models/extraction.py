@@ -16,7 +16,7 @@ import types
 import typing
 from collections.abc import Callable, Coroutine, Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any, Generic, Literal, TypeVar, get_args, get_origin
+from typing import Any, Generic, Literal, ParamSpec, TypeVar, get_args, get_origin
 
 from parsel import Selector
 from pydantic import BaseModel, ConfigDict, Field
@@ -26,6 +26,8 @@ EvidenceSource = Literal['dom', 'attribute', 'text', 'json_ld', 'raw_html', 'run
 ValidationResult = Literal['valid', 'no_match', 'invalid', 'error']
 
 T = TypeVar('T')
+P = ParamSpec('P')
+R = TypeVar('R')
 
 
 class ExtractorNoMatch(Exception):
@@ -466,28 +468,30 @@ def _decorator_target_token(target: Any, *, decorator: str) -> str:
     return token
 
 
-def extraction(target: Any) -> Callable[[Callable[..., Any]], staticmethod[Any, Any]]:
+def extraction(target: Any) -> Callable[[Callable[P, R]], staticmethod[P, R]]:
     """Bind one method to an ``ys.Extractor()`` field without a naming convention."""
     token = _decorator_target_token(target, decorator='@ys.extraction(...)')
 
-    def decorate(fn: Callable[..., Any]) -> staticmethod[Any, Any]:
-        setattr(fn, _EXTRACTION_TARGET_ATTR, (token,))
-        setattr(fn, _EXTRACTION_BATCH_ATTR, False)
-        return staticmethod(fn)
+    def decorate(fn: Callable[P, R]) -> staticmethod[P, R]:
+        callable_fn = fn.__func__ if isinstance(fn, staticmethod) else fn
+        setattr(callable_fn, _EXTRACTION_TARGET_ATTR, (token,))
+        setattr(callable_fn, _EXTRACTION_BATCH_ATTR, False)
+        return fn if isinstance(fn, staticmethod) else staticmethod(fn)
 
     return decorate
 
 
-def extractions(*targets: Any) -> Callable[[Callable[..., Any]], staticmethod[Any, Any]]:
+def extractions(*targets: Any) -> Callable[[Callable[P, R]], staticmethod[P, R]]:
     """Bind one row callback to several extractor fields and execute it once per row."""
     if not targets:
         raise TypeError('@ys.extractions(...) requires at least one ys.Extractor() field')
     tokens = tuple(_decorator_target_token(target, decorator='@ys.extractions(...) targets') for target in targets)
 
-    def decorate(fn: Callable[..., Any]) -> staticmethod[Any, Any]:
-        setattr(fn, _EXTRACTION_TARGET_ATTR, tokens)
-        setattr(fn, _EXTRACTION_BATCH_ATTR, True)
-        return staticmethod(fn)
+    def decorate(fn: Callable[P, R]) -> staticmethod[P, R]:
+        callable_fn = fn.__func__ if isinstance(fn, staticmethod) else fn
+        setattr(callable_fn, _EXTRACTION_TARGET_ATTR, tokens)
+        setattr(callable_fn, _EXTRACTION_BATCH_ATTR, True)
+        return fn if isinstance(fn, staticmethod) else staticmethod(fn)
 
     return decorate
 

@@ -55,10 +55,12 @@ class BoundCompany(ys.Contract):
     links: list[str] = ys.Extractor()
 
     @ys.extraction(name)
+    @staticmethod
     async def arbitrary_name(row: ys.ExtractionRow) -> str:
         return str(row.text('h1'))
 
     @ys.extraction(links)
+    @staticmethod
     def arbitrary_links(row: ys.ExtractionRow) -> list[str]:
         return row.attribute('a[href]', 'href')
 
@@ -73,6 +75,7 @@ class BatchedCompany(ys.Contract):
     links: list[str] = ys.Extractor()
 
     @ys.extractions(name, links)
+    @staticmethod
     async def arbitrary_batch_name(row: ys.ExtractionRow) -> dict[str, object]:
         _BATCH_CALLS.append(row.index)
         return ys.values(name=row.text('h2'), links=row.attribute('a[href]', 'href'))
@@ -86,6 +89,7 @@ class OptionalBatchedCompany(ys.Contract):
     links: list[str] = ys.Extractor(default_factory=list)
 
     @ys.extractions(name, links)
+    @staticmethod
     def no_values(row: ys.ExtractionRow) -> dict[str, object]:
         _BATCH_NO_MATCH_CALLS.append(row.index)
         raise ys.ExtractorNoMatch()
@@ -903,6 +907,7 @@ async def test_multi_field_extractor_rejects_unexpected_output_keys() -> None:
         value: str | None = ys.Extractor(key='batch-output-typo', version='1')
 
         @ys.extractions(value)
+        @staticmethod
         def batch(row: ys.ExtractionRow) -> dict[str, str]:
             return ys.values(vlaue=str(row.text('h1')))
 
@@ -920,6 +925,7 @@ def test_decorator_rejects_reused_field_marker() -> None:
             second: str = marker
 
             @ys.extraction(first)
+            @staticmethod
             def selected(row: ys.ExtractionRow) -> str:
                 return str(row.text('h1'))
 
@@ -1058,5 +1064,6 @@ def test_decorator_rejects_duplicate_explicit_strategy() -> None:
             name: str = ys.Extractor(using=string_integer)
 
             @ys.extraction(name)
+            @staticmethod
             def another_strategy(row: ys.ExtractionRow) -> str:
                 return str(row.text('h1'))

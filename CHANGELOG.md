@@ -1,3 +1,15 @@
+## 0.0.3a25 (2026-07-21)
+
+### Feat
+
+- **flow**: add typed, manually-authored browser `Flow` declarations that compile to existing A3 replay plans and execute through the VoidCrawl-backed fetcher.
+- **executor**: add root-confined, fingerprinted JavaScript module bundling with JSON-safe runtime input binding and typed settle conditions.
+- **replay**: add bounded repeated waits, no-growth scrolling, resilient accessible-role clicks, and serialized dialog collection with optional stable-ID deduplication.
+
+### Docs
+
+- Document browser Flow composition, expectations, typed executor fields, confined JavaScript modules, and fail-fast behavior.
+
 ## 0.0.3a24 (2026-07-20)
 
 ### Fix

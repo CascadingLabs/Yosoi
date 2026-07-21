@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+import json
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from typing import Any
@@ -340,6 +341,10 @@ async def _execute_act(tab: Any, act: ReplayAct, expect: ReplayCondition) -> Any
         last_output = await _execute_once(tab, act)
         if act.dwell_ms:
             await asyncio.sleep(act.dwell_ms / 1000)
+        if act.kind == ActKind.SCROLL and act.metadata.get('stop_when') == 'no_growth':
+            if last_output is False:
+                return last_output
+            continue
         if not act.repeat or await _condition_holds(tab, expect):
             return last_output
         if idx == repeats - 1:
@@ -427,8 +432,47 @@ def _raise_if_challenged(response: Any, url: str | None) -> None:
 
 
 async def _exec_click(tab: Any, act: ReplayAct) -> Any:
+    if act.metadata.get('click_all'):
+        return await _click_all(tab, act)
     await _click_first(tab, act.targets)
     return None
+
+
+async def _click_all(tab: Any, act: ReplayAct) -> int:
+    """Click matching elements in bounded CSS row scopes through one JS act."""
+    if not act.targets:
+        raise ReplayExecutionError('click_all requires at least one target')
+    target = act.targets[0]
+    within = act.metadata.get('within_selector')
+    limit = int(act.metadata.get('limit') or 1)
+    if target.type == 'role':
+        candidate_selector = 'button,[role="button"]' if target.value == 'button' else f'[role="{target.value}"]'
+        name = (target.name or '').casefold()
+        predicate = (
+            f"((el.getAttribute('aria-label') || el.innerText || '').trim().toLowerCase().includes({json.dumps(name)}))"
+        )
+    elif target.type == 'css':
+        candidate_selector = target.value
+        predicate = 'true'
+    else:
+        raise ReplayExecutionError(f'{target.type} click_all targets are not supported')
+    scopes = (
+        f'Array.from(document.querySelectorAll({json.dumps(str(within))})).slice(0, {limit})'
+        if within
+        else '[document]'
+    )
+    script = f"""(() => {{
+      const scopes = {scopes};
+      let clicked = 0;
+      for (const scope of scopes) {{
+        for (const el of scope.querySelectorAll({json.dumps(candidate_selector)})) {{
+          if ({predicate}) {{ el.click(); clicked += 1; break; }}
+        }}
+      }}
+      return clicked;
+    }})()"""
+    result = await _eval(tab, script)
+    return int(result or 0)
 
 
 async def _exec_type(tab: Any, act: ReplayAct) -> Any:
@@ -438,7 +482,23 @@ async def _exec_type(tab: Any, act: ReplayAct) -> Any:
 
 async def _exec_scroll(tab: Any, act: ReplayAct) -> Any:
     await _scroll(tab, act)
-    return None
+    if act.metadata.get('stop_when') != 'no_growth':
+        return None
+    extent = int(
+        await _eval(
+            tab,
+            'Math.max(document.body?.scrollHeight || 0, document.documentElement?.scrollHeight || 0)',
+        )
+        or 0
+    )
+    previous = act.metadata.get('_previous_scroll_extent')
+    act.metadata['_previous_scroll_extent'] = extent
+    if previous is None or extent > int(previous):
+        act.metadata['_stable_scroll_rounds'] = 0
+        return True
+    stable_rounds = int(act.metadata.get('_stable_scroll_rounds') or 0) + 1
+    act.metadata['_stable_scroll_rounds'] = stable_rounds
+    return stable_rounds < int(act.metadata.get('stable_rounds') or 1)
 
 
 async def _exec_wait(tab: Any, act: ReplayAct) -> Any:
@@ -448,7 +508,128 @@ async def _exec_wait(tab: Any, act: ReplayAct) -> Any:
 
 
 async def _exec_eval(tab: Any, act: ReplayAct) -> Any:
-    return await _eval(tab, act.script or '')
+    settle = act.metadata.get('settle')
+    if not isinstance(settle, dict):
+        return await _eval(tab, act.script or '')
+    timeout = float(settle.get('timeout') or 5.0)
+    poll_interval = float(settle.get('poll_interval') or 0.25)
+    max_attempts = max(1, int(timeout / poll_interval) + 1)
+    value: Any = None
+    async for attempt in get_async_retryer(
+        max_attempts=max_attempts,
+        wait_min=poll_interval,
+        wait_max=poll_interval,
+        exceptions=(ReplayExecutionError,),
+    ):
+        with attempt:
+            value = await _eval(tab, act.script or '')
+            if value is None:
+                raise ReplayExecutionError('Executor.js settle condition was not met')
+    return value
+
+
+async def _wait_for_target_state(tab: Any, target: SelectorEntry, *, present: bool) -> None:
+    async for attempt in get_async_retryer(max_attempts=8, exceptions=(ReplayExecutionError,)):
+        with attempt:
+            exists = await (_ax_target_exists(tab, target) if target.type == 'role' else _selector_exists(tab, target))
+            if exists is not present:
+                state = 'appear' if present else 'disappear'
+                raise ReplayExecutionError(f'timed out waiting for {target.type} target to {state}')
+
+
+def _role_dom_selector(target: SelectorEntry) -> str:
+    if target.value == 'button':
+        return 'button,[role="button"]'
+    if target.value == 'link':
+        return 'a,[role="link"]'
+    return f'[role={json.dumps(target.value)}]'
+
+
+async def _role_dom_matches(tab: Any, target: SelectorEntry, *, click_index: int | None = None) -> int | bool:
+    selector = _role_dom_selector(target)
+    name = (target.name or '').casefold()
+    result = await _eval(
+        tab,
+        f"""(() => {{
+          const candidates = Array.from(document.querySelectorAll({json.dumps(selector)}));
+          const named = candidates.filter(el =>
+            (el.getAttribute('aria-label') || el.innerText || '').trim().toLowerCase()
+              .includes({json.dumps(name)})
+          );
+          const matches = named.filter(el => !named.some(child => child !== el && el.contains(child)));
+          if ({json.dumps(click_index)} === null) return matches.length;
+          const target = matches[{click_index or 0}];
+          if (!target) return false;
+          target.click();
+          return true;
+        }})()""",
+    )
+    if not isinstance(result, (bool, int)):
+        raise ReplayExecutionError(f'role DOM match probe returned {type(result).__name__}')
+    return result
+
+
+async def _click_target_at_index(tab: Any, target: SelectorEntry, index: int) -> None:
+    if target.type == 'role':
+        clicked = await _role_dom_matches(tab, target, click_index=(target.nth or 0) + index)
+        if not clicked:
+            raise ReplayExecutionError(f'no role collect_each target at index {index}')
+        return
+    if target.type == 'css':
+        clicked = await _eval(
+            tab,
+            f"""(() => {{
+              const target = document.querySelectorAll({json.dumps(target.value)})[{index}];
+              if (!target) return false;
+              target.click();
+              return true;
+            }})()""",
+        )
+        if not clicked:
+            raise ReplayExecutionError(f'no CSS collect_each target at index {index}')
+        return
+    raise ReplayExecutionError(f'{target.type} collect_each targets are not supported')
+
+
+async def _exec_collect_each(tab: Any, act: ReplayAct) -> list[Any]:
+    """Open each matching item serially, collect one list, then close its overlay."""
+    target = act.targets[0]
+    ready = SelectorEntry.model_validate(act.metadata.get('ready_target'))
+    close_targets = [SelectorEntry.model_validate(item) for item in act.metadata.get('close_targets', [])]
+    if not close_targets:
+        raise ReplayExecutionError('collect_each requires close targets')
+    available = (
+        int(await _role_dom_matches(tab, target)) if target.type == 'role' else await _selector_count(tab, target)
+    )
+    count = min(available, int(act.metadata.get('limit') or available))
+    if count < 1:
+        if act.metadata.get('allow_empty'):
+            return []
+        raise ReplayExecutionError('collect_each found no matching targets')
+
+    collected: list[Any] = []
+    for index in range(count):
+        await _click_target_at_index(tab, target, index)
+        await _wait_for_target_state(tab, ready, present=True)
+        value: Any = None
+        async for attempt in get_async_retryer(max_attempts=8, exceptions=(ReplayExecutionError,)):
+            with attempt:
+                value = await _eval(tab, act.script or '')
+                if not isinstance(value, list):
+                    raise ReplayExecutionError(f'collect_each evaluator returned {type(value).__name__}, expected list')
+        collected.extend(value)
+        await _click_first(tab, close_targets)
+        await _wait_for_target_state(tab, ready, present=False)
+
+    dedupe_by = act.metadata.get('dedupe_by')
+    if not isinstance(dedupe_by, str):
+        return collected
+    unique: dict[Any, Any] = {}
+    for item in collected:
+        if not isinstance(item, dict) or dedupe_by not in item:
+            raise ReplayExecutionError(f'collect_each item omitted dedupe key {dedupe_by!r}')
+        unique.setdefault(item[dedupe_by], item)
+    return list(unique.values())
 
 
 async def _exec_teleport(tab: Any, act: ReplayAct) -> Any:
@@ -536,6 +717,7 @@ _EXECUTORS: dict[ActKind, Callable[[Any, ReplayAct], Awaitable[Any]]] = {
     ActKind.SCROLL: _exec_scroll,
     ActKind.WAIT: _exec_wait,
     ActKind.EVAL: _exec_eval,
+    ActKind.COLLECT_EACH: _exec_collect_each,
     ActKind.DOWNLOAD: _download,
     ActKind.TELEPORT: _exec_teleport,
 }
@@ -567,16 +749,25 @@ async def _condition_holds(tab: Any, condition: ReplayCondition) -> bool:
     if condition.kind == AssertKind.DOM_STABLE:
         await _wait_for_dom_stable(tab, condition)
         return True
-    if condition.kind == AssertKind.AX_TARGET:
-        if condition.selector is None:
-            return False
-        return await _ax_target_exists(tab, condition.selector)
+    if condition.kind in {AssertKind.AX_TARGET, AssertKind.ABSENT, AssertKind.ABSENT_AX_TARGET}:
+        return await _target_condition(tab, condition)
     if condition.kind == AssertKind.CAPTCHA:
         return await _captcha_condition(tab)
     # DOWNLOAD_OK: the DOWNLOAD act fails-fast internally (allowed_types/min-size via
     # run_download), so reaching the expect step means a verified download was captured.
     # FUTURE: thread the captured result here to assert content-type/min-size vs condition.value.
     return condition.kind == AssertKind.DOWNLOAD_OK
+
+
+async def _target_condition(tab: Any, condition: ReplayCondition) -> bool:
+    """Evaluate present/absent DOM or accessibility targets."""
+    if condition.selector is None:
+        return False
+    if condition.kind == AssertKind.AX_TARGET:
+        return await _ax_target_exists(tab, condition.selector)
+    if condition.kind == AssertKind.ABSENT_AX_TARGET:
+        return not await _ax_target_exists(tab, condition.selector)
+    return not await _selector_exists(tab, condition.selector)
 
 
 async def _captcha_condition(tab: Any) -> bool:
@@ -632,18 +823,22 @@ async def _selector_count(tab: Any, selector: SelectorEntry) -> int:
 
 
 async def _ax_target_exists(tab: Any, selector: SelectorEntry) -> bool:
+    return bool(await _matching_ax_targets(tab, selector))
+
+
+async def _matching_ax_targets(tab: Any, selector: SelectorEntry) -> list[str]:
+    """Return exact AX names matching one role/name substring selector."""
     if selector.type != 'role':
         raise ReplayExecutionError(f'{selector.type} AX conditions are not supported by replay runtime')
     if not hasattr(tab, 'get_full_ax_tree'):
-        return False
+        return []
     nodes = await _call(tab, 'get_full_ax_tree')
     name = (selector.name or '').lower()
-    for node in nodes or []:
-        role = _ax_value(node, 'role')
-        node_name = _ax_value(node, 'name').lower()
-        if role == selector.value and name in node_name:
-            return True
-    return False
+    return [
+        exact_name
+        for node in nodes or []
+        if _ax_value(node, 'role') == selector.value and name in (exact_name := _ax_value(node, 'name')).lower()
+    ]
 
 
 async def _click_first(tab: Any, targets: list[SelectorEntry]) -> None:
@@ -666,6 +861,19 @@ async def _try_click_target(tab: Any, target: SelectorEntry) -> str | None:
 
 async def _click_target(tab: Any, target: SelectorEntry) -> None:
     if target.type == 'role':
+        if hasattr(tab, 'get_full_ax_tree'):
+            matches = await _matching_ax_targets(tab, target)
+            index = target.nth or 0
+            if matches:
+                if index >= len(matches):
+                    raise ReplayExecutionError(
+                        f'no AX node with role={target.value!r} containing name={target.name!r} at index {index}'
+                    )
+                # VoidCrawl click_by_role performs exact accessible-name matching. Resolve
+                # our resilient substring target through the AX tree, then click that exact
+                # name. Passing the substring directly can assess true and still fail click.
+                await _call(tab, 'click_by_role', target.value, matches[index], 0)
+                return
         await _call(tab, 'click_by_role', target.value, target.name, target.nth or 0)
         return
     if target.type == 'css':
@@ -701,6 +909,30 @@ async def _type_first(tab: Any, targets: list[SelectorEntry], text: str) -> None
 
 async def _scroll(tab: Any, act: ReplayAct) -> None:
     pixels = int(act.metadata.get('pixels', 1200))
+    anchor_selector = act.metadata.get('anchor_selector')
+    if isinstance(anchor_selector, str) and anchor_selector:
+        selector = json.dumps(anchor_selector)
+        await _eval(
+            tab,
+            f"""(() => {{
+              const anchor = document.querySelector({selector});
+              if (!anchor) return false;
+              let node = anchor;
+              while (node) {{
+                if (node === document.body || node === document.documentElement) {{
+                  window.scrollTo(0, Math.max(document.body.scrollHeight, document.documentElement.scrollHeight));
+                  return true;
+                }}
+                if (node.scrollHeight > node.clientHeight + 100) {{
+                  node.scrollTop = node.scrollHeight;
+                  return true;
+                }}
+                node = node.parentElement;
+              }}
+              return false;
+            }})()""",
+        )
+        return
     await _eval(tab, f'window.scrollBy(0, {pixels})')
 
 

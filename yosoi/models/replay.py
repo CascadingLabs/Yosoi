@@ -34,6 +34,7 @@ class ActKind(str, Enum):
     SCROLL = 'scroll'
     WAIT = 'wait'
     EVAL = 'eval'
+    COLLECT_EACH = 'collect_each'
     TELEPORT = 'teleport'
     DOWNLOAD = 'download'  # ys.File() download node (see runtime._download)
     # --- Recovery primitives (W1) ----------------------------------------------------
@@ -56,6 +57,8 @@ class AssertKind(str, Enum):
     COUNT = 'count'
     DOM_STABLE = 'dom_stable'
     AX_TARGET = 'ax_target'
+    ABSENT = 'absent'
+    ABSENT_AX_TARGET = 'absent_ax_target'
     DOWNLOAD_OK = 'download_ok'  # a verified download was captured for the node's act
     CAPTCHA = 'captcha'  # trigger guard (W1): a rendered antibot/captcha wall is present
     NONE = 'none'
@@ -96,6 +99,8 @@ class ReplayAct(BaseModel):
             raise ValueError('type acts require targets and text')
         if self.kind == ActKind.EVAL and not self.script:
             raise ValueError('eval acts require script')
+        if self.kind == ActKind.COLLECT_EACH and (not self.targets or not self.script):
+            raise ValueError('collect_each acts require a target and evaluator script')
         if self.kind == ActKind.DOWNLOAD:
             if not (self.targets or self.url):
                 raise ValueError('download acts require targets (retrigger) or url (refetch)')
