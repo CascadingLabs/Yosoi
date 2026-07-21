@@ -189,6 +189,8 @@ def _compile_declaration(declaration: _Declaration, inputs: dict[str, Any]) -> R
     expectation = _expectation(declaration.annotation, inputs)
     value = declaration.value
     if isinstance(value, _Action):
+        if value.repeat and expectation.kind == AssertKind.NONE:
+            raise TypeError(f'{declaration.name}: repeated actions require ys.Expect[...]')
         max_repeats = _resolve_number(value.max_repeats, inputs)
         metadata = resolve_refs(value.metadata or {}, inputs)
         if metadata.get('click_all'):
@@ -202,6 +204,8 @@ def _compile_declaration(declaration: _Declaration, inputs: dict[str, Any]) -> R
             metadata=metadata,
         )
     else:
+        if declaration.annotation is None:
+            raise TypeError(f'{declaration.name}: Flow Executor.js fields require an output annotation')
         extra = value.json_schema_extra
         config = extra.get('yosoi_action') if isinstance(extra, dict) else None
         if not isinstance(config, dict) or config.get('type') != 'js':
@@ -231,10 +235,8 @@ def _resolve_number(value: int | InputRef, inputs: dict[str, Any]) -> int:
     if isinstance(value, InputRef):
         if value.name not in inputs:
             raise ValueError(f'missing required Flow input: {value.name}')
-        value = int(inputs[value.name])
-    if value < 1:
-        raise ValueError('Flow repeat limits must be >= 1')
-    return value
+        value = inputs[value.name]
+    return _positive_int(value, name='Flow repeat limits')
 
 
 def _expectation(annotation: Any, inputs: dict[str, Any]) -> ReplayCondition:
@@ -262,21 +264,24 @@ def _expectation(annotation: Any, inputs: dict[str, Any]) -> ReplayCondition:
     )
 
 
-def _positive_int(value: Any, *, name: str) -> int:
+def _strict_int(value: Any, *, name: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, (int, str)):
+        raise ValueError(f'{name} must be an integer')
     try:
-        resolved = int(value)
-    except (TypeError, ValueError) as exc:
+        return int(value)
+    except ValueError as exc:
         raise ValueError(f'{name} must be an integer') from exc
+
+
+def _positive_int(value: Any, *, name: str) -> int:
+    resolved = _strict_int(value, name=name)
     if resolved < 1:
         raise ValueError(f'{name} must be >= 1')
     return resolved
 
 
 def _non_negative_int(value: Any, *, name: str) -> int:
-    try:
-        resolved = int(value)
-    except (TypeError, ValueError) as exc:
-        raise ValueError(f'{name} must be an integer') from exc
+    resolved = _strict_int(value, name=name)
     if resolved < 0:
         raise ValueError(f'{name} must be >= 0')
     return resolved

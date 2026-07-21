@@ -138,7 +138,6 @@ class GoogleMapsPlace(ys.Contract):
     schedule: Schedule | None = ys.Executor.js(
         extract_schedule,
         scope='page',
-        settle=ys.until.non_null(timeout=8, poll_interval=0.25),
         description='Regular weekly hours from the primary business panel',
         default=None,
     )

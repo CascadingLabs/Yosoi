@@ -77,6 +77,16 @@ def test_flow_rejects_invalid_dynamic_bounds() -> None:
             'https://example.test',
             inputs={'limit': -1, 'scrolls': 1, 'value': 1},
         )
+    with pytest.raises(ValueError, match='count at_least must be an integer'):
+        ExampleFlow.compile(
+            'https://example.test',
+            inputs={'limit': 1.5, 'scrolls': 1, 'value': 1},
+        )
+    with pytest.raises(ValueError, match='Flow repeat limits must be an integer'):
+        ExampleFlow.compile(
+            'https://example.test',
+            inputs={'limit': 1, 'scrolls': 1.5, 'value': 1},
+        )
     with pytest.raises(ValueError, match='click_all limit must be >= 1'):
         ys.click_all(ys.css('button'), limit=0)
 
@@ -88,6 +98,39 @@ def test_flow_rejects_unimplemented_no_growth_scroll_stop() -> None:
             max_scrolls=3,
             stop_when='no_growth',
         )
+
+
+def test_flow_rejects_repeated_action_without_expectation() -> None:
+    class InvalidFlow(ys.Flow):
+        load_rows = ys.scroll_until(
+            ys.nearest_scroll_parent(ys.css('.row')),
+            max_scrolls=3,
+        )
+
+    with pytest.raises(TypeError, match=r'repeated actions require ys\.Expect'):
+        InvalidFlow.compile('https://example.test')
+
+
+def test_flow_rejects_untyped_executor_output() -> None:
+    class InvalidFlow(ys.Flow):
+        value = ys.Executor.js('window.value')
+
+    with pytest.raises(TypeError, match=r'Executor\.js fields require an output annotation'):
+        InvalidFlow.compile('https://example.test')
+
+
+def test_flow_applies_length_settle_to_inline_expression() -> None:
+    class InlineFlow(ys.Flow):
+        rows: list[int] = ys.Executor.js(
+            'window.rows',
+            settle=ys.until.length_at_least(2, timeout=1, poll_interval=0.25),
+        )
+
+    act = InlineFlow.compile('https://example.test').nodes[-1].act
+
+    assert act.script is not None
+    assert 'const value = await (window.rows)' in act.script
+    assert 'value?.length >= 2' in act.script
 
 
 def test_flow_validates_executor_outputs_from_annotations() -> None:

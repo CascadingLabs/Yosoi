@@ -166,6 +166,24 @@ async def test_execute_plan_click_all_without_row_scopes_honours_limit():
     assert 'if (clicked >= 3) return clicked;' in script
 
 
+@pytest.mark.parametrize('limit', [None, True, 1.5, 'invalid', 0])
+async def test_execute_plan_click_all_rejects_invalid_limit(limit):
+    plan = _plan(
+        ReplayNode(
+            id='expand',
+            intent='expand visible controls',
+            act=ReplayAct(
+                kind=ActKind.CLICK,
+                targets=[css('button.more')],
+                metadata={'click_all': True, 'limit': limit},
+            ),
+        )
+    )
+
+    with pytest.raises(ReplayExecutionError, match='click_all limit must be'):
+        await execute_plan(FakeTab(), plan)
+
+
 class _DelayedReadyTab(FakeTab):
     def __init__(self) -> None:
         super().__init__()
@@ -201,6 +219,48 @@ async def test_repeated_action_waits_before_rechecking_expectation():
     await execute_plan(tab, plan)
 
     assert tab.clicks == 1
+
+
+async def test_repeated_wait_sleeps_once_per_attempt(mocker):
+    sleep = mocker.patch('yosoi.core.replay.runtime.asyncio.sleep', new=mocker.AsyncMock())
+    tab = FakeTab()
+    tab.selectors['.ready'] = [object()]
+    plan = _plan(
+        ReplayNode(
+            id='wait',
+            intent='wait for readiness',
+            act=ReplayAct(kind=ActKind.WAIT, repeat=True, max_repeats=1, dwell_ms=20),
+            expect=ReplayCondition(kind=AssertKind.SELECTOR, selector=css('.ready')),
+        )
+    )
+
+    await execute_plan(tab, plan)
+
+    sleep.assert_awaited_once_with(0.02)
+
+
+async def test_exhausted_settle_does_not_sleep_after_final_attempt(mocker):
+    sleep = mocker.patch('yosoi.core.replay.runtime.asyncio.sleep', new=mocker.AsyncMock())
+    tab = _SettlingTab([None])
+    plan = _plan(
+        ReplayNode(
+            id='value',
+            intent='capture value',
+            act=ReplayAct(
+                kind=ActKind.EVAL,
+                script='window.value',
+                repeat=True,
+                max_repeats=1,
+                dwell_ms=250,
+                metadata={'until_non_null': True},
+            ),
+        )
+    )
+
+    with pytest.raises(ReplayExecutionError, match='remained null'):
+        await execute_plan(tab, plan)
+
+    sleep.assert_not_awaited()
 
 
 class _SettlingTab(FakeTab):

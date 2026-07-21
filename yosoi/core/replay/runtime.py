@@ -338,15 +338,21 @@ async def _execute_act(tab: Any, act: ReplayAct, expect: ReplayCondition) -> Any
     repeats = act.max_repeats if act.repeat else 1
     until_non_null = bool(act.metadata.get('until_non_null'))
     last_output: Any = None
-    for _idx in range(repeats):
+    for idx in range(repeats):
         last_output = await _execute_once(tab, act)
-        if until_non_null and last_output is not None:
-            return last_output
+        if until_non_null:
+            if last_output is not None:
+                return last_output
+            if idx < repeats - 1 and act.dwell_ms and act.kind != ActKind.WAIT:
+                await asyncio.sleep(act.dwell_ms / 1000)
+            continue
         if not act.repeat:
             return last_output
-        if act.dwell_ms:
+        # WAIT performs its own dwell. Mutating actions dwell here so asynchronous
+        # page state has a chance to become observable before the expectation check.
+        if act.dwell_ms and act.kind != ActKind.WAIT:
             await asyncio.sleep(act.dwell_ms / 1000)
-        if not until_non_null and await _condition_holds(tab, expect):
+        if await _condition_holds(tab, expect):
             return last_output
     if until_non_null:
         raise ReplayExecutionError(f'{act.kind.value} output remained null after {repeats} settle attempt(s)')
@@ -446,11 +452,11 @@ async def _click_all(tab: Any, act: ReplayAct) -> int:
     target = act.targets[0]
     within = act.metadata.get('within_selector')
     raw_limit = act.metadata.get('limit')
-    if raw_limit is None:
+    if isinstance(raw_limit, bool) or not isinstance(raw_limit, (int, str)):
         raise ReplayExecutionError('click_all limit must be an integer')
     try:
         limit = int(raw_limit)
-    except (TypeError, ValueError) as exc:
+    except ValueError as exc:
         raise ReplayExecutionError('click_all limit must be an integer') from exc
     if limit < 1:
         raise ReplayExecutionError('click_all limit must be >= 1')

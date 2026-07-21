@@ -8,9 +8,9 @@
 
 ### Fix
 
-- Fail fast on unsupported JavaScript module aliases and non-exported entry functions instead of deferring invalid bundles to browser execution.
+- Fail fast on unsupported JavaScript module aliases, missing imported exports, and non-exported entry functions instead of deferring invalid bundles to browser execution.
 - Preserve accessibility-node indexes for duplicate exact names, honor page-scoped `click_all` limits, and wait the configured dwell before repeating actions whose expectations become ready asynchronously.
-- Reject the unimplemented `scroll_until(..., stop_when='no_growth')` mode instead of silently treating it as expectation-driven scrolling.
+- Reject Contract-only settle timing, repeated Flow actions without an expectation, and the unimplemented `scroll_until(..., stop_when='no_growth')` mode instead of silently ignoring those declarations.
 
 ### Docs
 

@@ -25,6 +25,12 @@ def test_executor_settle_rejects_invalid_timing() -> None:
         ys.until.non_null(timeout=-1)
     with pytest.raises(ValueError, match='poll_interval must be > 0'):
         ys.until.length_at_least(1, poll_interval=0)
+    with pytest.raises(ValueError, match='timeout must be a finite number'):
+        ys.until.non_null(timeout=float('nan'))
+    with pytest.raises(ValueError, match='poll_interval must be a finite number'):
+        ys.until.non_null(poll_interval=float('inf'))
+    with pytest.raises(TypeError, match='length_at_least must be an integer'):
+        ys.until.length_at_least(1.5)  # type: ignore[arg-type]
 
 
 def test_javascript_modules_reject_root_escape(tmp_path) -> None:
@@ -33,6 +39,13 @@ def test_javascript_modules_reject_root_escape(tmp_path) -> None:
 
     with pytest.raises(ValueError, match='escapes configured root'):
         JavaScriptModules(tmp_path).function('../outside.mjs', export='run')
+
+
+def test_javascript_modules_reject_oversized_entry_before_parsing(tmp_path) -> None:
+    (tmp_path / 'entry.mjs').write_text('export function run() {}\n' + 'x' * 512_000)
+
+    with pytest.raises(ValueError, match='module exceeds 512000 bytes'):
+        JavaScriptModules(tmp_path).function('entry.mjs', export='run')
 
 
 def test_javascript_modules_rejects_non_exported_entry_function(tmp_path) -> None:
@@ -44,6 +57,25 @@ def test_javascript_modules_rejects_non_exported_entry_function(tmp_path) -> Non
         JavaScriptModules(tmp_path).function('entry.mjs', export='privateHelper')
 
 
+def test_javascript_modules_do_not_treat_comments_as_exports(tmp_path) -> None:
+    (tmp_path / 'entry.mjs').write_text(
+        '// export function privateHelper() {}\n'
+        'function privateHelper() { return 1; }\n'
+        'export function run() { return privateHelper(); }'
+    )
+
+    with pytest.raises(ValueError, match="export 'privateHelper' was not found"):
+        JavaScriptModules(tmp_path).function('entry.mjs', export='privateHelper')
+
+
+def test_javascript_modules_preserve_export_text_inside_string_literals(tmp_path) -> None:
+    (tmp_path / 'entry.mjs').write_text('export function run() { return "export function is documentation"; }')
+
+    function = JavaScriptModules(tmp_path).function('entry.mjs', export='run')
+
+    assert '"export function is documentation"' in function.expression
+
+
 def test_javascript_modules_rejects_named_import_aliases_before_browser_execution(tmp_path) -> None:
     (tmp_path / 'helper.mjs').write_text('export function original() { return 1; }')
     (tmp_path / 'entry.mjs').write_text(
@@ -51,6 +83,16 @@ def test_javascript_modules_rejects_named_import_aliases_before_browser_executio
     )
 
     with pytest.raises(ValueError, match='aliases are not supported'):
+        JavaScriptModules(tmp_path).function('entry.mjs', export='run')
+
+
+def test_javascript_modules_rejects_missing_imported_export(tmp_path) -> None:
+    (tmp_path / 'helper.mjs').write_text('export function available() { return 1; }')
+    (tmp_path / 'entry.mjs').write_text(
+        "import {missing} from './helper.mjs';\nexport function run() { return missing(); }"
+    )
+
+    with pytest.raises(ValueError, match="export 'missing' was not found"):
         JavaScriptModules(tmp_path).function('entry.mjs', export='run')
 
 
@@ -84,6 +126,16 @@ def test_executor_js_rejects_flow_inputs_on_contract_fields(tmp_path) -> None:
 
         class InvalidPage(ys.Contract):
             values: list[int] = ys.Executor.js(function, args={'limit': ys.input('limit')})
+
+
+def test_executor_js_rejects_flow_settle_timing_on_contract_fields() -> None:
+    with pytest.raises(TypeError, match=r'settle conditions are valid only on ys\.Flow'):
+
+        class InvalidPage(ys.Contract):
+            title: str = ys.Executor.js(
+                'document.title',
+                settle=ys.until.non_null(timeout=1),
+            )
 
 
 def test_executor_js_runtime_inputs_bind_without_source_interpolation(tmp_path) -> None:

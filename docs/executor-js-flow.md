@@ -30,7 +30,9 @@ class RuntimeSignals(ys.Contract):
 The annotation remains the output schema. Required fields still fail validation when
 execution produces `null`. Contract fields currently inherit `ys.js` batching semantics:
 a per-field JavaScript exception is isolated as `null` before type validation. Flow
-executors use replay EVAL acts and propagate JavaScript failures directly.
+executors use replay EVAL acts and propagate JavaScript failures directly. Explicit
+`settle=` conditions are Flow-only; Contract action fields use the browser fetcher's
+existing batch-settle policy.
 
 `ys.js(...)` remains available and compatible. `ys.Executor.js(...)` is the more
 discoverable namespace for new code.
@@ -146,10 +148,12 @@ print(result.values['cards'])
 - A public attribute name is the stable A3Node ID.
 - `ys.State` names a reusable selector/condition, and `ys.Expect[ThatState]`
   becomes the node's post-action assertion.
-- An ordinary annotation on `ys.Executor.js` validates the captured output and the
+- `ys.Executor.js` fields require either an ordinary output annotation or an
+  `ys.Expect[...]` state. Output annotations validate captured values, and the
   attribute name becomes `output_field`.
 - Missing inputs, unresolved annotations, failed actions, failed expectations, and
   Flow executor settle timeouts fail loudly.
+- Repeated `wait_until` and `scroll_until` actions require an `ys.Expect[...]` state.
 - `click`, `click_all`, `wait_until`, and `scroll_until` lower to deterministic A3
   acts; they do not introduce a second browser driver.
 

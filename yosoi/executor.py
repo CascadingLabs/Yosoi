@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import re
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -16,9 +17,16 @@ from yosoi.types.field import js as js_field
 
 _IMPORT_RE = re.compile(r"^\s*import\s+\{[^}]+\}\s+from\s+['\"]([^'\"]+)['\"]\s*;?\s*$", re.MULTILINE)
 _REEXPORT_RE = re.compile(r"^\s*export\s+\{[^}]+\}\s+from\s+['\"]([^'\"]+)['\"]\s*;?\s*$", re.MULTILINE)
+_NAMED_DEPENDENCY_RE = re.compile(
+    r"^\s*(?:import|export)\s+\{([^}]+)\}\s+from\s+['\"]([^'\"]+)['\"]\s*;?\s*$",
+    re.MULTILINE,
+)
 _LOCAL_EXPORT_RE = re.compile(r'^\s*export\s+\{[^}]+\}\s*;?\s*$', re.MULTILINE)
 _NAMED_BINDINGS_RE = re.compile(r'^\s*(?:import|export)\s+\{[^}]+\}', re.MULTILINE)
-_EXPORT_DECL_RE = re.compile(r'\bexport\s+(?=(?:async\s+)?function\b|(?:const|let|var|class)\b)')
+_EXPORT_DECL_RE = re.compile(
+    r'^\s*export\s+(?=(?:async\s+)?function\b|(?:const|let|var|class)\b)',
+    re.MULTILINE,
+)
 _MAX_MODULE_BYTES = 512_000
 
 
@@ -51,6 +59,8 @@ class _Until:
     @staticmethod
     def length_at_least(value: int, *, timeout: float = 5.0, poll_interval: float = 0.25) -> Settle:
         """Require an array-like result with at least ``value`` entries."""
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise TypeError('length_at_least must be an integer')
         if value < 0:
             raise ValueError('length_at_least must be >= 0')
         _validate_settle_timing(timeout, poll_interval)
@@ -58,6 +68,14 @@ class _Until:
 
 
 def _validate_settle_timing(timeout: float, poll_interval: float) -> None:
+    if isinstance(timeout, bool) or not isinstance(timeout, (int, float)) or not math.isfinite(timeout):
+        raise ValueError('settle timeout must be a finite number')
+    if (
+        isinstance(poll_interval, bool)
+        or not isinstance(poll_interval, (int, float))
+        or not math.isfinite(poll_interval)
+    ):
+        raise ValueError('settle poll_interval must be a finite number')
     if timeout < 0:
         raise ValueError('settle timeout must be >= 0')
     if poll_interval <= 0:
@@ -90,7 +108,10 @@ class JavaScriptFunction:
 
 
 def _declares_named_export(source: str, name: str) -> bool:
-    direct = re.compile(rf'\bexport\s+(?:(?:async\s+)?function|const|let|var|class)\s+{re.escape(name)}\b')
+    direct = re.compile(
+        rf'^\s*export\s+(?:(?:async\s+)?function|const|let|var|class)\s+{re.escape(name)}\b',
+        re.MULTILINE,
+    )
     if direct.search(source):
         return True
     for match in re.finditer(r'\bexport\s*\{([^}]+)\}', source):
@@ -115,7 +136,7 @@ class JavaScriptModules:
         if not export.isidentifier():
             raise ValueError(f'invalid JavaScript export name: {export!r}')
         entry = self._resolve(self.root / module)
-        entry_text = entry.read_text(encoding='utf-8')
+        entry_text = self._read(entry)
         if not _declares_named_export(entry_text, export):
             raise ValueError(f'export {export!r} was not found in {module!r}')
         chunks: list[tuple[Path, str]] = []
@@ -133,19 +154,22 @@ class JavaScriptModules:
         if path in visited:
             return
         visited.add(path)
-        if path.stat().st_size > _MAX_MODULE_BYTES:
-            raise ValueError(f'JavaScript module exceeds {_MAX_MODULE_BYTES} bytes: {path}')
-        text = path.read_text(encoding='utf-8')
+        text = self._read(path)
         for statement in _NAMED_BINDINGS_RE.findall(text):
             if re.search(r'\bas\b', statement):
                 raise ValueError(f'named JavaScript import/export aliases are not supported: {path}')
-        dependency_specs = [*_IMPORT_RE.findall(text), *_REEXPORT_RE.findall(text)]
-        for spec in dependency_specs:
+        for bindings, spec in _NAMED_DEPENDENCY_RE.findall(text):
             if not spec.startswith('.'):
                 raise ValueError(f'only relative JavaScript imports are supported: {spec!r}')
             dependency = path.parent / spec
             if dependency.suffix not in {'.js', '.mjs'}:
                 dependency = dependency.with_suffix('.mjs')
+            dependency = self._resolve(dependency)
+            dependency_text = self._read(dependency)
+            for binding in bindings.split(','):
+                name = binding.strip()
+                if name and not _declares_named_export(dependency_text, name):
+                    raise ValueError(f'export {name!r} was not found in {spec!r}')
             self._visit(dependency, visited, chunks)
         stripped = _IMPORT_RE.sub('', text)
         stripped = _REEXPORT_RE.sub('', stripped)
@@ -154,6 +178,11 @@ class JavaScriptModules:
         if re.search(r'\bimport\s*\(', stripped) or re.search(r'^\s*(?:import|export)\b', stripped, re.MULTILINE):
             raise ValueError(f'unsupported JavaScript import/export syntax: {path}')
         chunks.append((path, stripped.strip()))
+
+    def _read(self, path: Path) -> str:
+        if path.stat().st_size > _MAX_MODULE_BYTES:
+            raise ValueError(f'JavaScript module exceeds {_MAX_MODULE_BYTES} bytes: {path}')
+        return path.read_text(encoding='utf-8')
 
     def _resolve(self, path: Path) -> Path:
         resolved = path.resolve()
@@ -227,7 +256,7 @@ class _JavaScriptExecutor:
         if program is None:
             field = js_field(None, description=description, default=default, **kwargs)
         elif isinstance(program, str) and not has_refs and args is None:
-            field = js_field(program, description=description, default=default, **kwargs)
+            field = js_field(_apply_settle(program, settle), description=description, default=default, **kwargs)
         elif isinstance(program, str) and not has_refs:
             payload = json.dumps(encoded_args, sort_keys=True, separators=(',', ':'))
             script = _apply_settle(f'({program})({payload})', settle)
@@ -307,7 +336,9 @@ def _apply_settle(script: str, settle: Settle | None) -> str:
         return script
     if settle.kind == 'length_at_least':
         minimum = int(settle.value or 0)
-        return f'(() => {{ const value = ({script}); return value?.length >= {minimum} ? value : null; }})()'
+        return (
+            f'(async () => {{ const value = await ({script}); return value?.length >= {minimum} ? value : null; }})()'
+        )
     raise ValueError(f'unsupported JavaScript settle condition: {settle.kind}')
 
 

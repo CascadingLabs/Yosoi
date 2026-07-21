@@ -171,6 +171,11 @@ class Contract(BaseModel):
                     f'{cls.__name__}.{name}: Executor.js runtime inputs are valid only on ys.Flow fields '
                     f'({inputs}); Contract fields require literal args'
                 )
+            if isinstance(action, dict) and action.get('settle') is not None:
+                raise TypeError(
+                    f'{cls.__name__}.{name}: Executor.js settle conditions are valid only on ys.Flow fields; '
+                    'Contract action fields use the browser fetcher batch-settle policy'
+                )
             if 'yosoi_extractor' not in extra:
                 continue
             conflicts = [key for key in ('yosoi_action', 'yosoi_selector') if key in extra]
