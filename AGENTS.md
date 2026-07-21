@@ -10,7 +10,7 @@ Yosoi is an AI-powered tool that discovers resilient selectors for web scraping.
 - **Package Manager**: `uv` (Strict requirement. DO NOT use pip/poetry directly).
 - **Linting/Formatting**: `ruff`
 - **Testing**: `pytest`
-- **Type Checking**: `mypy`
+- **Type Checking**: `pyrefly`
 - **Retry Logic**: `tenacity` (Mandatory for all flaky/network operations)
 
 ## Retry Logic & Durability
@@ -40,7 +40,7 @@ for attempt in Retrying(
    - Example: `uv run yosoi --url ...`
    - Example: `uv run pytest`
 3. **Code Style**: Run `uv run ruff check .` and `uv run ruff format .` before finishing a task.
-4. **Type Safety**: Maintain strong typing. Use `mypy` to verify.
+4. **Type Safety**: Maintain strong typing. Use `pyrefly` to verify.
 5. **Retry Logic**: Use `tenacity` for all retry patterns. Never implement custom retry loops with `for` or `while`.
 
 ## Lazy Loading
@@ -67,7 +67,7 @@ __all__ = sorted(_LAZY)
 __getattr__, __dir__ = lazy_exports(__name__, globals(), _LAZY)
 ```
 The `TYPE_CHECKING` block (or, for `yosoi/__init__.py`, the committed
-`yosoi/__init__.pyi` stub) keeps mypy and IDEs seeing the full API. Keep the stub,
+`yosoi/__init__.pyi` stub) keeps Pyrefly and IDEs seeing the full API. Keep the stub,
 the `TYPE_CHECKING` imports, and `_LAZY` in lockstep.
 
 **Rules**

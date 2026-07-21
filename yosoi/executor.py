@@ -197,8 +197,9 @@ class _JavaScriptExecutor:
             )
 
         raw_extra = field.json_schema_extra
-        marker = raw_extra.get('yosoi_action') if isinstance(raw_extra, dict) else None
-        if isinstance(marker, dict):
+        raw_marker = raw_extra.get('yosoi_action') if isinstance(raw_extra, dict) else None
+        marker = cast(dict[str, Any], raw_marker) if isinstance(raw_marker, dict) else None
+        if marker is not None:
             marker['scope'] = scope
             marker['settle'] = asdict(settle) if settle is not None else None
             if function is not None:

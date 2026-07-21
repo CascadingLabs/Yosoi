@@ -62,13 +62,14 @@ The field annotation supplies the cardinality and output type: scalar fields sel
 
 ### 2. Field-bound decorator
 
-Bind arbitrary Python directly to a marker without `@staticmethod` or an `extract_<field>` naming convention:
+Bind arbitrary Python directly to a marker without an `extract_<field>` naming convention. Add `@staticmethod` so static analyzers recognize the callback's row-only signature:
 
 ```python
 class Company(ys.Contract):
     industry: str = ys.Extractor()
 
     @ys.extraction(industry)
+    @staticmethod
     async def industry_from_meta(row: ys.ExtractionRow) -> str:
         values = row.attribute('meta[name="industry"]', 'content')
         if not values:
@@ -86,6 +87,7 @@ class Company(ys.Contract):
     emails: list[str] = ys.Extractor()
 
     @ys.extractions(phone, emails)
+    @staticmethod
     async def contacts(row: ys.ExtractionRow):
         links = row.attribute('a[href]', 'href')
         return ys.values(

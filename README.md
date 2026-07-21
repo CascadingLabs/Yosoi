@@ -95,8 +95,7 @@ result = await OpenItems.run('https://example.com', fetcher_type='headless')
 ```
 
 These APIs are experimental during alpha. See
-[`docs/executor-js-flow.md`](docs/executor-js-flow.md) and the live
-[`examples/google_maps/api_spec_maps.py`](examples/google_maps/api_spec_maps.py).
+[`docs/executor-js-flow.md`](docs/executor-js-flow.md).
 
 ## Deterministic extractor fields
 
@@ -115,7 +114,7 @@ class Company(ys.Contract):
 records = await ys.extract(html, Company, url='https://example.com/')
 ```
 
-The annotation supplies cardinality and remains the model value type. `@ys.extraction(field)` binds custom logic without static methods or naming conventions; `@ys.extractions(...)` executes one callback for several fields. Extractor fingerprints contain strategy/structure evidence, never extracted values. See [`docs/extractors.md`](docs/extractors.md) and [`examples/extractor_fields.py`](examples/extractor_fields.py).
+The annotation supplies cardinality and remains the model value type. `@ys.extraction(field)` binds custom logic without a naming convention; `@ys.extractions(...)` executes one callback for several fields. Declare decorated callbacks with `@staticmethod` so editors and Pyrefly recognize their row-only signature. Extractor fingerprints contain strategy/structure evidence, never extracted values. See [`docs/extractors.md`](docs/extractors.md) and [`examples/extractor_fields.py`](examples/extractor_fields.py).
 
 ## Portable recipes
 

@@ -27,7 +27,7 @@ uv sync --all-groups
 uvx prek install
 ```
 
-[Prek](https://github.com/thesuperzapper/prek) is a Rust-based pre-commit runner that executes git hooks automatically on every `git commit`, catching issues before they reach CI. It reads the same `.pre-commit-config.yaml` format. In this repo the hooks run ruff (lint + format), mypy, check for secrets via gitleaks, and enforce conventional commit messages via commitizen. To run all hooks manually:
+[Prek](https://github.com/thesuperzapper/prek) is a Rust-based pre-commit runner that executes git hooks automatically on every `git commit`, catching issues before they reach CI. It reads the same `.pre-commit-config.yaml` format. In this repo the hooks run ruff (lint + format), Pyrefly, check for secrets via gitleaks, and enforce conventional commit messages via commitizen. To run all hooks manually:
 
 ```bash
 uvx prek run --all-files
@@ -47,7 +47,7 @@ uv run poe ci-check
 
 ## Linting & Formatting
 
-We use [Ruff](https://docs.astral.sh/ruff/) for linting and formatting, and [Mypy](https://mypy.readthedocs.io/) for type checking. Config lives in `pyproject.toml`.
+We use [Ruff](https://docs.astral.sh/ruff/) for linting and formatting, and [Pyrefly](https://pyrefly.org/) for type checking and editor diagnostics. Config lives in `pyproject.toml`.
 
 **Key rules:**
 
@@ -55,7 +55,7 @@ We use [Ruff](https://docs.astral.sh/ruff/) for linting and formatting, and [Myp
 - Comprehensive rule set (ARG, ASYNC, B, C4, C901, D, E, F, I, PERF, PT, RET, RUF, SIM, UP, and more)
 - Google-style docstrings
 - Per-file ignores for tests, examples, and `__init__.py`
-- Strict mypy with Python 3.10 target
+- Pyrefly with a Python 3.10 target and a migration baseline for existing findings
 
 ### Commands
 
@@ -63,10 +63,10 @@ We use [Ruff](https://docs.astral.sh/ruff/) for linting and formatting, and [Myp
 |------|---------|---------|
 | Ruff lint | Linting | `uv run ruff check .` |
 | Ruff format | Formatting | `uv run ruff format .` |
-| Mypy | Type checking | `uv run mypy .` |
+| Pyrefly | Type checking | `uv run pyrefly check` |
 | Prek | All hooks | `uvx prek run --all-files` |
 
-CI runs ruff, mypy, and tests on every push and PR. Your PR must pass all checks.
+CI runs ruff, Pyrefly, and tests on every push and PR. Your PR must pass all checks.
 
 ## Issues
 
@@ -107,7 +107,7 @@ test: add integration tests for HTML parser
 - Never use `unittest` -always `pytest`
 - Use `tenacity` for retries -never `time.sleep()` in loops
 - Always use `uv run` to execute commands -never bare `python` or `pip`
-- Maintain strong typing throughout -mypy strict mode is enforced
+- Maintain strong typing throughout -Pyrefly is enforced
 
 ## License
 

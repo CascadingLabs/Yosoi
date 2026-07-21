@@ -23,7 +23,6 @@ _SCAN_SKIP_DIRS = frozenset(
         'node_modules',
         '.git',
         'site-packages',
-        '.mypy_cache',
         '.ruff_cache',
         'tests',
         'examples',

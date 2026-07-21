@@ -15,7 +15,7 @@
 
 ### Docs
 
-- Document Executor.js, handwritten A3 flows, module safety constraints, alpha limitations, and the runnable Google Maps experiment.
+- Document Executor.js, handwritten A3 flows, module safety constraints, and alpha limitations.
 
 ## 0.0.3a24 (2026-07-20)
 

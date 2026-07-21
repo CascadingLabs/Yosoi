@@ -164,19 +164,6 @@ print(result.values['cards'])
 Runtime inputs are valid only on Flow executor fields. Contract executor arguments
 must be literal because a Contract has no Flow input scope.
 
-## Google Maps live example
-
-The repository includes a bounded, anonymous example using a real module tree and
-handwritten review flow:
-
-```bash
-uv run python examples/google_maps/api_spec_maps.py --limit 3 --fetcher headless
-```
-
-It opens the public Reviews panel, selects Newest, scrolls a bounded sample, expands
-visible review text, and returns typed review-card data. It does not sign in, post,
-edit business data, or use a persistent browser profile.
-
 ## Current alpha limits
 
 - `Flow.run` currently supports the headless and headful VoidCrawl fetchers.
@@ -185,5 +172,4 @@ edit business data, or use a persistent browser profile.
   Reaction authoring helpers remain future work.
 - Local module loading implements a constrained, acyclic ESM subset and rejects named import/export aliases, mutable live bindings, side-effect-only imports, and top-level await.
 - Flow declarations do not yet automatically mint or install recipes.
-- The Google Maps Flow intentionally omits per-review Share-dialog URL enrichment;
-  the older specialized example retains that slower workflow.
+- Domain-specific extraction and interaction flows belong in consuming applications.
