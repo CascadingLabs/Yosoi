@@ -34,7 +34,6 @@ class ActKind(str, Enum):
     SCROLL = 'scroll'
     WAIT = 'wait'
     EVAL = 'eval'
-    COLLECT_EACH = 'collect_each'
     TELEPORT = 'teleport'
     DOWNLOAD = 'download'  # ys.File() download node (see runtime._download)
     # --- Recovery primitives (W1) ----------------------------------------------------
@@ -99,8 +98,6 @@ class ReplayAct(BaseModel):
             raise ValueError('type acts require targets and text')
         if self.kind == ActKind.EVAL and not self.script:
             raise ValueError('eval acts require script')
-        if self.kind == ActKind.COLLECT_EACH and (not self.targets or not self.script):
-            raise ValueError('collect_each acts require a target and evaluator script')
         if self.kind == ActKind.DOWNLOAD:
             if not (self.targets or self.url):
                 raise ValueError('download acts require targets (retrigger) or url (refetch)')

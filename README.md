@@ -71,6 +71,32 @@ async def fetch_directly():
 
 See [`docs/voidcrawl.md`](docs/voidcrawl.md), the [official VoidCrawl documentation](https://cascadinglabs.com/voidcrawl/), and [`docs/fingerprinting-stack.md`](docs/fingerprinting-stack.md).
 
+## Typed JavaScript and handwritten browser flows
+
+Use `ys.Executor.js(...)` for browser-computed contract values. Larger evaluators
+can be imported from confined local `.js`/`.mjs` module trees. When content must be
+revealed first, a typed `ys.Flow` class compiles directly into Yosoi's existing
+A3Node assess/act/expect replay model:
+
+```python
+import yosoi as ys
+
+
+class ItemsOpen(ys.State):
+    condition = ys.css('[role="menu"]')
+
+
+class OpenItems(ys.Flow):
+    open_panel: ys.Expect[ItemsOpen] = ys.click(ys.role('tab', name='Items'))
+    title: str = ys.Executor.js('document.title')
+
+
+result = await OpenItems.run('https://example.com', fetcher_type='headless')
+```
+
+These APIs are experimental during alpha. See
+[`docs/executor-js-flow.md`](docs/executor-js-flow.md).
+
 ## Deterministic extractor fields
 
 Use fluent selector plans or `ys.Extractor()` callbacks for async, per-row scraper logic that consumes already-acquired evidence without an LLM:
@@ -89,13 +115,6 @@ records = await ys.extract(html, Company, url='https://example.com/')
 ```
 
 The annotation supplies cardinality and remains the model value type. `@ys.extraction(field)` binds custom logic without a naming convention; `@ys.extractions(...)` executes one callback for several fields. Declare decorated callbacks with `@staticmethod` so editors and Pyrefly recognize their row-only signature. Extractor fingerprints contain strategy/structure evidence, never extracted values. See [`docs/extractors.md`](docs/extractors.md) and [`examples/extractor_fields.py`](examples/extractor_fields.py).
-
-## Typed browser flows
-
-Use `ys.Flow` for reviewed, manually-authored browser interactions that compile to Yosoi's existing A3 replay model. Ordered
-click, wait, scroll, repeated-dialog collection, and typed `ys.Executor.js` declarations run through the VoidCrawl-backed
-fetcher—never a side browser driver. Local JavaScript modules are root-confined, statically bundled, fingerprinted, and receive
-runtime values through JSON-safe `ys.input()` bindings. See [`docs/flows.md`](docs/flows.md).
 
 ## Portable recipes
 

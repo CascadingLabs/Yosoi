@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+
 import pytest
 
 from yosoi.core.replay.runtime import ReplayExecutionError, execute_plan, verify_plan
@@ -102,6 +104,215 @@ async def test_execute_plan_resolves_role_substring_to_exact_ax_name_before_clic
     await execute_plan(tab, plan)
 
     assert tab.calls == [('click_by_role', ('tab', 'Reviews for Example Place', 0))]
+
+
+async def test_execute_plan_preserves_nth_for_duplicate_exact_ax_names():
+    tab = FakeTab()
+    tab.ax_nodes = [
+        {'role': {'value': 'button'}, 'name': {'value': 'Save changes'}},
+        {'role': {'value': 'button'}, 'name': {'value': 'Save changes'}},
+    ]
+    plan = _plan(
+        ReplayNode(
+            id='save-second',
+            intent='save the second row',
+            act=ReplayAct(kind=ActKind.CLICK, targets=[role('button', 'Save', nth=1)]),
+        )
+    )
+
+    await execute_plan(tab, plan)
+
+    assert tab.calls == [('click_by_role', ('button', 'Save changes', 1))]
+
+
+async def test_execute_plan_click_all_uses_bounded_row_scopes():
+    tab = FakeTab()
+    plan = _plan(
+        ReplayNode(
+            id='expand',
+            intent='expand rows',
+            act=ReplayAct(
+                kind=ActKind.CLICK,
+                targets=[role('button', 'More')],
+                metadata={'click_all': True, 'limit': 3, 'within_selector': '[data-row]'},
+            ),
+        )
+    )
+
+    await execute_plan(tab, plan)
+
+    script = next(args[0] for name, args in tab.calls if name == 'evaluate')
+    assert 'document.querySelectorAll("[data-row]")' in script
+    assert '.slice(0, 3)' in script
+
+
+async def test_execute_plan_click_all_without_row_scopes_honours_limit():
+    tab = FakeTab()
+    plan = _plan(
+        ReplayNode(
+            id='expand',
+            intent='expand visible controls',
+            act=ReplayAct(
+                kind=ActKind.CLICK,
+                targets=[css('button.more')],
+                metadata={'click_all': True, 'limit': 3},
+            ),
+        )
+    )
+
+    await execute_plan(tab, plan)
+
+    script = next(args[0] for name, args in tab.calls if name == 'evaluate')
+    assert 'if (clicked >= 3) return clicked;' in script
+
+
+@pytest.mark.parametrize('limit', [None, True, 1.5, 'invalid', 0])
+async def test_execute_plan_click_all_rejects_invalid_limit(limit):
+    plan = _plan(
+        ReplayNode(
+            id='expand',
+            intent='expand visible controls',
+            act=ReplayAct(
+                kind=ActKind.CLICK,
+                targets=[css('button.more')],
+                metadata={'click_all': True, 'limit': limit},
+            ),
+        )
+    )
+
+    with pytest.raises(ReplayExecutionError, match='click_all limit must be'):
+        await execute_plan(FakeTab(), plan)
+
+
+class _DelayedReadyTab(FakeTab):
+    def __init__(self) -> None:
+        super().__init__()
+        self.ready = False
+        self.clicks = 0
+
+    async def click_element(self, selector: str) -> None:
+        self.clicks += 1
+        asyncio.get_running_loop().call_later(0.01, setattr, self, 'ready', True)
+        await super().click_element(selector)
+
+    async def query_selector(self, selector: str) -> object | None:
+        return object() if selector == '.ready' and self.ready else None
+
+
+async def test_repeated_action_waits_before_rechecking_expectation():
+    tab = _DelayedReadyTab()
+    plan = _plan(
+        ReplayNode(
+            id='open',
+            intent='open delayed panel',
+            act=ReplayAct(
+                kind=ActKind.CLICK,
+                targets=[css('button.open')],
+                repeat=True,
+                max_repeats=2,
+                dwell_ms=20,
+            ),
+            expect=ReplayCondition(kind=AssertKind.SELECTOR, selector=css('.ready')),
+        )
+    )
+
+    await execute_plan(tab, plan)
+
+    assert tab.clicks == 1
+
+
+async def test_repeated_wait_sleeps_once_per_attempt(mocker):
+    sleep = mocker.patch('yosoi.core.replay.runtime.asyncio.sleep', new=mocker.AsyncMock())
+    tab = FakeTab()
+    tab.selectors['.ready'] = [object()]
+    plan = _plan(
+        ReplayNode(
+            id='wait',
+            intent='wait for readiness',
+            act=ReplayAct(kind=ActKind.WAIT, repeat=True, max_repeats=1, dwell_ms=20),
+            expect=ReplayCondition(kind=AssertKind.SELECTOR, selector=css('.ready')),
+        )
+    )
+
+    await execute_plan(tab, plan)
+
+    sleep.assert_awaited_once_with(0.02)
+
+
+async def test_exhausted_settle_does_not_sleep_after_final_attempt(mocker):
+    sleep = mocker.patch('yosoi.core.replay.runtime.asyncio.sleep', new=mocker.AsyncMock())
+    tab = _SettlingTab([None])
+    plan = _plan(
+        ReplayNode(
+            id='value',
+            intent='capture value',
+            act=ReplayAct(
+                kind=ActKind.EVAL,
+                script='window.value',
+                repeat=True,
+                max_repeats=1,
+                dwell_ms=250,
+                metadata={'until_non_null': True},
+            ),
+        )
+    )
+
+    with pytest.raises(ReplayExecutionError, match='remained null'):
+        await execute_plan(tab, plan)
+
+    sleep.assert_not_awaited()
+
+
+class _SettlingTab(FakeTab):
+    def __init__(self, values: list[object]) -> None:
+        super().__init__()
+        self.values = values
+
+    async def evaluate(self, script: str) -> object:
+        self.calls.append(('evaluate', (script,)))
+        return self.values.pop(0)
+
+
+async def test_execute_plan_retries_eval_until_non_null():
+    tab = _SettlingTab([None, 'ready'])
+    plan = _plan(
+        ReplayNode(
+            id='capture',
+            intent='capture settled value',
+            act=ReplayAct(
+                kind=ActKind.EVAL,
+                script='window.value',
+                repeat=True,
+                max_repeats=3,
+                metadata={'until_non_null': True},
+                output_field='value',
+            ),
+        )
+    )
+
+    result = await execute_plan(tab, plan)
+
+    assert result.extracted_actions == {'value': 'ready'}
+
+
+async def test_execute_plan_fails_when_eval_never_settles():
+    tab = _SettlingTab([None, None])
+    plan = _plan(
+        ReplayNode(
+            id='capture',
+            intent='capture settled value',
+            act=ReplayAct(
+                kind=ActKind.EVAL,
+                script='window.value',
+                repeat=True,
+                max_repeats=2,
+                metadata={'until_non_null': True},
+            ),
+        )
+    )
+
+    with pytest.raises(ReplayExecutionError, match='remained null after 2 settle attempt'):
+        await execute_plan(tab, plan)
 
 
 async def test_execute_plan_supports_visual_click_target():

@@ -336,19 +336,26 @@ def _fail(report: VerifyReport, message: str) -> None:
 
 async def _execute_act(tab: Any, act: ReplayAct, expect: ReplayCondition) -> Any:
     repeats = act.max_repeats if act.repeat else 1
+    until_non_null = bool(act.metadata.get('until_non_null'))
     last_output: Any = None
     for idx in range(repeats):
         last_output = await _execute_once(tab, act)
-        if act.dwell_ms:
-            await asyncio.sleep(act.dwell_ms / 1000)
-        if act.kind == ActKind.SCROLL and act.metadata.get('stop_when') == 'no_growth':
-            if last_output is False:
+        if until_non_null:
+            if last_output is not None:
                 return last_output
+            if idx < repeats - 1 and act.dwell_ms and act.kind != ActKind.WAIT:
+                await asyncio.sleep(act.dwell_ms / 1000)
             continue
-        if not act.repeat or await _condition_holds(tab, expect):
+        if not act.repeat:
             return last_output
-        if idx == repeats - 1:
+        # WAIT performs its own dwell. Mutating actions dwell here so asynchronous
+        # page state has a chance to become observable before the expectation check.
+        if act.dwell_ms and act.kind != ActKind.WAIT:
+            await asyncio.sleep(act.dwell_ms / 1000)
+        if await _condition_holds(tab, expect):
             return last_output
+    if until_non_null:
+        raise ReplayExecutionError(f'{act.kind.value} output remained null after {repeats} settle attempt(s)')
     return last_output
 
 
@@ -440,11 +447,19 @@ async def _exec_click(tab: Any, act: ReplayAct) -> Any:
 
 async def _click_all(tab: Any, act: ReplayAct) -> int:
     """Click matching elements in bounded CSS row scopes through one JS act."""
-    if not act.targets:
-        raise ReplayExecutionError('click_all requires at least one target')
+    if len(act.targets) != 1:
+        raise ReplayExecutionError('click_all requires exactly one target')
     target = act.targets[0]
     within = act.metadata.get('within_selector')
-    limit = int(act.metadata.get('limit') or 1)
+    raw_limit = act.metadata.get('limit')
+    if isinstance(raw_limit, bool) or not isinstance(raw_limit, (int, str)):
+        raise ReplayExecutionError('click_all limit must be an integer')
+    try:
+        limit = int(raw_limit)
+    except ValueError as exc:
+        raise ReplayExecutionError('click_all limit must be an integer') from exc
+    if limit < 1:
+        raise ReplayExecutionError('click_all limit must be >= 1')
     if target.type == 'role':
         candidate_selector = 'button,[role="button"]' if target.value == 'button' else f'[role="{target.value}"]'
         name = (target.name or '').casefold()
@@ -456,21 +471,30 @@ async def _click_all(tab: Any, act: ReplayAct) -> int:
         predicate = 'true'
     else:
         raise ReplayExecutionError(f'{target.type} click_all targets are not supported')
-    scopes = (
-        f'Array.from(document.querySelectorAll({json.dumps(str(within))})).slice(0, {limit})'
-        if within
-        else '[document]'
-    )
-    script = f"""(() => {{
-      const scopes = {scopes};
-      let clicked = 0;
-      for (const scope of scopes) {{
-        for (const el of scope.querySelectorAll({json.dumps(candidate_selector)})) {{
-          if ({predicate}) {{ el.click(); clicked += 1; break; }}
-        }}
-      }}
-      return clicked;
-    }})()"""
+    if within:
+        scopes = f'Array.from(document.querySelectorAll({json.dumps(str(within))})).slice(0, {limit})'
+        script = f"""(() => {{
+          const scopes = {scopes};
+          let clicked = 0;
+          for (const scope of scopes) {{
+            for (const el of scope.querySelectorAll({json.dumps(candidate_selector)})) {{
+              if ({predicate}) {{ el.click(); clicked += 1; break; }}
+            }}
+          }}
+          return clicked;
+        }})()"""
+    else:
+        script = f"""(() => {{
+          let clicked = 0;
+          for (const el of document.querySelectorAll({json.dumps(candidate_selector)})) {{
+            if ({predicate}) {{
+              el.click();
+              clicked += 1;
+              if (clicked >= {limit}) return clicked;
+            }}
+          }}
+          return clicked;
+        }})()"""
     result = await _eval(tab, script)
     return int(result or 0)
 
@@ -482,23 +506,7 @@ async def _exec_type(tab: Any, act: ReplayAct) -> Any:
 
 async def _exec_scroll(tab: Any, act: ReplayAct) -> Any:
     await _scroll(tab, act)
-    if act.metadata.get('stop_when') != 'no_growth':
-        return None
-    extent = int(
-        await _eval(
-            tab,
-            'Math.max(document.body?.scrollHeight || 0, document.documentElement?.scrollHeight || 0)',
-        )
-        or 0
-    )
-    previous = act.metadata.get('_previous_scroll_extent')
-    act.metadata['_previous_scroll_extent'] = extent
-    if previous is None or extent > int(previous):
-        act.metadata['_stable_scroll_rounds'] = 0
-        return True
-    stable_rounds = int(act.metadata.get('_stable_scroll_rounds') or 0) + 1
-    act.metadata['_stable_scroll_rounds'] = stable_rounds
-    return stable_rounds < int(act.metadata.get('stable_rounds') or 1)
+    return None
 
 
 async def _exec_wait(tab: Any, act: ReplayAct) -> Any:
@@ -508,128 +516,7 @@ async def _exec_wait(tab: Any, act: ReplayAct) -> Any:
 
 
 async def _exec_eval(tab: Any, act: ReplayAct) -> Any:
-    settle = act.metadata.get('settle')
-    if not isinstance(settle, dict):
-        return await _eval(tab, act.script or '')
-    timeout = float(settle.get('timeout') or 5.0)
-    poll_interval = float(settle.get('poll_interval') or 0.25)
-    max_attempts = max(1, int(timeout / poll_interval) + 1)
-    value: Any = None
-    async for attempt in get_async_retryer(
-        max_attempts=max_attempts,
-        wait_min=poll_interval,
-        wait_max=poll_interval,
-        exceptions=(ReplayExecutionError,),
-    ):
-        with attempt:
-            value = await _eval(tab, act.script or '')
-            if value is None:
-                raise ReplayExecutionError('Executor.js settle condition was not met')
-    return value
-
-
-async def _wait_for_target_state(tab: Any, target: SelectorEntry, *, present: bool) -> None:
-    async for attempt in get_async_retryer(max_attempts=8, exceptions=(ReplayExecutionError,)):
-        with attempt:
-            exists = await (_ax_target_exists(tab, target) if target.type == 'role' else _selector_exists(tab, target))
-            if exists is not present:
-                state = 'appear' if present else 'disappear'
-                raise ReplayExecutionError(f'timed out waiting for {target.type} target to {state}')
-
-
-def _role_dom_selector(target: SelectorEntry) -> str:
-    if target.value == 'button':
-        return 'button,[role="button"]'
-    if target.value == 'link':
-        return 'a,[role="link"]'
-    return f'[role={json.dumps(target.value)}]'
-
-
-async def _role_dom_matches(tab: Any, target: SelectorEntry, *, click_index: int | None = None) -> int | bool:
-    selector = _role_dom_selector(target)
-    name = (target.name or '').casefold()
-    result = await _eval(
-        tab,
-        f"""(() => {{
-          const candidates = Array.from(document.querySelectorAll({json.dumps(selector)}));
-          const named = candidates.filter(el =>
-            (el.getAttribute('aria-label') || el.innerText || '').trim().toLowerCase()
-              .includes({json.dumps(name)})
-          );
-          const matches = named.filter(el => !named.some(child => child !== el && el.contains(child)));
-          if ({json.dumps(click_index)} === null) return matches.length;
-          const target = matches[{click_index or 0}];
-          if (!target) return false;
-          target.click();
-          return true;
-        }})()""",
-    )
-    if not isinstance(result, (bool, int)):
-        raise ReplayExecutionError(f'role DOM match probe returned {type(result).__name__}')
-    return result
-
-
-async def _click_target_at_index(tab: Any, target: SelectorEntry, index: int) -> None:
-    if target.type == 'role':
-        clicked = await _role_dom_matches(tab, target, click_index=(target.nth or 0) + index)
-        if not clicked:
-            raise ReplayExecutionError(f'no role collect_each target at index {index}')
-        return
-    if target.type == 'css':
-        clicked = await _eval(
-            tab,
-            f"""(() => {{
-              const target = document.querySelectorAll({json.dumps(target.value)})[{index}];
-              if (!target) return false;
-              target.click();
-              return true;
-            }})()""",
-        )
-        if not clicked:
-            raise ReplayExecutionError(f'no CSS collect_each target at index {index}')
-        return
-    raise ReplayExecutionError(f'{target.type} collect_each targets are not supported')
-
-
-async def _exec_collect_each(tab: Any, act: ReplayAct) -> list[Any]:
-    """Open each matching item serially, collect one list, then close its overlay."""
-    target = act.targets[0]
-    ready = SelectorEntry.model_validate(act.metadata.get('ready_target'))
-    close_targets = [SelectorEntry.model_validate(item) for item in act.metadata.get('close_targets', [])]
-    if not close_targets:
-        raise ReplayExecutionError('collect_each requires close targets')
-    available = (
-        int(await _role_dom_matches(tab, target)) if target.type == 'role' else await _selector_count(tab, target)
-    )
-    count = min(available, int(act.metadata.get('limit') or available))
-    if count < 1:
-        if act.metadata.get('allow_empty'):
-            return []
-        raise ReplayExecutionError('collect_each found no matching targets')
-
-    collected: list[Any] = []
-    for index in range(count):
-        await _click_target_at_index(tab, target, index)
-        await _wait_for_target_state(tab, ready, present=True)
-        value: Any = None
-        async for attempt in get_async_retryer(max_attempts=8, exceptions=(ReplayExecutionError,)):
-            with attempt:
-                value = await _eval(tab, act.script or '')
-                if not isinstance(value, list):
-                    raise ReplayExecutionError(f'collect_each evaluator returned {type(value).__name__}, expected list')
-        collected.extend(value)
-        await _click_first(tab, close_targets)
-        await _wait_for_target_state(tab, ready, present=False)
-
-    dedupe_by = act.metadata.get('dedupe_by')
-    if not isinstance(dedupe_by, str):
-        return collected
-    unique: dict[Any, Any] = {}
-    for item in collected:
-        if not isinstance(item, dict) or dedupe_by not in item:
-            raise ReplayExecutionError(f'collect_each item omitted dedupe key {dedupe_by!r}')
-        unique.setdefault(item[dedupe_by], item)
-    return list(unique.values())
+    return await _eval(tab, act.script or '')
 
 
 async def _exec_teleport(tab: Any, act: ReplayAct) -> Any:
@@ -717,7 +604,6 @@ _EXECUTORS: dict[ActKind, Callable[[Any, ReplayAct], Awaitable[Any]]] = {
     ActKind.SCROLL: _exec_scroll,
     ActKind.WAIT: _exec_wait,
     ActKind.EVAL: _exec_eval,
-    ActKind.COLLECT_EACH: _exec_collect_each,
     ActKind.DOWNLOAD: _download,
     ActKind.TELEPORT: _exec_teleport,
 }
@@ -870,9 +756,11 @@ async def _click_target(tab: Any, target: SelectorEntry) -> None:
                         f'no AX node with role={target.value!r} containing name={target.name!r} at index {index}'
                     )
                 # VoidCrawl click_by_role performs exact accessible-name matching. Resolve
-                # our resilient substring target through the AX tree, then click that exact
-                # name. Passing the substring directly can assess true and still fail click.
-                await _call(tab, 'click_by_role', target.value, matches[index], 0)
+                # our resilient substring target through the AX tree, then preserve the
+                # occurrence index when duplicate nodes share that exact accessible name.
+                exact_name = matches[index]
+                exact_index = matches[:index].count(exact_name)
+                await _call(tab, 'click_by_role', target.value, exact_name, exact_index)
                 return
         await _call(tab, 'click_by_role', target.value, target.name, target.nth or 0)
         return
@@ -919,10 +807,6 @@ async def _scroll(tab: Any, act: ReplayAct) -> None:
               if (!anchor) return false;
               let node = anchor;
               while (node) {{
-                if (node === document.body || node === document.documentElement) {{
-                  window.scrollTo(0, Math.max(document.body.scrollHeight, document.documentElement.scrollHeight));
-                  return true;
-                }}
                 if (node.scrollHeight > node.clientHeight + 100) {{
                   node.scrollTop = node.scrollHeight;
                   return true;

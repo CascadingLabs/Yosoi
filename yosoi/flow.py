@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import inspect
+import math
 import re
 from dataclasses import dataclass
-from typing import Any, cast
+from typing import Any, ClassVar, Generic, TypeVar, cast
 
 import pydantic.fields
 from pydantic import BaseModel, TypeAdapter
@@ -13,6 +14,37 @@ from pydantic import BaseModel, TypeAdapter
 from yosoi.executor import InputRef, bind_executor_action, resolve_refs
 from yosoi.models.replay import ActKind, AssertKind, ReplayAct, ReplayCondition, ReplayNode, ReplayPlan
 from yosoi.models.selectors import SelectorEntry
+
+
+@dataclass(frozen=True)
+class _Expectation:
+    condition: Any
+
+
+class State:
+    """Named, reusable post-action browser state for typed Flow transitions."""
+
+    condition: ClassVar[Any]
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        """Require every concrete state to declare one supported condition."""
+        super().__init_subclass__(**kwargs)
+        condition = getattr(cls, 'condition', None)
+        if not isinstance(condition, (SelectorEntry, _Condition)):
+            raise TypeError(f'{cls.__name__}: State.condition must be a selector or Flow condition')
+
+
+_StateT = TypeVar('_StateT', bound=State)
+
+
+class Expect(Generic[_StateT]):
+    """Flow annotation mapping a named State to one post-action A3 condition."""
+
+    def __class_getitem__(cls, state: Any) -> _Expectation:
+        """Build annotation metadata from one State class."""
+        if not isinstance(state, type) or not issubclass(state, State):
+            raise TypeError('Expect[...] requires a ys.State subclass')
+        return _Expectation(state.condition)
 
 
 @dataclass(frozen=True)
@@ -40,17 +72,10 @@ class _Action:
 
 
 @dataclass(frozen=True)
-class _FlowStep:
-    value: Any
-    expectation: Any
-
-
-@dataclass(frozen=True)
 class _Declaration:
     name: str
     value: Any
     annotation: Any
-    expectation: Any = None
 
 
 class FlowResult(BaseModel):
@@ -66,23 +91,24 @@ class _FlowMeta(type):
     def __new__(mcls, name: str, bases: tuple[type[Any], ...], namespace: dict[str, Any]) -> type[Any]:
         cls: Any = super().__new__(mcls, name, bases, namespace)
         inherited: list[_Declaration] = []
+        inherited_names: set[str] = set()
         for base in bases:
-            inherited.extend(getattr(base, '_flow_declarations', ()))
+            for declaration in getattr(base, '_flow_declarations', ()):
+                if declaration.name not in inherited_names:
+                    inherited.append(declaration)
+                    inherited_names.add(declaration.name)
 
         try:
             annotations = inspect.get_annotations(cls, eval_str=True)
-        except (NameError, TypeError, ValueError):
-            annotations = dict(namespace.get('__annotations__', {}))
+        except (NameError, TypeError, ValueError) as exc:
+            raise TypeError(f'{name}: Flow annotations must resolve at class definition time: {exc}') from exc
 
         local: list[_Declaration] = []
         for attr_name, value in namespace.items():
             if attr_name.startswith('_'):
                 continue
-            expectation = None
-            if isinstance(value, _FlowStep):
-                value, expectation = value.value, value.expectation
             if isinstance(value, (_Action, pydantic.fields.FieldInfo)):
-                local.append(_Declaration(attr_name, value, annotations.get(attr_name), expectation))
+                local.append(_Declaration(attr_name, value, annotations.get(attr_name)))
 
         local_names = {item.name for item in local}
         cls._flow_declarations = [item for item in inherited if item.name not in local_names] + local
@@ -155,7 +181,7 @@ class Flow(metaclass=_FlowMeta):
         for declaration in cls._flow_declarations:
             if not isinstance(declaration.value, pydantic.fields.FieldInfo):
                 continue
-            if declaration.annotation is None:
+            if isinstance(declaration.annotation, _Expectation) or declaration.annotation is None:
                 continue
             if declaration.name not in outputs:
                 raise ValueError(f'Flow executor produced no output for {declaration.name}')
@@ -164,11 +190,15 @@ class Flow(metaclass=_FlowMeta):
 
 
 def _compile_declaration(declaration: _Declaration, inputs: dict[str, Any]) -> ReplayNode:
-    expectation = _expectation(declaration.expectation, inputs)
+    expectation = _expectation(declaration.annotation, inputs)
     value = declaration.value
     if isinstance(value, _Action):
+        if value.repeat and expectation.kind == AssertKind.NONE:
+            raise TypeError(f'{declaration.name}: repeated actions require ys.Expect[...]')
         max_repeats = _resolve_number(value.max_repeats, inputs)
         metadata = resolve_refs(value.metadata or {}, inputs)
+        if metadata.get('click_all'):
+            metadata['limit'] = _positive_int(metadata.get('limit'), name='click_all limit')
         act = ReplayAct(
             kind=value.kind,
             targets=list(value.targets),
@@ -178,36 +208,27 @@ def _compile_declaration(declaration: _Declaration, inputs: dict[str, Any]) -> R
             metadata=metadata,
         )
     else:
+        if declaration.annotation is None:
+            raise TypeError(f'{declaration.name}: Flow Executor.js fields require an output annotation')
         extra = value.json_schema_extra
         config = extra.get('yosoi_action') if isinstance(extra, dict) else None
-        if not isinstance(config, dict):
+        if not isinstance(config, dict) or config.get('type') != 'js':
             raise TypeError(f'unsupported Flow field descriptor: {declaration.name}')
-        if config.get('type') == 'js':
-            act = ReplayAct(
-                kind=ActKind.EVAL,
-                script=bind_executor_action(config, inputs),
-                metadata={'settle': config.get('settle')},
-                output_field=declaration.name,
-            )
-        elif config.get('type') == 'collect_each':
-            evaluator = config.get('evaluator')
-            if not isinstance(evaluator, dict):
-                raise TypeError('collect_each requires one Executor.js evaluator')
-            act = ReplayAct(
-                kind=ActKind.COLLECT_EACH,
-                targets=[SelectorEntry.model_validate(config['target'])],
-                script=bind_executor_action(evaluator, inputs),
-                metadata={
-                    'ready_target': config['ready_target'],
-                    'close_targets': config['close_targets'],
-                    'limit': _resolve_number(config['limit'], inputs),
-                    'dedupe_by': config.get('dedupe_by'),
-                    'allow_empty': bool(config.get('allow_empty')),
-                },
-                output_field=declaration.name,
-            )
-        else:
-            raise TypeError(f'unsupported Flow field descriptor: {declaration.name}')
+        settle = config.get('settle')
+        settle_timeout = float(settle.get('timeout', 0)) if isinstance(settle, dict) else 0.0
+        settle_poll = float(settle.get('poll_interval', 0.25)) if isinstance(settle, dict) else 0.25
+        should_settle = isinstance(settle, dict)
+        act = ReplayAct(
+            kind=ActKind.EVAL,
+            script=bind_executor_action(config, inputs),
+            output_field=declaration.name,
+            repeat=should_settle,
+            max_repeats=max(1, math.floor(settle_timeout / settle_poll) + 1)
+            if should_settle and settle_poll > 0
+            else 1,
+            dwell_ms=max(0, int(settle_poll * 1000)) if should_settle else 0,
+            metadata={'until_non_null': True} if should_settle else {},
+        )
     return ReplayNode(
         id=declaration.name,
         intent=declaration.name.replace('_', ' '),
@@ -216,21 +237,18 @@ def _compile_declaration(declaration: _Declaration, inputs: dict[str, Any]) -> R
     )
 
 
-def _resolve_number(value: int | InputRef | dict[str, str], inputs: dict[str, Any]) -> int:
-    if isinstance(value, dict):
-        value = InputRef(value['$input'])
+def _resolve_number(value: int | InputRef, inputs: dict[str, Any]) -> int:
     if isinstance(value, InputRef):
         if value.name not in inputs:
             raise ValueError(f'missing required Flow input: {value.name}')
-        value = int(inputs[value.name])
-    if value < 1:
-        raise ValueError('Flow repeat limits must be >= 1')
-    return value
+        value = inputs[value.name]
+    return _positive_int(value, name='Flow repeat limits')
 
 
-def _expectation(condition: Any, inputs: dict[str, Any]) -> ReplayCondition:
-    if condition is None:
+def _expectation(annotation: Any, inputs: dict[str, Any]) -> ReplayCondition:
+    if not isinstance(annotation, _Expectation):
         return ReplayCondition()
+    condition = annotation.condition
     if isinstance(condition, SelectorEntry):
         kind = AssertKind.AX_TARGET if condition.type == 'role' else AssertKind.SELECTOR
         return ReplayCondition(kind=kind, selector=condition)
@@ -241,6 +259,8 @@ def _expectation(condition: Any, inputs: dict[str, Any]) -> ReplayCondition:
         if value.name not in inputs:
             raise ValueError(f'missing required Flow input: {value.name}')
         value = inputs[value.name]
+    if condition.kind == AssertKind.COUNT:
+        value = _non_negative_int(value, name='count at_least')
     return ReplayCondition(
         kind=condition.kind,
         selector=condition.target,
@@ -250,13 +270,27 @@ def _expectation(condition: Any, inputs: dict[str, Any]) -> ReplayCondition:
     )
 
 
-def expect(action: Any, condition: Any) -> Any:
-    """Attach a post-action condition without abusing Python type annotations."""
-    if isinstance(action, _FlowStep):
-        raise TypeError('expect() cannot wrap an already wrapped Flow step')
-    if not isinstance(action, (_Action, pydantic.fields.FieldInfo)):
-        raise TypeError('expect() requires a Flow action or executor descriptor')
-    return _FlowStep(action, condition)
+def _strict_int(value: Any, *, name: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, (int, str)):
+        raise ValueError(f'{name} must be an integer')
+    try:
+        return int(value)
+    except ValueError as exc:
+        raise ValueError(f'{name} must be an integer') from exc
+
+
+def _positive_int(value: Any, *, name: str) -> int:
+    resolved = _strict_int(value, name=name)
+    if resolved < 1:
+        raise ValueError(f'{name} must be >= 1')
+    return resolved
+
+
+def _non_negative_int(value: Any, *, name: str) -> int:
+    resolved = _strict_int(value, name=name)
+    if resolved < 0:
+        raise ValueError(f'{name} must be >= 0')
+    return resolved
 
 
 def click(target: SelectorEntry | tuple[SelectorEntry, ...] | list[SelectorEntry]) -> _Action:
@@ -266,63 +300,26 @@ def click(target: SelectorEntry | tuple[SelectorEntry, ...] | list[SelectorEntry
 
 
 def click_all(
-    target: SelectorEntry | tuple[SelectorEntry, ...] | list[SelectorEntry],
+    target: SelectorEntry,
     *,
     limit: int | InputRef,
     within: SelectorEntry | None = None,
 ) -> _Action:
-    """Click every matching target once, optionally within bounded row scopes."""
-    targets = tuple(target) if isinstance(target, (tuple, list)) else (target,)
+    """Click matching targets up to a limit, or one target per bounded row scope."""
+    if not isinstance(target, SelectorEntry):
+        raise TypeError('click_all requires exactly one selector target')
+    if isinstance(limit, int):
+        _positive_int(limit, name='click_all limit')
     if within is not None and within.type != 'css':
         raise TypeError('click_all within currently requires a CSS selector')
     return _Action(
         ActKind.CLICK,
-        targets=targets,
+        targets=(target,),
         metadata={
             'click_all': True,
             'limit': {'$input': limit.name} if isinstance(limit, InputRef) else limit,
             'within_selector': within.value if within is not None else None,
         },
-    )
-
-
-def collect_each(
-    target: SelectorEntry,
-    *,
-    ready: SelectorEntry,
-    collect: pydantic.fields.FieldInfo,
-    close: SelectorEntry | tuple[SelectorEntry, ...] | list[SelectorEntry],
-    limit: int | InputRef,
-    dedupe_by: str | None = None,
-    allow_empty: bool = False,
-) -> Any:
-    """Sequentially open matching UI items, collect typed values, and close each overlay."""
-    extra = collect.json_schema_extra
-    evaluator = extra.get('yosoi_action') if isinstance(extra, dict) else None
-    if not isinstance(evaluator, dict) or evaluator.get('type') != 'js':
-        raise TypeError('collect_each collect= must be an Executor.js descriptor')
-    close_targets = tuple(close) if isinstance(close, (tuple, list)) else (close,)
-    if not close_targets:
-        raise ValueError('collect_each requires at least one close target')
-    if dedupe_by is not None and not dedupe_by:
-        raise ValueError('collect_each dedupe_by must not be empty')
-    return cast(
-        pydantic.fields.FieldInfo,
-        pydantic.Field(
-            ...,
-            json_schema_extra={
-                'yosoi_action': {
-                    'type': 'collect_each',
-                    'target': target.model_dump(mode='json'),
-                    'ready_target': ready.model_dump(mode='json'),
-                    'close_targets': [item.model_dump(mode='json') for item in close_targets],
-                    'limit': {'$input': limit.name} if isinstance(limit, InputRef) else limit,
-                    'dedupe_by': dedupe_by,
-                    'allow_empty': allow_empty,
-                    'evaluator': evaluator,
-                }
-            },
-        ),
     )
 
 
@@ -350,23 +347,15 @@ def scroll_until(
     *,
     max_scrolls: int | InputRef,
     stop_when: str = 'expectation',
-    stable_rounds: int = 3,
 ) -> _Action:
     """Create a repeated A3 SCROLL act gated by the annotated expectation."""
-    if stop_when not in {'expectation', 'no_growth'}:
-        raise ValueError("stop_when must be 'expectation' or 'no_growth'")
-    if stable_rounds < 1:
-        raise ValueError('scroll_until stable_rounds must be >= 1')
+    if stop_when != 'expectation':
+        raise ValueError("scroll_until stop_when currently supports only 'expectation'")
     return _Action(
         ActKind.SCROLL,
         repeat=True,
         max_repeats=max_scrolls,
-        dwell_ms=1000 if stop_when == 'no_growth' else 0,
-        metadata={
-            'anchor_selector': container.anchor.value,
-            'stop_when': stop_when,
-            'stable_rounds': stable_rounds,
-        },
+        metadata={'anchor_selector': container.anchor.value},
     )
 
 

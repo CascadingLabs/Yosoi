@@ -2,13 +2,20 @@
 
 ### Feat
 
-- **flow**: add typed, manually-authored browser `Flow` declarations that compile to existing A3 replay plans and execute through the VoidCrawl-backed fetcher.
-- **executor**: add root-confined, fingerprinted JavaScript module bundling with JSON-safe runtime input binding and typed settle conditions.
-- **replay**: add bounded repeated waits, no-growth scrolling, resilient accessible-role clicks, and serialized dialog collection with optional stable-ID deduplication.
+- Add experimental typed `ys.Executor.js` fields with confined local `.js`/`.mjs` module trees.
+- Add class-declared `ys.Flow` programs that compile into the existing deterministic A3Node replay runtime.
+- Add named `ys.State` expectations, runtime inputs, bounded wait/scroll/click-all actions, and live headless/headful Flow execution.
+
+### Fix
+
+- Replace regex-based JavaScript module flattening with an AST-backed, scope-preserving linker that rejects malformed or unsupported module graphs before browser execution.
+- Preserve accessibility-node indexes for duplicate exact names, enforce strict page-scoped `click_all` limits, and wait the configured dwell before repeating actions whose expectations become ready asynchronously.
+- Reject Contract-only settle timing, repeated Flow actions without an expectation, and the unimplemented `scroll_until(..., stop_when='no_growth')` mode instead of silently ignoring those declarations.
+- Deduplicate inherited Flow declarations by stable node ID under diamond multiple inheritance.
 
 ### Docs
 
-- Document browser Flow composition, expectations, typed executor fields, confined JavaScript modules, and fail-fast behavior.
+- Document Executor.js, handwritten A3 flows, module safety constraints, and alpha limitations.
 
 ## 0.0.3a24 (2026-07-20)
 
