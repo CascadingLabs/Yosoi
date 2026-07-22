@@ -1,4 +1,4 @@
-"""Tests that validate Yosoi type stubs are correct via mypy."""
+"""Tests that validate Yosoi type stubs are correct via Pyrefly."""
 
 import subprocess
 import sys
@@ -8,14 +8,25 @@ import uuid
 from tests.stubs.conftest import SNIPPETS_DIR
 
 
-def _run_mypy(code: str) -> subprocess.CompletedProcess[str]:
-    """Run mypy on a code snippet, return the result."""
+def _run_pyrefly(code: str) -> subprocess.CompletedProcess[str]:
+    """Run Pyrefly on a code snippet, return the result."""
     SNIPPETS_DIR.mkdir(exist_ok=True)
     snippet_file = SNIPPETS_DIR / f'_check_{uuid.uuid4().hex}.py'
     snippet_file.write_text(code)
     try:
         return subprocess.run(
-            [sys.executable, '-m', 'mypy', '--strict', '--no-incremental', '--no-error-summary', str(snippet_file)],
+            [
+                sys.executable,
+                '-m',
+                'pyrefly',
+                'check',
+                '--config',
+                'pyproject.toml',
+                '--summary=none',
+                '--progress-bar',
+                'no',
+                str(snippet_file),
+            ],
             capture_output=True,
             text=True,
             timeout=60,
@@ -28,7 +39,7 @@ class TestFieldFactoryStubs:
     """Verify that semantic type factories are seen as returning FieldInfo."""
 
     def test_contract_with_title_and_price(self) -> None:
-        result = _run_mypy(
+        result = _run_pyrefly(
             textwrap.dedent("""\
             import yosoi as ys
 
@@ -40,7 +51,7 @@ class TestFieldFactoryStubs:
         assert result.returncode == 0, result.stdout + result.stderr
 
     def test_field_is_assignable(self) -> None:
-        result = _run_mypy(
+        result = _run_pyrefly(
             textwrap.dedent("""\
             import yosoi as ys
 
@@ -51,7 +62,7 @@ class TestFieldFactoryStubs:
         assert result.returncode == 0, result.stdout + result.stderr
 
     def test_rating_kwargs(self) -> None:
-        result = _run_mypy(
+        result = _run_pyrefly(
             textwrap.dedent("""\
             import yosoi as ys
 
@@ -62,7 +73,7 @@ class TestFieldFactoryStubs:
         assert result.returncode == 0, result.stdout + result.stderr
 
     def test_url_kwargs(self) -> None:
-        result = _run_mypy(
+        result = _run_pyrefly(
             textwrap.dedent("""\
             import yosoi as ys
 
@@ -73,7 +84,7 @@ class TestFieldFactoryStubs:
         assert result.returncode == 0, result.stdout + result.stderr
 
     def test_datetime_kwargs(self) -> None:
-        result = _run_mypy(
+        result = _run_pyrefly(
             textwrap.dedent("""\
             import yosoi as ys
 
@@ -84,7 +95,7 @@ class TestFieldFactoryStubs:
         assert result.returncode == 0, result.stdout + result.stderr
 
     def test_extractor_plans_and_bound_decorators(self) -> None:
-        result = _run_mypy(
+        result = _run_pyrefly(
             textwrap.dedent("""\
             import yosoi as ys
 
@@ -97,6 +108,7 @@ class TestFieldFactoryStubs:
                 industry: str = ys.Extractor()
 
                 @ys.extraction(industry)
+                @staticmethod
                 async def industry_value(row: ys.ExtractionRow) -> str:
                     return str(row.text('.industry'))
         """)
@@ -104,7 +116,7 @@ class TestFieldFactoryStubs:
         assert result.returncode == 0, result.stdout + result.stderr
 
     def test_body_text_and_author(self) -> None:
-        result = _run_mypy(
+        result = _run_pyrefly(
             textwrap.dedent("""\
             import yosoi as ys
 
@@ -116,11 +128,34 @@ class TestFieldFactoryStubs:
         assert result.returncode == 0, result.stdout + result.stderr
 
 
+class TestExecutorFlowStubs:
+    """Verify typed Executor.js fields and named Flow states."""
+
+    def test_executor_and_flow_declarations(self) -> None:
+        result = _run_pyrefly(
+            textwrap.dedent("""\
+            import yosoi as ys
+
+            class Ready(ys.State):
+                condition = ys.css('.ready')
+
+            class Demo(ys.Flow):
+                open_panel: ys.Expect[Ready] = ys.click(ys.css('#open'))
+                title: str = ys.Executor.js('document.title')
+
+            async def run() -> str:
+                result = await Demo.run('https://example.com')
+                return str(result.values['title'])
+        """)
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
+
+
 class TestProviderStubs:
     """Verify that provider helpers are seen as returning ModelPolicy."""
 
     def test_groq_returns_model_policy(self) -> None:
-        result = _run_mypy(
+        result = _run_pyrefly(
             textwrap.dedent("""\
             import yosoi as ys
 
@@ -134,7 +169,7 @@ class TestPolicyStubs:
     """Verify that top-level policy constructors expose keyword signatures."""
 
     def test_top_level_policy_kwargs_typecheck(self) -> None:
-        result = _run_mypy(
+        result = _run_pyrefly(
             textwrap.dedent("""\
             import yosoi as ys
 
@@ -176,7 +211,7 @@ class TestPolicyStubs:
         assert result.returncode == 0, result.stdout + result.stderr
 
     def test_crawl_public_api_typechecks(self) -> None:
-        result = _run_mypy(
+        result = _run_pyrefly(
             textwrap.dedent("""\
             import yosoi as ys
 
@@ -199,7 +234,7 @@ class TestPolicyStubs:
         assert result.returncode == 0, result.stdout + result.stderr
 
     def test_crawl_representative_url_api_typechecks(self) -> None:
-        result = _run_mypy(
+        result = _run_pyrefly(
             textwrap.dedent("""\
             import yosoi as ys
 
@@ -218,7 +253,7 @@ class TestPolicyStubs:
         assert result.returncode == 0, result.stdout + result.stderr
 
     def test_top_level_policy_kwargs_fail_static_on_misspelling(self) -> None:
-        result = _run_mypy(
+        result = _run_pyrefly(
             textwrap.dedent("""\
             import yosoi as ys
 
@@ -226,10 +261,10 @@ class TestPolicyStubs:
         """)
         )
         assert result.returncode != 0
-        assert 'Unexpected keyword argument "allow_model_discover"' in result.stdout + result.stderr
+        assert 'allow_model_discover' in result.stdout + result.stderr
 
     def test_provider_returns_model_policy(self) -> None:
-        result = _run_mypy(
+        result = _run_pyrefly(
             textwrap.dedent("""\
             import yosoi as ys
 
@@ -239,7 +274,7 @@ class TestPolicyStubs:
         assert result.returncode == 0, result.stdout + result.stderr
 
     def test_gemini_with_api_key(self) -> None:
-        result = _run_mypy(
+        result = _run_pyrefly(
             textwrap.dedent("""\
             import yosoi as ys
 

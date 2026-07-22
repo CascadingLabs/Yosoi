@@ -43,6 +43,7 @@ class Company(ys.Contract):
     industry: str = ys.Extractor()
 
     @ys.extraction(industry)
+    @staticmethod
     async def industry_from_meta(row: ys.ExtractionRow) -> str:
         values = row.attribute('meta[name="industry"]', 'content')
         if not values:
@@ -53,6 +54,7 @@ class Company(ys.Contract):
     emails: list[str] = ys.Extractor()
 
     @ys.extractions(phone, emails)
+    @staticmethod
     async def contacts(row: ys.ExtractionRow) -> dict[str, object]:
         links = row.attribute('a[href]', 'href')
         phones = [value.removeprefix('tel:') for value in links if value.startswith('tel:')]

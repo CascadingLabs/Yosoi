@@ -284,10 +284,8 @@ async def _extract_from_html(
         try:
             obj = contract.model_validate(item, context={'source_url': source_url})
             validated.append(obj.model_dump())
-        except Exception:  # noqa: BLE001, PERF203
-            if contract.extractor_fields():
-                raise ValueError(f'{contract.__name__} failed full-contract validation after extraction') from None
-            validated.append(item)
+        except Exception as error:  # noqa: PERF203
+            raise ValueError(f'{contract.__name__} failed full-contract validation after extraction') from error
     extractor.persist_validated_references()
     return validated
 

@@ -108,7 +108,7 @@ async def test_pipeline_fresh_discovery_with_mountainhome_html(mocker, mock_llm_
     discovered_map = {
         'headline': {'primary': {'strategy': 'css', 'level': 1, 'value': '.pageTitle'}},
         'author': {'primary': {'strategy': 'css', 'level': 1, 'value': '.headerBar'}},
-        'date': {'primary': {'strategy': 'css', 'level': 1, 'value': '.footerBar'}},
+        'date': {'primary': {'strategy': 'css', 'level': 1, 'value': '.headerMeta'}},
         'body_text': {'primary': {'strategy': 'css', 'level': 1, 'value': '.navBar'}},
         'related_content': {'primary': {'strategy': 'css', 'level': 1, 'value': '.newsTicker'}},
     }
@@ -162,7 +162,7 @@ async def test_pipeline_cached_selectors_skip_verification(mocker, mock_llm_conf
     snapshots = {
         'headline': _snapshot('.pageTitle'),
         'author': _snapshot('.headerBar'),
-        'date': _snapshot('.footerBar'),
+        'date': _snapshot('.headerMeta'),
         'body_text': _snapshot('.navBar'),
         'related_content': _snapshot('.newsTicker'),
     }
@@ -201,7 +201,7 @@ async def test_pipeline_cached_selectors_with_fetch_and_verify(mocker, mock_llm_
     snapshots = {
         'headline': _snapshot('.pageTitle'),
         'author': _snapshot('.headerBar'),
-        'date': _snapshot('.footerBar'),
+        'date': _snapshot('.headerMeta'),
         'body_text': _snapshot('.navBar'),
         'related_content': _snapshot('.newsTicker'),
     }

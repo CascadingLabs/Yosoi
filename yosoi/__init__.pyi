@@ -1,6 +1,7 @@
 """Type stubs for yosoi public API."""
 
 from collections.abc import Iterable, Mapping, Sequence
+from pathlib import Path
 from typing import Any, Literal
 
 from yosoi.core.configs import TelemetryConfig as _TelemetryConfig
@@ -16,6 +17,10 @@ from yosoi.core.site_map import MapResult as MapResult
 from yosoi.core.site_map import MapSitemap as MapSitemap
 from yosoi.core.site_map import MapUrl as MapUrl
 from yosoi.fingerprints import FingerprintStore as _FingerprintStore
+from yosoi.flow import Expect as Expect
+from yosoi.flow import Flow as Flow
+from yosoi.flow import FlowResult as FlowResult
+from yosoi.flow import State as State
 from yosoi.generalization.fingerprint import PageFingerprint as PageFingerprint
 from yosoi.integrations import ClaudeSDKModel as ClaudeSDKModel
 from yosoi.integrations import OpenCodeModel as OpenCodeModel
@@ -111,6 +116,26 @@ from yosoi.types.field import js as js
 from yosoi.types.registry import register_coercion as register_coercion
 from yosoi.utils.contracts import resolve_contract as resolve_contract
 from yosoi.utils.urls import load_urls_from_file as load_urls_from_file
+
+class _ExecutorJs:
+    def __call__(self, program: Any = ..., **kwargs: Any) -> Any: ...
+    def modules(self, root: str | Path) -> Any: ...
+
+class Executor:
+    js: _ExecutorJs
+
+until: Any
+
+def input(name: str) -> Any: ...
+def absent(target: Any) -> Any: ...
+def click(target: Any) -> Any: ...
+def click_all(target: Any, **kwargs: Any) -> Any: ...
+def count(target: Any, **kwargs: Any) -> Any: ...
+def dom_stable(**kwargs: Any) -> Any: ...
+def matches(pattern: str) -> str: ...
+def nearest_scroll_parent(anchor: Any) -> Any: ...
+def scroll_until(container: Any, **kwargs: Any) -> Any: ...
+def wait_until(**kwargs: Any) -> Any: ...
 
 TrustTier = Literal['strict', 'yellow']
 CrawlModeName = Literal['seed_hunt', 'contract_focus', 'structure_guarded', 'explorer']

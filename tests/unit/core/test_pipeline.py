@@ -461,15 +461,11 @@ def test_pipeline_validate_with_contract_success(mocker):
     assert result['price'] == 9.99
 
 
-def test_pipeline_validate_with_contract_fallback_on_error(mocker):
-    # _validate_with_contract uses pipeline.utils' logger, not stub.logger.
-    # The warning is emitted; we verify by checking the return value (raw fallback).
+def test_pipeline_validate_with_contract_rejects_invalid_raw_data(mocker):
     stub = _make_pipeline_stub(mocker, SimpleContract)
-    raw = {'price': 'not-a-number'}
-    result = Pipeline._validate_with_contract(stub, raw)
-    assert result is raw
-    # NOTE: do NOT assert stub.logger.warning — that's the stub's mock logger,
-    # not pipeline.utils.logger which is what _validate_with_contract uses.
+
+    with pytest.raises(ValueError, match='failed full-contract validation after extraction'):
+        Pipeline._validate_with_contract(stub, {'price': 'not-a-number'})
 
 
 def test_validate_with_contract_injects_source_url(mocker):
@@ -1663,6 +1659,15 @@ class _CountContract(Contract):
     count: int = ys.Field(description='Count', default=0)
 
 
+class _NestedCount(Contract):
+    count: int = ys.Field(description='Count', default=0)
+
+
+class _NestedCountContract(Contract):
+    title: str = ys.Title()
+    details: _NestedCount = ys.Field(default_factory=_NestedCount)
+
+
 def _extract_count(_row: ys.ExtractionRow) -> int:
     return 1
 
@@ -1682,6 +1687,14 @@ def test_validate_single_item_drops_isolable_field_to_default(mocker):
     stub = _make_pipeline_stub(mocker, _CountContract)
     result = Pipeline._validate_single_item(stub, {'title': 'Book', 'count': 'not-a-number'}, url='')
     assert result == {'title': 'Book', 'count': 0}  # count -> its default, title preserved
+
+
+def test_validate_single_item_rejects_nested_error_instead_of_defaulting_entire_object(mocker):
+    """A child-field error cannot safely identify one top-level value to reset."""
+    stub = _make_pipeline_stub(mocker, _NestedCountContract)
+
+    with pytest.raises(ValueError, match='failed full-contract validation after extraction'):
+        Pipeline._validate_single_item(stub, {'title': 'Book', 'details': {'count': 'not-a-number'}}, url='')
 
 
 def test_validate_single_item_never_returns_raw_for_extractor_contract(mocker):
@@ -1724,31 +1737,58 @@ def test_validate_items_deduplicates_framework_copies_after_coercion(mocker):
     assert 'Dropped 1 duplicate item' in printed
 
 
-def test_validate_single_item_returns_raw_when_default_also_invalid(mocker):
-    """If the dropped field's default STILL fails validation, the raw item is returned untouched."""
+def test_validate_single_item_rejects_when_default_also_invalid(mocker):
+    """If default recovery also fails, unvalidated raw data must never escape."""
     stub = _make_pipeline_stub(mocker, _CountContract)
     mocker.patch.object(stub.contract, 'field_default', return_value='still-not-an-int')
-    raw = {'title': 'Book', 'count': 'not-a-number'}
-    result = Pipeline._validate_single_item(stub, raw, url='')
-    assert result is raw  # identity — nothing salvageable, returned as-is
+
+    with pytest.raises(ValueError, match='failed full-contract validation after extraction'):
+        Pipeline._validate_single_item(stub, {'title': 'Book', 'count': 'not-a-number'}, url='')
 
 
-def test_validate_single_item_returns_raw_when_error_unisolable(mocker):
-    """A MODEL-level error (pydantic loc=()) can't be pinned to one field, so we don't
-    guess which to drop — the raw item is returned intact."""
+def test_validate_single_item_wraps_non_pydantic_retry_error(mocker):
+    """Default recovery must preserve the public fail-fast error contract."""
+    stub = _make_pipeline_stub(mocker, _CountContract)
+    original_validate = stub.contract.model_validate
+
+    def validate(data, **kwargs):
+        if data.get('count') == 0:
+            raise TypeError('retry validator exploded')
+        return original_validate(data, **kwargs)
+
+    mocker.patch.object(stub.contract, 'model_validate', side_effect=validate)
+
+    with pytest.raises(ValueError, match='_CountContract failed full-contract validation after extraction'):
+        Pipeline._validate_single_item(stub, {'title': 'Book', 'count': 'not-a-number'}, url='')
+
+
+def test_validate_single_item_rejects_unisolable_error(mocker):
+    """A model-level error cannot be safely repaired and must fail the record."""
     stub = _make_pipeline_stub(mocker, _PriceContract)
-    raw = {'title': 'Book', 'price': 'NaN'}  # ys.Price() rejects with loc=()
-    result = Pipeline._validate_single_item(stub, raw, url='')
-    assert result is raw
+
+    with pytest.raises(ValueError, match='failed full-contract validation after extraction'):
+        Pipeline._validate_single_item(stub, {'title': 'Book', 'price': 'NaN'}, url='')
 
 
-def test_validate_single_item_handles_value_error(mocker):
-    """A non-pydantic ValueError from model_validate falls through to the raw-return guard."""
+def test_validate_single_item_rejects_non_pydantic_value_error(mocker):
+    """Unexpected validation errors must not bypass the contract."""
     stub = _make_pipeline_stub(mocker, _PriceContract)
     mocker.patch.object(stub.contract, 'model_validate', side_effect=ValueError('boom'))
-    raw = {'title': 'Book', 'price': '9.99'}
-    result = Pipeline._validate_single_item(stub, raw, url='')
-    assert result is raw
+
+    with pytest.raises(ValueError, match='failed full-contract validation after extraction'):
+        Pipeline._validate_single_item(stub, {'title': 'Book', 'price': '9.99'}, url='')
+
+
+def test_validate_with_contract_never_leaks_malformed_multi_item_record(mocker):
+    """A malformed repeated row fails the batch instead of accompanying valid output."""
+    stub = _make_pipeline_stub(mocker, _CountContract)
+    extracted = [
+        {'title': 'Valid', 'count': 2},
+        {'count': 'not-a-number'},
+    ]
+
+    with pytest.raises(ValueError, match='_CountContract failed full-contract validation after extraction'):
+        Pipeline._validate_with_contract(stub, extracted, url='https://example.test')
 
 
 # ---------------------------------------------------------------------------

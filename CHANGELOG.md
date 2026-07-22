@@ -1,3 +1,32 @@
+## 0.0.3a25 (2026-07-21)
+
+### Feat
+
+- Add experimental typed `ys.Executor.js` fields with confined local `.js`/`.mjs` module trees.
+- Add class-declared `ys.Flow` programs that compile into the existing deterministic A3Node replay runtime.
+- Add named `ys.State` expectations, runtime inputs, bounded wait/scroll/click-all actions, and live headless/headful Flow execution.
+
+### Fix
+
+- Replace regex-based JavaScript module flattening with an AST-backed, scope-preserving linker that rejects malformed or unsupported module graphs before browser execution.
+- Preserve accessibility-node indexes for duplicate exact names, enforce strict page-scoped `click_all` limits, and wait the configured dwell before repeating actions whose expectations become ready asynchronously.
+- Reject Contract-only settle timing, repeated Flow actions without an expectation, and the unimplemented `scroll_until(..., stop_when='no_growth')` mode instead of silently ignoring those declarations.
+- Deduplicate inherited Flow declarations by stable node ID under diamond multiple inheritance.
+
+### Docs
+
+- Document Executor.js, handwritten A3 flows, module safety constraints, and alpha limitations.
+
+## 0.0.3a24 (2026-07-20)
+
+### Fix
+
+- **deps**: require VoidCrawl 0.4 or newer and lock 0.4.0.
+
+### Test
+
+- **stubs**: reuse the warmed mypy cache across snippet checks to prevent `ci-check` from appearing stalled.
+
 ## 0.0.3a23 (2026-07-20)
 
 ### Feat

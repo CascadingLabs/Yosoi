@@ -16,6 +16,9 @@ DOMAIN = 'example.com'
 MINIMAL_HTML = """<html><body>
 <h1 class="headline">Test Headline</h1>
 <span class="author">Jane Doe</span>
+<time datetime="2026-07-21">July 21, 2026</time>
+<article>Complete article body.</article>
+<a class="related" href="/related">Related story</a>
 </body></html>"""
 
 SELECTORS: dict = {
@@ -118,6 +121,21 @@ class TestCacheHit:
         result = resolve(spec, html, cache, DOMAIN)
 
         assert result == [{'name': 'Hammer', 'price': '$10'}, {'name': 'Anvil', 'price': '$20'}]
+
+    def test_invalid_cached_value_never_bypasses_contract_validation(self):
+        class CountRecord(Contract):
+            count: int = ys.Field()
+
+        html = '<span class="count">not-a-number</span>'
+        spec = CountRecord.to_spec()
+        cache = build_cache_from_selectors(
+            DOMAIN,
+            spec.fingerprint,
+            {'count': {'primary': {'type': 'css', 'value': '.count::text'}}},
+        )
+
+        with pytest.raises(ValueError, match='CountRecord failed full-contract validation after extraction'):
+            resolve(spec, html, cache, DOMAIN)
 
 
 class TestFingerprintDedup:
