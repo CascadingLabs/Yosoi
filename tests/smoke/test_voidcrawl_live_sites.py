@@ -7,6 +7,7 @@ import os
 import pytest
 
 from yosoi.core.fetcher.voiddriver import _import_voidcrawl
+from yosoi.operations import FetchRequest, run_fetch
 
 pytestmark = [
     pytest.mark.smoke,
@@ -18,6 +19,7 @@ pytestmark = [
 
 
 BOTCHECK_URL = 'https://botcheck.com/'
+ARGOCD_MANAGED_CHALLENGE_URL = 'https://argo-cd.readthedocs.io/en/release-3.1/operator-manual/argocd-cm-yaml/'
 
 
 @pytest.mark.asyncio
@@ -37,3 +39,22 @@ async def test_botcheck_renders_with_yosoi_voidcrawl_wiring() -> None:
     assert 'bot' in html
     assert 'challenge-platform' not in html
     assert 'just a moment' not in html
+
+
+@pytest.mark.asyncio
+async def test_fetch_waterfall_clears_readthedocs_managed_challenge() -> None:
+    result = await run_fetch(
+        FetchRequest.from_axes(
+            ARGOCD_MANAGED_CHALLENGE_URL,
+            view='text',
+            page_size=1_000,
+        )
+    )
+    unit = result.results[0]
+
+    assert result.status == 'ok'
+    assert unit.status_code == 200
+    assert unit.title is not None
+    assert 'argocd-cm.yaml example' in unit.title
+    assert unit.content is not None
+    assert 'kind: ConfigMap' in unit.content

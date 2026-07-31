@@ -592,6 +592,41 @@ def test_fetch_result_document_projection_and_envelope_statuses():
     assert ops._fetch_envelope([failed]).status == 'error'
 
 
+def test_content_fetcher_kwargs_routes_single_profiles_and_pools(mocker):
+    from yosoi.core.fetcher.identity import BrowserIdentity, IdentityCascade
+    from yosoi.policy import BrowserProfilePolicy, PagePolicy, Policy
+
+    policy = Policy(page=PagePolicy(profile=BrowserProfilePolicy(profile='docs-warm', headful=True)))
+    one = BrowserIdentity(id='docs-warm', profile_dir='/profiles/docs-warm', headful=True)
+    cascade = IdentityCascade((one,))
+    resolve = mocker.patch(
+        'yosoi.core.fetcher.profile_policy.cascade_from_profile_policy',
+        return_value=(cascade, 1),
+    )
+
+    auto = ops._content_fetcher_kwargs(policy, 'auto')
+    direct = ops._content_fetcher_kwargs(policy, 'headful')
+
+    assert auto['identity_cascade'] == cascade
+    assert direct['identity'] == one
+    assert resolve.call_count == 2
+
+    pool = IdentityCascade((one, BrowserIdentity(id='docs-spare', profile_dir='/profiles/docs-spare', headful=True)))
+    resolve.return_value = (pool, 2)
+    with pytest.raises(ValueError, match='profile pools require fetcher_type auto or waterfall'):
+        ops._content_fetcher_kwargs(policy, 'headful')
+
+    pool_policy = Policy(page=PagePolicy(profile=BrowserProfilePolicy(pool='docs-pool', headful=True)))
+    rendered = FetchRequest.from_axes('https://docs.test', view='rendered_html', policy=pool_policy)
+    ax = FetchRequest.from_axes('https://docs.test', view='ax', policy=pool_policy)
+    assert ops._effective_fetcher_type(rendered, 'auto') == 'auto'
+    assert ops._effective_fetcher_type(ax, 'auto') == 'auto'
+    with pytest.raises(ValueError, match='profile pools require fetcher_type auto or waterfall'):
+        FetchRequest.from_axes('https://docs.test', fetcher_type='headful', policy=pool_policy)
+    with pytest.raises(ValueError, match='incompatible with raw_html'):
+        FetchRequest.from_axes('https://docs.test', view='raw_html', policy=pool_policy)
+
+
 def test_fetch_request_normalization_and_rich_document_projection():
     request = FetchRequest.from_axes(
         'https://one.test',
@@ -962,6 +997,35 @@ async def test_execute_fetch_catches_unexpected_unit_exception(monkeypatch):
     assert result.results[0].page == 2
     assert result.results[0].page_size == 10
     assert result.results[0].error == 'unit exploded'
+
+
+async def test_execute_fetch_reports_structured_antibot_recovery(monkeypatch):
+    from yosoi.utils.exceptions import BotDetectionError
+
+    async def fail_unit(_request, url):
+        raise BotDetectionError(
+            url,
+            200,
+            ['Cloudflare challenge platform', 'Cloudflare "Just a moment" page'],
+            captcha_kind='cloudflare_challenge',
+            fetcher_type='headful',
+        )
+
+    monkeypatch.setattr(ops, '_fetch_unit', fail_unit)
+
+    result = await execute_fetch(FetchRequest.from_axes('https://blocked.test'))
+    unit = result.results[0]
+
+    assert result.status == 'error'
+    assert unit.status_code == 200
+    assert unit.fetcher_type == 'headful'
+    assert unit.failure is not None
+    assert unit.failure.code == 'antibot_challenge'
+    assert unit.failure.vendor == 'cloudflare'
+    assert unit.failure.terminal_fetcher == 'headful'
+    assert unit.failure.captcha_kind == 'cloudflare_challenge'
+    assert any('--profile' in action for action in unit.failure.next_actions)
+    assert any('newly created' in action for action in unit.failure.next_actions)
 
 
 async def test_execute_fetch_failure_and_bundle_paths(monkeypatch, tmp_path):

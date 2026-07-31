@@ -206,7 +206,7 @@ class SimpleFetcher(HTMLFetcher):
                     status_code,
                     ', '.join(indicators),
                 )
-                raise BotDetectionError(url, status_code, indicators)
+                raise BotDetectionError(url, status_code, indicators, fetcher_type='simple')
 
             # Analyze content
             metadata = ContentAnalyzer.analyze(html)

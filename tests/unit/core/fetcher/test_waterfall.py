@@ -8,7 +8,7 @@ from typing import Any, ClassVar
 import pytest
 
 from yosoi.core.fetcher.base import ContentAnalyzer
-from yosoi.core.fetcher.voiddriver import _crawl_frontier_signature, _VoidCrawlFetcher
+from yosoi.core.fetcher.voiddriver import HeadlessFetcher, _crawl_frontier_signature, _VoidCrawlFetcher
 from yosoi.core.fetcher.waterfall import JSFetcher
 from yosoi.models.results import FetchResult
 from yosoi.storage.strategy import FetchStrategy
@@ -28,6 +28,17 @@ class _HydratingTab:
         if self.calls == 1:
             return '<html><body><main>loading</main></body></html>'
         return '<html><body><a href="/ready">ready</a></body></html>'
+
+
+class _ChallengeTab:
+    def __init__(self, pages: list[str]) -> None:
+        self.pages = pages
+        self.calls = 0
+
+    async def content(self) -> str:
+        page = self.pages[min(self.calls, len(self.pages) - 1)]
+        self.calls += 1
+        return page
 
 
 class _Simple:
@@ -79,6 +90,77 @@ async def test_crawl_frontier_content_waits_for_link_inventory_to_stabilize(mock
 
     assert html == '<html><body><a href="/ready">ready</a></body></html>'
     assert tab.calls == 3
+
+
+@pytest.mark.asyncio
+async def test_browser_challenge_settle_waits_for_cloudflare_interstitial_to_clear(mocker):
+    mocker.patch('yosoi.core.fetcher.voiddriver._CHALLENGE_SETTLE_WAIT_MIN_S', 0.0)
+    mocker.patch('yosoi.core.fetcher.voiddriver._CHALLENGE_SETTLE_WAIT_MAX_S', 0.0)
+    challenge = (
+        '<html><head><title>Just a moment...</title></head><body>challenge-platform'
+        + ' checking your browser' * 12
+        + '</body></html>'
+    )
+    content = '<html><head><title>Argo CD</title></head><body><main>' + 'docs ' * 120 + '</main></body></html>'
+    tab = _ChallengeTab([challenge, content])
+
+    html = await _VoidCrawlFetcher()._settle_browser_challenge(tab, challenge)
+
+    assert html == content
+    assert tab.calls == 2
+
+
+@pytest.mark.asyncio
+async def test_cleared_challenge_html_bypasses_a3_probe_and_replay(mocker):
+    fetcher = _VoidCrawlFetcher()
+    content = '<html><body><main>' + 'docs ' * 120 + '</main></body></html>'
+    probe = mocker.patch.object(fetcher, '_fetch_with_probe')
+    replay = mocker.patch.object(fetcher, '_fetch_with_replay')
+
+    html = await fetcher._fetch_ready_html(mocker.Mock(), mocker.Mock(), None, content)
+
+    assert html == content
+    probe.assert_not_awaited()
+    replay.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_browser_challenge_settle_returns_terminal_interstitial_after_bound(mocker):
+    mocker.patch('yosoi.core.fetcher.voiddriver._CHALLENGE_SETTLE_WAIT_MIN_S', 0.0)
+    mocker.patch('yosoi.core.fetcher.voiddriver._CHALLENGE_SETTLE_WAIT_MAX_S', 0.0)
+    challenge = '<html><body>' + 'checking your browser ' * 30 + 'challenge-platform</body></html>'
+    tab = _ChallengeTab([challenge])
+
+    html = await _VoidCrawlFetcher()._settle_browser_challenge(tab, challenge)
+
+    assert html == challenge
+    assert tab.calls == 6
+
+
+@pytest.mark.asyncio
+async def test_browser_challenge_settle_skips_wait_in_headless_browser(mocker):
+    mocker.patch('yosoi.core.fetcher.voiddriver._CHALLENGE_SETTLE_WAIT_MIN_S', 0.0)
+    mocker.patch('yosoi.core.fetcher.voiddriver._CHALLENGE_SETTLE_WAIT_MAX_S', 0.0)
+    challenge = '<html><body>' + 'checking your browser ' * 30 + 'challenge-platform</body></html>'
+    tab = _ChallengeTab(['unused'])
+
+    html = await HeadlessFetcher()._settle_browser_challenge(tab, challenge)
+
+    assert html == challenge
+    assert tab.calls == 0
+
+
+@pytest.mark.asyncio
+async def test_browser_challenge_settle_does_not_retry_captcha(mocker):
+    mocker.patch('yosoi.core.fetcher.voiddriver._CHALLENGE_SETTLE_WAIT_MIN_S', 0.0)
+    mocker.patch('yosoi.core.fetcher.voiddriver._CHALLENGE_SETTLE_WAIT_MAX_S', 0.0)
+    captcha = '<html><body>' + 'x' * 500 + '<div class="g-recaptcha"></div></body></html>'
+    tab = _ChallengeTab(['unused'])
+
+    html = await _VoidCrawlFetcher()._settle_browser_challenge(tab, captcha)
+
+    assert html == captcha
+    assert tab.calls == 0
 
 
 @pytest.mark.asyncio

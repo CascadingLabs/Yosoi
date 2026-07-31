@@ -70,6 +70,9 @@ yosoi fetch URL...
   --concurrency N             # concurrent URLs per batch; default 5
   --include headers,network,endpoints,fingerprint,links,ax
   --contract @Contract
+  --profile ID
+  --profile-pool NAME
+  --max-live-profiles N
   --output FILE|DIR
   --json
   --dump-request
@@ -528,7 +531,7 @@ Use policy for timeout, fetcher, redirects, Chrome endpoints, profiles, and othe
 
 If `status=failed` or envelope `status=partial/error`:
 
-1. Read `unit.error`, `status_code`, and `fetcher_type`.
+1. Read `unit.error`, `status_code`, `fetcher_type`, and structured `unit.failure` when present.
 2. Try browser if simple failed:
    ```bash
    uvx yosoi fetch URL --fetcher headless --view text --json
@@ -537,8 +540,9 @@ If `status=failed` or envelope `status=partial/error`:
    ```bash
    uvx yosoi fetch URL --view metadata --include headers,network --json
    ```
-4. For likely bot walls, use Yosoi policy/profile controls. Do not introduce Playwright.
-5. If still blocked, report the observed failure honestly.
+4. For likely bot walls, follow `unit.failure.next_actions`. `fetch` accepts `--profile`, `--profile-pool`, and `--max-live-profiles`; use `auto`/`waterfall` for profile pools. Do not introduce Playwright.
+5. Never call a newly created profile warm: it has no browsing history or clearance cookies. Do not clone or use a daily browser profile without explicit operator approval because it may contain sensitive sessions.
+6. Retry only after changing acquisition state. If still blocked, report the observed failure honestly or use an alternate canonical source.
 
 ## Non-Goals
 

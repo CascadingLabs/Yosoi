@@ -59,6 +59,26 @@ _JS_MAX_SETTLE_CYCLES: int = 10
 _JITTER_MAX_S: float = 1.5
 _CRAWL_LINK_SETTLE_INTERVAL_S: float = 0.2
 _CRAWL_LINK_SETTLE_CYCLES: int = 5
+# Full-page Cloudflare managed challenges often auto-clear a few seconds after
+# navigation. Browser fetches must let that browser-side transition finish
+# before treating the interstitial as a terminal bot block.
+_CHALLENGE_SETTLE_ATTEMPTS: int = 6
+_CHALLENGE_SETTLE_WAIT_MIN_S: float = 0.5
+_CHALLENGE_SETTLE_WAIT_MAX_S: float = 2.0
+_TRANSIENT_CLOUDFLARE_INDICATORS: frozenset[str] = frozenset(
+    {
+        'Cloudflare mitigation active',
+        'Cloudflare challenge platform',
+        'Cloudflare browser verification',
+        'Cloudflare JS challenge token',
+        'Cloudflare "Just a moment" page',
+        'Cloudflare browser check',
+    }
+)
+
+
+class _BrowserChallengePending(RuntimeError):
+    """Internal retry signal while a browser-managed challenge may auto-clear."""
 
 
 def _crawl_frontier_signature(html: str) -> tuple[frozenset[str], int]:
@@ -459,6 +479,7 @@ class _VoidCrawlFetcher(HTMLFetcher):
             resp_headers = getattr(page_resp, 'headers', None) or None
             resp_endpoints = getattr(page_resp, 'endpoints', None) or None
             html = await self._crawl_frontier_content(tab)
+            html = await self._settle_browser_challenge(tab, html)
             captcha_kind = await self._probe_captcha(tab)
 
         if not html or len(html) < self.min_content_length:
@@ -481,6 +502,7 @@ class _VoidCrawlFetcher(HTMLFetcher):
                 indicators,
                 identity_id=self._identity.id if self._identity is not None else None,
                 captcha_kind=captcha_kind,
+                fetcher_type=_tier,
             )
 
         return FetchResult(
@@ -507,6 +529,80 @@ class _VoidCrawlFetcher(HTMLFetcher):
             html = candidate
             signature = next_signature
         return html
+
+    def _is_transient_browser_challenge(self, html: str) -> bool:
+        blocked, indicators = self._check_for_bot_detection(html, 200, {}, min_html_length=0)
+        return blocked and bool(_TRANSIENT_CLOUDFLARE_INDICATORS.intersection(indicators))
+
+    async def _settle_browser_challenge(self, tab: Any, html: str) -> str:
+        """Wait briefly for a full-page browser challenge to auto-clear.
+
+        This is intentionally narrow: only Cloudflare interstitial signals are
+        retried. CAPTCHAs and unrelated bot walls still fail fast, and Yosoi
+        never clicks or attempts to solve a challenge.
+        """
+        if not self._is_transient_browser_challenge(html):
+            return html
+        if getattr(self, '_headless', False):
+            return html
+
+        self._console.print('[dim]  ↻ Browser challenge detected — waiting for automatic clearance...[/dim]')
+        latest_html = html
+        try:
+            async for attempt in get_async_retryer(
+                max_attempts=_CHALLENGE_SETTLE_ATTEMPTS,
+                wait_min=_CHALLENGE_SETTLE_WAIT_MIN_S,
+                wait_max=_CHALLENGE_SETTLE_WAIT_MAX_S,
+                exceptions=(_BrowserChallengePending,),
+            ):
+                with attempt:
+                    latest_html = str(await tab.content())
+                    if self._is_transient_browser_challenge(latest_html):
+                        raise _BrowserChallengePending('browser challenge has not cleared')
+                    self._console.print('[success]  ✓ Browser challenge cleared[/success]')
+                    return latest_html
+        except _BrowserChallengePending:
+            self._console.print('[warning]  ✗ Browser challenge did not clear[/warning]')
+        return latest_html
+
+    async def _ensure_browser_ready(self, tab: Any, url: str, tier: str) -> str | None:
+        """Clear an interstitial before A3 replay/probe can persist it.
+
+        Returns the cleared page HTML when a transient challenge was observed,
+        allowing the caller to use that browser-proven DOM without running an
+        A3 probe over the transition. Normal pages return ``None``.
+        """
+        html = str(await tab.content())
+        transient_challenge = self._is_transient_browser_challenge(html)
+        html = await self._settle_browser_challenge(tab, html)
+        blocked, indicators = self._check_for_bot_detection(html, 200, {}, min_html_length=0)
+        if blocked:
+            raise BotDetectionError(
+                url,
+                200,
+                indicators,
+                identity_id=self._identity.id if self._identity is not None else None,
+                captcha_kind=await self._probe_captcha(tab),
+                fetcher_type=tier,
+            )
+        return html if transient_challenge else None
+
+    async def _fetch_ready_html(
+        self,
+        tab: Any,
+        scope: A3NodeScope,
+        stored_node: A3Node | None,
+        cleared_html: str | None,
+    ) -> str | None:
+        if cleared_html is not None:
+            return cleared_html
+        if stored_node is not None:
+            return await self._fetch_with_replay(tab, scope, stored_node)
+        if not self._experimental_a3node:
+            obs.annotate_a3node(obs.current_span(), mode=obs.A3_MODE_DISABLED)
+        else:
+            obs.annotate_a3node(obs.current_span(), mode=obs.A3_MODE_PROBE)
+        return await self._fetch_with_probe(tab, scope)
 
     async def _do_fetch(
         self,
@@ -559,15 +655,8 @@ class _VoidCrawlFetcher(HTMLFetcher):
                     page_resp = await self._goto_capture(tab, url)
             resp_headers = getattr(page_resp, 'headers', None) or None
             resp_endpoints = getattr(page_resp, 'endpoints', None) or None
-
-            if stored_node is not None:
-                html = await self._fetch_with_replay(tab, scope, stored_node)
-            else:
-                if not self._experimental_a3node:
-                    obs.annotate_a3node(obs.current_span(), mode=obs.A3_MODE_DISABLED)
-                else:
-                    obs.annotate_a3node(obs.current_span(), mode=obs.A3_MODE_PROBE)
-                html = await self._fetch_with_probe(tab, scope)
+            cleared_html = await self._ensure_browser_ready(tab, url, _tier)
+            html = await self._fetch_ready_html(tab, scope, stored_node, cleared_html)
 
             if action_scripts:
                 js_outputs, wait_cycles = await self._eval_with_settle(tab, action_scripts)
@@ -621,6 +710,7 @@ class _VoidCrawlFetcher(HTMLFetcher):
                 indicators,
                 identity_id=self._identity.id if self._identity is not None else None,
                 captcha_kind=captcha_kind,
+                fetcher_type=_tier,
             )
 
         metadata = ContentAnalyzer.analyze(html)

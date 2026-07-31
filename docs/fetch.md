@@ -55,6 +55,33 @@ uv run yosoi fetch URL --view bundle --output .yosoi/fetches/example --json
 
 Use `raw-html` for static source fidelity, `rendered-html` for JavaScript pages, and `bundle` when artifacts must be retained for review.
 
+## Managed browser challenges
+
+The automatic waterfall now escalates full-page Cloudflare managed challenges
+from headless to headful Chrome, then gives the headful browser a bounded settle
+window before declaring the page blocked. This covers interstitials that clear
+after a few seconds; Yosoi does not click CAPTCHAs or attempt to solve
+interactive challenges.
+
+When a challenge remains, JSON output includes a structured `failure` object
+with the vendor, indicators, terminal browser tier, and safe next actions. Do
+not repeat an unchanged blocked request.
+
+For an operator-approved dedicated VoidCrawl profile, `fetch` has the same
+profile controls as `scrape`:
+
+```bash
+uv run yosoi fetch URL --profile docs-warm --fetcher auto --json
+uv run yosoi fetch URL --profile-pool docs-pool --max-live-profiles 2 --fetcher auto --json
+```
+
+A newly created managed profile is **cold**: it has no browsing history or
+clearance cookies. Never silently clone or use a person's daily Chrome profile;
+it may contain authenticated sessions and other sensitive state. Profile pools
+require `auto` or `waterfall` so Yosoi can rotate identities after a block.
+Profile flags are rejected with `raw-html`, which intentionally remains a
+static HTTP source view; use `rendered-html` for browser DOM.
+
 ## Python API
 
 ```python
