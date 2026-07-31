@@ -22,6 +22,7 @@ from rich.table import Table
 from rich.text import Text
 from rich.theme import Theme
 
+from yosoi import __version__
 from yosoi.cli.contract_param import ContractParamType
 from yosoi.cli.machine import MachineReadableGroup, echo_json
 from yosoi.cli.setup import build_policy, print_fetcher_info
@@ -443,6 +444,7 @@ async def _run_json(
 
 
 @click.group(cls=MachineReadableGroup, invoke_without_command=True, context_settings=_CONTEXT_SETTINGS)
+@click.version_option(__version__, '-v', '--version', prog_name='yosoi')
 @click.pass_context
 @click.option(
     '-m',

@@ -2,6 +2,7 @@
 
 ### Feat
 
+- Add root CLI `-v` and `--version` flags.
 - Add `fetch` profile and profile-pool flags for operator-approved browser identity recovery.
 - Add structured anti-bot failure details and safe next actions to fetch JSON results.
 

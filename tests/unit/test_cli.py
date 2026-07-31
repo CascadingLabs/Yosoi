@@ -7,6 +7,7 @@ import click
 import pytest
 from click.testing import CliRunner
 
+from yosoi import __version__
 from yosoi.cli import SchemaParamType, main
 from yosoi.models.defaults import NewsArticle, Product
 
@@ -44,6 +45,12 @@ class TestHelpAndUsage:
         result = runner.invoke(main, ['--help'])
         assert result.exit_code == 0
         assert 'Discover selectors' in result.output
+
+    @pytest.mark.parametrize('flag', ['-v', '--version'])
+    def test_version_flags(self, runner, flag):
+        result = runner.invoke(main, [flag])
+        assert result.exit_code == 0
+        assert result.output == f'yosoi, version {__version__}\n'
 
     def test_no_args_shows_root_help(self, runner, mock_pipeline, monkeypatch):
         monkeypatch.setenv('GROQ_KEY', 'test-key')
