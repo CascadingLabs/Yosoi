@@ -59,14 +59,23 @@ def test_bot_detection_error_legacy_positional_still_valid() -> None:
     assert err.identity_id is None
     assert err.captcha_kind is None
     assert err.status_code == 403
+    assert err.fetcher_type is None
 
 
 def test_bot_detection_error_carries_identity_and_captcha() -> None:
-    err = BotDetectionError('https://x.com', 200, ['cf-marker'], identity_id='trusted', captcha_kind='recaptcha')
+    err = BotDetectionError(
+        'https://x.com',
+        200,
+        ['cf-marker'],
+        identity_id='trusted',
+        captcha_kind='recaptcha',
+        fetcher_type='headful',
+    )
     assert err.identity_id == 'trusted'
     assert err.captcha_kind == 'recaptcha'
     assert '[identity=trusted]' in str(err)
     assert '[captcha=recaptcha]' in str(err)
+    assert err.fetcher_type == 'headful'
 
 
 def test_bot_detection_error_marker_without_captcha_is_its_own_bucket() -> None:
@@ -407,12 +416,16 @@ class _FakePool:
 class _FakeBlockingTab:
     """Live-tab stub: goto no-ops, detect_captcha returns a named captcha."""
 
-    def __init__(self, captcha: str | None) -> None:
+    def __init__(self, captcha: str | None, html: str) -> None:
         self._captcha = captcha
+        self._html = html
         self.detect_captcha_calls = 0
 
     async def goto(self, url: str, timeout: float = 30.0) -> None:
         return None
+
+    async def content(self) -> str:
+        return self._html
 
     async def detect_captcha(self) -> str | None:
         self.detect_captcha_calls += 1
@@ -426,13 +439,12 @@ async def test_do_fetch_attributes_block_to_identity_and_captcha(mocker: MockerF
 
     ident = BrowserIdentity(id='trusted', headful=True)
     fetcher = HeadlessFetcher(identity=ident, min_content_length=10)
-    tab = _FakeBlockingTab(captcha='recaptcha')
+    blocking_html = '<html><body>' + ('verify you are human ' * 30) + '</body></html>'
+    tab = _FakeBlockingTab(captcha='recaptcha', html=blocking_html)
     fetcher._pool = _FakePool(tab)
 
-    # Probe returns blocking HTML (long enough to pass the content-length gate so
-    # we reach the bot-detection check, which then flags it).
-    blocking_html = '<html><body>' + ('verify you are human ' * 30) + '</body></html>'
-    mocker.patch.object(fetcher, '_fetch_with_probe', return_value=blocking_html)
+    # A challenge is rejected before the A3 probe can persist the interstitial.
+    probe = mocker.patch.object(fetcher, '_fetch_with_probe', return_value=blocking_html)
     mocker.patch(
         'yosoi.core.fetcher.voiddriver.capture_ax_snapshot',
         new=mocker.AsyncMock(return_value=None),
@@ -454,6 +466,7 @@ async def test_do_fetch_attributes_block_to_identity_and_captcha(mocker: MockerF
     assert err.captcha_kind == 'recaptcha'  # probed on the LIVE tab, before release
     assert err.indicators == ['captcha challenge']  # html-marker signal kept distinct
     assert tab.detect_captcha_calls == 1
+    probe.assert_not_awaited()
 
 
 @pytest.mark.asyncio
@@ -463,11 +476,11 @@ async def test_do_fetch_soft_marker_block_has_none_captcha(mocker: MockerFixture
 
     ident = BrowserIdentity(id='fresh')
     fetcher = HeadlessFetcher(identity=ident, min_content_length=10)
-    tab = _FakeBlockingTab(captcha=None)  # DOM probe finds nothing
+    blocking_html = '<html><body>' + ('blocked ' * 30) + '</body></html>'
+    tab = _FakeBlockingTab(captcha=None, html=blocking_html)  # DOM probe finds nothing
     fetcher._pool = _FakePool(tab)
 
-    blocking_html = '<html><body>' + ('blocked ' * 30) + '</body></html>'
-    mocker.patch.object(fetcher, '_fetch_with_probe', return_value=blocking_html)
+    probe = mocker.patch.object(fetcher, '_fetch_with_probe', return_value=blocking_html)
     mocker.patch(
         'yosoi.core.fetcher.voiddriver.capture_ax_snapshot',
         new=mocker.AsyncMock(return_value=None),
@@ -483,6 +496,7 @@ async def test_do_fetch_soft_marker_block_has_none_captcha(mocker: MockerFixture
     assert err.identity_id == 'fresh'
     assert err.captcha_kind is None  # no named captcha despite the marker block
     assert err.indicators == ['cf-marker']
+    probe.assert_not_awaited()
 
 
 @pytest.mark.asyncio

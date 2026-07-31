@@ -116,7 +116,7 @@ Contract fit probe only; not scraping:
 uvx yosoi fetch "URL" --contract @Contract --view metadata --include fingerprint,links --json
 ```
 
-Interpret and report: status, fetcher, truncation/next page, saved artifacts, JS/bot/redirect risk, and recommended next step.
+Interpret and report: status, fetcher, truncation/next page, saved artifacts, JS/bot/redirect risk, and recommended next step. On a structured anti-bot failure, follow `failure.next_actions`; `fetch` supports operator-approved `--profile`/`--profile-pool` recovery. A newly created profile is cold, and daily profiles must never be used or cloned without explicit approval.
 
 See also `yosoi-fetch` for the full fetch-only skill.
 

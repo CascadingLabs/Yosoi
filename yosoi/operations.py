@@ -18,7 +18,7 @@ from typing import Any, Literal, cast
 from urllib.parse import urljoin, urlparse, urlunparse
 
 import lxml.html
-from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator, model_validator
 from rich.console import Console
 
 from yosoi.core.cleaning.cleaner import HTMLCleaner
@@ -31,6 +31,7 @@ from yosoi.models.selectors import SelectorLevel
 from yosoi.models.spec import ContractSpec
 from yosoi.policy import Policy, SearchPolicy
 from yosoi.utils.contracts import resolve_contract
+from yosoi.utils.exceptions import BotDetectionError
 
 ContractInput = str | type[Contract] | ContractSpec | dict[str, Any]
 SearchKind = Literal['text']
@@ -462,6 +463,17 @@ class FetchRequest(BaseModel):
             return ['endpoints' if item == 'network' else item for item in items]
         return value
 
+    @model_validator(mode='after')
+    def _profile_pool_uses_waterfall(self) -> FetchRequest:
+        page = (self.policy or Policy()).page_runtime()
+        profile = page.profile
+        selected = self.fetcher_type or page.fetcher_type
+        if profile is not None and (profile.profile or profile.pool) and self.view == 'raw_html':
+            raise ValueError('browser profiles are incompatible with raw_html; use rendered_html for browser DOM')
+        if profile is not None and profile.pool and selected not in {'auto', 'waterfall'}:
+            raise ValueError('profile pools require fetcher_type auto or waterfall for identity rotation')
+        return self
+
     @classmethod
     def from_axes(
         cls,
@@ -484,6 +496,20 @@ class FetchRequest(BaseModel):
     def contract_classes(self) -> list[type[Contract]]:
         """Resolve all advisory contract refs for execution."""
         return [ref.to_contract() for ref in self.contracts]
+
+
+class FetchFailure(BaseModel):
+    """Machine-readable acquisition failure and safe recovery guidance."""
+
+    code: Literal['antibot_challenge']
+    category: Literal['antibot'] = 'antibot'
+    vendor: str | None = None
+    status_code: int | None = None
+    indicators: list[str] = Field(default_factory=list)
+    captcha_kind: str | None = None
+    identity_id: str | None = None
+    terminal_fetcher: str | None = None
+    next_actions: list[str] = Field(default_factory=list)
 
 
 class FetchUnitResult(BaseModel):
@@ -518,6 +544,7 @@ class FetchUnitResult(BaseModel):
     contract_probes: list[ContractProbeResult] = Field(default_factory=list)
     artifacts: dict[str, str] = Field(default_factory=dict)
     error: str | None = None
+    failure: FetchFailure | None = None
 
     def _metadata_doc(self) -> dict[str, Any]:
         return {
@@ -1208,8 +1235,13 @@ def _content_fetcher_kwargs(policy: Policy, fetcher_type: str, *, fast_fetch: bo
         kwargs['console'] = Console(stderr=True, quiet=True)
         identity_cascade, max_live = cascade_from_profile_policy(page.profile)
         if identity_cascade is not None:
-            kwargs['identity_cascade'] = identity_cascade
-            kwargs['max_live_identities'] = max_live
+            if fetcher_type in {'auto', 'waterfall'}:
+                kwargs['identity_cascade'] = identity_cascade
+                kwargs['max_live_identities'] = max_live
+            elif len(identity_cascade) == 1:
+                kwargs['identity'] = identity_cascade.identities[0]
+            else:
+                raise ValueError('profile pools require fetcher_type auto or waterfall for identity rotation')
         if fast_fetch:
             if fetcher_type in {'auto', 'waterfall'}:
                 kwargs['simple_first'] = True
@@ -1222,6 +1254,9 @@ def _content_fetcher_kwargs(policy: Policy, fetcher_type: str, *, fast_fetch: bo
 def _effective_fetcher_type(request: FetchRequest, policy_fetcher_type: str) -> str:
     if request.fetcher_type is not None:
         return request.fetcher_type
+    profile = (request.policy or Policy()).page_runtime().profile
+    if profile is not None and profile.pool:
+        return policy_fetcher_type
     include = set(request.include)
     if request.view == 'raw_html':
         return 'simple'
@@ -1250,6 +1285,55 @@ def _paginate_content(content: str, *, page: int, page_size: int) -> tuple[str, 
     page_content = content[start:end]
     next_page = page + 1 if end < len(content) else None
     return page_content, next_page is not None, next_page
+
+
+def _antibot_vendor(indicators: Sequence[str]) -> str | None:
+    joined = ' '.join(indicators).lower()
+    for vendor in ('cloudflare', 'datadome', 'perimeterx', 'kasada', 'akamai'):
+        if vendor in joined:
+            return vendor
+    if any(name in joined for name in ('recaptcha', 'google captcha')):
+        return 'google'
+    if 'hcaptcha' in joined:
+        return 'hcaptcha'
+    return None
+
+
+def _fetch_antibot_failure(request: FetchRequest, url: str, exc: BotDetectionError) -> FetchUnitResult:
+    page = (request.policy or Policy()).page_runtime()
+    profile_configured = page.profile is not None and bool(page.profile.profile or page.profile.pool)
+    next_actions = [
+        'Do not repeat the same blocked request without changing acquisition state.',
+        'A newly created browser profile is cold; it does not contain browsing history or clearance cookies.',
+        'Use only an operator-approved dedicated managed profile; daily browser profiles may contain sensitive sessions.',
+    ]
+    if profile_configured:
+        next_actions.append(
+            'Rotate to another approved profile with --profile-pool, or use an alternate canonical source.'
+        )
+    else:
+        next_actions.append('Retry with --profile PROFILE_ID or --profile-pool POOL; fetch supports both flags.')
+    return FetchUnitResult(
+        url=url,
+        final_url=url,
+        status='failed',
+        status_code=exc.status_code,
+        fetcher_type=exc.fetcher_type or _effective_fetcher_type(request, page.fetcher_type),
+        view=request.view,
+        page=request.page,
+        page_size=request.page_size,
+        error=str(exc),
+        failure=FetchFailure(
+            code='antibot_challenge',
+            vendor=_antibot_vendor(exc.indicators),
+            status_code=exc.status_code,
+            indicators=list(exc.indicators),
+            captcha_kind=exc.captcha_kind,
+            identity_id=exc.identity_id,
+            terminal_fetcher=exc.fetcher_type,
+            next_actions=next_actions,
+        ),
+    )
 
 
 def _fetch_envelope(units: list[FetchUnitResult]) -> FetchResult:
@@ -1744,6 +1828,8 @@ async def execute_fetch(request: FetchRequest) -> FetchResult:
     async def _unit(url: str) -> FetchUnitResult:
         try:
             return await _fetch_unit(request, url)
+        except BotDetectionError as exc:
+            return _fetch_antibot_failure(request, url, exc)
         except Exception as exc:  # noqa: BLE001
             return FetchUnitResult(
                 url=url,

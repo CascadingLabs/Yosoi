@@ -1098,6 +1098,42 @@ class TestCoverageSensitiveCliBranches:
         assert concurrency_dumped.exit_code == 0, concurrency_dumped.output
         assert json.loads(concurrency_dumped.output)['max_concurrency'] == 2
 
+        profile_dumped = runner.invoke(
+            main,
+            ['fetch', 'https://example.com', '--profile', 'docs-warm', '--max-live-profiles', '1', '--dump-request'],
+        )
+        assert profile_dumped.exit_code == 0, profile_dumped.output
+        profile = json.loads(profile_dumped.output)['policy']['page']['profile']
+        assert profile == {'profile': 'docs-warm', 'pool': None, 'headful': True, 'max_live': 1}
+
+        pool_rendered = runner.invoke(
+            main,
+            [
+                'fetch',
+                'https://example.com',
+                '--profile-pool',
+                'docs-pool',
+                '--view',
+                'rendered-html',
+                '--dump-request',
+            ],
+        )
+        assert pool_rendered.exit_code == 0, pool_rendered.output
+
+        pool_direct = runner.invoke(
+            main,
+            ['fetch', 'https://example.com', '--profile-pool', 'docs-pool', '--fetcher', 'headful', '--dump-request'],
+        )
+        assert pool_direct.exit_code != 0
+        assert 'profile pools require fetcher_type auto or waterfall' in pool_direct.output
+
+        conflicting_profiles = runner.invoke(
+            main,
+            ['fetch', 'https://example.com', '--profile', 'one', '--profile-pool', 'pool'],
+        )
+        assert conflicting_profiles.exit_code != 0
+        assert 'mutually exclusive' in conflicting_profiles.output
+
         removed = runner.invoke(main, ['content', 'https://example.com', '--help'])
         assert removed.exit_code != 0
         assert 'No such command' in removed.output

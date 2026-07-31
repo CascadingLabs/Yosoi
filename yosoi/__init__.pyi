@@ -57,6 +57,7 @@ from yosoi.operations import ContentUnitResult as ContentUnitResult
 from yosoi.operations import ContractRef as ContractRef
 from yosoi.operations import CrawlRequest as CrawlRequest
 from yosoi.operations import CrawlResult as CrawlResult
+from yosoi.operations import FetchFailure as FetchFailure
 from yosoi.operations import FetchRequest as FetchRequest
 from yosoi.operations import FetchResult as FetchResult
 from yosoi.operations import FetchUnitResult as FetchUnitResult

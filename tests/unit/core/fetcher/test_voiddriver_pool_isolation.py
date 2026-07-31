@@ -50,6 +50,9 @@ class _ConcurrentTab:
             self._both_started.set()
         await asyncio.wait_for(self._both_started.wait(), timeout=1)
 
+    async def content(self) -> str:
+        return '<html><body><main>ready</main></body></html>'
+
 
 class _FlakyGotoTab:
     def __init__(self) -> None:
@@ -61,6 +64,9 @@ class _FlakyGotoTab:
         if self.goto_calls == 1:
             raise RuntimeError('navigation failed: Request timed out')
         return object()
+
+    async def content(self) -> str:
+        return '<html><body><main>ready</main></body></html>'
 
 
 class _TabEchoDOMLoader:

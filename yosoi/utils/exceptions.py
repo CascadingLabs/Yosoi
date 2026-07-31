@@ -30,6 +30,7 @@ class BotDetectionError(YosoiError):
         indicators: list[str],
         identity_id: str | None = None,
         captcha_kind: str | None = None,
+        fetcher_type: str | None = None,
     ):
         """Initialize bot detection error.
 
@@ -42,6 +43,7 @@ class BotDetectionError(YosoiError):
             captcha_kind: Optional captcha kind from a live DOM probe
                 (``Page.detect_captcha``). ``None`` when no named captcha was
                 detected — distinct from the marker heuristic in ``indicators``.
+            fetcher_type: Acquisition tier that observed the terminal block.
 
         """
         self.url = url
@@ -49,6 +51,7 @@ class BotDetectionError(YosoiError):
         self.indicators = indicators
         self.identity_id = identity_id
         self.captcha_kind = captcha_kind
+        self.fetcher_type = fetcher_type
         suffix = ''
         if identity_id is not None:
             suffix += f' [identity={identity_id}]'

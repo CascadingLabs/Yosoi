@@ -22,6 +22,7 @@ from rich.table import Table
 from rich.text import Text
 from rich.theme import Theme
 
+from yosoi import __version__
 from yosoi.cli.contract_param import ContractParamType
 from yosoi.cli.machine import MachineReadableGroup, echo_json
 from yosoi.cli.setup import build_policy, print_fetcher_info
@@ -179,7 +180,7 @@ def _apply_profile_cli_overrides(
     profile_pool: str | None,
     max_live_profiles: int,
 ) -> Policy:
-    """Layer scrape browser-profile flags over an existing policy."""
+    """Layer browser-profile flags over an existing policy."""
     if profile is None and profile_pool is None:
         return policy
     if profile is not None and profile_pool is not None:
@@ -443,6 +444,7 @@ async def _run_json(
 
 
 @click.group(cls=MachineReadableGroup, invoke_without_command=True, context_settings=_CONTEXT_SETTINGS)
+@click.version_option(__version__, '-v', '--version', prog_name='yosoi')
 @click.pass_context
 @click.option(
     '-m',
@@ -736,6 +738,11 @@ main._run_json = _ORIGINAL_RUN_JSON  # type: ignore[attr-defined]
 )
 @click.option('-o', '--output', 'output_path', default=None, metavar='FILE|DIR', help='Write selected view or bundle.')
 @click.option('--a3node', is_flag=True, help='Enable experimental A3Node acquisition recipe replay/minting.')
+@click.option(
+    '--profile-pool', default=None, metavar='NAME', help='VoidCrawl managed profile pool for bot-wall recovery.'
+)
+@click.option('--profile', default=None, metavar='ID', help='VoidCrawl managed profile id for bot-wall recovery.')
+@click.option('--max-live-profiles', type=int, default=3, show_default=True, help='Active profile cap.')
 @click.option('--dump-request', is_flag=True, help='Print the resolved fetch request JSON and exit.')
 @click.option('--json', 'json_output', is_flag=True, default=False, help='Emit machine JSON envelope on stdout.')
 def fetch(
@@ -753,6 +760,9 @@ def fetch(
     contract: tuple[type[Contract], ...],
     output_path: str | None,
     a3node: bool,
+    profile_pool: str | None,
+    profile: str | None,
+    max_live_profiles: int,
     dump_request: bool,
     json_output: bool,
 ) -> None:
@@ -770,6 +780,12 @@ def fetch(
     ui: Console = Console(theme=_THEME, stderr=True) if json_output else console
     all_urls = _collect_urls(tuple(list(urls) + list(url)), file_path, limit, ui)
     policy = Policy.cascade(Policy.from_env(), load_policy_layers(policy_source))
+    policy = _apply_profile_cli_overrides(
+        policy,
+        profile=profile,
+        profile_pool=profile_pool,
+        max_live_profiles=max_live_profiles,
+    )
     if fetcher is not None:
         policy = Policy.cascade(policy, Policy(page=PagePolicy(fetcher_type=cast(Any, fetcher))))
     include_items = [item for raw in include for item in raw.split(',') if item.strip()]

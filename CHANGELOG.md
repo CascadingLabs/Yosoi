@@ -1,3 +1,20 @@
+## 0.0.3a26 (2026-07-31)
+
+### Feat
+
+- Add root CLI `-v` and `--version` flags.
+- Add `fetch` profile and profile-pool flags for operator-approved browser identity recovery.
+- Add structured anti-bot failure details and safe next actions to fetch JSON results.
+
+### Fix
+
+- Let headful Chrome finish automatically clearing full-page Cloudflare managed challenges before treating the interstitial as a terminal block.
+- Escalate headless Cloudflare interstitials directly to the headful waterfall tier instead of waiting on an identity that cannot clear them.
+
+### Docs
+
+- Document managed-challenge behavior, profile sensitivity, and the distinction between cold and warm browser profiles.
+
 ## 0.0.3a25 (2026-07-21)
 
 ### Feat
