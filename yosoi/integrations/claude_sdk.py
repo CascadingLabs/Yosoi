@@ -20,6 +20,25 @@ from yosoi.integrations.utils.usage import build_request_usage
 from yosoi.utils import observability as obs
 
 
+def _import_claude_agent_sdk() -> Any:
+    """Import ``claude_agent_sdk``, or raise an actionable error if it's not installed.
+
+    The Claude Agent SDK is an opt-in extra (``yosoi[claude-sdk]``) — it consumes
+    constrained Claude subscription credits and isn't required for the default
+    OpenCode subscription-discovery path, so it's not pulled in by a base install.
+    """
+    try:
+        import claude_agent_sdk
+    except ImportError as exc:
+        raise ModuleNotFoundError(
+            "The 'claude-sdk' provider requires the optional 'claude-sdk' dependency, which is not "
+            "installed. Install it with:  uv add 'yosoi[claude-sdk]'  (or:  pip install 'yosoi[claude-sdk]'). "
+            'Note this pulls in the Claude Agent SDK and consumes Claude subscription usage credits — '
+            "OpenCode (`ys.opencode()`) is the default subscription-backed discovery provider and doesn't."
+        ) from exc
+    return claude_agent_sdk
+
+
 class ClaudeSDKModel(Model):
     """pydantic-ai model backed by the Claude Agent SDK CLI transport."""
 
@@ -102,7 +121,8 @@ async def _call_sdk(
     *, system_prompt: str, user_prompt: str, model: str, output_format: dict[str, Any] | None
 ) -> tuple[str, RequestUsage]:
     """Drive the Claude Agent SDK and return assistant text or structured JSON text."""
-    from claude_agent_sdk import ClaudeAgentOptions, query
+    sdk = _import_claude_agent_sdk()
+    ClaudeAgentOptions, query = sdk.ClaudeAgentOptions, sdk.query
 
     debug = os.getenv('YOSOI_SDK_DEBUG') == '1'
     t0 = time.monotonic()

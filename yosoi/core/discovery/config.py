@@ -409,7 +409,17 @@ def create_litellm_model(config: LLMConfig) -> OpenAIChatModel:
 
 
 def create_claude_sdk_model(config: LLMConfig) -> Model:
-    """Create a Claude Agent SDK model from configuration."""
+    """Create a Claude Agent SDK model from configuration.
+
+    The Claude Agent SDK is an opt-in extra (``yosoi[claude-sdk]``): it consumes
+    constrained Claude subscription usage credits and isn't required for the
+    default OpenCode subscription-discovery path, so it's checked eagerly here
+    (like the other gated provider SDKs) rather than failing later mid-request.
+    """
+    try:
+        import claude_agent_sdk  # noqa: F401
+    except ImportError as exc:
+        raise _provider_extra_error('claude-sdk', 'claude-sdk', exc) from exc
     from yosoi.integrations.claude_sdk import ClaudeSDKModel
 
     return ClaudeSDKModel(model_name=config.model_name)
@@ -1156,13 +1166,26 @@ def litellm(model_name: str, api_key: str | None = None, **kwargs: Any) -> LLMCo
     return LLMConfig(provider='litellm', model_name=model_name, api_key=_resolve_api_key('litellm', api_key), **kwargs)
 
 
+#: Default OpenCode model — also the model used when Policy resolves the
+#: subscription-agent discovery default (CAS-242).
+OPENCODE_DEFAULT_MODEL = 'openai/gpt-5.3-codex-spark'
+
+
 def claude_sdk(model_name: str = 'claude-opus-4-7', **kwargs: Any) -> LLMConfig:
-    """Quick config for the Claude Agent SDK transport."""
+    """Quick config for the Claude Agent SDK transport.
+
+    Requires the optional ``claude-sdk`` install extra and an explicit operator
+    opt-in — it consumes constrained Claude subscription usage credits. OpenCode
+    (:func:`opencode`) is the default subscription-backed discovery provider.
+    """
     return LLMConfig(provider='claude-sdk', model_name=model_name, api_key=None, **kwargs)
 
 
-def opencode(model_name: str = 'openai/gpt-5.3-codex-spark', **kwargs: Any) -> LLMConfig:
-    """Quick config for a running OpenCode server transport."""
+def opencode(model_name: str = OPENCODE_DEFAULT_MODEL, **kwargs: Any) -> LLMConfig:
+    """Quick config for a running OpenCode server transport.
+
+    OpenCode is the default, first-class subscription-backed discovery provider.
+    """
     return LLMConfig(provider='opencode', model_name=model_name, api_key=None, **kwargs)
 
 

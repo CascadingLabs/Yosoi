@@ -125,3 +125,21 @@ def test_validator_command_and_backend_dispatch(monkeypatch) -> None:
     monkeypatch.setattr('yosoi.core.discovery.mcp_backends.create_model', lambda _config: 'created')
     backend = backend_for(LLMConfig(provider='groq', model_name='llama'))
     assert backend.name == 'pydantic-ai'
+
+
+async def test_claude_sdk_backend_raises_actionable_error_when_sdk_not_installed(monkeypatch) -> None:
+    """CAS-242: an uninstalled claude-agent-sdk must fail with a clear message, never silently
+    substitute another backend."""
+    import builtins
+
+    real_import = builtins.__import__
+    monkeypatch.delitem(sys.modules, 'claude_agent_sdk', raising=False)
+    monkeypatch.setattr(
+        'builtins.__import__',
+        lambda name, *a, **kw: (
+            (_ for _ in ()).throw(ImportError('boom')) if name == 'claude_agent_sdk' else real_import(name, *a, **kw)
+        ),
+    )
+
+    with pytest.raises(ModuleNotFoundError, match=r'yosoi\[claude-sdk\]'):
+        await ClaudeSDKBackend('claude-test').run(instructions='sys', user_prompt='user', servers=[])
