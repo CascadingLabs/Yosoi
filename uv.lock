@@ -5562,7 +5562,6 @@ source = { editable = "." }
 dependencies = [
     { name = "aiofiles" },
     { name = "brotli" },
-    { name = "claude-agent-sdk" },
     { name = "click" },
     { name = "cssselect" },
     { name = "dateparser" },
@@ -5590,6 +5589,7 @@ dependencies = [
 
 [package.optional-dependencies]
 all = [
+    { name = "claude-agent-sdk" },
     { name = "pydantic-ai-slim", extra = ["anthropic", "bedrock", "google", "groq", "huggingface", "mistral", "openai", "openrouter", "xai"] },
 ]
 anthropic = [
@@ -5597,6 +5597,9 @@ anthropic = [
 ]
 bedrock = [
     { name = "pydantic-ai-slim", extra = ["bedrock"] },
+]
+claude-sdk = [
+    { name = "claude-agent-sdk" },
 ]
 huggingface = [
     { name = "pydantic-ai-slim", extra = ["huggingface"] },
@@ -5640,6 +5643,7 @@ dev = [
     { name = "vulture" },
 ]
 tests = [
+    { name = "claude-agent-sdk" },
     { name = "dirty-equals" },
     { name = "mutmut" },
     { name = "openpyxl" },
@@ -5664,7 +5668,8 @@ tests = [
 requires-dist = [
     { name = "aiofiles", specifier = ">=25.1" },
     { name = "brotli", specifier = ">=1.2" },
-    { name = "claude-agent-sdk", specifier = ">=0.2.87" },
+    { name = "claude-agent-sdk", marker = "extra == 'all'", specifier = ">=0.2.87" },
+    { name = "claude-agent-sdk", marker = "extra == 'claude-sdk'", specifier = ">=0.2.87" },
     { name = "click", specifier = ">=8.3" },
     { name = "cssselect", specifier = ">=1.4" },
     { name = "dateparser", specifier = ">=1.4" },
@@ -5699,7 +5704,7 @@ requires-dist = [
     { name = "tree-sitter-javascript", specifier = ">=0.25,<0.26" },
     { name = "voidcrawl", specifier = ">=0.4" },
 ]
-provides-extras = ["all", "anthropic", "bedrock", "huggingface", "mistral", "tabular", "vertexai", "xai"]
+provides-extras = ["all", "anthropic", "bedrock", "claude-sdk", "huggingface", "mistral", "tabular", "vertexai", "xai"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -5724,6 +5729,7 @@ dev = [
     { name = "vulture", specifier = ">=2.16" },
 ]
 tests = [
+    { name = "claude-agent-sdk", specifier = ">=0.2.87" },
     { name = "dirty-equals", specifier = ">=0.11" },
     { name = "mutmut", specifier = ">=3.5" },
     { name = "openpyxl", specifier = ">=3.1" },

@@ -13,6 +13,7 @@ from yosoi.policy import (
     CrawlPolicy,
     CrawlSafety,
     CrawlTarget,
+    DiscoveryPolicy,
     EscalationPolicy,
     ExtractorPolicy,
     ModelPolicy,
@@ -81,6 +82,34 @@ def test_run_spec_can_defer_model_only_when_explicitly_requested() -> None:
         require_model=False,
     )
     assert unresolved_credentials.llm_config is None
+
+
+def test_mcp_discovery_defaults_to_opencode_never_claude_sdk() -> None:
+    """CAS-242: an explicit agent-driven (mcp) discovery request with no model configured and no
+    API key present must resolve to the OpenCode subscription backend — never Claude, and never a
+    hard failure the way the generic (non-mcp) path fails fast."""
+    spec = Policy(discovery=DiscoveryPolicy(mode='mcp')).resolve_run_spec({})
+
+    assert spec.llm_config is not None
+    assert spec.llm_config.provider == 'opencode'
+    assert spec.llm_config.api_key is None
+
+
+def test_mcp_discovery_still_prefers_an_explicitly_configured_api_key_provider() -> None:
+    """An explicit YOSOI_MODEL/API key should still win over the OpenCode default."""
+    spec = Policy(discovery=DiscoveryPolicy(mode='mcp')).resolve_run_spec({'GROQ_KEY': 'groq-key'})
+
+    assert spec.llm_config is not None
+    assert spec.llm_config.provider == 'groq'
+
+
+def test_non_mcp_discovery_keeps_failing_fast_with_no_opencode_default() -> None:
+    """Only the explicit mcp discovery mode gets the OpenCode default; the generic path (static
+    field extraction, which needs a function-calling provider API) still fails closed."""
+    with pytest.raises(ValueError, match='No model specified'):
+        Policy(discovery=DiscoveryPolicy(mode='auto')).resolve_run_spec({})
+    with pytest.raises(ValueError, match='No model specified'):
+        Policy(discovery=DiscoveryPolicy(mode='static')).resolve_run_spec({})
 
 
 def test_strict_allowlist_is_positive_and_partitions_all_sources() -> None:
