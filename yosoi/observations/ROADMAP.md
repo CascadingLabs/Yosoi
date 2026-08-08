@@ -2,6 +2,8 @@
 
 The observation runtime captures no pages and invokes no models. Producers supply policy-safe artifacts; consumers such as QA and discovery query the resulting address space.
 
+The adversarial corpus, no-auth SPA slate, and per-pruner gates are specified in [`boss_fights.md`](boss_fights.md).
+
 ## Module map
 
 | Module | Responsibility | Planned implementation |

@@ -215,7 +215,8 @@ baseline = "pyrefly-baseline.json"
 ini_options.testpaths = [ "tests" ]
 ini_options.asyncio_mode = "auto"
 ini_options.markers = [
-  "eval: mark test as an evaluation test (requires real LLM and is slow)",
+  "eval: mark test as an evaluation test (may be deterministic or model-backed)",
+  "boss_fight: mark deterministic, offline indexed-observation boss fights",
   "smoke: mark test as an opt-in live smoke test",
 ]
 
@@ -315,7 +316,8 @@ types = [
 ]
 
 [tool.poe]
-tasks.eval = 'uv run pytest -m "eval"'  # run pydantic-evals eval tests
+tasks.eval = 'uv run pytest -m "eval"'  # run all evaluation tiers, including deterministic boss fights
+tasks.boss-fights = "uv run pytest tests/boss_fights/ -m boss_fight"  # offline/provider-free observation adversaries
 tasks.obs-eval = "uv run pytest tests/evals/observability/"  # deterministic observability span-contract eval set (no live LLM)
 tasks.bench = "pytest tests/benchmarks --codspeed"  # run CodSpeed perf benchmarks (walltime locally)
 tasks.integration = "uv run pytest -m 'integration'"  # run integration tests

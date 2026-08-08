@@ -21,8 +21,9 @@ This project uses a **Tiered Testing Architecture** to balance speed, cost, and 
 | --- | --- | --- | --- | --- | --- |
 | **1** | **Unit & Logic** | `tests/unit` | Verify schema validation and prompt construction. | **Deterministic** (`TestModel`) | Free |
 | **2** | **Simulated Integration** | `tests/integration` | Verify internal service coordination and I/O logic without real web traffic. | **Mocked** (`httpx2.MockTransport`, `mocker`) | Free |
-| **3** | **Quality Evals** | `tests/evals` | Verify the intelligence and accuracy of the AI on real-world data (not live web). | **Real** (Groq/Gemini) | $$$ |
-| **4** | **Live Smoke** | `tests/smoke` | Verify end-to-end browser wiring against selected live bot-check targets. | **None** | Network |
+| **3** | **Observation Boss Fights** | `tests/boss_fights` | Verify deterministic pruning, addressing, budgets, and evidence preservation. | **None** | Free |
+| **4** | **Quality Evals** | `tests/evals` | Verify QA/discovery intelligence on frozen real-world data. | **Real** (Groq/Gemini) | $$$ |
+| **5** | **Live Smoke** | `tests/smoke` | Verify end-to-end browser wiring against selected live bot-check targets. | **None** | Network |
 
 ---
 
@@ -166,6 +167,7 @@ Tests are automatically marked based on their directory location in `tests/conft
 
 - `tests/unit/` → `@pytest.mark.unit`
 - `tests/integration/` → `@pytest.mark.integration`
+- `tests/boss_fights/` → `@pytest.mark.boss_fight` and `@pytest.mark.eval`
 - `tests/evals/` → `@pytest.mark.eval`
 - `tests/smoke/` → `@pytest.mark.smoke`
 
@@ -174,7 +176,8 @@ Tests are automatically marked based on their directory location in `tests/conft
 We use poe tasks from pyproject.toml for running tests. Ensure you are in the correct directory (Yosoi root) to run tests correctly.
 
 ```
-uv run poe evals
+uv run poe eval
+uv run poe boss-fights
 uv run poe integration
 uv run poe unit
 YOSOI_LIVE_SMOKE=1 uv run pytest -m smoke

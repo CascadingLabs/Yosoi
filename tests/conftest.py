@@ -96,6 +96,7 @@ def pytest_configure(config):
     config.addinivalue_line('markers', 'integration: marks tests as integration tests')
     config.addinivalue_line('markers', 'unit: marks tests as unit tests')
     config.addinivalue_line('markers', 'eval: marks tests as evaluation tests')
+    config.addinivalue_line('markers', 'boss_fight: marks deterministic observation boss-fight evaluations')
     config.addinivalue_line('markers', 'smoke: marks opt-in live smoke tests')
     config.addinivalue_line(
         'markers',
@@ -113,7 +114,10 @@ def pytest_collection_modifyitems(config, items):
     for item in items:
         if hasattr(item, 'fspath'):
             parts = Path(item.fspath).parts
-            if 'integration' in parts:
+            if 'boss_fights' in parts:
+                item.add_marker(pytest.mark.boss_fight)
+                item.add_marker(pytest.mark.eval)
+            elif 'integration' in parts:
                 item.add_marker(pytest.mark.integration)
             elif 'unit' in parts:
                 item.add_marker(pytest.mark.unit)
