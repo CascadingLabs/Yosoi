@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import hashlib
 from collections import Counter
+from collections.abc import Sequence
 from urllib.parse import quote, unquote
 
 from yosoi.observations.models.dom import DomNode, DomRuntimeState, DomVisibility
+from yosoi.observations.models.view import RegionCoverage
 
 _DOM_PATH_PREFIX = '/dom/node/'
 _RUNTIME_FIELDS = ('value', 'checked', 'selected', 'expanded', 'pressed', 'disabled', 'focused')
@@ -64,6 +66,21 @@ def assign_dom_member_keys(members: tuple[DomNode, ...]) -> tuple[str | None, ..
     candidates = [dom_candidate_keys(member) for member in members]
     frequency: Counter[str] = Counter(key for keys in candidates for key in keys)
     return tuple(next((key for key in keys if frequency[key] == 1), None) for keys in candidates)
+
+
+def dom_region_coverage(container: DomNode, members: Sequence[DomNode]) -> RegionCoverage:
+    """State how much of a repeat region one capture actually observed.
+
+    A container's declared count (`aria-rowcount`, `aria-setsize`, …) describes the container's
+    whole collection, so it can only be compared against members that are the container's whole
+    collection. A run of 20 rows beside a header row is 20 of something the declaration never
+    counted, and calling that `20/500` would be a fabricated coverage claim.
+
+    One rule, one place: the pruner and the inspector each derive coverage for the same region,
+    and two formulations of "close enough" drift into disagreeing about `complete`.
+    """
+    declared = container.declared_count if len(members) == len(container.children) else None
+    return RegionCoverage(observed=len(members), declared=declared, complete=declared == len(members))
 
 
 def dom_label(node: DomNode) -> str:
@@ -142,6 +159,7 @@ __all__ = [
     'dom_candidate_keys',
     'dom_label',
     'dom_locator',
+    'dom_region_coverage',
     'dom_skeleton_signature',
     'dom_subtree_text',
     'dom_summary',

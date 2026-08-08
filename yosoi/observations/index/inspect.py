@@ -23,6 +23,7 @@ from yosoi.observations.dom_tree import (
     assign_dom_member_keys,
     dom_candidate_keys,
     dom_label,
+    dom_region_coverage,
     dom_skeleton_signature,
     dom_summary,
     node_id_from_locator,
@@ -59,6 +60,15 @@ class InspectionBudget(BaseModel):
 
     max_bytes: int = Field(default=32_000, gt=0)
     max_items: int = Field(default=500, gt=0)
+    max_summary_chars: int = Field(default=400, gt=0)
+    """Per-member summary bound for `expand`, declared separately from `max_bytes`.
+
+    `max_bytes` bounds one retrieval of canonical evidence. Reusing it as a summary limit made a
+    page of members cost `max_items × max_bytes` — 500 members of 32 KB each — so the two
+    budgets that look alike are stated apart. Bounding the whole page rather than each member is
+    a further step, and it changes what an already-gated sweep returns, so it is not taken here.
+    """
+
     allow_restricted: bool = False
 
 
@@ -280,8 +290,15 @@ class ObservationInspector:
         for offset, key in enumerate(replacements):
             rebound = rebound.rebind_member(key, at=at + offset)
 
-        _, tree = parse(self._store.read(artifact))
-        _resolve_segments(tree, rebound)
+        # Resolve through the modality's own resolver. Reading DOM JSON with the HTML parser
+        # produced a tree nothing could match, so a rebind that named a real member failed as
+        # "segment resolved to 0 nodes" — a grammar error for what was a modality mistake.
+        data = self._store.read(artifact)
+        if artifact.kind is EvidenceKind.RENDERED_DOM:
+            _resolve_dom_address(_parse_dom_artifact(artifact, data), rebound)
+        else:
+            _, tree = parse(data)
+            _resolve_segments(tree, rebound)
         return RegionRef(
             snapshot_id=ref.snapshot_id,
             artifact_sha256=ref.artifact_sha256,
@@ -318,18 +335,16 @@ class ObservationInspector:
                     ),
                     ordinal=offset + position,
                     label=dom_label(member),
-                    summary=dom_summary(member, max_chars=budget.max_bytes),
+                    summary=dom_summary(member, max_chars=budget.max_summary_chars),
                     stable=key is not None,
                 )
                 for position, (member, key) in enumerate(window)
             )
-            declared = container.declared_count if len(members) == len(container.children) else None
-            complete = declared is not None and declared == len(members)
             return RegionPage(
                 region=ref,
                 members=page,
                 offset=offset,
-                coverage=RegionCoverage(observed=len(members), declared=declared, complete=complete),
+                coverage=dom_region_coverage(container, members),
                 truncated=offset + len(window) < len(members),
             )
 
@@ -352,7 +367,7 @@ class ObservationInspector:
                 ),
                 ordinal=offset + position,
                 label=node_label(member),
-                summary=subtree_text(member)[: budget.max_bytes],
+                summary=subtree_text(member)[: budget.max_summary_chars],
                 stable=key is not None,
             )
             for position, (member, key) in enumerate(window)

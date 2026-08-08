@@ -8,6 +8,7 @@ from yosoi.observations.dom_tree import (
     assign_dom_member_keys,
     dom_label,
     dom_locator,
+    dom_region_coverage,
     dom_skeleton_signature,
     dom_subtree_text,
     dom_summary,
@@ -15,7 +16,7 @@ from yosoi.observations.dom_tree import (
 from yosoi.observations.index.addressing import element_address, format_address, region_address
 from yosoi.observations.models.artifact import EvidenceKind
 from yosoi.observations.models.dom import DomNode, DomVisibility, parse_dom_snapshot
-from yosoi.observations.models.view import PrunedView, RegionCoverage
+from yosoi.observations.models.view import PrunedView
 from yosoi.observations.pruning._base import PruneCandidate, Reduction, SemanticPruner, clip
 from yosoi.observations.pruning.protocol import PruningInput, PruningPolicy
 
@@ -85,14 +86,7 @@ def _walk(node: DomNode, *, out: list[PruneCandidate], policy: PruningPolicy, de
         members = children[start:end]
         collapse = len(members) >= MIN_RUN and run_frequency[signature] == 1
         if collapse:
-            exemplar = _emit_region(
-                container=node,
-                members=members,
-                shape=signature,
-                declared_count=node.declared_count if len(runs) == 1 else None,
-                out=out,
-                policy=policy,
-            )
+            exemplar = _emit_region(container=node, members=members, shape=signature, out=out, policy=policy)
             _walk(exemplar, out=out, policy=policy, depth=depth + 1)
             continue
 
@@ -137,7 +131,6 @@ def _emit_region(
     container: DomNode,
     members: tuple[DomNode, ...],
     shape: str,
-    declared_count: int | None,
     out: list[PruneCandidate],
     policy: PruningPolicy,
 ) -> DomNode:
@@ -147,8 +140,7 @@ def _emit_region(
     state_counts = Counter(_member_state(member) for member in members)
     state_text = ', '.join(f'{state}×{count}' for state, count in sorted(state_counts.items()))
     observed = len(members)
-    complete = declared_count is not None and declared_count == observed
-    coverage = RegionCoverage(observed=observed, declared=declared_count, complete=complete)
+    coverage = dom_region_coverage(container, members)
     summary = f'×{observed} {dom_label(members[0])}'
     # Which members, not just how many. A region that reports a bare count of 50 list items
     # forces an expand before the reader can tell whether the run is even relevant.
@@ -159,8 +151,8 @@ def _emit_region(
         remainder = len(distinct) - min(SAMPLED_MEMBERS, len(distinct))
         summary += f'  {shown}' + (f' +{remainder} more' if remainder > 0 else '')
     summary += f'; states={state_text or "unknown"}'
-    if declared_count is not None:
-        summary += f'; observed={observed}/{declared_count}'
+    if coverage.declared is not None:
+        summary += f'; observed={observed}/{coverage.declared}'
     else:
         summary += '; declared count unavailable'
     if any(key is None for key in keys):

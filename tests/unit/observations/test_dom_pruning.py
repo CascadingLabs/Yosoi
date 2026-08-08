@@ -20,6 +20,7 @@ from yosoi.observations.models import (
     RegionRef,
 )
 from yosoi.observations.models.dom import serialize_dom_snapshot
+from yosoi.observations.models.view import PrunedFragment
 from yosoi.observations.pruning import DomPruner, PruningInput, PruningPolicy
 from yosoi.observations.pruning.dom import MAX_DEPTH
 
@@ -321,6 +322,104 @@ def test_dom_expand_does_not_promote_container_count_for_state_subset() -> None:
 
     assert page.coverage.declared is None
     assert page.coverage.complete is False
+
+
+def _keyed_list_workload(
+    snapshot_id: str, *, declared: int | None = 2
+) -> tuple[MemoryArtifactStore, ObservationSnapshot, PrunedFragment]:
+    """Build a two-member keyed region and return its store, manifest, and pruned region."""
+    root = DomNode(
+        node_id='root',
+        tag='html',
+        children=(
+            DomNode(
+                node_id='todo-list',
+                tag='ul',
+                declared_count=declared,
+                children=(
+                    DomNode(
+                        node_id='todo-1',
+                        tag='li',
+                        attributes=(DomAttribute(name='class', value='todo'), DomAttribute(name='data-id', value='a')),
+                        text='Buy milk',
+                        visibility=DomVisibility.VISIBLE,
+                    ),
+                    DomNode(
+                        node_id='todo-2',
+                        tag='li',
+                        attributes=(DomAttribute(name='class', value='todo'), DomAttribute(name='data-id', value='b')),
+                        text='Ship beta',
+                        visibility=DomVisibility.VISIBLE,
+                    ),
+                ),
+            ),
+        ),
+    )
+    data = serialize_dom_snapshot(DomSnapshot(snapshot_id=snapshot_id, root=root))
+    store = MemoryArtifactStore()
+    ref = store.put(
+        snapshot_id=snapshot_id,
+        kind=EvidenceKind.RENDERED_DOM,
+        media_type='application/json',
+        data=data,
+    )
+    view = DomPruner().prune(PruningInput(source=ref, data=data), PruningPolicy())
+    region = next(fragment for fragment in view.fragments if fragment.coverage is not None)
+    manifest = ObservationSnapshot(
+        run_id='run',
+        episode_id='episode',
+        snapshot_id=snapshot_id,
+        requested_profile=CaptureProfile.BROWSER_HEADLESS,
+        artifacts=(ref,),
+    )
+    return store, manifest, region
+
+
+def test_dom_rebind_carries_a_route_onto_another_member() -> None:
+    """Rebinding a DOM member must resolve through the DOM, not through the HTML parser.
+
+    The inspector read DOM JSON with lxml here, so a rebind naming a real member failed as
+    'segment resolved to 0 nodes' — the address grammar blamed for a modality mistake.
+    """
+    store, manifest, region = _keyed_list_workload('rebind')
+    inspector = ObservationInspector(store, manifest)
+    exemplar = inspector.expand(region.ref, InspectionBudget(max_items=10)).members[0]
+
+    rebound = inspector.rebind(exemplar.ref, 'data-id=b')
+    detail = inspector.inspect(rebound, InspectionBudget())
+
+    assert 'key=data-id%3Db' in rebound.locator
+    assert DomNode.model_validate_json(detail.content).text == 'Ship beta'
+
+
+def test_dom_rebind_refuses_a_key_no_member_carries() -> None:
+    store, manifest, region = _keyed_list_workload('rebind-missing')
+    inspector = ObservationInspector(store, manifest)
+    exemplar = inspector.expand(region.ref, InspectionBudget(max_items=10)).members[0]
+
+    with pytest.raises(ObservationAddressError, match='resolved to 0 members'):
+        inspector.rebind(exemplar.ref, 'data-id=absent')
+
+
+@pytest.mark.parametrize('declared', [2, 5, None])
+def test_pruner_and_inspector_agree_on_region_coverage(declared: int | None) -> None:
+    """One coverage rule, two consumers. Two formulations drift on `complete`."""
+    store, manifest, region = _keyed_list_workload(f'coverage-{declared}', declared=declared)
+
+    page = ObservationInspector(store, manifest).expand(region.ref, InspectionBudget(max_items=10))
+
+    assert page.coverage == region.coverage
+
+
+def test_expand_bounds_member_summaries_independently_of_the_byte_budget() -> None:
+    store, manifest, region = _keyed_list_workload('summary-bound')
+
+    page = ObservationInspector(store, manifest).expand(
+        region.ref, InspectionBudget(max_bytes=32_000, max_summary_chars=12)
+    )
+
+    assert page.members
+    assert all(len(member.summary) <= 12 for member in page.members)
 
 
 def test_dom_inspection_rejects_payload_bound_to_another_snapshot() -> None:
