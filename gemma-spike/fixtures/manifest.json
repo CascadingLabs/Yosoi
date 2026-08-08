@@ -1,0 +1,9 @@
+{
+  "source": "Wikipedia pages fetched with Yosoi headless rendered-html",
+  "generated_at": "2026-08-08",
+  "cases": [
+    {"id": "web-scraping", "url": "https://en.wikipedia.org/wiki/Web_scraping", "image": "web-scraping.png", "question": "What is the page title and which section explains the legal and ethical concerns?"},
+    {"id": "browser-automation", "url": "https://en.wikipedia.org/wiki/Browser_automation", "image": "browser-automation.png", "question": "What is browser automation used for, according to the page?"},
+    {"id": "tailscale", "url": "https://en.wikipedia.org/wiki/Tailscale", "image": "tailscale.png", "question": "What kind of network does Tailscale provide?"}
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "url": "https://en.wikipedia.org/wiki/Web_scraping",
+  "raw_html_chars": 239658,
+  "pruned_html_chars": 4871,
+  "model": "google/gemma-4-12b-it-qat-w4a16-ct",
+  "base_url": "http://echo:8096/v1",
+  "answer": {
+    "article_title": "Web scraping",
+    "article_summary": "Web scraping, also known as web harvesting or web data extraction, is the process of extracting data from websites. It typically involves automated processes using bots or web crawlers to fetch pages via HTTP or a web browser, then parsing and copying specific data into a central local database or spreadsheet for later retrieval or analysis. Common applications include contact scraping, price monitoring, web indexing, and data mining."
+  }
+}

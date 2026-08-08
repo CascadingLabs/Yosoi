@@ -1,0 +1,29 @@
+[project]
+name = "yosoi-gemma-spike"
+version = "0.1.0"
+description = "Gemma 4 multimodal inference harness for Yosoi CAS-268"
+requires-python = ">=3.10"
+classifiers = [
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+]
+dependencies = [
+  "lxml>=6.0.2",
+  "pydantic-ai-slim[openai]==2",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=9",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest]
+ini_options.testpaths = [ "tests" ]
+ini_options.pythonpath = [ "scripts" ]
