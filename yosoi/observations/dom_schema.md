@@ -71,7 +71,8 @@ while both modalities can later share index and episode boundaries without shari
 Phase 2 now feeds deterministic fixture snapshots through the existing `SemanticPruner` base.
 `DomPruner` currently proves:
 
-- same-state sibling collapse with region coverage;
+- same-state sibling collapse with region coverage, sampling a bounded number of member texts
+  so the index says *which* members a region stands for and how many it withheld;
 - runtime-state-aware separation of active and completed controls;
 - retention of meaningful hidden content while omitting empty hidden wrappers;
 - explicit shadow-root and portal entries;

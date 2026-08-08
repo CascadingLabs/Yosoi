@@ -103,6 +103,25 @@ def dom_summary(node: DomNode, *, max_chars: int = 160) -> str:
     return '; '.join(parts)[:max_chars]
 
 
+def dom_subtree_text(node: DomNode) -> str:
+    """Return the node's whole rendered text, whitespace-collapsed.
+
+    Crosses shadow boundaries deliberately: a member's distinguishing content is what a
+    reader would see, and a shadow root is an implementation detail of where it lives.
+    """
+    return ' '.join(_text_fragments(node)).strip()
+
+
+def _text_fragments(node: DomNode) -> list[str]:
+    """Collect one node's text then its shadow and light children, in render order."""
+    parts = [' '.join(node.text.split())] if node.text.strip() else []
+    if node.shadow_root is not None:
+        parts.extend(_text_fragments(node.shadow_root))
+    for child in node.children:
+        parts.extend(_text_fragments(child))
+    return parts
+
+
 def _runtime_signature(runtime: DomRuntimeState | None) -> tuple[tuple[str, object], ...]:
     return tuple(_runtime_values(runtime))
 
@@ -124,6 +143,7 @@ __all__ = [
     'dom_label',
     'dom_locator',
     'dom_skeleton_signature',
+    'dom_subtree_text',
     'dom_summary',
     'node_id_from_locator',
 ]

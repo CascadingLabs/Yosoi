@@ -9,18 +9,25 @@ from yosoi.observations.dom_tree import (
     dom_label,
     dom_locator,
     dom_skeleton_signature,
+    dom_subtree_text,
     dom_summary,
 )
 from yosoi.observations.index.addressing import element_address, format_address, region_address
 from yosoi.observations.models.artifact import EvidenceKind
 from yosoi.observations.models.dom import DomNode, DomVisibility, parse_dom_snapshot
 from yosoi.observations.models.view import PrunedView, RegionCoverage
-from yosoi.observations.pruning._base import PruneCandidate, Reduction, SemanticPruner
+from yosoi.observations.pruning._base import PruneCandidate, Reduction, SemanticPruner, clip
 from yosoi.observations.pruning.protocol import PruningInput, PruningPolicy
 
-DOM_PRUNER_VERSION = '1'
+DOM_PRUNER_VERSION = '2'
+"""Bumped when regions started sampling member text: emitted summaries changed."""
+
 MIN_RUN = 2
 MAX_DEPTH = 24
+SAMPLED_MEMBERS = 3
+"""How many distinguishing member texts a collapsed region keeps inline. Mirrors the HTML pruner."""
+
+SAMPLE_TEXT_CHARS = 40
 
 
 class DomPruner(SemanticPruner):
@@ -129,7 +136,16 @@ def _emit_region(
     observed = len(members)
     complete = declared_count is not None and declared_count == observed
     coverage = RegionCoverage(observed=observed, declared=declared_count, complete=complete)
-    summary = f'×{observed} {dom_label(members[0])}; states={state_text or "unknown"}'
+    summary = f'×{observed} {dom_label(members[0])}'
+    # Which members, not just how many. A region that reports a bare count of 50 list items
+    # forces an expand before the reader can tell whether the run is even relevant.
+    distinct = list(dict.fromkeys(text for text in (dom_subtree_text(member) for member in members) if text))
+    if distinct:
+        sample_chars = min(SAMPLE_TEXT_CHARS, policy.max_fragment_chars)
+        shown = ', '.join(f'"{clip(text, sample_chars)}"' for text in distinct[:SAMPLED_MEMBERS])
+        remainder = len(distinct) - min(SAMPLED_MEMBERS, len(distinct))
+        summary += f'  {shown}' + (f' +{remainder} more' if remainder > 0 else '')
+    summary += f'; states={state_text or "unknown"}'
     if declared_count is not None:
         summary += f'; observed={observed}/{declared_count}'
     else:
@@ -178,4 +194,4 @@ def _should_emit(node: DomNode) -> bool:
     return any(_should_emit(child) for child in node.children) or node.shadow_root is not None
 
 
-__all__ = ['DOM_PRUNER_VERSION', 'MAX_DEPTH', 'MIN_RUN', 'DomPruner']
+__all__ = ['DOM_PRUNER_VERSION', 'MAX_DEPTH', 'MIN_RUN', 'SAMPLED_MEMBERS', 'SAMPLE_TEXT_CHARS', 'DomPruner']

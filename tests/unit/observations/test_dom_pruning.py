@@ -72,6 +72,70 @@ def test_todomvc_active_items_collapse_with_complete_coverage() -> None:
     assert any(fragment.label == 'li.todo' for fragment in view.fragments)
 
 
+def test_collapsed_region_names_which_members_it_collapsed() -> None:
+    """A region must say WHICH members it stands for, not only how many.
+
+    Found against a live TodoMVC capture: the region reported a count and a state tally and
+    carried no todo text, so nothing in the index distinguished a list of groceries from a
+    list of build failures without spending an `expand` first.
+    """
+    root = DomNode(
+        node_id='root',
+        tag='html',
+        children=(
+            DomNode(
+                node_id='todo-list',
+                tag='ul',
+                children=(_todo('todo-1', 'Buy milk'), _todo('todo-2', 'Read design'), _todo('todo-3', 'Ship beta')),
+            ),
+        ),
+    )
+
+    view = _reduce(DomSnapshot(snapshot_id='s0', root=root))
+    region = next(fragment for fragment in view.fragments if fragment.coverage is not None)
+
+    assert '"Buy milk"' in region.summary
+    assert '"Read design"' in region.summary
+    assert '"Ship beta"' in region.summary
+
+
+def test_region_sampling_is_bounded_and_says_how_many_it_withheld() -> None:
+    """Sampling must not turn a 50-member region back into 50 members of summary."""
+    members = tuple(_todo(f'todo-{index}', f'Item {index}') for index in range(50))
+    root = DomNode(
+        node_id='root',
+        tag='html',
+        children=(DomNode(node_id='todo-list', tag='ul', children=members),),
+    )
+
+    view = _reduce(DomSnapshot(snapshot_id='s0', root=root))
+    region = next(fragment for fragment in view.fragments if fragment.coverage is not None)
+
+    assert '"Item 0"' in region.summary
+    assert '"Item 3"' not in region.summary, 'only the first few members are sampled'
+    assert '+47 more' in region.summary, 'the withheld count must be stated, not implied'
+
+
+def test_region_sampling_crosses_a_shadow_boundary() -> None:
+    """A member whose text lives in a shadow root is still distinguished in the index."""
+    hosts = tuple(
+        DomNode(
+            node_id=f'card-{index}',
+            tag='div',
+            attributes=(DomAttribute(name='class', value='card'),),
+            shadow_root=DomNode(node_id=f'card-{index}-shadow', tag='#shadow-root', text=f'Card {index}'),
+        )
+        for index in range(2)
+    )
+    root = DomNode(node_id='root', tag='html', children=(DomNode(node_id='deck', tag='div', children=hosts),))
+
+    view = _reduce(DomSnapshot(snapshot_id='s0', root=root))
+    region = next(fragment for fragment in view.fragments if fragment.coverage is not None)
+
+    assert '"Card 0"' in region.summary
+    assert '"Card 1"' in region.summary
+
+
 def test_runtime_state_prevents_active_and_completed_merge() -> None:
     root = DomNode(
         node_id='root',
