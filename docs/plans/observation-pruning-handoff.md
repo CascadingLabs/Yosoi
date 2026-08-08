@@ -1,0 +1,150 @@
+# Observation pruning — agent handoff
+
+Pick-up doc for the indexed-observation kernel (`yosoi/observations/`). Read this, then
+[`observation-pruning.md`](observation-pruning.md) for *why* the design is what it is.
+
+Ticket: CAS-262 (L1 static HTML). Ladder: CAS-266 L0 network → **CAS-262 L1 html** →
+CAS-263 L2 DOM/AX → CAS-264 L3 blocking sites → CAS-265 L4 minimal CDP.
+
+## Status
+
+Working and gated:
+
+| Piece | State |
+| --- | --- |
+| `SemanticPruner` template base | done |
+| `html.declarations` pruner | done |
+| `html.body` pruner (MDR repeat collapse) | done |
+| Segmented region/member addressing | done |
+| `ObservationIndexCompiler` | done |
+| `inspect` + `expand` (source_html only) | done |
+| `RegionCoverage` on fragments and index entries | done |
+| Boss fights: `controls/html`, `html/books_toscrape` | done, 17 pass |
+
+Still scaffolds that raise: `pruning/{dom,ax,network}.py`, `index/render.py`,
+`index/diff.py`, `artifacts/filesystem.py`.
+
+Not wired into Yosoi operations, policy, acquisition, discovery, or top-level exports.
+Keep it that way until the ROADMAP says otherwise.
+
+## Run it
+
+```bash
+uv run poe boss-fights                            # the gate for this package
+uv run pytest tests/boss_fights/html -m boss_fight
+uv run pytest tests/unit/observations -q
+uv run poe ci-check                               # ruff + pyrefly + tests
+```
+
+`ci-check`'s `check python ast` hook fails on the repo-root `temp.py` (doctest `>>>` lines).
+**Pre-existing and unrelated** — do not "fix" it as part of pruning work.
+
+## Measured behaviour (books.toscrape, frozen)
+
+- 51,294 B document → 3,218 B across both reductions (~16×), 78 index entries.
+- 20 product cards cost **2 entries** (region + exemplar); all 20 reachable via `expand`
+  with `stable=True`.
+- `inspect` on member 1 returns the *Tipping the Velvet* record.
+
+## Invariants — do not break these
+
+Each one exists because breaking it produced a real failure, not because it reads well.
+
+1. **Addresses are segmented, never bare XPath.** `parse_address` / `format_address` in
+   `index/addressing.py` are the only places that know the grammar. A bare absolute path
+   is a *valid* address (one segment) but must not be minted for anything inside a repeat
+   region — that is precisely what rots on scroll.
+2. **Positional fallback is declared, never silent.** No key → `&ordinal=N` and
+   `is_stable` goes False. Never emit an ordinal dressed as a key.
+3. **Keys are uniqueness-checked within their group.** A key matching two rows is not an
+   address. `assign_member_keys` enforces this; don't bypass it.
+4. **Coverage is required on regions, forbidden elsewhere.** Enforced by a
+   `PrunedFragment` validator and carried into `IndexEntry`. A partial region must never
+   be indistinguishable from a complete one.
+5. **Never strip classes, ids, or style attributes.** Measured worst representation in
+   NEXT-EVAL (F1 0.10, 91% hallucination), and they are what Yosoi selectors are made of.
+   If you see a "slim the HTML" TODO, it is wrong — delete it.
+6. **The pruner and the inspector share one definition of shape and key** (`html_tree.py`).
+   A second implementation is how an address stops resolving to what it was minted for.
+7. **Pruners are pure**: no I/O, no browser, no model, no mutation of the source tree.
+8. **Canonical artifacts are immutable.** Detail is always re-derived from bytes, never
+   from a summary.
+9. **The `eval` mark on this tier does not mean non-deterministic.** Boss fights are
+   offline and provider-free. They must never fetch a live site.
+10. **Ground truth never contains an emitted `RegionRef`.** Fixtures state evidence by an
+    independent XPath oracle; `HtmlWorkload.entries_reaching` maps oracle → emitted address.
+
+## Traps already paid for
+
+- **`id()` on lxml elements is NOT stable.** lxml mints a fresh Python proxy per access and
+  frees it when the last reference drops; CPython reuses the address immediately. A
+  `dict[int, str]` signature memo therefore returns *another element's* shape. This merged
+  two differently-shaped `<div>`s into a bogus `×2` region and swallowed the entire
+  20-product grid, silently. `SignatureCache` now stores `(element, digest)` to pin the id.
+  **Any new cache keyed on an lxml element must do the same.**
+- **Per-element key uniqueness checking is O(n²)** and dies on the table this exists for.
+  Count once for the whole group.
+- **`<head>`-only declaration indexing loses real findings.** books.toscrape loads jQuery
+  over plain `http://` from the end of `<body>`. Partition by the spec's *metadata content*
+  category instead — `METADATA_CONTENT` in `html_tree.py`.
+- **Event handlers live on structure, not metadata.** `<body onload>` is indexed by the
+  body pruner (it emits the structure root deliberately), not the declaration pruner.
+
+## File map
+
+```text
+yosoi/observations/
+├── html_tree.py            shape/key primitives shared by pruner + inspector
+├── models/view.py          RegionRef, PrunedFragment, RegionCoverage, PrunedView
+├── models/index.py         IndexEntry (carries coverage), ObservationIndex
+├── pruning/_base.py        SemanticPruner template; PruneCandidate, Reduction
+├── pruning/html.py         DeclarationPruner, BodyPruner
+├── index/addressing.py     address grammar; ObservationAddress, AddressSegment
+├── index/compiler.py       flat index, fixed modality order, dup addresses fail closed
+└── index/inspect.py        inspect() + expand()
+
+tests/boss_fights/
+├── conftest.py             HtmlWorkload harness (build, entries_reaching, expand)
+├── controls/html/          trivial control: every declaration one hop away
+└── html/books_toscrape/    frozen SSR dogfood; region collapse + expand paging
+```
+
+Adding a workload: `manifest.toml` (identity, capabilities, budgets, prediction, failure)
++ `ground_truth.toml` (oracles) + `artifacts/` + `test_<modality>_<workload>.py`. Test
+module names must be globally unique. Write the prediction **before** running the pruner.
+
+## Next up, in order
+
+1. **10,000-row boss fight** *(highest value, smallest risk)*. The headline case is
+   currently argued from ×50 and ×20 only. Put a deterministic generator in
+   `tests/boss_fights/generators/` — do **not** freeze a 1 MB artifact, the large-file hook
+   will reject it. Accept: 10k rows → 2 entries, `expand` pages them, wall-clock stays flat.
+2. **`index/diff.py`** over stable addresses. This is what actually *proves* invariant 1 —
+   right now address stability is structural reasoning, not a measurement. Accept: two
+   snapshots of a page with a row inserted mid-list produce one `ADDED` change and no
+   spurious `CHANGED`.
+3. **`index/render.py`** — token budgets. Nothing in this package has ever counted tokens;
+   every budget is stated in bytes and says so. Keep semantic pruning out of it.
+4. **DOM/AX pruners (CAS-263)** on the same base, address scheme, and gates. This is where
+   `RegionCoverage.complete=False` first becomes real: a virtualised list observes 20 of
+   `aria-rowcount` members and must say so.
+5. **DEPTA tag-path clustering** for non-contiguous records. Needs its own gate corpus
+   (ad-interleaved lists, mixed-shape tables) to prove it does not over-collapse.
+
+## Open decisions
+
+- `MAX_BODY_DEPTH = 12` and `MIN_RUN = 2` are class constants folded into the pruner
+  version, not `PruningPolicy` fields — modality-specific dials in a shared policy felt
+  wrong. Revisit if a second modality wants the same dial.
+- The declaration label uses the author's *first attribute* as the key. Degrades to a
+  still-correct but less scannable label if an author writes `content=` before `name=`.
+  No case found in the corpus yet; worth watching.
+- `InspectionBudget.max_items` is currently only meaningful for `expand`; `inspect` always
+  returns exactly one node.
+
+## Ground rules from the repo
+
+`uv run` everything. Never pip. Never `unittest`. Never Playwright — VoidCrawl only.
+`tenacity` for retries, never hand-rolled loops. This repo uses **jj**: run `jj status`
+first, keep one semantic change together, don't create a change per turn, and never push
+or abandon without asking.

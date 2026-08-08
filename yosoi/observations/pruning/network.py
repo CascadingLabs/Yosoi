@@ -3,21 +3,19 @@
 from __future__ import annotations
 
 from yosoi.observations.models.artifact import EvidenceKind
-from yosoi.observations.models.view import PrunedView
-from yosoi.observations.pruning._shared import require_prunable
-from yosoi.observations.pruning.protocol import PruningInput, PruningPolicy
+from yosoi.observations.pruning._base import Reduction, SemanticPruner
+from yosoi.observations.pruning.protocol import PruningPolicy
 
 
-class NetworkPruner:
+class NetworkPruner(SemanticPruner):
     """Future reducer for already-redacted and normalized network evidence."""
 
     name = 'network'
     version = 'scaffold'
     evidence_kind = EvidenceKind.NETWORK
 
-    def prune(self, source: PruningInput, policy: PruningPolicy) -> PrunedView:
-        """Validate input identity, then refuse until safe network reduction exists."""
-        require_prunable(source, self.evidence_kind, policy)
+    def reduce(self, data: bytes, policy: PruningPolicy) -> Reduction:
+        """Refuse reduction until this modality is implemented."""
         raise NotImplementedError('network pruning awaits the safe evidence contract; see observations/ROADMAP.md')
 
 

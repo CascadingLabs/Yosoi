@@ -18,19 +18,44 @@ The adversarial corpus, no-auth SPA slate, and per-pruner gates are specified in
 | `artifacts/manifest.py` | Deterministic snapshot manifest serialization | Add byte-identical golden tests. |
 | `pruning/protocol.py` | Explicit pruner contract and policy input | No registry; callers pass a sequence or mapping. |
 | `pruning/_shared.py` | Hashing, accounting, and validation mechanics only | Never place modality semantics here. |
-| `pruning/html.py` | Source HTML reduction | First vertical slice, ported from the proven spike. |
+| `html_tree.py` | Shared HTML shape/key primitives | **Implemented (CAS-262).** One definition of skeleton signature and content key, used by both the pruner and the inspector. |
+| `pruning/_base.py` | Template method for every pruner | **Implemented (CAS-262).** Owns digest validation, policy hashing, addressing, capping, accounting. A pruner is one `reduce`. |
+| `pruning/html.py` | Source HTML reduction | **Implemented (CAS-262).** Two pruners: `html.declarations` (flat, metadata content) and `html.body` (MDR-style repeat collapse). |
 | `pruning/dom.py` | Rendered DOM reduction | Add after raw structured DOM capture exists. |
 | `pruning/ax.py` | Raw accessibility-tree reduction | Preserve raw AX evidence before compaction. |
 | `pruning/network.py` | Safe normalized network reduction | Add only after redaction and restricted-artifact policy are specified. |
-| `index/compiler.py` | Combine pruned modality views into one flat index | Deterministic ordering and no provider-specific packing. |
-| `index/addressing.py` | Validate snapshot-bound references | Stale or cross-snapshot references fail closed. |
-| `index/inspect.py` | Bounded canonical-detail retrieval | Enforce byte/item limits and sensitivity permissions. |
+| `index/compiler.py` | Combine pruned modality views into one flat index | **Implemented (CAS-262).** Fixed modality ordering; duplicate addresses fail closed. |
+| `index/addressing.py` | Address grammar and reference validation | **Implemented (CAS-262).** Segmented region/member addresses that survive re-snapshotting; stale, foreign, or malformed references fail closed. |
+| `index/inspect.py` | Bounded detail and region expansion | **Implemented (CAS-262) for `source_html` only.** `inspect` for one thing, `expand` to page a region's members. Other modalities raise. |
 | `index/render.py` | Tokenizer/provider-specific packing | Render an existing view/index without rerunning semantic pruning. |
 | `index/diff.py` | Snapshot/index comparison | Add with multi-shot action episodes. |
 
+## Static HTML scope, stated
+
+The document is partitioned by the HTML spec's *metadata content* category — the one
+enumerated set, and enumerated because the spec closes it. Metadata content goes to
+`html.declarations`, everything else to `html.body`; nothing is claimed by both or neither.
+
+`html.declarations` is flat. Each element is labelled by its own first attribute
+(`meta[name=robots]`), so an unexpected declaration appears in the index rather than being
+filtered by an allowlist. It is document-wide, not `<head>`-only: books.toscrape loads jQuery
+over plain http from the end of `<body>`.
+
+`html.body` is structural. Adjacent siblings sharing a skeleton signature collapse to one
+region plus one exemplar (MDR, Liu et al. 2003), so 10,000 rows cost two entries and stay
+individually reachable through `expand`. Classes and ids are never stripped — that was the
+worst-measured representation in NEXT-EVAL (arXiv:2505.17125) and it is what selectors are
+made of.
+
+Not handled: **non-contiguous** records, split by injected ads or dividers. That is DEPTA's
+tag-path clustering and is recorded as an asserted limit, not left to be discovered.
+
+Design rationale, including why one-shot extraction F1 does not transfer to a multi-shot
+loop, is in [`docs/plans/observation-pruning.md`](../../docs/plans/observation-pruning.md).
+
 ## Delivery sequence
 
-1. Static HTML artifact → `PrunedView` → flat index → bounded inspection.
+1. ~~Static HTML artifact → `PrunedView` → flat index → bounded inspection, addressing, and region expansion.~~ Done (CAS-262).
 2. Golden parity and MDS regression fixtures from the QA beachhead.
 3. DOM and AX artifact producers/pruners over the same contracts.
 4. QA runtime dogfooding, still opt-in and read-only.

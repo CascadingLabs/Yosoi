@@ -18,6 +18,31 @@ class RegionRef(BaseModel):
     locator: str = Field(min_length=1)
 
 
+class RegionCoverage(BaseModel):
+    """How much of a repeat region this snapshot actually observed.
+
+    A collapsed region says "N members". Without this, a region where 20 of 10,000 members were
+    ever in the DOM is indistinguishable from one that is genuinely complete, and a
+    consumer reads partial evidence as total. Incompleteness is stated, never inferred.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    observed: int = Field(ge=0)
+    declared: int | None = None
+    complete: bool
+
+    @model_validator(mode='after')
+    def _validate_coverage(self) -> RegionCoverage:
+        if self.declared is not None and self.observed > self.declared:
+            raise ValueError('a region cannot observe more members than it declares')
+        if self.complete and self.declared is not None and self.observed != self.declared:
+            raise ValueError('a complete region must observe every declared member')
+        if self.complete and self.declared is None:
+            raise ValueError('a complete region must declare its member count')
+        return self
+
+
 class PrunedFragment(BaseModel):
     """One addressable semantic fragment retained by a modality pruner."""
 
@@ -27,6 +52,18 @@ class PrunedFragment(BaseModel):
     ordinal: int = Field(ge=0)
     label: str = Field(min_length=1)
     summary: str
+    coverage: RegionCoverage | None = None
+
+    @model_validator(mode='after')
+    def _validate_region_coverage(self) -> PrunedFragment:
+        from yosoi.observations.index.addressing import parse_address
+
+        is_region = parse_address(self.ref.locator).is_region
+        if is_region and self.coverage is None:
+            raise ValueError('a region fragment must state how much of itself it observed')
+        if not is_region and self.coverage is not None:
+            raise ValueError('coverage belongs to a region fragment, not to a single element')
+        return self
 
 
 class PruningStats(BaseModel):
@@ -83,4 +120,11 @@ class RenderedView(BaseModel):
     truncated: bool = False
 
 
-__all__ = ['PrunedFragment', 'PrunedView', 'PruningStats', 'RegionRef', 'RenderedView']
+__all__ = [
+    'PrunedFragment',
+    'PrunedView',
+    'PruningStats',
+    'RegionCoverage',
+    'RegionRef',
+    'RenderedView',
+]

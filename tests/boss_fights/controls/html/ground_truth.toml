@@ -1,0 +1,34 @@
+# Evaluator-only oracles. Each names required evidence by an INDEPENDENT XPath into the
+# frozen artifact. Emitted RegionRef locators are never recorded here — the test maps
+# oracle to emitted address, so the fixture states what must be reachable and the
+# implementation stays free to choose how it addresses it.
+
+[[required_evidence]]
+id = "malformed_meta"
+oracle_xpath = "//meta[@name='Andrew Berg']"
+why = "an author meant name=author; an allowlist would have hidden the mistake entirely"
+
+[[required_evidence]]
+id = "canonical_link"
+oracle_xpath = "//link[@rel='canonical']"
+why = "canonical/SEO declarations exist in no other modality"
+
+[[required_evidence]]
+id = "http_equiv_refresh"
+oracle_xpath = "//meta[@http-equiv='refresh']"
+why = "keyed by http-equiv rather than name; a name-only reader misses it"
+
+[[required_evidence]]
+id = "external_script"
+oracle_xpath = "//script[@src='/static/control.js']"
+why = "external resources are the failure surface for broken or third-party loads"
+
+[[required_evidence]]
+id = "inline_handler"
+oracle_xpath = "//body[@onload]"
+why = "event handler content attributes are a spec-closed rule, not a guessed allowlist"
+
+[[required_evidence]]
+id = "title"
+oracle_xpath = "//title"
+why = "the document title is the cheapest identity check available"

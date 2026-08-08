@@ -14,6 +14,12 @@
 - Sensitive values must be redacted or excluded before an artifact becomes canonical.
 - No mutable global plugin registry. Pass pruners explicitly to compilers/runtimes.
 
+## Picking this up
+
+Start with [`docs/plans/observation-pruning-handoff.md`](../../docs/plans/observation-pruning-handoff.md) — current state, invariants, the traps already paid for, and what to build next. Design rationale is in [`docs/plans/observation-pruning.md`](../../docs/plans/observation-pruning.md).
+
 ## Current phase
 
-This package is scaffolding only. Leaf contracts and fail-closed interfaces may be implemented, but it is not wired into Yosoi operations, policy, acquisition, discovery, or public exports. Follow `ROADMAP.md` when replacing placeholders.
+The source-HTML slice is implemented end to end — `HtmlPruner` → `ObservationIndexCompiler` → `ObservationInspector` — and gated by `tests/boss_fights/{controls,html}`. Everything else remains scaffolding: DOM, AX, and network pruning, index rendering, diffing, and filesystem persistence all still refuse.
+
+The package is still not wired into Yosoi operations, policy, acquisition, discovery, or public top-level exports. Follow `ROADMAP.md` when replacing the remaining placeholders.

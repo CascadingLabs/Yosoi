@@ -5,11 +5,16 @@ from __future__ import annotations
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from yosoi.observations.models.artifact import OBSERVATION_SCHEMA_VERSION, ArtifactRef, EvidenceKind
-from yosoi.observations.models.view import RegionRef
+from yosoi.observations.models.view import RegionCoverage, RegionRef
 
 
 class IndexEntry(BaseModel):
-    """Compact overview entry pointing to exact recoverable evidence."""
+    """Compact overview entry pointing to exact recoverable evidence.
+
+    Carries the region's coverage verbatim: the index is what a consumer actually holds, so
+    dropping incompleteness here would let partial evidence read as total no matter how
+    carefully the pruner stated it.
+    """
 
     model_config = ConfigDict(frozen=True)
 
@@ -17,6 +22,7 @@ class IndexEntry(BaseModel):
     ref: RegionRef
     label: str = Field(min_length=1)
     summary: str
+    coverage: RegionCoverage | None = None
 
 
 class ObservationIndex(BaseModel):

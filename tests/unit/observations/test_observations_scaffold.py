@@ -22,7 +22,15 @@ from yosoi.observations.models import (
     PruningStats,
     RegionRef,
 )
-from yosoi.observations.pruning import HtmlPruner, PruningInput, PruningPolicy
+from yosoi.observations.pruning import (
+    AxPruner,
+    DeclarationPruner,
+    DomPruner,
+    NetworkPruner,
+    Pruner,
+    PruningInput,
+    PruningPolicy,
+)
 
 
 def test_memory_store_returns_exact_immutable_reference() -> None:
@@ -83,7 +91,7 @@ def test_pruned_view_and_index_keep_exact_reference_chain() -> None:
         snapshot_id='snapshot-1',
         artifact_sha256=ref.sha256,
         modality=EvidenceKind.SOURCE_HTML,
-        locator='node:0',
+        locator='/html',
     )
     fragment = PrunedFragment(ref=region, ordinal=0, label='document', summary='html document')
     view = PrunedView(
@@ -116,14 +124,35 @@ def test_pruned_view_and_index_keep_exact_reference_chain() -> None:
         resolve_index_entry(index, foreign)
 
 
-def test_scaffold_pruner_validates_source_then_fails_closed() -> None:
-    payload = b'<html></html>'
+@pytest.mark.parametrize(
+    ('pruner', 'kind'),
+    [
+        (DomPruner(), EvidenceKind.RENDERED_DOM),
+        (AxPruner(), EvidenceKind.AX_TREE),
+        (NetworkPruner(), EvidenceKind.NETWORK),
+    ],
+)
+def test_unimplemented_pruners_validate_source_then_fail_closed(pruner: Pruner, kind: EvidenceKind) -> None:
+    payload = b'{}'
     ref = MemoryArtifactStore().put(
         snapshot_id='snapshot-1',
-        kind=EvidenceKind.SOURCE_HTML,
-        media_type='text/html',
+        kind=kind,
+        media_type='application/json',
         data=payload,
     )
 
-    with pytest.raises(NotImplementedError, match='first implementation slice'):
-        HtmlPruner().prune(PruningInput(source=ref, data=payload), PruningPolicy())
+    with pytest.raises(NotImplementedError):
+        pruner.prune(PruningInput(source=ref, data=payload), PruningPolicy())
+
+
+def test_declaration_pruner_rejects_evidence_from_another_modality() -> None:
+    payload = b'{}'
+    ref = MemoryArtifactStore().put(
+        snapshot_id='snapshot-1',
+        kind=EvidenceKind.NETWORK,
+        media_type='application/json',
+        data=payload,
+    )
+
+    with pytest.raises(ValueError, match='cannot consume'):
+        DeclarationPruner().prune(PruningInput(source=ref, data=payload), PruningPolicy())

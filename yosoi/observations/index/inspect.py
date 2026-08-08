@@ -1,10 +1,45 @@
-"""Bounded canonical-detail inspection contracts and fail-closed scaffold."""
+"""Bounded canonical-detail inspection and region expansion.
+
+Two verbs, both one hop and both bounded:
+
+    inspect(ref)                    detail for one addressed thing
+    expand(region, offset, limit)   a page of members of a repeat region
+
+`expand` exists because `inspect` on a collapsed 10,000-member region can only return one row
+or forty megabytes, and neither is a zoom. Both re-derive detail from canonical bytes rather
+than from a summary — which is what keeps a finding re-checkable against exact bytes instead
+of an opinion about a reduction.
+"""
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from pydantic import BaseModel, ConfigDict, Field
 
-from yosoi.observations.models.view import RegionRef
+from yosoi.observations.artifacts.protocol import ArtifactStore
+from yosoi.observations.html_tree import (
+    SignatureCache,
+    assign_member_keys,
+    content_children,
+    matches_key,
+    node_label,
+    parse,
+    skeleton_signature,
+    subtree_text,
+)
+from yosoi.observations.index.addressing import (
+    ObservationAddress,
+    ObservationAddressError,
+    format_address,
+    parse_address,
+)
+from yosoi.observations.models.artifact import ArtifactRef, EvidenceKind, Sensitivity
+from yosoi.observations.models.snapshot import ObservationSnapshot
+from yosoi.observations.models.view import RegionCoverage, RegionRef
+
+if TYPE_CHECKING:
+    from lxml.etree import _Element, _ElementTree
 
 
 class InspectionBudget(BaseModel):
@@ -30,12 +65,166 @@ class InspectionResult(BaseModel):
     truncated: bool = False
 
 
+class RegionMember(BaseModel):
+    """One member of an expanded region, addressed durably where the page allows it."""
+
+    model_config = ConfigDict(frozen=True)
+
+    ref: RegionRef
+    ordinal: int = Field(ge=0)
+    label: str = Field(min_length=1)
+    summary: str
+    stable: bool
+
+
+class RegionPage(BaseModel):
+    """One bounded page of members drawn from a repeat region."""
+
+    model_config = ConfigDict(frozen=True)
+
+    region: RegionRef
+    members: tuple[RegionMember, ...] = ()
+    offset: int = Field(ge=0)
+    coverage: RegionCoverage
+    truncated: bool = False
+
+
+def _resolve_segments(tree: _ElementTree, address: ObservationAddress) -> _Element:
+    """Walk an address segment by segment, failing closed at the first ambiguity."""
+    from lxml import etree
+
+    current: _Element | _ElementTree = tree
+    for segment in address.segments:
+        try:
+            matches = current.xpath(segment.path)
+        except etree.XPathError as exc:
+            raise ObservationAddressError(f'address segment {segment.path!r} is not a valid path') from exc
+        if not isinstance(matches, list) or len(matches) != 1:
+            count = len(matches) if isinstance(matches, list) else 1
+            raise ObservationAddressError(f'address segment {segment.path!r} resolved to {count} nodes')
+        current = matches[0]
+        if segment.selects_member:
+            current = _select_member(current, segment.shape or '', key=segment.key, ordinal=segment.ordinal)
+    return current
+
+
+def _region_members(container: _Element, shape: str) -> list[_Element]:
+    """Return the container's children whose shape matches, preserving document order."""
+    cache: SignatureCache = {}
+    members = [child for child in content_children(container) if skeleton_signature(child, cache) == shape]
+    if not members:
+        raise ObservationAddressError(f'no members of shape {shape!r} remain in this region')
+    return members
+
+
+def _select_member(container: _Element, shape: str, *, key: str | None, ordinal: int | None) -> _Element:
+    """Select one member of a region by durable key, or by declared-unstable position."""
+    members = _region_members(container, shape)
+    if key is not None:
+        matched = [member for member in members if matches_key(member, key)]
+        if len(matched) != 1:
+            raise ObservationAddressError(f'region key {key!r} resolved to {len(matched)} members')
+        return matched[0]
+    position = ordinal or 0
+    if position >= len(members):
+        raise ObservationAddressError(f'region member ordinal {position} is past the {len(members)} members present')
+    return members[position]
+
+
 class ObservationInspector:
-    """Future resolver from a region reference to bounded canonical detail."""
+    """Resolve observation references to bounded detail from one exact snapshot."""
+
+    def __init__(self, store: ArtifactStore, snapshot: ObservationSnapshot) -> None:
+        """Bind an inspector to the immutable store and manifest it may read."""
+        self._store = store
+        self._snapshot = snapshot
+        self._artifacts: dict[str, ArtifactRef] = {artifact.sha256: artifact for artifact in snapshot.artifacts}
+
+    def _artifact_for(self, ref: RegionRef, *, allow_restricted: bool) -> ArtifactRef:
+        """Validate a reference against this snapshot and return the artifact it names."""
+        if ref.snapshot_id != self._snapshot.snapshot_id:
+            raise ObservationAddressError('observation reference belongs to a different snapshot')
+        artifact = self._artifacts.get(ref.artifact_sha256)
+        if artifact is None:
+            raise ObservationAddressError('observation reference targets an artifact this snapshot does not declare')
+        if artifact.kind != ref.modality:
+            raise ObservationAddressError('observation reference modality disagrees with its artifact')
+        if artifact.sensitivity in {Sensitivity.RESTRICTED, Sensitivity.EPHEMERAL_SECRET} and not allow_restricted:
+            raise PermissionError('restricted observation evidence requires explicit inspection permission')
+        if artifact.kind is not EvidenceKind.SOURCE_HTML:
+            raise NotImplementedError(
+                f'{artifact.kind.value} inspection is not implemented; see observations/ROADMAP.md'
+            )
+        return artifact
 
     def inspect(self, ref: RegionRef, budget: InspectionBudget) -> InspectionResult:
-        """Refuse retrieval until modality resolvers and permissions are implemented."""
-        raise NotImplementedError('bounded observation inspection is not implemented; see observations/ROADMAP.md')
+        """Return bounded canonical detail, failing closed on stale or foreign references."""
+        from lxml import etree
+
+        artifact = self._artifact_for(ref, allow_restricted=budget.allow_restricted)
+        address = parse_address(ref.locator)
+        _, tree = parse(self._store.read(artifact))
+        element = _resolve_segments(tree, address)
+
+        serialized = etree.tostring(element, encoding='utf-8')
+        content = serialized[: budget.max_bytes]
+        return InspectionResult(
+            ref=ref,
+            media_type=artifact.media_type,
+            content=content,
+            returned_bytes=len(content),
+            returned_items=1,
+            truncated=len(serialized) > budget.max_bytes,
+        )
+
+    def expand(self, ref: RegionRef, budget: InspectionBudget, *, offset: int = 0) -> RegionPage:
+        """Return one bounded page of a region's members, addressed durably where possible."""
+        artifact = self._artifact_for(ref, allow_restricted=budget.allow_restricted)
+        address = parse_address(ref.locator)
+        if not address.is_region:
+            raise ObservationAddressError('expand requires a region address; inspect addresses one element')
+        if offset < 0:
+            raise ObservationAddressError('region expansion offset cannot be negative')
+
+        _, tree = parse(self._store.read(artifact))
+        container = _resolve_segments(tree, address)
+        shape = address.segments[-1].shape or ''
+        members = _region_members(container, shape)
+        keys = assign_member_keys(members)
+        window = list(zip(members, keys, strict=True))[offset : offset + budget.max_items]
+
+        page = tuple(
+            RegionMember(
+                ref=RegionRef(
+                    snapshot_id=ref.snapshot_id,
+                    artifact_sha256=ref.artifact_sha256,
+                    modality=ref.modality,
+                    locator=format_address(
+                        address.member(key=key, ordinal=None if key is not None else offset + position)
+                    ),
+                ),
+                ordinal=offset + position,
+                label=node_label(member),
+                summary=subtree_text(member)[: budget.max_bytes],
+                stable=key is not None,
+            )
+            for position, (member, key) in enumerate(window)
+        )
+        return RegionPage(
+            region=ref,
+            members=page,
+            offset=offset,
+            # Static HTML holds every member it has. A rendered snapshot of a virtualised
+            # list will report a smaller `observed` than the container declares.
+            coverage=RegionCoverage(observed=len(members), declared=len(members), complete=True),
+            truncated=offset + len(window) < len(members),
+        )
 
 
-__all__ = ['InspectionBudget', 'InspectionResult', 'ObservationInspector']
+__all__ = [
+    'InspectionBudget',
+    'InspectionResult',
+    'ObservationInspector',
+    'RegionMember',
+    'RegionPage',
+]
