@@ -15,7 +15,7 @@ from yosoi.observations.models import (
     DomSnapshot,
     DomVisibility,
 )
-from yosoi.observations.models.dom import parse_dom_snapshot, serialize_dom_snapshot
+from yosoi.observations.models.dom import MAX_PARSED_DEPTH, parse_dom_snapshot, serialize_dom_snapshot
 
 
 def _snapshot() -> DomSnapshot:
@@ -122,3 +122,36 @@ def test_dom_snapshot_preserves_ordered_attributes_and_runtime_state() -> None:
             tag='div',
             attributes=(DomAttribute(name='class', value='a'), DomAttribute(name='class', value='b')),
         )
+
+
+def _chain(depth: int) -> DomNode:
+    """Build one element chain `depth` levels deep."""
+    node = DomNode(node_id=f'n{depth}', tag='div', text='leaf')
+    for level in range(depth - 1, -1, -1):
+        node = DomNode(node_id=f'n{level}', tag='div', children=(node,))
+    return node
+
+
+def test_dom_snapshot_parses_at_the_stated_depth_limit() -> None:
+    """MAX_PARSED_DEPTH is a measured fact, so it must stay true as pydantic moves."""
+    data = serialize_dom_snapshot(DomSnapshot(snapshot_id='deep', root=_chain(MAX_PARSED_DEPTH)))
+
+    assert parse_dom_snapshot(data).snapshot_id == 'deep'
+
+
+def test_dom_snapshot_names_the_depth_limit_instead_of_leaking_a_json_error() -> None:
+    """A page that nests too far is a capture problem, not a corrupt artifact.
+
+    The parser's own message talks about JSON recursion, which sends the reader looking
+    for malformed bytes that are not there.
+    """
+    data = serialize_dom_snapshot(DomSnapshot(snapshot_id='deep', root=_chain(MAX_PARSED_DEPTH + 1)))
+
+    with pytest.raises(ValueError, match=f'nests deeper than {MAX_PARSED_DEPTH} elements'):
+        parse_dom_snapshot(data)
+
+
+def test_dom_snapshot_still_reports_ordinary_validation_failures() -> None:
+    """The depth branch must not swallow every other way a payload can be wrong."""
+    with pytest.raises(ValidationError, match='snapshot_id'):
+        parse_dom_snapshot(b'{"schema_version":"dom1","kind":"rendered_dom"}')

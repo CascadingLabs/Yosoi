@@ -5,7 +5,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 DOM_SCHEMA_VERSION = 'dom1'
 
@@ -177,13 +177,45 @@ def serialize_dom_snapshot(snapshot: DomSnapshot) -> bytes:
     return snapshot.model_dump_json(exclude_none=False).encode('utf-8')
 
 
+MAX_PARSED_DEPTH = 99
+"""Deepest element chain the JSON validator accepts, measured rather than chosen.
+
+The limit belongs to the recursive-descent JSON parser underneath pydantic, not to this
+schema. It is stated here because a capture from a deeply nested application fails at the
+parser with a message about JSON recursion, which reads like a corrupt artifact rather
+than a page that nests too far.
+"""
+
+
 def parse_dom_snapshot(data: bytes) -> DomSnapshot:
-    """Validate canonical DOM JSON before a pruner or inspector consumes it."""
-    return DomSnapshot.model_validate_json(data)
+    """Validate canonical DOM JSON before a pruner or inspector consumes it.
+
+    Raises:
+        ValueError: if the payload nests deeper than `MAX_PARSED_DEPTH`, naming the depth
+            limit instead of surfacing the parser's recursion message.
+
+    """
+    try:
+        return DomSnapshot.model_validate_json(data)
+    except ValidationError as error:
+        if _is_depth_failure(error):
+            raise ValueError(
+                f'rendered-DOM payload nests deeper than {MAX_PARSED_DEPTH} elements, '
+                'which the JSON validator cannot parse; capture a shallower subtree'
+            ) from error
+        raise
+
+
+def _is_depth_failure(error: ValidationError) -> bool:
+    """Return whether a validation error is the parser giving up on nesting depth."""
+    return any(
+        detail.get('type') == 'json_invalid' and 'recursion' in str(detail.get('ctx', {})) for detail in error.errors()
+    )
 
 
 __all__ = [
     'DOM_SCHEMA_VERSION',
+    'MAX_PARSED_DEPTH',
     'DomAttribute',
     'DomCapability',
     'DomCapabilityKind',

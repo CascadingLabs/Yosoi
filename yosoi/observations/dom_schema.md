@@ -29,6 +29,9 @@ payload before a pruner or inspector consumes it.
 - It does not claim that an observed child list is complete; `declared_count` is only a
   producer-reported fact. The DOM pruner will turn that distinction into `RegionCoverage`.
 - Sensitive runtime values must be redacted before this payload becomes a canonical artifact.
+- Element nesting is capped at `MAX_PARSED_DEPTH` (99). The ceiling belongs to the recursive
+  JSON validator, not to the schema, and a deeper payload is rejected by name rather than as a
+  malformed artifact. Deeply wrapped applications need a subtree capture until that is lifted.
 - Cross-snapshot identity and diffs remain future work.
 
 ## How the beta works
