@@ -1,0 +1,10 @@
+{
+  "record": "app-article-preview",
+  "fields": {
+    "title": "a.preview-link h1::text",
+    "description": "a.preview-link p::text",
+    "url": "a.preview-link::attr(href)",
+    "author": "div.article-meta a::attr(href)",
+    "tag": "ul.tag-list li.tag-default::text"
+  }
+}

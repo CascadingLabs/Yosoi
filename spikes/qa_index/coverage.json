@@ -1,0 +1,2793 @@
+{
+  "budgets": [
+    300,
+    1000,
+    4000
+  ],
+  "rows": [
+    {
+      "target": "books_toscrape",
+      "defect": "blank_price",
+      "representation": "pruned_ax(baseline)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 1765
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "blank_price",
+      "representation": "pruned_ax(baseline)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 1765
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "blank_price",
+      "representation": "pruned_ax(baseline)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 1765
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "blank_price",
+      "representation": "ax(minimal)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 220
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "blank_price",
+      "representation": "ax(minimal)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 220
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "blank_price",
+      "representation": "ax(minimal)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 220
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "blank_price",
+      "representation": "dom(minimal)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 1110
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "blank_price",
+      "representation": "dom(minimal)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 1110
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "blank_price",
+      "representation": "dom(minimal)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 1110
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "blank_price",
+      "representation": "html(raw)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 13732
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "blank_price",
+      "representation": "html(raw)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 13732
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "blank_price",
+      "representation": "html(raw)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 13732
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "drop_record",
+      "representation": "pruned_ax(baseline)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 1765
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "drop_record",
+      "representation": "pruned_ax(baseline)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 1765
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "drop_record",
+      "representation": "pruned_ax(baseline)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 1765
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "drop_record",
+      "representation": "ax(minimal)",
+      "budget": 300,
+      "detected": true,
+      "clean_tokens": 220
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "drop_record",
+      "representation": "ax(minimal)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 220
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "drop_record",
+      "representation": "ax(minimal)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 220
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "drop_record",
+      "representation": "dom(minimal)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 1110
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "drop_record",
+      "representation": "dom(minimal)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 1110
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "drop_record",
+      "representation": "dom(minimal)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 1110
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "drop_record",
+      "representation": "html(raw)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 13732
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "drop_record",
+      "representation": "html(raw)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 13732
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "drop_record",
+      "representation": "html(raw)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 13732
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "break_href",
+      "representation": "pruned_ax(baseline)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 1765
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "break_href",
+      "representation": "pruned_ax(baseline)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 1765
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "break_href",
+      "representation": "pruned_ax(baseline)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 1765
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "break_href",
+      "representation": "ax(minimal)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 220
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "break_href",
+      "representation": "ax(minimal)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 220
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "break_href",
+      "representation": "ax(minimal)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 220
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "break_href",
+      "representation": "dom(minimal)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 1110
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "break_href",
+      "representation": "dom(minimal)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 1110
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "break_href",
+      "representation": "dom(minimal)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 1110
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "break_href",
+      "representation": "html(raw)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 13732
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "break_href",
+      "representation": "html(raw)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 13732
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "break_href",
+      "representation": "html(raw)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 13732
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "null_alt",
+      "representation": "pruned_ax(baseline)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 1765
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "null_alt",
+      "representation": "pruned_ax(baseline)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 1765
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "null_alt",
+      "representation": "pruned_ax(baseline)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 1765
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "null_alt",
+      "representation": "ax(minimal)",
+      "budget": 300,
+      "detected": true,
+      "clean_tokens": 220
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "null_alt",
+      "representation": "ax(minimal)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 220
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "null_alt",
+      "representation": "ax(minimal)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 220
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "null_alt",
+      "representation": "dom(minimal)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 1110
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "null_alt",
+      "representation": "dom(minimal)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 1110
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "null_alt",
+      "representation": "dom(minimal)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 1110
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "null_alt",
+      "representation": "html(raw)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 13732
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "null_alt",
+      "representation": "html(raw)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 13732
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "null_alt",
+      "representation": "html(raw)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 13732
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "duplicate_record",
+      "representation": "pruned_ax(baseline)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 1765
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "duplicate_record",
+      "representation": "pruned_ax(baseline)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 1765
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "duplicate_record",
+      "representation": "pruned_ax(baseline)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 1765
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "duplicate_record",
+      "representation": "ax(minimal)",
+      "budget": 300,
+      "detected": true,
+      "clean_tokens": 220
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "duplicate_record",
+      "representation": "ax(minimal)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 220
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "duplicate_record",
+      "representation": "ax(minimal)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 220
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "duplicate_record",
+      "representation": "dom(minimal)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 1110
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "duplicate_record",
+      "representation": "dom(minimal)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 1110
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "duplicate_record",
+      "representation": "dom(minimal)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 1110
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "duplicate_record",
+      "representation": "html(raw)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 13732
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "duplicate_record",
+      "representation": "html(raw)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 13732
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "duplicate_record",
+      "representation": "html(raw)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 13732
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "corrupt_value",
+      "representation": "pruned_ax(baseline)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 1765
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "corrupt_value",
+      "representation": "pruned_ax(baseline)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 1765
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "corrupt_value",
+      "representation": "pruned_ax(baseline)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 1765
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "corrupt_value",
+      "representation": "ax(minimal)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 220
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "corrupt_value",
+      "representation": "ax(minimal)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 220
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "corrupt_value",
+      "representation": "ax(minimal)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 220
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "corrupt_value",
+      "representation": "dom(minimal)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 1110
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "corrupt_value",
+      "representation": "dom(minimal)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 1110
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "corrupt_value",
+      "representation": "dom(minimal)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 1110
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "corrupt_value",
+      "representation": "html(raw)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 13732
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "corrupt_value",
+      "representation": "html(raw)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 13732
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "corrupt_value",
+      "representation": "html(raw)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 13732
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "empty_record",
+      "representation": "pruned_ax(baseline)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 1765
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "empty_record",
+      "representation": "pruned_ax(baseline)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 1765
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "empty_record",
+      "representation": "pruned_ax(baseline)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 1765
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "empty_record",
+      "representation": "ax(minimal)",
+      "budget": 300,
+      "detected": true,
+      "clean_tokens": 220
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "empty_record",
+      "representation": "ax(minimal)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 220
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "empty_record",
+      "representation": "ax(minimal)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 220
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "empty_record",
+      "representation": "dom(minimal)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 1110
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "empty_record",
+      "representation": "dom(minimal)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 1110
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "empty_record",
+      "representation": "dom(minimal)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 1110
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "empty_record",
+      "representation": "html(raw)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 13732
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "empty_record",
+      "representation": "html(raw)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 13732
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "empty_record",
+      "representation": "html(raw)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 13732
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "remove_last",
+      "representation": "pruned_ax(baseline)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 1765
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "remove_last",
+      "representation": "pruned_ax(baseline)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 1765
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "remove_last",
+      "representation": "pruned_ax(baseline)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 1765
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "remove_last",
+      "representation": "ax(minimal)",
+      "budget": 300,
+      "detected": true,
+      "clean_tokens": 220
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "remove_last",
+      "representation": "ax(minimal)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 220
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "remove_last",
+      "representation": "ax(minimal)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 220
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "remove_last",
+      "representation": "dom(minimal)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 1110
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "remove_last",
+      "representation": "dom(minimal)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 1110
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "remove_last",
+      "representation": "dom(minimal)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 1110
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "remove_last",
+      "representation": "html(raw)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 13732
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "remove_last",
+      "representation": "html(raw)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 13732
+    },
+    {
+      "target": "books_toscrape",
+      "defect": "remove_last",
+      "representation": "html(raw)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 13732
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "blank_price",
+      "representation": "pruned_ax(baseline)",
+      "budget": 300,
+      "detected": true,
+      "clean_tokens": 454
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "blank_price",
+      "representation": "pruned_ax(baseline)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 454
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "blank_price",
+      "representation": "pruned_ax(baseline)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 454
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "blank_price",
+      "representation": "ax(minimal)",
+      "budget": 300,
+      "detected": true,
+      "clean_tokens": 355
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "blank_price",
+      "representation": "ax(minimal)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 355
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "blank_price",
+      "representation": "ax(minimal)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 355
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "blank_price",
+      "representation": "dom(minimal)",
+      "budget": 300,
+      "detected": true,
+      "clean_tokens": 595
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "blank_price",
+      "representation": "dom(minimal)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 595
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "blank_price",
+      "representation": "dom(minimal)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 595
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "blank_price",
+      "representation": "html(raw)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 23236
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "blank_price",
+      "representation": "html(raw)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 23236
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "blank_price",
+      "representation": "html(raw)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 23236
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "drop_record",
+      "representation": "pruned_ax(baseline)",
+      "budget": 300,
+      "detected": true,
+      "clean_tokens": 454
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "drop_record",
+      "representation": "pruned_ax(baseline)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 454
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "drop_record",
+      "representation": "pruned_ax(baseline)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 454
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "drop_record",
+      "representation": "ax(minimal)",
+      "budget": 300,
+      "detected": true,
+      "clean_tokens": 355
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "drop_record",
+      "representation": "ax(minimal)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 355
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "drop_record",
+      "representation": "ax(minimal)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 355
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "drop_record",
+      "representation": "dom(minimal)",
+      "budget": 300,
+      "detected": true,
+      "clean_tokens": 595
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "drop_record",
+      "representation": "dom(minimal)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 595
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "drop_record",
+      "representation": "dom(minimal)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 595
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "drop_record",
+      "representation": "html(raw)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 23236
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "drop_record",
+      "representation": "html(raw)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 23236
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "drop_record",
+      "representation": "html(raw)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 23236
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "break_href",
+      "representation": "pruned_ax(baseline)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 454
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "break_href",
+      "representation": "pruned_ax(baseline)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 454
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "break_href",
+      "representation": "pruned_ax(baseline)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 454
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "break_href",
+      "representation": "ax(minimal)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 355
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "break_href",
+      "representation": "ax(minimal)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 355
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "break_href",
+      "representation": "ax(minimal)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 355
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "break_href",
+      "representation": "dom(minimal)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 595
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "break_href",
+      "representation": "dom(minimal)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 595
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "break_href",
+      "representation": "dom(minimal)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 595
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "break_href",
+      "representation": "html(raw)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 23236
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "break_href",
+      "representation": "html(raw)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 23236
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "break_href",
+      "representation": "html(raw)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 23236
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "null_alt",
+      "representation": "pruned_ax(baseline)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 454
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "null_alt",
+      "representation": "pruned_ax(baseline)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 454
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "null_alt",
+      "representation": "pruned_ax(baseline)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 454
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "null_alt",
+      "representation": "ax(minimal)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 355
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "null_alt",
+      "representation": "ax(minimal)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 355
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "null_alt",
+      "representation": "ax(minimal)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 355
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "null_alt",
+      "representation": "dom(minimal)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 595
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "null_alt",
+      "representation": "dom(minimal)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 595
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "null_alt",
+      "representation": "dom(minimal)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 595
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "null_alt",
+      "representation": "html(raw)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 23236
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "null_alt",
+      "representation": "html(raw)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 23236
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "null_alt",
+      "representation": "html(raw)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 23236
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "duplicate_record",
+      "representation": "pruned_ax(baseline)",
+      "budget": 300,
+      "detected": true,
+      "clean_tokens": 454
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "duplicate_record",
+      "representation": "pruned_ax(baseline)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 454
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "duplicate_record",
+      "representation": "pruned_ax(baseline)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 454
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "duplicate_record",
+      "representation": "ax(minimal)",
+      "budget": 300,
+      "detected": true,
+      "clean_tokens": 355
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "duplicate_record",
+      "representation": "ax(minimal)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 355
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "duplicate_record",
+      "representation": "ax(minimal)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 355
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "duplicate_record",
+      "representation": "dom(minimal)",
+      "budget": 300,
+      "detected": true,
+      "clean_tokens": 595
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "duplicate_record",
+      "representation": "dom(minimal)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 595
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "duplicate_record",
+      "representation": "dom(minimal)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 595
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "duplicate_record",
+      "representation": "html(raw)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 23236
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "duplicate_record",
+      "representation": "html(raw)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 23236
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "duplicate_record",
+      "representation": "html(raw)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 23236
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "corrupt_value",
+      "representation": "pruned_ax(baseline)",
+      "budget": 300,
+      "detected": true,
+      "clean_tokens": 454
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "corrupt_value",
+      "representation": "pruned_ax(baseline)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 454
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "corrupt_value",
+      "representation": "pruned_ax(baseline)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 454
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "corrupt_value",
+      "representation": "ax(minimal)",
+      "budget": 300,
+      "detected": true,
+      "clean_tokens": 355
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "corrupt_value",
+      "representation": "ax(minimal)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 355
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "corrupt_value",
+      "representation": "ax(minimal)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 355
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "corrupt_value",
+      "representation": "dom(minimal)",
+      "budget": 300,
+      "detected": true,
+      "clean_tokens": 595
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "corrupt_value",
+      "representation": "dom(minimal)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 595
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "corrupt_value",
+      "representation": "dom(minimal)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 595
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "corrupt_value",
+      "representation": "html(raw)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 23236
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "corrupt_value",
+      "representation": "html(raw)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 23236
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "corrupt_value",
+      "representation": "html(raw)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 23236
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "empty_record",
+      "representation": "pruned_ax(baseline)",
+      "budget": 300,
+      "detected": true,
+      "clean_tokens": 454
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "empty_record",
+      "representation": "pruned_ax(baseline)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 454
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "empty_record",
+      "representation": "pruned_ax(baseline)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 454
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "empty_record",
+      "representation": "ax(minimal)",
+      "budget": 300,
+      "detected": true,
+      "clean_tokens": 355
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "empty_record",
+      "representation": "ax(minimal)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 355
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "empty_record",
+      "representation": "ax(minimal)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 355
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "empty_record",
+      "representation": "dom(minimal)",
+      "budget": 300,
+      "detected": true,
+      "clean_tokens": 595
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "empty_record",
+      "representation": "dom(minimal)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 595
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "empty_record",
+      "representation": "dom(minimal)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 595
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "empty_record",
+      "representation": "html(raw)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 23236
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "empty_record",
+      "representation": "html(raw)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 23236
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "empty_record",
+      "representation": "html(raw)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 23236
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "remove_last",
+      "representation": "pruned_ax(baseline)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 454
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "remove_last",
+      "representation": "pruned_ax(baseline)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 454
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "remove_last",
+      "representation": "pruned_ax(baseline)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 454
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "remove_last",
+      "representation": "ax(minimal)",
+      "budget": 300,
+      "detected": true,
+      "clean_tokens": 355
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "remove_last",
+      "representation": "ax(minimal)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 355
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "remove_last",
+      "representation": "ax(minimal)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 355
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "remove_last",
+      "representation": "dom(minimal)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 595
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "remove_last",
+      "representation": "dom(minimal)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 595
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "remove_last",
+      "representation": "dom(minimal)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 595
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "remove_last",
+      "representation": "html(raw)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 23236
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "remove_last",
+      "representation": "html(raw)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 23236
+    },
+    {
+      "target": "realworld_conduit",
+      "defect": "remove_last",
+      "representation": "html(raw)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 23236
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "blank_price",
+      "representation": "pruned_ax(baseline)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 937
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "blank_price",
+      "representation": "pruned_ax(baseline)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 937
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "blank_price",
+      "representation": "pruned_ax(baseline)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 937
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "blank_price",
+      "representation": "ax(minimal)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 385
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "blank_price",
+      "representation": "ax(minimal)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 385
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "blank_price",
+      "representation": "ax(minimal)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 385
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "blank_price",
+      "representation": "dom(minimal)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 4215
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "blank_price",
+      "representation": "dom(minimal)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 4215
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "blank_price",
+      "representation": "dom(minimal)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 4215
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "blank_price",
+      "representation": "html(raw)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 134156
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "blank_price",
+      "representation": "html(raw)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 134156
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "blank_price",
+      "representation": "html(raw)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 134156
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "drop_record",
+      "representation": "pruned_ax(baseline)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 937
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "drop_record",
+      "representation": "pruned_ax(baseline)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 937
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "drop_record",
+      "representation": "pruned_ax(baseline)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 937
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "drop_record",
+      "representation": "ax(minimal)",
+      "budget": 300,
+      "detected": true,
+      "clean_tokens": 385
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "drop_record",
+      "representation": "ax(minimal)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 385
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "drop_record",
+      "representation": "ax(minimal)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 385
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "drop_record",
+      "representation": "dom(minimal)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 4215
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "drop_record",
+      "representation": "dom(minimal)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 4215
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "drop_record",
+      "representation": "dom(minimal)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 4215
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "drop_record",
+      "representation": "html(raw)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 134156
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "drop_record",
+      "representation": "html(raw)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 134156
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "drop_record",
+      "representation": "html(raw)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 134156
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "break_href",
+      "representation": "pruned_ax(baseline)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 937
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "break_href",
+      "representation": "pruned_ax(baseline)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 937
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "break_href",
+      "representation": "pruned_ax(baseline)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 937
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "break_href",
+      "representation": "ax(minimal)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 385
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "break_href",
+      "representation": "ax(minimal)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 385
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "break_href",
+      "representation": "ax(minimal)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 385
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "break_href",
+      "representation": "dom(minimal)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 4215
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "break_href",
+      "representation": "dom(minimal)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 4215
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "break_href",
+      "representation": "dom(minimal)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 4215
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "break_href",
+      "representation": "html(raw)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 134156
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "break_href",
+      "representation": "html(raw)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 134156
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "break_href",
+      "representation": "html(raw)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 134156
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "duplicate_record",
+      "representation": "pruned_ax(baseline)",
+      "budget": 300,
+      "detected": true,
+      "clean_tokens": 937
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "duplicate_record",
+      "representation": "pruned_ax(baseline)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 937
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "duplicate_record",
+      "representation": "pruned_ax(baseline)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 937
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "duplicate_record",
+      "representation": "ax(minimal)",
+      "budget": 300,
+      "detected": true,
+      "clean_tokens": 385
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "duplicate_record",
+      "representation": "ax(minimal)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 385
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "duplicate_record",
+      "representation": "ax(minimal)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 385
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "duplicate_record",
+      "representation": "dom(minimal)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 4215
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "duplicate_record",
+      "representation": "dom(minimal)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 4215
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "duplicate_record",
+      "representation": "dom(minimal)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 4215
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "duplicate_record",
+      "representation": "html(raw)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 134156
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "duplicate_record",
+      "representation": "html(raw)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 134156
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "duplicate_record",
+      "representation": "html(raw)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 134156
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "corrupt_value",
+      "representation": "pruned_ax(baseline)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 937
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "corrupt_value",
+      "representation": "pruned_ax(baseline)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 937
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "corrupt_value",
+      "representation": "pruned_ax(baseline)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 937
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "corrupt_value",
+      "representation": "ax(minimal)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 385
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "corrupt_value",
+      "representation": "ax(minimal)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 385
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "corrupt_value",
+      "representation": "ax(minimal)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 385
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "corrupt_value",
+      "representation": "dom(minimal)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 4215
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "corrupt_value",
+      "representation": "dom(minimal)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 4215
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "corrupt_value",
+      "representation": "dom(minimal)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 4215
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "corrupt_value",
+      "representation": "html(raw)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 134156
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "corrupt_value",
+      "representation": "html(raw)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 134156
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "corrupt_value",
+      "representation": "html(raw)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 134156
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "empty_record",
+      "representation": "pruned_ax(baseline)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 937
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "empty_record",
+      "representation": "pruned_ax(baseline)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 937
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "empty_record",
+      "representation": "pruned_ax(baseline)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 937
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "empty_record",
+      "representation": "ax(minimal)",
+      "budget": 300,
+      "detected": true,
+      "clean_tokens": 385
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "empty_record",
+      "representation": "ax(minimal)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 385
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "empty_record",
+      "representation": "ax(minimal)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 385
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "empty_record",
+      "representation": "dom(minimal)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 4215
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "empty_record",
+      "representation": "dom(minimal)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 4215
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "empty_record",
+      "representation": "dom(minimal)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 4215
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "empty_record",
+      "representation": "html(raw)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 134156
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "empty_record",
+      "representation": "html(raw)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 134156
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "empty_record",
+      "representation": "html(raw)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 134156
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "remove_last",
+      "representation": "pruned_ax(baseline)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 937
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "remove_last",
+      "representation": "pruned_ax(baseline)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 937
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "remove_last",
+      "representation": "pruned_ax(baseline)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 937
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "remove_last",
+      "representation": "ax(minimal)",
+      "budget": 300,
+      "detected": true,
+      "clean_tokens": 385
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "remove_last",
+      "representation": "ax(minimal)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 385
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "remove_last",
+      "representation": "ax(minimal)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 385
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "remove_last",
+      "representation": "dom(minimal)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 4215
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "remove_last",
+      "representation": "dom(minimal)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 4215
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "remove_last",
+      "representation": "dom(minimal)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 4215
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "remove_last",
+      "representation": "html(raw)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 134156
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "remove_last",
+      "representation": "html(raw)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 134156
+    },
+    {
+      "target": "gmaps_arbys",
+      "defect": "remove_last",
+      "representation": "html(raw)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 134156
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "blank_price",
+      "representation": "pruned_ax(baseline)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 357
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "blank_price",
+      "representation": "pruned_ax(baseline)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 357
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "blank_price",
+      "representation": "pruned_ax(baseline)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 357
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "blank_price",
+      "representation": "ax(minimal)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 183
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "blank_price",
+      "representation": "ax(minimal)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 183
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "blank_price",
+      "representation": "ax(minimal)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 183
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "blank_price",
+      "representation": "dom(minimal)",
+      "budget": 300,
+      "detected": true,
+      "clean_tokens": 2290
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "blank_price",
+      "representation": "dom(minimal)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 2290
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "blank_price",
+      "representation": "dom(minimal)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 2290
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "blank_price",
+      "representation": "html(raw)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 29080
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "blank_price",
+      "representation": "html(raw)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 29080
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "blank_price",
+      "representation": "html(raw)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 29080
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "drop_record",
+      "representation": "pruned_ax(baseline)",
+      "budget": 300,
+      "detected": true,
+      "clean_tokens": 357
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "drop_record",
+      "representation": "pruned_ax(baseline)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 357
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "drop_record",
+      "representation": "pruned_ax(baseline)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 357
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "drop_record",
+      "representation": "ax(minimal)",
+      "budget": 300,
+      "detected": true,
+      "clean_tokens": 183
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "drop_record",
+      "representation": "ax(minimal)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 183
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "drop_record",
+      "representation": "ax(minimal)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 183
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "drop_record",
+      "representation": "dom(minimal)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 2290
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "drop_record",
+      "representation": "dom(minimal)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 2290
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "drop_record",
+      "representation": "dom(minimal)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 2290
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "drop_record",
+      "representation": "html(raw)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 29080
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "drop_record",
+      "representation": "html(raw)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 29080
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "drop_record",
+      "representation": "html(raw)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 29080
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "duplicate_record",
+      "representation": "pruned_ax(baseline)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 357
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "duplicate_record",
+      "representation": "pruned_ax(baseline)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 357
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "duplicate_record",
+      "representation": "pruned_ax(baseline)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 357
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "duplicate_record",
+      "representation": "ax(minimal)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 183
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "duplicate_record",
+      "representation": "ax(minimal)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 183
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "duplicate_record",
+      "representation": "ax(minimal)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 183
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "duplicate_record",
+      "representation": "dom(minimal)",
+      "budget": 300,
+      "detected": true,
+      "clean_tokens": 2290
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "duplicate_record",
+      "representation": "dom(minimal)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 2290
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "duplicate_record",
+      "representation": "dom(minimal)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 2290
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "duplicate_record",
+      "representation": "html(raw)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 29080
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "duplicate_record",
+      "representation": "html(raw)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 29080
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "duplicate_record",
+      "representation": "html(raw)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 29080
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "corrupt_value",
+      "representation": "pruned_ax(baseline)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 357
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "corrupt_value",
+      "representation": "pruned_ax(baseline)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 357
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "corrupt_value",
+      "representation": "pruned_ax(baseline)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 357
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "corrupt_value",
+      "representation": "ax(minimal)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 183
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "corrupt_value",
+      "representation": "ax(minimal)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 183
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "corrupt_value",
+      "representation": "ax(minimal)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 183
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "corrupt_value",
+      "representation": "dom(minimal)",
+      "budget": 300,
+      "detected": true,
+      "clean_tokens": 2290
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "corrupt_value",
+      "representation": "dom(minimal)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 2290
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "corrupt_value",
+      "representation": "dom(minimal)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 2290
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "corrupt_value",
+      "representation": "html(raw)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 29080
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "corrupt_value",
+      "representation": "html(raw)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 29080
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "corrupt_value",
+      "representation": "html(raw)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 29080
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "empty_record",
+      "representation": "pruned_ax(baseline)",
+      "budget": 300,
+      "detected": true,
+      "clean_tokens": 357
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "empty_record",
+      "representation": "pruned_ax(baseline)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 357
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "empty_record",
+      "representation": "pruned_ax(baseline)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 357
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "empty_record",
+      "representation": "ax(minimal)",
+      "budget": 300,
+      "detected": true,
+      "clean_tokens": 183
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "empty_record",
+      "representation": "ax(minimal)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 183
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "empty_record",
+      "representation": "ax(minimal)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 183
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "empty_record",
+      "representation": "dom(minimal)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 2290
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "empty_record",
+      "representation": "dom(minimal)",
+      "budget": 1000,
+      "detected": true,
+      "clean_tokens": 2290
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "empty_record",
+      "representation": "dom(minimal)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 2290
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "empty_record",
+      "representation": "html(raw)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 29080
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "empty_record",
+      "representation": "html(raw)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 29080
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "empty_record",
+      "representation": "html(raw)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 29080
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "remove_last",
+      "representation": "pruned_ax(baseline)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 357
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "remove_last",
+      "representation": "pruned_ax(baseline)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 357
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "remove_last",
+      "representation": "pruned_ax(baseline)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 357
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "remove_last",
+      "representation": "ax(minimal)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 183
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "remove_last",
+      "representation": "ax(minimal)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 183
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "remove_last",
+      "representation": "ax(minimal)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 183
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "remove_last",
+      "representation": "dom(minimal)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 2290
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "remove_last",
+      "representation": "dom(minimal)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 2290
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "remove_last",
+      "representation": "dom(minimal)",
+      "budget": 4000,
+      "detected": true,
+      "clean_tokens": 2290
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "remove_last",
+      "representation": "html(raw)",
+      "budget": 300,
+      "detected": false,
+      "clean_tokens": 29080
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "remove_last",
+      "representation": "html(raw)",
+      "budget": 1000,
+      "detected": false,
+      "clean_tokens": 29080
+    },
+    {
+      "target": "qscrape_eshop_l2",
+      "defect": "remove_last",
+      "representation": "html(raw)",
+      "budget": 4000,
+      "detected": false,
+      "clean_tokens": 29080
+    }
+  ]
+}

@@ -1,0 +1,234 @@
+[
+  {
+    "found": true,
+    "hops": 3,
+    "tokens": 4454,
+    "where": "region[3]",
+    "target": "books_toscrape",
+    "defect": "blank_price"
+  },
+  {
+    "found": true,
+    "hops": 0,
+    "tokens": 201,
+    "where": "index",
+    "target": "books_toscrape",
+    "defect": "drop_record"
+  },
+  {
+    "found": true,
+    "hops": 3,
+    "tokens": 4454,
+    "where": "region[3]",
+    "target": "books_toscrape",
+    "defect": "break_href"
+  },
+  {
+    "found": true,
+    "hops": 0,
+    "tokens": 201,
+    "where": "index",
+    "target": "books_toscrape",
+    "defect": "null_alt"
+  },
+  {
+    "found": true,
+    "hops": 0,
+    "tokens": 201,
+    "where": "index",
+    "target": "books_toscrape",
+    "defect": "duplicate_record"
+  },
+  {
+    "found": true,
+    "hops": 3,
+    "tokens": 4454,
+    "where": "region[3]",
+    "target": "books_toscrape",
+    "defect": "corrupt_value"
+  },
+  {
+    "found": true,
+    "hops": 0,
+    "tokens": 201,
+    "where": "index",
+    "target": "books_toscrape",
+    "defect": "empty_record"
+  },
+  {
+    "found": true,
+    "hops": 0,
+    "tokens": 201,
+    "where": "index",
+    "target": "books_toscrape",
+    "defect": "remove_last"
+  },
+  {
+    "found": true,
+    "hops": 0,
+    "tokens": 381,
+    "where": "index",
+    "target": "realworld_conduit",
+    "defect": "blank_price"
+  },
+  {
+    "found": true,
+    "hops": 0,
+    "tokens": 381,
+    "where": "index",
+    "target": "realworld_conduit",
+    "defect": "drop_record"
+  },
+  {
+    "found": true,
+    "hops": 2,
+    "tokens": 1518,
+    "where": "region[2]",
+    "target": "realworld_conduit",
+    "defect": "break_href"
+  },
+  {
+    "found": false,
+    "hops": 3,
+    "tokens": 1575,
+    "where": "exhausted-regions",
+    "target": "realworld_conduit",
+    "defect": "null_alt"
+  },
+  {
+    "found": true,
+    "hops": 0,
+    "tokens": 381,
+    "where": "index",
+    "target": "realworld_conduit",
+    "defect": "duplicate_record"
+  },
+  {
+    "found": true,
+    "hops": 0,
+    "tokens": 381,
+    "where": "index",
+    "target": "realworld_conduit",
+    "defect": "corrupt_value"
+  },
+  {
+    "found": true,
+    "hops": 0,
+    "tokens": 381,
+    "where": "index",
+    "target": "realworld_conduit",
+    "defect": "empty_record"
+  },
+  {
+    "found": true,
+    "hops": 0,
+    "tokens": 381,
+    "where": "index",
+    "target": "realworld_conduit",
+    "defect": "remove_last"
+  },
+  {
+    "found": true,
+    "hops": 9,
+    "tokens": 15569,
+    "where": "region[9]",
+    "target": "gmaps_arbys",
+    "defect": "blank_price"
+  },
+  {
+    "found": true,
+    "hops": 0,
+    "tokens": 373,
+    "where": "index",
+    "target": "gmaps_arbys",
+    "defect": "drop_record"
+  },
+  {
+    "found": true,
+    "hops": 9,
+    "tokens": 15569,
+    "where": "region[9]",
+    "target": "gmaps_arbys",
+    "defect": "break_href"
+  },
+  {
+    "found": true,
+    "hops": 0,
+    "tokens": 373,
+    "where": "index",
+    "target": "gmaps_arbys",
+    "defect": "duplicate_record"
+  },
+  {
+    "found": true,
+    "hops": 9,
+    "tokens": 15569,
+    "where": "region[9]",
+    "target": "gmaps_arbys",
+    "defect": "corrupt_value"
+  },
+  {
+    "found": true,
+    "hops": 0,
+    "tokens": 373,
+    "where": "index",
+    "target": "gmaps_arbys",
+    "defect": "empty_record"
+  },
+  {
+    "found": true,
+    "hops": 0,
+    "tokens": 373,
+    "where": "index",
+    "target": "gmaps_arbys",
+    "defect": "remove_last"
+  },
+  {
+    "found": true,
+    "hops": 1,
+    "tokens": 190,
+    "where": "region[1]",
+    "target": "qscrape_eshop_l2",
+    "defect": "blank_price"
+  },
+  {
+    "found": true,
+    "hops": 0,
+    "tokens": 179,
+    "where": "index",
+    "target": "qscrape_eshop_l2",
+    "defect": "drop_record"
+  },
+  {
+    "found": true,
+    "hops": 0,
+    "tokens": 179,
+    "where": "region-count",
+    "target": "qscrape_eshop_l2",
+    "defect": "duplicate_record"
+  },
+  {
+    "found": true,
+    "hops": 1,
+    "tokens": 190,
+    "where": "region[1]",
+    "target": "qscrape_eshop_l2",
+    "defect": "corrupt_value"
+  },
+  {
+    "found": true,
+    "hops": 0,
+    "tokens": 179,
+    "where": "index",
+    "target": "qscrape_eshop_l2",
+    "defect": "empty_record"
+  },
+  {
+    "found": true,
+    "hops": 13,
+    "tokens": 1702,
+    "where": "region[13]",
+    "target": "qscrape_eshop_l2",
+    "defect": "remove_last"
+  }
+]
