@@ -182,6 +182,44 @@ def test_dom_inspect_and_expand_resolve_exact_snapshot_json() -> None:
     assert DomNode.model_validate_json(detail.content).text == 'B'
 
 
+def test_duplicate_content_keys_fall_back_to_declared_positional_members() -> None:
+    root = DomNode(
+        node_id='root',
+        tag='html',
+        children=(
+            DomNode(
+                node_id='todo-list',
+                tag='ul',
+                children=(_todo('todo-1', 'same'), _todo('todo-2', 'same')),
+            ),
+        ),
+    )
+    snapshot = DomSnapshot(snapshot_id='duplicate-keys', root=root)
+    data = serialize_dom_snapshot(snapshot)
+    store = MemoryArtifactStore()
+    ref = store.put(
+        snapshot_id='duplicate-keys',
+        kind=EvidenceKind.RENDERED_DOM,
+        media_type='application/json',
+        data=data,
+    )
+    view = DomPruner().prune(PruningInput(source=ref, data=data), PruningPolicy())
+    region = next(fragment for fragment in view.fragments if fragment.coverage is not None)
+    manifest = ObservationSnapshot(
+        run_id='run',
+        episode_id='episode',
+        snapshot_id='duplicate-keys',
+        requested_profile=CaptureProfile.BROWSER_HEADLESS,
+        artifacts=(ref,),
+    )
+
+    page = ObservationInspector(store, manifest).expand(region.ref, InspectionBudget(max_items=10))
+
+    assert 'some members are positional' in region.summary
+    assert [member.stable for member in page.members] == [False, False]
+    assert all('&ordinal=' in member.ref.locator for member in page.members)
+
+
 def test_dom_expand_does_not_promote_container_count_for_state_subset() -> None:
     root = DomNode(
         node_id='root',

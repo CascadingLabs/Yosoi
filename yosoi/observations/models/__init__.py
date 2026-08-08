@@ -10,6 +10,14 @@ if TYPE_CHECKING:
     from yosoi.observations.models.artifact import ArtifactRef as ArtifactRef
     from yosoi.observations.models.artifact import EvidenceKind as EvidenceKind
     from yosoi.observations.models.artifact import Sensitivity as Sensitivity
+    from yosoi.observations.models.dom import DomAttribute as DomAttribute
+    from yosoi.observations.models.dom import DomCapability as DomCapability
+    from yosoi.observations.models.dom import DomCapabilityKind as DomCapabilityKind
+    from yosoi.observations.models.dom import DomGeometry as DomGeometry
+    from yosoi.observations.models.dom import DomNode as DomNode
+    from yosoi.observations.models.dom import DomRuntimeState as DomRuntimeState
+    from yosoi.observations.models.dom import DomSnapshot as DomSnapshot
+    from yosoi.observations.models.dom import DomVisibility as DomVisibility
     from yosoi.observations.models.index import IndexEntry as IndexEntry
     from yosoi.observations.models.index import ObservationIndex as ObservationIndex
     from yosoi.observations.models.snapshot import CaptureCapability as CaptureCapability
@@ -25,6 +33,14 @@ _LAZY = {
     'ArtifactRef': 'yosoi.observations.models.artifact',
     'CaptureCapability': 'yosoi.observations.models.snapshot',
     'CaptureProfile': 'yosoi.observations.models.snapshot',
+    'DomAttribute': 'yosoi.observations.models.dom',
+    'DomCapability': 'yosoi.observations.models.dom',
+    'DomCapabilityKind': 'yosoi.observations.models.dom',
+    'DomGeometry': 'yosoi.observations.models.dom',
+    'DomNode': 'yosoi.observations.models.dom',
+    'DomRuntimeState': 'yosoi.observations.models.dom',
+    'DomSnapshot': 'yosoi.observations.models.dom',
+    'DomVisibility': 'yosoi.observations.models.dom',
     'EvidenceKind': 'yosoi.observations.models.artifact',
     'IndexEntry': 'yosoi.observations.models.index',
     'ObservationIndex': 'yosoi.observations.models.index',
