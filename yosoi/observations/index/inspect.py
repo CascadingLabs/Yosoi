@@ -19,6 +19,14 @@ from typing import TYPE_CHECKING
 from pydantic import BaseModel, ConfigDict, Field
 
 from yosoi.observations.artifacts.protocol import ArtifactStore
+from yosoi.observations.dom_tree import (
+    assign_dom_member_keys,
+    dom_candidate_keys,
+    dom_label,
+    dom_skeleton_signature,
+    dom_summary,
+    node_id_from_locator,
+)
 from yosoi.observations.html_tree import (
     SignatureCache,
     assign_member_keys,
@@ -36,6 +44,7 @@ from yosoi.observations.index.addressing import (
     parse_address,
 )
 from yosoi.observations.models.artifact import ArtifactRef, EvidenceKind, Sensitivity
+from yosoi.observations.models.dom import DomNode, DomSnapshot, parse_dom_snapshot
 from yosoi.observations.models.snapshot import ObservationSnapshot
 from yosoi.observations.models.view import RegionCoverage, RegionRef
 
@@ -132,6 +141,58 @@ def _select_member(container: _Element, shape: str, *, key: str | None, ordinal:
     return members[position]
 
 
+def _dom_nodes(snapshot: DomSnapshot) -> dict[str, DomNode]:
+    """Index light-DOM and shadow-root nodes by their exact snapshot-local IDs."""
+    nodes: dict[str, DomNode] = {}
+
+    def visit(node: DomNode) -> None:
+        nodes[node.node_id] = node
+        for child in node.children:
+            visit(child)
+        if node.shadow_root is not None:
+            visit(node.shadow_root)
+
+    visit(snapshot.root)
+    return nodes
+
+
+def _dom_region_members(container: DomNode, shape: str) -> list[DomNode]:
+    """Return direct DOM children matching one state-aware repeat shape."""
+    members = [child for child in container.children if dom_skeleton_signature(child) == shape]
+    if not members:
+        raise ObservationAddressError(f'no DOM members of shape {shape!r} remain in this region')
+    return members
+
+
+def _resolve_dom_address(snapshot: DomSnapshot, address: ObservationAddress) -> DomNode:
+    """Resolve one DOM address using node IDs and the shared repeat signature/key rules."""
+    if len(address.segments) != 1:
+        raise ObservationAddressError('rendered-DOM addresses currently support one segment')
+    segment = address.segments[0]
+    try:
+        node_id = node_id_from_locator(segment.path)
+    except ValueError as exc:
+        raise ObservationAddressError(str(exc)) from exc
+    node = _dom_nodes(snapshot).get(node_id)
+    if node is None:
+        raise ObservationAddressError(f'DOM node {node_id!r} is absent from this snapshot')
+    if not segment.selects_member:
+        return node
+
+    members = _dom_region_members(node, segment.shape or '')
+    if segment.key is not None:
+        matched = [member for member in members if segment.key in dom_candidate_keys(member)]
+        if len(matched) != 1:
+            raise ObservationAddressError(f'DOM region key {segment.key!r} resolved to {len(matched)} members')
+        return matched[0]
+    position = segment.ordinal or 0
+    if position >= len(members):
+        raise ObservationAddressError(
+            f'DOM region member ordinal {position} is past the {len(members)} members present'
+        )
+    return members[position]
+
+
 class ObservationInspector:
     """Resolve observation references to bounded detail from one exact snapshot."""
 
@@ -152,7 +213,7 @@ class ObservationInspector:
             raise ObservationAddressError('observation reference modality disagrees with its artifact')
         if artifact.sensitivity in {Sensitivity.RESTRICTED, Sensitivity.EPHEMERAL_SECRET} and not allow_restricted:
             raise PermissionError('restricted observation evidence requires explicit inspection permission')
-        if artifact.kind is not EvidenceKind.SOURCE_HTML:
+        if artifact.kind not in {EvidenceKind.SOURCE_HTML, EvidenceKind.RENDERED_DOM}:
             raise NotImplementedError(
                 f'{artifact.kind.value} inspection is not implemented; see observations/ROADMAP.md'
             )
@@ -160,14 +221,19 @@ class ObservationInspector:
 
     def inspect(self, ref: RegionRef, budget: InspectionBudget) -> InspectionResult:
         """Return bounded canonical detail, failing closed on stale or foreign references."""
-        from lxml import etree
-
         artifact = self._artifact_for(ref, allow_restricted=budget.allow_restricted)
         address = parse_address(ref.locator)
-        _, tree = parse(self._store.read(artifact))
-        element = _resolve_segments(tree, address)
+        data = self._store.read(artifact)
 
-        serialized = etree.tostring(element, encoding='utf-8')
+        if artifact.kind is EvidenceKind.RENDERED_DOM:
+            node = _resolve_dom_address(parse_dom_snapshot(data), address)
+            serialized = node.model_dump_json().encode('utf-8')
+        else:
+            from lxml import etree
+
+            _, tree = parse(data)
+            serialized = etree.tostring(_resolve_segments(tree, address), encoding='utf-8')
+
         content = serialized[: budget.max_bytes]
         return InspectionResult(
             ref=ref,
@@ -224,7 +290,42 @@ class ObservationInspector:
         if offset < 0:
             raise ObservationAddressError('region expansion offset cannot be negative')
 
-        _, tree = parse(self._store.read(artifact))
+        data = self._store.read(artifact)
+        if artifact.kind is EvidenceKind.RENDERED_DOM:
+            snapshot = parse_dom_snapshot(data)
+            container = _resolve_dom_address(snapshot, address)
+            shape = address.segments[-1].shape or ''
+            members = _dom_region_members(container, shape)
+            keys = assign_dom_member_keys(tuple(members))
+            window = list(zip(members, keys, strict=True))[offset : offset + budget.max_items]
+            page = tuple(
+                RegionMember(
+                    ref=RegionRef(
+                        snapshot_id=ref.snapshot_id,
+                        artifact_sha256=ref.artifact_sha256,
+                        modality=ref.modality,
+                        locator=format_address(
+                            address.member(key=key, ordinal=None if key is not None else offset + position)
+                        ),
+                    ),
+                    ordinal=offset + position,
+                    label=dom_label(member),
+                    summary=dom_summary(member, max_chars=budget.max_bytes),
+                    stable=key is not None,
+                )
+                for position, (member, key) in enumerate(window)
+            )
+            declared = container.declared_count
+            complete = declared is not None and declared == len(members)
+            return RegionPage(
+                region=ref,
+                members=page,
+                offset=offset,
+                coverage=RegionCoverage(observed=len(members), declared=declared, complete=complete),
+                truncated=offset + len(window) < len(members),
+            )
+
+        _, tree = parse(data)
         container = _resolve_segments(tree, address)
         shape = address.segments[-1].shape or ''
         members = _region_members(container, shape)
