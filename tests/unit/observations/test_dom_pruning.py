@@ -21,6 +21,7 @@ from yosoi.observations.models import (
 )
 from yosoi.observations.models.dom import serialize_dom_snapshot
 from yosoi.observations.pruning import DomPruner, PruningInput, PruningPolicy
+from yosoi.observations.pruning.dom import MAX_DEPTH
 
 
 def _reduce(snapshot: DomSnapshot):
@@ -382,3 +383,30 @@ def test_shadow_root_and_portal_relationships_remain_addressable() -> None:
     dialog = next(fragment for fragment in view.fragments if fragment.label == 'dialog')
     assert 'portal→portal-target' in dialog.summary
     assert parse_address(dialog.ref.locator).is_stable
+
+
+def _deep_chain(depth: int) -> DomNode:
+    """Build one element chain `depth` levels deep."""
+    node = DomNode(node_id=f'd{depth}', tag='div', text='bottom')
+    for level in range(depth - 1, -1, -1):
+        node = DomNode(node_id=f'd{level}', tag='div', children=(node,))
+    return node
+
+
+def test_walk_discloses_where_it_stopped_descending() -> None:
+    """A subtree the index never visited must be visible as an omission.
+
+    Real pages reach 38 elements deep against a walk ceiling of 24, so this is reachable,
+    not theoretical. Without the disclosure the deepest entry reports its child count and
+    reads exactly like a fully indexed node, so a reader has no reason to inspect further.
+    """
+    view = _reduce(DomSnapshot(snapshot_id='deep', root=_deep_chain(MAX_DEPTH + 10)))
+
+    assert 'below index depth' in (view.fragments[-1].summary or '')
+
+
+def test_a_fully_indexed_tree_is_never_labelled_truncated() -> None:
+    """The disclosure must mark real omissions only, or it stops meaning anything."""
+    view = _reduce(DomSnapshot(snapshot_id='shallow', root=_deep_chain(3)))
+
+    assert not any('below index depth' in (fragment.summary or '') for fragment in view.fragments)

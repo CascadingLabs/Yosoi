@@ -102,7 +102,7 @@ def _walk(node: DomNode, *, out: list[PruneCandidate], policy: PruningPolicy, de
                     PruneCandidate(
                         locator=format_address(element_address(dom_locator(child.node_id))),
                         label=dom_label(child),
-                        summary=dom_summary(child, max_chars=policy.max_fragment_chars),
+                        summary=_summary_at(child, depth=depth + 1, policy=policy),
                     )
                 )
                 _walk(child, out=out, policy=policy, depth=depth + 1)
@@ -113,10 +113,23 @@ def _walk(node: DomNode, *, out: list[PruneCandidate], policy: PruningPolicy, de
             PruneCandidate(
                 locator=format_address(element_address(dom_locator(shadow.node_id))),
                 label=f'{dom_label(node)} > shadow-root',
-                summary=dom_summary(shadow, max_chars=policy.max_fragment_chars),
+                summary=_summary_at(shadow, depth=depth + 1, policy=policy),
             )
         )
         _walk(shadow, out=out, policy=policy, depth=depth + 1)
+
+
+def _summary_at(node: DomNode, *, depth: int, policy: PruningPolicy) -> str:
+    """Summarize one node, disclosing when the walk stops before its children.
+
+    An entry at the depth ceiling otherwise reads exactly like a fully indexed leaf: it
+    reports its child count and says nothing about the subtree the index never visited.
+    A reader cannot ask to inspect an omission they cannot see.
+    """
+    summary = dom_summary(node, max_chars=policy.max_fragment_chars)
+    if depth >= MAX_DEPTH and (node.children or node.shadow_root is not None):
+        return f'{summary}; below index depth — inspect to descend'
+    return summary
 
 
 def _emit_region(
