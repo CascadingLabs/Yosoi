@@ -43,7 +43,10 @@ over plain http from the end of `<body>`.
 
 `html.body` is structural. Adjacent siblings sharing a skeleton signature collapse to one
 region plus one exemplar (MDR, Liu et al. 2003), so 10,000 rows cost two entries and stay
-individually reachable through `expand`. Classes and ids are never stripped — that was the
+individually reachable through `expand`. That is measured, not asserted: the `html/repeat_scale`
+boss fight generates 10,000 rows (1.7 MB), gets the same index the 1,000-row document gets,
+sweeps all 10,000 members back through `expand` with durable keys, and holds cost linear in
+row count. Classes and ids are never stripped — that was the
 worst-measured representation in NEXT-EVAL (arXiv:2505.17125) and it is what selectors are
 made of.
 
