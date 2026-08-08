@@ -9,8 +9,13 @@ repos:
       - id: check-executables-have-shebangs
       - id: check-case-conflict
       - id: check-merge-conflict
+      # Frozen boss-fight artifacts are byte-exact captures pinned by
+      # `artifact_sha256` in their manifests. Rewriting their bytes breaks the
+      # digest assertions, so the whitespace fixers must leave them alone.
       - id: end-of-file-fixer
+        exclude: ^tests/boss_fights/.*/artifacts/
       - id: trailing-whitespace
+        exclude: ^tests/boss_fights/.*/artifacts/
       - id: check-ast
       - id: detect-private-key
 
