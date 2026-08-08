@@ -77,7 +77,8 @@ Phase 2 now feeds deterministic fixture snapshots through the existing `Semantic
 - explicit shadow-root and portal entries;
 - `declared_count` versus observed-member accounting for virtualized regions.
 
-The browser/CDP producer, live TodoMVC capture, action episodes, and cross-snapshot diffs remain
-unwired. DOM-aware bounded `inspect`/`expand` now resolve the same snapshot-local node and repeat
-addresses as the pruner. The next slice should add a deterministic TodoMVC artifact fixture and
-exercise snapshot lineage before introducing headless acquisition.
+The browser/CDP producer is not wired into Yosoi operations, but the opt-in
+`scripts/capture_dom_todomvc.py` now freezes a live VoidCrawl TodoMVC episode for offline dogfood
+under `tests/boss_fights/dom/todomvc_live/`. DOM-aware bounded `inspect`/`expand` resolve the
+same snapshot-local node and repeat addresses as the pruner. Action episodes and cross-snapshot
+diffs remain next; live acquisition should stay opt-in until those fixtures are stable.

@@ -1,9 +1,10 @@
 # DOM pruning lifecycle — TodoMVC control
 
 This is the rendered-DOM companion to the static-HTML pruning writeup. It explains the
-lifecycle that CAS-263 should prove first with a deterministic TodoMVC capture. The document
-visualizes the browser boundary that is still pending; the beta `DomPruner` now consumes
-synthetic structured snapshots, but browser acquisition is not wired yet.
+lifecycle that CAS-263 should prove first with a deterministic TodoMVC capture. The opt-in
+VoidCrawl capture script now produces a frozen live episode, while the beta `DomPruner` consumes
+synthetic and frozen structured snapshots; browser acquisition is still not wired into Yosoi
+operations.
 
 ## One-sentence model
 
