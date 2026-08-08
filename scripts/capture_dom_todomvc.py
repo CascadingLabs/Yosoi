@@ -149,7 +149,7 @@ def _write_capture(states: dict[str, bytes], *, status_code: int, final_url: str
         final_url=final_url,
         files=files,
     )
-    (OUTPUT / 'capture_manifest.json').write_text(manifest.model_dump_json(indent=2) + '\\n', encoding='utf-8')
+    (OUTPUT / 'capture_manifest.json').write_text(manifest.model_dump_json(indent=2) + '\n', encoding='utf-8')
 
 
 async def main() -> None:
