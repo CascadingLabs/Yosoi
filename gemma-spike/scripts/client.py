@@ -67,6 +67,22 @@ def get_json(url: str, api_key: str) -> dict[str, Any]:
         return json.load(response)
 
 
+def resolve_model(base_url: str, api_key: str, explicit: str | None = None) -> str:
+    """Return the model id to request, asking the server when one was not pinned.
+
+    The spike runs a single-model vLLM worker, so the served id is a fact the endpoint
+    already reports. Hard-coding it per script drifted the moment the deployment switched
+    to the QAT checkpoint: `static_html_boss_fight.py` was updated and the other two were
+    not, so they asked for a model the server does not serve and got a 404.
+    """
+    if explicit:
+        return explicit
+    served = get_json(f'{base_url.rstrip("/")}/models', api_key).get('data') or []
+    if not served:
+        raise RuntimeError(f'{base_url} serves no models; start vLLM or pass --model')
+    return str(served[0]['id'])
+
+
 def post_json(url: str, body: dict[str, Any], api_key: str) -> dict[str, Any]:
     """Send a non-streaming JSON request."""
     data = json.dumps(body).encode()

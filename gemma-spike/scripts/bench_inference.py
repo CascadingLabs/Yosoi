@@ -8,7 +8,7 @@ import os
 from datetime import UTC, datetime
 from pathlib import Path
 
-from client import image_dimensions, payload, stream_completion
+from client import image_dimensions, payload, resolve_model, stream_completion
 
 
 def main() -> None:
@@ -21,11 +21,12 @@ def main() -> None:
         '--append', action='store_true', help='append to an existing JSONL artifact instead of replacing it'
     )
     parser.add_argument('--base-url', default=os.getenv('INFERENCE_BASE_URL', 'http://echo:8096/v1'))
-    parser.add_argument('--model', default=os.getenv('MODEL_ID', 'google/gemma-4-12b-it'))
+    parser.add_argument('--model', default=os.getenv('MODEL_ID'), help='defaults to whatever the endpoint serves')
     parser.add_argument('--api-key', default=os.getenv('INFERENCE_API_KEY', 'EMPTY'))
     parser.add_argument('--prompt', default='Inspect the screenshot and describe the visible page state.')
     parser.add_argument('--max-tokens', type=int, default=256)
     args = parser.parse_args()
+    model = resolve_model(args.base_url, args.api_key, args.model)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     dimensions = image_dimensions(args.image)
     # The first request is labelled cold and later requests warm. This is an
@@ -35,7 +36,7 @@ def main() -> None:
         for run in range(args.runs):
             metrics = stream_completion(
                 f'{args.base_url.rstrip("/")}/chat/completions',
-                payload(args.model, args.prompt, args.image, args.max_tokens),
+                payload(model, args.prompt, args.image, args.max_tokens),
                 args.api_key,
             )
             metrics.pop('text', None)
@@ -49,7 +50,7 @@ def main() -> None:
             prefill_tps = usage.get('prefill_tps') or usage.get('prefill_tokens_per_second')
             row = {
                 'timestamp': datetime.now(UTC).isoformat(),
-                'model': args.model,
+                'model': model,
                 'endpoint': args.base_url,
                 'run': run + 1,
                 'cache_state': 'cold' if run == 0 else 'warm',

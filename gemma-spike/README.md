@@ -23,6 +23,10 @@ export INFERENCE_BASE_URL=http://echo:8096/v1
 uv run python scripts/smoke_test.py --image /path/to/frozen-screenshot.png
 ```
 
+Every script asks `/v1/models` for the served model id unless you pin one with `--model` or
+`MODEL_ID`. The worker serves a single model, so the endpoint is the authority: pinning a stale
+id — the base checkpoint against a QAT deployment, say — is a 404, not a fallback.
+
 ## Microbench
 
 ```bash

@@ -10,6 +10,7 @@ from copy import deepcopy
 from pathlib import Path
 from urllib.request import Request, urlopen
 
+from client import resolve_model
 from lxml import html
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent, NativeOutput
@@ -81,9 +82,10 @@ def main() -> None:
     parser.add_argument('--url', default='https://en.wikipedia.org/wiki/Web_scraping')
     parser.add_argument('--html', type=Path, help='Use a frozen static HTML file instead of fetching --url.')
     parser.add_argument('--base-url', default=os.getenv('INFERENCE_BASE_URL', 'http://echo:8096/v1'))
-    parser.add_argument('--model', default=os.getenv('MODEL_ID', 'google/gemma-4-12b-it-qat-w4a16-ct'))
+    parser.add_argument('--model', default=os.getenv('MODEL_ID'), help='defaults to whatever the endpoint serves')
     parser.add_argument('--api-key', default=os.getenv('INFERENCE_API_KEY', 'EMPTY'))
     args = parser.parse_args()
+    args.model = resolve_model(args.base_url, args.api_key, args.model)
     print(json.dumps(asyncio.run(run(args)), indent=2))
 
 
