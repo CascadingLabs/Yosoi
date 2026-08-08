@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
+from yosoi.observations.index.addressing import ref_id
 from yosoi.observations.models.artifact import EvidenceKind
 from yosoi.observations.models.index import IndexEntry, ObservationIndex
 from yosoi.observations.models.snapshot import ObservationSnapshot
@@ -64,6 +65,7 @@ class ObservationIndexCompiler:
                         label=fragment.label,
                         summary=fragment.summary,
                         coverage=fragment.coverage,
+                        ref_id=ref_id(fragment.ref.modality, fragment.ref.locator),
                     )
                 )
 

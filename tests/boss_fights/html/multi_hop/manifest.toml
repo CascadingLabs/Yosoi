@@ -1,0 +1,53 @@
+id = "multi_hop_nested_regions"
+modality = "source_html"
+lane = "gate"
+threat = "each hop is bounded on its own and a realistic investigation still reads most of the page"
+capture_profile = "http_static"
+max_inspection_hops = 5
+
+generator = "tests.boss_fights.generators.nested_regions:render_nested_page"
+departments = 4
+teams = 5
+rows = 6
+leaf_records = 120
+generated_sha256 = "2594151dc0bc257e4135b1d4147bfbdbdf32c0a9c8add85081ecf54108bf4584"
+generated_bytes = 18057
+
+budget_output_bytes = 2200
+
+# The claim under test is a SESSION budget, not a per-call one. Everything the agent is handed
+# across a full five-hop investigation — overview plus every inspect and expand — must stay a
+# small fraction of the document it is investigating. A per-call limit with no session limit is
+# how bounded tools still deliver an unbounded transcript.
+budget_session_bytes = 6000
+budget_overview_tokens = 400
+tokenizer_id = "estimate/chars-per-token-4"
+
+prediction = """
+Three levels of nested repeats — 4 departments × 5 teams × 6 rows, 120 leaf records — are
+described by roughly 20 index entries, because the reducer descends into one exemplar per level
+rather than enumerating the tree. Addresses compose: a leaf is named by anchor + member key +
+member key + relative path, and every segment is a key rather than a position.
+
+A five-hop investigation that starts from a 400-token overview and ends holding one exact leaf
+record reads well under 6 KB in total, against an 18 KB document — and would read the whole
+document if any hop returned an unbounded subtree.
+
+The route learned at the exemplar transfers: an address minted while looking at department 1
+can be rebound to department 3 and still resolve, so reaching an unexemplified branch never
+requires pulling that branch back as raw bytes. A key that names no member fails at rebind
+time rather than producing a reference that resolves to nothing later.
+"""
+failure = "a hop returns an unbounded subtree, a composed address stops resolving, the session budget is exceeded, or a rebound address resolves to the wrong member"
+
+[capabilities]
+source_html = true
+rendered_dom = false
+ax_tree = false
+network = false
+
+[limits]
+# The index describes the EXEMPLAR branch only. Reaching an unexemplified branch requires an
+# explicit rebind; there is no per-member index and this workload does not pretend otherwise.
+per_member_index = false
+per_member_index_owner = "would need pruning scoped to a subtree; unscheduled"

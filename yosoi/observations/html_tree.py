@@ -116,11 +116,27 @@ def text_digest(value: str) -> str:
     return hashlib.blake2b(value.encode(), digest_size=_DIGEST_BYTES).hexdigest()
 
 
-def candidate_keys(element: _Element) -> list[str]:
-    """Return content keys for one element, most durable first.
+TAG_KEY_PREFIX = 'tag:'
+"""Marks an anchor keyed on a tag that occurs exactly once, e.g. `tag:title` → `//title`.
 
-    An `id` beats a `data-*` attribute beats a text digest. Ordinals are deliberately absent
-    — a position is not a key, and treating it as one is what breaks after a scroll.
+A colon cannot appear in the `name=value` form, so the two never collide — an element written
+`<x tag="title">` yields `tag=title`, which is not `tag:title`.
+"""
+
+
+def structural_keys(element: _Element) -> list[str]:
+    """Return the element's attribute-borne keys, most durable first.
+
+    Attributes only, never text: these are the keys an ANCHOR may use, and an anchor whose
+    identity moves when a sentence is reworded is not an anchor. The tiers are ordered by how
+    much authorial intent they carry — `id` is a promise of uniqueness, `data-*` is usually a
+    deliberate hook, a class value is a styling decision that happens to be unique here, and
+    the first attribute is whatever the author chose to write first.
+
+    That last tier enumerates nothing, for the same reason `_declaration_label` does not: a
+    `name`/`property`/`http-equiv`/`charset` allowlist can only anchor the declarations someone
+    thought of in advance. Source attribute order is the author's own statement of what
+    identifies the element, and it is the only such statement available on a `<meta>`.
     """
     keys: list[str] = []
     identifier = element.get('id')
@@ -131,6 +147,61 @@ def candidate_keys(element: _Element) -> list[str]:
         for name in sorted(str(name) for name in element.attrib)
         if name.startswith('data-')
     )
+    classes = element.get('class')
+    if classes and classes.split():
+        keys.append(f'class={" ".join(classes.split())}')
+    first = next(iter(element.attrib.items()), None)
+    if first is not None:
+        candidate = f'{first[0]}={first[1]}'
+        if candidate not in keys:
+            keys.append(candidate)
+    return keys
+
+
+SKELETON_TAGS = frozenset({'html', 'head', 'body'})
+"""Tags that are unique in every document and therefore identify nothing.
+
+Anchoring to `//body` passes a uniqueness check and buys nothing: the tail below it is the same
+positional chain a root-absolute path would have used. Excluding them keeps `is_anchored` from
+becoming trivially true for every element on the page.
+"""
+
+
+def anchor_keys(element: _Element) -> list[str]:
+    """Return every key an anchor may use for this element, most durable first.
+
+    Adds one tier structural keys deliberately exclude: a tag that occurs exactly once in the
+    document. `<title>` carries no attributes at all, so without this it could only ever be
+    addressed positionally — and a title is not a thing a diff should lose track of.
+    """
+    keys = structural_keys(element)
+    if element.tag not in SKELETON_TAGS:
+        keys.append(f'{TAG_KEY_PREFIX}{element.tag}')
+    return keys
+
+
+def anchor_tier(key: str) -> str:
+    """Return which durability tier an anchor key came from, for measurement."""
+    if key.startswith(TAG_KEY_PREFIX):
+        return 'tag'
+    name = key.partition('=')[0]
+    if name == 'id':
+        return 'id'
+    if name.startswith('data-'):
+        return 'data'
+    if name == 'class':
+        return 'class'
+    return 'attribute'
+
+
+def candidate_keys(element: _Element) -> list[str]:
+    """Return content keys for one element, most durable first.
+
+    An `id` beats a `data-*` attribute beats a class beats a text digest. Ordinals are
+    deliberately absent — a position is not a key, and treating it as one is what breaks after
+    a scroll.
+    """
+    keys = structural_keys(element)
     text = subtree_text(element)
     if text:
         keys.append(f'text:{text_digest(text)}')
@@ -154,6 +225,41 @@ def assign_member_keys(siblings: list[_Element]) -> list[str | None]:
     return [next((key for key in keys if frequency[key] == 1), None) for keys in per_sibling]
 
 
+def anchor_census(root: _Element) -> dict[str, int]:
+    """Count every structural key in the document, so uniqueness is checked and not assumed.
+
+    Built once per document and consulted per element: the per-element formulation is
+    quadratic, which is the shape that dies on the pages this package exists for.
+    """
+    from collections import Counter
+
+    census: Counter[str] = Counter()
+    for element in root.iter():
+        if isinstance(element.tag, str):
+            census.update(anchor_keys(element))
+    return census
+
+
+def nearest_anchor(element: _Element, census: dict[str, int]) -> tuple[_Element, str] | None:
+    """Return the nearest ancestor-or-self carrying a document-unique key, and that key.
+
+    This is what makes an address survive edits ABOVE it. A root-absolute path is positional
+    at every step — insert one section near the top of the document and `div[2]` names
+    something else, so every reference beneath it silently changes meaning. Addressing from
+    the nearest durable ancestor confines that blast radius to the anchor's own subtree.
+
+    Returns None when the document offers nothing durable on the way up, in which case the
+    caller must fall back to a positional path and say so.
+    """
+    current: _Element | None = element
+    while current is not None and isinstance(current.tag, str):
+        for key in anchor_keys(current):
+            if census.get(key) == 1 and '"' not in key:
+                return current, key
+        current = current.getparent()
+    return None
+
+
 def matches_key(element: _Element, key: str) -> bool:
     """Return whether an element carries the given content key."""
     return key in candidate_keys(element)
@@ -162,16 +268,22 @@ def matches_key(element: _Element, key: str) -> bool:
 __all__ = [
     'METADATA_CONTENT',
     'NON_CONTENT_TAGS',
+    'TAG_KEY_PREFIX',
     'HtmlParseError',
     'SignatureCache',
+    'anchor_census',
+    'anchor_keys',
+    'anchor_tier',
     'assign_member_keys',
     'candidate_keys',
     'content_children',
     'matches_key',
+    'nearest_anchor',
     'node_label',
     'own_text',
     'parse',
     'skeleton_signature',
+    'structural_keys',
     'subtree_text',
     'text_digest',
 ]

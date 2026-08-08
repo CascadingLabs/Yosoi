@@ -18,16 +18,16 @@ The adversarial corpus, no-auth SPA slate, and per-pruner gates are specified in
 | `artifacts/manifest.py` | Deterministic snapshot manifest serialization | Add byte-identical golden tests. |
 | `pruning/protocol.py` | Explicit pruner contract and policy input | No registry; callers pass a sequence or mapping. |
 | `pruning/_shared.py` | Hashing, accounting, and validation mechanics only | Never place modality semantics here. |
-| `html_tree.py` | Shared HTML shape/key primitives | **Implemented (CAS-262).** One definition of skeleton signature and content key, used by both the pruner and the inspector. |
+| `html_tree.py` | Shared HTML shape/key primitives | **Implemented (CAS-262).** One definition of skeleton signature, content key, and durable anchor, used by both the pruner and the inspector. |
 | `pruning/_base.py` | Template method for every pruner | **Implemented (CAS-262).** Owns digest validation, policy hashing, addressing, capping, accounting. A pruner is one `reduce`. |
 | `pruning/html.py` | Source HTML reduction | **Implemented (CAS-262).** Two pruners: `html.declarations` (flat, metadata content) and `html.body` (MDR-style repeat collapse). |
 | `pruning/dom.py` | Rendered DOM reduction | Add after raw structured DOM capture exists. |
 | `pruning/ax.py` | Raw accessibility-tree reduction | Preserve raw AX evidence before compaction. |
 | `pruning/network.py` | Safe normalized network reduction | Add only after redaction and restricted-artifact policy are specified. |
 | `index/compiler.py` | Combine pruned modality views into one flat index | **Implemented (CAS-262).** Fixed modality ordering; duplicate addresses fail closed. |
-| `index/addressing.py` | Address grammar and reference validation | **Implemented (CAS-262).** Segmented region/member addresses that survive re-snapshotting; stale, foreign, or malformed references fail closed. |
-| `index/inspect.py` | Bounded detail and region expansion | **Implemented (CAS-262) for `source_html` only.** `inspect` for one thing, `expand` to page a region's members. Other modalities raise. |
-| `index/render.py` | Tokenizer/provider-specific packing | Render an existing view/index without rerunning semantic pruning. |
+| `index/addressing.py` | Address grammar, anchoring, and snapshot-independent identity | **Implemented (CAS-262).** Segmented region/member addresses anchored to durable ancestors; `ref_id` for the ones that earned it; stale, foreign, or malformed references fail closed. |
+| `index/inspect.py` | Bounded detail, region expansion, branch rebinding | **Implemented (CAS-262) for `source_html` only.** `inspect` for one thing, `expand` to page a region's members, `rebind` to carry an exemplar-learned route onto another branch. Other modalities raise. |
+| `index/render.py` | Tokenizer/provider-specific packing | **Implemented (CAS-262).** Budgeted overview from an existing index; headings before regions; omission always stated. Estimator-based token counting until a provider tokenizer is wired. |
 | `index/diff.py` | Snapshot/index comparison | Add with multi-shot action episodes. |
 
 ## Static HTML scope, stated
@@ -53,22 +53,63 @@ made of.
 Not handled: **non-contiguous** records, split by injected ads or dividers. That is DEPTA's
 tag-path clustering and is recorded as an asserted limit, not left to be discovered.
 
+## Location and identity are different things
+
+A `RegionRef` locates bytes inside one exact capture. Two of its four fields are the snapshot
+id and the artifact digest, so it can never compare equal across captures — by construction,
+not by accident. Comparing two snapshots therefore needs a second value, and `IndexEntry.ref_id`
+is it: a digest over what the *page* provides (anchor key, shape, member key, local path) and
+nothing the *capture* provides.
+
+An address earns an identity only when all three hold:
+
+* **anchored** — the first segment starts from a document-unique attribute key or a
+  once-occurring tag, not from `/html/body/…`. Only this survives an edit *above* the node.
+  `html`, `head`, and `body` are excluded from the tag tier: unique in every document, so
+  anchoring there is a root path with extra steps.
+* **stable** — no segment fell back to `&ordinal=`.
+* **positional-free** — no step anywhere selects a sibling by position (`./div[3]/p`). An
+  address can be anchored and keyed and still rot on an insert inside the anchor's subtree.
+
+Otherwise `ref_id` is `None`. Refusal, not a weaker id: the reference still resolves exactly
+within its own snapshot, it simply may not claim to name the same thing in the next one.
+Anchor tiers, most to least intentional: `id` → `data-*` → `class` → the author's first
+attribute → a once-occurring tag. Nothing is enumerated, for the same reason declarations are
+not — an allowlist can only anchor what someone thought of in advance.
+
+Measured identity coverage, `tests/boss_fights/html/reference_stability`:
+
+| Workload | With identity | Refused |
+| --- | --- | --- |
+| books.toscrape (frozen, real) | 59/79 (74%) | 19 positional tails, 1 unkeyed member |
+| repeat_scale (10,000 rows) | 17/17 (100%) | — |
+| reference_stability (generated) | 19/21 (90%) | 2 positional tails |
+
+Cross-*document* identity — the same template served at two URLs — is deliberately not this
+tier's job. That is the fingerprint's, and treating a shared skeleton as shared identity is the
+confusion the fingerprint work already measured.
+
 Design rationale, including why one-shot extraction F1 does not transfer to a multi-shot
 loop, is in [`docs/plans/observation-pruning.md`](../../docs/plans/observation-pruning.md).
 
 ## Delivery sequence
 
 1. ~~Static HTML artifact → `PrunedView` → flat index → bounded inspection, addressing, and region expansion.~~ Done (CAS-262).
-2. Golden parity and MDS regression fixtures from the QA beachhead.
-3. DOM and AX artifact producers/pruners over the same contracts.
-4. QA runtime dogfooding, still opt-in and read-only.
-5. Indexed discovery shadow mode with independent verification.
-6. Safe network evidence, action episodes, and diffs.
+2. ~~Anchored addresses and snapshot-independent `ref_id`, gated by a mutation corpus.~~ Done (CAS-262).
+3. ~~Token-budget rendering, gated by the Wikipedia negative control.~~ Done (CAS-262).
+4. `index/diff.py` over `ref_id`, now that identity exists to diff on.
+5. Golden parity and MDS regression fixtures from the QA beachhead.
+6. DOM and AX artifact producers/pruners over the same contracts.
+7. QA runtime dogfooding, still opt-in and read-only.
+8. Indexed discovery shadow mode with independent verification.
+9. Safe network evidence and action episodes.
 
 ## Gates
 
 - Same source, pruner version, and policy hash produce byte-identical output.
 - Every emitted reference resolves against its exact snapshot and artifact digest.
+- Two captures of an unchanged page mint identical `ref_id`s; an address that has not earned
+  one gets `None` rather than a weaker id.
 - Canonical artifacts are never modified by pruning.
 - Missing capabilities remain explicit; they never become empty evidence.
 - Credentials never enter ordinary model-visible artifacts.

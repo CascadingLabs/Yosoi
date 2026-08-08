@@ -49,10 +49,10 @@ def _manifest() -> dict:
 def _region(workload: HtmlWorkload) -> int:
     """Return the index ordinal of the row region named by ground truth."""
     oracle = workload.ground_truth['required_region'][0]['oracle_xpath']
-    reaching = workload.entries_reaching(oracle)
-    assert reaching, 'the row region is unreachable from the index'
-    assert len(reaching) == 1, f'{len(reaching)} entries claim the row region; it must cost exactly one'
-    return reaching[0]
+    regions = workload.regions_reaching(oracle)
+    assert regions, 'the row region is unreachable from the index'
+    assert len(regions) == 1, f'{len(regions)} regions claim the rows; they must collapse into exactly one'
+    return regions[0]
 
 
 def test_generated_artifacts_match_their_pinned_digests(ledger: HtmlWorkload, control: HtmlWorkload) -> None:
@@ -75,6 +75,8 @@ def test_ten_thousand_rows_cost_one_region_and_one_exemplar(ledger: HtmlWorkload
     # The region entry is followed immediately by its exemplar, and by nothing else per row.
     exemplar = ledger.index.entries[region.ordinal + 1]
     assert 'exemplar of ×10000' in exemplar.summary
+    # Region plus exemplar is the whole cost of 10,000 rows: exactly 2 entries reach them.
+    assert ledger.entries_reaching(expected['oracle_xpath']) == [region.ordinal, exemplar.ordinal]
 
 
 def test_index_size_does_not_depend_on_row_count(ledger: HtmlWorkload, control: HtmlWorkload) -> None:

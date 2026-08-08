@@ -22,8 +22,10 @@ from typing import TYPE_CHECKING
 from yosoi.observations.html_tree import (
     METADATA_CONTENT,
     SignatureCache,
+    anchor_census,
     assign_member_keys,
     content_children,
+    nearest_anchor,
     node_label,
     own_text,
     parse,
@@ -32,9 +34,9 @@ from yosoi.observations.html_tree import (
 )
 from yosoi.observations.index.addressing import (
     ObservationAddress,
+    anchor_address,
     element_address,
     format_address,
-    region_address,
 )
 from yosoi.observations.models.artifact import EvidenceKind
 from yosoi.observations.models.view import RegionCoverage
@@ -44,8 +46,11 @@ from yosoi.observations.pruning.protocol import PruningPolicy
 if TYPE_CHECKING:
     from lxml.etree import _Element, _ElementTree
 
-DECLARATION_PRUNER_VERSION = '1'
-BODY_PRUNER_VERSION = '1'
+DECLARATION_PRUNER_VERSION = '2'
+"""Bumped in the anchoring slice: emitted addresses changed, so stored ones are not comparable."""
+
+BODY_PRUNER_VERSION = '2'
+"""Bumped in the anchoring slice: emitted addresses changed, so stored ones are not comparable."""
 
 MAX_BODY_DEPTH = 12
 """How deep the body outline descends. Part of the pruner version: change it, bump that."""
@@ -70,6 +75,7 @@ class DeclarationPruner(SemanticPruner):
     def reduce(self, data: bytes, policy: PruningPolicy) -> Reduction:
         """Index the document root plus every metadata-content element, enumerating nothing."""
         root, tree = parse(data)
+        minter = _Minter(root, tree)
         declarations = [
             element for element in root.iter() if isinstance(element.tag, str) and element.tag in METADATA_CONTENT
         ]
@@ -77,14 +83,14 @@ class DeclarationPruner(SemanticPruner):
         label_chars = min(_LABEL_VALUE_CHARS, policy.max_fragment_chars)
         candidates = [
             PruneCandidate(
-                locator=format_address(element_address(tree.getpath(root))),
+                locator=format_address(minter.element(root)),
                 label='document',
                 summary=_document_summary(root),
             )
         ]
         candidates += [
             PruneCandidate(
-                locator=format_address(element_address(tree.getpath(element))),
+                locator=format_address(minter.element(element)),
                 label=_declaration_label(element, label_chars),
                 summary=_declaration_summary(element),
             )
@@ -113,6 +119,7 @@ class BodyPruner(SemanticPruner):
     def reduce(self, data: bytes, policy: PruningPolicy) -> Reduction:
         """Walk the body, collapsing repeat regions to container + exemplar + count."""
         root, tree = parse(data)
+        minter = _Minter(root, tree)
         body = root.find('.//body')
         if body is None:
             # A fragment artifact has no <body>; its root IS the content subtree.
@@ -123,13 +130,43 @@ class BodyPruner(SemanticPruner):
         # a walk that only ever emits children can never address them.
         candidates: list[PruneCandidate] = [
             PruneCandidate(
-                locator=format_address(element_address(tree.getpath(body))),
+                locator=format_address(minter.element(body)),
                 label=node_label(body),
                 summary=_element_summary(body, 0),
             )
         ]
-        _walk(_Anchor(base=None, element=body), tree, depth=0, cache={}, out=candidates, policy=policy)
+        _walk(_Anchor(base=None, element=body, minter=minter), tree, depth=0, cache={}, out=candidates, policy=policy)
         return Reduction(candidates=tuple(candidates), source_items=population)
+
+
+class _Minter:
+    """Mints absolute addresses that start from the nearest durable ancestor.
+
+    One census per document, consulted per element. Elements the document offers nothing
+    durable for still get an address — a root-absolute, positional one — but it carries no
+    anchor, so `ref_id` refuses to mint an identity for it rather than implying stability the
+    page never offered.
+    """
+
+    def __init__(self, root: _Element, tree: _ElementTree) -> None:
+        """Build the document-wide uniqueness census this minter consults."""
+        self._tree = tree
+        self._census = anchor_census(root)
+
+    def element(self, element: _Element) -> ObservationAddress:
+        """Return the most durable absolute address available for one element."""
+        found = nearest_anchor(element, self._census)
+        if found is None:
+            return element_address(self._tree.getpath(element))
+        ancestor, key = found
+        if ancestor is element:
+            return anchor_address(key)
+        anchor_path = self._tree.getpath(ancestor)
+        return anchor_address(key, '.' + self._tree.getpath(element)[len(anchor_path) :])
+
+    def region(self, container: _Element, shape: str) -> ObservationAddress:
+        """Return the address of a repeat container, anchored where the page allows it."""
+        return self.element(container).as_region(shape)
 
 
 @dataclass(frozen=True)
@@ -143,6 +180,7 @@ class _Anchor:
 
     base: ObservationAddress | None
     element: _Element
+    minter: _Minter
 
     def _relative(self, tree: _ElementTree, node: _Element) -> str:
         anchor_path = tree.getpath(self.element)
@@ -151,13 +189,13 @@ class _Anchor:
     def element_at(self, tree: _ElementTree, node: _Element) -> ObservationAddress:
         """Address one exact element beneath this anchor."""
         if self.base is None:
-            return element_address(tree.getpath(node))
+            return self.minter.element(node)
         return self.base.descend(self._relative(tree, node))
 
     def region_at(self, tree: _ElementTree, container: _Element, shape: str) -> ObservationAddress:
         """Address a repeat container beneath this anchor."""
         if self.base is None:
-            return region_address(tree.getpath(container), shape)
+            return self.minter.region(container, shape)
         return self.base.descend_region(self._relative(tree, container), shape)
 
 
@@ -204,7 +242,14 @@ def _walk(
             member = _emit_region(anchor, tree, children[index : index + run], signature, out, policy)
             # Descend into the exemplar only — collapsing and then walking all N would
             # reintroduce the cost the collapse just removed.
-            _walk(_Anchor(base=member, element=exemplar), tree, depth=depth + 1, cache=cache, out=out, policy=policy)
+            _walk(
+                _Anchor(base=member, element=exemplar, minter=anchor.minter),
+                tree,
+                depth=depth + 1,
+                cache=cache,
+                out=out,
+                policy=policy,
+            )
         else:
             out.append(
                 PruneCandidate(
@@ -214,7 +259,11 @@ def _walk(
                 )
             )
             _walk(
-                _Anchor(base=anchor.element_at(tree, exemplar) if anchor.base is not None else None, element=exemplar),
+                _Anchor(
+                    base=anchor.element_at(tree, exemplar) if anchor.base is not None else None,
+                    element=exemplar,
+                    minter=anchor.minter,
+                ),
                 tree,
                 depth=depth + 1,
                 cache=cache,

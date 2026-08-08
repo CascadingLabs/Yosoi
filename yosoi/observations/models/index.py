@@ -23,6 +23,24 @@ class IndexEntry(BaseModel):
     label: str = Field(min_length=1)
     summary: str
     coverage: RegionCoverage | None = None
+    ref_id: str | None = None
+    """Snapshot-independent identity, or None when this address has not earned one.
+
+    `ref` locates bytes inside one exact capture and can never compare equal across captures —
+    two of its four fields are the snapshot id and the artifact digest. `ref_id` is what
+    survives: it is derived from the page's own anchors, shapes, and keys, so an unchanged page
+    yields the same id on the next capture. It is None for positional or unanchored addresses,
+    because "probably the same thing" is not an identity.
+    """
+
+    @model_validator(mode='after')
+    def _validate_identity(self) -> IndexEntry:
+        from yosoi.observations.index.addressing import ref_id
+
+        expected = ref_id(self.ref.modality, self.ref.locator)
+        if self.ref_id is not None and self.ref_id != expected:
+            raise ValueError('index entry identity disagrees with the identity its own address implies')
+        return self
 
 
 class ObservationIndex(BaseModel):

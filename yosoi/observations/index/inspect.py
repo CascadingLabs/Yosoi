@@ -13,6 +13,7 @@ of an opinion about a reduction.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -175,6 +176,43 @@ class ObservationInspector:
             returned_bytes=len(content),
             returned_items=1,
             truncated=len(serialized) > budget.max_bytes,
+        )
+
+    def rebind(self, ref: RegionRef, keys: str | Sequence[str], *, at: int = 0) -> RegionRef:
+        """Return the same reference pointed at a different branch of its nested regions.
+
+        The index describes the exemplar branch of every nested repeat, so this is how a route
+        learned at member 1 gets applied to member N without re-indexing anything or reading the
+        subtree back as bytes.
+
+        Member keys below the one being swapped are BRANCH-SPECIFIC — `id=team-1-1` exists only
+        inside department 1 — so an address with several member segments needs a key for each
+        one from `at` onward. Passing a single key when deeper selections remain is refused with
+        the count needed, rather than resolved loosely or silently downgraded to a position.
+
+        The rebound reference is resolved here before it is returned: a key that names no member
+        fails now, not later as a reference that looked fine.
+        """
+        artifact = self._artifact_for(ref, allow_restricted=False)
+        address = parse_address(ref.locator)
+        replacements = [keys] if isinstance(keys, str) else list(keys)
+        remaining = len(address.member_segments()) - at
+        if len(replacements) < remaining:
+            raise ObservationAddressError(
+                f'rebinding from member {at} needs {remaining} key(s) — member selections below the '
+                f'first are branch-specific and cannot survive the change; got {len(replacements)}'
+            )
+        rebound = address
+        for offset, key in enumerate(replacements):
+            rebound = rebound.rebind_member(key, at=at + offset)
+
+        _, tree = parse(self._store.read(artifact))
+        _resolve_segments(tree, rebound)
+        return RegionRef(
+            snapshot_id=ref.snapshot_id,
+            artifact_sha256=ref.artifact_sha256,
+            modality=ref.modality,
+            locator=format_address(rebound),
         )
 
     def expand(self, ref: RegionRef, budget: InspectionBudget, *, offset: int = 0) -> RegionPage:

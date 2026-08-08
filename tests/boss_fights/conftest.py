@@ -68,26 +68,46 @@ class HtmlWorkload:
         Ground truth names evidence by an independent XPath oracle; the implementation names
         it by whatever locator it chose. This maps one to the other so fixture authors never
         prescribe — or accidentally copy — an emitted reference.
+
+        Mapping goes through the production resolver rather than through string comparison of
+        locators. When addresses were root-absolute getpaths, comparing strings happened to
+        work; it stopped working the moment addresses could be anchored, which is the point —
+        a harness that knows the locator grammar is a harness that has to be rewritten every
+        time the grammar earns a new form. This one only knows that an address resolves.
         """
         from lxml import html as lxml_html
+
+        from yosoi.observations.index.inspect import _region_members, _resolve_segments
 
         root = lxml_html.fromstring(self.data)
         tree = root.getroottree()
         expected = {tree.getpath(element) for element in tree.xpath(oracle_xpath)}
         if not expected:
-            raise AssertionError(f'ground-truth oracle {oracle_xpath!r} matches nothing in the frozen artifact')
+            raise AssertionError(f'ground-truth oracle {oracle_xpath!r} matches nothing in the artifact')
         reached = []
         for entry in self.index.entries:
             address = parse_address(entry.ref.locator)
+            resolved = _resolve_segments(tree, address)
             # A region is reached when the oracle's elements are the members it collapsed;
             # an element entry is reached when it addresses one of them directly.
             if address.is_region:
-                container = address.segments[-1].path
-                if any(path.rsplit('/', 1)[0] == container for path in expected):
+                members = _region_members(resolved, address.segments[-1].shape or '')
+                if any(tree.getpath(member) in expected for member in members):
                     reached.append(entry.ordinal)
-            elif len(address.segments) == 1 and address.segments[0].path in expected:
+            elif tree.getpath(resolved) in expected:
                 reached.append(entry.ordinal)
         return reached
+
+    def regions_reaching(self, oracle_xpath: str) -> list[int]:
+        """Return ordinals of REGION entries that collapsed the oracle's elements.
+
+        Separate from `entries_reaching` because a collapsed run legitimately produces two
+        entries that both reach the oracle — the region and its exemplar member. Counting them
+        together cannot express "20 records cost 2 entries, and exactly one of them is the
+        region".
+        """
+        regions = {entry.ordinal for entry in self.index.entries if entry.coverage is not None}
+        return [ordinal for ordinal in self.entries_reaching(oracle_xpath) if ordinal in regions]
 
 
 def _build(workload_dir: Path, artifact_name: str) -> HtmlWorkload:
@@ -96,24 +116,29 @@ def _build(workload_dir: Path, artifact_name: str) -> HtmlWorkload:
     return _assemble(workload_dir, data)
 
 
-def _build_generated(workload_dir: Path, data: bytes) -> HtmlWorkload:
+def _build_generated(workload_dir: Path, data: bytes, snapshot_id: str | None = None) -> HtmlWorkload:
     """Assemble a workload whose artifact is generated rather than frozen on disk.
 
     A megabyte artifact is not committable, so a scale workload states its generator in the
     manifest and reproduces the bytes here. Everything downstream is identical to the frozen
     path — the pruners cannot tell where the bytes came from.
+
+    `snapshot_id` overrides the manifest's, so the same bytes can be captured twice as two
+    distinct snapshots. Without that, "capture the same page again" produces a byte-identical
+    snapshot and every cross-capture claim is vacuous.
     """
-    return _assemble(workload_dir, data)
+    return _assemble(workload_dir, data, snapshot_id=snapshot_id)
 
 
-def _assemble(workload_dir: Path, data: bytes) -> HtmlWorkload:
+def _assemble(workload_dir: Path, data: bytes, snapshot_id: str | None = None) -> HtmlWorkload:
     """Prune, compile, and bind one workload's bytes into a walkable address space."""
     manifest = tomllib.loads((workload_dir / 'manifest.toml').read_text())
     ground_truth = tomllib.loads((workload_dir / 'ground_truth.toml').read_text())
+    identity = snapshot_id or manifest['id']
 
     store = MemoryArtifactStore()
     artifact = store.put(
-        snapshot_id=manifest['id'],
+        snapshot_id=identity,
         kind=EvidenceKind.SOURCE_HTML,
         media_type='text/html',
         data=data,
@@ -121,7 +146,7 @@ def _assemble(workload_dir: Path, data: bytes) -> HtmlWorkload:
     snapshot = ObservationSnapshot(
         run_id=manifest['id'],
         episode_id=manifest['id'],
-        snapshot_id=manifest['id'],
+        snapshot_id=identity,
         requested_profile=CaptureProfile(manifest['capture_profile']),
         artifacts=(artifact,),
     )
@@ -148,6 +173,6 @@ def html_workload() -> Callable[[Path, str], HtmlWorkload]:
 
 
 @pytest.fixture(scope='session')
-def generated_html_workload() -> Callable[[Path, bytes], HtmlWorkload]:
+def generated_html_workload() -> Callable[..., HtmlWorkload]:
     """Return a factory that assembles a source-HTML workload from generated bytes."""
     return _build_generated

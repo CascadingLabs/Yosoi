@@ -52,20 +52,22 @@ def test_repeated_records_cost_one_region_not_twenty_entries(books: HtmlWorkload
     records = lxml_html.fromstring(books.data).xpath(expected['oracle_xpath'])
     assert len(records) == expected['expected_members'], 'the frozen capture no longer holds the expected records'
 
-    reaching = books.entries_reaching(expected['oracle_xpath'])
-    assert reaching, 'the product region is unreachable from the index'
-    region = books.index.entries[reaching[0]]
+    regions = books.regions_reaching(expected['oracle_xpath'])
+    assert regions, 'the product region is unreachable from the index'
+    region = books.index.entries[regions[0]]
     assert region.coverage is not None
     assert region.coverage.observed == expected['expected_members']
     assert region.coverage.complete, 'static HTML holds every member it has'
-    # One region entry, not one per record.
-    assert len(reaching) == 1
+    # One region entry, not one per record — and 2 entries in total, the region plus its
+    # exemplar member, for all 20 records.
+    assert len(regions) == 1
+    assert len(books.entries_reaching(expected['oracle_xpath'])) == 2
 
 
 def test_every_record_stays_reachable_through_the_region(books: HtmlWorkload) -> None:
     """Collapsing must not cost reachability: each member is one `expand` hop away."""
     expected = books.ground_truth['required_region'][0]
-    region_ordinal = books.entries_reaching(expected['oracle_xpath'])[0]
+    region_ordinal = books.regions_reaching(expected['oracle_xpath'])[0]
 
     page = books.expand(region_ordinal)
 
@@ -79,7 +81,7 @@ def test_every_record_stays_reachable_through_the_region(books: HtmlWorkload) ->
 
 def test_region_expansion_is_bounded_and_pages(books: HtmlWorkload) -> None:
     expected = books.ground_truth['required_region'][0]
-    region_ordinal = books.entries_reaching(expected['oracle_xpath'])[0]
+    region_ordinal = books.regions_reaching(expected['oracle_xpath'])[0]
 
     first = books.expand(region_ordinal, InspectionBudget(max_items=5))
     second = books.expand(region_ordinal, InspectionBudget(max_items=5), offset=5)
