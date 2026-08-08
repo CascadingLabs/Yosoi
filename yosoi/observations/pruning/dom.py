@@ -14,9 +14,9 @@ from yosoi.observations.dom_tree import (
 from yosoi.observations.index.addressing import element_address, format_address, region_address
 from yosoi.observations.models.artifact import EvidenceKind
 from yosoi.observations.models.dom import DomNode, DomVisibility, parse_dom_snapshot
-from yosoi.observations.models.view import RegionCoverage
+from yosoi.observations.models.view import PrunedView, RegionCoverage
 from yosoi.observations.pruning._base import PruneCandidate, Reduction, SemanticPruner
-from yosoi.observations.pruning.protocol import PruningPolicy
+from yosoi.observations.pruning.protocol import PruningInput, PruningPolicy
 
 DOM_PRUNER_VERSION = '1'
 MIN_RUN = 2
@@ -34,6 +34,13 @@ class DomPruner(SemanticPruner):
     name = 'dom'
     version = DOM_PRUNER_VERSION
     evidence_kind = EvidenceKind.RENDERED_DOM
+
+    def prune(self, source: PruningInput, policy: PruningPolicy) -> PrunedView:
+        """Bind the self-described DOM snapshot to the artifact before reduction."""
+        snapshot = parse_dom_snapshot(source.data)
+        if snapshot.snapshot_id != source.source.snapshot_id:
+            raise ValueError('rendered-DOM payload snapshot disagrees with its artifact')
+        return super().prune(source, policy)
 
     def reduce(self, data: bytes, policy: PruningPolicy) -> Reduction:
         """Return a bounded semantic proposal over validated DOM JSON bytes."""

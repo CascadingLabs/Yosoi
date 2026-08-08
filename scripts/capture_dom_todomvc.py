@@ -155,8 +155,9 @@ def _write_capture(states: dict[str, bytes], *, status_code: int, final_url: str
 async def main() -> None:
     """Capture a deterministic TodoMVC state episode with a live VoidCrawl tab."""
     async with BrowserPool(PoolConfig()) as pool, pool.acquire() as tab:
+        await tab.goto(URL, capture_endpoints=True)
+        await tab.evaluate_js('localStorage.clear(); sessionStorage.clear();')
         response = await tab.goto(URL, capture_endpoints=True)
-        await tab.evaluate_js("localStorage.clear(); sessionStorage.clear(); location.hash = '#/';")
         states: dict[str, bytes] = {}
 
         states['s0_empty'] = _snapshot(await tab.evaluate_js(CAPTURE_JS), 'todomvc-s0-empty')

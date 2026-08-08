@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import pytest
+
 from yosoi.observations.artifacts import MemoryArtifactStore
 from yosoi.observations.dom_tree import dom_locator
-from yosoi.observations.index.addressing import parse_address
+from yosoi.observations.index.addressing import ObservationAddressError, parse_address
 from yosoi.observations.index.inspect import InspectionBudget, ObservationInspector
 from yosoi.observations.models import (
     CaptureProfile,
@@ -15,6 +17,7 @@ from yosoi.observations.models import (
     DomVisibility,
     EvidenceKind,
     ObservationSnapshot,
+    RegionRef,
 )
 from yosoi.observations.models.dom import serialize_dom_snapshot
 from yosoi.observations.pruning import DomPruner, PruningInput, PruningPolicy
@@ -177,6 +180,77 @@ def test_dom_inspect_and_expand_resolve_exact_snapshot_json() -> None:
     assert page.coverage.complete is True
     assert [member.label for member in page.members] == ['li.todo', 'li.todo']
     assert DomNode.model_validate_json(detail.content).text == 'B'
+
+
+def test_dom_expand_does_not_promote_container_count_for_state_subset() -> None:
+    root = DomNode(
+        node_id='root',
+        tag='html',
+        children=(
+            DomNode(
+                node_id='todo-list',
+                tag='ul',
+                declared_count=3,
+                children=(_todo('todo-1', 'A'), _todo('todo-2', 'B'), _todo('todo-3', 'C', checked=True)),
+            ),
+        ),
+    )
+    snapshot = DomSnapshot(snapshot_id='mixed', root=root)
+    data = serialize_dom_snapshot(snapshot)
+    store = MemoryArtifactStore()
+    ref = store.put(
+        snapshot_id='mixed',
+        kind=EvidenceKind.RENDERED_DOM,
+        media_type='application/json',
+        data=data,
+    )
+    view = DomPruner().prune(PruningInput(source=ref, data=data), PruningPolicy())
+    region = next(fragment for fragment in view.fragments if fragment.coverage is not None)
+    manifest = ObservationSnapshot(
+        run_id='run',
+        episode_id='episode',
+        snapshot_id='mixed',
+        requested_profile=CaptureProfile.BROWSER_HEADLESS,
+        artifacts=(ref,),
+    )
+
+    page = ObservationInspector(store, manifest).expand(region.ref, InspectionBudget(max_items=10))
+
+    assert page.coverage.declared is None
+    assert page.coverage.complete is False
+
+
+def test_dom_inspection_rejects_payload_bound_to_another_snapshot() -> None:
+    root = DomNode(node_id='root', tag='html')
+    data = serialize_dom_snapshot(DomSnapshot(snapshot_id='payload', root=root))
+    store = MemoryArtifactStore()
+    ref = store.put(
+        snapshot_id='manifest',
+        kind=EvidenceKind.RENDERED_DOM,
+        media_type='application/json',
+        data=data,
+    )
+    manifest = ObservationSnapshot(
+        run_id='run',
+        episode_id='episode',
+        snapshot_id='manifest',
+        requested_profile=CaptureProfile.BROWSER_HEADLESS,
+        artifacts=(ref,),
+    )
+    inspector = ObservationInspector(store, manifest)
+
+    with pytest.raises(ValueError, match='payload snapshot disagrees'):
+        DomPruner().prune(PruningInput(source=ref, data=data), PruningPolicy())
+    with pytest.raises(ObservationAddressError, match='payload snapshot disagrees'):
+        inspector.inspect(
+            ref=RegionRef(
+                snapshot_id='manifest',
+                artifact_sha256=ref.sha256,
+                modality=EvidenceKind.RENDERED_DOM,
+                locator=dom_locator('root'),
+            ),
+            budget=InspectionBudget(),
+        )
 
 
 def test_shadow_root_and_portal_relationships_remain_addressable() -> None:

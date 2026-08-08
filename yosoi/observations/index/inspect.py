@@ -164,6 +164,14 @@ def _dom_region_members(container: DomNode, shape: str) -> list[DomNode]:
     return members
 
 
+def _parse_dom_artifact(artifact: ArtifactRef, data: bytes) -> DomSnapshot:
+    """Parse DOM bytes and bind their self-described snapshot identity to the artifact."""
+    snapshot = parse_dom_snapshot(data)
+    if snapshot.snapshot_id != artifact.snapshot_id:
+        raise ObservationAddressError('rendered-DOM payload snapshot disagrees with its artifact')
+    return snapshot
+
+
 def _resolve_dom_address(snapshot: DomSnapshot, address: ObservationAddress) -> DomNode:
     """Resolve one DOM address using node IDs and the shared repeat signature/key rules."""
     if len(address.segments) != 1:
@@ -226,7 +234,7 @@ class ObservationInspector:
         data = self._store.read(artifact)
 
         if artifact.kind is EvidenceKind.RENDERED_DOM:
-            node = _resolve_dom_address(parse_dom_snapshot(data), address)
+            node = _resolve_dom_address(_parse_dom_artifact(artifact, data), address)
             serialized = node.model_dump_json().encode('utf-8')
         else:
             from lxml import etree
@@ -292,7 +300,7 @@ class ObservationInspector:
 
         data = self._store.read(artifact)
         if artifact.kind is EvidenceKind.RENDERED_DOM:
-            snapshot = parse_dom_snapshot(data)
+            snapshot = _parse_dom_artifact(artifact, data)
             container = _resolve_dom_address(snapshot, address)
             shape = address.segments[-1].shape or ''
             members = _dom_region_members(container, shape)
@@ -315,7 +323,7 @@ class ObservationInspector:
                 )
                 for position, (member, key) in enumerate(window)
             )
-            declared = container.declared_count
+            declared = container.declared_count if len(members) == len(container.children) else None
             complete = declared is not None and declared == len(members)
             return RegionPage(
                 region=ref,
