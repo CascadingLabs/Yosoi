@@ -232,6 +232,8 @@ _LAZY: dict[str, str] = {
     # utils
     'resolve_contract': 'yosoi.utils.contracts',
     'load_urls_from_file': 'yosoi.utils.urls',
+    # read-only QA index surface
+    'index': 'yosoi.qa.index',
 }
 
 __all__ = [
@@ -359,6 +361,7 @@ __all__ = [
     'groq',
     'heroku',
     'huggingface',
+    'index',
     'input',
     'install_recipe',
     'js',

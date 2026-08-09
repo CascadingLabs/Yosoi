@@ -23,21 +23,34 @@ def qa_status(json_output: bool) -> None:
     """Show scaffold readiness without starting a browser or provider."""
     payload = {
         'type': 'qa.status',
-        'status': 'scaffolded',
+        'status': 'index_surface_ready',
         'runtime_wired': False,
+        'index_surface_wired': True,
+        'capture_wired': False,
         'observations_wired': False,
-        'next_slice': 'static HTML artifact -> pruned view -> flat index -> bounded inspection',
+        'provider_wired': False,
+        'mcp_launcher': 'yosoi-qa-index-mcp',
+        'next_slice': 'existing capture -> snapshot/index session injection',
         'roadmaps': ['yosoi/observations/ROADMAP.md', 'yosoi/qa/ROADMAP.md'],
     }
     if json_output:
         echo_json(payload)
         return
 
-    click.echo('Yosoi QA arm: scaffolded; runtime not wired')
+    click.echo('Yosoi QA arm: typed index surface ready; capture/provider wiring absent')
+    click.echo(f'Launcher: {payload["mcp_launcher"]} (fail-closed without injected evidence)')
     click.echo(f'Next: {payload["next_slice"]}')
     click.echo('Roadmaps:')
     for roadmap in payload['roadmaps']:
         click.echo(f'  - {roadmap}')
 
 
-__all__ = ['qa_group', 'qa_status']
+@qa_group.command('mcp')
+def qa_mcp() -> None:
+    """Launch the read-only QA-index MCP transport (unwired by default)."""
+    from yosoi.integrations.qa_index_mcp import main
+
+    main()
+
+
+__all__ = ['qa_group', 'qa_mcp', 'qa_status']
