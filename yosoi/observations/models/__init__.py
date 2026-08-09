@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     from yosoi.observations.models.snapshot import CaptureCapability as CaptureCapability
     from yosoi.observations.models.snapshot import CaptureProfile as CaptureProfile
     from yosoi.observations.models.snapshot import ObservationSnapshot as ObservationSnapshot
+    from yosoi.observations.models.view import Pagination as Pagination
     from yosoi.observations.models.view import PrunedFragment as PrunedFragment
     from yosoi.observations.models.view import PrunedView as PrunedView
     from yosoi.observations.models.view import PruningStats as PruningStats
@@ -45,6 +46,7 @@ _LAZY = {
     'IndexEntry': 'yosoi.observations.models.index',
     'ObservationIndex': 'yosoi.observations.models.index',
     'ObservationSnapshot': 'yosoi.observations.models.snapshot',
+    'Pagination': 'yosoi.observations.models.view',
     'PrunedFragment': 'yosoi.observations.models.view',
     'PrunedView': 'yosoi.observations.models.view',
     'PruningStats': 'yosoi.observations.models.view',

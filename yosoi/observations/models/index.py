@@ -5,7 +5,7 @@ from __future__ import annotations
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from yosoi.observations.models.artifact import OBSERVATION_SCHEMA_VERSION, ArtifactRef, EvidenceKind
-from yosoi.observations.models.view import RegionCoverage, RegionRef
+from yosoi.observations.models.view import Pagination, RegionCoverage, RegionRef
 
 
 class IndexEntry(BaseModel):
@@ -53,6 +53,13 @@ class ObservationIndex(BaseModel):
     sources: tuple[ArtifactRef, ...] = ()
     modalities: tuple[EvidenceKind, ...] = ()
     entries: tuple[IndexEntry, ...] = ()
+    page: Pagination | None = None
+    """Which window of the underlying reductions these entries are, when they are a window.
+
+    None only for an index compiled from no views. Carried so the renderer can state the true
+    candidate population: an index that reports omission relative to its own entry count tells a
+    reader that 937 of 1,000 are missing when the reduction proposed 271,134.
+    """
 
     @model_validator(mode='after')
     def _validate_snapshot_scope(self) -> ObservationIndex:

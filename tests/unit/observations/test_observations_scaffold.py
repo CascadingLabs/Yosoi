@@ -17,6 +17,7 @@ from yosoi.observations.models import (
     IndexEntry,
     ObservationIndex,
     ObservationSnapshot,
+    Pagination,
     PrunedFragment,
     PrunedView,
     PruningStats,
@@ -94,6 +95,7 @@ def test_pruned_view_and_index_keep_exact_reference_chain() -> None:
     )
     fragment = PrunedFragment(ref=region, ordinal=0, label='document', summary='html document')
     view = PrunedView(
+        page=Pagination(offset=0, limit=1_000, returned=1, total=1),
         source=ref,
         pruner_name='html',
         pruner_version='test',

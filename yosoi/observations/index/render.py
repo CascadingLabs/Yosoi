@@ -21,7 +21,7 @@ from typing import Protocol, runtime_checkable
 from pydantic import BaseModel, ConfigDict, Field
 
 from yosoi.observations.models.index import IndexEntry, ObservationIndex
-from yosoi.observations.models.view import RenderedView
+from yosoi.observations.models.view import Pagination, RenderedView
 
 RENDERER_VERSION = '1'
 
@@ -112,7 +112,7 @@ class ObservationIndexRenderer:
 
         # Reserve the LONGEST possible footer up front. An overview that spent its last token on
         # one more entry, and so could not say what it dropped, is the failure mode here.
-        reserved = counter.count(self._footer(len(index.entries), 0)) + 1
+        reserved = counter.count(self._footer(len(index.entries), 0, index.page)) + 1
         chosen: set[int] = set()
         spent = reserved
         for entry in order:
@@ -124,7 +124,7 @@ class ObservationIndexRenderer:
 
         selected = [entry for entry in index.entries if entry.ordinal in chosen]
         text = '\n'.join(
-            [*(lines[entry.ordinal] for entry in selected), self._footer(len(index.entries), len(selected))]
+            [*(lines[entry.ordinal] for entry in selected), self._footer(len(index.entries), len(selected), index.page)]
         )
         return RenderedView(
             text=text,
@@ -151,12 +151,28 @@ class ObservationIndexRenderer:
             clipped = clipped[: max(0, len(clipped) - 8)]
         return f'{head}  {clipped}{_ELLIPSIS}' if clipped else head
 
-    def _footer(self, total: int, shown: int) -> str:
-        """State the omission explicitly, including when there is none."""
-        omitted = total - shown
-        if omitted <= 0:
-            return f'— {total} of {total} entries shown; inspect any by its [ordinal] —'
-        return f'— {shown} of {total} entries shown, {omitted} omitted and still inspectable by [ordinal] —'
+    def _footer(self, held: int, shown: int, page: Pagination | None = None) -> str:
+        """State the omission explicitly — both omissions, when the index is itself a page.
+
+        There are two: the entries this rendering left out, which ARE inspectable by ordinal,
+        and the candidates the reduction never handed to this index, which are not. Reporting
+        only the first told a reader that 937 of 1,000 entries were missing from a page whose
+        reduction proposed 271,134, and called all of them inspectable.
+        """
+        omitted = held - shown
+        resident = (
+            f'— {held} of {held} entries shown'
+            if omitted <= 0
+            else f'— {shown} of {held} entries shown, {omitted} omitted but inspectable by [ordinal]'
+        )
+        if page is None or page.complete:
+            return f'{resident}; inspect any by its [ordinal] —' if omitted <= 0 else f'{resident} —'
+        beyond = page.total - (page.offset + page.returned)
+        return (
+            f'{resident}; this index is candidates {page.offset}–{page.offset + page.returned - 1} '
+            f'of {page.total} — {beyond} more are NOT in it'
+            + (f'; next page at offset {page.next_offset} —' if page.next_offset is not None else ' —')
+        )
 
 
 __all__ = ['RENDERER_VERSION', 'CharacterEstimator', 'ObservationIndexRenderer', 'RenderPolicy', 'Tokenizer']

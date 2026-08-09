@@ -317,6 +317,7 @@ def _emit_region(
             locator=format_address(exemplar),
             label=node_label(members[0]),
             summary=f'exemplar of ×{len(members)}' + (f'; children: {shape}' if shape else ''),
+            bound_to_previous=True,
         )
     )
     return exemplar

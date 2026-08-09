@@ -6,6 +6,7 @@ from typing import Protocol, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from yosoi.observations.index.paging import PageRequest
 from yosoi.observations.models.artifact import ArtifactRef, EvidenceKind
 from yosoi.observations.models.view import PrunedView
 
@@ -37,8 +38,8 @@ class Pruner(Protocol):
     version: str
     evidence_kind: EvidenceKind
 
-    def prune(self, source: PruningInput, policy: PruningPolicy) -> PrunedView:
-        """Derive a structured view without mutating or persisting its source."""
+    def prune(self, source: PruningInput, policy: PruningPolicy, page: PageRequest | None = None) -> PrunedView:
+        """Derive one page of a structured view, without mutating or persisting its source."""
         ...
 
 

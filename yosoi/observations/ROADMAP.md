@@ -29,6 +29,7 @@ The adversarial corpus, no-auth SPA slate, and per-pruner gates are specified in
 | `index/inspect.py` | Bounded detail, region expansion, branch rebinding | **Implemented (CAS-262) for `source_html` only.** `inspect` for one thing, `expand` to page a region's members, `rebind` to carry an exemplar-learned route onto another branch. Other modalities raise. |
 | `index/render.py` | Tokenizer/provider-specific packing | **Implemented (CAS-262).** Budgeted overview from an existing index; headings before regions; omission always stated. Estimator-based token counting until a provider tokenizer is wired. |
 | `index/diff.py` | Snapshot/index comparison | Add with multi-shot action episodes. |
+| `index/paging.py` | Explicit windows over a large candidate space | **Implemented.** Global ordinals, exact tiling via `next_offset = offset + returned`, fuzzy boundaries that keep a region with its exemplar. Replaced blind prefix truncation. |
 
 ## Static HTML scope, stated
 
@@ -113,3 +114,28 @@ loop, is in [`docs/plans/observation-pruning.md`](../../docs/plans/observation-p
 - Canonical artifacts are never modified by pruning.
 - Missing capabilities remain explicit; they never become empty evidence.
 - Credentials never enter ordinary model-visible artifacts.
+
+## The indexing ceiling
+
+Pruning does not remove the ceiling, it moves it. Measured on live captures: the HTML Living
+Standard reduces to 271,134 addressable candidates, the ECMAScript spec to 166,355, one
+Wikipedia list to 22,976. Those reductions are correct — that content really is that large and
+mostly unique — and none of them fit in a context window or in one useful overview.
+
+`index/paging.py` makes the ceiling explicit instead of silent: a page states the true total,
+ordinals are global, and `next_offset` tiles the space exactly. Two things it deliberately does
+not solve, recorded so they are not rediscovered:
+
+* **A page is not a map.** 272 pages of the HTML spec is exhaustive and still not something a
+  reader can orient in. Progressive collapse — describing the whole document at coarser
+  granularity when a reduction will not fit — is the missing complement, and is future work.
+* **Paging re-reduces.** `prune()` runs the full `reduce()` per page, so sweeping the HTML spec
+  in 272 pages costs ~49 minutes at 10.7s per page. Correct, and quadratic in the wrong place.
+  A candidate-space iterator or a cached reduction is needed before an exhaustive sweep of a
+  very large page is practical.
+
+`DEFAULT_PAGE_LIMIT = 1_000` is a working ceiling, not a measured one. A principled limit would
+come from a **complexity measure over the reduction** — how branched and how repetitive the
+document is, in the spirit of a cyclomatic/McCabe score — so that 1,000 near-identical table
+rows and 1,000 unique specification paragraphs are not treated as the same load on a reader.
+That measure does not exist yet and is the natural successor to the flat count.

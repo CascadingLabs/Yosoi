@@ -66,6 +66,40 @@ class PrunedFragment(BaseModel):
         return self
 
 
+class Pagination(BaseModel):
+    """Which window of a reduction a view holds, and how large the whole space is.
+
+    Carried on the view because `total` is the only place a downstream consumer can learn that
+    the reduction proposed more than it was handed. Without it the compiler, the index, and the
+    renderer each honestly report omission relative to what they received, and the reader is told
+    a smaller page is a smaller page rather than the first window of an enormous one.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    offset: int = Field(ge=0)
+    limit: int = Field(gt=0)
+    returned: int = Field(ge=0)
+    total: int = Field(ge=0)
+
+    @model_validator(mode='after')
+    def _validate_window(self) -> Pagination:
+        if self.offset + self.returned > self.total:
+            raise ValueError('a page cannot return candidates past the total it declares')
+        return self
+
+    @property
+    def next_offset(self) -> int | None:
+        """Offset of the next page, or None at the end. Always `offset + returned`."""
+        consumed = self.offset + self.returned
+        return consumed if consumed < self.total else None
+
+    @property
+    def complete(self) -> bool:
+        """Whether this window holds the entire candidate space."""
+        return self.offset == 0 and self.returned == self.total
+
+
 class PruningStats(BaseModel):
     """Loss and size accounting for a semantic pruning pass."""
 
@@ -90,6 +124,7 @@ class PrunedView(BaseModel):
     pruner_version: str = Field(min_length=1)
     policy_hash: str = Field(min_length=1)
     fragments: tuple[PrunedFragment, ...] = ()
+    page: Pagination
     stats: PruningStats
 
     @model_validator(mode='after')
@@ -121,6 +156,7 @@ class RenderedView(BaseModel):
 
 
 __all__ = [
+    'Pagination',
     'PrunedFragment',
     'PrunedView',
     'PruningStats',
