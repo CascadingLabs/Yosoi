@@ -188,6 +188,7 @@ def test_a_diff_of_many_changes_is_paged_and_states_what_it_left_out() -> None:
 
     assert len(diff.changes) == 5
     assert diff.truncated is True
+    assert diff.model_dump(mode='json')['truncated'] is True
     assert diff.page is not None
     assert diff.page.total > 5
     assert 'beyond this page' in diff.describe()

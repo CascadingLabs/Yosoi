@@ -18,7 +18,7 @@ from yosoi.observations.index.inspect import (
 )
 from yosoi.observations.index.paging import PageRequest
 from yosoi.observations.index.render import ObservationIndexRenderer, RenderPolicy
-from yosoi.observations.models.artifact import ArtifactRef, Sensitivity
+from yosoi.observations.models.artifact import ArtifactRef, EvidenceKind, Sensitivity
 from yosoi.observations.models.index import ObservationIndex
 from yosoi.observations.models.snapshot import CaptureCapability, ObservationSnapshot
 from yosoi.observations.models.view import RegionRef, RenderedView
@@ -50,6 +50,9 @@ class QAIndexLimits(BaseModel):
 QA_INDEX_LIMITS = QAIndexLimits()
 DEFAULT_QA_OVERVIEW_TOKENS = 1_000
 DEFAULT_QA_TOKENIZER_ID = 'estimate/chars-per-token-4'
+SUPPORTED_QA_MODALITIES = frozenset(
+    {EvidenceKind.SOURCE_HTML, EvidenceKind.RENDERED_DOM, EvidenceKind.AX_TREE, EvidenceKind.NETWORK}
+)
 
 
 class SnapshotIndexCapabilities(BaseModel):
@@ -137,6 +140,8 @@ def _validated_sources(
             raise ValueError('every index source must be an artifact declared by its snapshot')
         if source.sensitivity is not Sensitivity.MODEL_SAFE:
             raise PermissionError('QA index sessions cannot expose restricted evidence')
+        if source.kind not in SUPPORTED_QA_MODALITIES:
+            raise NotImplementedError(f'QA index sessions do not support {source.kind.value} evidence')
     source_modalities = {source.kind for source in observation_index.sources}
     if set(observation_index.modalities) != source_modalities:
         raise ValueError('index modalities must exactly describe its source artifact kinds')
@@ -183,9 +188,20 @@ class IndexSession:
         """Report indexed evidence and explicit unavailable-capture reasons per snapshot."""
         kinds = sorted({kind.value for index in self._indexes.values() for kind in index.modalities})
         operations = ('capabilities', 'status')
-        if self._indexes:
-            operations += ('overview', 'inspect', 'expand')
-        if len(self._indexes) > 1:
+        has_sources = any(observation_index.sources for observation_index in self._indexes.values())
+        has_entries = any(observation_index.entries for observation_index in self._indexes.values())
+        has_regions = any(
+            entry.coverage is not None
+            for observation_index in self._indexes.values()
+            for entry in observation_index.entries
+        )
+        if has_sources:
+            operations += ('overview',)
+        if has_entries:
+            operations += ('inspect',)
+        if has_regions:
+            operations += ('expand',)
+        if has_sources and len(self._indexes) > 1:
             operations += ('diff',)
         snapshots = tuple(
             SnapshotIndexCapabilities(
@@ -201,10 +217,11 @@ class IndexSession:
     async def status(self) -> IndexStatus:
         """Return readiness for the supplied offline evidence."""
         capabilities = await self.capabilities()
+        ready = any(observation_index.sources for observation_index in self._indexes.values())
         return IndexStatus(
-            ready=bool(self._indexes),
+            ready=ready,
             snapshot_ids=tuple(self._indexes),
-            message='read-only observation indexes are available' if self._indexes else 'no observation index is wired',
+            message='read-only observation indexes are available' if ready else 'no indexed evidence is wired',
             capabilities=capabilities,
         )
 
@@ -228,6 +245,8 @@ class IndexSession:
         index = self._indexes.get(args.snapshot_id)
         if index is None:
             raise KeyError(f'unknown snapshot {args.snapshot_id!r}')
+        if not index.sources:
+            raise RuntimeError(f'snapshot {args.snapshot_id!r} has no indexed evidence')
         if args.token_budget > QA_INDEX_LIMITS.overview_tokens:
             raise ValueError(f'overview token_budget exceeds QA ceiling of {QA_INDEX_LIMITS.overview_tokens}')
         return ObservationIndexRenderer().render(
@@ -290,6 +309,7 @@ __all__ = [
     'DEFAULT_QA_OVERVIEW_TOKENS',
     'DEFAULT_QA_TOKENIZER_ID',
     'QA_INDEX_LIMITS',
+    'SUPPORTED_QA_MODALITIES',
     'ExpandArgs',
     'IndexCapabilities',
     'IndexSession',

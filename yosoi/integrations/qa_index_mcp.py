@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import shutil
-from typing import Any
+from typing import Annotated, Any
+
+from pydantic import Field
 
 from yosoi.observations.models.view import RegionRef
 from yosoi.qa.index import DEFAULT_QA_OVERVIEW_TOKENS, DEFAULT_QA_TOKENIZER_ID, QA_INDEX_LIMITS
@@ -19,6 +21,18 @@ from yosoi.qa.tools import (
 QA_INDEX_SERVER_NAME = 'yosoi_qa_index'
 QA_INDEX_TOOL_NAMES = ('capabilities', 'status', 'overview', 'inspect', 'expand', 'diff')
 QA_INDEX_TOOL_IDS = tuple(f'mcp__{QA_INDEX_SERVER_NAME}__{name}' for name in QA_INDEX_TOOL_NAMES)
+
+SnapshotId = Annotated[str, Field(min_length=1)]
+Ordinal = Annotated[int, Field(ge=0)]
+Offset = Annotated[int, Field(ge=0)]
+OverviewTokens = Annotated[int, Field(gt=0, le=QA_INDEX_LIMITS.overview_tokens)]
+InspectBytes = Annotated[int, Field(gt=0, le=QA_INDEX_LIMITS.inspect_bytes)]
+InspectItems = Annotated[int, Field(gt=0, le=QA_INDEX_LIMITS.inspect_items)]
+InspectSummaryChars = Annotated[int, Field(gt=0, le=QA_INDEX_LIMITS.inspect_summary_chars)]
+ExpandBytes = Annotated[int, Field(gt=0, le=QA_INDEX_LIMITS.expand_bytes)]
+ExpandItems = Annotated[int, Field(gt=0, le=QA_INDEX_LIMITS.expand_items)]
+ExpandSummaryChars = Annotated[int, Field(gt=0, le=QA_INDEX_LIMITS.expand_summary_chars)]
+DiffItems = Annotated[int, Field(gt=0, le=QA_INDEX_LIMITS.diff_page_items)]
 
 
 def build_server(handler: QAToolHandler | None = None) -> object:
@@ -40,9 +54,9 @@ def build_server(handler: QAToolHandler | None = None) -> object:
 
     @server.tool()
     async def overview(
-        snapshot_id: str,
-        tokenizer_id: str = DEFAULT_QA_TOKENIZER_ID,
-        token_budget: int = DEFAULT_QA_OVERVIEW_TOKENS,
+        snapshot_id: SnapshotId,
+        tokenizer_id: Annotated[str, Field(min_length=1)] = DEFAULT_QA_TOKENIZER_ID,
+        token_budget: OverviewTokens = DEFAULT_QA_OVERVIEW_TOKENS,
     ) -> dict[str, Any]:
         """Render a bounded overview of an existing snapshot index."""
         result = await service.overview(
@@ -53,11 +67,11 @@ def build_server(handler: QAToolHandler | None = None) -> object:
     @server.tool()
     async def inspect(
         ref: RegionRef | None = None,
-        snapshot_id: str | None = None,
-        ordinal: int | None = None,
-        max_bytes: int = QA_INDEX_LIMITS.inspect_bytes,
-        max_items: int = QA_INDEX_LIMITS.inspect_items,
-        max_summary_chars: int = QA_INDEX_LIMITS.inspect_summary_chars,
+        snapshot_id: SnapshotId | None = None,
+        ordinal: Ordinal | None = None,
+        max_bytes: InspectBytes = QA_INDEX_LIMITS.inspect_bytes,
+        max_items: InspectItems = QA_INDEX_LIMITS.inspect_items,
+        max_summary_chars: InspectSummaryChars = QA_INDEX_LIMITS.inspect_summary_chars,
     ) -> dict[str, Any]:
         """Inspect one exact evidence reference or overview ordinal under hard limits."""
         result = await service.inspect(
@@ -72,13 +86,13 @@ def build_server(handler: QAToolHandler | None = None) -> object:
 
     @server.tool()
     async def expand(
-        snapshot_id: str,
-        ordinal: int | None = None,
+        snapshot_id: SnapshotId,
+        ordinal: Ordinal | None = None,
         ref: RegionRef | None = None,
-        offset: int = 0,
-        max_items: int = QA_INDEX_LIMITS.expand_items,
-        max_bytes: int = QA_INDEX_LIMITS.expand_bytes,
-        max_summary_chars: int = QA_INDEX_LIMITS.expand_summary_chars,
+        offset: Offset = 0,
+        max_items: ExpandItems = QA_INDEX_LIMITS.expand_items,
+        max_bytes: ExpandBytes = QA_INDEX_LIMITS.expand_bytes,
+        max_summary_chars: ExpandSummaryChars = QA_INDEX_LIMITS.expand_summary_chars,
     ) -> dict[str, Any]:
         """Expand one overview ordinal or exact region reference."""
         result = await service.expand(
@@ -94,10 +108,10 @@ def build_server(handler: QAToolHandler | None = None) -> object:
 
     @server.tool()
     async def diff(
-        before_snapshot_id: str,
-        after_snapshot_id: str,
-        offset: int = 0,
-        limit: int = QA_INDEX_LIMITS.diff_page_items,
+        before_snapshot_id: SnapshotId,
+        after_snapshot_id: SnapshotId,
+        offset: Offset = 0,
+        limit: DiffItems = QA_INDEX_LIMITS.diff_page_items,
     ) -> dict[str, Any]:
         """Compare related snapshot indexes by durable identity."""
         result = await service.diff(

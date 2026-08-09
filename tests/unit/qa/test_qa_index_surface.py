@@ -17,7 +17,7 @@ from yosoi.integrations.qa_index_mcp import (
 )
 from yosoi.observations.artifacts import MemoryArtifactStore
 from yosoi.observations.html_tree import parse, skeleton_signature
-from yosoi.observations.index.addressing import ref_id
+from yosoi.observations.index.addressing import ObservationAddressError, ref_id
 from yosoi.observations.index.inspect import InspectionBudget
 from yosoi.observations.models.artifact import EvidenceKind, Sensitivity
 from yosoi.observations.models.index import IndexEntry, ObservationIndex
@@ -97,6 +97,26 @@ def _session_pair():
         ys.index(store=store, snapshot=before, observation_index=before_index, related={'after': (after, after_index)})
     )
     return store, before, before_artifact, before_index, region, session
+
+
+def test_a_manifest_without_indexed_sources_is_not_reported_ready() -> None:
+    snapshot = ObservationSnapshot(
+        run_id='run',
+        episode_id='episode',
+        snapshot_id='empty',
+        requested_profile=CaptureProfile.HTTP_STATIC,
+        captured_at=_CAPTURED_AT,
+    )
+    observation_index = ObservationIndex(snapshot_id='empty')
+    session = IndexSession(store=MemoryArtifactStore(), snapshots=(snapshot,), indexes=(observation_index,))
+
+    status = asyncio.run(session.status())
+
+    assert status.ready is False
+    assert status.message == 'no indexed evidence is wired'
+    assert status.capabilities.operations == ('capabilities', 'status')
+    with pytest.raises(RuntimeError, match='no indexed evidence'):
+        asyncio.run(session.overview(OverviewArgs(snapshot_id='empty')))
 
 
 def test_session_composes_all_four_production_pruners() -> None:
@@ -219,6 +239,13 @@ def test_index_session_supports_async_surface_and_exposes_missing_modalities() -
 
     with pytest.raises(ValueError, match='provide ref'):
         InspectArgs(ref=region, snapshot_id='before', ordinal=0)
+    with pytest.raises(ObservationAddressError, match='different snapshot'):
+        asyncio.run(session.expand(ExpandArgs(snapshot_id='after', ref=region)))
+    with pytest.raises(LookupError, match='resolved to 0'):
+        asyncio.run(session.inspect(InspectArgs(snapshot_id='before', ordinal=999)))
+    stale = region.model_copy(update={'locator': region.locator + '|./missing'})
+    with pytest.raises(ObservationAddressError, match='resolved to 0'):
+        asyncio.run(session.inspect(InspectArgs(ref=stale)))
 
 
 def test_injected_mcp_matches_the_direct_session_and_unwired_introspection_is_truthful() -> None:
@@ -237,9 +264,11 @@ def test_injected_mcp_matches_the_direct_session_and_unwired_introspection_is_tr
         )
     )
     _, inspected = asyncio.run(server.call_tool('inspect', {'snapshot_id': 'before', 'ordinal': 0}))
+    _, diff = asyncio.run(server.call_tool('diff', {'before_snapshot_id': 'before', 'after_snapshot_id': 'after'}))
     assert status['ready'] is True
     assert overview['text'] == direct.text
     assert inspected['returned_bytes'] > 0
+    assert diff['truncated'] is False
 
     unwired = build_server()
     _, unwired_status = asyncio.run(unwired.call_tool('status', {}))
@@ -331,6 +360,25 @@ def test_session_rejects_restricted_sources_and_modality_lies() -> None:
             indexes=(restricted_index,),
         )
 
+    visual_store = MemoryArtifactStore()
+    visual = visual_store.put(
+        snapshot_id='visual',
+        kind=EvidenceKind.VISUAL,
+        media_type='image/png',
+        data=b'public-image-placeholder',
+    )
+    visual_snapshot = ObservationSnapshot(
+        run_id='run',
+        episode_id='episode',
+        snapshot_id='visual',
+        requested_profile=CaptureProfile.BROWSER_HEADLESS,
+        artifacts=(visual,),
+        captured_at=_CAPTURED_AT,
+    )
+    visual_index = ObservationIndex(snapshot_id='visual', sources=(visual,), modalities=(EvidenceKind.VISUAL,))
+    with pytest.raises(NotImplementedError, match='visual'):
+        IndexSession(store=visual_store, snapshots=(visual_snapshot,), indexes=(visual_index,))
+
     store, before, _, before_index, _, _ = _session_pair()
     lied = before_index.model_copy(update={'modalities': (EvidenceKind.NETWORK,)})
     with pytest.raises(ValueError, match='modalities'):
@@ -368,6 +416,29 @@ def test_session_construction_rejects_ambiguous_incomplete_or_forged_inputs() ->
         )
 
 
+def test_real_stdio_launcher_negotiates_tools_and_fails_closed() -> None:
+    from mcp import ClientSession, StdioServerParameters
+    from mcp.client.stdio import stdio_client
+
+    async def exercise() -> None:
+        command, args = qa_index_server_command()
+        parameters = StdioServerParameters(command=command, args=list(args))
+        async with (
+            stdio_client(parameters) as (reader, writer),
+            ClientSession(reader, writer) as client,
+        ):
+            await client.initialize()
+            tools = await client.list_tools()
+            assert tuple(tool.name for tool in tools.tools) == QA_INDEX_TOOL_NAMES
+            result = await client.call_tool('status', {})
+            assert result.isError is False
+            assert result.structuredContent is not None
+            assert result.structuredContent['ready'] is False
+            assert result.structuredContent['capabilities']['operations'] == ['capabilities', 'status']
+
+    asyncio.run(exercise())
+
+
 def test_mcp_server_spec_is_host_neutral_and_uses_prefixed_allowed_ids() -> None:
     status = asyncio.run(UnwiredQAToolHandler().status())
     assert status.ready is False
@@ -379,6 +450,9 @@ def test_mcp_server_spec_is_host_neutral_and_uses_prefixed_allowed_ids() -> None
     inspect_schema = tools['inspect'].inputSchema
     assert 'RegionRef' in inspect_schema['$defs']
     assert 'allow_restricted' not in inspect_schema['properties']
+    assert inspect_schema['properties']['max_bytes']['maximum'] == QA_INDEX_LIMITS.inspect_bytes
+    assert inspect_schema['properties']['max_bytes']['exclusiveMinimum'] == 0
+    assert tools['diff'].inputSchema['properties']['limit']['maximum'] == QA_INDEX_LIMITS.diff_page_items
 
     spec = qa_index_server_spec()
     assert spec['name'] == QA_INDEX_SERVER_NAME

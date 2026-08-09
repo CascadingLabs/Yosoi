@@ -32,7 +32,7 @@ from __future__ import annotations
 
 from enum import Enum
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 from yosoi.observations.index.paging import PageRequest, paginate
 from yosoi.observations.models.index import IndexEntry, ObservationIndex
@@ -90,6 +90,7 @@ class ObservationDiff(BaseModel):
     without_identity_after: int = Field(default=0, ge=0)
     page: Pagination | None = None
 
+    @computed_field
     @property
     def truncated(self) -> bool:
         """Whether changes exist beyond this window."""
