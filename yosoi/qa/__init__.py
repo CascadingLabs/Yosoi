@@ -11,6 +11,13 @@ from typing import TYPE_CHECKING
 from yosoi._lazy import lazy_exports
 
 if TYPE_CHECKING:
+    from yosoi.qa.actions import QAActionCapabilities as QAActionCapabilities
+    from yosoi.qa.actions import QAActionHandler as QAActionHandler
+    from yosoi.qa.actions import QAActionOutcome as QAActionOutcome
+    from yosoi.qa.actions import QAActionRequest as QAActionRequest
+    from yosoi.qa.actions import QAActionResult as QAActionResult
+    from yosoi.qa.actions import QAActionStatus as QAActionStatus
+    from yosoi.qa.actions import UnwiredQAActionHandler as UnwiredQAActionHandler
     from yosoi.qa.capture import QACaptureAdapter as QACaptureAdapter
     from yosoi.qa.capture import QACaptureRequest as QACaptureRequest
     from yosoi.qa.capture import QACaptureSession as QACaptureSession
@@ -27,6 +34,13 @@ if TYPE_CHECKING:
     from yosoi.qa.tools import QAToolHandler as QAToolHandler
 
 _LAZY = {
+    'QAActionCapabilities': 'yosoi.qa.actions',
+    'QAActionHandler': 'yosoi.qa.actions',
+    'QAActionOutcome': 'yosoi.qa.actions',
+    'QAActionRequest': 'yosoi.qa.actions',
+    'QAActionResult': 'yosoi.qa.actions',
+    'QAActionStatus': 'yosoi.qa.actions',
+    'UnwiredQAActionHandler': 'yosoi.qa.actions',
     'QACaptureAdapter': 'yosoi.qa.capture',
     'QACaptureRequest': 'yosoi.qa.capture',
     'QACaptureSession': 'yosoi.qa.capture',
