@@ -9,7 +9,16 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from yosoi.observations.index.diff import ObservationDiff
 from yosoi.observations.index.inspect import InspectionBudget, InspectionResult, RegionPage
 from yosoi.observations.models.view import RegionRef, RenderedView
-from yosoi.qa.index import QA_INDEX_LIMITS, ExpandArgs, IndexCapabilities, IndexSession, IndexStatus, _validate_budget
+from yosoi.qa.index import (
+    DEFAULT_QA_OVERVIEW_TOKENS,
+    DEFAULT_QA_TOKENIZER_ID,
+    QA_INDEX_LIMITS,
+    ExpandArgs,
+    IndexCapabilities,
+    IndexSession,
+    IndexStatus,
+    _validate_budget,
+)
 
 
 class OverviewArgs(BaseModel):
@@ -18,8 +27,8 @@ class OverviewArgs(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     snapshot_id: str = Field(min_length=1)
-    tokenizer_id: str = Field(min_length=1)
-    token_budget: int = Field(gt=0, le=QA_INDEX_LIMITS.overview_tokens)
+    tokenizer_id: str = Field(default=DEFAULT_QA_TOKENIZER_ID, min_length=1)
+    token_budget: int = Field(default=DEFAULT_QA_OVERVIEW_TOKENS, gt=0, le=QA_INDEX_LIMITS.overview_tokens)
 
 
 class InspectArgs(BaseModel):

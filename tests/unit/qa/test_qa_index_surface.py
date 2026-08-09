@@ -19,7 +19,7 @@ from yosoi.observations.artifacts import MemoryArtifactStore
 from yosoi.observations.html_tree import parse, skeleton_signature
 from yosoi.observations.index.addressing import ref_id
 from yosoi.observations.index.inspect import InspectionBudget
-from yosoi.observations.models.artifact import EvidenceKind
+from yosoi.observations.models.artifact import EvidenceKind, Sensitivity
 from yosoi.observations.models.index import IndexEntry, ObservationIndex
 from yosoi.observations.models.snapshot import CaptureCapability, CaptureProfile, ObservationSnapshot
 from yosoi.observations.models.view import RegionRef
@@ -29,12 +29,19 @@ from yosoi.qa.tools import DiffArgs, ExpandArgs, IndexQAToolHandler, InspectArgs
 _CAPTURED_AT = datetime(2026, 1, 1, tzinfo=timezone.utc)
 
 
-def _evidence(html: str, snapshot_id: str, store: MemoryArtifactStore):
+def _evidence(
+    html: str,
+    snapshot_id: str,
+    store: MemoryArtifactStore,
+    *,
+    sensitivity: Sensitivity = Sensitivity.MODEL_SAFE,
+):
     artifact = store.put(
         snapshot_id=snapshot_id,
         kind=EvidenceKind.SOURCE_HTML,
         media_type='text/html',
         data=html.encode(),
+        sensitivity=sensitivity,
     )
     snapshot = ObservationSnapshot(
         run_id='run',
@@ -102,11 +109,7 @@ def test_index_session_supports_async_surface_and_exposes_missing_modalities() -
     assert before_capabilities.indexed_modalities == ('source_html',)
     assert before_capabilities.capture_capabilities[1].reason == 'static capture has no AX tree'
 
-    overview = asyncio.run(
-        session.overview(
-            OverviewArgs(snapshot_id='before', tokenizer_id='estimate/chars-per-token-4', token_budget=500)
-        )
-    )
+    overview = asyncio.run(session.overview(OverviewArgs(snapshot_id='before', token_budget=500)))
     assert '[0]' in overview.text
     inspected = asyncio.run(session.inspect(InspectArgs(snapshot_id='before', ordinal=0)))
     assert b'main' in inspected.content
@@ -154,6 +157,37 @@ def test_injected_mcp_matches_the_direct_session_and_unwired_introspection_is_tr
         )
 
 
+def test_expand_enforces_aggregate_bytes_and_inspection_stays_utf8_serializable() -> None:
+    store = MemoryArtifactStore()
+    repeated = ''.join(f'<p>café item {index} with a long summary</p>' for index in range(20))
+    (
+        snapshot,
+        _,
+        observation_index,
+        _,
+    ) = _evidence(f'<html><body><div id="main">{repeated}</div></body></html>', 'bounded', store)
+    session = IndexSession(store=store, snapshots=(snapshot,), indexes=(observation_index,))
+
+    page = asyncio.run(
+        session.expand(
+            ExpandArgs(
+                snapshot_id='bounded',
+                ordinal=0,
+                budget=InspectionBudget(max_bytes=600, max_items=20, max_summary_chars=400),
+            )
+        )
+    )
+    assert page.returned_bytes <= 600
+    assert page.truncated
+    assert page.members
+
+    from yosoi.observations.index.inspect import _utf8_prefix
+
+    clipped = _utf8_prefix('café'.encode(), 4)
+    assert clipped == b'caf'
+    clipped.decode('utf-8')
+
+
 def test_qa_limits_are_hard() -> None:
     with pytest.raises(ValueError, match='less than or equal'):
         OverviewArgs(snapshot_id='s', tokenizer_id='t', token_budget=QA_INDEX_LIMITS.overview_tokens + 1)
@@ -169,6 +203,34 @@ def test_qa_limits_are_hard() -> None:
         )
 
 
+def test_session_rejects_restricted_sources_and_modality_lies() -> None:
+    restricted_store = MemoryArtifactStore()
+    restricted_snapshot, _, restricted_index, _ = _evidence(
+        '<html><body><div id="main"><p>secret</p><p>secret</p></div></body></html>',
+        'restricted',
+        restricted_store,
+        sensitivity=Sensitivity.RESTRICTED,
+    )
+    with pytest.raises(PermissionError, match='restricted'):
+        IndexSession(
+            store=restricted_store,
+            snapshots=(restricted_snapshot,),
+            indexes=(restricted_index,),
+        )
+
+    store, before, _, before_index, _, _ = _session_pair()
+    lied = before_index.model_copy(update={'modalities': (EvidenceKind.NETWORK,)})
+    with pytest.raises(ValueError, match='modalities'):
+        IndexSession(store=store, snapshots=(before,), indexes=(lied,))
+
+    entry = before_index.entries[0]
+    wrong_ref = entry.ref.model_copy(update={'modality': EvidenceKind.NETWORK})
+    wrong_entry = entry.model_copy(update={'ref': wrong_ref, 'ref_id': None})
+    wrong_index = before_index.model_copy(update={'entries': (wrong_entry,)})
+    with pytest.raises(ValueError, match='entry modality'):
+        IndexSession(store=store, snapshots=(before,), indexes=(wrong_index,))
+
+
 def test_session_construction_rejects_ambiguous_incomplete_or_forged_inputs() -> None:
     store, before, artifact, before_index, _, _ = _session_pair()
     with pytest.raises(ValueError, match='duplicate snapshot ids'):
@@ -176,7 +238,7 @@ def test_session_construction_rejects_ambiguous_incomplete_or_forged_inputs() ->
 
     forged = artifact.model_copy(update={'media_type': 'application/json'})
     forged_index = before_index.model_copy(update={'sources': (forged,)})
-    with pytest.raises(ValueError, match='exactly match'):
+    with pytest.raises(ValueError, match='declared by its snapshot'):
         IndexSession(store=store, snapshots=(before,), indexes=(forged_index,))
 
     with pytest.raises(ValueError, match='missing or failed integrity'):
@@ -197,6 +259,14 @@ def test_mcp_server_spec_is_host_neutral_and_uses_prefixed_allowed_ids() -> None
     status = asyncio.run(UnwiredQAToolHandler().status())
     assert status.ready is False
     assert status.capabilities.operations == ('capabilities', 'status')
+    tools = {tool.name: tool for tool in asyncio.run(build_server().list_tools())}
+    overview_schema = tools['overview'].inputSchema
+    assert overview_schema['properties']['tokenizer_id']['default'] == 'estimate/chars-per-token-4'
+    assert overview_schema['properties']['token_budget']['default'] == 1_000
+    inspect_schema = tools['inspect'].inputSchema
+    assert 'RegionRef' in inspect_schema['$defs']
+    assert 'allow_restricted' not in inspect_schema['properties']
+
     spec = qa_index_server_spec()
     assert spec['name'] == QA_INDEX_SERVER_NAME
     assert spec['tools'] == QA_INDEX_TOOL_NAMES

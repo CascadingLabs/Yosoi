@@ -5,7 +5,8 @@ from __future__ import annotations
 import shutil
 from typing import Any
 
-from yosoi.qa.index import QA_INDEX_LIMITS
+from yosoi.observations.models.view import RegionRef
+from yosoi.qa.index import DEFAULT_QA_OVERVIEW_TOKENS, DEFAULT_QA_TOKENIZER_ID, QA_INDEX_LIMITS
 from yosoi.qa.tools import (
     DiffArgs,
     ExpandArgs,
@@ -38,7 +39,11 @@ def build_server(handler: QAToolHandler | None = None) -> object:
         return (await service.status()).model_dump(mode='json')
 
     @server.tool()
-    async def overview(snapshot_id: str, tokenizer_id: str, token_budget: int) -> dict[str, Any]:
+    async def overview(
+        snapshot_id: str,
+        tokenizer_id: str = DEFAULT_QA_TOKENIZER_ID,
+        token_budget: int = DEFAULT_QA_OVERVIEW_TOKENS,
+    ) -> dict[str, Any]:
         """Render a bounded overview of an existing snapshot index."""
         result = await service.overview(
             OverviewArgs(snapshot_id=snapshot_id, tokenizer_id=tokenizer_id, token_budget=token_budget)
@@ -47,7 +52,7 @@ def build_server(handler: QAToolHandler | None = None) -> object:
 
     @server.tool()
     async def inspect(
-        ref: dict[str, Any] | None = None,
+        ref: RegionRef | None = None,
         snapshot_id: str | None = None,
         ordinal: int | None = None,
         max_bytes: int = QA_INDEX_LIMITS.inspect_bytes,
@@ -69,7 +74,7 @@ def build_server(handler: QAToolHandler | None = None) -> object:
     async def expand(
         snapshot_id: str,
         ordinal: int | None = None,
-        ref: dict[str, Any] | None = None,
+        ref: RegionRef | None = None,
         offset: int = 0,
         max_items: int = QA_INDEX_LIMITS.expand_items,
         max_bytes: int = QA_INDEX_LIMITS.expand_bytes,

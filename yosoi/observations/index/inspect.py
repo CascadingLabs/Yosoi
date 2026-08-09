@@ -90,10 +90,10 @@ class InspectionBudget(BaseModel):
     max_summary_chars: int = Field(default=400, gt=0)
     """Per-member summary bound for `expand`, declared separately from `max_bytes`.
 
-    `max_bytes` bounds one retrieval of canonical evidence. Reusing it as a summary limit made a
-    page of members cost `max_items × max_bytes` — 500 members of 32 KB each — so the two
-    budgets that look alike are stated apart. Bounding the whole page rather than each member is
-    a further step, and it changes what an already-gated sweep returns, so it is not taken here.
+    For direct inspection, `max_bytes` bounds canonical evidence bytes. For expansion it bounds
+    the sum of serialized member records, while this field independently caps each summary.
+    Keeping both prevents either one huge summary or many medium summaries from escaping the
+    response budget.
     """
 
     allow_restricted: bool = False
@@ -133,7 +133,55 @@ class RegionPage(BaseModel):
     members: tuple[RegionMember, ...] = ()
     offset: int = Field(ge=0)
     coverage: RegionCoverage
+    returned_bytes: int = Field(default=0, ge=0)
+    """UTF-8 bytes consumed by serialized member records, excluding page envelope metadata."""
+
     truncated: bool = False
+
+
+def _bounded_region_page(page: RegionPage, budget: InspectionBudget) -> RegionPage:
+    """Fit expansion members under one aggregate byte budget without producing a stuck page."""
+    selected: list[RegionMember] = []
+    spent = 0
+    content_clipped = False
+    for member in page.members:
+        remaining = budget.max_bytes - spent
+        candidate = member
+        encoded = candidate.model_dump_json().encode('utf-8')
+        if len(encoded) > remaining:
+            low = 0
+            high = len(member.summary)
+            fitted: tuple[RegionMember, bytes] | None = None
+            while low <= high:
+                middle = (low + high) // 2
+                clipped = member.model_copy(update={'summary': member.summary[:middle]})
+                clipped_bytes = clipped.model_dump_json().encode('utf-8')
+                if len(clipped_bytes) <= remaining:
+                    fitted = clipped, clipped_bytes
+                    low = middle + 1
+                else:
+                    high = middle - 1
+            if fitted is None:
+                if not selected:
+                    raise ValueError('expand max_bytes is too small for one region member reference')
+                break
+            candidate, encoded = fitted
+            content_clipped = len(candidate.summary) < len(member.summary)
+        selected.append(candidate)
+        spent += len(encoded)
+
+    return page.model_copy(
+        update={
+            'members': tuple(selected),
+            'returned_bytes': spent,
+            'truncated': page.truncated or content_clipped or len(selected) < len(page.members),
+        }
+    )
+
+
+def _utf8_prefix(data: bytes, max_bytes: int) -> bytes:
+    """Clip known UTF-8 evidence without leaving an unserializable partial code point."""
+    return data[:max_bytes].decode('utf-8', errors='ignore').encode('utf-8')
 
 
 def _resolve_segments(tree: _ElementTree, address: ObservationAddress) -> _Element:
@@ -401,7 +449,7 @@ class ObservationInspector:
             _, tree = parse(data)
             serialized = etree.tostring(_resolve_segments(tree, address), encoding='utf-8')
 
-        content = serialized[: budget.max_bytes]
+        content = _utf8_prefix(serialized, budget.max_bytes)
         return InspectionResult(
             ref=ref,
             media_type=artifact.media_type,
@@ -512,9 +560,11 @@ class ObservationInspector:
 
         data = self._store.read(artifact)
         if artifact.kind is EvidenceKind.AX_TREE:
-            return _expand_ax(ref, address, _parse_ax_artifact(artifact, data), budget, offset=offset)
+            return _bounded_region_page(
+                _expand_ax(ref, address, _parse_ax_artifact(artifact, data), budget, offset=offset), budget
+            )
         if artifact.kind is EvidenceKind.NETWORK:
-            return self._expand_network(ref, artifact, data, address, budget, offset)
+            return _bounded_region_page(self._expand_network(ref, artifact, data, address, budget, offset), budget)
         if artifact.kind is EvidenceKind.RENDERED_DOM:
             snapshot = _parse_dom_artifact(artifact, data)
             container = _resolve_dom_address(snapshot, address)
@@ -539,12 +589,15 @@ class ObservationInspector:
                 )
                 for position, (member, key) in enumerate(window)
             )
-            return RegionPage(
-                region=ref,
-                members=page,
-                offset=offset,
-                coverage=dom_region_coverage(container, members),
-                truncated=offset + len(window) < len(members),
+            return _bounded_region_page(
+                RegionPage(
+                    region=ref,
+                    members=page,
+                    offset=offset,
+                    coverage=dom_region_coverage(container, members),
+                    truncated=offset + len(window) < len(members),
+                ),
+                budget,
             )
 
         _, tree = parse(data)
@@ -571,14 +624,17 @@ class ObservationInspector:
             )
             for position, (member, key) in enumerate(window)
         )
-        return RegionPage(
-            region=ref,
-            members=page,
-            offset=offset,
-            # Static HTML holds every member it has. A rendered snapshot of a virtualised
-            # list will report a smaller `observed` than the container declares.
-            coverage=RegionCoverage(observed=len(members), declared=len(members), complete=True),
-            truncated=offset + len(window) < len(members),
+        return _bounded_region_page(
+            RegionPage(
+                region=ref,
+                members=page,
+                offset=offset,
+                # Static HTML holds every member it has. A rendered snapshot of a virtualised
+                # list will report a smaller `observed` than the container declares.
+                coverage=RegionCoverage(observed=len(members), declared=len(members), complete=True),
+                truncated=offset + len(window) < len(members),
+            ),
+            budget,
         )
 
 

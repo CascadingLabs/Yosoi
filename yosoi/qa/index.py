@@ -18,6 +18,7 @@ from yosoi.observations.index.inspect import (
 )
 from yosoi.observations.index.paging import PageRequest
 from yosoi.observations.index.render import ObservationIndexRenderer, RenderPolicy
+from yosoi.observations.models.artifact import ArtifactRef, Sensitivity
 from yosoi.observations.models.index import ObservationIndex
 from yosoi.observations.models.snapshot import CaptureCapability, ObservationSnapshot
 from yosoi.observations.models.view import RegionRef, RenderedView
@@ -47,6 +48,8 @@ class QAIndexLimits(BaseModel):
 
 
 QA_INDEX_LIMITS = QAIndexLimits()
+DEFAULT_QA_OVERVIEW_TOKENS = 1_000
+DEFAULT_QA_TOKENIZER_ID = 'estimate/chars-per-token-4'
 
 
 class SnapshotIndexCapabilities(BaseModel):
@@ -122,6 +125,37 @@ class ExpandArgs(BaseModel):
         return self
 
 
+def _validated_sources(
+    store: ArtifactStore, snapshot: ObservationSnapshot, observation_index: ObservationIndex
+) -> dict[str, ArtifactRef]:
+    """Validate the index-to-artifact boundary and return sources keyed by digest."""
+    sources_by_digest = {source.sha256: source for source in observation_index.sources}
+    if len(sources_by_digest) != len(observation_index.sources):
+        raise ValueError('index sources must not repeat an artifact digest')
+    for source in observation_index.sources:
+        if source not in snapshot.artifacts:
+            raise ValueError('every index source must be an artifact declared by its snapshot')
+        if source.sensitivity is not Sensitivity.MODEL_SAFE:
+            raise PermissionError('QA index sessions cannot expose restricted evidence')
+    source_modalities = {source.kind for source in observation_index.sources}
+    if set(observation_index.modalities) != source_modalities:
+        raise ValueError('index modalities must exactly describe its source artifact kinds')
+    for artifact in snapshot.artifacts:
+        if not store.contains(artifact):
+            raise ValueError(f'artifact {artifact.sha256!r} is missing or failed integrity verification')
+    return sources_by_digest
+
+
+def _validate_entry_modalities(
+    observation_index: ObservationIndex, sources_by_digest: Mapping[str, ArtifactRef]
+) -> None:
+    """Refuse an index whose entry claims a modality different from its source."""
+    for entry in observation_index.entries:
+        source = sources_by_digest[entry.ref.artifact_sha256]
+        if entry.ref.modality is not source.kind:
+            raise ValueError('index entry modality must agree with its source artifact')
+
+
 class IndexSession:
     """Provider-neutral session bound to immutable snapshots, indexes, and bytes."""
 
@@ -142,12 +176,8 @@ class IndexSession:
             if observation_index.snapshot_id != snapshot_id:
                 raise ValueError('snapshot and index ids must agree')
             snapshot = self._snapshots[snapshot_id]
-            for source in observation_index.sources:
-                if source not in snapshot.artifacts:
-                    raise ValueError('index sources must exactly match artifacts declared by their snapshot')
-            for artifact in snapshot.artifacts:
-                if not self._store.contains(artifact):
-                    raise ValueError(f'artifact {artifact.sha256!r} is missing or failed integrity verification')
+            sources_by_digest = _validated_sources(self._store, snapshot, observation_index)
+            _validate_entry_modalities(observation_index, sources_by_digest)
 
     async def capabilities(self) -> IndexCapabilities:
         """Report indexed evidence and explicit unavailable-capture reasons per snapshot."""
@@ -257,6 +287,8 @@ async def index(
 
 
 __all__ = [
+    'DEFAULT_QA_OVERVIEW_TOKENS',
+    'DEFAULT_QA_TOKENIZER_ID',
     'QA_INDEX_LIMITS',
     'ExpandArgs',
     'IndexCapabilities',
