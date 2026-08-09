@@ -18,10 +18,11 @@ The adversarial corpus, no-auth SPA slate, and per-pruner gates are specified in
 | `artifacts/manifest.py` | Deterministic snapshot manifest serialization | Add byte-identical golden tests. |
 | `pruning/protocol.py` | Explicit pruner contract and policy input | No registry; callers pass a sequence or mapping. |
 | `pruning/_shared.py` | Hashing, accounting, and validation mechanics only | Never place modality semantics here. |
+| `anchoring.py` | The identity recipe, shared by every modality | **Implemented.** Anchor tiers, uniqueness census, and the reserved-character rule live here; `html_tree` and `dom_tree` both call it, so "what identifies an element" has one definition. |
 | `html_tree.py` | Shared HTML shape/key primitives | **Implemented (CAS-262).** One definition of skeleton signature, content key, and durable anchor, used by both the pruner and the inspector. |
 | `pruning/_base.py` | Template method for every pruner | **Implemented (CAS-262).** Owns digest validation, policy hashing, addressing, capping, accounting. A pruner is one `reduce`. |
 | `pruning/html.py` | Source HTML reduction | **Implemented (CAS-262).** Two pruners: `html.declarations` (flat, metadata content) and `html.body` (MDR-style repeat collapse). |
-| `pruning/dom.py` | Rendered DOM reduction | Add after raw structured DOM capture exists. |
+| `pruning/dom.py` | Rendered DOM reduction | **Implemented.** Shape-based collapse, partitioned declarations, folded wrapper chains, and anchored addresses that earn `ref_id` through the shared recipe. |
 | `pruning/ax.py` | Raw accessibility-tree reduction | Preserve raw AX evidence before compaction. |
 | `pruning/network.py` | Safe normalized network reduction | Add only after redaction and restricted-artifact policy are specified. |
 | `index/compiler.py` | Combine pruned modality views into one flat index | **Implemented (CAS-262).** Fixed modality ordering; duplicate addresses fail closed. |
@@ -157,9 +158,61 @@ decision rather than a discovery. All measured on the frozen HTML Living Standar
 
 | Cost | Measured | Cause | Fix when it matters |
 | --- | --- | --- | --- |
+| Sibling scan when minting a step | fixed: 180.3s → 10.2s | `dom_step` scanned a node's siblings to test uniqueness, quadratic in the width of a level — the HTML spec holds 10,016 nodes at one level | Fixed by `SiblingIndex`: per-parent counts built once. Kept in this table because width, not depth, is what makes a real document expensive |
 | Duplicate parse per reduction | ~2.9s of a 10.7s walk | `DomPruner.reduce_once` parses to bind the payload to its artifact, then `reduce` parses the same bytes again to walk them | Parse once in `reduce_once` and hand the snapshot to the walk; puts the walk nearer 8s |
 | Peak memory | 3.9 GB, ~36x the artifact | Whole artifact validated into pydantic models, whole candidate tuple materialised | Streaming walk, or a candidate iterator instead of a tuple |
 | Artifact size | 441 B/node vs 93 B/node for source HTML | ~20% geometry at capture precision, ~18% always-serialized nulls (`exclude_none=False`) | Round geometry and omit nulls — but this re-digests every artifact and invalidates every frozen fixture, so it is a schema change, not a tweak |
 
 Capture is separate from and larger than indexing on a document this size: 5.9s navigate +
 11.1s in-browser serialize + 7.2s validate = 26.8s, against 16.3s to index exhaustively.
+
+## Rendered-DOM identity
+
+DOM addresses were `/dom/node/<producer node id>` — never anchored, so `ref_id` refused every one
+of them and identity coverage measured **0 across ten live pages**. That made `index/diff.py`, any
+S0-action-S1 comparison, and fingerprint-assisted reuse unbuildable for the modality they matter
+most for.
+
+DOM now anchors through `anchoring.py`, the same recipe source HTML uses, with a `_Minter` that
+mirrors the HTML one: nearest durable ancestor, then durable relative steps, falling back to the
+producer node id when the snapshot offers nothing — which `ref_id` then declines an identity for,
+as refusal rather than a weaker id.
+
+Measured identity coverage on the live qscrape.dev captures:
+
+| Page | With `ref_id` |
+| --- | --- |
+| l2_eshop | 312/320 (98%) |
+| l3_news | 89/96 (93%) |
+| l1_eshop | 64/76 (84%) |
+| l1_taxes | 33/41 (80%) |
+| l2_news | 268/339 (79%) |
+| l2_taxes | 191/250 (76%) |
+| l2_scoretap | 156/249 (63%) |
+| l1_news | 132/230 (57%) |
+| l1_scoretap | 68/185 (37%) |
+| **total** | **1,355/1,834 (74%)** |
+
+74% is the same figure books.toscrape gives on the source-HTML side, which is the point: one
+recipe, comparable durability. Anchor tiers used across four pages: attribute 388, class 206,
+data 123, tag 17, id 9, refused 88.
+
+Gated by two properties, not by the coverage number: two captures of an unchanged page mint
+identical `ref_id`s while their `RegionRef`s necessarily differ, and a node the page offers no
+durable key for is refused an identity while still resolving exactly inside its own snapshot.
+
+Only two DOM-specific pieces exist, and neither is part of the identity recipe: ancestry comes
+from a parent map because a `DomNode` tree has no parent pointers, and relative steps are limited
+to `./tag` and `./tag[@name="value"]`, resolved by unique match among siblings. A step that would
+need a sibling index is refused — `./div[3]` is a positional guess wearing a durable address's
+clothes.
+
+### A shared-grammar bug this surfaced
+
+An anchor value containing `"`, `#`, or `|` cannot round-trip through a locator. `href="#/active"`
+— an ordinary TodoMVC filter link — produced `//*[@href="#/active"]#anchor=…`, which parses as a
+path of `//*[@href="` and a qualifier of `/active"]#anchor`. Only `"` had been excluded.
+`anchoring.LOCATOR_RESERVED` now excludes all three. Found through a live DOM capture, but the
+grammar is shared: any HTML page with a fragment link was one anchor tier away from the same
+failure. Producers of unexpressible tag names (a shadow root is `#shadow-root`) are refused the
+tag tier for the same reason.

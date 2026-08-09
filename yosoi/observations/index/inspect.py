@@ -13,20 +13,24 @@ of an opinion about a reduction.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from yosoi.observations import anchoring
 from yosoi.observations.artifacts.protocol import ArtifactStore
 from yosoi.observations.dom_tree import (
     assign_dom_member_keys,
+    dom_attributes,
     dom_candidate_keys,
     dom_label,
     dom_member_summary,
     dom_region_coverage,
     dom_skeleton_signature,
     node_id_from_locator,
+    walk_dom,
 )
 from yosoi.observations.html_tree import (
     SignatureCache,
@@ -182,22 +186,75 @@ def _parse_dom_artifact(artifact: ArtifactRef, data: bytes) -> DomSnapshot:
     return snapshot
 
 
-def _resolve_dom_address(snapshot: DomSnapshot, address: ObservationAddress) -> DomNode:
-    """Resolve one DOM address using node IDs and the shared repeat signature/key rules."""
-    if len(address.segments) != 1:
-        raise ObservationAddressError('rendered-DOM addresses currently support one segment')
-    segment = address.segments[0]
-    try:
-        node_id = node_id_from_locator(segment.path)
-    except ValueError as exc:
-        raise ObservationAddressError(str(exc)) from exc
-    node = _dom_nodes(snapshot).get(node_id)
-    if node is None:
-        raise ObservationAddressError(f'DOM node {node_id!r} is absent from this snapshot')
-    if not segment.selects_member:
-        return node
+_DOM_STEP = re.compile(r'^(?P<tag>[\w:.-]+)(?:\[@(?P<name>[\w:.-]+)="(?P<value>[^"]*)"\])?$')
+"""The only two relative step forms a DOM address may carry: `tag` and `tag[@name="value"]`.
 
-    members = _dom_region_members(node, segment.shape or '')
+Bounded on purpose. A general XPath engine over a `DomNode` tree would accept steps the pruner
+never mints — including positional ones — and an address that resolves by a rule nothing emits is
+an address whose durability nobody has measured.
+"""
+
+
+def _dom_anchor_target(snapshot: DomSnapshot, anchor: str) -> DomNode:
+    """Resolve an anchored first segment by its KEY, not by re-parsing its path.
+
+    The locator carries both, and `AddressSegment` already checks them against each other, so
+    resolution uses the key the identity was computed from. Re-deriving a match from the XPath
+    would be a second interpretation of the same fact, free to disagree with the first.
+    """
+    matches = [
+        node for node in walk_dom(snapshot.root) if anchor in anchoring.anchor_keys(node.tag, dom_attributes(node))
+    ]
+    if len(matches) != 1:
+        raise ObservationAddressError(f'DOM anchor {anchor!r} resolved to {len(matches)} nodes')
+    return matches[0]
+
+
+def _dom_descend(node: DomNode, relative_path: str) -> DomNode:
+    """Walk one relative segment step by step, failing closed at the first ambiguity."""
+    current = node
+    for raw in relative_path.removeprefix('./').split('/'):
+        match = _DOM_STEP.match(raw)
+        if match is None:
+            raise ObservationAddressError(f'{raw!r} is not a rendered-DOM address step')
+        candidates = [child for child in current.children if child.tag == match['tag']]
+        if match['name'] is not None:
+            wanted = (match['name'], match['value'])
+            candidates = [
+                child for child in candidates if any(attribute == wanted for attribute in dom_attributes(child))
+            ]
+        if len(candidates) != 1:
+            raise ObservationAddressError(f'DOM address step {raw!r} resolved to {len(candidates)} nodes')
+        current = candidates[0]
+    return current
+
+
+def _resolve_dom_address(snapshot: DomSnapshot, address: ObservationAddress) -> DomNode:
+    """Resolve one DOM address, anchored or by producer node id, then select any member."""
+    first = address.segments[0]
+    if first.anchor is not None:
+        node = _dom_anchor_target(snapshot, first.anchor)
+    else:
+        try:
+            node_id = node_id_from_locator(first.path)
+        except ValueError as exc:
+            raise ObservationAddressError(str(exc)) from exc
+        found = _dom_nodes(snapshot).get(node_id)
+        if found is None:
+            raise ObservationAddressError(f'DOM node {node_id!r} is absent from this snapshot')
+        node = found
+
+    for segment in address.segments:
+        if segment is not first:
+            node = _dom_descend(node, segment.path)
+        if segment.selects_member:
+            node = _select_dom_member(node, segment)
+    return node
+
+
+def _select_dom_member(container: DomNode, segment) -> DomNode:
+    """Select one member of a DOM region by durable key, or by declared-unstable position."""
+    members = _dom_region_members(container, segment.shape or '')
     if segment.key is not None:
         matched = [member for member in members if segment.key in dom_candidate_keys(member)]
         if len(matched) != 1:

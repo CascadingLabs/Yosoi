@@ -7,7 +7,7 @@ import pytest
 from yosoi.observations.artifacts import MemoryArtifactStore
 from yosoi.observations.dom_tree import dom_locator
 from yosoi.observations.index.addressing import ObservationAddressError, parse_address
-from yosoi.observations.index.inspect import InspectionBudget, ObservationInspector
+from yosoi.observations.index.inspect import InspectionBudget, ObservationInspector, _resolve_dom_address
 from yosoi.observations.models import (
     CaptureProfile,
     DomAttribute,
@@ -37,6 +37,39 @@ def _reduce(snapshot: DomSnapshot):
         data=data,
     )
     return DomPruner().prune(PruningInput(source=ref, data=data), PruningPolicy())
+
+
+def _resolves_to(view, snapshot: DomSnapshot, node_id: str) -> bool:
+    """Whether any emitted address RESOLVES to the given node, whatever form it took.
+
+    Addresses are anchored now, so `/dom/node/<id>` no longer appears for a node the snapshot
+    offers an anchor for. Comparing locator strings would make every test a hostage of the
+    address grammar; the boss-fight harness learned this and maps ground truth through the
+    production resolver instead. This does the same.
+    """
+
+    return node_id in _resolved_nodes(view, snapshot)
+
+
+def _resolved_nodes(view, snapshot: DomSnapshot) -> dict[str, str]:
+    """Map node id to the summary of whichever emitted address resolves to it."""
+
+    found: dict[str, str] = {}
+    for fragment in view.fragments:
+        node = _try_resolve(snapshot, fragment.ref.locator)
+        if node is not None:
+            found.setdefault(node.node_id, fragment.summary)
+    return found
+
+
+def _try_resolve(snapshot: DomSnapshot, locator: str) -> DomNode | None:
+    """Resolve one locator, treating an unresolvable address as simply not a match."""
+    from yosoi.observations.index.addressing import parse_address
+
+    try:
+        return _resolve_dom_address(snapshot, parse_address(locator))
+    except Exception:  # noqa: BLE001 - an address that will not resolve is not a match
+        return None
 
 
 def _todo(
@@ -211,12 +244,12 @@ def test_hidden_empty_wrappers_are_omitted_but_hidden_content_is_retained() -> N
         ),
     )
 
-    view = _reduce(DomSnapshot(snapshot_id='hidden', root=root))
-    locators = {fragment.ref.locator for fragment in view.fragments}
+    snapshot = DomSnapshot(snapshot_id='hidden', root=root)
+    view = _reduce(snapshot)
 
-    assert dom_locator('empty-hidden') not in locators
-    assert dom_locator('unknown-wrapper') in locators
-    assert dom_locator('hidden-modal') in locators
+    assert not _resolves_to(view, snapshot, 'empty-hidden')
+    assert _resolves_to(view, snapshot, 'unknown-wrapper')
+    assert _resolves_to(view, snapshot, 'hidden-modal')
     assert any('Delete all todos?' in fragment.summary for fragment in view.fragments)
 
 
@@ -482,7 +515,7 @@ def test_declarations_are_described_by_attributes_not_payload() -> None:
     assert f'{len(payload)} chars of content' in script.summary
     assert 'defer' in script.summary
     # Still addressed: the payload is retrievable, it just is not resident.
-    assert script.ref.locator == dom_locator('script-1')
+    assert _resolves_to(view, DomSnapshot(snapshot_id='declarations', root=root), 'script-1')
 
 
 def test_summaries_state_visibility_and_geometry_only_when_they_deviate() -> None:
@@ -517,14 +550,15 @@ def test_summaries_state_visibility_and_geometry_only_when_they_deviate() -> Non
         ),
     )
 
-    view = _reduce(DomSnapshot(snapshot_id='deviation', root=root))
-    summaries = {fragment.ref.locator: fragment.summary for fragment in view.fragments}
+    snapshot = DomSnapshot(snapshot_id='deviation', root=root)
+    view = _reduce(snapshot)
+    summaries = _resolved_nodes(view, snapshot)
 
-    ordinary = summaries[dom_locator('ordinary')]
+    ordinary = summaries['ordinary']
     assert ordinary == 'text="plain"', 'agreeing visibility and geometry are the default, not evidence'
-    assert 'box=0x0 (visible, no area)' in summaries[dom_locator('zero-area')]
-    assert summaries[dom_locator('hidden')].startswith('display_none')
-    assert 'box=' not in summaries[dom_locator('hidden')], 'a hidden node with no area contradicts nothing'
+    assert 'box=0x0 (visible, no area)' in summaries['zero-area']
+    assert summaries['hidden'].startswith('display_none')
+    assert 'box=' not in summaries['hidden'], 'a hidden node with no area contradicts nothing'
 
 
 def test_the_root_entry_states_the_conventions_its_omissions_rely_on() -> None:
@@ -616,21 +650,24 @@ def test_shadow_root_and_portal_relationships_remain_addressable() -> None:
         ),
     )
 
-    view = _reduce(DomSnapshot(snapshot_id='boundaries', root=root))
-    locators = {fragment.ref.locator for fragment in view.fragments}
-
-    assert dom_locator('shadow-root') in locators
-    assert dom_locator('shadow-button') in locators
+    snapshot = DomSnapshot(snapshot_id='boundaries', root=root)
+    view = _reduce(snapshot)
+    assert _resolves_to(view, snapshot, 'shadow-root')
+    assert _resolves_to(view, snapshot, 'shadow-button')
     dialog = next(fragment for fragment in view.fragments if fragment.label == 'dialog')
     assert 'portal→portal-target' in dialog.summary
     assert parse_address(dialog.ref.locator).is_stable
 
 
 def _deep_chain(depth: int) -> DomNode:
-    """Build one element chain `depth` levels deep."""
+    """Build one element chain `depth` levels deep, each level carrying its own text.
+
+    The text matters: a chain of contentless single-child wrappers is a pass-through chain and
+    folds into one entry, so it could never reach the depth ceiling this fixture exists to test.
+    """
     node = DomNode(node_id=f'd{depth}', tag='div', text='bottom')
     for level in range(depth - 1, -1, -1):
-        node = DomNode(node_id=f'd{level}', tag='div', children=(node,))
+        node = DomNode(node_id=f'd{level}', tag='div', text=f'level {level}', children=(node,))
     return node
 
 
@@ -651,3 +688,219 @@ def test_a_fully_indexed_tree_is_never_labelled_truncated() -> None:
     view = _reduce(DomSnapshot(snapshot_id='shallow', root=_deep_chain(3)))
 
     assert not any('below index depth' in (fragment.summary or '') for fragment in view.fragments)
+
+
+def test_a_pass_through_wrapper_chain_becomes_one_entry() -> None:
+    """`div.card > .inner > .body` was three entries all summarised as `children=1`."""
+    root = DomNode(
+        node_id='root',
+        tag='html',
+        children=(
+            DomNode(
+                node_id='card',
+                tag='div',
+                attributes=(DomAttribute(name='class', value='card'),),
+                children=(
+                    DomNode(
+                        node_id='inner',
+                        tag='div',
+                        attributes=(DomAttribute(name='class', value='inner'),),
+                        children=(
+                            DomNode(
+                                node_id='body',
+                                tag='div',
+                                attributes=(DomAttribute(name='class', value='body'),),
+                                text='Standard Iron Pickaxe',
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    )
+
+    snapshot = DomSnapshot(snapshot_id='chain', root=root)
+    view = _reduce(snapshot)
+    labels = [fragment.label for fragment in view.fragments]
+
+    assert 'div.card > div.inner > div.body' in labels, 'the chain is named, not silently flattened'
+    assert _resolves_to(view, snapshot, 'body'), 'the entry addresses the end of the chain, where content is'
+    assert not _resolves_to(view, snapshot, 'inner')
+    assert sum(1 for label in labels if 'card' in label) == 1
+
+
+def test_a_wrapper_that_carries_an_anchor_is_never_folded() -> None:
+    """An `id` or `data-*` on a wrapper is the best anchor the page offers; keep its entry."""
+    root = DomNode(
+        node_id='root',
+        tag='html',
+        children=(
+            DomNode(
+                node_id='outer',
+                tag='div',
+                attributes=(DomAttribute(name='id', value='product-grid'),),
+                children=(DomNode(node_id='leaf', tag='span', text='content'),),
+            ),
+        ),
+    )
+
+    snapshot = DomSnapshot(snapshot_id='anchored', root=root)
+    view = _reduce(snapshot)
+
+    assert _resolves_to(view, snapshot, 'outer')
+    assert _resolves_to(view, snapshot, 'leaf')
+
+
+def test_a_hidden_wrapper_is_information_and_survives() -> None:
+    root = DomNode(
+        node_id='root',
+        tag='html',
+        children=(
+            DomNode(
+                node_id='hidden-wrap',
+                tag='div',
+                attributes=(DomAttribute(name='class', value='modal'),),
+                visibility=DomVisibility.DISPLAY_NONE,
+                children=(DomNode(node_id='msg', tag='p', text='Delete all todos?'),),
+            ),
+        ),
+    )
+
+    snapshot = DomSnapshot(snapshot_id='hidden-wrap', root=root)
+    view = _reduce(snapshot)
+
+    assert _resolves_to(view, snapshot, 'hidden-wrap'), 'a wrapper that is hidden tells a reader something'
+
+
+def _index(snapshot: DomSnapshot):
+    """Compile one snapshot into an index, the way a consumer would hold it."""
+    from yosoi.observations.index.compiler import ObservationIndexCompiler
+
+    data = serialize_dom_snapshot(snapshot)
+    store = MemoryArtifactStore()
+    ref = store.put(
+        snapshot_id=snapshot.snapshot_id, kind=EvidenceKind.RENDERED_DOM, media_type='application/json', data=data
+    )
+    manifest = ObservationSnapshot(
+        run_id='run',
+        episode_id='episode',
+        snapshot_id=snapshot.snapshot_id,
+        requested_profile=CaptureProfile.BROWSER_HEADLESS,
+        artifacts=(ref,),
+    )
+    view = DomPruner().prune(PruningInput(source=ref, data=data), PruningPolicy())
+    return ObservationIndexCompiler().compile(manifest, (view,))
+
+
+def _identity_page() -> DomNode:
+    return DomNode(
+        node_id='root',
+        tag='html',
+        children=(
+            DomNode(
+                node_id='main',
+                tag='main',
+                attributes=(DomAttribute(name='id', value='catalogue'),),
+                children=(
+                    DomNode(
+                        node_id='title',
+                        tag='h1',
+                        attributes=(DomAttribute(name='class', value='page-title'),),
+                        text='VaultMart',
+                    ),
+                    DomNode(
+                        node_id='positional',
+                        tag='span',
+                        text='no durable key of its own',
+                    ),
+                ),
+            ),
+        ),
+    )
+
+
+def test_dom_addresses_now_earn_snapshot_independent_identities() -> None:
+    """The critical property: rendered DOM used to mint zero identities on every page.
+
+    Addresses were `/dom/node/<producer id>`, never anchored, so `ref_id` correctly refused all of
+    them — measured as 0 across ten live captures, which made `index/diff.py` and any
+    S0-action-S1 comparison unbuildable. DOM now anchors through the same shared recipe HTML uses.
+    """
+    index = _index(DomSnapshot(snapshot_id='identity', root=_identity_page()))
+    with_identity = [entry for entry in index.entries if entry.ref_id is not None]
+
+    assert with_identity, 'a page offering an id and a class must yield some identities'
+    assert any(entry.label.startswith('h1') for entry in with_identity)
+
+
+def test_two_captures_of_an_unchanged_page_mint_the_same_identities() -> None:
+    """`ref_id` must be derived from the PAGE, never from the capture.
+
+    A `RegionRef` carries the snapshot id and artifact digest, so it can never compare equal
+    across captures — by construction. If `ref_id` inherited any of that, an archive could only
+    ever compare a snapshot with itself.
+    """
+    page = _identity_page()
+    first = _index(DomSnapshot(snapshot_id='capture-1', root=page))
+    second = _index(DomSnapshot(snapshot_id='capture-2', root=page))
+
+    assert [entry.ref_id for entry in first.entries] == [entry.ref_id for entry in second.entries]
+    assert all(a.ref != b.ref for a, b in zip(first.entries, second.entries, strict=True)), (
+        'exact references are snapshot-scoped and must NOT survive a re-capture'
+    )
+
+
+def test_a_node_the_page_offers_no_durable_key_for_is_refused_an_identity() -> None:
+    """Refusal, not a weaker id: the address still resolves, it just cannot claim to persist."""
+    snapshot = DomSnapshot(snapshot_id='refusal', root=_identity_page())
+    index = _index(snapshot)
+
+    from yosoi.observations.index.addressing import parse_address
+
+    refused = [entry for entry in index.entries if entry.ref_id is None]
+    assert refused, 'a real page always contains something it offers no durable key for'
+    for entry in refused:
+        address = parse_address(entry.ref.locator)
+        assert not (address.is_anchored and address.is_stable and address.is_positional_free)
+        # Still exactly resolvable inside its own snapshot.
+        assert _resolve_dom_address(snapshot, address) is not None
+
+
+def test_an_anchor_value_carrying_a_grammar_character_is_refused_not_mangled() -> None:
+    """`href="#/active"` is an ordinary filter link and used to produce an unparseable locator."""
+    root = DomNode(
+        node_id='root',
+        tag='html',
+        children=(
+            DomNode(
+                node_id='filter',
+                tag='a',
+                attributes=(DomAttribute(name='href', value='#/active'),),
+                text='Active',
+            ),
+        ),
+    )
+    snapshot = DomSnapshot(snapshot_id='fragment-link', root=root)
+
+    index = _index(snapshot)
+
+    from yosoi.observations.index.addressing import parse_address
+
+    for entry in index.entries:
+        parse_address(entry.ref.locator)  # must not raise
+    assert _resolves_to(
+        DomPruner().prune(
+            PruningInput(
+                source=MemoryArtifactStore().put(
+                    snapshot_id='fragment-link',
+                    kind=EvidenceKind.RENDERED_DOM,
+                    media_type='application/json',
+                    data=serialize_dom_snapshot(snapshot),
+                ),
+                data=serialize_dom_snapshot(snapshot),
+            ),
+            PruningPolicy(),
+        ),
+        snapshot,
+        'filter',
+    )

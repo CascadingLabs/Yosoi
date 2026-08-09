@@ -5,12 +5,19 @@ from __future__ import annotations
 import hashlib
 from collections import Counter
 from collections.abc import Sequence
+from dataclasses import dataclass
 from urllib.parse import quote, unquote
 
+from yosoi.observations import anchoring
 from yosoi.observations.models.dom import DomCapability, DomNode, DomRuntimeState, DomVisibility
 from yosoi.observations.models.view import RegionCoverage
 
 _DOM_PATH_PREFIX = '/dom/node/'
+_MEANINGFUL_INVISIBILITY = frozenset(
+    {DomVisibility.HIDDEN, DomVisibility.DISPLAY_NONE, DomVisibility.OFFSCREEN, DomVisibility.INERT}
+)
+"""Visibility states that are a finding about a node, as opposed to an unmeasured one."""
+
 _RUNTIME_FIELDS = ('value', 'checked', 'selected', 'expanded', 'pressed', 'disabled', 'focused')
 
 
@@ -94,6 +101,59 @@ def dom_region_coverage(container: DomNode, members: Sequence[DomNode]) -> Regio
     """
     declared = container.declared_count if len(members) == len(container.children) else None
     return RegionCoverage(observed=len(members), declared=declared, complete=declared == len(members))
+
+
+def dom_is_pass_through(node: DomNode) -> bool:
+    """Return whether a node adds a level of nesting and nothing else.
+
+    `div.product-card > div.product-card-inner > div.product-card-body` is three entries on a
+    real page, each summarised only as `children=1`, none of them telling a reader anything the
+    one below does not. Measured across ten live captures: 177 such entries.
+
+    The test is derived, not enumerated — no list of wrapper tag names, which could only fold the
+    wrappers someone thought of in advance. A node is a pass-through when it has exactly one
+    content child and contributes no discriminant of its own: no text, no runtime state, no
+    declared count, no portal or shadow boundary, and no geometry that contradicts its visibility.
+
+    Visibility blocks the fold only when it is a *finding* — hidden, display_none, offscreen, or
+    inert. A wrapper that is hidden tells a reader something its child does not. `unknown` is the
+    absence of a measurement rather than a fact about the node, and it is uniform across a capture
+    whose producer did not report visibility, so treating it as a finding would make this fold dead
+    for every such producer while adding nothing.
+
+    `id` and `data-*` bearers are never folded. They carry no content, but they are the most
+    intentional anchors a page offers and the raw material a selector is made of; folding away
+    the best available anchor to save a line is a bad trade.
+    """
+    if len(node.children) != 1 or node.shadow_root is not None:
+        return False
+    if node.visibility in _MEANINGFUL_INVISIBILITY:
+        return False
+    if node.text.strip() or node.runtime is not None:
+        return False
+    if node.declared_count is not None or node.portal_target_id is not None:
+        return False
+    if remarkable_geometry(node) is not None:
+        return False
+    return not any(attribute.name == 'id' or attribute.name.startswith('data-') for attribute in node.attributes)
+
+
+def dom_chain(node: DomNode) -> tuple[DomNode, str]:
+    """Follow a pass-through chain and return where it ends, plus the path it went through.
+
+    The chain's nesting is not lost, it is moved into the label: `div.card > .inner > .body`
+    reads as one place and still names every level a selector would have to traverse. The folded
+    wrappers remain in the canonical artifact, so inspecting the entry above the chain returns
+    them verbatim.
+    """
+    labels = [dom_label(node)]
+    current = node
+    while dom_is_pass_through(current):
+        current = current.children[0]
+        labels.append(dom_label(current))
+    if len(labels) == 1:
+        return node, labels[0]
+    return current, ' > '.join(labels)
 
 
 def dom_member_variants(members: Sequence[DomNode]) -> str:
@@ -293,19 +353,135 @@ def _runtime_values(runtime: DomRuntimeState | None) -> tuple[tuple[str, object]
 
 
 __all__ = [
+    'SiblingIndex',
     'assign_dom_member_keys',
+    'dom_anchor_census',
+    'dom_attributes',
     'dom_candidate_keys',
+    'dom_chain',
     'dom_declaration_label',
     'dom_declaration_summary',
     'dom_index_conventions',
+    'dom_is_pass_through',
     'dom_label',
     'dom_locator',
     'dom_member_summary',
     'dom_member_variants',
+    'dom_nearest_anchor',
+    'dom_parents',
     'dom_region_coverage',
     'dom_skeleton_signature',
+    'dom_step',
     'dom_subtree_text',
     'dom_summary',
     'node_id_from_locator',
     'remarkable_geometry',
+    'sibling_index',
+    'walk_dom',
 ]
+
+
+def dom_attributes(node: DomNode) -> list[tuple[str, str]]:
+    """Return one node's attributes in producer order, for the shared anchor tiers."""
+    return [(attribute.name, attribute.value) for attribute in node.attributes]
+
+
+def dom_anchor_census(root: DomNode) -> dict[str, int]:
+    """Count anchor keys across the light and shadow trees of one rendered snapshot.
+
+    Shadow content is included: a shadow root is a real part of the rendered document, and a key
+    unique in the light tree but repeated inside a shadow root is not document-unique.
+    """
+    return anchoring.build_census((node.tag, dom_attributes(node)) for node in walk_dom(root))
+
+
+def walk_dom(root: DomNode):
+    """Yield every node of one snapshot, crossing shadow boundaries, in document order."""
+    stack = [root]
+    while stack:
+        node = stack.pop()
+        yield node
+        stack.extend(reversed(node.children))
+        if node.shadow_root is not None:
+            stack.append(node.shadow_root)
+
+
+def dom_parents(root: DomNode) -> dict[str, DomNode]:
+    """Map each node id to its parent. A `DomNode` tree carries no parent pointers."""
+    parents: dict[str, DomNode] = {}
+    for node in walk_dom(root):
+        for child in node.children:
+            parents[child.node_id] = node
+        if node.shadow_root is not None:
+            parents[node.shadow_root.node_id] = node
+    return parents
+
+
+def dom_nearest_anchor(
+    node: DomNode, parents: dict[str, DomNode], census: dict[str, int]
+) -> tuple[DomNode, str] | None:
+    """Return the nearest ancestor-or-self carrying a document-unique key, and that key.
+
+    The DOM counterpart of the HTML walk, and the only part of anchoring that differs between
+    the two: lxml elements carry parent pointers and `DomNode` does not, so ancestry comes from a
+    map built once per snapshot. The tiers, the uniqueness test, and the resulting keys are the
+    shared ones — identity has one definition.
+    """
+    current: DomNode | None = node
+    while current is not None:
+        key = anchoring.usable_anchor(current.tag, dom_attributes(current), census)
+        if key is not None:
+            return current, key
+        current = parents.get(current.node_id)
+    return None
+
+
+@dataclass(frozen=True, slots=True)
+class SiblingIndex:
+    """Counts over one parent's children, so a durable step costs attributes, not siblings.
+
+    Built once per parent. The scan-the-siblings formulation is quadratic in the width of a level,
+    and width is exactly where real documents get large: the HTML Living Standard holds 10,016
+    nodes at one level, where per-node sibling scans took the reduction from 7.3s to 180.3s.
+    """
+
+    tags: Counter[str]
+    keyed: Counter[tuple[str, str, str]]
+    """Counts of `(tag, attribute name, attribute value)` — uniqueness must be among SAME-TAG
+    siblings, since that is what the emitted step `./tag[@name="value"]` selects within."""
+
+
+def sibling_index(children: Sequence[DomNode]) -> SiblingIndex:
+    """Build the per-parent counts a durable step decision needs."""
+    tags: Counter[str] = Counter()
+    keyed: Counter[tuple[str, str, str]] = Counter()
+    for child in children:
+        tags[child.tag] += 1
+        for name, value in dom_attributes(child):
+            keyed[(child.tag, name, value)] += 1
+    return SiblingIndex(tags=tags, keyed=keyed)
+
+
+def dom_step(node: DomNode, index: SiblingIndex) -> str | None:
+    """Return a relative step selecting `node` among its siblings, or None if none is durable.
+
+    Only two forms are minted, and both are content-addressed rather than positional: `./tag`
+    when the tag is unique among its siblings, and `./tag[@name="value"]` when one attribute
+    makes it so. A step that would need a sibling index is refused, because `./div[3]` is a
+    positional guess wearing a durable address's clothes — insert a sibling and it silently names
+    something else.
+    """
+    if not anchoring.SAFE_TAG.fullmatch(node.tag):
+        # A shadow root is named `#shadow-root` by its producer: a real boundary that cannot be
+        # written as a path step. Refusing here sends the caller to a positional address, which
+        # `ref_id` then declines to give an identity — the honest outcome for a node the document
+        # offers no durable way to name.
+        return None
+    if index.tags.get(node.tag) == 1:
+        return f'./{node.tag}'
+    for name, value in dom_attributes(node):
+        if any(character in value for character in anchoring.LOCATOR_RESERVED):
+            continue
+        if index.keyed.get((node.tag, name, value)) == 1:
+            return f'./{node.tag}[@{name}="{value}"]'
+    return None

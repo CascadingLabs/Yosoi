@@ -41,7 +41,8 @@ import re
 from dataclasses import dataclass
 from urllib.parse import quote, unquote
 
-from yosoi.observations.html_tree import TAG_KEY_PREFIX
+from yosoi.observations.anchoring import SAFE_TAG as _SAFE_TAG
+from yosoi.observations.anchoring import TAG_KEY_PREFIX
 from yosoi.observations.models.artifact import EvidenceKind
 from yosoi.observations.models.index import IndexEntry, ObservationIndex
 from yosoi.observations.models.view import RegionRef
@@ -50,9 +51,6 @@ SEGMENT_SEPARATOR = '|'
 
 _REF_ID_BYTES = 8
 """Identity digest width. Part of the identity contract: changing it invalidates stored ids."""
-
-_SAFE_TAG = re.compile(r'[A-Za-z_][\w.-]*')
-"""What may follow `tag:` in an anchor. Anything else is a malformed locator, not a path."""
 
 _POSITIONAL_STEP = re.compile(r'\[\d+\]')
 """An XPath step that selects by sibling position, e.g. `div[3]`."""

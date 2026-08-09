@@ -6,19 +6,25 @@ from collections import Counter
 
 from yosoi.observations.dom_tree import (
     assign_dom_member_keys,
+    dom_anchor_census,
+    dom_chain,
     dom_declaration_label,
     dom_declaration_summary,
     dom_index_conventions,
     dom_label,
     dom_locator,
     dom_member_variants,
+    dom_nearest_anchor,
+    dom_parents,
     dom_region_coverage,
     dom_skeleton_signature,
+    dom_step,
     dom_subtree_text,
     dom_summary,
+    sibling_index,
 )
 from yosoi.observations.html_tree import METADATA_CONTENT
-from yosoi.observations.index.addressing import element_address, format_address, region_address
+from yosoi.observations.index.addressing import anchor_address, element_address, format_address
 from yosoi.observations.models.artifact import EvidenceKind
 from yosoi.observations.models.dom import DomNode, DomVisibility, parse_dom_snapshot
 from yosoi.observations.pruning._base import PruneCandidate, Reduction, SemanticPruner, clip
@@ -38,6 +44,63 @@ SAMPLED_MEMBERS = 3
 
 SAMPLE_TEXT_CHARS = 40
 _DECLARATION_LABEL_CHARS = 60
+
+
+class _Minter:
+    """Mints DOM addresses that start from the nearest durable ancestor.
+
+    The DOM counterpart of the source-HTML minter, and deliberately the same shape: one census
+    per snapshot, consulted per node, falling back to the producer's node id when the document
+    offers nothing durable on the way up. That fallback still resolves exactly within its own
+    snapshot; it simply carries no anchor, so `ref_id` refuses it an identity rather than implying
+    a stability the page never offered.
+    """
+
+    def __init__(self, root: DomNode) -> None:
+        """Build the snapshot-wide census and ancestry this minter consults."""
+        self._census = dom_anchor_census(root)
+        self._parents = dom_parents(root)
+        self._siblings: dict[str, object] = {}
+
+    def _index_for(self, parent: DomNode):
+        """Return the sibling counts for one parent, built once and reused."""
+        cached = self._siblings.get(parent.node_id)
+        if cached is None:
+            cached = sibling_index(parent.children)
+            self._siblings[parent.node_id] = cached
+        return cached
+
+    def _relative(self, ancestor: DomNode, node: DomNode) -> str | None:
+        """Return a durable relative path from `ancestor` down to `node`, or None."""
+        steps: list[str] = []
+        current = node
+        while current is not ancestor and current.node_id != ancestor.node_id:
+            parent = self._parents.get(current.node_id)
+            if parent is None:
+                return None
+            step = dom_step(current, self._index_for(parent))
+            if step is None:
+                return None
+            steps.append(step.removeprefix('./'))
+            current = parent
+        return './' + '/'.join(reversed(steps)) if steps else None
+
+    def element(self, node: DomNode):
+        """Return the most durable address available for one node."""
+        found = dom_nearest_anchor(node, self._parents, self._census)
+        if found is not None:
+            ancestor, key = found
+            if ancestor.node_id == node.node_id:
+                return anchor_address(key)
+            relative = self._relative(ancestor, node)
+            if relative is not None:
+                return anchor_address(key, relative)
+        return element_address(dom_locator(node.node_id))
+
+    def region(self, container: DomNode, shape: str):
+        """Return the address of a repeat container, anchored where the snapshot allows it."""
+        address = self.element(container)
+        return address.as_region(shape)
 
 
 class DomPruner(SemanticPruner):
@@ -67,20 +130,21 @@ class DomPruner(SemanticPruner):
     def reduce(self, data: bytes, policy: PruningPolicy) -> Reduction:
         """Return a bounded semantic proposal over validated DOM JSON bytes."""
         snapshot = parse_dom_snapshot(data)
+        minter = _Minter(snapshot.root)
         root_summary = dom_summary(snapshot.root, max_chars=policy.max_fragment_chars)
         candidates: list[PruneCandidate] = [
             PruneCandidate(
-                locator=format_address(element_address(dom_locator(snapshot.root.node_id))),
+                locator=format_address(minter.element(snapshot.root)),
                 label=dom_label(snapshot.root),
                 summary=f'{root_summary}; {dom_index_conventions(snapshot.capabilities)}',
                 descends=bool(snapshot.root.children) or snapshot.root.shadow_root is not None,
             )
         ]
-        _walk(snapshot.root, out=candidates, policy=policy, depth=0)
+        _walk(snapshot.root, out=candidates, policy=policy, depth=0, minter=minter)
         return Reduction(candidates=tuple(candidates), source_items=snapshot.observed_node_count)
 
 
-def _walk(node: DomNode, *, out: list[PruneCandidate], policy: PruningPolicy, depth: int) -> None:
+def _walk(node: DomNode, *, out: list[PruneCandidate], policy: PruningPolicy, depth: int, minter: _Minter) -> None:
     """Walk light-DOM children and explicit shadow roots without flattening boundaries."""
     if depth > MAX_DEPTH:
         return
@@ -94,7 +158,7 @@ def _walk(node: DomNode, *, out: list[PruneCandidate], policy: PruningPolicy, de
         if child.tag in METADATA_CONTENT:
             out.append(
                 PruneCandidate(
-                    locator=format_address(element_address(dom_locator(child.node_id))),
+                    locator=format_address(minter.element(child)),
                     label=dom_declaration_label(child, label_chars),
                     summary=dom_declaration_summary(child),
                     depth=depth,
@@ -120,36 +184,40 @@ def _walk(node: DomNode, *, out: list[PruneCandidate], policy: PruningPolicy, de
         collapse = len(members) >= MIN_RUN and run_frequency[signature] == 1
         if collapse:
             exemplar = _emit_region(
-                container=node, members=members, shape=signature, depth=depth, out=out, policy=policy
+                container=node, members=members, shape=signature, depth=depth, out=out, policy=policy, minter=minter
             )
-            _walk(exemplar, out=out, policy=policy, depth=depth + 1)
+            _walk(exemplar, out=out, policy=policy, depth=depth + 1, minter=minter)
             continue
 
         for child in members:
             if _should_emit(child):
+                # Fold a chain of pass-through wrappers into the one entry at its end. The chain's
+                # depth is the chain START's, so a granularity cut still means "this far into the
+                # document's structure" rather than "this many levels of someone's div soup".
+                target, label = dom_chain(child)
                 out.append(
                     PruneCandidate(
-                        locator=format_address(element_address(dom_locator(child.node_id))),
-                        label=dom_label(child),
-                        summary=_summary_at(child, depth=depth + 1, policy=policy),
+                        locator=format_address(minter.element(target)),
+                        label=label,
+                        summary=_summary_at(target, depth=depth + 1, policy=policy),
                         depth=depth,
-                        descends=bool(child.children) or child.shadow_root is not None,
+                        descends=bool(target.children) or target.shadow_root is not None,
                     )
                 )
-                _walk(child, out=out, policy=policy, depth=depth + 1)
+                _walk(target, out=out, policy=policy, depth=depth + 1, minter=minter)
 
     if node.shadow_root is not None:
         shadow = node.shadow_root
         out.append(
             PruneCandidate(
-                locator=format_address(element_address(dom_locator(shadow.node_id))),
+                locator=format_address(minter.element(shadow)),
                 label=f'{dom_label(node)} > shadow-root',
                 summary=_summary_at(shadow, depth=depth + 1, policy=policy),
                 depth=depth,
                 descends=bool(shadow.children),
             )
         )
-        _walk(shadow, out=out, policy=policy, depth=depth + 1)
+        _walk(shadow, out=out, policy=policy, depth=depth + 1, minter=minter)
 
 
 def _summary_at(node: DomNode, *, depth: int, policy: PruningPolicy) -> str:
@@ -173,9 +241,10 @@ def _emit_region(
     depth: int,
     out: list[PruneCandidate],
     policy: PruningPolicy,
+    minter: _Minter,
 ) -> DomNode:
     """Emit one state-aware region and one exemplar; return the exemplar for descent."""
-    region = region_address(dom_locator(container.node_id), shape)
+    region = minter.region(container, shape)
     keys = assign_dom_member_keys(members)
     state_counts = Counter(_member_state(member) for member in members)
     state_text = ', '.join(f'{state}×{count}' for state, count in sorted(state_counts.items()))

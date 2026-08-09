@@ -13,6 +13,8 @@ from __future__ import annotations
 import hashlib
 from typing import TYPE_CHECKING
 
+from yosoi.observations import anchoring
+
 if TYPE_CHECKING:
     from lxml.etree import _Element, _ElementTree
 
@@ -116,82 +118,32 @@ def text_digest(value: str) -> str:
     return hashlib.blake2b(value.encode(), digest_size=_DIGEST_BYTES).hexdigest()
 
 
-TAG_KEY_PREFIX = 'tag:'
-"""Marks an anchor keyed on a tag that occurs exactly once, e.g. `tag:title` → `//title`.
+TAG_KEY_PREFIX = anchoring.TAG_KEY_PREFIX
+"""Re-exported from the shared anchoring module, which owns the identity recipe."""
 
-A colon cannot appear in the `name=value` form, so the two never collide — an element written
-`<x tag="title">` yields `tag=title`, which is not `tag:title`.
-"""
+
+def _attributes(element: _Element) -> list[tuple[str, str]]:
+    """Return attributes in the author's source order, as the anchor tiers require."""
+    return [(str(name), str(value)) for name, value in element.attrib.items()]
 
 
 def structural_keys(element: _Element) -> list[str]:
-    """Return the element's attribute-borne keys, most durable first.
-
-    Attributes only, never text: these are the keys an ANCHOR may use, and an anchor whose
-    identity moves when a sentence is reworded is not an anchor. The tiers are ordered by how
-    much authorial intent they carry — `id` is a promise of uniqueness, `data-*` is usually a
-    deliberate hook, a class value is a styling decision that happens to be unique here, and
-    the first attribute is whatever the author chose to write first.
-
-    That last tier enumerates nothing, for the same reason `_declaration_label` does not: a
-    `name`/`property`/`http-equiv`/`charset` allowlist can only anchor the declarations someone
-    thought of in advance. Source attribute order is the author's own statement of what
-    identifies the element, and it is the only such statement available on a `<meta>`.
-    """
-    keys: list[str] = []
-    identifier = element.get('id')
-    if identifier:
-        keys.append(f'id={identifier}')
-    keys.extend(
-        f'{name}={element.get(name)}'
-        for name in sorted(str(name) for name in element.attrib)
-        if name.startswith('data-')
-    )
-    classes = element.get('class')
-    if classes and classes.split():
-        keys.append(f'class={" ".join(classes.split())}')
-    first = next(iter(element.attrib.items()), None)
-    if first is not None:
-        candidate = f'{first[0]}={first[1]}'
-        if candidate not in keys:
-            keys.append(candidate)
-    return keys
+    """Return this element's attribute-borne anchor keys, most durable first."""
+    return anchoring.structural_keys(str(element.tag), _attributes(element))
 
 
-SKELETON_TAGS = frozenset({'html', 'head', 'body'})
-"""Tags that are unique in every document and therefore identify nothing.
-
-Anchoring to `//body` passes a uniqueness check and buys nothing: the tail below it is the same
-positional chain a root-absolute path would have used. Excluding them keeps `is_anchored` from
-becoming trivially true for every element on the page.
-"""
+SKELETON_TAGS = anchoring.SKELETON_TAGS
+"""Re-exported from the shared anchoring module."""
 
 
 def anchor_keys(element: _Element) -> list[str]:
-    """Return every key an anchor may use for this element, most durable first.
-
-    Adds one tier structural keys deliberately exclude: a tag that occurs exactly once in the
-    document. `<title>` carries no attributes at all, so without this it could only ever be
-    addressed positionally — and a title is not a thing a diff should lose track of.
-    """
-    keys = structural_keys(element)
-    if element.tag not in SKELETON_TAGS:
-        keys.append(f'{TAG_KEY_PREFIX}{element.tag}')
-    return keys
+    """Return every key an anchor may use for this element, most durable first."""
+    return anchoring.anchor_keys(str(element.tag), _attributes(element))
 
 
 def anchor_tier(key: str) -> str:
     """Return which durability tier an anchor key came from, for measurement."""
-    if key.startswith(TAG_KEY_PREFIX):
-        return 'tag'
-    name = key.partition('=')[0]
-    if name == 'id':
-        return 'id'
-    if name.startswith('data-'):
-        return 'data'
-    if name == 'class':
-        return 'class'
-    return 'attribute'
+    return anchoring.anchor_tier(key)
 
 
 def candidate_keys(element: _Element) -> list[str]:
@@ -226,18 +178,10 @@ def assign_member_keys(siblings: list[_Element]) -> list[str | None]:
 
 
 def anchor_census(root: _Element) -> dict[str, int]:
-    """Count every structural key in the document, so uniqueness is checked and not assumed.
-
-    Built once per document and consulted per element: the per-element formulation is
-    quadratic, which is the shape that dies on the pages this package exists for.
-    """
-    from collections import Counter
-
-    census: Counter[str] = Counter()
-    for element in root.iter():
-        if isinstance(element.tag, str):
-            census.update(anchor_keys(element))
-    return census
+    """Count every anchor key in the document, so uniqueness is checked and not assumed."""
+    return anchoring.build_census(
+        (str(element.tag), _attributes(element)) for element in root.iter() if isinstance(element.tag, str)
+    )
 
 
 def nearest_anchor(element: _Element, census: dict[str, int]) -> tuple[_Element, str] | None:
@@ -253,9 +197,9 @@ def nearest_anchor(element: _Element, census: dict[str, int]) -> tuple[_Element,
     """
     current: _Element | None = element
     while current is not None and isinstance(current.tag, str):
-        for key in anchor_keys(current):
-            if census.get(key) == 1 and '"' not in key:
-                return current, key
+        key = anchoring.usable_anchor(str(current.tag), _attributes(current), census)
+        if key is not None:
+            return current, key
         current = current.getparent()
     return None
 
