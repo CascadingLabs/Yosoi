@@ -59,8 +59,21 @@ from yosoi.observations.index.addressing import (
 from yosoi.observations.models.artifact import ArtifactRef, EvidenceKind, Sensitivity
 from yosoi.observations.models.ax import AxSnapshot, parse_ax_snapshot
 from yosoi.observations.models.dom import DomNode, DomSnapshot, parse_dom_snapshot
+from yosoi.observations.models.network import parse_network_trace
 from yosoi.observations.models.snapshot import ObservationSnapshot
 from yosoi.observations.models.view import RegionCoverage, RegionRef
+from yosoi.observations.network_tree import (
+    assign_request_member_keys,
+    group_coverage,
+    network_detail,
+    network_region_members,
+    request_label,
+    request_summary,
+    resolve_network_address,
+    resolve_network_region,
+    trace_context,
+    trace_defaults,
+)
 
 if TYPE_CHECKING:
     from lxml.etree import _Element, _ElementTree
@@ -185,6 +198,14 @@ def _dom_region_members(container: DomNode, shape: str) -> list[DomNode]:
     if not members:
         raise ObservationAddressError(f'no DOM members of shape {shape!r} remain in this region')
     return members
+
+
+def _parse_network_artifact(artifact: ArtifactRef, data: bytes):
+    """Parse network bytes and bind their self-described trace identity to the artifact."""
+    trace = parse_network_trace(data)
+    if trace.snapshot_id != artifact.snapshot_id:
+        raise ObservationAddressError('network payload snapshot disagrees with its artifact')
+    return trace
 
 
 def _parse_dom_artifact(artifact: ArtifactRef, data: bytes) -> DomSnapshot:
@@ -343,7 +364,12 @@ class ObservationInspector:
             raise ObservationAddressError('observation reference modality disagrees with its artifact')
         if artifact.sensitivity in {Sensitivity.RESTRICTED, Sensitivity.EPHEMERAL_SECRET} and not allow_restricted:
             raise PermissionError('restricted observation evidence requires explicit inspection permission')
-        if artifact.kind not in {EvidenceKind.SOURCE_HTML, EvidenceKind.RENDERED_DOM, EvidenceKind.AX_TREE}:
+        if artifact.kind not in {
+            EvidenceKind.SOURCE_HTML,
+            EvidenceKind.RENDERED_DOM,
+            EvidenceKind.AX_TREE,
+            EvidenceKind.NETWORK,
+        }:
             raise NotImplementedError(
                 f'{artifact.kind.value} inspection is not implemented; see observations/ROADMAP.md'
             )
@@ -355,7 +381,9 @@ class ObservationInspector:
         address = parse_address(ref.locator)
         data = self._store.read(artifact)
 
-        if artifact.kind is EvidenceKind.RENDERED_DOM:
+        if artifact.kind is EvidenceKind.NETWORK:
+            serialized = network_detail(resolve_network_address(_parse_network_artifact(artifact, data), address))
+        elif artifact.kind is EvidenceKind.RENDERED_DOM:
             node = _resolve_dom_address(_parse_dom_artifact(artifact, data), address)
             serialized = node.model_dump_json().encode('utf-8')
         elif artifact.kind is EvidenceKind.AX_TREE:
@@ -409,7 +437,9 @@ class ObservationInspector:
         # produced a tree nothing could match, so a rebind that named a real member failed as
         # "segment resolved to 0 nodes" — a grammar error for what was a modality mistake.
         data = self._store.read(artifact)
-        if artifact.kind is EvidenceKind.RENDERED_DOM:
+        if artifact.kind is EvidenceKind.NETWORK:
+            resolve_network_address(_parse_network_artifact(artifact, data), rebound)
+        elif artifact.kind is EvidenceKind.RENDERED_DOM:
             _resolve_dom_address(_parse_dom_artifact(artifact, data), rebound)
         elif artifact.kind is EvidenceKind.AX_TREE:
             resolve_ax_address(_parse_ax_artifact(artifact, data), rebound)
@@ -421,6 +451,48 @@ class ObservationInspector:
             artifact_sha256=ref.artifact_sha256,
             modality=ref.modality,
             locator=format_address(rebound),
+        )
+
+    def _expand_network(
+        self,
+        ref: RegionRef,
+        artifact: ArtifactRef,
+        data: bytes,
+        address: ObservationAddress,
+        budget: InspectionBudget,
+        offset: int,
+    ) -> RegionPage:
+        """Page the requests one endpoint region collapsed, keyed where the trace allows it."""
+        trace = _parse_network_artifact(artifact, data)
+        group = resolve_network_region(trace, address)
+        members = network_region_members(group, address.segments[-1].shape or '')
+        keys = assign_request_member_keys(members)
+        context = trace_context(trace)
+        defaults = trace_defaults(trace)
+        window = list(zip(members, keys, strict=True))[offset : offset + budget.max_items]
+        page = tuple(
+            RegionMember(
+                ref=RegionRef(
+                    snapshot_id=ref.snapshot_id,
+                    artifact_sha256=ref.artifact_sha256,
+                    modality=ref.modality,
+                    locator=format_address(
+                        address.member(key=key, ordinal=None if key is not None else offset + position)
+                    ),
+                ),
+                ordinal=offset + position,
+                label=request_label(member),
+                summary=request_summary(member, context, defaults)[: budget.max_summary_chars],
+                stable=key is not None,
+            )
+            for position, (member, key) in enumerate(window)
+        )
+        return RegionPage(
+            region=ref,
+            members=page,
+            offset=offset,
+            coverage=group_coverage(trace, group),
+            truncated=offset + len(window) < len(members),
         )
 
     def expand(self, ref: RegionRef, budget: InspectionBudget, *, offset: int = 0) -> RegionPage:
@@ -435,6 +507,8 @@ class ObservationInspector:
         data = self._store.read(artifact)
         if artifact.kind is EvidenceKind.AX_TREE:
             return _expand_ax(ref, address, _parse_ax_artifact(artifact, data), budget, offset=offset)
+        if artifact.kind is EvidenceKind.NETWORK:
+            return self._expand_network(ref, artifact, data, address, budget, offset)
         if artifact.kind is EvidenceKind.RENDERED_DOM:
             snapshot = _parse_dom_artifact(artifact, data)
             container = _resolve_dom_address(snapshot, address)

@@ -27,6 +27,17 @@ if TYPE_CHECKING:
     from yosoi.observations.models.dom import DomVisibility as DomVisibility
     from yosoi.observations.models.index import IndexEntry as IndexEntry
     from yosoi.observations.models.index import ObservationIndex as ObservationIndex
+    from yosoi.observations.models.network import NetworkCapability as NetworkCapability
+    from yosoi.observations.models.network import NetworkCapabilityKind as NetworkCapabilityKind
+    from yosoi.observations.models.network import NetworkRedaction as NetworkRedaction
+    from yosoi.observations.models.network import NetworkRequest as NetworkRequest
+    from yosoi.observations.models.network import NetworkTrace as NetworkTrace
+    from yosoi.observations.models.network import QueryParam as QueryParam
+    from yosoi.observations.models.network import ResourceType as ResourceType
+    from yosoi.observations.models.network import RestrictedBody as RestrictedBody
+    from yosoi.observations.models.network import ShapeSignature as ShapeSignature
+    from yosoi.observations.models.network import TimingBucket as TimingBucket
+    from yosoi.observations.models.network import ValueClass as ValueClass
     from yosoi.observations.models.snapshot import CaptureCapability as CaptureCapability
     from yosoi.observations.models.snapshot import CaptureProfile as CaptureProfile
     from yosoi.observations.models.snapshot import ObservationSnapshot as ObservationSnapshot
@@ -58,6 +69,17 @@ _LAZY = {
     'DomVisibility': 'yosoi.observations.models.dom',
     'EvidenceKind': 'yosoi.observations.models.artifact',
     'IndexEntry': 'yosoi.observations.models.index',
+    'NetworkCapability': 'yosoi.observations.models.network',
+    'NetworkCapabilityKind': 'yosoi.observations.models.network',
+    'NetworkRedaction': 'yosoi.observations.models.network',
+    'NetworkRequest': 'yosoi.observations.models.network',
+    'NetworkTrace': 'yosoi.observations.models.network',
+    'QueryParam': 'yosoi.observations.models.network',
+    'ResourceType': 'yosoi.observations.models.network',
+    'RestrictedBody': 'yosoi.observations.models.network',
+    'ShapeSignature': 'yosoi.observations.models.network',
+    'TimingBucket': 'yosoi.observations.models.network',
+    'ValueClass': 'yosoi.observations.models.network',
     'ObservationIndex': 'yosoi.observations.models.index',
     'ObservationSnapshot': 'yosoi.observations.models.snapshot',
     'Pagination': 'yosoi.observations.models.view',

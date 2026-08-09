@@ -24,9 +24,9 @@ from yosoi.observations.models import (
     RegionRef,
 )
 from yosoi.observations.pruning import (
+    AxPruner,
     DeclarationPruner,
     NetworkPruner,
-    Pruner,
     PruningInput,
     PruningPolicy,
 )
@@ -124,23 +124,17 @@ def test_pruned_view_and_index_keep_exact_reference_chain() -> None:
         resolve_index_entry(index, foreign)
 
 
-@pytest.mark.parametrize(
-    ('pruner', 'kind'),
-    [
-        (NetworkPruner(), EvidenceKind.NETWORK),
-    ],
-)
-def test_unimplemented_pruners_validate_source_then_fail_closed(pruner: Pruner, kind: EvidenceKind) -> None:
-    payload = b'{}'
-    ref = MemoryArtifactStore().put(
-        snapshot_id='snapshot-1',
-        kind=kind,
-        media_type='application/json',
-        data=payload,
-    )
+def test_no_modality_pruner_is_a_scaffold_any_more() -> None:
+    """The retired guarantee, kept as a statement rather than an empty parametrization.
 
-    with pytest.raises(NotImplementedError):
-        pruner.prune(PruningInput(source=ref, data=payload), PruningPolicy())
+    This file used to assert that not-yet-implemented pruners fail closed instead of returning
+    empty evidence — the rule that "missing capabilities never become empty evidence" depends on.
+    Every declared modality now has a real reduction, so that test had no subjects left. Deleting
+    it silently would leave no record that the guarantee was ever load-bearing, so what replaces
+    it is the fact that made it vacuous.
+    """
+    assert AxPruner().version != 'scaffold'
+    assert NetworkPruner().version != 'scaffold'
 
 
 def test_declaration_pruner_rejects_evidence_from_another_modality() -> None:

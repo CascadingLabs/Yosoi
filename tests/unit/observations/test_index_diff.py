@@ -23,9 +23,7 @@ def _index(root: DomNode, snapshot_id: str):
     snapshot = DomSnapshot(snapshot_id=snapshot_id, root=root)
     data = serialize_dom_snapshot(snapshot)
     store = MemoryArtifactStore()
-    ref = store.put(
-        snapshot_id=snapshot_id, kind=EvidenceKind.RENDERED_DOM, media_type='application/json', data=data
-    )
+    ref = store.put(snapshot_id=snapshot_id, kind=EvidenceKind.RENDERED_DOM, media_type='application/json', data=data)
     manifest = ObservationSnapshot(
         run_id='run',
         episode_id=snapshot_id,
@@ -62,7 +60,9 @@ def _page(*, heading: str = 'Catalogue', note: str = 'in stock', extra: bool = F
                 text='Sale',
             )
         )
-    return DomNode(node_id='root', tag='html', children=(DomNode(node_id='main', tag='main', children=tuple(children)),))
+    return DomNode(
+        node_id='root', tag='html', children=(DomNode(node_id='main', tag='main', children=tuple(children)),)
+    )
 
 
 def test_recapturing_an_unchanged_page_produces_an_empty_diff() -> None:
@@ -209,7 +209,9 @@ def test_a_region_observing_fewer_members_is_flagged_as_coverage() -> None:
         return DomNode(
             node_id='root',
             tag='html',
-            children=(DomNode(node_id='list', tag='ul', attributes=(DomAttribute(name='id', value='rows'),), children=rows),),
+            children=(
+                DomNode(node_id='list', tag='ul', attributes=(DomAttribute(name='id', value='rows'),), children=rows),
+            ),
         )
 
     diff = diff_indexes(_index(listing(6), 'full'), _index(listing(4), 'partial'))
