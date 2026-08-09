@@ -143,7 +143,14 @@ def test_region_sampling_crosses_a_shadow_boundary() -> None:
     assert '"Card 1"' in region.summary
 
 
-def test_runtime_state_prevents_active_and_completed_merge() -> None:
+def test_a_completed_member_stays_visible_without_fragmenting_its_region() -> None:
+    """State must not be lost when a mixed-state run collapses — and must not split it.
+
+    Previously state was part of the shape, so one completed todo among three broke the region
+    into three entries. On real pages that rule fired on every near-identical record and the
+    compression never happened. State is a discriminant: it belongs to the region's description,
+    where both `states=` and `variants:` now carry it, not to the equivalence it collapses on.
+    """
     root = DomNode(
         node_id='root',
         tag='html',
@@ -157,10 +164,11 @@ def test_runtime_state_prevents_active_and_completed_merge() -> None:
     )
 
     view = _reduce(DomSnapshot(snapshot_id='s1', root=root))
+    region = next(fragment for fragment in view.fragments if fragment.coverage is not None)
 
-    assert not [fragment for fragment in view.fragments if fragment.coverage is not None]
-    assert sum(fragment.label == 'li.todo' for fragment in view.fragments) == 2
-    assert sum(fragment.label == 'li.todo.completed' for fragment in view.fragments) == 1
+    assert region.summary.startswith('×3 li.todo')
+    assert 'checked×1' in region.summary, 'the completed member must remain countable'
+    assert 'variants: completed×1' in region.summary, 'the class the page used to mark it must survive'
 
 
 def test_virtualized_region_reports_incomplete_declared_coverage() -> None:
@@ -193,7 +201,7 @@ def test_hidden_empty_wrappers_are_omitted_but_hidden_content_is_retained() -> N
         tag='html',
         children=(
             DomNode(node_id='empty-hidden', tag='div', visibility=DomVisibility.DISPLAY_NONE),
-            DomNode(node_id='unknown-wrapper', tag='div', visibility=DomVisibility.UNKNOWN),
+            DomNode(node_id='unknown-wrapper', tag='section', visibility=DomVisibility.UNKNOWN),
             DomNode(
                 node_id='hidden-modal',
                 tag='dialog',
@@ -291,7 +299,13 @@ def test_duplicate_content_keys_fall_back_to_declared_positional_members() -> No
     assert all('&ordinal=' in member.ref.locator for member in page.members)
 
 
-def test_dom_expand_does_not_promote_container_count_for_state_subset() -> None:
+def test_dom_expand_does_not_promote_container_count_for_a_partial_run() -> None:
+    """A declared total counts the container's whole collection, not a run inside it.
+
+    The header row is not a todo, so the run of three todos is three of something the
+    `declared_count=3` never counted. Reporting `3/3` there would be a fabricated completeness
+    claim — and completeness is what a QA reader trusts to mean "nothing was missed".
+    """
     root = DomNode(
         node_id='root',
         tag='html',
@@ -300,7 +314,12 @@ def test_dom_expand_does_not_promote_container_count_for_state_subset() -> None:
                 node_id='todo-list',
                 tag='ul',
                 declared_count=3,
-                children=(_todo('todo-1', 'A'), _todo('todo-2', 'B'), _todo('todo-3', 'C', checked=True)),
+                children=(
+                    DomNode(node_id='header', tag='li', attributes=(DomAttribute(name='role', value='heading'),)),
+                    _todo('todo-1', 'A'),
+                    _todo('todo-2', 'B'),
+                    _todo('todo-3', 'C', checked=True),
+                ),
             ),
         ),
     )
@@ -481,7 +500,7 @@ def test_summaries_state_visibility_and_geometry_only_when_they_deviate() -> Non
             ),
             DomNode(
                 node_id='zero-area',
-                tag='div',
+                tag='section',
                 attributes=(DomAttribute(name='class', value='zero-area'),),
                 text='collapsed',
                 visibility=DomVisibility.VISIBLE,
@@ -489,7 +508,7 @@ def test_summaries_state_visibility_and_geometry_only_when_they_deviate() -> Non
             ),
             DomNode(
                 node_id='hidden',
-                tag='div',
+                tag='aside',
                 attributes=(DomAttribute(name='class', value='hidden'),),
                 text='concealed',
                 visibility=DomVisibility.DISPLAY_NONE,

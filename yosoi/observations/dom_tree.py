@@ -27,21 +27,34 @@ def node_id_from_locator(path: str) -> str:
 
 
 def dom_skeleton_signature(node: DomNode) -> str:
-    """Return a content-independent shape that retains state affecting page meaning.
+    """Return the node's SHAPE — the equivalence relation a repeat region collapses on.
 
-    IDs and ``data-*`` values are identity, not shape. Classes, ARIA attributes, visibility,
-    and captured interactive state remain in the signature so completed/hidden controls are
-    not merged into active/visible controls merely because their tags match.
+    Shape is tag structure plus the attribute *vocabulary*, and nothing else. Attribute values,
+    visibility, and runtime state are deliberately excluded, because they are DISCRIMINANTS, not
+    shape: they tell one member from another, which is what the region summary, the member keys,
+    and `expand` are for. The region line already reports its state tally and member variants.
+
+    Putting them in the signature counted them twice — once as a splitter, once as a description
+    — and the splitting won. Measured on ten live qscrape.dev captures: the nine VaultMart
+    product cards produced NINE distinct signatures and collapsed not at all, while the only
+    regions the pruner found on that page were star-rating glyphs and two scripts. Real records
+    are near-identical, never identical: one card carries a `SPONSORED` badge, another `NEW`, a
+    third differs only in `href` and `src`.
+
+    The source-HTML reducer has used tag structure alone since CAS-262 and collapses 10,000 rows
+    to two entries. This is that rule, plus the attribute vocabulary, which is a structural fact
+    about how an element is built rather than a fact about what fills it.
     """
-    attrs = tuple(
-        (attribute.name, attribute.value)
-        for attribute in node.attributes
-        if attribute.name != 'id' and not attribute.name.startswith('data-')
+    names = tuple(
+        sorted(
+            attribute.name
+            for attribute in node.attributes
+            if attribute.name != 'id' and not attribute.name.startswith('data-')
+        )
     )
-    runtime = _runtime_signature(node.runtime)
     children = tuple(dom_skeleton_signature(child) for child in node.children)
     shadow = dom_skeleton_signature(node.shadow_root) if node.shadow_root is not None else None
-    material = repr((node.tag, attrs, node.visibility.value, runtime, children, shadow)).encode()
+    material = repr((node.tag, names, children, shadow)).encode()
     return hashlib.blake2b(material, digest_size=8).hexdigest()
 
 
@@ -81,6 +94,31 @@ def dom_region_coverage(container: DomNode, members: Sequence[DomNode]) -> Regio
     """
     declared = container.declared_count if len(members) == len(container.children) else None
     return RegionCoverage(observed=len(members), declared=declared, complete=declared == len(members))
+
+
+def dom_member_variants(members: Sequence[DomNode]) -> str:
+    """Report class tokens carried by SOME but not all members of a repeat region.
+
+    Shape no longer splits on attribute values, so `li.todo` and `li.todo.completed` land in one
+    region — which is right for compression and would be wrong if the difference vanished. It
+    does not: a token on a strict subset of a run is exactly the page's own statement that these
+    members are not all alike, and it is reported here instead of fragmenting the region.
+
+    Strict subset, both ends. A token on every member is the run's shared identity and says
+    nothing about variation; a token on one member of one is not a variant of anything.
+    """
+    if len(members) < 2:
+        return ''
+    counts: Counter[str] = Counter()
+    for member in members:
+        for attribute in member.attributes:
+            if attribute.name == 'class':
+                counts.update(set(attribute.value.split()))
+    varying = {token: count for token, count in counts.items() if count < len(members)}
+    if not varying:
+        return ''
+    ordered = sorted(varying.items(), key=lambda item: (-item[1], item[0]))
+    return ', '.join(f'{token}×{count}' for token, count in ordered)
 
 
 def dom_label(node: DomNode) -> str:
@@ -148,6 +186,22 @@ def dom_summary(node: DomNode, *, max_chars: int = 160) -> str:
     # A node that deviates in nothing and holds no own text would otherwise summarise to the
     # empty string, which reads as "nothing here" for a node that may hold a whole record.
     return ('; '.join(parts) or dom_subtree_text(node))[:max_chars]
+
+
+def dom_member_summary(node: DomNode, *, max_chars: int = 160) -> str:
+    """Summarise one expanded region member, carrying the content that tells it apart.
+
+    `expand` is the one hop that answers "which member do I want?", so a member summary must
+    discriminate. `dom_summary` reports a node's OWN text, and a record's content lives in its
+    descendants — a product card summarised to `children=1` while its price sat three levels
+    down. The source-HTML path has always used the member's subtree text for exactly this, and
+    the divergence made DOM region expansion unable to answer questions about its own members.
+    """
+    content = dom_subtree_text(node)
+    base = dom_summary(node, max_chars=max_chars)
+    if not content or content in base:
+        return base[:max_chars]
+    return f'{base}; content="{content}"'[:max_chars]
 
 
 def dom_declaration_label(node: DomNode, max_value_chars: int = 60) -> str:
@@ -246,6 +300,8 @@ __all__ = [
     'dom_index_conventions',
     'dom_label',
     'dom_locator',
+    'dom_member_summary',
+    'dom_member_variants',
     'dom_region_coverage',
     'dom_skeleton_signature',
     'dom_subtree_text',

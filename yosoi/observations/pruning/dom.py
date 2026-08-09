@@ -11,6 +11,7 @@ from yosoi.observations.dom_tree import (
     dom_index_conventions,
     dom_label,
     dom_locator,
+    dom_member_variants,
     dom_region_coverage,
     dom_skeleton_signature,
     dom_subtree_text,
@@ -24,7 +25,7 @@ from yosoi.observations.models.view import PrunedView
 from yosoi.observations.pruning._base import PruneCandidate, Reduction, SemanticPruner, clip
 from yosoi.observations.pruning.protocol import PruningInput, PruningPolicy
 
-DOM_PRUNER_VERSION = '3'
+DOM_PRUNER_VERSION = '4'
 """Bumped when the reduction stopped restating defaults and stopped inlining declaration payloads.
 
 Emitted summaries changed for every node, so views stored under version 2 are not comparable.
@@ -182,6 +183,9 @@ def _emit_region(
         remainder = len(distinct) - min(SAMPLED_MEMBERS, len(distinct))
         summary += f'  {shown}' + (f' +{remainder} more' if remainder > 0 else '')
     summary += f'; states={state_text or "unknown"}'
+    variants = dom_member_variants(members)
+    if variants:
+        summary += f'; variants: {variants}'
     # Only a DECLARED total is worth a line. No total is the norm on real pages — it was stated
     # on essentially every region across ten live captures — and `coverage.declared is None`
     # already carries it for any consumer that needs to branch on it.

@@ -23,9 +23,9 @@ from yosoi.observations.dom_tree import (
     assign_dom_member_keys,
     dom_candidate_keys,
     dom_label,
+    dom_member_summary,
     dom_region_coverage,
     dom_skeleton_signature,
-    dom_summary,
     node_id_from_locator,
 )
 from yosoi.observations.html_tree import (
@@ -335,7 +335,7 @@ class ObservationInspector:
                     ),
                     ordinal=offset + position,
                     label=dom_label(member),
-                    summary=dom_summary(member, max_chars=budget.max_summary_chars),
+                    summary=dom_member_summary(member, max_chars=budget.max_summary_chars),
                     stable=key is not None,
                 )
                 for position, (member, key) in enumerate(window)
