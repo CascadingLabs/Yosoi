@@ -9,13 +9,14 @@ for every modality and are owned here, so a new pruner is one `reduce` method pl
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import ClassVar
 
 from yosoi.observations.index.paging import PageRequest, paginate
 from yosoi.observations.models.artifact import EvidenceKind
-from yosoi.observations.models.view import PrunedFragment, PrunedView, RegionCoverage, RegionRef
+from yosoi.observations.models.view import Granularity, PrunedFragment, PrunedView, RegionCoverage, RegionRef
 from yosoi.observations.pruning._shared import pruning_policy_hash, pruning_stats, require_prunable
+from yosoi.observations.pruning.granularity import DESCENT_NOTICE, collapse
 from yosoi.observations.pruning.protocol import PruningInput, PruningPolicy
 
 
@@ -31,6 +32,12 @@ class PruneCandidate:
     label: str
     summary: str
     coverage: RegionCoverage | None = None
+    depth: int = 0
+    """How deep in the walk this candidate sits. The axis progressive collapse cuts on."""
+
+    descends: bool = False
+    """Whether content exists below this candidate that the walk may not have indexed."""
+
     bound_to_previous: bool = False
     """Whether a page boundary must not fall immediately before this candidate.
 
@@ -66,13 +73,58 @@ class SemanticPruner(ABC):
     version: ClassVar[str]
     evidence_kind: ClassVar[EvidenceKind]
 
-    def prune(self, source: PruningInput, policy: PruningPolicy, page: PageRequest | None = None) -> PrunedView:
-        """Validate identity, reduce, and return one page of the result with global ordinals."""
+    def reduce_once(self, source: PruningInput, policy: PruningPolicy) -> Reduction:
+        """Validate the artifact and walk it once, returning the reusable candidate space.
+
+        Split out from `prune` because a reduction is expensive and every page of it is the same
+        reduction. Walking the HTML Living Standard costs 10.7s and yields 271,134 candidates; a
+        272-page sweep that called `prune` per page re-walked all of it 272 times for ~49 minutes
+        of duplicated work. Nothing was *wrong* with those pages — `reduce` is pure and
+        deterministic over `(data, policy)`, so every page saw the same space and tiling held —
+        it was pure waste.
+
+        A caller sweeping a large artifact reduces once and calls `view` per page:
+
+            reduction = pruner.reduce_once(source, policy)
+            for offset in offsets:
+                pruner.view(source, policy, reduction, PageRequest(offset=offset))
+
+        Deliberately an explicit value rather than an internal cache. A cache keyed on the
+        artifact digest would hold a quarter-million candidate objects alive for a caller that
+        asked for one page, and this package does not keep mutable global state.
+        """
         require_prunable(source, self.evidence_kind, policy)
-        reduction = self.reduce(source.data, policy)
+        return self.reduce(source.data, policy)
+
+    def prune(self, source: PruningInput, policy: PruningPolicy, page: PageRequest | None = None) -> PrunedView:
+        """Reduce and return one page of the result. Convenience for a single page."""
+        return self.view(source, policy, self.reduce_once(source, policy), page)
+
+    def view(
+        self,
+        source: PruningInput,
+        policy: PruningPolicy,
+        reduction: Reduction,
+        page: PageRequest | None = None,
+    ) -> PrunedView:
+        """Build one page of a view from an already-computed reduction."""
+        # Collapse first, then window. A reduction too large for the budget is served as the WHOLE
+        # document at coarser depth; paging then windows whatever that still leaves. Doing it the
+        # other way round would window the front of the document and never reach the rest.
+        granularity: Granularity | None = None
+        coarsened: tuple[PruneCandidate, ...] = reduction.candidates
+        if policy.collapse_to_fit:
+            coarsened, granularity = collapse(reduction.candidates, policy.max_fragments)
+            coarsened = tuple(
+                replace(candidate, summary=f'{candidate.summary}; {DESCENT_NOTICE}')
+                if granularity.reduced and candidate.descends and candidate.depth == granularity.depth
+                else candidate
+                for candidate in coarsened
+            )
+
         request = page or PageRequest(limit=policy.max_fragments)
         retained, pagination = paginate(
-            reduction.candidates, request, bound_to_previous=lambda candidate: candidate.bound_to_previous
+            coarsened, request, bound_to_previous=lambda candidate: candidate.bound_to_previous
         )
 
         fragments = tuple(
@@ -105,6 +157,7 @@ class SemanticPruner(ABC):
             policy_hash=pruning_policy_hash(policy),
             fragments=fragments,
             page=pagination,
+            granularity=granularity,
             stats=pruning_stats(
                 source=source,
                 source_items=reduction.source_items,

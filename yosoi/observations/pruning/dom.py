@@ -19,10 +19,8 @@ from yosoi.observations.dom_tree import (
 )
 from yosoi.observations.html_tree import METADATA_CONTENT
 from yosoi.observations.index.addressing import element_address, format_address, region_address
-from yosoi.observations.index.paging import PageRequest
 from yosoi.observations.models.artifact import EvidenceKind
 from yosoi.observations.models.dom import DomNode, DomVisibility, parse_dom_snapshot
-from yosoi.observations.models.view import PrunedView
 from yosoi.observations.pruning._base import PruneCandidate, Reduction, SemanticPruner, clip
 from yosoi.observations.pruning.protocol import PruningInput, PruningPolicy
 
@@ -59,12 +57,12 @@ class DomPruner(SemanticPruner):
     version = DOM_PRUNER_VERSION
     evidence_kind = EvidenceKind.RENDERED_DOM
 
-    def prune(self, source: PruningInput, policy: PruningPolicy, page: PageRequest | None = None) -> PrunedView:
+    def reduce_once(self, source: PruningInput, policy: PruningPolicy) -> Reduction:
         """Bind the self-described DOM snapshot to the artifact before reduction."""
         snapshot = parse_dom_snapshot(source.data)
         if snapshot.snapshot_id != source.source.snapshot_id:
             raise ValueError('rendered-DOM payload snapshot disagrees with its artifact')
-        return super().prune(source, policy, page)
+        return super().reduce_once(source, policy)
 
     def reduce(self, data: bytes, policy: PruningPolicy) -> Reduction:
         """Return a bounded semantic proposal over validated DOM JSON bytes."""
@@ -75,6 +73,7 @@ class DomPruner(SemanticPruner):
                 locator=format_address(element_address(dom_locator(snapshot.root.node_id))),
                 label=dom_label(snapshot.root),
                 summary=f'{root_summary}; {dom_index_conventions(snapshot.capabilities)}',
+                descends=bool(snapshot.root.children) or snapshot.root.shadow_root is not None,
             )
         ]
         _walk(snapshot.root, out=candidates, policy=policy, depth=0)
@@ -98,6 +97,7 @@ def _walk(node: DomNode, *, out: list[PruneCandidate], policy: PruningPolicy, de
                     locator=format_address(element_address(dom_locator(child.node_id))),
                     label=dom_declaration_label(child, label_chars),
                     summary=dom_declaration_summary(child),
+                    depth=depth,
                 )
             )
             continue
@@ -119,7 +119,9 @@ def _walk(node: DomNode, *, out: list[PruneCandidate], policy: PruningPolicy, de
         members = tuple(children[start:end])
         collapse = len(members) >= MIN_RUN and run_frequency[signature] == 1
         if collapse:
-            exemplar = _emit_region(container=node, members=members, shape=signature, out=out, policy=policy)
+            exemplar = _emit_region(
+                container=node, members=members, shape=signature, depth=depth, out=out, policy=policy
+            )
             _walk(exemplar, out=out, policy=policy, depth=depth + 1)
             continue
 
@@ -130,6 +132,8 @@ def _walk(node: DomNode, *, out: list[PruneCandidate], policy: PruningPolicy, de
                         locator=format_address(element_address(dom_locator(child.node_id))),
                         label=dom_label(child),
                         summary=_summary_at(child, depth=depth + 1, policy=policy),
+                        depth=depth,
+                        descends=bool(child.children) or child.shadow_root is not None,
                     )
                 )
                 _walk(child, out=out, policy=policy, depth=depth + 1)
@@ -141,6 +145,8 @@ def _walk(node: DomNode, *, out: list[PruneCandidate], policy: PruningPolicy, de
                 locator=format_address(element_address(dom_locator(shadow.node_id))),
                 label=f'{dom_label(node)} > shadow-root',
                 summary=_summary_at(shadow, depth=depth + 1, policy=policy),
+                depth=depth,
+                descends=bool(shadow.children),
             )
         )
         _walk(shadow, out=out, policy=policy, depth=depth + 1)
@@ -164,6 +170,7 @@ def _emit_region(
     container: DomNode,
     members: tuple[DomNode, ...],
     shape: str,
+    depth: int,
     out: list[PruneCandidate],
     policy: PruningPolicy,
 ) -> DomNode:
@@ -201,6 +208,8 @@ def _emit_region(
             label=f'{dom_label(container)} > {dom_label(members[0])}',
             summary=summary,
             coverage=coverage,
+            depth=depth,
+            descends=True,
         )
     )
     # An exemplar earns its slot by showing the member's STRUCTURE — what a reader would have to
@@ -215,6 +224,8 @@ def _emit_region(
                 locator=format_address(exemplar),
                 label=dom_label(members[0]),
                 summary=f'exemplar of ×{observed}; {dom_summary(members[0], max_chars=policy.max_fragment_chars)}',
+                depth=depth,
+                descends=bool(members[0].children) or members[0].shadow_root is not None,
                 bound_to_previous=True,
             )
         )

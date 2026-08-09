@@ -100,6 +100,48 @@ class Pagination(BaseModel):
         return self.offset == 0 and self.returned == self.total
 
 
+class Granularity(BaseModel):
+    """The resolution one reduction was served at, and what that cost.
+
+    `reduced` is the field a consumer must branch on: at full depth the reduction is the whole
+    document at the walk's own resolution, and at anything less it is the whole document with
+    subtrees deliberately unexplored — complete in extent, partial in detail.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    depth: int = Field(ge=0)
+    deepest: int = Field(ge=0)
+    retained: int = Field(ge=0)
+    proposed: int = Field(ge=0)
+    undescended: int = Field(ge=0)
+    """How many retained candidates hold content the collapse chose not to index."""
+
+    @model_validator(mode='after')
+    def _validate_choice(self) -> Granularity:
+        if self.depth > self.deepest:
+            raise ValueError('a granularity cannot be deeper than the walk that produced it')
+        if self.retained > self.proposed:
+            raise ValueError('a granularity cannot retain more candidates than were proposed')
+        if self.undescended > self.retained:
+            raise ValueError('only retained candidates can hold unindexed content')
+        return self
+
+    @property
+    def reduced(self) -> bool:
+        """Whether resolution was lowered to fit the budget."""
+        return self.depth < self.deepest
+
+    def describe(self) -> str:
+        """State the resolution in one line, or say plainly that none was lost."""
+        if not self.reduced:
+            return f'full depth {self.depth}; whole document indexed'
+        return (
+            f'depth {self.depth} of {self.deepest} — the whole document at reduced resolution; '
+            f'{self.undescended} entries hold content below the cut, each inspectable to descend'
+        )
+
+
 class PruningStats(BaseModel):
     """Loss and size accounting for a semantic pruning pass."""
 
@@ -125,6 +167,14 @@ class PrunedView(BaseModel):
     policy_hash: str = Field(min_length=1)
     fragments: tuple[PrunedFragment, ...] = ()
     page: Pagination
+    granularity: Granularity | None = None
+    """The resolution this view was served at, when resolution had to be lowered to fit.
+
+    Distinct from `page`, and both can apply. A page omission is not addressable — those
+    candidates are not in this index at all. A granularity omission IS addressable: it sits under
+    a retained entry that says so and can be inspected to descend.
+    """
+
     stats: PruningStats
 
     @model_validator(mode='after')
@@ -156,6 +206,7 @@ class RenderedView(BaseModel):
 
 
 __all__ = [
+    'Granularity',
     'Pagination',
     'PrunedFragment',
     'PrunedView',

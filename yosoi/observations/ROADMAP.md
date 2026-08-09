@@ -126,16 +126,40 @@ mostly unique — and none of them fit in a context window or in one useful over
 ordinals are global, and `next_offset` tiles the space exactly. Two things it deliberately does
 not solve, recorded so they are not rediscovered:
 
-* **A page is not a map.** 272 pages of the HTML spec is exhaustive and still not something a
-  reader can orient in. Progressive collapse — describing the whole document at coarser
-  granularity when a reduction will not fit — is the missing complement, and is future work.
-* **Paging re-reduces.** `prune()` runs the full `reduce()` per page, so sweeping the HTML spec
-  in 272 pages costs ~49 minutes at 10.7s per page. Correct, and quadratic in the wrong place.
-  A candidate-space iterator or a cached reduction is needed before an exhaustive sweep of a
-  very large page is practical.
+* **A page is not a map.** Progressive collapse (`pruning/granularity.py`, opt-in via
+  `PruningPolicy.collapse_to_fit`) answers this by describing the whole document at coarser
+  depth — but only where candidate mass spreads across depth. Measured: `List of Unicode
+  characters` collapses usefully to depth 10 of 24 (930 entries, whole document, 419 of them
+  inspectable to descend), while the HTML Living Standard is **wide** — depth 0 holds 3
+  candidates and depth 1 holds 10,016, so no cut exists between them and collapse can only
+  offer 3 entries. Depth is the wrong axis for a wide document; paging is. The reported
+  `Granularity` makes which case you are in visible instead of implicit. Collapsing by
+  *breadth* would mean a second routing level, which the compiler's own evidence
+  (arXiv:2607.17598) measured as hurting retrieval — so it is not the obvious next step.
+* ~~**Paging re-reduces.**~~ **Fixed.** `reduce_once()` returns the reusable candidate space and
+  `view()` builds a page from it, so a sweep costs one walk. The HTML spec went from ~49 minutes
+  (272 walks) to **10.7s walk + 5.6s for all 272 pages**, tiling still exact at 271,134/271,134.
+  `prune()` remains the one-shot convenience. Deliberately an explicit value, not an internal
+  cache: caching a quarter-million candidates for a caller that wanted one page is the kind of
+  hidden global state this package avoids.
 
 `DEFAULT_PAGE_LIMIT = 1_000` is a working ceiling, not a measured one. A principled limit would
 come from a **complexity measure over the reduction** — how branched and how repetitive the
 document is, in the spirit of a cyclomatic/McCabe score — so that 1,000 near-identical table
 rows and 1,000 unique specification paragraphs are not treated as the same load on a reader.
 That measure does not exist yet and is the natural successor to the flat count.
+
+## Performance backlog (measured, deliberately deferred)
+
+Not correctness issues and not on the critical path — recorded with numbers so they are a
+decision rather than a discovery. All measured on the frozen HTML Living Standard capture
+(15.6 MB source, 109 MB DOM JSON, 333,492 nodes, 271,134 candidates).
+
+| Cost | Measured | Cause | Fix when it matters |
+| --- | --- | --- | --- |
+| Duplicate parse per reduction | ~2.9s of a 10.7s walk | `DomPruner.reduce_once` parses to bind the payload to its artifact, then `reduce` parses the same bytes again to walk them | Parse once in `reduce_once` and hand the snapshot to the walk; puts the walk nearer 8s |
+| Peak memory | 3.9 GB, ~36x the artifact | Whole artifact validated into pydantic models, whole candidate tuple materialised | Streaming walk, or a candidate iterator instead of a tuple |
+| Artifact size | 441 B/node vs 93 B/node for source HTML | ~20% geometry at capture precision, ~18% always-serialized nulls (`exclude_none=False`) | Round geometry and omit nulls — but this re-digests every artifact and invalidates every frozen fixture, so it is a schema change, not a tweak |
+
+Capture is separate from and larger than indexing on a document this size: 5.9s navigate +
+11.1s in-browser serialize + 7.2s validate = 26.8s, against 16.3s to index exhaustively.

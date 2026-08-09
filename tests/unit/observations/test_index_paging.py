@@ -185,3 +185,81 @@ def test_every_page_resolves_its_own_references(offset: int) -> None:
             assert inspector.expand(fragment.ref, budget).members
         else:
             assert inspector.inspect(fragment.ref, budget).returned_bytes > 0
+
+
+def test_collapse_covers_the_whole_document_when_full_depth_will_not_fit() -> None:
+    """The complement to paging: complete extent at reduced detail, rather than a prefix.
+
+    A window over an oversized reduction reaches the front of the document only. Collapse keeps
+    the last record as reachable as the first, and every entry standing over unindexed content
+    says so.
+    """
+    snapshot = _rows(60)
+    generous, _ = _view(snapshot)
+    tight = DomPruner()
+    data = serialize_dom_snapshot(snapshot)
+    store = MemoryArtifactStore()
+    ref = store.put(
+        snapshot_id=snapshot.snapshot_id, kind=EvidenceKind.RENDERED_DOM, media_type='application/json', data=data
+    )
+    collapsed = tight.prune(PruningInput(source=ref, data=data), PruningPolicy(max_fragments=20, collapse_to_fit=True))
+
+    assert generous.granularity is None, 'collapse is opt-in; a default view keeps full resolution'
+    assert collapsed.granularity is not None
+    assert collapsed.granularity.reduced is True
+    assert collapsed.granularity.depth < collapsed.granularity.deepest
+    assert collapsed.granularity.proposed == generous.page.total
+    # Complete in extent: the collapse fits without paging anything away.
+    assert collapsed.page.complete is True
+    assert collapsed.granularity.undescended > 0
+    assert any('inspect to descend' in fragment.summary for fragment in collapsed.fragments)
+
+
+def test_a_collapsed_view_states_its_resolution_rather_than_looking_shallow() -> None:
+    snapshot = _rows(60)
+    data = serialize_dom_snapshot(snapshot)
+    store = MemoryArtifactStore()
+    ref = store.put(
+        snapshot_id=snapshot.snapshot_id, kind=EvidenceKind.RENDERED_DOM, media_type='application/json', data=data
+    )
+    view = DomPruner().prune(PruningInput(source=ref, data=data), PruningPolicy(max_fragments=20, collapse_to_fit=True))
+
+    assert view.granularity is not None
+    described = view.granularity.describe()
+    assert 'reduced resolution' in described
+    assert f'of {view.granularity.deepest}' in described
+
+
+def test_one_reduction_serves_every_page() -> None:
+    """Paging must not re-walk the artifact per page — that was ~49 minutes on the HTML spec."""
+    snapshot = _rows(60)
+    data = serialize_dom_snapshot(snapshot)
+    store = MemoryArtifactStore()
+    ref = store.put(
+        snapshot_id=snapshot.snapshot_id, kind=EvidenceKind.RENDERED_DOM, media_type='application/json', data=data
+    )
+    source = PruningInput(source=ref, data=data)
+    pruner = DomPruner()
+
+    walks = 0
+    original = pruner.reduce
+
+    def counted(*args, **kwargs):
+        nonlocal walks
+        walks += 1
+        return original(*args, **kwargs)
+
+    pruner.reduce = counted  # type: ignore[method-assign]
+    reduction = pruner.reduce_once(source, PruningPolicy())
+
+    visited, offset = 0, 0
+    pages = 0
+    while offset is not None:
+        view = pruner.view(source, PruningPolicy(), reduction, PageRequest(offset=offset, limit=5))
+        visited += view.page.returned
+        offset = view.page.next_offset
+        pages += 1
+
+    assert pages > 1, 'the fixture must actually need more than one page'
+    assert visited == view.page.total
+    assert walks == 1, f'{pages} pages cost {walks} walks; a reused reduction must cost exactly one'
