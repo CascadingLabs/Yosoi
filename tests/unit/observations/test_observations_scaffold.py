@@ -24,7 +24,6 @@ from yosoi.observations.models import (
     RegionRef,
 )
 from yosoi.observations.pruning import (
-    AxPruner,
     DeclarationPruner,
     NetworkPruner,
     Pruner,
@@ -128,7 +127,6 @@ def test_pruned_view_and_index_keep_exact_reference_chain() -> None:
 @pytest.mark.parametrize(
     ('pruner', 'kind'),
     [
-        (AxPruner(), EvidenceKind.AX_TREE),
         (NetworkPruner(), EvidenceKind.NETWORK),
     ],
 )

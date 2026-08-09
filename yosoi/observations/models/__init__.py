@@ -10,6 +10,13 @@ if TYPE_CHECKING:
     from yosoi.observations.models.artifact import ArtifactRef as ArtifactRef
     from yosoi.observations.models.artifact import EvidenceKind as EvidenceKind
     from yosoi.observations.models.artifact import Sensitivity as Sensitivity
+    from yosoi.observations.models.ax import AxCapability as AxCapability
+    from yosoi.observations.models.ax import AxCapabilityKind as AxCapabilityKind
+    from yosoi.observations.models.ax import AxNode as AxNode
+    from yosoi.observations.models.ax import AxProperty as AxProperty
+    from yosoi.observations.models.ax import AxRelation as AxRelation
+    from yosoi.observations.models.ax import AxRelationKind as AxRelationKind
+    from yosoi.observations.models.ax import AxSnapshot as AxSnapshot
     from yosoi.observations.models.dom import DomAttribute as DomAttribute
     from yosoi.observations.models.dom import DomCapability as DomCapability
     from yosoi.observations.models.dom import DomCapabilityKind as DomCapabilityKind
@@ -32,6 +39,13 @@ if TYPE_CHECKING:
 
 _LAZY = {
     'ArtifactRef': 'yosoi.observations.models.artifact',
+    'AxCapability': 'yosoi.observations.models.ax',
+    'AxCapabilityKind': 'yosoi.observations.models.ax',
+    'AxNode': 'yosoi.observations.models.ax',
+    'AxProperty': 'yosoi.observations.models.ax',
+    'AxRelation': 'yosoi.observations.models.ax',
+    'AxRelationKind': 'yosoi.observations.models.ax',
+    'AxSnapshot': 'yosoi.observations.models.ax',
     'CaptureCapability': 'yosoi.observations.models.snapshot',
     'CaptureProfile': 'yosoi.observations.models.snapshot',
     'DomAttribute': 'yosoi.observations.models.dom',

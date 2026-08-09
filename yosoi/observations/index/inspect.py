@@ -21,6 +21,14 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from yosoi.observations import anchoring
 from yosoi.observations.artifacts.protocol import ArtifactStore
+from yosoi.observations.ax_tree import (
+    assign_ax_member_keys,
+    ax_label,
+    ax_member_summary,
+    ax_region_coverage,
+    ax_region_members,
+    resolve_ax_address,
+)
 from yosoi.observations.dom_tree import (
     assign_dom_member_keys,
     dom_attributes,
@@ -49,6 +57,7 @@ from yosoi.observations.index.addressing import (
     parse_address,
 )
 from yosoi.observations.models.artifact import ArtifactRef, EvidenceKind, Sensitivity
+from yosoi.observations.models.ax import AxSnapshot, parse_ax_snapshot
 from yosoi.observations.models.dom import DomNode, DomSnapshot, parse_dom_snapshot
 from yosoi.observations.models.snapshot import ObservationSnapshot
 from yosoi.observations.models.view import RegionCoverage, RegionRef
@@ -186,6 +195,14 @@ def _parse_dom_artifact(artifact: ArtifactRef, data: bytes) -> DomSnapshot:
     return snapshot
 
 
+def _parse_ax_artifact(artifact: ArtifactRef, data: bytes) -> AxSnapshot:
+    """Parse AX bytes and bind their self-described snapshot identity to the artifact."""
+    snapshot = parse_ax_snapshot(data)
+    if snapshot.snapshot_id != artifact.snapshot_id:
+        raise ObservationAddressError('accessibility-tree payload snapshot disagrees with its artifact')
+    return snapshot
+
+
 _DOM_STEP = re.compile(r'^(?P<tag>[\w:.-]+)(?:\[@(?P<name>[\w:.-]+)="(?P<value>[^"]*)"\])?$')
 """The only two relative step forms a DOM address may carry: `tag` and `tag[@name="value"]`.
 
@@ -268,6 +285,44 @@ def _select_dom_member(container: DomNode, segment) -> DomNode:
     return members[position]
 
 
+def _expand_ax(
+    ref: RegionRef,
+    address: ObservationAddress,
+    snapshot: AxSnapshot,
+    budget: InspectionBudget,
+    *,
+    offset: int,
+) -> RegionPage:
+    """Return one bounded page of an accessibility region's members."""
+    by_id = snapshot.by_id
+    container = resolve_ax_address(snapshot, address)
+    members = ax_region_members(container, address.segments[-1].shape or '', by_id)
+    keys = assign_ax_member_keys(members, by_id)
+    window = list(zip(members, keys, strict=True))[offset : offset + budget.max_items]
+    page = tuple(
+        RegionMember(
+            ref=RegionRef(
+                snapshot_id=ref.snapshot_id,
+                artifact_sha256=ref.artifact_sha256,
+                modality=ref.modality,
+                locator=format_address(address.member(key=key, ordinal=None if key is not None else offset + position)),
+            ),
+            ordinal=offset + position,
+            label=ax_label(member),
+            summary=ax_member_summary(member, by_id, max_chars=budget.max_summary_chars),
+            stable=key is not None,
+        )
+        for position, (member, key) in enumerate(window)
+    )
+    return RegionPage(
+        region=ref,
+        members=page,
+        offset=offset,
+        coverage=ax_region_coverage(container, members),
+        truncated=offset + len(window) < len(members),
+    )
+
+
 class ObservationInspector:
     """Resolve observation references to bounded detail from one exact snapshot."""
 
@@ -288,7 +343,7 @@ class ObservationInspector:
             raise ObservationAddressError('observation reference modality disagrees with its artifact')
         if artifact.sensitivity in {Sensitivity.RESTRICTED, Sensitivity.EPHEMERAL_SECRET} and not allow_restricted:
             raise PermissionError('restricted observation evidence requires explicit inspection permission')
-        if artifact.kind not in {EvidenceKind.SOURCE_HTML, EvidenceKind.RENDERED_DOM}:
+        if artifact.kind not in {EvidenceKind.SOURCE_HTML, EvidenceKind.RENDERED_DOM, EvidenceKind.AX_TREE}:
             raise NotImplementedError(
                 f'{artifact.kind.value} inspection is not implemented; see observations/ROADMAP.md'
             )
@@ -303,6 +358,9 @@ class ObservationInspector:
         if artifact.kind is EvidenceKind.RENDERED_DOM:
             node = _resolve_dom_address(_parse_dom_artifact(artifact, data), address)
             serialized = node.model_dump_json().encode('utf-8')
+        elif artifact.kind is EvidenceKind.AX_TREE:
+            ax_node = resolve_ax_address(_parse_ax_artifact(artifact, data), address)
+            serialized = ax_node.model_dump_json().encode('utf-8')
         else:
             from lxml import etree
 
@@ -353,6 +411,8 @@ class ObservationInspector:
         data = self._store.read(artifact)
         if artifact.kind is EvidenceKind.RENDERED_DOM:
             _resolve_dom_address(_parse_dom_artifact(artifact, data), rebound)
+        elif artifact.kind is EvidenceKind.AX_TREE:
+            resolve_ax_address(_parse_ax_artifact(artifact, data), rebound)
         else:
             _, tree = parse(data)
             _resolve_segments(tree, rebound)
@@ -373,6 +433,8 @@ class ObservationInspector:
             raise ObservationAddressError('region expansion offset cannot be negative')
 
         data = self._store.read(artifact)
+        if artifact.kind is EvidenceKind.AX_TREE:
+            return _expand_ax(ref, address, _parse_ax_artifact(artifact, data), budget, offset=offset)
         if artifact.kind is EvidenceKind.RENDERED_DOM:
             snapshot = _parse_dom_artifact(artifact, data)
             container = _resolve_dom_address(snapshot, address)

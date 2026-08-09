@@ -1,0 +1,16 @@
+id = "aria_widget_matrix_ax_tree"
+modality = "ax_tree"
+lane = "gate"
+threat = "roles, names, states, relationships, or the ignored band disappear during AX compaction, or AX is read as a complete account of the visible page"
+source_url = "local fixture served over loopback: tests/boss_fights/ax/aria_widgets/fixture.html"
+capture_profile = "browser_headless"
+status_code = 200
+artifact_capture = "frozen live browser capture; tests never fetch"
+generated_by = "scripts/capture_ax_aria.py"
+budget_tokens = 3000
+max_inspection_hops = 1
+failure = "a required semantic is unreachable from the overview, or an emitted reference does not resolve"
+
+[artifacts]
+"ax_tree.json" = "7039a00127b49a1cda14785fa0d95c52b9e3fdafb8903fb4366b98e99c297cf3"
+"rendered_dom.json" = "c9877f6c26cf7d5dc561e670d19e28f4f4f0275812d09e9e2c9e62e69679bce0"

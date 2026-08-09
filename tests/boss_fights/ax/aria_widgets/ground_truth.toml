@@ -1,0 +1,53 @@
+# Independent semantic expectations for the frozen ARIA widget capture.
+# Written from the FIXTURE, not from emitted locators: nothing here names a RegionRef, an
+# address, or a pruner ordinal, so the harness cannot accidentally assert its own output.
+
+[widgets]
+# Every ARIA pattern the boss fight requires must survive into the canonical artifact.
+roles = [
+  "grid",
+  "row",
+  "gridcell",
+  "columnheader",
+  "combobox",
+  "listbox",
+  "option",
+  "tablist",
+  "tab",
+  "tabpanel",
+  "dialog",
+  "tree",
+  "treeitem",
+  "checkbox",
+  "textbox",
+  "spinbutton",
+  "status",
+]
+
+[channels]
+# Six checkboxes; only state differs. Two are checked, one is disabled.
+checkbox_count = 6
+checked_count = 2
+disabled_count = 1
+
+[defect_dom_only]
+# A real, visible, clickable button hidden from assistive technology with aria-hidden.
+# Visible in the rendered DOM by its text; absent from AX, which reports only that
+# something here was ignored and why.
+dom_text = "Delete account"
+ax_ignored_reason = "ariaHiddenElement"
+ax_subtree_reason = "ariaHiddenSubtree"
+
+[defect_ax_only]
+# Two icon-only buttons with no accessible name at all. Obvious in AX (a control with an
+# empty computed name); in the DOM it takes running the whole name-computation algorithm
+# over a <span class="icon"> to notice.
+nameless_button_count = 2
+
+[ax_only_semantics]
+# Facts the accessibility tree computes and the DOM only implies.
+selected_tab = "Production"
+selected_option = "eu-west-1"
+live_politeness = "polite"
+dialog_modal = true
+expanded_treeitem = "infra"
