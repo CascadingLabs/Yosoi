@@ -21,6 +21,14 @@ if TYPE_CHECKING:
     from yosoi.qa.capture import QACaptureAdapter as QACaptureAdapter
     from yosoi.qa.capture import QACaptureRequest as QACaptureRequest
     from yosoi.qa.capture import QACaptureSession as QACaptureSession
+    from yosoi.qa.discovery import AxPostconditionIntent as AxPostconditionIntent
+    from yosoi.qa.discovery import ClickDecision as ClickDecision
+    from yosoi.qa.discovery import CompleteDecision as CompleteDecision
+    from yosoi.qa.discovery import DiscoveryLimits as DiscoveryLimits
+    from yosoi.qa.discovery import DiscoveryRun as DiscoveryRun
+    from yosoi.qa.discovery import DiscoveryRunStatus as DiscoveryRunStatus
+    from yosoi.qa.discovery import IndexedDiscoveryHarness as IndexedDiscoveryHarness
+    from yosoi.qa.discovery import NavigateDecision as NavigateDecision
     from yosoi.qa.index import ExpandArgs as ExpandArgs
     from yosoi.qa.index import IndexCapabilities as IndexCapabilities
     from yosoi.qa.index import IndexSession as IndexSession
@@ -44,6 +52,14 @@ _LAZY = {
     'QACaptureAdapter': 'yosoi.qa.capture',
     'QACaptureRequest': 'yosoi.qa.capture',
     'QACaptureSession': 'yosoi.qa.capture',
+    'AxPostconditionIntent': 'yosoi.qa.discovery',
+    'ClickDecision': 'yosoi.qa.discovery',
+    'CompleteDecision': 'yosoi.qa.discovery',
+    'DiscoveryLimits': 'yosoi.qa.discovery',
+    'DiscoveryRun': 'yosoi.qa.discovery',
+    'DiscoveryRunStatus': 'yosoi.qa.discovery',
+    'IndexedDiscoveryHarness': 'yosoi.qa.discovery',
+    'NavigateDecision': 'yosoi.qa.discovery',
     'ExpandArgs': 'yosoi.qa.index',
     'IndexCapabilities': 'yosoi.qa.index',
     'IndexSession': 'yosoi.qa.index',

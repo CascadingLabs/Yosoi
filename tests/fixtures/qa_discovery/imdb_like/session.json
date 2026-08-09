@@ -1,0 +1,48 @@
+{
+  "fixture_version": "qa-discovery1",
+  "episode_id": "fixture-episode",
+  "goal": "Open Once Upon a Time in... Hollywood and follow Brad Pitt",
+  "safe_navigation_url": "https://www.imdb.com/find/?q=Once%20Upon%20a%20Time%20in%20Hollywood&s=tt",
+  "states": [
+    {
+      "snapshot_id": "s0",
+      "parent_snapshot_id": null,
+      "nodes": [
+        {"role": "document", "name": "IMDb"}
+      ]
+    },
+    {
+      "snapshot_id": "s1",
+      "parent_snapshot_id": "s0",
+      "nodes": [
+        {"role": "document", "name": "Search"},
+        {"role": "link", "name": "Once Upon a Time in... Hollywood"}
+      ]
+    },
+    {
+      "snapshot_id": "s2",
+      "parent_snapshot_id": "s1",
+      "nodes": [
+        {"role": "document", "name": "Film"},
+        {"role": "heading", "name": "Once Upon a Time in... Hollywood"},
+        {"role": "link", "name": "Brad Pitt"}
+      ]
+    },
+    {
+      "snapshot_id": "s3",
+      "parent_snapshot_id": "s2",
+      "nodes": [
+        {"role": "document", "name": "Person"},
+        {"role": "heading", "name": "Brad Pitt"},
+        {"role": "StaticText", "name": "December 18, 1963"},
+        {"role": "heading", "name": "Producer"},
+        {"role": "heading", "name": "Actor"}
+      ]
+    }
+  ],
+  "declared_fields": {
+    "name": "Brad Pitt",
+    "born": "December 18, 1963",
+    "professions": ["Producer", "Actor"]
+  }
+}
