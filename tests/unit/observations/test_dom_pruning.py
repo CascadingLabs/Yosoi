@@ -11,6 +11,9 @@ from yosoi.observations.index.inspect import InspectionBudget, ObservationInspec
 from yosoi.observations.models import (
     CaptureProfile,
     DomAttribute,
+    DomCapability,
+    DomCapabilityKind,
+    DomGeometry,
     DomNode,
     DomRuntimeState,
     DomSnapshot,
@@ -71,7 +74,9 @@ def test_todomvc_active_items_collapse_with_complete_coverage() -> None:
     assert regions[0].coverage is not None
     assert regions[0].coverage.model_dump() == {'observed': 3, 'declared': 3, 'complete': True}
     assert regions[0].summary.startswith('×3 li.todo')
-    assert any(fragment.label == 'li.todo' for fragment in view.fragments)
+    # Childless members get no exemplar entry: it could only restate the region line above it.
+    # They stay reachable through `expand`, which is where members belong.
+    assert not any(fragment.summary.startswith('exemplar of') for fragment in view.fragments)
 
 
 def test_collapsed_region_names_which_members_it_collapsed() -> None:
@@ -420,6 +425,124 @@ def test_expand_bounds_member_summaries_independently_of_the_byte_budget() -> No
 
     assert page.members
     assert all(len(member.summary) <= 12 for member in page.members)
+
+
+def test_declarations_are_described_by_attributes_not_payload() -> None:
+    """A rendered `<script>`/`<style>` is a declaration wherever it was found.
+
+    Inlining declaration payloads measured 31.9% of the index across ten live pages, in 2.8%
+    of its entries. The element stays addressed, so the payload is one `inspect` away.
+    """
+    payload = 'function navigateToProduct(sku) { window.location = "/p/" + sku; }' * 20
+    root = DomNode(
+        node_id='root',
+        tag='html',
+        children=(
+            DomNode(
+                node_id='head',
+                tag='head',
+                visibility=DomVisibility.DISPLAY_NONE,
+                children=(
+                    DomNode(
+                        node_id='script-1',
+                        tag='script',
+                        attributes=(DomAttribute(name='type', value='module'), DomAttribute(name='defer', value='')),
+                        text=payload,
+                        visibility=DomVisibility.DISPLAY_NONE,
+                    ),
+                ),
+            ),
+        ),
+    )
+
+    view = _reduce(DomSnapshot(snapshot_id='declarations', root=root))
+    script = next(fragment for fragment in view.fragments if fragment.label.startswith('script'))
+
+    assert script.label == 'script[type=module]'
+    assert 'navigateToProduct' not in script.summary
+    assert f'{len(payload)} chars of content' in script.summary
+    assert 'defer' in script.summary
+    # Still addressed: the payload is retrievable, it just is not resident.
+    assert script.ref.locator == dom_locator('script-1')
+
+
+def test_summaries_state_visibility_and_geometry_only_when_they_deviate() -> None:
+    root = DomNode(
+        node_id='root',
+        tag='html',
+        children=(
+            DomNode(
+                node_id='ordinary',
+                tag='div',
+                attributes=(DomAttribute(name='class', value='ordinary'),),
+                text='plain',
+                visibility=DomVisibility.VISIBLE,
+                geometry=DomGeometry(x=0, y=0, width=182.797, height=131.5625, in_viewport=True),
+            ),
+            DomNode(
+                node_id='zero-area',
+                tag='div',
+                attributes=(DomAttribute(name='class', value='zero-area'),),
+                text='collapsed',
+                visibility=DomVisibility.VISIBLE,
+                geometry=DomGeometry(x=0, y=0, width=0, height=0, in_viewport=True),
+            ),
+            DomNode(
+                node_id='hidden',
+                tag='div',
+                attributes=(DomAttribute(name='class', value='hidden'),),
+                text='concealed',
+                visibility=DomVisibility.DISPLAY_NONE,
+                geometry=DomGeometry(x=0, y=0, width=0, height=0, in_viewport=False),
+            ),
+        ),
+    )
+
+    view = _reduce(DomSnapshot(snapshot_id='deviation', root=root))
+    summaries = {fragment.ref.locator: fragment.summary for fragment in view.fragments}
+
+    ordinary = summaries[dom_locator('ordinary')]
+    assert ordinary == 'text="plain"', 'agreeing visibility and geometry are the default, not evidence'
+    assert 'box=0x0 (visible, no area)' in summaries[dom_locator('zero-area')]
+    assert summaries[dom_locator('hidden')].startswith('display_none')
+    assert 'box=' not in summaries[dom_locator('hidden')], 'a hidden node with no area contradicts nothing'
+
+
+def test_the_root_entry_states_the_conventions_its_omissions_rely_on() -> None:
+    """An unstated convention makes a smaller index indistinguishable from an emptier page."""
+    root = DomNode(node_id='root', tag='html', text='page')
+    snapshot = DomSnapshot(
+        snapshot_id='conventions',
+        root=root,
+        capabilities=(DomCapability(kind=DomCapabilityKind.PORTALS, available=False, reason='not instrumented'),),
+    )
+
+    summary = _reduce(snapshot).fragments[0].summary
+
+    assert 'non-default visibility only' in summary
+    assert 'contradicting geometry only' in summary
+    assert 'portals unavailable (not instrumented)' in summary
+
+
+def test_regions_state_a_declared_total_only_when_the_page_declares_one() -> None:
+    undeclared = DomNode(
+        node_id='root',
+        tag='html',
+        children=(DomNode(node_id='list', tag='ul', children=(_todo('a', 'A'), _todo('b', 'B'))),),
+    )
+    declared = DomNode(
+        node_id='root',
+        tag='html',
+        children=(DomNode(node_id='list', tag='ul', declared_count=500, children=(_todo('a', 'A'), _todo('b', 'B'))),),
+    )
+
+    without = next(f for f in _reduce(DomSnapshot(snapshot_id='u', root=undeclared)).fragments if f.coverage)
+    with_total = next(f for f in _reduce(DomSnapshot(snapshot_id='d', root=declared)).fragments if f.coverage)
+
+    assert 'declared' not in without.summary, 'no total is the norm; saying so on every region is noise'
+    assert without.coverage is not None
+    assert without.coverage.declared is None
+    assert 'observed=2/500' in with_total.summary, 'a real total means the capture missed 498 members'
 
 
 def test_dom_inspection_rejects_payload_bound_to_another_snapshot() -> None:

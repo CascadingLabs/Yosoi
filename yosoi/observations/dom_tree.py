@@ -7,7 +7,7 @@ from collections import Counter
 from collections.abc import Sequence
 from urllib.parse import quote, unquote
 
-from yosoi.observations.models.dom import DomNode, DomRuntimeState, DomVisibility
+from yosoi.observations.models.dom import DomCapability, DomNode, DomRuntimeState, DomVisibility
 from yosoi.observations.models.view import RegionCoverage
 
 _DOM_PATH_PREFIX = '/dom/node/'
@@ -95,18 +95,46 @@ def dom_label(node: DomNode) -> str:
     return label
 
 
+def remarkable_geometry(node: DomNode) -> str | None:
+    """Return a geometry fact only when the box CONTRADICTS the node's visibility claim.
+
+    Geometry was emitted for every node at capture precision — `box=6.60938x12` on a star
+    glyph — which measured 12.5% of the index across ten live pages while discriminating
+    almost nothing. A layout box is evidence when it disagrees with something: a node the
+    producer called visible that occupies no area, or one that sits outside the viewport it
+    was measured against. Agreeing geometry is one `inspect` away, in the canonical node.
+    """
+    box = node.geometry
+    if box is None or node.visibility is not DomVisibility.VISIBLE:
+        return None
+    if box.width * box.height == 0:
+        return 'box=0x0 (visible, no area)'
+    if not box.in_viewport:
+        return f'box={round(box.width)}x{round(box.height)} (visible, outside viewport)'
+    return None
+
+
 def dom_summary(node: DomNode, *, max_chars: int = 160) -> str:
-    """Summarize visible/stateful facts without serializing the whole subtree."""
-    parts: list[str] = [node.visibility.value]
+    """Summarize what DEVIATES for one node, without serializing the whole subtree.
+
+    Facts are stated when they depart from the modality's default, not unconditionally. On a
+    real page nearly every node is visible, so `visible;` on every line was 3.7% of the index
+    spent restating the background. The defaults themselves are declared once, on the root
+    entry, so a reader never has to guess whether silence means "visible" or "not checked".
+    """
+    parts: list[str] = []
+    if node.visibility is not DomVisibility.VISIBLE:
+        parts.append(node.visibility.value)
     text = ' '.join(node.text.split())
     if text:
         parts.append(f'text="{text[:max_chars]}"')
     if node.runtime is not None:
         state = _runtime_values(node.runtime)
         if state:
-            parts.append('state=' + ','.join(f'{name}={value}' for name, value in state))
-    if node.geometry is not None:
-        parts.append(f'box={node.geometry.width:g}x{node.geometry.height:g}')
+            parts.append('state[' + ', '.join(f'{name}={value}' for name, value in state) + ']')
+    box = remarkable_geometry(node)
+    if box is not None:
+        parts.append(box)
     if node.declared_count is not None:
         parts.append(f'declared={node.declared_count}')
     if node.portal_target_id is not None:
@@ -117,7 +145,63 @@ def dom_summary(node: DomNode, *, max_chars: int = 160) -> str:
         hidden = sum(child.visibility is not DomVisibility.VISIBLE for child in node.children)
         suffix = f', {hidden} non-visible' if hidden else ''
         parts.append(f'children={len(node.children)}{suffix}')
-    return '; '.join(parts)[:max_chars]
+    # A node that deviates in nothing and holds no own text would otherwise summarise to the
+    # empty string, which reads as "nothing here" for a node that may hold a whole record.
+    return ('; '.join(parts) or dom_subtree_text(node))[:max_chars]
+
+
+def dom_declaration_label(node: DomNode, max_value_chars: int = 60) -> str:
+    """Label a rendered declaration by its own first attribute — the author's key, not ours.
+
+    Mirrors the source-HTML declaration reducer deliberately: an allowlist of `name`/`rel`/
+    `charset` can only name the declarations someone thought of in advance, and source
+    attribute order is the author's own statement of what identifies the element.
+    """
+    if not node.attributes:
+        return node.tag
+    first = node.attributes[0]
+    return f'{node.tag}[{first.name}={" ".join(first.value.split())[:max_value_chars]}]'
+
+
+def dom_declaration_summary(node: DomNode) -> str:
+    """Report a declaration's remaining attributes, never its payload.
+
+    A `<script>` body and a `<style>` sheet are payloads, not discriminants. Inlining them
+    measured 31.9% of the whole index across ten live pages, in 2.8% of its entries — one
+    page spent 86% of its index on them. The element stays addressed, so the payload is one
+    `inspect` away; what the overview carries is what tells one declaration from another.
+    """
+    parts = [f'{attribute.name}="{attribute.value}"' for attribute in node.attributes[1:]]
+    text = ' '.join(node.text.split())
+    if text:
+        parts.append(f'{len(text)} chars of content')
+    return ' '.join(parts)
+
+
+def dom_index_conventions(snapshot_capabilities: tuple[DomCapability, ...] = ()) -> str:
+    """State the reading conventions once, so every omission below them is visible.
+
+    An index that silently omits agreeing geometry and the word `visible` is smaller and, to a
+    reader who was not told, indistinguishable from one describing a page with neither. The
+    conventions are part of the reduction's meaning, so they are stated where the reduction
+    starts rather than in documentation the reader does not have.
+
+    Kept terse deliberately: this rides on the root entry, and the renderer clips any entry over
+    its per-line ceiling. A convention statement that gets truncated is worse than none, because
+    the reader learns half a rule.
+    """
+    unavailable = [
+        f'{capability.kind.value} unavailable ({capability.reason})'
+        for capability in snapshot_capabilities
+        if not capability.available
+    ]
+    conventions = [
+        'conventions: non-default visibility only',
+        'contradicting geometry only',
+        'observed/declared only when declared',
+        'declarations by attribute, not payload',
+    ]
+    return '; '.join([*conventions, *unavailable])
 
 
 def dom_subtree_text(node: DomNode) -> str:
@@ -157,6 +241,9 @@ def _runtime_values(runtime: DomRuntimeState | None) -> tuple[tuple[str, object]
 __all__ = [
     'assign_dom_member_keys',
     'dom_candidate_keys',
+    'dom_declaration_label',
+    'dom_declaration_summary',
+    'dom_index_conventions',
     'dom_label',
     'dom_locator',
     'dom_region_coverage',
@@ -164,4 +251,5 @@ __all__ = [
     'dom_subtree_text',
     'dom_summary',
     'node_id_from_locator',
+    'remarkable_geometry',
 ]

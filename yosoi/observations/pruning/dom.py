@@ -6,6 +6,9 @@ from collections import Counter
 
 from yosoi.observations.dom_tree import (
     assign_dom_member_keys,
+    dom_declaration_label,
+    dom_declaration_summary,
+    dom_index_conventions,
     dom_label,
     dom_locator,
     dom_region_coverage,
@@ -13,6 +16,7 @@ from yosoi.observations.dom_tree import (
     dom_subtree_text,
     dom_summary,
 )
+from yosoi.observations.html_tree import METADATA_CONTENT
 from yosoi.observations.index.addressing import element_address, format_address, region_address
 from yosoi.observations.models.artifact import EvidenceKind
 from yosoi.observations.models.dom import DomNode, DomVisibility, parse_dom_snapshot
@@ -20,8 +24,12 @@ from yosoi.observations.models.view import PrunedView
 from yosoi.observations.pruning._base import PruneCandidate, Reduction, SemanticPruner, clip
 from yosoi.observations.pruning.protocol import PruningInput, PruningPolicy
 
-DOM_PRUNER_VERSION = '2'
-"""Bumped when regions started sampling member text: emitted summaries changed."""
+DOM_PRUNER_VERSION = '3'
+"""Bumped when the reduction stopped restating defaults and stopped inlining declaration payloads.
+
+Emitted summaries changed for every node, so views stored under version 2 are not comparable.
+Addresses did not change: a stored reference still resolves.
+"""
 
 MIN_RUN = 2
 MAX_DEPTH = 24
@@ -29,6 +37,7 @@ SAMPLED_MEMBERS = 3
 """How many distinguishing member texts a collapsed region keeps inline. Mirrors the HTML pruner."""
 
 SAMPLE_TEXT_CHARS = 40
+_DECLARATION_LABEL_CHARS = 60
 
 
 class DomPruner(SemanticPruner):
@@ -37,6 +46,11 @@ class DomPruner(SemanticPruner):
     The first beta keeps meaningful hidden state, collapses contiguous same-state sibling
     records, emits explicit shadow-root/portal facts, and reports declared-count gaps as
     incomplete coverage. It never mutates or reserializes the source artifact.
+
+    Metadata content is partitioned out of the structural walk and described by its attributes
+    rather than its payload, by the same spec-closed category the source-HTML reducers split
+    on. A rendered `<script>` is a declaration wherever it was found, and inlining its source
+    was the largest single cost measured in the index.
     """
 
     name = 'dom'
@@ -53,11 +67,12 @@ class DomPruner(SemanticPruner):
     def reduce(self, data: bytes, policy: PruningPolicy) -> Reduction:
         """Return a bounded semantic proposal over validated DOM JSON bytes."""
         snapshot = parse_dom_snapshot(data)
+        root_summary = dom_summary(snapshot.root, max_chars=policy.max_fragment_chars)
         candidates: list[PruneCandidate] = [
             PruneCandidate(
                 locator=format_address(element_address(dom_locator(snapshot.root.node_id))),
                 label=dom_label(snapshot.root),
-                summary=dom_summary(snapshot.root, max_chars=policy.max_fragment_chars),
+                summary=f'{root_summary}; {dom_index_conventions(snapshot.capabilities)}',
             )
         ]
         _walk(snapshot.root, out=candidates, policy=policy, depth=0)
@@ -69,7 +84,23 @@ def _walk(node: DomNode, *, out: list[PruneCandidate], policy: PruningPolicy, de
     if depth > MAX_DEPTH:
         return
 
-    children = node.children
+    # Partition before structure, exactly as the source-HTML reducers do: metadata content is a
+    # flat list of unique declarations, and mixing it into run detection both pollutes the
+    # structural shapes and lets a script body compete with a record for an overview slot.
+    label_chars = min(_DECLARATION_LABEL_CHARS, policy.max_fragment_chars)
+    children: list[DomNode] = []
+    for child in node.children:
+        if child.tag in METADATA_CONTENT:
+            out.append(
+                PruneCandidate(
+                    locator=format_address(element_address(dom_locator(child.node_id))),
+                    label=dom_declaration_label(child, label_chars),
+                    summary=dom_declaration_summary(child),
+                )
+            )
+            continue
+        children.append(child)
+
     signatures = [dom_skeleton_signature(child) for child in children]
     runs: list[tuple[int, int, str]] = []
     cursor = 0
@@ -83,7 +114,7 @@ def _walk(node: DomNode, *, out: list[PruneCandidate], policy: PruningPolicy, de
     run_frequency = Counter(signature for _, _, signature in runs)
 
     for start, end, signature in runs:
-        members = children[start:end]
+        members = tuple(children[start:end])
         collapse = len(members) >= MIN_RUN and run_frequency[signature] == 1
         if collapse:
             exemplar = _emit_region(container=node, members=members, shape=signature, out=out, policy=policy)
@@ -151,10 +182,11 @@ def _emit_region(
         remainder = len(distinct) - min(SAMPLED_MEMBERS, len(distinct))
         summary += f'  {shown}' + (f' +{remainder} more' if remainder > 0 else '')
     summary += f'; states={state_text or "unknown"}'
+    # Only a DECLARED total is worth a line. No total is the norm on real pages — it was stated
+    # on essentially every region across ten live captures — and `coverage.declared is None`
+    # already carries it for any consumer that needs to branch on it.
     if coverage.declared is not None:
         summary += f'; observed={observed}/{coverage.declared}'
-    else:
-        summary += '; declared count unavailable'
     if any(key is None for key in keys):
         summary += '; some members are positional'
 
@@ -166,15 +198,20 @@ def _emit_region(
             coverage=coverage,
         )
     )
-    key = keys[0]
-    exemplar = region.member(key=key, ordinal=None if key is not None else 0)
-    out.append(
-        PruneCandidate(
-            locator=format_address(exemplar),
-            label=dom_label(members[0]),
-            summary=f'exemplar of ×{observed}; {dom_summary(members[0], max_chars=policy.max_fragment_chars)}',
+    # An exemplar earns its slot by showing the member's STRUCTURE — what a reader would have to
+    # descend into. For a childless member there is nothing to show, and the entry restated the
+    # region line it sits under: 135 such entries and 4.5% of the index across ten live pages.
+    # The member stays reachable through `expand`, which is where members belong.
+    if members[0].children or members[0].shadow_root is not None:
+        key = keys[0]
+        exemplar = region.member(key=key, ordinal=None if key is not None else 0)
+        out.append(
+            PruneCandidate(
+                locator=format_address(exemplar),
+                label=dom_label(members[0]),
+                summary=f'exemplar of ×{observed}; {dom_summary(members[0], max_chars=policy.max_fragment_chars)}',
+            )
         )
-    )
     return members[0]
 
 
