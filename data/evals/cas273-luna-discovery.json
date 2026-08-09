@@ -1,0 +1,176 @@
+{
+  "schema_version": "cas273-luna-eval1",
+  "model": "openai-codex/gpt-5.6-luna",
+  "fixture": "qa-discovery1",
+  "completed": true,
+  "final_snapshot_id": "s3",
+  "action_count": 3,
+  "tool_calls": 9,
+  "model_turns": 10,
+  "decisions": [
+    {
+      "decision": "navigate",
+      "url": "https://www.imdb.com/find/?q=Once%20Upon%20a%20Time%20in%20Hollywood&s=tt"
+    },
+    {
+      "decision": "click",
+      "snapshot_id": "s1",
+      "ordinal": 1,
+      "expect": {
+        "assertion_id": "film-heading",
+        "semantic_role": "heading",
+        "accessible_name": "Once Upon a Time in... Hollywood"
+      }
+    },
+    {
+      "decision": "click",
+      "snapshot_id": "s2",
+      "ordinal": 2,
+      "expect": {
+        "assertion_id": "person-heading",
+        "semantic_role": "heading",
+        "accessible_name": "Brad Pitt"
+      }
+    }
+  ],
+  "audit": [
+    {
+      "event": "tool",
+      "name": "qa_status",
+      "snapshot_id": "s0"
+    },
+    {
+      "event": "tool",
+      "name": "qa_overview",
+      "snapshot_id": "s0"
+    },
+    {
+      "event": "tool",
+      "name": "qa_navigate",
+      "snapshot_id": "s0"
+    },
+    {
+      "event": "decision",
+      "name": "qa_navigate",
+      "params": {
+        "url": "https://www.imdb.com/find/?q=Once%20Upon%20a%20Time%20in%20Hollywood&s=tt"
+      }
+    },
+    {
+      "event": "receipt",
+      "kind": "navigate",
+      "before": "s0",
+      "after": "s1",
+      "target": null,
+      "expect": {
+        "url": "https://www.imdb.com/find/?q=Once%20Upon%20a%20Time%20in%20Hollywood&s=tt"
+      },
+      "outcome": "success",
+      "assertion_status": "passed",
+      "receipt_fingerprint": "cf91a42632f06457bf8fd20c0dcc3f765e8d35904f638a9a22e88b964f4b21cc"
+    },
+    {
+      "event": "tool",
+      "name": "qa_overview",
+      "snapshot_id": "s1"
+    },
+    {
+      "event": "tool",
+      "name": "qa_click",
+      "snapshot_id": "s1"
+    },
+    {
+      "event": "decision",
+      "name": "qa_click",
+      "params": {
+        "snapshot_id": "s1",
+        "ordinal": 1,
+        "expected_role": "heading",
+        "expected_name": "Once Upon a Time in... Hollywood"
+      }
+    },
+    {
+      "event": "receipt",
+      "kind": "click",
+      "before": "s1",
+      "after": "s2",
+      "target": {
+        "snapshot_id": "s1",
+        "ordinal": 1,
+        "role": "link",
+        "name_sha256": "c3e5f461f2057d7878fda12c3936f6c37966231c90d41d41b035fa6c97faf70e"
+      },
+      "expect": {
+        "role": "heading",
+        "name": "Once Upon a Time in... Hollywood"
+      },
+      "outcome": "success",
+      "assertion_status": "passed",
+      "receipt_fingerprint": "6074db6782ae57b92c4c962409d2551168792c27612685db2819f4c1656990f1"
+    },
+    {
+      "event": "tool",
+      "name": "qa_overview",
+      "snapshot_id": "s2"
+    },
+    {
+      "event": "tool",
+      "name": "qa_click",
+      "snapshot_id": "s2"
+    },
+    {
+      "event": "decision",
+      "name": "qa_click",
+      "params": {
+        "snapshot_id": "s2",
+        "ordinal": 2,
+        "expected_role": "heading",
+        "expected_name": "Brad Pitt"
+      }
+    },
+    {
+      "event": "receipt",
+      "kind": "click",
+      "before": "s2",
+      "after": "s3",
+      "target": {
+        "snapshot_id": "s2",
+        "ordinal": 2,
+        "role": "link",
+        "name_sha256": "ce533f8803b779bcd6217e22800bd85728f3814fbd5ae77ac85bf7abc7f49ee3"
+      },
+      "expect": {
+        "role": "heading",
+        "name": "Brad Pitt"
+      },
+      "outcome": "success",
+      "assertion_status": "passed",
+      "receipt_fingerprint": "3362144fedccd8e8a5c9b1cf63541e181acf6c2d486ea6585ca398f1de2d1fc7"
+    },
+    {
+      "event": "tool",
+      "name": "qa_overview",
+      "snapshot_id": "s3"
+    },
+    {
+      "event": "tool",
+      "name": "qa_complete",
+      "snapshot_id": "s3"
+    },
+    {
+      "event": "complete",
+      "status": "completed",
+      "snapshot_id": "s3",
+      "declared_fields": {
+        "name": "Brad Pitt",
+        "born": "December 18, 1963",
+        "professions": [
+          "Producer",
+          "Actor"
+        ]
+      },
+      "action_count": 3,
+      "tool_calls": 9
+    }
+  ]
+}
