@@ -91,15 +91,46 @@ def test_a_page_never_separates_a_bound_candidate_from_its_predecessor() -> None
     assert pagination.next_offset == 11, 'the next page resumes exactly where this one stopped'
 
 
-def test_a_bound_run_longer_than_the_slack_retracts_instead_of_overshooting() -> None:
-    items = list(range(40))
-    # One long bound run starting right at the boundary: 10..(10+PAGE_SLACK+3)
-    bound = set(range(10, 10 + PAGE_SLACK + 4))
+def test_an_offset_inside_a_bound_unit_rewinds_to_its_predecessor() -> None:
+    items = list(range(8))
+    bound = {2}
 
-    _, pagination = paginate(items, PageRequest(limit=10), bound_to_previous=lambda i: i in bound)
+    window, pagination = paginate(
+        items,
+        PageRequest(offset=2, limit=1),
+        bound_to_previous=lambda item: item in bound,
+    )
 
-    assert pagination.returned == 10, 'the boundary was already clean; nothing to flex for'
-    assert pagination.next_offset == 10
+    assert window == (1, 2)
+    assert pagination.offset == 1
+    assert pagination.next_offset == 3
+
+
+def test_an_overlong_bound_unit_tiles_without_repeating_its_predecessor() -> None:
+    items = list(range(50))
+    # Item 9 is the unit head; its followers exceed the whole limit-plus-slack allowance.
+    bound_end = 10 + 10 + PAGE_SLACK + 4
+    bound = set(range(10, bound_end))
+    offset: int | None = 0
+    visited: list[int] = []
+    actual_offsets: set[int] = set()
+    pages = []
+
+    while offset is not None:
+        window, pagination = paginate(
+            items,
+            PageRequest(offset=offset, limit=10),
+            bound_to_previous=lambda item: item in bound,
+        )
+        assert pagination.offset not in actual_offsets, 'paging must advance rather than rewind forever'
+        actual_offsets.add(pagination.offset)
+        pages.append((window, pagination))
+        visited.extend(window)
+        offset = pagination.next_offset
+
+    assert pages[0][0] == tuple(range(9)), 'retraction must not strand the bound unit head'
+    assert pages[1][0] == tuple(range(9, bound_end)), 'an indivisible unit may exceed page slack'
+    assert visited == items
 
 
 def test_ordinals_are_global_so_a_reference_means_one_thing_on_every_page() -> None:

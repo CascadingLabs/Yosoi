@@ -46,10 +46,11 @@ from yosoi.observations.index.addressing import (
 from yosoi.observations.models.artifact import EvidenceKind
 from yosoi.observations.models.ax import AxNode, AxSnapshot, parse_ax_snapshot
 from yosoi.observations.pruning._base import PruneCandidate, Reduction, SemanticPruner, clip
+from yosoi.observations.pruning._shared import require_prunable
 from yosoi.observations.pruning.protocol import PruningInput, PruningPolicy
 
-AX_PRUNER_VERSION = '1'
-"""First implemented version. `scaffold` refused every reduction, so nothing stored compares."""
+AX_PRUNER_VERSION = '2'
+"""Iterative shape hashing, round-tripping relative steps, and reserved root caveats."""
 
 MIN_RUN = 2
 MAX_DEPTH = 24
@@ -73,6 +74,7 @@ class _Minter:
         self._by_id = snapshot.by_id
         self._census = ax_anchor_census(snapshot)
         self._siblings: dict[str, object] = {}
+        self._shapes: dict[str, str] = {}
         # Occurrence indexes are computed once in tree order, not searched per node: the
         # per-node formulation is quadratic, and width is exactly where real trees get large.
         naming = ax_naming_census(snapshot)
@@ -87,6 +89,10 @@ class _Minter:
     def by_id(self) -> dict[str, AxNode]:
         """Return the snapshot's node index."""
         return self._by_id
+
+    def shape(self, node: AxNode) -> str:
+        """Return one memoized, iteratively computed subtree shape."""
+        return ax_shape_signature(node, self._by_id, self._shapes)
 
     def nth(self, node: AxNode) -> int:
         """Return this node's occurrence index among nodes sharing its `(role, name)` pair.
@@ -154,23 +160,27 @@ class AxPruner(SemanticPruner):
     evidence_kind = EvidenceKind.AX_TREE
 
     def reduce_once(self, source: PruningInput, policy: PruningPolicy) -> Reduction:
-        """Bind the self-described AX snapshot to the artifact before reduction."""
+        """Validate modality before parsing, then bind the self-described AX snapshot."""
+        require_prunable(source, self.evidence_kind, policy)
         snapshot = parse_ax_snapshot(source.data)
         if snapshot.snapshot_id != source.source.snapshot_id:
             raise ValueError('accessibility-tree payload snapshot disagrees with its artifact')
-        return super().reduce_once(source, policy)
+        return self.reduce(source.data, policy)
 
     def reduce(self, data: bytes, policy: PruningPolicy) -> Reduction:
         """Return a bounded semantic proposal over validated AX JSON bytes."""
         snapshot = parse_ax_snapshot(data)
         minter = _Minter(snapshot)
         root = snapshot.root
-        root_summary = ax_summary(root, minter.by_id, max_chars=policy.max_fragment_chars)
+        conventions = ax_index_conventions(snapshot.capabilities)
+        root_budget = max(0, policy.max_fragment_chars - len(conventions) - 2)
+        root_summary = ax_summary(root, minter.by_id, max_chars=root_budget)
+        summary = f'{conventions}; {root_summary}' if root_summary else conventions
         candidates: list[PruneCandidate] = [
             PruneCandidate(
                 locator=format_address(minter.element(root)),
                 label=minter.label(root),
-                summary=f'{root_summary}; {ax_index_conventions(snapshot.capabilities)}',
+                summary=summary,
                 descends=bool(root.child_ids),
             )
         ]
@@ -184,7 +194,7 @@ def _walk(node: AxNode, *, out: list[PruneCandidate], policy: PruningPolicy, dep
         return
 
     children = list(ax_children(node, minter.by_id))
-    signatures = [ax_shape_signature(child, minter.by_id) for child in children]
+    signatures = [minter.shape(child) for child in children]
     runs: list[tuple[int, int, str]] = []
     cursor = 0
     while cursor < len(children):

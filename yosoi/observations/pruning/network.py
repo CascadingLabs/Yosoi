@@ -1,4 +1,4 @@
-"""Normalized network-evidence reduction over the versioned `net1` artifact.
+"""Normalized network-evidence reduction over the versioned `net2` artifact.
 
 Three things make this modality different from the markup ones, and only the third is new work:
 
@@ -53,8 +53,8 @@ from yosoi.observations.pruning._base import PruneCandidate, Reduction, Semantic
 from yosoi.observations.pruning._shared import require_prunable
 from yosoi.observations.pruning.protocol import PruningInput, PruningPolicy
 
-NETWORK_PRUNER_VERSION = '1'
-"""First implemented version. `scaffold` views refused to exist, so nothing is being invalidated."""
+NETWORK_PRUNER_VERSION = '2'
+"""Canonical URL safety, complete shape digests, and honest root identity."""
 
 TRACE_DEPTH = 0
 ORIGIN_DEPTH = 1

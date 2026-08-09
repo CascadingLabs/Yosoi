@@ -18,16 +18,16 @@ The adversarial corpus, no-auth SPA slate, and per-pruner gates are specified in
 | `artifacts/manifest.py` | Deterministic snapshot manifest serialization | Add byte-identical golden tests. |
 | `pruning/protocol.py` | Explicit pruner contract and policy input | No registry; callers pass a sequence or mapping. |
 | `pruning/_shared.py` | Hashing, accounting, and validation mechanics only | Never place modality semantics here. |
-| `anchoring.py` | The identity recipe, shared by every modality | **Implemented.** Anchor tiers, uniqueness census, and the reserved-character rule live here; `html_tree` and `dom_tree` both call it, so "what identifies an element" has one definition. |
+| `anchoring.py` | The identity recipe, shared by every modality | **Implemented.** Single and first-two-attribute composite tiers, uniqueness census, and reserved-character rules live here; HTML, DOM, AX, and network all call it. |
 | `html_tree.py` | Shared HTML shape/key primitives | **Implemented (CAS-262).** One definition of skeleton signature, content key, and durable anchor, used by both the pruner and the inspector. |
 | `pruning/_base.py` | Template method for every pruner | **Implemented (CAS-262).** Owns digest validation, policy hashing, addressing, capping, accounting. A pruner is one `reduce`. |
 | `pruning/html.py` | Source HTML reduction | **Implemented (CAS-262).** Two pruners: `html.declarations` (flat, metadata content) and `html.body` (MDR-style repeat collapse). |
 | `pruning/dom.py` | Rendered DOM reduction | **Implemented.** Shape-based collapse, partitioned declarations, folded wrapper chains, and anchored addresses that earn `ref_id` through the shared recipe. |
-| `pruning/ax.py` | Raw accessibility-tree reduction | Preserve raw AX evidence before compaction. |
-| `pruning/network.py` | Safe normalized network reduction | Add only after redaction and restricted-artifact policy are specified. |
+| `pruning/ax.py` | Raw accessibility-tree reduction | **Implemented (CAS-263).** Iterative shape collapse, ignored-node band, exact resolution, and AX capability caveats; authenticated model-safe use still requires CAS-269 sanitization. |
+| `pruning/network.py` | Safe normalized network reduction | **Implemented (CAS-266).** `net2` canonical URLs, value-classed parameters, complete shape digests, grouped endpoints, and rarity-ranked deviations. |
 | `index/compiler.py` | Combine pruned modality views into one flat index | **Implemented (CAS-262).** Fixed modality ordering; duplicate addresses fail closed. |
 | `index/addressing.py` | Address grammar, anchoring, and snapshot-independent identity | **Implemented (CAS-262).** Segmented region/member addresses anchored to durable ancestors; `ref_id` for the ones that earned it; stale, foreign, or malformed references fail closed. |
-| `index/inspect.py` | Bounded detail, region expansion, branch rebinding | **Implemented (CAS-262) for `source_html` only.** `inspect` for one thing, `expand` to page a region's members, `rebind` to carry an exemplar-learned route onto another branch. Other modalities raise. |
+| `index/inspect.py` | Bounded detail, region expansion, branch rebinding | **Implemented for source HTML, rendered DOM, AX, and network.** `inspect` reads one thing, `expand` pages a region, and `rebind` carries an exemplar route onto another branch. |
 | `index/render.py` | Tokenizer/provider-specific packing | **Implemented (CAS-262).** Budgeted overview from an existing index; headings before regions; omission always stated. Estimator-based token counting until a provider tokenizer is wired. |
 | `index/diff.py` | Snapshot/index comparison | **Implemented.** Matches on `ref_id`, ignores ordinals, counts unmatchable entries rather than reporting them as churn, refuses fuzzy pairing, and pages like every other bounded surface. |
 | `index/paging.py` | Explicit windows over a large candidate space | **Implemented.** Global ordinals, exact tiling via `next_offset = offset + returned`, fuzzy boundaries that keep a region with its exemplar. Replaced blind prefix truncation. |

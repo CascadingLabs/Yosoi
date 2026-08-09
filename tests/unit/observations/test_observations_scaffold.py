@@ -25,7 +25,9 @@ from yosoi.observations.models import (
 )
 from yosoi.observations.pruning import (
     AxPruner,
+    BodyPruner,
     DeclarationPruner,
+    DomPruner,
     NetworkPruner,
     PruningInput,
     PruningPolicy,
@@ -124,27 +126,25 @@ def test_pruned_view_and_index_keep_exact_reference_chain() -> None:
         resolve_index_entry(index, foreign)
 
 
-def test_no_modality_pruner_is_a_scaffold_any_more() -> None:
-    """The retired guarantee, kept as a statement rather than an empty parametrization.
-
-    This file used to assert that not-yet-implemented pruners fail closed instead of returning
-    empty evidence — the rule that "missing capabilities never become empty evidence" depends on.
-    Every declared modality now has a real reduction, so that test had no subjects left. Deleting
-    it silently would leave no record that the guarantee was ever load-bearing, so what replaces
-    it is the fact that made it vacuous.
-    """
-    assert AxPruner().version != 'scaffold'
-    assert NetworkPruner().version != 'scaffold'
-
-
-def test_declaration_pruner_rejects_evidence_from_another_modality() -> None:
+@pytest.mark.parametrize(
+    ('pruner', 'foreign_kind'),
+    [
+        (DeclarationPruner(), EvidenceKind.NETWORK),
+        (BodyPruner(), EvidenceKind.NETWORK),
+        (DomPruner(), EvidenceKind.SOURCE_HTML),
+        (AxPruner(), EvidenceKind.RENDERED_DOM),
+        (NetworkPruner(), EvidenceKind.AX_TREE),
+    ],
+)
+def test_every_implemented_pruner_rejects_evidence_from_another_modality(pruner, foreign_kind: EvidenceKind) -> None:
+    """The old scaffold refusal remains a behavior, not a version-string assertion."""
     payload = b'{}'
     ref = MemoryArtifactStore().put(
         snapshot_id='snapshot-1',
-        kind=EvidenceKind.NETWORK,
+        kind=foreign_kind,
         media_type='application/json',
         data=payload,
     )
 
     with pytest.raises(ValueError, match='cannot consume'):
-        DeclarationPruner().prune(PruningInput(source=ref, data=payload), PruningPolicy())
+        pruner.prune(PruningInput(source=ref, data=payload), PruningPolicy())

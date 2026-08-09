@@ -26,6 +26,8 @@ from yosoi.observations.models.ax import AxCapability, AxNode, AxSnapshot
 from yosoi.observations.models.view import RegionCoverage
 
 _AX_PATH_PREFIX = '/ax/node/'
+AX_STEP_VALUE_RESERVED = frozenset((*anchoring.LOCATOR_RESERVED, '/'))
+"""Characters the AX relative-step parser cannot round-trip inside a quoted value."""
 
 SET_SIZE_PROPERTY = 'setsize'
 """The property a container uses to declare how many members its collection really has.
@@ -161,14 +163,14 @@ def ax_step(node: AxNode, index: AxSiblingIndex) -> str | None:
     if index.roles.get(node.role) == 1:
         return f'./{node.role}'
     for name, value in ax_attributes(node):
-        if any(character in value for character in anchoring.LOCATOR_RESERVED):
+        if any(character in value for character in AX_STEP_VALUE_RESERVED):
             continue
         if index.keyed.get((node.role, name, value)) == 1:
             return f'./{node.role}[@{name}="{value}"]'
     return None
 
 
-def ax_shape_signature(node: AxNode, by_id: dict[str, AxNode]) -> str:
+def ax_shape_signature(node: AxNode, by_id: dict[str, AxNode], cache: dict[str, str] | None = None) -> str:
     """Return the node's SHAPE — the equivalence a repeat region collapses on.
 
     Shape is role, the *names* of the states the node carries, its level, its ignored band, and
@@ -188,17 +190,29 @@ def ax_shape_signature(node: AxNode, by_id: dict[str, AxNode]) -> str:
     `level` is in the shape for the same reason a tag is: a heading level is structure. Two
     headings at different levels are not two states of one heading.
     """
-    values = {prop.name: prop.value for prop in node.properties}
-    material = repr(
-        (
-            node.role,
-            node.state_names,
-            values.get(LEVEL_PROPERTY),
-            node.ignored,
-            tuple(ax_shape_signature(child, by_id) for child in ax_children(node, by_id)),
-        )
-    ).encode()
-    return hashlib.blake2b(material, digest_size=8).hexdigest()
+    signatures = cache if cache is not None else {}
+    pending: list[tuple[AxNode, bool]] = [(node, False)]
+    while pending:
+        current, expanded = pending.pop()
+        if current.node_id in signatures:
+            continue
+        children = ax_children(current, by_id)
+        if not expanded:
+            pending.append((current, True))
+            pending.extend((child, False) for child in reversed(children) if child.node_id not in signatures)
+            continue
+        values = {prop.name: prop.value for prop in current.properties}
+        material = repr(
+            (
+                current.role,
+                current.state_names,
+                values.get(LEVEL_PROPERTY),
+                current.ignored,
+                tuple(signatures[child.node_id] for child in children),
+            )
+        ).encode()
+        signatures[current.node_id] = hashlib.blake2b(material, digest_size=8).hexdigest()
+    return signatures[node.node_id]
 
 
 def ax_naming_census(snapshot: AxSnapshot) -> dict[tuple[str, str], int]:
@@ -422,13 +436,14 @@ def ax_index_conventions(capabilities: tuple[AxCapability, ...] = ()) -> str:
     ]
     defaults = ', '.join(f'{name}={value}' for name, value in sorted(DEFAULT_PROPERTY_VALUES.items()))
     conventions = [
+        'AX absence is never proof that visible information does not exist',
+        *unavailable,
         'conventions: labels are role "name", executable as click_by_role',
         'ignored nodes retained with reasons',
         f'default states omitted ({defaults})',
         'observed/declared only when setsize declared',
-        'AX absence is never proof that visible information does not exist',
     ]
-    return '; '.join([*conventions, *unavailable])
+    return '; '.join(conventions)
 
 
 def ax_parent_of(node: AxNode, by_id: dict[str, AxNode]) -> AxNode | None:

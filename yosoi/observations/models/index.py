@@ -23,6 +23,9 @@ class IndexEntry(BaseModel):
     label: str = Field(min_length=1)
     summary: str
     coverage: RegionCoverage | None = None
+    bound_to_previous: bool = False
+    """Whether this entry and the one immediately before it form one render-routing unit."""
+
     ref_id: str | None = None
     """Snapshot-independent identity, or None when this address has not earned one.
 

@@ -6,7 +6,7 @@ import pytest
 
 from yosoi.observations.artifacts import MemoryArtifactStore
 from yosoi.observations.dom_tree import dom_locator
-from yosoi.observations.index.addressing import ObservationAddressError, parse_address
+from yosoi.observations.index.addressing import ObservationAddressError, parse_address, ref_id
 from yosoi.observations.index.inspect import InspectionBudget, ObservationInspector, _resolve_dom_address
 from yosoi.observations.models import (
     CaptureProfile,
@@ -28,7 +28,7 @@ from yosoi.observations.pruning import DomPruner, PruningInput, PruningPolicy
 from yosoi.observations.pruning.dom import MAX_DEPTH
 
 
-def _reduce(snapshot: DomSnapshot):
+def _reduce(snapshot: DomSnapshot, policy: PruningPolicy | None = None):
     data = serialize_dom_snapshot(snapshot)
     ref = MemoryArtifactStore().put(
         snapshot_id=snapshot.snapshot_id,
@@ -36,7 +36,7 @@ def _reduce(snapshot: DomSnapshot):
         media_type='application/json',
         data=data,
     )
-    return DomPruner().prune(PruningInput(source=ref, data=data), PruningPolicy())
+    return DomPruner().prune(PruningInput(source=ref, data=data), policy or PruningPolicy())
 
 
 def _resolves_to(view, snapshot: DomSnapshot, node_id: str) -> bool:
@@ -83,6 +83,41 @@ def _todo(
         visibility=visibility,
         runtime=DomRuntimeState(checked=checked),
     )
+
+
+def test_relative_attribute_steps_with_slashes_resolve_or_fall_back() -> None:
+    repeated = DomAttribute(name='href', value='/p/1')
+    main = DomNode(
+        node_id='main',
+        tag='main',
+        attributes=(DomAttribute(name='id', value='m'),),
+        children=(
+            DomNode(node_id='target', tag='a', attributes=(repeated,), text='one'),
+            DomNode(
+                node_id='other',
+                tag='a',
+                attributes=(
+                    DomAttribute(name='href', value='/p/2'),
+                    DomAttribute(name='title', value='secondary'),
+                ),
+                text='two',
+                runtime=DomRuntimeState(selected=True),
+            ),
+        ),
+    )
+    footer = DomNode(
+        node_id='footer',
+        tag='footer',
+        children=(DomNode(node_id='duplicate', tag='a', attributes=(repeated,), text='duplicate'),),
+    )
+    snapshot = DomSnapshot(
+        snapshot_id='slash-step',
+        root=DomNode(node_id='root', tag='html', children=(main, footer)),
+    )
+    view = _reduce(snapshot)
+
+    assert _resolves_to(view, snapshot, 'target')
+    assert all(_try_resolve(snapshot, fragment.ref.locator) is not None for fragment in view.fragments)
 
 
 def test_todomvc_active_items_collapse_with_complete_coverage() -> None:
@@ -561,16 +596,36 @@ def test_summaries_state_visibility_and_geometry_only_when_they_deviate() -> Non
     assert 'box=' not in summaries['hidden'], 'a hidden node with no area contradicts nothing'
 
 
+def test_runtime_values_are_presence_signals_not_model_visible_content() -> None:
+    secret = 'hunter2'
+    node = DomNode(
+        node_id='password',
+        tag='input',
+        attributes=(DomAttribute(name='type', value='password'),),
+        runtime=DomRuntimeState(value=secret, focused=True),
+    )
+    snapshot = DomSnapshot(
+        snapshot_id='runtime-secret',
+        root=DomNode(node_id='root', tag='html', children=(node,)),
+    )
+
+    summaries = '\n'.join(fragment.summary for fragment in _reduce(snapshot).fragments)
+
+    assert secret not in summaries
+    assert 'value=present' in summaries
+    assert 'focused=True' in summaries
+
+
 def test_the_root_entry_states_the_conventions_its_omissions_rely_on() -> None:
     """An unstated convention makes a smaller index indistinguishable from an emptier page."""
-    root = DomNode(node_id='root', tag='html', text='page')
+    root = DomNode(node_id='root', tag='html', text='x' * 5_000)
     snapshot = DomSnapshot(
         snapshot_id='conventions',
         root=root,
         capabilities=(DomCapability(kind=DomCapabilityKind.PORTALS, available=False, reason='not instrumented'),),
     )
 
-    summary = _reduce(snapshot).fragments[0].summary
+    summary = _reduce(snapshot, PruningPolicy(max_fragment_chars=700)).fragments[0].summary
 
     assert 'non-default visibility only' in summary
     assert 'contradicting geometry only' in summary
@@ -629,6 +684,44 @@ def test_dom_inspection_rejects_payload_bound_to_another_snapshot() -> None:
             ),
             budget=InspectionBudget(),
         )
+
+
+def test_shadow_descendant_identity_survives_changed_producer_node_ids() -> None:
+    def captured(prefix: str) -> DomSnapshot:
+        shadow_button = DomNode(node_id=f'{prefix}-shadow-button', tag='button', text='Save')
+        host = DomNode(
+            node_id=f'{prefix}-host',
+            tag='div',
+            attributes=(DomAttribute(name='id', value='widget-host'),),
+            shadow_root=DomNode(
+                node_id=f'{prefix}-shadow-root',
+                tag='#shadow-root',
+                children=(shadow_button,),
+            ),
+        )
+        light_button = DomNode(node_id=f'{prefix}-light-button', tag='button', text='Outside')
+        return DomSnapshot(
+            snapshot_id=prefix,
+            root=DomNode(node_id=f'{prefix}-root', tag='html', children=(host, light_button)),
+        )
+
+    first_snapshot = captured('first')
+    second_snapshot = captured('second')
+    first = _reduce(first_snapshot)
+    second = _reduce(second_snapshot)
+
+    def shadow_identity(view, snapshot: DomSnapshot, node_id: str) -> str | None:
+        fragment = next(
+            candidate
+            for candidate in view.fragments
+            if (resolved := _try_resolve(snapshot, candidate.ref.locator)) is not None and resolved.node_id == node_id
+        )
+        return ref_id(EvidenceKind.RENDERED_DOM, fragment.ref.locator)
+
+    first_id = shadow_identity(first, first_snapshot, 'first-shadow-button')
+    second_id = shadow_identity(second, second_snapshot, 'second-shadow-button')
+    assert first_id is not None
+    assert first_id == second_id
 
 
 def test_shadow_root_and_portal_relationships_remain_addressable() -> None:

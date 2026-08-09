@@ -85,6 +85,7 @@ class ObservationIndexCompiler:
                         label=fragment.label,
                         summary=fragment.summary,
                         coverage=fragment.coverage,
+                        bound_to_previous=fragment.bound_to_previous,
                         ref_id=ref_id(fragment.ref.modality, fragment.ref.locator),
                     )
                 )

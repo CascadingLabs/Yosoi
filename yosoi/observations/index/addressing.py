@@ -41,8 +41,8 @@ import re
 from dataclasses import dataclass
 from urllib.parse import quote, unquote
 
+from yosoi.observations.anchoring import COMPOSITE_KEY_PREFIX, TAG_KEY_PREFIX, composite_anchor_parts
 from yosoi.observations.anchoring import SAFE_TAG as _SAFE_TAG
-from yosoi.observations.anchoring import TAG_KEY_PREFIX
 from yosoi.observations.models.artifact import EvidenceKind
 from yosoi.observations.models.index import IndexEntry, ObservationIndex
 from yosoi.observations.models.view import RegionRef
@@ -73,8 +73,14 @@ def anchor_xpath(anchor: str) -> str:
         if not tag or not _SAFE_TAG.fullmatch(tag):
             raise ObservationAddressError(f'malformed observation tag anchor {anchor!r}')
         return f'//{tag}'
+    if anchor.startswith(COMPOSITE_KEY_PREFIX):
+        parts = composite_anchor_parts(anchor)
+        if not parts or any(not _SAFE_TAG.fullmatch(name) or '"' in value for name, value in parts):
+            raise ObservationAddressError(f'malformed observation composite anchor {anchor!r}')
+        predicate = ' and '.join(f'@{name}="{value}"' for name, value in parts)
+        return f'//*[{predicate}]'
     name, separator, value = anchor.partition('=')
-    if not separator or not name:
+    if not separator or not name or not _SAFE_TAG.fullmatch(name):
         raise ObservationAddressError(f'malformed observation anchor {anchor!r}')
     if '"' in value:
         raise ObservationAddressError('an anchor value containing a double quote cannot be expressed as a path')

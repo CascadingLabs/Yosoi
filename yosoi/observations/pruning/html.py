@@ -46,11 +46,11 @@ from yosoi.observations.pruning.protocol import PruningPolicy
 if TYPE_CHECKING:
     from lxml.etree import _Element, _ElementTree
 
-DECLARATION_PRUNER_VERSION = '2'
-"""Bumped in the anchoring slice: emitted addresses changed, so stored ones are not comparable."""
+DECLARATION_PRUNER_VERSION = '3'
+"""Composite anchors can identify declarations that single attributes could not."""
 
-BODY_PRUNER_VERSION = '2'
-"""Bumped in the anchoring slice: emitted addresses changed, so stored ones are not comparable."""
+BODY_PRUNER_VERSION = '3'
+"""Composite anchors can identify body nodes that single attributes could not."""
 
 MAX_BODY_DEPTH = 12
 """How deep the body outline descends. Part of the pruner version: change it, bump that."""
@@ -224,7 +224,7 @@ def _walk(
             run += 1
         runs.append((signature, run))
         cursor += run
-    qualifying_runs = Counter(signature for signature, run in runs if run >= MIN_RUN)
+    run_frequency = Counter(signature for signature, _ in runs)
 
     index = 0
     while index < len(children):
@@ -237,7 +237,7 @@ def _walk(
         # separated runs under this container, collapsing each run would mint the same
         # address more than once. Non-contiguous clustering is deliberately out of scope,
         # so preserve those members individually rather than pretending the runs are one.
-        collapse = run >= MIN_RUN and qualifying_runs[signature] == 1
+        collapse = run >= MIN_RUN and run_frequency[signature] == 1
         if collapse:
             member = _emit_region(anchor, tree, children[index : index + run], signature, out, policy)
             # Descend into the exemplar only — collapsing and then walking all N would

@@ -13,6 +13,10 @@ from yosoi.observations.models.dom import DomCapability, DomNode, DomRuntimeStat
 from yosoi.observations.models.view import RegionCoverage
 
 _DOM_PATH_PREFIX = '/dom/node/'
+SHADOW_ROOT_STEP = 'shadow-root()'
+_DOM_STEP_VALUE_RESERVED = frozenset((*anchoring.LOCATOR_RESERVED, '/'))
+"""Characters the DOM relative-step parser cannot round-trip inside a quoted value."""
+
 _MEANINGFUL_INVISIBILITY = frozenset(
     {DomVisibility.HIDDEN, DomVisibility.DISPLAY_NONE, DomVisibility.OFFSCREEN, DomVisibility.INERT}
 )
@@ -348,11 +352,14 @@ def _runtime_values(runtime: DomRuntimeState | None) -> tuple[tuple[str, object]
     for name in _RUNTIME_FIELDS:
         value = getattr(runtime, name)
         if value is not None:
-            values.append((name, value))
+            values.append(
+                (name, 'empty' if name == 'value' and value == '' else 'present' if name == 'value' else value)
+            )
     return tuple(values)
 
 
 __all__ = [
+    'SHADOW_ROOT_STEP',
     'SiblingIndex',
     'assign_dom_member_keys',
     'dom_anchor_census',
@@ -471,16 +478,16 @@ def dom_step(node: DomNode, index: SiblingIndex) -> str | None:
     positional guess wearing a durable address's clothes — insert a sibling and it silently names
     something else.
     """
+    if node.tag == '#shadow-root':
+        # The boundary is an explicit edge on its host, not a light-DOM child or an invented tag.
+        # Naming that edge gives descendants a stable route across producer node-id changes.
+        return f'./{SHADOW_ROOT_STEP}'
     if not anchoring.SAFE_TAG.fullmatch(node.tag):
-        # A shadow root is named `#shadow-root` by its producer: a real boundary that cannot be
-        # written as a path step. Refusing here sends the caller to a positional address, which
-        # `ref_id` then declines to give an identity — the honest outcome for a node the document
-        # offers no durable way to name.
         return None
     if index.tags.get(node.tag) == 1:
         return f'./{node.tag}'
     for name, value in dom_attributes(node):
-        if any(character in value for character in anchoring.LOCATOR_RESERVED):
+        if any(character in value for character in _DOM_STEP_VALUE_RESERVED):
             continue
         if index.keyed.get((node.tag, name, value)) == 1:
             return f'./{node.tag}[@{name}="{value}"]'

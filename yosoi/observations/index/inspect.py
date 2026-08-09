@@ -30,6 +30,7 @@ from yosoi.observations.ax_tree import (
     resolve_ax_address,
 )
 from yosoi.observations.dom_tree import (
+    SHADOW_ROOT_STEP,
     assign_dom_member_keys,
     dom_attributes,
     dom_candidate_keys,
@@ -252,6 +253,11 @@ def _dom_descend(node: DomNode, relative_path: str) -> DomNode:
     """Walk one relative segment step by step, failing closed at the first ambiguity."""
     current = node
     for raw in relative_path.removeprefix('./').split('/'):
+        if raw == SHADOW_ROOT_STEP:
+            if current.shadow_root is None:
+                raise ObservationAddressError('DOM shadow-root step resolved to 0 nodes')
+            current = current.shadow_root
+            continue
         match = _DOM_STEP.match(raw)
         if match is None:
             raise ObservationAddressError(f'{raw!r} is not a rendered-DOM address step')

@@ -128,6 +128,10 @@ combobox + listbox, grid, treeview, modal dialog, live region — plus a deliber
    `index/diff.py` needs nothing new to do it since AX entries carry `ref_id`.
 9. **No `PruningPolicy.collapse_to_fit` measurement.** Progressive collapse is wired through the
    kernel and works, but whether AX candidate mass spreads usefully across depth was not measured.
+10. **Raw AX is not an authenticated model-safe boundary.** Accessible names, descriptions, form
+    values, and arbitrary property values are canonical evidence and can contain PII or secrets.
+    The current gate is a controlled public fixture. Authenticated use remains blocked on CAS-269's
+    pre-index sanitizer/redaction declaration; prompting or post-render filtering is insufficient.
 
 ## Where the shared kernel fit, and the one place it strained
 
@@ -135,22 +139,16 @@ combobox + listbox, grid, treeview, modal dialog, live region — plus a deliber
 `anchoring.py` were all reused unchanged; the pruner is one `reduce` plus the identity triple, as
 intended. `anchoring.py` was **not** forked.
 
-The one strain, reported rather than worked around: **the shared anchor recipe considers exactly
-one positional tier — the author's first attribute — plus `id`/`data-*`/`class`, none of which an
-AX node has.** So an AX anchor is a single key, while AX's natural identity is the *composite*
-`role + name (+ nth)` that `click_by_role` takes. Consequences:
+Post-integration measurement justified a shared composite tier in `anchoring.py`: when neither of
+the first two attributes is unique alone but their conjunction is, the key is written as
+`@{name=Home&role=link}`. This gives AX its natural `role + name` identity without a modality-local
+recipe, while HTML and DOM receive the same capability. Delimiter-bearing values fail closed and
+fall back rather than minting an address the resolver cannot reproduce.
 
-* Attribute order in `ax_attributes` becomes load-bearing: name first, role second. Leading with
-  role would make nearly every anchor non-unique and refuse nearly every identity — the exact
-  measured failure the rendered-DOM modality had before it was anchored.
-* Two nodes with the same accessible name and *different* roles (a `link "Home"` and a
-  `heading "Home"`) both fail the uniqueness census and are refused an identity, even though
-  `role + name` would have been unique. That is a real loss of coverage, taken deliberately in
-  preference to inventing a second identity recipe or smuggling a composite key in under a
-  synthetic attribute name.
-
-If composite anchors are wanted, that is a change to `anchoring.py` benefiting every modality, and
-it should be made there with its own measurement — not in this module.
+Adversarial review also tightened three AX boundaries: shape hashing is iterative and
+memoized so a valid 1,200-node chain cannot exhaust Python recursion; relative steps refuse `/` in
+quoted values rather than minting an unresolvable identity; and root capability/absence conventions
+reserve their summary budget ahead of page content.
 
 ## Gates
 

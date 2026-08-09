@@ -28,14 +28,11 @@ from yosoi.observations.index.addressing import anchor_address, element_address,
 from yosoi.observations.models.artifact import EvidenceKind
 from yosoi.observations.models.dom import DomNode, DomVisibility, parse_dom_snapshot
 from yosoi.observations.pruning._base import PruneCandidate, Reduction, SemanticPruner, clip
+from yosoi.observations.pruning._shared import require_prunable
 from yosoi.observations.pruning.protocol import PruningInput, PruningPolicy
 
-DOM_PRUNER_VERSION = '4'
-"""Bumped when the reduction stopped restating defaults and stopped inlining declaration payloads.
-
-Emitted summaries changed for every node, so views stored under version 2 are not comparable.
-Addresses did not change: a stored reference still resolves.
-"""
+DOM_PRUNER_VERSION = '5'
+"""Composite anchors can change addresses for nodes that single attributes could not identify."""
 
 MIN_RUN = 2
 MAX_DEPTH = 24
@@ -121,22 +118,26 @@ class DomPruner(SemanticPruner):
     evidence_kind = EvidenceKind.RENDERED_DOM
 
     def reduce_once(self, source: PruningInput, policy: PruningPolicy) -> Reduction:
-        """Bind the self-described DOM snapshot to the artifact before reduction."""
+        """Validate modality before parsing, then bind the self-described DOM snapshot."""
+        require_prunable(source, self.evidence_kind, policy)
         snapshot = parse_dom_snapshot(source.data)
         if snapshot.snapshot_id != source.source.snapshot_id:
             raise ValueError('rendered-DOM payload snapshot disagrees with its artifact')
-        return super().reduce_once(source, policy)
+        return self.reduce(source.data, policy)
 
     def reduce(self, data: bytes, policy: PruningPolicy) -> Reduction:
         """Return a bounded semantic proposal over validated DOM JSON bytes."""
         snapshot = parse_dom_snapshot(data)
         minter = _Minter(snapshot.root)
-        root_summary = dom_summary(snapshot.root, max_chars=policy.max_fragment_chars)
+        conventions = dom_index_conventions(snapshot.capabilities)
+        root_budget = max(0, policy.max_fragment_chars - len(conventions) - 2)
+        root_summary = dom_summary(snapshot.root, max_chars=root_budget)
+        summary = f'{conventions}; {root_summary}' if root_summary else conventions
         candidates: list[PruneCandidate] = [
             PruneCandidate(
                 locator=format_address(minter.element(snapshot.root)),
                 label=dom_label(snapshot.root),
-                summary=f'{root_summary}; {dom_index_conventions(snapshot.capabilities)}',
+                summary=summary,
                 descends=bool(snapshot.root.children) or snapshot.root.shadow_root is not None,
             )
         ]

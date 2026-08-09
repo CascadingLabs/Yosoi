@@ -29,10 +29,11 @@ import hashlib
 import re
 from enum import Enum
 from typing import Literal
+from urllib.parse import urlsplit
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-NETWORK_SCHEMA_VERSION = 'net1'
+NETWORK_SCHEMA_VERSION = 'net2'
 
 _SHAPE_DIGEST_BYTES = 8
 """Width of a shape digest. Part of the schema: changing it invalidates every stored trace."""
@@ -138,7 +139,7 @@ class TimingBucket(str, Enum):
     Buckets rather than milliseconds because a millisecond is a property of the machine and the
     link, not of the page: two captures of an unchanged endpoint differ in every digit, which
     would make every diff report churn. The boundaries are stated once, in
-    `network_tree.timing_bucket`, and are part of `net1`.
+    `network_tree.timing_bucket`, and are part of `net2`.
     """
 
     INSTANT = 'instant'
@@ -191,8 +192,11 @@ class ShapeSignature(BaseModel):
 
     @model_validator(mode='after')
     def _validate_digest(self) -> ShapeSignature:
-        if self.digest != shape_digest(self.keys):
+        visible_digest = shape_digest(self.keys)
+        if not self.truncated and self.digest != visible_digest:
             raise ValueError('shape signature digest disagrees with its own key skeleton')
+        if self.truncated and self.digest == visible_digest:
+            raise ValueError('truncated shape signature digest does not cover its omitted key skeleton')
         return self
 
 
@@ -261,6 +265,9 @@ class NetworkRequest(BaseModel):
     def _validate_request(self) -> NetworkRequest:
         if not ORIGIN.match(self.origin):
             raise ValueError(f'network origin {self.origin!r} must be a scheme and authority with no path')
+        authority = urlsplit(self.origin)
+        if authority.username is not None or authority.password is not None:
+            raise ValueError('network origin must not contain URL userinfo')
         self._validate_template()
         self._validate_headers()
         names = [param.name for param in self.params]
@@ -328,6 +335,10 @@ class NetworkTrace(BaseModel):
 
     @model_validator(mode='after')
     def _validate_trace(self) -> NetworkTrace:
+        if self.schema_version != NETWORK_SCHEMA_VERSION:
+            raise ValueError(
+                f'network trace schema {self.schema_version!r} is unsupported; expected {NETWORK_SCHEMA_VERSION!r}'
+            )
         identifiers = [request.request_id for request in self.requests]
         if len(identifiers) != len(set(identifiers)):
             raise ValueError('network request ids must be unique within a trace')

@@ -1,4 +1,4 @@
-"""The `net1` schema and the normalization helpers that feed it."""
+"""The `net2` schema and the normalization helpers that feed it."""
 
 from __future__ import annotations
 
@@ -128,6 +128,37 @@ def test_normalizing_a_url_keeps_no_value() -> None:
     assert all('newest' not in repr(param) for param in params)
 
 
+def test_normalizing_a_url_strips_userinfo_and_canonicalizes_its_authority() -> None:
+    origin, template, _ = normalize_url('HTTPS://user:password@BÜCHER.example.:443/v1/items/%31%32%33')
+
+    assert origin == 'https://xn--bcher-kva.example'
+    assert template == '/v1/items/{id}'
+    assert 'user' not in origin
+    assert 'password' not in origin
+
+
+@pytest.mark.parametrize(
+    'secret',
+    [
+        'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.signature',
+        'c2Vzc2lvbi10b2tlbi13aXRoLXNlY3JldA==',
+        '%65%79%4A%68%62%47%63%69%4F%69%4A%49%55%7A%49%31%4E%69%4A%39',
+    ],
+)
+def test_token_shaped_path_values_are_never_retained(secret: str) -> None:
+    _, template, _ = normalize_url(f'https://api.example/v1/session/{secret}')
+
+    assert secret not in template
+    assert template == '/v1/session/{token}'
+
+
+def test_equivalent_query_order_and_default_ports_canonicalize_identically() -> None:
+    first = normalize_url('https://EXAMPLE.com:443/v1/items?z=1&a=newest')
+    second = normalize_url('https://example.com/v1/items?a=newest&z=1')
+
+    assert first == second
+
+
 def test_a_repeated_parameter_name_keeps_one_class() -> None:
     assert classify_params('id=1&id=abc') == (QueryParam(name='id', value_class=ValueClass.ID),)
 
@@ -176,6 +207,26 @@ def test_a_missing_key_does_change_a_shape() -> None:
     assert shape_signature({'total': 1}).digest != shape_signature({'total': 1, 'items': []}).digest
 
 
+def test_shape_drift_after_the_retained_key_prefix_changes_the_digest() -> None:
+    baseline = {f'field_{index:03}': index for index in range(70)}
+    drifted = baseline | {'field_069': 0, 'tail_only_change': True}
+
+    first = shape_signature(baseline)
+    second = shape_signature(drifted)
+
+    assert first.truncated
+    assert second.truncated
+    assert first.keys == second.keys
+    assert first.digest != second.digest
+
+
+def test_a_truncated_shape_cannot_claim_only_its_visible_prefix_digest() -> None:
+    keys = tuple(f'field_{index:03}' for index in range(64))
+
+    with pytest.raises(ValidationError, match='omitted key skeleton'):
+        ShapeSignature(digest=shape_digest(keys), keys=keys, truncated=True)
+
+
 def test_a_shape_signature_cannot_disagree_with_its_own_keys() -> None:
     with pytest.raises(ValidationError, match='disagrees with its own key skeleton'):
         ShapeSignature(digest=shape_digest(('a',)), keys=('b',))
@@ -200,6 +251,11 @@ def test_header_names_are_kept_because_a_name_is_evidence() -> None:
     request = _request(request_header_names=('accept', 'authorization', 'x-csrf-token'))
 
     assert credential_header_names(request.request_header_names) == ('authorization', 'x-csrf-token')
+
+
+def test_a_manually_constructed_origin_cannot_carry_userinfo() -> None:
+    with pytest.raises(ValidationError, match='userinfo'):
+        _request(origin='https://user:password@api.example')
 
 
 def test_the_credential_name_list_is_the_one_voidcrawl_uses() -> None:
@@ -272,6 +328,11 @@ def test_two_calls_differing_only_in_an_id_share_a_duplicate_key() -> None:
 def test_malformed_requests_fail_closed(field: str, value: object, match: str | None) -> None:
     with pytest.raises(ValidationError, match=match):
         _request(**{field: value})
+
+
+def test_an_older_network_schema_is_refused_instead_of_reinterpreted() -> None:
+    with pytest.raises(ValidationError, match="expected 'net2'"):
+        NetworkTrace(schema_version='net1', snapshot_id='s')
 
 
 def test_a_trace_refuses_duplicate_request_ids_and_repeated_capabilities() -> None:

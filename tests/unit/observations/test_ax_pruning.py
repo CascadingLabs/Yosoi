@@ -287,6 +287,27 @@ def test_addresses_are_anchored_on_the_accessible_name_and_earn_an_identity() ->
     assert ref_id(EvidenceKind.AX_TREE, region.ref.locator) is not None
 
 
+def test_role_and_name_form_a_composite_identity_when_neither_is_unique() -> None:
+    children = (
+        AxNode(node_id='home-link', parent_id='root', role='link', name='Home'),
+        AxNode(node_id='home-heading', parent_id='root', role='heading', name='Home'),
+        AxNode(node_id='docs-link', parent_id='root', role='link', name='Docs'),
+        AxNode(node_id='welcome-heading', parent_id='root', role='heading', name='Welcome'),
+    )
+    root = AxNode(
+        node_id='root',
+        role='RootWebArea',
+        name='Document',
+        child_ids=tuple(child.node_id for child in children),
+    )
+    view = _prune(_snapshot((root, *children)))
+    target = next(fragment for fragment in view.fragments if fragment.label == 'link "Home"')
+    address = parse_address(target.ref.locator)
+
+    assert address.segments[0].anchor == '@{name=Home&role=link}'
+    assert ref_id(EvidenceKind.AX_TREE, target.ref.locator) is not None
+
+
 def test_a_node_the_tree_cannot_name_is_refused_an_identity_but_still_resolves() -> None:
     unnamed = tuple(AxNode(node_id=f'g{i}', parent_id='root', role='generic') for i in range(2))
     root = AxNode(node_id='root', role='generic', child_ids=('g0', 'g1'))
@@ -295,6 +316,41 @@ def test_a_node_the_tree_cannot_name_is_refused_an_identity_but_still_resolves()
     positional = [fragment for fragment in view.fragments if ref_id(EvidenceKind.AX_TREE, fragment.ref.locator) is None]
     assert positional, 'a tree offering no unique key must refuse at least one identity'
     assert inspector.inspect(positional[0].ref, InspectionBudget()).returned_bytes > 0
+
+
+@pytest.mark.parametrize(
+    ('name', 'earns_identity'),
+    [
+        ('A/B', False),
+        ('A]B', True),
+        ('A=B', True),
+        ('A#B', False),
+        ('A|B', False),
+        ('A"B', False),
+    ],
+)
+def test_quoted_relative_step_values_resolve_or_refuse_identity(name: str, earns_identity: bool) -> None:
+    buttons = (
+        AxNode(node_id='b0', parent_id='g0', role='button', name=name),
+        AxNode(
+            node_id='b1',
+            parent_id='g0',
+            role='button',
+            name='Other',
+            properties=(AxProperty(name='pressed', value='false'),),
+        ),
+        AxNode(node_id='b2', parent_id='g1', role='button', name=name),
+    )
+    groups = (
+        AxNode(node_id='g0', parent_id='root', role='group', name='Primary', child_ids=('b0', 'b1')),
+        AxNode(node_id='g1', parent_id='root', role='group', name='Secondary', child_ids=('b2',)),
+    )
+    root = AxNode(node_id='root', role='RootWebArea', name='Doc', child_ids=('g0', 'g1'))
+    view, inspector = _bind(_snapshot((root, *groups, *buttons)))
+    target = next(fragment for fragment in view.fragments if fragment.label == f'button "{name}"')
+
+    assert inspector.inspect(target.ref, InspectionBudget()).returned_bytes > 0
+    assert (ref_id(EvidenceKind.AX_TREE, target.ref.locator) is not None) is earns_identity
 
 
 def test_two_captures_of_one_tree_agree_on_identity_and_differ_on_location() -> None:
@@ -412,6 +468,25 @@ def test_coverage_is_only_claimed_when_the_declaration_covers_the_whole_collecti
     assert ax_region_coverage(container, (header, *members)).declared == 50
 
 
+def test_a_deep_valid_flat_tree_does_not_recurse_while_computing_shapes() -> None:
+    depth = 1_200
+    nodes = tuple(
+        AxNode(
+            node_id=f'n{level}',
+            parent_id=f'n{level - 1}' if level else None,
+            role='generic',
+            name=f'level {level}',
+            child_ids=(f'n{level + 1}',) if level < depth else (),
+        )
+        for level in range(depth + 1)
+    )
+
+    view = _prune(_snapshot(nodes))
+
+    assert view.fragments
+    assert any('below index depth' in fragment.summary for fragment in view.fragments)
+
+
 def test_the_walk_discloses_where_it_stopped_descending() -> None:
     depth = MAX_DEPTH + 3
     nodes = [
@@ -437,6 +512,24 @@ def test_locators_round_trip_and_reject_foreign_paths() -> None:
     assert node_id_from_locator(ax_locator('a/b c')) == 'a/b c'
     with pytest.raises(ValueError, match='not an accessibility-tree locator'):
         node_id_from_locator('/dom/node/1')
+
+
+def test_long_root_content_cannot_clip_capability_and_absence_caveats() -> None:
+    capability = AxCapability(
+        kind=AxCapabilityKind.FRAME_TRAVERSAL,
+        available=False,
+        reason='cross-origin frame unavailable',
+    )
+    root = AxNode(node_id='root', role='RootWebArea', name='x' * 5_000)
+
+    view = _prune(
+        _snapshot((root,), capabilities=(capability,)),
+        PruningPolicy(max_fragment_chars=700),
+    )
+
+    summary = view.fragments[0].summary
+    assert 'AX absence is never proof' in summary
+    assert 'frame_traversal unavailable (cross-origin frame unavailable)' in summary
 
 
 def test_attribute_order_leads_with_the_accessible_name() -> None:

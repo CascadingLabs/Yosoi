@@ -292,3 +292,12 @@ Before moving beyond the control:
 
 After these pass, the same lifecycle can be reused for portals, shadow DOM, and virtualization
 boss fights without changing the snapshot/index boundary.
+
+## Post-integration hardening
+
+Adversarial review added three address/overview guarantees: relative attribute steps containing `/`
+fall back instead of minting dead locators; `shadow-root()` is an explicit host-relative boundary so
+shadow descendants keep identity across producer node-id changes; and root conventions reserve
+summary budget before page text. Runtime string values are represented in overviews only as
+`empty`/`present`, never verbatim. Raw DOM artifacts and `inspect()` still contain canonical bytes,
+so authenticated captures remain restricted until CAS-269 supplies pre-index sanitization.

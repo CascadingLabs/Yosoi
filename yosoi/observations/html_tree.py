@@ -42,10 +42,13 @@ def parse(data: bytes) -> tuple[_Element, _ElementTree]:
     from lxml import etree
     from lxml import html as lxml_html
 
+    parser = lxml_html.HTMLParser()
     try:
-        root = lxml_html.fromstring(data)
+        root = lxml_html.fromstring(data, parser=parser)
     except etree.ParserError as exc:
         raise HtmlParseError(f'source HTML evidence could not be parsed: {exc}') from exc
+    if any(entry.type_name == 'ERR_RESOURCE_LIMIT' for entry in parser.error_log):
+        raise HtmlParseError('source HTML evidence exceeds the parser depth limit; refusing a truncated tree')
     return root, root.getroottree()
 
 

@@ -23,7 +23,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from yosoi.observations.models.index import IndexEntry, ObservationIndex
 from yosoi.observations.models.view import Pagination, RenderedView
 
-RENDERER_VERSION = '1'
+RENDERER_VERSION = '2'
 
 _HEADING = re.compile(r'^h[1-6]\b')
 _ELLIPSIS = '…'
@@ -108,18 +108,24 @@ class ObservationIndexRenderer:
             raise ValueError(f'tokenizer {counter.id!r} cannot measure a budget declared for {policy.tokenizer_id!r}')
 
         lines = {entry.ordinal: self._line(entry, policy, counter) for entry in index.entries}
-        order = sorted(index.entries, key=lambda entry: (_tier(entry), entry.ordinal))
+        units: list[list[IndexEntry]] = []
+        for entry in index.entries:
+            if entry.bound_to_previous and units:
+                units[-1].append(entry)
+            else:
+                units.append([entry])
+        order = sorted(units, key=lambda unit: (min(_tier(entry) for entry in unit), unit[0].ordinal))
 
         # Reserve the LONGEST possible footer up front. An overview that spent its last token on
         # one more entry, and so could not say what it dropped, is the failure mode here.
         reserved = counter.count(self._footer(len(index.entries), 0, index.page)) + 1
         chosen: set[int] = set()
         spent = reserved
-        for entry in order:
-            cost = counter.count(lines[entry.ordinal]) + 1  # +1 for the newline between lines
+        for unit in order:
+            cost = sum(counter.count(lines[entry.ordinal]) + 1 for entry in unit)
             if spent + cost > policy.token_budget:
                 continue
-            chosen.add(entry.ordinal)
+            chosen.update(entry.ordinal for entry in unit)
             spent += cost
 
         selected = [entry for entry in index.entries if entry.ordinal in chosen]

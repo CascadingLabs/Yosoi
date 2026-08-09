@@ -142,6 +142,7 @@ class SemanticPruner(ABC):
                 label=candidate.label,
                 summary=clip(candidate.summary, policy.max_fragment_chars),
                 coverage=candidate.coverage,
+                bound_to_previous=candidate.bound_to_previous,
             )
             for position, candidate in enumerate(retained)
         )

@@ -360,12 +360,25 @@ def test_the_network_pruner_refuses_another_modality() -> None:
 # ── Identity: earned, or refused ──────────────────────────────────────────────
 
 
-def test_every_entry_of_an_ordinary_trace_earns_an_identity() -> None:
+def test_only_page_derived_network_entries_earn_an_identity() -> None:
     trace = _complete(_request('r1'), _request('broken', status=500))
     index, _ = _indexed(trace)
 
-    assert all(entry.ref_id is not None for entry in index.entries)
-    assert all(parse_address(entry.ref.locator).is_anchored for entry in index.entries)
+    root, *page_derived = index.entries
+    assert root.label == 'network trace'
+    assert root.ref_id is None
+    assert not parse_address(root.ref.locator).is_anchored
+    assert all(entry.ref_id is not None for entry in page_derived)
+    assert all(parse_address(entry.ref.locator).is_anchored for entry in page_derived)
+
+
+def test_unrelated_trace_roots_cannot_share_a_global_identity() -> None:
+    first, _ = _indexed(_complete(_request('a', origin='https://one.example')))
+    second, _ = _indexed(_complete(_request('b', origin='https://two.example')))
+
+    assert first.entries[0].ref_id is None
+    assert second.entries[0].ref_id is None
+    assert first.entries[0].ref != second.entries[0].ref
 
 
 def test_a_positional_member_is_refused_an_identity_rather_than_given_a_weak_one() -> None:
@@ -384,7 +397,7 @@ def test_a_positional_member_is_refused_an_identity_rather_than_given_a_weak_one
 
 
 def test_an_origin_the_locator_grammar_cannot_express_falls_back_and_is_refused_identity() -> None:
-    """The `net1` validators keep this off the normal path, so it is proved directly."""
+    """The `net2` validators keep this off the normal path, so it is proved directly."""
     # TWO origins, because with one the tag tier legitimately anchors it: `tag:origin` occurring
     # exactly once is a durable key. The fallback is what happens when NO tier is expressible.
     trace = _complete(

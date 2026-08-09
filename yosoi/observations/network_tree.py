@@ -23,7 +23,7 @@ import re
 from collections import Counter
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from urllib.parse import parse_qsl, urlsplit
+from urllib.parse import SplitResult, parse_qsl, unquote, urlsplit
 
 from yosoi.observations import anchoring
 from yosoi.observations.index.addressing import ObservationAddress, ObservationAddressError
@@ -77,7 +77,8 @@ _EPOCH = re.compile(r'^\d{10}$|^\d{13}$')
 _UUID = re.compile(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$')
 _INTEGER = re.compile(r'^\d+$')
 _HEX = re.compile(r'^(?:[0-9a-fA-F]{2}){4,}$')
-_TOKENISH = re.compile(r'^[A-Za-z0-9_-]{20,}$')
+_TOKENISH = re.compile(r'^[A-Za-z0-9+/_-]{20,}={0,2}$')
+_JWT = re.compile(r'^[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}(?:\.[A-Za-z0-9_-]{8,})?$')
 _ENUMISH = re.compile(r'^[A-Za-z][A-Za-z0-9_.-]{0,23}$')
 
 CLASSIFICATION_ORDER = ('empty', 'timestamp', 'id', 'token', 'enum', 'opaque')
@@ -103,7 +104,9 @@ def classify_value(value: str) -> ValueClass:
         return ValueClass.TIMESTAMP
     if _INTEGER.match(value) or _UUID.match(value) or _HEX.match(value):
         return ValueClass.ID
-    if _TOKENISH.match(value) and any(c.isalpha() for c in value) and any(c.isdigit() for c in value):
+    if _JWT.match(value) or (
+        _TOKENISH.match(value) and any(c.isalpha() for c in value) and any(c.isdigit() for c in value)
+    ):
         return ValueClass.TOKEN
     if _ENUMISH.match(value):
         return ValueClass.ENUM
@@ -123,10 +126,16 @@ _EXTENSION = re.compile(r'^[A-Za-z0-9]{1,8}$')
 
 
 def template_segment(segment: str) -> str:
-    """Return one path segment as itself or as its value-class placeholder."""
-    stem, dot, extension = segment.rpartition('.')
+    """Return one path segment as itself or as its value-class placeholder.
+
+    Classification uses the decoded spelling so percent-encoding cannot disguise an identifier or
+    token. Literal structural segments retain their wire spelling; only value-shaped segments are
+    replaced, so decoding never introduces a reserved locator character.
+    """
+    decoded = unquote(segment)
+    stem, dot, extension = decoded.rpartition('.')
     if not dot or not _EXTENSION.match(extension):
-        stem, extension = segment, ''
+        stem, extension = decoded, ''
     value_class = classify_value(stem)
     if value_class not in TEMPLATED_CLASSES:
         return segment
@@ -144,7 +153,7 @@ def path_template(path: str) -> str:
 
 
 def classify_params(query: str) -> tuple[QueryParam, ...]:
-    """Return parameter NAMES with value classes, in first-appearance order.
+    """Return parameter names with value classes, in canonical name order.
 
     A repeated name keeps the class of its first occurrence. Multi-valued parameters therefore
     report one class rather than a set — a stated simplification, not an inference.
@@ -153,26 +162,50 @@ def classify_params(query: str) -> tuple[QueryParam, ...]:
     for name, value in parse_qsl(query, keep_blank_values=True):
         if name and name not in seen:
             seen[name] = QueryParam(name=name, value_class=classify_value(value))
-    return tuple(seen.values())
+    return tuple(sorted(seen.values(), key=lambda param: param.name))
+
+
+_DEFAULT_PORTS = {'http': 80, 'https': 443, 'ws': 80, 'wss': 443}
+
+
+def _canonical_origin(url: str) -> tuple[str, SplitResult]:
+    """Return a userinfo-free canonical origin and the parsed URL.
+
+    Userinfo is intentionally discarded rather than copied into canonical evidence. Host spelling,
+    IDNA, trailing dots, and default ports are normalized so equivalent calls group together.
+    """
+    parts = urlsplit(url)
+    if not parts.scheme or not parts.netloc or parts.hostname is None:
+        raise ValueError('network url has no origin to normalize')
+    scheme = parts.scheme.lower()
+    host = parts.hostname.rstrip('.')
+    if ':' not in host:
+        host = host.encode('idna').decode('ascii').lower()
+    else:
+        host = f'[{host.lower()}]'
+    try:
+        port = parts.port
+    except ValueError as error:
+        raise ValueError('network url has an invalid port') from error
+    authority = host if port is None or _DEFAULT_PORTS.get(scheme) == port else f'{host}:{port}'
+    return f'{scheme}://{authority}', parts
 
 
 def normalize_url(url: str) -> tuple[str, str, tuple[QueryParam, ...]]:
-    """Split one raw URL into the origin, path template, and classed parameter names it keeps.
+    """Split one raw URL into a canonical origin, path template, and classed parameter names.
 
-    This is the producer-side half of the security boundary expressed as code: a raw URL goes in
-    and no value comes out. The fragment is dropped entirely, since it never reaches a server.
+    Userinfo, parameter values, and fragments never survive. Path values are classified after
+    percent-decoding, preventing encoded identifiers and common token forms from bypassing the
+    value-only template boundary.
     """
-    parts = urlsplit(url)
-    if not parts.scheme or not parts.netloc:
-        raise ValueError(f'network url {url!r} has no origin to normalize')
-    origin = f'{parts.scheme.lower()}://{parts.netloc.lower()}'
+    origin, parts = _canonical_origin(url)
     return origin, path_template(parts.path or '/'), classify_params(parts.query)
 
 
 TIMING_BOUNDS_MS = ((50, 'instant'), (200, 'fast'), (1_000, 'moderate'), (3_000, 'slow'))
 """Upper bounds, in milliseconds, for every timing bucket below `very_slow`.
 
-Part of `net1`, not of a policy: two consumers that bucket the same duration differently cannot
+Part of `net2`, not of a policy: two consumers that bucket the same duration differently cannot
 compare their traces, and a bucket boundary a caller can move is a bucket that means nothing.
 """
 
@@ -217,10 +250,14 @@ def _walk_shape(payload: object, *, prefix: str, keys: set[str]) -> None:
 
 
 def shape_signature(payload: object) -> ShapeSignature:
-    """Return the bounded key skeleton and digest of a decoded JSON payload."""
+    """Return a bounded key skeleton whose digest still covers every key.
+
+    Only the visible key list is capped. Collapse equivalence hashes the complete skeleton so a
+    change beyond the display prefix remains detectable by rarity scoring and index diffs.
+    """
     keys = json_key_skeleton(payload)
     kept = keys[:MAX_SHAPE_KEYS]
-    return ShapeSignature(digest=shape_digest(kept), keys=kept, truncated=len(kept) < len(keys))
+    return ShapeSignature(digest=shape_digest(keys), keys=kept, truncated=len(kept) < len(keys))
 
 
 # ── Grouping: the two-level tree ──────────────────────────────────────────────
@@ -309,11 +346,10 @@ def pseudo_elements(trace: NetworkTrace, groups: Sequence[EndpointGroup]) -> lis
     them that way is what lets `anchoring.build_census` and `anchoring.usable_anchor` do the work
     here without a second identity recipe existing anywhere.
 
-    The trace root deliberately carries NO attributes and is anchored by its tag alone. Keying it on
-    the snapshot id was the obvious move and was wrong: `ref_id` must be computed from nothing the
-    capture provides, and a root keyed on the snapshot id minted a different identity for every
-    capture of the same page — measured as 40 of 41 identities matching across two captures instead
-    of 41.
+    The trace root deliberately carries no attributes. It remains addressable inside its artifact,
+    but `trace_anchor` refuses it a cross-snapshot identity: a bare `trace` tag describes every page
+    and would otherwise collide globally. Origins and endpoints earn identity from page-derived
+    attributes instead.
     """
     return [pseudo_element for pseudo_element, _, _ in _addressables(trace, groups)]
 
@@ -338,8 +374,9 @@ def anchor_census(trace: NetworkTrace, groups: Sequence[EndpointGroup]) -> dict[
 
 
 def trace_anchor(census: dict[str, int]) -> str | None:
-    """Return the durable key for the trace root, or None when it has none."""
-    return anchoring.usable_anchor(TRACE_TAG, (), census)
+    """Refuse a global identity for a root carrying no page-derived key."""
+    del census
+    return None
 
 
 def origin_anchor(origin: str, census: dict[str, int]) -> str | None:
@@ -474,7 +511,7 @@ OMITTED_RANKING_SIGNALS: tuple[str, ...] = (
     'response size and duration outliers (would need a tuned threshold)',
     'request ordering, dependency chains, and races',
     'host or path reputation of any kind',
-    'server-sent events and WebSocket frames (not modelled by net1)',
+    'server-sent events and WebSocket frames (not modelled by net2)',
 )
 """Signals a reader might expect the ranking to use, which it does not. Stated, never silent."""
 

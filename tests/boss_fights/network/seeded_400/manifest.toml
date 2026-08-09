@@ -9,7 +9,7 @@ max_inspection_hops = 1
 # Generated, not frozen: the trace is ~200 KB of JSON and is a pure function of its snapshot id,
 # so the manifest pins the bytes by digest and the test reproduces them.
 generator = "tests.boss_fights.generators.network_trace:render_network_trace"
-generated_sha256 = "48bf1906556d6426a5e583137f92b23a8a47d9af5e3164b16e1fcb0c46a8f922"
+generated_sha256 = "d720bb9a9ab92c83e8b9bb4579b92dbb5b31a09456b309abe13fe9cfad0f5e4c"
 generated_bytes = 204710
 
 # The composition boss_fights.md specifies, restated so the fixture cannot drift from the spec.
@@ -30,12 +30,10 @@ max_index_entries = 60
 min_defect_rank = 1
 max_defect_rank = 2
 
-# The measured edges of the band, recorded rather than tuned around. The whole 41-entry index costs
-# 1,297 estimated tokens, so any budget from 1,280 up holds both defect entries. At the very bottom
-# of boss_fights.md's band the SHARED RENDERER starves them: `index/render.py::_tier` packs every
-# region ahead of every entry that only carries an identity, so 33 endpoint regions come first.
+# The whole 41-entry index costs 1,297 estimated tokens. At the bottom of boss_fights.md's
+# 1,000–3,000 band, both defect members remain resident because each inherits the routing tier of
+# the endpoint region it is bound to.
 budget_floor_tokens = 1000
-render_floor_tokens = 1280
 whole_index_tokens = 1297
 
 prediction = """
@@ -61,7 +59,7 @@ network = true
 # network-internal half is: a declared item count that differs from its own duplicate group's.
 dom_cardinality_cross_check = false
 dom_cardinality_cross_check_owner = "cross-modality gate; needs a DOM view of the same snapshot"
-# net1 models request/response pairs. Streams are a different shape and a different fight.
+# net2 models request/response pairs. Streams are a different shape and a different fight.
 server_sent_events = false
 websocket_frames = false
 streams_owner = "unscheduled; needs an event-sequence schema, not a request schema"

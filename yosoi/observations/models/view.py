@@ -53,6 +53,8 @@ class PrunedFragment(BaseModel):
     label: str = Field(min_length=1)
     summary: str
     coverage: RegionCoverage | None = None
+    bound_to_previous: bool = False
+    """Whether this fragment and the one before it form one routing unit."""
 
     @model_validator(mode='after')
     def _validate_region_coverage(self) -> PrunedFragment:
@@ -179,7 +181,9 @@ class PrunedView(BaseModel):
 
     @model_validator(mode='after')
     def _validate_fragment_sources(self) -> PrunedView:
-        for fragment in self.fragments:
+        for position, fragment in enumerate(self.fragments):
+            if fragment.bound_to_previous and position == 0:
+                raise ValueError('the first fragment in a view cannot be bound to a missing predecessor')
             ref = fragment.ref
             if ref.snapshot_id != self.source.snapshot_id:
                 raise ValueError('pruned fragment belongs to a different snapshot')

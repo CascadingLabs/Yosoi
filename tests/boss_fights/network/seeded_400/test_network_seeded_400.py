@@ -156,30 +156,22 @@ def test_the_overview_fits_the_budget_and_states_both_defects(trace: NetworkWork
     assert str(len(trace.index.entries)) in overview.text
 
 
-def test_the_measured_low_end_of_the_budget_band_is_recorded_not_hidden(trace: NetworkWorkload) -> None:
-    """A measured miss, asserted so it stays a known fact instead of becoming a surprise.
+def test_bound_defect_members_tier_with_their_regions_at_the_budget_floor(trace: NetworkWorkload) -> None:
+    """The bottom of the declared budget band must retain both deviations.
 
-    `boss_fights.md` says roughly 1,000-3,000 tokens. The whole 41-entry index costs 1,297, so any
-    budget at or above `render_floor_tokens` holds both defect entries. Below that the RENDERER, not
-    the reduction, drops them: `index/render.py::_tier` places every region above every entry that
-    merely carries an identity, a rule learned from a 1,038-entry Wikipedia article where regions
-    were the scarce thing. Here it means 33 endpoint regions are packed before the two lines that
-    name the actual defects.
-
-    Deliberately not fixed here. The fix belongs in the shared renderer — a deviating member should
-    tier with the region it deviates from — and this change does not own that file.
+    Each defect member is semantically bound to the endpoint region immediately before it. Paging
+    already preserves that relation; rendering must see the same fact instead of packing all 33
+    regions ahead of the two lines that identify the actual defects.
     """
-    floor = trace.manifest['render_floor_tokens']
     members = trace.members()
+    overview = trace.render(trace.manifest['budget_floor_tokens'])
+    included = {ref.locator for ref in overview.included_refs}
 
-    starved = trace.render(trace.manifest['budget_floor_tokens'])
-    starved_locators = {ref.locator for ref in starved.included_refs}
-    assert not [o for o in members if trace.index.entries[o].ref.locator in starved_locators]
-    assert starved.truncated
-
-    held = trace.render(floor)
-    held_locators = {ref.locator for ref in held.included_refs}
-    assert len([o for o in members if trace.index.entries[o].ref.locator in held_locators]) == len(members) == 2
+    assert len([ordinal for ordinal in members if trace.index.entries[ordinal].ref.locator in included]) == 2
+    for position, entry in enumerate(trace.index.entries):
+        if entry.bound_to_previous and entry.ref.locator in included:
+            assert trace.index.entries[position - 1].ref.locator in included
+    assert overview.truncated
 
 
 def test_duplicate_requests_stay_countable_and_individually_reachable(trace: NetworkWorkload) -> None:
@@ -311,7 +303,9 @@ def test_identity_survives_a_second_capture_while_locations_do_not(trace: Networ
     again = build_network_workload(WORKLOAD, snapshot_id='network_seeded_400_recaptured')
 
     assert [entry.ref_id for entry in again.index.entries] == [entry.ref_id for entry in trace.index.entries]
-    assert all(entry.ref_id is not None for entry in trace.index.entries)
+    assert trace.index.entries[0].label == 'network trace'
+    assert trace.index.entries[0].ref_id is None
+    assert all(entry.ref_id is not None for entry in trace.index.entries[1:])
     assert again.index.entries[2].ref != trace.index.entries[2].ref
 
 
@@ -349,6 +343,10 @@ def _timed(pruner, source, policy) -> float:
 def test_addresses_carry_no_positional_guess_above_a_region_member(trace: NetworkWorkload) -> None:
     for entry in trace.index.entries:
         address = parse_address(entry.ref.locator)
-        assert address.is_anchored, f'{entry.label} is not anchored'
+        if entry.label == 'network trace':
+            assert not address.is_anchored
+            assert entry.ref_id is None
+        else:
+            assert address.is_anchored, f'{entry.label} is not anchored'
+            assert (entry.ref_id is None) == (not address.is_stable)
         assert address.is_positional_free
-        assert (entry.ref_id is None) == (not address.is_stable)

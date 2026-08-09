@@ -27,7 +27,9 @@ The second invariant is what lets a page be FUZZY. A page boundary is not free t
 anywhere: a repeat region and the exemplar that shows its shape are one unit, and splitting
 them leaves a region whose exemplar is on another page and an exemplar whose region is not
 visible. Candidates therefore declare when they must stay with the candidate before them, and a
-page overshoots its limit by up to `PAGE_SLACK` items to honour that rather than cutting.
+page overshoots its limit by up to `PAGE_SLACK` items to honour that rather than cutting. If an
+atomic unit itself exceeds that allowance, the unit wins: it occupies one overlong page rather
+than becoming an unpageable loop.
 
 Not solved here, and stated rather than left to be discovered: paging gives *exhaustive* access
 to a large reduction, one window at a time. It does not give a MAP of one. A 271-page index is
@@ -85,27 +87,36 @@ def paginate(
     """Return one window of `items` plus an honest account of the whole space.
 
     `bound_to_previous` marks an item that must not be separated from the one before it. The
-    window extends past `limit` by up to `PAGE_SLACK` to keep such a run intact, and retracts
-    to before the run if the run is longer than the slack allows — either way it never ends
-    between two bound items, and `returned` reports what actually happened.
+    window rewinds when an arbitrary offset lands inside a bound unit, extends past `limit` by up
+    to `PAGE_SLACK` to keep a unit intact, and retracts to before an overlong unit. When that unit
+    starts the page, it is returned whole even beyond the allowance: no bounded split can preserve
+    atomicity, while returning only its head would make `next_offset` repeat forever. The returned
+    `offset` and `returned` describe the actual flexed window.
     """
     total = len(items)
     start = min(request.offset, total)
+    if bound_to_previous is not None:
+        while 0 < start < total and bound_to_previous(items[start]):
+            start -= 1
     end = min(start + request.limit, total)
 
-    if bound_to_previous is not None and end < total:
-        limit_with_slack = end + PAGE_SLACK
-        while end < total and end < limit_with_slack and bound_to_previous(items[end]):
-            end += 1
-        # Still mid-run after spending the slack: retract to the last unbound boundary rather
-        # than cut a region away from its exemplar.
-        if end < total and bound_to_previous(items[end]):
-            retracted = end
-            while retracted > start and bound_to_previous(items[retracted - 1]):
-                retracted -= 1
-            # Never retract to an empty page: a caller that asked for a window must advance.
-            if retracted > start:
-                end = retracted
+    if bound_to_previous is not None and end < total and bound_to_previous(items[end]):
+        unit_start = end
+        while unit_start > start and bound_to_previous(items[unit_start]):
+            unit_start -= 1
+        unit_end = unit_start + 1
+        while unit_end < total and bound_to_previous(items[unit_end]):
+            unit_end += 1
+
+        if unit_end <= start + request.limit + PAGE_SLACK:
+            end = unit_end
+        elif unit_start > start:
+            # Exclude the unit head too: every following member is transitively bound to it.
+            end = unit_start
+        else:
+            # The indivisible unit is larger than a bounded page. Returning it whole is the only
+            # option that both preserves the relationship and makes the next offset advance.
+            end = unit_end
 
     window = tuple(items[start:end])
     return window, Pagination(offset=start, limit=request.limit, returned=len(window), total=total)
