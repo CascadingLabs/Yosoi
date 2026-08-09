@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import difflib
+import functools
 import re
 import subprocess
 import sys
@@ -52,10 +53,41 @@ _GITHUB_ICON = (
 _REPO_ROOT = Path(__file__).parent.parent
 
 
+@functools.cache
+def _git_database_args() -> tuple[str, ...]:
+    """Return explicit Git-database arguments when running from a non-colocated jj workspace."""
+    colocated = subprocess.run(
+        ['git', 'rev-parse', '--git-dir'],
+        cwd=_REPO_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if colocated.returncode == 0:
+        return ()
+    backing = subprocess.run(
+        ['jj', 'git', 'root'],
+        cwd=_REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return (f'--git-dir={backing.stdout.strip()}',)
+
+
 def _current_git_ref() -> str:
-    """Return the current commit SHA for stable latest-docs source links."""
+    """Return the current commit SHA for stable source links in Git or jj workspaces."""
     result = subprocess.run(
         ['git', 'rev-parse', 'HEAD'],
+        cwd=_REPO_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode == 0:
+        return result.stdout.strip()
+    result = subprocess.run(
+        ['jj', 'log', '-r', '@', '--no-graph', '-T', 'commit_id'],
         cwd=_REPO_ROOT,
         check=True,
         capture_output=True,
@@ -67,7 +99,7 @@ def _current_git_ref() -> str:
 def _source_path_exists_at_ref(ref: str, rel_path: str) -> bool:
     """Return True when rel_path exists at ref, preserving git's case sensitivity."""
     result = subprocess.run(
-        ['git', 'cat-file', '-e', f'{ref}:{rel_path}'],
+        ['git', *_git_database_args(), 'cat-file', '-e', f'{ref}:{rel_path}'],
         cwd=_REPO_ROOT,
         check=False,
         capture_output=True,
@@ -79,7 +111,7 @@ def _source_path_exists_at_ref(ref: str, rel_path: str) -> bool:
 def _source_text_at_ref(ref: str, rel_path: str) -> str:
     """Return file content at ref:path."""
     result = subprocess.run(
-        ['git', 'show', f'{ref}:{rel_path}'],
+        ['git', *_git_database_args(), 'show', f'{ref}:{rel_path}'],
         cwd=_REPO_ROOT,
         check=True,
         capture_output=True,
