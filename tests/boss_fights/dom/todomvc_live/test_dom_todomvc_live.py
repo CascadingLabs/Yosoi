@@ -97,3 +97,56 @@ def test_live_todomvc_repeat_region_is_expandable_offline() -> None:
     assert page.coverage.complete is False  # the live page declared no total count
     assert DomNode.model_validate_json(detail.content).tag == 'li'
     assert page.members[0].stable is True  # data-id is available in this capture
+
+
+def _episode_index(name: str, snapshot_id: str):
+    """Compile one state of the frozen live episode into an index."""
+    from yosoi.observations.index.compiler import ObservationIndexCompiler
+    from yosoi.observations.models.dom import serialize_dom_snapshot
+
+    _, parsed = _load(name)
+    snapshot = parsed.model_copy(update={'snapshot_id': snapshot_id})
+    data = serialize_dom_snapshot(snapshot)
+    store = MemoryArtifactStore()
+    ref = store.put(snapshot_id=snapshot_id, kind=EvidenceKind.RENDERED_DOM, media_type='application/json', data=data)
+    manifest = ObservationSnapshot(
+        run_id='todomvc-live',
+        episode_id=name,
+        snapshot_id=snapshot_id,
+        requested_profile=CaptureProfile.BROWSER_HEADLESS,
+        artifacts=(ref,),
+    )
+    view = DomPruner().prune(PruningInput(source=ref, data=data), PruningPolicy())
+    return ObservationIndexCompiler().compile(manifest, (view,))
+
+
+def test_checking_one_todo_diffs_to_a_handful_of_changes_not_a_new_page() -> None:
+    """The action-episode claim: one committed action produces a bounded, readable diff.
+
+    Against a real live capture, not a synthetic one. Checking the second todo touches the item's
+    state, the remaining-count, and the footer — and must leave the rest of the page alone. A diff
+    that reports dozens of changes for one click is useless for QA even when every change is real.
+    """
+    from yosoi.observations.index.diff import ChangeKind, diff_indexes
+
+    diff = diff_indexes(_episode_index('s1_three_active', 's1'), _episode_index('s2_one_completed', 's2'))
+
+    assert not diff.of_kind(ChangeKind.ADDED), 'checking a todo adds no addressable thing'
+    assert not diff.of_kind(ChangeKind.REMOVED), 'and removes none'
+    assert 0 < len(diff.of_kind(ChangeKind.CHANGED)) <= 8, diff.describe()
+    assert diff.unchanged > len(diff.changes), 'most of the page must be reported as holding still'
+
+    # The remaining-count is the page's own statement of what the click did.
+    assert any('"3"' in change.summary and '"2"' in change.summary for change in diff.changes), diff.describe()
+    # And the todo list region must report the state move rather than being re-identified.
+    assert any('todo-list' in change.label for change in diff.of_kind(ChangeKind.CHANGED))
+
+
+def test_adding_todos_to_an_empty_list_is_reported_as_additions() -> None:
+    from yosoi.observations.index.diff import ChangeKind, diff_indexes
+
+    diff = diff_indexes(_episode_index('s0_empty', 's0'), _episode_index('s1_three_active', 's1'))
+
+    assert diff.of_kind(ChangeKind.ADDED), 'three todos and their list are new addressable things'
+    assert not diff.of_kind(ChangeKind.REMOVED)
+    assert any('todo-list' in change.label for change in diff.of_kind(ChangeKind.ADDED))

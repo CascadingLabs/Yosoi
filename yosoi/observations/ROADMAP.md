@@ -29,7 +29,7 @@ The adversarial corpus, no-auth SPA slate, and per-pruner gates are specified in
 | `index/addressing.py` | Address grammar, anchoring, and snapshot-independent identity | **Implemented (CAS-262).** Segmented region/member addresses anchored to durable ancestors; `ref_id` for the ones that earned it; stale, foreign, or malformed references fail closed. |
 | `index/inspect.py` | Bounded detail, region expansion, branch rebinding | **Implemented (CAS-262) for `source_html` only.** `inspect` for one thing, `expand` to page a region's members, `rebind` to carry an exemplar-learned route onto another branch. Other modalities raise. |
 | `index/render.py` | Tokenizer/provider-specific packing | **Implemented (CAS-262).** Budgeted overview from an existing index; headings before regions; omission always stated. Estimator-based token counting until a provider tokenizer is wired. |
-| `index/diff.py` | Snapshot/index comparison | Add with multi-shot action episodes. |
+| `index/diff.py` | Snapshot/index comparison | **Implemented.** Matches on `ref_id`, ignores ordinals, counts unmatchable entries rather than reporting them as churn, refuses fuzzy pairing, and pages like every other bounded surface. |
 | `index/paging.py` | Explicit windows over a large candidate space | **Implemented.** Global ordinals, exact tiling via `next_offset = offset + returned`, fuzzy boundaries that keep a region with its exemplar. Replaced blind prefix truncation. |
 
 ## Static HTML scope, stated
@@ -216,3 +216,60 @@ path of `//*[@href="` and a qualifier of `/active"]#anchor`. Only `"` had been e
 grammar is shared: any HTML page with a fragment link was one anchor tier away from the same
 failure. Producers of unexpressible tag names (a shadow root is `#shadow-root`) are refused the
 tag tier for the same reason.
+
+## Index diffing
+
+Keyed on `ref_id`, which is what the identity tier was for. Three rules, each because its opposite
+produces a convincing lie:
+
+* **Position is not identity.** Ordinals are excluded from comparison. `section_above` shifts every
+  ordinal below the insertion and removes no identity; a position-keyed diff calls that whole page
+  churn.
+* **An entry with no identity is not "added".** A quarter of a real page earns no `ref_id`. Treating
+  those as added-and-removed would report 20 removals and 20 additions for an unchanged
+  books.toscrape. They are counted as `without_identity_before/after` and named in `describe()`.
+* **No fuzzy pairing.** A vanished identity beside a new one is two facts. Pairing them would turn
+  a real removal plus a real addition into a fabricated modification — the "probably the same
+  thing" inference the identity tier exists to refuse.
+
+Measured against the existing `reference_stability` corpus, and it agrees with the identity table
+that corpus already produced — the point being that a diff which quietly disagrees with the
+identities it is built on is the more dangerous of the two:
+
+| Mutation | changed | added | removed | unchanged |
+| --- | --- | --- | --- | --- |
+| re-captured unchanged | 0 | 0 | 0 | 19 |
+| `section_above` | 2 | 2 | 0 | 17 |
+| `row_inserted` | 4 | 0 | 0 | 15 |
+| `rows_reordered` | 1 | 3 | 3 | 15 |
+| `column_added` | 1 | 4 | 4 | 14 |
+| `prose_reworded` | 2 | 1 | 1 | 16 |
+| `class_restyled` | 0 | 4 | 4 | 15 |
+
+`row_inserted` is the interesting row: a new row lands inside a collapsed region, so it costs no
+new entry and the region's own summary moves instead. Compression and diffing have to agree about
+that, or a reader sees "nothing added" for a page that grew.
+
+Gated on the frozen live TodoMVC episode too — one committed action, a bounded diff:
+
+| Transition | result |
+| --- | --- |
+| S0 empty → S1 three active | 11 changed, 7 added, 0 removed, 34 unchanged |
+| S1 → S2 (check one todo) | **5 changed, 0 added, 0 removed, 47 unchanged** |
+| S2 → S3 (filter to completed) | 1 changed, 5 added, 8 removed, 43 unchanged |
+
+S1→S2 is the shape an action episode should have: five changes for one click, including the
+remaining-count moving `"3"` → `"2"`, and the rest of the page reported as holding still.
+
+### A finding: filtering re-identifies a region
+
+S2→S3 is noisier than a reader would expect, and the cause is structural rather than a bug. A
+region's address carries the shape digest of its members — that is what distinguishes two different
+runs under one container — so filtering a list to its completed items changes the shape, changes the
+address, and therefore changes the `ref_id`. The diff reports the old region removed and a new one
+added. Defensible (the DOM really did replace those children) and less direct than "the list went
+from 3 items to 1".
+
+Fixing it would mean a second identity for regions, computed from the container alone — a second
+identity recipe, which is exactly the thing the shared `anchoring` module exists to prevent. Left
+as a stated limitation rather than resolved, pending a decision.

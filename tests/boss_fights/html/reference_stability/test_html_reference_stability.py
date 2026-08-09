@@ -119,3 +119,50 @@ def test_identities_are_unique_within_a_snapshot(pages: dict[str, HtmlWorkload])
     for name, workload in pages.items():
         minted = [entry.ref_id for entry in workload.index.entries if entry.ref_id is not None]
         assert len(minted) == len(set(minted)), f'{name} minted a duplicate identity'
+
+
+@pytest.mark.boss_fight
+def test_diff_over_the_mutation_corpus_matches_the_measured_identity_table(
+    generated_html_workload: Callable[..., HtmlWorkload],
+) -> None:
+    """The diff must report exactly what the identity tier already promised for each edit.
+
+    This is a cross-check, not a new claim: `ref_id` survival per mutation was measured when
+    anchoring landed, and a diff keyed on those ids must agree with it. Where the two disagree,
+    one of them is wrong — and a diff that quietly disagrees is the more dangerous of the pair.
+    """
+    from yosoi.observations.index.diff import ChangeKind, diff_indexes
+
+    def _index_for(mutation: str, snapshot_id: str):
+        return generated_html_workload(WORKLOAD, render_mutable_page(mutation), snapshot_id).index
+
+    base = _index_for('base', 'capture-base')
+
+    unchanged_again = diff_indexes(base, _index_for('base', 'capture-base-again'))
+    assert unchanged_again.changes == (), 'a re-capture of an unchanged page must diff to nothing'
+    assert unchanged_again.unchanged > 0
+
+    # Inserting a section near the top of <body> is the row that justifies anchoring: a
+    # root-absolute address space loses every reference below the insertion; this loses none.
+    inserted = diff_indexes(base, _index_for('section_above', 'capture-section-above'))
+    assert not inserted.of_kind(ChangeKind.REMOVED), 'an insertion above must remove no identity'
+    assert inserted.of_kind(ChangeKind.ADDED), 'the inserted section is itself new'
+
+    # A new row lands inside a collapsed region, so it costs no new entry — the region's own
+    # summary moves instead. Compression and diffing have to agree about that or a QA reader
+    # would see "nothing added" for a page that grew.
+    row = diff_indexes(base, _index_for('row_inserted', 'capture-row-inserted'))
+    assert not row.of_kind(ChangeKind.ADDED)
+    assert not row.of_kind(ChangeKind.REMOVED)
+    assert row.of_kind(ChangeKind.CHANGED), 'the region summary must report the new member'
+
+    # Restyling loses class-anchored identities. Those are a removal AND an addition, never a
+    # modification: nothing in the evidence says the new anchor names the old thing.
+    restyled = diff_indexes(base, _index_for('class_restyled', 'capture-class-restyled'))
+    assert restyled.of_kind(ChangeKind.REMOVED)
+    assert restyled.of_kind(ChangeKind.ADDED)
+    assert len(restyled.of_kind(ChangeKind.REMOVED)) == len(restyled.of_kind(ChangeKind.ADDED))
+
+    for diff in (unchanged_again, inserted, row, restyled):
+        assert diff.without_identity_before == diff.without_identity_after
+        assert 'were NOT compared' in diff.describe(), 'unanchorable entries must stay visible'
