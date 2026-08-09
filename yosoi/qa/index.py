@@ -70,7 +70,7 @@ class IndexCapabilities(BaseModel):
 
     modalities: tuple[str, ...] = ()
     snapshots: tuple[SnapshotIndexCapabilities, ...] = ()
-    operations: tuple[str, ...] = ('capabilities', 'status', 'overview', 'inspect', 'expand', 'diff')
+    operations: tuple[str, ...] = ('capabilities', 'status')
     read_only: bool = True
     capture_wired: bool = False
     provider_wired: bool = False
@@ -182,11 +182,11 @@ class IndexSession:
     async def capabilities(self) -> IndexCapabilities:
         """Report indexed evidence and explicit unavailable-capture reasons per snapshot."""
         kinds = sorted({kind.value for index in self._indexes.values() for kind in index.modalities})
-        operations = (
-            ('capabilities', 'status', 'overview', 'inspect', 'expand', 'diff')
-            if self._indexes
-            else ('capabilities', 'status')
-        )
+        operations = ('capabilities', 'status')
+        if self._indexes:
+            operations += ('overview', 'inspect', 'expand')
+        if len(self._indexes) > 1:
+            operations += ('diff',)
         snapshots = tuple(
             SnapshotIndexCapabilities(
                 snapshot_id=snapshot_id,

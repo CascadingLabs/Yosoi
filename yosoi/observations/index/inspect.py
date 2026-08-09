@@ -143,38 +143,20 @@ def _bounded_region_page(page: RegionPage, budget: InspectionBudget) -> RegionPa
     """Fit expansion members under one aggregate byte budget without producing a stuck page."""
     selected: list[RegionMember] = []
     spent = 0
-    content_clipped = False
     for member in page.members:
-        remaining = budget.max_bytes - spent
-        candidate = member
-        encoded = candidate.model_dump_json().encode('utf-8')
-        if len(encoded) > remaining:
-            low = 0
-            high = len(member.summary)
-            fitted: tuple[RegionMember, bytes] | None = None
-            while low <= high:
-                middle = (low + high) // 2
-                clipped = member.model_copy(update={'summary': member.summary[:middle]})
-                clipped_bytes = clipped.model_dump_json().encode('utf-8')
-                if len(clipped_bytes) <= remaining:
-                    fitted = clipped, clipped_bytes
-                    low = middle + 1
-                else:
-                    high = middle - 1
-            if fitted is None:
-                if not selected:
-                    raise ValueError('expand max_bytes is too small for one region member reference')
-                break
-            candidate, encoded = fitted
-            content_clipped = len(candidate.summary) < len(member.summary)
-        selected.append(candidate)
+        encoded = member.model_dump_json().encode('utf-8')
+        if spent + len(encoded) > budget.max_bytes:
+            if not selected:
+                raise ValueError('expand max_bytes is too small for one region member reference')
+            break
+        selected.append(member)
         spent += len(encoded)
 
     return page.model_copy(
         update={
             'members': tuple(selected),
             'returned_bytes': spent,
-            'truncated': page.truncated or content_clipped or len(selected) < len(page.members),
+            'truncated': page.truncated or len(selected) < len(page.members),
         }
     )
 

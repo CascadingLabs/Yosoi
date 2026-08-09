@@ -99,12 +99,108 @@ def _session_pair():
     return store, before, before_artifact, before_index, region, session
 
 
+def test_session_composes_all_four_production_pruners() -> None:
+    from yosoi.observations.index.compiler import ObservationIndexCompiler
+    from yosoi.observations.models import AxNode, AxSnapshot, DomAttribute, DomNode, DomSnapshot
+    from yosoi.observations.models.ax import serialize_ax_snapshot
+    from yosoi.observations.models.dom import serialize_dom_snapshot
+    from yosoi.observations.models.network import (
+        NetworkRequest,
+        NetworkTrace,
+        ResourceType,
+        TimingBucket,
+        duplicate_key,
+        serialize_network_trace,
+    )
+    from yosoi.observations.pruning import AxPruner, BodyPruner, DomPruner, NetworkPruner, PruningInput, PruningPolicy
+
+    snapshot_id = 'all-four'
+    html = b'<html><body><main id="main"><h1>Catalogue</h1><p>Evidence</p></main></body></html>'
+    dom = serialize_dom_snapshot(
+        DomSnapshot(
+            snapshot_id=snapshot_id,
+            root=DomNode(
+                node_id='root',
+                tag='html',
+                children=(
+                    DomNode(
+                        node_id='main',
+                        tag='main',
+                        attributes=(DomAttribute(name='id', value='main'),),
+                        text='Rendered evidence',
+                    ),
+                ),
+            ),
+        )
+    )
+    ax = serialize_ax_snapshot(
+        AxSnapshot(
+            snapshot_id=snapshot_id,
+            root_id='ax-root',
+            nodes=(
+                AxNode(node_id='ax-root', role='document', child_ids=('button',)),
+                AxNode(node_id='button', parent_id='ax-root', role='button', name='Save'),
+            ),
+        )
+    )
+    request = NetworkRequest(
+        request_id='request-1',
+        method='GET',
+        origin='https://api.example',
+        path_template='/v1/items',
+        status=200,
+        resource_type=ResourceType.XHR,
+        mime='application/json',
+        timing=TimingBucket.FAST,
+        duplicate_key=duplicate_key('GET', 'https://api.example', '/v1/items', ()),
+    )
+    network = serialize_network_trace(NetworkTrace(snapshot_id=snapshot_id, requests=(request,)))
+
+    store = MemoryArtifactStore()
+    artifacts = tuple(
+        store.put(snapshot_id=snapshot_id, kind=kind, media_type=media_type, data=data)
+        for kind, media_type, data in (
+            (EvidenceKind.SOURCE_HTML, 'text/html', html),
+            (EvidenceKind.RENDERED_DOM, 'application/json', dom),
+            (EvidenceKind.AX_TREE, 'application/json', ax),
+            (EvidenceKind.NETWORK, 'application/json', network),
+        )
+    )
+    snapshot = ObservationSnapshot(
+        run_id='run',
+        episode_id='episode',
+        snapshot_id=snapshot_id,
+        requested_profile=CaptureProfile.BROWSER_HEADLESS,
+        artifacts=artifacts,
+        captured_at=_CAPTURED_AT,
+    )
+    policy = PruningPolicy()
+    pruners = (BodyPruner(), DomPruner(), AxPruner(), NetworkPruner())
+    views = tuple(
+        pruner.prune(PruningInput(source=artifact, data=data), policy)
+        for pruner, artifact, data in zip(pruners, artifacts, (html, dom, ax, network), strict=True)
+    )
+    observation_index = ObservationIndexCompiler().compile(snapshot, views)
+    session = asyncio.run(ys.index(store=store, snapshot=snapshot, observation_index=observation_index))
+
+    capabilities = asyncio.run(session.capabilities())
+    assert set(capabilities.modalities) == {'source_html', 'rendered_dom', 'ax_tree', 'network'}
+    assert capabilities.operations == ('capabilities', 'status', 'overview', 'inspect', 'expand')
+    overview = asyncio.run(session.overview(OverviewArgs(snapshot_id=snapshot_id, token_budget=3_000)))
+    assert overview.included_refs
+    for modality in (EvidenceKind.SOURCE_HTML, EvidenceKind.RENDERED_DOM, EvidenceKind.AX_TREE, EvidenceKind.NETWORK):
+        entry = next(entry for entry in observation_index.entries if entry.ref.modality is modality)
+        detail = asyncio.run(session.inspect(InspectArgs(ref=entry.ref)))
+        assert detail.content
+
+
 def test_index_session_supports_async_surface_and_exposes_missing_modalities() -> None:
     _, _, _, _, region, session = _session_pair()
 
     status = asyncio.run(session.status())
     assert status.ready
     assert status.snapshot_ids == ('before', 'after')
+    assert 'diff' in status.capabilities.operations
     before_capabilities = status.capabilities.snapshots[0]
     assert before_capabilities.indexed_modalities == ('source_html',)
     assert before_capabilities.capture_capabilities[1].reason == 'static capture has no AX tree'
@@ -168,18 +264,35 @@ def test_expand_enforces_aggregate_bytes_and_inspection_stays_utf8_serializable(
     ) = _evidence(f'<html><body><div id="main">{repeated}</div></body></html>', 'bounded', store)
     session = IndexSession(store=store, snapshots=(snapshot,), indexes=(observation_index,))
 
-    page = asyncio.run(
-        session.expand(
-            ExpandArgs(
-                snapshot_id='bounded',
-                ordinal=0,
-                budget=InspectionBudget(max_bytes=600, max_items=20, max_summary_chars=400),
+    offset = 0
+    visited: list[int] = []
+    while offset < 20:
+        page = asyncio.run(
+            session.expand(
+                ExpandArgs(
+                    snapshot_id='bounded',
+                    ordinal=0,
+                    offset=offset,
+                    budget=InspectionBudget(max_bytes=600, max_items=20, max_summary_chars=400),
+                )
             )
         )
-    )
-    assert page.returned_bytes <= 600
-    assert page.truncated
-    assert page.members
+        assert page.returned_bytes <= 600
+        assert page.members
+        visited.extend(member.ordinal for member in page.members)
+        offset += len(page.members)
+    assert visited == list(range(20))
+    assert page.truncated is False
+    with pytest.raises(ValueError, match='too small for one'):
+        asyncio.run(
+            session.expand(
+                ExpandArgs(
+                    snapshot_id='bounded',
+                    ordinal=0,
+                    budget=InspectionBudget(max_bytes=1, max_items=20, max_summary_chars=400),
+                )
+            )
+        )
 
     from yosoi.observations.index.inspect import _utf8_prefix
 
