@@ -71,8 +71,8 @@ urls.Homepage = "https://cascadinglabs.com/yosoi/"
 urls.Issues = "https://github.com/CascadingLabs/Yosoi/issues"
 urls.Repository = "https://github.com/CascadingLabs/Yosoi"
 scripts.yosoi = "yosoi.cli:main"
-scripts.yosoi-validator-mcp = "yosoi.integrations.validator_mcp:main"
 scripts.yosoi-qa-index-mcp = "yosoi.integrations.qa_index_mcp:main"
+scripts.yosoi-validator-mcp = "yosoi.integrations.validator_mcp:main"
 
 [dependency-groups]
 dev = [
