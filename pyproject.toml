@@ -24,6 +24,7 @@ classifiers = [
 dependencies = [
   "aiofiles>=25.1",
   "brotli>=1.2",
+  "charset-normalizer>=3.4.6",
   "click>=8.3",
   "cssselect>=1.4",
   "dateparser>=1.4",

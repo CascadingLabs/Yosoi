@@ -1,0 +1,57 @@
+{
+  "euc_kr_meta_and_header.html": {
+    "expected_encoding": "euc-kr",
+    "http_charset": "euc-kr",
+    "marker": "가격은 1000원입니다. 배송비는 무료입니다."
+  },
+  "gb18030_http_equiv.html": {
+    "expected_encoding": "gb18030",
+    "http_charset": null,
+    "marker": "价格是1000元。免运费。"
+  },
+  "koi8r_header_only.html": {
+    "expected_encoding": "koi8-r",
+    "http_charset": "koi8-r",
+    "marker": "Цена составляет 1000 рублей. Доставка бесплатная."
+  },
+  "latin1_undeclared.html": {
+    "expected_encoding": null,
+    "http_charset": null,
+    "marker": "Der Preis beträgt 1000 Euro. Größe: mittel. Grüße!"
+  },
+  "shift_jis_header_lies.html": {
+    "expected_encoding": "shift_jis",
+    "http_charset": "utf-8",
+    "marker": "価格は1000円です。送料は無料。"
+  },
+  "shift_jis_header_only.html": {
+    "expected_encoding": "shift_jis",
+    "http_charset": "shift_jis",
+    "marker": "価格は1000円です。送料は無料。"
+  },
+  "shift_jis_meta_only.html": {
+    "expected_encoding": "shift_jis",
+    "http_charset": null,
+    "marker": "価格は1000円です。送料は無料。"
+  },
+  "shift_jis_undeclared.html": {
+    "expected_encoding": "cp932",
+    "http_charset": null,
+    "marker": "価格は1000円です。送料は無料。"
+  },
+  "utf8_bom_wrong_header.html": {
+    "expected_encoding": "utf-8-sig",
+    "http_charset": "shift_jis",
+    "marker": "価格は1000円です。送料は無料。"
+  },
+  "utf8_plain.html": {
+    "expected_encoding": "utf-8",
+    "http_charset": "utf-8",
+    "marker": "価格は1000円です。送料は無料。"
+  },
+  "windows1251_meta_only.html": {
+    "expected_encoding": "windows-1251",
+    "http_charset": null,
+    "marker": "Цена составляет 1000 рублей. Доставка бесплатная."
+  }
+}

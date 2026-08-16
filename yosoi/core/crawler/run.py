@@ -12,7 +12,7 @@ from rich.console import Console
 from yosoi.core.crawler.coordinator import CrawlCoordinator, CrawlRunSummary
 from yosoi.core.fetcher import create_fetcher
 from yosoi.models.contract import Contract
-from yosoi.policy import CrawlPolicy, CrawlTarget, Policy
+from yosoi.policy import CrawlBudget, CrawlPolicy, CrawlTarget, Policy
 from yosoi.reporting import RichCrawlProgress
 
 
@@ -28,6 +28,11 @@ async def _crawl_impl(
     console: Any | None = None,
 ) -> CrawlRunSummary:
     """Crawl from ``seeds`` under a resolved crawl ``policy``, returning a run summary.
+
+    ``limit`` is a hard page cap: it lowers the resolved ``CrawlBudget.max_pages`` so the
+    crawl fetches at most ``limit`` pages, and lifts a preset's ``max_pages_per_host`` to
+    match so a per-host cap cannot silently answer ``limit=40`` with 30 pages. It remains
+    an upper bound — depth and plain reachability can still stop the crawl earlier.
 
     Opinionated default: the ``crawl.conservative`` preset when no policy is given.
     The fetcher defaults to the one the policy resolves (``runtime.fetcher_type``);
@@ -173,6 +178,32 @@ def _show_crawl_progress(policy: Policy) -> bool:
     return not (output.plain_output or output.json_output or output.quiet)
 
 
+def _budget_with_limit(budget: CrawlBudget, limit: int) -> CrawlBudget:
+    """Return ``budget`` capped at ``limit`` pages.
+
+    ``limit`` reads as "crawl at most N pages", so it must land on ``max_pages`` — the
+    only field the frontier actually enforces. The neighbouring fields move only as far
+    as that intent requires:
+
+    * ``max_depth`` must be 0 when a single page is allowed (``CrawlBudget`` validates it).
+    * ``max_attempts`` may not sit below ``max_pages`` (same validator).
+    * ``max_pages_per_host`` is raised to ``limit`` when a preset set it lower. It is a
+      budget-*allocation* lever — it exists so one host cannot eat a multi-host budget —
+      and letting ``crawl.conservative``'s cap of 30 silently answer ``limit=40`` with 30
+      pages reintroduces the CAS-232 surprise in a new place. Politeness proper
+      (``politeness_delay``, ``per_host_concurrency``) is untouched, and the total stays
+      bounded by the caller's own ``limit``.
+    """
+    update: dict[str, int | None] = {'max_pages': limit}
+    if limit == 1 and budget.max_depth > 0:
+        update['max_depth'] = 0
+    if budget.max_attempts is not None and budget.max_attempts < limit:
+        update['max_attempts'] = limit
+    if budget.max_pages_per_host is not None and budget.max_pages_per_host < limit:
+        update['max_pages_per_host'] = limit
+    return budget.model_copy(update=update)
+
+
 def _with_crawl_targets(policy: Policy, *, contracts: Sequence[object] | object | None, limit: int | None) -> Policy:
     """Apply call-site contract intent while keeping policy as the lever surface."""
     crawl = policy.require_crawl()
@@ -202,6 +233,8 @@ def _with_crawl_targets(policy: Policy, *, contracts: Sequence[object] | object 
 
     crawl_payload = crawl.model_dump()
     crawl_payload['target_contracts'] = targets
+    if limit is not None:
+        crawl_payload['budget'] = _budget_with_limit(crawl.budget, limit).model_dump()
     return Policy.cascade(policy, Policy(crawl=CrawlPolicy.model_validate(crawl_payload)))
 
 

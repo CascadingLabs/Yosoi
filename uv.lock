@@ -5562,6 +5562,7 @@ source = { editable = "." }
 dependencies = [
     { name = "aiofiles" },
     { name = "brotli" },
+    { name = "charset-normalizer" },
     { name = "click" },
     { name = "cssselect" },
     { name = "dateparser" },
@@ -5668,6 +5669,7 @@ tests = [
 requires-dist = [
     { name = "aiofiles", specifier = ">=25.1" },
     { name = "brotli", specifier = ">=1.2" },
+    { name = "charset-normalizer", specifier = ">=3.4.6" },
     { name = "claude-agent-sdk", marker = "extra == 'all'", specifier = ">=0.2.87" },
     { name = "claude-agent-sdk", marker = "extra == 'claude-sdk'", specifier = ">=0.2.87" },
     { name = "click", specifier = ">=8.3" },

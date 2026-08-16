@@ -11,6 +11,7 @@ from typing import Any
 import httpx2
 
 from yosoi.core.fetcher.base import ContentAnalyzer, HTMLFetcher
+from yosoi.core.fetcher.encoding import charset_from_content_type, decode_html
 from yosoi.models.results import FetchResult
 from yosoi.utils.exceptions import BotDetectionError
 from yosoi.utils.headers import HeaderGenerator, UserAgentRotator
@@ -164,23 +165,22 @@ class SimpleFetcher(HTMLFetcher):
 
             status_code = response.status_code
 
-            try:
-                # Try to get text with proper encoding
-                html = response.text
+            body = response.content
+            if body.startswith(b'\x1f\x8b'):
+                # Undecoded gzip body: the transport did not unwrap it, so do it here.
+                import gzip
 
-                # Verify it's actually text
-                if html.startswith('\x1f\x8b'):
-                    # Force decompression
-                    import gzip
-
-                    html = gzip.decompress(response.content).decode('utf-8', errors='replace')
-
-            except (OSError, UnicodeDecodeError):
-                # Fallback: try to decode bytes manually
                 try:
-                    html = response.content.decode('utf-8', errors='replace')
-                except UnicodeDecodeError:
-                    html = response.content.decode('latin-1', errors='replace')
+                    body = gzip.decompress(body)
+                except (OSError, EOFError, gzip.BadGzipFile):
+                    self.logger.warning('gzip body for %s failed to decompress; decoding raw bytes', url)
+
+            # Header charset is only one of the ways a page declares its encoding; decode_html
+            # also honors the BOM, <meta charset>, and byte-level detection before going lossy.
+            declared = charset_from_content_type(response.headers.get('content-type'))
+            html, encoding_used = decode_html(body, declared=declared)
+            if encoding_used.lower() not in {'utf-8', 'utf-8-sig'}:
+                self.logger.debug('decoded %s as %s (header declared %r)', url, encoding_used, declared)
 
             # Verify we got actual HTML
             if not html or len(html) < self.min_content_length:

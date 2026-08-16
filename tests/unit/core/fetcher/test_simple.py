@@ -237,27 +237,13 @@ class TestEncodingFallback:
         assert result.html is not None
 
     @pytest.mark.asyncio
-    async def test_double_decode_error_falls_back_to_latin1(self, mocker):
-        """When utf-8 decode also fails, falls back to latin-1."""
+    async def test_undecodable_bytes_still_return_text(self, mocker):
+        """Bytes no codec accepts fall back to a lossy decode instead of raising."""
         f = SimpleFetcher(use_session=False, min_delay=0)
         mock_resp = mocker.MagicMock()
         mock_resp.status_code = 200
-        mock_resp.headers = {}
-
-        type(mock_resp).text = mocker.PropertyMock(side_effect=UnicodeDecodeError('utf-8', b'', 0, 1, 'bad'))
-
-        # Create a mock content that raises on utf-8 decode but works on latin-1
-        mock_content = mocker.MagicMock()
-        call_count = [0]
-
-        def fake_decode(encoding, errors='strict'):
-            call_count[0] += 1
-            if call_count[0] == 1:
-                raise UnicodeDecodeError('utf-8', b'', 0, 1, 'bad')
-            return VALID_HTML
-
-        mock_content.decode = fake_decode
-        mock_resp.content = mock_content
+        mock_resp.headers = {'content-type': 'text/html; charset=utf-8'}
+        mock_resp.content = b'<html><body>' + b'\x81\xfe' * 150 + b'</body></html>'
 
         mocker.patch('httpx2.AsyncClient.get', return_value=mock_resp)
         mocker.patch.object(f, '_apply_request_delay', return_value=None)

@@ -625,7 +625,8 @@ async def test_quick_test_success(mocker):
     """quick_test returns True when selector finds element with text."""
     v = SelectorVerifier()
     mock_response = mocker.MagicMock()
-    mock_response.text = '<html><body><h1>Hello World</h1></body></html>'
+    mock_response.content = b'<html><body><h1>Hello World</h1></body></html>'
+    mock_response.headers = {'content-type': 'text/html; charset=utf-8'}
 
     mock_client = mocker.AsyncMock()
     mock_client.get.return_value = mock_response
@@ -642,7 +643,8 @@ async def test_quick_test_no_match(mocker):
     """quick_test returns False when selector finds no elements."""
     v = SelectorVerifier()
     mock_response = mocker.MagicMock()
-    mock_response.text = '<html><body><p>No heading</p></body></html>'
+    mock_response.content = b'<html><body><p>No heading</p></body></html>'
+    mock_response.headers = {'content-type': 'text/html; charset=utf-8'}
 
     mock_client = mocker.AsyncMock()
     mock_client.get.return_value = mock_response

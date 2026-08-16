@@ -66,3 +66,22 @@ async def test_live_crawl_produces_representative_urls() -> None:
     assert summary.pages_fetched >= 1
     assert representatives
     assert all(url.startswith('https://qscrape.dev/') for url in representatives)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('limit', [3, 7])
+async def test_live_crawl_limit_caps_pages_fetched(limit: int) -> None:
+    """CAS-232 against a live site: ``limit=N`` bounds a real crawl to N pages.
+
+    ``books.toscrape.com`` is a public scraping sandbox with far more than seven reachable
+    pages, so an uncapped crawl of this seed runs long past the limit.
+    """
+    summary = await ys.crawl(
+        'https://books.toscrape.com/',
+        limit=limit,
+        fetcher_type='simple',
+        progress=False,
+    )
+
+    assert summary.pages_fetched == limit
+    assert len([result for result in summary.results if result.status == 'succeeded']) == limit

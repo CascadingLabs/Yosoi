@@ -102,6 +102,10 @@ def pytest_configure(config):
         'markers',
         'browser_integration: requires YOSOI_INTEGRATION=1 and Chromium/Chrome',
     )
+    config.addinivalue_line(
+        'markers',
+        'local_http: serves real bytes from a localhost HTTP server; no browser, no network egress',
+    )
 
 
 def pytest_collection_modifyitems(config, items):
