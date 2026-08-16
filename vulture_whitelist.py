@@ -8,3 +8,8 @@ exc_tb  # noqa
 # TYPE_CHECKING imports used in string annotations (invisible to vulture)
 TaskiqResult  # noqa
 AsyncTaskiqTask  # noqa
+
+# DiscoveryAgent / DiscoveryController protocol parameters (yosoi/qa/discovery.py).
+# The names are part of the published protocol signature; the bodies are `...`.
+turn  # noqa
+inspection  # noqa

@@ -1,0 +1,77 @@
+"""QA consumer of the task-agnostic indexed observation runtime.
+
+This package is deliberately not re-exported from :mod:`yosoi` and has no browser,
+provider, policy, or operations wiring. See ``ROADMAP.md``.
+"""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+from yosoi._lazy import lazy_exports
+
+if TYPE_CHECKING:
+    from yosoi.qa.actions import QAActionCapabilities as QAActionCapabilities
+    from yosoi.qa.actions import QAActionHandler as QAActionHandler
+    from yosoi.qa.actions import QAActionOutcome as QAActionOutcome
+    from yosoi.qa.actions import QAActionRequest as QAActionRequest
+    from yosoi.qa.actions import QAActionResult as QAActionResult
+    from yosoi.qa.actions import QAActionStatus as QAActionStatus
+    from yosoi.qa.actions import UnwiredQAActionHandler as UnwiredQAActionHandler
+    from yosoi.qa.capture import QACaptureAdapter as QACaptureAdapter
+    from yosoi.qa.capture import QACaptureRequest as QACaptureRequest
+    from yosoi.qa.capture import QACaptureSession as QACaptureSession
+    from yosoi.qa.discovery import AxPostconditionIntent as AxPostconditionIntent
+    from yosoi.qa.discovery import ClickDecision as ClickDecision
+    from yosoi.qa.discovery import CompleteDecision as CompleteDecision
+    from yosoi.qa.discovery import DiscoveryLimits as DiscoveryLimits
+    from yosoi.qa.discovery import DiscoveryRun as DiscoveryRun
+    from yosoi.qa.discovery import DiscoveryRunStatus as DiscoveryRunStatus
+    from yosoi.qa.discovery import IndexedDiscoveryHarness as IndexedDiscoveryHarness
+    from yosoi.qa.discovery import NavigateDecision as NavigateDecision
+    from yosoi.qa.index import ExpandArgs as ExpandArgs
+    from yosoi.qa.index import IndexCapabilities as IndexCapabilities
+    from yosoi.qa.index import IndexSession as IndexSession
+    from yosoi.qa.index import IndexStatus as IndexStatus
+    from yosoi.qa.index import SnapshotIndexCapabilities as SnapshotIndexCapabilities
+    from yosoi.qa.reports import QAFinding as QAFinding
+    from yosoi.qa.reports import QAReport as QAReport
+    from yosoi.qa.runtime import QARequest as QARequest
+    from yosoi.qa.runtime import QAResult as QAResult
+    from yosoi.qa.runtime import QARuntime as QARuntime
+    from yosoi.qa.tools import QAToolHandler as QAToolHandler
+
+_LAZY = {
+    'QAActionCapabilities': 'yosoi.qa.actions',
+    'QAActionHandler': 'yosoi.qa.actions',
+    'QAActionOutcome': 'yosoi.qa.actions',
+    'QAActionRequest': 'yosoi.qa.actions',
+    'QAActionResult': 'yosoi.qa.actions',
+    'QAActionStatus': 'yosoi.qa.actions',
+    'UnwiredQAActionHandler': 'yosoi.qa.actions',
+    'QACaptureAdapter': 'yosoi.qa.capture',
+    'QACaptureRequest': 'yosoi.qa.capture',
+    'QACaptureSession': 'yosoi.qa.capture',
+    'AxPostconditionIntent': 'yosoi.qa.discovery',
+    'ClickDecision': 'yosoi.qa.discovery',
+    'CompleteDecision': 'yosoi.qa.discovery',
+    'DiscoveryLimits': 'yosoi.qa.discovery',
+    'DiscoveryRun': 'yosoi.qa.discovery',
+    'DiscoveryRunStatus': 'yosoi.qa.discovery',
+    'IndexedDiscoveryHarness': 'yosoi.qa.discovery',
+    'NavigateDecision': 'yosoi.qa.discovery',
+    'ExpandArgs': 'yosoi.qa.index',
+    'IndexCapabilities': 'yosoi.qa.index',
+    'IndexSession': 'yosoi.qa.index',
+    'IndexStatus': 'yosoi.qa.index',
+    'SnapshotIndexCapabilities': 'yosoi.qa.index',
+    'QAFinding': 'yosoi.qa.reports',
+    'QAReport': 'yosoi.qa.reports',
+    'QARequest': 'yosoi.qa.runtime',
+    'QAResult': 'yosoi.qa.runtime',
+    'QARuntime': 'yosoi.qa.runtime',
+    'QAToolHandler': 'yosoi.qa.tools',
+}
+
+__all__ = sorted(_LAZY)
+__getattr__, __dir__ = lazy_exports(__name__, globals(), _LAZY)

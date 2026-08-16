@@ -270,7 +270,12 @@ class Policy(BaseModel):
         a later discovery attempt remains responsible for failing closed.
         """
         from yosoi.core.configs import PROVIDER_FALLBACK_ORDER, TelemetryConfig
-        from yosoi.core.discovery.config import _PROVIDER_ENV_VARS, NO_API_KEY_REQUIRED_PROVIDERS, LLMConfig
+        from yosoi.core.discovery.config import (
+            _PROVIDER_ENV_VARS,
+            NO_API_KEY_REQUIRED_PROVIDERS,
+            OPENCODE_DEFAULT_MODEL,
+            LLMConfig,
+        )
 
         if env is None:
             from dotenv import load_dotenv
@@ -288,13 +293,20 @@ class Policy(BaseModel):
                 if found is not None:
                     break
             if found is None:
-                if require_model:
+                discovery_mode = self.discovery.mode if self.discovery is not None else 'auto'
+                if discovery_mode == 'mcp':
+                    # CAS-242: an operator who explicitly asked for agent-driven MCP
+                    # discovery but named no provider gets the OpenCode subscription
+                    # backend (no API key required) — never Claude, which stays reachable
+                    # only via an explicit provider='claude-sdk' selection.
+                    found = ('opencode', OPENCODE_DEFAULT_MODEL, '')
+                elif require_model:
                     raise ValueError(
                         'No model specified and no API key found. '
                         'Pass policy=ys.Policy(model=ys.ModelPolicy.from_string("groq:...")) '
                         'or set YOSOI_MODEL and a provider API key.'
                     )
-            else:
+            if found is not None:
                 provider, model_name, _key = found
                 model = ModelPolicy(
                     provider=provider,

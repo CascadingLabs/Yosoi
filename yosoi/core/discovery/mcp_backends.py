@@ -160,7 +160,10 @@ class ClaudeSDKBackend:
         servers: Sequence[StdioServerSpec],
     ) -> MCPDiscoveryDraft:
         """Drive the Claude Agent SDK with the MCP servers and harvest structured output."""
-        from claude_agent_sdk import ClaudeAgentOptions, query
+        from yosoi.integrations.claude_sdk import _import_claude_agent_sdk
+
+        sdk = _import_claude_agent_sdk()
+        ClaudeAgentOptions, query = sdk.ClaudeAgentOptions, sdk.query
 
         mcp_servers = {
             s.name: {'type': 'stdio', 'command': s.command, 'args': list(s.args), 'env': dict(s.env)} for s in servers

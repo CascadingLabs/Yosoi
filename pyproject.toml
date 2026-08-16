@@ -24,7 +24,6 @@ classifiers = [
 dependencies = [
   "aiofiles>=25.1",
   "brotli>=1.2",
-  "claude-agent-sdk>=0.2.87",
   "click>=8.3",
   "cssselect>=1.4",
   "dateparser>=1.4",
@@ -50,6 +49,7 @@ dependencies = [
   "voidcrawl>=0.4",
 ]
 optional-dependencies.all = [
+  "claude-agent-sdk>=0.2.87",
   "pydantic-ai-slim[anthropic,bedrock,google,groq,huggingface,mistral,openai,openrouter,xai]==2",
 ]
 # Provider SDKs ship as optional extras to keep the base install slim. The base
@@ -57,6 +57,10 @@ optional-dependencies.all = [
 # always available; these add heavyweight SDKs only when the user opts in.
 optional-dependencies.anthropic = [ "pydantic-ai-slim[anthropic]==2" ]
 optional-dependencies.bedrock = [ "pydantic-ai-slim[bedrock]==2" ]
+# The Claude Agent SDK is a large, opt-in dependency: it consumes constrained
+# Claude subscription credits and is not required for the default OpenCode
+# subscription discovery path. Install with `uv add 'yosoi[claude-sdk]'`.
+optional-dependencies.claude-sdk = [ "claude-agent-sdk>=0.2.87" ]
 optional-dependencies.huggingface = [ "pydantic-ai-slim[huggingface]==2" ]
 optional-dependencies.mistral = [ "pydantic-ai-slim[mistral]==2" ]
 optional-dependencies.tabular = [ "openpyxl>=3.1", "pandas>=2", "pyarrow>=14" ]
@@ -67,6 +71,7 @@ urls.Homepage = "https://cascadinglabs.com/yosoi/"
 urls.Issues = "https://github.com/CascadingLabs/Yosoi/issues"
 urls.Repository = "https://github.com/CascadingLabs/Yosoi"
 scripts.yosoi = "yosoi.cli:main"
+scripts.yosoi-qa-index-mcp = "yosoi.integrations.qa_index_mcp:main"
 scripts.yosoi-validator-mcp = "yosoi.integrations.validator_mcp:main"
 
 [dependency-groups]
@@ -92,6 +97,7 @@ dev = [
   "vulture>=2.16",
 ]
 tests = [
+  "claude-agent-sdk>=0.2.87",
   "dirty-equals>=0.11",
   "mutmut>=3.5",
   "openpyxl>=3.1",

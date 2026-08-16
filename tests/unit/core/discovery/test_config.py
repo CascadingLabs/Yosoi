@@ -882,6 +882,10 @@ _GATED_PROVIDERS = [
     ('hf', 'huggingface', 'pydantic_ai.models.huggingface'),  # alias
     ('vertexai', 'vertexai', 'pydantic_ai.providers.google_cloud'),
     ('google-vertex', 'vertexai', 'pydantic_ai.providers.google_cloud'),  # alias
+    # CAS-242: the Claude Agent SDK is opt-in (both to select and to install) —
+    # it consumes constrained Claude subscription usage credits, unlike the
+    # default OpenCode subscription-discovery path.
+    ('claude-sdk', 'claude-sdk', 'claude_agent_sdk'),
 ]
 
 # OpenAI-compatible providers ride the base `openai` client and must NOT be gated
