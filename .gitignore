@@ -118,3 +118,7 @@ yosoi_driver/target/
 .claude/scheduled_tasks.lock
 article.json
 tests/stubs/snippets/_check_*.py
+
+# Generated QA-index spike captures (raw/rendered HTML, AX trees, network logs).
+# Reproducible output, multi-MB, and not part of the package.
+spikes/**/captures/
