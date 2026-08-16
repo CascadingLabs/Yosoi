@@ -715,7 +715,8 @@ async def test_quick_extract_success(mocker):
     """quick_extract fetches URL and extracts content."""
     extractor = _make_extractor()
     mock_response = mocker.MagicMock()
-    mock_response.text = '<html><body><h1>Hello World</h1></body></html>'
+    mock_response.content = b'<html><body><h1>Hello World</h1></body></html>'
+    mock_response.headers = {'content-type': 'text/html; charset=utf-8'}
 
     mock_client = mocker.AsyncMock()
     mock_client.get.return_value = mock_response

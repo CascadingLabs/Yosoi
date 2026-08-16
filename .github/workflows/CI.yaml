@@ -92,3 +92,6 @@ jobs:
           YOSOI_INTEGRATION: "1"
           YOSOI_NO_SANDBOX: "1"
         run: uv run pytest tests/integration/ -m browser_integration --tb=short -q
+
+      - name: Run local-HTTP integration tests
+        run: uv run pytest tests/integration/ -m local_http --tb=short -q

@@ -456,7 +456,9 @@ async def test_crawl_accepts_contract_classes_at_call_site(monkeypatch) -> None:
         safety=CrawlSafety(allowed_hosts=('example.com',)),
     )
 
-    summary = await crawl('https://example.com/news/', contracts=NewsArticle, limit=1, policy=policy, progress=False)
+    # No ``limit`` here: this test is about the contract class at the call site, and ``limit``
+    # is a page cap (CAS-232) that would stop the crawl at the seed.
+    summary = await crawl('https://example.com/news/', contracts=NewsArticle, policy=policy, progress=False)
 
     assert summary.scrape_target_urls() == ['https://example.com/story']
 
@@ -560,3 +562,50 @@ async def test_crawl_blocks_denied_host_before_fetch(monkeypatch) -> None:
     assert fetcher.calls == []
     assert summary.policy_blocked == 1
     assert summary.outcome_lanes['policy_blocked'] == ['https://blocked.test/']
+
+
+def _linked_site(page_count: int) -> dict[str, str]:
+    """A seed linking to ``page_count`` leaf pages, each linking back to a sibling."""
+    links = ''.join(f'<a href="/p{index}">P{index}</a>' for index in range(page_count))
+    pages = {'https://example.com/': links}
+    for index in range(page_count):
+        pages[f'https://example.com/p{index}'] = f'<article>P{index}</article>{links}'
+    return pages
+
+
+@pytest.mark.parametrize('limit', [1, 3, 6])
+async def test_crawl_limit_caps_pages_fetched(monkeypatch, limit) -> None:
+    """CAS-232: ``limit=N`` bounds the crawl to N pages, not just the reporting target."""
+    fetcher = FakeFetcher(_linked_site(20))
+    _inject(monkeypatch, fetcher)
+
+    summary = await crawl(['https://example.com/'], limit=limit, progress=False)
+
+    assert summary.pages_fetched == limit
+    assert len(fetcher.calls) == limit
+
+
+async def test_crawl_limit_is_an_upper_bound_not_a_target(monkeypatch) -> None:
+    """A limit above what the site offers still crawls only what is reachable."""
+    fetcher = FakeFetcher(_linked_site(2))
+    _inject(monkeypatch, fetcher)
+
+    summary = await crawl(['https://example.com/'], limit=50, progress=False)
+
+    assert summary.pages_fetched == 3
+
+
+async def test_crawl_limit_lowers_the_policy_budget(monkeypatch) -> None:
+    """An explicit budget is capped by ``limit`` rather than ignoring it."""
+    fetcher = FakeFetcher(_linked_site(20))
+    _inject(monkeypatch, fetcher)
+    policy = Policy.for_crawl(
+        'crawl.conservative',
+        budget=CrawlBudget(max_pages=15, max_depth=2, max_attempts=15),
+        scheduler=SchedulerPolicy(max_workers=1, politeness_delay=0),
+        safety=CrawlSafety(allowed_hosts=('example.com',)),
+    )
+
+    summary = await crawl(['https://example.com/'], limit=4, policy=policy, progress=False)
+
+    assert summary.pages_fetched == 4

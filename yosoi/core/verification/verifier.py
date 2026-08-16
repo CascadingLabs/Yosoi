@@ -280,12 +280,14 @@ class SelectorVerifier:
         """
         import httpx2
 
+        from yosoi.core.fetcher.encoding import decode_response
+
         try:
             async with httpx2.AsyncClient() as client:
                 response = await client.get(
                     url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=10, follow_redirects=True
                 )
-            sel = Selector(text=response.text)
+            sel = Selector(text=decode_response(response))
             elements = sel.css(selector)
             return bool(elements) and bool(' '.join(elements[0].xpath('.//text()').getall()).strip())
         except (httpx2.HTTPError, ValueError) as exc:
