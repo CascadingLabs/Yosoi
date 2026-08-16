@@ -1,0 +1,38 @@
+# Evaluator-only oracles into the frozen capture. Emitted RegionRef locators are never
+# recorded here; the test maps each oracle to whatever address the implementation chose.
+
+[[required_evidence]]
+id = "robots_noarchive"
+oracle_xpath = "//meta[@name='robots']"
+oracle_contains = "NOARCHIVE"
+why = "a crawl directive exists in no other modality and changes what may be archived"
+
+[[required_evidence]]
+id = "empty_description"
+oracle_xpath = "//meta[@name='description']"
+why = "a declared-but-empty description is a defect an allowlist reports as merely absent"
+
+[[required_evidence]]
+id = "insecure_jquery"
+oracle_xpath = "//script[starts-with(@src, 'http://')]"
+oracle_contains = "jquery"
+why = "a third-party script over plain http is a real finding available only in source"
+
+[[required_evidence]]
+id = "favicon_link"
+oracle_xpath = "//link[@rel='shortcut icon']"
+why = "keyed by a two-word rel value that a naive rel parser splits or drops"
+
+[[required_evidence]]
+id = "title"
+oracle_xpath = "//title"
+oracle_contains = "Books to Scrape"
+why = "page identity"
+
+# The repeat region. Reached as a REGION rather than as 20 entries: the index must address the
+# container and let `expand` page the members, never spend 20 slots on one shape.
+[[required_region]]
+id = "product_records"
+oracle_xpath = "//li[contains(@class, 'col-xs-6')]"
+expected_members = 20
+why = "the headline case: N identical records must cost one region, and stay individually reachable"

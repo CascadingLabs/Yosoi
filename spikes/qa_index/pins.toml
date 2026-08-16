@@ -1,0 +1,16 @@
+# Immutable snapshot set. Every measurement resolves through this file.
+# Re-pinning re-bases every number — do it deliberately, never as a side effect.
+
+[pin]
+books_toscrape = "20260808T001127Z"
+gmaps_arbys = "20260808T002126Z"
+qscrape_eshop_l1 = "20260808T004351Z"
+qscrape_eshop_l2 = "20260808T004353Z"
+react_window_ghpages_broken = "20260808T003302Z"
+react_window_virtualized = "20260807T235845Z"
+realworld_conduit = "20260808T001023Z"
+saleor_storefront = "20260807T235800Z"
+tanstack_query_infinite = "20260807T235621Z"
+tanstack_virtual_infinite = "20260807T235618Z"
+the_internet = "20260807T235803Z"
+wikipedia_united_states = "20260807T235752Z"

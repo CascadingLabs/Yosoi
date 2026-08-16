@@ -1,0 +1,68 @@
+id = "network_seeded_400"
+modality = "network"
+lane = "gate"
+threat = "a small number of important API failures disappear among assets, telemetry, duplicate calls, and irrelevant JSON"
+capture_profile = "browser_headless"
+budget_tokens = 3000
+max_inspection_hops = 1
+
+# Generated, not frozen: the trace is ~200 KB of JSON and is a pure function of its snapshot id,
+# so the manifest pins the bytes by digest and the test reproduces them.
+generator = "tests.boss_fights.generators.network_trace:render_network_trace"
+generated_sha256 = "d720bb9a9ab92c83e8b9bb4579b92dbb5b31a09456b309abe13fe9cfad0f5e4c"
+generated_bytes = 204710
+
+# The composition boss_fights.md specifies, restated so the fixture cannot drift from the spec.
+total_requests = 400
+assets = 250
+telemetry = 80
+duplicate_api = 40
+irrelevant_json = 20
+useful_api = 8
+defects = 2
+
+# 400 requests must reduce to a few dozen entries. This is a ceiling, not a measurement: the
+# reduction produces 41 (1 trace + 5 origins + 33 endpoints + 2 deviating members).
+max_index_entries = 60
+
+# The overview an agent reads. `budget_tokens` is the ceiling from boss_fights.md; the reduction
+# measures well under it, and the gate is that the defects are IN it, not that it is exactly 1000.
+min_defect_rank = 1
+max_defect_rank = 2
+
+# The whole 41-entry index costs 1,297 estimated tokens. At the bottom of boss_fights.md's
+# 1,000–3,000 band, both defect members remain resident because each inherits the routing tier of
+# the endpoint region it is bound to.
+budget_floor_tokens = 1000
+whole_index_tokens = 1297
+
+prediction = """
+Both defect-bearing requests are individually addressable from an overview that costs under 3000
+estimated tokens, with no task given in advance and no host or path allowlist anywhere. They are
+the two highest-ranked things in the reduction, because they are the only two requests that deviate
+from the other members of their OWN duplicate group: one is a 500 among five 200s on the same
+endpoint, the other is a 200 whose response shape and declared item count differ from the forty
+identical polls beside it. The 40 duplicate calls stay countable as one region reporting x41 and
+remain individually reachable through `expand`. 250 assets and 80 telemetry calls cost 8 entries
+between them and are never named by a rule that mentions a host.
+"""
+failure = "a defect request is unreachable from the overview, ranks below an irrelevant singleton, or is only findable because a host, path, or weight was hand-picked"
+
+[capabilities]
+source_html = false
+rendered_dom = false
+ax_tree = false
+network = true
+
+[limits]
+# The half of "API/DOM cardinality mismatch" that needs a second modality is not computed. Only the
+# network-internal half is: a declared item count that differs from its own duplicate group's.
+dom_cardinality_cross_check = false
+dom_cardinality_cross_check_owner = "cross-modality gate; needs a DOM view of the same snapshot"
+# net2 models request/response pairs. Streams are a different shape and a different fight.
+server_sent_events = false
+websocket_frames = false
+streams_owner = "unscheduled; needs an event-sequence schema, not a request schema"
+# Ordering, dependency chains, and races are visible in a trace and deliberately not ranked on.
+request_ordering = false
+request_ordering_owner = "unscheduled; a chain is a relation between requests, not a property of one"

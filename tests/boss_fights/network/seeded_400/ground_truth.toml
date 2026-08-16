@@ -1,0 +1,39 @@
+# Evaluator-only oracles into the generated trace. Emitted locators are never recorded here; the
+# test maps each oracle to whatever address the implementation chose.
+#
+# The oracle for a network trace is a `request_id` — a property of the artifact, exactly as an XPath
+# is a property of a document. It says which request must be reachable without saying how.
+
+[[required_evidence]]
+id = "defect_status_500"
+oracle_request_id = "req_defect_status"
+expect_status = 500
+why = "a 500 on the sixth call to an endpoint whose other five returned 200 — the failure a reader is meant to find without being told to look for it"
+
+[[required_evidence]]
+id = "defect_shape_drift"
+oracle_request_id = "req_defect_shape"
+expect_status = 200
+why = "a semantic HTTP-200 failure: the cart stopped returning line items, so status alone cannot find it and only a shape comparison against its own duplicate group can"
+
+[[required_region]]
+id = "duplicate_cart_polls"
+oracle_path_template = "/v1/cart"
+expected_members = 41
+why = "40 duplicate polls plus the drifted one must cost one region that still reports its true count and still expands to every member"
+
+[[required_region]]
+id = "failing_product_endpoint"
+oracle_path_template = "/v1/products/{id}"
+expected_members = 6
+why = "the failing request must not be lifted out of its endpoint; the group is what makes the deviation visible"
+
+[[decoy]]
+id = "irrelevant_singletons"
+count = 20
+why = "20 one-off JSON endpoints fire the weakest rarity feature (singleton template) and must rank BELOW both defects — that ordering is the whole gate"
+
+[[decoy]]
+id = "asset_and_telemetry_volume"
+count = 330
+why = "250 assets and 80 telemetry calls must be compressed without any rule that names a host, a path, or a vendor"

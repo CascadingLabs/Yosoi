@@ -1,0 +1,31 @@
+# Evaluator-only oracles into the frozen revision. Emitted RegionRef locators and ref_ids are
+# never recorded here; the test maps each oracle to whatever the implementation chose.
+
+# The article's own table of contents. Every one of these must appear in a budgeted overview:
+# a reader who cannot see that a section exists cannot ask to inspect it.
+[[required_overview]]
+id = "section_headings"
+oracle_xpath = "//h2 | //h3"
+why = "sections are the routing layer; omitting one hides a whole topic rather than shortening it"
+
+# Prose that must remain reachable in one hop from the overview, not resident in it.
+[[required_evidence]]
+id = "html_parsing_prose"
+oracle_xpath = "//h3[@id='HTML_parsing']/following-sibling::p[1]"
+why = "the answer to a real question about this page lives in body prose the overview must not carry"
+
+[[required_evidence]]
+id = "prevention_prose"
+oracle_xpath = "//h2[@id='Methods_to_prevent_web_scraping']/following-sibling::p[1]"
+why = "second topic, so one-hop reachability is not proven by a single lucky entry"
+
+[[required_evidence]]
+id = "page_title"
+oracle_xpath = "//title"
+why = "page identity survives even on a document dominated by prose"
+
+# Repeated structures the body reducer must collapse rather than enumerate.
+[[required_region]]
+id = "any_repeat"
+oracle_xpath = "(//ul[count(li)>1])[1]/li"
+why = "a list-heavy article must spend regions on its lists, not one entry per item"

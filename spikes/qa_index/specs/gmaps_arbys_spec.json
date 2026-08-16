@@ -1,0 +1,16 @@
+{
+  "record": "div[role=article]",
+  "fields": {
+    "name": "div.qBF1Pd::text",
+    "rating": "span.MW4etd::text",
+    "stars": "span.ZkP5Je::attr(aria-label)",
+    "category": "div.W4Efsd > div.W4Efsd:nth-of-type(1) > span:nth-of-type(1) > span::text",
+    "address": "div.W4Efsd > div.W4Efsd:nth-of-type(1) > span:nth-of-type(3) > span:nth-of-type(2)::text",
+    "blurb": "div.W4Efsd > div.W4Efsd:nth-of-type(2) > span > span::text",
+    "open_state": "div.W4Efsd > div.W4Efsd:nth-of-type(3) > span:nth-of-type(1) > span > span:nth-of-type(1)::text",
+    "hours_detail": "div.W4Efsd > div.W4Efsd:nth-of-type(3) > span:nth-of-type(1) > span > span:nth-of-type(2)::text",
+    "phone": "span.UsdlK::text",
+    "place_url": "a.hfpxzc::attr(href)",
+    "website": "a.lcr4fd::attr(href)"
+  }
+}

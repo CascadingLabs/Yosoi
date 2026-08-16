@@ -1,0 +1,49 @@
+services:
+  vllm:
+    image: ${VLLM_IMAGE:-vllm/vllm-openai:latest}
+    restart: unless-stopped
+    ipc: host
+    ports:
+      - "${VLLM_BIND_ADDRESS:-127.0.0.1}:${VLLM_PORT:-8096}:8000"
+      # Echo-only control endpoint for separating network overhead from inference.
+      - "127.0.0.1:${VLLM_LOCAL_PORT:-8097}:8000"
+    environment:
+      NVIDIA_VISIBLE_DEVICES: ${GPU_DEVICE:-1}
+      HF_TOKEN: ${HF_TOKEN:-}
+    volumes:
+      - model-cache:/root/.cache/huggingface
+    command:
+      - --model
+      - ${MODEL_ID:-google/gemma-4-12b-it}
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+      - --dtype
+      - ${DTYPE:-bfloat16}
+      - --gpu-memory-utilization
+      - "${GPU_MEMORY_UTILIZATION:-0.90}"
+      - --max-model-len
+      - "${MAX_MODEL_LEN:-32768}"
+      - --limit-mm-per-prompt
+      - '{"image": ${MAX_IMAGES_PER_PROMPT:-4}}'
+      - --enable-prefix-caching
+      - --enable-auto-tool-choice
+      - --tool-call-parser
+      - gemma4
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["${GPU_DEVICE:-1}"]
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)\""]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+volumes:
+  model-cache:

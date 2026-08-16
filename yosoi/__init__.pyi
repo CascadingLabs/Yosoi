@@ -95,6 +95,7 @@ from yosoi.policy import SearchPolicy as _SearchPolicy
 from yosoi.policy import SecretRef as _SecretRef
 from yosoi.policy import TelemetryPolicy as _TelemetryPolicy
 from yosoi.policy import Trust as _Trust
+from yosoi.qa.index import index as index
 from yosoi.recipe import Recipe as Recipe
 from yosoi.recipe import RecipeMetadata as RecipeMetadata
 from yosoi.recipe import RecipePublishResult as RecipePublishResult

@@ -1,0 +1,22 @@
+# Independent semantic expectations for the frozen live episode.
+# These deliberately do not name emitted RegionRef locators.
+
+[s0_empty]
+todo_count = 0
+completed_count = 0
+route = "all"
+
+[s1_three_active]
+todo_count = 3
+completed_count = 0
+route = "all"
+
+[s2_one_completed]
+todo_count = 3
+completed_count = 1
+route = "all"
+
+[s3_completed_filter]
+todo_count = 1
+completed_count = 1
+route = "completed"

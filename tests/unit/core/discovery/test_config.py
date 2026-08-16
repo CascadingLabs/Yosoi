@@ -575,6 +575,17 @@ class TestSpecialProviderBehaviour:
         model = create_model(cfg)
         assert 'OpenAI' in type(model).__name__
 
+    def test_openai_extra_params_base_url(self):
+        """OpenAI-compatible endpoints accept a custom base_url."""
+        cfg = LLMConfig(
+            provider='openai',
+            model_name='local-model',
+            api_key='EMPTY',
+            extra_params={'base_url': 'http://echo:8096/v1'},
+        )
+        model = create_model(cfg)
+        assert str(model.provider.base_url) == 'http://echo:8096/v1/'
+
     def test_ollama_extra_params_base_url(self):
         """Ollama accepts a custom base_url via extra_params."""
         cfg = LLMConfig(

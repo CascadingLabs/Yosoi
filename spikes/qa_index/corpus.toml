@@ -1,0 +1,257 @@
+# QA index benchmark corpus.
+#
+# The corpus is a MEASUREMENT INSTRUMENT. If a target drifts, the scoreboard stops
+# being a time series and every earlier iteration becomes uncomparable. Hence:
+# pin what we can, self-host what matters, and quarantine what we can't pin.
+#
+# lane:
+#   gate     — scores in the time series. Must be pinned or effectively static.
+#   dirty    — real, messy, unpinned. NEVER gates. Canary for over-fitting to clean DOM.
+#   selfhost — needs local infra before it can be captured (not yet wired).
+#
+# verified = false means the URL is an assumption, not yet confirmed by a live probe.
+# `predict` is written BEFORE measuring, on purpose. It is what makes a result falsifiable.
+
+[[target]]
+id = "books_toscrape"
+url = "https://books.toscrape.com/"
+axis = "static-ssr"
+lane = "gate"
+pin = "static-site"
+verified = true          # known-good target, used by Yosoi already
+predict = """
+Floor/control. Raw HTML is already near-sufficient; pruning should cut tokens with
+near-zero MDS coverage loss. If coverage drops here, the reducer is broken.
+"""
+
+[[target]]
+id = "wikipedia_united_states"
+url = "https://en.wikipedia.org/w/index.php?title=United_States&oldid=1367974909"
+axis = "huge-prose-flat"
+lane = "gate"
+pin = "oldid=1367974909"  # rev of 2026-08-06T08:11:17Z. Unpinned, this drifts daily and
+                          # the negative control's scoreboard history becomes worthless.
+verified = true
+predict = """
+NEGATIVE CONTROL. Prose is not templated, so dedup should buy relatively little and
+MDS coverage should degrade FASTER here than on templated targets.
+If Wikipedia scores as well as books_toscrape, that is a bug in the metric — not a win
+for the index. Do not read it the other way.
+"""
+
+[[target]]
+id = "realworld_conduit"
+url = "https://demo.realworld.show/"
+axis = "csr-spa-rest"
+lane = "gate"
+pin = "public-demo"
+verified = true   # probed: demo.realworld.build and *.realworld.how do not resolve;
+                  # demo.realworld.io and react-redux.realworld.io return 404.
+predict = """
+Canonical SPA workload: client-side nav, REST fetches, list + detail. Expect a large
+L1→L2 delta (static HTML nearly empty, rendered DOM full). Raw-HTML baseline should
+score near zero on MDS coverage — that gap is the whole reason L2 is the starting tier.
+"""
+
+[[target]]
+id = "saleor_storefront"
+url = "https://demo.saleor.io/en/default"
+axis = "graphql"
+lane = "gate"
+pin = "public-demo"
+verified = true   # probed: storefront1.saleor.cloud is the Saleor CLOUD ENVIRONMENT
+                  # landing page ("Welcome. This is your new environment.", 35 AX nodes),
+                  # not a storefront. The real storefront is demo.saleor.io, which
+                  # redirects to a locale/channel path — capture that path directly.
+predict = """
+The typed-oracle target. GraphQL introspection should yield a schema, making
+"API returned N, DOM rendered M" a defect assertion with zero LLM judgment.
+NOTE: we cannot make a public demo lie — DOM/network divergence must be INJECTED
+into the frozen capture, not observed live. That injection is needed for MDS labeling
+anyway, so self-hosting Saleor is not worth the weight.
+"""
+
+[[target]]
+id = "react_window_virtualized"
+url = "https://react-window.vercel.app/"
+axis = "virtualized-list"
+lane = "gate"
+pin = "public-demo"
+verified = true   # capturable stand-in for the TanStack Virtual example, which is only
+                  # reachable through a StackBlitz iframe (see below).
+predict = """
+Breaks naive DOM indexing outright: elements leave the DOM as you scroll, so a
+single-snapshot index is structurally incomplete. Expect low MDS coverage for ALL
+snapshot-based reducers including ours. This target exists to prove the episode unit
+is necessary, not to be won on snapshot alone.
+"""
+
+[[target]]
+id = "tanstack_virtual_infinite"
+url = "https://tanstack.com/virtual/latest/docs/framework/react/examples/infinite-scroll"
+axis = "virtualized-list"
+lane = "selfhost"
+pin = "official-example"
+verified = false
+predict = """
+CAPTURE FAILS AS A URL. Probed: the docs page embeds the example in a StackBlitz
+iframe (stackblitz.com/github/tanstack/virtual/...?embed=1), so the captured DOM is
+docs chrome — nav, sidebar, search — and contains no virtualized list at all
+(1,638 AX nodes, none of them list items). Must be run locally from the repo example
+to be captured. Until then react_window_virtualized covers the axis.
+"""
+
+[[target]]
+id = "tanstack_query_infinite"
+url = "https://tanstack.com/query/latest/docs/framework/react/examples/load-more-infinite-scroll"
+axis = "loading-network-states"
+lane = "selfhost"
+pin = "official-example"
+verified = false
+predict = """
+Same StackBlitz-iframe problem as tanstack_virtual_infinite — must be run locally.
+Meanwhile the requests-on/off delta is measured as a CAPTURE MODE (--no-requests)
+against realworld_conduit and saleor_storefront, which is arguably the better framing:
+the delta is a property of how you capture, not of which site you point at.
+"""
+
+[[target]]
+id = "the_internet"
+url = "https://the-internet.herokuapp.com/"
+axis = "known-behavioral-defects"
+lane = "gate"
+pin = "public-demo"
+verified = false
+predict = """
+PRIMARY MDS ANCHOR. Failures are behavioral, tiny, and isolated (broken images,
+disappearing elements, slow resources, status codes) — which is what makes a minimal
+set actually minimal. Best ground truth per unit of labeling effort in the corpus.
+"""
+
+[[target]]
+id = "juice_shop"
+url = "http://localhost:3000/"
+axis = "known-defects-spa"
+lane = "selfhost"        # moved off the public demo: it drifts, and its state is shared
+                         # with everyone else poking it. Pin bkimminich/juice-shop by digest.
+pin = "docker-digest"
+verified = false
+predict = """
+PARTIAL anchor — do not over-invest. Its documented challenges are SECURITY defects
+(XSS, injection, auth bypass); QA mode targets rendering and data-integrity defects.
+Overlap is real but thin. Value is mostly "modern SPA with known-bad states".
+"""
+
+[[target]]
+id = "grpc_web_echo"
+url = "http://localhost:8081/echotest.html"
+axis = "grpc-web"
+lane = "selfhost"
+pin = "official-example"
+verified = false
+predict = """
+Feasibility probe, and a documented "no" is an acceptable result. Decoding gRPC-web
+protobuf framing without server reflection or checked-in .protos is a genuine research
+task. Self-hosted (Envoy + echo server) so it is pinnable at all.
+"""
+
+[[target]]
+id = "react_window_ghpages_broken"
+url = "https://bvaughn.github.io/react-window/"
+axis = "known-behavioral-defects"
+lane = "gate"
+pin = "gh-pages"
+verified = true
+predict = """
+FREE GROUND TRUTH — found by accident while probing, kept on purpose.
+This deployment is genuinely broken: a CSR shell whose asset paths are absolute
+(/static/js/main.*.js) while the site is served under the /react-window/ subpath, so
+every bundle 404s and the app never mounts. Captured result is a 505-byte document with
+4 AX nodes and an empty <div id="root">.
+
+Defect class: blank-page-on-asset-404. The MDS is tiny and unambiguous — the empty root
+node plus the failed script requests — which makes it a good early test of whether the
+NETWORK layer is doing work the DOM layer cannot. From the DOM alone this page is merely
+small; only the request log says it is broken. If our index can't distinguish "small page"
+from "broken page" here, that is the clearest possible argument for L4.
+"""
+
+# ── dirty lane ────────────────────────────────────────────────────────────────
+# Real, messy, unpinned. Consent walls, tag managers, third-party script soup, lazy
+# hydration islands, telemetry noise. These NEVER score in the time series.
+# They exist to catch an index that looks excellent on official examples and falls
+# over on the first real page.
+
+[[target]]
+id = "qscrape_eshop_l1"
+url = "https://qscrape.dev/l1/eshop"
+axis = "actions-interaction"
+lane = "gate"
+pin = "own-property"
+verified = true
+predict = """
+ACTION TEST — the index has only been proven on static analysis so far. Everything up to
+here reads one snapshot; QA assertions live in state CHANGES.
+
+Prediction: the minimal outline is cheap enough (hundreds of tokens) that re-indexing
+after every click is affordable, which makes the natural unit an EPISODE —
+action -> outline delta. The delta between two outlines should be far smaller than
+either outline, so the assertion surface is cheaper than the observation surface.
+
+Failure mode to watch: if a click causes a large re-render, the diff is not small and
+the episode framing loses its cost advantage.
+"""
+
+[[target]]
+id = "qscrape_eshop_l2"
+url = "https://qscrape.dev/l2/eshop"
+axis = "actions-interaction"
+lane = "gate"
+pin = "own-property"
+verified = true
+predict = "Same as l1 but at the heavier tier — expect a larger L1->L2 hydration delta and more client-side state."
+
+[[target]]
+id = "gmaps_arbys"
+url = "https://www.google.com/maps/search/arbys/@39.8283,-98.5795,5z"
+axis = "dirty-real-world"
+lane = "dirty"
+pin = "none"
+verified = false
+predict = """
+STRESS TEST — expected to be the hardest target in the corpus, and a documented failure
+is an acceptable result.
+
+Everything the clean targets lack, at once: obfuscated/rotating class names (so
+attribute-based selectors are unstable BY DESIGN), a virtualized result pane (records
+leave the DOM on scroll), consent interstitials, geo-dependence (coords anchored in the
+URL per prior replay-executor work — IP geolocation is not a reliable signal), and
+results that arrive via internal RPC rather than the initial document.
+
+Predictions, written before measuring:
+- L1 static will be near-useless: results are not in the server HTML.
+- record_unit()'s max-sibling-count heuristic is likely to pick the WRONG boundary,
+  because the result list is nested inside scroll containers with their own repeats.
+- Selector-based extraction should lose to the network layer here. If the RPC response
+  carries review counts and hours as typed data, that is the deterministic oracle and
+  the DOM is the wrong substrate entirely. This target is the clearest test of the
+  "prefer JSON over authored selectors" claim.
+"""
+
+[[target]]
+id = "dirty_news"
+url = "https://www.theguardian.com/us"
+axis = "dirty-real-world"
+lane = "dirty"
+pin = "none"
+verified = false
+predict = "Expect consent/CMP interference, heavy third-party network noise, and ad slots that look like content to a naive salience ranker."
+
+[[target]]
+id = "dirty_ecommerce"
+url = "https://www.etsy.com/"
+axis = "dirty-real-world"
+lane = "dirty"
+pin = "none"
+verified = false
+predict = "Expect antibot pressure at L2 headless. If this fails to capture, that is a finding about tier, not a corpus bug."

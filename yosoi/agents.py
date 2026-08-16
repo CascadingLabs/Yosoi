@@ -10,7 +10,7 @@ from typing import Literal, cast
 AgentTarget = Literal['pi', 'agents', 'claude', 'codex', 'opencode']
 AgentScope = Literal['user', 'project']
 
-_SKILLS = ('yosoi-web-workflows', 'yosoi-fetch', 'yosoi-research-frontier')
+_SKILLS = ('yosoi-web-workflows', 'yosoi-fetch', 'yosoi-research-frontier', 'yosoi-qa-index')
 _TARGETS: tuple[AgentTarget, ...] = ('pi', 'agents', 'claude', 'codex', 'opencode')
 
 

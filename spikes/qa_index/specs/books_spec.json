@@ -1,0 +1,10 @@
+{
+  "record": "article.product_pod",
+  "fields": {
+    "title": "h3 a::attr(title)",
+    "price": "p.price_color::text",
+    "availability": "p.instock.availability::text",
+    "url": "h3 a::attr(href)",
+    "rating": "p.star-rating::attr(class)"
+  }
+}

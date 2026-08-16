@@ -120,3 +120,31 @@ def test_save_xlsx_extends_header_with_new_columns(tmp_path, xlsx_save):
     ws = wb.active
     header = [cell.value for cell in ws[1]]
     assert 'rating' in header  # header was extended
+
+
+def test_save_xlsx_keeps_columns_aligned_across_a_header_gap(tmp_path, xlsx_save):
+    """A blank cell in the header row must stay a blank column, not shift the data.
+
+    A gap (column D empty, column E filled) reads back as a ``None`` header value.
+    The header list is positional -- index i is column i+1 -- so the gap has to be
+    preserved, and the appended value for column E must still land in column E.
+    """
+    import openpyxl
+
+    filepath = str(tmp_path / 'results.xlsx')
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws['A1'], ws['B1'], ws['C1'], ws['E1'] = 'url', 'domain', 'headline', 'extra'
+    wb.save(filepath)
+    assert [c.value for c in openpyxl.load_workbook(filepath).active[1]] == [
+        'url',
+        'domain',
+        'headline',
+        None,
+        'extra',
+    ], 'precondition: the gap must survive a save/load round trip'
+
+    xlsx_save(filepath, URL, DOMAIN, {'headline': 'Test Article', 'extra': 'kept'})
+
+    ws = openpyxl.load_workbook(filepath).active
+    assert [c.value for c in ws[2]] == [URL, DOMAIN, 'Test Article', None, 'kept']
