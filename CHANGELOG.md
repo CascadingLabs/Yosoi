@@ -1,3 +1,17 @@
+## 0.0.3a27 (2026-08-16)
+
+### Feat
+
+- add the QA index: a task-agnostic indexed observation runtime that turns a live page into a compact, role+name addressable index instead of raw HTML, so an agent can inspect a large SPA without reading it in full. Ships `yosoi.observations` (AX and DOM trees, anchoring, pruners, artifacts), `yosoi.qa` (index, capture, reports, runtime, tools), and the `yosoi qa` CLI arm. (CAS-262, CAS-270)
+- add `yosoi.actions`: a retained action runtime with a transition ledger and a VoidCrawl adapter, so a QA episode can act on a page and re-capture the resulting state as evidence. (CAS-270)
+- compile action episodes into fresh-session deterministic replay, so a recorded interaction can be re-run and asserted against from a clean browser. (CAS-272)
+- add a bounded indexed discovery harness — an agent loop over the page index with explicit per-turn budgets and a closed decision per turn (click, navigate, or declare complete). (CAS-273)
+- make OpenCode the default subscription-discovery provider and move the Claude SDK behind the opt-in `claude-sdk` extra, so the base install no longer pulls a provider SDK it may not use. (CAS-242)
+
+### Fix
+
+- bump `aiohttp` 3.14.1 → 3.14.3, `cryptography` 49.0.0 → 50.0.0, and `h2` 4.3.0 → 4.4.1 to clear PYSEC-2026-3545/3546/3547/3552/3628.
+
 ## 0.0.3a26 (2026-07-31)
 
 ### Feat
