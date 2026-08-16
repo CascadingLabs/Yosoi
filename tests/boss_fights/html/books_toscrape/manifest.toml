@@ -1,0 +1,38 @@
+id = "books_toscrape_ssr_control"
+modality = "source_html"
+lane = "dogfood"
+threat = "repetitive chrome or a fixed budget hides a declaration that only source HTML carries"
+capture_profile = "http_static"
+source_url = "https://books.toscrape.com/"
+artifact = "books_toscrape.html"
+artifact_sha256 = "9fdd63da34161ebd13408d7a85105f83ec3c9f351c5d77cd0aa578790e121c1e"
+captured_at = "2026-08-07T20:11:00Z"
+frozen_from = "Yosoi-qa-spike/spikes/qa_index/captures/books_toscrape/20260808T001127Z/raw.html"
+max_inspection_hops = 1
+
+# Rendering is a separate stage and ObservationIndexRenderer is still a scaffold, so this
+# gate is stated in the bytes this slice actually emits, summed across BOTH reductions
+# (html.declarations + html.body).
+budget_output_bytes = 4000
+
+prediction = """
+Every declaration on the page is addressable in one hop from an index an order of magnitude
+smaller than the 51,294-byte document — including the empty description, the NOARCHIVE
+robots directive, and the jQuery script loaded over plain http from the end of <body>. The
+20 repeated product records collapse to one region plus one exemplar, and every record stays
+reachable through that region by a durable content key.
+"""
+failure = "a required declaration or record is unreachable in one hop, or the index exceeds its byte budget"
+
+[capabilities]
+source_html = true
+rendered_dom = false
+ax_tree = false
+network = false
+
+# Stated limits. Contiguous repeats collapse (MDR's rule); records interleaved with unrelated
+# siblings do not, and that is DEPTA's tag-path clustering to add later. Recorded here so the
+# boundary is asserted rather than discovered.
+[limits]
+noncontiguous_records = false
+noncontiguous_records_owner = "DEPTA-style tag-path clustering, unscheduled"

@@ -139,6 +139,19 @@ uvx yosoi agents install --target agents
 
 See [`docs/agent-workflows.md`](docs/agent-workflows.md). For direct, bounded multi-URL page acquisition, see [`docs/fetch.md`](docs/fetch.md).
 
+## Read-only QA index
+
+Existing observation indexes can be exposed through a bounded Python API or an injected MCP server.
+The standalone CLI and MCP launcher report their unwired state rather than starting capture or a
+provider:
+
+```bash
+uvx yosoi qa status --json
+uvx yosoi agents install --target pi
+```
+
+See [`docs/qa-index.md`](docs/qa-index.md) for Python, MCP, CLI, skill, and security boundaries.
+
 ## Quick Start
 
 ### API Key

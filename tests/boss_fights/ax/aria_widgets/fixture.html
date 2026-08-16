@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ARIA widget matrix</title>
+<style>
+  body { font: 14px/1.4 system-ui, sans-serif; margin: 1rem; }
+  [role="tabpanel"][hidden] { display: none; }
+  .icon { width: 16px; height: 16px; display: inline-block; background: #333; }
+  .row { display: flex; gap: .5rem; }
+</style>
+</head>
+<body>
+<h1>ARIA widget matrix</h1>
+
+<!-- FORM: repeated controls that differ ONLY in state. Shape must collapse, state must survive. -->
+<form aria-label="Notification preferences">
+  <fieldset>
+    <legend>Channels</legend>
+    <label><input type="checkbox" name="c1" checked> Email</label>
+    <label><input type="checkbox" name="c2"> SMS</label>
+    <label><input type="checkbox" name="c3" checked> Push</label>
+    <label><input type="checkbox" name="c4"> Webhook</label>
+    <label><input type="checkbox" name="c5"> Carrier pigeon</label>
+    <label><input type="checkbox" name="c6" disabled> Fax (retired)</label>
+  </fieldset>
+  <label for="email">Email address</label>
+  <input id="email" type="email" value="ops@example.test" required>
+  <label for="threshold">Threshold</label>
+  <input id="threshold" type="number" value="7" aria-describedby="threshold-help">
+  <p id="threshold-help">Alert after this many failures.</p>
+  <button type="submit">Save preferences</button>
+</form>
+
+<!-- TABS: aria-selected is the only difference between the three tab controls. -->
+<div role="tablist" aria-label="Environments">
+  <button role="tab" id="tab-prod" aria-selected="true" aria-controls="panel-prod">Production</button>
+  <button role="tab" id="tab-stage" aria-selected="false" aria-controls="panel-stage">Staging</button>
+  <button role="tab" id="tab-dev" aria-selected="false" aria-controls="panel-dev">Development</button>
+</div>
+<div role="tabpanel" id="panel-prod" aria-labelledby="tab-prod">Production is healthy.</div>
+<div role="tabpanel" id="panel-stage" aria-labelledby="tab-stage" hidden>Staging is degraded.</div>
+<div role="tabpanel" id="panel-dev" aria-labelledby="tab-dev" hidden>Development is offline.</div>
+
+<!-- COMBOBOX + LISTBOX: aria-setsize declares 50 options while only 5 are rendered.
+     AX-ONLY SEMANTICS: the true collection size exists nowhere in the DOM's own text. -->
+<label for="region">Region</label>
+<input id="region" role="combobox" aria-expanded="true" aria-controls="region-list" aria-autocomplete="list" value="eu-">
+<ul role="listbox" id="region-list" aria-label="Regions">
+  <li role="option" aria-setsize="50" aria-posinset="1" aria-selected="true">eu-west-1</li>
+  <li role="option" aria-setsize="50" aria-posinset="2" aria-selected="false">eu-west-2</li>
+  <li role="option" aria-setsize="50" aria-posinset="3" aria-selected="false">eu-central-1</li>
+  <li role="option" aria-setsize="50" aria-posinset="4" aria-selected="false">eu-north-1</li>
+  <li role="option" aria-setsize="50" aria-posinset="5" aria-selected="false">eu-south-1</li>
+</ul>
+
+<!-- GRID: rows repeat with one cell of state difference. -->
+<div role="grid" aria-label="Deploys" aria-rowcount="4">
+  <div role="row" aria-rowindex="1">
+    <span role="columnheader">Service</span>
+    <span role="columnheader">Status</span>
+  </div>
+  <div role="row" aria-rowindex="2"><span role="gridcell">checkout</span><span role="gridcell">passing</span></div>
+  <div role="row" aria-rowindex="3"><span role="gridcell">billing</span><span role="gridcell">passing</span></div>
+  <div role="row" aria-rowindex="4"><span role="gridcell">search</span><span role="gridcell">failing</span></div>
+</div>
+
+<!-- TREEVIEW: aria-expanded and aria-level are structure, not decoration. -->
+<ul role="tree" aria-label="Config">
+  <li role="treeitem" aria-level="1" aria-expanded="true">infra
+    <ul role="group">
+      <li role="treeitem" aria-level="2">network.yaml</li>
+      <li role="treeitem" aria-level="2">storage.yaml</li>
+    </ul>
+  </li>
+  <li role="treeitem" aria-level="1" aria-expanded="false">apps</li>
+</ul>
+
+<!-- DIALOG: open, modal, and labelled by a heading that lives inside it. -->
+<div role="dialog" aria-modal="true" aria-labelledby="dialog-title" aria-describedby="dialog-body">
+  <h2 id="dialog-title">Confirm rollout</h2>
+  <p id="dialog-body">This promotes build 4821 to production.</p>
+  <button>Promote</button>
+  <button>Cancel</button>
+</div>
+
+<!-- DEFECT A — visible in DOM, absent from AX.
+     A real, visible, focusable, clickable button hidden from assistive technology. -->
+<div class="row">
+  <button id="delete-account" aria-hidden="true">Delete account</button>
+  <p aria-hidden="true">Deleting an account is permanent and cannot be undone.</p>
+</div>
+
+<!-- DEFECT B — obvious in AX, hard to infer from DOM.
+     An icon-only control with no accessible name, and a label reference that names nothing. -->
+<div class="row">
+  <button id="export"><span class="icon"></span></button>
+  <button id="refresh" aria-labelledby="refresh-label-that-does-not-exist"><span class="icon"></span></button>
+</div>
+
+<!-- LIVE REGION: politeness and atomicity are AX-side facts. -->
+<div role="status" aria-live="polite" aria-atomic="true">3 deploys queued</div>
+</body>
+</html>

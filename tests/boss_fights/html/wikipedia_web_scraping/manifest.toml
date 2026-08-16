@@ -1,0 +1,47 @@
+id = "wikipedia_web_scraping_l1"
+modality = "source_html"
+lane = "negative-control"
+threat = "a correct reduction is mistaken for a usable overview, and the agent is handed 84 KiB of index"
+capture_profile = "http_static"
+source_url = "https://en.wikipedia.org/api/rest_v1/page/html/Web_scraping/1367063064"
+artifact = "wikipedia_web_scraping.html"
+artifact_sha256 = "3df34fc2001899ace9a2d60266d90029cfc9f17868140a9e03ebdf421a0cd0e3"
+captured_at = "2026-08-08T13:53:00Z"
+frozen_from = ".yosoi/fetches/wikipedia-web-scraping-rest-l1/source.html"
+max_inspection_hops = 1
+
+# The article-only REST representation of a PINNED revision: canonical static HTML that cannot
+# drift, without making Wikipedia's navigation chrome the subject of the example.
+revision = 1367063064
+
+# This workload gates the RENDERER, so the index budget is deliberately absent — the index is
+# expected to be large here. That is the whole point of the control.
+budget_overview_tokens = 900
+budget_overview_bytes = 4000
+tokenizer_id = "estimate/chars-per-token-4"
+
+prediction = """
+Pruning this article produces a correct index that is far too large to place in a model's
+context: roughly 1,038 entries and 84 KiB, because unique prose is preserved on purpose and the
+article carries many metadata and style declarations. That is not a pruning bug and must not be
+"fixed" by dropping prose.
+
+The renderer resolves it as a separate stage. Under a 900-token budget the overview keeps every
+`h2` and `h3` section heading the article declares, keeps the repeat regions, states how many
+entries it omitted, and stays inside both its token and byte budgets. Every omitted entry
+remains addressable: any heading in the overview reaches its section's prose in ONE `inspect`
+hop, and no rendering step re-runs semantic pruning or touches canonical bytes.
+"""
+failure = "a section heading is missing from the overview, the omission count is absent or wrong, the budget is exceeded, or rendering changes the index"
+
+[capabilities]
+source_html = true
+rendered_dom = false
+ax_tree = false
+network = false
+
+[limits]
+# The token count is an estimate from a declared, deterministic estimator — this package has no
+# provider tokenizer. The byte budget is the measurement; the token budget is the intent.
+provider_tokenizer = false
+provider_tokenizer_owner = "plug a real Tokenizer when a provider is wired into QA"

@@ -1,0 +1,38 @@
+# Evaluator-only oracles into the generated page. The test maps each to whatever the
+# implementation minted; no emitted locator or ref_id is recorded here.
+
+# The three nesting levels, outermost first. Each must cost a region rather than N entries.
+[[required_region]]
+id = "departments"
+oracle_xpath = "//main[@id='app']/section"
+expected_members = 4
+why = "outermost repeat"
+
+[[required_region]]
+id = "teams"
+oracle_xpath = "//ul[@id='teams-1']/li"
+expected_members = 5
+why = "second level, indexed only through the first department's exemplar"
+
+[[required_region]]
+id = "rows"
+oracle_xpath = "//tbody[@id='rows-1-1']/tr"
+expected_members = 6
+why = "third level, indexed only through the first team's exemplar"
+
+# The five-hop route the session budget is measured against.
+[route]
+overview_hop = "render the index under the token budget"
+region_oracle = "//main[@id='app']/section"
+member_key = "id=dept-3"
+nested_region_oracle = "//tbody[@id='rows-1-1']/tr"
+leaf_text = "Part 1-1-4"
+why = "start at the overview, cross three nesting levels, end holding one exact record"
+
+# Rebinding a route learned at the exemplar onto a branch the index never described.
+[rebind]
+learned_at_oracle = "//tbody[@id='rows-1-1']/tr"
+target_member_keys = ["id=dept-3", "id=team-3-1"]
+expect_text = "Part 3-1-"
+absent_keys = ["id=dept-99", "id=team-99-1"]
+why = "the index describes department 1; department 3 must be reachable without indexing it"

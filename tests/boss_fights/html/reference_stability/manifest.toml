@@ -1,0 +1,56 @@
+id = "reference_stability_mutations"
+modality = "source_html"
+lane = "gate"
+threat = "a reference is called stable because it was never compared against a second capture of the same page"
+capture_profile = "http_static"
+max_inspection_hops = 1
+
+generator = "tests.boss_fights.generators.mutations:render_mutable_page"
+mutations = [
+  "base",
+  "section_above",
+  "row_inserted",
+  "rows_reordered",
+  "column_added",
+  "prose_reworded",
+  "class_restyled",
+]
+
+# Not a byte budget: this workload measures identity across snapshots, not reduction size. The
+# page is deliberately small so every entry can be reasoned about individually.
+budget_output_bytes = 3000
+
+prediction = """
+`ref_id` is derived from the page and not from the capture, so two captures of an UNCHANGED
+page produce identical ids even though every `RegionRef` differs (snapshot id and artifact
+digest are part of a ref and not of an identity).
+
+Under mutation, the ids that survive are exactly the ones that should:
+
+* inserting a section near the top of <body> loses NOTHING — that is what anchoring buys, and a
+  root-absolute address space would have lost every reference below the insertion;
+* inserting or reordering records preserves the region's identity and every keyed member's
+  identity, because members are addressed by key and never by position;
+* adding a column changes the row SHAPE, so the region's identity changes — loudly, since a
+  record whose fields changed is not the same record shape a stored selector was built for;
+* rewording prose changes only text-keyed identities and leaves structural anchors intact;
+* renaming class values changes class-tier identities and leaves id-tier ones intact.
+
+Identity is refused, not weakened, where the page offers nothing durable: an attribute-free
+subtree reached through a positional tail gets `ref_id = None` rather than an id that means
+"probably the same thing".
+"""
+failure = "an id survives a mutation it cannot have survived, a section insert loses references, or an unanchorable element is handed an identity"
+
+[capabilities]
+source_html = true
+rendered_dom = false
+ax_tree = false
+network = false
+
+[limits]
+# Cross-DOCUMENT identity (the same template served at two URLs) is out of scope: that is the
+# fingerprint tier's job, and treating a shared skeleton as shared identity is exactly the
+# confusion the fingerprint work already measured.
+cross_document_identity = false
+cross_document_identity_owner = "PageFingerprint / CAS-262 Phase D"

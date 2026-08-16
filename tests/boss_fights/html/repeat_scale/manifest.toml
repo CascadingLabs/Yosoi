@@ -1,0 +1,52 @@
+id = "repeat_scale_10k_rows"
+modality = "source_html"
+lane = "gate"
+threat = "the headline compression claim is argued from 20 rows and quietly falls over — or goes quadratic — at the scale it exists for"
+capture_profile = "http_static"
+max_inspection_hops = 1
+
+# Generated, not frozen: the 10,000-row artifact is 1.7 MB and the large-file hook rejects
+# it. `render_repeat_table` is a pure function of its row count, so the manifest pins the
+# bytes by digest and the test reproduces them.
+generator = "tests.boss_fights.generators.repeat_table:render_repeat_table"
+rows = 10000
+generated_sha256 = "e003a9367efe930013fcae5c81963036d934501033c06fd985f8814644c558ff"
+generated_bytes = 1698283
+
+# The scaling control: the same generator at 1/10th the rows. Cost is compared against this
+# rather than against an absolute number, so the gate measures shape instead of this box.
+control_rows = 1000
+control_generated_sha256 = "8d0682aa392b184e287bf37c9f1497bd8121befa23c175202d871cae802fee56"
+
+# Bytes, not tokens: rendering is a separate stage and ObservationIndexRenderer is still a
+# scaffold. Summed across both reductions.
+budget_output_bytes = 2500
+
+# 10x the rows, so LINEAR is 10x the time — not 1x. A quadratic term is ~100x. The gate sits
+# between the two at 20x, which is linear plus generous noise, and pins no wall clock to this
+# machine. Measured exponent across doublings from 1k to 40k rows: 0.99–1.17.
+max_scaling_factor = 20.0
+
+prediction = """
+10,000 identically shaped rows cost exactly 2 index entries — one region plus one exemplar —
+and the whole index is the SAME SIZE as the 1,000-row document's, because nothing about the
+representation depends on N. All 10,000 rows stay reachable through `expand`, each addressed
+by its durable id rather than by position, and expansion is bounded and pages. Total cost
+grows with row count rather than its square: the 10x document stays within 20x the control.
+"""
+failure = "row count leaks into index size, a member is addressable only by position, expansion is unbounded, or cost grows super-linearly"
+
+[capabilities]
+source_html = true
+rendered_dom = false
+ax_tree = false
+network = false
+
+[limits]
+# Peak memory is deliberately not gated. lxml allocates its tree on the C heap, which
+# tracemalloc cannot see and maxrss cannot attribute, so any number here would measure the
+# interpreter rather than the reducer. Resident cost is gated in index output bytes instead.
+peak_memory = false
+peak_memory_owner = "needs a C-level allocator probe; unscheduled"
+noncontiguous_records = false
+noncontiguous_records_owner = "DEPTA-style tag-path clustering, unscheduled"

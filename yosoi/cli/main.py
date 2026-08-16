@@ -25,6 +25,7 @@ from rich.theme import Theme
 from yosoi import __version__
 from yosoi.cli.contract_param import ContractParamType
 from yosoi.cli.machine import MachineReadableGroup, echo_json
+from yosoi.cli.qa import qa_group
 from yosoi.cli.setup import build_policy, print_fetcher_info
 from yosoi.cli.utils import console, load_urls_from_file
 from yosoi.models.contract import Contract
@@ -3425,3 +3426,4 @@ contract_alias_group = MachineReadableGroup(
     hidden=True,
 )
 main.add_command(contract_alias_group)
+main.add_command(qa_group, 'qa')

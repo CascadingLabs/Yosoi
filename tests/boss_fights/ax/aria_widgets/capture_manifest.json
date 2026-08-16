@@ -1,0 +1,10 @@
+{
+  "source_url": "served locally from tests/boss_fights/ax/aria_widgets/fixture.html",
+  "captured_at": "2026-08-09T02:12:48.274832+00:00",
+  "status_code": 200,
+  "ax_node_count": 178,
+  "files": {
+    "ax_tree.json": "7039a00127b49a1cda14785fa0d95c52b9e3fdafb8903fb4366b98e99c297cf3",
+    "rendered_dom.json": "c9877f6c26cf7d5dc561e670d19e28f4f4f0275812d09e9e2c9e62e69679bce0"
+  }
+}

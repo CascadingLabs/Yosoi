@@ -277,8 +277,14 @@ def create_vertexai_model(config: LLMConfig) -> GoogleModel:
 
 
 def create_openai_model(config: LLMConfig) -> OpenAIChatModel:
-    """Create an OpenAI model from configuration."""
-    prov = OpenAIProvider(**_provider_kwargs(config))
+    """Create an OpenAI-compatible model.
+
+    Supply ``base_url`` via ``extra_params`` to target a compatible endpoint.
+    """
+    kwargs = _provider_kwargs(config)
+    if config.extra_params and 'base_url' in config.extra_params:
+        kwargs['base_url'] = config.extra_params['base_url']
+    prov = OpenAIProvider(**kwargs)
     return OpenAIChatModel(config.model_name, provider=prov)
 
 

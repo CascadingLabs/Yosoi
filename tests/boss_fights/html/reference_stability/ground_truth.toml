@@ -1,0 +1,55 @@
+# Per-mutation expectations, stated as evaluator-only XPath oracles. Emitted ref_ids and
+# locators are never recorded here; the test maps each oracle to whatever the implementation
+# minted and then asks whether that identity survived.
+#
+#   all_base_ids_preserved  every identity the base page minted still exists after the edit
+#   must_survive            these elements' identities MUST be unchanged by the edit
+#   must_change             these elements' identities MUST change — silence would be the bug
+
+[[mutation]]
+id = "section_above"
+all_base_ids_preserved = true
+must_survive = ["//h1", "//title", "//*[@id='ledger']", "//tbody[@id='rows']/tr", "//*[@id='report']"]
+must_change = []
+why = "the headline case for anchoring: an insert near the top of <body> renumbers every root-absolute path beneath it"
+
+[[mutation]]
+id = "row_inserted"
+all_base_ids_preserved = true
+must_survive = ["//tbody[@id='rows']/tr", "//*[@id='ledger']", "//h1"]
+must_change = []
+why = "a record appearing mid-list must not rename the region or any existing record"
+
+[[mutation]]
+id = "rows_reordered"
+all_base_ids_preserved = false
+must_survive = ["//tbody[@id='rows']/tr", "//h1"]
+must_change = []
+why = "the region survives reordering; the entry that exemplifies it is a different record, and that is declared rather than hidden"
+
+[[mutation]]
+id = "column_added"
+all_base_ids_preserved = false
+must_survive = ["//*[@id='ledger']", "//h1", "//title"]
+must_change = ["//tbody[@id='rows']/tr"]
+why = "records that gained a field are not the shape a stored selector was built for; the region identity must change loudly"
+
+[[mutation]]
+id = "prose_reworded"
+all_base_ids_preserved = false
+must_survive = ["//h1", "//title", "//tbody[@id='rows']/tr", "//*[@id='report']"]
+must_change = []
+why = "structural anchors must not move when words do; text-keyed members legitimately do"
+
+[[mutation]]
+id = "class_restyled"
+all_base_ids_preserved = false
+must_survive = ["//title", "//*[@id='report']", "//*[@id='ledger']", "//tbody[@id='rows']/tr"]
+must_change = ["//h1"]
+why = "a class-tier anchor is a styling decision that happened to be unique; when it is renamed the identity must change, not silently follow"
+
+# Elements the page offers nothing durable for. These must be addressable and inspectable, and
+# must NOT be handed an identity.
+[[unanchorable]]
+oracle_xpath = "//main//div[not(@class)]/span"
+why = "an attribute-free subtree is reached through a positional tail; an id here would mean 'probably the same thing'"

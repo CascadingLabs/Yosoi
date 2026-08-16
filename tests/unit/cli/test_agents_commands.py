@@ -15,10 +15,13 @@ def test_agents_install_pi_writes_skills_and_extension(tmp_path, monkeypatch) ->
 
     assert result.exit_code == 0, result.output
     payload = json.loads(result.output)
-    assert payload['written'] == 4
+    assert payload['written'] == 5
     assert (tmp_path / '.pi' / 'agent' / 'skills' / 'yosoi-web-workflows' / 'SKILL.md').exists()
     assert (tmp_path / '.pi' / 'agent' / 'skills' / 'yosoi-fetch' / 'SKILL.md').exists()
     assert (tmp_path / '.pi' / 'agent' / 'skills' / 'yosoi-research-frontier' / 'SKILL.md').exists()
+    qa_skill = tmp_path / '.pi' / 'agent' / 'skills' / 'yosoi-qa-index' / 'SKILL.md'
+    assert qa_skill.exists()
+    assert 'overview' in qa_skill.read_text(encoding='utf-8')
     extension = tmp_path / '.pi' / 'agent' / 'extensions' / 'yosoi-workflows.ts'
     assert extension.exists()
     extension_text = extension.read_text(encoding='utf-8')
@@ -60,7 +63,7 @@ def test_agents_install_skips_existing_without_force(tmp_path, monkeypatch) -> N
     assert second.exit_code == 0, second.output
     payload = json.loads(second.output)
     assert payload['written'] == 0
-    assert payload['skipped'] == 4
+    assert payload['skipped'] == 5
 
 
 def test_agents_install_all_targets(tmp_path, monkeypatch) -> None:
@@ -85,7 +88,7 @@ def test_agents_install_project_scope_writes_project_assets(tmp_path, monkeypatc
 
     assert result.exit_code == 0, result.output
     payload = json.loads(result.output)
-    assert payload['written'] == 4
+    assert payload['written'] == 5
     assert (tmp_path / '.agents' / 'skills' / 'yosoi-web-workflows' / 'SKILL.md').exists()
     assert (tmp_path / '.agents' / 'skills' / 'yosoi-fetch' / 'SKILL.md').exists()
     assert (tmp_path / '.agents' / 'skills' / 'yosoi-research-frontier' / 'SKILL.md').exists()
@@ -106,7 +109,7 @@ def test_agents_update_overwrites_existing_assets(tmp_path, monkeypatch) -> None
     assert result.exit_code == 0, result.output
     payload = json.loads(result.output)
     assert payload['type'] == 'agents.update'
-    assert payload['written'] == 3
+    assert payload['written'] == 4
     assert 'uvx yosoi' in skill.read_text(encoding='utf-8')
 
 

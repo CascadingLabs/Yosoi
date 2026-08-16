@@ -1,0 +1,25 @@
+# Evaluator-only oracles into the generated artifact. Emitted RegionRef locators are never
+# recorded here; the test maps each oracle to whatever address the implementation chose.
+
+[[required_region]]
+id = "ledger_rows"
+oracle_xpath = "//tbody[@id='rows']/tr"
+expected_members = 10000
+why = "the reason this reducer exists: N identical records must cost one region at any N"
+
+[[required_evidence]]
+id = "row_count_declaration"
+oracle_xpath = "//meta[@name='row-count']"
+oracle_contains = "10000"
+why = "the document declares its own scale; a declaration must not be crowded out by volume"
+
+[[required_evidence]]
+id = "heading"
+oracle_xpath = "//h1[@id='heading']"
+oracle_contains = "Generated repeat table"
+why = "unique prose must survive a document dominated by repetition"
+
+[[required_evidence]]
+id = "table_head_row"
+oracle_xpath = "//tr[@class='head-row']"
+why = "a differently shaped sibling row must not be swallowed into the body region"

@@ -1,0 +1,26 @@
+id = "control_html_declarations"
+modality = "source_html"
+lane = "gate"
+threat = "an allowlist silently hides a declaration nobody predicted"
+capture_profile = "http_static"
+artifact = "control.html"
+artifact_sha256 = "b5e71582f24b81831c1ca3c42336122cb75b231d2644b3511c44c22249cf6aa0"
+max_inspection_hops = 1
+
+# Token budgets are deliberately absent: rendering is a separate stage and
+# ObservationIndexRenderer is still a scaffold, so a token number here would be
+# aspirational rather than measured. Bytes are what this slice actually produces.
+budget_output_bytes = 1000
+
+prediction = """
+Every declaration in the document is addressable in one hop, including the malformed
+`<meta name="Andrew Berg">` that a description/og:/twitter: allowlist would drop, and the
+inline `onload` handler on <body>. Output is byte-identical across runs.
+"""
+failure = "a required declaration is unreachable in one hop, or output is not deterministic"
+
+[capabilities]
+source_html = true
+rendered_dom = false
+ax_tree = false
+network = false

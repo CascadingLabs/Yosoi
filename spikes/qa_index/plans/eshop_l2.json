@@ -1,0 +1,5 @@
+[
+  {"action": "click", "role": "button", "name": "Mining & Excavation", "nth": 0},
+  {"action": "click", "role": "button", "name": "Food & Brewing", "nth": 0},
+  {"action": "click", "role": "button", "name": "All", "nth": 0}
+]

@@ -1,0 +1,12 @@
+{
+  "source_url": "https://todomvc.com/examples/javascript-es6/dist/",
+  "captured_at": "2026-08-08T20:08:03.483470+00:00",
+  "status_code": 200,
+  "final_url": "https://todomvc.com/examples/javascript-es6/dist/",
+  "files": {
+    "s0_empty.json": "94cd6e8ce74a8be5e8650c96651b01dfbcfae9ea883fcb25ee6c748220127dde",
+    "s1_three_active.json": "3a85bbc20a5e6540794c0a09f521a991e24b41759eb0618f674e0fd816a7eee0",
+    "s2_one_completed.json": "59941bd4b1989706be653b135abaa06e9837e95ff71ec2a8eef45eb418a9b558",
+    "s3_completed_filter.json": "0eee243093927a0b1a28e53da3a2917d9651e9f4b13a53399518b0e3fc223d06"
+  }
+}

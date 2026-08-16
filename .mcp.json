@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "linear-cas": {
+      "type": "http",
+      "url": "https://mcp.linear.app/mcp"
+    }
+  }
+}

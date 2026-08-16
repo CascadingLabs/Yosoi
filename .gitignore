@@ -30,7 +30,7 @@ agent_share.md
 .env
 .env.*
 !.env.example
-.venv/
+.venv
 venv/
 ENV/
 env/
