@@ -53,3 +53,6 @@ completions/
 /scripts/docs/node_modules/
 
 /scripts/docs/.vite/
+
+# Pinned local release-note tooling environment
+/scripts/releases/.venv/

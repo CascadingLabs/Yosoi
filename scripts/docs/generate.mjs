@@ -13,6 +13,7 @@ const MAX_FILE_BYTES = 16 * 1024 * 1024;
 const MAX_TOTAL_BYTES = 64 * 1024 * 1024;
 const HEX_40 = /^[0-9a-f]{40}$/;
 const HEX_64 = /^[0-9a-f]{64}$/;
+const RELEASE_METADATA_FIELDS = new Set(['version', 'date', 'channel', 'previous']);
 const VERSION = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/;
 const utf8 = new TextDecoder('utf-8', { fatal: true });
 
@@ -169,6 +170,10 @@ function parseStringScalar(raw, key) {
   return value;
 }
 
+function isReleaseSourcePage(file) {
+  return file.startsWith('releases/') || file.startsWith(`${PUBLIC_ROOT}/releases/`);
+}
+
 export function parseFrontmatter(source, file = '<page>') {
   const normalized = source.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n');
   const lines = normalized.split('\n');
@@ -180,12 +185,23 @@ export function parseFrontmatter(source, file = '<page>') {
   for (let index = 1; index < end; index += 1) {
     const line = lines[index];
     if (line.trim().length === 0 || line.trimStart().startsWith('#')) continue;
-    const match = /^(title|description|order|draft):(?:\s*)(.*)$/.exec(line);
+    const match = /^(title|description|version|date|channel|previous|order|draft):(?:\s*)(.*)$/.exec(line);
     if (!match) fail(`${file}:${index + 1}: unsupported or malformed frontmatter field`);
     const [, key, raw] = match;
     if (Object.hasOwn(metadata, key)) fail(`${file}:${index + 1}: duplicate frontmatter field ${key}`);
-    if (key === 'title' || key === 'description') metadata[key] = parseStringScalar(raw, key);
-    else if (key === 'order') {
+    if (RELEASE_METADATA_FIELDS.has(key) && file !== '<page>' && !isReleaseSourcePage(file)) {
+      fail(`${file}:${index + 1}: release metadata is only allowed under releases/`);
+    }
+    if (
+      key === 'title' ||
+      key === 'description' ||
+      key === 'version' ||
+      key === 'date' ||
+      key === 'channel' ||
+      key === 'previous'
+    ) {
+      metadata[key] = parseStringScalar(raw, key);
+    } else if (key === 'order') {
       const value = stripYamlComment(raw).trim();
       if (!/^(0|[1-9]\d*)$/.test(value)) fail(`${file}:${index + 1}: order must be a non-negative integer`);
       const order = Number(value);
@@ -276,6 +292,10 @@ function buildManifestEntries(entries) {
         file: relativePath,
         title,
         ...(metadata.description === undefined ? {} : { description: metadata.description }),
+        ...(metadata.version === undefined ? {} : { version: metadata.version }),
+        ...(metadata.date === undefined ? {} : { date: metadata.date }),
+        ...(metadata.channel === undefined ? {} : { channel: metadata.channel }),
+        ...(metadata.previous === undefined ? {} : { previous: metadata.previous }),
         order: metadata.order ?? 0,
         format,
         sha256: sha256(entry.bytes),
@@ -535,10 +555,13 @@ export function validateManifest(manifest, { allowPreview = true } = {}) {
       fail(`invalid manifest page route ${JSON.stringify(route)}`);
     }
     if (!page || typeof page !== 'object' || Array.isArray(page)) fail(`manifest page ${route} must be an object`);
-    const allowedPageKeys = new Set(['file', 'title', 'description', 'order', 'format', 'sha256']);
+    const allowedPageKeys = new Set(['file', 'title', 'description', 'version', 'date', 'channel', 'previous', 'order', 'format', 'sha256']);
     if (Object.keys(page).some((key) => !allowedPageKeys.has(key))) fail(`manifest page ${route} contains unsupported fields`);
     validateRelativePath(page.file);
     if (isExcludedPath(page.file)) fail(`manifest page ${route} refers to an excluded file`);
+    if ([...RELEASE_METADATA_FIELDS].some((field) => Object.hasOwn(page, field)) && !page.file.startsWith('releases/')) {
+      fail(`manifest page ${route} release metadata is only allowed under releases/`);
+    }
     const extension = /\.(md|mdx)$/.exec(page.file)?.[1];
     if (extension === undefined) fail(`manifest page ${route} file must end in lowercase .md or .mdx`);
     const expectedFormat = extension === 'mdx' ? 'mdx' : 'markdown';
@@ -549,6 +572,11 @@ export function validateManifest(manifest, { allowPreview = true } = {}) {
     pageFiles.add(page.file);
     if (typeof page.title !== 'string' || page.title.length === 0) fail(`manifest page ${route} needs a title`);
     if (page.description !== undefined && typeof page.description !== 'string') fail(`manifest page ${route} description must be a string`);
+    for (const field of ['version', 'date', 'channel', 'previous']) {
+      if (Object.hasOwn(page, field) && (typeof page[field] !== 'string' || page[field].length === 0)) {
+        fail(`manifest page ${route} ${field} must be a non-empty string`);
+      }
+    }
     if (!Number.isSafeInteger(page.order) || page.order < 0) fail(`manifest page ${route} order must be a non-negative integer`);
     if (page.format !== 'markdown' && page.format !== 'mdx') fail(`manifest page ${route} has unsupported format`);
     if (typeof page.sha256 !== 'string' || !HEX_64.test(page.sha256)) fail(`manifest page ${route} has an invalid SHA-256`);

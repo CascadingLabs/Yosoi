@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'vite-plus/test';
-import { parseNavigationMetadata as decode, resolveNavigation } from './navigation.mjs';
+import {
+  parseNavigationMetadata as decode,
+  referenceNavigation,
+  resolveNavigation,
+} from './navigation.mjs';
 import * as jsonc from 'jsonc-parser';
 const parseNavigationMetadata = (source) => decode(source, jsonc);
 const page = (file, route, title, order = 0) => ({
@@ -183,4 +187,43 @@ test('an omitted Reference stays hidden and authored overview-only sections rema
 
 test('an explicitly empty section list means an empty sidebar', () => {
   assert.deepEqual(resolveNavigation(pages, { schemaVersion: 1, sections: [] }).children, []);
+});
+
+test('generated reference uses public namespaces rather than route kind folders', () => {
+  const references = [
+    { ...page('api/index.md', 'api', 'Reference'), kind: 'module', publicPath: 'yosoi_sdk' },
+    {
+      ...page('api/locators.md', 'api/yosoi-sdk/module/locators', 'Locators'),
+      kind: 'module',
+      publicPath: 'yosoi_sdk::locators',
+    },
+    {
+      ...page('api/z.md', 'api/yosoi-sdk/locators/struct/zeta', 'Zeta'),
+      kind: 'struct',
+      publicPath: 'yosoi_sdk::locators::Zeta',
+    },
+    {
+      ...page('api/a.md', 'api/yosoi-sdk/locators/enum/alpha', 'Alpha'),
+      kind: 'enum',
+      publicPath: 'yosoi_sdk::locators::Alpha',
+    },
+  ];
+  const tree = referenceNavigation(references);
+  assert.deepEqual(
+    tree.children.map((node) => node.title),
+    ['Locators'],
+  );
+  assert.deepEqual(
+    tree.children[0].children.map((node) => node.title),
+    ['Alpha', 'Zeta'],
+  );
+  assert.equal(tree.children[0].children[0].route, 'api/yosoi-sdk/locators/enum/alpha');
+  const configured = resolveNavigation(references, {
+    schemaVersion: 1,
+    sections: [{ title: 'Reference', generated: 'rust-api' }],
+  });
+  assert.deepEqual(
+    configured.children[0].children.map((node) => node.title),
+    ['Locators'],
+  );
 });

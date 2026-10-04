@@ -50,6 +50,9 @@ function makeGitRepo(files, symlinks = []) {
 function baseFiles(extra = {}) {
   return {
     'docs/public/index.md': '---\ntitle: Home\ndescription: "Overview: tools and ideas"\norder: 0\n---\n# Welcome\n',
+    'docs/public/releases/index.md': '---\ntitle: Release notes\ndescription: User-facing changes for published releases\norder: 0\n---\n# Release notes\n',
+    'docs/public/releases/0-2-0.md': '---\ntitle: Yosoi 0.2.0\nversion: 0.2.0\ndate: 2026-10-04\nchannel: recommended\nprevious: 0.1.0\n---\n# Yosoi 0.2.0\n',
+    'docs/public/releases/0-3-0.md': '---\ntitle: Yosoi 0.3.0\nversion: 0.3.0\ndate: 2026-11-04\nchannel: preview\ndraft: true\n---\n# Draft release\n',
     'docs/public/guides/locating.md': '---\ntitle: Locating\norder: 3\n---\n# Locate\n',
     'docs/public/concepts/index.md': '---\ntitle: Concepts\n---\n# Concepts\n',
     'docs/public/components.mdx': '---\ntitle: Components\n---\n# Components\n\n<Callout title="Demo fixture">\nThis is Markdown inside the supported wrapper.\n</Callout>\n',
@@ -71,13 +74,18 @@ test('builds a deterministic manifest from one Git snapshot and applies the publ
   const second = generateFromGit(input);
 
   assert.deepEqual(first, second);
-  assert.deepEqual(Object.keys(first.pages), ['/', '/components', '/concepts', '/guides/locating']);
+  assert.deepEqual(Object.keys(first.pages), ['/', '/components', '/concepts', '/guides/locating', '/releases', '/releases/0-2-0']);
   assert.equal(first.pages['/'].title, 'Home');
   assert.equal(first.pages['/'].description, 'Overview: tools and ideas');
   assert.equal(first.pages['/concepts'].file, 'concepts/index.md');
   assert.equal(first.pages['/components'].format, 'mdx');
   assert.equal(first.pages['/guides/locating'].order, 3);
+  assert.deepEqual(
+    Object.fromEntries(['version', 'date', 'channel', 'previous'].map((field) => [field, first.pages['/releases/0-2-0'][field]])),
+    { version: '0.2.0', date: '2026-10-04', channel: 'recommended', previous: '0.1.0' },
+  );
   assert.equal(Object.hasOwn(first.pages, '/draft'), false);
+  assert.equal(Object.hasOwn(first.pages, '/releases/0-3-0'), false);
   assert.equal(Object.hasOwn(first.pages, '/readme'), false);
   assert.equal(Object.hasOwn(first.pages, '/agents'), false);
   assert.deepEqual(Object.keys(first.assets), ['assets/demo.svg']);
@@ -85,6 +93,15 @@ test('builds a deterministic manifest from one Git snapshot and applies the publ
   assert.equal(first.source.commit, commit);
   assert.equal(first.source.root, 'docs/public');
   assert.throws(() => generateFromGit({ ...input, schemaVersion: 2 }), /unsupported schema version/);
+  const badReleaseMetadata = structuredClone(first);
+  badReleaseMetadata.pages['/releases/0-2-0'].channel = false;
+  assert.throws(() => validateManifest(badReleaseMetadata), /channel must be a non-empty string/);
+  const unknownReleaseMetadata = structuredClone(first);
+  unknownReleaseMetadata.pages['/releases/0-2-0'].audience = 'users';
+  assert.throws(() => validateManifest(unknownReleaseMetadata), /contains unsupported fields/);
+  const releaseMetadataOnGuide = structuredClone(first);
+  releaseMetadataOnGuide.pages['/guides/locating'].version = '0.2.0';
+  assert.throws(() => validateManifest(releaseMetadataOnGuide), /release metadata is only allowed under releases\//);
 
   fs.writeFileSync(path.join(root, 'docs/public/index.md'), '# Dirty working copy\n');
   fs.writeFileSync(path.join(root, 'docs/public/uncommitted.md'), '# Uncommitted\n');
@@ -133,13 +150,24 @@ test('rejects route collisions, unsafe paths, symbolic links, and executable MDX
 });
 
 test('parses quoted colon scalars and makes filesystem previews ineligible for release catalogs', (context) => {
-  const frontmatter = parseFrontmatter('---\ntitle: "A title: with a colon"\ndescription: \'It\'\'s useful: yes\'\norder: 4\ndraft: false\n---\n# Heading\n');
+  const frontmatter = parseFrontmatter('---\ntitle: "A title: with a colon"\ndescription: \'It\'\'s useful: yes\'\nversion: 0.2.0\ndate: 2026-10-04\nchannel: recommended\nprevious: \'0.1.0\'\norder: 4\ndraft: false\n---\n# Heading\n');
   assert.deepEqual(frontmatter.metadata, {
     title: 'A title: with a colon',
     description: "It's useful: yes",
+    version: '0.2.0',
+    date: '2026-10-04',
+    channel: 'recommended',
+    previous: '0.1.0',
     order: 4,
     draft: false,
   });
+  assert.throws(() => parseFrontmatter('---\nunknown: value\n---\n'), /unsupported or malformed frontmatter field/);
+  assert.throws(() => parseFrontmatter('---\nversion:\n---\n'), /frontmatter version must be a non-empty string/);
+  assert.throws(() => parseFrontmatter('---\ndate: [2026-10-04]\n---\n'), /unsupported YAML syntax/);
+  assert.throws(
+    () => parseFrontmatter('---\nversion: 0.2.0\n---\n', 'guides/locating.md'),
+    /release metadata is only allowed under releases\//,
+  );
 
   const parent = fs.mkdtempSync(path.join(os.tmpdir(), 'docs-manifest-preview-'));
   const publicRoot = path.join(parent, 'docs', 'public');

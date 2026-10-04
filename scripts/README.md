@@ -24,3 +24,22 @@ The Search, Map, benchmark, browser, fixture-generation and independent Python
 oracle harnesses are retired. Committed fixture bytes and expected values remain
 under `benchmarks/fixtures`; Rust regression tests own semantic behavior. Existing
 benchmark results and documentation artifact locations remain unchanged.
+
+## Release notes
+
+Use `cargo xtask release prepare VERSION --date YYYY-MM-DD --channel preview --github-notes EXPORT.md`
+to scaffold a local draft from GitHub-generated notes. Choose `--previous VERSION`
+explicitly for the desired earlier comparison baseline; omit it only for the
+first tracked release. Review the prose and retain the imported
+attribution section, then set `draft: false`.
+
+After synchronizing the chosen version and citation date with `bump-version`,
+run `cargo xtask release check VERSION`. This checks the reviewed notes and the
+existing complete version/date consistency contract. Export the reviewed body
+with `cargo xtask release body VERSION`; refresh the public history with
+`cargo xtask release history`.
+
+The pinned Jinja environment requires `uv`. See
+[`releases/README.md`](releases/README.md) for the template, offline input format,
+read-only GitHub export, and validation commands. These commands do not create
+tags, publish releases, upload packages, build binaries, or manage nightlies.

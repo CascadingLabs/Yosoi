@@ -96,27 +96,57 @@ export function referenceNavigation(pages, title = 'Reference') {
     const key = namespace.join('::');
     if (groups.has(key)) return groups.get(key);
     const parent = group(namespace.slice(0, -1));
-    const node = { title: label(namespace.at(-1)), route: `api/${namespace.map((name) => name.replaceAll('_', '-').toLowerCase()).join('/')}`, order: 0, collapsed: true, children: [] };
-    parent.children.push(node); groups.set(key, node); return node;
+    const node = {
+      title: label(namespace.at(-1)),
+      route: `api/${namespace.map((name) => name.replaceAll('_', '-').toLowerCase()).join('/')}`,
+      order: 0,
+      collapsed: true,
+      children: [],
+    };
+    parent.children.push(node);
+    groups.set(key, node);
+    return node;
   };
-  const kinds = new Set(['module', 'enum', 'struct', 'function', 'trait', 'type_alias', 'proc_macro', 'reexport', 'union', 'constant', 'static']);
+  const kinds = new Set([
+    'module',
+    'enum',
+    'struct',
+    'function',
+    'trait',
+    'type_alias',
+    'proc_macro',
+    'reexport',
+    'union',
+    'constant',
+    'static',
+  ]);
   for (const page of pages) {
-    if (page.route === 'api') { root.id = page.id; continue; }
+    if (page.route === 'api') {
+      root.id = page.id;
+      continue;
+    }
     const path = page.publicPath?.split('::');
     const segments = page.route.slice('api/'.length).split('/');
     const kindIndex = segments.findIndex((segment) => kinds.has(segment));
     const kind = page.kind || segments[kindIndex];
-    const namespace = path ? path.slice(1, kind === 'module' ? undefined : -1) : segments.slice(1, kindIndex < 0 ? -1 : kindIndex);
+    const namespace = path
+      ? path.slice(1, kind === 'module' ? undefined : -1)
+      : segments.slice(1, kindIndex < 0 ? -1 : kindIndex);
     if (!path && kind === 'module') namespace.push(segments.at(-1));
     const parent = group(namespace);
-    if (kind === 'module') { parent.id = page.id; parent.route = page.route; }
-    else parent.children.push({ ...pageNode(page), kind });
+    if (kind === 'module') {
+      parent.id = page.id;
+      parent.route = page.route;
+    } else parent.children.push({ ...pageNode(page), kind });
   }
   const sort = (node) => {
-    node.children.sort((a, b) => compare(a.title.toLowerCase(), b.title.toLowerCase()) || compare(a.route, b.route));
+    node.children.sort(
+      (a, b) => compare(a.title.toLowerCase(), b.title.toLowerCase()) || compare(a.route, b.route),
+    );
     node.children.forEach(sort);
   };
-  sort(root); return root;
+  sort(root);
+  return root;
 }
 
 export function resolveNavigation(pages, metadata) {
@@ -200,7 +230,9 @@ export function resolveNavigation(pages, metadata) {
         }));
       }
       selected.forEach(claim);
-      node = generated ? referenceNavigation(ordered, title) : directoryNavigation(ordered, directory, title);
+      node = generated
+        ? referenceNavigation(ordered, title)
+        : directoryNavigation(ordered, directory, title);
     }
     node.order = index;
     node.collapsed = collapsed;
