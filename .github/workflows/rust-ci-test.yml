@@ -5,6 +5,8 @@
 # keyed by compiler identity, manifests, lockfile, and build configuration.
 # Build checks link all targets (including examples/benchmark harnesses); benchmarks
 # are not measured here. Nextest runs unit/integration tests; Cargo runs doctests.
+# Run each serial test suite through all failures so an early browser regression
+# does not hide later failures behind another complete rebuild.
 # Browser tests use regular Chrome Stable with its sandbox enabled and Xvfb so
 # headful assertions execute. This is regression evidence, not browser promotion:
 # certification remains governed by docs/chromium-cdp-baseline.md.
@@ -109,7 +111,7 @@ jobs:
           } | tee ci-evidence/browser-identity.txt
       - name: Run default-feature unit and integration tests
         if: matrix.configuration == 'default'
-        run: xvfb-run -a cargo nextest run --locked --workspace --test-threads 1
+        run: xvfb-run -a cargo nextest run --locked --workspace --test-threads 1 --no-fail-fast
       - name: Run default-feature doctests
         if: matrix.configuration == 'default'
         run: xvfb-run -a cargo test --locked --workspace --doc -- --test-threads=1
@@ -118,7 +120,7 @@ jobs:
         run: cargo llvm-cov clean --workspace
       - name: Run all-feature tests with LLVM coverage
         if: matrix.configuration == 'coverage-all-features'
-        run: xvfb-run -a cargo llvm-cov nextest --locked --workspace --all-features --test-threads 1 --no-report
+        run: xvfb-run -a cargo llvm-cov nextest --locked --workspace --all-features --test-threads 1 --no-fail-fast --no-report
       - name: Run all-feature doctests
         if: matrix.configuration == 'coverage-all-features'
         # Doctests are correctness checked separately; the stable coverage report
