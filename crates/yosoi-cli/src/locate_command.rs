@@ -5,6 +5,7 @@ use std::{
     io::{self, IsTerminal as _, Read, Write},
     path::PathBuf,
     process::ExitCode,
+    time::Instant,
 };
 
 use anyhow::{Context as _, Result, bail};
@@ -12,7 +13,17 @@ use clap::{Args, ValueEnum};
 use serde::Serialize;
 use yosoi::{Document, LocateOutcome, prelude as ys};
 
-use crate::{document_pipe, policy_store::PolicyStore};
+use crate::{
+    document_pipe,
+    policy_store::PolicyStore,
+    presentation::Theme,
+    stats::{RunTimer, StatsArgs},
+};
+
+mod preview;
+mod statistics;
+
+use statistics::{LocateTimings, render_stats};
 
 const MAX_RAW_INPUT_BYTES: usize = 67_108_864;
 const MAX_OUTPUT_BYTES: usize = 16_777_216;
@@ -26,6 +37,7 @@ pub enum SourceChoice {
 }
 
 #[derive(Debug, Args)]
+#[allow(clippy::struct_excessive_bools)] // Clap exposes independent input and output flags.
 pub struct LocateArgs {
     /// Read raw source bytes from a file.
     #[arg(long)]
@@ -54,9 +66,15 @@ pub struct LocateArgs {
     /// Emit a bounded machine-readable outcome envelope.
     #[arg(long)]
     pub json: bool,
+    /// Show all findings and complete values in wrapped human output.
+    #[arg(long, conflicts_with = "json", help_heading = "Output")]
+    pub full: bool,
+    #[command(flatten)]
+    pub reporting: StatsArgs,
 }
 
 pub fn run(args: &LocateArgs, profile: Option<&str>) -> Result<ExitCode> {
+    let timer = RunTimer::start();
     let plan = plan(args)?;
     let store = PolicyStore::load()?;
     let selected = profile.or_else(|| store.active_profile());
@@ -64,9 +82,23 @@ pub fn run(args: &LocateArgs, profile: Option<&str>) -> Result<ExitCode> {
         Some(name) => store.resolve_profile(name)?,
         None => store.current()?,
     };
+    let input_started = Instant::now();
     let document = read_document(args)?;
+    let input = input_started.elapsed();
+    let locate_started = Instant::now();
     let outcome = document.bind(&policy).locate(&plan);
-    render(&document, &outcome, selected, args.json)?;
+    let locate = locate_started.elapsed();
+    let output_started = Instant::now();
+    let rendered = render(&document, &outcome, selected, args.json, args.full);
+    let timings = LocateTimings {
+        input,
+        locate,
+        output: output_started.elapsed(),
+    };
+    if args.reporting.enabled {
+        render_stats(&document, &outcome, &timer, &timings)?;
+    }
+    rendered?;
     Ok(exit_code(&outcome))
 }
 
@@ -164,6 +196,7 @@ fn render(
     outcome: &LocateOutcome,
     profile: Option<&str>,
     machine: bool,
+    full: bool,
 ) -> Result<()> {
     let mut output = BoundedOutput::new();
     if machine {
@@ -181,7 +214,7 @@ fn render(
         }
         serialized.context("could not render Locate outcome")?;
     } else {
-        render_human(&mut output, document, outcome, profile)?;
+        render_human(&mut output, document, outcome, profile, full)?;
     }
     if output.exceeded {
         bail!("Locate output exceeds the {MAX_OUTPUT_BYTES} byte CLI limit");
@@ -197,35 +230,59 @@ fn render_human(
     document: &Document,
     outcome: &LocateOutcome,
     profile: Option<&str>,
+    full: bool,
 ) -> Result<()> {
+    let theme = Theme::stdout();
+    let heading = theme.heading;
+    let label = theme.label;
+    let value = theme.value;
+    let success = theme.success;
+    let warning = theme.warning;
+    let error = theme.error;
     writeln!(
         output,
-        "Document: {} ({:?})",
+        "{heading}Document:{heading:#} {value}{}{value:#} ({:?})",
         document.id(),
         document.class()
     )?;
     writeln!(
         output,
-        "Policy profile: {}",
+        "{label}Policy profile:{label:#} {value}{}{value:#}",
         profile.unwrap_or("<defaults>")
     )?;
     match outcome {
         LocateOutcome::Matched { result } => {
             writeln!(
                 output,
-                "Matched: {} finding(s), {} region(s)",
+                "{success}Matched:{success:#} {} finding(s), {} region(s)",
                 result.findings().len(),
                 result.regions().len()
             )?;
-            for finding in result.findings() {
-                writeln!(output, "  {}: {:?}", finding.output_id(), finding.value())?;
+            let limit = if full {
+                result.findings().len()
+            } else {
+                preview::MAX_FINDINGS
+            };
+            for finding in result.findings().iter().take(limit) {
+                write!(output, "  {label}{}:{label:#} ", finding.output_id())?;
+                preview::value(output, finding.value(), full, theme)?;
+            }
+            if result.findings().len() > limit {
+                let muted = theme.muted;
+                writeln!(
+                    output,
+                    "{muted}[showing {limit} of {} findings; use --full or --json]{muted:#}",
+                    result.findings().len()
+                )?;
             }
         }
-        LocateOutcome::NoMatch { .. } => writeln!(output, "No match")?,
+        LocateOutcome::NoMatch { .. } => writeln!(output, "{warning}No match{warning:#}")?,
         LocateOutcome::Indeterminate { reason_code, .. } => {
-            writeln!(output, "Indeterminate: {reason_code}")?;
+            writeln!(output, "{warning}Indeterminate: {reason_code}{warning:#}")?;
         }
-        LocateOutcome::Failed { failure } => writeln!(output, "Locate failed: {failure:?}")?,
+        LocateOutcome::Failed { failure } => {
+            writeln!(output, "{error}Locate failed: {failure:?}{error:#}")?;
+        }
     }
     Ok(())
 }

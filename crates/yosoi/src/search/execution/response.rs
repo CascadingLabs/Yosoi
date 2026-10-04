@@ -260,6 +260,9 @@ pub(super) const fn search_attempt_diagnostic(
         }
         AttemptDiagnostic::BrowserCleanupFailed => SearchAttemptDiagnostic::BrowserCleanupFailed,
         AttemptDiagnostic::BrowserCaptureFailed => SearchAttemptDiagnostic::BrowserCaptureFailed,
+        AttemptDiagnostic::BrowserFailure(reason) => {
+            SearchAttemptDiagnostic::BrowserFailure(reason)
+        }
         AttemptDiagnostic::BrowserFinalizationFailed => {
             SearchAttemptDiagnostic::BrowserFinalizationFailed
         }
@@ -282,6 +285,7 @@ pub(super) const fn search_failure_for_attempt(diagnostic: AttemptDiagnostic) ->
         | AttemptDiagnostic::BrowserCancelledCleanupFailed
         | AttemptDiagnostic::BrowserCleanupFailed
         | AttemptDiagnostic::BrowserCaptureFailed
+        | AttemptDiagnostic::BrowserFailure(_)
         | AttemptDiagnostic::BrowserFinalizationFailed => SearchFailure::TransportFailure,
         AttemptDiagnostic::ProjectionFailed => SearchFailure::MalformedResponse,
     }

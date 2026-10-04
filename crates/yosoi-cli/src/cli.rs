@@ -6,10 +6,15 @@ use std::{
     iter,
 };
 
-use clap::{ArgAction, CommandFactory, Parser, Subcommand, error::ErrorKind};
+use clap::{ArgAction, CommandFactory, FromArgMatches, Parser, Subcommand, error::ErrorKind};
 use clap_complete::Shell;
 
-use crate::{locate_command, map_command, policy_command, request_command, search_command, syntax};
+use crate::presentation::Theme;
+
+use crate::{
+    locate_command, map_command, policy_command, presentation, request_command, search_command,
+    syntax,
+};
 
 /// The top-level command line for Yosoi.
 #[derive(Debug, Parser)]
@@ -18,7 +23,8 @@ use crate::{locate_command, map_command, policy_command, request_command, search
     version,
     propagate_version = true,
     disable_version_flag = true,
-    about = "Yosoi command line interface"
+    about = "unified CLI for scraping, crawling, and browser automation",
+    styles = presentation::styles()
 )]
 pub struct Cli {
     /// Print version information.
@@ -49,13 +55,17 @@ enum Commands {
 
 /// Parse the command line and print Clap's standard help or diagnostics.
 pub async fn run() -> ExitCode {
-    let command = Cli::command();
+    let command = presentation::command(Cli::command());
     let args = match syntax::normalize_args(&command, env::args_os().skip(1)) {
         Ok(args) => args,
         Err(error) => return report_syntax_error(&error),
     };
     let args = iter::once(OsString::from("yosoi")).chain(args);
-    match Cli::try_parse_from(args) {
+    let parsed = command
+        .clone()
+        .try_get_matches_from(args)
+        .and_then(|matches| Cli::from_arg_matches(&matches));
+    match parsed {
         Ok(cli) => match cli.command {
             Some(Commands::Policy(args)) => {
                 if cli.profile.is_some() {
@@ -99,7 +109,7 @@ pub async fn run() -> ExitCode {
                     ));
                 }
                 let mut generated = Vec::new();
-                let mut completion_command = Cli::command();
+                let mut completion_command = presentation::command(Cli::command());
                 clap_complete::generate(shell, &mut completion_command, "yosoi", &mut generated);
                 match io::stdout().lock().write_all(&generated) {
                     Ok(()) => ExitCode::SUCCESS,
@@ -128,20 +138,29 @@ pub async fn run() -> ExitCode {
 }
 
 fn report_app_error(error: &anyhow::Error) -> ExitCode {
+    let style = Theme::stderr().error;
     let mut stderr = io::stderr().lock();
-    let _ = writeln!(stderr, "yosoi: {error:#}");
+    let _ = writeln!(stderr, "{style}yosoi: {error:#}{style:#}");
     ExitCode::FAILURE
 }
 
 fn report_syntax_error(error: &syntax::SyntaxError) -> ExitCode {
+    let style = Theme::stderr().error;
     let mut stderr = io::stderr().lock();
-    let _ = writeln!(stderr, "yosoi: invalid CLI syntax definition: {error}");
+    let _ = writeln!(
+        stderr,
+        "{style}yosoi: invalid CLI syntax definition: {error}{style:#}"
+    );
     ExitCode::FAILURE
 }
 
 fn report_write_error(error: &io::Error) -> ExitCode {
+    let style = Theme::stderr().error;
     let mut stderr = io::stderr().lock();
-    let _ = writeln!(stderr, "yosoi: failed to write command output: {error}");
+    let _ = writeln!(
+        stderr,
+        "{style}yosoi: failed to write command output: {error}{style:#}"
+    );
     ExitCode::FAILURE
 }
 
@@ -220,7 +239,7 @@ mod tests {
         assert_eq!(args.per_provider_limit.map(NonZeroU16::get), Some(8));
         assert_eq!(args.max_in_flight.map(NonZeroUsize::get), Some(2));
         assert_eq!(args.output, OutputFormat::Json);
-        assert!(args.stats);
+        assert!(args.reporting.enabled);
         Ok(())
     }
 
@@ -245,7 +264,7 @@ mod tests {
             args.providers,
             [ProviderChoice::Brave, ProviderChoice::Bing]
         );
-        assert!(args.stats);
+        assert!(args.reporting.enabled);
         Ok(())
     }
 
@@ -267,7 +286,7 @@ mod tests {
         assert_eq!(args.per_provider_limit, None);
         assert_eq!(args.max_in_flight, None);
         assert_eq!(args.output, OutputFormat::Human);
-        assert!(!args.stats);
+        assert!(!args.reporting.enabled);
         Ok(())
     }
 }

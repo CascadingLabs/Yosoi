@@ -169,10 +169,10 @@ pub use request::{
     ArtifactDisposition, ArtifactFamilyDisposition, AttemptCaptureFacts,
     AttemptCaptureFailureFacts, AttemptDiagnostic, AttemptDocumentOutcome, AttemptFailure,
     AttemptFailureKind, AttemptOutcome, AttemptResult, AttemptTransportOutcome, BoundPageRequest,
-    BrowserDocumentObservation, BrowserTerminalClassification, BrowserTerminalFacts,
-    NotStartedAttempt, NotStartedReason, PageRequest, PreparedAttempt, PreparedPageRequest,
-    RequestExecutor, RequestId, RequestPreparationError, RequestSendError, Response,
-    ResponseTermination, StandardExecutionSetupError, WebTarget,
+    BrowserDocumentObservation, BrowserFailureReason, BrowserTerminalClassification,
+    BrowserTerminalFacts, NotStartedAttempt, NotStartedReason, PageRequest, PreparedAttempt,
+    PreparedPageRequest, RequestExecutor, RequestId, RequestPreparationError, RequestSendError,
+    Response, ResponseTermination, StandardExecutionSetupError, WebTarget,
 };
 
 pub use yosoi_contracts::{

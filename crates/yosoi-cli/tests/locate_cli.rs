@@ -12,6 +12,7 @@ use std::{
 
 use serde_json::{Value, json};
 use tempfile::TempDir;
+use unicode_width::UnicodeWidthStr as _;
 use yosoi::{Document, prelude::DocumentEpoch};
 
 fn json_at<'a>(value: &'a Value, pointer: &str) -> Result<&'a Value, Box<dyn Error>> {
@@ -317,7 +318,7 @@ fn request_pipe_into_locate_needs_no_output_or_input_mode_flags() -> Result<(), 
     let home = CliHome::new()?;
     let (url, address, server) = loopback_html()?;
     let mut request = Command::new(env!("CARGO_BIN_EXE_yosoi"))
-        .args(["request", &url])
+        .args(["request", &url, "-s"])
         .env("XDG_CONFIG_HOME", &home.config)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -327,7 +328,7 @@ fn request_pipe_into_locate_needs_no_output_or_input_mode_flags() -> Result<(), 
         .take()
         .ok_or("Request stdout was not piped")?;
     let locate = Command::new(env!("CARGO_BIN_EXE_yosoi"))
-        .args(["locate", "--css", "h1"])
+        .args(["locate", "--css", "h1", "-s"])
         .env("XDG_CONFIG_HOME", &home.config)
         .stdin(Stdio::from(request_stdout))
         .output()?;
@@ -342,6 +343,11 @@ fn request_pipe_into_locate_needs_no_output_or_input_mode_flags() -> Result<(), 
     );
     assert_eq!(locate.status.code(), Some(0), "{}", stderr(&locate));
     assert!(String::from_utf8_lossy(&locate.stdout).contains("Catalog"));
+    assert!(stderr(&request_result).contains("Request stats:"));
+    assert!(stderr(&locate).contains("Locate stats:"));
+    assert!(stderr(&locate).contains("Outcome: matched"));
+    assert!(stderr(&locate).contains("Findings: 1"));
+    assert!(!String::from_utf8_lossy(&locate.stdout).contains("Wall time:"));
     Ok(())
 }
 
@@ -402,5 +408,110 @@ fn typed_rendered_dom_frame_keeps_epoch_and_cannot_be_relabelled_source()
         Some(42)
     );
     assert_eq!(json_at(&value, "/outcome/status")?.as_str(), Some("failed"));
+    Ok(())
+}
+
+#[test]
+fn locate_stats_preserve_json_and_report_match_and_no_match() -> Result<(), Box<dyn Error>> {
+    let home = CliHome::new()?;
+    let source = b"<main><h1>Catalog</h1></main>";
+    let args = [
+        "locate", "--stdin", "--format", "html", "--css", "h1", "--json",
+    ];
+    let baseline = home.run_with_input(&args, source)?;
+    assert_eq!(baseline.status.code(), Some(0), "{}", stderr(&baseline));
+    assert!(baseline.stderr.is_empty());
+    for flag in ["--stats", "-s", "--STATS"] {
+        let mut with_stats = args.to_vec();
+        with_stats.push(flag);
+        let output = home.run_with_input(&with_stats, source)?;
+        assert_eq!(output.status.code(), Some(0), "{}", stderr(&output));
+        assert_eq!(output.stdout, baseline.stdout);
+        let statistics = stderr(&output);
+        assert!(statistics.contains("Locate stats:\nWall time:"));
+        assert!(statistics.contains("Input wait/read time:"));
+        assert!(statistics.contains("Parse/query time:"));
+        assert!(statistics.contains("Output time:"));
+        assert!(statistics.contains(&format!("Input bytes: {}", source.len())));
+        assert!(statistics.contains("Outcome: matched"));
+        assert!(statistics.contains("Findings: 1"));
+        assert!(!statistics.contains('\u{1b}'));
+    }
+    let absent = home.run_with_input(
+        &[
+            "locate", "--stdin", "--format", "html", "--css", ".missing", "--json", "--stats",
+        ],
+        source,
+    )?;
+    assert_eq!(absent.status.code(), Some(1), "{}", stderr(&absent));
+    let value: Value = serde_json::from_slice(&absent.stdout)?;
+    assert_eq!(
+        json_at(&value, "/outcome/status")?.as_str(),
+        Some("no_match")
+    );
+    assert!(stderr(&absent).contains("Outcome: no_match"));
+    Ok(())
+}
+
+#[test]
+fn human_previews_are_bounded_and_full_and_json_keep_complete_values() -> Result<(), Box<dyn Error>>
+{
+    let home = CliHome::new()?;
+    let title = format!("{}\u{1b}[31mENDINGTOKEN", "界".repeat(800));
+    let source = format!("<html><head><title>{title}</title></head></html>");
+    let args = ["locate", "--stdin", "--format", "html", "--css", "head"];
+    let preview = home.run_with_input(&args, source.as_bytes())?;
+    assert_eq!(preview.status.code(), Some(0), "{}", stderr(&preview));
+    let text = String::from_utf8(preview.stdout)?;
+    assert!(text.contains("[preview: 600 of"));
+    assert!(!text.contains("ENDINGTOKEN"));
+    assert!(!text.contains('\u{1b}'));
+    for line in text
+        .lines()
+        .filter(|line| line.starts_with("    ") && !line.contains("[preview:"))
+    {
+        assert!(line.width() <= 96);
+    }
+    let mut full_args = args.to_vec();
+    full_args.push("--full");
+    let full = home.run_with_input(&full_args, source.as_bytes())?;
+    assert_eq!(full.status.code(), Some(0), "{}", stderr(&full));
+    let full_text = String::from_utf8(full.stdout)?;
+    assert!(full_text.contains("ENDINGTOKEN"));
+    assert!(!full_text.contains("[preview:"));
+    assert!(!full_text.contains('\u{1b}'));
+    let mut json_args = args.to_vec();
+    json_args.push("--json");
+    let machine = home.run_with_input(&json_args, source.as_bytes())?;
+    assert_eq!(machine.status.code(), Some(0), "{}", stderr(&machine));
+    let envelope: Value = serde_json::from_slice(&machine.stdout)?;
+    let findings = json_at(&envelope, "/outcome/result/findings")?
+        .as_array()
+        .ok_or("missing findings")?;
+    let finding = findings.first().ok_or("missing first finding")?;
+    assert_eq!(
+        json_at(finding, "/value/value")?.as_str(),
+        Some(title.as_str())
+    );
+    Ok(())
+}
+
+#[test]
+fn many_findings_have_an_explicit_preview_limit() -> Result<(), Box<dyn Error>> {
+    let home = CliHome::new()?;
+    let source = (0..12)
+        .map(|number| format!("<h1>item-{number}</h1>"))
+        .collect::<String>();
+    let args = ["locate", "--stdin", "--format", "html", "--css", "h1"];
+    let preview = home.run_with_input(&args, source.as_bytes())?;
+    assert_eq!(preview.status.code(), Some(0), "{}", stderr(&preview));
+    let text = String::from_utf8(preview.stdout)?;
+    assert!(text.contains("[showing 10 of 12 findings; use --full or --json]"));
+    assert!(!text.contains("item-11"));
+    let mut full_args = args.to_vec();
+    full_args.push("--full");
+    let full = home.run_with_input(&full_args, source.as_bytes())?;
+    assert_eq!(full.status.code(), Some(0), "{}", stderr(&full));
+    assert!(String::from_utf8(full.stdout)?.contains("item-11"));
     Ok(())
 }

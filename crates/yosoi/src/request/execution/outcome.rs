@@ -11,7 +11,8 @@ pub use capture_facts::{
     BrowserTerminalFacts,
 };
 pub use failure::{
-    AttemptDiagnostic, AttemptFailure, AttemptFailureKind, NotStartedAttempt, NotStartedReason,
+    AttemptDiagnostic, AttemptFailure, AttemptFailureKind, BrowserFailureReason, NotStartedAttempt,
+    NotStartedReason,
 };
 pub use response::{Response, ResponseTermination};
 

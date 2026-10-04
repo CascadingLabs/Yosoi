@@ -19,6 +19,10 @@ use crate::{
 };
 
 mod archive;
+#[cfg(feature = "browser")]
+mod browser_diagnostic;
+#[cfg(feature = "browser")]
+use browser_diagnostic::browser_error_diagnostic;
 mod outcome;
 mod standard;
 pub use outcome::{
@@ -26,8 +30,9 @@ pub use outcome::{
     ArtifactDisposition, ArtifactFamilyDisposition, AttemptCaptureFacts,
     AttemptCaptureFailureFacts, AttemptDiagnostic, AttemptDocumentOutcome, AttemptFailure,
     AttemptFailureKind, AttemptOutcome, AttemptResult, AttemptTransportOutcome,
-    BrowserDocumentObservation, BrowserTerminalClassification, BrowserTerminalFacts,
-    NotStartedAttempt, NotStartedReason, RequestSendError, Response, ResponseTermination,
+    BrowserDocumentObservation, BrowserFailureReason, BrowserTerminalClassification,
+    BrowserTerminalFacts, NotStartedAttempt, NotStartedReason, RequestSendError, Response,
+    ResponseTermination,
 };
 pub use standard::StandardExecutionSetupError;
 
@@ -357,35 +362,5 @@ fn execution_failure_facts(
     }
 }
 
-#[cfg(feature = "browser")]
-fn browser_error_diagnostic(
-    error: &yosoi_web_capture::VoidCrawlAdapterError,
-) -> (AttemptDiagnostic, Option<yosoi_web_capture::CleanupState>) {
-    match error {
-        yosoi_web_capture::VoidCrawlAdapterError::CancelledBeforeOwnership
-        | yosoi_web_capture::VoidCrawlAdapterError::CancelledBeforeStaging => {
-            (AttemptDiagnostic::BrowserCancelled, None)
-        }
-        yosoi_web_capture::VoidCrawlAdapterError::PrimaryAndCleanup { primary, .. } => (
-            if matches!(
-                browser_error_diagnostic(primary).0,
-                AttemptDiagnostic::BrowserCancelled
-                    | AttemptDiagnostic::BrowserCancelledCleanupFailed
-            ) {
-                AttemptDiagnostic::BrowserCancelledCleanupFailed
-            } else {
-                AttemptDiagnostic::BrowserCleanupFailed
-            },
-            Some(yosoi_web_capture::CleanupState::Failed),
-        ),
-        yosoi_web_capture::VoidCrawlAdapterError::ContextDisposal
-        | yosoi_web_capture::VoidCrawlAdapterError::SessionClose => (
-            AttemptDiagnostic::BrowserCleanupFailed,
-            Some(yosoi_web_capture::CleanupState::Failed),
-        ),
-        yosoi_web_capture::VoidCrawlAdapterError::ManagedExecution { primary, .. } => {
-            browser_error_diagnostic(primary)
-        }
-        _ => (AttemptDiagnostic::BrowserCaptureFailed, None),
-    }
-}
+#[cfg(all(test, feature = "browser"))]
+mod browser_diagnostic_tests;

@@ -16,6 +16,8 @@ pub enum AttemptFailureKind {
     Projection,
 }
 
+pub use yosoi_types::BrowserFailureReason;
+
 /// Bounded, secret-safe diagnostic classification for one attempt failure.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum AttemptDiagnostic {
@@ -28,6 +30,7 @@ pub enum AttemptDiagnostic {
     BrowserCancelledCleanupFailed,
     BrowserCleanupFailed,
     BrowserCaptureFailed,
+    BrowserFailure(BrowserFailureReason),
     BrowserFinalizationFailed,
     BrowserFeatureDisabled,
     ProjectionFailed,

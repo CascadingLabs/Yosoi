@@ -345,3 +345,32 @@ fn release_job(
         .map_err(|()| io::Error::other("release receiver was closed"))?;
     Ok(())
 }
+
+#[test]
+fn precise_browser_diagnostics_survive_search_without_becoming_markup_errors() {
+    use crate::BrowserFailureReason;
+    for reason in [
+        BrowserFailureReason::Launch,
+        BrowserFailureReason::Connection,
+        BrowserFailureReason::Navigation,
+        BrowserFailureReason::Timeout,
+        BrowserFailureReason::DisplayUnavailable,
+        BrowserFailureReason::EnvironmentMismatch,
+        BrowserFailureReason::ProfileUnavailable,
+        BrowserFailureReason::Unavailable,
+        BrowserFailureReason::CapacityExhausted,
+        BrowserFailureReason::Closed,
+        BrowserFailureReason::RendererCrashed,
+        BrowserFailureReason::UnsupportedConfiguration,
+    ] {
+        let diagnostic = AttemptDiagnostic::BrowserFailure(reason);
+        assert_eq!(
+            search_attempt_diagnostic(diagnostic),
+            SearchAttemptDiagnostic::BrowserFailure(reason)
+        );
+        assert_eq!(
+            search_failure_for_attempt(diagnostic),
+            super::SearchFailure::TransportFailure
+        );
+    }
+}

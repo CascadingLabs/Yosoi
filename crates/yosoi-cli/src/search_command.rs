@@ -25,7 +25,12 @@ use thiserror::Error;
 use tokio::signal;
 use yosoi::{CancellationToken, Policy, policy::search::Search, prelude as ys};
 
-use crate::{policy_store::PolicyStore, stats::RunTimer};
+use crate::{
+    policy_store::PolicyStore,
+    presentation::Theme,
+    progress::Spinner,
+    stats::{RunTimer, StatsArgs},
+};
 
 use view::SearchEnvelope;
 
@@ -60,9 +65,8 @@ pub struct SearchArgs {
     /// Ordered providers, as a comma-separated enum list.
     #[arg(short = 'p', long = "providers", value_enum, value_delimiter = ',', action = ArgAction::Append)]
     pub providers: Vec<ProviderChoice>,
-    /// Report wall time and Search totals on stderr.
-    #[arg(short = 's', long = "stats")]
-    pub stats: bool,
+    #[command(flatten)]
+    pub reporting: StatsArgs,
     /// Override the Search Policy's maximum retained results from each provider.
     #[arg(long)]
     pub per_provider_limit: Option<NonZeroU16>,
@@ -94,14 +98,25 @@ pub async fn run(args: SearchArgs, profile: Option<&str>) -> Result<ExitCode, Se
     let cancellation = CancellationToken::new();
     let send = request.send_cancellable(&cancellation);
     tokio::pin!(send);
-    let (response, interrupted) = tokio::select! {
-        result = &mut send => (result, false),
-        signal_result = signal::ctrl_c() => {
-            signal_result.context("could not listen for Ctrl-C").map_err(SearchCommandError::Setup)?;
-            cancellation.cancel();
-            (send.await, true)
+    let mut spinner = Spinner::new("Searching…", matches!(args.output, OutputFormat::Human));
+    let mut signal_result = None;
+    let response = loop {
+        tokio::select! {
+            result = &mut send => break result,
+            signal = signal::ctrl_c(), if signal_result.is_none() => {
+                cancellation.cancel();
+                signal_result = Some(signal);
+            }
+            () = spinner.tick() => {}
         }
     };
+    drop(spinner);
+    let interrupted = signal_result.is_some();
+    if let Some(result) = signal_result {
+        result
+            .context("could not listen for Ctrl-C")
+            .map_err(SearchCommandError::Setup)?;
+    }
     let response = response
         .context("Search setup failed")
         .map_err(SearchCommandError::Setup)?;
@@ -109,7 +124,8 @@ pub async fn run(args: SearchArgs, profile: Option<&str>) -> Result<ExitCode, Se
 
     let rendered: anyhow::Result<()> = match args.output {
         OutputFormat::Human => {
-            report::render_human(&mut io::stdout().lock(), &envelope).map_err(Into::into)
+            report::render_human(&mut io::stdout().lock(), &envelope, Theme::stdout())
+                .map_err(Into::into)
         }
         OutputFormat::Json => report::render_json(&mut io::stdout().lock(), &envelope),
     };
@@ -119,7 +135,7 @@ pub async fn run(args: SearchArgs, profile: Option<&str>) -> Result<ExitCode, Se
             anyhow::Error::new(error).context("could not write Search diagnostics"),
         )
     })?;
-    if args.stats {
+    if args.reporting.enabled {
         report::report_stats(&envelope, &timer)
             .context("could not write Search stats")
             .map_err(SearchCommandError::Output)?;
@@ -137,7 +153,8 @@ pub fn report_error(error: &SearchCommandError) -> ExitCode {
         SearchCommandError::Setup(_) => 2,
         SearchCommandError::Output(_) => 1,
     };
-    let _ = writeln!(io::stderr().lock(), "yosoi search: {error}");
+    let style = Theme::stderr().error;
+    let _ = writeln!(io::stderr().lock(), "{style}yosoi search: {error}{style:#}");
     ExitCode::from(code)
 }
 

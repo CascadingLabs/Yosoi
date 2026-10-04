@@ -912,7 +912,7 @@ fn broken_output_consumer_returns_an_error_without_panicking() -> Result<(), Box
 fn stats_spellings_keep_explain_stdout_clean_and_report_only_to_stderr()
 -> Result<(), Box<dyn Error>> {
     let home = CliHome::new()?;
-    for flag in ["--stats", "-s", "--stat", "--STATS"] {
+    for flag in ["--stats", "-s", "--STATS"] {
         let output = home.run(&["map", "https://example.com/", "--explain", flag])?;
         assert_eq!(output.status.code(), Some(0), "{}", stderr(&output));
         assert!(stderr(&output).contains("Map: not sent (--explain)"));

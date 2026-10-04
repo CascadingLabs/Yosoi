@@ -38,6 +38,9 @@ pub(super) const fn diagnostic(value: AttemptDiagnostic) -> RequestAttemptDiagno
         }
         AttemptDiagnostic::BrowserCleanupFailed => RequestAttemptDiagnostic::BrowserCleanupFailed,
         AttemptDiagnostic::BrowserCaptureFailed => RequestAttemptDiagnostic::BrowserCaptureFailed,
+        AttemptDiagnostic::BrowserFailure(reason) => {
+            RequestAttemptDiagnostic::BrowserFailure(reason)
+        }
         AttemptDiagnostic::BrowserFinalizationFailed => {
             RequestAttemptDiagnostic::BrowserFinalizationFailed
         }
@@ -95,5 +98,38 @@ const fn direct_http_redirect(
         }
         DirectHttpRedirectErrorKind::Loop => RequestDirectHttpRedirectDiagnostic::Loop,
         DirectHttpRedirectErrorKind::HopLimit => RequestDirectHttpRedirectDiagnostic::HopLimit,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{AttemptDiagnostic, RequestAttemptDiagnostic, diagnostic};
+    use crate::BrowserFailureReason;
+
+    #[test]
+    #[allow(clippy::panic_in_result_fn)] // Assertions intentionally fail archive contract checks.
+    fn detailed_browser_failures_are_retained_in_archive_v1() -> Result<(), serde_json::Error> {
+        for reason in [
+            BrowserFailureReason::Launch,
+            BrowserFailureReason::Connection,
+            BrowserFailureReason::Navigation,
+            BrowserFailureReason::Timeout,
+            BrowserFailureReason::DisplayUnavailable,
+            BrowserFailureReason::EnvironmentMismatch,
+            BrowserFailureReason::ProfileUnavailable,
+            BrowserFailureReason::Unavailable,
+            BrowserFailureReason::CapacityExhausted,
+            BrowserFailureReason::Closed,
+            BrowserFailureReason::RendererCrashed,
+            BrowserFailureReason::UnsupportedConfiguration,
+        ] {
+            let persisted = diagnostic(AttemptDiagnostic::BrowserFailure(reason));
+            assert_eq!(persisted, RequestAttemptDiagnostic::BrowserFailure(reason));
+            let encoded = serde_json::to_vec(&persisted)?;
+            let decoded: RequestAttemptDiagnostic = serde_json::from_slice(&encoded)?;
+            assert_eq!(decoded, persisted);
+        }
+        assert_eq!(yosoi_archive::ARCHIVE_FORMAT_VERSION, 1);
+        Ok(())
     }
 }

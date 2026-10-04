@@ -8,25 +8,31 @@ use std::{
 use anyhow::{Context as _, Result, bail};
 use serde_json::json;
 use yosoi::{
-    AttemptOutcome, Document, DocumentOutcome, EffectivePolicyIdentity, Response,
-    ResponseTermination,
+    AttemptDiagnostic, AttemptOutcome, Document, DocumentOutcome, EffectivePolicyIdentity,
+    Response, ResponseTermination,
     policy::{AcquisitionKind, BrowserMode, DocumentRequest},
 };
 
-use crate::stats::RunTimer;
+use crate::{browser_diagnostics, presentation::Theme, stats::RunTimer};
 
 const MAX_RAW_BYTES: usize = 16 * 1024 * 1024;
 
 pub(super) fn stats(response: &Response, timer: &RunTimer) -> Result<()> {
+    let theme = Theme::stderr();
+    let label = theme.label;
+    let value = theme.value;
     let mut stderr = io::stderr().lock();
-    writeln!(stderr, "Request stats:")?;
-    timer.write_wall_time(&mut stderr)?;
+    timer.write_header(&mut stderr, "Request", theme)?;
     writeln!(
         stderr,
-        "Termination: {}",
+        "{label}Termination:{label:#} {value}{}{value:#}",
         termination_label(response.termination())
     )?;
-    writeln!(stderr, "Attempts: {}", response.attempts().len())?;
+    writeln!(
+        stderr,
+        "{label}Attempts:{label:#} {value}{}{value:#}",
+        response.attempts().len()
+    )?;
     for (index, attempt) in response.attempts().iter().enumerate() {
         let number = index.saturating_add(1);
         let status = attempt
@@ -45,7 +51,7 @@ pub(super) fn stats(response: &Response, timer: &RunTimer) -> Result<()> {
             .unwrap_or_default();
         writeln!(
             stderr,
-            "Attempt {number}: {}, HTTP {status}, {bytes} document bytes",
+            "{label}Attempt {number}:{label:#} {value}{}{value:#}, HTTP {status}, {bytes} document bytes",
             acquisition_label(attempt.acquisition())
         )?;
     }
@@ -57,21 +63,28 @@ pub(super) fn human(
     profile: Option<&str>,
     identity: &EffectivePolicyIdentity,
 ) -> Result<()> {
+    let theme = Theme::stdout();
+    let label = theme.label;
+    let value = theme.value;
+    let muted = theme.muted;
+    let success = theme.success;
+    let error = theme.error;
+    let warning = theme.warning;
     let mut stdout = io::stdout().lock();
     writeln!(
         stdout,
-        "Policy profile: {}",
+        "{label}Policy profile:{label:#} {value}{}{value:#}",
         profile.unwrap_or("<defaults>")
     )?;
     writeln!(
         stdout,
-        "Policy identity: v{} {}",
+        "{muted}Policy identity: v{} {}{muted:#}",
         identity.version(),
         identity.digest()
     )?;
     writeln!(
         stdout,
-        "Termination: {}",
+        "{label}Termination:{label:#} {value}{}{value:#}",
         termination_label(response.termination())
     )?;
     for (index, attempt) in response.attempts().iter().enumerate() {
@@ -83,7 +96,7 @@ pub(super) fn human(
             AttemptOutcome::Completed(result) => {
                 writeln!(
                     stdout,
-                    "Attempt {number}: {} completed, HTTP {status}",
+                    "{label}Attempt {number}:{label:#} {value}{}{value:#} {success}completed{success:#}, HTTP {status}",
                     acquisition_label(attempt.acquisition())
                 )?;
                 for document in result.documents() {
@@ -91,13 +104,13 @@ pub(super) fn human(
                     match document_detail(outcome) {
                         Some(detail) => writeln!(
                             stdout,
-                            "  {}: {} ({detail})",
+                            "  {label}{}:{label:#} {value}{}{value:#} ({detail})",
                             document_label(document.requested()),
                             document_state(outcome)
                         )?,
                         None => writeln!(
                             stdout,
-                            "  {}: {}",
+                            "  {label}{}:{label:#} {value}{}{value:#}",
                             document_label(document.requested()),
                             document_state(outcome)
                         )?,
@@ -107,15 +120,26 @@ pub(super) fn human(
             AttemptOutcome::Failed(failure) => {
                 writeln!(
                     stdout,
-                    "Attempt {number}: {} failed, HTTP {status}, {:?}",
+                    "{label}Attempt {number}:{label:#} {value}{}{value:#} {error}failed{error:#}, HTTP {status}, {}",
                     acquisition_label(attempt.acquisition()),
-                    failure.diagnostic()
+                    diagnostic_label(failure.diagnostic())
                 )?;
+                if let AttemptDiagnostic::BrowserFailure(reason) = failure.diagnostic()
+                    && let Some(advice) =
+                        browser_diagnostics::advice(browser_diagnostics::name(reason))
+                {
+                    writeln!(stdout, "  {error}{advice}{error:#}")?;
+                    writeln!(
+                        stdout,
+                        "  {muted}Capture: {}{muted:#}",
+                        failure.capture_id()
+                    )?;
+                }
             }
             AttemptOutcome::NotStarted(not_started) => {
                 writeln!(
                     stdout,
-                    "Attempt {number}: {} not started, {:?}",
+                    "{label}Attempt {number}:{label:#} {value}{}{value:#} {warning}not started{warning:#}, {:?}",
                     acquisition_label(attempt.acquisition()),
                     not_started.reason()
                 )?;
@@ -154,7 +178,7 @@ pub(super) fn json(
                 .unwrap_or_default();
             let (state, diagnostic) = match attempt {
                 AttemptOutcome::Completed(_) => ("completed", None),
-                AttemptOutcome::Failed(failure) => ("failed", Some(format!("{:?}", failure.diagnostic()))),
+                AttemptOutcome::Failed(failure) => ("failed", Some(diagnostic_label(failure.diagnostic()))),
                 AttemptOutcome::NotStarted(not_started) => ("not_started", Some(format!("{:?}", not_started.reason()))),
             };
             json!({
@@ -310,5 +334,12 @@ const fn termination_label(termination: ResponseTermination) -> &'static str {
     match termination {
         ResponseTermination::Completed => "completed",
         ResponseTermination::Cancelled => "cancelled",
+    }
+}
+
+fn diagnostic_label(diagnostic: AttemptDiagnostic) -> String {
+    match diagnostic {
+        AttemptDiagnostic::BrowserFailure(reason) => browser_diagnostics::name(reason).to_owned(),
+        other => format!("{other:?}"),
     }
 }

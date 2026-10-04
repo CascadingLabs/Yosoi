@@ -38,6 +38,8 @@ bytes = "1"
 memchr = "=2.8.3"
 encoding_rs = { version = "0.8.35", default-features = false, features = ["alloc"] }
 chrono = { version = "0.4.45", default-features = false, features = ["serde", "std"] }
+anstream = "1.0"
+unicode-width = "=0.2.2"
 clap = { version = "4.6", features = ["cargo", "derive", "wrap_help"] }
 futures-util = { version = "0.3", default-features = false, features = ["std"] }
 libc = "0.2"

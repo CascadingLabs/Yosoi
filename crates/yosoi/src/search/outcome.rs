@@ -11,7 +11,7 @@ use yosoi_policy::{
 };
 use yosoi_types::CaptureId;
 
-use crate::request::RequestId;
+use crate::{BrowserFailureReason, request::RequestId};
 
 use super::{SearchPage, SearchRequestId};
 
@@ -45,6 +45,7 @@ pub enum SearchAttemptDiagnostic {
     BrowserCancelledCleanupFailed,
     BrowserCleanupFailed,
     BrowserCaptureFailed,
+    BrowserFailure(BrowserFailureReason),
     BrowserFinalizationFailed,
     BrowserFeatureDisabled,
     ProjectionFailed,

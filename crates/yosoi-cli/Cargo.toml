@@ -15,6 +15,8 @@ browser = ["yosoi/browser"]
 
 [dependencies]
 anyhow.workspace = true
+anstream.workspace = true
+unicode-width.workspace = true
 clap.workspace = true
 clap_complete.workspace = true
 serde.workspace = true

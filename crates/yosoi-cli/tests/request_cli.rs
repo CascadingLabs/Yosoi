@@ -155,7 +155,7 @@ fn default_request_reports_a_real_http_response_as_bounded_json() -> Result<(), 
 }
 
 #[test]
-fn stat_reports_timing_and_metadata_without_changing_document_stdout() -> Result<(), Box<dyn Error>>
+fn stats_reports_timing_and_metadata_without_changing_document_stdout() -> Result<(), Box<dyn Error>>
 {
     let home = CliHome::new()?;
     let (url, address, server) = loopback("200 OK", b"fixture-body")?;
@@ -244,7 +244,7 @@ fn schemeless_target_and_short_acquisition_alias_prepare_without_io() -> Result<
         "-a",
         "http",
         "--explain",
-        "--stat",
+        "--stats",
     ])?;
     assert_eq!(http.status.code(), Some(0), "{}", stderr(&http));
     assert!(String::from_utf8_lossy(&http.stdout).contains("\"kind\": \"direct_http\""));
@@ -485,7 +485,7 @@ fn ctrl_c_in_raw_mode_keeps_stdout_empty_and_returns_130() -> Result<(), Box<dyn
 #[test]
 fn stats_long_and_short_spellings_report_explain_timing_on_stderr() -> Result<(), Box<dyn Error>> {
     let home = CliHome::new()?;
-    for flag in ["--stats", "-s", "--stat", "--STATS"] {
+    for flag in ["--stats", "-s", "--STATS"] {
         let output = home.run(&["request", "https://example.com/", "--explain", flag])?;
         assert_eq!(output.status.code(), Some(0), "{}", stderr(&output));
         assert!(stderr(&output).contains("Request: not sent (--explain)"));

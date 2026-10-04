@@ -18,9 +18,9 @@ pub use execution::{
     ArtifactDisposition, ArtifactFamilyDisposition, AttemptCaptureFacts,
     AttemptCaptureFailureFacts, AttemptDiagnostic, AttemptDocumentOutcome, AttemptFailure,
     AttemptFailureKind, AttemptOutcome, AttemptResult, AttemptTransportOutcome,
-    BrowserDocumentObservation, BrowserTerminalClassification, BrowserTerminalFacts,
-    NotStartedAttempt, NotStartedReason, RequestExecutor, RequestSendError, Response,
-    ResponseTermination, StandardExecutionSetupError,
+    BrowserDocumentObservation, BrowserFailureReason, BrowserTerminalClassification,
+    BrowserTerminalFacts, NotStartedAttempt, NotStartedReason, RequestExecutor, RequestSendError,
+    Response, ResponseTermination, StandardExecutionSetupError,
 };
 
 /// An owned target string authored before URL validation.

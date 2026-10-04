@@ -1,3 +1,5 @@
+use crate::browser_diagnostics;
+
 use yosoi::{
     policy::{ProviderDefaultsStatus, search::Provider},
     search::{
@@ -40,6 +42,7 @@ pub(in crate::search_command) const fn attempt_diagnostic_name(
         }
         SearchAttemptDiagnostic::BrowserCleanupFailed => "browser_cleanup_failed",
         SearchAttemptDiagnostic::BrowserCaptureFailed => "browser_capture_failed",
+        SearchAttemptDiagnostic::BrowserFailure(reason) => browser_diagnostics::name(reason),
         SearchAttemptDiagnostic::BrowserFinalizationFailed => "browser_finalization_failed",
         SearchAttemptDiagnostic::BrowserFeatureDisabled => "browser_feature_disabled",
         SearchAttemptDiagnostic::ProjectionFailed => "projection_failed",
