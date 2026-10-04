@@ -262,8 +262,9 @@ async fn malformed_and_unsupported_codings_are_terminal_values_without_a_bundle_
                 artifact.metadata().record().availability(),
                 ArtifactAvailability::Truncated
             );
-            assert!(
-                !source(&capture).1.is_empty(),
+            assert_ne!(
+                source(&capture).1.len(),
+                0,
                 "decoder output before malformed trailer is retained"
             );
         } else {

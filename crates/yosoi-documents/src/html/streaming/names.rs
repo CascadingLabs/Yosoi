@@ -39,7 +39,7 @@ impl NameKey {
         clippy::arithmetic_side_effects,
         clippy::as_conversions,
         clippy::indexing_slicing,
-        reason = "const loop proves index is below the validated sixteen-byte literal length; Rust 1.98 lacks const slice::get"
+        reason = "const loop proves index is below the validated sixteen-byte literal length; Rust 1.99 lacks const slice::get"
     )]
     const fn literal(bytes: &[u8]) -> Self {
         let mut result = Self { low: 0, high: 0 };

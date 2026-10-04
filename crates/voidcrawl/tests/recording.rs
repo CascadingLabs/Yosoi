@@ -266,7 +266,7 @@ async fn own_window_recording_does_not_block_sibling_screenshots() {
             .await
             .expect("sibling screenshot blocked on the in-flight recording")
             .expect("sibling screenshot failed");
-        assert!(!shot.is_empty());
+        assert_ne!(shot.as_slice(), b"");
 
         // Keep recording after the sibling stole focus, so the assertion below is
         // about frames captured *while occluded* rather than about the handful

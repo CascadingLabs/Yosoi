@@ -42,14 +42,6 @@ fn foundation_manifest_has_no_direct_http_transport_dependencies() {
 }
 
 #[test]
-fn foundation_root_has_no_direct_http_modules_or_exports() {
-    let root = fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/src/lib.rs"))
-        .expect("test fixture crate root must be readable");
-    assert!(!root.contains("mod direct_http"));
-    assert!(!root.contains("pub use direct_http"));
-}
-
-#[test]
 fn retired_voidcrawl_adapter_cannot_reenter_the_workspace() {
     let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
         .parent()

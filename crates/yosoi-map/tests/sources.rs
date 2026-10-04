@@ -111,7 +111,7 @@ fn sitemap_validates_entries_after_the_retention_limit() {
         br#"<urlset><wrapper><url><loc>https://example.com/hidden</loc></url></wrapper></urlset>"#;
     let sitemap =
         parse_sitemap(nested_location, 10, 4096).expect("well-formed XML without direct entries");
-    assert!(sitemap.locations.is_empty());
+    assert_eq!(sitemap.locations, Vec::<String>::new());
 }
 
 #[test]
@@ -178,7 +178,7 @@ fn certificate_parser_rejects_wrong_shapes_and_truncates_zero_entries() {
     let nonempty =
         certificate_names(br#"[{"name_value":"example.com"}]"#, 0).expect("valid crt.sh response");
     assert!(nonempty.truncated);
-    assert!(nonempty.names.is_empty());
+    assert_eq!(nonempty.names, Vec::<String>::new());
 }
 
 #[test]

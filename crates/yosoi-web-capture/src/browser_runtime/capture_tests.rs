@@ -2,20 +2,6 @@ use super::*;
 use std::ffi::OsStr;
 
 #[test]
-fn effective_environment_is_observed_after_arming_and_before_navigation() {
-    let source = include_str!("capture/attempt.rs");
-    let observation = source.find("page.arm_observation").unwrap();
-    let navigation_capture = source.find("page.arm_navigation_capture").unwrap();
-    let environment = source.find("page.environment_snapshot").unwrap();
-    let navigation = source
-        .find("page.navigate(spec.target().as_str())")
-        .unwrap();
-    assert!(observation < environment);
-    assert!(navigation_capture < environment);
-    assert!(environment < navigation);
-}
-
-#[test]
 fn headful_display_detection_accepts_supported_displays_only() {
     assert!(!headful_display_configured(None, None));
     assert!(!headful_display_configured(

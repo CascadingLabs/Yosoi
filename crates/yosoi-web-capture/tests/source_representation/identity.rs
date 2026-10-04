@@ -247,7 +247,7 @@ fn errors_have_stable_nonempty_display() {
         SourceBindingError::SizeMismatch.to_string(),
         DecodedOutputIdentityError::SameArtifact.to_string(),
     ] {
-        assert!(!text.is_empty());
+        assert_ne!(text, "");
         assert!(!text.contains("CANARY"));
     }
 }

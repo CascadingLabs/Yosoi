@@ -122,7 +122,7 @@ async fn public_orchestrator_corpus_preserves_independently_fixed_source_evidenc
                     UnknownReason::NoStrongSignature
                 };
                 assert_eq!(*reason, expected);
-                assert!(candidates.is_empty());
+                assert_eq!(candidates.len(), 0);
                 assert_eq!(*extent, ClassificationExtent::Complete);
             }
             (

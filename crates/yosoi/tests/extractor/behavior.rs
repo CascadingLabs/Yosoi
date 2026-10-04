@@ -69,7 +69,7 @@ fn repeated_candidates_have_direct_fields_and_preserve_evidence() -> Result<(), 
     };
     let extracted = Product::extract(&located);
     assert_eq!(extracted.candidates().len(), 2);
-    assert!(extracted.diagnostics().is_empty());
+    assert_eq!(extracted.diagnostics().len(), 0);
 
     let first = extracted
         .candidates()
@@ -207,7 +207,7 @@ fn unrelated_outputs_are_ignored_and_wrong_lineage_is_diagnosed() -> Result<(), 
     let extracted = Product::extract(&ys::LocateOutcome::Matched {
         result: ys::LocateResult::try_new(document, findings)?,
     });
-    assert!(extracted.candidates().is_empty());
+    assert_eq!(extracted.candidates().len(), 0);
     assert!(matches!(
         extracted.diagnostics(),
         [ys::ExtractionDiagnostic::IncompatibleLineage { output }]
@@ -309,7 +309,7 @@ fn unrelated_outputs_do_not_consume_matching_finding_bound() -> Result<(), Box<d
         },
     );
     assert_eq!(extracted.candidates().len(), 1);
-    assert!(extracted.diagnostics().is_empty());
+    assert_eq!(extracted.diagnostics().len(), 0);
     Ok(())
 }
 

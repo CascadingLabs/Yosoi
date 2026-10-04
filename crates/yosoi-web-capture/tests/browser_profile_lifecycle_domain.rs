@@ -537,10 +537,9 @@ fn local_store_persists_startup_quarantine_without_recovery_or_deletion()
             .map(BrowserProfileLifecycleRecord::next),
         Some(State::Available)
     );
-    assert!(
-        store
-            .classify_abandoned_on_startup(observed_at()?)?
-            .is_empty()
+    assert_eq!(
+        store.classify_abandoned_on_startup(observed_at()?)?.len(),
+        0
     );
     assert!(directory.path().join("profile-staged.json").is_file());
     Ok(())

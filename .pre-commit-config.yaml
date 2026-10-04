@@ -1,0 +1,44 @@
+# Prek's built-in hooks need no remote repositories or Python environments.
+minimum_prek_version: "0.3.6"
+default_stages: [pre-commit]
+# Preserve vendored code and byte-sensitive test/benchmark fixtures.
+exclude: '(^vendor/|^fuzz/seeds/|(^|/)(fixtures|property-regressions)/)'
+
+repos:
+  - repo: builtin
+    hooks:
+      - id: check-merge-conflict
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+      - id: detect-private-key
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+      - id: end-of-file-fixer
+
+  - repo: local
+    hooks:
+      - id: rustfmt
+        name: Check Rust formatting
+        entry: rustfmt --check --edition 2024
+        language: system
+        types: [rust]
+        require_serial: true
+
+      - id: clippy
+        name: Clippy (all targets and features, one build worker)
+        entry: sh -c 'CARGO_BUILD_JOBS=1 cargo clippy --locked --workspace --all-targets --all-features -- -D warnings'
+        language: system
+        pass_filenames: false
+        require_serial: true
+        stages: [manual]
+        files: '(^|/)(Cargo\.(toml|lock)|[^/]+\.rs)$'
+
+      - id: cargo-deny
+        name: Dependency advisories, licenses, bans, and sources
+        entry: cargo deny --workspace --all-features --locked check
+        language: system
+        pass_filenames: false
+        require_serial: true
+        stages: [manual]
+        files: '(^|/)(Cargo\.(toml|lock)|deny\.toml)$'

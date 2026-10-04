@@ -3,7 +3,7 @@
 #[path = "../../yosoi-web-capture-direct-http/tests/support/direct_http_fixture.rs"]
 mod fixture;
 
-use std::{error::Error, io, sync::Arc, time::Duration};
+use std::{error::Error, fmt::Write as _, io, sync::Arc, time::Duration};
 
 use fixture::{
     FixtureService, Protocol, RequestLine, Response as FixtureResponse, ResponseControl,
@@ -91,7 +91,7 @@ async fn ten_root_links_form_a_tree_while_sitemap_entries_stay_metadata_only() -
     let mut routes = support_miss_routes();
     let mut root = String::from("<!doctype html><main>");
     for index in 0..10 {
-        root.push_str(&format!("<a href=\"/link-{index}\">link {index}</a>"));
+        write!(root, "<a href=\"/link-{index}\">link {index}</a>")?;
     }
     root.push_str("</main>");
     add_html_route(&mut routes, "/", root.as_bytes());
@@ -706,7 +706,7 @@ async fn parser_entry_budget_retains_partial_links_and_marks_the_operation_trunc
     service.shutdown().await;
 
     assert!(page_at(&outcome, "/").is_some());
-    let linked_pages: Vec<_> = outcome
+    let linked_pages = outcome
         .pages()
         .iter()
         .filter(|page| {
@@ -714,8 +714,8 @@ async fn parser_entry_budget_retains_partial_links_and_marks_the_operation_trunc
                 .iter()
                 .any(|observation| observation.source == ys::map::DiscoverySource::HtmlLink)
         })
-        .collect();
-    assert_eq!(linked_pages.len(), 1);
+        .count();
+    assert_eq!(linked_pages, 1);
     assert_eq!(
         requests_for(&paths, "/one") + requests_for(&paths, "/two"),
         0
@@ -888,7 +888,7 @@ async fn cancellation_before_work_returns_an_outcome_without_network_requests() 
     service.shutdown().await;
 
     assert_eq!(outcome.termination(), ys::map::MapTermination::Cancelled);
-    assert!(requests.is_empty());
+    assert_eq!(requests.len(), 0);
     let seed = page_at(&outcome, "/").ok_or_else(|| missing_page("seed was not inventoried"))?;
     assert_eq!(seed.exploration, ys::map::Exploration::Pending);
     assert!(outcome.frontier().iter().any(|entry| {
@@ -1106,7 +1106,7 @@ async fn seed_redirect_preserves_the_single_authored_tree_root() -> TestResult {
         .find(|entry| entry.page.path() == "/about/")
         .ok_or_else(|| missing_page("redirect target missing from tree"))?;
     assert_eq!(target.depth, Some(0));
-    assert_eq!(target.parent.as_ref().map(|url| url.path()), Some("/about"));
+    assert_eq!(target.parent.as_ref().map(url::Url::path), Some("/about"));
     assert_eq!(requests_for(&paths, "/about/"), 1);
     Ok(())
 }

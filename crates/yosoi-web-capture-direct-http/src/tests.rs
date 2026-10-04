@@ -4,14 +4,12 @@
     reason = "static test fixtures"
 )]
 
-use std::{error::Error, sync::Arc, time::Duration};
+use std::{error::Error, sync::Arc};
 
 use chrono::{DateTime, Utc};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::TcpListener,
-    task::yield_now,
-    time::sleep,
 };
 use tokio_rustls::{
     TlsAcceptor,
@@ -39,6 +37,8 @@ use crate::direct_http_orchestration::capture_direct_http_with_client_at;
 
 #[path = "tests/sink.rs"]
 mod sink_tests;
+#[path = "tests/tls_pending_cancellation.rs"]
+mod tls_pending_cancellation;
 
 const CERT: &[u8] = include_bytes!("../tests/fixtures/direct-http-tls/cert.der");
 const KEY: &[u8] = include_bytes!("../tests/fixtures/direct-http-tls/key.der");
@@ -365,34 +365,4 @@ fn invalid_and_too_long_header_values_are_classified_without_copying_them() {
         super::response::content_length(&headers),
         ObservedContentLength::TooLong
     );
-}
-
-#[tokio::test]
-async fn cancellation_wins_while_tls_request_is_pending() {
-    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-    let address = listener.local_addr().unwrap();
-    tokio::spawn(async move {
-        let (_stream, _) = listener.accept().await.unwrap();
-        sleep(Duration::from_secs(2)).await;
-    });
-    let token = CancellationToken::new();
-    let trigger = token.clone();
-    tokio::spawn(async move {
-        yield_now().await;
-        trigger.cancel();
-    });
-    let failure = execute_direct_http_with_client_at(
-        spec(&format!("https://localhost:{}/pending", address.port())),
-        &token,
-        wall_clock(),
-        pinned_client(),
-        super::DirectHttpRedirectTargetPolicy::AllowHttpAndHttps,
-    )
-    .await
-    .unwrap_err();
-    assert_eq!(
-        failure.error().kind(),
-        super::DirectHttpTransportErrorKind::Cancelled
-    );
-    assert!(failure.lifecycle().termination().is_some());
 }

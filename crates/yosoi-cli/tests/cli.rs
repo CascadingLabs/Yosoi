@@ -25,7 +25,7 @@ fn bare_invocation_prints_root_help_to_stdout() -> Result<(), Box<dyn Error>> {
     let output = run_yosoi(&[])?;
 
     assert_eq!(output.status.code(), Some(0));
-    assert!(output.stderr.is_empty());
+    assert_eq!(output.stderr.as_slice(), b"");
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(stdout.contains("Usage: yosoi"));
     assert!(stdout.contains("Options:"));
@@ -40,7 +40,7 @@ fn explicit_help_prints_root_help_to_stdout() -> Result<(), Box<dyn Error>> {
     let output = run_yosoi(&["--help"])?;
 
     assert_eq!(output.status.code(), Some(0));
-    assert!(output.stderr.is_empty());
+    assert_eq!(output.stderr.as_slice(), b"");
     assert!(String::from_utf8_lossy(&output.stdout).contains("Usage: yosoi"));
     assert_no_ansi(&output.stdout);
     Ok(())
@@ -52,7 +52,7 @@ fn help_name_ignores_capitalization() -> Result<(), Box<dyn Error>> {
     for spelling in ["-H", "--HELP", "--HeLp"] {
         let output = run_yosoi(&[spelling])?;
         assert_eq!(output.status.code(), Some(0), "{spelling}");
-        assert!(output.stderr.is_empty(), "{spelling}");
+        assert_eq!(output.stderr.as_slice(), b"", "{spelling}");
         assert_eq!(output.stdout, canonical.stdout, "{spelling}");
     }
     Ok(())
@@ -63,7 +63,7 @@ fn explicit_version_prints_version_to_stdout() -> Result<(), Box<dyn Error>> {
     let output = run_yosoi(&["--version"])?;
 
     assert_eq!(output.status.code(), Some(0));
-    assert!(output.stderr.is_empty());
+    assert_eq!(output.stderr.as_slice(), b"");
     assert!(String::from_utf8_lossy(&output.stdout).starts_with("yosoi "));
     assert_no_ansi(&output.stdout);
     Ok(())
@@ -75,7 +75,7 @@ fn version_name_ignores_capitalization() -> Result<(), Box<dyn Error>> {
     for spelling in ["-v", "-V", "--VERSION", "--VeRsIoN"] {
         let output = run_yosoi(&[spelling])?;
         assert_eq!(output.status.code(), Some(0), "{spelling}");
-        assert!(output.stderr.is_empty(), "{spelling}");
+        assert_eq!(output.stderr.as_slice(), b"", "{spelling}");
         assert_eq!(output.stdout, canonical.stdout, "{spelling}");
     }
     Ok(())
@@ -86,7 +86,7 @@ fn policy_subcommand_version_keeps_lowercase_canonical_spelling() -> Result<(), 
     for spelling in ["-v", "-V", "--VeRsIoN"] {
         let output = run_yosoi(&["policy", spelling])?;
         assert_eq!(output.status.code(), Some(0), "{spelling}");
-        assert!(output.stderr.is_empty(), "{spelling}");
+        assert_eq!(output.stderr.as_slice(), b"", "{spelling}");
         assert!(String::from_utf8_lossy(&output.stdout).contains(env!("CARGO_PKG_VERSION")));
     }
     Ok(())
@@ -97,8 +97,8 @@ fn unknown_flag_fails_with_only_a_stderr_diagnostic() -> Result<(), Box<dyn Erro
     let output = run_yosoi(&["--not-a-real-option"])?;
 
     assert_eq!(output.status.code(), Some(2));
-    assert!(output.stdout.is_empty());
-    assert!(!output.stderr.is_empty());
+    assert_eq!(output.stdout.as_slice(), b"");
+    assert_ne!(output.stderr.as_slice(), b"");
     assert_no_ansi(&output.stderr);
     Ok(())
 }
@@ -108,8 +108,8 @@ fn unexpected_operand_fails_with_only_a_stderr_diagnostic() -> Result<(), Box<dy
     let output = run_yosoi(&["not-a-command"])?;
 
     assert_eq!(output.status.code(), Some(2));
-    assert!(output.stdout.is_empty());
-    assert!(!output.stderr.is_empty());
+    assert_eq!(output.stdout.as_slice(), b"");
+    assert_ne!(output.stderr.as_slice(), b"");
     assert_no_ansi(&output.stderr);
     Ok(())
 }
@@ -119,7 +119,7 @@ fn misspelled_help_suggests_help_in_diagnostic_only() -> Result<(), Box<dyn Erro
     let output = run_yosoi(&["--hlep"])?;
 
     assert_eq!(output.status.code(), Some(2));
-    assert!(output.stdout.is_empty());
+    assert_eq!(output.stdout.as_slice(), b"");
     assert!(String::from_utf8_lossy(&output.stderr).contains("--help"));
     assert_no_ansi(&output.stderr);
     Ok(())

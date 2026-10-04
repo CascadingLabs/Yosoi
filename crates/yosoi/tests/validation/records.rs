@@ -15,8 +15,8 @@ fn explicit_validation_builds_simple_products_and_retains_candidates() -> Result
     else {
         return Err("expected evaluated outcome".into());
     };
-    assert!(issues.is_empty());
-    assert!(extraction_diagnostics.is_empty());
+    assert_eq!(issues.len(), 0);
+    assert_eq!(extraction_diagnostics.len(), 0);
     assert_eq!(records.len(), 2);
 
     let first = records.first().ok_or("missing first product")?;
@@ -31,7 +31,7 @@ fn explicit_validation_builds_simple_products_and_retains_candidates() -> Result
     let second = records.get(1).ok_or("missing second product")?;
     assert_eq!(second.value.name, "Coffee");
     assert_eq!(second.value.subtitle.as_deref(), Some("Whole bean"));
-    assert!(second.value.categories.is_empty());
+    assert_eq!(second.value.categories, Vec::<String>::new());
     Ok(())
 }
 

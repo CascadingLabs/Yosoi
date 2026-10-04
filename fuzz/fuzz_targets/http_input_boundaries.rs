@@ -85,10 +85,7 @@ fn validate_media_declaration(observed: &ObservedHeaderValue, declaration: Media
             ObservedHeaderValue::Duplicate,
             MediaDeclaration::Malformed(MediaDeclarationIssue::DuplicateField),
         ) => {}
-        (
-            ObservedHeaderValue::Value(_),
-            MediaDeclaration::Parsed { essence, charset },
-        ) => {
+        (ObservedHeaderValue::Value(_), MediaDeclaration::Parsed { essence, charset }) => {
             assert!(essence.is_ascii());
             assert!(essence.len() <= 127);
             assert_eq!(essence, essence.to_ascii_lowercase());
@@ -116,9 +113,7 @@ fn validate_media_declaration(observed: &ObservedHeaderValue, declaration: Media
                     assert!(normalized.is_ascii());
                     assert!(normalized.len() <= 63);
                 }
-                CharsetDeclaration::Issue(
-                    CharsetIssue::Invalid | CharsetIssue::Conflicting,
-                ) => {}
+                CharsetDeclaration::Issue(CharsetIssue::Invalid | CharsetIssue::Conflicting) => {}
             }
         }
         (ObservedHeaderValue::Value(_), MediaDeclaration::Malformed(_)) => {}
@@ -129,7 +124,9 @@ fn validate_media_declaration(observed: &ObservedHeaderValue, declaration: Media
 fn validate_url(value: &str) {
     match RequestedWebTarget::parse(value) {
         Ok(target) => {
-            assert!(target.as_str().starts_with("http://") || target.as_str().starts_with("https://"));
+            assert!(
+                target.as_str().starts_with("http://") || target.as_str().starts_with("https://")
+            );
             assert_eq!(RequestedWebTarget::parse(target.as_str()), Ok(target));
         }
         Err(error) => {

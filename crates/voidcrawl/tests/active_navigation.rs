@@ -217,7 +217,7 @@ async fn collect_progress(navigation: &mut ActiveNavigation) -> Vec<NavigationPr
 }
 
 fn assert_strictly_ordered(progress: &[NavigationProgress]) {
-    assert!(!progress.is_empty(), "navigation produced no progress");
+    assert_ne!(progress.len(), 0, "navigation produced no progress");
     assert!(
         progress
             .windows(2)

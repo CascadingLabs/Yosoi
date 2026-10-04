@@ -2,11 +2,13 @@
 
 use std::{
     error::Error,
+    fmt::Write as _,
     fs,
-    io::{Read, Write},
+    io::{self, Read, Write},
     net::{SocketAddr, TcpListener, TcpStream},
     path::PathBuf,
     process::{Command, Output, Stdio},
+    str,
     sync::mpsc,
     thread,
     time::Duration,
@@ -14,6 +16,18 @@ use std::{
 
 use serde_json::{Value, json};
 use tempfile::TempDir;
+
+fn json_at<'a>(value: &'a Value, pointer: &str) -> Result<&'a Value, Box<dyn Error>> {
+    value
+        .pointer(pointer)
+        .ok_or_else(|| io::Error::other(format!("missing JSON value at {pointer}")).into())
+}
+
+fn json_at_mut<'a>(value: &'a mut Value, pointer: &str) -> Result<&'a mut Value, Box<dyn Error>> {
+    value
+        .pointer_mut(pointer)
+        .ok_or_else(|| io::Error::other(format!("missing JSON value at {pointer}")).into())
+}
 
 struct CliHome {
     _directory: TempDir,
@@ -45,19 +59,14 @@ impl CliHome {
         let mut policy: Value = serde_json::from_str(include_str!(
             "../../yosoi-policy/tests/fixtures/default-policy.json"
         ))?;
-        {
-            let map = policy
-                .get_mut("map")
-                .ok_or("default Policy fixture has no Map policy")?;
-            map["scope"]["hosts"] = json!("registrable_domain");
-            map["pages"] = json!("disabled");
-            map["subdomains"] = json!("passive");
-            map["limits"]["max_link_depth"] = json!(1);
-            map["limits"]["max_requests"] = json!(13);
-            map["limits"]["max_hosts"] = json!(17);
-            map["limits"]["max_urls"] = json!(19);
-        }
-        let map = policy["map"].clone();
+        *json_at_mut(&mut policy, "/map/scope/hosts")? = json!("registrable_domain");
+        *json_at_mut(&mut policy, "/map/pages")? = json!("disabled");
+        *json_at_mut(&mut policy, "/map/subdomains")? = json!("passive");
+        *json_at_mut(&mut policy, "/map/limits/max_link_depth")? = json!(1);
+        *json_at_mut(&mut policy, "/map/limits/max_requests")? = json!(13);
+        *json_at_mut(&mut policy, "/map/limits/max_hosts")? = json!(17);
+        *json_at_mut(&mut policy, "/map/limits/max_urls")? = json!(19);
+        let map = json_at(&policy, "/map")?.clone();
 
         let mut versions = serde_json::Map::new();
         versions.insert(
@@ -66,7 +75,7 @@ impl CliHome {
                 "active_profile": "inherited",
                 "profiles": {
                     "inherited": {"map": map},
-                    "other": {"map": policy["map"]}
+                    "other": {"map": map}
                 }
             }),
         );
@@ -276,15 +285,15 @@ fn map_value(output: &Output) -> Result<Value, Box<dyn Error>> {
     Ok(serde_json::from_slice(&output.stdout)?)
 }
 
-fn assert_map_document(value: &Value) {
-    assert_eq!(value["schema_version"], 1);
-    assert!(value["cli_version"].is_string());
-    assert!(value["seed"].is_string());
-    assert!(value["policy_identity"]["version"].is_number());
-    assert!(value["policy_identity"]["sha256"].is_string());
-    assert!(value["map_policy"].is_object());
-    assert!(value["termination"].is_object());
-    assert!(value["summary"].is_object());
+fn assert_map_document(value: &Value) -> Result<(), Box<dyn Error>> {
+    assert_eq!(json_at(value, "/schema_version")?.as_u64(), Some(1));
+    assert!(json_at(value, "/cli_version")?.is_string());
+    assert!(json_at(value, "/seed")?.is_string());
+    assert!(json_at(value, "/policy_identity/version")?.is_number());
+    assert!(json_at(value, "/policy_identity/sha256")?.is_string());
+    assert!(json_at(value, "/map_policy")?.is_object());
+    assert!(json_at(value, "/termination")?.is_object());
+    assert!(json_at(value, "/summary")?.is_object());
     for field in [
         "hosts",
         "pages",
@@ -296,20 +305,27 @@ fn assert_map_document(value: &Value) {
         "frontier",
         "request_trace",
     ] {
-        assert!(value[field].is_array(), "missing Map array {field}");
+        assert!(
+            json_at(value, &format!("/{field}"))?.is_array(),
+            "missing Map array {field}"
+        );
     }
+    Ok(())
 }
 
 fn explain_policy(output: &Output) -> Result<Value, Box<dyn Error>> {
-    let text = std::str::from_utf8(&output.stdout)?;
+    let text = str::from_utf8(&output.stdout)?;
     let start = text.find('{').ok_or("Explain did not print Policy JSON")?;
-    Ok(serde_json::from_str(&text[start..])?)
+    Ok(serde_json::from_str(
+        text.get(start..)
+            .ok_or("Explain offset is not a character boundary")?,
+    )?)
 }
 
 fn page<'a>(value: &'a Value, suffix: &str) -> Option<&'a Value> {
-    value["pages"].as_array()?.iter().find(|page| {
-        page["url"]
-            .as_str()
+    value.get("pages")?.as_array()?.iter().find(|page| {
+        page.get("url")
+            .and_then(Value::as_str)
             .is_some_and(|url| url.ends_with(suffix))
     })
 }
@@ -338,11 +354,17 @@ fn profile_mode_and_limit_overrides_are_explained_without_store_writes()
     let inherited = home.run(&["map", "example.test/docs/", "--explain", "-s"])?;
     assert_eq!(inherited.status.code(), Some(0), "{}", stderr(&inherited));
     let inherited_policy = explain_policy(&inherited)?;
-    assert_eq!(inherited_policy["map"]["pages"], "disabled");
-    assert_eq!(inherited_policy["map"]["subdomains"], "passive");
     assert_eq!(
-        inherited_policy["map"]["scope"]["hosts"],
-        "registrable_domain"
+        json_at(&inherited_policy, "/map/pages")?.as_str(),
+        Some("disabled")
+    );
+    assert_eq!(
+        json_at(&inherited_policy, "/map/subdomains")?.as_str(),
+        Some("passive")
+    );
+    assert_eq!(
+        json_at(&inherited_policy, "/map/scope/hosts")?.as_str(),
+        Some("registrable_domain")
     );
     assert!(stderr(&inherited).contains("Map: not sent"));
 
@@ -369,15 +391,30 @@ fn profile_mode_and_limit_overrides_are_explained_without_store_writes()
     ])?;
     assert_eq!(overridden.status.code(), Some(0), "{}", stderr(&overridden));
     let policy = explain_policy(&overridden)?;
-    assert_eq!(policy["map"]["pages"], "explore");
-    assert_eq!(policy["map"]["subdomains"], "disabled");
-    assert_eq!(policy["map"]["scope"]["hosts"], "seed_host");
-    assert_eq!(policy["map"]["robots"], "respect");
-    assert_eq!(policy["map"]["limits"]["max_link_depth"], 3);
-    assert_eq!(policy["map"]["limits"]["max_requests"], 7);
-    assert_eq!(policy["map"]["limits"]["max_hosts"], 8);
-    assert_eq!(policy["map"]["limits"]["max_urls"], 9);
-    assert_eq!(policy["map"]["limits"]["maximum_elapsed"]["seconds"], 9);
+    assert_eq!(json_at(&policy, "/map/pages")?.as_str(), Some("explore"));
+    assert_eq!(
+        json_at(&policy, "/map/subdomains")?.as_str(),
+        Some("disabled")
+    );
+    assert_eq!(
+        json_at(&policy, "/map/scope/hosts")?.as_str(),
+        Some("seed_host")
+    );
+    assert_eq!(json_at(&policy, "/map/robots")?.as_str(), Some("respect"));
+    assert_eq!(
+        json_at(&policy, "/map/limits/max_link_depth")?.as_u64(),
+        Some(3)
+    );
+    assert_eq!(
+        json_at(&policy, "/map/limits/max_requests")?.as_u64(),
+        Some(7)
+    );
+    assert_eq!(json_at(&policy, "/map/limits/max_hosts")?.as_u64(), Some(8));
+    assert_eq!(json_at(&policy, "/map/limits/max_urls")?.as_u64(), Some(9));
+    assert_eq!(
+        json_at(&policy, "/map/limits/maximum_elapsed/seconds")?.as_u64(),
+        Some(9)
+    );
     assert_eq!(fs::read(home.config.join("yosoi/policies.json"))?, original);
     Ok(())
 }
@@ -406,7 +443,7 @@ fn invalid_limits_overflow_and_output_conflicts_fail_before_network_io()
         "{}",
         stderr(&explain_conflict)
     );
-    assert!(site.finish()?.is_empty());
+    assert_eq!(site.finish()?, Vec::<String>::new());
     Ok(())
 }
 
@@ -418,11 +455,16 @@ fn schemeless_map_seed_uses_https_like_request_cli() -> Result<(), Box<dyn Error
     let map = home.run(&["map", &bare, "--json", "--max-requests", "1"])?;
     let request = home.run(&["request", &bare, "--explain"])?;
     let value = map_value(&map)?;
-    assert_eq!(value["seed"], format!("https://{bare}"));
+    let expected_seed = format!("https://{bare}");
+    assert_eq!(
+        json_at(&value, "/seed")?.as_str(),
+        Some(expected_seed.as_str())
+    );
     assert_eq!(request.status.code(), Some(0), "{}", stderr(&request));
     let requests = site.finish()?;
-    assert!(
-        requests.is_empty(),
+    assert_eq!(
+        requests,
+        Vec::<String>::new(),
         "schemeless input unexpectedly used HTTP"
     );
     Ok(())
@@ -441,12 +483,15 @@ fn regular_file_redirection_defaults_to_clean_versioned_map_json() -> Result<(),
         .stdout(Stdio::from(file))
         .output()?;
     assert_eq!(output.status.code(), Some(0), "{}", stderr(&output));
-    assert!(output.stderr.is_empty());
+    assert_eq!(output.stderr.as_slice(), b"");
     let bytes = fs::read(output_path)?;
     assert_eq!(bytes.first(), Some(&b'{'));
     let value: Value = serde_json::from_slice(&bytes)?;
-    assert_map_document(&value);
-    assert_eq!(value["termination"]["status"], "exhausted");
+    assert_map_document(&value)?;
+    assert_eq!(
+        json_at(&value, "/termination/status")?.as_str(),
+        Some("exhausted")
+    );
     assert!(!String::from_utf8_lossy(&bytes).contains("CLI version:"));
     assert!(site.finish()?.contains(&"/".to_owned()));
     Ok(())
@@ -473,7 +518,10 @@ fn default_pipe_is_typed_document_locate_can_query_for_page_urls() -> Result<(),
     assert_eq!(mapped.status.code(), Some(0), "{}", stderr(&mapped));
     assert_eq!(located.status.code(), Some(0), "{}", stderr(&located));
     let located_value: Value = serde_json::from_slice(&located.stdout)?;
-    assert_eq!(located_value["outcome"]["status"], "matched");
+    assert_eq!(
+        json_at(&located_value, "/outcome/status")?.as_str(),
+        Some("matched")
+    );
     assert!(String::from_utf8_lossy(&located.stdout).contains(&url));
     assert!(site.finish()?.contains(&"/".to_owned()));
     Ok(())
@@ -520,7 +568,10 @@ fn explicit_json_pipe_and_pipe_document_file_replay_keep_their_wire_formats()
         stderr(&located_json)
     );
     assert_eq!(
-        serde_json::from_slice::<Value>(&located_json.stdout)?["outcome"]["status"],
+        json_at(
+            &serde_json::from_slice::<Value>(&located_json.stdout)?,
+            "/outcome/status"
+        )?,
         "matched"
     );
 
@@ -547,7 +598,10 @@ fn explicit_json_pipe_and_pipe_document_file_replay_keep_their_wire_formats()
         .output()?;
     assert_eq!(replay.status.code(), Some(0), "{}", stderr(&replay));
     assert_eq!(
-        serde_json::from_slice::<Value>(&replay.stdout)?["outcome"]["status"],
+        json_at(
+            &serde_json::from_slice::<Value>(&replay.stdout)?,
+            "/outcome/status"
+        )?,
         "matched"
     );
     assert!(site.finish()?.contains(&"/".to_owned()));
@@ -558,37 +612,47 @@ fn explicit_json_pipe_and_pipe_document_file_replay_keep_their_wire_formats()
 fn traversal_normalizes_links_and_respect_skips_robots_blocked_pages() -> Result<(), Box<dyn Error>>
 {
     let home = CliHome::new()?;
-    let mut config = SiteConfig::default();
-    config.robots_status = 200;
-    config.robots_body = b"User-agent: *\nDisallow: /private\n".to_vec();
+    let config = SiteConfig {
+        robots_status: 200,
+        robots_body: b"User-agent: *\nDisallow: /private\n".to_vec(),
+        ..SiteConfig::default()
+    };
     let site = LoopbackSite::new(config)?;
     let url = site.url("/");
 
     let ignored = home.run(&["map", &url, "--json"])?;
     assert_eq!(ignored.status.code(), Some(0), "{}", stderr(&ignored));
     let ignored_value = map_value(&ignored)?;
-    assert_map_document(&ignored_value);
-    assert_eq!(ignored_value["map_policy"]["robots"], "ignore");
-    assert_eq!(ignored_value["pages"].as_array().map(Vec::len), Some(3));
-    let normalized_child = ignored_value["pages"]
+    assert_map_document(&ignored_value)?;
+    assert_eq!(
+        json_at(&ignored_value, "/map_policy/robots")?.as_str(),
+        Some("ignore")
+    );
+    assert_eq!(
+        json_at(&ignored_value, "/pages")?.as_array().map(Vec::len),
+        Some(3)
+    );
+    let normalized_child = json_at(&ignored_value, "/pages")?
         .as_array()
         .and_then(|pages| {
             pages.iter().find(|page| {
-                page["url"]
-                    .as_str()
+                page.get("url")
+                    .and_then(Value::as_str)
                     .is_some_and(|url| url.contains("/child?b=2&a=1"))
             })
         })
         .ok_or("normalized child URL is missing")?;
-    assert_eq!(normalized_child["minimum_link_depth"], 1);
-    assert!(
-        !normalized_child["url"]
-            .as_str()
-            .unwrap_or_default()
-            .contains('#')
+    assert_eq!(
+        json_at(normalized_child, "/minimum_link_depth")?.as_u64(),
+        Some(1)
     );
     assert!(
-        ignored_value["summary"]["requests"]
+        json_at(normalized_child, "/url")?
+            .as_str()
+            .is_some_and(|url| !url.contains('#'))
+    );
+    assert!(
+        json_at(&ignored_value, "/summary/requests")?
             .as_u64()
             .unwrap_or_default()
             >= 4
@@ -604,14 +668,18 @@ fn traversal_normalizes_links_and_respect_skips_robots_blocked_pages() -> Result
     let respected = home.run(&["map", &url, "--json", "--robots", "respect"])?;
     assert_eq!(respected.status.code(), Some(0), "{}", stderr(&respected));
     let respected_value = map_value(&respected)?;
-    assert_eq!(respected_value["map_policy"]["robots"], "respect");
     assert_eq!(
-        page(&respected_value, "/private")
-            .map(|page| page["exploration"].to_string())
-            .unwrap_or_default()
-            .to_ascii_lowercase()
-            .contains("skipped"),
-        true
+        json_at(&respected_value, "/map_policy/robots")?.as_str(),
+        Some("respect")
+    );
+    let skipped = page(&respected_value, "/private").ok_or("missing robots-blocked page")?;
+    assert_eq!(
+        json_at(skipped, "/exploration/status")?.as_str(),
+        Some("skipped")
+    );
+    assert_eq!(
+        json_at(skipped, "/exploration/reason")?.as_str(),
+        Some("robots")
     );
     let respected_requests = site.finish()?;
     assert!(!respected_requests.iter().any(|path| path == "/private"));
@@ -632,13 +700,15 @@ fn deep_seed_subtree_traverses_relative_child_without_fetching_siblings()
     let output = home.run(&["map", &url, "--json", "--depth", "2"])?;
     assert_eq!(output.status.code(), Some(0), "{}", stderr(&output));
     let value = map_value(&output)?;
-    assert_eq!(value["seed"], url);
-    assert_eq!(value["pages"].as_array().map(Vec::len), Some(2));
+    assert_eq!(json_at(&value, "/seed")?.as_str(), Some(url.as_str()));
+    assert_eq!(json_at(&value, "/pages")?.as_array().map(Vec::len), Some(2));
     assert!(page(&value, "/docs/chapter.html").is_some());
     assert!(
-        value["pages"]
+        json_at(&value, "/pages")?
             .as_array()
-            .is_some_and(|pages| pages.iter().all(|page| page["url"]
+            .is_some_and(|pages| pages.iter().all(|page| page
+                .get("url")
+                .unwrap_or(&Value::Null)
                 .as_str()
                 .is_some_and(|url| url.contains("/docs/"))))
     );
@@ -653,46 +723,52 @@ fn deep_seed_subtree_traverses_relative_child_without_fetching_siblings()
 #[test]
 fn robots_404_is_normal_absence_but_a_source_error_is_partial() -> Result<(), Box<dyn Error>> {
     let home = CliHome::new()?;
-    let mut absent_config = SiteConfig::default();
-    absent_config.sitemap_status = 410;
+    let absent_config = SiteConfig {
+        sitemap_status: 410,
+        ..SiteConfig::default()
+    };
     let absent_site = LoopbackSite::new(absent_config)?;
     let absent = home.run(&["map", &absent_site.url("/"), "--json"])?;
     assert_eq!(absent.status.code(), Some(0), "{}", stderr(&absent));
     let absent_value = map_value(&absent)?;
     assert!(page(&absent_value, "/").is_some());
     assert!(
-        absent_value["support_documents"]
+        json_at(&absent_value, "/support_documents")?
             .as_array()
             .is_some_and(|documents| documents.iter().any(|document| {
-                document["url"]
+                document
+                    .get("url")
+                    .unwrap_or(&Value::Null)
                     .as_str()
                     .is_some_and(|url| url.ends_with("/robots.txt"))
-                    && !document["status"]
-                        .to_string()
-                        .to_ascii_lowercase()
-                        .contains("failed")
+                    && !document.get("status").is_some_and(|status| {
+                        status.to_string().to_ascii_lowercase().contains("failed")
+                    })
             }))
     );
     assert!(absent_site.finish()?.contains(&"/robots.txt".to_owned()));
 
-    let mut config = SiteConfig::default();
-    config.robots_status = 503;
+    let config = SiteConfig {
+        robots_status: 503,
+        ..SiteConfig::default()
+    };
     let failed_site = LoopbackSite::new(config)?;
     let failed = home.run(&["map", &failed_site.url("/"), "--json"])?;
     assert_eq!(failed.status.code(), Some(3), "{}", stderr(&failed));
     let failed_value = map_value(&failed)?;
     assert!(page(&failed_value, "/").is_some());
     assert!(
-        failed_value["support_documents"]
+        json_at(&failed_value, "/support_documents")?
             .as_array()
             .is_some_and(|documents| documents.iter().any(|document| {
-                document["url"]
+                document
+                    .get("url")
+                    .unwrap_or(&Value::Null)
                     .as_str()
                     .is_some_and(|url| url.ends_with("/robots.txt"))
-                    && document["status"]
-                        .to_string()
-                        .to_ascii_lowercase()
-                        .contains("failed")
+                    && document.get("status").is_some_and(|status| {
+                        status.to_string().to_ascii_lowercase().contains("failed")
+                    })
             }))
     );
     assert!(failed_site.finish()?.contains(&"/robots.txt".to_owned()));
@@ -707,19 +783,26 @@ fn request_limit_returns_partial_json_with_pending_seed_frontier() -> Result<(),
     let output = home.run(&["map", &url, "--json", "--max-requests", "1"])?;
     assert_eq!(output.status.code(), Some(3), "{}", stderr(&output));
     let value = map_value(&output)?;
-    assert_eq!(value["termination"]["status"], "limit");
+    assert_eq!(
+        json_at(&value, "/termination/status")?.as_str(),
+        Some("limit")
+    );
     assert!(
-        value["termination"]
+        json_at(&value, "/termination")?
             .to_string()
             .to_ascii_lowercase()
             .contains("request")
     );
     assert!(
-        value["frontier"]
+        json_at(&value, "/frontier")?
             .as_array()
-            .is_some_and(|frontier| frontier.iter().any(|entry| entry["page"] == url))
+            .is_some_and(|frontier| {
+                frontier
+                    .iter()
+                    .any(|entry| entry.get("page").is_some_and(|page| page == &url))
+            })
     );
-    assert_eq!(value["summary"]["requests"], 1);
+    assert_eq!(json_at(&value, "/summary/requests")?.as_u64(), Some(1));
     assert_eq!(site.finish()?, vec!["/robots.txt".to_owned()]);
     Ok(())
 }
@@ -728,10 +811,12 @@ fn request_limit_returns_partial_json_with_pending_seed_frontier() -> Result<(),
 #[test]
 fn ctrl_c_cancels_a_held_map_response_and_cleans_up_fixture() -> Result<(), Box<dyn Error>> {
     let home = CliHome::new()?;
-    let mut config = SiteConfig::default();
-    config.robots_status = 200;
-    config.robots_body = b"User-agent: *\n".to_vec();
-    config.hold_path = Some("/robots.txt".to_owned());
+    let config = SiteConfig {
+        robots_status: 200,
+        robots_body: b"User-agent: *\n".to_vec(),
+        hold_path: Some("/robots.txt".to_owned()),
+        ..SiteConfig::default()
+    };
     let site = LoopbackSite::new(config)?;
     let url = site.url("/");
     let mut child = home
@@ -781,7 +866,10 @@ fn ctrl_c_cancels_a_held_map_response_and_cleans_up_fixture() -> Result<(), Box<
     waiter.join().map_err(|_| "CLI process waiter panicked")?;
     assert_eq!(output.status.code(), Some(130), "{}", stderr(&output));
     let value = map_value(&output)?;
-    assert_eq!(value["termination"]["status"], "cancelled");
+    assert_eq!(
+        json_at(&value, "/termination/status")?.as_str(),
+        Some("cancelled")
+    );
     assert!(site.finish()?.contains(&"/robots.txt".to_owned()));
     Ok(())
 }
@@ -789,12 +877,14 @@ fn ctrl_c_cancels_a_held_map_response_and_cleans_up_fixture() -> Result<(), Box<
 #[test]
 fn broken_output_consumer_returns_an_error_without_panicking() -> Result<(), Box<dyn Error>> {
     let home = CliHome::new()?;
-    let mut config = SiteConfig::default();
     let mut many_links = String::new();
     for index in 0..700 {
-        many_links.push_str(&format!("<a href=\"/target-{index:04}\">target</a>"));
+        let _ = write!(many_links, "<a href=\"/target-{index:04}\">target</a>");
     }
-    config.root_html = many_links.into_bytes();
+    let config = SiteConfig {
+        root_html: many_links.into_bytes(),
+        ..SiteConfig::default()
+    };
     let site = LoopbackSite::new(config)?;
     let url = site.url("/");
     let mut child = home
@@ -828,7 +918,10 @@ fn stats_spellings_keep_explain_stdout_clean_and_report_only_to_stderr()
         assert!(stderr(&output).contains("Map: not sent (--explain)"));
         assert!(stderr(&output).contains("Wall time:"));
         let policy = explain_policy(&output)?;
-        assert_eq!(policy["map"]["limits"]["max_concurrency"], 2);
+        assert_eq!(
+            json_at(&policy, "/map/limits/max_concurrency")?.as_u64(),
+            Some(2)
+        );
         assert!(!String::from_utf8_lossy(&output.stdout).contains("Wall time:"));
     }
     Ok(())

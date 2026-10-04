@@ -481,7 +481,7 @@ async fn mid_body_disconnect_is_an_explicit_failed_source_not_partial_bytes() {
                 | SourceBodyUnavailableReason::CdpBodyUnavailable
         )
     ));
-    assert!(source.body().is_empty());
+    assert_eq!(source.body().len(), 0);
     assert!(report.cleanup_complete);
     assert_contract(
         "partial_response_body",

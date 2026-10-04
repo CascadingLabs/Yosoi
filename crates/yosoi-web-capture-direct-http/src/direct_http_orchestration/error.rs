@@ -1,18 +1,29 @@
-use super::*;
+use thiserror::Error;
+
+use crate::{
+    ArtifactByteExtentError, ArtifactCollectionError, CaptureResolution,
+    DecodedOutputIdentityError, DirectHttpFailure, DirectHttpResponseFacts, InFlightActivityError,
+    LifecycleError, MediaTypeError, ResponseBodyFailure, ResponseBodyOutcome,
+    RetainedSourceReplayError, SourceBindingError, SourceDecoderProducerError,
+    SourceRepresentationArtifactError, SourceRepresentationEvidenceError,
+    SourceRepresentationFacts, StagedPayloadError, WebArtifactManifestError,
+    WebArtifactMetadataError,
+};
+use yosoi_types::{ArtifactIdError, ArtifactRecordError, NamespacedIdError};
 
 /// Safely publishable evidence retained when bundle-last orchestration fails.
 #[derive(Debug)]
 pub struct DirectHttpCaptureEvidence {
-    pub(super) response: Option<crate::DirectHttpResponseFacts>,
-    pub(super) resolution: Option<crate::CaptureResolution>,
+    pub(super) response: Option<DirectHttpResponseFacts>,
+    pub(super) resolution: Option<CaptureResolution>,
     pub(super) body: Option<ResponseBodyOutcome>,
     pub(super) source_facts: Option<SourceRepresentationFacts>,
 }
 impl DirectHttpCaptureEvidence {
-    pub const fn response(&self) -> Option<&crate::DirectHttpResponseFacts> {
+    pub const fn response(&self) -> Option<&DirectHttpResponseFacts> {
         self.response.as_ref()
     }
-    pub const fn resolution(&self) -> Option<&crate::CaptureResolution> {
+    pub const fn resolution(&self) -> Option<&CaptureResolution> {
         self.resolution.as_ref()
     }
     pub const fn body(&self) -> Option<&ResponseBodyOutcome> {
@@ -35,7 +46,7 @@ pub enum DirectHttpReplayError {
     #[error("source payload does not satisfy artifact metadata")]
     RetainedSource(#[from] RetainedSourceReplayError),
     #[error("source payload binding is invalid")]
-    SourceBinding(#[from] crate::SourceBindingError),
+    SourceBinding(#[from] SourceBindingError),
     #[error("capture has no retained source representation evidence artifact")]
     SourceRepresentationUnavailable,
     #[error("capture does not contain exactly one source representation evidence artifact")]
@@ -43,7 +54,7 @@ pub enum DirectHttpReplayError {
     #[error("capture bundle has no payload for its source representation evidence artifact")]
     SourceRepresentationPayloadUnavailable,
     #[error("source representation evidence artifact or payload is invalid")]
-    SourceRepresentation(#[from] crate::SourceRepresentationArtifactError),
+    SourceRepresentation(#[from] SourceRepresentationArtifactError),
 }
 
 /// Failure of a concrete attempt. No `CaptureBundle` has been published.
@@ -72,37 +83,37 @@ impl DirectHttpCaptureError {
 #[derive(Debug, Error)]
 pub enum DirectHttpConstructionError {
     #[error("artifact identity is invalid")]
-    ArtifactId(#[source] yosoi_types::ArtifactIdError),
+    ArtifactId(#[source] ArtifactIdError),
     #[error("artifact record is invalid")]
-    ArtifactRecord(#[source] yosoi_types::ArtifactRecordError),
+    ArtifactRecord(#[source] ArtifactRecordError),
     #[error("artifact metadata is invalid")]
-    Metadata(#[source] crate::WebArtifactMetadataError),
+    Metadata(#[source] WebArtifactMetadataError),
     #[error("artifact extent is invalid")]
-    Extent(#[source] crate::ArtifactByteExtentError),
+    Extent(#[source] ArtifactByteExtentError),
     #[error("media type is invalid")]
-    MediaType(#[source] crate::MediaTypeError),
+    MediaType(#[source] MediaTypeError),
     #[error("reason code is invalid")]
-    Reason(#[source] yosoi_types::NamespacedIdError),
+    Reason(#[source] NamespacedIdError),
     #[error("decoded output identity is invalid")]
     DecodedIdentity(#[source] DecodedOutputIdentityError),
     #[error("source binding is invalid")]
-    SourceBinding(#[source] crate::SourceBindingError),
+    SourceBinding(#[source] SourceBindingError),
     #[error("source representation evidence is invalid")]
-    SourceRepresentationEvidence(#[source] crate::SourceRepresentationEvidenceError),
+    SourceRepresentationEvidence(#[source] SourceRepresentationEvidenceError),
     #[error("source representation artifact is invalid")]
-    SourceRepresentationArtifact(#[source] crate::SourceRepresentationArtifactError),
+    SourceRepresentationArtifact(#[source] SourceRepresentationArtifactError),
     #[error("artifact collection is invalid")]
-    Collection(#[source] crate::ArtifactCollectionError),
+    Collection(#[source] ArtifactCollectionError),
     #[error("artifact manifest is invalid")]
-    Manifest(#[source] crate::WebArtifactManifestError),
+    Manifest(#[source] WebArtifactManifestError),
     #[error("payload staging is invalid")]
     Staging(#[source] StagedPayloadError),
     #[error("lifecycle finalization failed")]
     Lifecycle(#[source] LifecycleError),
     #[error("decoder producer identity is invalid")]
-    DecoderProducer(#[source] crate::SourceDecoderProducerError),
+    DecoderProducer(#[source] SourceDecoderProducerError),
     #[error("in-flight accounting is invalid")]
-    InFlight(#[source] crate::InFlightActivityError),
+    InFlight(#[source] InFlightActivityError),
     #[error("unsupported classified source was configured to fail the attempt")]
     UnsupportedSource {
         facts: Box<SourceRepresentationFacts>,

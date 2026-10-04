@@ -263,7 +263,7 @@ mod tests {
         let Some(Commands::Search(args)) = cli.command else {
             return Err("parsed command was not Search".into());
         };
-        assert!(args.providers.is_empty());
+        assert_eq!(args.providers, Vec::<ProviderChoice>::new());
         assert_eq!(args.per_provider_limit, None);
         assert_eq!(args.max_in_flight, None);
         assert_eq!(args.output, OutputFormat::Human);

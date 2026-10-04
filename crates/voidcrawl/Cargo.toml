@@ -1,6 +1,6 @@
 [package]
 name = "void_crawl_core"
-version = "0.5.0"
+version = "0.1.0"
 publish = false
 edition.workspace = true
 license.workspace = true
@@ -14,9 +14,9 @@ workspace = true
 
 [features]
 default = []
-# Content-safety scanning is separate from browser acquisition. Consumers that
-# disable defaults avoid the YARA/Wasmtime dependency tree entirely.
-scanner = ["dep:yara-x", "dep:infer"]
+# Size, MIME and the fixed EICAR signature check are opt-in independently of
+# browser acquisition; no dynamic signature engine is needed for this ruleset.
+scanner = ["dep:memchr", "dep:infer"]
 # Encode a recording to an animated GIF in-process. Pure Rust, no external
 # binary; `image`'s GIF encoder handles quantization.
 encode-gif = ["image/gif"]
@@ -44,12 +44,7 @@ rustls = { workspace = true, features = ["ring", "std", "tls12"] }
 tempfile.workspace = true
 uuid.workspace = true
 yosoi-types.workspace = true
-# Content-safety gate for downloads: pure-Rust YARA engine (signatures) +
-# magic-byte type detection. Both MIT/Apache-2.0, no external daemon.
-# default-features off drops the binary-format modules (pe/macho/dotnet/…) we
-# don't use — and with them the `rsa`/`dsa` crypto crates (RUSTSEC-flagged) and
-# other heavy transitive deps. Our ruleset is string-only, so the core suffices.
-yara-x = { workspace = true, optional = true }
+memchr = { workspace = true, optional = true }
 infer = { workspace = true, optional = true }
 
 [dev-dependencies]

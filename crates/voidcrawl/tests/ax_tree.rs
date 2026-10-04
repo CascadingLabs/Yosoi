@@ -101,8 +101,9 @@ async fn query_ax_tree_matches_by_role_and_name() {
         .query_ax_tree(Some("button"), Some("Nonexistent"))
         .await
         .expect("query_ax_tree failed");
-    assert!(
-        none.as_array().expect("array").is_empty(),
+    assert_eq!(
+        none.as_array().expect("array").as_slice().len(),
+        0,
         "no match → empty"
     );
 

@@ -1,7 +1,6 @@
-//! Content-safety gate for downloaded files — a small, pure-Rust "antivirus".
+//! Optional size, file-type and fixed EICAR checks for downloaded files.
 //!
-//! Anything fetched from the open web is untrusted, so before a downloaded
-//! file is handed back to a caller it passes three checks, cheapest first:
+//! Callers can explicitly check a downloaded file with three bounded checks:
 //!
 //!   1. **size cap** — reject anything over the configured ceiling; an
 //!      unbounded download is itself a resource-exhaustion surface.
@@ -9,17 +8,15 @@
 //!      its bytes. A file whose bytes are an executable but whose *claimed*
 //!      Content-Type is a benign document (PDF, image, …) is a classic
 //!      disguised-payload and is flagged.
-//!   3. **signature scan** ([`yara_x`]) — VirusTotal's pure-Rust YARA engine,
-//!      run against a tiny embedded ruleset. Ships an EICAR signature so the
-//!      gate is testable with the industry-standard harmless test file.
+//!   3. **EICAR signature check** — two fixed, case-sensitive byte markers,
+//!      so the gate is testable with the industry-standard harmless test file.
+//!      This checks the embedded signature; it is not a general malware engine.
 //!
-//! `clamd` signature-database scanning is intentionally **not** here — it needs
-//! an external daemon and is an opt-in follow-up. This module is the always-on
-//! baseline that runs anywhere, including CI.
+//! This helper has no signature database or custom rule interface.
 
-use std::{fs, path::Path, sync::OnceLock};
+use std::{fs, path::Path};
 
-use yara_x::Rules;
+use memchr::memmem;
 
 use crate::error::{Result, VoidCrawlError};
 
@@ -72,38 +69,11 @@ impl Default for ScanConfig {
     }
 }
 
-/// Embedded YARA ruleset — signature-only, so it compiles fast and needs no
-/// YARA modules.
-///
-/// The EICAR rule deliberately keys on two disjoint substrings rather than the
-/// full contiguous 68-byte test string, so this source file is not itself
-/// quarantined by a host antivirus scanning the repository.
-const RULES_SRC: &str = r#"
-rule EICAR_Test_File {
-    meta:
-        description = "EICAR standard antivirus test file"
-    strings:
-        $a = "EICAR-STANDARD-ANTIVIRUS-TEST-FILE"
-        $b = "$H+H*"
-    condition:
-        all of them
-}
-"#;
-
-/// Lazily compile and cache the embedded ruleset.
-fn rules() -> &'static Rules {
-    static RULES: OnceLock<Rules> = OnceLock::new();
-    RULES.get_or_init(|| {
-        let mut compiler = yara_x::Compiler::new();
-        // The source is a compile-time constant we control; a failure here is a
-        // programming error, but we still avoid panicking — fall back to an
-        // empty ruleset so the gate degrades to type/size checks only.
-        match compiler.add_source(RULES_SRC) {
-            Ok(_) => compiler.build(),
-            Err(_) => yara_x::Compiler::new().build(),
-        }
-    })
-}
+// Preserve the original embedded rule: both exact ASCII markers may occur
+// anywhere in the payload, in either order. Keep them separate so the source
+// does not contain the contiguous standard test signature.
+const EICAR_TEXT_MARKER: &[u8] = b"EICAR-STANDARD-ANTIVIRUS-TEST-FILE";
+const EICAR_SUFFIX_MARKER: &[u8] = b"$H+H*";
 
 /// Read `path` and scan its contents. See [`scan_bytes`].
 pub fn scan_path(path: &Path, cfg: &ScanConfig) -> Result<ScanReport> {
@@ -143,15 +113,11 @@ pub fn scan_bytes(data: &[u8], cfg: &ScanConfig) -> ScanReport {
         ));
     }
 
-    // 3. YARA signature scan.
-    let mut scanner = yara_x::Scanner::new(rules());
-    match scanner.scan(data) {
-        Ok(results) => {
-            if let Some(rule) = results.matching_rules().next() {
-                return flag(format!("matched signature: {}", rule.identifier()));
-            }
-        }
-        Err(e) => return flag(format!("scan error: {e}")),
+    // 3. The shipped signature has no dynamic rules or compilation failure.
+    if memmem::find(data, EICAR_TEXT_MARKER).is_some()
+        && memmem::find(data, EICAR_SUFFIX_MARKER).is_some()
+    {
+        return flag("matched signature: EICAR_Test_File".to_owned());
     }
 
     ScanReport {

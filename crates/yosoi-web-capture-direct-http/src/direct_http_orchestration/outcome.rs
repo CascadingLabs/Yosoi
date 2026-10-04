@@ -1,4 +1,12 @@
-use super::*;
+use std::ops::Deref;
+
+use crate::{
+    CaptureBundle, DecodedOutputIdentity, DirectHttpExecutionIdentity, DirectHttpResponseFacts,
+    RetainedSource, SourceRepresentationEvidence, SourceRepresentationFacts,
+    ValidatedSourceBinding, classify_and_decode,
+};
+
+use super::DirectHttpReplayError;
 
 /// Owning result of a successful Direct HTTP attempt.
 ///
@@ -8,22 +16,22 @@ use super::*;
 #[derive(Debug)]
 pub struct DirectHttpCapture {
     pub(super) bundle: CaptureBundle,
-    pub(super) response: crate::DirectHttpResponseFacts,
+    pub(super) response: DirectHttpResponseFacts,
     pub(super) source_facts: Option<SourceRepresentationFacts>,
-    pub(super) identity: crate::DirectHttpExecutionIdentity,
+    pub(super) identity: DirectHttpExecutionIdentity,
     pub(super) unicode_limit: u64,
 }
 impl DirectHttpCapture {
     pub const fn bundle(&self) -> &CaptureBundle {
         &self.bundle
     }
-    pub const fn response(&self) -> &crate::DirectHttpResponseFacts {
+    pub const fn response(&self) -> &DirectHttpResponseFacts {
         &self.response
     }
     pub const fn source_facts(&self) -> Option<&SourceRepresentationFacts> {
         self.source_facts.as_ref()
     }
-    pub const fn identity(&self) -> &crate::DirectHttpExecutionIdentity {
+    pub const fn identity(&self) -> &DirectHttpExecutionIdentity {
         &self.identity
     }
 
@@ -76,7 +84,7 @@ impl DirectHttpCapture {
             .ok_or(DirectHttpReplayError::PayloadUnavailable)?;
         let retained = RetainedSource::from_artifact_payload(source, payload.to_vec())?;
         let binding = ValidatedSourceBinding::new(&retained, source)?;
-        Ok(crate::classify_and_decode(
+        Ok(classify_and_decode(
             binding,
             &self.response.source_media_type(),
             output,
@@ -88,9 +96,9 @@ impl DirectHttpCapture {
         self,
     ) -> (
         CaptureBundle,
-        crate::DirectHttpResponseFacts,
+        DirectHttpResponseFacts,
         Option<SourceRepresentationFacts>,
-        crate::DirectHttpExecutionIdentity,
+        DirectHttpExecutionIdentity,
     ) {
         (self.bundle, self.response, self.source_facts, self.identity)
     }

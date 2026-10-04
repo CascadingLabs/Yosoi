@@ -383,7 +383,7 @@ mod tests {
         )
         .expect("positive byte limit");
         assert!(matches!(snapshot.state, SnapshotState::Unavailable { .. }));
-        assert!(snapshot.bytes().is_empty());
+        assert_eq!(snapshot.bytes(), b"");
         assert_eq!(snapshot.retained_bytes, 0);
         assert_eq!(snapshot.byte_spec.limit().get(), 1);
     }
@@ -400,7 +400,7 @@ mod tests {
             AccessibilitySnapshotOptions::default(),
             SnapshotUnavailableReason::BrowserDidNotReport,
         );
-        assert!(snapshot.bytes().is_empty());
+        assert_eq!(snapshot.bytes(), b"");
         assert_eq!(snapshot.complete_bytes, None);
     }
 }

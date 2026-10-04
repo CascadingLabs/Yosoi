@@ -440,7 +440,7 @@ async fn old_prepared_redirect_policy_survives_new_snapshot_and_forwarding_is_ob
         DirectHttpTransportErrorKind::Redirect(DirectHttpRedirectErrorKind::TargetRefused),
         same_origin_identity,
     )?;
-    assert!(destination.requests().await.is_empty());
+    assert_eq!(destination.requests().await.len(), 0);
 
     let followed = follow_attempt.execute(&CancellationToken::new()).await?;
     let followed_http = direct_capture(&followed)?;
@@ -548,7 +548,7 @@ async fn pre_cancel_and_event_driven_inflight_cancel_keep_policy_identity() -> T
         DirectHttpTransportErrorKind::Cancelled,
         expected_identity,
     )?;
-    assert!(service.requests().await.is_empty());
+    assert_eq!(service.requests().await.len(), 0);
 
     let in_flight_token = CancellationToken::new();
     let in_flight_prepared = request(&declaration, &service.url("/inflight"))?;

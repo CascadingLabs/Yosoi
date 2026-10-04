@@ -1,24 +1,26 @@
 # Repository scripts
 
-Use `cargo xtask` for standard repository tasks, including `cargo xtask docs`
-and `cargo xtask sdk-boundary`.
-Run scripts directly for specialized checks and local previews.
+Use `cargo xtask bump-version <VERSION>` to synchronize first-party release
+versions, local dependency requirements, lockfiles, and `CITATION.cff` in place.
+`--dry-run` previews affected paths; `--check` fails if any version needs updating.
+Add `--date-released YYYY-MM-DD` to update or check the citation's release date
+alongside the version. Omitting it preserves the existing date.
+Real runs stage replacements and ask for yes/no confirmation. Pass `-y` or
+`--yes` to apply after staging without prompting in scripts. Preview/check modes
+remain read-only and do not accept the confirmation flag.
+See the release procedure in the root `AGENTS.md`.
 
-| Directory | Purpose | Standard entry point |
-| --- | --- | --- |
-| `benchmarks/` | Capture measurements, result directories and summaries | `cargo xtask benchmark <class>` |
-| `browser/` | Browser measurements, Docker contexts and cleanup | `cargo xtask benchmark browser`, `browser-execution`, `browser-stealth`; other runners remain direct |
-| `docs/` | Public-document manifests and version catalogs | `cargo xtask docs manifest <command>` |
-| `fixtures/` | Fixture generation, locator corpus validation and independent oracles | Direct Python tools |
-| `fuzz/` | Bounded Direct HTTP fuzz smoke checks | `cargo xtask fuzz` |
-| `map/` | Map comparisons, live checks and CLI previews | Direct runners |
-| `rust-reference/` | Commit-pinned SDK reference generation and verification | `cargo xtask docs reference <command>` |
+Maintained JavaScript documentation tooling lives in `docs/`:
 
-`bootstrap.sh` installs the pinned Rust development tools. Measurement scripts
-remain opt-in; run one expensive command at a time.
+- `cargo xtask docs manifest <command>` generates public-document manifests.
+- `cargo xtask docs reference <command>` owns SDK reference workflows under `docs/reference/`.
+- `cargo xtask docs check` runs their focused tests serially.
 
-The retired CAS-520 Search container probe and preview have been removed.
-Use the `yosoi search` CLI for current Search workflows. SDK visibility checks
-live in `xtask/src/sdk_boundary.rs`; `SDK_CHECK_TOOLCHAIN` selects the compiler
-(default: nightly). The retained tools and their standard
-entry points are listed above or in `cargo xtask --help`.
+`bootstrap.sh` installs the pinned Rust development tools. Standard maintenance
+lives in Rust `xtask`: SDK boundary checks, capture measurements and result
+retention, fixture integrity/materialization, and the serial fuzz smoke profile.
+
+The Search, Map, benchmark, browser, fixture-generation and independent Python
+oracle harnesses are retired. Committed fixture bytes and expected values remain
+under `benchmarks/fixtures`; Rust regression tests own semantic behavior. Existing
+benchmark results and documentation artifact locations remain unchanged.

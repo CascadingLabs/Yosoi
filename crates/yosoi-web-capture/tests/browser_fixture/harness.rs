@@ -246,7 +246,7 @@ async fn record_error(errors: &Mutex<Vec<String>>, error: FixtureError) {
 }
 fn admit_active_connection(active: &AtomicUsize) -> Result<(), FixtureError> {
     active
-        .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |count| {
+        .try_update(Ordering::SeqCst, Ordering::SeqCst, |count| {
             count.checked_add(1)
         })
         .map(|_| ())
@@ -255,7 +255,7 @@ fn admit_active_connection(active: &AtomicUsize) -> Result<(), FixtureError> {
 
 async fn decrement_active(active: &AtomicUsize, errors: &Mutex<Vec<String>>) {
     if active
-        .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |count| {
+        .try_update(Ordering::SeqCst, Ordering::SeqCst, |count| {
             count.checked_sub(1)
         })
         .is_err()
@@ -553,10 +553,10 @@ fn assert_manifest_scenarios(manifest: &Manifest) {
     let mut barriers: BTreeSet<String> = BTreeSet::new();
     let mut named_descriptors: BTreeSet<&str> = BTreeSet::new();
     for scenario in &manifest.scenarios {
-        assert!(!scenario.id.trim().is_empty());
+        assert_ne!(scenario.id.trim(), "");
         assert!(ids.insert(&scenario.id));
         assert_ne!(scenario.routes.is_some(), scenario.descriptor.is_some());
-        assert!(!scenario.expected.is_empty());
+        assert_ne!(scenario.expected.len(), 0);
         assert!(scenario.expected.iter().all(|fact| !fact.trim().is_empty()));
         let scenario_routes = scenario.routes.as_deref().unwrap_or_default();
         let scenario_barriers = scenario.barriers.as_deref().unwrap_or_default();
@@ -571,7 +571,7 @@ fn assert_manifest_scenarios(manifest: &Manifest) {
             assert!(barriers.insert(barrier.clone()));
         }
         if let Some(descriptor) = &scenario.descriptor {
-            assert!(!descriptor.trim().is_empty());
+            assert_ne!(descriptor.trim(), "");
             assert!(descriptors.contains(descriptor.as_str()));
             assert!(named_descriptors.insert(descriptor.as_str()));
         }
@@ -823,7 +823,7 @@ async fn auxiliary_routes_and_parallel_servers_are_isolated() {
             ),
         }
     }
-    assert!(second.requests().await.is_empty());
+    assert_eq!(second.requests().await, Vec::<String>::new());
     first.shutdown().await.expect("first shutdown");
     second.shutdown().await.expect("second shutdown");
 }
@@ -854,7 +854,7 @@ async fn malformed_connections_are_observable_without_stopping_acceptance() {
         .await
         .expect("barrier");
     assert!(response(&mut good).await.ends_with(SHELL_HTML));
-    assert!(!fixture.errors().await.is_empty());
+    assert_ne!(fixture.errors().await, Vec::<String>::new());
     assert!(fixture.shutdown().await.is_err());
 }
 

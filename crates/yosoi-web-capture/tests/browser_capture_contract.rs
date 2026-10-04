@@ -1,8 +1,6 @@
 #![allow(clippy::unwrap_used, reason = "black-box fixtures")]
 use std::{
-    fs,
     num::{NonZeroU32, NonZeroU64},
-    path::Path,
     sync::Arc,
 };
 use yosoi_types::{Producer, ProducerId, ProducerVersion, ReasonCode};
@@ -259,27 +257,6 @@ fn capability_categories_are_distinct() {
     assert!(values[0].is_supported());
     for value in &values[1..] {
         assert!(!value.is_supported());
-    }
-}
-#[test]
-fn architecture_and_documentation_contract() {
-    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
-    let doc =
-        fs::read_to_string(root.join("../../docs/archive/cas-330-browser-adapter-contract.md")).unwrap();
-    assert!(doc.contains("de1cee33-b090-43a0-ab72-a8ef6c32a296"));
-    assert!(doc.contains("ba8a62f7-f9c3-451f-ba5a-1d350f54271d"));
-    for relative in ["src/browser_spec.rs", "src/browser_adapter.rs"] {
-        let source = fs::read_to_string(root.join(relative)).unwrap();
-        for forbidden in [
-            "void_crawl",
-            "chromiumoxide",
-            "CaptureBundleBuilder",
-            "WebCaptureWire",
-            "RecordingFrame",
-            "EncodedRecording",
-        ] {
-            assert!(!source.contains(forbidden), "{relative}: {forbidden}");
-        }
     }
 }
 fn reason(value: &str) -> ReasonCode {

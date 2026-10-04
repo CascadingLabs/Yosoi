@@ -1,10 +1,10 @@
 //! Link discovery and cache expansion for acquired page documents.
 use super::{
-    CachedLinks, DiscoverySource, Document, DocumentClass, Exploration, Runner, SourceOutcome,
-    SourceStatus,
+    CachedLinks, DiscoverySource, Document, Exploration, Runner, SourceOutcome, SourceStatus,
 };
 use tokio::time::Instant;
 use url::Url;
+use yosoi_documents::DocumentClass;
 impl Runner<'_> {
     pub(super) fn discover_document(
         &mut self,

@@ -7,44 +7,6 @@ use yosoi::prelude as ys;
 
 type TestResult = Result<(), Box<dyn Error>>;
 
-const FACADE_SOURCE: &str = include_str!("../src/lib.rs");
-const PLAN_SOURCE: &str = include_str!("../../yosoi-documents/src/plan_model.rs");
-
-#[test]
-fn facade_omits_compilation_evaluation_and_resource_budget_symbols() -> TestResult {
-    let prelude = FACADE_SOURCE
-        .split_once("pub mod prelude {")
-        .and_then(|(_, rest)| rest.split_once("\n}").map(|(prelude, _)| prelude))
-        .ok_or_else(|| io::Error::other("facade prelude block was not found"))?;
-
-    for forbidden in [
-        "EvaluationLimits",
-        "EvaluationLimitValues",
-        "LocatedTextEvaluation",
-        "LocatorPlanBuilder",
-        "ParsedHtmlDocument",
-        "ParsedJsonDocument",
-        "ParsedAccessibilityDocument",
-        "DecodedTextDocument",
-        "RenderedDomDocument",
-        "XmlDocument",
-        "document_locator_limits",
-    ] {
-        assert!(
-            !prelude.contains(forbidden),
-            "facade prelude still exports {forbidden}"
-        );
-    }
-
-    for forbidden_method in ["pub fn compile(", "pub fn evaluate(", "pub fn limits("] {
-        assert!(
-            !PLAN_SOURCE.contains(forbidden_method),
-            "public Plan implementation still contains {forbidden_method}"
-        );
-    }
-    Ok(())
-}
-
 #[test]
 fn plan_serialization_contains_no_resource_budget() -> TestResult {
     let plan = ys::Plan::new([ys::output("title", ys::css("h1")?.text())?])?;

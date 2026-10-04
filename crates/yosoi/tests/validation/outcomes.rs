@@ -114,13 +114,14 @@ fn strict_require_all_is_explicit() -> Result<(), Box<dyn Error>> {
             ..
         })
     ));
-    assert!(
+    assert_eq!(
         Product::extract(&ys::LocateOutcome::NoMatch {
             document_id: ys::DocumentId::try_new("no-match")?,
         })
         .validate()
         .require_all()?
-        .is_empty()
+        .len(),
+        0
     );
     assert!(matches!(
         Product::extract(&ys::LocateOutcome::Indeterminate {

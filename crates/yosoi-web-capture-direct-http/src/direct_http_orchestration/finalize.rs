@@ -1,4 +1,30 @@
-use super::*;
+use std::time::SystemTime;
+
+use chrono::{DateTime, Utc};
+use tokio_util::sync::CancellationToken;
+
+use crate::{
+    ActivityCount, ArtifactFamilyResult, BoundedAcquisitionLifecycle, ByteCount,
+    CaptureEnvironment, CaptureOffset, CaptureResolution, DirectHttpExecutionIdentity,
+    DirectHttpRedirectTargetPolicy, DirectHttpResponseFacts, EventCount, InFlightActivity,
+    LifecycleFinalizationInput, MeasuredCount, ResolvedDirectHttpCaptureSpec, ResponseBodyOutcome,
+    WebArtifactManifest, WebArtifactResults, WebProviderCapabilityProfile, consume_response_body,
+    execute_direct_http_at, execute_direct_http_at_with_redirect_policy,
+    finalize_direct_http_attempt,
+};
+#[cfg(test)]
+use wreq::Client;
+
+use super::{
+    DirectHttpCapture, DirectHttpCaptureError, DirectHttpCaptureEvidence,
+    DirectHttpConstructionError,
+};
+
+#[cfg(test)]
+use crate::{
+    body::{PayloadSink, consume_with_sink, consume_with_sink_forced_invariant_failure},
+    execute_direct_http_with_client_at,
+};
 
 /// Explicit wall-clock samples used by deterministic orchestration tests.
 #[derive(Clone, Debug)]
@@ -11,22 +37,22 @@ pub struct DirectHttpCaptureTimestamps {
 
 /// Executes, processes, classifies, constructs, and publishes one capture bundle.
 pub async fn capture_direct_http(
-    spec: crate::ResolvedDirectHttpCaptureSpec,
+    spec: ResolvedDirectHttpCaptureSpec,
     cancellation: &CancellationToken,
 ) -> Result<DirectHttpCapture, DirectHttpCaptureError> {
     capture_direct_http_with_redirect_policy(
         spec,
         cancellation,
-        crate::DirectHttpRedirectTargetPolicy::AllowHttpAndHttps,
+        DirectHttpRedirectTargetPolicy::AllowHttpAndHttps,
     )
     .await
 }
 
 /// Executes a full bounded attempt while applying the policy-selected redirect target rule.
 pub async fn capture_direct_http_with_redirect_policy(
-    spec: crate::ResolvedDirectHttpCaptureSpec,
+    spec: ResolvedDirectHttpCaptureSpec,
     cancellation: &CancellationToken,
-    redirect_target_policy: crate::DirectHttpRedirectTargetPolicy,
+    redirect_target_policy: DirectHttpRedirectTargetPolicy,
 ) -> Result<DirectHttpCapture, DirectHttpCaptureError> {
     let started_at: DateTime<Utc> = SystemTime::now().into();
     Box::pin(capture_direct_http_at_with_redirect_policy(
@@ -40,7 +66,7 @@ pub async fn capture_direct_http_with_redirect_policy(
 
 /// Deterministic wall-clock seam; the monotonic absolute deadline remains transport-owned.
 pub async fn capture_direct_http_at(
-    spec: crate::ResolvedDirectHttpCaptureSpec,
+    spec: ResolvedDirectHttpCaptureSpec,
     cancellation: &CancellationToken,
     started_at: DateTime<Utc>,
 ) -> Result<DirectHttpCapture, DirectHttpCaptureError> {
@@ -48,19 +74,19 @@ pub async fn capture_direct_http_at(
         spec,
         cancellation,
         started_at,
-        crate::DirectHttpRedirectTargetPolicy::AllowHttpAndHttps,
+        DirectHttpRedirectTargetPolicy::AllowHttpAndHttps,
     )
     .await
 }
 
 /// Deterministic start-time seam with an explicit redirect target policy.
 pub async fn capture_direct_http_at_with_redirect_policy(
-    spec: crate::ResolvedDirectHttpCaptureSpec,
+    spec: ResolvedDirectHttpCaptureSpec,
     cancellation: &CancellationToken,
     started_at: DateTime<Utc>,
-    redirect_target_policy: crate::DirectHttpRedirectTargetPolicy,
+    redirect_target_policy: DirectHttpRedirectTargetPolicy,
 ) -> Result<DirectHttpCapture, DirectHttpCaptureError> {
-    let pending = crate::execute_direct_http_at_with_redirect_policy(
+    let pending = execute_direct_http_at_with_redirect_policy(
         spec.clone(),
         cancellation,
         started_at,
@@ -69,7 +95,7 @@ pub async fn capture_direct_http_at_with_redirect_policy(
     .await
     .map_err(DirectHttpCaptureError::Transport)?;
     let (body, lifecycle, response, resolution, identity) =
-        Box::pin(crate::consume_response_body(pending, cancellation))
+        Box::pin(consume_response_body(pending, cancellation))
             .await
             .map_err(DirectHttpCaptureError::Body)?;
     // Wall-clock completion is sampled at the artifact/finalization boundary; monotonic
@@ -92,22 +118,22 @@ pub async fn capture_direct_http_at_with_redirect_policy(
 
 #[cfg(test)]
 pub(crate) async fn capture_direct_http_with_client_at(
-    spec: crate::ResolvedDirectHttpCaptureSpec,
+    spec: ResolvedDirectHttpCaptureSpec,
     cancellation: &CancellationToken,
     started_at: DateTime<Utc>,
-    client: wreq::Client,
+    client: Client,
 ) -> Result<DirectHttpCapture, DirectHttpCaptureError> {
-    let pending = crate::execute_direct_http_with_client_at(
+    let pending = execute_direct_http_with_client_at(
         spec.clone(),
         cancellation,
         started_at,
         client,
-        crate::DirectHttpRedirectTargetPolicy::AllowHttpAndHttps,
+        DirectHttpRedirectTargetPolicy::AllowHttpAndHttps,
     )
     .await
     .map_err(DirectHttpCaptureError::Transport)?;
     let (body, lifecycle, response, resolution, identity) =
-        crate::consume_response_body(pending, cancellation)
+        Box::pin(consume_response_body(pending, cancellation))
             .await
             .map_err(DirectHttpCaptureError::Body)?;
     finish_capture(
@@ -117,19 +143,24 @@ pub(crate) async fn capture_direct_http_with_client_at(
 
 #[cfg(test)]
 pub(crate) async fn capture_direct_http_with_sink_at(
-    spec: crate::ResolvedDirectHttpCaptureSpec,
+    spec: ResolvedDirectHttpCaptureSpec,
     cancellation: &CancellationToken,
     started_at: DateTime<Utc>,
-    sink: Box<dyn crate::body::PayloadSink>,
+    sink: Box<dyn PayloadSink>,
     force_invariant_failure: bool,
 ) -> Result<DirectHttpCapture, DirectHttpCaptureError> {
-    let pending = crate::execute_direct_http_at(spec.clone(), cancellation, started_at)
+    let pending = execute_direct_http_at(spec.clone(), cancellation, started_at)
         .await
         .map_err(DirectHttpCaptureError::Transport)?;
     let consumed = if force_invariant_failure {
-        crate::body::consume_with_sink_forced_invariant_failure(pending, cancellation, sink).await
+        Box::pin(consume_with_sink_forced_invariant_failure(
+            pending,
+            cancellation,
+            sink,
+        ))
+        .await
     } else {
-        crate::body::consume_with_sink(pending, cancellation, sink).await
+        Box::pin(consume_with_sink(pending, cancellation, sink)).await
     };
     let (body, lifecycle, response, resolution, identity) =
         consumed.map_err(DirectHttpCaptureError::Body)?;
@@ -138,14 +169,17 @@ pub(crate) async fn capture_direct_http_with_sink_at(
     )
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "keeps timing and response lifecycle evidence explicit at finalization"
+)]
 fn finish_capture(
-    spec: crate::ResolvedDirectHttpCaptureSpec,
+    spec: ResolvedDirectHttpCaptureSpec,
     body: ResponseBodyOutcome,
-    lifecycle: crate::BoundedAcquisitionLifecycle,
-    response: crate::DirectHttpResponseFacts,
-    resolution: crate::CaptureResolution,
-    identity: crate::DirectHttpExecutionIdentity,
+    lifecycle: BoundedAcquisitionLifecycle,
+    response: DirectHttpResponseFacts,
+    resolution: CaptureResolution,
+    identity: DirectHttpExecutionIdentity,
     source_generated_at: DateTime<Utc>,
     decoded_generated_at: DateTime<Utc>,
     finished_at: DateTime<Utc>,
@@ -175,15 +209,15 @@ fn finish_capture(
 
 /// Deterministic construction-time seam. Transport deadlines remain monotonic.
 pub async fn capture_direct_http_with_clock(
-    spec: crate::ResolvedDirectHttpCaptureSpec,
+    spec: ResolvedDirectHttpCaptureSpec,
     cancellation: &CancellationToken,
     timestamps: DirectHttpCaptureTimestamps,
 ) -> Result<DirectHttpCapture, DirectHttpCaptureError> {
-    let pending = crate::execute_direct_http_at(spec.clone(), cancellation, timestamps.started_at)
+    let pending = execute_direct_http_at(spec.clone(), cancellation, timestamps.started_at)
         .await
         .map_err(DirectHttpCaptureError::Transport)?;
     let (body, lifecycle, response, resolution, identity) =
-        Box::pin(crate::consume_response_body(pending, cancellation))
+        Box::pin(consume_response_body(pending, cancellation))
             .await
             .map_err(DirectHttpCaptureError::Body)?;
     finish_capture(
@@ -199,16 +233,23 @@ pub async fn capture_direct_http_with_clock(
     )
 }
 
-#[allow(clippy::too_many_arguments)]
+#[allow(
+    clippy::too_many_arguments,
+    reason = "constructs one bundle from independently bounded evidence and lifecycle facts"
+)]
+#[allow(
+    clippy::result_large_err,
+    reason = "construction failure returns its typed error with retained capture evidence"
+)]
 fn construct(
-    spec: crate::ResolvedDirectHttpCaptureSpec,
+    spec: ResolvedDirectHttpCaptureSpec,
     body: ResponseBodyOutcome,
-    lifecycle: crate::BoundedAcquisitionLifecycle,
-    response: crate::DirectHttpResponseFacts,
-    resolution: crate::CaptureResolution,
+    lifecycle: BoundedAcquisitionLifecycle,
+    response: DirectHttpResponseFacts,
+    resolution: CaptureResolution,
     environment: CaptureEnvironment,
     capabilities: WebProviderCapabilityProfile,
-    identity: crate::DirectHttpExecutionIdentity,
+    identity: DirectHttpExecutionIdentity,
     source_generated_at: DateTime<Utc>,
     decoded_generated_at: DateTime<Utc>,
     finished_at: DateTime<Utc>,
@@ -264,10 +305,7 @@ fn construct(
         Ok(value) => value,
         Err(error) => return Err((DirectHttpConstructionError::Manifest(error), evidence)),
     };
-    let in_flight = match crate::InFlightActivity::new(
-        crate::ActivityCount::new(0),
-        crate::ActivityCount::new(0),
-    ) {
+    let in_flight = match InFlightActivity::new(ActivityCount::new(0), ActivityCount::new(0)) {
         Ok(value) => value,
         Err(error) => return Err((DirectHttpConstructionError::InFlight(error), evidence)),
     };
@@ -275,7 +313,7 @@ fn construct(
     let input = LifecycleFinalizationInput {
         finished_at,
         terminal_offset,
-        dropped_events: MeasuredCount::Known(crate::EventCount::new(dropped_events)),
+        dropped_events: MeasuredCount::Known(EventCount::new(dropped_events)),
         dropped_bytes: MeasuredCount::Known(ByteCount::new(dropped_bytes)),
         in_flight,
         resolution,
@@ -286,7 +324,7 @@ fn construct(
         payloads,
     };
     let source_facts = evidence.source_facts.clone();
-    let bundle = crate::finalize_direct_http_attempt(spec, lifecycle, input)
+    let bundle = finalize_direct_http_attempt(spec, lifecycle, input)
         .map_err(|e| (DirectHttpConstructionError::Lifecycle(e), evidence))?;
     Ok(DirectHttpCapture {
         bundle,

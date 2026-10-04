@@ -3,7 +3,7 @@
 use std::{
     error::Error,
     fs,
-    io::{Read, Write},
+    io::{self, Read, Write},
     net::{SocketAddr, TcpListener, TcpStream},
     path::PathBuf,
     process::{Command, Output, Stdio},
@@ -15,6 +15,12 @@ use std::{sync::mpsc, time::Duration};
 
 use serde_json::{Value, json};
 use tempfile::TempDir;
+
+fn json_at<'a>(value: &'a Value, pointer: &str) -> Result<&'a Value, Box<dyn Error>> {
+    value
+        .pointer(pointer)
+        .ok_or_else(|| io::Error::other(format!("missing JSON value at {pointer}")).into())
+}
 
 struct CliHome {
     _directory: TempDir,
@@ -123,13 +129,22 @@ fn default_request_reports_a_real_http_response_as_bounded_json() -> Result<(), 
     finish_server(address, server)?;
 
     assert_eq!(output.status.code(), Some(0), "{}", stderr(&output));
-    assert!(output.stderr.is_empty());
+    assert_eq!(output.stderr.as_slice(), b"");
     let value: Value = serde_json::from_slice(&output.stdout)?;
-    assert_eq!(value["schema_version"], 1);
-    assert_eq!(value["policy_profile"], Value::Null);
-    assert_eq!(value["attempts"][0]["state"], "completed");
-    assert_eq!(value["attempts"][0]["http_status"], 200);
-    assert_eq!(value["attempts"][0]["documents"][0]["state"], "produced");
+    assert_eq!(json_at(&value, "/schema_version")?.as_u64(), Some(1));
+    assert!(json_at(&value, "/policy_profile")?.is_null());
+    assert_eq!(
+        json_at(&value, "/attempts/0/state")?.as_str(),
+        Some("completed")
+    );
+    assert_eq!(
+        json_at(&value, "/attempts/0/http_status")?.as_u64(),
+        Some(200)
+    );
+    assert_eq!(
+        json_at(&value, "/attempts/0/documents/0/state")?.as_str(),
+        Some("produced")
+    );
     assert!(
         !output
             .stdout
@@ -172,7 +187,7 @@ fn regular_file_redirect_writes_document_bytes_without_an_output_flag() -> Resul
     finish_server(address, server)?;
 
     assert_eq!(result.status.code(), Some(0), "{}", stderr(&result));
-    assert!(result.stderr.is_empty());
+    assert_eq!(result.stderr.as_slice(), b"");
     assert_eq!(fs::read(output_path)?, b"redirected-body");
     Ok(())
 }
@@ -186,7 +201,7 @@ fn non_success_http_status_still_emits_selected_raw_document() -> Result<(), Box
 
     assert_eq!(output.status.code(), Some(0), "{}", stderr(&output));
     assert_eq!(output.stdout, b"missing");
-    assert!(output.stderr.is_empty());
+    assert_eq!(output.stderr.as_slice(), b"");
     Ok(())
 }
 
@@ -257,8 +272,11 @@ fn named_profile_is_bound_for_a_real_request_without_changing_active_selection()
 
     assert_eq!(output.status.code(), Some(0), "{}", stderr(&output));
     let value: Value = serde_json::from_slice(&output.stdout)?;
-    assert_eq!(value["policy_profile"], "fast");
-    assert_eq!(value["attempts"][0]["state"], "completed");
+    assert_eq!(json_at(&value, "/policy_profile")?.as_str(), Some("fast"));
+    assert_eq!(
+        json_at(&value, "/attempts/0/state")?.as_str(),
+        Some("completed")
+    );
     assert_eq!(fs::read(home.config.join("yosoi/policies.json"))?, original);
     Ok(())
 }
@@ -276,7 +294,7 @@ fn missing_selected_profile_fails_before_network_io() -> Result<(), Box<dyn Erro
     ])?;
 
     assert_ne!(output.status.code(), Some(0));
-    assert!(output.stdout.is_empty());
+    assert_eq!(output.stdout.as_slice(), b"");
     assert!(stderr(&output).contains("missing"));
     Ok(())
 }
@@ -318,8 +336,11 @@ fn transport_failure_has_nonzero_exit_and_typed_attempt_result() -> Result<(), B
 
     assert_ne!(output.status.code(), Some(0));
     let value: Value = serde_json::from_slice(&output.stdout)?;
-    assert_eq!(value["attempts"][0]["state"], "failed");
-    assert_eq!(value["attempts"][0]["http_status"], Value::Null);
+    assert_eq!(
+        json_at(&value, "/attempts/0/state")?.as_str(),
+        Some("failed")
+    );
+    assert!(json_at(&value, "/attempts/0/http_status")?.is_null());
     Ok(())
 }
 
@@ -331,8 +352,8 @@ fn incomplete_response_does_not_emit_raw_document_bytes() -> Result<(), Box<dyn 
     finish_server(address, server)?;
 
     assert_ne!(output.status.code(), Some(0));
-    assert!(output.stdout.is_empty());
-    assert!(!stderr(&output).is_empty());
+    assert_eq!(output.stdout.as_slice(), b"");
+    assert_ne!(stderr(&output), "");
     assert!(stderr(&output).contains("Request stats:"));
     Ok(())
 }
@@ -342,7 +363,7 @@ fn policy_commands_reject_operational_profile_flag() -> Result<(), Box<dyn Error
     let home = CliHome::new()?;
     let output = home.run(&["policy", "list", "--profile", "fast"])?;
     assert_ne!(output.status.code(), Some(0));
-    assert!(output.stdout.is_empty());
+    assert_eq!(output.stdout.as_slice(), b"");
     assert!(stderr(&output).contains("--profile"));
     Ok(())
 }
@@ -361,7 +382,7 @@ fn raw_selection_errors_before_network_io() -> Result<(), Box<dyn Error>> {
         "headless",
     ])?;
     assert_ne!(ambiguous.status.code(), Some(0));
-    assert!(ambiguous.stdout.is_empty());
+    assert_eq!(ambiguous.stdout.as_slice(), b"");
     assert!(stderr(&ambiguous).contains("--attempt"));
 
     let missing_view = home.run(&[
@@ -372,7 +393,7 @@ fn raw_selection_errors_before_network_io() -> Result<(), Box<dyn Error>> {
         "dom",
     ])?;
     assert_ne!(missing_view.status.code(), Some(0));
-    assert!(missing_view.stdout.is_empty());
+    assert_eq!(missing_view.stdout.as_slice(), b"");
     assert!(stderr(&missing_view).contains("does not request"));
 
     let ambiguous_documents = home.run(&[
@@ -383,7 +404,7 @@ fn raw_selection_errors_before_network_io() -> Result<(), Box<dyn Error>> {
         "--raw",
     ])?;
     assert_ne!(ambiguous_documents.status.code(), Some(0));
-    assert!(ambiguous_documents.stdout.is_empty());
+    assert_eq!(ambiguous_documents.stdout.as_slice(), b"");
     assert!(stderr(&ambiguous_documents).contains("--document"));
     Ok(())
 }
@@ -447,7 +468,7 @@ fn ctrl_c_cancels_an_active_request_and_reports_terminal_state() -> Result<(), B
     let output = cancelled_request("--json")?;
     assert_eq!(output.status.code(), Some(130), "{}", stderr(&output));
     let value: Value = serde_json::from_slice(&output.stdout)?;
-    assert_eq!(value["termination"], "cancelled");
+    assert_eq!(json_at(&value, "/termination")?.as_str(), Some("cancelled"));
     Ok(())
 }
 
@@ -456,7 +477,7 @@ fn ctrl_c_cancels_an_active_request_and_reports_terminal_state() -> Result<(), B
 fn ctrl_c_in_raw_mode_keeps_stdout_empty_and_returns_130() -> Result<(), Box<dyn Error>> {
     let output = cancelled_request("--raw")?;
     assert_eq!(output.status.code(), Some(130), "{}", stderr(&output));
-    assert!(output.stdout.is_empty());
+    assert_eq!(output.stdout.as_slice(), b"");
     assert!(stderr(&output).contains("cancelled"));
     Ok(())
 }

@@ -1,13 +1,14 @@
 # Local Docker profiles
 
-| Directory | Purpose | Build entry point |
-| --- | --- | --- |
-| `browser/` | Hardened browser benchmarks and frame-isolation checks | `scripts/browser/run-container.sh` |
-| `browser-stealth/` | Browser stealth measurements on the reviewed browser image | `scripts/browser/run-cas-374-browser-stealth.sh` |
+Both builders pin the official Rust 1.99.0 Linux/amd64 image by digest, matching
+the repository's development toolchain. Updated container builds and browser
+certification remain pending; recorded results retain their original toolchain
+and image identities in [the browser baseline](../docs/chromium-cdp-baseline.md).
 
-The runners prepare a source context with a `YosoiOxide/` directory and verify
-the expected local runtime image. These are local validation profiles; use the
-runners rather than building a Dockerfile directly from the repository root.
-Browser versions, sandbox rules, image labels and evidence formats retain their
-existing identities. Context preparation excludes local recovery and generated
-output directories.
+The `browser/` and `browser-stealth/` Docker profiles retain their sandbox and
+source identities. Their legacy script orchestrators have been retired. Building
+these templates requires a sanitized context containing the complete workspace
+under `YosoiOxide/` and the browser Docker files at `docker/browser/`; exclude VCS
+state, generated output, credentials, and local configuration. These templates
+are not a current browser certification entry point. Consult
+`docs/chromium-cdp-baseline.md` before preparing a new certification.

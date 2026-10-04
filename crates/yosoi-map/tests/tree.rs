@@ -4,6 +4,10 @@ use yosoi_map::{
     TreeEntry, tree,
 };
 
+#[expect(
+    clippy::expect_used,
+    reason = "The test helper accepts only fixed valid URL fixtures."
+)]
 fn url(value: &str) -> Url {
     Url::parse(value).expect("test URL is valid")
 }
@@ -44,6 +48,10 @@ fn relationship(from: &str, to: &str, kind: RelationshipKind) -> Relationship {
     }
 }
 
+#[expect(
+    clippy::expect_used,
+    reason = "Missing inventoried pages must fail the tree contract test."
+)]
 fn entry<'a>(tree: &'a [TreeEntry], value: &str) -> &'a TreeEntry {
     let page = url(value);
     tree.iter()

@@ -171,7 +171,7 @@ fn money_wire_format_preserves_the_non_negative_invariant() -> Result<(), Box<dy
     else {
         return Err("expected evaluated negative-zero outcome".into());
     };
-    assert!(records.is_empty());
+    assert_eq!(records.len(), 0);
     assert_eq!(issues.len(), 1);
     let issue = issues.first().ok_or("missing negative-zero record issue")?;
     assert_eq!(issue.fields.len(), 1);

@@ -209,7 +209,7 @@ fn repeated_root_membership_survives_missing_field_outputs() -> Result<(), Box<d
         return Err("expected the empty product root to remain matched".into());
     };
     assert_eq!(result.regions().len(), 1);
-    assert!(result.findings().is_empty());
+    assert_eq!(result.findings().len(), 0);
     let extracted = Product::extract(&located);
     let candidate = extracted
         .candidates()
@@ -218,14 +218,14 @@ fn repeated_root_membership_survives_missing_field_outputs() -> Result<(), Box<d
     assert!(candidate.name.is_absent());
     assert!(candidate.price.is_absent());
     assert!(candidate.subtitle.is_absent());
-    assert!(candidate.categories.is_empty());
+    assert_eq!(candidate.categories.values().len(), 0);
     let ys::ContractOutcome::Evaluated {
         records, issues, ..
     } = extracted.validate()
     else {
         return Err("expected empty root to produce validation issues".into());
     };
-    assert!(records.is_empty());
+    assert_eq!(records.len(), 0);
     assert_eq!(issues.len(), 1);
     assert_eq!(
         issues.first().map(|issue| issue
@@ -246,7 +246,7 @@ fn repeated_root_membership_survives_missing_field_outputs() -> Result<(), Box<d
     let product = products.first().ok_or("missing required-only product")?;
     assert_eq!(product.name, "Tea");
     assert_eq!(product.subtitle, None);
-    assert!(product.categories.is_empty());
+    assert_eq!(product.categories, Vec::<String>::new());
     Ok(())
 }
 
@@ -258,14 +258,14 @@ fn xml_repeated_root_survives_when_every_field_misses() -> Result<(), Box<dyn Er
         return Err("expected empty XML product root to remain matched".into());
     };
     assert_eq!(result.regions().len(), 1);
-    assert!(result.findings().is_empty());
+    assert_eq!(result.findings().len(), 0);
     let ys::ContractOutcome::Evaluated {
         records, issues, ..
     } = XmlProduct::extract(&located).validate()
     else {
         return Err("expected XML root validation outcome".into());
     };
-    assert!(records.is_empty());
+    assert_eq!(records.len(), 0);
     assert_eq!(issues.len(), 1);
     assert_eq!(
         issues

@@ -80,11 +80,7 @@ pub(super) const fn could_close_outer_record(
     }
 }
 
-#[allow(
-    clippy::missing_const_for_fn,
-    reason = "Rust 1.98 cannot evaluate str pattern matches in const functions"
-)]
-pub(super) fn closes_paragraph(tag: NameKey) -> bool {
+pub(super) const fn closes_paragraph(tag: NameKey) -> bool {
     matches!(
         tag,
         ADDRESS
@@ -149,11 +145,7 @@ pub(super) const fn is_void_html_tag(tag: NameKey) -> bool {
             | WBR
     )
 }
-#[allow(
-    clippy::missing_const_for_fn,
-    reason = "Rust 1.98 cannot evaluate str pattern matches in const functions"
-)]
-pub(super) fn is_unsupported_tag(tag: NameKey) -> bool {
+pub(super) const fn is_unsupported_tag(tag: NameKey) -> bool {
     matches!(
         tag,
         FRAMESET
@@ -173,11 +165,7 @@ pub(super) fn is_unsupported_tag(tag: NameKey) -> bool {
             | XMP
     )
 }
-#[allow(
-    clippy::missing_const_for_fn,
-    reason = "Rust 1.98 cannot evaluate str pattern matches in const functions"
-)]
-pub(super) fn is_formatting_tag(tag: NameKey) -> bool {
+pub(super) const fn is_formatting_tag(tag: NameKey) -> bool {
     matches!(
         tag,
         A | B | BIG | CODE | EM | FONT | I | NOBR | S | SMALL | STRIKE | STRONG | TT | U

@@ -268,7 +268,7 @@ fn matched_region_membership_is_validated_and_round_trips_without_findings()
     let result =
         LocateResult::try_new_with_regions(document.clone(), vec![region.clone()], Vec::new())?;
     assert_eq!(result.regions(), std::slice::from_ref(&region));
-    assert!(result.findings().is_empty());
+    assert_eq!(result.findings().len(), 0);
     let encoded = serde_json::to_vec(&result)?;
     assert_eq!(serde_json::from_slice::<LocateResult>(&encoded)?, result);
 

@@ -372,7 +372,7 @@ fn repeated_regions_remain_matched_when_all_outputs_miss() -> Result<(), Box<dyn
         return Err("expected repeated rendered-DOM roots to remain matched".into());
     };
     assert_eq!(result.regions().len(), 3);
-    assert!(result.findings().is_empty());
+    assert_eq!(result.findings().len(), 0);
     assert!(matches!(
         document.locate_with_budget(
             &plan,

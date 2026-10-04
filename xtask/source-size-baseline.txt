@@ -15,7 +15,6 @@ crates/voidcrawl/src/error.rs	442
 crates/voidcrawl/src/managed_profile.rs	931
 crates/voidcrawl/src/navigation_capture.rs	1194
 crates/voidcrawl/src/observation.rs	1474
-crates/voidcrawl/src/page.rs	4292
 crates/voidcrawl/src/recording.rs	2250
 crates/voidcrawl/src/response.rs	1134
 crates/voidcrawl/src/selector.rs	635
@@ -23,14 +22,9 @@ crates/voidcrawl/src/session.rs	1378
 # Pre-existing Yosoi aggregate/domain sources. CAS-356 does not rewrite these
 # boundaries; their current size is a non-increasing migration ceiling.
 crates/yosoi-types/src/vocabulary.rs	430
-crates/yosoi-web-capture/src/acquisition.rs	410
 crates/yosoi-web-capture/src/aggregate.rs	560
 crates/yosoi-web-capture/src/browser_adapter/facts.rs	948
-crates/yosoi-web-capture/src/browser_adapter/staging.rs	724
 # CAS-352 execution receipts and the behavior-preserving adapter staging move
 # are cohesive migration exceptions, also held to non-increasing ceilings.
 crates/yosoi-web-capture/src/browser_execution/receipt.rs	764
-crates/yosoi-web-capture/src/browser_runtime/capture/staging_facts.rs	510
-crates/yosoi-web-capture/src/browser_spec.rs	761
 crates/yosoi-web-capture/src/error.rs	426
-crates/yosoi-web-capture/src/source.rs	414

@@ -17,7 +17,7 @@ impl BrowserExecutionManager {
         let ticket = self
             .inner
             .next_ticket
-            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |ticket| {
+            .try_update(Ordering::Relaxed, Ordering::Relaxed, |ticket| {
                 ticket.checked_add(1)
             })
             .map_err(|_| BrowserExecutionManagerError::InternalInvariant)?;

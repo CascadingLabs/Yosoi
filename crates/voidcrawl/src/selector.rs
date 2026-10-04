@@ -183,16 +183,6 @@ pub enum TargetResolution {
     Ambiguous { candidates: usize, reason: String },
 }
 
-/// Compatibility alias for the pre-CAS-321 name.
-#[deprecated(note = "use BrowserTargetKind")]
-pub type SelectorKind = BrowserTargetKind;
-/// Compatibility alias for the pre-CAS-321 name.
-#[deprecated(note = "use BrowserTarget")]
-pub type SelectorEntry = BrowserTarget;
-/// Compatibility alias for the pre-CAS-321 name.
-#[deprecated(note = "use TargetResolution")]
-pub type SelectorResolution = TargetResolution;
-
 /// Build the JS expression that gathers this selector's raw DOM candidates,
 /// as a JS array of `Element`s — before visibility filtering. `None` for
 /// kinds with no DOM candidate-gathering step (`role`, `visual`, `jsonld`,
@@ -444,27 +434,6 @@ mod tests {
                 "{kind:?} name remains optional"
             );
         }
-    }
-
-    #[test]
-    #[allow(deprecated)]
-    fn legacy_selector_type_names_remain_source_compatible() {
-        let kind: SelectorKind = BrowserTargetKind::Css;
-        let target: SelectorEntry = BrowserTarget {
-            kind,
-            value: "h1".into(),
-            regex: None,
-            name: None,
-            nth: None,
-            x: None,
-            y: None,
-        };
-        let resolution: SelectorResolution = TargetResolution::Empty {
-            reason: "test".into(),
-        };
-
-        assert_eq!(target.kind, BrowserTargetKind::Css);
-        assert!(matches!(resolution, TargetResolution::Empty { .. }));
     }
 
     #[test]

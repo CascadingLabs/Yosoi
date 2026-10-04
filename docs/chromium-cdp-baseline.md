@@ -30,11 +30,19 @@ SHA-256 digest. The container still starts from the local runtime tag
 `voidcrawl-headful:local`, but its runner refuses to build unless that tag
 resolves to the reviewed image ID
 `sha256:9f89ca6fcbe3ed40f9c3847edaecf9de98b997e57dd65395a990916cd68dd82a`,
-labels the result with that identity, and verifies exact layer ancestry. Its
-Linux/amd64 Rust 1.98 builder manifest is pinned at
+labels the result with that identity, and verifies exact layer ancestry.
+The certified image used the Linux/amd64 Rust 1.98 builder manifest pinned at
 `sha256:af753e6e729c839de28010e323abc550eceaa9572bdaa765429d4f585e2e43dc`.
 The certified resulting image ID and in-image browser digest are recorded
 below.
+
+As of 2026-10-04, both checked-in Docker builders use Rust 1.99.0 with
+Linux/amd64 manifest
+`sha256:9d5e02aa6c7e9c112ed7a4c438900b41f519a792959cd5445c25de42bfb8388b`,
+resolved from the official `rust:1.99.0` image. Rebuilding and certifying those
+images remains pending; the historical image evidence below applies to its
+recorded Rust 1.98 builder. Browser, CDP, Chromiumoxide, and VoidCrawl identities
+are unchanged by this compiler update.
 
 ## What protocol age means
 

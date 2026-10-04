@@ -59,16 +59,16 @@ jobs:
       - name: Install pinned documentation compiler
         shell: bash
         run: |
-          channel=$(node -p 'require("./scripts/rust-reference/toolchain.json").channel')
+          channel=$(node -p 'require("./scripts/docs/reference/toolchain.json").channel')
           rustup toolchain install "$channel" --profile minimal
       - name: Generate compiler-backed SDK reference
         shell: bash
         run: |
           args=()
           if [ "$PREVIEW" = true ]; then args+=(--preview); fi
-          node scripts/rust-reference/generate.mjs generate --source "$SOURCE_COMMIT" --repository "$GITHUB_REPOSITORY" --sdk "$SDK_PACKAGE" --version "$API_VERSION" --locales "$API_LOCALES" --out .generated/reference-release "${args[@]}"
-          node scripts/rust-reference/generate.mjs verify --dir .generated/reference-release
-          node scripts/rust-reference/generate.mjs pack --dir .generated/reference-release --out .generated/reference.tar
+          node scripts/docs/reference/generate.mjs generate --source "$SOURCE_COMMIT" --repository "$GITHUB_REPOSITORY" --sdk "$SDK_PACKAGE" --version "$API_VERSION" --locales "$API_LOCALES" --out .generated/reference-release "${args[@]}"
+          node scripts/docs/reference/generate.mjs verify --dir .generated/reference-release
+          node scripts/docs/reference/generate.mjs pack --dir .generated/reference-release --out .generated/reference.tar
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: ${{ steps.identity.outputs.artifact_name }}

@@ -24,11 +24,8 @@ struct LiveCase {
     policy: ys::Policy,
 }
 
-fn budget(value: u32) -> Result<ys::policy::Budget, ys::PolicyError> {
-    ys::policy::Budget::new(value)
-}
-
-fn live_case(
+#[derive(Clone, Copy)]
+struct LiveCaseConfig {
     name: &'static str,
     seed: &'static str,
     hosts: ys::policy::HostScope,
@@ -39,31 +36,37 @@ fn live_case(
     max_requests: u32,
     operation_seconds: u64,
     request_seconds: u64,
-) -> Result<LiveCase, ys::PolicyError> {
+}
+
+const fn budget(value: u32) -> Result<ys::policy::Budget, ys::PolicyError> {
+    ys::policy::Budget::new(value)
+}
+
+fn live_case(config: LiveCaseConfig) -> Result<LiveCase, ys::PolicyError> {
     Ok(LiveCase {
-        name,
-        seed,
-        registrable_domain,
+        name: config.name,
+        seed: config.seed,
+        registrable_domain: config.registrable_domain,
         policy: ys::Policy {
             request: ys::policy::Request {
                 maximum_elapsed: ys::MaximumElapsed::try_from(
-                    request_seconds.saturating_mul(1_000_000),
+                    config.request_seconds.saturating_mul(1_000_000),
                 )?,
                 ..Default::default()
             },
             map: ys::policy::Map {
                 scope: ys::policy::Scope {
-                    hosts,
+                    hosts: config.hosts,
                     paths: ys::policy::PathScope::SeedSubtree,
                 },
                 robots: ys::policy::Robots::Ignore,
-                pages,
-                subdomains,
+                pages: config.pages,
+                subdomains: config.subdomains,
                 limits: ys::policy::Limits {
-                    max_link_depth,
-                    max_requests: budget(max_requests)?,
+                    max_link_depth: config.max_link_depth,
+                    max_requests: budget(config.max_requests)?,
                     max_concurrency: budget(1)?,
-                    maximum_elapsed: Duration::from_secs(operation_seconds),
+                    maximum_elapsed: Duration::from_secs(config.operation_seconds),
                     ..Default::default()
                 },
                 documents: ys::policy::DiscoveryDocuments::RetainWithinBudget,
@@ -83,162 +86,162 @@ fn live_cases() -> Result<Vec<LiveCase>, ys::PolicyError> {
     let passive = ys::policy::Subdomains::Passive;
 
     let mut cases = vec![
-        live_case(
-            "rust-root",
-            "https://www.rust-lang.org/",
-            seed_host,
-            None,
-            explore,
-            no_subdomains,
-            2,
-            30,
-            60,
-            30,
-        )?,
-        live_case(
-            "rust-book",
-            "https://doc.rust-lang.org/book/",
-            seed_host,
-            None,
-            explore,
-            no_subdomains,
-            2,
-            40,
-            60,
-            30,
-        )?,
-        live_case(
-            "python-library",
-            "https://docs.python.org/3/library/",
-            seed_host,
-            None,
-            explore,
-            no_subdomains,
-            2,
-            40,
-            60,
-            30,
-        )?,
-        live_case(
-            "mdn-http",
-            "https://developer.mozilla.org/en-US/docs/Web/HTTP/",
-            seed_host,
-            None,
-            explore,
-            no_subdomains,
-            2,
-            30,
-            60,
-            30,
-        )?,
-        live_case(
-            "example-org-passive",
-            "https://example.org/",
-            registrable,
-            Some("example.org"),
-            disabled,
-            passive,
-            0,
-            100,
-            60,
-            30,
-        )?,
-        live_case(
-            "example-org-combined",
-            "https://example.org/",
-            registrable,
-            Some("example.org"),
-            explore,
-            passive,
-            0,
-            20,
-            90,
-            30,
-        )?,
-        live_case(
-            "qscrape-root",
-            "https://qscrape.dev/",
-            seed_host,
-            None,
-            explore,
-            no_subdomains,
-            2,
-            100,
-            90,
-            30,
-        )?,
-        live_case(
-            "qscrape-news",
-            "https://qscrape.dev/l1/news/",
-            seed_host,
-            None,
-            explore,
-            no_subdomains,
-            3,
-            100,
-            90,
-            30,
-        )?,
-        live_case(
-            "qscrape-news-respect-robots",
-            "https://qscrape.dev/l1/news/",
-            seed_host,
-            None,
-            explore,
-            no_subdomains,
-            3,
-            100,
-            90,
-            30,
-        )?,
-        live_case(
-            "qscrape-eshop",
-            "https://qscrape.dev/l1/eshop/",
-            seed_host,
-            None,
-            explore,
-            no_subdomains,
-            3,
-            150,
-            120,
-            30,
-        )?,
-        live_case(
-            "qscrape-stress",
-            "https://qscrape.dev/",
-            seed_host,
-            None,
-            explore,
-            no_subdomains,
-            4,
-            500,
-            180,
-            30,
-        )?,
-        live_case(
-            "qscrape-filter-utm-source",
-            "https://qscrape.dev/",
-            seed_host,
-            None,
-            explore,
-            no_subdomains,
-            2,
-            100,
-            90,
-            30,
-        )?,
-        live_case(
-            "yahoo-root",
-            "https://www.yahoo.com/",
-            seed_host,
-            None,
-            explore,
-            no_subdomains,
-            1,
-            20,
-            60,
-            30,
-        )?,
+        live_case(LiveCaseConfig {
+            name: "rust-root",
+            seed: "https://www.rust-lang.org/",
+            hosts: seed_host,
+            registrable_domain: None,
+            pages: explore,
+            subdomains: no_subdomains,
+            max_link_depth: 2,
+            max_requests: 30,
+            operation_seconds: 60,
+            request_seconds: 30,
+        })?,
+        live_case(LiveCaseConfig {
+            name: "rust-book",
+            seed: "https://doc.rust-lang.org/book/",
+            hosts: seed_host,
+            registrable_domain: None,
+            pages: explore,
+            subdomains: no_subdomains,
+            max_link_depth: 2,
+            max_requests: 40,
+            operation_seconds: 60,
+            request_seconds: 30,
+        })?,
+        live_case(LiveCaseConfig {
+            name: "python-library",
+            seed: "https://docs.python.org/3/library/",
+            hosts: seed_host,
+            registrable_domain: None,
+            pages: explore,
+            subdomains: no_subdomains,
+            max_link_depth: 2,
+            max_requests: 40,
+            operation_seconds: 60,
+            request_seconds: 30,
+        })?,
+        live_case(LiveCaseConfig {
+            name: "mdn-http",
+            seed: "https://developer.mozilla.org/en-US/docs/Web/HTTP/",
+            hosts: seed_host,
+            registrable_domain: None,
+            pages: explore,
+            subdomains: no_subdomains,
+            max_link_depth: 2,
+            max_requests: 30,
+            operation_seconds: 60,
+            request_seconds: 30,
+        })?,
+        live_case(LiveCaseConfig {
+            name: "example-org-passive",
+            seed: "https://example.org/",
+            hosts: registrable,
+            registrable_domain: Some("example.org"),
+            pages: disabled,
+            subdomains: passive,
+            max_link_depth: 0,
+            max_requests: 100,
+            operation_seconds: 60,
+            request_seconds: 30,
+        })?,
+        live_case(LiveCaseConfig {
+            name: "example-org-combined",
+            seed: "https://example.org/",
+            hosts: registrable,
+            registrable_domain: Some("example.org"),
+            pages: explore,
+            subdomains: passive,
+            max_link_depth: 0,
+            max_requests: 20,
+            operation_seconds: 90,
+            request_seconds: 30,
+        })?,
+        live_case(LiveCaseConfig {
+            name: "qscrape-root",
+            seed: "https://qscrape.dev/",
+            hosts: seed_host,
+            registrable_domain: None,
+            pages: explore,
+            subdomains: no_subdomains,
+            max_link_depth: 2,
+            max_requests: 100,
+            operation_seconds: 90,
+            request_seconds: 30,
+        })?,
+        live_case(LiveCaseConfig {
+            name: "qscrape-news",
+            seed: "https://qscrape.dev/l1/news/",
+            hosts: seed_host,
+            registrable_domain: None,
+            pages: explore,
+            subdomains: no_subdomains,
+            max_link_depth: 3,
+            max_requests: 100,
+            operation_seconds: 90,
+            request_seconds: 30,
+        })?,
+        live_case(LiveCaseConfig {
+            name: "qscrape-news-respect-robots",
+            seed: "https://qscrape.dev/l1/news/",
+            hosts: seed_host,
+            registrable_domain: None,
+            pages: explore,
+            subdomains: no_subdomains,
+            max_link_depth: 3,
+            max_requests: 100,
+            operation_seconds: 90,
+            request_seconds: 30,
+        })?,
+        live_case(LiveCaseConfig {
+            name: "qscrape-eshop",
+            seed: "https://qscrape.dev/l1/eshop/",
+            hosts: seed_host,
+            registrable_domain: None,
+            pages: explore,
+            subdomains: no_subdomains,
+            max_link_depth: 3,
+            max_requests: 150,
+            operation_seconds: 120,
+            request_seconds: 30,
+        })?,
+        live_case(LiveCaseConfig {
+            name: "qscrape-stress",
+            seed: "https://qscrape.dev/",
+            hosts: seed_host,
+            registrable_domain: None,
+            pages: explore,
+            subdomains: no_subdomains,
+            max_link_depth: 4,
+            max_requests: 500,
+            operation_seconds: 180,
+            request_seconds: 30,
+        })?,
+        live_case(LiveCaseConfig {
+            name: "qscrape-filter-utm-source",
+            seed: "https://qscrape.dev/",
+            hosts: seed_host,
+            registrable_domain: None,
+            pages: explore,
+            subdomains: no_subdomains,
+            max_link_depth: 2,
+            max_requests: 100,
+            operation_seconds: 90,
+            request_seconds: 30,
+        })?,
+        live_case(LiveCaseConfig {
+            name: "yahoo-root",
+            seed: "https://www.yahoo.com/",
+            hosts: seed_host,
+            registrable_domain: None,
+            pages: explore,
+            subdomains: no_subdomains,
+            max_link_depth: 1,
+            max_requests: 20,
+            operation_seconds: 60,
+            request_seconds: 30,
+        })?,
     ];
 
     if let Some(case) = cases
@@ -293,11 +296,16 @@ fn write_json_line(writer: &mut impl Write, value: &Value) -> HarnessResult {
     Ok(())
 }
 
+fn write_stdout_json_line(value: &Value) -> HarnessResult {
+    let stdout = io::stdout();
+    let mut output = stdout.lock();
+    write_json_line(&mut output, value)?;
+    output.flush()?;
+    Ok(())
+}
+
 fn elapsed_milliseconds(started: Instant) -> u64 {
-    match u64::try_from(started.elapsed().as_millis()) {
-        Ok(value) => value,
-        Err(_) => u64::MAX,
-    }
+    u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX)
 }
 
 fn policy_caps(case: &LiveCase) -> Value {
@@ -338,7 +346,7 @@ fn increment(counts: &mut BTreeMap<String, u64>, key: impl Into<String>) {
     *count = count.saturating_add(1);
 }
 
-fn source_status_bucket(status: &ys::map::SourceStatus) -> &'static str {
+const fn source_status_bucket(status: &ys::map::SourceStatus) -> &'static str {
     match status {
         ys::map::SourceStatus::Completed => "completed",
         ys::map::SourceStatus::Sampled => "sampled",
@@ -444,12 +452,14 @@ fn path_is_within_subtree(path: &str, root: &str) -> bool {
         .is_some_and(|remainder| remainder.starts_with('/'))
 }
 
-fn scope_violations(case: &LiveCase, outcome: &ys::MapOutcome) -> HarnessResult<Vec<&'static str>> {
-    let seed = Url::parse(case.seed)?;
-    let mut violations = Vec::new();
-
+fn check_case_expectations(
+    case: &LiveCase,
+    seed: &Url,
+    outcome: &ys::MapOutcome,
+    violations: &mut Vec<&'static str>,
+) {
     if case.policy.map.pages == ys::policy::PageDiscovery::Explore
-        && !outcome.pages().iter().any(|page| page.url == seed)
+        && !outcome.pages().iter().any(|page| &page.url == seed)
     {
         violations.push("explore_seed_missing");
     }
@@ -466,7 +476,7 @@ fn scope_violations(case: &LiveCase, outcome: &ys::MapOutcome) -> HarnessResult<
     }
     if case.name == "qscrape-news-respect-robots" {
         let seed_is_robots_skipped = outcome.pages().iter().any(|page| {
-            page.url == seed
+            &page.url == seed
                 && page.exploration == ys::map::Exploration::Skipped(ys::map::SkipReason::Robots)
         });
         if !seed_is_robots_skipped {
@@ -475,7 +485,7 @@ fn scope_violations(case: &LiveCase, outcome: &ys::MapOutcome) -> HarnessResult<
         if outcome
             .request_trace()
             .iter()
-            .any(|trace| trace.target == seed)
+            .any(|trace| &trace.target == seed)
         {
             violations.push("qscrape_respect_seed_was_requested");
         }
@@ -483,7 +493,7 @@ fn scope_violations(case: &LiveCase, outcome: &ys::MapOutcome) -> HarnessResult<
         let seed_is_inspected = outcome
             .pages()
             .iter()
-            .any(|page| page.url == seed && page.exploration == ys::map::Exploration::Inspected);
+            .any(|page| &page.url == seed && page.exploration == ys::map::Exploration::Inspected);
         if !seed_is_inspected {
             violations.push("qscrape_seed_not_inspected");
         }
@@ -495,13 +505,21 @@ fn scope_violations(case: &LiveCase, outcome: &ys::MapOutcome) -> HarnessResult<
             violations.push("qscrape_no_html_link_discovery");
         }
     }
+}
+
+fn check_page_scope(
+    case: &LiveCase,
+    seed: &Url,
+    outcome: &ys::MapOutcome,
+    violations: &mut Vec<&'static str>,
+) {
     for page in outcome.pages() {
         let origin_matches = page.url.scheme() == seed.scheme()
             && page.url.port_or_known_default() == seed.port_or_known_default();
         let host_matches = page
             .url
             .host_str()
-            .is_some_and(|host| host_is_in_scope(case, &seed, host));
+            .is_some_and(|host| host_is_in_scope(case, seed, host));
         let path_matches = case.policy.map.scope.paths == ys::policy::PathScope::EntireOrigin
             || path_is_within_subtree(page.url.path(), seed.path());
         if !origin_matches || !host_matches || !path_matches {
@@ -520,8 +538,16 @@ fn scope_violations(case: &LiveCase, outcome: &ys::MapOutcome) -> HarnessResult<
             violations.push("inspected_beyond_link_depth");
         }
     }
+}
+
+fn check_host_scope(
+    case: &LiveCase,
+    seed: &Url,
+    outcome: &ys::MapOutcome,
+    violations: &mut Vec<&'static str>,
+) {
     for host in outcome.hosts() {
-        if !host_is_in_scope(case, &seed, &host.host) {
+        if !host_is_in_scope(case, seed, &host.host) {
             violations.push("host_out_of_scope");
         }
         if host.host.len()
@@ -530,11 +556,19 @@ fn scope_violations(case: &LiveCase, outcome: &ys::MapOutcome) -> HarnessResult<
             violations.push("host_name_budget_exceeded");
         }
     }
+}
+
+fn check_capture_scope(
+    case: &LiveCase,
+    seed: &Url,
+    outcome: &ys::MapOutcome,
+    violations: &mut Vec<&'static str>,
+) {
     for capture in outcome.captures() {
         if !capture
             .url()
             .host_str()
-            .is_some_and(|host| host_is_in_scope(case, &seed, host))
+            .is_some_and(|host| host_is_in_scope(case, seed, host))
             || capture.url().scheme() != seed.scheme()
             || capture.url().port_or_known_default() != seed.port_or_known_default()
             || (case.policy.map.scope.paths == ys::policy::PathScope::SeedSubtree
@@ -543,7 +577,14 @@ fn scope_violations(case: &LiveCase, outcome: &ys::MapOutcome) -> HarnessResult<
             violations.push("capture_out_of_scope");
         }
     }
+}
 
+fn check_request_trace(
+    case: &LiveCase,
+    seed: &Url,
+    outcome: &ys::MapOutcome,
+    violations: &mut Vec<&'static str>,
+) {
     let limits = &case.policy.map.limits;
     let trace_count = u64::try_from(outcome.request_trace().len()).unwrap_or(u64::MAX);
     if u64::from(outcome.summary().requests) > u64::from(limits.max_requests.get()) {
@@ -571,7 +612,7 @@ fn scope_violations(case: &LiveCase, outcome: &ys::MapOutcome) -> HarnessResult<
             && trace
                 .target
                 .host_str()
-                .is_some_and(|host| host_is_in_scope(case, &seed, host));
+                .is_some_and(|host| host_is_in_scope(case, seed, host));
         let target_is_certificate_service = case.policy.map.subdomains
             == ys::policy::Subdomains::Passive
             && trace.target.scheme() == "https"
@@ -581,6 +622,14 @@ fn scope_violations(case: &LiveCase, outcome: &ys::MapOutcome) -> HarnessResult<
             violations.push("request_target_out_of_scope");
         }
     }
+}
+
+fn check_output_budgets(
+    case: &LiveCase,
+    outcome: &ys::MapOutcome,
+    violations: &mut Vec<&'static str>,
+) {
+    let limits = &case.policy.map.limits;
     if u64::try_from(outcome.hosts().len()).unwrap_or(u64::MAX) > u64::from(limits.max_hosts.get())
     {
         violations.push("host_budget_exceeded");
@@ -612,6 +661,18 @@ fn scope_violations(case: &LiveCase, outcome: &ys::MapOutcome) -> HarnessResult<
     {
         violations.push("retained_document_budget_exceeded");
     }
+}
+
+fn scope_violations(case: &LiveCase, outcome: &ys::MapOutcome) -> HarnessResult<Vec<&'static str>> {
+    let seed = Url::parse(case.seed)?;
+    let mut violations = Vec::new();
+
+    check_case_expectations(case, &seed, outcome, &mut violations);
+    check_page_scope(case, &seed, outcome, &mut violations);
+    check_host_scope(case, &seed, outcome, &mut violations);
+    check_capture_scope(case, &seed, outcome, &mut violations);
+    check_request_trace(case, &seed, outcome, &mut violations);
+    check_output_budgets(case, outcome, &mut violations);
 
     violations.sort_unstable();
     violations.dedup();
@@ -716,8 +777,6 @@ async fn run() -> HarnessResult {
         return Err(io::Error::new(io::ErrorKind::InvalidInput, "unknown Map live case").into());
     }
 
-    let stdout = io::stdout();
-    let mut output = stdout.lock();
     let mut had_failure = false;
     let mut ran_case = false;
     for case in cases
@@ -725,18 +784,14 @@ async fn run() -> HarnessResult {
         .filter(|case| selected_name.is_none_or(|name| case.name == name))
     {
         ran_case = true;
-        write_json_line(
-            &mut output,
-            &json!({
-                "case": case.name,
-                "phase": "started",
-                "seed": case.seed,
-                "selected_case": case.name,
-                "actual_caps": policy_caps(&case),
-                "source_revision": source_revision,
-            }),
-        )?;
-        output.flush()?;
+        write_stdout_json_line(&json!({
+            "case": case.name,
+            "phase": "started",
+            "seed": case.seed,
+            "selected_case": case.name,
+            "actual_caps": policy_caps(&case),
+            "source_revision": source_revision,
+        }))?;
 
         let started = Instant::now();
         match ys::map::new(case.seed).bind(&case.policy).send().await {
@@ -750,8 +805,7 @@ async fn run() -> HarnessResult {
                     &violations,
                     source_revision.as_deref(),
                 );
-                write_json_line(&mut output, &report)?;
-                output.flush()?;
+                write_stdout_json_line(&report)?;
                 had_failure |= !violations.is_empty();
             }
             Err(error) => {
@@ -765,8 +819,7 @@ async fn run() -> HarnessResult {
                     "elapsed_ms": elapsed_milliseconds(started),
                     "error": error.to_string(),
                 });
-                write_json_line(&mut output, &report)?;
-                output.flush()?;
+                write_stdout_json_line(&report)?;
                 had_failure = true;
             }
         }
