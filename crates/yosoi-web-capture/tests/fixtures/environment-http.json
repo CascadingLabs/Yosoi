@@ -1,0 +1,17 @@
+{
+  "kind": "http",
+  "environment": {
+    "client": {
+      "id": "com.cascadinglabs.yosoi.http",
+      "version": "0.1.0"
+    },
+    "user_agent": {
+      "status": "omitted",
+      "reason": "capture.user-agent-policy"
+    },
+    "preferred_languages": {
+      "status": "known",
+      "value": ["en-US", "en"]
+    }
+  }
+}

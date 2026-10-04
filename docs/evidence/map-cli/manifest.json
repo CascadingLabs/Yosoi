@@ -1,0 +1,20 @@
+{
+  "source_revision": "fc2bde617c3400c51e15277cecf8bfa1ea4355c7",
+  "executable": "/home/andrew/Desktop/cl/YosoiOxide/target/debug/yosoi",
+  "sha256": "00337471ab26d538c0f1b2d5c7495799ffa90f8534aa9a652c3ba5ea0b059590",
+  "profile": "dev",
+  "cli_version": "0.1.0",
+  "platform": "Linux-7.2.5-3-omarchy-x86_64-with-glibc2.44",
+  "browser_launched": false,
+  "checks": {
+    "cli": 86,
+    "sdk_facade_and_map": 68,
+    "production_clippy": "passed warnings denied",
+    "pty_cases": 2
+  },
+  "live": {
+    "qscrape": "21 requests,19 URLs; raw JSON and typed Map-to-Locate matched;exit3 metadata parse failures",
+    "anthropic_passive": "one crt.sh request,HTTP404,exit1,zero target-site requests"
+  },
+  "scope": "isolated Map CLI build; default convergence verified separately"
+}

@@ -1,0 +1,33 @@
+{
+  "schema": "yosoi.browser-benchmark-fixture",
+  "version": 1,
+  "network": "loopback-only",
+  "modes": ["headless", "headful-when-display-configured"],
+  "cases": [
+    {
+      "name": "minimal",
+      "file": "minimal.html",
+      "bytes": 139,
+      "sha256": "b29e85cb45273cd33b518d8d221d22c8e80793b6ec5c4e79485b7d0d9b3c17a0",
+      "artifacts": "rendered-dom",
+      "events": 0
+    },
+    {
+      "name": "full",
+      "file": "full.html",
+      "bytes": 244,
+      "sha256": "da79f1155a3c5b016132773fc7f2380087718cd06451f9540d24450572f995a5",
+      "artifacts": "source-rendered-dom-ax-network-layout-visual-runtime",
+      "events": 16
+    },
+    {
+      "name": "growth",
+      "file": "growth.html",
+      "bytes": 32995,
+      "sha256": "cd9ccd76306a1535db36df506dfbcec371796a7a7d91552e3523225220339015",
+      "artifacts": "source-rendered-dom-ax-network-layout-visual-runtime",
+      "events": 128
+    }
+  ],
+  "determinism": "committed synthetic bytes; no public URLs, timestamps, or randomness"
+}

@@ -1,0 +1,131 @@
+{
+  "schema": "yosoi.rendered-dom.v1",
+  "document_epoch": 1,
+  "tree_model": "document_light_dom",
+  "root": 1,
+  "nodes": [
+    {
+      "kind": "document",
+      "id": 1,
+      "parent": null,
+      "children": [
+        2
+      ]
+    },
+    {
+      "kind": "element",
+      "id": 2,
+      "parent": 1,
+      "children": [
+        3
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "html",
+      "attributes": []
+    },
+    {
+      "kind": "element",
+      "id": 3,
+      "parent": 2,
+      "children": [
+        4
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "body",
+      "attributes": []
+    },
+    {
+      "kind": "element",
+      "id": 4,
+      "parent": 3,
+      "children": [
+        5
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "div",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "data-testid",
+          "value": "web-vertical"
+        }
+      ]
+    },
+    {
+      "kind": "element",
+      "id": 5,
+      "parent": 4,
+      "children": [
+        6
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "section",
+      "attributes": [
+        {
+          "namespace_uri": "",
+          "name": "data-testid",
+          "value": "mainline"
+        }
+      ]
+    },
+    {
+      "kind": "element",
+      "id": 6,
+      "parent": 5,
+      "children": [
+        7
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "div",
+      "attributes": []
+    },
+    {
+      "kind": "element",
+      "id": 7,
+      "parent": 6,
+      "children": [
+        8
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "div",
+      "attributes": []
+    },
+    {
+      "kind": "element",
+      "id": 8,
+      "parent": 7,
+      "children": [
+        9
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "p",
+      "attributes": []
+    },
+    {
+      "kind": "element",
+      "id": 9,
+      "parent": 8,
+      "children": [
+        10,
+        11
+      ],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "span",
+      "attributes": []
+    },
+    {
+      "kind": "text",
+      "id": 10,
+      "parent": 9,
+      "children": [],
+      "value": "No results found for"
+    },
+    {
+      "kind": "text",
+      "id": 11,
+      "parent": 9,
+      "children": [],
+      "value": " [redacted query]"
+    }
+  ]
+}

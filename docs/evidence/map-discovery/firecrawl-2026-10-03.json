@@ -1,0 +1,188 @@
+{
+  "seed": "https://docs.firecrawl.dev/",
+  "command": [
+    "/home/andrew/Desktop/cl/YosoiOxide/target/debug/yosoi",
+    "map",
+    "https://docs.firecrawl.dev/",
+    "-p",
+    "stress",
+    "--json",
+    "--stats"
+  ],
+  "exit": 3,
+  "elapsed_seconds": 19.168677937996108,
+  "binary_sha256": "29fd486b2b6683238a96ccdd3b70e031f2fe67b1711092ec62ffeac6b77cb6e5",
+  "termination": {
+    "status": "limit",
+    "limit": "requests"
+  },
+  "summary": {
+    "counts": {
+      "hosts": 1,
+      "pages": 1312,
+      "relationships": 3528,
+      "wildcard_patterns": 0,
+      "tree": 1312,
+      "sources": 8,
+      "support_documents": 3,
+      "frontier": 108
+    },
+    "requests": 80,
+    "provider_concurrency_peak": 0,
+    "response_bytes": 43079622,
+    "inventory_bytes": 2120564,
+    "observations": 4834,
+    "omitted": 1953,
+    "retained_document_bytes": 0
+  },
+  "sources": [
+    {
+      "source": "passive_certificate",
+      "source_url": null,
+      "status": {
+        "status": "disabled"
+      }
+    },
+    {
+      "source": "hackertarget",
+      "source_url": null,
+      "status": {
+        "status": "disabled"
+      }
+    },
+    {
+      "source": "subdomaincenter",
+      "source_url": null,
+      "status": {
+        "status": "disabled"
+      }
+    },
+    {
+      "source": "waybackarchive",
+      "source_url": null,
+      "status": {
+        "status": "disabled"
+      }
+    },
+    {
+      "source": "robots",
+      "source_url": "https://docs.firecrawl.dev/robots.txt",
+      "status": {
+        "status": "completed"
+      }
+    },
+    {
+      "source": "sitemap",
+      "source_url": "https://docs.firecrawl.dev/sitemap.xml",
+      "status": {
+        "status": "completed"
+      }
+    },
+    {
+      "source": "sitemap",
+      "source_url": "https://docs.firecrawl.dev/sitemap_index.xml",
+      "status": {
+        "status": "failed",
+        "failure": {
+          "kind": "http_status",
+          "http_status": 404
+        }
+      }
+    },
+    {
+      "source": "html_link",
+      "source_url": null,
+      "status": {
+        "status": "truncated"
+      }
+    }
+  ],
+  "policy_identity": {
+    "version": 3,
+    "sha256": "93e820b5d444a3defbaf5690da540bc1a165154f19b20423fa7687f8546caafd"
+  },
+  "limits": {
+    "max_link_depth": 2,
+    "max_hosts": 2000,
+    "max_urls": 20000,
+    "max_relationships": 50000,
+    "max_observations": 100000,
+    "max_pending": 20000,
+    "max_requests": 80,
+    "max_sitemaps": 20,
+    "max_sitemap_depth": 3,
+    "max_response_bytes": 8388608,
+    "max_total_response_bytes": 67108864,
+    "max_retained_document_bytes": 8388608,
+    "max_concurrency": 4,
+    "maximum_elapsed": {
+      "seconds": 120,
+      "nanoseconds": 0
+    },
+    "max_url_bytes": 8192,
+    "max_inventory_bytes": 33554432,
+    "max_parser_entries": 50000,
+    "max_hostname_bytes": 253
+  },
+  "request_hosts": [
+    "docs.firecrawl.dev"
+  ],
+  "published_index_urls": 51,
+  "missing_index_urls": [
+    "https://docs.firecrawl.dev/_llms/en/v2.md",
+    "https://docs.firecrawl.dev/_llms/en/v2/documentation.md",
+    "https://docs.firecrawl.dev/_llms/es.md",
+    "https://docs.firecrawl.dev/_llms/es/v2.md",
+    "https://docs.firecrawl.dev/_llms/es/v2/documentacion.md",
+    "https://docs.firecrawl.dev/_llms/fr.md",
+    "https://docs.firecrawl.dev/_llms/fr/v2.md",
+    "https://docs.firecrawl.dev/_llms/fr/v2/documentation.md",
+    "https://docs.firecrawl.dev/_llms/ja.md",
+    "https://docs.firecrawl.dev/_llms/ja/v2.md",
+    "https://docs.firecrawl.dev/_llms/pt-br.md",
+    "https://docs.firecrawl.dev/_llms/pt-br/v2.md",
+    "https://docs.firecrawl.dev/_llms/pt-br/v2/documentacao.md",
+    "https://docs.firecrawl.dev/_llms/zh.md",
+    "https://docs.firecrawl.dev/_llms/zh/v2.md",
+    "https://docs.firecrawl.dev/advanced-scraping-guide.md",
+    "https://docs.firecrawl.dev/billing.md",
+    "https://docs.firecrawl.dev/dashboard.md",
+    "https://docs.firecrawl.dev/enterprise.md",
+    "https://docs.firecrawl.dev/features/batch-scrape.md",
+    "https://docs.firecrawl.dev/features/change-tracking.md",
+    "https://docs.firecrawl.dev/features/crawl.md",
+    "https://docs.firecrawl.dev/features/enhanced-mode.md",
+    "https://docs.firecrawl.dev/features/fast-scraping.md",
+    "https://docs.firecrawl.dev/features/ip-restrictions.md",
+    "https://docs.firecrawl.dev/features/key-restrictions.md",
+    "https://docs.firecrawl.dev/features/llm-extract.md",
+    "https://docs.firecrawl.dev/features/map.md",
+    "https://docs.firecrawl.dev/features/proxies.md",
+    "https://docs.firecrawl.dev/features/scrape.md",
+    "https://docs.firecrawl.dev/features/search.md",
+    "https://docs.firecrawl.dev/features/siem.md",
+    "https://docs.firecrawl.dev/features/threat-protection.md",
+    "https://docs.firecrawl.dev/introduction.md",
+    "https://docs.firecrawl.dev/mcp-server.md",
+    "https://docs.firecrawl.dev/partner-credits.md",
+    "https://docs.firecrawl.dev/rate-limits.md",
+    "https://docs.firecrawl.dev/sdks/dotnet.md",
+    "https://docs.firecrawl.dev/sdks/elixir.md",
+    "https://docs.firecrawl.dev/sdks/go.md",
+    "https://docs.firecrawl.dev/sdks/java.md",
+    "https://docs.firecrawl.dev/sdks/node.md",
+    "https://docs.firecrawl.dev/sdks/overview.md",
+    "https://docs.firecrawl.dev/sdks/php.md",
+    "https://docs.firecrawl.dev/sdks/python.md",
+    "https://docs.firecrawl.dev/sdks/ruby.md",
+    "https://docs.firecrawl.dev/sdks/rust.md",
+    "https://docs.firecrawl.dev/webhooks/events.md",
+    "https://docs.firecrawl.dev/webhooks/overview.md",
+    "https://docs.firecrawl.dev/webhooks/security.md",
+    "https://docs.firecrawl.dev/webhooks/testing.md"
+  ],
+  "index_sha256": "03d6366bd295ce26d99d5de5ba953fbe64794031295fcce735e4ed546aa74383",
+  "sitemap_urls": 1302,
+  "missing_sitemap_urls": [],
+  "sitemap_sha256": "237d7050437bf682071e597db24a9ac053a10bb0fe73e7425407314805470ca2"
+}

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<catalog>
+  <product id="ada">
+    <author>Ada</author>
+    <price currency="USD">12</price>
+  </product>
+  <product id="grace">
+    <author>Grace</author>
+    <price currency="USD">18</price>
+  </product>
+</catalog>

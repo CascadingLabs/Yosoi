@@ -1,0 +1,14 @@
+Sitemap: https://example.com/sitemap-index.xml
+
+User-agent: *
+Disallow: /all-bots
+
+User-agent: YosoiMap
+Disallow: /private
+Disallow: /tie/*
+Disallow: /assets/*.js$
+
+User-agent: yosoimap
+Allow: /private/public
+Allow: /tie/*
+Sitemap: https://example.com/inside-group.xml

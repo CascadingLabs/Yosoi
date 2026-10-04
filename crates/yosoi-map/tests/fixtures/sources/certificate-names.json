@@ -1,0 +1,5 @@
+[
+  {"name_value":"example.com\n*.example.com"},
+  {"name_value":"example.com\napi.example.com"},
+  {"name_value":"*.example.com"}
+]

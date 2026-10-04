@@ -1,0 +1,39 @@
+[package]
+name = "yosoi-web-capture-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+chrono = { version = "0.4.45", default-features = false, features = ["std"] }
+libfuzzer-sys = "=0.4.13"
+yosoi-types = { version = "0.1.0", path = "../crates/yosoi-types" }
+yosoi-web-capture = { version = "0.1.0", path = "../crates/yosoi-web-capture" }
+yosoi-web-capture-direct-http = { version = "0.1.0", path = "../crates/yosoi-web-capture-direct-http" }
+
+[[bin]]
+name = "wire-and-evidence"
+path = "fuzz_targets/wire_and_evidence.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "http-input-boundaries"
+path = "fuzz_targets/http_input_boundaries.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "bounded-lifecycle"
+path = "fuzz_targets/bounded_lifecycle.rs"
+test = false
+doc = false
+bench = false
+
+[workspace]
+members = ["."]

@@ -1,0 +1,15 @@
+# CAS-308 known limitations and deferred ownership
+
+* **Raw HTTP wire:** `wreq` exposes a normalized response/body stream, not exact status/header framing, chunk framing, TLS records or necessarily content-coded wire bytes. `DirectHttpResponseFacts` must not be interpreted as a packet/archive record. Owner: future HTTP evidence/transport issue.
+* **Source facts durability:** CAS-324 adds the typed `SourceRepresentation` derived-evidence artifact. Canonical Web Capture v1 metadata plus payload pairs now preserve declaration, classification, and decoding facts with dedicated schema, producer/version, exact source lineage, size, and digest. The payload excludes decoded text, which remains a separate artifact. Raw HTTP framing and unbounded header/body values remain intentionally unavailable.
+* **Pre-release wire policy:** canonical metadata remains named Web Capture v1. There are no production consumers and no backward-compatibility promise yet. Intentional wire changes replace v1 code, fixtures, and documentation together; obsolete pre-release v1 shapes are rejected rather than migrated. Owner: wire evolution through first public release.
+* **Memory/durability:** body sink and `CaptureBundle` are in-memory. `payloads`/`into_parts` enable exact transfer but do not create durability, atomic disk publication, serialized bundle, remote storage or archive semantics. Owner: CAS-309/archive-storage work.
+* **Missing product layers:** no browser producer, policy engine, retry scheduling, extraction, crawling, archive, storage or SDK is certified. Owners: their respective future projects; the browser scope is bounded in the CAS-308 brief.
+* **Errors:** typed categories exist, but transport/provider classification remains necessarily coarse and is not a stable cross-provider retry taxonomy. Safe messages do not make arbitrary upstream logs safe. Owner: future error-taxonomy/redaction audit.
+* **Cancellation:** cooperative cancellation cannot prove that an underlying OS/network action never completed; conformance covers observable precedence and cleanup.
+* **Benchmarks:** results are grouped by VCS change under `benchmarks/results/by-change/` and include Criterion, Callgrind, Divan allocation, GNU time/perf process, and Massif heap evidence. They remain exploratory and machine-specific, with no universal thresholds. Client construction, decompression/copying, classification/decoding, canonical wire work and redirects are visible stages, not automatically proven optimization opportunities. Browser process-tree and concurrency measurements remain future L2 work.
+* **Certification boundary:** CAS-308 certifies Direct HTTP conformance and the provider-neutral bounded seam. It does not claim `AcquisitionLifecycle` itself is browser-neutral; that type remains the Direct HTTP adapter/finalizer owner.
+
+## CAS-325 migration note
+
+Direct HTTP implementation APIs now require the pre-release-breaking `yosoi_web_capture_direct_http` import. The foundation intentionally exposes no provider trait and no compatibility reexports that would reverse the one-way crate DAG.

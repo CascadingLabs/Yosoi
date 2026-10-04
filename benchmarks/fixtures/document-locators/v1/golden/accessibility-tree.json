@@ -1,0 +1,28 @@
+{
+  "schema": "yosoi.accessibility-tree.v1",
+  "document_epoch": 1,
+  "root": "ax-1",
+  "completeness": { "status": "complete" },
+  "nodes": [
+    {
+      "id": "ax-1",
+      "parent": null,
+      "children": ["ax-2"],
+      "ignored": false,
+      "role": "document",
+      "accessible_name": "Products",
+      "text": null,
+      "states": {}
+    },
+    {
+      "id": "ax-2",
+      "parent": "ax-1",
+      "children": [],
+      "ignored": false,
+      "role": "button",
+      "accessible_name": "Buy now",
+      "text": "Buy now",
+      "states": { "expanded": true }
+    }
+  ]
+}

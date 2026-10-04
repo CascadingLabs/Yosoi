@@ -1,0 +1,132 @@
+{
+  "seed": "https://vercel.com/docs",
+  "command": [
+    "/home/andrew/Desktop/cl/YosoiOxide/target/debug/yosoi",
+    "map",
+    "https://vercel.com/docs",
+    "-p",
+    "stress",
+    "--json",
+    "--stats"
+  ],
+  "exit": 3,
+  "elapsed_seconds": 53.626222445993335,
+  "binary_sha256": "29fd486b2b6683238a96ccdd3b70e031f2fe67b1711092ec62ffeac6b77cb6e5",
+  "termination": {
+    "status": "limit",
+    "limit": "total_response_bytes"
+  },
+  "summary": {
+    "counts": {
+      "hosts": 1,
+      "pages": 4268,
+      "relationships": 8163,
+      "wildcard_patterns": 0,
+      "tree": 4268,
+      "sources": 8,
+      "support_documents": 3,
+      "frontier": 2753
+    },
+    "requests": 67,
+    "provider_concurrency_peak": 0,
+    "response_bytes": 67108864,
+    "inventory_bytes": 6274536,
+    "observations": 10428,
+    "omitted": 13822,
+    "retained_document_bytes": 0
+  },
+  "sources": [
+    {
+      "source": "passive_certificate",
+      "source_url": null,
+      "status": {
+        "status": "disabled"
+      }
+    },
+    {
+      "source": "hackertarget",
+      "source_url": null,
+      "status": {
+        "status": "disabled"
+      }
+    },
+    {
+      "source": "subdomaincenter",
+      "source_url": null,
+      "status": {
+        "status": "disabled"
+      }
+    },
+    {
+      "source": "waybackarchive",
+      "source_url": null,
+      "status": {
+        "status": "disabled"
+      }
+    },
+    {
+      "source": "robots",
+      "source_url": "https://vercel.com/robots.txt",
+      "status": {
+        "status": "completed"
+      }
+    },
+    {
+      "source": "sitemap",
+      "source_url": "https://vercel.com/sitemap.xml",
+      "status": {
+        "status": "completed"
+      }
+    },
+    {
+      "source": "sitemap",
+      "source_url": "https://vercel.com/sitemap_index.xml",
+      "status": {
+        "status": "failed",
+        "failure": {
+          "kind": "incomplete_document"
+        }
+      }
+    },
+    {
+      "source": "html_link",
+      "source_url": null,
+      "status": {
+        "status": "truncated"
+      }
+    }
+  ],
+  "policy_identity": {
+    "version": 3,
+    "sha256": "93e820b5d444a3defbaf5690da540bc1a165154f19b20423fa7687f8546caafd"
+  },
+  "limits": {
+    "max_link_depth": 2,
+    "max_hosts": 2000,
+    "max_urls": 20000,
+    "max_relationships": 50000,
+    "max_observations": 100000,
+    "max_pending": 20000,
+    "max_requests": 80,
+    "max_sitemaps": 20,
+    "max_sitemap_depth": 3,
+    "max_response_bytes": 8388608,
+    "max_total_response_bytes": 67108864,
+    "max_retained_document_bytes": 8388608,
+    "max_concurrency": 4,
+    "maximum_elapsed": {
+      "seconds": 120,
+      "nanoseconds": 0
+    },
+    "max_url_bytes": 8192,
+    "max_inventory_bytes": 33554432,
+    "max_parser_entries": 50000,
+    "max_hostname_bytes": 253
+  },
+  "request_hosts": [
+    "vercel.com"
+  ],
+  "sitemap_urls": 2261,
+  "missing_sitemap_urls": [],
+  "sitemap_sha256": "558bfccf9853202c77694faf9959ef0532a2b0d2904544a5d8c25cb958002022"
+}

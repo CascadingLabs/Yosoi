@@ -1,0 +1,17 @@
+{
+  "date": "2026-10-03",
+  "source_revision": "c66c2a6af4770d982201d7f478ae5b7b4bb76a42",
+  "binary_sha256": "29fd486b2b6683238a96ccdd3b70e031f2fe67b1711092ec62ffeac6b77cb6e5",
+  "source_note": "Public live binary built from Map feature source c66c2a6a. Later independent review added terminal-admission and parse-deadline guards; those are covered by focused regressions. The shared target executable is not a stable artifact; record each run hash.",
+  "reports": [
+    "anthropic-2026-10-03.json",
+    "firecrawl-2026-10-03.json",
+    "vercel-2026-10-03.json",
+    "qscrape-root-2026-10-03.json"
+  ],
+  "full_outputs_local": "/tmp/map-public-stress",
+  "coverage_scope": "published inventories and bounded page exploration, not exhaustive unpublished or browser-only URLs",
+  "qscrape_final_source_revision": "ceaf08dd94a87e451a18b91834182fe60e999197",
+  "qscrape_final_binary_sha256": "7476cff2e73549b470e24203b8e231e87d6f97f0b2b5702f273fdc6053f8a4fc",
+  "qscrape_full_outputs_local": "/tmp/map-root-final-snapshot-coverage"
+}

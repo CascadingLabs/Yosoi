@@ -1,0 +1,17 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>CAS-326 JavaScript shell</title>
+<main id="application" aria-live="polite">shell source only</main>
+<script>
+  console.log("cas-326 shell started");
+  fetch("/secondary").then(response => response.json()).then(payload => {
+    const live = document.createElement("article");
+    live.id = "live-dom-mutation";
+    live.setAttribute("aria-label", "live accessible article");
+    live.style.cssText = "position:absolute;left:17px;top:23px;width:211px;height:37px";
+    live.textContent = payload.message;
+    document.querySelector("#application").replaceChildren(live);
+    console.info("cas-326 secondary complete");
+    throw new Error("cas-326 deliberate fixture exception");
+  });
+</script>

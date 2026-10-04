@@ -1,0 +1,27 @@
+{
+  "source_revision": "5be7256f563ff3ff07242ab83095aa1efbc8d7a5",
+  "executable": "/home/andrew/Desktop/cl/YosoiOxide/target/debug/examples/map_live_stress",
+  "executable_sha256": "5ad47a9ce0c3fd34ee8183e8165ceb40ae4a1d757225dbe7f2c9db775c99b600",
+  "profile": "dev",
+  "packages": {
+    "yosoi": "0.1.0",
+    "yosoi-map": "0.1.0",
+    "yosoi-policy": "0.1.0"
+  },
+  "platform": "Linux-7.2.5-3-omarchy-x86_64-with-glibc2.44",
+  "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)\nbinary: rustc\ncommit-hash: 88d9e12ae178fab0fb5cc050a94da85685d449ea\ncommit-date: 2026-08-18\nhost: x86_64-unknown-linux-gnu\nrelease: 1.98.0\nLLVM version: 22.1.8\n",
+  "cases": [
+    "qscrape-root",
+    "qscrape-news",
+    "qscrape-eshop",
+    "qscrape-stress",
+    "qscrape-filter-utm-source",
+    "qscrape-news-respect-robots",
+    "yahoo-root",
+    "example-org-passive",
+    "example-org-combined",
+    "rust-book"
+  ],
+  "known_failed_coverage_gate": "yahoo-root: sitemap inventory exhausted observation budget before seed inspection",
+  "validation": "24 facade unit + 24 public E2E + 14 limits + 5 independent audit + 29 policy + 25 kernel tests passed; warnings-denied production library clippy passed; serial one-worker execution"
+}

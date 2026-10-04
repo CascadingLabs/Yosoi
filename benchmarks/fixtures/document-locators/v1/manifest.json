@@ -1,0 +1,103 @@
+{
+  "schema": "yosoi.document-locator-corpus.v1",
+  "files": [
+    {
+      "id": "golden-html-products",
+      "path": "golden/products.html",
+      "document_kind": "html",
+      "schema_identity": "html5-static-utf8-v1",
+      "media_type": "text/html",
+      "encoding": "utf-8",
+      "bytes": 328,
+      "sha256": "d7b8412ad3fc0b3a38588a351c658c3a3ac7198af676c0f205ef95384a6b4810",
+      "source_url": null,
+      "captured_at": null,
+      "provenance": {
+        "kind": "authored",
+        "note": "Synthetic repeated-product source document authored for exact locator oracles."
+      }
+    },
+    {
+      "id": "golden-xml-catalog",
+      "path": "golden/catalog.xml",
+      "document_kind": "xml",
+      "schema_identity": "xml-1.0",
+      "media_type": "application/xml",
+      "encoding": "utf-8",
+      "bytes": 256,
+      "sha256": "a49b6c038d6e8ecf36eb6ce66a0b6825ac1f7a40adc3fb9e077ec5ce0358b013",
+      "source_url": null,
+      "captured_at": null,
+      "provenance": {
+        "kind": "authored",
+        "note": "Synthetic repeated-product XML document authored for exact locator oracles."
+      }
+    },
+    {
+      "id": "golden-json-products",
+      "path": "golden/product.json",
+      "document_kind": "json",
+      "schema_identity": "rfc8259-json",
+      "media_type": "application/json",
+      "encoding": "utf-8",
+      "bytes": 150,
+      "sha256": "e8cf20bf3af706dcc36446205818c46f2074d5adda7bc86f016bb41c4a749f93",
+      "source_url": null,
+      "captured_at": null,
+      "provenance": {
+        "kind": "authored",
+        "note": "Synthetic product object authored for Pointer and bounded JSONPath oracles."
+      }
+    },
+    {
+      "id": "golden-text-orders",
+      "path": "golden/orders.txt",
+      "document_kind": "text",
+      "schema_identity": "decoded-text-utf8",
+      "media_type": "text/plain",
+      "encoding": "utf-8",
+      "bytes": 77,
+      "sha256": "896ab08d346019bbcae3a469d040d11e4fc78ab0be7a59759a2742030948719d",
+      "source_url": null,
+      "captured_at": null,
+      "provenance": {
+        "kind": "authored",
+        "note": "Synthetic decoded text authored for literal and regex oracles."
+      }
+    },
+    {
+      "id": "golden-dom-products",
+      "path": "golden/rendered-dom.json",
+      "document_kind": "dom",
+      "schema_identity": "yosoi.rendered-dom.v1",
+      "media_type": "application/json",
+      "encoding": "utf-8",
+      "bytes": 897,
+      "sha256": "cba7d81eb712cf1dded3655b495ae73a5b4ee3e89089b49ff569c1b98221f612",
+      "source_url": null,
+      "captured_at": null,
+      "provenance": {
+        "kind": "normalized-authored",
+        "normalization": "yosoi-rendered-dom-v1",
+        "note": "Synthetic document-light-DOM fixture in the canonical rendered-DOM schema, including explicit text nodes and namespace-aware attribute pairs."
+      }
+    },
+    {
+      "id": "golden-ax-products",
+      "path": "golden/accessibility-tree.json",
+      "document_kind": "ax",
+      "schema_identity": "yosoi.accessibility-tree.v1",
+      "media_type": "application/json",
+      "encoding": "utf-8",
+      "bytes": 582,
+      "sha256": "dabfea7a20655fc58b7f403479fe91d68b1531ce75d72ff5578af5e04365009f",
+      "source_url": null,
+      "captured_at": null,
+      "provenance": {
+        "kind": "normalized-authored",
+        "derived_from": "golden-dom-products",
+        "note": "Purpose-built provider-neutral accessibility-tree v1 fixture with separate accessible name, text, state, and epoch-bound identity fields."
+      }
+    }
+  ]
+}

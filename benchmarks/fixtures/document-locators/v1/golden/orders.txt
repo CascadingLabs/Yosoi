@@ -1,0 +1,3 @@
+Order #1001: Ada paid 12 USD
+Order #1002: Grace paid 18 USD
+Status: complete

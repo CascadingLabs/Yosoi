@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>CAS-383 OOPIF child</title></head>
+<body>
+  <main>
+    <h1>CAS-383 child fixture</h1>
+    <button id="oopif-action" aria-label="__CHILD_MARKER__">__CHILD_MARKER__</button>
+  </main>
+  <script>
+    const marker = '__CHILD_MARKER__';
+    const report = value => window.parent.postMessage(
+      { fixture: 'cas-383', nonce: 'oopif-v1', marker: value },
+      '__PARENT_ORIGIN__'
+    );
+    document.getElementById('oopif-action').addEventListener('click', () => {
+      report(`${marker}-CLICKED`);
+    });
+    window.addEventListener('load', () => report(marker), { once: true });
+  </script>
+</body>
+</html>

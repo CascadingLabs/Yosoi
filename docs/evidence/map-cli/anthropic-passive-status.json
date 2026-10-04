@@ -1,0 +1,43 @@
+{
+  "exit": 1,
+  "target_site_requests": 0,
+  "termination": {
+    "status": "exhausted"
+  },
+  "requests": 1,
+  "hosts": 1,
+  "sources": [
+    {
+      "source": "passive_certificate",
+      "source_url": "https://crt.sh/?q=%25.anthropic.com&output=json",
+      "status": {
+        "status": "failed",
+        "failure": {
+          "kind": "http_status",
+          "http_status": 404
+        }
+      }
+    },
+    {
+      "source": "html_link",
+      "source_url": null,
+      "status": {
+        "status": "disabled"
+      }
+    },
+    {
+      "source": "robots",
+      "source_url": null,
+      "status": {
+        "status": "disabled"
+      }
+    },
+    {
+      "source": "sitemap",
+      "source_url": null,
+      "status": {
+        "status": "disabled"
+      }
+    }
+  ]
+}

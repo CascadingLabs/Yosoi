@@ -1,199 +1,87 @@
 <p align="center">
-  <a href="https://cascadinglabs.com/yosoi">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="media/logo-dark.svg">
-      <source media="(prefers-color-scheme: light)" srcset="media/logo-light.svg">
-      <img src="media/logo-dark.svg" alt="Yosoi" width="200">
-    </picture>
-  </a>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="media/logo-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="media/logo-light.svg">
+    <img src="media/logo-dark.svg" alt="Yosoi" width="200">
+  </picture>
 </p>
+
+<h1 align="center">Yosoi</h1>
+<p align="center"><strong>You Only Scrape Once (iteratively)</strong></p>
+<p align="center">A Rust toolkit for turning web content into structured, traceable data.</p>
 
 <p align="center">
-  <a href="https://discord.gg/YreV3CzxsE"><img src="https://img.shields.io/badge/Discord-Join-c4d4df?labelColor=2e3742&logo=discord&logoColor=white" alt="Discord"></a>
-  <a href="https://opensource.org/licenses/Apache-2.0"><img src="https://img.shields.io/badge/License-Apache_2.0-c4d4df?labelColor=2e3742" alt="License"></a>
-  <a href="https://github.com/CascadingLabs/Yosoi/actions"><img src="https://img.shields.io/github/actions/workflow/status/CascadingLabs/Yosoi/CI.yaml?label=CI&labelColor=2e3742&color=c4d4df" alt="CI"></a>
-  <a href="https://pypi.python.org/pypi/yosoi"><img src="https://img.shields.io/pypi/v/yosoi?labelColor=2e3742&color=c4d4df" alt="PyPI"></a>
-  <a href="https://pypi.python.org/pypi/yosoi"><img src="https://img.shields.io/pypi/pyversions/yosoi?labelColor=2e3742&color=c4d4df" alt="Python versions"></a>
-  <a href="https://codecov.io/gh/CascadingLabs/Yosoi"><img src="https://img.shields.io/codecov/c/gh/CascadingLabs/Yosoi?token=DFDI574EEA&labelColor=2e3742&color=c4d4df" alt="codecov"></a>
-  <a href="https://codspeed.io/CascadingLabs/Yosoi"><img src="https://img.shields.io/endpoint?url=https://codspeed.io/badge.json&labelColor=2e3742&color=c4d4df" alt="CodSpeed"></a>
-  <a href="https://doi.org/10.5281/zenodo.18713573"><img src="https://img.shields.io/badge/DOI-10.5281%2Fzenodo.18713573-c4d4df?labelColor=2e3742" alt="DOI"></a>
-  <a href="https://cascadinglabs.com/yosoi"><img src="https://img.shields.io/badge/docs-cascadinglabs.com%2Fyosoi-c4d4df?labelColor=2e3742" alt="docs"></a>
+  <a href="https://discord.gg/YreV3CzxsE"><img src="https://img.shields.io/badge/Discord-Join-c4d4df?labelColor=2e3742&logo=discord&logoColor=white" alt="Join Discord"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache_2.0-c4d4df?labelColor=2e3742" alt="Apache 2.0 license"></a>
+  <a href="Cargo.toml"><img src="https://img.shields.io/badge/Rust-1.98%2B-c4d4df?labelColor=2e3742&logo=rust&logoColor=white" alt="Rust 1.98 or later"></a>
+  <a href="docs/README.md"><img src="https://img.shields.io/badge/docs-Read_the_guides-c4d4df?labelColor=2e3742" alt="Documentation"></a>
 </p>
 
+Yosoi brings page capture, reusable locators, and typed extraction into one workflow. Fetch content over HTTP or through a Chromium browser, find the fields you need, and validate them against Rust structs. Results retain their source evidence so you can inspect how each value was found.
 
+Use the **Rust SDK** in your application or the **CLI** in scripts and terminal pipelines.
 
-> [!WARNING]
-> **Yosoi is currently in Alpha.** The API is expected to change significantly. We do not expect a stable API until we are out of Beta.
+## What you can do
 
-# Yosoi - You Only Scrape Once (iteratively)
+- **Capture web pages** through Direct HTTP or browser rendering, with explicit policies and bounded execution.
+- **Locate information** in HTML, JSON, XML, text, rendered DOM, and accessibility trees using reusable plans.
+- **Extract typed records** with derive-backed Contracts and explicit validation for required, optional, and repeated fields.
+- **Discover website pages** with bounded mapping and source provenance.
+- **Search across providers** with per-provider results and visible partial or failed outcomes. Built-in search providers are currently previews; see the [Search guide](docs/search.md).
 
-> **Discover once, scrape forever**
+## Get started
 
-> [!WARNING]
-> Yosoi is research tooling for API design and web reverse engineering. **You assume all legal risk for how you use it.** Respect `robots.txt`, rate limits, and IP bans; and please don't bypass them with Tor or a VPN. Read [DISCLAIMER.md](DISCLAIMER.md) before pointing it at anything.
+Install [Rust](https://rustup.rs/), then build the CLI from this checkout. The repository pins Rust 1.99.0 for development; the minimum supported version is 1.98.
 
-Give Yosoi a URL, domain, or group of URLs, and it uses AI to automatically discover the best selectors for structured content.
-
-## Installation
-
-```bash
-# Install yosoi using uv
-uv add yosoi
-```
-
-## Browser Fetcher (JavaScript-heavy pages)
-
-Yosoi uses [VoidCrawl](https://github.com/CascadingLabs/VoidCrawl), its Rust-native Chrome DevTools Protocol backend, for rendered `headless`, `headful`, and waterfall acquisition. The pinned VoidCrawl wheel is installed with Yosoi; building from source is optional.
-
-```python
-from yosoi.core.fetcher import create_fetcher
-
-
-async def fetch_rendered():
-    fetcher = create_fetcher('headless', no_sandbox=True)
-    async with fetcher:
-        result = await fetcher.fetch('https://example.com')
-        print(result.html)
-```
-
-For direct VoidCrawl usage, use its current pool API:
-
-```python
-from voidcrawl import BrowserPool, PoolConfig
-
-
-async def fetch_directly():
-    async with BrowserPool(PoolConfig()) as pool:
-        async with pool.acquire() as tab:
-            response = await tab.goto('https://example.com', capture_endpoints=True)
-            print(response.html, response.endpoints)
-```
-
-See [`docs/voidcrawl.md`](docs/voidcrawl.md), the [official VoidCrawl documentation](https://cascadinglabs.com/voidcrawl/), and [`docs/fingerprinting-stack.md`](docs/fingerprinting-stack.md).
-
-## Typed JavaScript and handwritten browser flows
-
-Use `ys.Executor.js(...)` for browser-computed contract values. Larger evaluators
-can be imported from confined local `.js`/`.mjs` module trees. When content must be
-revealed first, a typed `ys.Flow` class compiles directly into Yosoi's existing
-A3Node assess/act/expect replay model:
-
-```python
-import yosoi as ys
-
-
-class ItemsOpen(ys.State):
-    condition = ys.css('[role="menu"]')
-
-
-class OpenItems(ys.Flow):
-    open_panel: ys.Expect[ItemsOpen] = ys.click(ys.role('tab', name='Items'))
-    title: str = ys.Executor.js('document.title')
-
-
-result = await OpenItems.run('https://example.com', fetcher_type='headless')
-```
-
-These APIs are experimental during alpha. See
-[`docs/executor-js-flow.md`](docs/executor-js-flow.md).
-
-## Deterministic extractor fields
-
-Use fluent selector plans or `ys.Extractor()` callbacks for async, per-row scraper logic that consumes already-acquired evidence without an LLM:
-
-```python
-import yosoi as ys
-
-
-class Company(ys.Contract):
-    # Without a root, the full page is one row. Collection plans naturally return [].
-    name: str = ys.css('h1').text()
-    links: list[str] = ys.css('a[href]').attr('href')
-
-
-records = await ys.extract(html, Company, url='https://example.com/')
-```
-
-The annotation supplies cardinality and remains the model value type. `@ys.extraction(field)` binds custom logic without a naming convention; `@ys.extractions(...)` executes one callback for several fields. Declare decorated callbacks with `@staticmethod` so editors and Pyrefly recognize their row-only signature. Extractor fingerprints contain strategy/structure evidence, never extracted values. See [`docs/extractors.md`](docs/extractors.md) and [`examples/extractor_fields.py`](examples/extractor_fields.py).
-
-## Portable recipes
-
-Recipes package a contract, verified selectors, optional A3Node browser actions, and validation evidence into deterministic JSON for review and replay:
-
-```bash
-uv run yosoi recipe mint --contract @Product --from-cache https://example.com/product/1 --out .yosoi/recipes/ --yes
-uv run yosoi recipe validate .yosoi/recipes/product.recipe.json --url https://example.com/product/1 --write
-uv run yosoi scrape https://example.com/product/2 --recipe .yosoi/recipes/product.recipe.json --recipe-id v1:sha256:...
-```
-
-Remote recipes are pin-required and trust-gated. See [`docs/recipes.md`](docs/recipes.md).
-
-## Agent workflows
-
-Install Yosoi fetch/search/crawl/research skills into supported coding agents:
-
-```bash
-uvx yosoi agents install --target pi
-uvx yosoi agents install --target agents
-```
-
-See [`docs/agent-workflows.md`](docs/agent-workflows.md). For direct, bounded multi-URL page acquisition, see [`docs/fetch.md`](docs/fetch.md).
-
-## Read-only QA index
-
-Existing observation indexes can be exposed through a bounded Python API or an injected MCP server.
-The standalone CLI and MCP launcher report their unwired state rather than starting capture or a
-provider:
-
-```bash
-uvx yosoi qa status --json
-uvx yosoi agents install --target pi
-```
-
-See [`docs/qa-index.md`](docs/qa-index.md) for Python, MCP, CLI, skill, and security boundaries.
-
-## Quick Start
-
-### API Key
-Export your API Key or create a `.env` file
-```bash
-# Set keys for whichever providers you want to use
-<PROVIDER_NAME>_KEY=your_api_key_here
-GROQ_API_KEY=your_groq_key_here               # groq/...
-GEMINI_API_KEY=your_gemini_api_key_here       # gemini/...
-OPENAI_API_KEY=your_openai_api_key_here       # openai/...
-CEREBRAS_API_KEY=your_cerebras_api_key_here   # cerebras/...
-OPENROUTER_API_KEY=your_openrouter_key_here  # openrouter/...
-```
-
-See the full list of [supported providers](https://cascadinglabs.com/reference/helpers/)
-
-
-### Basic Usage
-
-#### CLI Usage
 ```sh
-# Specify model explicitly with -m provider:model-name
-uv run yosoi -m groq:llama-3.3-70b-versatile --url https://qscrape.dev/l1/eshop/catalog/?cat=Forge%20%26%20Smithing --contract Product
+CARGO_BUILD_JOBS=1 cargo install --path crates/yosoi-cli --locked
+yosoi --help
 ```
-You can then find your scraped content, selectors and logs in `./.yosoi` relative to the directory you run the CLI command from.
 
-#### Python Usage
-We also have example scripts, you can find them in our [example docs](https://cascadinglabs.com/guides/examples/)
+Fetch a page and extract its heading as JSON:
 
-## Citation
+```sh
+set -o pipefail
+yosoi request https://example.org/ | yosoi locate --css 'h1' --json
+```
 
-If you use **yosoi** in your research or projects, please cite it using the metadata provided in the `CITATION.cff` file.
+Or locate values in a local file:
 
+```sh
+yosoi locate --file page.html --format html --css 'h1' --json
+```
 
-<p align="center">
-    <img src="media/citationExample.png" alt="Citation" width="800">
-</p>
+See the [CLI guide](docs/cli-foundation.md) for installation options, settings, and shell completions.
 
-## Community
+## Rust SDK
 
-- **Responsible use:** see [DISCLAIMER.md](DISCLAIMER.md)
+Use [`yosoi-sdk`](crates/yosoi-sdk) as your application entry point. Its named modules cover documents, locators, contracts, requests, mapping, and policy; `yosoi_sdk::prelude` provides common imports.
 
-## Contact
+The extraction flow keeps each step inspectable:
 
-[contact@cascadinglabs.com](mailto:contact@cascadinglabs.com)
+```rust
+let located = Product::locate(&document)?;
+let extracted = Product::extract(&located);
+let outcome = extracted.validate();
+```
+
+Declare `Product` with `#[derive(ys::Contract)]` and pinned field locators. Rust types express cardinality: `T` requires one value, `Option<T>` accepts an optional value, and `Vec<T>` collects repeated values. Follow the [Contracts guide](docs/contracts-extractor.md) for a complete declaration and validation details.
+
+## Documentation
+
+- [Documentation index](docs/README.md)
+- [Requests](docs/cli-requests.md) and [locating values](docs/cli-locate.md)
+- [Contracts and extraction](docs/contracts-extractor.md)
+- [Website mapping](docs/map.md) and [search](docs/search.md)
+- [Policy and tuning](docs/policy-tuning.md)
+- [Browser compatibility](docs/chromium-cdp-baseline.md)
+
+## Development
+
+Set up the pinned development tools with `CARGO_BUILD_JOBS=1 ./scripts/bootstrap.sh`. Run focused checks while iterating; `cargo xtask --help` lists the repository tasks. The [Rust policy](docs/rust-policy.md) documents the engineering rules.
+
+Maintained by [Cascading Labs](https://github.com/CascadingLabs). Join the [Discord community](https://discord.gg/YreV3CzxsE) to discuss Yosoi, and see [SECURITY.md](SECURITY.md) to report a security concern.
+
+## License
+
+[Apache License 2.0](LICENSE).

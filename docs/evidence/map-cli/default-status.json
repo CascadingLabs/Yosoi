@@ -1,0 +1,29 @@
+{
+  "source_revision": "935b6ffc6faa36472873445f904caaf2c29b12c2",
+  "default_workspace_revision": "f92cc07404287b3ce0f53b0439b3cf18e4d987e7",
+  "binary_sha256": "b5738c4afd5f03bcf1c46ac6c28f53952d52f2d5474daa250400f5435b7d6f98",
+  "exit": 3,
+  "stderr": "",
+  "cli_tests": 86,
+  "summary": {
+    "counts": {
+      "hosts": 1,
+      "pages": 19,
+      "relationships": 47,
+      "wildcard_patterns": 0,
+      "tree": 19,
+      "sources": 6,
+      "support_documents": 4,
+      "frontier": 0
+    },
+    "requests": 21,
+    "response_bytes": 338923,
+    "inventory_bytes": 30499,
+    "observations": 68,
+    "omitted": 277,
+    "retained_document_bytes": 0
+  },
+  "termination": {
+    "status": "exhausted"
+  }
+}
