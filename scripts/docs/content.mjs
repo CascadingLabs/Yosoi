@@ -86,8 +86,16 @@ export function authoredPages(manifest) {
     route: route === '/' ? '' : route.slice(1),
     id: route === '/' ? 'index' : route.slice(1),
   }));
-  if (pages.some((page) => page.route === 'api' || page.route.startsWith('api/')))
-    throw new Error('The api/ route is reserved for compiler-generated reference pages.');
+  if (
+    pages.some((page) =>
+      ['api', 'archive', 'assets'].some(
+        (reserved) => page.route === reserved || page.route.startsWith(`${reserved}/`),
+      ),
+    )
+  )
+    throw new Error(
+      'The api/, archive/, and assets/ routes are reserved by the documentation frontend.',
+    );
   return pages;
 }
 

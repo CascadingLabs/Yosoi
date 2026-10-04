@@ -7,7 +7,7 @@
     "validate": "node validate.mjs",
     "fmt": "node format.mjs --write",
     "fmt:check": "node format.mjs --check",
-    "test": "vp test run"
+    "test": "node run-tests.mjs"
   },
   "devDependencies": {
     "jsonc-parser": "^3.3.1",
