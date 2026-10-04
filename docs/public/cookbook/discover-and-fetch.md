@@ -12,7 +12,7 @@ Map gives you a bounded inventory. Choose the URLs your application needs, then 
 
 ```rust
 use std::error::Error;
-use yosoi_sdk::prelude as ys;
+use yosoi::prelude as ys;
 use ys::policy::{Budget, Robots};
 
 #[tokio::main(flavor = "current_thread")]
@@ -49,7 +49,7 @@ If Map already captured the document you need, retaining it can avoid the second
 
 ```rust
 use std::error::Error;
-use yosoi_sdk::prelude as ys;
+use yosoi::prelude as ys;
 use ys::documents::DocumentClass;
 use ys::policy::{Budget, DiscoveryDocuments, Robots};
 use ys::request::DocumentOutcome;

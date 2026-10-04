@@ -4,7 +4,7 @@ use std::process::ExitCode;
 
 use crate::stats::RunTimer;
 use anyhow::Result;
-use yosoi::{Document, map};
+use yosoi_engine::{Document, map};
 
 mod human;
 mod manifest;

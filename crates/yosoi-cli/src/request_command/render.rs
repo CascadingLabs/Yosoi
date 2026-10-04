@@ -7,7 +7,7 @@ use std::{
 
 use anyhow::{Context as _, Result, bail};
 use serde_json::json;
-use yosoi::{
+use yosoi_engine::{
     AttemptDiagnostic, AttemptOutcome, Document, DocumentOutcome, EffectivePolicyIdentity,
     Response, ResponseTermination,
     policy::{AcquisitionKind, BrowserMode, DocumentRequest},
@@ -169,7 +169,7 @@ pub(super) fn json(
                             json!({
                                 "requested": document_label(document.requested()),
                                 "state": document_state(document.outcome()),
-                                "byte_len": document.outcome().document().map(yosoi::Document::byte_len),
+                                "byte_len": document.outcome().document().map(yosoi_engine::Document::byte_len),
                                 "detail": document_detail(document.outcome()),
                             })
                         })

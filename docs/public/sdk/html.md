@@ -10,7 +10,7 @@ Use CSS for familiar element selection. The same plan can inspect source HTML an
 
 ```rust
 use std::error::Error;
-use yosoi_sdk::prelude as ys;
+use yosoi::prelude as ys;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let document = ys::Document::html(

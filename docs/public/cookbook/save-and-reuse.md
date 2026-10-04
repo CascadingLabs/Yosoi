@@ -14,7 +14,7 @@ This example writes `saved-document.json` and `saved-document.bin` in the curren
 
 ```rust
 use std::error::Error;
-use yosoi_sdk::prelude as ys;
+use yosoi::prelude as ys;
 use ys::documents::{DocumentId, DocumentProfile};
 
 fn main() -> Result<(), Box<dyn Error>> {

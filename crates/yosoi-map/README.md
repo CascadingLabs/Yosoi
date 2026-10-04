@@ -39,5 +39,5 @@ high-volume operation.
 
 The parsers and admission kernel have deterministic fixture tests. They do not
 prove network cancellation, live provider coverage, or the public Yosoi
-operation. See `crates/yosoi/tests/map_end_to_end.rs` and the
+operation. See `crates/yosoi-engine/tests/map_end_to_end.rs` and the
 [verification record](../../docs/archive/map-verification.md) for those evidence levels.

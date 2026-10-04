@@ -3511,7 +3511,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "yosoi"
+name = "yosoi-engine"
 version = "0.1.0"
 dependencies = [
  "base64 0.22.1",
@@ -3602,7 +3602,7 @@ dependencies = [
  "tokio",
  "toml",
  "unicode-width",
- "yosoi",
+ "yosoi-engine",
 ]
 
 [[package]]
@@ -3708,10 +3708,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "yosoi-sdk"
+name = "yosoi"
 version = "0.1.0"
 dependencies = [
- "yosoi",
+ "yosoi-engine",
  "yosoi-documents",
  "yosoi-policy",
 ]

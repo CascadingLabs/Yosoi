@@ -3,8 +3,8 @@ use std::io::{self, Write};
 use anyhow::{Context as _, Result};
 use serde::Serialize;
 use thiserror::Error;
-use yosoi::policy::Map as MapPolicy;
-use yosoi::{Document, map};
+use yosoi_engine::policy::Map as MapPolicy;
+use yosoi_engine::{Document, map};
 
 mod inventory;
 mod sources;

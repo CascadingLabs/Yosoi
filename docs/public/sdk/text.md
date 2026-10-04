@@ -10,7 +10,7 @@ Text locators operate on a decoded UTF-8 document. Use literal matching for a fi
 
 ```rust
 use std::error::Error;
-use yosoi_sdk::prelude as ys;
+use yosoi::prelude as ys;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let document = ys::Document::text(

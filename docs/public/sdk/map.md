@@ -12,7 +12,7 @@ Map starts with a seed URL and builds an inventory from links, robots and sitema
 
 ```rust
 use std::error::Error;
-use yosoi_sdk::prelude as ys;
+use yosoi::prelude as ys;
 use ys::policy::{Budget, Robots};
 
 #[tokio::main(flavor = "current_thread")]
@@ -42,7 +42,7 @@ The default scope is the seed host and the seed path subtree. A seed such as `ht
 
 ```rust
 use std::error::Error;
-use yosoi_sdk::prelude as ys;
+use yosoi::prelude as ys;
 use ys::policy::{HostScope, PathScope, Subdomains};
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -67,7 +67,7 @@ Robots handling defaults to `Robots::Ignore`. Set `Robots::Respect` explicitly, 
 
 ```rust
 use std::error::Error;
-use yosoi_sdk::prelude as ys;
+use yosoi::prelude as ys;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let mut policy = ys::Policy::default();

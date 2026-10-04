@@ -4,7 +4,7 @@ use std::{error::Error, fs};
 
 use serde_json::{Map, Value, json};
 use tempfile::tempdir;
-use yosoi::{
+use yosoi_engine::{
     Policy,
     policy::{PageDiscovery, search::Provider},
 };

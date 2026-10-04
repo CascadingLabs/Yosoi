@@ -11,7 +11,7 @@ on:
         required: true
       sdk:
         type: string
-        default: yosoi-sdk
+        default: yosoi
       preview:
         type: boolean
         default: true

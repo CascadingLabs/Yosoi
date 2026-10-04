@@ -17,7 +17,7 @@ use std::{
     num::{NonZeroU16, NonZeroU32, NonZeroUsize},
     process::ExitCode,
 };
-use yosoi::{
+use yosoi_engine::{
     policy::{
         self, AcquisitionKind,
         search::{Provider, Search},

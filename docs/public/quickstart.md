@@ -36,7 +36,7 @@ Follow [SDK installation](sdk/installation.md) for the Cargo dependencies, then 
 
 ```rust
 use std::error::Error;
-use yosoi_sdk::prelude as ys;
+use yosoi::prelude as ys;
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Box<dyn Error>> {

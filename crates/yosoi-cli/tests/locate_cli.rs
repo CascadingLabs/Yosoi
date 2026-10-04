@@ -13,7 +13,7 @@ use std::{
 use serde_json::{Value, json};
 use tempfile::TempDir;
 use unicode_width::UnicodeWidthStr as _;
-use yosoi::{Document, prelude::DocumentEpoch};
+use yosoi_engine::{Document, prelude::DocumentEpoch};
 
 fn json_at<'a>(value: &'a Value, pointer: &str) -> Result<&'a Value, Box<dyn Error>> {
     value

@@ -6,7 +6,7 @@ order: 19
 
 # Archive availability
 
-The repository has archive and replay implementations, but `yosoi-sdk` does not export an `Archive` type, an `archive` module, or archived request execution methods. Responses intentionally expose data and diagnostics without archive handles.
+The repository has archive and replay implementations, but `yosoi` does not export an `Archive` type, an `archive` module, or archived request execution methods. Responses intentionally expose data and diagnostics without archive handles.
 
 ## Save data in your application
 

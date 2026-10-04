@@ -12,7 +12,7 @@ This recipe fetches a page, selects a complete HTML response, and turns its head
 
 ```rust
 use std::error::Error;
-use yosoi_sdk::prelude as ys;
+use yosoi::prelude as ys;
 use ys::documents::DocumentClass;
 use ys::request::DocumentOutcome;
 

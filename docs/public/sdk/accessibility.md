@@ -12,7 +12,7 @@ This complete local example creates a small snapshot:
 
 ```rust
 use std::error::Error;
-use yosoi_sdk::prelude as ys;
+use yosoi::prelude as ys;
 use ys::documents::DocumentEpoch;
 use ys::locators::AccessibilityStateName;
 

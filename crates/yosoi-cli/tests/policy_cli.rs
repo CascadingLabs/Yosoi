@@ -9,7 +9,7 @@ use std::{
 
 use serde_json::{Value, json};
 use tempfile::TempDir;
-use yosoi::Policy;
+use yosoi_engine::Policy;
 
 struct CliHome {
     _directory: TempDir,

@@ -21,12 +21,12 @@ function fixture() {
 	} };
 }
 
-test('SDK discovery reserves names and excludes internal yosoi', () => {
+test('SDK discovery reserves names and excludes internal yosoi-engine', () => {
 	const pkg = (name, sdk) => ({ id: name, name, metadata: { yosoi: { sdk } }, version: '0.1.0', manifest_path: '/repo/Cargo.toml', targets: [{ name: name.replaceAll('-', '_'), kind: ['lib'] }] });
-	const metadata = { workspace_members: ['yosoi', 'yosoi-sdk'], packages: [pkg('yosoi', false), pkg('yosoi-sdk', true)] };
-	assert.deepEqual(discoverSdks(metadata).map((s) => s.name), ['yosoi-sdk']);
-	assert.throws(() => discoverSdks({ ...metadata, packages: [pkg('yosoi-sdk', false)] }), /reserved SDK/);
-	assert.throws(() => discoverSdks({ workspace_members: ['yosoi'], packages: [pkg('yosoi', true)] }), /naming policy/);
+	const metadata = { workspace_members: ['yosoi-engine', 'yosoi'], packages: [pkg('yosoi-engine', false), pkg('yosoi', true)] };
+	assert.deepEqual(discoverSdks(metadata).map((s) => s.name), ['yosoi']);
+	assert.throws(() => discoverSdks({ ...metadata, packages: [pkg('yosoi', false)] }), /reserved SDK/);
+	assert.throws(() => discoverSdks({ workspace_members: ['yosoi-engine'], packages: [pkg('yosoi-engine', true)] }), /naming policy/);
 });
 
 test('compiler model publishes SDK reachability, public members, and exact definition spans', () => {

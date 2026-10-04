@@ -1,0 +1,282 @@
+{
+  "provenance": {
+    "spike": {
+      "name": "CAS-502 four-provider Requests spike",
+      "reported_base": "main at 0ec5ceb7",
+      "probe_source": "crates/yosoi-engine/examples/search_provider_spike.rs",
+      "notes_source": "design/search-provider-spike/README.md",
+      "query_for_direct_http_rows": "rust programming language",
+      "live_queries_or_browser_runs_during_fixture_work": false,
+      "notes_source_present_in_merge_checkout": false,
+      "notes_source_local_workspace": "cas-502-four-provider-search-spike/design/search-provider-spike/README.md"
+    },
+    "captures": {
+      "brave_standard_http": {
+        "artifact": "yosoi-search-spike-brave-standard.html",
+        "sha256": "e663aa2aefe542474794f3eb1c353706018794630560fa5c60662de2b400be1d",
+        "bytes": 302543,
+        "status": 200,
+        "acquisition": "Requests Direct HTTP, standard profile",
+        "retained_source_path": "/tmp/yosoi-search-spike-brave-standard.html"
+      },
+      "bing_standard_http": {
+        "artifact": "yosoi-search-spike-bing-standard.html",
+        "sha256": "691788188a4c1a7ae4a5c106567dc3347f4700037bd610169ef3b5aa8b99c6e6",
+        "bytes": 121222,
+        "status": 200,
+        "acquisition": "Requests Direct HTTP, standard profile",
+        "retained_source_path": "/tmp/yosoi-search-spike-bing-standard.html"
+      },
+      "bing_safari26_http": {
+        "artifact": "yosoi-search-spike-bing-safari26.html",
+        "sha256": "8e029a921c5206a38c473091f35579de47c74fbdc93e3f63e66c9ce15d71c667",
+        "bytes": 610002,
+        "status": 200,
+        "acquisition": "Requests Direct HTTP, safari26 named profile",
+        "retained_source_path": "/tmp/yosoi-search-spike-bing-safari26.html"
+      },
+      "duckduckgo_http_challenge": {
+        "artifact": "yosoi-search-spike-duckduckgo-standard.html",
+        "sha256": "547793a6e1ce9f64a316ab20462da9c50202ed17e989e6cd1f7dd38c1794f26c",
+        "bytes": 14173,
+        "status": 202,
+        "acquisition": "Requests Direct HTTP to html.duckduckgo.com/html/, standard profile",
+        "retained_source_path": "/tmp/yosoi-search-spike-duckduckgo-standard.html"
+      },
+      "duckduckgo_browser_results": {
+        "artifact": "duckduckgo-web-headful-rust-programming.html",
+        "sha256": "14b522250b20df13ffb2aaf7831f0ca67da070350bb20def6845892fef652293",
+        "bytes": 517248,
+        "status": 200,
+        "acquisition": "CAS-502 retained regular DuckDuckGo browser capture, headful result checkpoint",
+        "retained_source_path": "/tmp/cas502-browser-evidence/duckduckgo-web-headful-rust-programming.html"
+      },
+      "duckduckgo_browser_early_shell_candidate": {
+        "artifact": "duckduckgo-web-rust-official-book.html",
+        "sha256": "e4ddbe27325062c98fbb03b5ba747c059c58634b1de4d5eee6f5081870f231f4",
+        "bytes": 41605,
+        "status": null,
+        "acquisition": "CAS-502 retained DuckDuckGo browser artifact; per-file acquisition checkpoint is not embedded",
+        "retained_source_path": "/tmp/cas502-browser-evidence/duckduckgo-web-rust-official-book.html"
+      },
+      "brave_safari26_http": {
+        "artifact": "yosoi-search-spike-brave-safari26.html",
+        "sha256": "0e9d9b25ae08d29876f8a3474cf558b4a290dd50fc609b08ed480066d76a511a",
+        "bytes": 73818,
+        "status": 429,
+        "acquisition": "Requests Direct HTTP, safari26 named HTTP impersonation profile; later 429 response reported in the CAS-502 notes",
+        "retained_source_path": "/tmp/yosoi-search-spike-brave-safari26.html"
+      },
+      "duckduckgo_browser_empty_current_stable": {
+        "artifact": "ddg-empty-candidate-dom.json",
+        "sha256": "0f8051c4fad514aa55841fbd12c7e9a15f71ccb6c0c786e8e999b91c132e8b59",
+        "bytes": 163271,
+        "status": 200,
+        "acquisition": "CAS-520 regular Stable Chrome 154.0.8037.97, Yosoi Requests Browser(Headless), ResponseDocument + RenderedDom",
+        "retained_source_path": "/tmp/cas520-ddg-result.gryKbj/ddg-empty-candidate-dom.json"
+      }
+    },
+    "fixture_derivations": {
+      "brave_multirow": {
+        "kind": "captured_structure_sanitized",
+        "source_capture": "brave_standard_http",
+        "source_rows": [
+          1,
+          2
+        ]
+      },
+      "bing_multirow": {
+        "kind": "captured_structure_sanitized",
+        "source_capture": "bing_standard_http",
+        "source_rows": [
+          1,
+          2
+        ]
+      },
+      "bing_safari26_snippetless_rows": {
+        "kind": "captured_structure_sanitized",
+        "source_capture": "bing_safari26_http",
+        "source_rows": [
+          2,
+          3
+        ],
+        "observed": "The standard b_lineclamp2 snippet selector has no match in these rows."
+      },
+      "brave_synthetic_sponsored_control": {
+        "kind": "synthetic_negative_control",
+        "derived_from": "brave_standard_http row 1",
+        "transformation": "Changed the root class to synthetic-sponsored-control; no ad was captured."
+      },
+      "brave_synthetic_missing_href": {
+        "kind": "synthetic_negative_control",
+        "derived_from": "brave_standard_http row 1",
+        "transformation": "Removed the result anchor href."
+      },
+      "bing_synthetic_sponsored_control": {
+        "kind": "synthetic_negative_control",
+        "derived_from": "bing_standard_http row 1",
+        "transformation": "Changed the root class to synthetic-sponsored-control; no ad was captured."
+      },
+      "bing_synthetic_missing_href": {
+        "kind": "synthetic_negative_control",
+        "derived_from": "bing_standard_http row 1",
+        "transformation": "Removed the result anchor href."
+      }
+    }
+  },
+  "observations": {
+    "brave": {
+      "surface": "direct_http_result_page",
+      "selector_evidence": {
+        "row": ".result-wrapper",
+        "title_link": ".result-wrapper .result-content > a.l1",
+        "title_text": "a.l1 .title",
+        "snippet_text": ".generic-snippet > .content"
+      },
+      "captured_rows": 20,
+      "captured_title_links": 20,
+      "captured_external_title_links": 20,
+      "distinct_destination_hosts": 16,
+      "source_capture": "brave_standard_http",
+      "rate_limited_capture": {
+        "response_status": 429,
+        "source_capture": "brave_safari26_http",
+        "classification": "rate_limited by recorded HTTP status; one profile-specific observation, not a quota or reliability claim"
+      }
+    },
+    "bing": {
+      "surface": "direct_http_result_page",
+      "selector_evidence": {
+        "row": "li.b_algo",
+        "title_link": "li.b_algo h2 > a[href]",
+        "snippet_text": "li.b_algo .b_caption > p.b_lineclamp2"
+      },
+      "wrapper_decoder": {
+        "observed_host": "www.bing.com",
+        "observed_path": "/ck/a",
+        "destination_query_parameter": "u",
+        "observed_prefix": "a1",
+        "observed_encoding": "URL-safe Base64 without padding after the a1 prefix; decoded bytes were UTF-8 absolute HTTP(S) URLs",
+        "standard_capture": {
+          "result_rows": 10,
+          "title_links": 10,
+          "wrapper_host_www_bing_com": 10,
+          "wrapper_path_ck_a": 10,
+          "u_parameter_present": 10,
+          "a1_prefix": 10,
+          "url_safe_alphabet_no_padding": 10,
+          "base64url_utf8_absolute_http_target": 10,
+          "target_host_path_examples": [
+            "https://rust-lang.org/",
+            "https://en.wikipedia.org/wiki/Rust_(programming_language)",
+            "https://rust-lang.org/tools/install/"
+          ],
+          "u_parameter_exactly_once": 10,
+          "u_parameter_counts_seen": [
+            1
+          ]
+        },
+        "safari26_capture": {
+          "result_rows": 10,
+          "title_links": 10,
+          "wrapper_host_www_bing_com": 10,
+          "wrapper_path_ck_a": 10,
+          "u_parameter_present": 10,
+          "a1_prefix": 10,
+          "url_safe_alphabet_no_padding": 10,
+          "base64url_utf8_absolute_http_target": 10,
+          "target_host_path_examples": [
+            "https://rust-lang.org/",
+            "https://en.wikipedia.org/wiki/Rust_(programming_language)",
+            "https://rust-lang.org/tools/install/"
+          ],
+          "u_parameter_exactly_once": 10,
+          "u_parameter_counts_seen": [
+            1
+          ]
+        },
+        "total_observed_wrapper_links": 20,
+        "synthetic_positive_vectors": [
+          "https://example.org/path",
+          "https://example.net/second"
+        ]
+      },
+      "source_captures": [
+        "bing_standard_http",
+        "bing_safari26_http"
+      ],
+      "safari26_snippetless_rows": {
+        "row_count": 2,
+        "source_capture": "bing_safari26_http",
+        "source_rows": [
+          2,
+          3
+        ],
+        "standard_snippet_selector_matches": 0,
+        "interpretation": "Captured row layout variant; snippet is optional metadata and no text was retained."
+      }
+    },
+    "duckduckgo": {
+      "http_challenge": {
+        "response_status": 202,
+        "selector": "div.anomaly-modal__title",
+        "visible_marker": "Unfortunately, bots use DuckDuckGo too.",
+        "result_title_markers_in_capture": 0,
+        "source_capture": "duckduckgo_http_challenge"
+      },
+      "browser_completed_results": {
+        "response_status": 200,
+        "result_row_selector": "article[data-testid=\"result\"]",
+        "ad_row_selector": "article[data-testid=\"ad\"]",
+        "result_title_selector": "a[data-testid=\"result-title-a\"]",
+        "snippet_selector": "article[data-testid=\"result\"] > div:nth-child(4)",
+        "result_title_marker_occurrences_in_retained_artifact": 11,
+        "result_row_occurrences_in_retained_artifact": 10,
+        "ad_row_occurrences_in_retained_artifact": 1,
+        "organic_results_and_ads_from_spike_notes": {
+          "organic_results": 10,
+          "ads": 1
+        },
+        "generic_links_and_external_links_from_spike_notes": {
+          "generic_links": 93,
+          "external_links": 26
+        },
+        "rendered_dom_shape_fixture_available": true,
+        "fixture": "fixtures/duckduckgo-rendered-dom.json",
+        "fixture_kind": "synthetic redacted structure based on the retained RenderedDom capture; destinations and text are substituted",
+        "source_capture": "duckduckgo_browser_results"
+      },
+      "early_shell_candidate": {
+        "result_title_marker_occurrences_in_retained_artifact": 0,
+        "classification": "candidate early shell only; capture phase is not embedded in the file",
+        "html_fixture_available": false,
+        "source_capture": "duckduckgo_browser_early_shell_candidate"
+      },
+      "browser_empty_current_stable": {
+        "response_status": 200,
+        "result_rows": 0,
+        "ad_rows": 0,
+        "marker_selector": "section[data-testid=\"mainline\"] p",
+        "visible_marker": "No results found for",
+        "classification": "recognized_empty_for_observed_english_layout",
+        "sanitized_fixture": "crates/yosoi-engine/src/search/provider/duckduckgo-empty-rendered-dom.json",
+        "source_capture": "duckduckgo_browser_empty_current_stable"
+      }
+    },
+    "google": {
+      "implementation": "out of scope; no Google fixtures emitted"
+    },
+    "unknowns": [
+      "Bing wrapper variants outside the two captured profiles, including other markets, locales, ad links, missing or duplicate u values, different prefixes, nested redirects, and redirect behavior, remain unverified.",
+      "The Bing positive decoder evidence covers only 20 captured result title links; opaque raw u values are intentionally not retained as executable fixtures.",
+      "The DDG row selectors are observed in one retained RenderedDom capture; parser behavior across queries, locales, page changes, and ads remains unverified.",
+      "One English-language browser empty layout is captured and fixture-backed; localized empty layouts and browser 200 challenge pages remain unobserved, and unknown zero-row pages remain malformed.",
+      "The early-shell artifact has no embedded capture-phase metadata; acquire a paired DOMContentLoaded and response-completion capture with explicit phase and status provenance before treating it as a phase-specific baseline.",
+      "The small positive and empty corpus does not establish long-term selector stability, localization, pagination, or browser challenge drift."
+    ],
+    "synthetic_controls": {
+      "sponsored": "Both synthetic-sponsored-control fixtures are excluded by the current captured row selectors. No captured Brave or Bing ad markup was found.",
+      "missing_href": "Both missing-href controls derive from captured row structure but have a deliberately removed destination; they are not provider responses."
+    }
+  }
+}

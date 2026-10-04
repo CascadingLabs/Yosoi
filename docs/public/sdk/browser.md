@@ -13,7 +13,7 @@ Use browser acquisition when you need evidence from a page after JavaScript runs
 Replace the SDK dependency in your application's `Cargo.toml` with:
 
 ```toml
-yosoi-sdk = { path = "../Yosoi/crates/yosoi-sdk", features = ["browser"] }
+yosoi = { path = "../Yosoi/crates/yosoi", features = ["browser"] }
 ```
 
 Install regular Chrome or Chromium Stable. Testing-only browser distributions are outside the project's supported baseline. The browser must be able to run with its sandbox and site/process isolation enabled. Headful mode also needs a working display.
@@ -22,7 +22,7 @@ Install regular Chrome or Chromium Stable. Testing-only browser distributions ar
 
 ```rust
 use std::error::Error;
-use yosoi_sdk::prelude as ys;
+use yosoi::prelude as ys;
 use ys::policy::{Acquisition, BrowserMode, DocumentRequest, Page};
 use ys::request::DocumentOutcome;
 

@@ -4,7 +4,7 @@ This file is for maintainers and is excluded from published pages. The public SD
 
 ## Scope
 
-Document the facade in `crates/yosoi-sdk`, including its actual limitations. Do not turn an implementation-crate API into an SDK example merely because it is public somewhere else in the workspace. Search and Archive have availability pages because the current facade does not export their execution APIs. The hidden `__macro` module is derive linkage, not an application namespace.
+Document the facade in `crates/yosoi`, including its actual limitations. Do not turn an implementation-crate API into an SDK example merely because it is public somewhere else in the workspace. Search and Archive have availability pages because the current facade does not export their execution APIs. The hidden `__macro` module is derive linkage, not an application namespace.
 
 The reading path is installation, requests and responses, Policy, documents, locators by representation, contracts and validation, Map, browser acquisition, limits, and troubleshooting. Recipes connect those pieces. Concepts and the locator guide replace the skeleton's placeholder pages.
 
@@ -14,20 +14,20 @@ Paths below are relative to the repository root. Follow re-exports to their impl
 
 | Pages or claims                        | Authoritative source                                                                                                          |
 | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| SDK surface and features               | `crates/yosoi-sdk/src/lib.rs`, `src/prelude.rs`, and `crates/yosoi-sdk/Cargo.toml`                                            |
-| Requests and responses                 | `crates/yosoi-sdk/src/request/`, `crates/yosoi/src/request/execution/standard.rs`                                             |
-| Document ownership and constructors    | `crates/yosoi-sdk/src/documents.rs`, `crates/yosoi-documents/src/document_profile.rs`                                         |
+| SDK surface and features               | `crates/yosoi/src/lib.rs`, `src/prelude.rs`, and `crates/yosoi/Cargo.toml`                                            |
+| Requests and responses                 | `crates/yosoi/src/request/`, `crates/yosoi-engine/src/request/execution/standard.rs`                                             |
+| Document ownership and constructors    | `crates/yosoi/src/documents.rs`, `crates/yosoi-documents/src/document_profile.rs`                                         |
 | Locator authoring and outcomes         | `crates/yosoi-documents/src/plan_authoring.rs`, `plan_compatibility.rs`, `query_builders.rs`, `query_output.rs`, `outcome.rs` |
 | XML namespace behavior                 | `crates/yosoi-documents/src/query.rs`                                                                                         |
 | JSONPath subset                        | `crates/yosoi-documents/src/json/query.rs`                                                                                    |
 | Accessibility matching and states      | `crates/yosoi-documents/src/accessibility/evaluate.rs`, `crates/yosoi-documents/src/query.rs`                                 |
 | Contract derive and static locators    | `crates/yosoi-contracts-derive/src/lib.rs`, `support.rs`, `crates/yosoi-documents/src/locator_declaration.rs`                 |
 | Contract outcomes and Money            | `crates/yosoi-contract-validation/src/outcome.rs`, `value.rs`, `validation.rs`                                                |
-| Extraction limits                      | `crates/yosoi/src/lib.rs`, `crates/yosoi-extractor/src/lib.rs`                                                                |
+| Extraction limits                      | `crates/yosoi-engine/src/lib.rs`, `crates/yosoi-extractor/src/lib.rs`                                                                |
 | Policy fields, defaults, serialization | `crates/yosoi-policy/src/policy/`, `policy_value.rs`, `policy_serde.rs`, `snapshot.rs`                                        |
-| Map authoring and outcomes             | `crates/yosoi-sdk/src/map.rs`, `crates/yosoi-map/src/lib.rs`                                                                  |
-| Map discovery, retention, and robots   | `crates/yosoi/src/map/`, `crates/yosoi-policy/src/policy/map.rs`                                                              |
-| Browser projection and timing          | `crates/yosoi/src/projection/browser.rs`, `crates/yosoi/src/request/execution/standard.rs`                                    |
+| Map authoring and outcomes             | `crates/yosoi/src/map.rs`, `crates/yosoi-map/src/lib.rs`                                                                  |
+| Map discovery, retention, and robots   | `crates/yosoi-engine/src/map/`, `crates/yosoi-policy/src/policy/map.rs`                                                              |
+| Browser projection and timing          | `crates/yosoi-engine/src/projection/browser.rs`, `crates/yosoi-engine/src/request/execution/standard.rs`                                    |
 | Browser distribution requirements      | `docs/chromium-cdp-baseline.md`                                                                                               |
 
 ## Editorial references
@@ -38,7 +38,7 @@ The structure takes cues from [Bun](https://bun.sh/docs), [Pydantic](https://doc
 
 Run `vpr check` from `scripts/docs` for formatting, content, links, navigation, and native Markdown rendering. This gate does not compile Rust snippets or validate a live website.
 
-For this draft, Rust fences are extracted verbatim into a temporary Cargo package depending on the local `yosoi-sdk`, Tokio, and serde_json. Helper-function snippets receive an empty `main` only for compilation. Local examples run from a single temporary binary; the file-reading example receives a local HTML fixture. No harness or implementation code is added to the repository.
+For this draft, Rust fences are extracted verbatim into a temporary Cargo package depending on the local `yosoi`, Tokio, and serde_json. Helper-function snippets receive an empty `main` only for compilation. Local examples run from a single temporary binary; the file-reading example receives a local HTML fixture. No harness or implementation code is added to the repository.
 
 Verified on 2026-10-04 against the local 0.1.0 SDK with Rust 1.99.0:
 

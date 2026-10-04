@@ -273,7 +273,7 @@ fn standard_wrapper_inner<'a>(field_type: &'a Type, wrapper: &str) -> Option<&'a
 }
 
 pub fn yosoi_path() -> syn::Result<proc_macro2::TokenStream> {
-    for package in ["yosoi-sdk", "yosoi"] {
+    for package in ["yosoi", "yosoi-engine"] {
         let resolved = match crate_name(package) {
             Ok(FoundCrate::Itself) => {
                 let name = package.replace('-', "_");
@@ -285,7 +285,7 @@ pub fn yosoi_path() -> syn::Result<proc_macro2::TokenStream> {
             }
             Err(_) => continue,
         };
-        return if package == "yosoi-sdk" {
+        return if package == "yosoi" {
             Ok(quote!(::#resolved::__macro))
         } else {
             Ok(quote!(::#resolved))
@@ -293,6 +293,6 @@ pub fn yosoi_path() -> syn::Result<proc_macro2::TokenStream> {
     }
     Err(syn::Error::new(
         proc_macro2::Span::call_site(),
-        "Contract derive requires the yosoi-sdk package (or the legacy yosoi facade)",
+        "Contract derive requires the yosoi package (or the internal yosoi-engine crate)",
     ))
 }

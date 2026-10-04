@@ -1,3 +1,3 @@
 # yosoi
 
-This crate connects Yosoi’s core features so applications can fetch pages, find information in documents, search the web, and discover website pages. It applies the chosen limits and keeps evidence of the results.
+This crate is the public Rust toolkit for using Yosoi in an application. It groups the tools for requests, documents, finding information, contracts, website discovery, and settings into named modules.

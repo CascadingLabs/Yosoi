@@ -3,8 +3,8 @@ members = [
     "benchmarks",
     "benchmarks/document-locators",
     "crates/voidcrawl",
+    "crates/yosoi-engine",
     "crates/yosoi",
-    "crates/yosoi-sdk",
     "crates/yosoi-archive",
     "crates/yosoi-cli",
     "crates/yosoi-contracts",
@@ -61,6 +61,7 @@ wreq = { version = "=0.16.1", default-features = false, features = ["stream", "t
 uuid = { version = "1", features = ["v4"] }
 void_crawl_core = { version = "=0.1.0", path = "crates/voidcrawl", default-features = false }
 yosoi = { version = "=0.1.0", path = "crates/yosoi" }
+yosoi-engine = { version = "=0.1.0", path = "crates/yosoi-engine" }
 yosoi-contracts = { version = "=0.1.0", path = "crates/yosoi-contracts" }
 yosoi-contracts-derive = { version = "=0.1.0", path = "crates/yosoi-contracts-derive" }
 yosoi-contract-validation = { version = "=0.1.0", path = "crates/yosoi-contract-validation" }

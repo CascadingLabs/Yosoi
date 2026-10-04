@@ -12,7 +12,7 @@ Use `.validate().require_all()?` when any rejected record should fail the operat
 
 ```rust
 use std::error::Error;
-use yosoi_sdk::prelude as ys;
+use yosoi::prelude as ys;
 use ys::contracts::ContractOutcome;
 
 #[derive(ys::Contract)]

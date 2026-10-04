@@ -4,7 +4,7 @@ use std::{
 };
 
 use anyhow::{Context as _, Result};
-use yosoi::{
+use yosoi_engine::{
     policy::{AcquisitionKind, BrowserMode},
     search::{ProviderOutcome, SearchResponse, SearchTermination},
 };

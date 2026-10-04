@@ -17,7 +17,7 @@ struct Case {
 pub fn run() -> Result<()> {
     let repository = super::workspace_root()?;
     let consumer = tempfile::Builder::new()
-        .prefix("yosoi-sdk-consumer-")
+        .prefix("yosoi-consumer-")
         .tempdir()
         .context("failed to create temporary SDK consumer")?;
     let root = consumer.path();
@@ -25,9 +25,9 @@ pub fn run() -> Result<()> {
     fs::copy(repository.join("Cargo.lock"), root.join("Cargo.lock"))
         .context("failed to copy workspace lockfile")?;
     // JSON string escaping is also valid for this TOML path string.
-    let sdk_path = serde_json::to_string(&repository.join("crates/yosoi-sdk"))?;
+    let sdk_path = serde_json::to_string(&repository.join("crates/yosoi"))?;
     fs::write(root.join("Cargo.toml"), format!(
-        "[package]\nname=\"sdk-consumer\"\nversion=\"0.0.0\"\nedition=\"2024\"\n[workspace]\n[dependencies]\nsdk={{package=\"yosoi-sdk\",path={sdk_path}}}\n"
+        "[package]\nname=\"sdk-consumer\"\nversion=\"0.0.0\"\nedition=\"2024\"\n[workspace]\n[dependencies]\nsdk={{package=\"yosoi\",path={sdk_path}}}\n"
     )).context("failed to write consumer manifest")?;
     let channel = env::var("SDK_CHECK_TOOLCHAIN").unwrap_or_else(|_| "nightly".to_owned());
     let target = repository.join(".generated/rust-reference/target");
@@ -92,8 +92,8 @@ fn main() -> Result<(),Box<dyn std::error::Error>> {
     },
     Case {
         name: "internal crate is not a direct consumer dependency",
-        source: "use yosoi::Document; fn main() {}",
-        outcome: Outcome::Rejected("yosoi"),
+        source: "use yosoi_engine::Document; fn main() {}",
+        outcome: Outcome::Rejected("yosoi_engine"),
     },
     Case {
         name: "no archive namespace",

@@ -12,7 +12,7 @@ Yosoi bounds work at each stage. Raising a download limit does not also raise pa
 
 ```rust
 use std::error::Error;
-use yosoi_sdk::prelude as ys;
+use yosoi::prelude as ys;
 use ys::policy::{AddressableByteLimit, CountLimit, StepLimit};
 
 fn main() -> Result<(), Box<dyn Error>> {

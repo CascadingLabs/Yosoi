@@ -6,7 +6,7 @@ order: 18
 
 # Search availability
 
-The repository contains a Search implementation and a CLI command, but `yosoi-sdk` does not currently export a `search` module or a Search request type. There is no supported `ys::search::new(...)` call through this facade today.
+The repository contains a Search implementation and a CLI command, but `yosoi` does not currently export a `search` module or a Search request type. There is no supported `ys::search::new(...)` call through this facade today.
 
 `Policy` includes stored Search configuration. That field does not imply that Search execution is available through the SDK.
 
@@ -18,4 +18,4 @@ See [CLI Search](../cli/search.md) for provider-backed search from the terminal.
 
 Once you have a URL, use [Requests](requests.md) to acquire it and [Contracts](contracts.md) to extract a typed record. To discover pages within a site directly through the Rust SDK, use [Map](map.md).
 
-The implementation crate's API is broader than `yosoi-sdk`. These docs keep their runnable examples on the facade so you can see exactly what that package supports.
+The implementation crate's API is broader than `yosoi`. These docs keep their runnable examples on the facade so you can see exactly what that package supports.

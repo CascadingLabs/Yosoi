@@ -191,21 +191,21 @@ test('an explicitly empty section list means an empty sidebar', () => {
 
 test('generated reference uses public namespaces rather than route kind folders', () => {
   const references = [
-    { ...page('api/index.md', 'api', 'Reference'), kind: 'module', publicPath: 'yosoi_sdk' },
+    { ...page('api/index.md', 'api', 'Reference'), kind: 'module', publicPath: 'yosoi' },
     {
-      ...page('api/locators.md', 'api/yosoi-sdk/module/locators', 'Locators'),
+      ...page('api/locators.md', 'api/yosoi/module/locators', 'Locators'),
       kind: 'module',
-      publicPath: 'yosoi_sdk::locators',
+      publicPath: 'yosoi::locators',
     },
     {
-      ...page('api/z.md', 'api/yosoi-sdk/locators/struct/zeta', 'Zeta'),
+      ...page('api/z.md', 'api/yosoi/locators/struct/zeta', 'Zeta'),
       kind: 'struct',
-      publicPath: 'yosoi_sdk::locators::Zeta',
+      publicPath: 'yosoi::locators::Zeta',
     },
     {
-      ...page('api/a.md', 'api/yosoi-sdk/locators/enum/alpha', 'Alpha'),
+      ...page('api/a.md', 'api/yosoi/locators/enum/alpha', 'Alpha'),
       kind: 'enum',
-      publicPath: 'yosoi_sdk::locators::Alpha',
+      publicPath: 'yosoi::locators::Alpha',
     },
   ];
   const tree = referenceNavigation(references);
@@ -217,7 +217,7 @@ test('generated reference uses public namespaces rather than route kind folders'
     tree.children[0].children.map((node) => node.title),
     ['Alpha', 'Zeta'],
   );
-  assert.equal(tree.children[0].children[0].route, 'api/yosoi-sdk/locators/enum/alpha');
+  assert.equal(tree.children[0].children[0].route, 'api/yosoi/locators/enum/alpha');
   const configured = resolveNavigation(references, {
     schemaVersion: 1,
     sections: [{ title: 'Reference', generated: 'rust-api' }],

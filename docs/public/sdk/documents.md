@@ -10,7 +10,7 @@ A Document holds an identity, a representation profile, and immutable bytes. Cre
 
 ```rust
 use std::error::Error;
-use yosoi_sdk::prelude as ys;
+use yosoi::prelude as ys;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let document = ys::Document::html(
@@ -44,7 +44,7 @@ Construction validates identity and representation metadata. Parsing and locatin
 
 ```rust
 use std::error::Error;
-use yosoi_sdk::prelude as ys;
+use yosoi::prelude as ys;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let bytes = std::fs::read("catalog.html")?;
@@ -62,7 +62,7 @@ Use `parse()` when several plans will inspect the same document:
 
 ```rust
 use std::error::Error;
-use yosoi_sdk::prelude as ys;
+use yosoi::prelude as ys;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let document = ys::Document::html(

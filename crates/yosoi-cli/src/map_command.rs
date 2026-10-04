@@ -8,7 +8,7 @@ use std::{
 use anyhow::{Context as _, Result, bail};
 use clap::{Args, ValueEnum};
 use tokio::signal;
-use yosoi::{CancellationToken, Policy, map, policy};
+use yosoi_engine::{CancellationToken, Policy, map, policy};
 
 use crate::{
     document_pipe,

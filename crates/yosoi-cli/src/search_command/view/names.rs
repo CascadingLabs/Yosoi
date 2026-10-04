@@ -1,6 +1,6 @@
 use crate::browser_diagnostics;
 
-use yosoi::{
+use yosoi_engine::{
     policy::{ProviderDefaultsStatus, search::Provider},
     search::{
         SearchAttemptDiagnostic, SearchFailure, SearchIssueKind, SearchTermination,

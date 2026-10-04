@@ -1,5 +1,5 @@
 use serde::Serialize;
-use yosoi::{EffectivePolicyIdentity, policy::AcquisitionKind};
+use yosoi_engine::{EffectivePolicyIdentity, policy::AcquisitionKind};
 
 mod convert;
 pub(super) mod names;

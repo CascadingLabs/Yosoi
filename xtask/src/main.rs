@@ -297,6 +297,8 @@ fn fmt() -> Result<()> {
             "--package",
             "yosoi",
             "--package",
+            "yosoi-engine",
+            "--package",
             "yosoi-archive",
             "--package",
             "yosoi-contracts",
@@ -350,7 +352,11 @@ fn test() -> Result<()> {
         "nextest",
         &["nextest", "run", "--workspace", "--all-features"],
     )?;
-    run_cargo("yosoi doctests", &["test", "--package", "yosoi", "--doc"])
+    run_cargo("yosoi doctests", &["test", "--package", "yosoi", "--doc"])?;
+    run_cargo(
+        "yosoi-engine doctests",
+        &["test", "--package", "yosoi-engine", "--doc"],
+    )
 }
 
 fn deny() -> Result<()> {

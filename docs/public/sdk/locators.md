@@ -10,7 +10,7 @@ A locator plan says what to select and which values to return. Each output has a
 
 ```rust
 use std::error::Error;
-use yosoi_sdk::prelude as ys;
+use yosoi::prelude as ys;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let document = ys::Document::html(
@@ -67,7 +67,7 @@ Use a region when several fields belong to the same card, table row, or list ite
 
 ```rust
 use std::error::Error;
-use yosoi_sdk::prelude as ys;
+use yosoi::prelude as ys;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let document = ys::Document::html(

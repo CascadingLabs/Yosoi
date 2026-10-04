@@ -10,7 +10,7 @@ A Contract describes the record you want: its fields, their types, and where the
 
 ```rust
 use std::error::Error;
-use yosoi_sdk::prelude as ys;
+use yosoi::prelude as ys;
 
 #[derive(Debug, ys::Contract)]
 #[ys(id = "product", description = "A product for sale", root = ys::locator::css("article"))]
@@ -72,7 +72,7 @@ Omit locators when selectors need to be chosen at runtime:
 
 ```rust
 use std::error::Error;
-use yosoi_sdk::prelude as ys;
+use yosoi::prelude as ys;
 
 #[derive(ys::Contract)]
 #[ys(id = "heading", description = "The page heading")]

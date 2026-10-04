@@ -3,7 +3,7 @@
 use std::num::{NonZeroU16, NonZeroU32, NonZeroUsize};
 
 use serde::{Deserialize, Serialize};
-use yosoi::{CountLimit, Policy, StepLimit, policy};
+use yosoi_engine::{CountLimit, Policy, StepLimit, policy};
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]

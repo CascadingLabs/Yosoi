@@ -11,7 +11,7 @@ use std::{
 use anyhow::{Context as _, Result, bail};
 use clap::{Args, ValueEnum};
 use serde::Serialize;
-use yosoi::{Document, LocateOutcome, prelude as ys};
+use yosoi_engine::{Document, LocateOutcome, prelude as ys};
 
 use crate::{
     document_pipe,
@@ -334,7 +334,7 @@ mod tests {
 
     use std::{error::Error, process::ExitCode};
 
-    use yosoi::{
+    use yosoi_engine::{
         LocateOutcome,
         prelude::{DocumentId, IncompleteEvidence, LocateFailure},
     };

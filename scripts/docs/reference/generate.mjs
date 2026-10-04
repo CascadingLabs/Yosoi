@@ -224,7 +224,7 @@ export function writePreviewCatalog({ work, versions, latest }) {
 
 export const HELP = `Rust SDK reference tooling (Node orchestrator, one Cargo worker):
   node scripts/docs/reference/generate.mjs discover [--repo checkout] [--toolchain nightly]
-  node scripts/docs/reference/generate.mjs generate --source <commit-or-tag> --repository <Owner/Repo> --out <new-directory> [--sdk yosoi-sdk] [--version label] [--locales en,fr] [--overlays file] [--toolchain nightly-2026-09-06] [--features browser] [--preview --from-json directory]
+  node scripts/docs/reference/generate.mjs generate --source <commit-or-tag> --repository <Owner/Repo> --out <new-directory> [--sdk yosoi] [--version label] [--locales en,fr] [--overlays file] [--toolchain nightly-2026-09-06] [--features browser] [--preview --from-json directory]
   node scripts/docs/reference/generate.mjs preview-catalog --versions v1,v2 --latest v2 [--work .generated/rust-reference]
   node scripts/docs/reference/generate.mjs verify --dir <artifact-directory>
   node scripts/docs/reference/generate.mjs pack --dir <artifact-directory> --out <bundle.tar>

@@ -10,7 +10,7 @@ Use JSON Pointer for a known path and JSONPath for simple array selection. Both 
 
 ```rust
 use std::error::Error;
-use yosoi_sdk::prelude as ys;
+use yosoi::prelude as ys;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let document = ys::Document::json(

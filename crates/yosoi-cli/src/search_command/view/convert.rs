@@ -1,6 +1,6 @@
 use std::num::NonZeroU16;
 
-use yosoi::{
+use yosoi_engine::{
     policy::ProviderDefaultsVersion,
     search::{
         FeatureCoverage, ProviderCharge, ProviderOutcome, ProviderResult, RequestAttemptTerminal,

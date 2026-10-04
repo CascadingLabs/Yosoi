@@ -12,7 +12,7 @@ mod view;
 use std::num::{NonZeroU16, NonZeroUsize};
 
 use clap::{ArgAction, Args, ValueEnum};
-use yosoi::policy::search::Provider;
+use yosoi_engine::policy::search::Provider;
 
 use std::{
     io::{self, Write},
@@ -23,7 +23,7 @@ use std::{
 use anyhow::{Context as _, Result};
 use thiserror::Error;
 use tokio::signal;
-use yosoi::{CancellationToken, Policy, policy::search::Search, prelude as ys};
+use yosoi_engine::{CancellationToken, Policy, policy::search::Search, prelude as ys};
 
 use crate::{
     policy_store::PolicyStore,

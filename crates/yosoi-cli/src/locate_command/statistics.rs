@@ -4,7 +4,7 @@ use std::{
 };
 
 use anyhow::Result;
-use yosoi::{Document, LocateOutcome};
+use yosoi_engine::{Document, LocateOutcome};
 
 use crate::{presentation::Theme, stats::RunTimer};
 

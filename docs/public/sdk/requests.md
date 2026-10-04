@@ -10,7 +10,7 @@ A request describes a URL to acquire. Creating it performs no I/O. Sending it va
 
 ```rust
 use std::error::Error;
-use yosoi_sdk::prelude as ys;
+use yosoi::prelude as ys;
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -52,7 +52,7 @@ Both `PageRequest` and `BoundPageRequest` expose `id()`, `target()`, `validate()
 Pass a `CancellationToken` owned by your application:
 
 ```rust
-use yosoi_sdk::prelude as ys;
+use yosoi::prelude as ys;
 use ys::request::{CancellationToken, RequestSendError, Response};
 
 async fn fetch(cancel: &CancellationToken) -> Result<Response, RequestSendError> {

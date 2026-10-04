@@ -19,11 +19,11 @@ cargo new yosoi-example
 cd yosoi-example
 ```
 
-Add these dependencies to `Cargo.toml`. Adjust the path to point to your checkout's `crates/yosoi-sdk` directory:
+Add these dependencies to `Cargo.toml`. Adjust the path to point to your checkout's `crates/yosoi` directory:
 
 ```toml
 [dependencies]
-yosoi-sdk = { path = "../Yosoi/crates/yosoi-sdk" }
+yosoi = { path = "../Yosoi/crates/yosoi" }
 tokio = { version = "1", features = ["macros", "rt"] }
 ```
 
@@ -33,7 +33,7 @@ Replace `src/main.rs` with:
 
 ```rust
 use std::error::Error;
-use yosoi_sdk::prelude as ys;
+use yosoi::prelude as ys;
 use ys::request::DocumentOutcome;
 
 #[tokio::main(flavor = "current_thread")]
@@ -65,12 +65,12 @@ This uses Direct HTTP. Its output depends on the response from the remote site. 
 
 ## Optional dependencies
 
-| Task                                                       | Dependency or feature                                                             |
-| ---------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| Local documents, locators, contracts, and Policy           | `yosoi-sdk`                                                                       |
-| Async Requests and Map                                     | An async runtime; these examples use Tokio                                        |
-| Browser acquisition                                        | `yosoi-sdk` with `features = ["browser"]`, plus regular Chrome or Chromium Stable |
-| Serialize policies, plans, or findings in your application | `serde_json = "1"`                                                                |
+| Task                                                       | Dependency or feature                                                         |
+| ---------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Local documents, locators, contracts, and Policy           | `yosoi`                                                                       |
+| Async Requests and Map                                     | An async runtime; these examples use Tokio                                    |
+| Browser acquisition                                        | `yosoi` with `features = ["browser"]`, plus regular Chrome or Chromium Stable |
+| Serialize policies, plans, or findings in your application | `serde_json = "1"`                                                            |
 
 The SDK has no default Cargo features. Enabling `browser` makes browser acquisition available; choose it through [Policy](policy.md) to use it.
 

@@ -1,5 +1,5 @@
 use serde::{Serialize, Serializer, ser::SerializeStruct};
-use yosoi::map;
+use yosoi_engine::map;
 
 pub(super) struct StatusView<'a> {
     status: &'static str,

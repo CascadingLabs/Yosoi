@@ -5,7 +5,7 @@ use std::{
 };
 
 use anyhow::Result;
-use yosoi::{
+use yosoi_engine::{
     map,
     policy::{PageDiscovery, Subdomains},
 };

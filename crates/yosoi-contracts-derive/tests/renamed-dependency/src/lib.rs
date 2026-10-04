@@ -16,7 +16,7 @@ pub struct RenamedProduct {
     pub name: String,
 }
 
-pub fn schema() -> Result<&'static sdk::ContractSchema, sdk::ContractSchemaError> {
+pub fn schema() -> Result<&'static ys::contracts::ContractSchema, ys::contracts::ContractSchemaError> {
     RenamedProduct::schema()
 }
 

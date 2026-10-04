@@ -9,7 +9,7 @@ use std::{
 use serde::Deserialize;
 use serde_json::Value;
 use thiserror::Error;
-use yosoi::{Policy, PolicyError};
+use yosoi_engine::{Policy, PolicyError};
 
 mod overrides;
 mod storage;

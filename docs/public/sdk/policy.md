@@ -10,7 +10,7 @@ Policy is a Rust struct with public fields. Start with the defaults, change the 
 
 ```rust
 use std::error::Error;
-use yosoi_sdk::prelude as ys;
+use yosoi::prelude as ys;
 use ys::policy::{CountLimit, MaximumElapsed};
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -44,7 +44,7 @@ See [Limits](limits.md) for defaults and units, and [Map](map.md) for discovery 
 
 ```rust
 use std::error::Error;
-use yosoi_sdk::prelude as ys;
+use yosoi::prelude as ys;
 use ys::policy::{Acquisition, BrowserMode, DocumentRequest, Page};
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -75,7 +75,7 @@ Direct HTTP follows up to ten redirects by default, including redirects across H
 
 ```rust
 use std::error::Error;
-use yosoi_sdk::prelude as ys;
+use yosoi::prelude as ys;
 use ys::policy::{DirectHttpRedirects, DirectHttpRedirectTargets, RedirectHopLimit};
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -97,7 +97,7 @@ Add `serde_json = "1"` to your application for this example:
 
 ```rust
 use std::error::Error;
-use yosoi_sdk::prelude as ys;
+use yosoi::prelude as ys;
 use ys::policy::PolicySnapshot;
 
 fn main() -> Result<(), Box<dyn Error>> {

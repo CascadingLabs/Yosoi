@@ -12,7 +12,7 @@ Start with a document you already have:
 
 ```rust
 use std::error::Error;
-use yosoi_sdk::prelude as ys;
+use yosoi::prelude as ys;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let document = ys::Document::html(
@@ -51,12 +51,12 @@ This prints a `title` finding containing `Hello, Yosoi`. It runs locally, withou
 
 ## Imports
 
-Examples use `use yosoi_sdk::prelude as ys;`. The prelude includes common types and the `request`, `documents`, `locators`, `contracts`, `policy`, and `map` namespaces. For explicit imports, use those modules directly, such as `yosoi_sdk::request::DocumentOutcome`.
+Examples use `use yosoi::prelude as ys;`. The prelude includes common types and the `request`, `documents`, `locators`, `contracts`, `policy`, and `map` namespaces. For explicit imports, use those modules directly, such as `yosoi::request::DocumentOutcome`.
 
-The package name is `yosoi-sdk`; the Rust crate name is `yosoi_sdk`.
+The package name is `yosoi`; the Rust crate name is `yosoi`.
 
 ## What is available
 
-These pages describe the current facade in this repository. [Search](search.md) and [Archive](archive.md) explain the boundary with features that exist in implementation crates but are not exported by `yosoi-sdk`.
+These pages describe the current facade in this repository. [Search](search.md) and [Archive](archive.md) explain the boundary with features that exist in implementation crates but are not exported by `yosoi`.
 
 Use the guides for workflows and the generated API reference for individual type and method signatures.

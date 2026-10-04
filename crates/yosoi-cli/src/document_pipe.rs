@@ -4,7 +4,7 @@ use std::io::{Read, Write};
 
 use anyhow::{Context as _, Result, bail};
 use serde::{Deserialize, Serialize};
-use yosoi::{Document, DocumentId, DocumentProfile};
+use yosoi_engine::{Document, DocumentId, DocumentProfile};
 
 const MAGIC: &[u8; 8] = b"YSOIDOC1";
 const FORMAT_VERSION: u32 = 1;
@@ -109,7 +109,7 @@ mod tests {
     use std::error::Error;
     use std::io::Cursor;
 
-    use yosoi::{Document, prelude::DocumentEpoch};
+    use yosoi_engine::{Document, prelude::DocumentEpoch};
 
     use super::{read_from, write_to};
 

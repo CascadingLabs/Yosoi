@@ -1,8 +1,8 @@
 # Rust SDK reference tooling
 
-Only workspace library crates with a reserved `*-sdk` package name and
-`[package.metadata.yosoi] sdk = true` enter discovery. The internal `yosoi`
-crate is not an SDK. `crates/yosoi-sdk` is the public facade; reachable public
+Only workspace library crates named `yosoi` or with a reserved `*-sdk` package name and
+`[package.metadata.yosoi] sdk = true` enter discovery. The internal `yosoi-engine`
+crate is not an SDK. `crates/yosoi` is the public facade; reachable public
 re-exports can point back to their defining internal source files.
 
 Run with Node, Git, tar and Rustup. The documentation compiler is pinned in
@@ -12,7 +12,7 @@ experimental; unsupported formats fail instead of silently degrading.
 ```sh
 rustup toolchain install nightly-2026-09-06 --profile minimal
 cargo xtask docs reference discover
-cargo xtask docs reference generate --source FULL_COMMIT --repository OWNER/REPO --sdk yosoi-sdk --version 0.1.0 --out .generated/reference-release
+cargo xtask docs reference generate --source FULL_COMMIT --repository OWNER/REPO --sdk yosoi --version 0.1.0 --out .generated/reference-release
 cargo xtask docs reference verify --dir .generated/reference-release
 cargo xtask docs reference pack --dir .generated/reference-release --out .generated/reference.tar
 cargo xtask docs check

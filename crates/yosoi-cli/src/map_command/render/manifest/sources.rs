@@ -2,7 +2,7 @@ use serde::{
     Serialize, Serializer,
     ser::{SerializeSeq, SerializeStruct},
 };
-use yosoi::map;
+use yosoi_engine::map;
 
 use super::super::wire::{
     StatusView, discovery_source_label, pending_reason_label, reason_label, rejection_label,
