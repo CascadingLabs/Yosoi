@@ -14,7 +14,28 @@
     {
       "title": "SDK",
       "directory": "sdk",
-      "order": ["index.md", "map.md", "search.md"],
+      "order": [
+        "index.md",
+        "installation.md",
+        "requests.md",
+        "responses.md",
+        "policy.md",
+        "documents.md",
+        "locators.md",
+        "html.md",
+        "xml.md",
+        "json.md",
+        "text.md",
+        "accessibility.md",
+        "contracts.md",
+        "validation.md",
+        "map.md",
+        "browser.md",
+        "limits.md",
+        "errors.md",
+        "search.md",
+        "archive.md",
+      ],
     },
     {
       "title": "Concepts",
@@ -23,7 +44,12 @@
     {
       "title": "Cookbook",
       "directory": "cookbook",
-      "order": ["index.md", "discover-and-fetch.md", "extract-structured-data.md"],
+      "order": [
+        "index.md",
+        "extract-structured-data.md",
+        "discover-and-fetch.md",
+        "save-and-reuse.md",
+      ],
     },
     {
       "title": "Guides",

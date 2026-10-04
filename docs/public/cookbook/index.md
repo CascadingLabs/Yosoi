@@ -8,7 +8,8 @@ order: 2
 
 Pick a task and follow it from input to output.
 
-- [Discover and fetch](discover-and-fetch.md) — map a site and fetch a selected page.
-- [Extract structured data](extract-structured-data.md) — select headings and URLs from documents.
+- [Extract structured data](extract-structured-data.md) — fetch HTML and validate a Rust record.
+- [Discover and fetch](discover-and-fetch.md) — map a site, fetch selected URLs, or reuse retained captures.
+- [Save and reuse a document](save-and-reuse.md) — repeat location from files without another request.
 
-Recipes show the workflow. The [CLI](../cli/index.md) and [SDK](../sdk/index.md) sections explain individual tools.
+Rust recipes use the dependencies in [SDK installation](../sdk/installation.md). Network examples depend on the remote site's response; the save-and-reuse example runs entirely locally.

@@ -1,26 +1,21 @@
 ---
-title: Search
-description: Find candidate URLs through provider-backed search.
-order: 2
+title: Search availability
+description: Understand the current boundary between CLI Search and the Rust SDK facade.
+order: 18
 ---
 
-# Search
+# Search availability
 
-Search combines query intent, provider routing, and per-provider outcomes in one operation.
+The repository contains a Search implementation and a CLI command, but `yosoi-sdk` does not currently export a `search` module or a Search request type. There is no supported `ys::search::new(...)` call through this facade today.
 
-## Workflow
+`Policy` includes stored Search configuration. That field does not imply that Search execution is available through the SDK.
 
-1. Choose providers and limits through Policy.
-2. Submit a query.
-3. Inspect each provider outcome.
-4. Fetch selected URLs through Requests.
+## Use the available command
 
-Search returns candidates; fetching their destination pages is a separate step.
+See [CLI Search](../cli/search.md) for provider-backed search from the terminal. Provider routes are previews pending certification. Search results are candidate URLs; fetching their destination pages is a separate operation.
 
-## Handling partial results
+## Continue in Rust
 
-One provider can succeed while another is challenged or unavailable. Preserve those outcomes so your application can explain what it found.
+Once you have a URL, use [Requests](requests.md) to acquire it and [Contracts](contracts.md) to extract a typed record. To discover pages within a site directly through the Rust SDK, use [Map](map.md).
 
-Current built-in provider routes are previews pending certification.
-
-Try [CLI Search](../cli/search.md) for a terminal example. Exact Rust signatures belong in the generated API reference.
+The implementation crate's API is broader than `yosoi-sdk`. These docs keep their runnable examples on the facade so you can see exactly what that package supports.
