@@ -13,7 +13,10 @@ use chromiumoxide_cdp::cdp::browser_protocol::page::{FrameId, GetFrameTreeParams
 use chromiumoxide_cdp::cdp::browser_protocol::{
     browser::BrowserContextId,
     log as cdplog, performance,
-    target::{AttachToTargetParams, SessionId, SetAutoAttachParams, TargetId, TargetInfo},
+    target::{
+        AttachToTargetParams, FilterEntry, SessionId, SetAutoAttachParams, TargetFilter, TargetId,
+        TargetInfo,
+    },
 };
 use chromiumoxide_cdp::cdp::events::CdpEvent;
 use chromiumoxide_types::{Command, Method, Request, Response};
@@ -853,6 +856,20 @@ impl Target {
             .flatten(true)
             .auto_attach(true)
             .wait_for_debugger_on_start(true)
+            // Service workers are not controlled by this page. Attaching with
+            // waitForDebuggerOnStart and immediately detaching races worker
+            // startup and can leave registration waiting indefinitely. Keep
+            // them running natively while retaining OOPIF/other child targets.
+            .filter(TargetFilter::new(vec![
+                FilterEntry {
+                    exclude: Some(true),
+                    r#type: Some("service_worker".into()),
+                },
+                FilterEntry {
+                    exclude: None,
+                    r#type: None,
+                },
+            ]))
             .build()
             .unwrap();
         let enable_performance = performance::EnableParams::default();

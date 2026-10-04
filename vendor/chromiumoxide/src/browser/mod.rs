@@ -186,8 +186,12 @@ impl Browser {
                     // already exited, do nothing, may happen if the browser crashed
                 } else {
                     // the process is still alive, kill it and wait for exit (avoid zombie processes)
-                    child.kill().await.expect("`Browser::launch` failed but could not clean-up the child process (`kill`)");
-                    child.wait().await.expect("`Browser::launch` failed but could not clean-up the child process (`wait`)");
+                    if let Err(cleanup) = child.kill().await {
+                        tracing::warn!(?cleanup, launch_error = ?e, "browser launch cleanup: kill failed");
+                    }
+                    if let Err(cleanup) = child.wait().await {
+                        tracing::warn!(?cleanup, launch_error = ?e, "browser launch cleanup: wait failed");
+                    }
                 }
                 return Err(e);
             }
