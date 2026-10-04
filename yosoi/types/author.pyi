@@ -1,3 +1,0 @@
-from typing import Any
-
-def Author(description: str = ..., **kwargs: Any) -> Any: ...

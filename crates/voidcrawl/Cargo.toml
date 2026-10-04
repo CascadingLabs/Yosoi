@@ -1,0 +1,69 @@
+[package]
+name = "void_crawl_core"
+version = "0.1.0"
+publish = false
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "VoidCrawl, Yosoi's Rust-native Chromium browser engine"
+repository = "https://github.com/CascadingLabs/YosoiOxide"
+readme = "../../README.md"
+
+[lints]
+workspace = true
+
+[features]
+default = []
+# Size, MIME and the fixed EICAR signature check are opt-in independently of
+# browser acquisition; no dynamic signature engine is needed for this ruleset.
+scanner = ["dep:memchr", "dep:infer"]
+# Encode a recording to an animated GIF in-process. Pure Rust, no external
+# binary; `image`'s GIF encoder handles quantization.
+encode-gif = ["image/gif"]
+# Encode a recording to MP4/WebM by shelling out to an `ffmpeg` binary on
+# PATH. No extra crates — the dependency is the binary itself.
+encode-ffmpeg = []
+
+[dependencies]
+chromiumoxide.workspace = true
+tokio = { workspace = true, features = ["full"] }
+futures.workspace = true
+thiserror.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+schemars.workspace = true
+globset.workspace = true
+base64.workspace = true
+# Frame decode/crop/re-encode for screen recording. Codecs limited to the two
+# formats CDP's screencast emits — this is not a general image stack, and the
+# default feature set would pull in a dozen decoders we never touch.
+image = { workspace = true, features = ["jpeg", "png"] }
+notify.workspace = true
+reqwest = { workspace = true, features = ["rustls-no-provider", "json"] }
+rustls = { workspace = true, features = ["ring", "std", "tls12"] }
+tempfile.workspace = true
+uuid.workspace = true
+yosoi-types.workspace = true
+memchr = { workspace = true, optional = true }
+infer = { workspace = true, optional = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util"] }
+flate2.workspace = true
+tempfile.workspace = true
+
+[[example]]
+name = "download_and_scan"
+required-features = ["scanner"]
+
+[[example]]
+name = "download_via_action"
+required-features = ["scanner"]
+
+[[test]]
+name = "download"
+required-features = ["scanner"]
+
+[[test]]
+name = "scanner"
+required-features = ["scanner"]

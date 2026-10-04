@@ -1,0 +1,7 @@
+# Clippy behavior settings cannot live in Cargo.toml's lint-level table.
+# Lint levels and MSRV are defined in the workspace Cargo.toml.
+# Tests may use direct assertions and indexing where they improve readability.
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true
+allow-panic-in-tests = true
+allow-indexing-slicing-in-tests = true

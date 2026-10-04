@@ -1,0 +1,304 @@
+{
+  "schema": "yosoi.document-locator-advanced-corpus.v1",
+  "captured_at": "2026-09-26T00:41:50Z",
+  "storage": {
+    "policy": "tracked-compressed-source-artifact",
+    "raw_files_tracked": false,
+    "source_and_browser_bytes": 55572090,
+    "expanded_bytes": 63475181,
+    "source_artifact": {
+      "path": "source.tar.gz",
+      "format": "tar+gzip",
+      "bytes": 8682249,
+      "sha256": "47b96567eb497d1de0e054fac518bd7664ec03b37038e0efb57ccb2699e9bdde",
+      "generation": "GNU tar format, uid/gid 0, mtime 1970-01-01 UTC; gzip header mtime 0, level 9"
+    },
+    "reason": "The compressed artifact stores all pinned source, browser, derived text, and normalized DOM bytes. Fresh checkouts extract and verify them offline; acquisition and normalization are retired development workflows.",
+    "network_fetch": "unsupported because several source URLs are mutable",
+    "archive_member_bytes": 63475181
+  },
+  "files": [
+    {
+      "id": "advanced-whatwg-html",
+      "path": "live/whatwg-html-standard.html",
+      "document_kind": "html",
+      "schema_identity": "html5-static-utf8-v1",
+      "encoding": "utf-8",
+      "source_url": "https://html.spec.whatwg.org/",
+      "captured_at": "2026-09-26T00:41:50Z",
+      "bytes": 15597637,
+      "sha256": "7f3e9f83d4cdf89c797bbc9e00f3c4e684abd36612518681d64cf462df4d1687",
+      "license": {
+        "name": "CC-BY-4.0",
+        "url": "https://whatwg.org/ipr-policy",
+        "attribution": "HTML Standard, Copyright WHATWG (Apple, Google, Mozilla, Microsoft); https://html.spec.whatwg.org/",
+        "redistribution": "permitted-with-attribution"
+      },
+      "provenance": {
+        "kind": "live-snapshot",
+        "mutable_source": true
+      }
+    },
+    {
+      "id": "advanced-rfc-index-xml",
+      "path": "live/rfc-index.xml",
+      "document_kind": "xml",
+      "schema_identity": "xml-1.0",
+      "encoding": "utf-8",
+      "source_url": "https://www.rfc-editor.org/rfc-index.xml",
+      "captured_at": "2026-09-26T00:41:50Z",
+      "bytes": 13722267,
+      "sha256": "401e94f50c15f60d89b09e95ce3dd02212cb9650165c05ca0fc83436bffd7742",
+      "license": {
+        "name": "IETF-Trust-Legal-Provisions-5.0",
+        "url": "https://trustee.ietf.org/documents/trust-legal-provisions/tlp-5/",
+        "attribution": "RFC Index, RFC Editor and IETF Trust; https://www.rfc-editor.org/rfc-index.xml",
+        "redistribution": "permitted-under-ietf-trust-terms"
+      },
+      "provenance": {
+        "kind": "live-snapshot",
+        "mutable_source": true
+      }
+    },
+    {
+      "id": "advanced-ecb-history-xml",
+      "path": "live/ecb-eurofxref-hist.xml",
+      "document_kind": "xml",
+      "schema_identity": "xml-1.0",
+      "encoding": "utf-8",
+      "source_url": "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist.xml",
+      "captured_at": "2026-09-26T00:41:50Z",
+      "bytes": 8186083,
+      "sha256": "66bb9fc2ebc1459ec21b6ac54b57f0be0e921149fcc75a1cc637b8fe5b717503",
+      "license": {
+        "name": "ECB-source-acknowledgement",
+        "url": "https://www.ecb.europa.eu/stats/eurofxref/",
+        "attribution": "European Central Bank; source https://www.ecb.europa.eu/stats/eurofxref/eurofxref-hist.xml",
+        "redistribution": "reproduction-permitted-with-source-acknowledgement"
+      },
+      "provenance": {
+        "kind": "live-snapshot",
+        "mutable_source": true
+      }
+    },
+    {
+      "id": "advanced-usgs-earthquakes-json",
+      "path": "live/usgs-earthquakes-all-month.geojson",
+      "document_kind": "json",
+      "schema_identity": "rfc7946-geojson",
+      "encoding": "utf-8",
+      "source_url": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_month.geojson",
+      "captured_at": "2026-09-26T00:41:50Z",
+      "bytes": 7663008,
+      "sha256": "8d4387c6076433531a432a97fa54a14e213e22b5e62fbf04733b347843f33e41",
+      "license": {
+        "name": "US-Government-Public-Domain",
+        "url": "https://www.usgs.gov/faqs/are-usgs-reportspublications-copyrighted",
+        "attribution": "U.S. Geological Survey; https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_month.geojson",
+        "redistribution": "public-domain-in-the-united-states"
+      },
+      "provenance": {
+        "kind": "live-snapshot",
+        "mutable_source": true
+      }
+    },
+    {
+      "id": "advanced-nvd-cves-json",
+      "path": "live/nvd-cves-2000.json",
+      "document_kind": "json",
+      "schema_identity": "nvd-cve-api-2.0",
+      "encoding": "utf-8",
+      "source_url": "https://services.nvd.nist.gov/rest/json/cves/2.0?resultsPerPage=2000&startIndex=0",
+      "captured_at": "2026-09-26T00:41:50Z",
+      "bytes": 4258928,
+      "sha256": "7da99bfd7b7d82b2da0f3fd9b9c4bba88e900764ab605629bc48b3f022c70e27",
+      "license": {
+        "name": "NIST-public-information-and-CVE-Terms-of-Use",
+        "url": "https://www.cve.org/legal/termsofuse",
+        "attribution": "National Vulnerability Database, National Institute of Standards and Technology. CVE data: Copyright 1999-2026, The MITRE Corporation; CVE is a trademark of The MITRE Corporation.",
+        "redistribution": "retain-the-MITRE-copyright-designation-and-CVE-license-notice"
+      },
+      "provenance": {
+        "kind": "live-snapshot",
+        "mutable_source": true
+      }
+    },
+    {
+      "id": "advanced-wcag-html",
+      "path": "live/wcag22.html",
+      "document_kind": "html",
+      "schema_identity": "html5-static-utf8-v1",
+      "encoding": "utf-8",
+      "source_url": "https://www.w3.org/TR/2024/REC-WCAG22-20241212/",
+      "captured_at": "2026-09-26T00:41:50Z",
+      "bytes": 512457,
+      "sha256": "6e3c5fe397257cae509a2fb4752b73062cf8cbeb92c2cec618989b17e4cf7057",
+      "license": {
+        "name": "W3C-Document-License-2023",
+        "url": "https://www.w3.org/copyright/document-license-2023/",
+        "attribution": "Web Content Accessibility Guidelines (WCAG) 2.2, W3C Recommendation 12 December 2024; Copyright 2020-2024 W3C; https://www.w3.org/TR/2024/REC-WCAG22-20241212/",
+        "redistribution": "copy-and-distribute-with-required-notices"
+      },
+      "provenance": {
+        "kind": "live-snapshot",
+        "mutable_source": false
+      }
+    },
+    {
+      "id": "advanced-whatwg-text",
+      "path": "derived/whatwg-html-standard.txt",
+      "document_kind": "text",
+      "schema_identity": "decoded-text-utf8",
+      "encoding": "utf-8",
+      "source_url": null,
+      "captured_at": "2026-09-26T00:41:50Z",
+      "bytes": 4304975,
+      "sha256": "9654e6841e15325c4e14ad52215cb6fbed6b1a94884c744df75d82d080401bc2",
+      "license": {
+        "name": "CC-BY-4.0",
+        "url": "https://whatwg.org/ipr-policy",
+        "attribution": "Derived from the HTML Standard, Copyright WHATWG (Apple, Google, Mozilla, Microsoft); https://html.spec.whatwg.org/",
+        "redistribution": "permitted-with-attribution-and-derivative-notice"
+      },
+      "provenance": {
+        "kind": "derived",
+        "derived_from": "advanced-whatwg-html",
+        "derivation": "lxml HTML parse; drop script/style/template; trim non-empty text_content lines; UTF-8 LF output"
+      }
+    },
+    {
+      "id": "advanced-wcag-rendered-html",
+      "path": "browser/wcag22/rendered.html",
+      "document_kind": "html",
+      "schema_identity": "html5-rendered-outerhtml",
+      "encoding": "utf-8",
+      "source_url": null,
+      "captured_at": "2026-09-26T00:37:04.204Z",
+      "bytes": 512785,
+      "sha256": "e9a9f04b93a6471e7ba4f8effab179591a3467bcae56da743fea9ed2f39b17ec",
+      "license": {
+        "name": "W3C-Document-License-2023",
+        "url": "https://www.w3.org/copyright/document-license-2023/",
+        "attribution": "Includes material copied from or derived from Web Content Accessibility Guidelines (WCAG) 2.2; Copyright 2020-2024 W3C; https://www.w3.org/TR/2024/REC-WCAG22-20241212/",
+        "redistribution": "derived-implementation-material-with-required-notice"
+      },
+      "provenance": {
+        "kind": "browser-derived",
+        "derived_from": "advanced-wcag-html",
+        "capture_metadata": "advanced-wcag-browser-metadata"
+      }
+    },
+    {
+      "id": "advanced-wcag-dom-snapshot",
+      "path": "browser/wcag22/dom-snapshot.json",
+      "document_kind": "dom",
+      "schema_identity": "chromium-cdp-dom-snapshot-1.3-raw",
+      "encoding": "utf-8",
+      "source_url": null,
+      "captured_at": "2026-09-26T00:37:04.204Z",
+      "bytes": 1538633,
+      "sha256": "2483f0acb28b007205611df9bfa83ce194b37db2c834e05ff9b246cc959bacb0",
+      "license": {
+        "name": "W3C-Document-License-2023",
+        "url": "https://www.w3.org/copyright/document-license-2023/",
+        "attribution": "Includes material copied from or derived from Web Content Accessibility Guidelines (WCAG) 2.2; Copyright 2020-2024 W3C; https://www.w3.org/TR/2024/REC-WCAG22-20241212/",
+        "redistribution": "derived-implementation-material-with-required-notice"
+      },
+      "provenance": {
+        "kind": "browser-derived",
+        "derived_from": "advanced-wcag-html",
+        "capture_metadata": "advanced-wcag-browser-metadata",
+        "normalization": "generated-as-yosoi.rendered-dom.v1"
+      }
+    },
+    {
+      "id": "advanced-wcag-rendered-dom-v1",
+      "path": "browser/wcag22/rendered-dom-v1.json",
+      "document_kind": "dom",
+      "schema_identity": "yosoi.rendered-dom.v1",
+      "encoding": "utf-8",
+      "source_url": null,
+      "captured_at": "2026-09-26T00:37:04.204Z",
+      "bytes": 3598116,
+      "sha256": "318a9d66f3f5a12d27b309e754c8d94f11aad633ceee80351f941aea18277d14",
+      "license": {
+        "name": "W3C-Document-License-2023",
+        "url": "https://www.w3.org/copyright/document-license-2023/",
+        "attribution": "Includes material copied from or derived from Web Content Accessibility Guidelines (WCAG) 2.2; Copyright 2020-2024 W3C; https://www.w3.org/TR/2024/REC-WCAG22-20241212/",
+        "redistribution": "derived-implementation-material-with-required-notice"
+      },
+      "provenance": {
+        "kind": "normalized-derived",
+        "derived_from": "advanced-wcag-dom-snapshot",
+        "normalization": {
+          "id": "yosoi-rendered-dom-cdp-snapshot",
+          "version": 2,
+          "schema": "yosoi.rendered-dom.v1",
+          "source_fixture_id": "advanced-wcag-dom-snapshot",
+          "source_sha256": "2483f0acb28b007205611df9bfa83ce194b37db2c834e05ff9b246cc959bacb0",
+          "document_epoch": 392,
+          "element_namespace_inference": "whatwg-html-foreign-content-with-svg-adjusted-names-v1",
+          "attribute_namespace_inference": "foreign-elements-only-standard-xml-xmlns-xlink-prefixes-v2",
+          "pseudo_element_policy": "omit-pseudoType-index-and-double-colon-name-subtrees-v1",
+          "tree_model": "document_light_dom",
+          "exclusions": [
+            "shadow-dom",
+            "iframe-subdocuments",
+            "pseudo-elements",
+            "flattened-composed-trees",
+            "layout-visibility"
+          ]
+        }
+      }
+    },
+    {
+      "id": "advanced-wcag-accessibility-tree",
+      "path": "browser/wcag22/accessibility-tree.json",
+      "document_kind": "ax",
+      "schema_identity": "yosoi.accessibility-tree.v1",
+      "encoding": "utf-8",
+      "source_url": null,
+      "captured_at": "2026-09-26T00:37:04.204Z",
+      "bytes": 3579221,
+      "sha256": "c9f55cdf6f2f49f1d78574170c479647bff7c4a83a8048c36fd7befe4d7e179e",
+      "license": {
+        "name": "W3C-Document-License-2023",
+        "url": "https://www.w3.org/copyright/document-license-2023/",
+        "attribution": "Includes material copied from or derived from Web Content Accessibility Guidelines (WCAG) 2.2; Copyright 2020-2024 W3C; https://www.w3.org/TR/2024/REC-WCAG22-20241212/",
+        "redistribution": "derived-implementation-material-with-required-notice"
+      },
+      "provenance": {
+        "kind": "browser-derived",
+        "derived_from": "advanced-wcag-html",
+        "capture_metadata": "advanced-wcag-browser-metadata",
+        "normalization": "yosoi.accessibility-tree.v1",
+        "completeness": "unknown: capture method is not pinned",
+        "deduplicated_identical_records": 160
+      }
+    },
+    {
+      "id": "advanced-wcag-browser-metadata",
+      "path": "browser/wcag22/capture-metadata.json",
+      "document_kind": "metadata",
+      "schema_identity": "yosoi.browser-fixture-capture-metadata.v1",
+      "encoding": "utf-8",
+      "source_url": null,
+      "captured_at": "2026-09-26T00:37:04.204Z",
+      "bytes": 1071,
+      "sha256": "2369ea006cd4672108bd0ded4040b69359c7c676d42567ae18193432e1575d7e",
+      "license": {
+        "name": "Apache-2.0",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0",
+        "attribution": "Cascading Labs generated browser fixture capture metadata.",
+        "redistribution": "permitted-under-repository-license"
+      },
+      "provenance": {
+        "kind": "capture-metadata",
+        "derived_from": "advanced-wcag-html",
+        "browser": "Chromium 152.0.7977.82 Arch Linux",
+        "executable_sha256": "27c398e1738a5bf578e4414654b959b8fdb63446dfb309c114a95e97c5d243ff",
+        "cdp_protocol_version": "1.3"
+      }
+    }
+  ]
+}

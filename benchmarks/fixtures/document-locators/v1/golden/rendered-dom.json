@@ -1,0 +1,42 @@
+{
+  "schema": "yosoi.rendered-dom.v1",
+  "document_epoch": 1,
+  "tree_model": "document_light_dom",
+  "root": 1,
+  "nodes": [
+    {
+      "kind": "document",
+      "id": 1,
+      "parent": null,
+      "children": [2]
+    },
+    {
+      "kind": "element",
+      "id": 2,
+      "parent": 1,
+      "children": [3],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "body",
+      "attributes": []
+    },
+    {
+      "kind": "element",
+      "id": 3,
+      "parent": 2,
+      "children": [4],
+      "namespace_uri": "http://www.w3.org/1999/xhtml",
+      "tag_name": "button",
+      "attributes": [
+        { "namespace_uri": "", "name": "class", "value": "buy-now" },
+        { "namespace_uri": "", "name": "data-product-id", "value": "ada" }
+      ]
+    },
+    {
+      "kind": "text",
+      "id": 4,
+      "parent": 3,
+      "children": [],
+      "value": "Buy now"
+    }
+  ]
+}

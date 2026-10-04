@@ -1,0 +1,7 @@
+User-agent: YosoiMap
+Disallow: /~member
+Disallow: /encoded%2Fslash
+Disallow: /file-with-a-%2A.html
+Disallow: /search?q=blue
+Disallow: /caf%C3%A9
+Disallow:

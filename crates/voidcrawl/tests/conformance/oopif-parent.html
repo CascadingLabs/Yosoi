@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>CAS-383 OOPIF parent</title></head>
+<body>
+  <main id="parent-marker">CAS-383 parent fixture</main>
+  <iframe
+    id="oopif-child"
+    title="cross-site child"
+    style="width: 320px; height: 180px; transform: translate(32px, 18px) rotate(3deg) scale(0.85); transform-origin: top left"
+  ></iframe>
+  <script>
+    (() => {
+      const frame = document.getElementById('oopif-child');
+      const allowedOrigins = __ALLOWED_CHILD_ORIGINS__;
+      const initialChildUrl = __INITIAL_CHILD_URL__;
+      const messages = [];
+      let waiter = null;
+
+      window.__waitForOopifMessage = () => {
+        if (messages.length > 0) return Promise.resolve(messages.shift());
+        return new Promise(resolve => { waiter = resolve; });
+      };
+
+      window.addEventListener('message', event => {
+        if (event.source !== frame.contentWindow) return;
+        if (!allowedOrigins.includes(event.origin)) return;
+        if (event.data?.fixture !== 'cas-383' || event.data?.nonce !== 'oopif-v1') return;
+
+        if (waiter !== null) {
+          const resolve = waiter;
+          waiter = null;
+          resolve(event.data);
+        } else {
+          messages.push(event.data);
+        }
+      });
+
+      window.__loadInitialOopif = () => {
+        frame.src = initialChildUrl;
+      };
+    })();
+  </script>
+</body>
+</html>

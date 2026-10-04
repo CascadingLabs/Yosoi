@@ -1,0 +1,32 @@
+{
+  "schema": "voidcrawl.browser-acquisition-conformance",
+  "version": 1,
+  "provenance": {
+    "network": "loopback-only",
+    "clock": "relative-or-category-only",
+    "secrets": "synthetic",
+    "public_sites_required": false
+  },
+  "scenarios": [
+    {"id":"static_navigation","fixture":"static.html","expected":["finished","complete"],"coverage":"document_snapshot::rendered_dom_is_bounded_and_tracks_document_epochs"},
+    {"id":"redirect_chain","fixture":"server:redirect","expected":["redirect_hops","final_response"],"coverage":"navigation_capture::redirects_and_final_response_are_explicit_but_debug_is_redacted"},
+    {"id":"delayed_dom","fixture":"delayed-dom.html","expected":["same_document_epoch","rendered_dom_changed"],"coverage":"browser_acquisition_conformance::static_delayed_runtime_frame_and_visual_fixtures_are_observable"},
+    {"id":"synchronous_runtime_error","fixture":"runtime-error.html","expected":["console","exception","pre_navigation"],"coverage":"observation_scope::observers_are_armed_before_navigation_and_capture_initial_signals"},
+    {"id":"endless_network","fixture":"server:endless","expected":["finished","in_flight_known","cleanup_complete"],"coverage":"browser_acquisition_conformance::active_network_can_finish_with_explicit_in_flight_accounting"},
+    {"id":"event_flood","fixture":"server:event-flood","expected":["event_limit","dropped_explicit"],"coverage":"observation_scope::every_early_terminal_reports_unknown_upstream_byte_loss"},
+    {"id":"byte_flood","fixture":"server:byte-flood","expected":["truncated","exact_retained_bytes"],"coverage":"navigation_capture::chromium_body_is_a_decoded_representation_and_truncation_is_exact"},
+    {"id":"partial_response_body","fixture":"server:partial-body","expected":["failed","body_unavailable","no_partial_bytes_claim"],"coverage":"browser_acquisition_conformance::mid_body_disconnect_is_an_explicit_failed_source_not_partial_bytes"},
+    {"id":"http_cache","fixture":"server:cache","expected":["cache_state_explicit"],"coverage":"navigation_capture::browser_cache_provenance_is_explicit"},
+    {"id":"service_worker","fixture":"service-worker.html","expected":["service_worker_state_explicit_or_unavailable"],"coverage":"navigation_capture::service_worker_source_and_provenance_are_explicit"},
+    {"id":"same_process_frame","fixture":"frame-parent.html","expected":["frame_scope"],"coverage":"document_snapshot::frame_accessibility_scope_is_explicit"},
+    {"id":"oopif","fixture":"server:oopif","expected":["frame_payload_or_unavailable"],"coverage":"browser_acquisition_conformance::loopback_cross_origin_frame_is_payload_or_explicitly_unavailable"},
+    {"id":"oopif_session_routing","fixture":"server:oopif-session-routing","expected":["distinct_target_session","child_session_detached","cleanup_complete","frame_geometry_routed","process_swap_routed","trusted_input_routed"],"coverage":"browser_acquisition_conformance::cross_site_oopif_session_routes_child_operations_and_swaps"},
+    {"id":"oopif_minimal_mode","fixture":"server:oopif-minimal","expected":["minimal_oopif_disabled_typed"],"coverage":"browser_acquisition_conformance::minimal_mode_reports_oopif_routing_as_typed_disabled_capability"},
+    {"id":"visual_layout_change","fixture":"visual-layout.html","expected":["dimensions","coordinate_space","document_epoch"],"coverage":"visual_snapshot::visual_snapshot_reports_bbox_target_and_one_shot_viewport_without_leak"},
+    {"id":"interrupt","fixture":"static.html","expected":["interrupted","cleanup_complete"],"coverage":"observation_scope::every_early_terminal_reports_unknown_upstream_byte_loss"},
+    {"id":"page_disconnect","fixture":"provider:page-close","expected":["provider_disconnected","cleanup_complete"],"coverage":"observation_scope::page_close_reports_provider_disconnect_and_cleans_up"},
+    {"id":"renderer_crash","fixture":"provider:renderer-crash","expected":["renderer_failure"],"coverage":"observation::renderer_crash_progress_is_terminal"},
+    {"id":"browser_disconnect","fixture":"provider:browser-close","expected":["provider_disconnected","cleanup_complete"],"coverage":"browser_acquisition_conformance::browser_disconnect_reaches_the_provider_disconnect_terminal"},
+    {"id":"isolated_state","fixture":"static.html","expected":["isolated_browser_context","state_removed","cleanup_complete"],"coverage":"context_isolation::disposable_context_removes_cookie_and_origin_storage_state"}
+  ]
+}

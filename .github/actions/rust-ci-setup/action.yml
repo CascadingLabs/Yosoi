@@ -1,0 +1,34 @@
+# Shared Linux setup for Rust CI. Keep compiler/dependency/build caches separate
+# for ordinary and instrumented builds; never reuse coverage artifacts as normal
+# binaries. Toolchain identity comes from rust-toolchain.toml.
+name: Rust CI setup
+description: Install native prerequisites, the repository toolchain, and a Cargo cache
+inputs:
+  cache-key:
+    description: Build configuration cache namespace
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Install native build prerequisites
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends cmake clang libclang-dev ninja-build pkg-config libssl-dev
+    - name: Install repository Rust toolchain
+      shell: bash
+      run: |
+        channel=$(sed -n 's/^channel = "\([^"]*\)"$/\1/p' rust-toolchain.toml)
+        test -n "$channel"
+        rustup toolchain install "$channel" --profile minimal --component rustfmt --component clippy --component llvm-tools-preview
+        echo "SDK_CHECK_TOOLCHAIN=$channel" >> "$GITHUB_ENV"
+        rustc --version --verbose
+    - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      with:
+        key: ${{ inputs.cache-key }}
+        workspaces: |
+          . -> target
+          . -> target/llvm-cov-target
+          . -> .generated/rust-reference/target
+        cache-workspace-crates: 'true'
+        save-if: ${{ github.ref == 'refs/heads/main' }}

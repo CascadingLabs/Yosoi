@@ -1,0 +1,12 @@
+[package]
+name = "yosoi-contracts-renamed-dependency-fixture"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+ys = { package = "yosoi", version = "=0.1.0", path = "../../../yosoi" }

@@ -1,3 +1,0 @@
-from typing import Any
-
-def Rating(description: str = ..., *, as_float: bool = ..., scale: int = ..., **kwargs: Any) -> Any: ...

@@ -1,0 +1,43 @@
+{
+  "note": "Synthetic Bing decoder test vectors only; the positive target is a harmless fixture URL and the negative inputs are adversarial examples. None came from provider traffic.",
+  "vectors": [
+    {
+      "name": "synthetic_valid_http_target",
+      "kind": "positive",
+      "u": "a1aHR0cHM6Ly9leGFtcGxlLm9yZy9wYXRo",
+      "expected": "accept: https://example.org/path",
+      "origin": "synthetic fixture URL; not a captured Bing value"
+    },
+    {
+      "name": "synthetic_valid_second_target",
+      "kind": "positive",
+      "u": "a1aHR0cHM6Ly9leGFtcGxlLm5ldC9zZWNvbmQ",
+      "expected": "accept: https://example.net/second",
+      "origin": "synthetic fixture URL; not a captured Bing value"
+    },
+    {
+      "name": "wrong_prefix",
+      "u": "b1dGVzdA",
+      "expected": "reject before decoding: unsupported prefix",
+      "kind": "negative"
+    },
+    {
+      "name": "invalid_base64url",
+      "u": "a1%%%",
+      "expected": "reject: invalid URL-safe Base64",
+      "kind": "negative"
+    },
+    {
+      "name": "invalid_utf8",
+      "u": "a1_w",
+      "expected": "reject: decoded bytes are not UTF-8",
+      "kind": "negative"
+    },
+    {
+      "name": "non_http_scheme",
+      "u": "a1ZnRwOi8vZml4dHVyZS5pbnZhbGlkL3BhdGg",
+      "expected": "reject: decoded URL scheme is not HTTP or HTTPS",
+      "kind": "negative"
+    }
+  ]
+}

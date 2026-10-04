@@ -1,3 +1,0 @@
-from typing import Any
-
-def Url(description: str = ..., *, require_https: bool = ..., strip_tracking: bool = ..., **kwargs: Any) -> Any: ...

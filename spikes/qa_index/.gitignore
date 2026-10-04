@@ -1,8 +1,0 @@
-captures/
-.venv/
-uv.lock
-__pycache__/
-defect_pages/
-captures/\nsessions/
-sessions/
-sections/

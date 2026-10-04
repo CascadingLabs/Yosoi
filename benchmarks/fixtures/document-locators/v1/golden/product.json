@@ -1,0 +1,7 @@
+{
+  "currency": "USD",
+  "products": [
+    { "id": "ada", "author": "Ada", "price": 12 },
+    { "id": "grace", "author": "Grace", "price": 18 }
+  ]
+}

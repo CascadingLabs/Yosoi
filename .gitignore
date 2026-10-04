@@ -1,96 +1,28 @@
-# ==========================================
-# Yosoi Project Specific
-# ==========================================
-.yosoi/
-examples/projects/
-primary-sources.json
-test_batch.py
-.batch_progress.json
-used-urls.json
-mutants
-_check.py
-lighthouserc.desktop.json
-lighthouserc.mobile.json
-node_modules
+# Rust build, fuzzing, and generated benchmark output
+target/
+/.generated/
+__pycache__/
+*.pyc
+/fuzz/artifacts/
+/fuzz/corpus/
+/benchmarks/results/
+**/*.rs.bk
+*.pdb
 
-# ==========================================
-# Task Tracking
-# ==========================================
-todo.md
-TODO.md
-.todo.md
-plan.md
-PLAN.md
-.plan.md
-agent_share.md
+# Public docs source is the only new content tracked under docs.
+/docs/*
+!/docs/public/
+!/docs/archive/
 
-# ==========================================
-# Environments & Secrets
-# ==========================================
+# Checkout-local live examples (may contact public websites)
+/crates/yosoi-web-capture/examples/
+
+# Environment and secrets
 .env
 .env.*
 !.env.example
-.venv
-venv/
-ENV/
-env/
 
-# ==========================================
-# Python Standard
-# ==========================================
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-
-# Builds and Distributions
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
-
-# ==========================================
-# Testing, Tooling & Profiling
-# ==========================================
-# Caches
-.pytest_cache/
-.ruff_cache/
-.mypy_cache/
-.typecheck_cache/
-.deepeval
-
-# Coverage
-.coverage
-.coverage.*
-htmlcov/
-coverage.xml
-
-# Profiling & Diagnostics
-memray*.bin
-.prof/
-profile/
-spike-results/
-
-# Runners
-.tox/
-.nox/
-
-# ==========================================
-# IDEs & Editors
-# ==========================================
+# Editors
 .vscode/
 .zed/
 .idea/
@@ -98,27 +30,22 @@ spike-results/
 *.swo
 *~
 
-# ==========================================
-# Claude Code
-# ==========================================
-.claude/settings.local.json
+# Checkout-local agent configuration
+.local/
+.pi/
+AGENTS.local.md
+CLAUDE.local.md
+.agents/skills/local-*/
+.opencode/agent/local-*.md
+.opencode/command/local-*.md
+.opencode/tools/local-*
+.claude/agents/local-*.md
+.claude/commands/local-*.md
 
-# ==========================================
-# OS & System
-# ==========================================
+# Operating systems
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
-.claude/ralph-loop.local.md
-yosoi_driver/target/
-.claude/scheduled_tasks.lock
-article.json
-tests/stubs/snippets/_check_*.py
-
-# Generated QA-index spike captures (raw/rendered HTML, AX trees, network logs).
-# Reproducible output, multi-MB, and not part of the package.
-spikes/**/captures/
+.yosoi/
+.codex/
+.agents/
+completions/

@@ -1,0 +1,30 @@
+# Existing first-party production files above the 400-line target.
+#
+# The number is a non-increasing ceiling, not a desired size. New entries and
+# ceiling increases require explicit architecture review; ordinary changes
+# should split the source instead. Remove an entry once its file reaches 400
+# lines or fewer.
+#
+# VoidCrawl engine sources imported without behavior changes. These retain
+# their pre-monorepo ceilings and cannot grow without failing the gate.
+crates/voidcrawl/src/byte_control.rs	683
+crates/voidcrawl/src/cookie_jar.rs	808
+crates/voidcrawl/src/document_snapshot.rs	415
+crates/voidcrawl/src/environment.rs	641
+crates/voidcrawl/src/error.rs	442
+crates/voidcrawl/src/managed_profile.rs	931
+crates/voidcrawl/src/navigation_capture.rs	1194
+crates/voidcrawl/src/observation.rs	1474
+crates/voidcrawl/src/recording.rs	2250
+crates/voidcrawl/src/response.rs	1134
+crates/voidcrawl/src/selector.rs	635
+crates/voidcrawl/src/session.rs	1378
+# Pre-existing Yosoi aggregate/domain sources. CAS-356 does not rewrite these
+# boundaries; their current size is a non-increasing migration ceiling.
+crates/yosoi-types/src/vocabulary.rs	430
+crates/yosoi-web-capture/src/aggregate.rs	560
+crates/yosoi-web-capture/src/browser_adapter/facts.rs	948
+# CAS-352 execution receipts and the behavior-preserving adapter staging move
+# are cohesive migration exceptions, also held to non-increasing ceilings.
+crates/yosoi-web-capture/src/browser_execution/receipt.rs	764
+crates/yosoi-web-capture/src/error.rs	426

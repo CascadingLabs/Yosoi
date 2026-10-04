@@ -1,0 +1,141 @@
+[workspace]
+members = [
+    "benchmarks",
+    "benchmarks/document-locators",
+    "crates/voidcrawl",
+    "crates/yosoi",
+    "crates/yosoi-sdk",
+    "crates/yosoi-archive",
+    "crates/yosoi-cli",
+    "crates/yosoi-contracts",
+    "crates/yosoi-contracts-derive",
+    "crates/yosoi-contracts-derive/tests/renamed-dependency",
+    "crates/yosoi-contract-validation",
+    "crates/yosoi-documents",
+    "crates/yosoi-extractor",
+    "crates/yosoi-map",
+    "crates/yosoi-policy",
+    "crates/yosoi-types",
+    "crates/yosoi-web-capture",
+    "crates/yosoi-web-capture-direct-http",
+    "vendor/chromiumoxide_cdp",
+    "xtask",
+]
+resolver = "2"
+exclude = ["vendor/chromiumoxide"]
+
+[workspace.package]
+edition = "2024"
+license = "Apache-2.0"
+# Also supplies Clippy's MSRV; rust-toolchain.toml pins the development compiler.
+rust-version = "1.99"
+version = "0.1.0"
+
+[workspace.dependencies]
+anyhow = "1"
+async-compression = { version = "0.4", default-features = false, features = ["tokio", "gzip", "brotli", "zlib"] }
+bytes = "1"
+memchr = "=2.8.3"
+encoding_rs = { version = "0.8.35", default-features = false, features = ["alloc"] }
+chrono = { version = "0.4.45", default-features = false, features = ["serde", "std"] }
+clap = { version = "4.6", features = ["cargo", "derive", "wrap_help"] }
+futures-util = { version = "0.3", default-features = false, features = ["std"] }
+libc = "0.2"
+proptest = { version = "=1.11.0", default-features = false, features = ["std"] }
+rayon = "=1.12.0"
+regex = "1"
+rustix = { version = "1", features = ["fs"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+tempfile = "3"
+simdutf8 = "=0.1.5"
+thiserror = "2"
+tokio = { version = "1.48", default-features = false, features = ["macros", "rt", "time"] }
+tokio-util = { version = "0.7.17", default-features = false, features = ["io", "rt"] }
+tokio-rustls = { version = "=0.26.4", default-features = false, features = ["ring"] }
+url = { version = "2.5.8", default-features = false, features = ["std"] }
+wreq = { version = "=0.16.1", default-features = false, features = ["stream", "tokio-rt", "webpki-roots"] }
+uuid = { version = "1", features = ["v4"] }
+void_crawl_core = { version = "=0.1.0", path = "crates/voidcrawl", default-features = false }
+yosoi = { version = "=0.1.0", path = "crates/yosoi" }
+yosoi-contracts = { version = "=0.1.0", path = "crates/yosoi-contracts" }
+yosoi-contracts-derive = { version = "=0.1.0", path = "crates/yosoi-contracts-derive" }
+yosoi-contract-validation = { version = "=0.1.0", path = "crates/yosoi-contract-validation" }
+yosoi-archive = { version = "=0.1.0", path = "crates/yosoi-archive" }
+yosoi-documents = { version = "=0.1.0", path = "crates/yosoi-documents" }
+yosoi-extractor = { version = "=0.1.0", path = "crates/yosoi-extractor" }
+yosoi-map = { version = "=0.1.0", path = "crates/yosoi-map" }
+yosoi-policy = { version = "=0.1.0", path = "crates/yosoi-policy" }
+yosoi-types = { version = "=0.1.0", path = "crates/yosoi-types" }
+yosoi-web-capture = { version = "=0.1.0", path = "crates/yosoi-web-capture", default-features = false }
+yosoi-web-capture-direct-http = { version = "=0.1.0", path = "crates/yosoi-web-capture-direct-http", default-features = false }
+
+base64 = "0.22"
+chromiumoxide = { version = "0.9", path = "vendor/chromiumoxide", default-features = false }
+clap_complete = "4.6.11"
+criterion = { version = "=0.7.0", default-features = false }
+divan = "=0.1.21"
+flate2 = "=1.1.10"
+futures = "0.3"
+globset = "0.4"
+gungraun = "=0.19.4"
+html5ever = "=0.39.0"
+image = { version = "0.25", default-features = false }
+infer = "0.16"
+markup5ever_rcdom = "=0.39.0"
+notify = "8"
+proc-macro-crate = "3.5.0"
+proc-macro2 = "1"
+publicsuffix = "=2.3.0"
+quote = "1"
+reqwest = { version = "0.13", default-features = false }
+roxmltree = "=0.21.1"
+rustls = { version = "0.23", default-features = false }
+schemars = "1"
+syn = "2"
+toml = "0.8"
+
+[workspace.lints.rust]
+# Audited exceptions require a separate crate and explicit maintainer approval.
+unsafe_code = "forbid"
+unsafe_op_in_unsafe_fn = "deny"
+missing_debug_implementations = "warn"
+static_mut_refs = "deny"
+
+[workspace.lints.clippy]
+# Test-only behavioral allowances are in clippy.toml, as required by Clippy.
+pedantic = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+
+# Correctness and safety
+unwrap_used = "deny"
+expect_used = "deny"
+indexing_slicing = "deny"
+arithmetic_side_effects = "deny"
+# Add `unchecked_time_subtraction = "deny"` when it is available on the MSRV.
+unreachable = "deny"
+unimplemented = "deny"
+todo = "deny"
+string_slice = "deny"
+panic_in_result_fn = "deny"
+panic = "deny"
+exit = "deny"
+as_conversions = "deny"
+
+# Clean imports and structure
+absolute_paths = "deny"
+cognitive_complexity = "warn"
+
+# Intentional pedantic exceptions
+must_use_candidate = "allow"
+missing_errors_doc = "allow"
+module_name_repetitions = "allow"
+missing_docs_in_private_items = "allow"
+doc_markdown = "allow"
+return_self_not_must_use = "allow"
+items_after_statements = "allow"
+similar_names = "allow"
+doc_lazy_continuation = "allow"
+needless_raw_string_hashes = "allow"
+too_many_lines = "allow"

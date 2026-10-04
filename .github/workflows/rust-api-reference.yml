@@ -1,0 +1,105 @@
+name: Rust SDK reference artifact
+
+on:
+  workflow_call:
+    inputs:
+      source_commit:
+        type: string
+        required: true
+      version:
+        type: string
+        required: true
+      sdk:
+        type: string
+        default: yosoi-sdk
+      preview:
+        type: boolean
+        default: true
+      locales:
+        type: string
+        default: en
+    outputs:
+      artifact_name:
+        value: ${{ jobs.build.outputs.artifact_name }}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      artifact_name: ${{ steps.identity.outputs.artifact_name }}
+    env:
+      SOURCE_COMMIT: ${{ inputs.source_commit }}
+      API_VERSION: ${{ inputs.version }}
+      SDK_PACKAGE: ${{ inputs.sdk }}
+      API_LOCALES: ${{ inputs.locales }}
+      PREVIEW: ${{ inputs.preview }}
+      CARGO_BUILD_JOBS: '1'
+      RAYON_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: '24.21.0'
+      - name: Validate immutable source and release context
+        id: identity
+        shell: bash
+        run: |
+          node -e 'if(!/^[a-f0-9]{40}$/.test(process.env.SOURCE_COMMIT))throw Error("A full source commit is required");if(!/^[A-Za-z0-9][A-Za-z0-9._+-]*$/.test(process.env.API_VERSION))throw Error("Invalid version label")'
+          if [ "$PREVIEW" = false ]; then
+            test "$SOURCE_COMMIT" = "$GITHUB_SHA"
+            case "$GITHUB_REF" in refs/tags/*) ;; *) exit 1 ;; esac
+          fi
+          printf 'artifact_name=rust-sdk-reference-%s\n' "$GITHUB_RUN_ID" >> "$GITHUB_OUTPUT"
+      - name: Install pinned documentation compiler
+        shell: bash
+        run: |
+          channel=$(node -p 'require("./scripts/docs/reference/toolchain.json").channel')
+          rustup toolchain install "$channel" --profile minimal
+      - name: Generate compiler-backed SDK reference
+        shell: bash
+        run: |
+          args=()
+          if [ "$PREVIEW" = true ]; then args+=(--preview); fi
+          node scripts/docs/reference/generate.mjs generate --source "$SOURCE_COMMIT" --repository "$GITHUB_REPOSITORY" --sdk "$SDK_PACKAGE" --version "$API_VERSION" --locales "$API_LOCALES" --out .generated/reference-release "${args[@]}"
+          node scripts/docs/reference/generate.mjs verify --dir .generated/reference-release
+          node scripts/docs/reference/generate.mjs pack --dir .generated/reference-release --out .generated/reference.tar
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: ${{ steps.identity.outputs.artifact_name }}
+          path: .generated/reference.tar
+          if-no-files-found: error
+
+  attest:
+    if: ${{ !inputs.preview }}
+    needs: build
+    runs-on: ubuntu-latest
+    # Signing is isolated from Rust compilation and untrusted preview code.
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          name: ${{ needs.build.outputs.artifact_name }}
+      - name: Attest reference archive
+        id: attest
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        with:
+          subject-path: reference.tar
+      - name: Verify trusted reusable workflow identity
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_COMMIT: ${{ inputs.source_commit }}
+        run: gh attestation verify reference.tar --repo "$GITHUB_REPOSITORY" --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/rust-api-reference.yml" --source-digest "$SOURCE_COMMIT"
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: ${{ needs.build.outputs.artifact_name }}-attestation
+          path: ${{ steps.attest.outputs.bundle-path }}
+          if-no-files-found: error

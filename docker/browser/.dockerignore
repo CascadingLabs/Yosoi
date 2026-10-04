@@ -1,0 +1,3 @@
+# Cargo validates explicitly declared test, example, and benchmark targets even
+# when building only profile_browser, so those source paths remain in context.
+YosoiOxide/fuzz/

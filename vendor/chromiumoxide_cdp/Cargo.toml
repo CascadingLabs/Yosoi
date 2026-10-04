@@ -1,0 +1,58 @@
+[package]
+edition = "2024"
+rust-version = "1.85"
+name = "chromiumoxide_cdp"
+version = "0.10.0-yosoi.m153.1"
+publish = false
+authors = ["Matthias Seitz <matthias.seitz@outlook.de>"]
+build = false
+include = [
+    "src/**/*",
+    "pdl/**/*.pdl",
+    "examples/**/*.rs",
+    "tests/**/*.rs",
+    "scripts/**/*",
+    "*.SHA256",
+    "VENDORING.md",
+    "LICENSE-*",
+]
+autolib = false
+autobins = false
+autoexamples = false
+autotests = false
+autobenches = false
+description = "Contains all the generated types for chromiumoxide"
+homepage = "https://github.com/mattsse/chromiumoxide"
+readme = "README.md"
+license = "(MIT OR Apache-2.0) AND BSD-3-Clause"
+repository = "https://github.com/mattsse/chromiumoxide"
+
+[package.metadata.yosoi]
+chrome-version = "153.0.8010.36"
+chromium-revision = 1681091
+v8-revision = "f343157cebb388bfa416baccb5d35507e6fe8cc7"
+
+[[example]]
+name = "generate"
+path = "examples/generate.rs"
+
+[[test]]
+name = "m153"
+path = "tests/m153.rs"
+
+[lib]
+name = "chromiumoxide_cdp"
+path = "src/lib.rs"
+
+[dependencies.chromiumoxide_pdl]
+version = "0.9"
+
+[dependencies.chromiumoxide_types]
+version = "0.9"
+
+[dependencies.serde]
+version = "1"
+features = ["derive"]
+
+[dependencies.serde_json]
+version = "1"

@@ -1,0 +1,16 @@
+This profile is derived from moby/profiles seccomp/default.json at commit
+f9bc03ec19b2dc4c091449b08e88f85c0caa9f0b:
+https://github.com/moby/profiles/blob/f9bc03ec19b2dc4c091449b08e88f85c0caa9f0b/seccomp/default.json
+
+The upstream profile is licensed under Apache License 2.0:
+https://github.com/moby/profiles/blob/f9bc03ec19b2dc4c091449b08e88f85c0caa9f0b/LICENSE
+Canonical baseline JSON SHA-256:
+9da637d2ab0a204fcbd91bd88f1be9e004a3acab61c571a9f5b8870e588a17d2
+
+VoidCrawl adds the Chrome sandbox bootstrap syscall set documented by the
+GoogleChrome Lighthouse CI Docker guidance:
+https://googlechrome.github.io/lighthouse-ci/docs/recipes/docker-client/#docker-permissions
+
+The added rule is intentionally exact and regression-tested. Keep this pinned
+profile reviewed when rebasing it onto a newer Docker default; do not broaden
+it, replace it with seccomp=unconfined, or grant CAP_SYS_ADMIN.

@@ -1,0 +1,34 @@
+[package]
+name = "yosoi-cli"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "yosoi"
+path = "src/main.rs"
+
+[features]
+default = ["browser"]
+browser = ["yosoi/browser"]
+
+[dependencies]
+anyhow.workspace = true
+clap.workspace = true
+clap_complete.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tokio = { workspace = true, features = ["signal"] }
+yosoi.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+toml.workspace = true
+
+[target.'cfg(unix)'.dependencies]
+rustix.workspace = true
+
+[lints]
+workspace = true

@@ -1,0 +1,50 @@
+{
+  "kind": "browser",
+  "environment": {
+    "controller": {
+      "id": "com.cascadinglabs.voidcrawl.cdp",
+      "version": "1.0.0"
+    },
+    "renderer": {
+      "id": "org.chromium.chromium",
+      "version": "143.0.0"
+    },
+    "mode": {
+      "status": "known",
+      "value": "headless"
+    },
+    "rendering": {
+      "viewport": {
+        "status": "known",
+        "value": {
+          "width_css_pixels": 1440,
+          "height_css_pixels": 900
+        }
+      },
+      "device_scale_factor": {
+        "status": "known",
+        "value": "1"
+      },
+      "user_agent": {
+        "status": "known",
+        "value": "Mozilla/5.0 Chrome/143.0.0"
+      },
+      "locale": {
+        "status": "known",
+        "value": "en-US"
+      },
+      "time_zone": {
+        "status": "known",
+        "value": "America/New_York"
+      },
+      "color_scheme": {
+        "status": "known",
+        "value": "dark"
+      },
+      "reduced_motion": {
+        "status": "known",
+        "value": "no_preference"
+      }
+    }
+  }
+}

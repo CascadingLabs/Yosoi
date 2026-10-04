@@ -1,0 +1,235 @@
+{
+  "schema": "yosoi.browser-acquisition-fixture",
+  "version": 1,
+  "provenance": {
+    "network": "loopback-only",
+    "browser_execution": "not-required",
+    "headless_default": true,
+    "headful_compatible": true,
+    "pixel_equality": "not-asserted"
+  },
+  "fixtures": {
+    "shell.html": {
+      "sha256": "0e1d046224af309748b544950298b921da9a2e197e27b1734207c9cc1c30752c",
+      "source_vs_dom": "source contains shell; live DOM contains secondary message"
+    },
+    "secondary.json": {
+      "sha256": "b46c4484816a0f99cf35fcc079ef53da9d7115f00b5c586965c63a6159481c27"
+    }
+  },
+  "responses": {
+    "/redirect": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "/shell": {
+      "bytes": 740,
+      "sha256": "0e1d046224af309748b544950298b921da9a2e197e27b1734207c9cc1c30752c"
+    },
+    "/secondary": {
+      "bytes": 78,
+      "sha256": "b46c4484816a0f99cf35fcc079ef53da9d7115f00b5c586965c63a6159481c27"
+    },
+    "/delayed": {
+      "bytes": 27,
+      "sha256": "82009723fb0d454f3a423bf1e966b6d15e931ac3875055605570832380e0a19e"
+    },
+    "/endless": {
+      "bytes": 11,
+      "sha256": "e6511ca43028427102cac1729ebe28b07f15148d60a5d2e2a60ffc2683754f1d"
+    },
+    "/event-flood": {
+      "bytes": 8370,
+      "sha256": "5247c28143f5fd5ddade76fe9b3603147c5c6e1077ae41f9da638620e858f89b"
+    },
+    "/byte-flood": {
+      "bytes": 65536,
+      "sha256": "1f8745f0d2d1387ec1af2211a3cf417b2e9e885e853472649c1d979d0e9370e3"
+    },
+    "/partial": {
+      "bytes": 7,
+      "sha256": "9834a14ab9bcaa0f6a8da71073617eac8f004e596a3fa11d807b84631b825d9d"
+    },
+    "/frame-parent": {
+      "bytes": 51,
+      "sha256": "e84de24f192eb3ab3385354a0778c373a7d7a0451ab9c0b83bc1cdf0d03cfbdd"
+    },
+    "/frame-child": {
+      "bytes": 48,
+      "sha256": "8e3f176e3ddf2b02c1654438366505b62375445e7d67b7389fcf279ebd65bb2a"
+    },
+    "/cache": {
+      "bytes": 5,
+      "sha256": "5e1ecee06a7fc06f305ae5c12acfe7a7f67b8ece7af76932ed3afab00c3c6921"
+    },
+    "/service-worker": {
+      "bytes": 74,
+      "sha256": "634b981c7476eda98478557c3ca4707e4c6b5dfd87a9805199e74e8015edeec3"
+    },
+    "/sw.js": {
+      "bytes": 80,
+      "sha256": "e0c03f141cf25c327ad92e9f732569d862db485a8478bdfdee9b5722aa37be8d"
+    },
+    "/isolated-state": {
+      "bytes": 495,
+      "sha256": "f3d26c3788455f39427d2679640bb5846961e11c9d1d7581c8d9b33420caf916"
+    },
+    "/challenge": {
+      "bytes": 76,
+      "sha256": "5672c9ba72eb8f8bcadf9e7da2df3208c728defd0fd688f6cfa818f373bde7c3"
+    },
+    "404": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "scenarios": [
+    {
+      "id": "composite_redirect_shell_v1",
+      "routes": [
+        "/redirect",
+        "/shell",
+        "/secondary"
+      ],
+      "barriers": [
+        "redirect_requested",
+        "shell_requested",
+        "secondary_requested"
+      ],
+      "expected": [
+        "ordered redirect before shell before secondary",
+        "source differs from mutated DOM",
+        "DOM AX layout content",
+        "console output",
+        "JavaScript exception"
+      ]
+    },
+    {
+      "id": "delayed_response_v1",
+      "routes": [
+        "/delayed"
+      ],
+      "barriers": [
+        "delayed_requested",
+        "release_delayed",
+        "delayed_written"
+      ],
+      "expected": [
+        "response unavailable until explicit release",
+        "deadline/cancellation controllable"
+      ]
+    },
+    {
+      "id": "endless_activity_v1",
+      "routes": [
+        "/endless"
+      ],
+      "barriers": [
+        "endless_requested"
+      ],
+      "expected": [
+        "in-flight activity remains explicit",
+        "shutdown/cancellation closes connection"
+      ]
+    },
+    {
+      "id": "iframe_document_epoch_v1",
+      "routes": [
+        "/frame-parent",
+        "/frame-child"
+      ],
+      "expected": [
+        "distinct frame/document scopes and epochs"
+      ]
+    },
+    {
+      "id": "cache_service_worker_v1",
+      "routes": [
+        "/cache",
+        "/service-worker",
+        "/sw.js"
+      ],
+      "expected": [
+        "cache and service-worker provenance explicit or unavailable"
+      ]
+    },
+    {
+      "id": "event_byte_flood_v1",
+      "routes": [
+        "/event-flood",
+        "/byte-flood"
+      ],
+      "barriers": [
+        "event_flood_requested",
+        "byte_flood_requested"
+      ],
+      "expected": [
+        "event/byte limits retain exact accounting"
+      ]
+    },
+    {
+      "id": "partial_disconnect_v1",
+      "routes": [
+        "/partial"
+      ],
+      "barriers": [
+        "partial_requested"
+      ],
+      "expected": [
+        "declared length then disconnect; no invented complete body"
+      ]
+    },
+    {
+      "id": "fresh_context_state_v1",
+      "routes": [
+        "/isolated-state"
+      ],
+      "expected": [
+        "sequential and concurrent fresh contexts see no prior cookie or local/session storage state"
+      ]
+    },
+    {
+      "id": "blocking_challenge_observation_v1",
+      "routes": [
+        "/challenge"
+      ],
+      "expected": [
+        "successful navigation with active challenge fact",
+        "no retry or challenge resolution",
+        "cleanup complete"
+      ]
+    },
+    {
+      "id": "provider_close_v1",
+      "descriptor": "provider-close",
+      "expected": [
+        "provider disconnected",
+        "cleanup complete"
+      ]
+    },
+    {
+      "id": "renderer_crash_v1",
+      "descriptor": "renderer-crash",
+      "expected": [
+        "provider failure or bounded deadline",
+        "cleanup complete"
+      ]
+    },
+    {
+      "id": "browser_close_v1",
+      "descriptor": "browser-close",
+      "expected": [
+        "provider disconnected",
+        "cleanup complete"
+      ]
+    },
+    {
+      "id": "deadline_cancellation_v1",
+      "descriptor": "deadline-cancellation",
+      "expected": [
+        "adapter deadline cancels delayed or endless activity",
+        "cleanup complete"
+      ]
+    }
+  ]
+}
