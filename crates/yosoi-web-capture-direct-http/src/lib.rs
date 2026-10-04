@@ -4,9 +4,8 @@
 //! the foundation never depends on this crate or on the HTTP transport.
 
 #![allow(
-    clippy::large_futures,
     clippy::redundant_pub_crate,
-    reason = "crate-only HTTP test seams cross private cohesive modules"
+    reason = "crate-private HTTP seams are shared across private acquisition modules"
 )]
 
 pub use yosoi_web_capture::*;

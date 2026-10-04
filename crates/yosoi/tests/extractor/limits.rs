@@ -24,7 +24,7 @@ fn located_with_regions(count: u64) -> Result<ys::LocateOutcome, Box<dyn Error>>
 fn default_extraction_bounds_distinct_regions() -> Result<(), Box<dyn Error>> {
     let exact = Product::extract(&located_with_regions(64)?);
     assert_eq!(exact.candidates().len(), 64);
-    assert!(exact.diagnostics().is_empty());
+    assert_eq!(exact.diagnostics().len(), 0);
 
     let located = located_with_regions(65)?;
     assert!(matches!(

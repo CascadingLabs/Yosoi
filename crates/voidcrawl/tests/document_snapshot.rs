@@ -178,7 +178,7 @@ async fn accessibility_snapshot_preserves_raw_payload_and_explicit_limits() {
         .ax_tree_outline(None)
         .await
         .expect("compact AX projection");
-    assert!(!outline.is_empty());
+    assert_ne!(outline, "");
     assert_ne!(
         complete.bytes(),
         outline.as_bytes(),

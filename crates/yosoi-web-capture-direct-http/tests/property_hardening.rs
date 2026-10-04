@@ -16,7 +16,7 @@ proptest! {
     fn bounded_http_header_successes_have_canonical_round_trips(value in ".{0,2048}") {
         let observed = ObservedHeaderValue::from_text(value);
         if let Ok(codings) = parse_content_encoding(&observed) {
-            prop_assert!(!codings.is_empty());
+            prop_assert_ne!(codings.len(), 0);
             prop_assert!(codings.len() <= 16);
             let canonical = codings.iter().map(|coding| match coding {
                 HttpContentCoding::Identity => "identity",

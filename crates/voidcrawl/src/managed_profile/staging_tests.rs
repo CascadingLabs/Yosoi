@@ -127,11 +127,11 @@ fn manifest_write_and_replace_failures_restore_private_staging() {
                 .expect("list staged profiles"),
             vec!["warming"]
         );
-        assert!(
+        assert_eq!(
             registry
                 .list_unregistered_profiles()
-                .expect("list unregistered profiles")
-                .is_empty()
+                .expect("list unregistered profiles"),
+            Vec::<String>::new()
         );
     }
 }
@@ -163,11 +163,11 @@ fn failed_directory_rollback_is_typed_and_inventory_visible_but_not_leasable() {
     assert!(!registry.root().join(".staging/warming").exists());
     assert!(registry.root().join("warming").is_dir());
     assert_eq!(registry.list_profiles().expect("list profiles").len(), 1);
-    assert!(
+    assert_eq!(
         registry
             .list_staged_profiles()
-            .expect("list staged profiles")
-            .is_empty()
+            .expect("list staged profiles"),
+        Vec::<String>::new()
     );
     assert_eq!(
         registry

@@ -29,6 +29,10 @@ pub fn provider_target(
 }
 
 #[cfg(test)]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "assertions report provider-target encoding regressions after fallible setup"
+)]
 mod tests {
     use std::error::Error;
 

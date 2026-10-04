@@ -418,7 +418,7 @@ async fn pre_cancel_is_typed_and_does_not_touch_the_fixture() {
         result,
         Ok(Err(VoidCrawlAdapterError::CancelledBeforeOwnership))
     ));
-    assert!(fixture.requests().await.is_empty());
+    assert_eq!(fixture.requests().await, Vec::<String>::new());
     clean_shutdown(fixture).await;
 }
 
@@ -1275,7 +1275,7 @@ async fn headful_uses_shared_adapter_semantics_or_reports_missing_display() {
             );
         }
         Err(VoidCrawlAdapterError::HeadfulDisplayUnavailable) => {
-            assert!(fixture.requests().await.is_empty());
+            assert_eq!(fixture.requests().await, Vec::<String>::new());
         }
         Err(error) => panic!("unexpected headful result: {error:?}"),
     }

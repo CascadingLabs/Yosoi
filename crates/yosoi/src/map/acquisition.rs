@@ -1,7 +1,5 @@
 //! Reserved single-hop acquisition shared by serial support and concurrent page work.
-use super::{
-    Fetch, LimitReached, MapTermination, RequestTrace, Response, Runner, SourceFailure, normalize,
-};
+use super::{Fetch, LimitReached, MapTermination, RequestTrace, Response, Runner, SourceFailure};
 use crate::{
     AttemptCaptureFacts, AttemptOutcome, CancellationToken, Policy, RequestExecutor,
     RequestSendError, request,
@@ -9,6 +7,7 @@ use crate::{
 use std::{future::Future, pin::Pin};
 use tokio::time::{Instant, sleep_until};
 use url::Url;
+use yosoi_map::admission::normalize;
 use yosoi_policy::policy::{AddressableByteLimit, DirectHttpRedirects, MaximumElapsed};
 use yosoi_web_capture::CaptureTermination;
 use yosoi_web_capture_direct_http::ObservedHeaderValue;

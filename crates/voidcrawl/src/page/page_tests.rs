@@ -10,7 +10,9 @@ mod download_tests {
 
     use tokio::time::timeout;
 
-    use super::super::{completed_download, dir_entries, new_complete_files, watch_download_dir};
+    use super::super::downloads::download_fs::{
+        completed_download, dir_entries, new_complete_files, watch_download_dir,
+    };
 
     fn touch(dir: &Path, name: &str, bytes: usize) {
         fs::write(dir.join(name), vec![0u8; bytes]).unwrap();
@@ -89,10 +91,12 @@ mod tests {
     use chromiumoxide::cdp::browser_protocol::browser::BrowserContextId;
     use serde_json::json;
 
-    use super::super::{
-        ProviderBrowserContextIdentity, client_hints_for_ua, client_hints_for_ua_with_full_version,
-        dehead, finalize_endpoints, safe_endpoint, selector_wait_status,
+    use super::super::ProviderBrowserContextIdentity;
+    use super::super::document::selector_wait_status;
+    use super::super::identity::{
+        client_hints_for_ua, client_hints_for_ua_with_full_version, dehead,
     };
+    use super::super::navigation_response::{finalize_endpoints, safe_endpoint};
     use crate::VoidCrawlError;
 
     #[test]

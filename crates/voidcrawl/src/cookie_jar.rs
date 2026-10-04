@@ -763,7 +763,7 @@ mod tests {
         lease.revoke("session closed");
         assert!(lease.is_revoked());
         assert_eq!(lease.revoked_for(), Some("session closed"));
-        assert!(lease.is_empty(), "values must be dropped, not just flagged");
+        assert_eq!(lease.len(), 0, "values must be dropped, not just flagged");
 
         let err = lease
             .header_for(&["session"])
@@ -803,6 +803,6 @@ mod tests {
         let before = lease.provenance();
         lease.revoke("auth failed");
         assert_eq!(before.len(), 1);
-        assert!(lease.provenance().is_empty());
+        assert_eq!(lease.provenance().len(), 0);
     }
 }

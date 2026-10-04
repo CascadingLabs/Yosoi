@@ -200,9 +200,9 @@ async fn full_orchestration_preserves_redacted_invariant_failure_context() {
     };
     assert!(matches!(failure.primary(), ResponseBodyError::Lifecycle(_)));
     assert_eq!(failure.facts().status(), 200);
-    assert!(!format!("{:?}", failure.resolution()).is_empty());
+    assert_ne!(format!("{:?}", failure.resolution()), "");
     assert!(failure.lifecycle().observed_through().as_microseconds() > 0);
-    assert!(!format!("{:?}", failure.identity()).is_empty());
+    assert_ne!(format!("{:?}", failure.identity()), "");
     assert_eq!(failure.content_coded_bytes(), 20);
     assert!(failure.response_is_consumed());
     assert!(!failure.staged_body_is_publishable());

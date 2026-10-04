@@ -26,7 +26,7 @@ pub fn run(mut arguments: impl Iterator<Item = OsString>) -> Result<()> {
     };
     match task.to_str() {
         Some("manifest") => run_node("scripts/docs/generate.mjs", arguments),
-        Some("reference") => run_node("scripts/rust-reference/generate.mjs", arguments),
+        Some("reference") => run_node("scripts/docs/reference/generate.mjs", arguments),
         Some("check") => {
             super::no_extra_arguments(arguments)?;
             run_node(
@@ -35,7 +35,7 @@ pub fn run(mut arguments: impl Iterator<Item = OsString>) -> Result<()> {
                     "--test-isolation=none",
                     "--test-concurrency=1",
                     "scripts/docs/generate.test.mjs",
-                    "scripts/rust-reference/reference.test.mjs",
+                    "scripts/docs/reference/reference.test.mjs",
                 ]
                 .into_iter()
                 .map(OsString::from),

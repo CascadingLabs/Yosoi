@@ -341,7 +341,7 @@ impl ProfileLifecycleStore {
         #[cfg(test)]
         if self
             .fail_after_commits
-            .fetch_update(Ordering::AcqRel, Ordering::Acquire, |remaining| {
+            .try_update(Ordering::AcqRel, Ordering::Acquire, |remaining| {
                 remaining.checked_sub(1)
             })
             == Ok(1)
@@ -353,7 +353,7 @@ impl ProfileLifecycleStore {
         let destination = self.record_path(profile_id);
         for _ in 0..TEMPORARY_FILE_ATTEMPTS {
             let sequence = TEMPORARY_FILE_SEQUENCE
-                .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |value| {
+                .try_update(Ordering::Relaxed, Ordering::Relaxed, |value| {
                     value.checked_add(1)
                 })
                 .map_err(|_| ProfileLifecycleStoreError::TemporaryNameUnavailable)?;

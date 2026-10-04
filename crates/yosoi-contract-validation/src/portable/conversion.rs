@@ -1,21 +1,21 @@
+mod diagnostics;
+use diagnostics::{
+    portable_extraction_diagnostic, portable_extraction_failure, portable_field_issue,
+    portable_validation_failure,
+};
 use yosoi_contracts::{CandidateView, Contract, ContractSchema, FieldId};
-use yosoi_extractor::{ExtractionDiagnostic, ExtractionFailure, ExtractionLimit};
 
 use crate::archived::{
     CandidateField as ArchivedCandidateField, ContractDecodeError,
     ContractOutcome as ArchivedContractOutcome,
     ValidatedContractRecord as ArchivedValidatedContractRecord,
 };
-use crate::{
-    ContractOutcome, FieldIssue, FieldIssueKind, Money, ValidationCode, ValidationFailure,
-};
+use crate::{ContractOutcome, Money};
 
 use super::PortableContractDecodeError;
 use super::{
     PortableContractField, PortableContractFieldValue, PortableContractOutcome,
-    PortableContractRecordIssue, PortableContractValue, PortableExtractionDiagnostic,
-    PortableExtractionFailure, PortableExtractionLimit, PortableFieldIssue, PortableFieldIssueKind,
-    PortableValidatedContractRecord, PortableValidationCode, PortableValidationFailure,
+    PortableContractRecordIssue, PortableContractValue, PortableValidatedContractRecord,
 };
 
 /// Capability for converting a typed Contract to and from its archived values.
@@ -283,125 +283,6 @@ where
             Self::ValidationRejected { failure } => PortableContractOutcome::ValidationRejected {
                 failure: portable_validation_failure(failure),
             },
-        }
-    }
-}
-
-fn portable_field_issue(issue: &FieldIssue) -> PortableFieldIssue {
-    PortableFieldIssue::new(
-        issue.field.clone(),
-        match issue.kind {
-            FieldIssueKind::MissingRequired => PortableFieldIssueKind::MissingRequired,
-            FieldIssueKind::ExcessCandidates { observed } => {
-                PortableFieldIssueKind::ExcessCandidates { observed }
-            }
-            FieldIssueKind::IncompleteEvidence => PortableFieldIssueKind::IncompleteEvidence,
-            FieldIssueKind::UnsupportedProjectedValue => {
-                PortableFieldIssueKind::UnsupportedProjectedValue
-            }
-            FieldIssueKind::ConversionFailed => PortableFieldIssueKind::ConversionFailed,
-            FieldIssueKind::SemanticValidationFailed { code } => {
-                PortableFieldIssueKind::SemanticValidationFailed {
-                    code: match code {
-                        ValidationCode::NegativeMoney => PortableValidationCode::NegativeMoney,
-                    },
-                }
-            }
-        },
-        issue.evidence.clone(),
-    )
-}
-
-fn portable_extraction_diagnostic(
-    diagnostic: &ExtractionDiagnostic,
-) -> PortableExtractionDiagnostic {
-    match diagnostic {
-        ExtractionDiagnostic::IncompatibleLineage { output } => {
-            PortableExtractionDiagnostic::IncompatibleLineage {
-                output: output.clone(),
-            }
-        }
-    }
-}
-
-const fn portable_extraction_failure(failure: &ExtractionFailure) -> PortableExtractionFailure {
-    match failure {
-        ExtractionFailure::InvalidContractSchema(_) => {
-            PortableExtractionFailure::InvalidContractSchema
-        }
-        ExtractionFailure::CountOverflow { limit } => PortableExtractionFailure::CountOverflow {
-            limit: portable_extraction_limit(*limit),
-        },
-        ExtractionFailure::GroupingIndexInvariant => {
-            PortableExtractionFailure::GroupingIndexInvariant
-        }
-        ExtractionFailure::LimitExceeded {
-            limit,
-            maximum,
-            observed,
-        } => PortableExtractionFailure::LimitExceeded {
-            limit: portable_extraction_limit(*limit),
-            maximum: *maximum,
-            observed: *observed,
-        },
-    }
-}
-
-const fn portable_extraction_limit(limit: ExtractionLimit) -> PortableExtractionLimit {
-    match limit {
-        ExtractionLimit::ScannedRegions => PortableExtractionLimit::ScannedRegions,
-        ExtractionLimit::ScannedFindings => PortableExtractionLimit::ScannedFindings,
-        ExtractionLimit::MatchingFindings => PortableExtractionLimit::MatchingFindings,
-        ExtractionLimit::Candidates => PortableExtractionLimit::Candidates,
-        ExtractionLimit::ValuesPerField => PortableExtractionLimit::ValuesPerField,
-        ExtractionLimit::RetainedEvidence => PortableExtractionLimit::RetainedEvidence,
-        ExtractionLimit::Diagnostics => PortableExtractionLimit::Diagnostics,
-    }
-}
-
-const fn portable_validation_failure(failure: &ValidationFailure) -> PortableValidationFailure {
-    match failure {
-        ValidationFailure::InvalidContractSchema(_) => {
-            PortableValidationFailure::InvalidContractSchema
-        }
-        ValidationFailure::FieldCountOverflow => PortableValidationFailure::FieldCountOverflow,
-        ValidationFailure::FieldLimitExceeded { maximum, observed } => {
-            PortableValidationFailure::FieldLimitExceeded {
-                maximum: *maximum,
-                observed: *observed,
-            }
-        }
-        ValidationFailure::RecordCountOverflow => PortableValidationFailure::RecordCountOverflow,
-        ValidationFailure::RecordLimitExceeded { maximum, observed } => {
-            PortableValidationFailure::RecordLimitExceeded {
-                maximum: *maximum,
-                observed: *observed,
-            }
-        }
-        ValidationFailure::ConversionCountOverflow => {
-            PortableValidationFailure::ConversionCountOverflow
-        }
-        ValidationFailure::ConversionLimitExceeded { maximum, observed } => {
-            PortableValidationFailure::ConversionLimitExceeded {
-                maximum: *maximum,
-                observed: *observed,
-            }
-        }
-        ValidationFailure::IssueCountOverflow => PortableValidationFailure::IssueCountOverflow,
-        ValidationFailure::IssueLimitExceeded { maximum, observed } => {
-            PortableValidationFailure::IssueLimitExceeded {
-                maximum: *maximum,
-                observed: *observed,
-            }
-        }
-        ValidationFailure::ProvenanceCountOverflow => {
-            PortableValidationFailure::ProvenanceCountOverflow
-        }
-        ValidationFailure::ProvenanceLimitExceeded { maximum, observed } => {
-            PortableValidationFailure::ProvenanceLimitExceeded {
-                maximum: *maximum,
-                observed: *observed,
-            }
         }
     }
 }

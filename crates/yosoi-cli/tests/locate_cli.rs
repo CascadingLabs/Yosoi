@@ -3,7 +3,7 @@
 use std::{
     error::Error,
     fs,
-    io::{Read, Write},
+    io::{self, Read, Write},
     net::{SocketAddr, TcpListener, TcpStream},
     path::PathBuf,
     process::{Command, Output, Stdio},
@@ -13,6 +13,12 @@ use std::{
 use serde_json::{Value, json};
 use tempfile::TempDir;
 use yosoi::{Document, prelude::DocumentEpoch};
+
+fn json_at<'a>(value: &'a Value, pointer: &str) -> Result<&'a Value, Box<dyn Error>> {
+    value
+        .pointer(pointer)
+        .ok_or_else(|| io::Error::other(format!("missing JSON value at {pointer}")).into())
+}
 
 struct CliHome {
     _directory: TempDir,
@@ -123,8 +129,14 @@ fn html_file_reports_match_and_no_match_with_distinct_exit_codes() -> Result<(),
     ])?;
     assert_eq!(matched.status.code(), Some(0), "{}", stderr(&matched));
     let match_value: Value = serde_json::from_slice(&matched.stdout)?;
-    assert_eq!(match_value["outcome"]["status"], "matched");
-    assert_eq!(match_value["document_profile"]["representation"], "source");
+    assert_eq!(
+        json_at(&match_value, "/outcome/status")?.as_str(),
+        Some("matched")
+    );
+    assert_eq!(
+        json_at(&match_value, "/document_profile/representation")?.as_str(),
+        Some("source")
+    );
 
     let human = home.run(&["locate", "--file", path, "--format", "html", "--css", "h1"])?;
     assert_eq!(human.status.code(), Some(0), "{}", stderr(&human));
@@ -137,7 +149,10 @@ fn html_file_reports_match_and_no_match_with_distinct_exit_codes() -> Result<(),
     ])?;
     assert_eq!(absent.status.code(), Some(1), "{}", stderr(&absent));
     let absent_value: Value = serde_json::from_slice(&absent.stdout)?;
-    assert_eq!(absent_value["outcome"]["status"], "no_match");
+    assert_eq!(
+        json_at(&absent_value, "/outcome/status")?.as_str(),
+        Some("no_match")
+    );
     Ok(())
 }
 
@@ -149,7 +164,7 @@ fn raw_stdin_requires_format_and_json_path_finds_value() -> Result<(), Box<dyn E
         b"{\"name\":\"Yosoi\"}",
     )?;
     assert_ne!(missing_format.status.code(), Some(0));
-    assert!(missing_format.stdout.is_empty());
+    assert_eq!(missing_format.stdout.as_slice(), b"");
     assert!(stderr(&missing_format).contains("--format"));
 
     let matched = home.run_with_input(
@@ -165,7 +180,10 @@ fn raw_stdin_requires_format_and_json_path_finds_value() -> Result<(), Box<dyn E
     )?;
     assert_eq!(matched.status.code(), Some(0), "{}", stderr(&matched));
     let value: Value = serde_json::from_slice(&matched.stdout)?;
-    assert_eq!(value["outcome"]["status"], "matched");
+    assert_eq!(
+        json_at(&value, "/outcome/status")?.as_str(),
+        Some("matched")
+    );
 
     let pointer = home.run_with_input(
         &[
@@ -181,7 +199,10 @@ fn raw_stdin_requires_format_and_json_path_finds_value() -> Result<(), Box<dyn E
     )?;
     assert_eq!(pointer.status.code(), Some(0), "{}", stderr(&pointer));
     let pointer_value: Value = serde_json::from_slice(&pointer.stdout)?;
-    assert_eq!(pointer_value["outcome"]["status"], "matched");
+    assert_eq!(
+        json_at(&pointer_value, "/outcome/status")?.as_str(),
+        Some("matched")
+    );
 
     let text = home.run_with_input(
         &[
@@ -191,7 +212,10 @@ fn raw_stdin_requires_format_and_json_path_finds_value() -> Result<(), Box<dyn E
     )?;
     assert_eq!(text.status.code(), Some(0), "{}", stderr(&text));
     let text_value: Value = serde_json::from_slice(&text.stdout)?;
-    assert_eq!(text_value["outcome"]["status"], "matched");
+    assert_eq!(
+        json_at(&text_value, "/outcome/status")?.as_str(),
+        Some("matched")
+    );
     Ok(())
 }
 
@@ -205,8 +229,14 @@ fn locate_resolves_active_or_named_policy_without_rewriting_json() -> Result<(),
     let active = home.run_with_input(&args, b"Yosoi")?;
     assert_eq!(active.status.code(), Some(3), "{}", stderr(&active));
     let active_value: Value = serde_json::from_slice(&active.stdout)?;
-    assert_eq!(active_value["policy_profile"], "active");
-    assert_eq!(active_value["outcome"]["status"], "failed");
+    assert_eq!(
+        json_at(&active_value, "/policy_profile")?.as_str(),
+        Some("active")
+    );
+    assert_eq!(
+        json_at(&active_value, "/outcome/status")?.as_str(),
+        Some("failed")
+    );
 
     let chosen = home.run_with_input(
         &[
@@ -224,8 +254,14 @@ fn locate_resolves_active_or_named_policy_without_rewriting_json() -> Result<(),
     )?;
     assert_eq!(chosen.status.code(), Some(0), "{}", stderr(&chosen));
     let chosen_value: Value = serde_json::from_slice(&chosen.stdout)?;
-    assert_eq!(chosen_value["policy_profile"], "chosen");
-    assert_eq!(chosen_value["outcome"]["status"], "matched");
+    assert_eq!(
+        json_at(&chosen_value, "/policy_profile")?.as_str(),
+        Some("chosen")
+    );
+    assert_eq!(
+        json_at(&chosen_value, "/outcome/status")?.as_str(),
+        Some("matched")
+    );
     assert_eq!(fs::read(home.config.join("yosoi/policies.json"))?, original);
     Ok(())
 }
@@ -258,12 +294,21 @@ fn request_to_locate_os_pipe_preserves_source_profile() -> Result<(), Box<dyn Er
         "{}",
         stderr(&request_result)
     );
-    assert!(request_result.stderr.is_empty());
+    assert_eq!(request_result.stderr.as_slice(), b"");
     assert_eq!(locate.status.code(), Some(0), "{}", stderr(&locate));
     let value: Value = serde_json::from_slice(&locate.stdout)?;
-    assert_eq!(value["document_profile"]["representation"], "source");
-    assert_eq!(value["document_profile"]["source_format"], "html");
-    assert_eq!(value["outcome"]["status"], "matched");
+    assert_eq!(
+        json_at(&value, "/document_profile/representation")?.as_str(),
+        Some("source")
+    );
+    assert_eq!(
+        json_at(&value, "/document_profile/source_format")?.as_str(),
+        Some("html")
+    );
+    assert_eq!(
+        json_at(&value, "/outcome/status")?.as_str(),
+        Some("matched")
+    );
     Ok(())
 }
 
@@ -308,7 +353,7 @@ fn malformed_and_oversized_pipe_frames_fail_without_output() -> Result<(), Box<d
         b"not-a-document",
     )?;
     assert_ne!(malformed.status.code(), Some(0));
-    assert!(malformed.stdout.is_empty());
+    assert_eq!(malformed.stdout.as_slice(), b"");
 
     let header = serde_json::to_vec(&json!({
         "format_version": 1,
@@ -321,7 +366,7 @@ fn malformed_and_oversized_pipe_frames_fail_without_output() -> Result<(), Box<d
     frame.extend_from_slice(&header);
     let oversized = home.run_with_input(&["locate", "--pipe-document", "--text", "x"], &frame)?;
     assert_ne!(oversized.status.code(), Some(0));
-    assert!(oversized.stdout.is_empty());
+    assert_eq!(oversized.stdout.as_slice(), b"");
     assert!(stderr(&oversized).contains("limit"));
     Ok(())
 }
@@ -348,8 +393,14 @@ fn typed_rendered_dom_frame_keeps_epoch_and_cannot_be_relabelled_source()
     )?;
     assert_eq!(output.status.code(), Some(3), "{}", stderr(&output));
     let value: Value = serde_json::from_slice(&output.stdout)?;
-    assert_eq!(value["document_profile"]["representation"], "rendered_dom");
-    assert_eq!(value["document_profile"]["epoch"], 42);
-    assert_eq!(value["outcome"]["status"], "failed");
+    assert_eq!(
+        json_at(&value, "/document_profile/representation")?.as_str(),
+        Some("rendered_dom")
+    );
+    assert_eq!(
+        json_at(&value, "/document_profile/epoch")?.as_u64(),
+        Some(42)
+    );
+    assert_eq!(json_at(&value, "/outcome/status")?.as_str(), Some("failed"));
     Ok(())
 }

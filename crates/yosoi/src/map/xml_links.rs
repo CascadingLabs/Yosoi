@@ -4,11 +4,11 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use url::Url;
 use yosoi_documents::{
-    DocumentClass, LocateOutcome, NativeCoordinate, ProjectedValue, css, output,
+    DocumentClass, Finding, LocateOutcome, NativeCoordinate, Plan, ProjectedValue, css, output,
 };
 use yosoi_map::admission::{Rejection, normalize};
 
-use super::{Document, Finding, LimitReached, Plan, Runner, SourceFailure};
+use super::{Document, LimitReached, Runner, SourceFailure};
 
 impl Runner<'_> {
     /// Extracts feed links with the shared bounded XML locator.

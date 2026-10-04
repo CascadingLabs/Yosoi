@@ -14,3 +14,6 @@ thiserror.workspace = true
 yosoi-contracts.workspace = true
 yosoi-documents.workspace = true
 yosoi-extractor.workspace = true
+
+[dev-dependencies]
+toml.workspace = true

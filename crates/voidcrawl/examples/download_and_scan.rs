@@ -48,7 +48,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         outcome.path.display()
     );
 
-    // The antivirus gate: magic-byte type check + yara-x signature scan.
+    // The antivirus gate: magic-byte type check + embedded EICAR signature check.
     let report = scan_path(&outcome.path, &ScanConfig::default())?;
     let kind = report.detected_mime.as_deref().unwrap_or("unknown");
     println!("  detected type: {kind}");

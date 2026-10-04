@@ -404,7 +404,7 @@ fn staged_profile_is_invisible_until_confirmed_close_and_publish() {
     let staged_path = tmp.path().join(".staging").join("warm-profile");
 
     assert!(staged_path.join("Default").join("Preferences").is_file());
-    assert!(registry.list_profiles().unwrap().is_empty());
+    assert_eq!(registry.list_profiles().unwrap().len(), 0);
     assert!(matches!(
         registry.acquire_profile("warm-profile"),
         Err(VoidCrawlError::ProfileNotFound { .. })
@@ -428,7 +428,10 @@ fn staged_profile_is_invisible_until_confirmed_close_and_publish() {
     assert!(!staged_path.exists());
     assert!(tmp.path().join("warm-profile").is_dir());
     assert_eq!(registry.list_profiles().unwrap().len(), 1);
-    assert!(registry.list_staged_profiles().unwrap().is_empty());
+    assert_eq!(
+        registry.list_staged_profiles().unwrap(),
+        Vec::<String>::new()
+    );
 }
 
 #[test]
@@ -459,8 +462,11 @@ fn staged_profile_can_be_explicitly_discarded_and_reserves_duplicate_ids() {
         ManagedProfileStagingDisposition::Discarded
     );
     assert!(!staged_path.exists());
-    assert!(registry.list_profiles().unwrap().is_empty());
-    assert!(registry.list_staged_profiles().unwrap().is_empty());
+    assert_eq!(registry.list_profiles().unwrap().len(), 0);
+    assert_eq!(
+        registry.list_staged_profiles().unwrap(),
+        Vec::<String>::new()
+    );
 }
 
 #[test]
@@ -476,7 +482,7 @@ fn dropped_uncertain_stage_remains_unpublished_for_later_classification() {
     drop(staged);
 
     assert!(staged_path.is_dir());
-    assert!(registry.list_profiles().unwrap().is_empty());
+    assert_eq!(registry.list_profiles().unwrap().len(), 0);
     assert_eq!(registry.list_staged_profiles().unwrap(), vec!["uncertain"]);
     assert!(registry.create_profile("uncertain", None, vec![]).is_err());
 }

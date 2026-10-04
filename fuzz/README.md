@@ -13,7 +13,7 @@ No target performs network I/O. Source/body decompression behavior remains cover
 Run the deterministic smoke profile:
 
 ```bash
-scripts/fuzz/run-cas-323-fuzz-smoke.sh
+cargo xtask fuzz
 ```
 
 Run a longer local campaign:

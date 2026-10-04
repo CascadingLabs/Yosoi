@@ -101,6 +101,10 @@ impl BoundSearchRequest<'_> {
 }
 
 #[cfg(test)]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "assertions report child-policy preparation regressions after fallible setup"
+)]
 mod tests {
     use std::error::Error;
 
@@ -118,9 +122,11 @@ mod tests {
     fn child_request_uses_one_profile_and_capped_locator_output() -> Result<(), Box<dyn Error>> {
         let profile =
             ProviderRequestProfile::new(Page::default(), Request::default(), Documents::default())?;
-        let mut search = Search::default();
-        search.providers = vec![ProviderSelection::exact(Provider::Brave, profile)];
-        search.max_retained_content_bytes = AddressableByteLimit::try_from(64_u64)?;
+        let search = Search {
+            providers: vec![ProviderSelection::exact(Provider::Brave, profile)],
+            max_retained_content_bytes: AddressableByteLimit::try_from(64_u64)?,
+            ..Search::default()
+        };
         let policy = Policy {
             search,
             ..Policy::default()
@@ -136,7 +142,7 @@ mod tests {
             .request_policy_for(route, AddressableByteLimit::try_from(64_u64)?)
             .ok_or("missing exact child Request policy")?;
         assert_eq!(child.locators.max_output_bytes.get(), 64);
-        assert!(child.search.providers().is_empty());
+        assert_eq!(child.search.providers().len(), 0);
         assert_eq!(child.page, Page::default());
         Ok(())
     }

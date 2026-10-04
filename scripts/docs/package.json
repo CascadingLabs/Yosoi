@@ -1,0 +1,23 @@
+{
+  "name": "yosoi-docs-tooling",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "vp run fmt:check && vp run validate && vp run test",
+    "validate": "node validate.mjs",
+    "fmt": "node format.mjs --write",
+    "fmt:check": "node format.mjs --check",
+    "test": "vp test run"
+  },
+  "devDependencies": {
+    "jsonc-parser": "^3.3.1",
+    "mdast-util-gfm": "3.1.0",
+    "mdast-util-to-markdown": "2.2.0",
+    "satteri": "0.10.5",
+    "vite-plus": "1.0.0"
+  },
+  "overrides": {
+    "vite": "npm:@voidzero-dev/vite-plus-core@1.0.0"
+  },
+  "packageManager": "bun@1.4.2"
+}

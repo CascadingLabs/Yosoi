@@ -248,7 +248,7 @@ async fn headless_loopback_facts_survive_teardown() {
         match slot.family() {
             BrowserStagingFamily::Artifact(WebArtifactFamily::RenderedDom) => {
                 assert_eq!(slot.outcome().state(), StagingState::Complete);
-                assert!(!slot.outcome().bytes().expect("DOM bytes").is_empty());
+                assert_ne!(slot.outcome().bytes().expect("DOM bytes").len(), 0);
                 let mapping = slot.outcome().mapping().expect("byte mapping");
                 assert_eq!(mapping.layer(), BrowserByteLayer::RenderedDomUtf8);
                 assert!(mapping.source_binding().is_none());
@@ -263,7 +263,7 @@ async fn headless_loopback_facts_survive_teardown() {
                 else {
                     panic!("typed accessibility evidence");
                 };
-                assert!(!accessibility.canonical_node_bytes.is_empty());
+                assert_ne!(accessibility.canonical_node_bytes.len(), 0);
                 assert!(slot.envelope().is_some());
                 document_scopes.push(accessibility.scope);
             }
@@ -283,7 +283,7 @@ async fn headless_loopback_facts_survive_teardown() {
                 else {
                     panic!("network must be structured");
                 };
-                assert!(!events.is_empty(), "ordered provider events are retained");
+                assert_ne!(events.len(), 0, "ordered provider events are retained");
                 assert!(resources.iter().all(|resource| resource.scope.is_none()));
                 let (redirect, shell, secondary, favicon) = match resources.as_slice() {
                     [redirect, shell] => (redirect, shell, None, None),
@@ -413,7 +413,7 @@ async fn headless_loopback_facts_survive_teardown() {
                 else {
                     panic!("runtime diagnostics must be structured");
                 };
-                assert!(!diagnostics.is_empty());
+                assert_ne!(diagnostics.len(), 0);
                 assert_eq!(
                     runtime_event_accounting.retained().get(),
                     u64::try_from(diagnostics.len()).unwrap()
@@ -449,5 +449,5 @@ async fn headless_loopback_facts_survive_teardown() {
         receipt.as_str(),
         "/redirect" | "/shell" | "/secondary" | "/favicon.ico"
     )));
-    assert!(!format!("{facts:?}").is_empty());
+    assert_ne!(format!("{facts:?}"), "");
 }

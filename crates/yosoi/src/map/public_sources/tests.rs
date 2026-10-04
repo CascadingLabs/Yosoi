@@ -1,11 +1,13 @@
 //! Event-driven provider concurrency and reservation regressions.
 
-#![allow(clippy::panic_in_result_fn)]
+#![expect(clippy::panic_in_result_fn, reason = "Assertions report test failures")]
 
-#[path = "../../../../yosoi-web-capture-direct-http/tests/support/direct_http_fixture.rs"]
-mod fixture;
+use crate::test_http_fixture as fixture;
 
-use std::{error::Error, future::Future, io, pin::Pin, sync::Arc, task::Poll, time::Duration};
+use std::{
+    error::Error, future::Future, future::poll_fn, io, pin::Pin, sync::Arc, task::Poll,
+    time::Duration,
+};
 
 use fixture::{
     FixtureService, Protocol, RequestLine, Response as FixtureResponse, ResponseControl,
@@ -26,12 +28,12 @@ use super::{
 
 type TestResult<T = ()> = Result<T, Box<dyn Error + Send + Sync>>;
 
-fn policy() -> TestResult<Policy> {
+fn policy() -> Policy {
     let mut policy = Policy::default();
     policy.map.scope.hosts = HostScope::RegistrableDomain;
     policy.map.scope.paths = PathScope::EntireOrigin;
     policy.map.subdomains = Subdomains::Passive;
-    Ok(policy)
+    policy
 }
 
 fn set_budget(target: &mut MapBudget, value: u32) -> TestResult {
@@ -122,12 +124,12 @@ fn assert_catalog_status(runner: &Runner<'_>, status: &SourceStatus) {
 
 fn assert_no_provider_requests(runner: &Runner<'_>) {
     assert_eq!(runner.summary.requests, 0);
-    assert!(runner.request_trace.is_empty());
+    assert_eq!(runner.request_trace.len(), 0);
 }
 
 #[tokio::test]
 async fn provider_pool_holds_its_cap_until_a_response_finishes() -> TestResult {
-    let mut policy = policy()?;
+    let mut policy = policy();
     set_budget(&mut policy.map.limits.max_concurrency, 2)?;
     set_budget(&mut policy.map.limits.max_pending, 2)?;
     let cancellation = CancellationToken::new();
@@ -206,7 +208,7 @@ async fn response_reservations_release_unused_capacity_and_charge_exact_bytes() 
     assert_eq!(first.cap, 8);
 
     let mut waiting = Box::pin(budget.reserve(&url, &cancellation, deadline));
-    let remained_pending = std::future::poll_fn(|context| match waiting.as_mut().poll(context) {
+    let remained_pending = poll_fn(|context| match waiting.as_mut().poll(context) {
         Poll::Pending => Poll::Ready(true),
         Poll::Ready(_) => Poll::Ready(false),
     })
@@ -263,7 +265,7 @@ async fn terminal_inventory_denial_rejects_later_shorter_reservations() -> TestR
         Err(AdmissionError::Limit(LimitReached::InventoryBytes))
     ));
     let consumption = budget.consumption().await;
-    assert!(consumption.traces.is_empty());
+    assert_eq!(consumption.traces.len(), 0);
     assert_eq!(consumption.inventory, 0);
     assert_eq!(consumption.limit, Some(LimitReached::InventoryBytes));
     Ok(())
@@ -297,7 +299,7 @@ async fn cancelled_or_expired_provider_parsing_returns_no_names() -> TestResult 
 
 #[tokio::test]
 async fn redirect_hops_share_the_request_limit() -> TestResult {
-    let mut policy = policy()?;
+    let mut policy = policy();
     set_budget(&mut policy.map.limits.max_requests, 1)?;
     let cancellation = CancellationToken::new();
     let mut runner = runner(&policy, &cancellation)?;
@@ -344,7 +346,7 @@ async fn redirect_hops_share_the_request_limit() -> TestResult {
 
 #[tokio::test]
 async fn passive_inventory_keeps_valid_names_after_out_of_scope_entries() -> TestResult {
-    let policy = policy()?;
+    let policy = policy();
     let cancellation = CancellationToken::new();
     let mut runner = runner(&policy, &cancellation)?;
     let (response, _) = controlled_response(
@@ -373,7 +375,7 @@ async fn passive_inventory_keeps_valid_names_after_out_of_scope_entries() -> Tes
 
 #[tokio::test]
 async fn identical_wildcards_keep_both_provider_sources_without_concrete_hosts() -> TestResult {
-    let policy = policy()?;
+    let policy = policy();
     let cancellation = CancellationToken::new();
     let mut runner = runner(&policy, &cancellation)?;
     let (crt, _) = controlled_response(
@@ -403,7 +405,7 @@ async fn identical_wildcards_keep_both_provider_sources_without_concrete_hosts()
     service.shutdown().await;
 
     assert_eq!(request_paths.len(), 2);
-    assert!(runner.hosts.is_empty());
+    assert_eq!(runner.hosts.len(), 0);
     assert_eq!(runner.wildcard_names, vec!["*.example.com".to_owned()]);
     let observations = runner
         .wildcard_entries
@@ -457,7 +459,7 @@ async fn request_budget_denials_do_not_consume_provider_rate_quota() -> TestResu
 
 #[tokio::test]
 async fn passive_catalog_early_exits_report_every_provider_without_requests() -> TestResult {
-    let mut disabled_policy = policy()?;
+    let mut disabled_policy = policy();
     disabled_policy.map.subdomains = Subdomains::Disabled;
     let disabled_cancellation = CancellationToken::new();
     disabled_cancellation.cancel();
@@ -467,7 +469,7 @@ async fn passive_catalog_early_exits_report_every_provider_without_requests() ->
     assert_eq!(disabled_runner.termination, None);
     assert_no_provider_requests(&disabled_runner);
 
-    let active_policy = policy()?;
+    let active_policy = policy();
     let mut seed_scope_policy = active_policy.clone();
     seed_scope_policy.map.scope.hosts = HostScope::SeedHost;
     seed_scope_policy.map.subdomains = Subdomains::Disabled;
@@ -486,7 +488,7 @@ async fn passive_catalog_early_exits_report_every_provider_without_requests() ->
     assert_eq!(domainless_runner.termination, None);
     assert_no_provider_requests(&domainless_runner);
 
-    let mut limited_policy = policy()?;
+    let mut limited_policy = policy();
     set_budget(&mut limited_policy.map.limits.max_inventory_bytes, 1)?;
     let limited_cancellation = CancellationToken::new();
     limited_cancellation.cancel();
@@ -504,7 +506,7 @@ async fn passive_catalog_early_exits_report_every_provider_without_requests() ->
 
 #[tokio::test]
 async fn providers_commit_in_catalog_order_and_keep_distinct_provenance() -> TestResult {
-    let mut policy = policy()?;
+    let mut policy = policy();
     set_budget(&mut policy.map.limits.max_concurrency, 4)?;
     let cancellation = CancellationToken::new();
     let mut runner = runner(&policy, &cancellation)?;
@@ -669,7 +671,7 @@ async fn providers_commit_in_catalog_order_and_keep_distinct_provenance() -> Tes
 
 #[tokio::test]
 async fn cancellation_drains_active_work_without_dispatching_queued_jobs() -> TestResult {
-    let mut policy = policy()?;
+    let mut policy = policy();
     set_budget(&mut policy.map.limits.max_concurrency, 1)?;
     let cancellation = CancellationToken::new();
     let mut runner = runner(&policy, &cancellation)?;
@@ -730,7 +732,7 @@ async fn cancellation_drains_active_work_without_dispatching_queued_jobs() -> Te
 
 #[tokio::test]
 async fn deadline_drains_active_work_and_preserves_finished_provider_results() -> TestResult {
-    let mut policy = policy()?;
+    let mut policy = policy();
     policy.map.limits.maximum_elapsed = Duration::from_secs(1);
     set_budget(&mut policy.map.limits.max_concurrency, 1)?;
     let cancellation = CancellationToken::new();

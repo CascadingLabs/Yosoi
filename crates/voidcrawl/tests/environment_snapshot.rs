@@ -51,7 +51,7 @@ async fn normal_headless_snapshot_contains_effective_environment() {
     }
 
     assert_eq!(snapshot.controller.name, "void_crawl_core");
-    assert!(!snapshot.controller.version.is_empty());
+    assert_ne!(snapshot.controller.version.as_str(), "");
     assert!(
         snapshot.renderer.product.contains("Chrome")
             || snapshot.renderer.product.contains("Chromium"),

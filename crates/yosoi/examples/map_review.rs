@@ -119,7 +119,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             .attempts()
             .iter()
             .filter_map(ys::AttemptOutcome::result)
-            .flat_map(|result| result.documents())
+            .flat_map(yosoi::AttemptResult::documents)
             .find_map(|document| document.outcome().document())
             .map(|document| (capture.url(), document))
     });

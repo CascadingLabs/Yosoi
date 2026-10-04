@@ -27,7 +27,9 @@ exclude = ["vendor/chromiumoxide"]
 [workspace.package]
 edition = "2024"
 license = "Apache-2.0"
-rust-version = "1.98"
+# Also supplies Clippy's MSRV; rust-toolchain.toml pins the development compiler.
+rust-version = "1.99"
+version = "0.1.0"
 
 [workspace.dependencies]
 anyhow = "1"
@@ -55,19 +57,19 @@ tokio-rustls = { version = "=0.26.4", default-features = false, features = ["rin
 url = { version = "2.5.8", default-features = false, features = ["std"] }
 wreq = { version = "=0.16.1", default-features = false, features = ["stream", "tokio-rt", "webpki-roots"] }
 uuid = { version = "1", features = ["v4"] }
-void_crawl_core = { version = "=0.5.0", path = "crates/voidcrawl", default-features = false }
-yosoi = { version = "0.1.0", path = "crates/yosoi" }
-yosoi-contracts = { version = "0.1.0", path = "crates/yosoi-contracts" }
-yosoi-contracts-derive = { version = "0.1.0", path = "crates/yosoi-contracts-derive" }
-yosoi-contract-validation = { version = "0.1.0", path = "crates/yosoi-contract-validation" }
-yosoi-archive = { version = "0.1.0", path = "crates/yosoi-archive" }
-yosoi-documents = { version = "0.1.0", path = "crates/yosoi-documents" }
-yosoi-extractor = { version = "0.1.0", path = "crates/yosoi-extractor" }
-yosoi-map = { version = "0.1.0", path = "crates/yosoi-map" }
-yosoi-policy = { version = "0.1.0", path = "crates/yosoi-policy" }
-yosoi-types = { version = "0.1.0", path = "crates/yosoi-types" }
-yosoi-web-capture = { version = "0.1.0", path = "crates/yosoi-web-capture", default-features = false }
-yosoi-web-capture-direct-http = { version = "0.1.0", path = "crates/yosoi-web-capture-direct-http", default-features = false }
+void_crawl_core = { version = "=0.1.0", path = "crates/voidcrawl", default-features = false }
+yosoi = { version = "=0.1.0", path = "crates/yosoi" }
+yosoi-contracts = { version = "=0.1.0", path = "crates/yosoi-contracts" }
+yosoi-contracts-derive = { version = "=0.1.0", path = "crates/yosoi-contracts-derive" }
+yosoi-contract-validation = { version = "=0.1.0", path = "crates/yosoi-contract-validation" }
+yosoi-archive = { version = "=0.1.0", path = "crates/yosoi-archive" }
+yosoi-documents = { version = "=0.1.0", path = "crates/yosoi-documents" }
+yosoi-extractor = { version = "=0.1.0", path = "crates/yosoi-extractor" }
+yosoi-map = { version = "=0.1.0", path = "crates/yosoi-map" }
+yosoi-policy = { version = "=0.1.0", path = "crates/yosoi-policy" }
+yosoi-types = { version = "=0.1.0", path = "crates/yosoi-types" }
+yosoi-web-capture = { version = "=0.1.0", path = "crates/yosoi-web-capture", default-features = false }
+yosoi-web-capture-direct-http = { version = "=0.1.0", path = "crates/yosoi-web-capture-direct-http", default-features = false }
 
 base64 = "0.22"
 chromiumoxide = { version = "0.9", path = "vendor/chromiumoxide", default-features = false }
@@ -93,7 +95,6 @@ rustls = { version = "0.23", default-features = false }
 schemars = "1"
 syn = "2"
 toml = "0.8"
-yara-x = { version = "1.7", default-features = false }
 
 [workspace.lints.rust]
 # Audited exceptions require a separate crate and explicit maintainer approval.
@@ -103,6 +104,7 @@ missing_debug_implementations = "warn"
 static_mut_refs = "deny"
 
 [workspace.lints.clippy]
+# Test-only behavioral allowances are in clippy.toml, as required by Clippy.
 pedantic = { level = "warn", priority = -1 }
 nursery = { level = "warn", priority = -1 }
 

@@ -105,7 +105,7 @@ async fn known_headful_visual_capture_does_not_wait_for_target_activation() {
     .expect("headful visual capture stalled")
     .expect("headful visual capture failed");
     assert!(snapshot.complete);
-    assert!(!snapshot.bytes().is_empty());
+    assert_ne!(snapshot.bytes().len(), 0);
     page.close().await.expect("close headful page");
     browser.close().await.expect("close headful browser");
 }

@@ -1,4 +1,6 @@
-use std::{error::Error, time::Duration};
+#![expect(clippy::panic_in_result_fn, reason = "Assertions report test failures")]
+
+use std::{error::Error, io, time::Duration};
 
 use tokio::time::Instant;
 use url::Url;
@@ -27,7 +29,7 @@ fn runner<'a>(policy: &Policy, cancellation: &'a CancellationToken) -> TestResul
     let scope = Scope::new(&seed, &policy.map)?;
     let deadline = Instant::now()
         .checked_add(Duration::from_secs(30))
-        .ok_or_else(|| std::io::Error::other("Map test deadline overflow"))?;
+        .ok_or_else(|| io::Error::other("Map test deadline overflow"))?;
     let user_agent = UserAgent::new("YosoiMap/test")?;
     let executor = execution::direct_http_executor_with_user_agent(user_agent)?;
     Ok(Runner::new(
@@ -70,13 +72,13 @@ fn host_budget_keeps_the_first_passive_host_and_returns_typed_limit() -> TestRes
     let first = runner
         .hosts
         .get("a.example.com")
-        .ok_or_else(|| std::io::Error::other("first admitted host was not retained"))?;
+        .ok_or_else(|| io::Error::other("first admitted host was not retained"))?;
     assert_eq!(first.host, "a.example.com");
     assert_eq!(first.observations.len(), 1);
     let observation = first
         .observations
         .first()
-        .ok_or_else(|| std::io::Error::other("first host observation was not retained"))?;
+        .ok_or_else(|| io::Error::other("first host observation was not retained"))?;
     assert_eq!(observation.source, DiscoverySource::PassiveCertificate);
     assert_eq!(observation.source_url.as_ref(), Some(&provider));
     assert_eq!(runner.summary.observations, 1);
@@ -111,15 +113,15 @@ fn shared_host_admission_deduplicates_only_equal_source_provenance() -> TestResu
     let host = runner
         .hosts
         .get("a.example.com")
-        .ok_or_else(|| std::io::Error::other("canonical host was not retained"))?;
+        .ok_or_else(|| io::Error::other("canonical host was not retained"))?;
     assert_eq!(host.observations.len(), 2);
     let mut observations = host.observations.iter();
     let first = observations
         .next()
-        .ok_or_else(|| std::io::Error::other("passive provenance was not retained"))?;
+        .ok_or_else(|| io::Error::other("passive provenance was not retained"))?;
     let second = observations
         .next()
-        .ok_or_else(|| std::io::Error::other("link provenance was not retained"))?;
+        .ok_or_else(|| io::Error::other("link provenance was not retained"))?;
     assert_eq!(first.source_url.as_ref(), Some(&provider));
     assert_eq!(second.source_url.as_ref(), Some(&seed));
 
@@ -153,9 +155,9 @@ async fn cancelled_passive_discovery_is_not_started_and_schedules_no_probes() ->
     assert_eq!(runner.termination, Some(MapTermination::Cancelled));
     assert_eq!(runner.summary.requests, 0);
     assert_eq!(runner.summary.response_bytes, 0);
-    assert!(runner.hosts.is_empty());
-    assert!(runner.probes.is_empty());
-    assert!(runner.queue.is_empty());
+    assert_eq!(runner.hosts.len(), 0);
+    assert_eq!(runner.probes.len(), 0);
+    assert_eq!(runner.queue.len(), 0);
     assert_eq!(
         runner.source_outcomes.first().map(|source| &source.status),
         Some(&SourceStatus::NotStarted)
@@ -173,9 +175,9 @@ async fn disabled_passive_discovery_does_not_schedule_provider_work() -> TestRes
 
     assert_eq!(runner.termination, None);
     assert_eq!(runner.summary.requests, 0);
-    assert!(runner.hosts.is_empty());
-    assert!(runner.probes.is_empty());
-    assert!(runner.queue.is_empty());
+    assert_eq!(runner.hosts.len(), 0);
+    assert_eq!(runner.probes.len(), 0);
+    assert_eq!(runner.queue.len(), 0);
     assert_eq!(
         runner.source_outcomes.first().map(|source| &source.status),
         Some(&SourceStatus::Disabled)
@@ -210,8 +212,8 @@ fn wildcard_patterns_are_scoped_deduplicated_and_never_become_concrete_hosts() -
         DiscoverySource::PassiveCertificate,
     );
     assert_eq!(runner.wildcard_names, ["*.a.example.com"]);
-    assert!(runner.hosts.is_empty());
-    assert!(runner.queue.is_empty());
+    assert_eq!(runner.hosts.len(), 0);
+    assert_eq!(runner.queue.len(), 0);
     assert_eq!(runner.summary.observations, 1);
     assert_eq!(runner.summary.omitted, 2);
     Ok(())

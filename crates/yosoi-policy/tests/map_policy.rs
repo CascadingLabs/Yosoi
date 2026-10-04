@@ -2,6 +2,8 @@
 
 mod common;
 
+use std::io;
+
 use common::{TestResult, default_policy_json_value};
 use serde_json::{Value, json};
 use yosoi_policy::{
@@ -57,7 +59,7 @@ fn map_robots_defaults_to_ignore_when_missing_from_existing_map_policy() -> Test
     let map = document
         .pointer_mut("/map")
         .and_then(Value::as_object_mut)
-        .ok_or_else(|| std::io::Error::other("default Map policy is missing"))?;
+        .ok_or_else(|| io::Error::other("default Map policy is missing"))?;
     map.remove("robots");
 
     let parsed: Policy = serde_json::from_value(document)?;
@@ -136,7 +138,7 @@ fn map_positive_limits_and_filter_bounds_are_checked_during_deserialization() ->
     let keys = too_many
         .pointer_mut("/map/filters/excluded_query_keys")
         .and_then(Value::as_array_mut)
-        .ok_or_else(|| std::io::Error::other("default Map filter list is missing"))?;
+        .ok_or_else(|| io::Error::other("default Map filter list is missing"))?;
     for index in 0..129 {
         keys.push(json!(format!("key-{index}")));
     }
@@ -168,10 +170,10 @@ fn map_positive_limits_and_filter_bounds_are_checked_during_deserialization() ->
     Ok(())
 }
 
-fn set_value(document: &mut Value, pointer: &str, value: Value) -> Result<(), std::io::Error> {
+fn set_value(document: &mut Value, pointer: &str, value: Value) -> Result<(), io::Error> {
     let destination = document.pointer_mut(pointer).ok_or_else(|| {
-        std::io::Error::new(
-            std::io::ErrorKind::InvalidData,
+        io::Error::new(
+            io::ErrorKind::InvalidData,
             format!("default policy fixture has no field at {pointer}"),
         )
     })?;

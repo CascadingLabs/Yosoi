@@ -9,8 +9,13 @@ use std::{
 
 use anyhow::{Context, Result, bail};
 
+mod benchmark;
+mod benchmark_results;
 mod docs;
+mod fixtures;
+mod fuzz;
 mod sdk_boundary;
+mod version;
 
 const HELP: &str = "\
 Repository development tasks
@@ -18,6 +23,8 @@ Repository development tasks
 Usage: cargo xtask <task>
 
 Tasks:
+  bump-version <VERSION> [--date-released YYYY-MM-DD] [--dry-run|--check] [-y|--yes]
+                               Synchronize release versions and optional citation date
   fmt                          Check Rust formatting
   clippy                       Run Clippy for all targets and features
   test                         Run the workspace test suite with nextest
@@ -26,20 +33,20 @@ Tasks:
   source-size                  Enforce the 400-line production source budget
   check                        Run fmt, clippy, source-size, file-lines, test, and deny
   sdk-boundary                 Compile downstream SDK visibility checks, one worker
+  fixtures [verify|materialize] Verify or extract committed locator fixture bytes
   fuzz                         Run the deterministic Direct HTTP fuzz smoke profile
   docs manifest <command>      Generate public-doc manifests and manage version catalogs
   docs reference <command>     Generate, verify, and pack commit-pinned Rust references
   docs check                   Run focused documentation tooling tests serially
   benchmark check              Compile every repository benchmark harness
-  benchmark criterion          Collect and publish the Criterion baseline
-  benchmark deterministic      Run Gungraun Callgrind measurements
-  benchmark allocations        Run Divan allocation count/byte measurements
-  benchmark process            Run fresh-process RSS, CPU, and perf measurements
-  benchmark heap               Run fresh-process Massif peak-heap measurements
-  benchmark browser            Run CAS-333 Criterion, Divan, and bounded soak measurements
-  benchmark browser-execution  Run CAS-352 warm browser capacity and soak measurements
-  benchmark browser-stealth    Run CAS-374 hermetic and optional live stealth evidence
-  benchmark all                Run every existing measurement class sequentially
+  benchmark criterion [out]    Collect raw Criterion estimates
+  benchmark deterministic [out] Run Gungraun Callgrind measurements
+  benchmark allocations [out]  Run Divan allocation count/byte measurements
+  benchmark process [out]      Run fresh-process GNU time and raw perf measurements
+  benchmark heap [out]         Run fresh-process raw Massif profiles
+  benchmark all                Run capture measurement classes sequentially
+  benchmark result-dir <class> Print the per-change result directory
+  benchmark publish <src> <dst> Retain the previous run and publish a completed result
 ";
 
 fn main() -> Result<()> {
@@ -50,21 +57,10 @@ fn main() -> Result<()> {
     };
 
     match task.to_str() {
+        Some("bump-version") => version::run(arguments),
         Some("docs") => docs::run(arguments),
         Some("sdk-boundary") => no_extra_arguments(arguments).and_then(|()| sdk_boundary::run()),
-        Some("benchmark") => {
-            let class = arguments.next().context(
-                "benchmark requires one of: check, criterion, deterministic, allocations, process, heap, browser, browser-execution, browser-stealth, all",
-            )?;
-            if arguments.next().is_some() {
-                bail!("benchmark accepts exactly one measurement class\n\n{HELP}");
-            }
-            benchmark(
-                class
-                    .to_str()
-                    .context("benchmark class must be valid Unicode")?,
-            )
-        }
+        Some("benchmark") => benchmark::run(arguments),
         Some("fmt") => no_extra_arguments(arguments).and_then(|()| fmt()),
         Some("clippy") => no_extra_arguments(arguments).and_then(|()| clippy()),
         Some("test") => no_extra_arguments(arguments).and_then(|()| test()),
@@ -72,7 +68,8 @@ fn main() -> Result<()> {
         Some("file-lines") => no_extra_arguments(arguments).and_then(|()| file_lines()),
         Some("source-size") => no_extra_arguments(arguments).and_then(|()| source_size()),
         Some("check") => no_extra_arguments(arguments).and_then(|()| check()),
-        Some("fuzz") => no_extra_arguments(arguments).and_then(|()| fuzz()),
+        Some("fixtures") => fixtures::run(arguments),
+        Some("fuzz") => no_extra_arguments(arguments).and_then(|()| fuzz::run()),
         Some("help" | "--help" | "-h") => {
             no_extra_arguments(arguments)?;
             print!("{HELP}");
@@ -90,231 +87,178 @@ fn no_extra_arguments(mut arguments: impl Iterator<Item = OsString>) -> Result<(
     Ok(())
 }
 
-fn benchmark(class: &str) -> Result<()> {
-    match class {
-        "check" => {
-            run_cargo(
-                "Criterion benchmark compilation",
-                &[
-                    "bench",
-                    "-p",
-                    "yosoi-benchmarks",
-                    "--bench",
-                    "criterion_capture",
-                    "--no-run",
-                ],
-            )?;
-            run_cargo(
-                "document-locator Criterion benchmark compilation",
-                &[
-                    "bench",
-                    "-p",
-                    "yosoi-document-locator-benchmarks",
-                    "--bench",
-                    "criterion_document_locators",
-                    "--no-run",
-                ],
-            )?;
-            run_cargo(
-                "decoded-text Criterion benchmark compilation",
-                &[
-                    "bench",
-                    "-p",
-                    "yosoi-document-locator-benchmarks",
-                    "--bench",
-                    "criterion_documents",
-                    "--no-run",
-                ],
-            )?;
-            run_cargo(
-                "HTML and rendered-DOM Criterion benchmark compilation",
-                &[
-                    "bench",
-                    "-p",
-                    "yosoi-document-locator-benchmarks",
-                    "--bench",
-                    "document_locators",
-                    "--no-run",
-                ],
-            )?;
-            run_cargo(
-                "JSON document-locator Criterion benchmark compilation",
-                &[
-                    "bench",
-                    "-p",
-                    "yosoi-document-locator-benchmarks",
-                    "--bench",
-                    "criterion_json",
-                    "--no-run",
-                ],
-            )?;
-            run_cargo(
-                "document-locator allocation benchmark compilation",
-                &[
-                    "bench",
-                    "-p",
-                    "yosoi-document-locator-benchmarks",
-                    "--bench",
-                    "allocation_document_locators",
-                    "--no-run",
-                ],
-            )?;
-            run_cargo(
-                "Gungraun benchmark compilation",
-                &[
-                    "bench",
-                    "-p",
-                    "yosoi-benchmarks",
-                    "--bench",
-                    "gungraun_capture",
-                    "--no-run",
-                ],
-            )?;
-            run_cargo(
-                "allocation benchmark compilation",
-                &[
-                    "bench",
-                    "-p",
-                    "yosoi-benchmarks",
-                    "--bench",
-                    "allocation_capture",
-                    "--no-run",
-                ],
-            )?;
-            run_cargo(
-                "process benchmark compilation",
-                &[
-                    "build",
-                    "--release",
-                    "-p",
-                    "yosoi-benchmarks",
-                    "--bin",
-                    "profile_capture",
-                ],
-            )?;
-            run_cargo(
-                "browser Criterion harness compilation",
-                &[
-                    "bench",
-                    "-p",
-                    "yosoi-benchmarks",
-                    "--bench",
-                    "criterion_browser",
-                    "--no-run",
-                ],
-            )?;
-            run_cargo(
-                "browser allocation harness compilation",
-                &[
-                    "bench",
-                    "-p",
-                    "yosoi-benchmarks",
-                    "--bench",
-                    "allocation_browser",
-                    "--no-run",
-                ],
-            )?;
-            run_cargo(
-                "browser profile compilation",
-                &[
-                    "build",
-                    "--release",
-                    "-p",
-                    "yosoi-benchmarks",
-                    "--bin",
-                    "profile_browser",
-                ],
-            )?;
-            run_cargo(
-                "browser execution profile compilation",
-                &[
-                    "build",
-                    "--release",
-                    "-p",
-                    "yosoi-benchmarks",
-                    "--bin",
-                    "profile_browser_execution",
-                ],
-            )?;
-            run_cargo(
-                "browser stealth profile compilation",
-                &[
-                    "build",
-                    "--release",
-                    "-p",
-                    "yosoi-benchmarks",
-                    "--bin",
-                    "profile_browser_stealth",
-                ],
-            )?;
-            run_cargo(
-                "benchmark contract test compilation",
-                &[
-                    "test",
-                    "-p",
-                    "yosoi-benchmarks",
-                    "--test",
-                    "benchmark_contract",
-                    "--no-run",
-                ],
-            )
-        }
-        "criterion" => run_repository_script("scripts/benchmarks/run-cas-307-benchmarks.sh"),
-        "deterministic" => {
-            require_command("valgrind", "install Valgrind to run Callgrind")?;
-            require_command(
-                "gungraun-runner",
-                "install the pinned runner with `cargo install gungraun-runner --version 0.19.4 --locked`",
-            )?;
-            run_repository_script("scripts/benchmarks/run-cas-307-gungraun.sh")
-        }
-        "allocations" => run_repository_script("scripts/benchmarks/run-cas-307-allocations.sh"),
-        "process" => {
-            require_command(
-                "/usr/bin/time",
-                "install GNU time for peak RSS measurements",
-            )?;
-            require_command("perf", "install perf for hardware and software counters")?;
-            run_repository_script("scripts/benchmarks/run-cas-307-process-metrics.sh")
-        }
-        "heap" => {
-            require_command("valgrind", "install Valgrind to run Massif")?;
-            run_repository_script("scripts/benchmarks/run-cas-307-heap.sh")
-        }
-        "browser" => run_repository_script("scripts/browser/run-cas-333-browser.sh"),
-        "browser-execution" => {
-            run_repository_script("scripts/browser/run-cas-352-browser-execution.sh")
-        }
-        "browser-stealth" => {
-            run_repository_script("scripts/browser/run-cas-374-browser-stealth.sh")
-        }
-        "all" => {
-            benchmark("criterion")?;
-            benchmark("deterministic")?;
-            benchmark("allocations")?;
-            benchmark("process")?;
-            benchmark("heap")
-        }
-        other => bail!("unknown benchmark class `{other}`\n\n{HELP}"),
-    }
+fn benchmark_check() -> Result<()> {
+    run_cargo(
+        "Criterion benchmark compilation",
+        &[
+            "bench",
+            "-p",
+            "yosoi-benchmarks",
+            "--bench",
+            "criterion_capture",
+            "--no-run",
+        ],
+    )?;
+    run_cargo(
+        "document-locator Criterion benchmark compilation",
+        &[
+            "bench",
+            "-p",
+            "yosoi-document-locator-benchmarks",
+            "--bench",
+            "criterion_document_locators",
+            "--no-run",
+        ],
+    )?;
+    run_cargo(
+        "decoded-text Criterion benchmark compilation",
+        &[
+            "bench",
+            "-p",
+            "yosoi-document-locator-benchmarks",
+            "--bench",
+            "criterion_documents",
+            "--no-run",
+        ],
+    )?;
+    run_cargo(
+        "HTML and rendered-DOM Criterion benchmark compilation",
+        &[
+            "bench",
+            "-p",
+            "yosoi-document-locator-benchmarks",
+            "--bench",
+            "document_locators",
+            "--no-run",
+        ],
+    )?;
+    run_cargo(
+        "JSON document-locator Criterion benchmark compilation",
+        &[
+            "bench",
+            "-p",
+            "yosoi-document-locator-benchmarks",
+            "--bench",
+            "criterion_json",
+            "--no-run",
+        ],
+    )?;
+    run_cargo(
+        "document-locator allocation benchmark compilation",
+        &[
+            "bench",
+            "-p",
+            "yosoi-document-locator-benchmarks",
+            "--bench",
+            "allocation_document_locators",
+            "--no-run",
+        ],
+    )?;
+    run_cargo(
+        "Gungraun benchmark compilation",
+        &[
+            "bench",
+            "-p",
+            "yosoi-benchmarks",
+            "--bench",
+            "gungraun_capture",
+            "--no-run",
+        ],
+    )?;
+    run_cargo(
+        "allocation benchmark compilation",
+        &[
+            "bench",
+            "-p",
+            "yosoi-benchmarks",
+            "--bench",
+            "allocation_capture",
+            "--no-run",
+        ],
+    )?;
+    run_cargo(
+        "process benchmark compilation",
+        &[
+            "build",
+            "--release",
+            "-p",
+            "yosoi-benchmarks",
+            "--bin",
+            "profile_capture",
+        ],
+    )?;
+    run_cargo(
+        "browser Criterion harness compilation",
+        &[
+            "bench",
+            "-p",
+            "yosoi-benchmarks",
+            "--bench",
+            "criterion_browser",
+            "--no-run",
+        ],
+    )?;
+    run_cargo(
+        "browser allocation harness compilation",
+        &[
+            "bench",
+            "-p",
+            "yosoi-benchmarks",
+            "--bench",
+            "allocation_browser",
+            "--no-run",
+        ],
+    )?;
+    run_cargo(
+        "browser profile compilation",
+        &[
+            "build",
+            "--release",
+            "-p",
+            "yosoi-benchmarks",
+            "--bin",
+            "profile_browser",
+        ],
+    )?;
+    run_cargo(
+        "browser execution profile compilation",
+        &[
+            "build",
+            "--release",
+            "-p",
+            "yosoi-benchmarks",
+            "--bin",
+            "profile_browser_execution",
+        ],
+    )?;
+    run_cargo(
+        "browser stealth profile compilation",
+        &[
+            "build",
+            "--release",
+            "-p",
+            "yosoi-benchmarks",
+            "--bin",
+            "profile_browser_stealth",
+        ],
+    )?;
+    run_cargo(
+        "benchmark contract test compilation",
+        &[
+            "test",
+            "-p",
+            "yosoi-benchmarks",
+            "--test",
+            "benchmark_contract",
+            "--no-run",
+        ],
+    )
 }
 
 fn workspace_root() -> Result<&'static Path> {
     Path::new(env!("CARGO_MANIFEST_DIR"))
         .parent()
         .context("xtask manifest directory must have a workspace parent")
-}
-
-fn run_repository_script(relative: &str) -> Result<()> {
-    let path = workspace_root()?.join(relative);
-    let status = Command::new(&path)
-        .current_dir(workspace_root()?)
-        .status()
-        .with_context(|| format!("failed to start {}", path.display()))?;
-    if !status.success() {
-        bail!("{} failed with {status}", path.display());
-    }
-    Ok(())
 }
 
 fn require_command(command: &str, guidance: &str) -> Result<PathBuf> {
@@ -336,10 +280,6 @@ fn find_command(command: &str) -> Option<PathBuf> {
     split_paths(&path)
         .map(|directory| directory.join(command))
         .find(|candidate| candidate.is_file())
-}
-
-fn fuzz() -> Result<()> {
-    run_repository_script("scripts/fuzz/run-cas-323-fuzz-smoke.sh")
 }
 
 fn fmt() -> Result<()> {
@@ -624,9 +564,9 @@ mod tests {
             "benchmark allocations",
             "benchmark process",
             "benchmark heap",
-            "benchmark browser",
-            "benchmark browser-execution",
-            "benchmark browser-stealth",
+            "benchmark result-dir",
+            "benchmark publish",
+            "fixtures",
             "benchmark all",
         ] {
             assert!(HELP.lines().any(|line| line.trim_start().starts_with(task)));

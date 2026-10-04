@@ -110,7 +110,9 @@ fn map_policy_choices_in_current_json_profile_validate_without_rewrite()
 -> Result<(), Box<dyn Error>> {
     let home = CliHome::new()?;
     let mut authored_map = serde_json::to_value(Policy::default().map)?;
-    authored_map["pages"] = json!("disabled");
+    *authored_map
+        .get_mut("pages")
+        .ok_or_else(|| io::Error::other("Policy fixture has no pages field"))? = json!("disabled");
     home.write_store(&current_store(json!({
         "active_profile": "map-off",
         "profiles": {"map-off": {"map": authored_map}}
@@ -133,7 +135,7 @@ fn missing_active_profile_is_an_error() -> Result<(), Box<dyn Error>> {
 
     let output = home.run(&["policy", "validate"])?;
     assert_ne!(output.status.code(), Some(0));
-    assert!(output.stdout.is_empty());
+    assert_eq!(output.stdout.as_slice(), b"");
     assert!(stderr(&output).contains("missing"));
     Ok(())
 }
@@ -147,7 +149,7 @@ fn malformed_json_fails_without_writing() -> Result<(), Box<dyn Error>> {
 
     let output = home.run(&["policy", "list"])?;
     assert_ne!(output.status.code(), Some(0));
-    assert!(output.stdout.is_empty());
+    assert_eq!(output.stdout.as_slice(), b"");
     assert_eq!(fs::read(path)?, b"{ malformed");
     Ok(())
 }

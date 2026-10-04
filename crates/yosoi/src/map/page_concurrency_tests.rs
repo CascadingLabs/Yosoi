@@ -2,8 +2,7 @@
 
 #![allow(clippy::panic_in_result_fn)]
 
-#[path = "../../../yosoi-web-capture-direct-http/tests/support/direct_http_fixture.rs"]
-mod fixture;
+use crate::test_http_fixture as fixture;
 
 use std::{error::Error, io};
 
@@ -170,7 +169,7 @@ async fn rejected_long_probe_does_not_block_a_later_valid_probe() -> TestResult 
     assert!(!paths.iter().any(|path| path == &long_path));
     assert!(!runner.probes.contains(&rejected));
     assert!(!runner.probes.contains(&later));
-    assert!(runner.queue.is_empty());
+    assert_eq!(runner.queue.len(), 0);
     assert_eq!(runner.termination, None);
     assert!(runner.source_outcomes.iter().any(|outcome| {
         outcome.source_url.as_ref() == Some(&rejected)
@@ -306,6 +305,6 @@ async fn shorter_failed_page_keeps_failure_without_a_second_request() -> TestRes
         page.exploration,
         Exploration::Failed(SourceFailure::HttpStatus(404))
     );
-    assert!(runner.queue.is_empty());
+    assert_eq!(runner.queue.len(), 0);
     Ok(())
 }

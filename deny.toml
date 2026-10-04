@@ -12,7 +12,6 @@ allow = [
     "Apache-2.0 WITH LLVM-exception",
     "BSD-2-Clause",
     "BSD-3-Clause",
-    # CAS-302: compiled Mozilla trust-anchor data used by wreq's webpki-roots feature.
     "CDLA-Permissive-2.0",
     # notify uses CC0 for its small cross-platform filesystem-watcher facade.
     "CC0-1.0",

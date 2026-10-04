@@ -16,7 +16,7 @@ use super::support::{brotli, consume, gzip, retained, serve, spec, wire, zlib};
 )]
 fn assert_malformed_after_output(outcome: ResponseBodyOutcome) {
     let source = outcome.payload().retained_source().unwrap();
-    assert!(!source.bytes().is_empty());
+    assert_ne!(source.bytes().len(), 0);
     assert_eq!(source.digest(), Sha256Digest::digest(source.bytes()));
     assert_eq!(outcome.terminal(), BodyTerminal::MalformedCoding);
 }

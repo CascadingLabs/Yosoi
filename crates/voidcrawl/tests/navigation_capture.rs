@@ -618,7 +618,7 @@ async fn failed_document_request_has_explicit_unavailable_source() {
         source.body_unavailable,
         Some(SourceBodyUnavailableReason::RequestFailed)
     );
-    assert!(source.body().is_empty());
+    assert_eq!(source.body().len(), 0);
     assert!(
         report
             .resources

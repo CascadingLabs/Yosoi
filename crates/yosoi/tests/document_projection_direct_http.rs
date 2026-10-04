@@ -293,7 +293,7 @@ async fn truncated_source_is_partial_and_never_published_as_a_complete_document(
     let outcome = first_document(&projected)?;
     assert!(matches!(outcome, DocumentOutcome::Partial { .. }));
     assert!(outcome.document().is_none());
-    assert!(!outcome.partial_reasons().is_empty());
+    assert_ne!(outcome.partial_reasons().len(), 0);
     assert!(
         outcome
             .partial_reasons()
@@ -439,7 +439,7 @@ async fn exact_empty_selection_projects_no_public_document_outcomes() -> TestRes
         attempt.authored_selection(),
         ys::policy::DocumentSelectionKind::Exact
     );
-    assert!(attempt.documents().is_empty());
+    assert_eq!(attempt.documents().len(), 0);
     let capture = execute_direct(&prepared, attempt).await?;
     let projected = project_attempt(capture, &prepared, attempt)?;
 
@@ -453,7 +453,7 @@ async fn exact_empty_selection_projects_no_public_document_outcomes() -> TestRes
         ys::policy::DocumentSelectionKind::Exact
     );
     assert_eq!(projected.policy_snapshot().policy(), &policy);
-    assert!(projected.documents().is_empty());
+    assert_eq!(projected.documents().len(), 0);
     assert!(
         !projected
             .applied_policy()

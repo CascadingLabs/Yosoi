@@ -833,7 +833,7 @@ mod tests {
         // Chrome omits `Network.Response.requestHeaders` for some requests
         // (cache hits, certain service-worker paths). That must degrade to an
         // empty vec, never a panic or a spurious failure.
-        assert!(optional_headers(None).is_empty());
+        assert_eq!(optional_headers(None), Vec::<(String, String)>::new());
     }
 
     #[test]
@@ -930,9 +930,12 @@ mod tests {
             true,
         );
         assert_eq!(take_sent_headers(&mut store, "req-1").len(), 1);
-        assert!(store.is_empty());
+        assert_eq!(store.len(), 0);
         // A second take is empty, not a panic.
-        assert!(take_sent_headers(&mut store, "req-1").is_empty());
+        assert_eq!(
+            take_sent_headers(&mut store, "req-1"),
+            Vec::<(String, String)>::new()
+        );
     }
 
     #[test]
@@ -950,7 +953,10 @@ mod tests {
         // A brand-new id past the cap is dropped…
         merge_sent_headers(&mut store, "overflow", vec![("a".into(), "1".into())], true);
         assert_eq!(store.len(), MAX_TRACKED_REQUESTS);
-        assert!(take_sent_headers(&mut store, "overflow").is_empty());
+        assert_eq!(
+            take_sent_headers(&mut store, "overflow"),
+            Vec::<(String, String)>::new()
+        );
         // …but an already-tracked id still accepts its wire headers.
         merge_sent_headers(
             &mut store,
@@ -969,7 +975,7 @@ mod tests {
     fn empty_incoming_headers_do_not_create_an_entry() {
         let mut store = HashMap::new();
         merge_sent_headers(&mut store, "req-1", vec![], true);
-        assert!(store.is_empty());
+        assert_eq!(store.len(), 0);
     }
 
     #[test]

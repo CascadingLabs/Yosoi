@@ -54,7 +54,7 @@ impl Drop for JobCountGuard {
         };
         let _ = inner
             .jobs
-            .fetch_update(Ordering::AcqRel, Ordering::Acquire, |jobs| {
+            .try_update(Ordering::AcqRel, Ordering::Acquire, |jobs| {
                 jobs.checked_sub(1)
             });
         inner.jobs_changed.notify_waiters();

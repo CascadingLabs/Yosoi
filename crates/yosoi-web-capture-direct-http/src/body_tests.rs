@@ -100,7 +100,7 @@ fn incomplete_empty_output_is_unavailable() {
 fn normally_completed_empty_output_is_retained() {
     let outcome = publish(Vec::new(), 0, 0, BodyTerminal::Complete).unwrap();
     let source = outcome.payload().retained_source().unwrap();
-    assert!(source.bytes().is_empty());
+    assert_eq!(source.bytes(), b"");
     assert_eq!(source.digest(), Sha256Digest::digest(b""));
     assert_eq!(source.extent(), crate::RetainedSourceExtent::Complete);
 }

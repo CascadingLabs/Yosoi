@@ -164,7 +164,7 @@ async fn standard_browser_send_requires_the_browser_feature_before_execution() -
         error,
         ys::RequestSendError::StandardSetup(StandardExecutionSetupError::BrowserFeatureDisabled)
     ));
-    assert!(service.requests().await.is_empty());
+    assert_eq!(service.requests().await.len(), 0);
     service.shutdown().await;
     Ok(())
 }
@@ -228,9 +228,9 @@ async fn empty_acquisition_list_returns_an_empty_completed_response_without_io()
     )
     .await?;
 
-    assert!(response.attempts().is_empty());
+    assert_eq!(response.attempts().len(), 0);
     assert_eq!(response.termination(), ResponseTermination::Completed);
-    assert!(service.requests().await.is_empty());
+    assert_eq!(service.requests().await.len(), 0);
     service.shutdown().await;
     Ok(())
 }
@@ -264,7 +264,7 @@ async fn pre_cancelled_mixed_attempts_are_ordered_not_started_and_do_no_io() -> 
         attempt(&response, 1)?.capture_id(),
         attempt(&response, 2)?.capture_id()
     );
-    assert!(service.requests().await.is_empty());
+    assert_eq!(service.requests().await.len(), 0);
     service.shutdown().await;
     Ok(())
 }
@@ -302,7 +302,7 @@ async fn missing_contexts_produce_ordered_typed_failures_with_distinct_ids() -> 
     assert_ne!(first_id, second_id);
     assert_ne!(first_id, third_id);
     assert_ne!(second_id, third_id);
-    assert!(service.requests().await.is_empty());
+    assert_eq!(service.requests().await.len(), 0);
     service.shutdown().await;
     Ok(())
 }
@@ -476,10 +476,9 @@ async fn response_document_classifies_owns_bytes_redacts_debug_and_allows_empty_
     let mut empty_policy = ys::Policy::default();
     empty_policy.page.acquisitions = vec![ys::policy::Acquisition::DirectHttp.documents([])];
     let empty_response = send(&empty_policy, &target, &executor, &CancellationToken::new()).await?;
-    assert!(
-        completed(attempt(&empty_response, 0)?)?
-            .documents()
-            .is_empty()
+    assert_eq!(
+        completed(attempt(&empty_response, 0)?)?.documents().len(),
+        0
     );
     assert_eq!(empty_response.termination(), ResponseTermination::Completed);
     assert_eq!(service.requests().await.len(), 2);

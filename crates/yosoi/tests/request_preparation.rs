@@ -314,8 +314,8 @@ fn empty_acquisition_policy_prepares_no_attempts() -> TestResult {
         .bind(&policy)
         .prepare()?;
 
-    assert!(prepared.attempts().is_empty());
-    assert!(prepared.effective_policy().page.acquisitions.is_empty());
+    assert_eq!(prepared.attempts().len(), 0);
+    assert_eq!(prepared.effective_policy().page.acquisitions.len(), 0);
     assert_eq!(prepared.policy_snapshot().policy(), &policy);
 
     Ok(())

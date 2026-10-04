@@ -3,7 +3,7 @@
 use std::{
     error::Error,
     fs,
-    io::{Read, Write},
+    io::{self, Read, Write},
     net::{SocketAddr, TcpListener, TcpStream},
     path::PathBuf,
     process::{Command, Output, Stdio},
@@ -12,6 +12,12 @@ use std::{
 
 use serde_json::{Value, json};
 use tempfile::TempDir;
+
+fn json_at<'a>(value: &'a Value, pointer: &str) -> Result<&'a Value, Box<dyn Error>> {
+    value
+        .pointer(pointer)
+        .ok_or_else(|| io::Error::other(format!("missing JSON value at {pointer}")).into())
+}
 
 struct Journey {
     _directory: TempDir,
@@ -120,20 +126,29 @@ fn active_and_explicit_profiles_drive_different_end_to_end_results() -> Result<(
     let journey = Journey::new()?;
     let (request_active, locate_active) = pipeline(&journey, false)?;
     assert_eq!(request_active.status.code(), Some(0));
-    assert!(request_active.stderr.is_empty());
+    assert_eq!(request_active.stderr.as_slice(), b"");
     assert_eq!(locate_active.status.code(), Some(3));
     let active: Value = serde_json::from_slice(&locate_active.stdout)?;
-    assert_eq!(active["policy_profile"], "strict");
-    assert_eq!(active["outcome"]["status"], "failed");
+    assert_eq!(
+        json_at(&active, "/policy_profile")?.as_str(),
+        Some("strict")
+    );
+    assert_eq!(
+        json_at(&active, "/outcome/status")?.as_str(),
+        Some("failed")
+    );
 
     let (request_named, locate_named) = pipeline(&journey, true)?;
     assert_eq!(request_named.status.code(), Some(0));
-    assert!(request_named.stderr.is_empty());
+    assert_eq!(request_named.stderr.as_slice(), b"");
     assert_eq!(locate_named.status.code(), Some(0));
-    assert!(locate_named.stderr.is_empty());
+    assert_eq!(locate_named.stderr.as_slice(), b"");
     let named: Value = serde_json::from_slice(&locate_named.stdout)?;
-    assert_eq!(named["policy_profile"], "normal");
-    assert_eq!(named["outcome"]["status"], "matched");
+    assert_eq!(json_at(&named, "/policy_profile")?.as_str(), Some("normal"));
+    assert_eq!(
+        json_at(&named, "/outcome/status")?.as_str(),
+        Some("matched")
+    );
     assert!(journey.store_unchanged()?);
     Ok(())
 }
@@ -155,7 +170,7 @@ fn request_override_is_explained_before_io_and_does_not_edit_profile() -> Result
         .env("XDG_CONFIG_HOME", &journey.config)
         .output()?;
     assert_eq!(output.status.code(), Some(0));
-    assert!(output.stderr.is_empty());
+    assert_eq!(output.stderr.as_slice(), b"");
     let text = String::from_utf8(output.stdout)?;
     assert!(text.contains("Policy profile: normal"));
     assert!(text.contains("\"maximum_elapsed\": 2500000"));

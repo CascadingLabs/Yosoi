@@ -9,6 +9,10 @@ fn policy(hosts: HostScope, paths: PathScope) -> Map {
     policy
 }
 
+#[expect(
+    clippy::expect_used,
+    reason = "The test helper accepts only fixed valid URL fixtures."
+)]
 fn url(value: &str) -> Url {
     Url::parse(value).expect("test URL is valid")
 }

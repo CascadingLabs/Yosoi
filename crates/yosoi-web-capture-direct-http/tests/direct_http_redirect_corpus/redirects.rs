@@ -60,7 +60,7 @@ fn assert_redirect_failure(
         DirectHttpRedirectErrorKind::HopLimit => "web_capture.direct_http.redirect_hop_limit",
     };
     assert_eq!(failure.error().code().as_str(), expected_code);
-    assert!(!failure.error().to_string().is_empty());
+    assert_ne!(failure.error().to_string(), "");
     assert!(failure.has_unconsumed_response());
     assert_eq!(
         failure

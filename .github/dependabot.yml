@@ -1,0 +1,19 @@
+# Enable Dependabot alerts and security updates in the repository's GitHub settings.
+# A zero PR limit disables routine version updates while allowing security updates.
+version: 2
+updates:
+  - package-ecosystem: "cargo"
+    directories:
+      - "/"
+      - "/fuzz"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0
+
+  - package-ecosystem: "github-actions"
+    directories:
+      - "/"
+      - "/.github/actions/rust-ci-setup"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0

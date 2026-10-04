@@ -1,13 +1,32 @@
-#![allow(
-    clippy::wildcard_imports,
-    reason = "private cohesive orchestration implementation"
-)]
-use super::*;
+use chrono::{DateTime, Utc};
+use yosoi_types::{
+    ArtifactAvailability, ArtifactId, ArtifactRecord, ArtifactRef, Provenance, ReasonCode,
+};
 
+use crate::{
+    AcceptedSourceFormat, ArtifactByteExtent, ArtifactCollection, ArtifactFamilyResult,
+    ArtifactRequest, ArtifactSensitivity, BodyTerminal, ByteCount, CharacterDecodingOutcome,
+    DecodedOutputIdentity, DecodedSourceArtifact, DecodedSourceArtifactRef, DecodedSourceView,
+    DirectHttpResponseFacts, MeasuredCount, MediaDeclaration, MediaType, MediaTypeError,
+    NetworkArtifact, ResolvedDirectHttpCaptureSpec, ResponseBodyOutcome, RetainedSource,
+    RetainedSourceExtent, SOURCE_REPRESENTATION_EVIDENCE_MEDIA_TYPE, SourceArtifact,
+    SourceArtifactRef, SourceClassificationOutcome, SourceFormat, SourceRepresentationArtifact,
+    SourceRepresentationEvidence, SourceRepresentationFacts, SourceRetentionPolicy, StagedPayloads,
+    UnsupportedSourceFormatBehavior, ValidatedSourceBinding, WebArtifactMetadata, XmlProfile,
+    XmlSourceProfile, body::terminal_reason, classify_and_decode, parse_media_declaration,
+    source_decoder_producer,
+};
+
+use super::DirectHttpConstructionError;
+
+#[allow(
+    clippy::type_complexity,
+    reason = "artifact families and their staged payloads come from one validation pass"
+)]
 pub(super) fn build_artifacts(
-    spec: &crate::ResolvedDirectHttpCaptureSpec,
+    spec: &ResolvedDirectHttpCaptureSpec,
     outcome: &ResponseBodyOutcome,
-    response: &crate::DirectHttpResponseFacts,
+    response: &DirectHttpResponseFacts,
     source_generated_at: DateTime<Utc>,
     decoded_generated_at: DateTime<Utc>,
 ) -> Result<
@@ -22,8 +41,8 @@ pub(super) fn build_artifacts(
     DirectHttpConstructionError,
 > {
     let network = match spec.artifacts().network() {
-        crate::ArtifactRequest::NotRequested => ArtifactFamilyResult::NotRequested,
-        crate::ArtifactRequest::Optional | crate::ArtifactRequest::Required => {
+        ArtifactRequest::NotRequested => ArtifactFamilyResult::NotRequested,
+        ArtifactRequest::Optional | ArtifactRequest::Required => {
             ArtifactFamilyResult::Unavailable {
                 reason: reason("web_capture.direct_http.network_bytes_unavailable")?,
             }
@@ -65,7 +84,7 @@ pub(super) fn build_artifacts(
         source_generated_at,
     )?;
     let provisional_decoder = decoder_identity(spec, provisional.reference())?;
-    let provisional_facts = crate::classify_and_decode(
+    let provisional_facts = classify_and_decode(
         ValidatedSourceBinding::new(source_input, &provisional)
             .map_err(DirectHttpConstructionError::SourceBinding)?,
         &media_type,
@@ -82,7 +101,7 @@ pub(super) fn build_artifacts(
     )?;
     let decoder =
         decoder_identity(spec, source.reference())?.with_generated_at(decoded_generated_at);
-    let facts = crate::classify_and_decode(
+    let facts = classify_and_decode(
         ValidatedSourceBinding::new(source_input, &source)
             .map_err(DirectHttpConstructionError::SourceBinding)?,
         &media_type,
@@ -170,7 +189,7 @@ pub(super) fn build_artifacts(
 }
 
 fn source_representation_artifact(
-    spec: &crate::ResolvedDirectHttpCaptureSpec,
+    spec: &ResolvedDirectHttpCaptureSpec,
     source: &SourceArtifact,
     decoded_source: Option<DecodedSourceArtifactRef>,
     facts: &SourceRepresentationFacts,
@@ -198,7 +217,7 @@ fn source_representation_artifact(
         provenance,
     )
     .map_err(DirectHttpConstructionError::ArtifactRecord)?;
-    let metadata = crate::WebArtifactMetadata::new(
+    let metadata = WebArtifactMetadata::new(
         record,
         MediaType::new(SOURCE_REPRESENTATION_EVIDENCE_MEDIA_TYPE)
             .map_err(DirectHttpConstructionError::MediaType)?,
@@ -217,10 +236,10 @@ fn source_representation_artifact(
 }
 
 fn source_artifact(
-    spec: &crate::ResolvedDirectHttpCaptureSpec,
+    spec: &ResolvedDirectHttpCaptureSpec,
     source: &RetainedSource,
     terminal: BodyTerminal,
-    response: &crate::DirectHttpResponseFacts,
+    response: &DirectHttpResponseFacts,
     classification: Option<&SourceClassificationOutcome>,
     at: DateTime<Utc>,
 ) -> Result<SourceArtifact, DirectHttpConstructionError> {
@@ -242,7 +261,7 @@ fn source_artifact(
                 },
             )
             .map_err(DirectHttpConstructionError::Extent)?,
-            Some(reason(crate::body::terminal_reason(terminal))?),
+            Some(reason(terminal_reason(terminal))?),
         ),
     };
     let provenance = Provenance::new(
@@ -256,15 +275,14 @@ fn source_artifact(
         .map_err(DirectHttpConstructionError::ArtifactRecord)?;
     let media =
         observed_media(response, classification).map_err(DirectHttpConstructionError::MediaType)?;
-    let metadata =
-        crate::WebArtifactMetadata::new(record, media, extent, ArtifactSensitivity::Unassessed)
-            .map_err(DirectHttpConstructionError::Metadata)?;
+    let metadata = WebArtifactMetadata::new(record, media, extent, ArtifactSensitivity::Unassessed)
+        .map_err(DirectHttpConstructionError::Metadata)?;
     Ok(SourceArtifact::new(metadata))
 }
 
 fn decoder_identity(
-    spec: &crate::ResolvedDirectHttpCaptureSpec,
-    source: crate::SourceArtifactRef,
+    spec: &ResolvedDirectHttpCaptureSpec,
+    source: SourceArtifactRef,
 ) -> Result<DecodedOutputIdentity, DirectHttpConstructionError> {
     let id = ArtifactId::try_from(2).map_err(DirectHttpConstructionError::ArtifactId)?;
     let reference = DecodedSourceArtifactRef::from_untyped(ArtifactRef::new(
@@ -272,7 +290,7 @@ fn decoder_identity(
         id,
     ));
     let producer =
-        crate::source_decoder_producer().map_err(DirectHttpConstructionError::DecoderProducer)?;
+        source_decoder_producer().map_err(DirectHttpConstructionError::DecoderProducer)?;
     let schema = spec
         .output_schemas()
         .unicode_view()
@@ -288,7 +306,7 @@ fn decoder_identity(
     .map_err(DirectHttpConstructionError::DecodedIdentity)
 }
 
-const fn decoded_view(outcome: &CharacterDecodingOutcome) -> Option<&crate::DecodedSourceView> {
+const fn decoded_view(outcome: &CharacterDecodingOutcome) -> Option<&DecodedSourceView> {
     match outcome {
         CharacterDecodingOutcome::Complete(v) | CharacterDecodingOutcome::OutputTruncated(v) => {
             Some(v)
@@ -297,7 +315,7 @@ const fn decoded_view(outcome: &CharacterDecodingOutcome) -> Option<&crate::Deco
     }
 }
 fn should_fail_unsupported(
-    spec: &crate::ResolvedDirectHttpCaptureSpec,
+    spec: &ResolvedDirectHttpCaptureSpec,
     outcome: &SourceClassificationOutcome,
 ) -> bool {
     if !matches!(
@@ -309,24 +327,24 @@ fn should_fail_unsupported(
     match outcome {
         SourceClassificationOutcome::Classified(value) => {
             !spec.accepted_formats().contains(match value.format() {
-                SourceFormat::Html => crate::AcceptedSourceFormat::Html,
-                SourceFormat::Xml(crate::XmlProfile::Generic) => {
-                    crate::AcceptedSourceFormat::Xml(crate::XmlSourceProfile::Generic)
+                SourceFormat::Html => AcceptedSourceFormat::Html,
+                SourceFormat::Xml(XmlProfile::Generic) => {
+                    AcceptedSourceFormat::Xml(XmlSourceProfile::Generic)
                 }
-                SourceFormat::Xml(crate::XmlProfile::Xhtml) => {
-                    crate::AcceptedSourceFormat::Xml(crate::XmlSourceProfile::Xhtml)
+                SourceFormat::Xml(XmlProfile::Xhtml) => {
+                    AcceptedSourceFormat::Xml(XmlSourceProfile::Xhtml)
                 }
-                SourceFormat::Json => crate::AcceptedSourceFormat::Json,
-                SourceFormat::PlainText => crate::AcceptedSourceFormat::PlainText,
+                SourceFormat::Json => AcceptedSourceFormat::Json,
+                SourceFormat::PlainText => AcceptedSourceFormat::PlainText,
             })
         }
         _ => true,
     }
 }
 fn observed_media(
-    response: &crate::DirectHttpResponseFacts,
+    response: &DirectHttpResponseFacts,
     classification: Option<&SourceClassificationOutcome>,
-) -> Result<MediaType, crate::MediaTypeError> {
+) -> Result<MediaType, MediaTypeError> {
     if let MediaDeclaration::Parsed { essence, .. } =
         parse_media_declaration(&response.source_media_type())
     {
@@ -335,8 +353,8 @@ fn observed_media(
     let canonical = match classification {
         Some(SourceClassificationOutcome::Classified(value)) => match value.format() {
             SourceFormat::Html => "text/html",
-            SourceFormat::Xml(crate::XmlProfile::Generic) => "application/xml",
-            SourceFormat::Xml(crate::XmlProfile::Xhtml) => "application/xhtml+xml",
+            SourceFormat::Xml(XmlProfile::Generic) => "application/xml",
+            SourceFormat::Xml(XmlProfile::Xhtml) => "application/xhtml+xml",
             SourceFormat::Json => "application/json",
             SourceFormat::PlainText => "text/plain",
         },
@@ -348,7 +366,7 @@ fn size(bytes: &[u8]) -> u64 {
     u64::try_from(bytes.len()).unwrap_or(u64::MAX)
 }
 const fn body_reason(outcome: &ResponseBodyOutcome) -> &'static str {
-    crate::body::terminal_reason(outcome.terminal())
+    terminal_reason(outcome.terminal())
 }
 fn reason(value: &'static str) -> Result<ReasonCode, DirectHttpConstructionError> {
     ReasonCode::new(value).map_err(DirectHttpConstructionError::Reason)

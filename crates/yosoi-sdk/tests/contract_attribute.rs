@@ -1,3 +1,4 @@
+use std::error::Error;
 use yosoi_sdk::prelude as ys;
 
 #[derive(ys::Contract)]
@@ -10,7 +11,11 @@ struct SearchHit {
 }
 
 #[test]
-fn public_contract_sdk_validates_result_links_per_row() -> Result<(), Box<dyn std::error::Error>> {
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "Assertions report SDK contract test failures."
+)]
+fn public_contract_sdk_validates_result_links_per_row() -> Result<(), Box<dyn Error>> {
     let document = ys::Document::html(
         "search.html",
         b"<ul><li class='result'><a href='https://a.example/'>A</a></li><li class='result'><a href='https://b.example/'>B</a></li></ul>".to_vec(),

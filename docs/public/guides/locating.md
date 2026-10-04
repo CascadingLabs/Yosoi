@@ -3,6 +3,7 @@ title: Locating fixture
 description: Lorem ipsum dolor sit amet.
 order: 0
 ---
+
 # Locating fixture
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit.

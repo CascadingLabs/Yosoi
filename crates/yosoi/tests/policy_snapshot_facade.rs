@@ -26,7 +26,7 @@ fn snapshot_owns_a_validated_copy_of_the_caller_policy() -> TestResult {
 
     assert_eq!(snapshot.policy(), &expected);
     assert_eq!(snapshot.identity(), expected_identity);
-    assert!(policy.page.acquisitions.is_empty());
+    assert_eq!(policy.page.acquisitions.len(), 0);
     Ok(())
 }
 

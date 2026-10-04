@@ -274,13 +274,13 @@ impl BrowserNavigationScheduler {
             let ticket = self
                 .inner
                 .next_ticket
-                .fetch_update(Ordering::AcqRel, Ordering::Acquire, |ticket| {
+                .try_update(Ordering::AcqRel, Ordering::Acquire, |ticket| {
                     ticket.checked_add(1)
                 })
                 .map_err(|_| BrowserNavigationSchedulerError::InternalInvariant)?;
             self.inner
                 .jobs
-                .fetch_update(Ordering::AcqRel, Ordering::Acquire, |jobs| {
+                .try_update(Ordering::AcqRel, Ordering::Acquire, |jobs| {
                     jobs.checked_add(1)
                 })
                 .map_err(|_| BrowserNavigationSchedulerError::InternalInvariant)?;

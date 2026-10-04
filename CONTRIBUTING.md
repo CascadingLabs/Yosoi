@@ -1,7 +1,3 @@
-# Contributing to Yosoi Oxide
-
-Yosoi Oxide is currently a private, early-stage Cascading Labs project. Coordinate planned work with the maintainers before making substantial changes.
-
 ## Setup
 
 Install [rustup](https://rustup.rs/), clone the repository, and run:
@@ -10,7 +6,35 @@ Install [rustup](https://rustup.rs/), clone the repository, and run:
 ./scripts/bootstrap.sh
 ```
 
-The bootstrap script and `rust-toolchain.toml` pin Rust 1.99.0 with rustfmt and Clippy. Bootstrap also installs cargo-nextest 0.9.106 and cargo-deny 0.19.0. `Cargo.toml` records Rust 1.98 as the current minimum supported Rust version and defines the workspace lint policy.
+The bootstrap script and `rust-toolchain.toml` pin Rust 1.99.0 with rustfmt and Clippy. Bootstrap also installs cargo-nextest 0.9.106 and cargo-deny 0.19.0. `Cargo.toml` records Rust 1.99 as the current minimum supported Rust version and defines the workspace lint policy.
+
+## Pre-commit checks
+
+Install [prek](https://prek.j178.dev/installation/) 0.3.6 or later, then enable the repository's Git hook:
+
+```bash
+prek install
+```
+
+Commits check Rust formatting, YAML/TOML/JSON syntax, merge conflicts, private keys, trailing whitespace, and final newlines. Vendored code and test fixtures are excluded. Hooks may fix whitespace and final newlines; review and stage those changes before committing again.
+
+Run the fast checks explicitly with `prek run --all-files`. When using JJ, run prek explicitly before review; Git commit hooks do not enforce JJ operations.
+
+Clippy is a manual hook to keep commits fast. Run it before review with one build worker:
+
+```bash
+prek run clippy --stage manual --all-files
+```
+
+Run the dependency audit separately so expensive checks stay serial:
+
+```bash
+prek run cargo-deny --stage manual --all-files
+```
+
+This checks advisories, licenses, banned dependencies, and allowed sources using `deny.toml`. It may fetch current advisory data. For a handoff, capture each command's output and let the next agent resolve the findings; no automatic Rust or dependency fixes are applied.
+
+Clippy treats warnings, including Rust's unused-code warnings, as errors. This does not prove that exported library APIs are used by consumers. CI remains the shared enforcement point; the full review checks are still `cargo xtask check`.
 
 ## Changes
 
@@ -37,7 +61,7 @@ Workspace crates should inherit these dependencies with `anyhow.workspace = true
 
 ## Pull requests
 
-Explain the intent, significant design choices, verification performed, and remaining risks. Justify every new dependency and enabled feature using the checklist in the Rust policy. New dependencies, frameworks, crate boundaries, safety policy, lint strictness, and policy exceptions require explicit maintainer agreement rather than being introduced incidentally.
+Explain the intent, relevant AI prompts, significant design choices, verification performed, and remaining risks. Justify every new dependency and enabled feature using the checklist in the Rust policy. New dependencies, frameworks, crate boundaries, safety policy, lint strictness, and policy exceptions require explicit maintainer agreement rather than being introduced incidentally.
 
 ## License
 

@@ -21,6 +21,17 @@ Read and follow [the Chromium/CDP baseline](docs/chromium-cdp-baseline.md) befor
 - Keep Chromiumoxide and a small documented patch queue; a replacement requires a concrete issue proving bounded patches insufficient.
 - Review on the first business day monthly and after relevant security/compatibility changes. Record a go/no-go/urgent-remediation decision, consumer notes, and deduplicated follow-ups or dismissal reasons. Promotion requires complete applicable regressions and Rust benchmarks, run serially.
 
+# Release procedure
+
+- Beta releases stay below `1.0.0` and use `0.MINOR.PATCH`, without a `-beta` suffix. Beta iterations increment MINOR (1–100000) and reset PATCH to zero: `0.1.0`, `0.2.0`, …, `0.100000.0`.
+- Bug fixes and hotfixes increment only PATCH (1–10000) within the current beta iteration: `0.2.0` → `0.2.1` → `0.2.2`. The next beta iteration becomes `0.3.0`. Reserve `1.0.0` for the first stable release.
+- Preview with `cargo xtask bump-version 0.2.0 --dry-run`, then run `cargo xtask bump-version 0.2.0` to update in place. Use the actual chosen version in both commands.
+- A real run validates the metadata and stages complete replacements beside the originals before asking `Apply these changes? [y/N]`. This checks file preparation, not compilation, dependency resolution, or release test results. Answer `y` or `yes` to apply; `n`, `no`, an empty answer, or end-of-input cancels. Use `-y` or `--yes` for scripting (for example `cargo xtask bump-version 0.2.0 --date-released 2026-10-04 -y`); staging and validation still run. `--dry-run` and `--check` never prompt or stage files and cannot be combined with `-y`.
+- Applying rechecks the originals for concurrent edits, preserves permissions, and replaces each file with an atomic rename. Ordinary replacement failures restore already updated files. The entire multi-file update is not atomic across process termination; inspect the diff and rerun the consistency check after an interruption.
+- The command synchronizes `[workspace.package].version`, every first-party package under `crates/`, `benchmarks/`, `xtask/`, and `fuzz/`, local dependency requirements (including renamed and target-specific dependencies), `Cargo.lock`, `fuzz/Cargo.lock`, and `CITATION.cff`. Vendored Chromium manifests and dependency versions retain their independent identities. Dependency requirements use `=VERSION` so beta dependencies resolve to the chosen iteration.
+- Verify with `cargo xtask bump-version 0.2.0 --date-released 2026-10-04 --check` (fails on version or date drift), using the chosen release version and date. Review the diff and run the focused release checks. The command does not build product crates, resolve dependencies, create tags, or publish releases. Keep existing unrelated changes intact.
+- Set `CITATION.cff`'s `date-released` through `cargo xtask bump-version 0.2.0 --date-released 2026-10-04`, using the actual release version and date. The date must be a valid calendar date in `YYYY-MM-DD` format. Combine this option with `--dry-run` to preview or `--check` to verify both version and date; omit it to preserve the existing date. The CFF schema version stays unchanged. Example versions in docs, historical evidence, and generated reference artifacts are not release metadata and are not rewritten.
+
 # Linear
 
 `Backlog` → `Todo` → `Shaping` → `Ready for Worker` → `Agent Working` → `In Review` → `Agent Verification` → `Final Boss` → `Ready to land` → `Done`

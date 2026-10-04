@@ -1356,7 +1356,7 @@ fn ready_finalizes_exact_payloads_and_browser_contexts() {
             assert_eq!(metadata.provenance().derived_from().len(), 1);
         } else {
             assert_eq!(metadata.provenance().schema(), &schema("test.output"));
-            assert!(metadata.provenance().derived_from().is_empty());
+            assert_eq!(metadata.provenance().derived_from().len(), 0);
         }
     }
     assert_eq!(

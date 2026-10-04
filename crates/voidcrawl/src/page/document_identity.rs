@@ -53,7 +53,7 @@ impl DocumentIdentityState {
         };
         if establish_or_advance {
             self.top_epoch
-                .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |epoch| {
+                .try_update(Ordering::Relaxed, Ordering::Relaxed, |epoch| {
                     epoch.checked_add(1)
                 })
                 .map_err(|_| VoidCrawlError::Other("document epoch exhausted".into()))?;

@@ -63,7 +63,7 @@ fn executable_disguised_as_pdf_is_flagged() {
 #[test]
 fn executable_under_octet_stream_is_allowed() {
     // octet-stream is the generic binary type — an executable under it is not a
-    // disguise, so the type check must not flag it (yara still gets a say).
+    // disguise, so the type check must not flag it (the signature check still gets a say).
     let mut data = ELF_HEADER.to_vec();
     data.extend_from_slice(&[0u8; 64]);
     let cfg = ScanConfig {
@@ -88,4 +88,29 @@ fn oversize_is_flagged() {
 fn small_clean_payload_passes() {
     let report = scan_bytes(b"hello world, not a virus", &ScanConfig::default());
     assert_eq!(report.verdict, Verdict::Clean);
+}
+
+#[test]
+fn eicar_requires_both_case_sensitive_markers_in_either_order() {
+    for incomplete in [b"EICAR-STANDARD-ANTIVIRUS-TEST-FILE".as_slice(), b"$H+H*"] {
+        assert_eq!(
+            scan_bytes(incomplete, &ScanConfig::default()).verdict,
+            Verdict::Clean
+        );
+    }
+    let reordered = b"$H+H*\0EICAR-STANDARD-ANTIVIRUS-TEST-FILE";
+    assert_eq!(
+        scan_bytes(reordered, &ScanConfig::default()).verdict,
+        Verdict::Flagged {
+            reason: "matched signature: EICAR_Test_File".to_owned()
+        }
+    );
+    assert_eq!(
+        scan_bytes(
+            b"$H+H*eicar-standard-antivirus-test-file",
+            &ScanConfig::default()
+        )
+        .verdict,
+        Verdict::Clean
+    );
 }

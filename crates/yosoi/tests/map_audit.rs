@@ -217,7 +217,7 @@ async fn off_host_robots_sitemap_is_typed_and_never_dispatched() -> TestResult {
     external.shutdown().await;
     mapped.shutdown().await;
 
-    assert!(external_requests.is_empty());
+    assert_eq!(external_requests.len(), 0);
     assert!(
         !mapped_requests
             .iter()

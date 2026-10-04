@@ -1,10 +1,8 @@
 #![allow(clippy::unwrap_used, reason = "deterministic local fixtures")]
 
-use std::{error::Error, sync::Arc, time::Duration};
+use std::{error::Error, time::Duration};
 
 use chrono::{DateTime, Utc};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::{net::TcpListener, sync::Mutex, time::sleep};
 use tokio_util::sync::CancellationToken;
 
 use crate::{CaptureTermination, DirectHttpRedirectPolicy, Observation, RedirectCause};
@@ -19,29 +17,9 @@ fn wall_clock() -> DateTime<Utc> {
     DateTime::from_timestamp(1_700_000_000, 0).unwrap()
 }
 
-async fn server(routes: Vec<(&'static str, Duration)>) -> String {
-    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-    let address = listener.local_addr().unwrap();
-    let routes = Arc::new(Mutex::new(routes.into_iter()));
-    tokio::spawn(async move {
-        loop {
-            let Ok((mut stream, _)) = listener.accept().await else {
-                return;
-            };
-            let routes = Arc::clone(&routes);
-            tokio::spawn(async move {
-                let mut request = [0_u8; 2048];
-                let _ = stream.read(&mut request).await;
-                let next = routes.lock().await.next();
-                if let Some((response, delay)) = next {
-                    sleep(delay).await;
-                    let _ = stream.write_all(response.as_bytes()).await;
-                }
-            });
-        }
-    });
-    format!("http://{address}/start?signature=INITIAL_SECRET#initial")
-}
+#[path = "redirect_test_server.rs"]
+mod test_server;
+use test_server::{server, server_observing_request};
 
 fn follow(url: &str, hops: u32, elapsed: u64) -> crate::ResolvedDirectHttpCaptureSpec {
     spec_with_redirects(
@@ -264,7 +242,7 @@ async fn classifies_missing_credential_scheme_and_policy_refusal_without_content
         assert_eq!(failure.response_status(), Some(302));
         let resolution = failure.resolution().unwrap();
         assert_eq!(resolution.final_url().as_observed().unwrap().as_str(), url);
-        assert!(resolution.redirects().as_observed().unwrap().is_empty());
+        assert_eq!(resolution.redirects().as_observed().unwrap().len(), 0);
         assert!(matches!(
             failure.lifecycle().termination(),
             Some(CaptureTermination::Interrupted(evidence))
@@ -304,19 +282,24 @@ async fn classifies_missing_credential_scheme_and_policy_refusal_without_content
 
 #[tokio::test]
 async fn cancellation_after_one_hop_retains_exact_partial_resolution() {
-    let url = server(vec![
-        ("HTTP/1.1 302 Found\r\nLocation: /next?token=FOLLOWED_SECRET#f\r\nContent-Length: 2000000\r\n\r\nignored", Duration::ZERO),
-        ("HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n", Duration::from_secs(2)),
-    ]).await;
+    let (url, redirected_request, release_response) = server_observing_request(
+        vec![
+            ("HTTP/1.1 302 Found\r\nLocation: /next?token=FOLLOWED_SECRET#f\r\nContent-Length: 2000000\r\n\r\nignored", Duration::ZERO),
+            ("HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n", Duration::ZERO),
+        ],
+        "/next?token=",
+    )
+    .await;
     let cancellation = CancellationToken::new();
     let trigger = cancellation.clone();
     tokio::spawn(async move {
-        sleep(Duration::from_millis(30)).await;
+        let _ = redirected_request.await;
         trigger.cancel();
     });
     let failure = execute_direct_http_at(follow(&url, 2, 1_000_000), &cancellation, wall_clock())
         .await
         .unwrap_err();
+    let _ = release_response.send(());
     assert_eq!(
         failure.error().kind(),
         DirectHttpTransportErrorKind::Cancelled

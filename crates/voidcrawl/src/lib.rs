@@ -112,8 +112,6 @@ pub use response::{
 #[cfg(feature = "scanner")]
 pub use scanner::{DEFAULT_MAX_BYTES, ScanConfig, ScanReport, Verdict, scan_bytes, scan_path};
 pub use selector::{BrowserTarget, BrowserTargetKind, TargetResolution};
-#[allow(deprecated)]
-pub use selector::{SelectorEntry, SelectorKind, SelectorResolution};
 pub use session::{BrowserDebugPortPolicy, BrowserMode, BrowserSession, BrowserSessionBuilder};
 pub use stealth::{NavigatorWebdriverPolicy, StealthConfig};
 pub use viewport::{ScrollTarget, Viewport, all_presets, preset as viewport_preset, preset_names};

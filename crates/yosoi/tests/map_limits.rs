@@ -3,7 +3,7 @@
 #[path = "../../yosoi-web-capture-direct-http/tests/support/direct_http_fixture.rs"]
 mod fixture;
 
-use std::{error::Error, io};
+use std::{error::Error, fmt::Write as _, io};
 
 use fixture::{FixtureService, Protocol, RequestLine, Response as FixtureResponse};
 use yosoi::prelude as ys;
@@ -175,7 +175,7 @@ async fn url_byte_limit_also_guards_support_requests_before_dispatch() -> TestRe
     let requests = service.requests().await;
     service.shutdown().await;
 
-    assert!(requests.is_empty());
+    assert_eq!(requests.len(), 0);
     assert!(outcome.support_documents().iter().any(|document| {
         document.kind == ys::map::SupportDocumentKind::Robots
             && document.status
@@ -190,7 +190,7 @@ async fn inventory_byte_limit_preserves_the_seed_and_bounds_accounting() -> Test
     let mut routes = misses();
     let mut root = String::from("<main>");
     for number in 0..50 {
-        root.push_str(&format!("<a href=\"/item-{number:02}\">item</a>"));
+        write!(root, "<a href=\"/item-{number:02}\">item</a>")?;
     }
     root.push_str("</main>");
     html(&mut routes, "/", root.as_bytes());
@@ -430,7 +430,7 @@ async fn cross_host_redirect_is_rejected_before_the_target_request() -> TestResu
             .exploration,
         ys::map::Exploration::Failed(ys::map::SourceFailure::RedirectRejected)
     );
-    assert!(outside_requests.is_empty());
+    assert_eq!(outside_requests.len(), 0);
     Ok(())
 }
 
@@ -526,8 +526,8 @@ async fn disabled_page_exploration_still_inventories_the_seed_host() -> TestResu
             .host,
         "localhost"
     );
-    assert!(outcome.pages().is_empty());
-    assert!(requests.is_empty());
+    assert_eq!(outcome.pages().len(), 0);
+    assert_eq!(requests.len(), 0);
     assert_eq!(outcome.termination(), ys::map::MapTermination::Exhausted);
     Ok(())
 }

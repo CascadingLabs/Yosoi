@@ -64,7 +64,7 @@ fn canonical_wire_has_stable_preorder_ids_and_explicitly_omits_non_tree_nodes() 
         .get("nodes")
         .and_then(Value::as_array)
         .ok_or_else(|| io::Error::other("rendered DOM nodes are missing"))?;
-    assert!(!nodes.is_empty());
+    assert_ne!(nodes.len(), 0);
     for (index, node) in nodes.iter().enumerate() {
         assert_eq!(
             node.get("id").and_then(Value::as_u64),
