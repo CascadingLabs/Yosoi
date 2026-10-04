@@ -521,3 +521,28 @@ CDP commands, and their effects—not the crate name—are what can be observed.
 - [Chromiumoxide OOPIF pull request 331](https://github.com/mattsse/chromiumoxide/pull/331)
 - [Chrome 153 Stable and security fixes](https://chromereleases.googleblog.com/2026/09/stable-channel-update-for-desktop_0808145027.html)
 - [Chrome 153 web-platform release notes](https://developer.chrome.com/release-notes/153)
+
+## Runtime eligibility guard (2026-10-04)
+
+VoidCrawl now rejects unknown, non-Stable, testing-only, and stale executable
+identities before launch. `session/browser_distribution.rs` contains the
+reviewed regular Linux Stable versions from [Google Version History](https://versionhistory.googleapis.com/v1/chrome/platforms/linux/channels/stable/versions/all/releases).
+The newest reviewed milestone is 154; only exact Stable versions from milestones
+153 and 154 are eligible. A superseded version expires 30 days after it stopped
+serving, and the review snapshot itself expires after 30 days. Refresh this
+eligibility list during monthly review and after relevant security updates.
+Unknown releases fail closed. Eligibility does not promote M154 or replace the
+M153 certification tuple; complete promotion evidence remains required.
+
+Remote attachments now require a loopback debug endpoint, CDP SystemInfo's
+absolute executable path, a successful local executable identity check, and
+an exact match with Browser.getVersion. Both direct WebSocket URLs and resolved
+HTTP endpoints undergo this validation. Nonlocal attachments and executable
+identities outside the reviewed Linux Stable list are unsupported until a
+verifiable distribution boundary is provided. CDP's product string alone
+cannot distinguish regular Chrome from Chrome for Testing. Rejected attachments
+disconnect without terminating the browser owned by the caller.
+
+Generic arguments that disable browser/GPU sandboxing or site/process isolation
+are rejected. The legacy `no_sandbox()` builder setting also returns an invalid
+input error; there is currently no approved security-exception mechanism.

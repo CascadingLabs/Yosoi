@@ -6,7 +6,7 @@ use std::{
     num::NonZeroU16,
     path::PathBuf,
     sync::{
-        Arc, Once,
+        Arc,
         atomic::{AtomicBool, Ordering},
     },
     time::Duration,
@@ -24,8 +24,6 @@ use chromiumoxide::{
     error::{BrowserStderr, CdpError},
     handler::{Handler, HandlerConfig},
 };
-use rustls::crypto::ring::default_provider as ring_crypto_provider;
-use serde_json::Value;
 use tokio::{
     net::TcpListener,
     runtime::Handle,
@@ -40,6 +38,7 @@ const AUTO_DEBUG_PORT_ATTEMPTS: u8 = 3;
 
 mod browser_distribution;
 mod browser_mode;
+mod security;
 use browser_distribution::supported_chrome_executable;
 use browser_mode::browser_mode_observation;
 
@@ -88,10 +87,7 @@ async fn fetch_attached_pages(browser: &mut Browser) -> Result<Vec<(TargetInfo, 
 ///    to SwiftShader software WebGL, which `WEBGL_debug_renderer_info` reports
 ///    as "SwiftShader" — a strong bot signal Cloudflare Turnstile weighs. These
 ///    request hardware acceleration through ANGLE while preserving Chromium's
-///    GPU-process sandbox. Hosts with a demonstrated driver incompatibility may
-///    opt in to `--disable-gpu-sandbox` through [`BrowserSessionBuilder::arg`],
-///    but it is never a default because Chromium warns that it reduces security
-///    and stability.
+///    GPU-process sandbox. Sandbox-disabling caller switches are rejected before launch.
 ///
 /// Flags are stored **without** the leading `--`: chromiumoxide's
 /// `BrowserConfig::arg` prepends `--` itself (it treats the whole string as a
@@ -372,6 +368,8 @@ impl BrowserSessionBuilder {
         self
     }
 
+    /// Legacy setting retained for callers; launch rejects it because no
+    /// sandbox-disabling security exception is currently approved.
     pub const fn no_sandbox(mut self) -> Self {
         self.no_sandbox = true;
         self
@@ -620,6 +618,7 @@ impl BrowserSession {
         persistent_user_data_dir: Option<PathBuf>,
         cdp_mode: CdpMode,
     ) -> Result<Self> {
+        security::validate_launch_security(&extra_args, no_sandbox)?;
         let browser_mode = browser_mode_observation(&mode);
         let state_binding = if matches!(mode, BrowserMode::RemoteDebug { .. }) {
             BrowserStateBinding::AttachedBrowser
@@ -632,7 +631,9 @@ impl BrowserSession {
 
         let (browser, handler) = match &mode {
             BrowserMode::RemoteDebug { ws_url } => {
-                let ws = resolve_ws_url(ws_url).await?;
+                security::require_local_attachment(ws_url)?;
+                let ws = security::resolve_ws_url(ws_url).await?;
+                security::require_local_attachment(&ws)?;
                 // `Browser::connect` hardcodes `HandlerConfig::default()`,
                 // which would re-read the environment and
                 // discard an explicit `cdp_mode`.
@@ -722,6 +723,13 @@ impl BrowserSession {
 
         let alive = Arc::new(AtomicBool::new(true));
         let handler_task = spawn_handler(handler, Arc::clone(&alive));
+        if matches!(mode, BrowserMode::RemoteDebug { .. })
+            && let Err(error) = security::verify_attached_browser(&browser).await
+        {
+            handler_task.abort();
+            let _ = handler_task.await;
+            return Err(error);
+        }
 
         Ok(Self {
             browser: Arc::new(Mutex::new(browser)),
@@ -1222,43 +1230,6 @@ async fn shutdown_launched_browser(browser: Arc<Mutex<Browser>>) -> Result<()> {
             "browser session close timed out killing Chromium".into(),
         )),
     }
-}
-
-/// If the user gives us `http://host:port` (Chrome's debug HTTP endpoint),
-/// resolve it to the actual `ws://` URL by hitting `/json/version`.
-async fn resolve_ws_url(url: &str) -> Result<String> {
-    // Already a ws:// URL — use directly
-    if url.starts_with("ws://") || url.starts_with("wss://") {
-        return Ok(url.to_string());
-    }
-
-    // reqwest is built with `rustls-no-provider`, so we must install a rustls
-    // CryptoProvider before the first request or reqwest panics "No provider
-    // set" (even for this plain-HTTP localhost fetch). Install the `ring`
-    // provider exactly once; `install_default` errors if already set, so the
-    // `Once` + ignored result is idempotent.
-    static CRYPTO_INIT: Once = Once::new();
-    CRYPTO_INIT.call_once(|| {
-        let _ = ring_crypto_provider().install_default();
-    });
-
-    // Treat as an HTTP endpoint, fetch /json/version
-    let version_url = format!("{}/json/version", url.trim_end_matches('/'));
-    let resp: Value = reqwest::get(&version_url)
-        .await
-        .map_err(|e| VoidCrawlError::ConnectionFailed(format!("GET {version_url}: {e}")))?
-        .json()
-        .await
-        .map_err(|e| VoidCrawlError::ConnectionFailed(format!("parse {version_url}: {e}")))?;
-
-    resp.get("webSocketDebuggerUrl")
-        .and_then(|v| v.as_str())
-        .map(ToString::to_string)
-        .ok_or_else(|| {
-            VoidCrawlError::ConnectionFailed(
-                "webSocketDebuggerUrl not found in /json/version response".into(),
-            )
-        })
 }
 
 #[cfg(test)]

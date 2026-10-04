@@ -30,7 +30,11 @@ generated CDP schema:
    and
 10. route normal-mode OOPIF frame events and frame-scoped commands through the
     owning flat session, initializing child Page/Runtime state before resuming
-    it. Child-session Network adoption remains out of scope.
+    it. Child-session Network adoption remains out of scope;
+11. exclude service workers from page auto-attachment so their startup does
+    not race debugger pause/resume and immediate detachment;
+12. report child kill/reap failures during launch cleanup without panicking,
+    preserving the original launch error.
 
 The controller still identifies as 0.9.1 at the upstream base above. Its CDP
 dependency is the separately vendored `../chromiumoxide_cdp`, generated from

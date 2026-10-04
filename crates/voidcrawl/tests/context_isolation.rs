@@ -17,6 +17,7 @@ use std::{
     collections::HashMap,
     io::{Read, Write},
     net::{SocketAddr, TcpListener, TcpStream},
+    num::NonZeroUsize,
     sync::{
         Arc,
         atomic::{AtomicBool, AtomicUsize, Ordering},
@@ -25,9 +26,19 @@ use std::{
     time::Duration,
 };
 
+use chromiumoxide::{
+    browser::{Browser, CdpMode},
+    cdp::browser_protocol::target::{
+        EventTargetCreated, EventTargetDestroyed, GetBrowserContextsParams,
+        SetDiscoverTargetsParams,
+    },
+    handler::HandlerConfig,
+    listeners::{EventDelivery, EventListenerConfig, EventOverflowPolicy},
+};
+use futures::StreamExt;
 use tokio::{
     task::yield_now,
-    time::{Instant, sleep, timeout},
+    time::{Instant, timeout},
 };
 use void_crawl_core::{
     BrowserSession, BrowserStateBinding, ContextDisposalState, NavigationCaptureOptions,
@@ -630,64 +641,104 @@ async fn cancelling_explicit_context_disposal_does_not_leak_the_context() {
 #[tokio::test]
 async fn cancelling_context_creation_after_the_cdp_request_disposes_the_context() {
     let browser = Arc::new(session().await);
-    // Chromium's initial about:blank page can arrive asynchronously after
-    // launch. Establish a stable baseline so it is not mistaken for a leaked
-    // isolated-context page.
-    let mut existing_page_count = browser.pages().await.expect("list initial pages").len();
-    let mut stable_samples = 0_u8;
-    for _ in 0..100 {
-        let current_page_count = browser.pages().await.expect("list initial pages").len();
-        if current_page_count == existing_page_count {
-            stable_samples = stable_samples.saturating_add(1);
-            if stable_samples >= 4 {
-                break;
-            }
-        } else {
-            existing_page_count = current_page_count;
-            stable_samples = 0;
-        }
-        sleep(Duration::from_millis(25)).await;
-    }
-    let baseline_page_count = existing_page_count;
-    let creating_browser = Arc::clone(&browser);
-
-    let creating = tokio::spawn(async move { creating_browser.new_isolated_context().await });
-    let mut created_page_count = 0;
-    for _ in 0..400 {
-        let current_page_count = browser
-            .pages()
-            .await
-            .expect("list pages during context creation")
-            .len();
-        created_page_count = current_page_count.saturating_sub(baseline_page_count);
-        if created_page_count > 0 {
-            break;
-        }
-        sleep(Duration::from_millis(25)).await;
-    }
-    assert!(
-        created_page_count > 0,
-        "context construction never exposed its target"
+    let (observer, mut handler) = Browser::connect_with_config(
+        browser.websocket_url().await,
+        HandlerConfig {
+            cdp_mode: CdpMode::Minimal,
+            ignore_invalid_messages: false,
+            ..HandlerConfig::default()
+        },
+    )
+    .await
+    .expect("connect lifecycle observer");
+    let observer_task = tokio::spawn(async move { while handler.next().await.is_some() {} });
+    let config = EventListenerConfig::new(
+        NonZeroUsize::new(32).expect("positive capacity"),
+        EventOverflowPolicy::Close,
     );
+    let mut created = observer
+        .event_listener::<EventTargetCreated>(config)
+        .await
+        .expect("observe target creation");
+    let mut destroyed = observer
+        .event_listener::<EventTargetDestroyed>(config)
+        .await
+        .expect("observe target destruction");
+    let initial_contexts = observer
+        .execute(GetBrowserContextsParams::default())
+        .await
+        .expect("initial contexts")
+        .result
+        .browser_context_ids;
+    observer
+        .execute(SetDiscoverTargetsParams::new(true))
+        .await
+        .expect("enable target lifecycle events");
 
-    creating.abort();
-    let _ = creating.await;
-
-    // Cancellation happens only after the new target is observable. The
-    // retained construction worker must recover an unreceived context and
-    // dispose it rather than leaving that target in Chromium.
-    for _ in 0..400 {
-        let pages = browser
-            .pages()
-            .await
-            .expect("list pages after cancellation");
-        if pages.len() <= baseline_page_count {
-            browser.close().await.expect("close browser");
-            return;
+    let creating_browser = Arc::clone(&browser);
+    let creating = tokio::spawn(async move { creating_browser.new_isolated_context().await });
+    // Identify the newly created isolated context rather than sampling page
+    // counts: Chrome's unrelated startup tab can arrive after any sample.
+    let target = timeout(Duration::from_secs(10), async {
+        while let Some(delivery) = created.next().await {
+            let EventDelivery::Event(event) = delivery else {
+                panic!("creation events overflowed")
+            };
+            if event.target_info.r#type == "page"
+                && let Some(id) = event.target_info.browser_context_id.as_ref()
+                && !initial_contexts.contains(id)
+            {
+                // Chrome can give its default startup tab a context ID too,
+                // but GetBrowserContexts lists only explicitly created contexts.
+                let private_contexts = observer
+                    .execute(GetBrowserContextsParams::default())
+                    .await
+                    .expect("identify private context")
+                    .result
+                    .browser_context_ids;
+                if private_contexts.contains(id) {
+                    return event.target_info.clone();
+                }
+            }
         }
-        sleep(Duration::from_millis(25)).await;
-    }
-    panic!("cancelled context creation left a page behind");
+        panic!("creation event stream closed")
+    })
+    .await
+    .expect("isolated target creation timed out");
+    creating.abort();
+    // If construction won the cancellation race, drop its delivered context
+    // explicitly; both cancellation boundaries must release the same target.
+    drop(creating.await);
+    timeout(Duration::from_secs(10), async {
+        while let Some(delivery) = destroyed.next().await {
+            let EventDelivery::Event(event) = delivery else {
+                panic!("destruction events overflowed")
+            };
+            if event.target_id == target.target_id {
+                return;
+            }
+        }
+        panic!("destruction event stream closed")
+    })
+    .await
+    .expect("cancelled context creation left its target behind");
+    let contexts = observer
+        .execute(GetBrowserContextsParams::default())
+        .await
+        .expect("remaining contexts")
+        .result
+        .browser_context_ids;
+    assert!(
+        !target
+            .browser_context_id
+            .as_ref()
+            .is_some_and(|id| contexts.contains(id)),
+        "cancelled context creation left its browser context behind"
+    );
+    drop(observer);
+    observer_task.abort();
+    let _ = observer_task.await;
+    browser.close().await.expect("close browser");
 }
 
 #[tokio::test]

@@ -8,6 +8,10 @@
     clippy::absolute_paths
 )]
 
+#[path = "integration/fixture.rs"]
+mod fixture;
+
+use fixture::Fixture;
 use std::collections::HashMap;
 use void_crawl_core::{
     Bbox, BrowserSession, ScreenshotOptions, ScreenshotOutput, ScrollTarget, StealthConfig,
@@ -58,17 +62,15 @@ async fn test_launch_and_version() {
 
 #[tokio::test]
 async fn test_new_page_and_content() {
+    let fixture = Fixture::start().await;
     let session = headless_session().await;
     let page = session
-        .new_page("https://example.com")
+        .new_page(&fixture.url)
         .await
         .expect("new_page failed");
 
     let html = page.content().await.expect("content() failed");
-    assert!(
-        html.contains("Example Domain"),
-        "expected example.com content"
-    );
+    assert!(html.contains("Example Domain"), "expected fixture content");
 
     page.close().await.expect("page close failed");
     session.close().await.expect("browser close failed");
@@ -166,9 +168,10 @@ async fn test_attach_existing_page_with_active_worker() {
 
 #[tokio::test]
 async fn test_title_and_url() {
+    let fixture = Fixture::start().await;
     let session = headless_session().await;
     let page = session
-        .new_page("https://example.com")
+        .new_page(&fixture.url)
         .await
         .expect("new_page failed");
 
@@ -176,7 +179,7 @@ async fn test_title_and_url() {
     assert_eq!(title, Some("Example Domain".to_string()));
 
     let url = page.url().await.expect("url() failed");
-    assert_eq!(url, Some("https://example.com/".to_string()));
+    assert_eq!(url, Some(fixture.url.clone()));
 
     page.close().await.expect("close failed");
     session.close().await.ok();
@@ -184,9 +187,10 @@ async fn test_title_and_url() {
 
 #[tokio::test]
 async fn test_evaluate_js() {
+    let fixture = Fixture::start().await;
     let session = headless_session().await;
     let page = session
-        .new_page("https://example.com")
+        .new_page(&fixture.url)
         .await
         .expect("new_page failed");
 
@@ -205,9 +209,10 @@ async fn test_evaluate_js() {
 
 #[tokio::test]
 async fn test_query_selector() {
+    let fixture = Fixture::start().await;
     let session = headless_session().await;
     let page = session
-        .new_page("https://example.com")
+        .new_page(&fixture.url)
         .await
         .expect("new_page failed");
 
@@ -233,13 +238,14 @@ async fn test_query_selector() {
 
 #[tokio::test]
 async fn test_navigate() {
+    let fixture = Fixture::start().await;
     let session = headless_session().await;
     let page = session
-        .new_page("https://example.com")
+        .new_page(&fixture.url)
         .await
         .expect("new_page failed");
 
-    page.navigate("https://www.iana.org/domains/reserved")
+    page.navigate(&format!("{}reserved", fixture.url))
         .await
         .expect("navigate failed");
 
@@ -255,9 +261,10 @@ async fn test_navigate() {
 
 #[tokio::test]
 async fn test_screenshot_png() {
+    let fixture = Fixture::start().await;
     let session = headless_session().await;
     let page = session
-        .new_page("https://example.com")
+        .new_page(&fixture.url)
         .await
         .expect("new_page failed");
 
@@ -288,6 +295,7 @@ async fn test_set_headers() {
 
 #[tokio::test]
 async fn test_custom_identity_geometry_and_locale() {
+    let fixture = Fixture::start().await;
     let stealth = StealthConfig {
         navigator_webdriver: void_crawl_core::NavigatorWebdriverPolicy::BrowserReported,
         viewport_width: 1280,
@@ -303,7 +311,7 @@ async fn test_custom_identity_geometry_and_locale() {
         .expect("launch failed");
 
     let page = session
-        .new_page("https://example.com")
+        .new_page(&fixture.url)
         .await
         .expect("new_page failed");
 
@@ -318,9 +326,10 @@ async fn test_custom_identity_geometry_and_locale() {
 
 #[tokio::test]
 async fn set_viewport_overrides_dimensions_scale_and_mobile_ua_persistently() {
+    let fixture = Fixture::start().await;
     let session = headless_session().await;
     let page = session
-        .new_page("https://example.com")
+        .new_page(&fixture.url)
         .await
         .expect("new_page failed");
 
@@ -366,9 +375,10 @@ async fn set_viewport_overrides_dimensions_scale_and_mobile_ua_persistently() {
 
 #[tokio::test]
 async fn clear_viewport_removes_the_override() {
+    let fixture = Fixture::start().await;
     let session = headless_session().await;
     let page = session
-        .new_page("https://example.com")
+        .new_page(&fixture.url)
         .await
         .expect("new_page failed");
 
@@ -406,9 +416,10 @@ async fn clear_viewport_removes_the_override() {
 
 #[tokio::test]
 async fn screenshot_one_shot_viewport_restores_after_capture() {
+    let fixture = Fixture::start().await;
     let session = headless_session().await;
     let page = session
-        .new_page("https://example.com")
+        .new_page(&fixture.url)
         .await
         .expect("new_page failed");
 
