@@ -8,44 +8,45 @@ use std::{
 use anyhow::{Context as _, Result, bail};
 use serde_json::json;
 use yosoi::{
-    AttemptOutcome, Document, DocumentOutcome, EffectivePolicyIdentity, Response,
-    ResponseTermination,
+    EffectivePolicyIdentity, ResponseTermination,
+    documents::DocumentRef,
     policy::{AcquisitionKind, BrowserMode, DocumentRequest},
+    request::{AttemptDiagnostic, AttemptState, DocumentOutcome, Response},
 };
 
-use crate::stats::RunTimer;
+use crate::{browser_diagnostics, presentation::Theme, stats::RunTimer};
 
 const MAX_RAW_BYTES: usize = 16 * 1024 * 1024;
 
 pub(super) fn stats(response: &Response, timer: &RunTimer) -> Result<()> {
+    let theme = Theme::stderr();
+    let label = theme.label;
+    let value = theme.value;
     let mut stderr = io::stderr().lock();
-    writeln!(stderr, "Request stats:")?;
-    timer.write_wall_time(&mut stderr)?;
+    timer.write_header(&mut stderr, "Request", theme)?;
     writeln!(
         stderr,
-        "Termination: {}",
+        "{label}Termination:{label:#} {value}{}{value:#}",
         termination_label(response.termination())
     )?;
-    writeln!(stderr, "Attempts: {}", response.attempts().len())?;
-    for (index, attempt) in response.attempts().iter().enumerate() {
+    writeln!(
+        stderr,
+        "{label}Attempts:{label:#} {value}{}{value:#}",
+        response.attempts().len()
+    )?;
+    for (index, attempt) in response.attempts().enumerate() {
         let number = index.saturating_add(1);
         let status = attempt
             .status()
             .map_or_else(|| "unobserved".to_owned(), |value| value.to_string());
-        let bytes: u64 = attempt
-            .result()
-            .map(|result| {
-                result
-                    .documents()
-                    .iter()
-                    .filter_map(|document| document.outcome().document())
-                    .map(Document::byte_len)
-                    .fold(0_u64, u64::saturating_add)
-            })
-            .unwrap_or_default();
+        let bytes = attempt
+            .documents()
+            .filter_map(|item| item.outcome().document())
+            .map(DocumentRef::byte_len)
+            .fold(0_u64, u64::saturating_add);
         writeln!(
             stderr,
-            "Attempt {number}: {}, HTTP {status}, {bytes} document bytes",
+            "{label}Attempt {number}:{label:#} {value}{}{value:#}, HTTP {status}, {bytes} document bytes",
             acquisition_label(attempt.acquisition())
         )?;
     }
@@ -57,67 +58,85 @@ pub(super) fn human(
     profile: Option<&str>,
     identity: &EffectivePolicyIdentity,
 ) -> Result<()> {
+    let theme = Theme::stdout();
+    let label = theme.label;
+    let value = theme.value;
+    let muted = theme.muted;
+    let success = theme.success;
+    let error = theme.error;
+    let warning = theme.warning;
     let mut stdout = io::stdout().lock();
     writeln!(
         stdout,
-        "Policy profile: {}",
+        "{label}Policy profile:{label:#} {value}{}{value:#}",
         profile.unwrap_or("<defaults>")
     )?;
     writeln!(
         stdout,
-        "Policy identity: v{} {}",
+        "{muted}Policy identity: v{} {}{muted:#}",
         identity.version(),
         identity.digest()
     )?;
     writeln!(
         stdout,
-        "Termination: {}",
+        "{label}Termination:{label:#} {value}{}{value:#}",
         termination_label(response.termination())
     )?;
-    for (index, attempt) in response.attempts().iter().enumerate() {
+    for (index, attempt) in response.attempts().enumerate() {
         let number = index.saturating_add(1);
         let status = attempt
             .status()
             .map_or_else(|| "unobserved".to_owned(), |value| value.to_string());
-        match attempt {
-            AttemptOutcome::Completed(result) => {
+        match attempt.state() {
+            AttemptState::Completed => {
                 writeln!(
                     stdout,
-                    "Attempt {number}: {} completed, HTTP {status}",
+                    "{label}Attempt {number}:{label:#} {value}{}{value:#} {success}completed{success:#}, HTTP {status}",
                     acquisition_label(attempt.acquisition())
                 )?;
-                for document in result.documents() {
+                for document in attempt.documents() {
                     let outcome = document.outcome();
-                    match document_detail(outcome) {
+                    match document_detail(&outcome) {
                         Some(detail) => writeln!(
                             stdout,
-                            "  {}: {} ({detail})",
+                            "  {label}{}:{label:#} {value}{}{value:#} ({detail})",
                             document_label(document.requested()),
-                            document_state(outcome)
+                            document_state(&outcome)
                         )?,
                         None => writeln!(
                             stdout,
-                            "  {}: {}",
+                            "  {label}{}:{label:#} {value}{}{value:#}",
                             document_label(document.requested()),
-                            document_state(outcome)
+                            document_state(&outcome)
                         )?,
                     }
                 }
             }
-            AttemptOutcome::Failed(failure) => {
+            AttemptState::Failed(_) => {
                 writeln!(
                     stdout,
-                    "Attempt {number}: {} failed, HTTP {status}, {:?}",
+                    "{label}Attempt {number}:{label:#} {value}{}{value:#} {error}failed{error:#}, HTTP {status}, {}",
                     acquisition_label(attempt.acquisition()),
-                    failure.diagnostic()
+                    attempt.diagnostic().map(diagnostic_label).unwrap_or_else(|| "unavailable".to_owned())
                 )?;
+                if let Some(AttemptDiagnostic::BrowserFailure(reason)) = attempt.diagnostic()
+                    && let Some(advice) =
+                        browser_diagnostics::advice(browser_diagnostics::name(reason))
+                {
+                    writeln!(stdout, "  {error}{advice}{error:#}")?;
+                    writeln!(
+                        stdout,
+                        "  {muted}Capture: {}{muted:#}",
+                        attempt.capture_id()
+                    )?;
+                }
             }
-            AttemptOutcome::NotStarted(not_started) => {
+            AttemptState::NotStarted(reason) => {
                 writeln!(
                     stdout,
-                    "Attempt {number}: {} not started, {:?}",
+                    "{label}Attempt {number}:{label:#} {value}{}{value:#} {warning}not started{warning:#}, {:?}",
                     acquisition_label(attempt.acquisition()),
-                    not_started.reason()
+                    reason
                 )?;
             }
         }
@@ -132,30 +151,27 @@ pub(super) fn json(
 ) -> Result<()> {
     let attempts: Vec<_> = response
         .attempts()
-        .iter()
         .enumerate()
         .map(|(index, attempt)| {
             let documents: Vec<_> = attempt
-                .result()
-                .map(|result| {
-                    result
-                        .documents()
-                        .iter()
-                        .map(|document| {
-                            json!({
-                                "requested": document_label(document.requested()),
-                                "state": document_state(document.outcome()),
-                                "byte_len": document.outcome().document().map(yosoi::Document::byte_len),
-                                "detail": document_detail(document.outcome()),
-                            })
-                        })
-                        .collect()
+                .documents()
+                .map(|item| {
+                    let outcome = item.outcome();
+                    json!({
+                        "requested": document_label(item.requested()),
+                        "state": document_state(&outcome),
+                        "byte_len": outcome.document().map(DocumentRef::byte_len),
+                        "detail": document_detail(&outcome),
+                    })
                 })
-                .unwrap_or_default();
-            let (state, diagnostic) = match attempt {
-                AttemptOutcome::Completed(_) => ("completed", None),
-                AttemptOutcome::Failed(failure) => ("failed", Some(format!("{:?}", failure.diagnostic()))),
-                AttemptOutcome::NotStarted(not_started) => ("not_started", Some(format!("{:?}", not_started.reason()))),
+                .collect();
+            let (state, diagnostic) = match attempt.state() {
+                AttemptState::Completed => ("completed", None),
+                AttemptState::Failed(_) => (
+                    "failed",
+                    attempt.diagnostic().map(diagnostic_label),
+                ),
+                AttemptState::NotStarted(reason) => ("not_started", Some(format!("{reason:?}"))),
             };
             json!({
                 "index": index.saturating_add(1),
@@ -188,8 +204,8 @@ pub(super) fn selected_document(
     response: &Response,
     attempt_number: Option<usize>,
     requested_document: Option<DocumentRequest>,
-) -> Result<&Document> {
-    let attempts = response.attempts();
+) -> Result<DocumentRef<'_>> {
+    let mut attempts = response.attempts();
     let number = match attempt_number {
         Some(number) => number,
         None if attempts.len() == 1 => 1,
@@ -199,15 +215,14 @@ pub(super) fn selected_document(
         .checked_sub(1)
         .ok_or_else(|| anyhow::anyhow!("--attempt is one-based"))?;
     let attempt = attempts
-        .get(index)
+        .nth(index)
         .ok_or_else(|| anyhow::anyhow!("--attempt {number} is out of range"))?;
-    let result = attempt
-        .result()
-        .ok_or_else(|| anyhow::anyhow!("attempt {number} did not complete"))?;
-    let documents = result.documents();
+    if attempt.state() != AttemptState::Completed {
+        bail!("attempt {number} did not complete");
+    }
+    let mut documents = attempt.documents();
     let outcome = match requested_document {
         Some(requested) => documents
-            .iter()
             .find(|item| item.requested() == requested)
             .ok_or_else(|| {
                 anyhow::anyhow!(
@@ -216,21 +231,21 @@ pub(super) fn selected_document(
                 )
             })?,
         None if documents.len() == 1 => documents
-            .first()
+            .next()
             .ok_or_else(|| anyhow::anyhow!("attempt {number} has no documents"))?,
         None => bail!("raw output needs --document when the attempt has multiple documents"),
     };
-    let DocumentOutcome::Produced { document, .. } = outcome.outcome() else {
+    let DocumentOutcome::Produced(document) = outcome.outcome() else {
         bail!(
             "selected {} is not a complete produced Document: {}",
             document_label(outcome.requested()),
-            document_state(outcome.outcome())
+            document_state(&outcome.outcome())
         );
     };
     Ok(document)
 }
 
-pub(super) fn raw(document: &Document) -> Result<()> {
+pub(super) fn raw(document: DocumentRef<'_>) -> Result<()> {
     if document.bytes().len() > MAX_RAW_BYTES {
         bail!("selected Document exceeds the {MAX_RAW_BYTES} byte CLI raw-output limit");
     }
@@ -252,19 +267,12 @@ pub(super) fn exit_code(response: &Response) -> ExitCode {
 }
 
 pub(super) fn has_incomplete(response: &Response) -> bool {
-    for attempt in response.attempts() {
-        let Some(result) = attempt.result() else {
-            return true;
-        };
-        if result
-            .documents()
-            .iter()
-            .any(|document| !matches!(document.outcome(), DocumentOutcome::Produced { .. }))
-        {
-            return true;
-        }
-    }
-    false
+    response.attempts().any(|attempt| {
+        attempt.state() != AttemptState::Completed
+            || attempt
+                .documents()
+                .any(|item| !matches!(item.outcome(), DocumentOutcome::Produced(_)))
+    })
 }
 
 const fn acquisition_label(kind: AcquisitionKind) -> &'static str {
@@ -290,19 +298,19 @@ const fn document_label(requested: DocumentRequest) -> &'static str {
 
 const fn document_state(outcome: &DocumentOutcome) -> &'static str {
     match outcome {
-        DocumentOutcome::Produced { .. } => "produced",
+        DocumentOutcome::Produced(_) => "produced",
         DocumentOutcome::Partial { .. } => "partial",
-        DocumentOutcome::Unavailable { .. } => "unavailable",
-        DocumentOutcome::Unprojectable { .. } => "unprojectable",
+        DocumentOutcome::Unavailable(_) => "unavailable",
+        DocumentOutcome::Unprojectable(_) => "unprojectable",
     }
 }
 
 fn document_detail(outcome: &DocumentOutcome) -> Option<String> {
     match outcome {
-        DocumentOutcome::Produced { .. } => None,
+        DocumentOutcome::Produced(_) => None,
         DocumentOutcome::Partial { reasons, .. } => Some(format!("{reasons:?}")),
-        DocumentOutcome::Unavailable { reason } => Some(format!("{reason:?}")),
-        DocumentOutcome::Unprojectable { reason } => Some(format!("{reason:?}")),
+        DocumentOutcome::Unavailable(reason) => Some(format!("{reason:?}")),
+        DocumentOutcome::Unprojectable(reason) => Some(format!("{reason:?}")),
     }
 }
 
@@ -310,5 +318,12 @@ const fn termination_label(termination: ResponseTermination) -> &'static str {
     match termination {
         ResponseTermination::Completed => "completed",
         ResponseTermination::Cancelled => "cancelled",
+    }
+}
+
+fn diagnostic_label(diagnostic: AttemptDiagnostic) -> String {
+    match diagnostic {
+        AttemptDiagnostic::BrowserFailure(reason) => browser_diagnostics::name(reason).to_owned(),
+        other => format!("{other:?}"),
     }
 }

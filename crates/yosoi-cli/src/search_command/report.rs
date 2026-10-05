@@ -9,7 +9,7 @@ use yosoi::{
     search::{ProviderOutcome, SearchResponse, SearchTermination},
 };
 
-use crate::stats::RunTimer;
+use crate::{browser_diagnostics, presentation::Theme, stats::RunTimer};
 
 use super::view::names::{failure_name, provider_name, unavailable_name};
 use super::view::{ProviderView, SearchEnvelope};
@@ -23,56 +23,130 @@ pub(super) fn render_json(writer: &mut impl Write, envelope: &SearchEnvelope<'_>
 pub(super) fn render_human(
     writer: &mut impl Write,
     envelope: &SearchEnvelope<'_>,
+    theme: Theme,
 ) -> io::Result<()> {
+    let heading = theme.heading;
+    let label = theme.label;
+    let value = theme.value;
+    let muted = theme.muted;
     for provider in &envelope.providers {
-        writeln!(writer, "{}:", provider.provider)?;
-        writeln!(writer, "  Status: {}", provider.status.label())?;
+        writeln!(writer, "{heading}{}:{heading:#}", provider.provider)?;
+        let status = theme.status(provider.status.label());
+        writeln!(
+            writer,
+            "  {label}Status:{label:#} {status}{}{status:#}",
+            provider.status.label()
+        )?;
         if let Some(coverage) = &provider.coverage {
-            writeln!(writer, "  Web coverage: {}", coverage.web)?;
-            writeln!(writer, "  Rich features: {}", coverage.rich_features)?;
+            writeln!(
+                writer,
+                "  {label}Web coverage:{label:#} {value}{}{value:#}",
+                coverage.web
+            )?;
+            writeln!(
+                writer,
+                "  {label}Rich features:{label:#} {value}{}{value:#}",
+                coverage.rich_features
+            )?;
         }
         if let Some(detail) = provider.detail {
-            writeln!(writer, "  Detail: {detail}")?;
+            writeln!(
+                writer,
+                "  {label}Detail:{label:#} {status}{detail}{status:#}"
+            )?;
+            let explanation = match detail {
+                "unsupported_capability"
+                    if !cfg!(feature = "browser")
+                        && provider.profile.acquisition.is_some_and(|kind| {
+                            matches!(kind, AcquisitionKind::Browser { .. })
+                        }) =>
+                {
+                    Some(
+                        "This provider needs browser support; rebuild yosoi-cli with its default features.",
+                    )
+                }
+                "query_mismatch" => Some(
+                    "The relevance check could not verify these results against your query; they were discarded.",
+                ),
+                _ => None,
+            };
+            if let Some(explanation) = explanation {
+                writeln!(writer, "  {status}{explanation}{status:#}")?;
+            }
         }
         for attempt in &provider.attempts {
             if let Some(diagnostic) = attempt.diagnostic {
-                writeln!(writer, "  Request attempt: {diagnostic}")?;
+                writeln!(
+                    writer,
+                    "  {label}Request attempt:{label:#} {status}{diagnostic}{status:#}"
+                )?;
+                if let Some(advice) = browser_diagnostics::advice(diagnostic) {
+                    writeln!(writer, "  {status}{advice}{status:#}")?;
+                    writeln!(
+                        writer,
+                        "  {muted}Request: {}; Capture: {}{muted:#}",
+                        attempt.request_id, attempt.capture_id
+                    )?;
+                }
             }
         }
         if let Some(acquisition) = provider.profile.acquisition {
-            writeln!(writer, "  Acquisition: {}", acquisition_name(acquisition))?;
+            writeln!(
+                writer,
+                "  {label}Acquisition:{label:#} {value}{}{value:#}",
+                acquisition_name(acquisition)
+            )?;
         }
         writeln!(
             writer,
-            "  Provider profile: {}",
+            "  {label}Provider profile:{label:#} {value}{}{value:#}",
             provider.profile.defaults_status
         )?;
         if let Some(version) = provider.profile.defaults_version {
-            writeln!(writer, "  Defaults version: {version}")?;
-        }
-        if let Some(query) = provider.recovery_query {
-            writeln!(writer, "  Recovery query: {}", safe_terminal_text(query))?;
-        }
-        writeln!(writer, "  Cost: {}", provider.cost.status)?;
-
-        for hit in &provider.hits {
-            let label = hit.title.unwrap_or(hit.url);
             writeln!(
                 writer,
-                "  {}. {}",
+                "  {label}Defaults version:{label:#} {value}{version}{value:#}"
+            )?;
+        }
+        if let Some(query) = provider.recovery_query {
+            writeln!(
+                writer,
+                "  {label}Recovery query:{label:#} {value}{}{value:#}",
+                safe_terminal_text(query)
+            )?;
+        }
+        writeln!(
+            writer,
+            "  {label}Cost:{label:#} {value}{}{value:#}",
+            provider.cost.status
+        )?;
+
+        for hit in &provider.hits {
+            let title = hit.title.unwrap_or(hit.url);
+            writeln!(
+                writer,
+                "  {muted}{}.{muted:#} {value}{}{value:#}",
                 hit.organic_rank,
-                safe_terminal_text(label)
+                safe_terminal_text(title)
             )?;
             if hit.title.is_some() {
-                writeln!(writer, "     URL: {}", safe_terminal_text(hit.url))?;
+                writeln!(
+                    writer,
+                    "     {label}URL:{label:#} {value}{}{value:#}",
+                    safe_terminal_text(hit.url)
+                )?;
             }
             if let Some(publisher) = hit.publisher {
-                writeln!(writer, "     Publisher: {}", safe_terminal_text(publisher))?;
+                writeln!(
+                    writer,
+                    "     {label}Publisher:{label:#} {value}{}{value:#}",
+                    safe_terminal_text(publisher)
+                )?;
             }
             if let Some(published_at) = hit.published_at {
                 writeln!(
                     writer,
-                    "     Published: {}",
+                    "     {label}Published:{label:#} {value}{}{value:#}",
                     safe_terminal_text(published_at)
                 )?;
             }
@@ -81,7 +155,11 @@ pub(super) fn render_human(
             }
         }
         for feature in &provider.features {
-            writeln!(writer, "  Feature: {}", feature.label())?;
+            writeln!(
+                writer,
+                "  {label}Feature:{label:#} {value}{}{value:#}",
+                feature.label()
+            )?;
         }
         for issue in &provider.issues {
             match issue.placement_index {
@@ -92,7 +170,7 @@ pub(super) fn render_human(
         if let Some(identity) = &provider.profile.effective_request_policy {
             writeln!(
                 writer,
-                "  Request Policy: v{} {}",
+                "  {muted}Request Policy: v{} {}{muted:#}",
                 identity.version, identity.digest
             )?;
         }
@@ -127,6 +205,7 @@ fn safe_terminal_text(value: &str) -> String {
 }
 
 pub(super) fn report_diagnostics(response: &SearchResponse, interrupted: bool) -> io::Result<()> {
+    let error = Theme::stderr().error;
     let mut stderr = io::stderr().lock();
     for provider in response.providers() {
         match provider.outcome() {
@@ -134,7 +213,7 @@ pub(super) fn report_diagnostics(response: &SearchResponse, interrupted: bool) -
             ProviderOutcome::Failed(failure) => {
                 writeln!(
                     stderr,
-                    "yosoi search: {} failed ({})",
+                    "{error}yosoi search: {} failed ({}){error:#}",
                     provider_name(provider.provider()),
                     failure_name(*failure)
                 )?;
@@ -142,14 +221,14 @@ pub(super) fn report_diagnostics(response: &SearchResponse, interrupted: bool) -
             ProviderOutcome::Cancelled => {
                 writeln!(
                     stderr,
-                    "yosoi search: {} was cancelled",
+                    "{error}yosoi search: {} was cancelled{error:#}",
                     provider_name(provider.provider())
                 )?;
             }
             ProviderOutcome::NotStarted(reason) => {
                 writeln!(
                     stderr,
-                    "yosoi search: {} did not start ({})",
+                    "{error}yosoi search: {} did not start ({}){error:#}",
                     provider_name(provider.provider()),
                     unavailable_name(*reason)
                 )?;
@@ -157,30 +236,43 @@ pub(super) fn report_diagnostics(response: &SearchResponse, interrupted: bool) -
         }
     }
     if response.termination() == SearchTermination::DeadlineReached {
-        writeln!(stderr, "yosoi search: the Search deadline was reached")?;
+        writeln!(
+            stderr,
+            "{error}yosoi search: the Search deadline was reached{error:#}"
+        )?;
     }
     if interrupted {
         writeln!(
             stderr,
-            "yosoi search: interrupted; partial provider output was preserved"
+            "{error}yosoi search: interrupted; partial provider output was preserved{error:#}"
         )?;
     }
     Ok(())
 }
 
 pub(super) fn report_stats(envelope: &SearchEnvelope<'_>, timer: &RunTimer) -> Result<()> {
-    render_stats(&mut io::stderr().lock(), envelope, timer)
+    render_stats(&mut io::stderr().lock(), envelope, timer, Theme::stderr())
 }
 
 pub(super) fn render_stats(
     writer: &mut impl Write,
     envelope: &SearchEnvelope<'_>,
     timer: &RunTimer,
+    theme: Theme,
 ) -> Result<()> {
-    writeln!(writer, "Search stats:")?;
-    timer.write_wall_time(writer)?;
-    writeln!(writer, "Termination: {}", envelope.termination)?;
-    writeln!(writer, "Providers: {}", envelope.providers.len())?;
+    let label = theme.label;
+    let value = theme.value;
+    timer.write_header(writer, "Search", theme)?;
+    writeln!(
+        writer,
+        "{label}Termination:{label:#} {value}{}{value:#}",
+        envelope.termination
+    )?;
+    writeln!(
+        writer,
+        "{label}Providers:{label:#} {value}{}{value:#}",
+        envelope.providers.len()
+    )?;
     let mut hits = 0_usize;
     let mut attempts = 0_usize;
     let mut retained_source_bytes = 0_u64;
@@ -193,11 +285,14 @@ pub(super) fn render_stats(
             }
         }
     }
-    writeln!(writer, "Hits: {hits}")?;
-    writeln!(writer, "Request attempts: {attempts}")?;
+    writeln!(writer, "{label}Hits:{label:#} {value}{hits}{value:#}")?;
     writeln!(
         writer,
-        "Known retained source bytes: {retained_source_bytes}"
+        "{label}Request attempts:{label:#} {value}{attempts}{value:#}"
+    )?;
+    writeln!(
+        writer,
+        "{label}Known retained source bytes:{label:#} {value}{retained_source_bytes}{value:#}"
     )?;
     Ok(())
 }

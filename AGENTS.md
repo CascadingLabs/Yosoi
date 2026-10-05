@@ -32,6 +32,14 @@ Read and follow [the Chromium/CDP baseline](docs/chromium-cdp-baseline.md) befor
 - Verify with `cargo xtask bump-version 0.2.0 --date-released 2026-10-04 --check` (fails on version or date drift), using the chosen release version and date. Review the diff and run the focused release checks. The command does not build product crates, resolve dependencies, create tags, or publish releases. Keep existing unrelated changes intact.
 - Set `CITATION.cff`'s `date-released` through `cargo xtask bump-version 0.2.0 --date-released 2026-10-04`, using the actual release version and date. The date must be a valid calendar date in `YYYY-MM-DD` format. Combine this option with `--dry-run` to preview or `--check` to verify both version and date; omit it to preserve the existing date. The CFF schema version stays unchanged. Example versions in docs, historical evidence, and generated reference artifacts are not release metadata and are not rewritten.
 
+
+## Local release notes contract
+
+- Prepare numbered release-note drafts with `cargo xtask release prepare VERSION --date YYYY-MM-DD --channel preview --github-notes EXPORT.md`, adding `--previous VERSION` when applicable. The Jinja template and pinned environment live under `scripts/releases/`. Preparation must not overwrite an existing draft or its provenance record.
+- Keep the reviewed Markdown under `docs/public/releases/` as the canonical notes. Preserve the imported GitHub change references, contributor mentions, and first-time contributor recognition. Remove editorial placeholders and mark `draft: false` only after review.
+- Run `cargo xtask release check VERSION` after synchronizing versions and the citation date. It verifies finalized notes, imported attribution, and the existing release metadata consistency contract. `body VERSION` exports validated Markdown; `history` refreshes the docs index from finalized entries and excludes drafts.
+- These commands do not tag, publish, build release binaries, upload to registries, or manage nightly artifacts. Only the explicitly requested `fetch` command accesses GitHub, read-only, with an explicit comparison range.
+
 # Linear
 
 `Backlog` → `Todo` → `Shaping` → `Ready for Worker` → `Agent Working` → `In Review` → `Agent Verification` → `Final Boss` → `Ready to land` → `Done`

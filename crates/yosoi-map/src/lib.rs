@@ -7,9 +7,11 @@ pub mod sources;
 
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
+use serde::Serialize;
 use url::Url;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Serialize)]
+#[serde(tag = "kind", content = "value", rename_all = "snake_case")]
 pub enum DiscoverySource {
     Seed,
     HtmlLink,
@@ -27,13 +29,14 @@ impl DiscoverySource {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Serialize)]
 pub struct Observation {
     pub source: DiscoverySource,
     pub source_url: Option<Url>,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum SkipReason {
     Depth,
     Robots,
@@ -41,7 +44,8 @@ pub enum SkipReason {
     Budget,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(tag = "kind", content = "value", rename_all = "snake_case")]
 pub enum SourceFailure {
     Transport,
     HttpStatus(u16),
@@ -55,7 +59,8 @@ pub enum SourceFailure {
     UnexpectedSitemapContent,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(tag = "kind", content = "value", rename_all = "snake_case")]
 pub enum Exploration {
     Inventoried,
     Pending,
@@ -64,7 +69,7 @@ pub enum Exploration {
     Failed(SourceFailure),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct PageEntry {
     pub url: Url,
     pub minimum_link_depth: Option<u16>,
@@ -81,40 +86,43 @@ impl PageEntry {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct WildcardEntry {
     pub pattern: String,
     pub observations: Vec<Observation>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct HostEntry {
     pub host: String,
     pub observations: Vec<Observation>,
     pub verification: HostVerification,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum HostVerification {
     Unverified,
     HttpObserved,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum RelationshipKind {
     Link,
     Redirect,
     Canonical,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Serialize)]
 pub struct Relationship {
     pub from: Url,
     pub to: Url,
     pub kind: RelationshipKind,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum PendingReason {
     AwaitingExploration,
     DepthBoundary,
@@ -122,25 +130,28 @@ pub enum PendingReason {
     ProbeCandidate,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct FrontierEntry {
     pub page: Url,
     pub reason: PendingReason,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum SupportDocumentKind {
     Robots,
     Sitemap,
     SitemapIndex,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum SourceSkipReason {
     NotSitemap,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(tag = "kind", content = "value", rename_all = "snake_case")]
 pub enum SourceStatus {
     Completed,
     Sampled,
@@ -151,21 +162,22 @@ pub enum SourceStatus {
     NotStarted,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct SourceOutcome {
     pub source: DiscoverySource,
     pub source_url: Option<Url>,
     pub status: SourceStatus,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct SupportDocument {
     pub url: Url,
     pub kind: SupportDocumentKind,
     pub status: SourceStatus,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum LimitReached {
     Hosts,
     Urls,
@@ -181,7 +193,8 @@ pub enum LimitReached {
     ParserEntries,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[serde(tag = "kind", content = "value", rename_all = "snake_case")]
 pub enum MapTermination {
     Exhausted,
     Limit(LimitReached),
@@ -189,7 +202,8 @@ pub enum MapTermination {
     Cancelled,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Serialize)]
+#[serde(tag = "kind", content = "value", rename_all = "snake_case")]
 pub enum OmissionReason {
     Admission(admission::Rejection),
     Robots,
@@ -202,13 +216,13 @@ pub enum OmissionReason {
     Other,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
 pub struct Omission {
     pub reason: OmissionReason,
     pub count: u64,
 }
 
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug, Default, Serialize)]
 pub struct Summary {
     pub requests: u32,
     pub provider_concurrency_peak: u32,
@@ -221,7 +235,7 @@ pub struct Summary {
     pub retained_document_bytes: u64,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct TreeEntry {
     pub page: Url,
     pub parent: Option<Url>,

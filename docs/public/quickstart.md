@@ -6,7 +6,7 @@ order: 1
 
 # Install and quickstart
 
-Start with the CLI, then try the Rust SDK when you need to integrate Yosoi into an application.
+Use the CLI for terminal workflows or the Rust SDK to build Yosoi into an application.
 
 ## Install the CLI
 
@@ -32,16 +32,20 @@ yosoi request https://example.org/ | yosoi locate --css 'h1' --json
 
 ## Try the SDK
 
-Rust integrations use the `yosoi-sdk` facade. This example runs inside an async function returning a compatible error:
+Follow [SDK installation](sdk/installation.md) for the Cargo dependencies, then put this in `src/main.rs`:
 
 ```rust
-use yosoi_sdk::prelude as ys;
+use std::error::Error;
+use yosoi::prelude as ys;
 
-let policy = ys::Policy::default();
-let outcome = ys::map::new("https://example.org/")
-    .bind(&policy)
-    .send()
-    .await?;
+#[tokio::main(flavor = "current_thread")]
+async fn main() -> Result<(), Box<dyn Error>> {
+    let response = ys::request::new("https://example.org/").send().await?;
+    for attempt in response.attempts() {
+        println!("{:?}: {:?}", attempt.acquisition(), attempt.state());
+    }
+    Ok(())
+}
 ```
 
-See [SDK Map](sdk/map.md) for the next step, or follow a [cookbook recipe](cookbook/index.md).
+Read [Responses](sdk/responses.md) to use the returned documents, or follow the [structured extraction recipe](cookbook/extract-structured-data.md). For an example that needs no network, start with the [Rust SDK overview](sdk/index.md).

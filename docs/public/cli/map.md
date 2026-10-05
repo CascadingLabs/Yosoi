@@ -14,11 +14,11 @@ yosoi map https://example.org/ --json
 
 ## Common options
 
-| Option | Purpose |
-| --- | --- |
-| `--json` | Emit ordinary JSON |
-| `--max-concurrency` | Limit concurrent work |
-| `--stats` | Write run statistics to stderr |
+| Option              | Purpose                        |
+| ------------------- | ------------------------------ |
+| `--json`            | Emit ordinary JSON             |
+| `--max-concurrency` | Limit concurrent work          |
+| `--stats`           | Write run statistics to stderr |
 
 ## Read the result
 

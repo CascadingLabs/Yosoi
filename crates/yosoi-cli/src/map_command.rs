@@ -13,7 +13,9 @@ use yosoi::{CancellationToken, Policy, map, policy};
 use crate::{
     document_pipe,
     policy_store::PolicyStore,
-    stats::RunTimer,
+    presentation::Theme,
+    progress::Spinner,
+    stats::{RunTimer, StatsArgs},
     stream_output::{Destination, cli_target, destination},
 };
 
@@ -73,9 +75,8 @@ pub struct MapArgs {
     /// Emit the Map manifest as one typed JSON Document frame.
     #[arg(long)]
     pub pipe_document: bool,
-    /// Report wall time and consumed bounds on stderr.
-    #[arg(short = 's', long = "stats", visible_alias = "stat")]
-    pub stat: bool,
+    #[command(flatten)]
+    pub reporting: StatsArgs,
 }
 
 pub async fn run(args: MapArgs, profile: Option<&str>) -> Result<ExitCode> {
@@ -104,44 +105,66 @@ pub async fn run(args: MapArgs, profile: Option<&str>) -> Result<ExitCode> {
         .context("invalid Map target or acquisition")?;
     if args.explain {
         let identity = policy.effective_identity()?;
+        let theme = Theme::stdout();
+        let label = theme.label;
+        let value = theme.value;
+        let muted = theme.muted;
         let mut stdout = io::stdout().lock();
-        writeln!(stdout, "CLI version: {}", env!("CARGO_PKG_VERSION"))?;
         writeln!(
             stdout,
-            "Policy profile: {}",
+            "{label}CLI version:{label:#} {value}{}{value:#}",
+            env!("CARGO_PKG_VERSION")
+        )?;
+        writeln!(
+            stdout,
+            "{label}Policy profile:{label:#} {value}{}{value:#}",
             selected.unwrap_or("<defaults>")
         )?;
         writeln!(
             stdout,
-            "Policy identity: v{} {}",
+            "{muted}Policy identity: v{} {}{muted:#}",
             identity.version(),
             identity.digest()
         )?;
         serde_json::to_writer_pretty(&mut stdout, &policy)?;
         writeln!(stdout)?;
-        if args.stat {
+        if args.reporting.enabled {
             let mut stderr = io::stderr().lock();
-            timer.write_wall_time(&mut stderr)?;
-            writeln!(stderr, "Map: not sent (--explain)")?;
+            timer.write_header(&mut stderr, "Map", Theme::stderr())?;
+            let muted = Theme::stderr().muted;
+            writeln!(stderr, "{muted}Map: not sent (--explain){muted:#}")?;
         }
         return Ok(ExitCode::SUCCESS);
     }
     let cancellation = CancellationToken::new();
     let send = request.send_cancellable(&cancellation);
     tokio::pin!(send);
-    let outcome = tokio::select! {
-        result = &mut send => result,
-        interrupted = signal::ctrl_c() => {
-            cancellation.cancel();
-            let outcome = send.await;
-            interrupted.context("could not listen for Ctrl-C")?;
-            outcome
+    let mut spinner = Spinner::new("Mapping…", matches!(destination, Destination::Terminal));
+    let mut signal_result = None;
+    let outcome = loop {
+        tokio::select! {
+            result = &mut send => break result,
+            signal = signal::ctrl_c(), if signal_result.is_none() => {
+                cancellation.cancel();
+                signal_result = Some(signal);
+            }
+            () = spinner.tick() => {}
         }
+    };
+    drop(spinner);
+    if let Some(result) = signal_result {
+        result.context("could not listen for Ctrl-C")?;
     }
-    .context("could not execute Map")?;
+    let outcome = outcome.context("could not execute Map")?;
     match destination {
         Destination::Terminal => {
-            writeln!(io::stdout().lock(), "Map seed: {target}")?;
+            let theme = Theme::stdout();
+            let heading = theme.heading;
+            let value = theme.value;
+            writeln!(
+                io::stdout().lock(),
+                "{heading}Map seed:{heading:#} {value}{target}{value:#}"
+            )?;
             render::human(&outcome, selected)?;
         }
         Destination::Bytes => {
@@ -153,10 +176,10 @@ pub async fn run(args: MapArgs, profile: Option<&str>) -> Result<ExitCode> {
         }
         Destination::Document => {
             let document = render::document(&outcome, &target, selected)?;
-            document_pipe::write_to(&mut io::stdout().lock(), &document)?;
+            document_pipe::write_to(&mut io::stdout().lock(), document.as_ref())?;
         }
     }
-    if args.stat {
+    if args.reporting.enabled {
         render::stats(&outcome, &timer)?;
     }
     Ok(render::exit_code(&outcome))

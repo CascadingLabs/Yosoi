@@ -7,7 +7,7 @@ mod candidate;
 mod ids;
 mod schema;
 
-pub use candidate::{CandidateField, CandidateInput, CandidateView, Contract};
+pub use candidate::{CandidateField, CandidateInput, CandidateView, Contract, RuntimeCandidate};
 pub use ids::{ContractId, ContractSchemaError, FieldId};
 pub use schema::{
     CONTRACT_SCHEMA_VERSION, Cardinality, ContractIdentity, ContractSchema, ContractValue,

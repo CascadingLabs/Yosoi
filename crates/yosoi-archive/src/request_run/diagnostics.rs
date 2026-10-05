@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use yosoi_types::BrowserFailureReason;
 
 /// Stable request-level failure category.
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -53,6 +54,7 @@ pub enum RequestAttemptDiagnostic {
     BrowserCancelledCleanupFailed,
     BrowserCleanupFailed,
     BrowserCaptureFailed,
+    BrowserFailure(BrowserFailureReason),
     BrowserFinalizationFailed,
     BrowserFeatureDisabled,
     ProjectionFailed,

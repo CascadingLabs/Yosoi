@@ -14,11 +14,11 @@ yosoi search "rust programming language" --providers bing --json
 
 ## Common options
 
-| Option | Purpose |
-| --- | --- |
-| `--providers` | Choose an ordered provider list |
-| `--per-provider-limit` | Bound results per provider |
-| `--stats` | Write run statistics to stderr |
+| Option                 | Purpose                         |
+| ---------------------- | ------------------------------- |
+| `--providers`          | Choose an ordered provider list |
+| `--per-provider-limit` | Bound results per provider      |
+| `--stats`              | Write run statistics to stderr  |
 
 ## Provider status
 

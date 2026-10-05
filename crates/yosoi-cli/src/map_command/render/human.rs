@@ -15,31 +15,38 @@ use crate::{
         discovery_source_label, host_verification_label, skip_reason_label, source_failure_label,
         termination_label,
     },
+    presentation::Theme,
     stats::RunTimer,
 };
 
 pub(super) fn human(outcome: &map::MapOutcome, profile: Option<&str>) -> Result<()> {
+    let theme = Theme::stdout();
+    let heading = theme.heading;
+    let label = theme.label;
+    let value = theme.value;
+    let muted = theme.muted;
+    let warning = theme.warning;
     let identity = outcome.policy_snapshot().identity();
     let mut stdout = io::stdout().lock();
     writeln!(
         stdout,
-        "Policy profile: {}",
+        "{label}Policy profile:{label:#} {value}{}{value:#}",
         profile.unwrap_or("<defaults>")
     )?;
     writeln!(
         stdout,
-        "Policy identity: v{} {}",
+        "{muted}Policy identity: v{} {}{muted:#}",
         identity.version(),
         identity.digest()
     )?;
     writeln!(
         stdout,
-        "Termination: {}",
+        "{label}Termination:{label:#} {value}{}{value:#}",
         termination_label(outcome.termination())
     )?;
     writeln!(
         stdout,
-        "Summary: {} hosts, {} pages, {} relationships, {} wildcard patterns, {} requests, {} response bytes, {} omitted",
+        "{label}Summary:{label:#} {} hosts, {} pages, {} relationships, {} wildcard patterns, {} requests, {} response bytes, {} omitted",
         outcome.hosts().len(),
         outcome.pages().len(),
         outcome.relationships().len(),
@@ -49,22 +56,22 @@ pub(super) fn human(outcome: &map::MapOutcome, profile: Option<&str>) -> Result<
         outcome.summary().omitted,
     )?;
 
-    writeln!(stdout, "Hosts:")?;
+    writeln!(stdout, "{heading}Hosts:{heading:#}")?;
     if outcome.hosts().is_empty() {
-        writeln!(stdout, "  (none)")?;
+        writeln!(stdout, "  {muted}(none){muted:#}")?;
     }
     for host in outcome.hosts() {
         writeln!(
             stdout,
-            "  {} ({})",
+            "  {value}{}{value:#} ({})",
             host.host,
             host_verification_label(host.verification)
         )?;
     }
 
-    writeln!(stdout, "Tree:")?;
+    writeln!(stdout, "{heading}Tree:{heading:#}")?;
     if outcome.tree().is_empty() {
-        writeln!(stdout, "  (none)")?;
+        writeln!(stdout, "  {muted}(none){muted:#}")?;
     }
     let exploration_by_url: BTreeMap<_, _> = outcome
         .pages()
@@ -80,7 +87,7 @@ pub(super) fn human(outcome: &map::MapOutcome, profile: Option<&str>) -> Result<
             Some(depth) => write!(stdout, "[{depth}] ")?,
             None => write!(stdout, "[?] ")?,
         }
-        write!(stdout, "{}", entry.page)?;
+        write!(stdout, "{value}{}{value:#}", entry.page)?;
         if let Some(parent) = &entry.parent {
             write!(stdout, " <- {parent}")?;
         }
@@ -94,7 +101,7 @@ pub(super) fn human(outcome: &map::MapOutcome, profile: Option<&str>) -> Result<
     for source in outcome.sources() {
         if source_has_issue(source) {
             if !has_issues {
-                writeln!(stdout, "Source issues:")?;
+                writeln!(stdout, "{warning}Source issues:{warning:#}")?;
                 has_issues = true;
             }
             write!(stdout, "  {}", discovery_source_label(source.source))?;
@@ -107,49 +114,55 @@ pub(super) fn human(outcome: &map::MapOutcome, profile: Option<&str>) -> Result<
         }
     }
     if !has_issues {
-        writeln!(stdout, "Source issues: none")?;
+        writeln!(stdout, "{label}Source issues:{label:#} none")?;
     }
     Ok(())
 }
 
 pub(super) fn stats(outcome: &map::MapOutcome, timer: &RunTimer) -> Result<()> {
+    let theme = Theme::stderr();
+    let label = theme.label;
+    let value = theme.value;
     let mut stderr = io::stderr().lock();
-    writeln!(stderr, "Map stats:")?;
-    timer.write_wall_time(&mut stderr)?;
+    timer.write_header(&mut stderr, "Map", theme)?;
     writeln!(
         stderr,
-        "Termination: {}",
+        "{label}Termination:{label:#} {value}{}{value:#}",
         termination_label(outcome.termination())
     )?;
-    writeln!(stderr, "Requests: {}", outcome.summary().requests)?;
     writeln!(
         stderr,
-        "Provider concurrency peak: {}",
+        "{label}Requests:{label:#} {value}{}{value:#}",
+        outcome.summary().requests
+    )?;
+    writeln!(
+        stderr,
+        "{label}Provider concurrency peak:{label:#} {value}{}{value:#}",
         outcome.summary().provider_concurrency_peak
     )?;
     writeln!(
         stderr,
-        "Page concurrency peak: {}",
+        "{label}Page concurrency peak:{label:#} {value}{}{value:#}",
         outcome.summary().page_concurrency_peak
     )?;
     writeln!(
         stderr,
-        "Unused page prefetches: {}",
+        "{label}Unused page prefetches:{label:#} {value}{}{value:#}",
         outcome.summary().unused_page_prefetches
     )?;
     writeln!(
         stderr,
-        "Response bytes: {}",
+        "{label}Response bytes:{label:#} {value}{}{value:#}",
         outcome.summary().response_bytes
     )?;
     writeln!(
         stderr,
-        "Inventory bytes: {}",
+        "{label}Inventory bytes:{label:#} {value}{}{value:#}",
         outcome.summary().inventory_bytes
     )?;
     writeln!(
         stderr,
-        "Retained document bytes: {}",
+        "{label}Retained document bytes:{label:#} {value}{}{value:#}",
         outcome.summary().retained_document_bytes
     )?;
     Ok(())
@@ -205,6 +218,9 @@ const fn source_has_issue(source: &map::SourceOutcome) -> bool {
 }
 
 fn write_source_status(output: &mut impl Write, status: &map::SourceStatus) -> io::Result<()> {
+    let theme = Theme::stdout();
+    let error = theme.error;
+    let warning = theme.warning;
     match status {
         map::SourceStatus::Completed => write!(output, "completed"),
         map::SourceStatus::Sampled => {
@@ -214,10 +230,14 @@ fn write_source_status(output: &mut impl Write, status: &map::SourceStatus) -> i
             write!(output, "not a sitemap (HTML response)")
         }
         map::SourceStatus::Disabled => write!(output, "disabled"),
-        map::SourceStatus::NotStarted => write!(output, "not started"),
-        map::SourceStatus::Truncated => write!(output, "truncated"),
+        map::SourceStatus::NotStarted => write!(output, "{warning}not started{warning:#}"),
+        map::SourceStatus::Truncated => write!(output, "{warning}truncated{warning:#}"),
         map::SourceStatus::Failed(failure) => {
-            write!(output, "failed ({})", source_failure_label(failure))
+            write!(
+                output,
+                "{error}failed ({}){error:#}",
+                source_failure_label(failure)
+            )
         }
     }
 }
@@ -302,11 +322,14 @@ const fn source_has_material_failure(source: &map::SourceOutcome) -> bool {
 }
 
 fn exploration_human(exploration: &map::Exploration) -> String {
+    let error = Theme::stdout().error;
     match exploration {
         map::Exploration::Inventoried => "inventoried".to_owned(),
         map::Exploration::Pending => "pending".to_owned(),
         map::Exploration::Inspected => "inspected".to_owned(),
         map::Exploration::Skipped(reason) => format!("skipped ({})", skip_reason_label(*reason)),
-        map::Exploration::Failed(failure) => format!("failed ({})", source_failure_label(failure)),
+        map::Exploration::Failed(failure) => {
+            format!("{error}failed ({}){error:#}", source_failure_label(failure))
+        }
     }
 }

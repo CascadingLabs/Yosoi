@@ -250,3 +250,21 @@ mod tests {
         }
     }
 }
+
+/// Content-free reason a browser capture could not complete.
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum BrowserFailureReason {
+    Launch,
+    Connection,
+    Navigation,
+    Timeout,
+    DisplayUnavailable,
+    EnvironmentMismatch,
+    ProfileUnavailable,
+    Unavailable,
+    CapacityExhausted,
+    Closed,
+    RendererCrashed,
+    UnsupportedConfiguration,
+}

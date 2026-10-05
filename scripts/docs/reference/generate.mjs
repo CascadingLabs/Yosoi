@@ -10,7 +10,15 @@ import { discoverSdks } from './sdk-discovery.mjs';
 const scriptRoot = path.dirname(fileURLToPath(import.meta.url));
 export const toolchain = JSON.parse(fs.readFileSync(path.join(scriptRoot, 'toolchain.json'), 'utf8'));
 const compare = (a, b) => a < b ? -1 : a > b ? 1 : 0;
-const run = (program, args, cwd, env = {}) => execFileSync(program, args, { cwd, env: { ...process.env, CARGO_BUILD_JOBS: '1', RAYON_NUM_THREADS: '1', ...env }, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+const run = (program, args, cwd, env = {}) => {
+	try {
+		return execFileSync(program, args, { cwd, env: { ...process.env, CARGO_BUILD_JOBS: '1', RAYON_NUM_THREADS: '1', ...env }, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+	} catch (error) {
+		const stderr = error.stderr?.toString?.() || '';
+		const tail = stderr.trim().split('\n').slice(-24).join('\n');
+		throw new Error(`${program} ${args.slice(0, 2).join(' ')} failed${tail ? `\n${tail}` : ''}`);
+	}
+};
 const write = (file, value) => { fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, canonicalJson(value)); };
 
 function safeRelative(file) {
@@ -132,8 +140,74 @@ export function assertArchiveBinding(directory, archive) {
 function compilerInfo(channel, cwd) {
 	const text = run('rustc', [`+${channel}`, '--version', '--verbose'], cwd);
 	const compilerCommit = /^commit-hash: (\w+)$/m.exec(text)?.[1];
+	const host = /^host: ([^\n]+)$/m.exec(text)?.[1];
 	if (compilerCommit !== toolchain.compilerCommit) throw new Error(`Rustdoc compiler mismatch. Install ${toolchain.channel}; expected ${toolchain.compilerCommit}, got ${compilerCommit}`);
-	return { compilerCommit, rustdocVersion: run('rustdoc', [`+${channel}`, '--version'], cwd).trim() };
+	if (!host) throw new Error('Rust compiler did not report its host target');
+	return { compilerCommit, host, rustdocVersion: run('rustdoc', [`+${channel}`, '--version'], cwd).trim() };
+}
+
+function lockPackageKeys(lockfile) {
+	const keys = new Set();
+	for (const block of lockfile.split(/^\[\[package\]\]\s*$/m).slice(1)) {
+		const name = /^name = "([^"]+)"$/m.exec(block)?.[1];
+		const version = /^version = "([^"]+)"$/m.exec(block)?.[1];
+		const source = /^source = "([^"]+)"$/m.exec(block)?.[1] || '';
+		if (name && version) keys.add(`${name}\0${version}\0${source}`);
+	}
+	return keys;
+}
+
+function resolveSdkFeatures({ checkout, work, sdk, sdkPackage, workspacePackages, features, channel, target, offline }) {
+	const snapshotLock = path.join(checkout, 'Cargo.lock');
+	if (!fs.existsSync(snapshotLock)) throw new Error('SDK feature resolution requires the snapshot Cargo.lock');
+	const selected = [...new Set([
+		...(Object.hasOwn(sdkPackage.features || {}, 'default') ? ['default'] : []),
+		...features,
+	])].sort(compare);
+	const probe = fs.mkdtempSync(path.join(work, 'sdk-feature-probe-'));
+	try {
+		fs.copyFileSync(snapshotLock, path.join(probe, 'Cargo.lock'));
+		fs.mkdirSync(path.join(probe, 'src'));
+		fs.writeFileSync(path.join(probe, 'src', 'lib.rs'), '');
+		const dependencyFeatures = selected.length ? `, features = ${JSON.stringify(selected)}` : '';
+		const manifest = [
+			'[package]',
+			'name = "rust-reference-feature-probe"',
+			'version = "0.0.0"',
+			'edition = "2021"',
+			'',
+			'[dependencies]',
+			`${JSON.stringify(sdk.name)} = { path = ${JSON.stringify(path.dirname(sdk.manifestPath))}, default-features = false${dependencyFeatures} }`,
+			'',
+			'[workspace]',
+		].join('\n') + '\n';
+		const manifestPath = path.join(probe, 'Cargo.toml');
+		fs.writeFileSync(manifestPath, manifest);
+		const args = [`+${channel}`, 'metadata', '--format-version', '1', '--manifest-path', manifestPath, '--filter-platform', target, '--quiet'];
+		if (offline) args.push('--offline');
+		const resolved = JSON.parse(run('cargo', args, probe));
+		const locked = lockPackageKeys(fs.readFileSync(snapshotLock, 'utf8'));
+		const snapshotPackages = new Map(workspacePackages.map((pkg) => [path.resolve(pkg.manifest_path), pkg]));
+		for (const pkg of resolved.packages) {
+			if (path.resolve(pkg.manifest_path) === path.resolve(manifestPath)) continue;
+			const key = `${pkg.name}\0${pkg.version}\0${pkg.source || ''}`;
+			if (!locked.has(key)) throw new Error(`Feature probe resolved ${pkg.name} ${pkg.version} outside the snapshot Cargo.lock`);
+			const original = path.resolve(pkg.manifest_path);
+			const relative = path.relative(checkout, original);
+			if (relative.startsWith('..') || path.isAbsolute(relative)) continue;
+			const snapshot = snapshotPackages.get(original);
+			if (snapshot && pkg.version !== snapshot.version) throw new Error(`Feature probe changed in-repository package ${pkg.name}`);
+		}
+		const nodes = new Map((resolved.resolve?.nodes || []).map((node) => [node.id, node]));
+		const active = new Map();
+		for (const pkg of resolved.packages) {
+			const node = nodes.get(pkg.id);
+			if (node) active.set(path.resolve(pkg.manifest_path), [...node.features].sort(compare));
+		}
+		return active;
+	} finally {
+		fs.rmSync(probe, { recursive: true, force: true });
+	}
 }
 
 export function generateReference(options) {
@@ -164,6 +238,9 @@ export function generateReference(options) {
 	const jsonDir = options['from-json'] ? path.resolve(options['from-json']) : path.join(targetDir, target, 'doc');
 	if (options['from-json'] && !options.preview) throw new Error('Imported rustdoc JSON is preview-only; release generation must extract the selected snapshot');
 	const libraries = new Map(metadata.packages.flatMap((pkg) => pkg.targets.filter((t) => t.kind.some((kind) => ['lib', 'proc-macro', 'rlib'].includes(kind))).map((t) => [t.name, pkg.name])));
+	const procMacros = new Set(metadata.packages.flatMap((pkg) => pkg.targets.filter((t) => t.kind.includes('proc-macro')).map((t) => t.name)));
+	const sdkPackage = metadata.packages.find((pkg) => path.resolve(pkg.manifest_path) === path.resolve(sdk.manifestPath));
+	const resolvedFeatures = options['from-json'] || procMacros.size === 0 ? new Map() : resolveSdkFeatures({ checkout, work, sdk, sdkPackage, workspacePackages: metadata.packages, features, channel, target, offline: !!options.offline });
 	const documents = new Map();
 	const pending = [sdk.crate];
 	while (pending.length) {
@@ -178,6 +255,18 @@ export function generateReference(options) {
 				if (features.length) args.push('--features', features.join(','));
 				args.push('--', '-Z', 'unstable-options', '--output-format', 'json');
 				run('cargo', args, checkout, { CARGO_TARGET_DIR: targetDir });
+			} else if (procMacros.has(crate)) {
+				const macroPackage = metadata.packages.find((pkg) => pkg.name === packageName && pkg.targets.some((item) => item.name === crate && item.kind.includes('proc-macro')));
+				const packageFeatures = macroPackage ? resolvedFeatures.get(path.resolve(macroPackage.manifest_path)) : null;
+				if (!macroPackage || !packageFeatures) throw new Error(`Proc-macro ${crate} is absent from the selected SDK feature graph`);
+				// Cargo doc may log that it documented a proc macro without writing
+				// its JSON artifact. Rustdoc the proc-macro package directly with the
+				// exact feature set resolved through the selected SDK profile.
+				const procMacroArgs = [`+${channel}`, 'rustdoc', '--locked', '-p', packageName, '--lib', '-j', '1', '--target', compiler.host, '--no-default-features'];
+				if (options.offline) procMacroArgs.push('--offline');
+				if (packageFeatures.length) procMacroArgs.push('--features', packageFeatures.join(','));
+				procMacroArgs.push('--', '-Z', 'unstable-options', '--output-format', 'json');
+				run('cargo', procMacroArgs, checkout, { CARGO_TARGET_DIR: targetDir });
 			} else {
 				// Document definitions under the same SDK feature graph. Selecting a
 				// dependency alone would lose forwarded features and invent defaults.
@@ -189,9 +278,15 @@ export function generateReference(options) {
 			}
 		}
 		let file = path.join(jsonDir, `${crate}.json`);
-		// Proc macros run on the host even when the SDK target is explicit.
+		// Proc macros run on the host even when the SDK target is explicit. Cargo
+		// stores their JSON in the shared host doc directory.
 		const hostFile = path.join(targetDir, 'doc', `${crate}.json`);
-		if (!options['from-json'] && !fs.existsSync(file) && fs.existsSync(hostFile)) file = hostFile;
+		const legacyHostFile = path.join(targetDir, 'doc', `${crate}.json`);
+		if (!options['from-json'] && procMacros.has(crate)) {
+			if (!fs.existsSync(hostFile)) throw new Error(`Missing host compiler JSON for proc macro ${crate}`);
+			file = hostFile;
+		}
+		else if (!options['from-json'] && !fs.existsSync(file) && fs.existsSync(legacyHostFile)) file = legacyHostFile;
 		if (!fs.existsSync(file)) throw new Error(`Missing compiler JSON for in-repo crate ${crate}`);
 		const doc = JSON.parse(fs.readFileSync(file, 'utf8'));
 		documents.set(crate, doc);
@@ -224,7 +319,7 @@ export function writePreviewCatalog({ work, versions, latest }) {
 
 export const HELP = `Rust SDK reference tooling (Node orchestrator, one Cargo worker):
   node scripts/docs/reference/generate.mjs discover [--repo checkout] [--toolchain nightly]
-  node scripts/docs/reference/generate.mjs generate --source <commit-or-tag> --repository <Owner/Repo> --out <new-directory> [--sdk yosoi-sdk] [--version label] [--locales en,fr] [--overlays file] [--toolchain nightly-2026-09-06] [--features browser] [--preview --from-json directory]
+  node scripts/docs/reference/generate.mjs generate --source <commit-or-tag> --repository <Owner/Repo> --out <new-directory> [--sdk yosoi] [--version label] [--locales en,fr] [--overlays file] [--toolchain nightly-2026-09-06] [--features browser] [--preview --from-json directory]
   node scripts/docs/reference/generate.mjs preview-catalog --versions v1,v2 --latest v2 [--work .generated/rust-reference]
   node scripts/docs/reference/generate.mjs verify --dir <artifact-directory>
   node scripts/docs/reference/generate.mjs pack --dir <artifact-directory> --out <bundle.tar>

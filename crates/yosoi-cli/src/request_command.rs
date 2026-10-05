@@ -19,7 +19,9 @@ use yosoi::{
 use crate::{
     document_pipe,
     policy_store::PolicyStore,
-    stats::RunTimer,
+    presentation::Theme,
+    progress::Spinner,
+    stats::{RunTimer, StatsArgs},
     stream_output::{Destination, cli_target, destination},
 };
 
@@ -90,12 +92,11 @@ pub struct RequestArgs {
     /// Emit one complete selected Document as raw bytes on stdout.
     #[arg(long, conflicts_with = "pipe_document")]
     pub raw: bool,
-    /// Emit one selected typed Document for `yosoi locate --pipe-document`.
+    /// Emit one selected binary Yosoi Document frame for `yosoi locate --pipe-document`.
     #[arg(long)]
     pub pipe_document: bool,
-    /// Show wall time and request outcome metadata on stderr.
-    #[arg(short = 's', long = "stats", visible_alias = "stat")]
-    pub stat: bool,
+    #[command(flatten)]
+    pub reporting: StatsArgs,
     /// One-based acquisition index for raw or typed Document output.
     #[arg(long)]
     pub attempt: Option<usize>,
@@ -132,30 +133,40 @@ pub async fn run(args: RequestArgs, profile: Option<&str>) -> Result<ExitCode> {
         .context("could not compute effective Policy identity")?;
     let target = cli_target(&args.url);
     let request = request::new(target).bind(&policy);
-    request.prepare().context("invalid request URL or Policy")?;
+    request
+        .validate()
+        .context("invalid request URL or Policy")?;
 
     if output_mode == OutputMode::Explain {
+        let theme = Theme::stdout();
+        let label = theme.label;
+        let value = theme.value;
+        let muted = theme.muted;
         let mut stdout = io::stdout().lock();
-        writeln!(stdout, "CLI version: {}", env!("CARGO_PKG_VERSION"))?;
         writeln!(
             stdout,
-            "Policy profile: {}",
+            "{label}CLI version:{label:#} {value}{}{value:#}",
+            env!("CARGO_PKG_VERSION")
+        )?;
+        writeln!(
+            stdout,
+            "{label}Policy profile:{label:#} {value}{}{value:#}",
             selected.unwrap_or("<defaults>")
         )?;
         writeln!(
             stdout,
-            "Policy identity: v{} {}",
+            "{muted}Policy identity: v{} {}{muted:#}",
             identity.version(),
             identity.digest()
         )?;
         serde_json::to_writer_pretty(&mut stdout, &policy)
             .context("could not render effective Policy")?;
         writeln!(stdout)?;
-        if args.stat {
+        if args.reporting.enabled {
             let mut stderr = io::stderr().lock();
-            writeln!(stderr, "Request stats:")?;
-            timer.write_wall_time(&mut stderr)?;
-            writeln!(stderr, "Request: not sent (--explain)")?;
+            timer.write_header(&mut stderr, "Request", Theme::stderr())?;
+            let muted = Theme::stderr().muted;
+            writeln!(stderr, "{muted}Request: not sent (--explain){muted:#}")?;
         }
         return Ok(ExitCode::SUCCESS);
     }
@@ -163,24 +174,33 @@ pub async fn run(args: RequestArgs, profile: Option<&str>) -> Result<ExitCode> {
     let cancellation = CancellationToken::new();
     let send = request.send_cancellable(&cancellation);
     tokio::pin!(send);
-    let response = tokio::select! {
-        result = &mut send => result,
-        signal = signal::ctrl_c() => {
-            signal.context("could not listen for Ctrl-C")?;
-            cancellation.cancel();
-            send.await
+    let mut spinner = Spinner::new("Requesting…", matches!(output_mode, OutputMode::Human));
+    let mut signal_result = None;
+    let response = loop {
+        tokio::select! {
+            result = &mut send => break result,
+            signal = signal::ctrl_c(), if signal_result.is_none() => {
+                cancellation.cancel();
+                signal_result = Some(signal);
+            }
+            () = spinner.tick() => {}
         }
+    };
+    drop(spinner);
+    if let Some(result) = signal_result {
+        result.context("could not listen for Ctrl-C")?;
     }
-    .context("request setup failed")?;
+    let response = response.context("request setup failed")?;
     if matches!(output_mode, OutputMode::Raw | OutputMode::Typed)
         && response.termination() == ResponseTermination::Cancelled
     {
-        if args.stat {
+        if args.reporting.enabled {
             render::stats(&response, &timer)?;
         }
+        let warning = Theme::stderr().warning;
         writeln!(
             io::stderr().lock(),
-            "yosoi: request cancelled; no Document emitted"
+            "{warning}yosoi: request cancelled; no Document emitted{warning:#}"
         )?;
         return Ok(ExitCode::from(130));
     }
@@ -197,9 +217,10 @@ pub async fn run(args: RequestArgs, profile: Option<&str>) -> Result<ExitCode> {
                 document_pipe::write_to(&mut io::stdout().lock(), document)?;
             }
             if render::has_incomplete(&response) {
+                let warning = Theme::stderr().warning;
                 writeln!(
                     io::stderr().lock(),
-                    "yosoi: selected Document emitted, but another requested outcome was incomplete or failed"
+                    "{warning}yosoi: selected Document emitted, but another requested outcome was incomplete or failed{warning:#}"
                 )?;
             }
         } else if output_mode == OutputMode::Json {
@@ -209,7 +230,7 @@ pub async fn run(args: RequestArgs, profile: Option<&str>) -> Result<ExitCode> {
         }
         Ok(())
     })();
-    if args.stat {
+    if args.reporting.enabled {
         render::stats(&response, &timer)?;
     }
     output_result?;

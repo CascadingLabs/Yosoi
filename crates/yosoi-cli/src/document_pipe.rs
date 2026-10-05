@@ -4,6 +4,7 @@ use std::io::{Read, Write};
 
 use anyhow::{Context as _, Result, bail};
 use serde::{Deserialize, Serialize};
+use yosoi::documents::DocumentRef;
 use yosoi::{Document, DocumentId, DocumentProfile};
 
 const MAGIC: &[u8; 8] = b"YSOIDOC1";
@@ -20,7 +21,7 @@ struct Header {
     byte_len: u64,
 }
 
-pub fn write_to(writer: &mut impl Write, document: &Document) -> Result<()> {
+pub fn write_to(writer: &mut impl Write, document: DocumentRef<'_>) -> Result<()> {
     let payload = document.bytes();
     if payload.len() > MAX_PAYLOAD_BYTES {
         bail!("Document exceeds the {MAX_PAYLOAD_BYTES} byte CLI pipe limit");
@@ -118,7 +119,7 @@ mod tests {
         let epoch = DocumentEpoch::try_from(42)?;
         let original = Document::rendered_dom("browser-doc", epoch, b"{\"node\":1}".to_vec())?;
         let mut frame = Vec::new();
-        write_to(&mut frame, &original)?;
+        write_to(&mut frame, original.as_ref())?;
         let restored = read_from(&mut Cursor::new(frame))?;
         assert_eq!(restored.id(), original.id());
         assert_eq!(restored.profile(), original.profile());
@@ -130,7 +131,7 @@ mod tests {
     fn rejects_trailing_bytes_after_one_document() -> Result<(), Box<dyn Error>> {
         let original = Document::text("text", b"hello".to_vec())?;
         let mut frame = Vec::new();
-        write_to(&mut frame, &original)?;
+        write_to(&mut frame, original.as_ref())?;
         frame.push(0);
         assert!(read_from(&mut Cursor::new(frame)).is_err());
         Ok(())

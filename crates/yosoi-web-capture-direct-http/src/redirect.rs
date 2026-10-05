@@ -17,7 +17,8 @@ pub enum DirectHttpRedirectTargetPolicy {
 }
 
 /// Secret-safe reason redirect traversal terminated.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum DirectHttpRedirectErrorKind {
     MissingLocation,
     MalformedLocation,

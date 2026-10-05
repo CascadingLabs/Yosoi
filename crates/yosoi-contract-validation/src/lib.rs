@@ -4,6 +4,7 @@ mod issue;
 mod outcome;
 #[doc(hidden)]
 pub mod portable;
+mod runtime;
 mod validation;
 mod value;
 
@@ -12,6 +13,10 @@ pub use issue::FieldIssueDraft;
 pub use issue::{ContractIssues, FieldIssue, FieldIssueKind, ValidationCode, ValidationFailure};
 pub use outcome::{ContractOutcome, RecordIssue, ValidatedRecord};
 pub use portable::ArchivedContract;
+pub use runtime::{
+    RuntimeContract, RuntimeContractError, RuntimeContractOutcome, RuntimeExtracted,
+    RuntimeFieldValue, RuntimeRecordIssue, RuntimeValidatedRecord, RuntimeValue,
+};
 pub use validation::{MAX_CONTRACT_FIELDS, MAX_VALIDATED_RECORDS};
 #[doc(hidden)]
 pub use validation::{ValidationBudget, ValidationLimits, read_many, read_optional, read_required};

@@ -1,0 +1,262 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://yosoi.dev/schemas/python-rust-sdk-conformance-results-v1.json",
+  "title": "Raw machine-readable result for a Yosoi Python/Rust conformance run",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "kind",
+    "runId",
+    "outcome",
+    "source",
+    "python",
+    "cases"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "kind": {
+      "const": "yosoi-python-rust-conformance-results"
+    },
+    "runId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "outcome": {
+      "enum": [
+        "passed",
+        "failed"
+      ]
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "sourceRevision",
+        "inventorySignature",
+        "featureProfileDigest"
+      ],
+      "properties": {
+        "sourceRevision": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "inventorySignature": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "featureProfileDigest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "python": {
+      "type": "object",
+      "required": [
+        "surfaceDigest",
+        "implementationDigest",
+        "runtime"
+      ],
+      "properties": {
+        "surfaceDigest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "implementationDigest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "runtime": {
+          "type": "object",
+          "required": [
+            "implementation",
+            "version",
+            "abi"
+          ],
+          "properties": {
+            "implementation": {
+              "type": "string"
+            },
+            "version": {
+              "type": "string"
+            },
+            "abi": {
+              "type": "string"
+            },
+            "dependencies": {
+              "type": "object",
+              "additionalProperties": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "cases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "testId",
+          "rustPath",
+          "pythonTarget",
+          "outcome",
+          "comparisons",
+          "mappingChecks"
+        ],
+        "properties": {
+          "testId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "symbolKey": {
+            "type": "string",
+            "minLength": 1
+          },
+          "trait": {
+            "type": "string",
+            "minLength": 1
+          },
+          "rustPath": {
+            "type": "string",
+            "minLength": 1
+          },
+          "pythonTarget": {
+            "type": "string",
+            "minLength": 1
+          },
+          "outcome": {
+            "enum": [
+              "passed",
+              "failed"
+            ]
+          },
+          "comparisons": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": [
+                "name",
+                "rustSha256",
+                "pythonSha256",
+                "equal"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rustSha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "pythonSha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "equal": {
+                  "type": "boolean"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "mappingChecks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "kind",
+                "key",
+                "rustSha256",
+                "pythonSha256",
+                "equal"
+              ],
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "argument",
+                    "default",
+                    "unit",
+                    "cardinality"
+                  ]
+                },
+                "key": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "rustSha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "pythonSha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                "equal": {
+                  "type": "boolean"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "inputs": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "workflows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "rust",
+          "python",
+          "equal",
+          "rustSha256",
+          "pythonSha256"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "rust": {
+            "type": "object"
+          },
+          "python": {
+            "type": "object"
+          },
+          "equal": {
+            "type": "boolean"
+          },
+          "rustSha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "pythonSha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

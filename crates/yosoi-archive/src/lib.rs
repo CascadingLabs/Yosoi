@@ -103,3 +103,5 @@ impl Archive {
         R::read_from(self, reference).await
     }
 }
+
+pub use yosoi_types::BrowserFailureReason;

@@ -7,6 +7,7 @@ rust-version.workspace = true
 autobenches = false
 
 [dependencies]
+serde.workspace = true
 async-compression.workspace = true
 bytes.workspace = true
 chrono.workspace = true

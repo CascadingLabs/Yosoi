@@ -9,7 +9,10 @@ use super::view::{
     SearchEnvelope,
 };
 use super::{OutputFormat, ProviderChoice, SearchArgs};
-use crate::stats::RunTimer;
+use crate::{
+    presentation::Theme,
+    stats::{RunTimer, StatsArgs},
+};
 use std::{
     num::{NonZeroU16, NonZeroU32, NonZeroUsize},
     process::ExitCode,
@@ -131,7 +134,7 @@ fn cli_args(
     SearchArgs {
         query: "unused fixture query".to_owned(),
         providers,
-        stats: false,
+        reporting: StatsArgs { enabled: false },
         per_provider_limit,
         max_in_flight,
         output: OutputFormat::Human,
@@ -156,7 +159,7 @@ fn query_mismatch_is_a_distinct_provider_failure() {
 #[test]
 fn stats_formatter_reports_wall_time_and_bounded_totals() -> Result<(), Box<dyn Error>> {
     let mut output = Vec::new();
-    render_stats(&mut output, &fixture(), &RunTimer::start())?;
+    render_stats(&mut output, &fixture(), &RunTimer::start(), Theme::plain())?;
     let text = String::from_utf8(output)?;
     assert!(text.contains("Search stats:\nWall time: "));
     assert!(text.contains("Termination: completed"));
@@ -376,7 +379,7 @@ fn human_formatter_groups_by_provider_and_removes_terminal_controls() -> Result<
     {
         hit.title = Some("Example\u{1b}[31m");
     }
-    render_human(&mut output, &envelope)?;
+    render_human(&mut output, &envelope, Theme::plain())?;
     let text = String::from_utf8(output)?;
     assert!(
         text.find("brave:").ok_or("Brave group missing")?
@@ -424,5 +427,40 @@ fn exit_code_reflects_valid_partial_failed_and_interrupted_results() -> Result<(
         exit_code(slice::from_ref(clean_provider), "completed", false),
         ExitCode::from(3)
     );
+    Ok(())
+}
+
+#[test]
+fn browser_failure_advice_and_ids_are_human_only() -> Result<(), Box<dyn Error>> {
+    let mut envelope = fixture();
+    let provider = envelope
+        .providers
+        .first_mut()
+        .ok_or("missing provider fixture")?;
+    provider.status = ProviderStatus::Failed;
+    provider.detail = Some("transport_failure");
+    provider.coverage = None;
+    provider.hits.clear();
+    provider
+        .attempts
+        .first_mut()
+        .ok_or("missing request attempt")?
+        .diagnostic = Some("browser_launch_failed");
+    let mut human = Vec::new();
+    render_human(&mut human, &envelope, Theme::plain())?;
+    let text = String::from_utf8(human)?;
+    assert!(text.contains("Chrome/Chromium could not start"));
+    assert!(text.contains("Request: 123e4567-e89b-42d3-a456-426614174100"));
+    assert!(text.contains("Capture: 123e4567-e89b-42d3-a456-426614174101"));
+    let mut machine = Vec::new();
+    render_json(&mut machine, &envelope)?;
+    let value: serde_json::Value = serde_json::from_slice(&machine)?;
+    assert_eq!(
+        value
+            .pointer("/providers/0/attempts/0/diagnostic")
+            .and_then(serde_json::Value::as_str),
+        Some("browser_launch_failed")
+    );
+    assert!(!String::from_utf8(machine)?.contains("Chrome/Chromium could not start"));
     Ok(())
 }

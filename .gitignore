@@ -3,6 +3,11 @@ target/
 /.generated/
 __pycache__/
 *.pyc
+.venv/
+dist/
+.pytest_cache/
+.ruff_cache/
+*.so
 /fuzz/artifacts/
 /fuzz/corpus/
 /benchmarks/results/
@@ -49,3 +54,10 @@ Thumbs.db
 .codex/
 .agents/
 completions/
+
+/scripts/docs/node_modules/
+
+/scripts/docs/.vite/
+
+# Pinned local release-note tooling environment
+/scripts/releases/.venv/

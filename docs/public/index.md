@@ -17,11 +17,11 @@ Yosoi helps you discover URLs, fetch pages, and turn web documents into useful d
 
 ## Choose a tool
 
-| Tool | Use it to |
-| --- | --- |
-| Map | Discover URLs on a site |
-| Search | Find candidates across search providers |
-| Requests | Fetch a web document |
-| Locate | Select values from a document |
+| Tool         | Use it to                               |
+| ------------ | --------------------------------------- |
+| Map          | Discover URLs on a site                 |
+| Search (CLI) | Find candidates across search providers |
+| Requests     | Fetch a web document                    |
+| Locate       | Select values from a document           |
 
 The API reference is generated separately from code.

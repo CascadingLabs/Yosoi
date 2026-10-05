@@ -11,10 +11,12 @@ path = "src/main.rs"
 
 [features]
 default = ["browser"]
-browser = ["yosoi/browser"]
+browser = ["yosoi/browser", "yosoi-engine/browser"]
 
 [dependencies]
 anyhow.workspace = true
+anstream.workspace = true
+unicode-width.workspace = true
 clap.workspace = true
 clap_complete.workspace = true
 serde.workspace = true
@@ -22,6 +24,7 @@ serde_json.workspace = true
 thiserror.workspace = true
 tokio = { workspace = true, features = ["signal"] }
 yosoi.workspace = true
+yosoi-engine.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true

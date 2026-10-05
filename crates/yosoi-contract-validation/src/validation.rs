@@ -2,7 +2,9 @@ use crate::{
     FieldIssueDraft, FieldIssueKind, RuntimeContractValue, RuntimeValueIssue, ValidationFailure,
 };
 use std::fmt::{self, Formatter};
-use yosoi_contracts::{CandidateField, CandidateView, Contract};
+use yosoi_contracts::{
+    CandidateField, CandidateInput, CandidateView, Contract, ContractSchema, FieldId,
+};
 use yosoi_documents::{Completeness, Finding};
 
 pub const MAX_CONTRACT_FIELDS: u64 = 1_024;
@@ -56,20 +58,47 @@ impl ValidationBudget {
         limits: ValidationLimits,
     ) -> Result<Self, ValidationFailure> {
         let schema = T::schema()?;
+        let total_values = candidates.iter().try_fold(0_u64, |total, candidate| {
+            total.checked_add(<T::Candidate as CandidateView>::value_count(candidate)?)
+        });
+        let total_values = total_values.ok_or(ValidationFailure::ConversionCountOverflow)?;
+        Self::preflight_counts(schema, candidates.len(), total_values, limits)
+    }
+
+    pub(crate) fn preflight_runtime(
+        schema: &ContractSchema,
+        candidates: &[CandidateInput],
+        limits: ValidationLimits,
+    ) -> Result<Self, ValidationFailure> {
+        let total_values = candidates.iter().try_fold(0_u64, |total, candidate| {
+            candidate
+                .fields()
+                .values()
+                .try_fold(total, |count, findings| {
+                    let evidence_count = u64::try_from(findings.len()).ok()?;
+                    count.checked_add(evidence_count)
+                })
+        });
+        let total_values = total_values.ok_or(ValidationFailure::ConversionCountOverflow)?;
+        Self::preflight_counts(schema, candidates.len(), total_values, limits)
+    }
+
+    fn preflight_counts(
+        schema: &ContractSchema,
+        candidate_count: usize,
+        total_values: u64,
+        limits: ValidationLimits,
+    ) -> Result<Self, ValidationFailure> {
         let field_count = u64::try_from(schema.fields().len())
             .map_err(|_| ValidationFailure::FieldCountOverflow)?;
         enforce(field_count, limits.max_fields, |maximum, observed| {
             ValidationFailure::FieldLimitExceeded { maximum, observed }
         })?;
         let record_count =
-            u64::try_from(candidates.len()).map_err(|_| ValidationFailure::RecordCountOverflow)?;
+            u64::try_from(candidate_count).map_err(|_| ValidationFailure::RecordCountOverflow)?;
         enforce(record_count, limits.max_records, |maximum, observed| {
             ValidationFailure::RecordLimitExceeded { maximum, observed }
         })?;
-        let total_values = candidates.iter().try_fold(0_u64, |total, candidate| {
-            total.checked_add(<T::Candidate as CandidateView>::value_count(candidate)?)
-        });
-        let total_values = total_values.ok_or(ValidationFailure::ConversionCountOverflow)?;
         enforce(total_values, limits.max_conversions, |maximum, observed| {
             ValidationFailure::ConversionLimitExceeded { maximum, observed }
         })?;
@@ -141,15 +170,27 @@ fn enforce(
 pub fn read_required<T: RuntimeContractValue>(
     field: &CandidateField<T>,
 ) -> Result<T, FieldIssueDraft<'_>> {
-    validate_completeness(field)?;
-    match field.evidence() {
-        [] => Err(issue_all(field, FieldIssueKind::MissingRequired)),
-        [finding] => convert(field, finding),
-        findings => Err(issue_all(
-            field,
+    read_required_evidence(field.id(), field.evidence())
+}
+
+pub(crate) fn read_required_evidence<'a, T: RuntimeContractValue>(
+    id: &FieldId,
+    evidence: &'a [Finding],
+) -> Result<T, FieldIssueDraft<'a>> {
+    validate_completeness(id, evidence)?;
+    match evidence {
+        [] => Err(FieldIssueDraft::all(
+            id.clone(),
+            FieldIssueKind::MissingRequired,
+            evidence,
+        )),
+        [finding] => convert(id, finding),
+        findings => Err(FieldIssueDraft::all(
+            id.clone(),
             FieldIssueKind::ExcessCandidates {
                 observed: u64::try_from(findings.len()).unwrap_or(u64::MAX),
             },
+            findings,
         )),
     }
 }
@@ -158,15 +199,23 @@ pub fn read_required<T: RuntimeContractValue>(
 pub fn read_optional<T: RuntimeContractValue>(
     field: &CandidateField<T>,
 ) -> Result<Option<T>, FieldIssueDraft<'_>> {
-    validate_completeness(field)?;
-    match field.evidence() {
+    read_optional_evidence(field.id(), field.evidence())
+}
+
+pub(crate) fn read_optional_evidence<'a, T: RuntimeContractValue>(
+    id: &FieldId,
+    evidence: &'a [Finding],
+) -> Result<Option<T>, FieldIssueDraft<'a>> {
+    validate_completeness(id, evidence)?;
+    match evidence {
         [] => Ok(None),
-        [finding] => convert(field, finding).map(Some),
-        findings => Err(issue_all(
-            field,
+        [finding] => convert(id, finding).map(Some),
+        findings => Err(FieldIssueDraft::all(
+            id.clone(),
             FieldIssueKind::ExcessCandidates {
                 observed: u64::try_from(findings.len()).unwrap_or(u64::MAX),
             },
+            findings,
         )),
     }
 }
@@ -175,31 +224,37 @@ pub fn read_optional<T: RuntimeContractValue>(
 pub fn read_many<T: RuntimeContractValue>(
     field: &CandidateField<T>,
 ) -> Result<Vec<T>, FieldIssueDraft<'_>> {
-    validate_completeness(field)?;
-    let mut values = Vec::with_capacity(field.len());
-    for finding in field.evidence() {
-        values.push(convert(field, finding)?);
+    read_many_evidence(field.id(), field.evidence())
+}
+
+pub(crate) fn read_many_evidence<'a, T: RuntimeContractValue>(
+    id: &FieldId,
+    evidence: &'a [Finding],
+) -> Result<Vec<T>, FieldIssueDraft<'a>> {
+    validate_completeness(id, evidence)?;
+    let mut values = Vec::with_capacity(evidence.len());
+    for finding in evidence {
+        values.push(convert(id, finding)?);
     }
     Ok(values)
 }
 
-fn validate_completeness<T>(field: &CandidateField<T>) -> Result<(), FieldIssueDraft<'_>> {
-    if field
-        .evidence()
+fn validate_completeness<'a>(
+    id: &FieldId,
+    evidence: &'a [Finding],
+) -> Result<(), FieldIssueDraft<'a>> {
+    if evidence
         .iter()
         .all(|finding| finding.completeness() == &Completeness::Complete)
     {
         Ok(())
     } else {
-        Err(FieldIssueDraft::incomplete(
-            field.id().clone(),
-            field.evidence(),
-        ))
+        Err(FieldIssueDraft::incomplete(id.clone(), evidence))
     }
 }
 
 fn convert<'a, T: RuntimeContractValue>(
-    field: &CandidateField<T>,
+    id: &FieldId,
     finding: &'a Finding,
 ) -> Result<T, FieldIssueDraft<'a>> {
     T::from_projected(finding.value()).map_err(|runtime_issue| {
@@ -212,10 +267,6 @@ fn convert<'a, T: RuntimeContractValue>(
                 FieldIssueKind::SemanticValidationFailed { code }
             }
         };
-        FieldIssueDraft::one(field.id().clone(), kind, finding)
+        FieldIssueDraft::one(id.clone(), kind, finding)
     })
-}
-
-fn issue_all<T>(field: &CandidateField<T>, kind: FieldIssueKind) -> FieldIssueDraft<'_> {
-    FieldIssueDraft::all(field.id().clone(), kind, field.evidence())
 }

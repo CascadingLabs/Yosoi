@@ -9,6 +9,7 @@ rust-version.workspace = true
 workspace = true
 
 [dependencies]
+serde.workspace = true
 thiserror.workspace = true
 yosoi-contracts.workspace = true
 yosoi-documents.workspace = true

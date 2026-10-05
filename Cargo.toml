@@ -3,8 +3,9 @@ members = [
     "benchmarks",
     "benchmarks/document-locators",
     "crates/voidcrawl",
+    "crates/yosoi-engine",
     "crates/yosoi",
-    "crates/yosoi-sdk",
+    "crates/yosoi-python",
     "crates/yosoi-archive",
     "crates/yosoi-cli",
     "crates/yosoi-contracts",
@@ -38,6 +39,8 @@ bytes = "1"
 memchr = "=2.8.3"
 encoding_rs = { version = "0.8.35", default-features = false, features = ["alloc"] }
 chrono = { version = "0.4.45", default-features = false, features = ["serde", "std"] }
+anstream = "1.0"
+unicode-width = "=0.2.2"
 clap = { version = "4.6", features = ["cargo", "derive", "wrap_help"] }
 futures-util = { version = "0.3", default-features = false, features = ["std"] }
 libc = "0.2"
@@ -58,6 +61,8 @@ url = { version = "2.5.8", default-features = false, features = ["std"] }
 wreq = { version = "=0.16.1", default-features = false, features = ["stream", "tokio-rt", "webpki-roots"] }
 uuid = { version = "1", features = ["v4"] }
 void_crawl_core = { version = "=0.1.0", path = "crates/voidcrawl", default-features = false }
+yosoi = { version = "=0.1.0", path = "crates/yosoi" }
+yosoi-engine = { version = "=0.1.0", path = "crates/yosoi-engine" }
 yosoi = { version = "=0.1.0", path = "crates/yosoi" }
 yosoi-contracts = { version = "=0.1.0", path = "crates/yosoi-contracts" }
 yosoi-contracts-derive = { version = "=0.1.0", path = "crates/yosoi-contracts-derive" }

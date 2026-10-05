@@ -3,10 +3,13 @@
 //! Extraction preserves candidate values and evidence. It performs no value
 //! conversion, cardinality enforcement, defaults, or semantic validation.
 
+use serde::Serialize;
 use std::collections::{BTreeMap, HashMap};
 use std::fmt::{self, Formatter};
 use thiserror::Error;
-use yosoi_contracts::{CandidateInput, Contract, ContractSchemaError, FieldId, RecordScope};
+use yosoi_contracts::{
+    CandidateInput, Contract, ContractSchema, ContractSchemaError, FieldId, RecordScope,
+};
 use yosoi_documents::{
     DocumentId, IncompleteEvidence, LocateFailure, LocateOutcome, OutputId, RegionLineage,
 };
@@ -19,6 +22,32 @@ pub enum Extracted<T: Contract> {
     Candidates {
         document_id: DocumentId,
         candidates: Vec<T::Candidate>,
+        diagnostics: Vec<ExtractionDiagnostic>,
+    },
+    NoMatch {
+        document_id: DocumentId,
+    },
+    Indeterminate {
+        document_id: DocumentId,
+        completeness: IncompleteEvidence,
+        reason_code: String,
+    },
+    LocateFailed {
+        failure: LocateFailure,
+    },
+    Rejected {
+        failure: ExtractionFailure,
+    },
+}
+
+/// Schema-driven candidates shared by derive-backed and runtime Contracts.
+#[doc(hidden)]
+#[derive(Clone, Debug, Serialize)]
+#[serde(tag = "status", rename_all = "snake_case")]
+pub enum SchemaExtracted {
+    Candidates {
+        document_id: DocumentId,
+        candidates: Vec<CandidateInput>,
         diagnostics: Vec<ExtractionDiagnostic>,
     },
     NoMatch {
@@ -82,7 +111,8 @@ impl<T: Contract> Extracted<T> {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
 pub enum ExtractionDiagnostic {
     IncompatibleLineage { output: OutputId },
 }
@@ -113,7 +143,8 @@ impl ExtractionLimits {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum ExtractionLimit {
     ScannedRegions,
     ScannedFindings,
@@ -138,6 +169,40 @@ pub enum ExtractionFailure {
         maximum: u64,
         observed: u64,
     },
+}
+
+impl Serialize for ExtractionFailure {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut state = serializer.serialize_struct("ExtractionFailure", 4)?;
+        match self {
+            Self::InvalidContractSchema(error) => {
+                state.serialize_field("kind", "invalid_contract_schema")?;
+                state.serialize_field("message", &error.to_string())?;
+            }
+            Self::CountOverflow { limit } => {
+                state.serialize_field("kind", "count_overflow")?;
+                state.serialize_field("limit", limit)?;
+            }
+            Self::GroupingIndexInvariant => {
+                state.serialize_field("kind", "grouping_index_invariant")?;
+            }
+            Self::LimitExceeded {
+                limit,
+                maximum,
+                observed,
+            } => {
+                state.serialize_field("kind", "limit_exceeded")?;
+                state.serialize_field("limit", limit)?;
+                state.serialize_field("maximum", maximum)?;
+                state.serialize_field("observed", observed)?;
+            }
+        }
+        state.end()
+    }
 }
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
@@ -196,12 +261,18 @@ pub fn extract_contract_with_limits<T: Contract>(
     limits: ExtractionLimits,
 ) -> Extracted<T> {
     match located {
-        LocateOutcome::Matched { result } => extract_findings::<T>(
-            result.document_id(),
-            result.regions(),
-            result.findings(),
-            limits,
-        ),
+        LocateOutcome::Matched { result } => match T::schema() {
+            Ok(schema) => extract_findings::<T>(
+                schema,
+                result.document_id(),
+                result.regions(),
+                result.findings(),
+                limits,
+            ),
+            Err(error) => Extracted::Rejected {
+                failure: ExtractionFailure::InvalidContractSchema(error),
+            },
+        },
         LocateOutcome::NoMatch { document_id } => Extracted::NoMatch {
             document_id: document_id.clone(),
         },
@@ -220,20 +291,79 @@ pub fn extract_contract_with_limits<T: Contract>(
     }
 }
 
+/// Extracts candidates from a validated runtime schema using the shared
+/// grouping and resource accounting path used by derive-backed Contracts.
+#[doc(hidden)]
+pub fn extract_schema_with_limits(
+    schema: &ContractSchema,
+    located: &LocateOutcome,
+    limits: ExtractionLimits,
+) -> SchemaExtracted {
+    match located {
+        LocateOutcome::Matched { result } => extract_candidates(
+            schema,
+            result.document_id(),
+            result.regions(),
+            result.findings(),
+            limits,
+        ),
+        LocateOutcome::NoMatch { document_id } => SchemaExtracted::NoMatch {
+            document_id: document_id.clone(),
+        },
+        LocateOutcome::Indeterminate {
+            document_id,
+            completeness,
+            reason_code,
+        } => SchemaExtracted::Indeterminate {
+            document_id: document_id.clone(),
+            completeness: completeness.clone(),
+            reason_code: reason_code.clone(),
+        },
+        LocateOutcome::Failed { failure } => SchemaExtracted::LocateFailed {
+            failure: failure.clone(),
+        },
+    }
+}
+
 fn extract_findings<T: Contract>(
+    schema: &ContractSchema,
     document_id: &DocumentId,
     regions: &[RegionLineage],
     findings: &[yosoi_documents::Finding],
     limits: ExtractionLimits,
 ) -> Extracted<T> {
-    let schema = match T::schema() {
-        Ok(schema) => schema,
-        Err(error) => {
-            return Extracted::Rejected {
-                failure: ExtractionFailure::InvalidContractSchema(error),
-            };
-        }
-    };
+    match extract_candidates(schema, document_id, regions, findings, limits) {
+        SchemaExtracted::Candidates {
+            document_id,
+            candidates,
+            diagnostics,
+        } => Extracted::Candidates {
+            document_id,
+            candidates: candidates.iter().map(T::candidate_from).collect(),
+            diagnostics,
+        },
+        SchemaExtracted::Rejected { failure } => Extracted::Rejected { failure },
+        SchemaExtracted::NoMatch { document_id } => Extracted::NoMatch { document_id },
+        SchemaExtracted::Indeterminate {
+            document_id,
+            completeness,
+            reason_code,
+        } => Extracted::Indeterminate {
+            document_id,
+            completeness,
+            reason_code,
+        },
+        SchemaExtracted::LocateFailed { failure } => Extracted::LocateFailed { failure },
+    }
+}
+
+fn extract_candidates(
+    schema: &ContractSchema,
+    document_id: &DocumentId,
+    regions: &[RegionLineage],
+    findings: &[yosoi_documents::Finding],
+    limits: ExtractionLimits,
+) -> SchemaExtracted {
     let mut builders = Vec::<CandidateBuilder>::new();
     let mut builder_indices = HashMap::<RecordKey, usize>::new();
     let mut diagnostics = Vec::new();
@@ -247,7 +377,7 @@ fn extract_findings<T: Contract>(
         ExtractionLimit::ScannedRegions,
         limits.max_scanned_regions,
     ) {
-        return Extracted::Rejected { failure };
+        return SchemaExtracted::Rejected { failure };
     }
 
     if schema.scope() == RecordScope::Repeated {
@@ -260,12 +390,12 @@ fn extract_findings<T: Contract>(
                 ExtractionLimit::Candidates,
                 limits.max_candidates,
             ) {
-                return Extracted::Rejected { failure };
+                return SchemaExtracted::Rejected { failure };
             }
             let key = RecordKey::Region(region.clone());
             let index = builders.len();
             if builder_indices.insert(key.clone(), index).is_some() {
-                return Extracted::Rejected {
+                return SchemaExtracted::Rejected {
                     failure: ExtractionFailure::GroupingIndexInvariant,
                 };
             }
@@ -279,7 +409,7 @@ fn extract_findings<T: Contract>(
             ExtractionLimit::ScannedFindings,
             limits.max_scanned_findings,
         ) {
-            return Extracted::Rejected { failure };
+            return SchemaExtracted::Rejected { failure };
         }
         let Some(field) = schema.field_for_output(finding.output_id()) else {
             continue;
@@ -289,7 +419,7 @@ fn extract_findings<T: Contract>(
             ExtractionLimit::MatchingFindings,
             limits.max_matching_findings,
         ) {
-            return Extracted::Rejected { failure };
+            return SchemaExtracted::Rejected { failure };
         }
         let key = match (schema.scope(), finding.parent_region()) {
             (RecordScope::Page, None) => RecordKey::Page,
@@ -304,7 +434,7 @@ fn extract_findings<T: Contract>(
                     ExtractionLimit::Diagnostics,
                     limits.max_diagnostics,
                 ) {
-                    return Extracted::Rejected { failure };
+                    return SchemaExtracted::Rejected { failure };
                 }
                 diagnostics.push(ExtractionDiagnostic::IncompatibleLineage {
                     output: finding.output_id().clone(),
@@ -315,14 +445,14 @@ fn extract_findings<T: Contract>(
 
         if let Some(index) = builder_indices.get(&key).copied() {
             let Some(builder) = builders.get_mut(index) else {
-                return Extracted::Rejected {
+                return SchemaExtracted::Rejected {
                     failure: ExtractionFailure::GroupingIndexInvariant,
                 };
             };
             if let Err(failure) =
                 builder.push(field.id().clone(), finding, limits, &mut retained_evidence)
             {
-                return Extracted::Rejected { failure };
+                return SchemaExtracted::Rejected { failure };
             }
         } else {
             if let Err(failure) = check_next_len(
@@ -330,13 +460,13 @@ fn extract_findings<T: Contract>(
                 ExtractionLimit::Candidates,
                 limits.max_candidates,
             ) {
-                return Extracted::Rejected { failure };
+                return SchemaExtracted::Rejected { failure };
             }
             let mut builder = CandidateBuilder::new(key);
             if let Err(failure) =
                 builder.push(field.id().clone(), finding, limits, &mut retained_evidence)
             {
-                return Extracted::Rejected { failure };
+                return SchemaExtracted::Rejected { failure };
             }
             let index = builders.len();
             builder_indices.insert(builder.key.clone(), index);
@@ -351,15 +481,11 @@ fn extract_findings<T: Contract>(
                 RecordKey::Page => None,
                 RecordKey::Region(region) => Some(region),
             };
-            T::candidate_from(&CandidateInput::new(
-                document_id.clone(),
-                region,
-                builder.fields,
-            ))
+            CandidateInput::new(document_id.clone(), region, builder.fields)
         })
         .collect();
 
-    Extracted::Candidates {
+    SchemaExtracted::Candidates {
         document_id: document_id.clone(),
         candidates,
         diagnostics,

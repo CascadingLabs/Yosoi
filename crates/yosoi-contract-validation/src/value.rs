@@ -157,7 +157,8 @@ fn parse_usd(value: &str) -> Option<(Money, bool)> {
     ))
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
 pub enum RuntimeValueIssue {
     UnsupportedProjectedValue,
     ConversionFailed,

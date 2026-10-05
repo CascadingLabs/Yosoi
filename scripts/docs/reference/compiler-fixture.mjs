@@ -6,13 +6,22 @@ import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { generateReference, verifyReference } from './generate.mjs';
 const root=fs.mkdtempSync(path.join(os.tmpdir(),'sdk-rustdoc-fixture-'));
-const run=(cmd,args)=>execFileSync(cmd,args,{cwd:root,encoding:'utf8',env:{...process.env,CARGO_BUILD_JOBS:'1',RAYON_NUM_THREADS:'1'}}).trim();
+const run=(cmd,args)=>{
+ try { return execFileSync(cmd,args,{cwd:root,encoding:'utf8',env:{...process.env,CARGO_BUILD_JOBS:'1',RAYON_NUM_THREADS:'1'},maxBuffer:16*1024*1024}).trim(); }
+ catch(error) {
+  const tail=String(error.stderr||'').trim().split('\n').slice(-20).join('\n');
+  throw new Error(`${cmd} ${args.slice(0,2).join(' ')} failed${tail?`\n${tail}`:''}`);
+ }
+};
 try {
  fs.mkdirSync(path.join(root,'src'));
- fs.writeFileSync(path.join(root,'Cargo.toml'),`[package]\nname="fixture-sdk"\nversion="0.1.0"\nedition="2021"\n[package.metadata.yosoi]\nsdk=true\n[features]\nextra=["fixture-core/extra"]\n[dependencies]\nfixture-core={path="core",default-features=false}\n[workspace]\nmembers=["core"]\n`);
+ fs.writeFileSync(path.join(root,'Cargo.toml'),`[package]\nname="fixture-sdk"\nversion="0.1.0"\nedition="2021"\n[package.metadata.yosoi]\nsdk=true\n[features]\nextra=["fixture-core/extra","fixture-macros/extra"]\n[dependencies]\nfixture-core={path="core",default-features=false}\nfixture-macros={path="macros",default-features=false}\n[workspace]\nmembers=["core","macros"]\n`);
  fs.mkdirSync(path.join(root,'core/src'),{recursive:true});
  fs.writeFileSync(path.join(root,'core/Cargo.toml'),'[package]\nname="fixture-core"\nversion="0.1.0"\nedition="2021"\n[features]\nextra=[]\n');
  fs.writeFileSync(path.join(root,'core/src/lib.rs'),'#[cfg(feature="extra")]\npub struct FeatureItem;\n');
+ fs.mkdirSync(path.join(root,'macros/src'),{recursive:true});
+ fs.writeFileSync(path.join(root,'macros/Cargo.toml'),'[package]\nname="fixture-macros"\nversion="0.1.0"\nedition="2021"\n[lib]\nproc-macro=true\n[features]\nextra=[]\n');
+ fs.writeFileSync(path.join(root,'macros/src/lib.rs'),`extern crate proc_macro;\nuse proc_macro::TokenStream;\n/// A macro re-exported by the fixture SDK.\n#[proc_macro]\npub fn exported(_input: TokenStream) -> TokenStream { TokenStream::new() }\n/// An SDK-forwarded optional macro.\n#[cfg(feature="extra")]\n#[proc_macro]\npub fn gated(_input: TokenStream) -> TokenStream { TokenStream::new() }\n`);
  const source=`//! Compiler fixture.
 /// A public SDK item.
 /// \`\`\`rust
@@ -38,10 +47,13 @@ macro_rules! make_item { () => { pub fn generated() {} } }
 make_item!();
 #[cfg(feature="extra")]
 pub use fixture_core::FeatureItem;
+pub use fixture_macros::exported;
+#[cfg(feature="extra")]
+pub use fixture_macros::gated;
 `;
  fs.writeFileSync(path.join(root,'src/lib.rs'),source);
  run('git',['init','--quiet']);run('cargo',['+nightly','generate-lockfile','--offline']);
- const commit=()=>{run('git',['add','Cargo.toml','Cargo.lock','src','core']);run('git',['-c','user.name=Local Fixture','-c','user.email=fixture@example.invalid','commit','--quiet','-m','fixture']);return run('git',['rev-parse','HEAD']);};
+ const commit=()=>{run('git',['add','Cargo.toml','Cargo.lock','src','core','macros']);run('git',['-c','user.name=Local Fixture','-c','user.email=fixture@example.invalid','commit','--quiet','-m','fixture']);return run('git',['rev-parse','HEAD']);};
  const first=commit();
  const options={repo:root,repository:'CascadingLabs/fixture',sdk:'fixture-sdk',toolchain:'nightly',offline:true,preview:true};
  const one=generateReference({...options,source:first,version:'0.1.0',out:path.join(root,'one')});
@@ -52,6 +64,8 @@ pub use fixture_core::FeatureItem;
  const publicOne=get(one,'one','fixture_sdk::Public');
  assert(publicOne.members.some(m=>m.publicPath.endsWith('::base')));
  assert(!publicOne.members.some(m=>m.publicPath.endsWith('::extra')));
+ assert(Object.values(one.pages).some(p=>p.title==='fixture_sdk::exported'));
+ assert(!Object.values(one.pages).some(p=>p.title==='fixture_sdk::gated'));
  assert(!Object.values(one.pages).some(p=>/::(?:hidden|private)$/.test(p.title)));
  assert(Object.values(one.pages).some(p=>p.title==='fixture_sdk::Alias'));
  assert(Object.values(one.pages).some(p=>p.title==='fixture_sdk::generated'));
@@ -62,6 +76,7 @@ pub use fixture_core::FeatureItem;
  const publicTwo=get(two,'two','fixture_sdk::Renamed');
  assert(Object.values(two.pages).some(p=>p.title==='fixture_sdk::FeatureItem'));
  assert.equal(get(two,'two','fixture_sdk::FeatureItem').kind,'struct');
+ assert(Object.values(two.pages).some(p=>p.title==='fixture_sdk::gated'));
  assert(publicTwo.members.some(m=>m.publicPath.endsWith('::extra')));
  assert.equal(publicTwo.source.lineStart,publicOne.source.lineStart+2);
  assert(publicOne.source.url.includes(first));assert(publicTwo.source.url.includes(second));

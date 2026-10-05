@@ -8,7 +8,8 @@ use url::{Host, Url};
 use yosoi_policy::policy::{HostScope, Map, PathScope};
 
 /// Why a URL or hostname did not pass map admission.
-#[derive(Clone, Copy, Debug, Error, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Clone, Copy, Debug, Error, Eq, PartialEq, Ord, PartialOrd, serde::Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum Rejection {
     /// The input could not be parsed as a URL.
     #[error("invalid URL")]

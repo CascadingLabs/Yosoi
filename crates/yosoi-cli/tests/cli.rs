@@ -159,20 +159,21 @@ fn manifest_dependencies_respect_the_crate_boundary() -> Result<(), Box<dyn Erro
         .get("dependencies")
         .and_then(toml::Value::as_table)
         .ok_or("CLI manifest must declare normal dependencies")?;
-    let has_public_yosoi_dependency = normal_dependencies.iter().any(|(key, specification)| {
+    let has_public_sdk_dependency = normal_dependencies.iter().any(|(key, specification)| {
         specification
             .get("package")
             .and_then(toml::Value::as_str)
             .unwrap_or(key)
             == "yosoi"
     });
-    assert!(has_public_yosoi_dependency);
+    assert!(has_public_sdk_dependency);
 
     let mut package_names = Vec::new();
     collect_dependency_package_names(&manifest, &mut package_names);
     for package_name in package_names {
         assert_ne!(package_name, "void_crawl_core");
-        assert!(!package_name.starts_with("yosoi-"));
+        assert_ne!(package_name, "yosoi-engine");
+        assert!(package_name == "yosoi" || !package_name.starts_with("yosoi-"));
     }
     Ok(())
 }

@@ -1,0 +1,295 @@
+{
+  "schemaVersion": 1,
+  "kind": "python-rust-sdk-parity-ledger",
+  "sourcePin": {
+    "sourceRevision": null,
+    "inventorySignature": null,
+    "featureProfileDigest": null
+  },
+  "pythonPin": {
+    "surfaceDigest": null,
+    "implementationDigest": null
+  },
+  "entries": [
+    {
+      "rustPath": "yosoi::documents",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.documents",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The Python documents module is the authoring and outcome surface for Rust SDK documents."
+    },
+    {
+      "rustPath": "yosoi::locators",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.locators",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The Python locators module authors plans consumed by the Rust SDK."
+    },
+    {
+      "rustPath": "yosoi::map",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.map",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The Python map module authors requests and typed outcomes over the Rust SDK."
+    },
+    {
+      "rustPath": "yosoi::policy",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.policy",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The Python policy module authors policy models and delegates validation to Rust."
+    },
+    {
+      "rustPath": "yosoi::request",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.request",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The Python request module authors asynchronous requests and typed results over the Rust SDK."
+    },
+    {
+      "rustPath": "yosoi::search",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The Python search module authors provider-neutral requests and typed results over the Rust SDK."
+    },
+    {
+      "rustPath": "yosoi::Document",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.Document",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The package root exports the immutable Pydantic Document authoring model backed by the native SDK."
+    },
+    {
+      "rustPath": "yosoi::DocumentProfile",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.documents.DocumentProfile",
+      "argumentMappings": [],
+      "defaults": [
+        {
+          "id": "document-profile-epoch",
+          "rustField": "epoch",
+          "pythonField": "epoch",
+          "semantics": "optional; omitted for source representations"
+        }
+      ],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The Pydantic profile model authors the document profile passed to native Rust operations."
+    },
+    {
+      "rustPath": "yosoi::Policy",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.Policy",
+      "argumentMappings": [],
+      "defaults": [
+        {
+          "id": "rust-default-policy",
+          "source": "Rust default policy",
+          "target": "Pydantic default factories backed by yosoi._native.default_policy"
+        }
+      ],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Python Policy fields obtain defaults from the native Rust SDK and validate through Rust."
+    },
+    {
+      "rustPath": "yosoi::CancellationToken",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.CancellationToken",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The Python cancellation wrapper owns and forwards the native cancellation token."
+    },
+    {
+      "rustPath": "yosoi::locators::Plan",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.locators.Plan",
+      "argumentMappings": [
+        {
+          "rustArgument": "outputs",
+          "pythonArgument": "outputs",
+          "conversion": "Pydantic output models serialized to the native Rust plan"
+        }
+      ],
+      "defaults": [],
+      "units": [],
+      "cardinality": [
+        {
+          "id": "plan-named-outputs",
+          "rust": "named outputs",
+          "python": "tuple[Output, ...]"
+        }
+      ],
+      "rationale": "Plan declarations are converted to JSON and compiled by the native SDK."
+    },
+    {
+      "rustPath": "yosoi::request::PageRequest",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.request.PageRequest",
+      "argumentMappings": [
+        {
+          "rustArgument": "target",
+          "pythonArgument": "target",
+          "conversion": "str"
+        }
+      ],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "Python PageRequest creates and sends the native SDK request."
+    },
+    {
+      "rustPath": "yosoi::request::new",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.request.new",
+      "argumentMappings": [
+        {
+          "rustArgument": "target",
+          "pythonArgument": "target",
+          "conversion": "str"
+        }
+      ],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The Python convenience constructor creates a PageRequest with the authored target."
+    },
+    {
+      "rustPath": "yosoi::request::Response",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.outcomes.Response",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [
+        {
+          "id": "borrowed-response-view",
+          "rust": "borrowed response/document views",
+          "python": "owned Python wrappers retaining the native response handle",
+          "reviewStatus": "mapped; conformance evidence required"
+        }
+      ],
+      "cardinality": [],
+      "rationale": "The typed Python response preserves the native response handle while constructing Pydantic outcomes."
+    },
+    {
+      "rustPath": "yosoi::map::MapRequest",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.map.MapRequest",
+      "argumentMappings": [
+        {
+          "rustArgument": "seed",
+          "pythonArgument": "seed",
+          "conversion": "str"
+        }
+      ],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The Python request wrapper creates and executes bounded mapping through the native SDK."
+    },
+    {
+      "rustPath": "yosoi::map::MapOutcome",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.map.MapOutcome",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [
+        {
+          "id": "map-outcome-sequences",
+          "rust": "slice and exact-size iterator views",
+          "python": "immutable tuples"
+        }
+      ],
+      "rationale": "The Python model validates the native serialized outcome and retains native capture handles."
+    },
+    {
+      "rustPath": "yosoi::map::new",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.map.new",
+      "argumentMappings": [
+        {
+          "rustArgument": "seed",
+          "pythonArgument": "seed",
+          "conversion": "str"
+        }
+      ],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The Python convenience constructor creates a MapRequest with the authored seed."
+    },
+    {
+      "rustPath": "yosoi::search::SearchRequest",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchRequest",
+      "argumentMappings": [
+        {
+          "rustArgument": "query",
+          "pythonArgument": "query",
+          "conversion": "str"
+        }
+      ],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The Python request model forwards provider-neutral Search intent to the native SDK."
+    },
+    {
+      "rustPath": "yosoi::search::SearchResponse",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.SearchResponse",
+      "argumentMappings": [],
+      "defaults": [],
+      "units": [],
+      "cardinality": [
+        {
+          "id": "search-response-sequences",
+          "rust": "provider result and attempt sequences",
+          "python": "immutable tuples"
+        }
+      ],
+      "rationale": "The Python Pydantic response validates the native serialized Search result."
+    },
+    {
+      "rustPath": "yosoi::search::new",
+      "decision": "mapped",
+      "pythonTarget": "yosoi.search.new",
+      "argumentMappings": [
+        {
+          "rustArgument": "query",
+          "pythonArgument": "query",
+          "conversion": "str"
+        }
+      ],
+      "defaults": [],
+      "units": [],
+      "cardinality": [],
+      "rationale": "The Python convenience constructor creates a SearchRequest with the authored query."
+    }
+  ]
+}

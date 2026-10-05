@@ -12,12 +12,12 @@ The CLI exposes Yosoi operations as commands you can combine in shell workflows.
 yosoi --help
 ```
 
-| Command | Purpose |
-| --- | --- |
-| `yosoi request` | Fetch a document |
-| `yosoi locate` | Select values from a document |
-| `yosoi map` | Discover site URLs |
-| `yosoi search` | Query search providers |
+| Command         | Purpose                       |
+| --------------- | ----------------------------- |
+| `yosoi request` | Fetch a document              |
+| `yosoi locate`  | Select values from a document |
+| `yosoi map`     | Discover site URLs            |
+| `yosoi search`  | Query search providers        |
 
 - [Map](map.md)
 - [Search](search.md)

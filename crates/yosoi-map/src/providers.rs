@@ -15,7 +15,8 @@ const WAYBACK_QUERY_LIMIT: usize = 1_000;
 const HACKERTARGET_RESULT_LIMIT: usize = 50;
 
 /// Anonymous, public indexes with a bounded and documented query shape.
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, serde::Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum PublicProvider {
     CrtSh,
     HackerTarget,

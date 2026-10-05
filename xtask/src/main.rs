@@ -14,6 +14,7 @@ mod benchmark_results;
 mod docs;
 mod fixtures;
 mod fuzz;
+mod release;
 mod sdk_boundary;
 mod version;
 
@@ -23,6 +24,7 @@ Repository development tasks
 Usage: cargo xtask <task>
 
 Tasks:
+  release <command>            Prepare, check, export, and index reviewed release notes
   bump-version <VERSION> [--date-released YYYY-MM-DD] [--dry-run|--check] [-y|--yes]
                                Synchronize release versions and optional citation date
   fmt                          Check Rust formatting
@@ -58,6 +60,7 @@ fn main() -> Result<()> {
 
     match task.to_str() {
         Some("bump-version") => version::run(arguments),
+        Some("release") => release::run(arguments),
         Some("docs") => docs::run(arguments),
         Some("sdk-boundary") => no_extra_arguments(arguments).and_then(|()| sdk_boundary::run()),
         Some("benchmark") => benchmark::run(arguments),
@@ -294,6 +297,8 @@ fn fmt() -> Result<()> {
             "--package",
             "yosoi",
             "--package",
+            "yosoi-engine",
+            "--package",
             "yosoi-archive",
             "--package",
             "yosoi-contracts",
@@ -347,7 +352,11 @@ fn test() -> Result<()> {
         "nextest",
         &["nextest", "run", "--workspace", "--all-features"],
     )?;
-    run_cargo("yosoi doctests", &["test", "--package", "yosoi", "--doc"])
+    run_cargo("yosoi doctests", &["test", "--package", "yosoi", "--doc"])?;
+    run_cargo(
+        "yosoi-engine doctests",
+        &["test", "--package", "yosoi-engine", "--doc"],
+    )
 }
 
 fn deny() -> Result<()> {

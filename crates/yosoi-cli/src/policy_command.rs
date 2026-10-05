@@ -5,7 +5,7 @@ use std::io::{self, Write};
 use anyhow::{Context as _, Result};
 use clap::{Args, Subcommand};
 
-use crate::policy_store::PolicyStore;
+use crate::{policy_store::PolicyStore, presentation::Theme};
 
 #[derive(Debug, Args)]
 pub struct PolicyArgs {
@@ -24,10 +24,15 @@ pub enum PolicyAction {
 }
 
 pub fn run(args: PolicyArgs) -> Result<()> {
+    let theme = Theme::stdout();
+    let heading = theme.heading;
+    let value = theme.value;
+    let success = theme.success;
+    let muted = theme.muted;
     let mut stdout = io::stdout().lock();
     match args.action {
         Some(PolicyAction::Path) => {
-            writeln!(stdout, "{}", PolicyStore::path()?.display())?;
+            writeln!(stdout, "{value}{}{value:#}", PolicyStore::path()?.display())?;
         }
         Some(PolicyAction::List) => {
             let store = PolicyStore::load()?;
@@ -35,7 +40,7 @@ pub fn run(args: PolicyArgs) -> Result<()> {
             if profiles.is_empty() {
                 writeln!(
                     stdout,
-                    "No profiles for yosoi {}",
+                    "{muted}No profiles for yosoi {}{muted:#}",
                     env!("CARGO_PKG_VERSION")
                 )?;
             } else {
@@ -46,7 +51,10 @@ pub fn run(args: PolicyArgs) -> Result<()> {
                     } else {
                         " "
                     };
-                    writeln!(stdout, "{marker} {profile}")?;
+                    writeln!(
+                        stdout,
+                        "{success}{marker}{success:#} {value}{profile}{value:#}"
+                    )?;
                 }
             }
         }
@@ -62,7 +70,7 @@ pub fn run(args: PolicyArgs) -> Result<()> {
                 .context("could not compute effective Policy identity")?;
             writeln!(
                 stdout,
-                "Valid Policy '{}' for yosoi {}: v{} {}",
+                "{success}Valid Policy{success:#} {value}'{}'{value:#} for yosoi {}: v{} {}",
                 selected.unwrap_or("<defaults>"),
                 env!("CARGO_PKG_VERSION"),
                 identity.version(),
@@ -70,7 +78,10 @@ pub fn run(args: PolicyArgs) -> Result<()> {
             )?;
         }
         None => {
-            writeln!(stdout, "Policy commands: path, list, validate")?;
+            writeln!(
+                stdout,
+                "{heading}Policy commands:{heading:#} {value}path, list, validate{value:#}"
+            )?;
             writeln!(stdout, "Run `yosoi policy --help` for details.")?;
         }
     }

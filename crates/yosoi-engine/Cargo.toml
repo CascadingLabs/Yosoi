@@ -1,0 +1,43 @@
+[package]
+name = "yosoi-engine"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[features]
+default = []
+browser = ["yosoi-web-capture/browser"]
+
+[dependencies]
+base64.workspace = true
+chrono.workspace = true
+html5ever.workspace = true
+markup5ever_rcdom.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tokio-util.workspace = true
+url.workspace = true
+yosoi-archive.workspace = true
+yosoi-contracts.workspace = true
+yosoi-contracts-derive.workspace = true
+yosoi-contract-validation.workspace = true
+yosoi-documents.workspace = true
+yosoi-extractor.workspace = true
+yosoi-map.workspace = true
+yosoi-policy.workspace = true
+yosoi-types.workspace = true
+yosoi-web-capture.workspace = true
+yosoi-web-capture-direct-http.workspace = true
+
+[dev-dependencies]
+sha2.workspace = true
+tempfile.workspace = true
+tokio = { workspace = true, features = ["io-util", "net", "sync"] }
+tokio-rustls.workspace = true
+url.workspace = true
+
+[lints]
+workspace = true

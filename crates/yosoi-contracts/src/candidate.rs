@@ -1,11 +1,13 @@
 use crate::{ContractSchema, ContractSchemaError, FieldId};
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::fmt::{self, Formatter};
 use std::marker::PhantomData;
 use yosoi_documents::{DocumentId, Finding, ProjectedValue, RegionLineage};
 
 #[doc(hidden)]
-#[derive(Clone)]
+#[derive(Clone, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct CandidateInput {
     document_id: DocumentId,
     region: Option<RegionLineage>,
@@ -43,7 +45,13 @@ impl CandidateInput {
     pub fn findings(&self, field: &FieldId) -> &[Finding] {
         self.fields.get(field).map_or(&[], Vec::as_slice)
     }
+    pub fn fields(&self) -> &BTreeMap<FieldId, Vec<Finding>> {
+        &self.fields
+    }
 }
+
+/// Owned field evidence for one runtime-described Contract candidate.
+pub type RuntimeCandidate = CandidateInput;
 
 pub struct CandidateField<T> {
     id: FieldId,
@@ -78,6 +86,14 @@ impl<T> CandidateField<T> {
         Self {
             findings: input.findings(&id).to_vec(),
             id,
+            value_type: PhantomData,
+        }
+    }
+    #[doc(hidden)]
+    pub fn from_runtime(id: FieldId, findings: &[Finding]) -> Self {
+        Self {
+            id,
+            findings: findings.to_vec(),
             value_type: PhantomData,
         }
     }

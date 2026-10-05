@@ -31,8 +31,8 @@ pub use activity::{
 pub use artifact::{ArtifactAvailability, ArtifactRecord, ArtifactRecordError};
 pub use browser::{
     BrowserAccessibilityCaptureMode, BrowserAccessibilityIgnoredNodes, BrowserAccessibilitySchema,
-    BrowserDocumentEpoch, BrowserFrameId, BrowserMode, BrowserResourceId, BrowserResourceOutcome,
-    ColorScheme, EnvironmentValue, ReducedMotion, Viewport, ViewportError,
+    BrowserDocumentEpoch, BrowserFailureReason, BrowserFrameId, BrowserMode, BrowserResourceId,
+    BrowserResourceOutcome, ColorScheme, EnvironmentValue, ReducedMotion, Viewport, ViewportError,
 };
 pub use digest::{Sha256Digest, Sha256DigestParseError};
 pub use identity::{

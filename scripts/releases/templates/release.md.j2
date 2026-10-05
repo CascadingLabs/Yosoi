@@ -1,0 +1,50 @@
+---
+title: {{ title | tojson }}
+description: {{ description | tojson }}
+draft: true
+version: {{ version | tojson }}
+date: {{ date | tojson }}
+channel: {{ channel | tojson }}
+{% if previous %}previous: {{ previous | tojson }}
+{% endif %}---
+# Yosoi {{ version }}
+
+## Summary
+
+TODO: Describe the main value in a few clear sentences.
+
+## Highlights
+
+### TODO: Name this highlight
+
+TODO: Explain who benefits and how. Include a concrete example when it helps readers understand the change.
+
+<!-- Optional sections: copy, complete, and uncomment only when useful. Remove empty sections.
+## Improvements
+
+Describe meaningful user-facing improvements.
+
+## Fixes
+
+Describe fixes that change user-visible behavior.
+
+## Known limitations
+
+Describe relevant limitations readers should understand.
+-->
+
+## Upgrading
+
+TODO: Explain required actions, compatibility changes, or state that no action is required.
+
+## Full changelog and contributors
+
+Thanks to everyone who contributed to this release.
+
+<!-- prettier-ignore-start -->
+
+<!-- release-notes:generated-begin sha256={{ generated_sha256 }} -->
+{{ generated_source }}{% if not generated_source.endswith('\n') %}
+{% endif %}<!-- release-notes:generated-end -->
+
+<!-- prettier-ignore-end -->

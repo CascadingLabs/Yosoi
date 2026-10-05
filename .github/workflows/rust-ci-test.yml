@@ -63,7 +63,7 @@ jobs:
         run: cargo build --locked --workspace --all-targets --all-features
       - name: Compile the SDK without optional features
         # Check separately: workspace members can unify optional features.
-        run: cargo check --locked --package yosoi-sdk --no-default-features
+        run: cargo check --locked --package yosoi --no-default-features
       - name: Check downstream SDK visibility
         run: cargo run --locked --package xtask -- sdk-boundary
 

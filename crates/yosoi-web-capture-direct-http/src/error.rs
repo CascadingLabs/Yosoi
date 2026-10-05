@@ -8,7 +8,8 @@ use crate::{
 use super::DirectHttpRedirectErrorKind;
 
 /// Stable transport failure class, independent of provider error wording.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
+#[serde(tag = "kind", content = "value", rename_all = "snake_case")]
 pub enum DirectHttpTransportErrorKind {
     Dns,
     Connect,

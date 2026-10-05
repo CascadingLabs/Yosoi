@@ -1,14 +1,17 @@
+use serde::{Deserialize, Serialize};
 use std::fmt::{self, Formatter};
 use thiserror::Error;
 use yosoi_contracts::{ContractSchemaError, FieldId};
 use yosoi_documents::{Completeness, Finding};
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum ValidationCode {
     NegativeMoney,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct FieldIssue {
     pub field: FieldId,
     pub kind: FieldIssueKind,
@@ -26,7 +29,8 @@ impl fmt::Debug for FieldIssue {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
 pub enum FieldIssueKind {
     MissingRequired,
     ExcessCandidates { observed: u64 },
@@ -145,7 +149,59 @@ pub enum ValidationFailure {
     ProvenanceLimitExceeded { maximum: u64, observed: u64 },
 }
 
-#[derive(Clone, Debug, Eq, Error, PartialEq)]
+impl Serialize for ValidationFailure {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut state = serializer.serialize_struct("ValidationFailure", 3)?;
+        match self {
+            Self::InvalidContractSchema(error) => {
+                state.serialize_field("kind", "invalid_contract_schema")?;
+                state.serialize_field("message", &error.to_string())?;
+            }
+            Self::FieldCountOverflow => state.serialize_field("kind", "field_count_overflow")?,
+            Self::FieldLimitExceeded { maximum, observed } => {
+                state.serialize_field("kind", "field_limit_exceeded")?;
+                state.serialize_field("maximum", maximum)?;
+                state.serialize_field("observed", observed)?;
+            }
+            Self::RecordCountOverflow => state.serialize_field("kind", "record_count_overflow")?,
+            Self::RecordLimitExceeded { maximum, observed } => {
+                state.serialize_field("kind", "record_limit_exceeded")?;
+                state.serialize_field("maximum", maximum)?;
+                state.serialize_field("observed", observed)?;
+            }
+            Self::ConversionCountOverflow => {
+                state.serialize_field("kind", "conversion_count_overflow")?
+            }
+            Self::ConversionLimitExceeded { maximum, observed } => {
+                state.serialize_field("kind", "conversion_limit_exceeded")?;
+                state.serialize_field("maximum", maximum)?;
+                state.serialize_field("observed", observed)?;
+            }
+            Self::IssueCountOverflow => state.serialize_field("kind", "issue_count_overflow")?,
+            Self::IssueLimitExceeded { maximum, observed } => {
+                state.serialize_field("kind", "issue_limit_exceeded")?;
+                state.serialize_field("maximum", maximum)?;
+                state.serialize_field("observed", observed)?;
+            }
+            Self::ProvenanceCountOverflow => {
+                state.serialize_field("kind", "provenance_count_overflow")?
+            }
+            Self::ProvenanceLimitExceeded { maximum, observed } => {
+                state.serialize_field("kind", "provenance_limit_exceeded")?;
+                state.serialize_field("maximum", maximum)?;
+                state.serialize_field("observed", observed)?;
+            }
+        }
+        state.end()
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, Error, PartialEq, Serialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
 pub enum ContractIssues {
     #[error(
         "contract evaluation rejected {record_issues} records and produced {extraction_diagnostics} extraction diagnostics"

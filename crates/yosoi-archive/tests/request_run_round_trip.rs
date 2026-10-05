@@ -8,8 +8,8 @@ use std::path::{Path, PathBuf};
 
 use tempfile::tempdir;
 use yosoi_archive::{
-    Archive, ArchiveError, ArchivedDocumentInput, AuthoredDocumentSelection, CaptureArchiveRef,
-    EffectivePolicyIdentityRecord, PolicyArchiveRef, RequestAttemptDiagnostic,
+    Archive, ArchiveError, ArchivedDocumentInput, AuthoredDocumentSelection, BrowserFailureReason,
+    CaptureArchiveRef, EffectivePolicyIdentityRecord, PolicyArchiveRef, RequestAttemptDiagnostic,
     RequestAttemptFailureKind, RequestAttemptOutcome, RequestAttemptRecord,
     RequestDirectHttpTransportDiagnostic, RequestDocumentOutcome, RequestDocumentPartialReason,
     RequestDocumentRecord, RequestDocumentUnavailableReason, RequestNotStartedReason,
@@ -809,5 +809,53 @@ fn mutate_record(
     let mut record: serde_json::Value = serde_json::from_slice(&fs::read(&path)?)?;
     mutate(&mut record)?;
     fs::write(path, serde_json::to_vec(&record)?)?;
+    Ok(())
+}
+
+#[tokio::test]
+async fn browser_failure_reasons_round_trip_in_v1_request_records() -> Result<(), Box<dyn Error>> {
+    for reason in [
+        BrowserFailureReason::Launch,
+        BrowserFailureReason::EnvironmentMismatch,
+        BrowserFailureReason::CapacityExhausted,
+    ] {
+        let temporary = tempdir()?;
+        let root = temporary.path().join(".yosoi");
+        let archive = Archive::open(&root).await?;
+        let mut policy = Policy::default();
+        policy.page.acquisitions = vec![Acquisition::Browser(BrowserMode::Headless)];
+        let policy_ref = archive.write(&policy).await?;
+        let attempt = RequestAttemptRecord::try_new(
+            CAPTURE_ONE.parse()?,
+            AcquisitionKind::Browser {
+                mode: BrowserMode::Headless,
+            },
+            AuthoredDocumentSelection::Current,
+            vec![DocumentRequest::ResponseDocument],
+            RequestAttemptOutcome::Failed {
+                kind: RequestAttemptFailureKind::CaptureExecution,
+                diagnostic: RequestAttemptDiagnostic::BrowserFailure(reason),
+                capture: None,
+                response_status: None,
+            },
+        )?;
+        let record = RequestRunRecord::try_new(
+            REQUEST_ID.parse()?,
+            "https://example.test".parse()?,
+            policy_ref,
+            EffectivePolicyIdentityRecord::from_identity(policy.effective_identity()?),
+            RequestRunTermination::Completed,
+            vec![attempt],
+        )?;
+        let reference = archive.write(&record).await?;
+        if reference.format_version() != 1 {
+            return Err("browser diagnostic unexpectedly changed the Archive format".into());
+        }
+        drop(archive);
+        let reopened = Archive::open(&root).await?;
+        if reopened.read(&reference).await? != record {
+            return Err("browser reason was lost during a v1 Request-run round trip".into());
+        }
+    }
     Ok(())
 }

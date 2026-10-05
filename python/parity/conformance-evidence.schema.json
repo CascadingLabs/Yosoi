@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://yosoi.dev/schemas/python-rust-sdk-conformance-evidence-v1.json",
+  "title": "Executed Yosoi Python/Rust conformance evidence",
+  "description": "Evidence is accepted only when the raw result artifact digest, source inventory, feature profile, Python surface, item pair, and equal output digests all match the report snapshot.",
+  "type": "object",
+  "required": ["schemaVersion", "kind", "runId", "executedAt", "outcome", "runner", "source", "python", "resultArtifact", "cases"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "kind": {"const": "yosoi-python-rust-conformance"},
+    "runId": {"type": "string", "minLength": 1},
+    "executedAt": {"type": "string", "format": "date-time"},
+    "outcome": {"enum": ["passed", "failed"]},
+    "runner": {
+      "type": "object",
+      "required": ["command"],
+      "properties": {
+        "command": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "name": {"type": "string"},
+        "version": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "source": {
+      "type": "object",
+      "required": ["sourceRevision", "inventorySignature", "featureProfileDigest"],
+      "properties": {
+        "sourceRevision": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "inventorySignature": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "featureProfileDigest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      },
+      "additionalProperties": false
+    },
+    "python": {
+      "type": "object",
+      "required": ["surfaceDigest", "implementationDigest", "runtime"],
+      "properties": {
+        "surfaceDigest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "implementationDigest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "runtime": {
+          "type": "object",
+          "required": ["implementation", "version", "abi"],
+          "properties": {
+            "implementation": {"type": "string"},
+            "version": {"type": "string"},
+            "abi": {"type": "string"},
+            "dependencies": {"type": "object", "additionalProperties": {"type": ["string", "null"]}}
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "resultArtifact": {
+      "type": "object",
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      },
+      "additionalProperties": false
+    },
+    "cases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["testId", "rustPath", "pythonTarget", "outcome", "comparisons", "mappingChecks"],
+        "properties": {
+          "testId": {"type": "string", "minLength": 1},
+          "symbolKey": {"type": "string", "minLength": 1},
+          "trait": {"type": "string", "minLength": 1},
+          "rustPath": {"type": "string", "minLength": 1},
+          "pythonTarget": {"type": "string", "minLength": 1},
+          "outcome": {"enum": ["passed", "failed"]},
+          "comparisons": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["name", "rustSha256", "pythonSha256", "equal"],
+              "properties": {
+                "name": {"type": "string", "minLength": 1},
+                "rustSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+                "pythonSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+                "equal": {"type": "boolean"}
+              },
+              "additionalProperties": false
+            }
+          },
+          "mappingChecks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["kind", "key", "rustSha256", "pythonSha256", "equal"],
+              "properties": {
+                "kind": {"enum": ["argument", "default", "unit", "cardinality"]},
+                "key": {"type": "string", "minLength": 1},
+                "rustSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+                "pythonSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+                "equal": {"type": "boolean"}
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
