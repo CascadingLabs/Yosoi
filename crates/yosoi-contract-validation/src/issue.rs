@@ -174,7 +174,7 @@ impl Serialize for ValidationFailure {
                 state.serialize_field("observed", observed)?;
             }
             Self::ConversionCountOverflow => {
-                state.serialize_field("kind", "conversion_count_overflow")?
+                state.serialize_field("kind", "conversion_count_overflow")?;
             }
             Self::ConversionLimitExceeded { maximum, observed } => {
                 state.serialize_field("kind", "conversion_limit_exceeded")?;
@@ -188,7 +188,7 @@ impl Serialize for ValidationFailure {
                 state.serialize_field("observed", observed)?;
             }
             Self::ProvenanceCountOverflow => {
-                state.serialize_field("kind", "provenance_count_overflow")?
+                state.serialize_field("kind", "provenance_count_overflow")?;
             }
             Self::ProvenanceLimitExceeded { maximum, observed } => {
                 state.serialize_field("kind", "provenance_limit_exceeded")?;

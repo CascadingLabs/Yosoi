@@ -6,6 +6,24 @@ order: 2
 
 # Python documents and locators
 
+JSON projection comparisons use Rust's value rules: booleans, integers, and
+floating-point numbers remain distinct; object key order is ignored and array
+order is preserved. Use `projected_values_equal()` when comparing arbitrary
+projection variants:
+
+```python
+from yosoi.outcomes import JsonValueProjection, projected_values_equal
+
+boolean = JsonValueProjection(kind="json", value=True)
+integer = JsonValueProjection(kind="json", value=1)
+assert not projected_values_equal(boolean, integer)
+```
+
+SDK Pydantic models provide `clone()` for an independent value copy. Nested
+mutable JSON and policy data are detached; cloned native requests retain their
+Rust correlation identity. `model_copy()` retains Pydantic's default shallow
+copy behavior, while `model_copy(deep=True)` requests a deep copy.
+
 `Document` holds immutable input bytes, a stable ID, and a validated profile.
 Pass `str` content to encode it as UTF-8, or pass `bytes` to preserve the
 original payload. The six supported document classes are:
@@ -110,6 +128,15 @@ The outcome statuses retain different meanings:
 `NoMatch`, `Indeterminate`, and `Failed` are not interchangeable empty lists.
 Use `outcome.values(output_id)` for a convenience projection, or inspect
 `outcome.findings` and each finding when provenance matters.
+
+## Portable query metadata
+
+`Plan.from_compiled(plan.compiled())` imports the portable Rust plan format.
+Rust validates the imported plan; Python preserves the query atoms, explicit
+result shapes, namespace bindings, projections, and region relationships.
+`query.compiled()` exposes the corresponding `QuerySpec`, including
+`query_bytes`. Converting a nonempty `QuerySpec` with `to_query()` retains its
+explicit result shape. Namespace binding order follows Rust's canonical order.
 
 ## Reuse a parsed document
 

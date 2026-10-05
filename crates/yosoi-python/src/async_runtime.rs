@@ -9,7 +9,11 @@ use std::{
 };
 
 use pyo3::{exceptions::PyRuntimeError, prelude::*};
-use tokio::{runtime::Runtime, sync::Notify};
+use pyo3_async_runtimes::tokio as async_runtime;
+use tokio::{
+    runtime::{Builder, Runtime},
+    sync::Notify,
+};
 use yosoi::request::CancellationToken;
 
 static RUNTIME: OnceLock<Result<Runtime, String>> = OnceLock::new();
@@ -20,7 +24,7 @@ static IDLE: Notify = Notify::const_new();
 pub fn initialize() -> PyResult<()> {
     let runtime = RUNTIME
         .get_or_init(|| {
-            tokio::runtime::Builder::new_multi_thread()
+            Builder::new_multi_thread()
                 .worker_threads(1)
                 .enable_all()
                 .build()
@@ -29,9 +33,9 @@ pub fn initialize() -> PyResult<()> {
         .as_ref()
         .map_err(|error| PyRuntimeError::new_err(error.clone()))?;
     REGISTERED
-        .get_or_init(|| pyo3_async_runtimes::tokio::init_with_runtime(runtime))
+        .get_or_init(|| async_runtime::init_with_runtime(runtime))
         .as_ref()
-        .map(|()| ())
+        .copied()
         .map_err(|()| PyRuntimeError::new_err("Python async runtime already initialized"))
 }
 
@@ -85,7 +89,7 @@ struct CancelOnDrop {
     armed: bool,
 }
 impl CancelOnDrop {
-    fn disarm(&mut self) {
+    const fn disarm(&mut self) {
         self.armed = false;
     }
 }
@@ -115,11 +119,11 @@ where
     };
     let ticket = ActiveOperation::start()?;
     let future = operation(token);
-    let task = pyo3_async_runtimes::tokio::get_runtime().spawn(async move {
+    let task = async_runtime::get_runtime().spawn(async move {
         let _ticket = ticket;
         future.await
     });
-    pyo3_async_runtimes::tokio::future_into_py(py, async move {
+    async_runtime::future_into_py(py, async move {
         let result = task
             .await
             .map_err(|_| PyRuntimeError::new_err("Rust SDK operation task failed"))?;
@@ -132,7 +136,7 @@ where
 #[pyfunction]
 pub fn wait_for_idle(py: Python<'_>) -> PyResult<Bound<'_, PyAny>> {
     initialize()?;
-    pyo3_async_runtimes::tokio::future_into_py(py, async {
+    async_runtime::future_into_py(py, async {
         loop {
             let notified = IDLE.notified();
             tokio::pin!(notified);

@@ -118,12 +118,9 @@ def test_empty_roots_invalid_money_and_excess_scalar_preserve_issues():
 
 
 def test_no_match_is_empty_but_indeterminate_and_failure_are_errors():
-    assert (
-        ys.extract(ys.Document.html("empty", "<p>none</p>"), Book)
-        .validate()
-        .require_all()
-        == []
-    )
+    no_match = ys.extract(ys.Document.html("empty", "<p>none</p>"), Book).validate()
+    assert no_match.require_all() == []
+    assert no_match.to_archived().status == "no_match"
     outcome = Book.extract(
         _read(
             json.dumps(
@@ -137,6 +134,7 @@ def test_no_match_is_empty_but_indeterminate_and_failure_are_errors():
         )
     ).validate()
     assert outcome.status == "indeterminate"
+    assert outcome.to_archived().status == "indeterminate"
     with pytest.raises(ContractIssues):
         outcome.require_all()
     failed = Book.extract(
@@ -150,8 +148,46 @@ def test_no_match_is_empty_but_indeterminate_and_failure_are_errors():
         )
     ).validate()
     assert failed.status == "locate_failed"
+    assert failed.to_archived().status == "locate_failed"
     with pytest.raises(ContractIssues):
         failed.require_all()
+
+
+def test_contract_outcome_to_archived_preserves_portable_values_and_evidence():
+    document = ys.Document.html(
+        "books",
+        """
+        <article><b class=author>Ada</b><b class=price>$12.34</b>
+          <a href=/ada></a><i class=tag>rust</i></article>
+        <article><b class=author>Grace</b><b class=price>$0.00</b></article>
+        """,
+    )
+    outcome = ys.extract(document, Book).validate()
+    archived = outcome.to_archived()
+    assert isinstance(archived, ys.contracts.ArchivedContractOutcome)
+    assert archived.status == "evaluated"
+    assert len(archived.records) == 2
+    second = archived.model_dump()["records"][1]
+    assert [field["id"] for field in second["fields"]] == [
+        "author",
+        "price",
+        "link",
+        "tags",
+    ]
+    assert second["fields"][1]["value"] == {
+        "cardinality": "exactly_one",
+        "value": {"type": "money_usd", "minor_units": 0},
+    }
+    assert second["fields"][2]["value"] == {
+        "cardinality": "zero_or_one",
+        "value": None,
+    }
+    assert second["fields"][3]["value"] == {"cardinality": "many", "values": []}
+    assert second["evidence"][2] == {"id": "link", "evidence": []}
+    assert "Grace" not in repr(archived.view)
+    assert "Grace" in archived.model_dump_json()
+    with pytest.raises(AttributeError, match="read-only"):
+        cast(Any, archived).status = "no_match"
 
 
 def test_partial_evidence_and_optional_bad_conversion_are_not_defaults():
@@ -252,10 +288,14 @@ def test_explicit_budgets_preserve_extraction_and_validation_rejections():
     assert rejected.failure is not None
     assert rejected.failure.kind == "limit_exceeded"
     assert rejected.validate().status == "extraction_rejected"
+    assert rejected.validate().to_archived().status == "extraction_rejected"
     outcome = Book.extract(located).validate(limits=ValidationLimits(max_records=0))
     assert outcome.status == "validation_rejected"
     assert outcome.failure is not None
     assert outcome.failure.kind == "record_limit_exceeded"
+    archived = outcome.to_archived()
+    assert archived.failure is not None
+    assert archived.failure.kind == "record_limit_exceeded"
     with pytest.raises(ContractIssues):
         outcome.require_all()
 
@@ -326,7 +366,7 @@ def test_custom_field_ids_map_schema_plan_candidate_and_record_names() -> None:
     ],
 )
 def test_standalone_field_schema_uses_rust_validation(values: dict[str, str]) -> None:
-    with pytest.raises(ys._native.ContractError):
+    with pytest.raises((ys._native.ContractError, ValidationError)):
         ys.contracts.FieldSchema.model_validate(values)
 
 

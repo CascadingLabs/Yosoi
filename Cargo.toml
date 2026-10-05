@@ -63,7 +63,6 @@ uuid = { version = "1", features = ["v4"] }
 void_crawl_core = { version = "=0.1.0", path = "crates/voidcrawl", default-features = false }
 yosoi = { version = "=0.1.0", path = "crates/yosoi" }
 yosoi-engine = { version = "=0.1.0", path = "crates/yosoi-engine" }
-yosoi = { version = "=0.1.0", path = "crates/yosoi" }
 yosoi-contracts = { version = "=0.1.0", path = "crates/yosoi-contracts" }
 yosoi-contracts-derive = { version = "=0.1.0", path = "crates/yosoi-contracts-derive" }
 yosoi-contract-validation = { version = "=0.1.0", path = "crates/yosoi-contract-validation" }

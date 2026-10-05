@@ -10,7 +10,7 @@ import sys
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 
 def tooling() -> Any:
@@ -25,12 +25,193 @@ def tooling() -> Any:
 
 
 def prepare_cases() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    from pydantic import create_model
+    from pydantic import BaseModel, create_model
 
     import yosoi as ys
 
     cases: list[dict[str, Any]] = []
     expected: list[dict[str, Any]] = []
+    from yosoi.contracts import value_type_id
+
+    class CustomValue:
+        TYPE_ID: ClassVar[str] = "custom.review"
+
+    class EmptyIdentity:
+        TYPE_ID: ClassVar[str] = ""
+
+    cases.append(
+        {"kind": "contract_value_identity", "name": "contract-value-identities"}
+    )
+    expected.append(
+        {
+            "name": "contract-value-identities",
+            "result": {
+                "string": value_type_id(str),
+                "money": value_type_id(ys.Money),
+                "custom": value_type_id(CustomValue),
+                "empty": value_type_id(EmptyIdentity),
+            },
+        }
+    )
+    from yosoi.contracts import RuntimeZeroOrOne
+    from yosoi.locators import QueryAtom, QuerySpec, TreeCoordinate
+
+    for name, value in (
+        ("tree-required-null", TreeCoordinate.try_new((1,))),
+        (
+            "query-absent-namespaces",
+            QuerySpec.new(QueryAtom(kind="css", value="article"), "tree_nodes"),
+        ),
+        (
+            "query-present-namespaces",
+            QuerySpec.new(
+                QueryAtom(kind="x_path", value="//p:name"), "tree_nodes"
+            ).with_namespace("p", "urn:test"),
+        ),
+        ("map-unit-termination", ys.map.MapTermination(kind="exhausted")),
+        (
+            "runtime-optional-null",
+            RuntimeZeroOrOne(cardinality="zero_or_one", value=None),
+        ),
+    ):
+        cases.append({"kind": "wire_view", "name": name})
+        expected.append(
+            {"name": name, "result": {"value": value.model_dump(mode="json")}}
+        )
+    for rust_type, model in (
+        ("yosoi::Policy", ys.Policy),
+        ("yosoi::policy::Map", ys.policy.Map),
+        ("yosoi::policy::Filters", ys.policy.Filters),
+    ):
+        name = "clone-model:" + rust_type
+        original = model()
+        cloned = original.clone()
+        filters = (
+            cloned.map.filters
+            if isinstance(cloned, ys.Policy)
+            else (cloned.filters if isinstance(cloned, ys.policy.Map) else cloned)
+        )
+        filters.excluded_query_keys.append("clone-only")
+
+        def serialize(value: Any) -> Any:
+            return (
+                json.loads(value.to_json())
+                if isinstance(value, ys.Policy)
+                else value.model_dump(mode="json")
+            )
+
+        cases.append(
+            {
+                "kind": "model_clone",
+                "name": name,
+                "rust_type": rust_type,
+                "marker": "clone-only",
+            }
+        )
+        expected.append(
+            {
+                "name": name,
+                "result": {"original": serialize(original), "clone": serialize(cloned)},
+            }
+        )
+    # Compare actual public Rust Default implementations with Python authoring
+    # defaults, rather than feeding Python-created values back to Rust.
+    default_models = [
+        ("yosoi::Policy", ys.Policy),
+        ("yosoi::policy::Page", ys.policy.Page),
+        ("yosoi::policy::Request", ys.policy.Request),
+        ("yosoi::policy::SourceLimits", ys.policy.SourceLimits),
+        ("yosoi::policy::BrowserLimits", ys.policy.BrowserLimits),
+        ("yosoi::policy::DirectHttpRedirects", ys.policy.Redirects.default),
+        ("yosoi::policy::Documents", ys.policy.Documents),
+        ("yosoi::policy::Locators", ys.policy.Locators),
+        ("yosoi::policy::Map", ys.policy.Map),
+        ("yosoi::policy::Limits", ys.policy.MapLimits),
+        ("yosoi::policy::Filters", ys.policy.Filters),
+        ("yosoi::policy::Scope", ys.policy.Scope),
+        ("yosoi::policy::Tuning", ys.policy.Tuning),
+        ("yosoi::policy::search::Search", ys.policy.Search),
+        ("yosoi::policy::EventLimit", ys.policy.EventLimit.default),
+        ("yosoi::policy::MaximumElapsed", ys.policy.MaximumElapsed.default),
+        ("yosoi::policy::RedirectHopLimit", ys.policy.RedirectHopLimit.default),
+        ("yosoi::map::Summary", ys.map.Summary),
+        ("yosoi::search::SearchHitMetadata", ys.search.SearchHitMetadata),
+    ]
+    for rust_type, model in default_models:
+        name = "default-model:" + rust_type
+        cases.append({"kind": "model_default", "name": name, "rust_type": rust_type})
+        value = model()
+        serialized = (
+            json.loads(value.to_json())
+            if isinstance(value, ys.Policy)
+            else value.model_dump(mode="json")
+            if isinstance(value, BaseModel)
+            else value
+        )
+        omitted_fields = (
+            {"tuning": value.tuning.model_dump(mode="json")}
+            if isinstance(value, ys.Policy)
+            else {}
+        )
+        expected.append(
+            {
+                "name": name,
+                "result": {"value": serialized, "omitted_fields": omitted_fields},
+            }
+        )
+    # Exercise constructor arguments and result-shape preservation independently
+    # from locating documents. Namespace error cases compare real Rust failures.
+    query_inputs = [
+        ("css", "article", "tree_nodes", "new", None, None),
+        ("css", "article", "json_values", "new", None, None),
+        ("css", "", "tree_nodes", "new", None, None),
+        ("text_literal", "café", "text_ranges", "new", None, None),
+        ("x_path", "//t:name", "tree_nodes", "with_namespace", "t", "urn:test"),
+        ("css", "name", "tree_nodes", "with_default_namespace", None, "urn:test"),
+        ("x_path", "//name", "tree_nodes", "with_default_namespace", None, "urn:test"),
+        ("css", "name", "tree_nodes", "with_namespace", "xml", "urn:invalid"),
+        ("css", "name", "tree_nodes", "with_namespace", "t", ""),
+        ("json_pointer", "/name", "json_values", "with_namespace", "t", "urn:test"),
+    ]
+    for index, (atom_kind, value, shape, operation, prefix, uri) in enumerate(
+        query_inputs
+    ):
+        name = f"query-{index}-{operation}"
+        source = QuerySpec.new(QueryAtom(kind=atom_kind, value=value), shape)
+        case = {
+            "kind": "query",
+            "name": name,
+            "query": source.model_dump(mode="json"),
+            "operation": operation,
+            "prefix": prefix,
+            "uri": uri,
+        }
+        try:
+            if operation == "with_namespace":
+                assert prefix is not None and uri is not None
+                query = source.with_namespace(prefix, uri)
+            elif operation == "with_default_namespace":
+                assert uri is not None
+                query = source.with_default_namespace(uri)
+            else:
+                query = QuerySpec.new(source.atom, source.result_shape)
+            result = {
+                "query": query.model_dump(mode="json", exclude_defaults=True),
+                "atom": query.atom.model_dump(mode="json"),
+                "result_shape": query.result_shape,
+                "namespace_bindings": [
+                    item.model_dump(mode="json") for item in query.namespace_bindings
+                ],
+                "query_bytes": query.query_bytes,
+            }
+            # Only nonempty authoring atoms can be converted to the ergonomic DSL.
+            # QuerySpec itself intentionally preserves unchecked raw atoms.
+            if value:
+                assert query.to_query().compiled() == query
+        except ys._native.LocatorError as error:
+            result = {"error": str(error)}
+        cases.append(case)
+        expected.append({"name": name, "result": result})
     policies = [("default-policy", ys.Policy()), ("bounded-policy", ys.Policy())]
     policies[1][1].request.maximum_elapsed = 5_000_000
     policies[1][1].documents.max_nodes = 1000
@@ -259,6 +440,7 @@ def prepare_cases() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
                     "identity": contract.identity(),
                     "extracted": extracted.model_dump(),
                     "outcome": wire,
+                    "archived": outcome.to_archived().model_dump(),
                     "required": required,
                     "typed_values": typed_values,
                 },
@@ -268,16 +450,9 @@ def prepare_cases() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
 
 
 def equivalent(value: Any) -> Any:
-    """Normalize omitted nullable fields shared by Rust serde/Pydantic views.
-
-    Cardinality value:null is retained; it describes an absent optional value.
-    """
+    """Convert container wrappers while retaining every JSON value and key."""
     if isinstance(value, dict):
-        return {
-            key: equivalent(item)
-            for key, item in value.items()
-            if item is not None or key == "value"
-        }
+        return {key: equivalent(item) for key, item in value.items()}
     if isinstance(value, (list, tuple)):
         return [equivalent(item) for item in value]
     return value
@@ -336,6 +511,21 @@ def main() -> int:
     # Explicit attribution to operations called by both implementations above.
     # Other symbols remain unverified until their own cases are executed.
     operations = {
+        "yosoi::contracts::ContractValue": "contract_value_identity",
+        "yosoi::contracts::ContractValue::TYPE_ID": "contract_value_identity",
+        "yosoi::locators::QuerySpec::new": "query",
+        "yosoi::locators::QuerySpec::atom": "query",
+        "yosoi::locators::QuerySpec::result_shape": "query",
+        "yosoi::locators::QuerySpec::namespace_bindings": "query",
+        "yosoi::locators::QuerySpec::query_bytes": "query",
+        "yosoi::locators::QuerySpec::with_namespace": "query",
+        "yosoi::locators::QuerySpec::with_default_namespace": "query",
+        "yosoi::contracts::ContractOutcome::to_archived": "contract",
+        "yosoi::Document::from_profile": "document",
+        "yosoi::Document::class": "document",
+        "yosoi::Document::byte_len": "document",
+        "yosoi::Document::locate": "document",
+        "yosoi::Policy::effective_policy": "policy",
         "yosoi::documents::Document::from_profile": "document",
         "yosoi::documents::Document::class": "document",
         "yosoi::documents::Document::byte_len": "document",
@@ -353,13 +543,65 @@ def main() -> int:
             for item, given in zip(raw_comparisons, inputs, strict=True)
             if given["kind"] == kind
         ]
-        for kind in ("policy", "document", "contract")
+        for kind in (
+            "query", "policy", "document", "contract", "contract_value_identity"
+        )
     }
+    inputs_by_name = {item["name"]: item for item in inputs}
+    default_workflows = {
+        given["rust_type"]: item
+        for item, given in zip(raw_comparisons, inputs, strict=True)
+        if given["kind"] == "model_default"
+    }
+    clone_workflows = {
+        given["rust_type"]: item
+        for item, given in zip(raw_comparisons, inputs, strict=True)
+        if given["kind"] == "model_clone"
+    }
+    rust_items = {item["symbolKey"]: item for item in rust["items"]}
     for entry in ledger["entries"]:
         kind = operations.get(entry["rustPath"])
+        inventory_item = rust_items.get(entry.get("symbolKey")) or {}
+        clone_type = (
+            inventory_item.get("parentRustPath")
+            if inventory_item.get("trait") == "Clone"
+            else None
+        )
+        if clone_type in clone_workflows:
+            kind = "model_clone"
+        default_type = (
+            entry["rustPath"]
+            if entry["rustPath"] in default_workflows
+            else inventory_item.get("parentRustPath")
+            if inventory_item.get("kind") == "struct_field"
+            or inventory_item.get("trait") == "Default"
+            else None
+        )
+        if default_type in default_workflows:
+            kind = "model_default"
         if kind is None or entry.get("decision") != "mapped":
             continue
-        selected = workflow_by_kind[kind]
+        selected = (
+            [clone_workflows[clone_type]]
+            if kind == "model_clone"
+            else [default_workflows[default_type]]
+            if kind == "model_default"
+            else workflow_by_kind[kind]
+        )
+        if kind == "query":
+            method = entry["rustPath"].rsplit("::", 1)[-1]
+            if method in {"new", "with_namespace", "with_default_namespace"}:
+                selected = [
+                    item
+                    for item in selected
+                    if inputs_by_name[item["name"]]["operation"] == method
+                ]
+            else:
+                selected = [
+                    item for item in selected if "error" not in item["rust"]["result"]
+                ]
+        if not selected:
+            continue
         comparisons = [
             {
                 "name": item["name"],

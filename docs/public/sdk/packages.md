@@ -14,7 +14,7 @@ the package does not claim complete verified parity.
 
 | Package            | Use it for                                                                               |
 | ------------------ | ---------------------------------------------------------------------------------------- |
-| `yosoi`        | Integrating Yosoi into a Rust application                                                |
+| `yosoi`            | Integrating Yosoi into a Rust application                                                |
 | `yosoi` for Python | Integrating documents, locators, Contracts, Policy, Requests, Map, or Search from Python |
 | `yosoi-cli`        | Running Yosoi from a terminal or shell pipeline                                          |
 

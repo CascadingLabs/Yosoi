@@ -6,7 +6,7 @@ use pyo3::prelude::*;
 use serde_json::{Value, json};
 use yosoi::{
     documents::DocumentRef,
-    map::MapOutcome,
+    map::{MapOutcome, RetainedCapture},
     policy::{EffectivePolicyIdentity, PolicySnapshot},
     request::{AttemptState, DocumentOutcome, Response, ResponseRef},
 };
@@ -32,7 +32,7 @@ impl ResponseSource {
             Self::Map { outcome, index } => outcome
                 .captures()
                 .nth(*index)
-                .map(|capture| capture.response())
+                .map(RetainedCapture::response)
                 .ok_or_else(|| errors::RequestError::new_err("capture index is out of range")),
         }
     }

@@ -86,9 +86,9 @@ def test_namespace_constructors_distinguish_named_and_default_bindings():
         ]
     )
     assert document.locate(plan).values() == ["Ada"]
-    with pytest.raises(ys._native.LocatorError):
+    with pytest.raises((ys._native.LocatorError, ValidationError)):
         ys.css("article").each_as_region("")
-    with pytest.raises(ys._native.LocatorError):
+    with pytest.raises((ys._native.LocatorError, ValidationError)):
         ys.output("", ys.css("h1").text())
 
 
@@ -113,6 +113,19 @@ def test_query_metadata_and_portable_plan_import_preserve_rust_semantics():
     assert query.query_bytes == len("//t:name") + len("t") + len("urn:test")
     spec = query.compiled()
     assert spec.to_query() == query
+    # QuerySpec::new permits an explicit result shape independently of the atom.
+    # Import must preserve it instead of silently replacing it with the DSL default.
+    explicit = ys.locators.QuerySpec.new(ys.css("article").atom, "json_values")
+    assert explicit.to_query().compiled() == explicit
+    assert explicit.to_query().model_copy(deep=True).compiled() == explicit
+    first = (
+        ys.xpath("//x:name").with_namespace("z", "urn:z").with_namespace("x", "urn:x")
+    )
+    second = (
+        ys.xpath("//x:name").with_namespace("x", "urn:x").with_namespace("z", "urn:z")
+    )
+    assert first == second
+    assert first.compiled() == second.compiled()
     assert ys.locators.QuerySpec.new(spec.atom, spec.result_shape).query_bytes == len(
         "//t:name"
     )

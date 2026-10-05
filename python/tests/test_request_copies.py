@@ -17,6 +17,19 @@ def test_request_copy_rebuilds_changed_target_and_keeps_unchanged_identity() -> 
         original.model_copy(update={"target": None})
 
 
+def test_web_target_preserves_authored_text_until_request_preparation() -> None:
+    authored = "  ftp://user:secret@example.org/path?q=1  "
+    target = ys.request.WebTarget.new(authored)
+    request = ys.request.new(target)
+
+    assert target.as_str() == authored
+    assert request.target == authored
+    assert request.model_dump(mode="json")["target"] == authored
+    assert "secret" not in repr(target)
+    with pytest.raises(RequestError):
+        request.check()
+
+
 def test_map_copy_rebuilds_changed_seed() -> None:
     original = ys.map.new("https://example.org/")
     changed = original.model_copy(update={"seed": "ftp://example.org/"})

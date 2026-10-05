@@ -34,6 +34,9 @@ from yosoi.scalars import (
     AccessibilityNodeLimit,
     AddressableByteLimit,
     Budget,
+    ByteLimit,
+    CaptureDeadline,
+    CaptureDuration,
     ContractId,
     CountLimit,
     DocumentEpoch,
@@ -42,6 +45,7 @@ from yosoi.scalars import (
     EventLimit,
     FieldId,
     MaximumElapsed,
+    NonZeroU32,
     OutputId,
     ProviderDefaultsVersion,
     RedirectHopLimit,
@@ -69,6 +73,24 @@ def test_public_id_and_positive_policy_scalar_constructors() -> None:
     assert RedirectHopLimit.try_new(13).get() == 13
     assert Budget.try_new(14).get() == 14
     assert ProviderDefaultsVersion.try_new(15).get() == 15
+
+    accessibility_nonzero = AccessibilityNodeLimit.try_new(21).to_nonzero()
+    resource_nonzero = ResourceLimit.try_new(22).to_nonzero()
+    assert isinstance(accessibility_nonzero, NonZeroU32)
+    assert isinstance(resource_nonzero, NonZeroU32)
+    assert accessibility_nonzero.get() == 21
+    assert resource_nonzero.get() == 22
+
+    byte_limit = AddressableByteLimit.try_new(23).to_byte_limit()
+    assert isinstance(byte_limit, ByteLimit)
+    assert byte_limit.get() == byte_limit.as_usize() == 23
+
+    deadline = MaximumElapsed.try_new(24).to_capture_deadline()
+    assert isinstance(deadline, CaptureDeadline)
+    assert deadline.as_microseconds() == 24
+    duration = deadline.duration()
+    assert isinstance(duration, CaptureDuration)
+    assert duration.as_microseconds() == 24
 
     for factory, value, error in (
         (DocumentId, " \t", DocumentError),

@@ -124,7 +124,9 @@ fn public_api_does_not_return_raw_chromiumoxide_handles() {
     let page_source =
         fs::read_to_string(source_root.join("page.rs")).expect("Page source must be readable");
     assert!(
-        page_source.contains("pub(crate) const fn cdp(&self) -> &CdpPage"),
+        source_files
+            .iter()
+            .any(|source| source.contains("pub(crate) const fn cdp(&self) -> &CdpPage")),
         "internal controller use must remain behind the crate-private cdp accessor"
     );
     assert!(

@@ -16,6 +16,8 @@ CARGO_BUILD_JOBS=1 uv sync --locked --python 3.12
 uv run --no-sync python python/examples/review.py policy
 uv run --no-sync python python/examples/review.py locate
 uv run --no-sync python python/examples/review.py contracts
+uv run --no-sync python python/examples/review.py runtime-contracts
+uv run --no-sync python python/examples/review.py errors
 uv run --no-sync python python/examples/review.py local
 ~~~
 
@@ -24,9 +26,10 @@ existing binding keeps its validated policy snapshot. `locate` shows
 Pydantic-authored plans, Rust compilation and execution, extraction evidence,
 repeated-region lineage, and parse reuse. `contracts` prints the Pydantic model
 schema, Rust Contract schema and compiled plan, extracted candidates, validated
-records, and field issues. `local` starts a loopback HTTP server and exercises
-Requests and Map plus explicit cancellation before I/O. Neither command needs
-a public website. Fresh installed-wheel verification for the new Contract
+records, and field issues. `runtime-contracts` reviews schema-authored extraction and
+portable archival. `errors` prints Rust error variants and payloads, plus a Map
+rejection message returned by Rust. `local` starts a loopback HTTP server and exercises
+Requests and Map plus explicit cancellation before I/O. These commands need no public website. Fresh installed-wheel verification for the new Contract
 example is pending.
 
 For requests to public sites or search providers:
@@ -58,8 +61,8 @@ CARGO_BUILD_JOBS=1 cargo run --locked --package yosoi --example review -- cancel
 
 Pass `--features browser` before `--` to the Rust command when reviewing
 browser-backed Search routes. The Python `local` example has no matching
-Rust runner command. These examples show selected SDK paths; Contracts
-authoring is not yet available in the Python package.
+Rust runner command. These examples show selected SDK paths; Python Contracts use the shared Rust
+extraction and validation implementation.
 
 For source review before rebuilding the editable package in this checkout, use
 `PYTHONPATH=python .venv/bin/python` in place of `uv run --no-sync python`.

@@ -45,7 +45,7 @@ impl CandidateInput {
     pub fn findings(&self, field: &FieldId) -> &[Finding] {
         self.fields.get(field).map_or(&[], Vec::as_slice)
     }
-    pub fn fields(&self) -> &BTreeMap<FieldId, Vec<Finding>> {
+    pub const fn fields(&self) -> &BTreeMap<FieldId, Vec<Finding>> {
         &self.fields
     }
 }

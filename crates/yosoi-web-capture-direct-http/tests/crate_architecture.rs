@@ -13,7 +13,7 @@ fn copied_complete_wire_fixture_matches_foundation_canonical_fixture() {
 fn producer_depends_inward_on_foundation_and_owns_transport() {
     let manifest = fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/Cargo.toml"))
         .expect("test fixture manifest must be readable");
-    assert!(manifest.contains("yosoi-web-capture ="));
+    assert!(manifest.contains("yosoi-web-capture.workspace = true"));
     assert!(manifest.contains("wreq.workspace = true"));
     assert!(!manifest.contains("yosoi-web-capture-browser"));
 }

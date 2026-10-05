@@ -6,7 +6,17 @@ use pyo3::prelude::*;
 use serde::Deserialize;
 use yosoi::locators as ys;
 
-use crate::errors::LocatorError;
+use crate::errors::{self, LocatorError};
+
+#[pyfunction]
+pub fn projected_value_equal(py: Python<'_>, left: &str, right: &str) -> PyResult<bool> {
+    let decode = |value: &str| -> PyResult<ys::ProjectedValue> {
+        serde_json::from_str(value).map_err(|error| {
+            errors::serde_decode_error(py, LocatorError::new_err(error.to_string()), &error)
+        })
+    };
+    Ok(decode(left)? == decode(right)?)
+}
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -17,6 +27,8 @@ struct QueryDeclaration {
     namespaces: BTreeMap<String, String>,
     #[serde(default)]
     state: Option<bool>,
+    #[serde(default)]
+    shape: Option<ys::QueryResultShape>,
     #[serde(default)]
     within: Option<Box<RegionDeclaration>>,
 }
@@ -46,7 +58,7 @@ struct OutputDeclaration {
     locator: LocatorDeclaration,
 }
 
-fn query(declaration: &QueryDeclaration) -> PyResult<ys::QuerySpec> {
+fn query(py: Python<'_>, declaration: &QueryDeclaration) -> PyResult<ys::QuerySpec> {
     let expression = &declaration.expression;
     if declaration.kind != "accessibility_state" && declaration.state.is_some() {
         return Err(LocatorError::new_err(
@@ -77,19 +89,22 @@ fn query(declaration: &QueryDeclaration) -> PyResult<ys::QuerySpec> {
         }
         _ => return Err(LocatorError::new_err("unknown locator family")),
     };
-    let mut compiled = compiled.map_err(|error| LocatorError::new_err(error.to_string()))?;
+    let mut compiled = compiled.map_err(|error| errors::query_error(py, &error))?;
+    if let Some(shape) = declaration.shape {
+        compiled = ys::QuerySpec::new(compiled.atom().clone(), shape);
+    }
     for (prefix, uri) in &declaration.namespaces {
         compiled = if prefix.is_empty() && declaration.kind == "css" {
             compiled.with_default_namespace(uri)
         } else {
             compiled.with_namespace(prefix, uri)
         }
-        .map_err(|error| LocatorError::new_err(error.to_string()))?;
+        .map_err(|error| errors::query_error(py, &error))?;
     }
     Ok(compiled)
 }
 
-fn projected(declaration: &LocatorDeclaration) -> PyResult<ys::OutputPlan> {
+fn projected(py: Python<'_>, declaration: &LocatorDeclaration) -> PyResult<ys::OutputPlan> {
     if declaration.projection != "attribute" && declaration.attribute.is_some() {
         return Err(LocatorError::new_err(
             "attribute name requires attribute projection",
@@ -100,7 +115,7 @@ fn projected(declaration: &LocatorDeclaration) -> PyResult<ys::OutputPlan> {
             "capture names require captures projection",
         ));
     }
-    let compiled = query(&declaration.query)?;
+    let compiled = query(py, &declaration.query)?;
     let output = match declaration.projection.as_str() {
         "text" => compiled.text(),
         "value" => compiled.value(),
@@ -113,10 +128,10 @@ fn projected(declaration: &LocatorDeclaration) -> PyResult<ys::OutputPlan> {
                     .as_deref()
                     .ok_or_else(|| LocatorError::new_err("attribute projection requires a name"))?,
             )
-            .map_err(|error| LocatorError::new_err(error.to_string()))?,
+            .map_err(|error| errors::query_error(py, &error))?,
         "captures" => compiled
             .captures(declaration.captures.clone())
-            .map_err(|error| LocatorError::new_err(error.to_string()))?,
+            .map_err(|error| errors::query_error(py, &error))?,
         _ => return Err(LocatorError::new_err("unknown projection")),
     };
     let Some(region) = &declaration.query.within else {
@@ -125,10 +140,10 @@ fn projected(declaration: &LocatorDeclaration) -> PyResult<ys::OutputPlan> {
     if region.query.within.is_some() {
         return Err(LocatorError::new_err("nested regions are not supported"));
     }
-    let region = query(&region.query)?
+    let region = query(py, &region.query)?
         .each_as_region(&region.id)
-        .map_err(|error| LocatorError::new_err(error.to_string()))?;
-    let selection = region.find(query(&declaration.query)?);
+        .map_err(|error| errors::query_error(py, &error))?;
+    let selection = region.find(query(py, &declaration.query)?);
     Ok(match declaration.projection.as_str() {
         "text" => selection.text(),
         "value" => selection.value(),
@@ -141,10 +156,10 @@ fn projected(declaration: &LocatorDeclaration) -> PyResult<ys::OutputPlan> {
                     .as_deref()
                     .ok_or_else(|| LocatorError::new_err("attribute projection requires a name"))?,
             )
-            .map_err(|error| LocatorError::new_err(error.to_string()))?,
+            .map_err(|error| errors::query_error(py, &error))?,
         "captures" => selection
             .captures(declaration.captures.clone())
-            .map_err(|error| LocatorError::new_err(error.to_string()))?,
+            .map_err(|error| errors::query_error(py, &error))?,
         _ => return Err(LocatorError::new_err("unknown projection")),
     })
 }
@@ -158,99 +173,126 @@ pub struct NativePlan {
 #[pymethods]
 impl NativePlan {
     #[new]
-    fn new(outputs_json: &str) -> PyResult<Self> {
-        let declarations: Vec<OutputDeclaration> = serde_json::from_str(outputs_json)
-            .map_err(|error| LocatorError::new_err(error.to_string()))?;
+    fn new(py: Python<'_>, outputs_json: &str) -> PyResult<Self> {
+        let declarations: Vec<OutputDeclaration> =
+            serde_json::from_str(outputs_json).map_err(|error| {
+                errors::serde_decode_error(py, LocatorError::new_err(error.to_string()), &error)
+            })?;
         let mut outputs = Vec::with_capacity(declarations.len());
         for declaration in declarations {
             outputs.push(
-                ys::output(declaration.id, projected(&declaration.locator)?)
-                    .map_err(|error| LocatorError::new_err(error.to_string()))?,
+                ys::output(declaration.id, projected(py, &declaration.locator)?)
+                    .map_err(|error| errors::plan_error(py, &error))?,
             );
         }
-        let inner =
-            ys::Plan::new(outputs).map_err(|error| LocatorError::new_err(error.to_string()))?;
+        let inner = ys::Plan::new(outputs).map_err(|error| errors::plan_error(py, &error))?;
         Ok(Self { inner })
     }
 
     #[staticmethod]
-    fn from_json(value: &str) -> PyResult<Self> {
+    fn from_json(py: Python<'_>, value: &str) -> PyResult<Self> {
         serde_json::from_str::<ys::Plan>(value)
             .map(|inner| Self { inner })
-            .map_err(|error| LocatorError::new_err(error.to_string()))
+            .map_err(|error| {
+                errors::serde_decode_error(py, LocatorError::new_err(error.to_string()), &error)
+            })
     }
 
-    fn to_json(&self) -> PyResult<String> {
-        serde_json::to_string(&self.inner).map_err(|error| LocatorError::new_err(error.to_string()))
+    fn to_json(&self, py: Python<'_>) -> PyResult<String> {
+        serde_json::to_string(&self.inner).map_err(|error| {
+            errors::serde_encode_error(py, LocatorError::new_err(error.to_string()), &error)
+        })
     }
 }
 
 #[pyfunction]
-pub fn validate_query(declaration_json: &str) -> PyResult<()> {
-    let declaration: QueryDeclaration = serde_json::from_str(declaration_json)
-        .map_err(|error| LocatorError::new_err(error.to_string()))?;
-    query(&declaration).map(|_| ())
+pub fn validate_query(py: Python<'_>, declaration_json: &str) -> PyResult<()> {
+    let declaration: QueryDeclaration =
+        serde_json::from_str(declaration_json).map_err(|error| {
+            errors::serde_decode_error(py, LocatorError::new_err(error.to_string()), &error)
+        })?;
+    query(py, &declaration).map(|_| ())
 }
 
 #[pyfunction]
-pub fn validate_namespace(declaration_json: &str, prefix: Option<&str>, uri: &str) -> PyResult<()> {
-    let declaration: QueryDeclaration = serde_json::from_str(declaration_json)
-        .map_err(|error| LocatorError::new_err(error.to_string()))?;
-    let compiled = query(&declaration)?;
+pub fn validate_namespace(
+    py: Python<'_>,
+    declaration_json: &str,
+    prefix: Option<&str>,
+    uri: &str,
+) -> PyResult<()> {
+    let declaration: QueryDeclaration =
+        serde_json::from_str(declaration_json).map_err(|error| {
+            errors::serde_decode_error(py, LocatorError::new_err(error.to_string()), &error)
+        })?;
+    let compiled = query(py, &declaration)?;
     match prefix {
         Some(prefix) => compiled.with_namespace(prefix, uri),
         None => compiled.with_default_namespace(uri),
     }
     .map(|_| ())
-    .map_err(|error| LocatorError::new_err(error.to_string()))
+    .map_err(|error| errors::query_error(py, &error))
 }
 #[pyfunction]
-pub fn validate_region_id(value: &str) -> PyResult<()> {
+pub fn validate_region_id(py: Python<'_>, value: &str) -> PyResult<()> {
     ys::RegionId::try_new(value)
         .map(|_| ())
-        .map_err(|error| LocatorError::new_err(error.to_string()))
+        .map_err(|error| errors::query_error(py, &error))
 }
 #[pyfunction]
-pub fn validate_output_id(value: &str) -> PyResult<()> {
+pub fn validate_output_id(py: Python<'_>, value: &str) -> PyResult<()> {
     ys::OutputId::try_new(value)
         .map(|_| ())
-        .map_err(|error| LocatorError::new_err(error.to_string()))
+        .map_err(|error| errors::plan_error(py, &error))
 }
 
 #[pyfunction]
-pub fn validate_locator(declaration_json: &str) -> PyResult<()> {
-    let declaration: LocatorDeclaration = serde_json::from_str(declaration_json)
-        .map_err(|error| LocatorError::new_err(error.to_string()))?;
-    projected(&declaration).map(|_| ())
+pub fn validate_locator(py: Python<'_>, declaration_json: &str) -> PyResult<()> {
+    let declaration: LocatorDeclaration =
+        serde_json::from_str(declaration_json).map_err(|error| {
+            errors::serde_decode_error(py, LocatorError::new_err(error.to_string()), &error)
+        })?;
+    projected(py, &declaration).map(|_| ())
 }
 
-fn query_info(compiled: &ys::QuerySpec) -> PyResult<String> {
+fn query_info(py: Python<'_>, compiled: &ys::QuerySpec) -> PyResult<String> {
     let bytes = compiled
         .query_bytes()
-        .map_err(|error| LocatorError::new_err(error.to_string()))?;
-    serde_json::to_string(&serde_json::json!({"query": compiled, "query_bytes": bytes}))
-        .map_err(|error| LocatorError::new_err(error.to_string()))
+        .map_err(|error| errors::query_error(py, &error))?;
+    serde_json::to_string(&serde_json::json!({"query": compiled, "query_bytes": bytes})).map_err(
+        |error| errors::serde_encode_error(py, LocatorError::new_err(error.to_string()), &error),
+    )
 }
 #[pyfunction]
-pub fn authored_query_info(value: &str) -> PyResult<String> {
-    let declaration: QueryDeclaration =
-        serde_json::from_str(value).map_err(|error| LocatorError::new_err(error.to_string()))?;
-    query_info(&query(&declaration)?)
+pub fn authored_query_info(py: Python<'_>, value: &str) -> PyResult<String> {
+    let declaration: QueryDeclaration = serde_json::from_str(value).map_err(|error| {
+        errors::serde_decode_error(py, LocatorError::new_err(error.to_string()), &error)
+    })?;
+    query_info(py, &query(py, &declaration)?)
 }
 #[pyfunction]
-pub fn compiled_query_info(value: &str) -> PyResult<String> {
-    let compiled: ys::QuerySpec =
-        serde_json::from_str(value).map_err(|error| LocatorError::new_err(error.to_string()))?;
-    query_info(&compiled)
+pub fn compiled_query_info(py: Python<'_>, value: &str) -> PyResult<String> {
+    let compiled: ys::QuerySpec = serde_json::from_str(value).map_err(|error| {
+        errors::serde_decode_error(py, LocatorError::new_err(error.to_string()), &error)
+    })?;
+    query_info(py, &compiled)
 }
 #[pyfunction]
-pub fn compiled_query_namespace(value: &str, prefix: Option<&str>, uri: &str) -> PyResult<String> {
-    let compiled: ys::QuerySpec =
-        serde_json::from_str(value).map_err(|error| LocatorError::new_err(error.to_string()))?;
+pub fn compiled_query_namespace(
+    py: Python<'_>,
+    value: &str,
+    prefix: Option<&str>,
+    uri: &str,
+) -> PyResult<String> {
+    let compiled: ys::QuerySpec = serde_json::from_str(value).map_err(|error| {
+        errors::serde_decode_error(py, LocatorError::new_err(error.to_string()), &error)
+    })?;
     let compiled = match prefix {
         Some(prefix) => compiled.with_namespace(prefix, uri),
         None => compiled.with_default_namespace(uri),
     }
-    .map_err(|error| LocatorError::new_err(error.to_string()))?;
-    serde_json::to_string(&compiled).map_err(|error| LocatorError::new_err(error.to_string()))
+    .map_err(|error| errors::query_error(py, &error))?;
+    serde_json::to_string(&compiled).map_err(|error| {
+        errors::serde_encode_error(py, LocatorError::new_err(error.to_string()), &error)
+    })
 }

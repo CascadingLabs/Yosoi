@@ -1,5 +1,41 @@
 # Python SDK compatibility verification
 
+## Current integrated SDK evidence
+
+The SDK continuation is based on the updated default workspace revision
+`c26eace7b2dc746fcde1072748ff6cc6c7fe2114`. On 2026-10-05 (local time),
+separate development-profile wheels built from the current workspace passed
+the installed-package checks on Linux x86-64:
+
+| Interpreter | Wheel ABI | Latest installed SDK tests |
+| --- | --- | --- |
+| CPython 3.12.14 (current workspace) | `cp312` | 282 passed, 1 free-threading-only skip |
+| CPython 3.13.1 (current workspace) | `cp313` | 282 passed, 1 free-threading-only skip |
+| CPython 3.14.8 (current workspace) | `cp314` | 282 passed, 1 free-threading-only skip |
+| CPython 3.14.8 free-threaded (current workspace) | `cp314t` | 283 passed |
+
+Tests ran with isolated Python (`-I`) against installed wheels. The
+free-threading test uses a fresh interpreter without forcing `PYTHON_GIL=0`;
+Yosoi/Pydantic imports, concurrent parsing, and Contract validation leave the
+GIL disabled. The wheels enable the Rust browser feature; browser execution
+was not certified by these checks.
+
+The current source distribution also passes that same four-interpreter matrix.
+Its SHA-256 is
+`54126186b9ae56c4116ff060db2f00723738dc1b8321c03a060d7e8e8ccd0d2d`.
+The Python payloads in every wheel match both the extracted archive and the
+workspace package. Offline Cargo normalization removes 53 unused packages and
+changes no retained package versions, checksums, or dependency records.
+
+Reproducible local evidence is stored in `.local/current-sdk-sdist/identity.json`,
+`packaging-proof.json`, `test-suite-manifest.json`, and `tests-INTERPRETER.log`.
+The supported platform evidence is Linux x86-64, with development-profile
+`manylinux_2_39_x86_64` wheels. Hosted CI and browser certification are separate
+from these local checks. The semantic SDK parity gate and supported-ABI matrix
+are configured in `.github/workflows/python-ci.yml`.
+
+## Historical scaffold evidence
+
 Verified locally on Linux x86-64 on 2026-10-04. The declared range is
 `>=3.12,<3.15`; the CI matrix selects normal 3.12, 3.13, 3.14 and exact 3.14.3t.
 

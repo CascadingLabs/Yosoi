@@ -5,18 +5,25 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
-
 
 SCRIPT = Path(__file__).with_name("parity.py")
 SPEC = importlib.util.spec_from_file_location("sdk_parity", SCRIPT)
 assert SPEC is not None and SPEC.loader is not None
 parity = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = parity
+sys.modules["parity"] = parity
 SPEC.loader.exec_module(parity)
+SEED_SCRIPT = SCRIPT.with_name("seed_ledger.py")
+SEED_SPEC = importlib.util.spec_from_file_location("sdk_seed_ledger", SEED_SCRIPT)
+assert SEED_SPEC is not None and SEED_SPEC.loader is not None
+seed_ledger = importlib.util.module_from_spec(SEED_SPEC)
+sys.modules[SEED_SPEC.name] = seed_ledger
+SEED_SPEC.loader.exec_module(seed_ledger)
 
 
 def write_json(path: Path, value: object) -> bytes:
@@ -123,6 +130,795 @@ def ledger() -> dict[str, object]:
 
 
 class InventoryTests(unittest.TestCase):
+    def test_fixed_dispatch_argument_must_be_in_the_python_signature(self):
+        item = {"kind": "function", "rustArguments": []}
+        target = {"kind": "callable", "signature": {"parameters": [{"name": "kind"}]}}
+        entry = {"argumentMappings": [], "fixedArguments": {"kind": "relationship"}}
+        self.assertIsNone(parity._mapping_configuration_problem(item, entry, target))
+        entry["fixedArguments"] = {"missing": "relationship"}
+        self.assertIn(
+            "fixed argument", parity._mapping_configuration_problem(item, entry, target)
+        )
+
+    def test_function_receiver_mapping_requires_actual_self_and_python_parameter(self):
+        item = {
+            "kind": "function",
+            "rustArguments": [
+                {"name": "self", "receiver": True},
+                {"name": "other", "receiver": False},
+            ],
+        }
+        target = {
+            "kind": "callable",
+            "signature": {"parameters": [{"name": "left"}, {"name": "right"}]},
+        }
+        entry = {
+            "argumentMappings": [{"rustArgument": "other", "pythonArgument": "right"}],
+            "receiverMapping": {"rustArgument": "self", "pythonArgument": "left"},
+        }
+        self.assertIsNone(parity._mapping_configuration_problem(item, entry, target))
+        entry["receiverMapping"]["pythonArgument"] = "absent"
+        self.assertIn(
+            "receiver mapping",
+            parity._mapping_configuration_problem(item, entry, target),
+        )
+        entry["receiverMapping"]["pythonArgument"] = "left"
+        item["rustArguments"][0]["receiver"] = False
+        self.assertIsNotNone(parity._mapping_configuration_problem(item, entry, target))
+
+    def test_nested_schema_error_payload_requires_the_live_detail_path(self):
+        target = {
+            "kind": "type-alias",
+            "signature": {"parameters": []},
+            "alias": {
+                "kind": "discriminated-union",
+                "discriminator": "variant",
+                "unionMembers": [
+                    {
+                        "discriminatorValues": ["UnsupportedVersion"],
+                        "fields": [
+                            {"name": "variant"},
+                            {"name": "details", "modelFields": [{"name": "observed"}]},
+                        ],
+                    }
+                ],
+            },
+        }
+        item = {
+            "kind": "variant",
+            "rustPath": "yosoi::contracts::ContractSchemaError::UnsupportedVersion",
+            "symbolKey": "unsupported-version",
+            "signature": "UnsupportedVersion { observed: u32 }",
+            "rustArguments": [{"name": "observed", "type": "u32"}],
+        }
+        entry = seed_ledger._entry(
+            item,
+            "yosoi.contracts.ContractSchemaFailure",
+            target,
+            {},
+            "Typed schema error",
+        )
+        self.assertIsNotNone(entry)
+        self.assertEqual(
+            entry["argumentMappings"][0]["pythonArgument"], "details.observed"
+        )
+        self.assertIsNone(parity._mapping_configuration_problem(item, entry, target))
+        entry["argumentMappings"][0]["pythonArgument"] = "details.missing"
+        self.assertIn(
+            "selected Python fields",
+            parity._mapping_configuration_problem(item, entry, target),
+        )
+
+    def test_public_class_constants_are_preserved_without_instance_attributes(self):
+        class Scalar:
+            TYPE_ID = "fixture.scalar"
+            _PRIVATE = "hidden"
+            ordinary = "instance detail"
+
+        descriptions = parity._class_member_descriptions(Scalar, ["fixture.Scalar"])
+        constants = {
+            item["target"]: item
+            for item in descriptions
+            if item["kind"] == "class-constant"
+        }
+        self.assertEqual(set(constants), {"fixture.Scalar.TYPE_ID"})
+        self.assertEqual(constants["fixture.Scalar.TYPE_ID"]["value"], "fixture.scalar")
+
+    def test_alias_of_alias_retains_discriminator_and_payload_schema(self):
+        from typing import Annotated, Literal, TypeAliasType
+
+        from pydantic import BaseModel, Field
+
+        class Failed(BaseModel):
+            kind: Literal["failed"]
+            message: str
+
+        class Empty(BaseModel):
+            kind: Literal["empty"]
+
+        original = TypeAliasType(
+            "Original", Annotated[Failed | Empty, Field(discriminator="kind")]
+        )
+        alias = TypeAliasType("Alias", original)
+        shape = parity._type_alias_shape(alias, "fixture")
+        self.assertEqual(shape["kind"], "discriminated-union")
+        self.assertEqual(shape["discriminator"], "kind")
+        failed = next(
+            member
+            for member in shape["unionMembers"]
+            if member["name"].endswith("Failed")
+        )
+        self.assertEqual(failed["discriminatorValues"], ["failed"])
+        self.assertEqual(
+            {field["name"] for field in failed["fields"]}, {"kind", "message"}
+        )
+
+    def test_tagged_payload_mapping_is_checked_against_live_member_schema(self):
+        item = {"kind": "variant", "rustArguments": [{"name": "0"}]}
+        target = {
+            "kind": "type-alias",
+            "alias": {
+                "kind": "discriminated-union",
+                "discriminator": "kind",
+                "unionMembers": [
+                    {
+                        "discriminatorValues": ["browser_failure"],
+                        "fields": [{"name": "kind"}, {"name": "value"}],
+                    }
+                ],
+            },
+        }
+        entry = {
+            "variantBinding": {
+                "discriminator": "kind",
+                "tag": "browser_failure",
+                "input": "TypeAdapter.validate_python",
+            },
+            "argumentMappings": [{"rustArgument": "0", "pythonArgument": "value"}],
+        }
+        self.assertIsNone(parity._mapping_configuration_problem(item, entry, target))
+        entry["variantBinding"]["tag"] = "missing_tag"
+        self.assertIn(
+            "exactly one", parity._mapping_configuration_problem(item, entry, target)
+        )
+        entry["variantBinding"]["tag"] = "browser_failure"
+        entry["argumentMappings"][0]["pythonArgument"] = "missing_field"
+        self.assertIn(
+            "selected Python fields",
+            parity._mapping_configuration_problem(item, entry, target),
+        )
+
+    def test_output_error_details_validate_parent_identity_and_public_fields(self):
+        item = {
+            "kind": "variant",
+            "rustPath": "yosoi::PolicyError::DuplicateAcquisition",
+            "parentRustPath": "yosoi::PolicyError",
+            "rustArguments": [
+                {"name": "0", "type": "AcquisitionKind", "receiver": False}
+            ],
+        }
+        target = {"kind": "class", "signature": None, "fields": []}
+        python_targets = {
+            "yosoi.errors.RustErrorDetails": {"kind": "class", "fields": []},
+            **{
+                f"yosoi.errors.RustErrorDetails.{name}": {
+                    "target": f"yosoi.errors.RustErrorDetails.{name}",
+                    "kind": "field",
+                    "annotation": annotation,
+                    "field": {"name": name, "annotation": annotation},
+                }
+                for name, annotation in (
+                    ("rust_type", "str"),
+                    ("variant", "str | None"),
+                    ("details", "Mapping[str, Any]"),
+                    ("source_chain", "tuple[str, ...]"),
+                )
+            },
+        }
+        entry = {
+            "pythonTarget": "yosoi.errors.PolicyError",
+            "mappingDirection": "output",
+            "argumentMappings": [],
+            "outputBinding": {
+                "kind": "error-details",
+                "schemaTarget": "yosoi.errors.RustErrorDetails",
+                "discriminator": "variant",
+                "tag": "DuplicateAcquisition",
+                "rustType": "yosoi_policy::PolicyError",
+                "pythonFields": [
+                    {
+                        "rustArgument": "0",
+                        "pythonFieldPath": "details.acquisition",
+                        "conversion": "AcquisitionKind tagged JSON value",
+                    }
+                ],
+            },
+        }
+        self.assertIsNone(
+            parity._mapping_configuration_problem(item, entry, target, python_targets)
+        )
+        entry["outputBinding"]["rustType"] = "yosoi_policy::OtherError"
+        self.assertIn(
+            "rustType",
+            parity._mapping_configuration_problem(item, entry, target, python_targets),
+        )
+        entry["outputBinding"]["rustType"] = "yosoi_policy::PolicyError"
+        entry["outputBinding"]["pythonFields"][0]["pythonFieldPath"] = "source_chain[*]"
+        self.assertIsNone(
+            parity._mapping_configuration_problem(item, entry, target, python_targets)
+        )
+        entry["outputBinding"]["pythonFields"][0]["pythonFieldPath"] = "private_handle"
+        self.assertIn(
+            "output Python field path",
+            parity._mapping_configuration_problem(item, entry, target, python_targets),
+        )
+        entry["outputBinding"]["pythonFields"][0]["pythonFieldPath"] = "$"
+        self.assertIsNone(
+            parity._mapping_configuration_problem(item, entry, target, python_targets)
+        )
+        entry["outputBinding"]["kind"] = "outcome-view"
+        entry["outputBinding"]["tag"] = "duplicate_acquisition"
+        self.assertIn(
+            "output Python field path",
+            parity._mapping_configuration_problem(item, entry, target, python_targets),
+        )
+        wrapper = {
+            "kind": "variant",
+            "rustPath": "yosoi::contracts::ContractLocatorError::Plan",
+            "parentRustPath": "yosoi::contracts::ContractLocatorError",
+            "rustArguments": [
+                {
+                    "name": "0",
+                    "type": "yosoi_documents::PlanError",
+                    "receiver": False,
+                }
+            ],
+        }
+        entry["outputBinding"] = {
+            "kind": "error-details",
+            "schemaTarget": "yosoi.errors.RustErrorDetails",
+            "discriminator": "rust_type",
+            "tag": "yosoi_documents::PlanError",
+            "rustType": "yosoi_documents::PlanError",
+            "pythonFields": [
+                {
+                    "rustArgument": "0",
+                    "pythonFieldPath": "$",
+                    "conversion": "complete transparent public Plan error metadata",
+                }
+            ],
+        }
+        self.assertIsNone(
+            parity._mapping_configuration_problem(
+                wrapper, entry, target, python_targets
+            )
+        )
+        entry["outputBinding"]["pythonFields"] = [
+            {
+                "rustArgument": "0",
+                "pythonFieldPath": "variant",
+                "conversion": "inner PlanError variant metadata",
+            },
+            {
+                "rustArgument": "0",
+                "pythonFieldPath": "details",
+                "conversion": "inner PlanError structured details mapping",
+            },
+            {
+                "rustArgument": "0",
+                "pythonFieldPath": "source_chain",
+                "conversion": "public display source chain",
+            },
+        ]
+        self.assertIsNone(
+            parity._mapping_configuration_problem(
+                wrapper, entry, target, python_targets
+            )
+        )
+
+    def test_output_outcome_view_checks_readonly_status_slot_and_variant_tag(self):
+        item = {
+            "kind": "variant",
+            "rustPath": "yosoi::contracts::ContractOutcome::NoMatch",
+            "parentRustPath": "yosoi::contracts::ContractOutcome",
+            "rustArguments": [],
+        }
+        target = {"kind": "class", "fields": []}
+        python_targets = {
+            "yosoi.contracts.ContractOutcome": {"kind": "class", "fields": []},
+            "yosoi.contracts.ContractOutcome.status": {
+                "target": "yosoi.contracts.ContractOutcome.status",
+                "kind": "field",
+                "annotation": "str",
+            },
+        }
+        entry = {
+            "pythonTarget": "yosoi.contracts.ContractOutcome",
+            "mappingDirection": "output",
+            "argumentMappings": [],
+            "outputBinding": {
+                "kind": "outcome-view",
+                "schemaTarget": "yosoi.contracts.ContractOutcome",
+                "discriminator": "status",
+                "tag": "no_match",
+                "pythonFields": [],
+            },
+        }
+        self.assertIsNone(
+            parity._mapping_configuration_problem(item, entry, target, python_targets)
+        )
+        entry["outputBinding"]["tag"] = "unknown_status"
+        self.assertIn(
+            "output tag",
+            parity._mapping_configuration_problem(item, entry, target, python_targets),
+        )
+        entry["outputBinding"]["tag"] = "no_match"
+        python_targets.pop("yosoi.contracts.ContractOutcome.status")
+        self.assertIn(
+            "discriminator",
+            parity._mapping_configuration_problem(item, entry, target, python_targets),
+        )
+
+    def test_output_external_union_validates_literal_unit_and_payload_tags(self):
+        alias_target = "yosoi.diagnostics.SearchAttemptDiagnostic"
+        target = {
+            "kind": "type-alias",
+            "alias": {
+                "kind": "union",
+                "unionMembers": [
+                    {
+                        "literalValues": [
+                            "browser_cancelled",
+                            "browser_cleanup_failed",
+                        ],
+                        "fields": [],
+                    },
+                    {
+                        "literalValues": [],
+                        "fields": [
+                            {"name": "browser_failure", "literalChoices": ["timeout"]}
+                        ],
+                    },
+                ],
+            },
+        }
+        python_targets = {alias_target: target}
+        unit = {
+            "kind": "variant",
+            "rustPath": "yosoi::search::SearchAttemptDiagnostic::BrowserCancelled",
+            "parentRustPath": "yosoi::search::SearchAttemptDiagnostic",
+            "rustArguments": [],
+        }
+        entry = {
+            "pythonTarget": alias_target,
+            "mappingDirection": "output",
+            "argumentMappings": [],
+            "outputBinding": {
+                "kind": "outcome-view",
+                "schemaTarget": alias_target,
+                "discriminator": "external",
+                "tag": "browser_cancelled",
+                "pythonFields": [],
+            },
+        }
+        self.assertIsNone(
+            parity._mapping_configuration_problem(unit, entry, target, python_targets)
+        )
+        entry["outputBinding"]["tag"] = "removed_unit_tag"
+        self.assertIn(
+            "external output tag",
+            parity._mapping_configuration_problem(unit, entry, target, python_targets),
+        )
+        payload = {
+            **unit,
+            "rustPath": "yosoi::search::SearchAttemptDiagnostic::BrowserFailure",
+            "rustArguments": [
+                {"name": "0", "type": "BrowserFailureReason", "receiver": False}
+            ],
+        }
+        entry["outputBinding"]["tag"] = "browser_failure"
+        entry["outputBinding"]["pythonFields"] = [
+            {
+                "rustArgument": "0",
+                "pythonFieldPath": "browser_failure",
+                "conversion": "BrowserFailureReason literal",
+            }
+        ]
+        self.assertIsNone(
+            parity._mapping_configuration_problem(
+                payload, entry, target, python_targets
+            )
+        )
+        entry["outputBinding"]["pythonFields"][0]["pythonFieldPath"] = "missing_field"
+        self.assertIn(
+            "output Python field path",
+            parity._mapping_configuration_problem(
+                payload, entry, target, python_targets
+            ),
+        )
+
+    def test_output_discriminated_union_uses_literal_tag_before_payload_fields(self):
+        item = {
+            "kind": "variant",
+            "rustPath": "yosoi::contracts::RuntimeContractOutcome::NoMatch",
+            "parentRustPath": "yosoi::contracts::RuntimeContractOutcome",
+            "rustArguments": [{"name": "document_id", "receiver": False}],
+        }
+        target = {
+            "kind": "type-alias",
+            "fields": [],
+            "alias": {
+                "kind": "discriminated-union",
+                "discriminator": "status",
+                "unionMembers": [
+                    {
+                        "discriminatorValues": ["no_match"],
+                        "fields": [{"name": "status"}, {"name": "document_id"}],
+                    }
+                ],
+            },
+        }
+        entry = {
+            "pythonTarget": "yosoi.runtime_contracts.RuntimeContractOutcomeData",
+            "mappingDirection": "output",
+            "argumentMappings": [],
+            "outputBinding": {
+                "kind": "outcome-view",
+                "schemaTarget": "yosoi.runtime_contracts.RuntimeContractOutcomeData",
+                "discriminator": "status",
+                "tag": "no_match",
+                "pythonFields": [
+                    {
+                        "rustArgument": "document_id",
+                        "pythonFieldPath": "document_id",
+                        "conversion": "DocumentId string",
+                    }
+                ],
+            },
+        }
+        targets = {entry["pythonTarget"]: target}
+        self.assertIsNone(
+            parity._mapping_configuration_problem(item, entry, target, targets)
+        )
+        entry["outputBinding"]["tag"] = "removed_status"
+        self.assertIn(
+            "output tag",
+            parity._mapping_configuration_problem(item, entry, target, targets),
+        )
+
+    def test_output_binding_is_not_an_input_constructor_mapping(self):
+        item = {
+            "kind": "variant",
+            "rustPath": "yosoi::map::LimitReached::Hosts",
+            "parentRustPath": "yosoi::map::LimitReached",
+            "rustArguments": [],
+        }
+        target = {
+            "kind": "class",
+            "fields": [
+                {"name": "kind", "literalChoices": ["limit"]},
+                {"name": "value", "literalChoices": ["hosts", "urls"]},
+            ],
+        }
+        python_targets = {
+            "yosoi.map.MapTermination": target,
+            "yosoi.map.MapTermination.kind": {
+                "kind": "field",
+                "field": target["fields"][0],
+            },
+            "yosoi.map.MapTermination.value": {
+                "kind": "field",
+                "field": target["fields"][1],
+            },
+        }
+        entry = {
+            "pythonTarget": "yosoi.map.MapTermination",
+            "mappingDirection": "output",
+            "argumentMappings": [],
+            "outputBinding": {
+                "kind": "outcome-view",
+                "schemaTarget": "yosoi.map.MapTermination",
+                "discriminator": "value",
+                "tag": "hosts",
+                "pythonFields": [],
+            },
+        }
+        self.assertIsNone(
+            parity._mapping_configuration_problem(item, entry, target, python_targets)
+        )
+        entry["argumentMappings"] = [
+            {"rustArgument": "0", "pythonArgument": "value", "conversion": "str"}
+        ]
+        self.assertIn(
+            "constructor argument",
+            parity._mapping_configuration_problem(item, entry, target, python_targets),
+        )
+
+    def test_plain_tagged_model_variant_uses_nested_public_literal_discriminator(self):
+        item = {
+            "kind": "variant",
+            "rustPath": "yosoi::policy::Acquisition::Exact",
+            "rustArguments": [
+                {"name": "acquisition", "type": "AcquisitionKind", "receiver": False},
+                {
+                    "name": "documents",
+                    "type": "Vec<DocumentRequest>",
+                    "receiver": False,
+                },
+            ],
+        }
+        document_selection = [
+            {"name": "kind", "literalChoices": ["current", "exact"]},
+            {"name": "documents", "literalChoices": []},
+        ]
+        target = {
+            "kind": "class",
+            "signature": {"parameters": [{"name": "kind"}, {"name": "documents"}]},
+            "fields": [
+                {"name": "kind", "literalChoices": ["direct_http", "browser"]},
+                {"name": "documents", "modelFields": document_selection},
+            ],
+        }
+        entry = {
+            "argumentMappings": [
+                {
+                    "rustArgument": "acquisition",
+                    "pythonArgument": "kind",
+                    "conversion": "AcquisitionKind tag",
+                },
+                {
+                    "rustArgument": "documents",
+                    "pythonArgument": "documents.documents",
+                    "conversion": "ordered document selection",
+                },
+            ],
+            "variantBinding": {
+                "discriminator": "documents.kind",
+                "tag": "exact",
+                "input": "TypeAdapter.validate_python",
+            },
+        }
+        self.assertIsNone(parity._mapping_configuration_problem(item, entry, target))
+        entry["variantBinding"]["tag"] = "removed"
+        self.assertIn(
+            "literal choices",
+            parity._mapping_configuration_problem(item, entry, target),
+        )
+
+    def test_python_model_introspection_keeps_dataclass_fields_and_public_slots(self):
+        from dataclasses import dataclass
+
+        @dataclass(frozen=True, slots=True)
+        class RustErrorDetails:
+            rust_type: str
+            variant: str | None
+            details: dict[str, object]
+            source_chain: tuple[str, ...] = ()
+
+        class Outcome:
+            __slots__ = ("status", "_handle")
+            __annotations__ = {"status": str, "_handle": object}
+
+        rust_members = parity._class_member_descriptions(
+            RustErrorDetails, ["yosoi.errors.RustErrorDetails"]
+        )
+        rust_targets = {item["target"] for item in rust_members}
+        self.assertTrue(
+            {
+                "yosoi.errors.RustErrorDetails.rust_type",
+                "yosoi.errors.RustErrorDetails.variant",
+                "yosoi.errors.RustErrorDetails.details",
+                "yosoi.errors.RustErrorDetails.source_chain",
+            }.issubset(rust_targets)
+        )
+        self.assertFalse(any(target.endswith("._handle") for target in rust_targets))
+        outcome_members = parity._class_member_descriptions(
+            Outcome, ["yosoi.contracts.Outcome"]
+        )
+        self.assertEqual(
+            [item["target"] for item in outcome_members],
+            ["yosoi.contracts.Outcome.status"],
+        )
+
+    def test_union_alias_tags_preserve_multiple_literals_without_payload_constructor(
+        self,
+    ):
+        target = "yosoi.diagnostics.PartialReason"
+        description = {
+            "kind": "type-alias",
+            "signature": {"parameters": []},
+            "alias": {
+                "unionMembers": [
+                    {
+                        "discriminatorValues": [
+                            "source_family_partial",
+                            "browser_artifact_truncated",
+                        ]
+                    }
+                ]
+            },
+        }
+        parent = {"rustPath": "yosoi::request::PartialReason"}
+        python = {"targets": {target: description}}
+        self.assertEqual(
+            seed_ledger._variant_literal_target(
+                parent, "SourceFamilyPartial", target, python
+            ),
+            (target, "source_family_partial"),
+        )
+        self.assertEqual(
+            seed_ledger._variant_literal_target(
+                parent, "UnknownVariant", target, python
+            ),
+            (None, None),
+        )
+        # The alias describes tagged values; it exposes no payload constructor.
+        self.assertIsNone(
+            seed_ledger._argument_mappings(
+                {
+                    "kind": "variant",
+                    "rustPath": parent["rustPath"] + "::BrowserArtifactTruncated",
+                    "rustArguments": [{"name": "family", "type": "WebArtifactFamily"}],
+                },
+                description,
+            )
+        )
+
+    def test_seed_migration_preserves_overload_identity_when_source_changes(
+        self,
+    ) -> None:
+        path = "yosoi::contracts::Error::from"
+        entry = {
+            "rustPath": path,
+            "trait": "From",
+            "symbolKey": "member:@signature:first@source:old",
+        }
+        same = {
+            "rustPath": path,
+            "trait": "From",
+            "symbolKey": "member:@signature:first@source:new",
+            "aliases": [],
+        }
+        other = {**same, "symbolKey": "member:@signature:second@source:new"}
+        self.assertTrue(seed_ledger._matches_prior_mapping(entry, same))
+        self.assertFalse(seed_ledger._matches_prior_mapping(entry, other))
+        self.assertFalse(
+            seed_ledger._matches_prior_mapping(entry, {**same, "trait": "TryFrom"})
+        )
+
+    def test_union_properties_require_every_concrete_member(self) -> None:
+        targets = {
+            "sdk.Result": {
+                "alias": {
+                    "unionMembers": [
+                        {"target": "sdk.Produced"},
+                        {"target": "sdk.Unavailable"},
+                    ]
+                }
+            },
+            "sdk.Produced.document": {"kind": "field"},
+            "sdk.Produced.only_here": {"kind": "field"},
+            "sdk.Unavailable.document": {"kind": "property"},
+        }
+        parity._add_union_properties(targets)
+        self.assertEqual(targets["sdk.Result.document"]["kind"], "union-property")
+        self.assertEqual(
+            targets["sdk.Result.document"]["members"],
+            ["sdk.Produced.document", "sdk.Unavailable.document"],
+        )
+        self.assertNotIn("sdk.Result.only_here", targets)
+
+    def test_frontend_summary_preserves_incomplete_status_and_counts(self) -> None:
+        report = parity.build_report(inventory(), python_surface(), ledger())
+        summary = parity.summary_from_report(report, "f" * 64)
+        self.assertEqual(summary["parityStatus"], report["parityStatus"])
+        self.assertEqual(summary["coverage"]["counts"], report["coverage"]["counts"])
+        self.assertEqual(summary["reportSha256"], "f" * 64)
+        self.assertNotIn("objects", summary["python"])
+        self.assertNotIn("items", summary["coverage"])
+
+    def test_fixed_variant_tag_must_exist_in_live_model_choices(self) -> None:
+        item = {
+            "kind": "variant",
+            "rustArguments": [{"name": "0", "type": "String", "receiver": False}],
+        }
+        entry = {
+            "argumentMappings": [{"rustArgument": "0", "pythonArgument": "value"}],
+            "fixedArguments": {"kind": "removed_tag"},
+        }
+        target = {
+            "kind": "class",
+            "signature": {"parameters": [{"name": "kind"}, {"name": "value"}]},
+            "fields": [{"name": "kind", "literalChoices": ["css"]}],
+        }
+        self.assertIn(
+            "literal choices",
+            parity._mapping_configuration_problem(item, entry, target),
+        )
+        entry["fixedArguments"]["kind"] = "css"
+        self.assertIsNone(parity._mapping_configuration_problem(item, entry, target))
+
+    def test_members_in_sdk_base_modules_are_available_without_framework_members(
+        self,
+    ) -> None:
+        class Framework:
+            def framework_method(self):
+                pass
+
+        class Base(Framework):
+            def as_str(self) -> str:
+                return "value"
+
+        class Child(Base):
+            pass
+
+        Framework.__module__ = "framework.models"
+        Base.__module__ = "yosoi.scalars"
+        Child.__module__ = "yosoi.request"
+        members = parity._class_member_descriptions(Child, ["yosoi.request.Child"])
+        targets = {member["target"] for member in members}
+        self.assertIn("yosoi.request.Child.as_str", targets)
+        self.assertNotIn("yosoi.request.Child.framework_method", targets)
+
+    def test_validator_signatures_are_stable_across_processes(self) -> None:
+        code = """
+import sys
+from typing import Annotated
+from pydantic import BaseModel, AfterValidator
+sys.path.insert(0, sys.argv[1])
+import parity
+def factory(bound):
+    def validate(value):
+        return bound(value)
+    return validate
+class Record(BaseModel):
+    value: Annotated[int, AfterValidator(factory(int))]
+class Different(BaseModel):
+    value: Annotated[int, AfterValidator(factory(str))]
+first = parity._describe_signature(Record)
+second = parity._describe_signature(Different)
+assert first != second, "captured scalar types must remain distinguishable"
+print(parity.digest_json(first))
+"""
+        command = [sys.executable, "-c", code, str(SCRIPT.parent)]
+        first = subprocess.check_output(command, text=True, timeout=15)
+        second = subprocess.check_output(command, text=True, timeout=15)
+        self.assertEqual(first, second)
+
+    def test_seed_ledger_rebases_legacy_crate_root_from_inventory(self) -> None:
+        rust = {
+            "sdk": {"crate": "yosoi_sdk"},
+            "items": [
+                {
+                    "rustPath": "yosoi_sdk::Thing",
+                    "aliases": ["yosoi_sdk::model::Thing"],
+                    "parentRustPath": "yosoi_sdk::module",
+                }
+            ],
+        }
+        canonical = seed_ledger._inventory_with_mapping_root(rust)
+        self.assertEqual(canonical["items"][0]["rustPath"], "yosoi::Thing")
+        self.assertEqual(canonical["items"][0]["aliases"], ["yosoi::model::Thing"])
+        self.assertEqual(canonical["items"][0]["parentRustPath"], "yosoi::module")
+
+        old_ledger = {
+            "entries": [{"rustPath": "yosoi_sdk::Thing", "decision": "mapped"}]
+        }
+        canonical_ledger = seed_ledger._ledger_with_mapping_root(old_ledger)
+        self.assertEqual(canonical_ledger["entries"][0]["rustPath"], "yosoi::Thing")
+        restored = seed_ledger._ledger_with_source_root(canonical_ledger, "yosoi_sdk")
+        self.assertEqual(restored["entries"][0]["rustPath"], "yosoi_sdk::Thing")
+
+    def test_seed_ledger_keeps_current_crate_root_and_fails_unknown_root_closed(
+        self,
+    ) -> None:
+        rust = {"sdk": {"crate": "yosoi"}, "items": []}
+        self.assertIs(seed_ledger._inventory_with_mapping_root(rust), rust)
+        with self.assertRaises(parity.ParityError):
+            seed_ledger._inventory_with_mapping_root(
+                {"sdk": {"crate": "future_sdk"}, "items": []}
+            )
+
     def test_seed_ledger_has_stable_mapping_metadata(self) -> None:
         root = Path(__file__).resolve().parents[2]
         loaded = parity.load_ledger(root / "python/parity/ledger.json")
@@ -151,10 +947,10 @@ class InventoryTests(unittest.TestCase):
 
         NativeError.__module__ = "_native"
         self.assertTrue(
-            parity._is_public_native_exception(NativeError, "yosoi.errors", "yosoi-engine")
+            parity._is_public_native_exception(NativeError, "yosoi.errors", "yosoi")
         )
         self.assertFalse(
-            parity._is_public_native_exception(NativeError, "yosoi._internal", "yosoi-engine")
+            parity._is_public_native_exception(NativeError, "yosoi._internal", "yosoi")
         )
 
     def test_public_members_in_same_module_base_are_introspected(self) -> None:
@@ -539,6 +1335,23 @@ class InventoryTests(unittest.TestCase):
                 {"signature": None},
             )
         )
+
+    def test_identity_view_method_can_map_to_owning_python_type(self) -> None:
+        problem = parity._mapping_configuration_problem(
+            {
+                "kind": "function",
+                "rustArguments": [{"name": "self", "receiver": True}],
+            },
+            {
+                "semanticEquivalent": "The Python owner is the Rust borrowed view.",
+                "argumentMappings": [],
+            },
+            {
+                "kind": "class",
+                "signature": {"parameters": [{"name": "id", "hasDefault": False}]},
+            },
+        )
+        self.assertIsNone(problem)
 
     def test_only_snapshot_bound_comparison_evidence_verifies_mapping(self) -> None:
         rust = inventory()

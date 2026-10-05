@@ -29,15 +29,15 @@ use yosoi_engine::{
     BrowserResolutionInputs, BrowserUrlAdmission, CaptureId, CertifiedBrowserCapabilities,
     DocumentOutcome, NavigationCompletionPolicy, NavigationContext, OperationId,
     PolicyCaptureOutcome, PolicyDecision, PolicyResolutionContext, PolicyResolutionError,
-    PolicyResolver, Producer, ProducerId, ProducerVersion, ReasonCode, RequestExecutor,
-    ResponseTermination, Schema, SchemaId, SchemaVersion, SettlementPolicy,
-    WebArtifactCapabilitySet, WebProviderCapabilityProfile, prelude as ys, project_attempt,
+    PolicyResolver, Producer, ReasonCode, RequestExecutor, ResponseTermination, Schema, SchemaId,
+    SchemaVersion, SettlementPolicy, WebArtifactCapabilitySet, WebProviderCapabilityProfile,
+    prelude as ys, project_attempt,
 };
 use yosoi_types::ArtifactAvailability;
 use yosoi_web_capture::{
     AccessibilityTreeArtifact, ArtifactRequest, BrowserCaptureSpecError, BrowserMode,
     BrowserStructuredEvidence, CaptureBundle, CaptureCompleteness, CaptureEnvironment,
-    CleanupState, RenderedDomArtifact, SourceArtifact,
+    CleanupState, RenderedDomArtifact, SourceArtifact, void_crawl_adapter_producer,
 };
 
 const INLINE_PAGE: &[u8] = br##"<!doctype html>
@@ -154,10 +154,7 @@ async fn serve_inline_page(
 }
 
 fn test_producer() -> TestResult<Producer> {
-    Ok(Producer::new(
-        ProducerId::new("com.cascadinglabs.void_crawl_core")?,
-        ProducerVersion::new("0.5.0")?,
-    ))
+    Ok(void_crawl_adapter_producer()?)
 }
 
 fn test_operation() -> TestResult<OperationId> {

@@ -28,13 +28,13 @@ impl NativeMapRequest {
     }
 
     #[pyo3(signature = (policy_json=None))]
-    fn validate(&self, policy_json: Option<&str>) -> PyResult<()> {
+    fn validate(&self, py: Python<'_>, policy_json: Option<&str>) -> PyResult<()> {
         let policy = policy::parse(policy_json)?;
         self.inner
             .clone()
             .bind(&policy)
             .validate()
-            .map_err(|error| errors::MapError::new_err(error.to_string()))
+            .map_err(|error| errors::map_error(py, &error))
     }
 
     #[pyo3(signature = (policy_json=None, cancellation=None))]
@@ -50,7 +50,7 @@ impl NativeMapRequest {
             let outcome = request
                 .send_cancellable(&token)
                 .await
-                .map_err(|error| errors::MapError::new_err(error.to_string()))?;
+                .map_err(|error| Python::attach(|py| errors::map_error(py, &error)))?;
             Ok(NativeMapOutcome {
                 inner: Arc::new(outcome),
             })
@@ -66,7 +66,7 @@ pub struct NativeMapOutcome {
 
 #[pymethods]
 impl NativeMapOutcome {
-    fn to_json(&self) -> PyResult<String> {
+    fn to_json(&self, py: Python<'_>) -> PyResult<String> {
         let outcome = &self.inner;
         let captures: Vec<_> = outcome
             .captures()
@@ -82,7 +82,9 @@ impl NativeMapOutcome {
             "request_trace": outcome.request_trace(), "termination": outcome.termination(),
             "omissions": outcome.omissions(), "summary": outcome.summary(),
         }))
-        .map_err(|error| errors::MapError::new_err(error.to_string()))
+        .map_err(|error| {
+            errors::serde_encode_error(py, errors::MapError::new_err(error.to_string()), &error)
+        })
     }
 
     fn response(&self, index: usize) -> PyResult<NativeResponse> {

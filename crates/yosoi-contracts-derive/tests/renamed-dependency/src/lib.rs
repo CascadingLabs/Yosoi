@@ -1,5 +1,6 @@
 //! Compile fixture proving the Contract derive respects a renamed dependency.
 
+use ys::contracts::{ContractSchema, ContractSchemaError};
 use ys::prelude as sdk;
 
 const PRODUCT_ROOT: sdk::PinnedLocator = sdk::locator::css("article.product");
@@ -16,7 +17,7 @@ pub struct RenamedProduct {
     pub name: String,
 }
 
-pub fn schema() -> Result<&'static ys::contracts::ContractSchema, ys::contracts::ContractSchemaError> {
+pub fn schema() -> Result<&'static ContractSchema, ContractSchemaError> {
     RenamedProduct::schema()
 }
 

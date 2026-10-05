@@ -13,6 +13,7 @@ from typing import (
     ClassVar,
     Literal,
     NoReturn,
+    Protocol,
     Self,
     SupportsIndex,
     TypeVar,
@@ -44,8 +45,16 @@ T = TypeVar("T", bound="Contract")
 Cardinality = Literal["exactly_one", "zero_or_one", "many"]
 
 
+class ContractValue(Protocol):
+    """Identity-only protocol for Rust Contract scalar type IDs."""
+
+    TYPE_ID: ClassVar[str]
+
+
 class Money(NativeAuthoringModel):
     """A validated USD amount, stored in integer minor units."""
+
+    TYPE_ID: ClassVar[str] = _native.contract_value_type_id(True)
 
     minor_units: Annotated[int, PydanticField(strict=True, repr=False)]
     currency: Literal["usd"] = "usd"
@@ -57,6 +66,22 @@ class Money(NativeAuthoringModel):
 
     def __str__(self) -> str:
         return _native.validate_money(self.model_dump_json())
+
+
+def value_type_id(
+    annotation: type[str] | type[Money] | type[ContractValue],
+) -> str:
+    """Return the Rust ContractValue identity declared by a scalar type."""
+    if annotation is str:
+        return _native.contract_value_type_id(False)
+    if annotation is Money:
+        return Money.TYPE_ID
+    if not isinstance(annotation, type):
+        raise TypeError("ContractValue must be a scalar type")
+    type_id = getattr(annotation, "TYPE_ID", None)
+    if isinstance(type_id, str):
+        return type_id
+    raise TypeError("ContractValue types require a string TYPE_ID")
 
 
 @dataclass(frozen=True)
@@ -540,7 +565,9 @@ class Extracted[T: "Contract"](_ReadOnlyView):
         self.status: str = wire["status"]
         self.document_id: str | None = wire.get("document_id")
         self.failure = (
-            TerminalFailure.model_validate(wire["failure"])
+            TypeAdapter(_runtime_contracts.RuntimeExtractedData)
+            .validate_python(wire, context=RUST_DOMAIN_VALIDATED)
+            .failure
             if "failure" in wire
             else None
         )
@@ -596,7 +623,9 @@ class ContractOutcome[T: "Contract"](_ReadOnlyView):
         self.status: str = wire["status"]
         self.document_id: str | None = wire.get("document_id")
         self.failure = (
-            TerminalFailure.model_validate(wire["failure"])
+            TypeAdapter(_runtime_contracts.RuntimeContractOutcomeData)
+            .validate_python(wire, context=RUST_DOMAIN_VALIDATED)
+            .failure
             if "failure" in wire
             else None
         )
@@ -607,7 +636,7 @@ class ContractOutcome[T: "Contract"](_ReadOnlyView):
         )
         self.reason_code: str | None = wire.get("reason_code")
         self.records: tuple[ValidatedRecord[T], ...] = tuple(
-            ValidatedRecord[T](
+            ValidatedRecord(
                 value=_record(contract, item["value"]),
                 candidate=contract._definition().candidate(item["candidate"]),
             )
@@ -634,6 +663,12 @@ class ContractOutcome[T: "Contract"](_ReadOnlyView):
             raise ContractIssues(result["error"])
         return [_record(self.contract, item["value"]) for item in result["records"]]
 
+    def to_archived(self) -> ArchivedContractOutcome:
+        """Return Rust's code-independent portable archive representation."""
+        return _runtime_contracts._archived_outcome(
+            self._handle, self.contract.contract_schema()
+        )
+
     def model_dump(self) -> dict[str, Any]:
         return json.loads(self._handle.to_json())
 
@@ -650,7 +685,16 @@ def extract[T: "Contract"](
 
 from . import runtime_contracts as _runtime_contracts  # noqa: E402
 
+ContractSchemaFailure = _runtime_contracts.ContractSchemaFailure
 RuntimeCandidate = _runtime_contracts.RuntimeCandidate
+ArchivedContractCandidateField = _runtime_contracts.ArchivedContractCandidateField
+ArchivedContractField = _runtime_contracts.ArchivedContractField
+ArchivedContractMoneyUsd = _runtime_contracts.ArchivedContractMoneyUsd
+ArchivedContractOutcome = _runtime_contracts.ArchivedContractOutcome
+ArchivedContractRecordIssue = _runtime_contracts.ArchivedContractRecordIssue
+ArchivedContractString = _runtime_contracts.ArchivedContractString
+ArchivedContractValue = _runtime_contracts.ArchivedContractValue
+ArchivedValidatedContractRecord = _runtime_contracts.ArchivedValidatedContractRecord
 RuntimeContract = _runtime_contracts.RuntimeContract
 RuntimeContractOutcome = _runtime_contracts.RuntimeContractOutcome
 RuntimeExactlyOne = _runtime_contracts.RuntimeExactlyOne
@@ -665,3 +709,7 @@ RuntimeValidationFailure = _runtime_contracts.RuntimeValidationFailure
 RuntimeValidatedRecord = _runtime_contracts.RuntimeValidatedRecord
 RuntimeValue = _runtime_contracts.RuntimeValue
 RuntimeZeroOrOne = _runtime_contracts.RuntimeZeroOrOne
+
+# Resolve the generic bound once during module import. Runtime subscripting
+# can ask Pydantic to rebuild this shared schema concurrently without the GIL.
+ValidatedRecord.model_rebuild()

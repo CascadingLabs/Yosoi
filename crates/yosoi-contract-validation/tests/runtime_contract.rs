@@ -1,7 +1,7 @@
 #![allow(clippy::panic_in_result_fn)] // Assertions intentionally fail conformance tests.
 
 use serde_json::{Value, json};
-use std::sync::OnceLock;
+use std::{collections::BTreeMap, error::Error, io, sync::OnceLock};
 use yosoi_contract_validation::{
     FieldIssueKind, Money, RuntimeContract, RuntimeContractOutcome, RuntimeFieldValue,
     RuntimeValue, ValidationLimits, read_many, read_optional, read_required,
@@ -107,9 +107,9 @@ impl Contract for StaticContract {
     }
 }
 
-fn finding(output: &str, order: u64, text: &str, completeness: Value) -> Value {
-    let start = order * 8;
-    let end = start + u64::try_from(text.len()).unwrap_or(u64::MAX);
+fn finding(output: &str, order: u64, text: &str, completeness: &Value) -> Value {
+    let start = order.saturating_mul(8);
+    let end = start.saturating_add(u64::try_from(text.len()).unwrap_or(u64::MAX));
     json!({
         "document_id": "catalog-page",
         "output_id": output,
@@ -131,12 +131,12 @@ fn complete() -> Value {
     json!({"status": "complete"})
 }
 
-fn located(findings: Vec<Value>) -> Result<LocateOutcome, Box<dyn std::error::Error>> {
+fn located(findings: Vec<Value>) -> Result<LocateOutcome, Box<dyn Error>> {
     let wire = json!({
         "status": "matched",
         "result": {
             "document_id": "catalog-page",
-            "findings": findings
+            "findings": Value::Array(findings)
         }
     });
     Ok(serde_json::from_value(wire)?)
@@ -144,15 +144,15 @@ fn located(findings: Vec<Value>) -> Result<LocateOutcome, Box<dyn std::error::Er
 
 fn normal_findings() -> Vec<Value> {
     vec![
-        finding("name", 0, "Tea", complete()),
-        finding("price", 1, "$4.50", complete()),
-        finding("tags", 2, "drinks", complete()),
+        finding("name", 0, "Tea", &complete()),
+        finding("price", 1, "$4.50", &complete()),
+        finding("tags", 2, "drinks", &complete()),
     ]
 }
 
 #[test]
-fn runtime_and_static_contracts_share_candidate_and_value_semantics()
--> Result<(), Box<dyn std::error::Error>> {
+fn runtime_and_static_contracts_share_candidate_and_value_semantics() -> Result<(), Box<dyn Error>>
+{
     let located = located(normal_findings())?;
     let limits = ExtractionLimits::uniform(32);
     let static_extracted = extract_contract_with_limits::<StaticContract>(&located, limits);
@@ -162,11 +162,11 @@ fn runtime_and_static_contracts_share_candidate_and_value_semantics()
     let static_candidate = static_extracted
         .candidates()
         .first()
-        .ok_or_else(|| std::io::Error::other("static extraction omitted candidate"))?;
+        .ok_or_else(|| io::Error::other("static extraction omitted candidate"))?;
     let runtime_candidate = runtime_extracted
         .candidates()
         .first()
-        .ok_or_else(|| std::io::Error::other("runtime extraction omitted candidate"))?;
+        .ok_or_else(|| io::Error::other("runtime extraction omitted candidate"))?;
     assert_eq!(
         static_candidate.document_id(),
         runtime_candidate.document_id()
@@ -181,13 +181,13 @@ fn runtime_and_static_contracts_share_candidate_and_value_semantics()
     );
 
     let static_name = read_required(&static_candidate.name)
-        .map_err(|_| std::io::Error::other("static name validation failed"))?;
+        .map_err(|_| io::Error::other("static name validation failed"))?;
     let static_price = read_required(&static_candidate.price)
-        .map_err(|_| std::io::Error::other("static price validation failed"))?;
+        .map_err(|_| io::Error::other("static price validation failed"))?;
     let static_nickname = read_optional(&static_candidate.nickname)
-        .map_err(|_| std::io::Error::other("static optional validation failed"))?;
+        .map_err(|_| io::Error::other("static optional validation failed"))?;
     let static_tags = read_many(&static_candidate.tags)
-        .map_err(|_| std::io::Error::other("static many validation failed"))?;
+        .map_err(|_| io::Error::other("static many validation failed"))?;
 
     let outcome = runtime_extracted.validate();
     let RuntimeContractOutcome::Evaluated {
@@ -197,13 +197,13 @@ fn runtime_and_static_contracts_share_candidate_and_value_semantics()
         ..
     } = outcome.clone()
     else {
-        return Err(std::io::Error::other("runtime validation did not evaluate").into());
+        return Err(io::Error::other("runtime validation did not evaluate").into());
     };
-    assert!(issues.is_empty());
-    assert!(extraction_diagnostics.is_empty());
+    assert_eq!(issues.len(), 0);
+    assert_eq!(extraction_diagnostics.len(), 0);
     let record = records
         .first()
-        .ok_or_else(|| std::io::Error::other("runtime validation omitted record"))?;
+        .ok_or_else(|| io::Error::other("runtime validation omitted record"))?;
     assert_eq!(
         record.value.get(&FieldId::try_new("name")?),
         Some(&RuntimeFieldValue::ExactlyOne {
@@ -245,7 +245,141 @@ fn runtime_and_static_contracts_share_candidate_and_value_semantics()
 }
 
 #[test]
-fn runtime_contract_rejects_unsupported_scalar_types() -> Result<(), Box<dyn std::error::Error>> {
+fn runtime_outcome_archives_with_the_portable_contract_wire_shape() -> Result<(), Box<dyn Error>> {
+    let schema = StaticContract::schema()?.clone();
+    let runtime = RuntimeContract::new(schema.clone())?;
+    let located = located(normal_findings())?;
+    let outcome = runtime
+        .extract(&located, ExtractionLimits::uniform(32))
+        .validate();
+    let archived = outcome.to_archived(&schema)?;
+    let wire = serde_json::to_value(archived)?;
+    assert_eq!(wire["status"], "evaluated");
+    let record = wire["records"]
+        .as_array()
+        .and_then(|records| records.first())
+        .ok_or_else(|| io::Error::other("portable outcome omitted record"))?;
+    let fields = record["fields"]
+        .as_array()
+        .ok_or_else(|| io::Error::other("portable record omitted fields"))?;
+    assert_eq!(fields.len(), 4);
+    assert_eq!(
+        fields[0],
+        json!({"id":"name","value":{"cardinality":"exactly_one","value":{"type":"string","value":"Tea"}}})
+    );
+    assert_eq!(
+        fields[1],
+        json!({"id":"price","value":{"cardinality":"exactly_one","value":{"type":"money_usd","minor_units":450}}})
+    );
+    assert_eq!(
+        fields[2],
+        json!({"id":"nickname","value":{"cardinality":"zero_or_one","value":null}})
+    );
+    assert_eq!(
+        fields[3],
+        json!({"id":"tags","value":{"cardinality":"many","values":[{"type":"string","value":"drinks"}]}})
+    );
+    let evidence = record["evidence"]
+        .as_array()
+        .ok_or_else(|| io::Error::other("portable record omitted evidence"))?;
+    assert_eq!(
+        evidence
+            .iter()
+            .map(|field| field["id"].as_str())
+            .collect::<Vec<_>>(),
+        [Some("name"), Some("price"), Some("nickname"), Some("tags")]
+    );
+    assert_eq!(evidence[2]["evidence"], json!([]));
+
+    let no_match: LocateOutcome =
+        serde_json::from_value(json!({"status":"no_match","document_id":"catalog-page"}))?;
+    let no_match_archive = runtime
+        .extract(&no_match, ExtractionLimits::uniform(32))
+        .validate()
+        .to_archived(&schema)?;
+    assert_eq!(
+        serde_json::to_value(no_match_archive)?["status"],
+        "no_match"
+    );
+
+    let indeterminate: LocateOutcome = serde_json::from_value(json!({
+        "status":"indeterminate",
+        "document_id":"catalog-page",
+        "completeness":{"status":"unknown","reason_code":"source_incomplete"},
+        "reason_code":"source_incomplete"
+    }))?;
+    let indeterminate_archive = runtime
+        .extract(&indeterminate, ExtractionLimits::uniform(32))
+        .validate()
+        .to_archived(&schema)?;
+    assert_eq!(
+        serde_json::to_value(indeterminate_archive)?["status"],
+        "indeterminate"
+    );
+
+    let locate_failed: LocateOutcome = serde_json::from_value(json!({
+        "status":"failed",
+        "failure":{"kind":"parse_failed","code":"parse_failed"}
+    }))?;
+    let locate_failure_archive = runtime
+        .extract(&locate_failed, ExtractionLimits::uniform(32))
+        .validate()
+        .to_archived(&schema)?;
+    assert_eq!(
+        serde_json::to_value(locate_failure_archive)?["status"],
+        "locate_failed"
+    );
+
+    let extraction_rejected = runtime
+        .extract(&located, ExtractionLimits::uniform(0))
+        .validate()
+        .to_archived(&schema)?;
+    let extraction_wire = serde_json::to_value(extraction_rejected)?;
+    assert_eq!(extraction_wire["status"], "extraction_rejected");
+    assert!(extraction_wire["failure"].get("message").is_none());
+
+    let validation_rejected = runtime
+        .extract(&located, ExtractionLimits::uniform(32))
+        .validate_with_limits(ValidationLimits {
+            max_fields: 0,
+            ..ValidationLimits::default()
+        })
+        .to_archived(&schema)?;
+    assert_eq!(
+        serde_json::to_value(validation_rejected)?["status"],
+        "validation_rejected"
+    );
+    Ok(())
+}
+
+#[test]
+fn runtime_archiving_rejects_unknown_candidate_evidence_fields() -> Result<(), Box<dyn Error>> {
+    let schema = StaticContract::schema()?.clone();
+    let candidate = CandidateInput::new(
+        DocumentId::try_new("catalog-page")?,
+        None,
+        BTreeMap::from([(FieldId::try_new("unknown")?, Vec::new())]),
+    );
+    let outcome = RuntimeContractOutcome::Evaluated {
+        document_id: DocumentId::try_new("catalog-page")?,
+        records: Vec::new(),
+        issues: vec![yosoi_contract_validation::RuntimeRecordIssue {
+            candidate,
+            fields: Vec::new(),
+        }],
+        extraction_diagnostics: Vec::new(),
+    };
+    assert!(matches!(
+        outcome.to_archived(&schema),
+        Err(
+            yosoi_contract_validation::RuntimeContractArchiveError::UnexpectedCandidateField { .. }
+        )
+    ));
+    Ok(())
+}
+
+#[test]
+fn runtime_contract_rejects_unsupported_scalar_types() -> Result<(), Box<dyn Error>> {
     let schema = ContractSchema::try_new(
         CONTRACT_SCHEMA_VERSION,
         ContractId::try_new("unsupported")?,
@@ -267,22 +401,22 @@ fn runtime_contract_rejects_unsupported_scalar_types() -> Result<(), Box<dyn std
 
 #[test]
 fn runtime_contract_reports_scalar_multiplicity_and_incomplete_evidence()
--> Result<(), Box<dyn std::error::Error>> {
+-> Result<(), Box<dyn Error>> {
     let multiple = located(vec![
-        finding("name", 0, "Tea", complete()),
-        finding("name", 1, "Coffee", complete()),
+        finding("name", 0, "Tea", &complete()),
+        finding("name", 1, "Coffee", &complete()),
     ])?;
     let runtime = RuntimeContract::new(StaticContract::schema()?.clone())?;
     let outcome = runtime
         .extract(&multiple, ExtractionLimits::uniform(32))
         .validate();
     let RuntimeContractOutcome::Evaluated { issues, .. } = outcome else {
-        return Err(std::io::Error::other("multiplicity case did not evaluate").into());
+        return Err(io::Error::other("multiplicity case did not evaluate").into());
     };
     let issue = issues
         .first()
         .and_then(|record| record.fields.first())
-        .ok_or_else(|| std::io::Error::other("missing multiplicity issue"))?;
+        .ok_or_else(|| io::Error::other("missing multiplicity issue"))?;
     assert_eq!(issue.kind, FieldIssueKind::ExcessCandidates { observed: 2 });
     assert_eq!(issue.evidence.len(), 2);
 
@@ -291,17 +425,17 @@ fn runtime_contract_reports_scalar_multiplicity_and_incomplete_evidence()
         "reason_code": "source_truncated",
         "lost_items": 1
     });
-    let incomplete = located(vec![finding("name", 0, "Tea", partial)])?;
+    let incomplete = located(vec![finding("name", 0, "Tea", &partial)])?;
     let outcome = runtime
         .extract(&incomplete, ExtractionLimits::uniform(32))
         .validate();
     let RuntimeContractOutcome::Evaluated { issues, .. } = outcome else {
-        return Err(std::io::Error::other("incomplete case did not evaluate").into());
+        return Err(io::Error::other("incomplete case did not evaluate").into());
     };
     let issue = issues
         .first()
         .and_then(|record| record.fields.first())
-        .ok_or_else(|| std::io::Error::other("missing incomplete-evidence issue"))?;
+        .ok_or_else(|| io::Error::other("missing incomplete-evidence issue"))?;
     assert_eq!(issue.kind, FieldIssueKind::IncompleteEvidence);
     assert_eq!(issue.evidence.len(), 1);
     assert!(matches!(
@@ -312,8 +446,7 @@ fn runtime_contract_reports_scalar_multiplicity_and_incomplete_evidence()
 }
 
 #[test]
-fn runtime_contract_enforces_validation_and_extraction_budgets()
--> Result<(), Box<dyn std::error::Error>> {
+fn runtime_contract_enforces_validation_and_extraction_budgets() -> Result<(), Box<dyn Error>> {
     let located = located(normal_findings())?;
     let runtime = RuntimeContract::new(StaticContract::schema()?.clone())?;
     let extracted = runtime.extract(&located, ExtractionLimits::uniform(32));
@@ -346,8 +479,7 @@ fn runtime_contract_enforces_validation_and_extraction_budgets()
 }
 
 #[test]
-fn runtime_contract_keeps_repeated_roots_without_field_evidence()
--> Result<(), Box<dyn std::error::Error>> {
+fn runtime_contract_keeps_repeated_roots_without_field_evidence() -> Result<(), Box<dyn Error>> {
     let document_id = DocumentId::try_new("catalog-page")?;
     let coordinate = NativeCoordinate::DecodedText(DecodedTextCoordinate::new(
         ByteRange::try_new(0, 1)?,
@@ -373,12 +505,12 @@ fn runtime_contract_keeps_repeated_roots_without_field_evidence()
     let candidate = extracted
         .candidates()
         .first()
-        .ok_or_else(|| std::io::Error::other("empty repeated root was dropped"))?;
+        .ok_or_else(|| io::Error::other("empty repeated root was dropped"))?;
     assert_eq!(candidate.region(), Some(&region));
-    assert!(candidate.fields().is_empty());
+    assert_eq!(candidate.fields().len(), 0);
     let outcome = extracted.validate();
     let RuntimeContractOutcome::Evaluated { issues, .. } = outcome else {
-        return Err(std::io::Error::other("empty repeated root did not validate").into());
+        return Err(io::Error::other("empty repeated root did not validate").into());
     };
     assert!(matches!(
         issues

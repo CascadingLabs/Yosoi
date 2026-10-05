@@ -31,6 +31,7 @@ assert not sys._is_gil_enabled(), "Yosoi import enabled the GIL"
 from pydantic import BaseModel
 assert not sys._is_gil_enabled(), "Pydantic import enabled the GIL"
 from concurrent.futures import ThreadPoolExecutor
+from threading import Barrier
 
 class Record(BaseModel):
     value: int
@@ -38,13 +39,17 @@ class Record(BaseModel):
 class ContractRecord(yosoi.Contract):
     value: str = yosoi.Field("Value", locator=yosoi.css("h1"))
 
+validation_barrier = Barrier(2, timeout=5)
+
 def validate(value):
     document = yosoi.Document.html(str(value), f"<h1>{value}</h1>")
     plan = yosoi.Plan(outputs=[yosoi.output("value", yosoi.css("h1").text())])
     located = document.locate(plan)
     with document.parse() as parsed:
         assert parsed.locate(plan) == located
-    contract_records = yosoi.extract(document, ContractRecord).validate().require_all()
+    extracted = yosoi.extract(document, ContractRecord)
+    validation_barrier.wait()
+    contract_records = extracted.validate().require_all()
     assert contract_records[0].value == str(value)
     return Record.model_validate({"value": located.values()[0]}).value
 

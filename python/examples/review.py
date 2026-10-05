@@ -7,12 +7,23 @@ import asyncio
 import json
 import sys
 import threading
+from collections.abc import Mapping
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from typing import ClassVar
 
 from pydantic import BaseModel
 
 import yosoi as ys
+from yosoi.errors import YosoiError, rust_error_details
 from yosoi.policy import Documents, Map, Policy, ProviderSelection, Request, Search
+
+
+def json_payload(value: object) -> object:
+    if isinstance(value, Mapping):
+        return {key: json_payload(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [json_payload(item) for item in value]
+    return value
 
 
 def show(label: str, value: object) -> None:
@@ -20,7 +31,7 @@ def show(label: str, value: object) -> None:
     if isinstance(value, BaseModel):
         print(value.model_dump_json(indent=2))
     else:
-        print(json.dumps(value, indent=2))
+        print(json.dumps(json_payload(value), indent=2))
 
 
 def policy_example() -> None:
@@ -29,9 +40,36 @@ def policy_example() -> None:
         documents=Documents(max_input_bytes=1_000_000, max_nodes=100_000),
     )
     restored = Policy.model_validate_json(policy.to_json())
+    cloned = policy.clone()
+    cloned.map.filters.excluded_query_keys.append("clone-only")
+    show(
+        "SDK clone keeps policy edits independent",
+        {
+            "original": policy.map.filters.excluded_query_keys,
+            "clone": cloned.map.filters.excluded_query_keys,
+        },
+    )
     show("Authored policy with Rust defaults", json.loads(policy.to_json()))
     show("Resolved effective policy without I/O", policy.effective_policy())
     show("Immutable policy snapshot", policy.snapshot())
+    deadline = ys.policy.MaximumElapsed.try_new(policy.request.maximum_elapsed)
+    byte_limit = ys.policy.AddressableByteLimit.try_new(
+        policy.documents.max_input_bytes
+    )
+    show(
+        "Rust policy conversions with explicit units",
+        {
+            "deadline_microseconds": deadline.to_capture_deadline().as_microseconds(),
+            "duration_microseconds": deadline.to_capture_deadline()
+            .duration()
+            .as_microseconds(),
+            "input_byte_limit": byte_limit.to_byte_limit().get(),
+        },
+    )
+    show(
+        "Authored target before request preparation",
+        ys.request.WebTarget.new("https://example.org/").as_str(),
+    )
     show(
         "Saved and reloaded identities",
         {
@@ -47,6 +85,46 @@ def policy_example() -> None:
         {
             "binding_unchanged": bound.policy.identity() == original,
             "future_policy_changed": policy.identity() != original,
+        },
+    )
+
+
+def errors_example() -> None:
+    from yosoi.identities import ActivityId
+
+    for action in (
+        lambda: ys.css(""),
+        lambda: ys.request.new("ftp://example.com").check(),
+        lambda: ActivityId.from_str("invalid"),
+        lambda: ys.Document.from_json("empty-json", b""),
+        lambda: ys.Document.from_json("truncated-json", '{"title":').parse(),
+    ):
+        try:
+            action()
+        except YosoiError as error:
+            detail = rust_error_details(error)
+            show(
+                "Actual Rust SDK error",
+                {
+                    "exception": type(error).__name__,
+                    "message": str(error),
+                    "rust_type": detail.rust_type if detail else None,
+                    "variant": detail.variant if detail else None,
+                    "details": dict(detail.details) if detail else None,
+                },
+            )
+    show("Rust Map rejection Display", ys.map.rejection_message("host_scope"))
+    show(
+        "Rust Map declaration order",
+        {
+            "redirect_before_canonical": ys.map.compare_values(
+                "relationship_kind", "redirect", "canonical"
+            ),
+            "seed_before_html_link": ys.map.compare_values(
+                "discovery_source",
+                ys.map.DiscoverySource(kind="seed"),
+                ys.map.DiscoverySource(kind="html_link"),
+            ),
         },
     )
 
@@ -70,11 +148,32 @@ def contracts_example() -> None:
     )
     show("Pydantic record schema", Book.model_json_schema())
     show("Rust semantic schema", Book.contract_schema())
+    show(
+        "Rust Contract value IDs",
+        {
+            "str": ys.contracts.value_type_id(str),
+            "Money": ys.Money.TYPE_ID,
+        },
+    )
+
+    class SchemaScalar:
+        TYPE_ID: ClassVar[str] = "review.scalar"
+
+    show(
+        "Custom schema identity (extraction supports str and Money)",
+        ys.contracts.FieldSchema(
+            id="review",
+            description="A custom schema value identity",
+            cardinality="exactly_one",
+            value_type=ys.contracts.value_type_id(SchemaScalar),
+        ),
+    )
     show("Rust locator plan", Book.plan().compiled())
     extracted = ys.extract(document, Book)
     show("Rust extraction, including empty roots", extracted.model_dump())
     outcome = extracted.validate()
     show("Rust validation, including field issues", outcome.model_dump())
+    show("Portable Rust Contract archive", outcome.to_archived().model_dump())
     for record in outcome.records:
         show("Named typed record", record.value)
         show("Candidate provenance", record.candidate)
@@ -106,6 +205,7 @@ def runtime_contracts_example() -> None:
     show("Runtime extraction from public semantic schema", extracted.model_dump())
     outcome = extracted.validate()
     show("Runtime validation", outcome.model_dump())
+    show("Portable archive from the runtime schema", outcome.to_archived().model_dump())
     for record in outcome.require_all():
         show("Typed runtime value and retained candidate", record)
 
@@ -217,7 +317,14 @@ async def local_example() -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
-    for name in ("policy", "locate", "contracts", "runtime-contracts", "local"):
+    for name in (
+        "policy",
+        "errors",
+        "locate",
+        "contracts",
+        "runtime-contracts",
+        "local",
+    ):
         commands.add_parser(name)
     for name in ("request", "map", "cancel"):
         command = commands.add_parser(name)
@@ -239,6 +346,8 @@ def main() -> int:
     try:
         if args.command == "policy":
             policy_example()
+        elif args.command == "errors":
+            errors_example()
         elif args.command == "runtime-contracts":
             runtime_contracts_example()
         elif args.command == "contracts":

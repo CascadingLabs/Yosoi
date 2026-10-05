@@ -50,8 +50,8 @@ impl NativeParsedDocument {
                 let parsed = match bound.parse() {
                     Ok(parsed) => parsed,
                     Err(error) => {
-                        let _ =
-                            ready_sender.send(Err(errors::ParseError::new_err(error.to_string())));
+                        let _ = ready_sender
+                            .send(Err(Python::attach(|py| errors::parse_error(py, &error))));
                         return;
                     }
                 };

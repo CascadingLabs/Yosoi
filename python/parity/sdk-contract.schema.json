@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://yosoi.dev/schemas/python-scoped-sdk-contract-v1.json",
+  "title": "Yosoi scoped Python SDK semantic parity contract",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "kind",
+    "sourceSnapshot",
+    "scope",
+    "wireEvidence",
+    "standardTraitMechanics",
+    "declarations"
+  ],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "kind": {"const": "yosoi-scoped-python-sdk-contract"},
+    "sourceSnapshot": {
+      "type": "object",
+      "required": ["revision", "inventorySignature"],
+      "properties": {
+        "revision": {"type": ["string", "null"]},
+        "inventorySignature": {"type": ["string", "null"]}
+      },
+      "additionalProperties": false
+    },
+    "scope": {
+      "type": "object",
+      "required": ["crate", "root", "namespaces"],
+      "properties": {
+        "crate": {"const": "yosoi"},
+        "root": {"const": true},
+        "namespaces": {
+          "const": ["contracts", "documents", "locators", "map", "policy", "request", "search"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "wireEvidence": {
+      "type": "object",
+      "required": ["format", "runner", "rationale"],
+      "properties": {
+        "format": {"const": "JSON"},
+        "runner": {"const": "run_serde_conformance.py"},
+        "rationale": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "standardTraitMechanics": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {"$ref": "#/$defs/mechanic"}
+    },
+    "declarations": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/declaration"}
+    }
+  },
+  "$defs": {
+    "mechanic": {
+      "type": "object",
+      "required": ["rationale", "equivalentCapability"],
+      "properties": {
+        "rationale": {"type": "string", "minLength": 1},
+        "equivalentCapability": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "mapping": {
+      "type": "object",
+      "required": ["decision", "pythonTarget", "pythonTargetSha256", "ledgerMappingSha256", "semanticEquivalent", "rationale", "review"],
+      "properties": {
+        "decision": {"enum": ["mapped", "language-specific", "missing"]},
+        "pythonTarget": {"type": ["string", "null"]},
+        "pythonTargetSha256": {
+          "oneOf": [
+            {"type": "null"},
+            {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+          ]
+        },
+        "ledgerMappingSha256": {
+          "oneOf": [
+            {"type": "null"},
+            {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+          ]
+        },
+        "semanticEquivalent": {"type": ["string", "null"]},
+        "rationale": {"type": ["string", "null"]},
+        "review": {
+          "oneOf": [
+            {"type": "null"},
+            {
+              "type": "object",
+              "required": ["status", "rationale", "pythonEquivalent"],
+              "properties": {
+                "status": {"enum": ["proposed", "reviewed"]},
+                "rationale": {"type": "string"},
+                "pythonEquivalent": {"type": "string"},
+                "reviewer": {"type": "string"},
+                "reviewedAt": {"type": "string"}
+              },
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "declaration": {
+      "type": "object",
+      "required": [
+        "id",
+        "rustPath",
+        "kind",
+        "trait",
+        "surface",
+        "parentRustPath",
+        "signatureSha256",
+        "baselineStatus",
+        "symbolKey",
+        "classification",
+        "mapping"
+      ],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "rustPath": {"type": "string", "minLength": 1},
+        "kind": {"type": "string", "minLength": 1},
+        "trait": {"type": ["string", "null"]},
+        "surface": {"enum": ["item", "member"]},
+        "parentRustPath": {"type": ["string", "null"]},
+        "signatureSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "baselineStatus": {"enum": ["mapped", "verified", "stale", "missing", "language-specific"]},
+        "symbolKey": {"type": ["string", "null"]},
+        "classification": {"enum": ["sdk", "trait-mechanic", "prelude-mechanic", "proc-macro-mechanic"]},
+        "mapping": {"$ref": "#/$defs/mapping"},
+        "mechanic": {"$ref": "#/$defs/mechanic"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"classification": {"enum": ["trait-mechanic", "prelude-mechanic", "proc-macro-mechanic"]}}},
+          "then": {"required": ["mechanic"]}
+        }
+      ],
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

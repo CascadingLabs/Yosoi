@@ -65,6 +65,16 @@ description, page or repeated scope, field IDs, cardinalities, and value types.
 expressions are stored in a `Plan`; they do not define the semantic schema
 identity.
 
+`ys.contracts.ContractValue` is an identity-only typing Protocol with a
+`TYPE_ID: ClassVar[str]` member, matching Rust's public `ContractValue` trait.
+`ys.Money.TYPE_ID` exposes Rust's `money.usd` identity, and
+`ys.contracts.value_type_id(str)` or `ys.contracts.value_type_id(ys.Money)`
+returns the identities for the built-in values. A custom class that declares a
+string `TYPE_ID` can also use `value_type_id` when constructing a `FieldSchema`.
+This records its schema identity only: Contract field authoring and runtime
+conversion still support `str` and `ys.Money` only, because Rust has no
+downstream custom scalar conversion extension point.
+
 When every field has a locator, `Book.plan()` returns the Rust-compiled plan.
 Pin all fields or leave all fields unpinned. A class-level `root` query makes
 the schema repeated and supplies the region for every field. The default
@@ -186,3 +196,22 @@ Both stages accept explicit limits: `Contract.extract(..., limits=...)` takes
 `ExtractionLimits`, and `Extracted.validate(limits=...)` takes
 `ValidationLimits`. Omit them to use the Rust defaults. See
 [errors and limits](errors-and-limits.md) for their domains.
+
+## Portable outcomes
+
+```python
+archived = outcome.to_archived()
+print(archived.status)
+print(archived.model_dump_json())
+```
+
+This calls the Rust portable Contract converter and preserves its archive
+wire format, including typed field values, candidate evidence, diagnostics,
+and terminal outcomes. The returned `ArchivedContractOutcome` provides a
+read-only typed `view`, `records`, and `issues`; serialization explicitly
+includes the values omitted from `repr`.
+
+Schema-authored `RuntimeContractOutcome` also supports `to_archived()`. It
+uses the schema retained from extraction, or accepts an explicit
+`to_archived(schema)` to match Rust's schema-driven conversion. Rust rejects
+inconsistent field types, cardinalities, or unknown candidate evidence.

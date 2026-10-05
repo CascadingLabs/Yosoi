@@ -13,16 +13,24 @@ proof that the current revision built, installed, or passed on each target.
 
 | Target                        | Current status                                                                                                                                                                                |
 | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| CPython 3.12                  | Declared and selected by CI; fresh wheel/test evidence after the Contract binding change is pending.                                                                                          |
-| CPython 3.13                  | Declared and selected by CI; fresh wheel/test evidence after the Contract binding change is pending.                                                                                          |
-| CPython 3.14.8                | Declared and selected by CI; fresh wheel/test evidence after the Contract binding change is pending.                                                                                          |
-| Free-threaded CPython 3.14.8t | Separate `cp314t` ABI target is selected by CI; fresh wheel, runtime, and GIL evidence after the Contract binding change is pending.                                                          |
+| CPython 3.12                  | Current 3.12.14 installed wheel: 282 passed, one free-threading-only skip.                                                                                                                    |
+| CPython 3.13                  | Current 3.13.1 installed wheel: 282 passed, one free-threading-only skip.                                                                                                                     |
+| CPython 3.14.8                | Current local Linux x86-64 installed-wheel checks: 282 passed, one free-threading-only skip.                                                                                                  |
+| Free-threaded CPython 3.14.8t | Current separate `cp314t` wheel: 283 passed, including fresh-interpreter imports and concurrent parsing/Contract validation with the GIL disabled.                                            |
 | Browser feature               | The Maturin configuration requests the Rust feature; current wheel startup and browser execution have not been verified. A regular Chrome or Chromium executable remains an external install. |
 | Search providers              | Built-in routes remain previews. Local examples do not certify live providers.                                                                                                                |
 
 Wheel support still depends on operating system, architecture, and platform
 tags. The current CI matrix does not establish that a release has published a
 wheel for every such target.
+
+These current wheels were built from the integrated workspace in the
+development profile with the Rust browser feature enabled. They are local
+validation artifacts, not published release wheels or hosted CI results.
+One operation-error source distribution built and passed on all four targets.
+The current identity, typed-failure, equality, and clone additions passed
+installed-wheel checks on all four interpreters. Browser
+execution and hosted CI remain pending.
 
 ## Earlier local compatibility evidence
 

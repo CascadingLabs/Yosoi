@@ -11,12 +11,10 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import sys
 from pathlib import Path
 from typing import Any
 
 import parity
-
 
 ROOT_MODULES = {
     "contracts": "contracts",
@@ -28,6 +26,94 @@ ROOT_MODULES = {
     "search": "search",
 }
 
+MAPPING_RUST_CRATE = "yosoi"
+SUPPORTED_RUST_CRATES = {MAPPING_RUST_CRATE, "yosoi_sdk"}
+
+
+def _rebase_rust_path(path: str, source_crate: str, target_crate: str) -> str:
+    if path == source_crate:
+        return target_crate
+    prefix = f"{source_crate}::"
+    if path.startswith(prefix):
+        return f"{target_crate}{path[len(source_crate) :]}"
+    return path
+
+
+def _inventory_with_mapping_root(rust: dict[str, Any]) -> dict[str, Any]:
+    """Present supported compiler inventories under the canonical mapping root."""
+    source_crate = (rust.get("sdk") or {}).get("crate")
+    if source_crate not in SUPPORTED_RUST_CRATES:
+        raise parity.ParityError(
+            f"no Python mapping root is configured for Rust crate {source_crate!r}"
+        )
+    if source_crate == MAPPING_RUST_CRATE:
+        return rust
+
+    rebased = dict(rust)
+    items = []
+    for original in rust["items"]:
+        item = dict(original)
+        item["rustPath"] = _rebase_rust_path(
+            item["rustPath"], source_crate, MAPPING_RUST_CRATE
+        )
+        item["aliases"] = [
+            _rebase_rust_path(alias, source_crate, MAPPING_RUST_CRATE)
+            for alias in item.get("aliases", [])
+        ]
+        parent = item.get("parentRustPath")
+        if parent is not None:
+            item["parentRustPath"] = _rebase_rust_path(
+                parent, source_crate, MAPPING_RUST_CRATE
+            )
+        items.append(item)
+    rebased["items"] = items
+    return rebased
+
+
+def _ledger_with_mapping_root(ledger: dict[str, Any]) -> dict[str, Any]:
+    rebased = dict(ledger)
+    entries = []
+    for original in ledger["entries"]:
+        entry = dict(original)
+        entry["rustPath"] = _rebase_rust_path(
+            entry["rustPath"], "yosoi_sdk", MAPPING_RUST_CRATE
+        )
+        entries.append(entry)
+    rebased["entries"] = entries
+    return rebased
+
+
+def _matches_prior_mapping(entry: dict[str, Any], item: dict[str, Any]) -> bool:
+    selector = entry.get("symbolKey")
+    if selector == item["symbolKey"]:
+        return True
+    if entry["rustPath"] not in {item["rustPath"], *item.get("aliases", [])}:
+        return False
+    if entry.get("trait") != item.get("trait"):
+        return False
+    if selector:
+        old_signature = re.search(r"@signature:([^@]+)", selector)
+        new_signature = re.search(r"@signature:([^@]+)", item["symbolKey"])
+        if old_signature and new_signature:
+            return old_signature.group(1) == new_signature.group(1)
+    return selector is None
+
+
+def _ledger_with_source_root(
+    ledger: dict[str, Any], source_crate: str
+) -> dict[str, Any]:
+    rebased = dict(ledger)
+    entries = []
+    for original in ledger["entries"]:
+        entry = dict(original)
+        entry["rustPath"] = _rebase_rust_path(
+            entry["rustPath"], MAPPING_RUST_CRATE, source_crate
+        )
+        entries.append(entry)
+    rebased["entries"] = entries
+    return rebased
+
+
 ERROR_TARGETS = {
     "CoordinateError": "yosoi.errors.LocatorError",
     "ContractLocatorError": "yosoi.errors.ContractError",
@@ -36,6 +122,7 @@ ERROR_TARGETS = {
     "DocumentProfileError": "yosoi.errors.DocumentError",
     "LocatorError": "yosoi.errors.LocatorError",
     "MapError": "yosoi.errors.MapError",
+    "OccurrenceIdParseError": "yosoi.errors.RequestError",
     "ParseError": "yosoi.errors.ParseError",
     "PlanError": "yosoi.errors.LocatorError",
     "PolicyError": "yosoi.errors.PolicyError",
@@ -45,6 +132,7 @@ ERROR_TARGETS = {
     "RequestSendError": "yosoi.errors.RequestError",
     "ResourceBudgetError": "yosoi.errors.LocatorError",
     "RuntimeContractError": "yosoi.errors.ContractError",
+    "RuntimeContractArchiveError": "yosoi.errors.ContractError",
     "SearchError": "yosoi.errors.SearchError",
     "SearchQueryError": "yosoi.errors.SearchError",
     "SearchSendError": "yosoi.errors.SearchError",
@@ -61,12 +149,11 @@ VALUE_TARGETS = {
     "yosoi::LocateOutcome": "yosoi.outcomes.LocateOutcome",
     "yosoi::PolicyError": "yosoi.errors.PolicyError",
     "yosoi::ResponseTermination": "yosoi.request.Response.termination",
-    "yosoi::StepLimit": "yosoi.scalars.StepLimit",
     "yosoi::contracts::ContractId": "yosoi.scalars.ContractId",
     "yosoi::contracts::ContractLocatorError": "yosoi.errors.ContractError",
-    "yosoi::contracts::ContractSchemaError": "yosoi.errors.ContractError",
-    "yosoi::contracts::ExtractionFailure": "yosoi.contracts.TerminalFailure",
-    "yosoi::contracts::ValidationFailure": "yosoi.contracts.TerminalFailure",
+    "yosoi::contracts::ContractSchemaError": "yosoi.contracts.ContractSchemaFailure",
+    "yosoi::contracts::ExtractionFailure": "yosoi.contracts.RuntimeExtractionFailure",
+    "yosoi::contracts::ValidationFailure": "yosoi.contracts.RuntimeValidationFailure",
     "yosoi::contracts::Currency": "yosoi.contracts.Money.currency",
     "yosoi::contracts::FieldId": "yosoi.scalars.FieldId",
     "yosoi::contracts::ExtractionLimit": "yosoi.runtime_contracts.ExtractionLimitName",
@@ -87,32 +174,35 @@ VALUE_TARGETS = {
     "yosoi::locators::RegionLineage": "yosoi.outcomes.RegionLineage",
     "yosoi::locators::TextRange": "yosoi.outcomes.TextRange",
     "yosoi::locators::TreeCoordinate": "yosoi.outcomes.TreeCoordinate",
-    "yosoi::map::MapError": "yosoi.errors.MapError",
     "yosoi::map::Rejection": "yosoi.map.Rejection",
     "yosoi::map::SkipReason": "yosoi.map.SkipReason",
     "yosoi::map::SourceSkipReason": "yosoi.map.SourceSkipReason",
     "yosoi::policy::Limits": "yosoi.policy.MapLimits",
-    "yosoi::request::RequestPreparationError": "yosoi.errors.RequestError",
-    "yosoi::request::RequestSendError": "yosoi.errors.RequestError",
     "yosoi::request::ActivityId": "yosoi.request.ActivityId",
     "yosoi::request::CaptureId": "yosoi.request.CaptureId",
     "yosoi::request::RequestId": "yosoi.request.RequestId",
-    "yosoi::policy::DiscoveryDocuments": "yosoi.policy.DocumentSelection.documents",
+    "yosoi::policy::DiscoveryDocuments": "yosoi.policy.DiscoveryDocuments",
     "yosoi::map::HostVerification": "yosoi.map.HostEntry.verification",
     "yosoi::map::LimitReached": "yosoi.map.MapTermination.value",
     "yosoi::map::PendingReason": "yosoi.map.FrontierEntry.reason",
-    "yosoi::map::RelationshipKind": "yosoi.map.Relationship.kind",
+    "yosoi::map::RelationshipKind": "yosoi.map.RelationshipKind",
     "yosoi::map::SupportDocumentKind": "yosoi.map.SupportDocument.kind",
     "yosoi::policy::search::ProfileSelectionKind": "yosoi.policy.ProfileSelection.kind",
-    "yosoi::request::AttemptDiagnostic": "yosoi.request.Diagnostic.kind",
-    "yosoi::request::AttemptFailureKind": "yosoi.request.Attempt.failure_kind",
+    "yosoi::request::AttemptDiagnostic": "yosoi.request.AttemptDiagnostic",
+    "yosoi::request::AttemptFailureKind": "yosoi.diagnostics.AttemptFailureKind",
     "yosoi::request::AttemptState": "yosoi.request.Attempt.state",
-    "yosoi::request::NotStartedReason": "yosoi.request.Attempt.not_started_reason",
-    "yosoi::request::PartialReason": "yosoi.request.ProjectionReason.kind",
-    "yosoi::request::UnavailableReason": "yosoi.request.ProjectionReason.kind",
-    "yosoi::request::UnprojectableReason": "yosoi.request.ProjectionReason.kind",
+    "yosoi::request::NotStartedReason": "yosoi.diagnostics.NotStartedReason",
+    "yosoi::request::PartialReason": "yosoi.request.PartialReason",
+    "yosoi::request::BrowserFailureReason": "yosoi.diagnostics.BrowserFailureReason",
+    "yosoi::request::DecodingErrorCode": "yosoi.diagnostics.DecodingErrorCode",
+    "yosoi::request::DirectHttpRedirectErrorKind": "yosoi.diagnostics.DirectHttpRedirectErrorKind",
+    "yosoi::request::DirectHttpTransportErrorKind": "yosoi.diagnostics.TransportDiagnostic",
+    "yosoi::request::UnknownReason": "yosoi.diagnostics.UnknownReason",
+    "yosoi::request::WebArtifactFamily": "yosoi.diagnostics.WebArtifactFamily",
+    "yosoi::request::UnavailableReason": "yosoi.request.UnavailableReason",
+    "yosoi::request::UnprojectableReason": "yosoi.request.UnprojectableReason",
     "yosoi::search::RequestAttemptTerminal": "yosoi.search.RequestAttemptSummary.terminal",
-    "yosoi::search::SearchAttemptDiagnostic": "yosoi.search.RequestAttemptSummary.diagnostic",
+    "yosoi::search::SearchAttemptDiagnostic": "yosoi.search.SearchAttemptDiagnostic",
     "yosoi::search::SearchIssueKind": "yosoi.search.SearchIssue.kind",
     "yosoi::documents::AccessibilityCompleteness": "yosoi.outcomes.Completeness",
     "yosoi::documents::DocumentEpoch": "yosoi.scalars.DocumentEpoch",
@@ -120,10 +210,11 @@ VALUE_TARGETS = {
     "yosoi::documents::DocumentRepresentation": "yosoi.documents.DocumentProfile.representation",
     "yosoi::documents::DocumentSchemaProfile": "yosoi.documents.DocumentProfile.schema_profile",
     "yosoi::documents::ParseError": "yosoi.errors.ParseError",
-    "yosoi::locators::AccessibilityStateName": "yosoi.locators.Query.state",
+    "yosoi::locators::AccessibilityStateName": "yosoi.locators.AccessibilityStateName",
     "yosoi::locators::CoordinateError": "yosoi.errors.LocatorError",
     "yosoi::locators::DomNodeId": "yosoi.scalars.DomNodeId",
     "yosoi::locators::JsonCoordinate": "yosoi.scalars.JsonCoordinate",
+    "yosoi::locators::JsonQuerySyntaxError": "yosoi.locators.JsonQuerySyntaxError",
     "yosoi::locators::LocateFailure": "yosoi.outcomes.Failure",
     "yosoi::locators::NamedOutput": "yosoi.locators.Output",
     "yosoi::locators::OutputPlan": "yosoi.locators.Locator",
@@ -132,33 +223,33 @@ VALUE_TARGETS = {
     "yosoi::locators::PlanError": "yosoi.errors.LocatorError",
     "yosoi::locators::QueryError": "yosoi.errors.LocatorError",
     "yosoi::locators::RegionId": "yosoi.scalars.RegionId",
-    "yosoi::locators::ResourceLimit": "yosoi.outcomes.Failure",
+    "yosoi::locators::ResourceLimit": "yosoi.outcomes.ResourceLimit",
     "yosoi::map::MapError": "yosoi.errors.MapError",
     "yosoi::map::PolicySnapshot": "yosoi.policy.PolicySnapshot",
     "yosoi::policy::AccessibilityNodeLimit": "yosoi.scalars.AccessibilityNodeLimit",
     "yosoi::policy::AddressableByteLimit": "yosoi.scalars.AddressableByteLimit",
-    "yosoi::policy::BrowserMode": "yosoi.policy.Acquisition.mode",
+    "yosoi::policy::BrowserMode": "yosoi.policy.BrowserMode",
     "yosoi::policy::Budget": "yosoi.scalars.Budget",
-    "yosoi::policy::DirectHttpRedirectTargets": "yosoi.policy.Redirects.targets",
-    "yosoi::policy::DirectHttpRedirects": "yosoi.policy.Request.direct_http_redirects",
-    "yosoi::policy::DocumentRequest": "yosoi.policy.DocumentSelection.documents",
-    "yosoi::policy::DocumentSelectionKind": "yosoi.policy.DocumentSelection.kind",
+    "yosoi::policy::DirectHttpRedirectTargets": "yosoi.policy.DirectHttpRedirectTargets",
+    "yosoi::policy::DirectHttpRedirects": "yosoi.policy.Redirects",
+    "yosoi::policy::DocumentRequest": "yosoi.policy.DocumentRequest",
+    "yosoi::policy::DocumentSelectionKind": "yosoi.policy.DocumentSelectionKind",
     "yosoi::policy::EventLimit": "yosoi.scalars.EventLimit",
-    "yosoi::policy::HostScope": "yosoi.policy.Scope.hosts",
+    "yosoi::policy::HostScope": "yosoi.policy.HostScope",
     "yosoi::policy::MaximumElapsed": "yosoi.scalars.MaximumElapsed",
-    "yosoi::policy::PageDiscovery": "yosoi.policy.Map.pages",
-    "yosoi::policy::PathScope": "yosoi.policy.Scope.paths",
+    "yosoi::policy::PageDiscovery": "yosoi.policy.PageDiscovery",
+    "yosoi::policy::PathScope": "yosoi.policy.PathScope",
     "yosoi::policy::ProviderDefaultsVersion": "yosoi.scalars.ProviderDefaultsVersion",
     "yosoi::policy::RedirectHopLimit": "yosoi.scalars.RedirectHopLimit",
     "yosoi::policy::ResourceLimit": "yosoi.scalars.ResourceLimit",
-    "yosoi::policy::Robots": "yosoi.policy.Map.robots",
-    "yosoi::policy::Subdomains": "yosoi.policy.Map.subdomains",
-    "yosoi::policy::TuningMode": "yosoi.policy.Tuning.mode",
-    "yosoi::policy::search::Provider": "yosoi.search.Provider",
+    "yosoi::policy::Robots": "yosoi.policy.Robots",
+    "yosoi::policy::Subdomains": "yosoi.policy.Subdomains",
+    "yosoi::policy::TuningMode": "yosoi.policy.TuningMode",
+    "yosoi::policy::search::Provider": "yosoi.policy.Provider",
     "yosoi::StepLimit": "yosoi.scalars.StepLimit",
     "yosoi::request::RequestPreparationError": "yosoi.errors.RequestError",
     "yosoi::request::RequestSendError": "yosoi.errors.RequestError",
-    "yosoi::request::WebTarget": "yosoi.request.PageRequest.target",
+    "yosoi::request::WebTarget": "yosoi.request.WebTarget",
     "yosoi::search::FeatureCoverage": "yosoi.search.SearchCoverage.rich_features",
     "yosoi::search::SearchFailure": "yosoi.search.Failed.value",
     "yosoi::search::SearchQueryError": "yosoi.errors.SearchError",
@@ -176,13 +267,43 @@ ITEM_MAPPING_RATIONALES = {
     "yosoi::locators::RegionPlan": "Rust RegionPlan maps to the Python Region model, which carries a native-validated id and query and supports find().",
 }
 
+# These Default counterparts are exercised by independent Rust Default versus
+# Python authoring-default workflows. Other traits retain proposed status.
+DEFAULT_EQUIVALENTS = {
+    "yosoi::map::Summary": "yosoi.map.Summary",
+    "yosoi::search::SearchHitMetadata": "yosoi.search.SearchHitMetadata",
+    "yosoi::Policy": "yosoi.Policy",
+    "yosoi::policy::Page": "yosoi.policy.Page",
+    "yosoi::policy::Request": "yosoi.policy.Request",
+    "yosoi::policy::SourceLimits": "yosoi.policy.SourceLimits",
+    "yosoi::policy::BrowserLimits": "yosoi.policy.BrowserLimits",
+    "yosoi::policy::DirectHttpRedirects": "yosoi.policy.Redirects.default",
+    "yosoi::policy::Documents": "yosoi.policy.Documents",
+    "yosoi::policy::Locators": "yosoi.policy.Locators",
+    "yosoi::policy::Map": "yosoi.policy.Map",
+    "yosoi::policy::Limits": "yosoi.policy.MapLimits",
+    "yosoi::policy::Filters": "yosoi.policy.Filters",
+    "yosoi::policy::Scope": "yosoi.policy.Scope",
+    "yosoi::policy::Tuning": "yosoi.policy.Tuning",
+    "yosoi::policy::search::Search": "yosoi.policy.Search",
+    "yosoi::policy::EventLimit": "yosoi.policy.EventLimit.default",
+    "yosoi::policy::MaximumElapsed": "yosoi.policy.MaximumElapsed.default",
+    "yosoi::policy::RedirectHopLimit": "yosoi.policy.RedirectHopLimit.default",
+}
+
 ITEM_SEMANTIC_EQUIVALENTS = {
+    "yosoi::contracts::ContractValue": (
+        "The structural Python ContractValue protocol exposes TYPE_ID; "
+        "value_type_id returns the same identity. This trait supplies schema "
+        "identity only, not a custom extraction or validation converter."
+    ),
     "yosoi::locators::NamedOutput": "Python Output(id, locator) represents the Rust named output.",
     "yosoi::locators::OutputPlan": "Python Locator is the Rust output selection before Plan compilation.",
     "yosoi::locators::RegionPlan": "Python Region represents the Rust region id/query and find operation.",
 }
 
 MEMBER_TARGETS = {
+    "yosoi::request::DocumentOutcome::document": "yosoi.request.DocumentOutcome.document",
     "yosoi::Document::bytes": "yosoi.documents.Document.data",
     "yosoi::Document::class": "yosoi.documents.Document.document_class",
     "yosoi::Document::json": "yosoi.documents.Document.from_json",
@@ -197,6 +318,10 @@ MEMBER_TARGETS = {
     "yosoi::contracts::Contract::schema": "yosoi.contracts.Contract.contract_schema",
     "yosoi::contracts::CandidateField::id": "yosoi.contracts.CandidateField.field_id",
     "yosoi::contracts::CandidateField::len": "yosoi.contracts.CandidateField.__len__",
+    "yosoi::policy::Acquisition::documents": "yosoi.policy.Acquisition.with_documents",
+    "yosoi::policy::Filters::validate": "yosoi.policy.Filters.check",
+    "yosoi::policy::Map::validate": "yosoi.policy.Map.check",
+    "yosoi::locators::AccessibilityStateName::as_str": "yosoi.locators.AccessibilityStateName",
     "yosoi::contracts::RuntimeExtracted::validate_with_limits": "yosoi.contracts.RuntimeExtracted.validate",
     "yosoi::locators::Plan::new": "yosoi.locators.Plan",
     "yosoi::locators::PinnedLocator::attribute": "yosoi.locators.Query.attribute",
@@ -229,6 +354,8 @@ MEMBER_TARGETS = {
     "yosoi::search::SearchRequestId::activity_id": "yosoi.request.RequestId.activity_id",
     "yosoi::contracts::RuntimeContract::schema": "yosoi.contracts.RuntimeContract.contract_schema",
     "yosoi::contracts::RuntimeContract::extract_with_limits": "yosoi.contracts.RuntimeContract.extract",
+    "yosoi::contracts::RuntimeContractOutcome::to_archived": "yosoi.contracts.RuntimeContractOutcome.to_archived",
+    "yosoi::request::WebTarget::as_str": "yosoi.request.WebTarget.as_str",
     "yosoi::locators::accessibility_text": "yosoi.locators.accessibility_text",
     "yosoi::locators::accessible_name": "yosoi.locators.accessible_name",
     "yosoi::locators::css": "yosoi.locators.css",
@@ -262,6 +389,11 @@ VARIANT_PARENT_TARGETS = {
 }
 
 VARIANT_MODEL_PARENTS = {
+    "yosoi::contracts::FieldIssueKind",
+    "yosoi::contracts::ExtractionDiagnostic",
+    "yosoi::locators::LocateFailure",
+    "yosoi::policy::Acquisition",
+    "yosoi::policy::ProfileSelection",
     "yosoi::map::DiscoverySource",
     "yosoi::map::Exploration",
     "yosoi::map::MapTermination",
@@ -362,7 +494,7 @@ ENUM_VALUE_FIELDS = {
     "yosoi::policy::DirectHttpRedirects": "yosoi.policy.Redirects.kind",
     "yosoi::policy::DocumentRequest": "yosoi.policy.DocumentSelection.documents",
     "yosoi::policy::DocumentSelectionKind": "yosoi.policy.DocumentSelection.kind",
-    "yosoi::policy::DiscoveryDocuments": "yosoi.policy.DocumentSelection.documents",
+    "yosoi::policy::DiscoveryDocuments": "yosoi.policy.DiscoveryDocuments",
     "yosoi::policy::ProfileSelectionKind": "yosoi.policy.ProfileSelection.kind",
     "yosoi::policy::HostScope": "yosoi.policy.Scope.hosts",
     "yosoi::policy::PathScope": "yosoi.policy.Scope.paths",
@@ -373,11 +505,11 @@ ENUM_VALUE_FIELDS = {
     "yosoi::policy::Subdomains": "yosoi.policy.Map.subdomains",
     "yosoi::request::AttemptState": "yosoi.request.Attempt.state",
     "yosoi::request::AttemptFailureKind": "yosoi.request.Attempt.failure_kind",
-    "yosoi::request::AttemptDiagnostic": "yosoi.request.Diagnostic.kind",
+    "yosoi::request::AttemptDiagnostic": "yosoi.request.AttemptDiagnostic",
     "yosoi::request::NotStartedReason": "yosoi.request.Attempt.not_started_reason",
-    "yosoi::request::PartialReason": "yosoi.request.ProjectionReason.kind",
-    "yosoi::request::UnavailableReason": "yosoi.request.ProjectionReason.kind",
-    "yosoi::request::UnprojectableReason": "yosoi.request.ProjectionReason.kind",
+    "yosoi::request::PartialReason": "yosoi.request.PartialReason",
+    "yosoi::request::UnavailableReason": "yosoi.request.UnavailableReason",
+    "yosoi::request::UnprojectableReason": "yosoi.request.UnprojectableReason",
     "yosoi::search::FeatureCoverage": "yosoi.search.SearchCoverage.rich_features",
     "yosoi::search::ProviderCharge": "yosoi.search.ProviderCharge.status",
     "yosoi::search::RequestAttemptTerminal": "yosoi.search.RequestAttemptSummary.terminal",
@@ -412,7 +544,6 @@ LANGUAGE_SPECIFIC_ITEMS = {
 }
 
 BORROWED_VIEW_METHODS = {
-    "yosoi::documents::Document::as_ref": "Python Document itself is the owning view of the native document.",
     "yosoi::documents::DocumentRef::id": "Python Document.id reads the identity from its retained native handle.",
     "yosoi::documents::DocumentRef::class": "Python Document.document_class reads the validated native profile.",
     "yosoi::documents::DocumentRef::profile": "Python Document.profile owns the same immutable profile value.",
@@ -457,7 +588,6 @@ BORROWED_VIEW_TARGETS = {
 ARGUMENT_ALIASES = {
     ("yosoi::Document::html", "bytes"): "content",
     ("yosoi::Document::xml", "bytes"): "content",
-    ("yosoi::Document::json", "bytes"): "content",
     ("yosoi::request::ActivityId::from_str", "s"): "value",
     ("yosoi::locators::JsonCoordinate::try_new", "pointer"): "value",
     ("yosoi::locators::Finding::try_new", "value"): "projected",
@@ -495,7 +625,7 @@ def _python_module(rust_path: str, *, module_item: bool = False) -> str | None:
         return None
     root = parts[0]
     if root not in ROOT_MODULES:
-        return "yosoi-engine"
+        return "yosoi"
     module = f"yosoi.{ROOT_MODULES[root]}"
     return module
 
@@ -566,8 +696,15 @@ def _variant_literal_target(
     wire_name = _snake_case(member_name)
     parent_info = python["targets"].get(parent_target) or {}
     alias = parent_info.get("alias") or {}
-    if wire_name in alias.get("choices", []):
-        return parent_target, wire_name
+    for tag in (wire_name, member_name):
+        if tag in alias.get("choices", []):
+            return parent_target, tag
+    for tag in (wire_name, member_name):
+        if any(
+            tag in member.get("discriminatorValues", [])
+            for member in alias.get("unionMembers", [])
+        ):
+            return parent_target, tag
     direct_field = (parent_info.get("field") or {}).get("literalChoices", [])
     if wire_name in direct_field:
         return parent_target, wire_name
@@ -774,6 +911,66 @@ def _entry(
     argument_aliases: dict[tuple[str, str], str] | None = None,
 ) -> dict[str, Any] | None:
     arguments = _argument_mappings(item, target_info, argument_aliases)
+    variant_binding = None
+    if arguments is None and item["kind"] == "variant":
+        alias = target_info.get("alias") or {}
+        leaf = item["rustPath"].rsplit("::", 1)[-1]
+        tag = next(
+            (
+                candidate
+                for candidate in (_snake_case(leaf), leaf)
+                if any(
+                    candidate in member.get("discriminatorValues", [])
+                    for member in alias.get("unionMembers", [])
+                )
+            ),
+            None,
+        )
+        members = [
+            member
+            for member in alias.get("unionMembers", [])
+            if tag in member.get("discriminatorValues", [])
+        ]
+        if alias.get("kind") == "discriminated-union" and len(members) == 1:
+            fields = parity.variant_payload_fields(members[0], alias["discriminator"])
+            derived = []
+            if item["rustPath"] in {
+                "yosoi::contracts::ExtractionFailure::InvalidContractSchema",
+                "yosoi::contracts::ValidationFailure::InvalidContractSchema",
+            }:
+                derived = ["message"]
+                fields = [field for field in fields if field["name"] not in derived]
+            given = [
+                argument
+                for argument in item.get("rustArguments", [])
+                if not argument.get("receiver")
+            ]
+            if len(fields) == len(given) and all(
+                argument["name"] in {field["rustName"] for field in fields}
+                or (argument["name"] == "0" and len(fields) == 1)
+                for argument in given
+            ):
+                arguments = [
+                    {
+                        "rustArgument": argument["name"],
+                        "pythonArgument": fields[0]["name"]
+                        if argument["name"] == "0"
+                        else next(
+                            field["name"]
+                            for field in fields
+                            if field["rustName"] == argument["name"]
+                        ),
+                        "conversion": "Rust enum payload maps to the typed dictionary field validated by Pydantic TypeAdapter",
+                    }
+                    for argument in given
+                ]
+                variant_binding = {
+                    "discriminator": alias["discriminator"],
+                    "tag": tag,
+                    "input": "TypeAdapter.validate_python",
+                }
+                if derived:
+                    variant_binding["derivedFields"] = derived
     if arguments is None:
         return None
     defaults, units, cardinality = _detail_rows(item, target_info, rust_type=rust_type)
@@ -792,6 +989,12 @@ def _entry(
         result["trait"] = item["trait"]
     if semantic_equivalent:
         result["semanticEquivalent"] = semantic_equivalent
+    if variant_binding:
+        result["variantBinding"] = variant_binding
+        result["semanticEquivalent"] = (
+            "TypeAdapter(public_union).validate_python accepts a tagged dictionary; "
+            "the alias is not a callable constructor."
+        )
     return result
 
 
@@ -858,9 +1061,9 @@ def _proposal_argument_mappings(
 
 def _mapped_error_target(item: dict[str, Any], python: dict[str, Any]) -> str | None:
     name = item["rustPath"].split("::")[-1]
-    if item["kind"] == "assoc_type" and name == "Error":
+    if item["kind"] == "assoc_type" and name in {"Error", "Err"}:
         match = re.search(
-            r"type\s+Error\s*=\s*([A-Za-z_][A-Za-z0-9_:]*)", item["signature"]
+            r"type\s+(?:Error|Err)\s*=\s*([A-Za-z_][A-Za-z0-9_:]*)", item["signature"]
         )
         if match:
             name = match.group(1).split("::")[-1]
@@ -873,10 +1076,13 @@ def _mapped_error_target(item: dict[str, Any], python: dict[str, Any]) -> str | 
 def seed_entries(
     rust: dict[str, Any], python: dict[str, Any], existing: dict[str, Any]
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    source_rust = rust
+    source_crate = (rust.get("sdk") or {}).get("crate")
+    rust = _inventory_with_mapping_root(rust)
+    existing = _ledger_with_mapping_root(existing)
     entries_by_identity: dict[str, dict[str, Any]] = {}
-    existing_by_path = {entry["rustPath"]: entry for entry in existing["entries"]}
     page_targets: dict[str, str] = {}
-    items_by_key = {item["symbolKey"]: item for item in rust["items"]}
+    migrated_selectors: set[str] = set()
 
     # Keep explicit, source-reviewed mappings already in the seed ledger.
     for entry in existing["entries"]:
@@ -884,17 +1090,40 @@ def seed_entries(
             (
                 candidate
                 for candidate in rust["items"]
-                if entry.get("symbolKey") == candidate["symbolKey"]
-                or (entry["rustPath"] in {candidate["rustPath"], *candidate["aliases"]})
+                if _matches_prior_mapping(entry, candidate)
             ),
             None,
         )
         if item is not None:
+            if entry.get("symbolKey"):
+                migrated_selectors.add(entry["symbolKey"])
             copied = dict(entry)
             copied["rustPath"] = item["rustPath"]
             copied["symbolKey"] = item["symbolKey"]
+            if item.get("kind") == "variant" and item.get("parentRustPath") in {
+                "yosoi::contracts::ContractSchemaError",
+                "yosoi::contracts::ExtractionFailure",
+                "yosoi::contracts::ValidationFailure",
+            }:
+                target = VALUE_TARGETS[item["parentRustPath"]]
+                info = python["targets"].get(target)
+                if info:
+                    updated = _entry(
+                        item,
+                        target,
+                        info,
+                        python,
+                        "The typed Contract schema-error union preserves this Rust variant and its structured details.",
+                    )
+                    if updated:
+                        copied = updated
             preferred_target = VALUE_TARGETS.get(item["rustPath"])
             if preferred_target in python["targets"]:
+                if copied.get("pythonTarget") != preferred_target:
+                    copied["rationale"] = (
+                        "The live Python surface exposes the corresponding public "
+                        f"target {preferred_target}."
+                    )
                 copied["pythonTarget"] = preferred_target
             entries_by_identity[item["symbolKey"]] = copied
             if (
@@ -920,11 +1149,17 @@ def seed_entries(
         target = _target_for_page(item, python)
         if target is None and item["rustPath"] in BORROWED_VIEW_EQUIVALENTS:
             equivalent = BORROWED_VIEW_EQUIVALENTS[item["rustPath"]]
-            entries_by_identity[item["symbolKey"]] = _language_proposal(
+            target = BORROWED_VIEW_TARGETS.get(item["rustPath"])
+            target_info = python["targets"].get(target) if target else None
+            if not target or not target_info:
+                continue
+            entries_by_identity[item["symbolKey"]] = _entry(
                 item,
-                equivalent,
-                f"Rust exposes a borrowed view while Python retains an owning native wrapper. {equivalent} Owner review is required.",
-                python_target=BORROWED_VIEW_TARGETS.get(item["rustPath"]),
+                target,
+                target_info,
+                python,
+                f"{equivalent} Owner accepted the Python owning-view mapping; the wrapper retains the same native value and extends its lifetime.",
+                semantic_equivalent="Python Document/Response owns the same native value that Rust exposes through a borrowed view.",
             )
             continue
         if target is None and item["rustPath"] in LANGUAGE_SPECIFIC_ITEMS:
@@ -954,10 +1189,7 @@ def seed_entries(
         if target_info is None:
             continue
         page_targets[item["rustPath"]] = target
-        if (
-            item["kind"] == "trait"
-            and item["rustPath"] == "yosoi::contracts::Contract"
-        ):
+        if item["kind"] == "trait" and item["rustPath"] == "yosoi::contracts::Contract":
             row = _entry(
                 item,
                 target,
@@ -986,24 +1218,62 @@ def seed_entries(
     for item in rust["items"]:
         if item["surface"] != "member" or item["symbolKey"] in entries_by_identity:
             continue
+        if item["rustPath"] == "yosoi::contracts::ContractValue::TYPE_ID":
+            target = "yosoi.contracts.value_type_id"
+            target_info = python["targets"].get(target)
+            if target_info:
+                entries_by_identity[item["symbolKey"]] = _entry(
+                    item,
+                    target,
+                    target_info,
+                    python,
+                    "The helper reads the scalar type's ContractValue TYPE_ID; "
+                    "str uses the compiled Rust String identity.",
+                    semantic_equivalent="Associated type identity maps to value_type_id(type).",
+                )
+            continue
+        if item["parentRustPath"] == "yosoi::request::WebTarget" and (
+            (item.get("trait"), item["rustPath"].rsplit("::", 1)[-1])
+            in {("From", "from"), ("AsRef", "as_ref")}
+        ):
+            borrowed = item.get("trait") == "AsRef"
+            target = (
+                "yosoi.request.WebTarget.as_str"
+                if borrowed
+                else "yosoi.request.WebTarget.new"
+            )
+            target_info = python["targets"].get(target)
+            if not target_info:
+                continue
+            row = _entry(
+                item,
+                target,
+                target_info,
+                python,
+                "Rust string ownership forms preserve the authored target text; "
+                "Python uses its immutable string scalar and the native SDK constructor.",
+                semantic_equivalent=(
+                    "AsRef<str> maps to as_str() on the same authored target."
+                    if borrowed
+                    else "From<&str/String/&String/Box<str>/Cow<str>> maps to "
+                    "WebTarget.new(value); construction preserves text without URL preparation."
+                ),
+            )
+            if row:
+                entries_by_identity[item["symbolKey"]] = row
+            continue
         if item["rustPath"] in BORROWED_VIEW_METHODS:
             target = BORROWED_VIEW_TARGETS.get(item["rustPath"])
             target_info = python["targets"].get(target) if target else None
-            arguments = (
-                _argument_mappings(item, target_info)
-                if target_info
-                else _proposal_argument_mappings(item, "ownership")
-            )
-            defaults, units, cardinality = _detail_rows(item, target_info)
-            entries_by_identity[item["symbolKey"]] = _language_proposal(
+            if not target_info:
+                continue
+            entries_by_identity[item["symbolKey"]] = _entry(
                 item,
-                f"{BORROWED_VIEW_METHODS[item['rustPath']]} Owner review is required.",
-                f"{BORROWED_VIEW_METHODS[item['rustPath']]} This preserves the value while making Python ownership explicit.",
-                argument_mappings=arguments or [],
-                defaults=defaults,
-                units=units,
-                cardinality=cardinality,
-                python_target=target,
+                target,
+                target_info,
+                python,
+                f"{BORROWED_VIEW_METHODS[item['rustPath']]} Python retains the same native value through its owning wrapper.",
+                semantic_equivalent="Python owns the same native value that Rust exposes through a borrowed view.",
             )
             continue
         parent_target = page_targets.get(item["parentRustPath"])
@@ -1172,7 +1442,7 @@ def seed_entries(
             )
         elif item["kind"] == "assoc_type":
             assoc = item["rustPath"].split("::")[-1]
-            if assoc == "Error":
+            if assoc in {"Error", "Err"}:
                 target = _mapped_error_target(item, python)
                 target_info = python["targets"].get(target) if target else None
                 rationale = "Rust associated error type maps to the public Python SDK exception."
@@ -1185,6 +1455,12 @@ def seed_entries(
                 rationale = "The Python Contract subclass uses the public Candidate model and derives its typed field view per subclass."
             else:
                 continue
+        elif item["kind"] == "assoc_const":
+            target = f"{parent_target}.{member_name}"
+            target_info = python["targets"].get(target)
+            if not target_info or target_info.get("kind") != "class-constant":
+                continue
+            rationale = "Rust associated constant maps to the Rust-backed Python class constant."
         else:
             continue
 
@@ -1202,6 +1478,144 @@ def seed_entries(
         if row is not None:
             if item["kind"] == "variant":
                 row["defaults"].extend(_variant_tag_defaults(target_info, member_name))
+            entries_by_identity[item["symbolKey"]] = row
+
+    for item in rust["items"]:
+        if item.get("trait") != "Default":
+            continue
+        target = DEFAULT_EQUIVALENTS.get(item.get("parentRustPath"))
+        info = python["targets"].get(target) if target else None
+        if not info:
+            continue
+        row = _entry(
+            item,
+            target,
+            info,
+            python,
+            "Rust Default maps to this Python constructor or Rust-backed default helper; "
+            "independent default-model conformance compares the resulting values.",
+            rust_type=item.get("parentRustPath"),
+            semantic_equivalent="Rust Default value and Python authoring default value.",
+        )
+        if row is not None:
+            entries_by_identity[item["symbolKey"]] = row
+
+    # Checked scalar conversions use the same Rust constructor as Python's
+    # inherited helper. Rust's trait dispatch is represented by that method.
+    for item in rust["items"]:
+        trait = item.get("trait")
+        leaf = item["rustPath"].rsplit("::", 1)[-1]
+        helper = {
+            ("TryFrom", "try_from"): "try_new",
+            ("FromStr", "from_str"): "from_str",
+        }.get((trait, leaf))
+        parent_target = page_targets.get(item.get("parentRustPath"))
+        if not helper or not parent_target:
+            continue
+        target = f"{parent_target}.{helper}"
+        info = python["targets"].get(target)
+        if not info:
+            continue
+        row = _entry(
+            item,
+            target,
+            info,
+            python,
+            "Rust checked conversion maps to this Rust-backed Python scalar helper.",
+            semantic_equivalent="Python helper validates and constructs the same Rust scalar value.",
+        )
+        if row is not None:
+            entries_by_identity[item["symbolKey"]] = row
+
+    for item in rust["items"]:
+        if (
+            item.get("trait") != "Clone"
+            or item["rustPath"].rsplit("::", 1)[-1] != "clone"
+        ):
+            continue
+        parent_target = page_targets.get(item.get("parentRustPath"))
+        target = f"{parent_target}.clone" if parent_target else None
+        info = python["targets"].get(target) if target else None
+        if not info:
+            continue
+        row = _entry(
+            item,
+            target,
+            info,
+            python,
+            "The explicit SDK clone operation detaches mutable Python values while retaining immutable native ownership.",
+            semantic_equivalent="Rust Clone and Python clone() return an independently editable logical value.",
+        )
+        if row is not None:
+            entries_by_identity[item["symbolKey"]] = row
+
+    for item in rust["items"]:
+        if (
+            item.get("parentRustPath") != "yosoi::locators::ProjectedValue"
+            or item.get("trait") != "PartialEq"
+        ):
+            continue
+        method = item["rustPath"].rsplit("::", 1)[-1]
+        target = {
+            "eq": "yosoi.outcomes.projected_values_equal",
+            "ne": "yosoi.outcomes.projected_values_not_equal",
+        }.get(method)
+        info = python["targets"].get(target) if target else None
+        if not info:
+            continue
+        row = _entry(
+            item,
+            target,
+            info,
+            python,
+            "The typed comparison helper delegates complete projection equality to Rust.",
+            argument_aliases={(item["rustPath"], "other"): "right"},
+            semantic_equivalent="The helper's left argument supplies Rust self; right supplies the other projected value.",
+        )
+        if row:
+            row["receiverMapping"] = {
+                "rustArgument": "self",
+                "pythonArgument": "left",
+                "conversion": "Typed owning Python value supplies the borrowed Rust receiver",
+            }
+            entries_by_identity[item["symbolKey"]] = row
+
+    map_ordering_types = {
+        "DiscoverySource": "discovery_source",
+        "Observation": "observation",
+        "OmissionReason": "omission_reason",
+        "PublicProvider": "public_provider",
+        "Rejection": "rejection",
+        "Relationship": "relationship",
+        "RelationshipKind": "relationship_kind",
+    }
+    for item in rust["items"]:
+        parent = item.get("parentRustPath") or ""
+        if item.get("trait") not in {"Ord", "PartialOrd"} or not parent.startswith(
+            "yosoi::map::"
+        ):
+            continue
+        kind = map_ordering_types.get(parent.rsplit("::", 1)[-1])
+        target = "yosoi.map.compare_values"
+        info = python["targets"].get(target)
+        if not kind or not info:
+            continue
+        row = _entry(
+            item,
+            target,
+            info,
+            python,
+            "This fixed Map type dispatch uses the public Rust ordering implementation.",
+            argument_aliases={(item["rustPath"], "other"): "right"},
+            semantic_equivalent="Python returns the Rust total ordering sign; partial_cmp is always Some for these Ord types.",
+        )
+        if row:
+            row["receiverMapping"] = {
+                "rustArgument": "self",
+                "pythonArgument": "left",
+                "conversion": "Typed owning view supplies the borrowed Rust ordering receiver",
+            }
+            row["fixedArguments"] = {"kind": kind}
             entries_by_identity[item["symbolKey"]] = row
 
     # Proposed ownership/serialization mappings are explicit but remain missing
@@ -1304,7 +1718,11 @@ def seed_entries(
     # outside the current compiler feature inventory so strict mode marks them stale.
     for entry in existing["entries"]:
         selector = entry.get("symbolKey")
-        if selector and selector not in entries_by_identity:
+        if (
+            selector
+            and selector not in entries_by_identity
+            and selector not in migrated_selectors
+        ):
             entries_by_identity[selector] = dict(entry)
         elif not selector and not any(
             candidate["rustPath"] == entry["rustPath"]
@@ -1321,7 +1739,8 @@ def seed_entries(
             entry.get("symbolKey", ""),
         ),
     )
-    report = parity.build_report(rust, python, result)
+    result = _ledger_with_source_root(result, source_crate)
+    report = parity.build_report(source_rust, python, result)
     return result, report
 
 
@@ -1340,12 +1759,17 @@ def main(argv: list[str] | None = None) -> int:
         help="inspect this source package instead of an installed distribution",
     )
     parser.add_argument(
+        "--package",
+        default="yosoi",
+        help="Python import package to inspect (defaults to the public SDK package)",
+    )
+    parser.add_argument(
         "--write", action="store_true", help="write the seeded mappings to the ledger"
     )
     args = parser.parse_args(argv)
 
     rust = parity.load_rust_inventory(args.reference)
-    python = parity.introspect_python_package("yosoi-engine", args.python_root)
+    python = parity.introspect_python_package(args.package, args.python_root)
     existing = parity.load_ledger(args.ledger)
     ledger, report = seed_entries(rust, python, existing)
     counts = report["coverage"]["counts"]

@@ -1,6 +1,6 @@
 //! Human advice for bounded browser failure reasons from the public facade.
 
-use yosoi_engine::BrowserFailureReason;
+use yosoi::request::BrowserFailureReason;
 
 pub const fn name(reason: BrowserFailureReason) -> &'static str {
     match reason {

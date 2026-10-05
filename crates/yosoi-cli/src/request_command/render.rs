@@ -117,7 +117,9 @@ pub(super) fn human(
                     stdout,
                     "{label}Attempt {number}:{label:#} {value}{}{value:#} {error}failed{error:#}, HTTP {status}, {}",
                     acquisition_label(attempt.acquisition()),
-                    attempt.diagnostic().map(diagnostic_label).unwrap_or_else(|| "unavailable".to_owned())
+                    attempt
+                        .diagnostic()
+                        .map_or_else(|| "unavailable".to_owned(), diagnostic_label)
                 )?;
                 if let Some(AttemptDiagnostic::BrowserFailure(reason)) = attempt.diagnostic()
                     && let Some(advice) =
@@ -167,10 +169,7 @@ pub(super) fn json(
                 .collect();
             let (state, diagnostic) = match attempt.state() {
                 AttemptState::Completed => ("completed", None),
-                AttemptState::Failed(_) => (
-                    "failed",
-                    attempt.diagnostic().map(diagnostic_label),
-                ),
+                AttemptState::Failed(_) => ("failed", attempt.diagnostic().map(diagnostic_label)),
                 AttemptState::NotStarted(reason) => ("not_started", Some(format!("{reason:?}"))),
             };
             json!({
