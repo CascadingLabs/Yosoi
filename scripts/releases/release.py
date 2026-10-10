@@ -29,7 +29,7 @@ HISTORY_END = re.compile(r"^<!-- release-history:generated-end sha256=([0-9a-f]{
 PLACEHOLDER = re.compile(
     r"(?i)\b(?:TODO|TBD|FIXME|PLACEHOLDER)\b|\[\[[^\]]+\]\]"
 )
-VERSION_PATTERN = re.compile(r"^0\.(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,4})$")
+VERSION_PATTERN = re.compile(r"^0\.(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]{0,4})(?:-rc\.([1-9][0-9]*))?$")
 REPOSITORY_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
 HISTORY_INTRO = (
     "This section records the user-visible changes, compatibility impact, and upgrade actions "
@@ -56,10 +56,11 @@ class ReleaseVersion:
     text: str
     minor: int
     patch: int
+    candidate: int | None = None
 
     @property
-    def ordering(self) -> tuple[int, int, int]:
-        return (0, self.minor, self.patch)
+    def ordering(self) -> tuple[int, int, int, bool, int]:
+        return (0, self.minor, self.patch, self.candidate is None, self.candidate or 0)
 
     @property
     def filename(self) -> str:
@@ -89,7 +90,8 @@ def parse_version(text: str) -> ReleaseVersion:
         raise ReleaseError("beta MINOR must be between 1 and 100000")
     if not 0 <= patch <= 10_000:
         raise ReleaseError("beta PATCH must be between 0 and 10000")
-    return ReleaseVersion(text=text, minor=minor, patch=patch)
+    candidate = int(match.group(3)) if match.group(3) else None
+    return ReleaseVersion(text=text, minor=minor, patch=patch, candidate=candidate)
 
 
 def parse_date(text: str) -> str:
@@ -104,9 +106,11 @@ def parse_date(text: str) -> str:
     return text
 
 
-def validate_channel(channel: str) -> str:
+def validate_channel(channel: str, version: ReleaseVersion | None = None) -> str:
     if channel not in {"preview", "recommended"}:
         raise ReleaseError("channel must be 'preview' or 'recommended'")
+    if version is not None and version.candidate is not None and channel != "preview":
+        raise ReleaseError("release candidates must use the preview channel")
     return channel
 
 
@@ -275,7 +279,7 @@ def validate_metadata(
     if not metadata["description"].strip():
         raise ReleaseError(f"{document.path}: description must not be empty")
     date = parse_date(metadata["date"])
-    channel = validate_channel(metadata["channel"])
+    channel = validate_channel(metadata["channel"], version)
     previous_value = metadata.get("previous")
     previous: str | None = None
     if previous_value is not None:
@@ -624,7 +628,7 @@ def prepare_release(args: argparse.Namespace) -> None:
     root = _resolve_root(args.root)
     version = parse_version(args.version)
     date = parse_date(args.date)
-    channel = validate_channel(args.channel)
+    channel = validate_channel(args.channel, version)
     previous: str | None = None
     if args.previous is not None and args.previous.casefold() != "none":
         previous = parse_version(args.previous).text

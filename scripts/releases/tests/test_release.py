@@ -30,6 +30,37 @@ GITHUB_NOTES = (
 
 
 class ReleaseToolTests(unittest.TestCase):
+    def test_candidates_require_preview_during_prepare_and_check(self) -> None:
+        before = self.snapshot()
+        status, _, error = self.invoke(
+            "prepare", "0.1.0-rc.1", "--date", "2026-10-10",
+            "--channel", "recommended", "--github-notes", str(self.notes_path),
+        )
+        self.assertEqual(status, 2)
+        self.assertIn("preview channel", error)
+        self.assertEqual(before, self.snapshot())
+        page = self.prepare("0.1.0-rc.1", previous=None)
+        self.finalize(page, channel="recommended")
+        status, _, error = self.invoke("check", "0.1.0-rc.1")
+        self.assertEqual(status, 2)
+        self.assertIn("preview channel", error)
+
+    def test_rc_ordering_and_canonical_notes(self) -> None:
+        rc1 = release.parse_version("0.1.0-rc.1")
+        rc2 = release.parse_version("0.1.0-rc.2")
+        final = release.parse_version("0.1.0")
+        self.assertLess(rc1.ordering, rc2.ordering)
+        self.assertLess(rc2.ordering, final.ordering)
+        self.assertEqual(rc1.filename, "0-1-0-rc-1.md")
+        page = self.prepare("0.1.0-rc.1", previous=None)
+        self.finalize(page)
+        status, output, error = self.invoke("check", "0.1.0-rc.1", "--json")
+        self.assertEqual(status, 0, error)
+        self.assertEqual(json.loads(output)["version"], "0.1.0-rc.1")
+        for invalid in ("0.1.0-rc.0", "0.1.0-rc.01", "0.1.0rc1", "0.1.0-rc"):
+            with self.subTest(invalid=invalid), self.assertRaises(release.ReleaseError):
+                release.parse_version(invalid)
+
     def setUp(self) -> None:
         self.temporary = tempfile.TemporaryDirectory()
         self.root = Path(self.temporary.name)

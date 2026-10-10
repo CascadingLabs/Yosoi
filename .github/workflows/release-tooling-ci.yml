@@ -6,6 +6,8 @@ on:
       - '.github/workflows/release-*.yml'
       - '.github/workflows/docs-publish.yml'
       - 'scripts/cd/**'
+      - 'scripts/releases/release.py'
+      - 'scripts/releases/tests/**'
       - 'scripts/releases/pyproject.toml'
       - 'scripts/releases/uv.lock'
   push:
@@ -14,6 +16,8 @@ on:
       - '.github/workflows/release-*.yml'
       - '.github/workflows/docs-publish.yml'
       - 'scripts/cd/**'
+      - 'scripts/releases/release.py'
+      - 'scripts/releases/tests/**'
       - 'scripts/releases/pyproject.toml'
       - 'scripts/releases/uv.lock'
 
@@ -41,3 +45,4 @@ jobs:
           uv run --locked --project scripts/releases --with ruff==0.17.0 ruff check scripts/cd
           uv run --locked --project scripts/releases --with ruff==0.17.0 ruff format --check scripts/cd
           uv run --locked --project scripts/releases python -m unittest discover -s scripts/cd/tests
+          uv run --locked --project scripts/releases python -m unittest discover -s scripts/releases/tests

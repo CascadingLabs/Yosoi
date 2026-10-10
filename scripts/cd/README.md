@@ -8,6 +8,15 @@ it runs formatting, lint, and synthetic artifact tests without compiling Rust.
 
 ## Release sequence
 
+Numbered release candidates use Cargo version `0.MINOR.PATCH-rc.N`, tag
+`v0.MINOR.PATCH-rc.N`, and Python package version `0.MINOR.PATCHrcN` (PEP 440).
+Use `cargo xtask bump-version VERSION --date-released YYYY-MM-DD -y` for the
+RC, prepare and finalize its canonical preview notes, merge onto main, and
+tag that exact commit. Candidates follow the same registry, installed-package,
+GitHub prerelease, and docs publication gates as the final beta. A later final
+release uses a separate `0.MINOR.PATCH` version and tag; it must pass those gates
+again. A passing build alone does not clear the browser registry blocker.
+
 1. Merge the SDK and CD stack, synchronize the chosen `0.MINOR.PATCH` version
    and citation date with `cargo xtask bump-version`, and finalize the canonical
    release notes. `cargo xtask release check VERSION` must pass.
