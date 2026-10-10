@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite-plus';
 export default defineConfig({
   test: {
-    include: ['validate.test.mjs', 'navigation.test.mjs'],
+    include: ['validate.test.mjs', 'navigation.test.mjs', 'bundle.test.mjs'],
     maxWorkers: 1,
     fileParallelism: false,
   },
