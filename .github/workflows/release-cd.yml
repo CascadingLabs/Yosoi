@@ -746,6 +746,9 @@ jobs:
 
   publish-docs:
     needs: [identity, github]
+    # RC registry jobs are intentionally skipped upstream of github. A status
+    # function overrides the implicit success() check on those ancestors.
+    if: ${{ !cancelled() && needs.identity.result == 'success' && needs.github.result == 'success' }}
     permissions:
       contents: write
     uses: ./.github/workflows/docs-publish.yml
