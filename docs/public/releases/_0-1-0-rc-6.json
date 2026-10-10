@@ -1,0 +1,8 @@
+{
+  "generated_source": "## What's Changed\n* Close fixture transports across supported Python versions by @AndrewPBerg in https://github.com/CascadingLabs/Yosoi/pull/145\n\n\n**Full Changelog**: https://github.com/CascadingLabs/Yosoi/compare/v0.1.0-rc.5...v0.1.0-rc.6\n",
+  "generated_source_sha256": "df29722135498d246088122794095d1847b40eb3ffc27c9421db6619ffade93a",
+  "github_notes_file": "yosoi-rc6-github-notes.md",
+  "previous": "0.1.0-rc.5",
+  "schema": 1,
+  "version": "0.1.0-rc.6"
+}
