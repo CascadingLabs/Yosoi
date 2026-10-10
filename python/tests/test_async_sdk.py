@@ -235,7 +235,12 @@ def test_cancelling_one_task_keeps_its_shared_token_sibling_running() -> None:
             second.cancel()
             await asyncio.gather(first, second, return_exceptions=True)
             server.close()
-            await server.wait_closed()
+            # Python 3.13+ waits for active client transports as well as the listener.
+            # End the fixture-owned connections after all SDK assertions complete.
+            abort_clients = getattr(server, "abort_clients", None)
+            if abort_clients is not None:
+                abort_clients()
+            await asyncio.wait_for(server.wait_closed(), 10)
             await asyncio.wait_for(_native.wait_for_idle(), 10)
 
     asyncio.run(run())
