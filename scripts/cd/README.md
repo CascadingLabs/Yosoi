@@ -206,3 +206,10 @@ Native SDK checks run in the release profile before building the CLI, allowing
 both commands to reuse release dependencies. The same four public SDK checks
 still run on every native platform; ordinary CI retains the full debug-profile
 default and all-feature suites.
+
+Rust and Python CI keep source-line backtraces using `line-tables-only` debug
+information. This omits full type and variable records from CI artifacts to
+reduce linking and cache storage; optimization, debug assertions, overflow
+checks, coverage instrumentation, and release profiles retain their settings.
+This changes compiler fingerprints and requires one cold cache seed before
+warm timing and archive-size comparisons.

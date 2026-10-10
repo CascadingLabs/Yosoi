@@ -34,6 +34,9 @@ concurrency:
 env:
   CARGO_BUILD_JOBS: '1'
   CARGO_INCREMENTAL: '0'
+  # Keep backtrace source locations without large type/variable debug records.
+  CARGO_PROFILE_DEV_DEBUG: line-tables-only
+  CARGO_PROFILE_TEST_DEBUG: line-tables-only
   RAYON_NUM_THREADS: '1'
   RUST_TEST_THREADS: '1'
   CARGO_TERM_COLOR: always
