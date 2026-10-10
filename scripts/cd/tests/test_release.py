@@ -10,6 +10,7 @@ import textwrap
 import unittest
 import zipfile
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 DIRECTORY = Path(__file__).resolve().parents[1]
@@ -20,6 +21,233 @@ from archive import cli_archive  # noqa: E402
 
 
 class IdentityTests(unittest.TestCase):
+    def test_interpreter_resolution_installs_first_and_propagates_failures(self):
+        workflow = (
+            DIRECTORY.parents[1] / ".github/workflows/release-cd.yml"
+        ).read_text()
+        sections = workflow.split(
+            "      - name: Resolve the managed interpreter path\n"
+        )[1:]
+        self.assertEqual(len(sections), 2)
+        for section in sections:
+            script = textwrap.dedent(
+                section.split("\n      - ", 1)[0].split("        run: |\n", 1)[1]
+            )
+            for fail in ("", "install", "find"):
+                with (
+                    self.subTest(fail=fail),
+                    tempfile.TemporaryDirectory() as directory,
+                ):
+                    root = Path(directory)
+                    executable = root / "uv"
+                    executable.write_text("""#!/usr/bin/env bash
+set -e
+if [ "$2" = install ]; then
+  test "$FAIL_AT" != install
+  touch "$MARKER"
+elif [ "$2" = find ]; then
+  test -f "$MARKER"
+  test "$FAIL_AT" != find
+  echo '/managed Python/3.15t/bin/python'
+else
+  exit 2
+fi
+""")
+                    executable.chmod(0o755)
+                    output = root / "environment"
+                    result = subprocess.run(
+                        ["bash", "-ec", script],
+                        env=dict(
+                            os.environ,
+                            PATH=f"{root}:/usr/bin:/bin",
+                            SELECTED_PYTHON="3.15.0t",
+                            FAIL_AT=fail,
+                            MARKER=str(root / "installed"),
+                            GITHUB_ENV=str(output),
+                        ),
+                        capture_output=True,
+                        text=True,
+                        check=False,
+                    )
+                    self.assertEqual(result.returncode, 1 if fail else 0, result.stderr)
+                    if fail:
+                        self.assertFalse(output.exists())
+                    else:
+                        self.assertEqual(
+                            output.read_text(),
+                            "RELEASE_PYTHON=/managed Python/3.15t/bin/python\n",
+                        )
+
+    def test_actual_publication_conditions_keep_final_registry_gates(self):
+        workflow = (
+            DIRECTORY.parents[1] / ".github/workflows/release-cd.yml"
+        ).read_text()
+        github = workflow.split("\n  github:\n", 1)[1].split("    runs-on:", 1)[0]
+        github_if = " ".join(github.split("    if: >-\n", 1)[1].split())
+        registry = workflow.split("\n  publication-ready:\n", 1)[1].split(
+            "    runs-on:", 1
+        )[0]
+        registry_if = registry.split("    if: ", 1)[1].strip()
+        for (
+            candidate,
+            verify,
+            installed,
+            event,
+            publish_requested,
+            github_expected,
+            registry_expected,
+        ) in (
+            (True, "success", "skipped", "push", False, True, False),
+            (True, "failure", "skipped", "push", False, False, False),
+            (False, "success", "failure", "push", False, False, True),
+            (False, "success", "success", "push", False, True, True),
+            (True, "success", "skipped", "workflow_dispatch", False, False, False),
+            (True, "success", "skipped", "workflow_dispatch", True, True, False),
+        ):
+            with self.subTest(
+                candidate=candidate,
+                verify=verify,
+                installed=installed,
+                event=event,
+                publish=publish_requested,
+            ):
+                context = dict(
+                    needs=SimpleNamespace(
+                        identity=SimpleNamespace(
+                            result="success",
+                            outputs=SimpleNamespace(candidate=str(candidate).lower()),
+                        ),
+                        verify=SimpleNamespace(result=verify),
+                        installed=SimpleNamespace(result=installed),
+                    ),
+                    github=SimpleNamespace(event_name=event),
+                    inputs=SimpleNamespace(publish=publish_requested),
+                )
+                for condition, expected in (
+                    (github_if, github_expected),
+                    (registry_if, registry_expected),
+                ):
+                    expression = (
+                        condition.replace("always()", "True")
+                        .replace("&&", " and ")
+                        .replace("||", " or ")
+                    )
+                    self.assertEqual(
+                        eval(expression, {"__builtins__": {}}, context), expected
+                    )
+
+    def test_docs_version_guard_accepts_rc_and_rejects_invalid_versions(self):
+        workflow = DIRECTORY.parents[1] / ".github/workflows/docs-publish.yml"
+        line = next(
+            line.strip()
+            for line in workflow.read_text().splitlines()
+            if "node --input-type=module -e" in line
+        )
+        script = line.split(" -e '", 1)[1].removesuffix("'")
+        for version, expected in (
+            ("0.1.0-rc.2", 0),
+            ("0.1.0", 0),
+            ("0.1.0-rc.0", 1),
+            ("0.01.0", 1),
+            ("0.100001.0", 1),
+        ):
+            with (
+                self.subTest(version=version),
+                tempfile.TemporaryDirectory() as directory,
+            ):
+                output = Path(directory) / "environment"
+                result = subprocess.run(
+                    ["node", "--input-type=module", "-e", script],
+                    env=dict(
+                        os.environ,
+                        SELECTED_VERSION=version,
+                        SELECTED_SOURCE="",
+                        BUNDLE_ARTIFACT="",
+                        GITHUB_OUTPUT=str(output),
+                    ),
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+                self.assertEqual(result.returncode, expected, result.stderr)
+                if expected == 0:
+                    publish = str("-rc." not in version).lower()
+                    self.assertEqual(
+                        output.read_text(), f"version={version}\npublish={publish}\n"
+                    )
+                else:
+                    self.assertFalse(output.exists())
+
+    def test_rc_docs_require_explicit_identity_and_verified_release_bundle(self):
+        workflow = DIRECTORY.parents[1] / ".github/workflows/docs-publish.yml"
+        line = next(
+            line.strip()
+            for line in workflow.read_text().splitlines()
+            if "node --input-type=module -e" in line
+        )
+        script = line.split(" -e '", 1)[1].removesuffix("'")
+        for version, source, bundle, allowed in (
+            ("0.1.0-rc.2", "a" * 40, "release-docs", True),
+            ("0.1.0-rc.2", "", "release-docs", False),
+            ("", "a" * 40, "release-docs", False),
+            ("0.1.0-rc.2", "a" * 40, "unverified-docs", False),
+        ):
+            with (
+                self.subTest(version=version, source=source, bundle=bundle),
+                tempfile.TemporaryDirectory() as directory,
+            ):
+                root = Path(directory)
+                (root / "Cargo.toml").write_text(
+                    '[workspace.package]\nversion = "0.1.0-rc.2"\n'
+                )
+                output = root / "output"
+                result = subprocess.run(
+                    ["node", "--input-type=module", "-e", script],
+                    cwd=root,
+                    env=dict(
+                        os.environ,
+                        SELECTED_VERSION=version,
+                        SELECTED_SOURCE=source,
+                        BUNDLE_ARTIFACT=bundle,
+                        GITHUB_OUTPUT=str(output),
+                    ),
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertIn(f"publish={str(allowed).lower()}\n", output.read_text())
+
+    def test_actual_sdist_extraction_avoids_python_directory_collision(self):
+        workflow = DIRECTORY.parents[1] / ".github/workflows/release-cd.yml"
+        section = (
+            workflow.read_text()
+            .split("      - name: Extract the exact source distribution\n", 1)[1]
+            .split("\n      - ", 1)[0]
+        )
+        script = textwrap.dedent(section.split("        run: |\n", 1)[1])
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "python").mkdir()
+            (root / "source-distribution").mkdir()
+            data = b"candidate source"
+            with tarfile.open(
+                root / "source-distribution/yosoi.tar.gz", "w:gz"
+            ) as archive:
+                entry = tarfile.TarInfo("yosoi/test.txt")
+                entry.size = len(data)
+                archive.addfile(entry, io.BytesIO(data))
+            result = subprocess.run(
+                ["bash", "-ec", script],
+                cwd=root,
+                env=dict(os.environ, RELEASE_PYTHON=sys.executable),
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual((root / "sdist-source/test.txt").read_bytes(), data)
+
     def test_rc_versions_use_registry_specific_spelling(self):
         for tag in ("v0.1.0-rc.1", "v0.1.0-rc.2"):
             version = release.release_version(tag)
@@ -92,8 +320,10 @@ class IdentityTests(unittest.TestCase):
     def test_python_315_follows_compatibility_range(self):
         old = release.python_abis(">=3.12,<3.15")
         new = release.python_abis(">=3.12,<3.16")
-        self.assertEqual([a["python"] for a in old], ["3.12", "3.13", "3.14", "3.14t"])
-        self.assertEqual([a["python"] for a in new[-2:]], ["3.15", "3.15t"])
+        self.assertEqual(
+            [a["python"] for a in old], ["3.12", "3.13", "3.14.8", "3.14.8t"]
+        )
+        self.assertEqual([a["python"] for a in new[-2:]], ["3.15.0", "3.15.0t"])
         self.assertEqual(new[-1]["linux_python"], "/opt/python/cp315-cp315t/bin/python")
 
     def test_unreviewed_python_range_fails(self):

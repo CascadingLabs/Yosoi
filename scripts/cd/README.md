@@ -12,10 +12,20 @@ Numbered release candidates use Cargo version `0.MINOR.PATCH-rc.N`, tag
 `v0.MINOR.PATCH-rc.N`, and Python package version `0.MINOR.PATCHrcN` (PEP 440).
 Use `cargo xtask bump-version VERSION --date-released YYYY-MM-DD -y` for the
 RC, prepare and finalize its canonical preview notes, merge onto main, and
-tag that exact commit. Candidates follow the same registry, installed-package,
-GitHub prerelease, and docs publication gates as the final beta. A later final
-release uses a separate `0.MINOR.PATCH` version and tag; it must pass those gates
-again. A passing build alone does not clear the browser registry blocker.
+tag that exact commit. Candidates publish verified GitHub artifacts and the
+matching docs bundle after the complete build and installed-artifact matrix
+passes. Registry uploads and registry-installed tests run only for final beta
+tags. A later final release uses a separate `0.MINOR.PATCH` version and tag;
+registry prerequisites and clean published installs remain mandatory for it.
+A passing RC build alone does not clear the browser registry blocker.
+Standalone main/manual docs runs defer RC publication; only Release CD's verified
+`release-docs` bundle with explicit source and version can publish candidate docs.
+
+Maturin reduces the Cargo workspace when exporting the Python sdist. Before
+uploading that one shared sdist, CD reconciles its lockfile offline and verifies
+that every retained package identity/checksum was already locked in the source.
+Cargo metadata must then pass with `--locked`; wheel builds keep that flag.
+The archive retains its source payload and uses canonical ownership/timestamps.
 
 1. Merge the SDK and CD stack, synchronize the chosen `0.MINOR.PATCH` version
    and citation date with `cargo xtask bump-version`, and finalize the canonical

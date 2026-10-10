@@ -8,8 +8,9 @@ This section records the user-visible changes, compatibility impact, and upgrade
 
 ## Releases
 
+- [0.1.0-rc.2](0-1-0-rc-2.md) · 2026-10-10 · **Preview** — Release notes for Yosoi 0.1.0-rc.2.
 - [0.1.0-rc.1](0-1-0-rc-1.md) · 2026-10-10 · **Preview** — Release notes for Yosoi 0.1.0-rc.1.
 
-<!-- release-history:generated-end sha256=232982242c3c90cb66cdbcc9b70c86f6483fd6bc06fc6f8ae82af451f8c8be1b -->
+<!-- release-history:generated-end sha256=34ec131651c5680a2f28bb63f1259870d9034cf599b07f41c691c790fd373321 -->
 
 <!-- prettier-ignore-end -->
