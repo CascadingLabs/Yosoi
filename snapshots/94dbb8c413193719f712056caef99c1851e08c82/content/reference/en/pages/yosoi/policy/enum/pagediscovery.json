@@ -1,0 +1,159 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::policy::PageDiscovery",
+  "publicPath": "yosoi::policy::PageDiscovery",
+  "kind": "enum",
+  "title": "yosoi::policy::PageDiscovery",
+  "signature": "pub enum PageDiscovery",
+  "docs": "Whether Map follows links from inspected pages.",
+  "source": {
+    "file": "crates/yosoi-policy/src/policy/map.rs",
+    "lineStart": 114,
+    "lineEnd": 120,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-policy/src/policy/map.rs#L114-L120"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/policy.rs",
+    "lineStart": 13,
+    "lineEnd": 13,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi/src/policy.rs#L13-L13"
+  },
+  "aliases": [
+    "yosoi::prelude::policy::PageDiscovery"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::policy::PageDiscovery::Disabled",
+      "publicPath": "yosoi::policy::PageDiscovery::Disabled",
+      "title": "yosoi::policy::PageDiscovery::Disabled",
+      "kind": "variant",
+      "signature": "Disabled",
+      "docs": "Do not inspect pages for further links.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 116,
+        "lineEnd": 116,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-policy/src/policy/map.rs#L116-L116"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::policy::PageDiscovery::Explore",
+      "publicPath": "yosoi::policy::PageDiscovery::Explore",
+      "title": "yosoi::policy::PageDiscovery::Explore",
+      "kind": "variant",
+      "signature": "Explore",
+      "docs": "Inspect pages and follow discovered links within scope.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 119,
+        "lineEnd": 119,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-policy/src/policy/map.rs#L119-L119"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::PageDiscovery::clone",
+      "publicPath": "yosoi::policy::PageDiscovery::clone",
+      "title": "yosoi::policy::PageDiscovery::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> PageDiscovery",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 112,
+        "lineEnd": 112,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-policy/src/policy/map.rs#L112-L112"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::policy::PageDiscovery::default",
+      "publicPath": "yosoi::policy::PageDiscovery::default",
+      "title": "yosoi::policy::PageDiscovery::default",
+      "kind": "function",
+      "signature": "fn default() -> PageDiscovery",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 112,
+        "lineEnd": 112,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-policy/src/policy/map.rs#L112-L112"
+      },
+      "examples": [],
+      "trait": "Default"
+    },
+    {
+      "id": "function:yosoi::policy::PageDiscovery::deserialize",
+      "publicPath": "yosoi::policy::PageDiscovery::deserialize",
+      "title": "yosoi::policy::PageDiscovery::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 112,
+        "lineEnd": 112,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-policy/src/policy/map.rs#L112-L112"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::policy::PageDiscovery::eq",
+      "publicPath": "yosoi::policy::PageDiscovery::eq",
+      "title": "yosoi::policy::PageDiscovery::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &PageDiscovery) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 112,
+        "lineEnd": 112,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-policy/src/policy/map.rs#L112-L112"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::policy::PageDiscovery::fmt",
+      "publicPath": "yosoi::policy::PageDiscovery::fmt",
+      "title": "yosoi::policy::PageDiscovery::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 112,
+        "lineEnd": 112,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-policy/src/policy/map.rs#L112-L112"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::policy::PageDiscovery::serialize",
+      "publicPath": "yosoi::policy::PageDiscovery::serialize",
+      "title": "yosoi::policy::PageDiscovery::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 112,
+        "lineEnd": 112,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-policy/src/policy/map.rs#L112-L112"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "1d0dec75273f7063173e9fe4c427982da457140f46d8c388bb52fc9c2c7276ca",
+  "slug": "yosoi/policy/enum/pagediscovery",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "1d0dec75273f7063173e9fe4c427982da457140f46d8c388bb52fc9c2c7276ca"
+}

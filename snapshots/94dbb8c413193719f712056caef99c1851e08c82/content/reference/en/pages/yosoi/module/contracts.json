@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "module:yosoi::contracts",
+  "publicPath": "yosoi::contracts",
+  "kind": "module",
+  "title": "yosoi::contracts",
+  "signature": "pub mod contracts",
+  "docs": "Describe typed records and inspect extraction and validation outcomes.",
+  "source": {
+    "file": "crates/yosoi/src/contracts.rs",
+    "lineStart": 1,
+    "lineEnd": 68,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi/src/contracts.rs#L1-L68"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::contracts"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "92e15081928cb2eb172e03f8ec109046f92711531fcdf58449d9f756e5745fcd",
+  "slug": "yosoi/module/contracts",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "92e15081928cb2eb172e03f8ec109046f92711531fcdf58449d9f756e5745fcd"
+}

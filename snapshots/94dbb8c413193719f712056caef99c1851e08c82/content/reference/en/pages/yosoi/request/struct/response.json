@@ -1,0 +1,140 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::request::Response",
+  "publicPath": "yosoi::request::Response",
+  "kind": "struct",
+  "title": "yosoi::request::Response",
+  "signature": "pub struct Response",
+  "docs": "The result of executing a request, with no provider or archive handles.",
+  "source": {
+    "file": "crates/yosoi/src/request/response.rs",
+    "lineStart": 6,
+    "lineEnd": 8,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi/src/request/response.rs#L6-L8"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/request.rs",
+    "lineStart": 11,
+    "lineEnd": 11,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi/src/request.rs#L11-L11"
+  },
+  "aliases": [
+    "yosoi::prelude::Response",
+    "yosoi::prelude::request::Response"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::request::Response::as_ref",
+      "publicPath": "yosoi::request::Response::as_ref",
+      "title": "yosoi::request::Response::as_ref",
+      "kind": "function",
+      "signature": "pub const fn as_ref(&self) -> ResponseRef<'_>",
+      "docs": "Borrows this response without cloning captured data.",
+      "source": {
+        "file": "crates/yosoi/src/request/response.rs",
+        "lineStart": 14,
+        "lineEnd": 16,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi/src/request/response.rs#L14-L16"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::request::Response::attempts",
+      "publicPath": "yosoi::request::Response::attempts",
+      "title": "yosoi::request::Response::attempts",
+      "kind": "function",
+      "signature": "pub fn attempts(&self) -> impl ExactSizeIterator<Item = Attempt<'_>>",
+      "docs": "Iterates acquisition outcomes in authored policy order.",
+      "source": {
+        "file": "crates/yosoi/src/request/response.rs",
+        "lineStart": 30,
+        "lineEnd": 32,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi/src/request/response.rs#L30-L32"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::request::Response::fmt",
+      "publicPath": "yosoi::request::Response::fmt",
+      "title": "yosoi::request::Response::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/request/response.rs",
+        "lineStart": 5,
+        "lineEnd": 5,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi/src/request/response.rs#L5-L5"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::request::Response::policy_snapshot",
+      "publicPath": "yosoi::request::Response::policy_snapshot",
+      "title": "yosoi::request::Response::policy_snapshot",
+      "kind": "function",
+      "signature": "pub const fn policy_snapshot(&self) -> &PolicySnapshot",
+      "docs": "Returns the validated policy snapshot used during execution.",
+      "source": {
+        "file": "crates/yosoi/src/request/response.rs",
+        "lineStart": 26,
+        "lineEnd": 28,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi/src/request/response.rs#L26-L28"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::request::Response::request_id",
+      "publicPath": "yosoi::request::Response::request_id",
+      "title": "yosoi::request::Response::request_id",
+      "kind": "function",
+      "signature": "pub const fn request_id(&self) -> RequestId",
+      "docs": "Returns the request identity.",
+      "source": {
+        "file": "crates/yosoi/src/request/response.rs",
+        "lineStart": 18,
+        "lineEnd": 20,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi/src/request/response.rs#L18-L20"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::request::Response::requested_target",
+      "publicPath": "yosoi::request::Response::requested_target",
+      "title": "yosoi::request::Response::requested_target",
+      "kind": "function",
+      "signature": "pub fn requested_target(&self) -> &str",
+      "docs": "Returns the canonical target requested.",
+      "source": {
+        "file": "crates/yosoi/src/request/response.rs",
+        "lineStart": 22,
+        "lineEnd": 24,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi/src/request/response.rs#L22-L24"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::request::Response::termination",
+      "publicPath": "yosoi::request::Response::termination",
+      "title": "yosoi::request::Response::termination",
+      "kind": "function",
+      "signature": "pub const fn termination(&self) -> ResponseTermination",
+      "docs": "Distinguishes completed execution from cancellation.",
+      "source": {
+        "file": "crates/yosoi/src/request/response.rs",
+        "lineStart": 34,
+        "lineEnd": 36,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi/src/request/response.rs#L34-L36"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "48a92445af5e13245f74d4607de491d6b142fbe0258038f8e85e0638b64f0ee7",
+  "slug": "yosoi/request/struct/response",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "48a92445af5e13245f74d4607de491d6b142fbe0258038f8e85e0638b64f0ee7"
+}

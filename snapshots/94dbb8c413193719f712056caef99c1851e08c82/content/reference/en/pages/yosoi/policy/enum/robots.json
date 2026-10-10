@@ -1,0 +1,159 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::policy::Robots",
+  "publicPath": "yosoi::policy::Robots",
+  "kind": "enum",
+  "title": "yosoi::policy::Robots",
+  "signature": "pub enum Robots",
+  "docs": "Whether Map applies discovered robots rules while exploring pages.",
+  "source": {
+    "file": "crates/yosoi-policy/src/policy/map.rs",
+    "lineStart": 125,
+    "lineEnd": 131,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-policy/src/policy/map.rs#L125-L131"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/policy.rs",
+    "lineStart": 14,
+    "lineEnd": 14,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi/src/policy.rs#L14-L14"
+  },
+  "aliases": [
+    "yosoi::prelude::policy::Robots"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::policy::Robots::Ignore",
+      "publicPath": "yosoi::policy::Robots::Ignore",
+      "title": "yosoi::policy::Robots::Ignore",
+      "kind": "variant",
+      "signature": "Ignore",
+      "docs": "Do not filter page requests using robots rules.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 128,
+        "lineEnd": 128,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-policy/src/policy/map.rs#L128-L128"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::policy::Robots::Respect",
+      "publicPath": "yosoi::policy::Robots::Respect",
+      "title": "yosoi::policy::Robots::Respect",
+      "kind": "variant",
+      "signature": "Respect",
+      "docs": "Apply robots rules to page requests within the allowed scope.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 130,
+        "lineEnd": 130,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-policy/src/policy/map.rs#L130-L130"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::Robots::clone",
+      "publicPath": "yosoi::policy::Robots::clone",
+      "title": "yosoi::policy::Robots::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> Robots",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 123,
+        "lineEnd": 123,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-policy/src/policy/map.rs#L123-L123"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::policy::Robots::default",
+      "publicPath": "yosoi::policy::Robots::default",
+      "title": "yosoi::policy::Robots::default",
+      "kind": "function",
+      "signature": "fn default() -> Robots",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 123,
+        "lineEnd": 123,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-policy/src/policy/map.rs#L123-L123"
+      },
+      "examples": [],
+      "trait": "Default"
+    },
+    {
+      "id": "function:yosoi::policy::Robots::deserialize",
+      "publicPath": "yosoi::policy::Robots::deserialize",
+      "title": "yosoi::policy::Robots::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 123,
+        "lineEnd": 123,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-policy/src/policy/map.rs#L123-L123"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::policy::Robots::eq",
+      "publicPath": "yosoi::policy::Robots::eq",
+      "title": "yosoi::policy::Robots::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &Robots) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 123,
+        "lineEnd": 123,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-policy/src/policy/map.rs#L123-L123"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::policy::Robots::fmt",
+      "publicPath": "yosoi::policy::Robots::fmt",
+      "title": "yosoi::policy::Robots::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 123,
+        "lineEnd": 123,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-policy/src/policy/map.rs#L123-L123"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::policy::Robots::serialize",
+      "publicPath": "yosoi::policy::Robots::serialize",
+      "title": "yosoi::policy::Robots::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 123,
+        "lineEnd": 123,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-policy/src/policy/map.rs#L123-L123"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "7a1400d248dd33070a39478ed4a2d78314a0858e436f451ae208c39a374dff5c",
+  "slug": "yosoi/policy/enum/robots",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "7a1400d248dd33070a39478ed4a2d78314a0858e436f451ae208c39a374dff5c"
+}

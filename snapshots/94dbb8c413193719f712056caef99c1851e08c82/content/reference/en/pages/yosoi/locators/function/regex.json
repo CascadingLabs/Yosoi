@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::locators::regex",
+  "publicPath": "yosoi::locators::regex",
+  "kind": "function",
+  "title": "yosoi::locators::regex",
+  "signature": "pub fn regex(value: impl Into<String>) -> Result<crate::query::QuerySpec, crate::query::QueryError>",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi-documents/src/query_builders.rs",
+    "lineStart": 84,
+    "lineEnd": 91,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi-documents/src/query_builders.rs#L84-L91"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 11,
+    "lineEnd": 11,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi/src/locators.rs#L11-L11"
+  },
+  "aliases": [
+    "yosoi::prelude::regex",
+    "yosoi::prelude::locators::regex"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/locators/function/regex",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

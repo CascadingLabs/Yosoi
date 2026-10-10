@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::map::RetainedCapture",
+  "publicPath": "yosoi::map::RetainedCapture",
+  "kind": "struct",
+  "title": "yosoi::map::RetainedCapture",
+  "signature": "pub struct RetainedCapture<'map>",
+  "docs": "A capture retained by discovery, with a borrowed SDK response.",
+  "source": {
+    "file": "crates/yosoi/src/map.rs",
+    "lineStart": 136,
+    "lineEnd": 138,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi/src/map.rs#L136-L138"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::map::RetainedCapture"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::map::RetainedCapture::clone",
+      "publicPath": "yosoi::map::RetainedCapture::clone",
+      "title": "yosoi::map::RetainedCapture::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> RetainedCapture<'map>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/map.rs",
+        "lineStart": 135,
+        "lineEnd": 135,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi/src/map.rs#L135-L135"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::map::RetainedCapture::fmt",
+      "publicPath": "yosoi::map::RetainedCapture::fmt",
+      "title": "yosoi::map::RetainedCapture::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/map.rs",
+        "lineStart": 135,
+        "lineEnd": 135,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi/src/map.rs#L135-L135"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::map::RetainedCapture::response",
+      "publicPath": "yosoi::map::RetainedCapture::response",
+      "title": "yosoi::map::RetainedCapture::response",
+      "kind": "function",
+      "signature": "pub const fn response(self) -> ResponseRef<'map>",
+      "docs": "Borrows the SDK-visible response.",
+      "source": {
+        "file": "crates/yosoi/src/map.rs",
+        "lineStart": 145,
+        "lineEnd": 149,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi/src/map.rs#L145-L149"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::RetainedCapture::url",
+      "publicPath": "yosoi::map::RetainedCapture::url",
+      "title": "yosoi::map::RetainedCapture::url",
+      "kind": "function",
+      "signature": "pub fn url(self) -> &'map str",
+      "docs": "Returns the canonical URL.",
+      "source": {
+        "file": "crates/yosoi/src/map.rs",
+        "lineStart": 141,
+        "lineEnd": 143,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/94dbb8c413193719f712056caef99c1851e08c82/crates/yosoi/src/map.rs#L141-L143"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "ebb19adcf8ac08692e9bfe960ca61fda68465baf4d4bcf845ab8a7d7cde370cb",
+  "slug": "yosoi/map/struct/retainedcapture",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "ebb19adcf8ac08692e9bfe960ca61fda68465baf4d4bcf845ab8a7d7cde370cb"
+}
