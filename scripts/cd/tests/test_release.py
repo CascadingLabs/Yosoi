@@ -285,6 +285,40 @@ fi
                                         expected[job],
                                     )
 
+    def test_registry_install_gate_overrides_skipped_ancestors_but_requires_pypi(self):
+        workflow = (
+            DIRECTORY.parents[1] / ".github/workflows/release-cd.yml"
+        ).read_text()
+        section = workflow.split("\n  installed:\n", 1)[1].split("    name:", 1)[0]
+        condition = " ".join(section.split("    if: >-\n", 1)[1].split())
+        self.assertIn("always()", condition)
+        self.assertIn("!cancelled()", condition)
+        for identity in ("success", "failure", "skipped", "cancelled"):
+            for pypi in ("success", "failure", "skipped", "cancelled"):
+                for cancelled in (False, True):
+                    with self.subTest(
+                        identity=identity, pypi=pypi, cancelled=cancelled
+                    ):
+                        # The Rust-only ancestors are intentionally skipped for RCs.
+                        context = dict(
+                            needs=SimpleNamespace(
+                                identity=SimpleNamespace(result=identity),
+                                pypi=SimpleNamespace(result=pypi),
+                                crates=SimpleNamespace(result="skipped"),
+                            ),
+                        )
+                        expression = (
+                            condition.replace("always()", "True")
+                            .replace("!cancelled()", str(not cancelled))
+                            .replace("&&", " and ")
+                        )
+                        self.assertEqual(
+                            eval(expression, {"__builtins__": {}}, context),
+                            not cancelled
+                            and identity == "success"
+                            and pypi == "success",
+                        )
+
     def test_docs_version_guard_accepts_rc_and_rejects_invalid_versions(self):
         workflow = DIRECTORY.parents[1] / ".github/workflows/docs-publish.yml"
         line = next(

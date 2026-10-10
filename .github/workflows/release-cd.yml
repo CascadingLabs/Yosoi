@@ -648,6 +648,10 @@ jobs:
 
   installed:
     needs: [identity, pypi]
+    # Candidate Rust publication is skipped upstream of pypi. Override the
+    # implicit success() check while requiring both direct prerequisites.
+    if: >-
+      always() && !cancelled() && needs.identity.result == 'success' && needs.pypi.result == 'success'
     name: Published install (${{ matrix.platform }}, ${{ matrix.python }})
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 20
