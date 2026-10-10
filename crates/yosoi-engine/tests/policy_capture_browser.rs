@@ -89,7 +89,18 @@ impl InlinePageServer {
                         "browser fixture rejected a non-loopback peer",
                     ));
                 }
-                serve_inline_page(stream, &task_cancellation).await?;
+                if let Err(error) = serve_inline_page(stream, &task_cancellation).await {
+                    // Chrome can cancel speculative requests when a capture closes.
+                    // A disconnected client must not terminate the fixture server.
+                    if !matches!(
+                        error.kind(),
+                        io::ErrorKind::BrokenPipe
+                            | io::ErrorKind::ConnectionReset
+                            | io::ErrorKind::ConnectionAborted
+                    ) {
+                        return Err(error);
+                    }
+                }
             }
             Ok(())
         });
@@ -151,6 +162,30 @@ async fn serve_inline_page(
     }
     stream.write_all(INLINE_PAGE).await?;
     stream.shutdown().await
+}
+
+#[tokio::test]
+async fn inline_page_server_survives_reset_connections() -> TestResult {
+    let server = InlinePageServer::start().await?;
+    let address = server
+        .url
+        .trim_start_matches("http://")
+        .trim_end_matches('/');
+    let mut aborted = TcpStream::connect(address).await?;
+    aborted.set_zero_linger()?;
+    aborted
+        .write_all(b"GET / HTTP/1.1\r\nHost: localhost\r\n\r\n")
+        .await?;
+    drop(aborted);
+
+    let mut next = TcpStream::connect(address).await?;
+    next.write_all(b"GET / HTTP/1.1\r\nHost: localhost\r\n\r\n")
+        .await?;
+    let mut response = Vec::new();
+    timeout(Duration::from_secs(5), next.read_to_end(&mut response)).await??;
+    assert!(response.starts_with(b"HTTP/1.1 200 OK\r\n"));
+    assert!(response.ends_with(INLINE_PAGE));
+    server.shutdown().await
 }
 
 fn test_producer() -> TestResult<Producer> {
