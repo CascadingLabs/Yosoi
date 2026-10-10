@@ -1,0 +1,70 @@
+name: Chromium images
+
+on:
+  pull_request:
+    paths: ['docker/chromium/**', 'scripts/cd/containers.py', '.github/workflows/chromium-images.yml']
+  push:
+    branches: [main]
+    paths: ['docker/chromium/**', 'scripts/cd/containers.py', '.github/workflows/chromium-images.yml']
+  workflow_call:
+    inputs:
+      source_commit:
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        include:
+          - {mode: headless, arch: amd64, runner: ubuntu-24.04}
+          - {mode: headless, arch: arm64, runner: ubuntu-24.04-arm}
+          - {mode: headful, arch: amd64, runner: ubuntu-24.04}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ inputs.source_commit || github.sha }}
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: '0.13.0'
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - name: Build once on the native architecture
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          file: docker/chromium/Dockerfile
+          target: ${{ matrix.mode }}
+          platforms: linux/${{ matrix.arch }}
+          load: true
+          tags: chromium-cdp:${{ matrix.mode }}-${{ matrix.arch }}
+          cache-from: type=gha,scope=chromium-${{ matrix.mode }}-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=chromium-${{ matrix.mode }}-${{ matrix.arch }}
+          provenance: false
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ inputs.source_commit || github.sha }}
+      - name: Check both browsers, output routing, and renderer sandbox
+        env:
+          IMAGE: chromium-cdp:${{ matrix.mode }}-${{ matrix.arch }}
+          MODE: ${{ matrix.mode }}
+          ARCH: ${{ matrix.arch }}
+        run: |
+          uv run --locked --project scripts/releases python scripts/cd/containers.py smoke --image "$IMAGE" --mode "$MODE" --output "$MODE-$ARCH.json"
+          docker save --output "$MODE-$ARCH.tar" "$IMAGE"
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: release-container-${{ matrix.mode }}-${{ matrix.arch }}
+          path: |
+            ${{ matrix.mode }}-${{ matrix.arch }}.tar
+            ${{ matrix.mode }}-${{ matrix.arch }}.json
+          compression-level: 0
+          retention-days: 7
+          if-no-files-found: error

@@ -174,6 +174,7 @@ fi
                         ),
                         verify=SimpleNamespace(result=verify),
                         installed=SimpleNamespace(result=installed),
+                        container_publish=SimpleNamespace(result="success"),
                     ),
                     github=SimpleNamespace(event_name=event),
                     inputs=SimpleNamespace(publish=publish_requested),
@@ -190,6 +191,12 @@ fi
                     self.assertEqual(
                         eval(expression, {"__builtins__": {}}, context), expected
                     )
+                    if condition == github_if:
+                        context["needs"].container_publish.result = "failure"
+                        self.assertFalse(
+                            eval(expression, {"__builtins__": {}}, context)
+                        )
+                        context["needs"].container_publish.result = "success"
 
     def test_docs_version_guard_accepts_rc_and_rejects_invalid_versions(self):
         workflow = DIRECTORY.parents[1] / ".github/workflows/docs-publish.yml"
