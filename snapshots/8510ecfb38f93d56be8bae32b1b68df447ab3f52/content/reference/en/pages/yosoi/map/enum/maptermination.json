@@ -1,0 +1,157 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::map::MapTermination",
+  "publicPath": "yosoi::map::MapTermination",
+  "kind": "enum",
+  "title": "yosoi::map::MapTermination",
+  "signature": "pub enum MapTermination",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi-map/src/lib.rs",
+    "lineStart": 198,
+    "lineEnd": 203,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-map/src/lib.rs#L198-L203"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/map.rs",
+    "lineStart": 5,
+    "lineEnd": 5,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi/src/map.rs#L5-L5"
+  },
+  "aliases": [
+    "yosoi::prelude::map::MapTermination"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::map::MapTermination::Cancelled",
+      "publicPath": "yosoi::map::MapTermination::Cancelled",
+      "title": "yosoi::map::MapTermination::Cancelled",
+      "kind": "variant",
+      "signature": "Cancelled",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 202,
+        "lineEnd": 202,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-map/src/lib.rs#L202-L202"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::MapTermination::Deadline",
+      "publicPath": "yosoi::map::MapTermination::Deadline",
+      "title": "yosoi::map::MapTermination::Deadline",
+      "kind": "variant",
+      "signature": "Deadline",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 201,
+        "lineEnd": 201,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-map/src/lib.rs#L201-L201"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::MapTermination::Exhausted",
+      "publicPath": "yosoi::map::MapTermination::Exhausted",
+      "title": "yosoi::map::MapTermination::Exhausted",
+      "kind": "variant",
+      "signature": "Exhausted",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 199,
+        "lineEnd": 199,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-map/src/lib.rs#L199-L199"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::MapTermination::Limit",
+      "publicPath": "yosoi::map::MapTermination::Limit",
+      "title": "yosoi::map::MapTermination::Limit",
+      "kind": "variant",
+      "signature": "Limit(LimitReached)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 200,
+        "lineEnd": 200,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-map/src/lib.rs#L200-L200"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::MapTermination::clone",
+      "publicPath": "yosoi::map::MapTermination::clone",
+      "title": "yosoi::map::MapTermination::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> MapTermination",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 196,
+        "lineEnd": 196,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-map/src/lib.rs#L196-L196"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::map::MapTermination::eq",
+      "publicPath": "yosoi::map::MapTermination::eq",
+      "title": "yosoi::map::MapTermination::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &MapTermination) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 196,
+        "lineEnd": 196,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-map/src/lib.rs#L196-L196"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::map::MapTermination::fmt",
+      "publicPath": "yosoi::map::MapTermination::fmt",
+      "title": "yosoi::map::MapTermination::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 196,
+        "lineEnd": 196,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-map/src/lib.rs#L196-L196"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::map::MapTermination::serialize",
+      "publicPath": "yosoi::map::MapTermination::serialize",
+      "title": "yosoi::map::MapTermination::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 196,
+        "lineEnd": 196,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-map/src/lib.rs#L196-L196"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/map/enum/maptermination",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

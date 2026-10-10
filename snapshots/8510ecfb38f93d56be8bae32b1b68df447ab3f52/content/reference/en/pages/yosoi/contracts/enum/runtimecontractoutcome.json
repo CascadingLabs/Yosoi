@@ -1,0 +1,201 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::contracts::RuntimeContractOutcome",
+  "publicPath": "yosoi::contracts::RuntimeContractOutcome",
+  "kind": "enum",
+  "title": "yosoi::contracts::RuntimeContractOutcome",
+  "signature": "pub enum RuntimeContractOutcome",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi-contract-validation/src/runtime.rs",
+    "lineStart": 214,
+    "lineEnd": 238,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-contract-validation/src/runtime.rs#L214-L238"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/contracts.rs",
+    "lineStart": 15,
+    "lineEnd": 15,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi/src/contracts.rs#L15-L15"
+  },
+  "aliases": [
+    "yosoi::prelude::contracts::RuntimeContractOutcome"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::contracts::RuntimeContractOutcome::Evaluated",
+      "publicPath": "yosoi::contracts::RuntimeContractOutcome::Evaluated",
+      "title": "yosoi::contracts::RuntimeContractOutcome::Evaluated",
+      "kind": "variant",
+      "signature": "Evaluated { document_id: yosoi_documents::DocumentId, records: Vec<RuntimeValidatedRecord>, issues: Vec<RuntimeRecordIssue>, extraction_diagnostics: Vec<yosoi_extractor::ExtractionDiagnostic> }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/runtime.rs",
+        "lineStart": 215,
+        "lineEnd": 220,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-contract-validation/src/runtime.rs#L215-L220"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::RuntimeContractOutcome::ExtractionRejected",
+      "publicPath": "yosoi::contracts::RuntimeContractOutcome::ExtractionRejected",
+      "title": "yosoi::contracts::RuntimeContractOutcome::ExtractionRejected",
+      "kind": "variant",
+      "signature": "ExtractionRejected { failure: yosoi_extractor::ExtractionFailure }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/runtime.rs",
+        "lineStart": 232,
+        "lineEnd": 234,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-contract-validation/src/runtime.rs#L232-L234"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::RuntimeContractOutcome::Indeterminate",
+      "publicPath": "yosoi::contracts::RuntimeContractOutcome::Indeterminate",
+      "title": "yosoi::contracts::RuntimeContractOutcome::Indeterminate",
+      "kind": "variant",
+      "signature": "Indeterminate { document_id: yosoi_documents::DocumentId, completeness: yosoi_documents::IncompleteEvidence, reason_code: String }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/runtime.rs",
+        "lineStart": 224,
+        "lineEnd": 228,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-contract-validation/src/runtime.rs#L224-L228"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::RuntimeContractOutcome::LocateFailed",
+      "publicPath": "yosoi::contracts::RuntimeContractOutcome::LocateFailed",
+      "title": "yosoi::contracts::RuntimeContractOutcome::LocateFailed",
+      "kind": "variant",
+      "signature": "LocateFailed { failure: yosoi_documents::LocateFailure }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/runtime.rs",
+        "lineStart": 229,
+        "lineEnd": 231,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-contract-validation/src/runtime.rs#L229-L231"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::RuntimeContractOutcome::NoMatch",
+      "publicPath": "yosoi::contracts::RuntimeContractOutcome::NoMatch",
+      "title": "yosoi::contracts::RuntimeContractOutcome::NoMatch",
+      "kind": "variant",
+      "signature": "NoMatch { document_id: yosoi_documents::DocumentId }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/runtime.rs",
+        "lineStart": 221,
+        "lineEnd": 223,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-contract-validation/src/runtime.rs#L221-L223"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::RuntimeContractOutcome::ValidationRejected",
+      "publicPath": "yosoi::contracts::RuntimeContractOutcome::ValidationRejected",
+      "title": "yosoi::contracts::RuntimeContractOutcome::ValidationRejected",
+      "kind": "variant",
+      "signature": "ValidationRejected { failure: crate::ValidationFailure }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/runtime.rs",
+        "lineStart": 235,
+        "lineEnd": 237,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-contract-validation/src/runtime.rs#L235-L237"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::RuntimeContractOutcome::clone",
+      "publicPath": "yosoi::contracts::RuntimeContractOutcome::clone",
+      "title": "yosoi::contracts::RuntimeContractOutcome::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> RuntimeContractOutcome",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/runtime.rs",
+        "lineStart": 212,
+        "lineEnd": 212,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-contract-validation/src/runtime.rs#L212-L212"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::contracts::RuntimeContractOutcome::fmt",
+      "publicPath": "yosoi::contracts::RuntimeContractOutcome::fmt",
+      "title": "yosoi::contracts::RuntimeContractOutcome::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/runtime.rs",
+        "lineStart": 212,
+        "lineEnd": 212,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-contract-validation/src/runtime.rs#L212-L212"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::contracts::RuntimeContractOutcome::require_all",
+      "publicPath": "yosoi::contracts::RuntimeContractOutcome::require_all",
+      "title": "yosoi::contracts::RuntimeContractOutcome::require_all",
+      "kind": "function",
+      "signature": "pub fn require_all(self) -> Result<Vec<RuntimeValidatedRecord>, ContractIssues>",
+      "docs": "Returns every validated record only when no field or extraction issue\nexists, following `ContractOutcome::require_all()` rules.",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/runtime.rs",
+        "lineStart": 243,
+        "lineEnd": 265,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-contract-validation/src/runtime.rs#L243-L265"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::RuntimeContractOutcome::serialize",
+      "publicPath": "yosoi::contracts::RuntimeContractOutcome::serialize",
+      "title": "yosoi::contracts::RuntimeContractOutcome::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/runtime.rs",
+        "lineStart": 212,
+        "lineEnd": 212,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-contract-validation/src/runtime.rs#L212-L212"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::contracts::RuntimeContractOutcome::to_archived",
+      "publicPath": "yosoi::contracts::RuntimeContractOutcome::to_archived",
+      "title": "yosoi::contracts::RuntimeContractOutcome::to_archived",
+      "kind": "function",
+      "signature": "pub fn to_archived(&self, schema: &ContractSchema) -> Result<ArchivedContractOutcome, RuntimeContractArchiveError>",
+      "docs": "Converts this runtime-validated outcome into the same portable archive\nrepresentation used by derive-backed `ContractOutcome::to_archived`.",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/portable/conversion.rs",
+        "lineStart": 310,
+        "lineEnd": 377,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-contract-validation/src/portable/conversion.rs#L310-L377"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/contracts/enum/runtimecontractoutcome",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

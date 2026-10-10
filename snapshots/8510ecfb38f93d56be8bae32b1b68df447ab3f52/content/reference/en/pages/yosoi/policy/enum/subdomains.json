@@ -1,0 +1,159 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::policy::Subdomains",
+  "publicPath": "yosoi::policy::Subdomains",
+  "kind": "enum",
+  "title": "yosoi::policy::Subdomains",
+  "signature": "pub enum Subdomains",
+  "docs": "Whether Map performs passive subdomain discovery.",
+  "source": {
+    "file": "crates/yosoi-policy/src/policy/map.rs",
+    "lineStart": 136,
+    "lineEnd": 142,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-policy/src/policy/map.rs#L136-L142"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/policy.rs",
+    "lineStart": 14,
+    "lineEnd": 14,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi/src/policy.rs#L14-L14"
+  },
+  "aliases": [
+    "yosoi::prelude::policy::Subdomains"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::policy::Subdomains::Disabled",
+      "publicPath": "yosoi::policy::Subdomains::Disabled",
+      "title": "yosoi::policy::Subdomains::Disabled",
+      "kind": "variant",
+      "signature": "Disabled",
+      "docs": "Do not perform passive subdomain discovery.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 139,
+        "lineEnd": 139,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-policy/src/policy/map.rs#L139-L139"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::policy::Subdomains::Passive",
+      "publicPath": "yosoi::policy::Subdomains::Passive",
+      "title": "yosoi::policy::Subdomains::Passive",
+      "kind": "variant",
+      "signature": "Passive",
+      "docs": "Discover hosts below the seed's registrable domain.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 141,
+        "lineEnd": 141,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-policy/src/policy/map.rs#L141-L141"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::Subdomains::clone",
+      "publicPath": "yosoi::policy::Subdomains::clone",
+      "title": "yosoi::policy::Subdomains::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> Subdomains",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 134,
+        "lineEnd": 134,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-policy/src/policy/map.rs#L134-L134"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::policy::Subdomains::default",
+      "publicPath": "yosoi::policy::Subdomains::default",
+      "title": "yosoi::policy::Subdomains::default",
+      "kind": "function",
+      "signature": "fn default() -> Subdomains",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 134,
+        "lineEnd": 134,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-policy/src/policy/map.rs#L134-L134"
+      },
+      "examples": [],
+      "trait": "Default"
+    },
+    {
+      "id": "function:yosoi::policy::Subdomains::deserialize",
+      "publicPath": "yosoi::policy::Subdomains::deserialize",
+      "title": "yosoi::policy::Subdomains::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 134,
+        "lineEnd": 134,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-policy/src/policy/map.rs#L134-L134"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::policy::Subdomains::eq",
+      "publicPath": "yosoi::policy::Subdomains::eq",
+      "title": "yosoi::policy::Subdomains::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &Subdomains) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 134,
+        "lineEnd": 134,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-policy/src/policy/map.rs#L134-L134"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::policy::Subdomains::fmt",
+      "publicPath": "yosoi::policy::Subdomains::fmt",
+      "title": "yosoi::policy::Subdomains::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 134,
+        "lineEnd": 134,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-policy/src/policy/map.rs#L134-L134"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::policy::Subdomains::serialize",
+      "publicPath": "yosoi::policy::Subdomains::serialize",
+      "title": "yosoi::policy::Subdomains::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 134,
+        "lineEnd": 134,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-policy/src/policy/map.rs#L134-L134"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "5c7d941dc930bf22a3bb9dc3814622a331024589b19300c3c923ca6de7379486",
+  "slug": "yosoi/policy/enum/subdomains",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "5c7d941dc930bf22a3bb9dc3814622a331024589b19300c3c923ca6de7379486"
+}

@@ -1,0 +1,219 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::documents::DocumentClass",
+  "publicPath": "yosoi::documents::DocumentClass",
+  "kind": "enum",
+  "title": "yosoi::documents::DocumentClass",
+  "signature": "pub enum DocumentClass",
+  "docs": "One of the six document classes in the first locator slice.",
+  "source": {
+    "file": "crates/yosoi-documents/src/document_profile.rs",
+    "lineStart": 40,
+    "lineEnd": 47,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/document_profile.rs#L40-L47"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/documents.rs",
+    "lineStart": 9,
+    "lineEnd": 9,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi/src/documents.rs#L9-L9"
+  },
+  "aliases": [
+    "yosoi::prelude::documents::DocumentClass"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::documents::DocumentClass::AccessibilityTree",
+      "publicPath": "yosoi::documents::DocumentClass::AccessibilityTree",
+      "title": "yosoi::documents::DocumentClass::AccessibilityTree",
+      "kind": "variant",
+      "signature": "AccessibilityTree",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/document_profile.rs",
+        "lineStart": 46,
+        "lineEnd": 46,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/document_profile.rs#L46-L46"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::documents::DocumentClass::RenderedDom",
+      "publicPath": "yosoi::documents::DocumentClass::RenderedDom",
+      "title": "yosoi::documents::DocumentClass::RenderedDom",
+      "kind": "variant",
+      "signature": "RenderedDom",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/document_profile.rs",
+        "lineStart": 45,
+        "lineEnd": 45,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/document_profile.rs#L45-L45"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::documents::DocumentClass::SourceHtml",
+      "publicPath": "yosoi::documents::DocumentClass::SourceHtml",
+      "title": "yosoi::documents::DocumentClass::SourceHtml",
+      "kind": "variant",
+      "signature": "SourceHtml",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/document_profile.rs",
+        "lineStart": 41,
+        "lineEnd": 41,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/document_profile.rs#L41-L41"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::documents::DocumentClass::SourceJson",
+      "publicPath": "yosoi::documents::DocumentClass::SourceJson",
+      "title": "yosoi::documents::DocumentClass::SourceJson",
+      "kind": "variant",
+      "signature": "SourceJson",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/document_profile.rs",
+        "lineStart": 43,
+        "lineEnd": 43,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/document_profile.rs#L43-L43"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::documents::DocumentClass::SourceText",
+      "publicPath": "yosoi::documents::DocumentClass::SourceText",
+      "title": "yosoi::documents::DocumentClass::SourceText",
+      "kind": "variant",
+      "signature": "SourceText",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/document_profile.rs",
+        "lineStart": 44,
+        "lineEnd": 44,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/document_profile.rs#L44-L44"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::documents::DocumentClass::SourceXml",
+      "publicPath": "yosoi::documents::DocumentClass::SourceXml",
+      "title": "yosoi::documents::DocumentClass::SourceXml",
+      "kind": "variant",
+      "signature": "SourceXml",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/document_profile.rs",
+        "lineStart": 42,
+        "lineEnd": 42,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/document_profile.rs#L42-L42"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::documents::DocumentClass::clone",
+      "publicPath": "yosoi::documents::DocumentClass::clone",
+      "title": "yosoi::documents::DocumentClass::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> DocumentClass",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/document_profile.rs",
+        "lineStart": 38,
+        "lineEnd": 38,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/document_profile.rs#L38-L38"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::documents::DocumentClass::deserialize",
+      "publicPath": "yosoi::documents::DocumentClass::deserialize",
+      "title": "yosoi::documents::DocumentClass::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/document_profile.rs",
+        "lineStart": 38,
+        "lineEnd": 38,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/document_profile.rs#L38-L38"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::documents::DocumentClass::eq",
+      "publicPath": "yosoi::documents::DocumentClass::eq",
+      "title": "yosoi::documents::DocumentClass::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &DocumentClass) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/document_profile.rs",
+        "lineStart": 38,
+        "lineEnd": 38,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/document_profile.rs#L38-L38"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::documents::DocumentClass::fmt",
+      "publicPath": "yosoi::documents::DocumentClass::fmt",
+      "title": "yosoi::documents::DocumentClass::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/document_profile.rs",
+        "lineStart": 38,
+        "lineEnd": 38,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/document_profile.rs#L38-L38"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::documents::DocumentClass::hash",
+      "publicPath": "yosoi::documents::DocumentClass::hash",
+      "title": "yosoi::documents::DocumentClass::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/document_profile.rs",
+        "lineStart": 38,
+        "lineEnd": 38,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/document_profile.rs#L38-L38"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::documents::DocumentClass::serialize",
+      "publicPath": "yosoi::documents::DocumentClass::serialize",
+      "title": "yosoi::documents::DocumentClass::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/document_profile.rs",
+        "lineStart": 38,
+        "lineEnd": 38,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/document_profile.rs#L38-L38"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "81d1c04c62e80c776f99d63dbdf33946e700ad453dd3b8950e029e20e743e209",
+  "slug": "yosoi/documents/enum/documentclass",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "81d1c04c62e80c776f99d63dbdf33946e700ad453dd3b8950e029e20e743e209"
+}

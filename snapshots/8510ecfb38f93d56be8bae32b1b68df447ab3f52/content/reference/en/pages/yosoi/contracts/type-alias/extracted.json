@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "type_alias:yosoi::contracts::Extracted",
+  "publicPath": "yosoi::contracts::Extracted",
+  "kind": "type_alias",
+  "title": "yosoi::contracts::Extracted",
+  "signature": "pub type Extracted<T> = <T as yosoi_contracts::Contract>::Extracted",
+  "docs": "Model-shaped candidates awaiting explicit runtime validation.",
+  "source": {
+    "file": "crates/yosoi-contract-validation/src/lib.rs",
+    "lineStart": 45,
+    "lineEnd": 45,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-contract-validation/src/lib.rs#L45-L45"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/contracts.rs",
+    "lineStart": 8,
+    "lineEnd": 8,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi/src/contracts.rs#L8-L8"
+  },
+  "aliases": [
+    "yosoi::prelude::Extracted",
+    "yosoi::prelude::contracts::Extracted"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "d28b3f29eb506fe7006c43f47c5b26adbd6f481995c28393d66a040e210d049b",
+  "slug": "yosoi/contracts/type-alias/extracted",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "d28b3f29eb506fe7006c43f47c5b26adbd6f481995c28393d66a040e210d049b"
+}

@@ -1,0 +1,255 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::request::ActivityId",
+  "publicPath": "yosoi::request::ActivityId",
+  "kind": "struct",
+  "title": "yosoi::request::ActivityId",
+  "signature": "pub struct ActivityId",
+  "docs": "Random identity for one actual activity occurrence.\n\nThe JSON and display representation is a lowercase hyphenated UUID.\n\n```compile_fail\nuse yosoi_types::{ActivityId, CaptureId};\n\nfn requires_capture(_: CaptureId) {}\nrequires_capture(ActivityId::random());\n```",
+  "source": {
+    "file": "crates/yosoi-types/src/identity.rs",
+    "lineStart": 37,
+    "lineEnd": 37,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-types/src/identity.rs#L37-L37"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/request.rs",
+    "lineStart": 22,
+    "lineEnd": 22,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi/src/request.rs#L22-L22"
+  },
+  "aliases": [
+    "yosoi::prelude::request::ActivityId"
+  ],
+  "members": [
+    {
+      "id": "assoc_type:yosoi::request::ActivityId::Err",
+      "publicPath": "yosoi::request::ActivityId::Err",
+      "title": "yosoi::request::ActivityId::Err",
+      "kind": "assoc_type",
+      "signature": "type Err = OccurrenceIdParseError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-types/src/identity.rs",
+        "lineStart": 58,
+        "lineEnd": 58,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-types/src/identity.rs#L58-L58"
+      },
+      "examples": [],
+      "trait": "FromStr"
+    },
+    {
+      "id": "function:yosoi::request::ActivityId::as_bytes",
+      "publicPath": "yosoi::request::ActivityId::as_bytes",
+      "title": "yosoi::request::ActivityId::as_bytes",
+      "kind": "function",
+      "signature": "pub const fn as_bytes(&self) -> &[u8; 16]",
+      "docs": "Returns the UUID bytes in network byte order.",
+      "source": {
+        "file": "crates/yosoi-types/src/identity.rs",
+        "lineStart": 46,
+        "lineEnd": 48,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-types/src/identity.rs#L46-L48"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::request::ActivityId::clone",
+      "publicPath": "yosoi::request::ActivityId::clone",
+      "title": "yosoi::request::ActivityId::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> ActivityId",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-types/src/identity.rs",
+        "lineStart": 36,
+        "lineEnd": 36,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-types/src/identity.rs#L36-L36"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::request::ActivityId::cmp",
+      "publicPath": "yosoi::request::ActivityId::cmp",
+      "title": "yosoi::request::ActivityId::cmp",
+      "kind": "function",
+      "signature": "fn cmp(&self, other: &ActivityId) -> $crate::cmp::Ordering",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-types/src/identity.rs",
+        "lineStart": 36,
+        "lineEnd": 36,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-types/src/identity.rs#L36-L36"
+      },
+      "examples": [],
+      "trait": "Ord"
+    },
+    {
+      "id": "function:yosoi::request::ActivityId::deserialize",
+      "publicPath": "yosoi::request::ActivityId::deserialize",
+      "title": "yosoi::request::ActivityId::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<D>(deserializer: D) -> Result<Self, <D as >::Error> where D: Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-types/src/identity.rs",
+        "lineStart": 75,
+        "lineEnd": 80,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-types/src/identity.rs#L75-L80"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::request::ActivityId::eq",
+      "publicPath": "yosoi::request::ActivityId::eq",
+      "title": "yosoi::request::ActivityId::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &ActivityId) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-types/src/identity.rs",
+        "lineStart": 36,
+        "lineEnd": 36,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-types/src/identity.rs#L36-L36"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::request::ActivityId::fmt",
+      "publicPath": "yosoi::request::ActivityId::fmt",
+      "title": "yosoi::request::ActivityId::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-types/src/identity.rs",
+        "lineStart": 36,
+        "lineEnd": 36,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-types/src/identity.rs#L36-L36"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::request::ActivityId::fmt",
+      "publicPath": "yosoi::request::ActivityId::fmt",
+      "title": "yosoi::request::ActivityId::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-types/src/identity.rs",
+        "lineStart": 52,
+        "lineEnd": 54,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-types/src/identity.rs#L52-L54"
+      },
+      "examples": [],
+      "trait": "Display"
+    },
+    {
+      "id": "function:yosoi::request::ActivityId::from",
+      "publicPath": "yosoi::request::ActivityId::from",
+      "title": "yosoi::request::ActivityId::from",
+      "kind": "function",
+      "signature": "fn from(value: CaptureId) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-types/src/identity.rs",
+        "lineStart": 122,
+        "lineEnd": 124,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-types/src/identity.rs#L122-L124"
+      },
+      "examples": [],
+      "trait": "From"
+    },
+    {
+      "id": "function:yosoi::request::ActivityId::from_str",
+      "publicPath": "yosoi::request::ActivityId::from_str",
+      "title": "yosoi::request::ActivityId::from_str",
+      "kind": "function",
+      "signature": "fn from_str(value: &str) -> Result<Self, <Self as >::Err>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-types/src/identity.rs",
+        "lineStart": 60,
+        "lineEnd": 62,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-types/src/identity.rs#L60-L62"
+      },
+      "examples": [],
+      "trait": "FromStr"
+    },
+    {
+      "id": "function:yosoi::request::ActivityId::hash",
+      "publicPath": "yosoi::request::ActivityId::hash",
+      "title": "yosoi::request::ActivityId::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-types/src/identity.rs",
+        "lineStart": 36,
+        "lineEnd": 36,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-types/src/identity.rs#L36-L36"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::request::ActivityId::partial_cmp",
+      "publicPath": "yosoi::request::ActivityId::partial_cmp",
+      "title": "yosoi::request::ActivityId::partial_cmp",
+      "kind": "function",
+      "signature": "fn partial_cmp(&self, other: &ActivityId) -> $crate::option::Option<$crate::cmp::Ordering>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-types/src/identity.rs",
+        "lineStart": 36,
+        "lineEnd": 36,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-types/src/identity.rs#L36-L36"
+      },
+      "examples": [],
+      "trait": "PartialOrd"
+    },
+    {
+      "id": "function:yosoi::request::ActivityId::random",
+      "publicPath": "yosoi::request::ActivityId::random",
+      "title": "yosoi::request::ActivityId::random",
+      "kind": "function",
+      "signature": "pub fn random() -> Self",
+      "docs": "Generates a random UUID v4 activity identity.",
+      "source": {
+        "file": "crates/yosoi-types/src/identity.rs",
+        "lineStart": 41,
+        "lineEnd": 43,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-types/src/identity.rs#L41-L43"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::request::ActivityId::serialize",
+      "publicPath": "yosoi::request::ActivityId::serialize",
+      "title": "yosoi::request::ActivityId::serialize",
+      "kind": "function",
+      "signature": "fn serialize<S>(&self, serializer: S) -> Result<<S as >::Ok, <S as >::Error> where S: Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-types/src/identity.rs",
+        "lineStart": 66,
+        "lineEnd": 71,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-types/src/identity.rs#L66-L71"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "805c42f4ca5bec37fe3d8b3cb42b51337d8f0f4d23be348c996e12ed5396e744",
+  "slug": "yosoi/request/struct/activityid",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "805c42f4ca5bec37fe3d8b3cb42b51337d8f0f4d23be348c996e12ed5396e744"
+}

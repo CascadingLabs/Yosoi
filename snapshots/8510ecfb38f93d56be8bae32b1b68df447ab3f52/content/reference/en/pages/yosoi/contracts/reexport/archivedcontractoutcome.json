@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "reexport:yosoi::contracts::ArchivedContractOutcome",
+  "publicPath": "yosoi::contracts::ArchivedContractOutcome",
+  "kind": "reexport",
+  "title": "yosoi::contracts::ArchivedContractOutcome",
+  "signature": "pub use yosoi_contract_validation::archived::ContractOutcome as ArchivedContractOutcome;",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi/src/contracts.rs",
+    "lineStart": 13,
+    "lineEnd": 13,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi/src/contracts.rs#L13-L13"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::contracts::ArchivedContractOutcome"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/contracts/reexport/archivedcontractoutcome",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

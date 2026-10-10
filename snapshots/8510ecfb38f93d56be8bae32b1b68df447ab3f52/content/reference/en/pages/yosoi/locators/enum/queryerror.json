@@ -1,0 +1,415 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::locators::QueryError",
+  "publicPath": "yosoi::locators::QueryError",
+  "kind": "enum",
+  "title": "yosoi::locators::QueryError",
+  "signature": "pub enum QueryError",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi-documents/src/query_error.rs",
+    "lineStart": 6,
+    "lineEnd": 45,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/query_error.rs#L6-L45"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 9,
+    "lineEnd": 9,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi/src/locators.rs#L9-L9"
+  },
+  "aliases": [
+    "yosoi::prelude::QueryError",
+    "yosoi::prelude::locators::QueryError"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::locators::QueryError::DefaultNamespaceOnlyForCss",
+      "publicPath": "yosoi::locators::QueryError::DefaultNamespaceOnlyForCss",
+      "title": "yosoi::locators::QueryError::DefaultNamespaceOnlyForCss",
+      "kind": "variant",
+      "signature": "DefaultNamespaceOnlyForCss",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query_error.rs",
+        "lineStart": 40,
+        "lineEnd": 40,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/query_error.rs#L40-L40"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::QueryError::DuplicateCaptureName",
+      "publicPath": "yosoi::locators::QueryError::DuplicateCaptureName",
+      "title": "yosoi::locators::QueryError::DuplicateCaptureName",
+      "kind": "variant",
+      "signature": "DuplicateCaptureName { name: String }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query_error.rs",
+        "lineStart": 20,
+        "lineEnd": 20,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/query_error.rs#L20-L20"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::QueryError::DuplicateNamespacePrefix",
+      "publicPath": "yosoi::locators::QueryError::DuplicateNamespacePrefix",
+      "title": "yosoi::locators::QueryError::DuplicateNamespacePrefix",
+      "kind": "variant",
+      "signature": "DuplicateNamespacePrefix",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query_error.rs",
+        "lineStart": 30,
+        "lineEnd": 30,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/query_error.rs#L30-L30"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::QueryError::EmptyAttributeName",
+      "publicPath": "yosoi::locators::QueryError::EmptyAttributeName",
+      "title": "yosoi::locators::QueryError::EmptyAttributeName",
+      "kind": "variant",
+      "signature": "EmptyAttributeName",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query_error.rs",
+        "lineStart": 12,
+        "lineEnd": 12,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/query_error.rs#L12-L12"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::QueryError::EmptyCaptureList",
+      "publicPath": "yosoi::locators::QueryError::EmptyCaptureList",
+      "title": "yosoi::locators::QueryError::EmptyCaptureList",
+      "kind": "variant",
+      "signature": "EmptyCaptureList",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query_error.rs",
+        "lineStart": 16,
+        "lineEnd": 16,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/query_error.rs#L16-L16"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::QueryError::EmptyCaptureName",
+      "publicPath": "yosoi::locators::QueryError::EmptyCaptureName",
+      "title": "yosoi::locators::QueryError::EmptyCaptureName",
+      "kind": "variant",
+      "signature": "EmptyCaptureName",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query_error.rs",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/query_error.rs#L18-L18"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::QueryError::EmptyExpression",
+      "publicPath": "yosoi::locators::QueryError::EmptyExpression",
+      "title": "yosoi::locators::QueryError::EmptyExpression",
+      "kind": "variant",
+      "signature": "EmptyExpression",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query_error.rs",
+        "lineStart": 8,
+        "lineEnd": 8,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/query_error.rs#L8-L8"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::QueryError::EmptyNamespaceUri",
+      "publicPath": "yosoi::locators::QueryError::EmptyNamespaceUri",
+      "title": "yosoi::locators::QueryError::EmptyNamespaceUri",
+      "kind": "variant",
+      "signature": "EmptyNamespaceUri",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query_error.rs",
+        "lineStart": 28,
+        "lineEnd": 28,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/query_error.rs#L28-L28"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::QueryError::EmptyRegionId",
+      "publicPath": "yosoi::locators::QueryError::EmptyRegionId",
+      "title": "yosoi::locators::QueryError::EmptyRegionId",
+      "kind": "variant",
+      "signature": "EmptyRegionId",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query_error.rs",
+        "lineStart": 14,
+        "lineEnd": 14,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/query_error.rs#L14-L14"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::QueryError::InvalidAttributeNamespaceName",
+      "publicPath": "yosoi::locators::QueryError::InvalidAttributeNamespaceName",
+      "title": "yosoi::locators::QueryError::InvalidAttributeNamespaceName",
+      "kind": "variant",
+      "signature": "InvalidAttributeNamespaceName",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query_error.rs",
+        "lineStart": 42,
+        "lineEnd": 42,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/query_error.rs#L42-L42"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::QueryError::InvalidJsonQuery",
+      "publicPath": "yosoi::locators::QueryError::InvalidJsonQuery",
+      "title": "yosoi::locators::QueryError::InvalidJsonQuery",
+      "kind": "variant",
+      "signature": "InvalidJsonQuery(crate::JsonQuerySyntaxError)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query_error.rs",
+        "lineStart": 44,
+        "lineEnd": 44,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/query_error.rs#L44-L44"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::QueryError::InvalidNamespacePrefix",
+      "publicPath": "yosoi::locators::QueryError::InvalidNamespacePrefix",
+      "title": "yosoi::locators::QueryError::InvalidNamespacePrefix",
+      "kind": "variant",
+      "signature": "InvalidNamespacePrefix",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query_error.rs",
+        "lineStart": 26,
+        "lineEnd": 26,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/query_error.rs#L26-L26"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::QueryError::InvalidRegexSyntax",
+      "publicPath": "yosoi::locators::QueryError::InvalidRegexSyntax",
+      "title": "yosoi::locators::QueryError::InvalidRegexSyntax",
+      "kind": "variant",
+      "signature": "InvalidRegexSyntax",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query_error.rs",
+        "lineStart": 10,
+        "lineEnd": 10,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/query_error.rs#L10-L10"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::QueryError::LengthOverflow",
+      "publicPath": "yosoi::locators::QueryError::LengthOverflow",
+      "title": "yosoi::locators::QueryError::LengthOverflow",
+      "kind": "variant",
+      "signature": "LengthOverflow",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query_error.rs",
+        "lineStart": 24,
+        "lineEnd": 24,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/query_error.rs#L24-L24"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::QueryError::NamespacesRequireXmlLocator",
+      "publicPath": "yosoi::locators::QueryError::NamespacesRequireXmlLocator",
+      "title": "yosoi::locators::QueryError::NamespacesRequireXmlLocator",
+      "kind": "variant",
+      "signature": "NamespacesRequireXmlLocator",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query_error.rs",
+        "lineStart": 36,
+        "lineEnd": 36,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/query_error.rs#L36-L36"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::QueryError::NonCanonicalNamespaceBindingOrder",
+      "publicPath": "yosoi::locators::QueryError::NonCanonicalNamespaceBindingOrder",
+      "title": "yosoi::locators::QueryError::NonCanonicalNamespaceBindingOrder",
+      "kind": "variant",
+      "signature": "NonCanonicalNamespaceBindingOrder",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query_error.rs",
+        "lineStart": 38,
+        "lineEnd": 38,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/query_error.rs#L38-L38"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::QueryError::ReservedNamespacePrefix",
+      "publicPath": "yosoi::locators::QueryError::ReservedNamespacePrefix",
+      "title": "yosoi::locators::QueryError::ReservedNamespacePrefix",
+      "kind": "variant",
+      "signature": "ReservedNamespacePrefix",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query_error.rs",
+        "lineStart": 32,
+        "lineEnd": 32,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/query_error.rs#L32-L32"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::QueryError::UnboundNamespacePrefix",
+      "publicPath": "yosoi::locators::QueryError::UnboundNamespacePrefix",
+      "title": "yosoi::locators::QueryError::UnboundNamespacePrefix",
+      "kind": "variant",
+      "signature": "UnboundNamespacePrefix",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query_error.rs",
+        "lineStart": 34,
+        "lineEnd": 34,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/query_error.rs#L34-L34"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::QueryError::UnknownCaptureName",
+      "publicPath": "yosoi::locators::QueryError::UnknownCaptureName",
+      "title": "yosoi::locators::QueryError::UnknownCaptureName",
+      "kind": "variant",
+      "signature": "UnknownCaptureName { name: String }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query_error.rs",
+        "lineStart": 22,
+        "lineEnd": 22,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/query_error.rs#L22-L22"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::QueryError::clone",
+      "publicPath": "yosoi::locators::QueryError::clone",
+      "title": "yosoi::locators::QueryError::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> QueryError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query_error.rs",
+        "lineStart": 5,
+        "lineEnd": 5,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/query_error.rs#L5-L5"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::locators::QueryError::eq",
+      "publicPath": "yosoi::locators::QueryError::eq",
+      "title": "yosoi::locators::QueryError::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &QueryError) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query_error.rs",
+        "lineStart": 5,
+        "lineEnd": 5,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/query_error.rs#L5-L5"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::locators::QueryError::fmt",
+      "publicPath": "yosoi::locators::QueryError::fmt",
+      "title": "yosoi::locators::QueryError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query_error.rs",
+        "lineStart": 5,
+        "lineEnd": 5,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/query_error.rs#L5-L5"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::locators::QueryError::fmt",
+      "publicPath": "yosoi::locators::QueryError::fmt",
+      "title": "yosoi::locators::QueryError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, __formatter: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query_error.rs",
+        "lineStart": 5,
+        "lineEnd": 5,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/query_error.rs#L5-L5"
+      },
+      "examples": [],
+      "trait": "Display"
+    },
+    {
+      "id": "function:yosoi::locators::QueryError::from",
+      "publicPath": "yosoi::locators::QueryError::from",
+      "title": "yosoi::locators::QueryError::from",
+      "kind": "function",
+      "signature": "fn from(source: JsonQuerySyntaxError) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query_error.rs",
+        "lineStart": 5,
+        "lineEnd": 5,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/query_error.rs#L5-L5"
+      },
+      "examples": [],
+      "trait": "From"
+    },
+    {
+      "id": "function:yosoi::locators::QueryError::source",
+      "publicPath": "yosoi::locators::QueryError::source",
+      "title": "yosoi::locators::QueryError::source",
+      "kind": "function",
+      "signature": "fn source(&self) -> ::core::option::Option<&dyn ::thiserror::__private21::Error + 'static>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query_error.rs",
+        "lineStart": 5,
+        "lineEnd": 5,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/query_error.rs#L5-L5"
+      },
+      "examples": [],
+      "trait": "Error"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/locators/enum/queryerror",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

@@ -1,0 +1,159 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::locators::JsonCoordinate",
+  "publicPath": "yosoi::locators::JsonCoordinate",
+  "kind": "struct",
+  "title": "yosoi::locators::JsonCoordinate",
+  "signature": "pub struct JsonCoordinate",
+  "docs": "Native coordinate for a JSON value.",
+  "source": {
+    "file": "crates/yosoi-documents/src/outcome_native_coordinates.rs",
+    "lineStart": 10,
+    "lineEnd": 10,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/outcome_native_coordinates.rs#L10-L10"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 6,
+    "lineEnd": 6,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi/src/locators.rs#L6-L6"
+  },
+  "aliases": [
+    "yosoi::prelude::locators::JsonCoordinate"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::locators::JsonCoordinate::as_pointer",
+      "publicPath": "yosoi::locators::JsonCoordinate::as_pointer",
+      "title": "yosoi::locators::JsonCoordinate::as_pointer",
+      "kind": "function",
+      "signature": "pub fn as_pointer(&self) -> &str",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome_native_coordinates.rs",
+        "lineStart": 22,
+        "lineEnd": 24,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/outcome_native_coordinates.rs#L22-L24"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::JsonCoordinate::clone",
+      "publicPath": "yosoi::locators::JsonCoordinate::clone",
+      "title": "yosoi::locators::JsonCoordinate::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> JsonCoordinate",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome_native_coordinates.rs",
+        "lineStart": 8,
+        "lineEnd": 8,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/outcome_native_coordinates.rs#L8-L8"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::locators::JsonCoordinate::deserialize",
+      "publicPath": "yosoi::locators::JsonCoordinate::deserialize",
+      "title": "yosoi::locators::JsonCoordinate::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<D>(deserializer: D) -> Result<Self, <D as >::Error> where D: Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome_native_coordinates.rs",
+        "lineStart": 38,
+        "lineEnd": 43,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/outcome_native_coordinates.rs#L38-L43"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::locators::JsonCoordinate::eq",
+      "publicPath": "yosoi::locators::JsonCoordinate::eq",
+      "title": "yosoi::locators::JsonCoordinate::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &JsonCoordinate) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome_native_coordinates.rs",
+        "lineStart": 8,
+        "lineEnd": 8,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/outcome_native_coordinates.rs#L8-L8"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::locators::JsonCoordinate::fmt",
+      "publicPath": "yosoi::locators::JsonCoordinate::fmt",
+      "title": "yosoi::locators::JsonCoordinate::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome_native_coordinates.rs",
+        "lineStart": 8,
+        "lineEnd": 8,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/outcome_native_coordinates.rs#L8-L8"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::locators::JsonCoordinate::hash",
+      "publicPath": "yosoi::locators::JsonCoordinate::hash",
+      "title": "yosoi::locators::JsonCoordinate::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome_native_coordinates.rs",
+        "lineStart": 8,
+        "lineEnd": 8,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/outcome_native_coordinates.rs#L8-L8"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::locators::JsonCoordinate::serialize",
+      "publicPath": "yosoi::locators::JsonCoordinate::serialize",
+      "title": "yosoi::locators::JsonCoordinate::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome_native_coordinates.rs",
+        "lineStart": 8,
+        "lineEnd": 8,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/outcome_native_coordinates.rs#L8-L8"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::locators::JsonCoordinate::try_new",
+      "publicPath": "yosoi::locators::JsonCoordinate::try_new",
+      "title": "yosoi::locators::JsonCoordinate::try_new",
+      "kind": "function",
+      "signature": "pub fn try_new(pointer: impl Into<String>) -> Result<Self, CoordinateError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome_native_coordinates.rs",
+        "lineStart": 13,
+        "lineEnd": 20,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/8510ecfb38f93d56be8bae32b1b68df447ab3f52/crates/yosoi-documents/src/outcome_native_coordinates.rs#L13-L20"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "56b57020bc00ac6cebdd035a932b1e8ccf97b5be303a9053cee5286c856f9a0b",
+  "slug": "yosoi/locators/struct/jsoncoordinate",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "56b57020bc00ac6cebdd035a932b1e8ccf97b5be303a9053cee5286c856f9a0b"
+}
