@@ -102,7 +102,10 @@ def python_abis(requirement: str) -> list[dict]:
     for minor in range(minimum, maximum):
         # The existing SDK compatibility policy does not advertise 3.13t.
         for suffix in ("", "t") if minor >= 14 else ("",):
-            interpreter = f"3.{minor}{suffix}"
+            # Match the versions already exercised by Python CI; setup-python's
+            # hosted manifest may lag UV's managed 3.15 interpreters.
+            selected = {14: "3.14.8", 15: "3.15.0"}.get(minor, f"3.{minor}")
+            interpreter = selected + suffix
             cp = f"cp3{minor}"
             result.append(
                 {
@@ -190,6 +193,7 @@ def plan(root: Path, tag: str) -> dict:
     return {
         "version": version,
         "python_version": python_version(version),
+        "candidate": "-rc." in version,
         "toolchain": read_toml(root / "rust-toolchain.toml")["toolchain"]["channel"],
         "platforms": {"include": platforms},
         "wheels": {
@@ -333,6 +337,7 @@ def main() -> None:
                 for key in (
                     "version",
                     "python_version",
+                    "candidate",
                     "toolchain",
                     "source_commit",
                     "platforms",
@@ -340,7 +345,7 @@ def main() -> None:
                 ):
                     value = release[key]
                     encoded_value = (
-                        json.dumps(value) if isinstance(value, dict) else value
+                        json.dumps(value) if isinstance(value, (dict, bool)) else value
                     )
                     stream.write(f"{key}={encoded_value}\n")
     elif args.command == "publication-ready":

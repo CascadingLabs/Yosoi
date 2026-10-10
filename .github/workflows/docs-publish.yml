@@ -24,14 +24,13 @@ concurrency:
   group: docs-publication
   cancel-in-progress: false
 jobs:
-  publish:
+  identity:
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
-    permissions:
-      contents: write
-    env:
-      CARGO_BUILD_JOBS: '1'
-      RAYON_NUM_THREADS: '1'
+    timeout-minutes: 5
+    outputs:
+      publish: ${{ steps.select.outputs.publish }}
+      source_commit: ${{ steps.select.outputs.source_commit }}
+      version: ${{ steps.select.outputs.version }}
     steps:
       - name: Restrict standalone manual docs publication to main
         env:
@@ -47,15 +46,38 @@ jobs:
         with:
           ref: ${{ inputs.source_commit || github.sha }}
           fetch-depth: 0
+          persist-credentials: false
+      - name: Resolve docs source and SDK version
+        id: select
+        env:
+          SELECTED_VERSION: ${{ inputs.version }}
+          SELECTED_SOURCE: ${{ inputs.source_commit }}
+          BUNDLE_ARTIFACT: ${{ inputs.bundle_artifact }}
+        run: |
+          echo "source_commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          node --input-type=module -e 'import fs from "node:fs"; const version=process.env.SELECTED_VERSION || fs.readFileSync("Cargo.toml","utf8").match(/^version\s*=\s*"([^"]+)"/m)?.[1]; const match=/^0\.([1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-rc\.([1-9][0-9]*))?$/.exec(version); if(!match || Number(match[1])>100000 || Number(match[2])>10000) throw Error("Expected a beta or numbered RC SDK version"); const verifiedBundle=process.env.SELECTED_VERSION && process.env.SELECTED_SOURCE && process.env.BUNDLE_ARTIFACT==="release-docs"; const publish=!match[3] || Boolean(verifiedBundle); fs.appendFileSync(process.env.GITHUB_OUTPUT, `version=${version}\npublish=${publish}\n`); if(!publish) console.log("Deferring RC docs until the verified Release CD bundle is available.");'
+  publish:
+    needs: identity
+    if: needs.identity.outputs.publish == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    permissions:
+      contents: write
+    env:
+      CARGO_BUILD_JOBS: '1'
+      RAYON_NUM_THREADS: '1'
+      SOURCE_COMMIT: ${{ needs.identity.outputs.source_commit }}
+      DOCS_VERSION: ${{ needs.identity.outputs.version }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ needs.identity.outputs.source_commit }}
+          fetch-depth: 0
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version: 1.4.2
-      - name: Resolve docs source and SDK version
-        env:
-          SELECTED_VERSION: ${{ inputs.version }}
+      - name: Prepare docs publication directory
         run: |
-          echo "SOURCE_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
-          node --input-type=module -e 'import fs from "node:fs"; const version=process.env.SELECTED_VERSION || fs.readFileSync("Cargo.toml","utf8").match(/^version\s*=\s*"([^"]+)"/m)?.[1]; if(!/^0\.\d+\.\d+$/.test(version)) throw Error("Expected a beta SDK version"); fs.appendFileSync(process.env.GITHUB_ENV, `DOCS_VERSION=${version}\n`);'
           mkdir -p .generated/docs-publication
       - name: Download already built release docs
         if: inputs.bundle_artifact != '' && inputs.bundle_artifact != null
