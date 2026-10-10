@@ -59,6 +59,7 @@ jobs:
         env:
           SELECTED_PYTHON: ${{ matrix.python }}
         run: |
+          uv python install "$SELECTED_PYTHON"
           interpreter=$(uv python find "$SELECTED_PYTHON")
           uv venv --python "$interpreter" .venv
       - name: Install the built wheel and test dependencies
