@@ -248,11 +248,13 @@ fi
             if "node --input-type=module -e" in line
         )
         script = line.split(" -e '", 1)[1].removesuffix("'")
-        for version, source, bundle, allowed in (
-            ("0.1.0-rc.2", "a" * 40, "release-docs", True),
-            ("0.1.0-rc.2", "", "release-docs", False),
-            ("", "a" * 40, "release-docs", False),
-            ("0.1.0-rc.2", "a" * 40, "unverified-docs", False),
+        for version, source, bundle, tag, allowed, expected in (
+            ("0.1.0-rc.2", "a" * 40, "release-docs", "", True, 0),
+            ("0.1.0-rc.2", "", "release-docs", "", False, 0),
+            ("", "a" * 40, "release-docs", "", False, 0),
+            ("0.1.0-rc.2", "a" * 40, "unverified-docs", "", False, 0),
+            ("", "", "", "v0.1.0-rc.2", True, 0),
+            ("", "", "", "v0.1.0-rc.3", False, 1),
         ):
             with (
                 self.subTest(version=version, source=source, bundle=bundle),
@@ -271,14 +273,60 @@ fi
                         SELECTED_VERSION=version,
                         SELECTED_SOURCE=source,
                         BUNDLE_ARTIFACT=bundle,
+                        RELEASE_TAG=tag,
                         GITHUB_OUTPUT=str(output),
                     ),
                     capture_output=True,
                     text=True,
                     check=False,
                 )
-                self.assertEqual(result.returncode, 0, result.stderr)
-                self.assertIn(f"publish={str(allowed).lower()}\n", output.read_text())
+                self.assertEqual(result.returncode, expected, result.stderr)
+                if expected:
+                    self.assertFalse(output.exists())
+                else:
+                    self.assertIn(
+                        f"publish={str(allowed).lower()}\n", output.read_text()
+                    )
+
+    def test_docs_replay_rejects_drafts_missing_releases_and_invalid_tags(self):
+        workflow = DIRECTORY.parents[1] / ".github/workflows/docs-publish.yml"
+        section = workflow.read_text().split(
+            "      - name: Require a published release for docs replay\n", 1
+        )[1]
+        script = textwrap.dedent(
+            section.split("\n      - ", 1)[0].split("        run: |\n", 1)[1]
+        )
+        for tag, published, api_exit, allowed in (
+            ("v0.1.0-rc.4", "true", 0, True),
+            ("v0.1.0", "true", 0, True),
+            ("v0.1.0-rc.4", "false", 0, False),
+            ("v0.1.0-rc.4", "", 1, False),
+            ("main", "true", 0, False),
+            ("v0.1.0-rc.0", "true", 0, False),
+        ):
+            with self.subTest(tag=tag, published=published, api_exit=api_exit):
+                with tempfile.TemporaryDirectory() as directory:
+                    root = Path(directory)
+                    gh = root / "gh"
+                    gh.write_text(
+                        '#!/bin/sh\nprintf "%s\\n" "$PUBLISHED"\nexit "$API_EXIT"\n'
+                    )
+                    gh.chmod(0o755)
+                    result = subprocess.run(
+                        ["bash", "-ec", script],
+                        env=dict(
+                            os.environ,
+                            PATH=f"{root}:/usr/bin:/bin",
+                            RELEASE_TAG=tag,
+                            PUBLISHED=published,
+                            API_EXIT=str(api_exit),
+                            GITHUB_REPOSITORY="example/repo",
+                        ),
+                        capture_output=True,
+                        text=True,
+                        check=False,
+                    )
+                    self.assertEqual(result.returncode == 0, allowed, result.stderr)
 
     def test_actual_sdist_extraction_avoids_python_directory_collision(self):
         workflow = DIRECTORY.parents[1] / ".github/workflows/release-cd.yml"

@@ -4,6 +4,11 @@ on:
     branches: [main]
     paths: ['docs/public/**', 'scripts/docs/**', 'crates/**', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', '.github/workflows/docs-publish.yml']
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Replay docs from an already published release; blank for main docs
+        type: string
+        default: ''
   workflow_call:
     inputs:
       source_commit:
@@ -42,9 +47,17 @@ jobs:
             echo 'Standalone production docs publication requires main.' >&2
             exit 1
           fi
+      - name: Require a published release for docs replay
+        if: inputs.release_tag != '' && inputs.release_tag != null
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          [[ "$RELEASE_TAG" =~ ^v0\.[1-9][0-9]*\.(0|[1-9][0-9]*)(-rc\.[1-9][0-9]*)?$ ]]
+          test "$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq '.isDraft == false')" = true
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
-          ref: ${{ inputs.source_commit || github.sha }}
+          ref: ${{ inputs.release_tag && format('refs/tags/{0}', inputs.release_tag) || inputs.source_commit || github.sha }}
           fetch-depth: 0
           persist-credentials: false
       - name: Resolve docs source and SDK version
@@ -53,9 +66,10 @@ jobs:
           SELECTED_VERSION: ${{ inputs.version }}
           SELECTED_SOURCE: ${{ inputs.source_commit }}
           BUNDLE_ARTIFACT: ${{ inputs.bundle_artifact }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
         run: |
           echo "source_commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-          node --input-type=module -e 'import fs from "node:fs"; const version=process.env.SELECTED_VERSION || fs.readFileSync("Cargo.toml","utf8").match(/^version\s*=\s*"([^"]+)"/m)?.[1]; const match=/^0\.([1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-rc\.([1-9][0-9]*))?$/.exec(version); if(!match || Number(match[1])>100000 || Number(match[2])>10000) throw Error("Expected a beta or numbered RC SDK version"); const verifiedBundle=process.env.SELECTED_VERSION && process.env.SELECTED_SOURCE && process.env.BUNDLE_ARTIFACT==="release-docs"; const publish=!match[3] || Boolean(verifiedBundle); fs.appendFileSync(process.env.GITHUB_OUTPUT, `version=${version}\npublish=${publish}\n`); if(!publish) console.log("Deferring RC docs until the verified Release CD bundle is available.");'
+          node --input-type=module -e 'import fs from "node:fs"; const version=process.env.SELECTED_VERSION || fs.readFileSync("Cargo.toml","utf8").match(/^version\s*=\s*"([^"]+)"/m)?.[1]; const match=/^0\.([1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-rc\.([1-9][0-9]*))?$/.exec(version); if(!match || Number(match[1])>100000 || Number(match[2])>10000) throw Error("Expected a beta or numbered RC SDK version"); if(process.env.RELEASE_TAG && process.env.RELEASE_TAG!==`v${version}`) throw Error("Release tag differs from checked-out SDK version"); const verifiedBundle=process.env.RELEASE_TAG || (process.env.SELECTED_VERSION && process.env.SELECTED_SOURCE && process.env.BUNDLE_ARTIFACT==="release-docs"); const publish=!match[3] || Boolean(verifiedBundle); fs.appendFileSync(process.env.GITHUB_OUTPUT, `version=${version}\npublish=${publish}\n`); if(!publish) console.log("Deferring RC docs until the verified Release CD bundle is available.");'
   publish:
     needs: identity
     if: needs.identity.outputs.publish == 'true'
@@ -68,6 +82,7 @@ jobs:
       RAYON_NUM_THREADS: '1'
       SOURCE_COMMIT: ${{ needs.identity.outputs.source_commit }}
       DOCS_VERSION: ${{ needs.identity.outputs.version }}
+      RELEASE_TAG: ${{ inputs.release_tag }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -85,8 +100,17 @@ jobs:
         with:
           name: ${{ inputs.bundle_artifact }}
           path: .generated/docs-publication/dist
+      - name: Download checksummed docs from an already published release
+        if: inputs.release_tag != '' && inputs.release_tag != null
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p .generated/docs-publication/dist
+          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --pattern "yosoi-docs-v$DOCS_VERSION.tar.gz" --pattern SHA256SUMS --dir .generated/docs-publication/dist
+          cd .generated/docs-publication/dist
+          sha256sum --check --strict --ignore-missing SHA256SUMS
       - name: Build docs and matching API reference for a docs-only publication
-        if: inputs.bundle_artifact == '' || inputs.bundle_artifact == null
+        if: (inputs.bundle_artifact == '' || inputs.bundle_artifact == null) && (inputs.release_tag == '' || inputs.release_tag == null)
         run: |
           cd scripts/docs
           bun install --frozen-lockfile
