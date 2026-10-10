@@ -23,10 +23,15 @@ package may need its visibility set to public in GitHub's package settings.
 ```sh
 docker run --rm --init --cap-drop ALL --security-opt no-new-privileges:true \
   --security-opt seccomp=docker/browser/seccomp-chrome.json \
-  --cpus 1 --memory 2g --pids-limit 256 --shm-size 1g \
-  -p 127.0.0.1:9222:9222 -p 127.0.0.1:9223:9223 \
+  --cpus 1 --memory 2g --pids-limit 512 --shm-size 1g \
+  --network host \
   ghcr.io/cascadinglabs/chromium-cdp:headless-0.1.0-rc.3
 ```
+
+On Linux, host networking makes Chromium's loopback CDP listeners reachable
+at `127.0.0.1:9222` and `127.0.0.1:9223`. Bridge-mode `-p` mappings cannot
+forward to a listener bound only to container loopback. Use a private tunnel
+or a shared network namespace when host networking is unavailable.
 
 Use the headful tag and ports 19222/19223 for the Sway/Wayland service. Both
 variants run as UID/GID 10001, preserve Chromium's sandbox and site isolation,

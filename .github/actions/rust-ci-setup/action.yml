@@ -7,6 +7,12 @@ inputs:
   cache-key:
     description: Build configuration cache namespace
     required: true
+  cache-job-id:
+    description: Reuse another job's cache namespace when compilation settings match
+    default: ''
+  cache-save:
+    description: Whether this job may update the compiled target cache
+    default: 'true'
 runs:
   using: composite
   steps:
@@ -34,7 +40,8 @@ runs:
         printf '# Source: %s\n# Run: %s\n# Attempt: %s\n' "$GITHUB_SHA" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" > .generated/ci-cache-key/.cargo/config.toml
     - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
       with:
-        key: ${{ inputs.cache-key }}
+        key: ${{ inputs.cache-key }}-${{ inputs.cache-job-id || github.job }}
+        add-job-id-key: 'false'
         workspaces: |
           . -> target
           . -> target/llvm-cov-target
@@ -43,7 +50,20 @@ runs:
         cache-on-failure: 'true'
         # PRs restore main's caches without filling the repository quota with
         # duplicate archives that main cannot restore. Cargo checks fingerprints.
-        save-if: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') }}
+        save-if: ${{ inputs.cache-save == 'true' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) }}
+    - name: Install pinned compiler-result cache
+      uses: mozilla-actions/sccache-action@fd02668681acd5f960e1372061bee5e3e987195c # v0.0.11
+      with:
+        version: 'v0.18.0'
+    - name: Reuse content-keyed compilation results
+      shell: bash
+      env:
+        CACHE_MODE: ${{ (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && 'READ_WRITE' || 'READ_ONLY' }}
+      run: |
+        # Enable after rust-cache so existing target-cache namespaces survive.
+        echo "SCCACHE_GHA_RW_MODE=$CACHE_MODE" >> "$GITHUB_ENV"
+        echo 'SCCACHE_GHA_ENABLED=true' >> "$GITHUB_ENV"
+        echo 'RUSTC_WRAPPER=sccache' >> "$GITHUB_ENV"
     - name: Use two compiler workers on the hosted Linux runner
       shell: bash
       run: |

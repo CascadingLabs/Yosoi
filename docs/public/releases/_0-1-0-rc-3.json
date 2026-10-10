@@ -1,0 +1,8 @@
+{
+  "generated_source": "## What's Changed\n* Batch stable ABI wheels and reuse CI for faster releases by @AndrewPBerg in https://github.com/CascadingLabs/Yosoi/pull/127\n* Publish verified headless and headful Chromium containers by @AndrewPBerg in https://github.com/CascadingLabs/Yosoi/pull/128\n\n\n**Full Changelog**: https://github.com/CascadingLabs/Yosoi/compare/v0.1.0-rc.2...v0.1.0-rc.3",
+  "generated_source_sha256": "d90b228ff1af0181e69948333ea74d9c1347fc7a8e47935822b78c452b14857e",
+  "github_notes_file": "yosoi-rc3-github-notes.md",
+  "previous": "0.1.0-rc.2",
+  "schema": 1,
+  "version": "0.1.0-rc.3"
+}
