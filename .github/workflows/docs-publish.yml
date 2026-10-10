@@ -1,0 +1,106 @@
+name: Publish Yosoi docs
+on:
+  push:
+    branches: [main]
+    paths: ['docs/public/**', 'scripts/docs/**', 'crates/**', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', '.github/workflows/docs-publish.yml']
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      source_commit:
+        required: true
+        type: string
+      version:
+        required: true
+        type: string
+      bundle_artifact:
+        type: string
+        default: ''
+    secrets:
+      DOCS_DEPLOY_TOKEN:
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: docs-publication
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    permissions:
+      contents: write
+    env:
+      CARGO_BUILD_JOBS: '1'
+      RAYON_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ inputs.source_commit || github.sha }}
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: 1.4.2
+      - name: Resolve docs source and SDK version
+        env:
+          SELECTED_VERSION: ${{ inputs.version }}
+        run: |
+          echo "SOURCE_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          node --input-type=module -e 'import fs from "node:fs"; const version=process.env.SELECTED_VERSION || fs.readFileSync("Cargo.toml","utf8").match(/^version\s*=\s*"([^"]+)"/m)?.[1]; if(!/^0\.\d+\.\d+$/.test(version)) throw Error("Expected a beta SDK version"); fs.appendFileSync(process.env.GITHUB_ENV, `DOCS_VERSION=${version}\n`);'
+          mkdir -p .generated/docs-publication
+      - name: Download already built release docs
+        if: inputs.bundle_artifact != '' && inputs.bundle_artifact != null
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          name: ${{ inputs.bundle_artifact }}
+          path: .generated/docs-publication/dist
+      - name: Build docs and matching API reference for a docs-only publication
+        if: inputs.bundle_artifact == '' || inputs.bundle_artifact == null
+        run: |
+          cd scripts/docs
+          bun install --frozen-lockfile
+          bun run check
+          cd ../..
+          channel=$(node -p 'require("./scripts/docs/reference/toolchain.json").channel')
+          rustup toolchain install "$channel" --profile minimal
+          node scripts/docs/reference/generate.mjs generate --source "$SOURCE_COMMIT" --repository CascadingLabs/Yosoi --sdk yosoi --version "$DOCS_VERSION" --locales en --out .generated/docs-publication/reference
+          node scripts/docs/bundle.mjs create --source "$SOURCE_COMMIT" --version "$DOCS_VERSION" --reference .generated/docs-publication/reference --out .generated/docs-publication/content
+          mkdir -p .generated/docs-publication/dist
+          tar --sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner --mode=u+rwX,go+rX,go-w -cf - -C .generated/docs-publication/content . | gzip -n > ".generated/docs-publication/dist/yosoi-docs-v$DOCS_VERSION.tar.gz"
+      - name: Publish immutable raw files and latest catalog
+        run: |
+          bundle="$GITHUB_WORKSPACE/.generated/docs-publication/dist/yosoi-docs-v$DOCS_VERSION.tar.gz"
+          artifacts="$GITHUB_WORKSPACE/.generated/docs-publication/artifacts"
+          mkdir -p "$artifacts"
+          git init -q "$artifacts"
+          git -C "$artifacts" config user.name 'github-actions[bot]'
+          git -C "$artifacts" config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git -C "$artifacts" config commit.gpgsign false
+          git -C "$artifacts" config http.https://github.com/.extraheader "$(git config --get http.https://github.com/.extraheader)"
+          git -C "$artifacts" remote add origin https://github.com/CascadingLabs/Yosoi.git
+          if git ls-remote --exit-code origin refs/heads/docs-artifacts > /dev/null; then
+            git -C "$artifacts" fetch origin docs-artifacts
+            git -C "$artifacts" checkout -b docs-artifacts FETCH_HEAD
+          else
+            git -C "$artifacts" checkout --orphan docs-artifacts
+          fi
+          snapshot="$artifacts/snapshots/$SOURCE_COMMIT"
+          if [ -f "$snapshot/bundle.tar.gz" ]; then
+            cmp "$bundle" "$snapshot/bundle.tar.gz"
+          else
+            mkdir -p "$snapshot/content"
+            cp "$bundle" "$snapshot/bundle.tar.gz"
+            tar -xzf "$bundle" -C "$snapshot/content"
+            git -C "$artifacts" add snapshots
+            git -C "$artifacts" commit -m "docs: publish $DOCS_VERSION at $SOURCE_COMMIT"
+          fi
+          node scripts/docs/bundle.mjs register --checkout "$artifacts" --bundle "$bundle" --source "$SOURCE_COMMIT" --version "$DOCS_VERSION"
+          git -C "$artifacts" add catalog.json
+          if ! git -C "$artifacts" diff --cached --quiet; then
+            git -C "$artifacts" commit -m "docs: select $SOURCE_COMMIT"
+          fi
+          git -C "$artifacts" push origin HEAD:docs-artifacts
+      - name: Request frontend docs update
+        env:
+          GH_TOKEN: ${{ secrets.DOCS_DEPLOY_TOKEN }}
+        run: |
+          gh api --method POST repos/CascadingLabs/CascadingLabsFE/dispatches -f event_type=yosoi-docs-published

@@ -61,12 +61,15 @@ a separate wheel. macOS has separate Intel/Apple Silicon wheels with a macOS
   publish patched upstream packages under upstream names.
 - The Python stack's hosted checks must pass before release; its local fixes
   do not establish a passing hosted wheel matrix.
-- This PR publishes a versioned docs/reference **bundle**, not a frontend
-  deployment. CascadingLabsFE's prepare/export/register contract remains the
-  deployment boundary: import this bundle's `reference/`, prepare the same SDK
-  commit/version, export and commit immutable HTML artifacts, register their
-  committed hashes, then build/deploy the frontend. `DOCS_DEPLOY_TOKEN` is not
-  exposed because this workflow does not write to that repository.
+- After the GitHub SDK release succeeds, `docs-publish.yml` publishes the exact
+  already-built docs/reference bundle to the `docs-artifacts` branch, updates
+  its latest catalog, and dispatches `yosoi-docs-published` to CascadingLabsFE.
+  Docs/API changes on main can also publish a fresh docs snapshot without a new
+  SDK version. The frontend updates a small pointer file; Cloudflare Pages'
+  existing Git integration performs the deployment. Only the dispatch step
+  uses `DOCS_DEPLOY_TOKEN`, which must authorize repository dispatches to
+  CascadingLabsFE. The frontend's own secret of that name must authorize its
+  pointer commit. No new Cloudflare token is needed.
 - Artifact installation checks do not certify browser execution. Windows/macOS
   browser support needs platform-specific certification before advertising it;
   the current browser executable eligibility policy is Linux-specific.
