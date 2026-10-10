@@ -1,0 +1,8 @@
+{
+  "generated_source": "## What's Changed\n* Package browser dependencies under Yosoi-owned registry names by @AndrewPBerg in https://github.com/CascadingLabs/Yosoi/pull/144\n* Fix missing license in Python source distributions by @AndrewPBerg in https://github.com/CascadingLabs/Yosoi/pull/147\n\n\n**Full Changelog**: https://github.com/CascadingLabs/Yosoi/compare/v0.1.0-rc.6...v0.1.0-rc.7\n",
+  "generated_source_sha256": "4bf089fb03758a480172837615c00bb3c98029710907e4462b0802ab0948cf22",
+  "github_notes_file": "yosoi-rc7-github-notes.md",
+  "previous": "0.1.0-rc.6",
+  "schema": 1,
+  "version": "0.1.0-rc.7"
+}

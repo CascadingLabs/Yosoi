@@ -1392,7 +1392,7 @@ dependencies = [
 
 [[package]]
 name = "yosoi-types"
-version = "0.1.0-rc.6"
+version = "0.1.0-rc.7"
 dependencies = [
  "chrono",
  "serde",
@@ -1403,7 +1403,7 @@ dependencies = [
 
 [[package]]
 name = "yosoi-web-capture"
-version = "0.1.0-rc.6"
+version = "0.1.0-rc.7"
 dependencies = [
  "chrono",
  "encoding_rs",
@@ -1418,7 +1418,7 @@ dependencies = [
 
 [[package]]
 name = "yosoi-web-capture-direct-http"
-version = "0.1.0-rc.6"
+version = "0.1.0-rc.7"
 dependencies = [
  "async-compression",
  "bytes",
@@ -1436,7 +1436,7 @@ dependencies = [
 
 [[package]]
 name = "yosoi-web-capture-fuzz"
-version = "0.1.0-rc.6"
+version = "0.1.0-rc.7"
 dependencies = [
  "chrono",
  "libfuzzer-sys",
