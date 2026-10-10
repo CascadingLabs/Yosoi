@@ -32,7 +32,7 @@ The archive retains its source payload and uses canonical ownership/timestamps.
    release notes. `cargo xtask release check VERSION` must pass.
 2. Tag that commit on `main` as `v0.MINOR.PATCH`. A tag push runs release CD;
    a manual dispatch defaults to validation only (`publish: false`). Dispatch
-   from the release tag so GitHub's workflow identity also matches the release.
+   from the release tag, or from `main` while it is exactly the tagged commit.
    Publication checks `github.workflow_sha` against the tag's source commit;
    validation-only dispatches may use a different workflow revision.
 3. CD checks the tag/version/main ancestry, exports one source distribution,
@@ -55,9 +55,11 @@ build wheel batches on five platforms and five native artifacts concurrently;
 clean published
 installation checks run up to ten at a time. Cargo caches include workspace
 crates and separate CLI, wheel target, release identity, reference,
-and crate packaging. `sccache` also caches compiler outputs through Maturin's hosted cache integration,
-allowing common dependencies to be reused across wheel ABIs without sharing
-incompatible interpreter bindings. Cache statistics are emitted by the action.
+and crate packaging. Pinned `sccache` caches compiler results in ordinary Rust
+CI and native release builds as well as Maturin wheel builds. Content-keyed
+results avoid recompiling unchanged libraries when checkout timestamps change;
+compiler, features, flags, and interpreter bindings remain distinct cache inputs.
+Cache statistics are emitted by the action. Tests and linking still execute.
 Release builds clear inherited Rust flags and do not use `target-cpu=native`.
 Linux wheels are audited against **manylinux 2.28**; Linux
 CLI archives use the Ubuntu 24.04 native runner baseline, not manylinux.
@@ -87,7 +89,10 @@ Intel/Apple Silicon wheels with a macOS
 
 Warm-cache targets are under 10 minutes for PR CI and under 30 minutes for release
 CD. Measure the complete workflow, including queue/setup/cache time, rather than
-compiler time alone. Cold first builds are reported separately.
+compiler time alone. Cold first builds are reported separately. All-feature doctests run on a separate
+hosted runner alongside the complete coverage suite, and the Rust result gate
+requires both. Doctests restore the check job's ordinary all-feature target cache
+without overwriting it; compiler-result caches still validate content and flags.
 
 Python CI builds three development-profile wheels from their source distributions
 and tests those artifacts on all six interpreters; optimized wheels remain a CD
@@ -95,8 +100,19 @@ gate. CI sets a persistent target directory so temporary sdist extraction does
 not discard compilation results. Main/tag compiled caches use fresh immutable
 save keys with the existing compiler/configuration restore prefix. PRs consume
 main's caches without creating duplicate archives that main cannot restore.
+Compiler-result caching is also read-only on PRs and non-default validation
+branches; main/tag runs populate it.
 The per-run key marker is a comment-only nested config file outside crate
 ancestor paths, hashed by rust-cache and never loaded by Cargo.
+
+GitHub caches are scoped to refs: different release tags cannot directly consume
+one another's caches, but can restore default-branch caches. For publication that
+also warms caches for later releases, dispatch `release-cd.yml` from `main` with
+`tag: vVERSION` and `publish: true` while main equals that tag's source commit.
+If replacing an automatically started tag run, cancel it and confirm it is
+terminal before starting the default-branch run. This changes the controller ref,
+not the immutable source tag or any verification/publication gates. See
+[GitHub cache access rules](https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching#restrictions-for-accessing-a-cache).
 
 ## Required external setup and current blockers
 

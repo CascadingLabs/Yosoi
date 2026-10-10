@@ -5,6 +5,7 @@
 # keyed by compiler identity, manifests, lockfile, and build configuration.
 # Build checks link all targets (including examples/benchmark harnesses); benchmarks
 # are not measured here. Nextest runs unit/integration tests; Cargo runs doctests.
+# All-feature doctests run alongside coverage on a separate bounded runner.
 # Run each serial test suite through all failures so an early browser regression
 # does not hide later failures behind another complete rebuild.
 # Browser tests use regular Chrome Stable with its sandbox enabled and Xvfb so
@@ -121,11 +122,6 @@ jobs:
       - name: Run all-feature tests with LLVM coverage
         if: matrix.configuration == 'coverage-all-features'
         run: xvfb-run -a cargo llvm-cov nextest --locked --workspace --all-features --test-threads 1 --no-fail-fast --no-report
-      - name: Run all-feature doctests
-        if: matrix.configuration == 'coverage-all-features'
-        # Doctests are correctness checked separately; the stable coverage report
-        # covers unit/integration tests and does not claim doctest instrumentation.
-        run: xvfb-run -a cargo test --locked --workspace --all-features --doc -- --test-threads=1
       - name: Generate coverage reports
         if: matrix.configuration == 'coverage-all-features'
         run: |
@@ -152,10 +148,39 @@ jobs:
           retention-days: 7
           if-no-files-found: warn
 
+  doctests:
+    name: All-feature doctests
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/rust-ci-setup
+        with:
+          # These use ordinary all-feature libraries, not instrumented ones.
+          # Restore the check job's compiled libraries without competing to save.
+          cache-key: checks-all-features
+          cache-job-id: checks
+          cache-save: 'false'
+      - name: Install regular Chrome Stable and display prerequisites
+        run: |
+          sudo apt-get install -y --no-install-recommends xvfb xauth ffmpeg
+          curl --fail --silent --show-error --location --proto '=https' \
+            https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
+            --output "$RUNNER_TEMP/google-chrome-stable.deb"
+          sudo apt-get install -y --no-install-recommends "$RUNNER_TEMP/google-chrome-stable.deb"
+          echo 'CHROME=/usr/bin/google-chrome-stable' >> "$GITHUB_ENV"
+          google-chrome-stable --version
+          sha256sum /opt/google/chrome/chrome "$RUNNER_TEMP/google-chrome-stable.deb"
+      - name: Run all-feature doctests
+        # Correctness checked without claiming doctest coverage instrumentation.
+        run: xvfb-run -a cargo test --locked --workspace --all-features --doc -- --test-threads=1
+
   result:
     name: Rust CI result
     if: always()
-    needs: [checks, tests]
+    needs: [checks, tests, doctests]
     runs-on: ubuntu-22.04
     timeout-minutes: 5
     steps:
@@ -163,6 +188,8 @@ jobs:
         env:
           CHECKS_RESULT: ${{ needs.checks.result }}
           TESTS_RESULT: ${{ needs.tests.result }}
+          DOCTESTS_RESULT: ${{ needs.doctests.result }}
         run: |
           test "$CHECKS_RESULT" = success
           test "$TESTS_RESULT" = success
+          test "$DOCTESTS_RESULT" = success

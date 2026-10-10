@@ -91,3 +91,37 @@ class SourceCiTests(unittest.TestCase):
                 with self.subTest(repository=repository), self.assertRaises(ValueError):
                     ci.check(repository, source)
             command.assert_not_called()
+
+
+class WorkflowGateTests(unittest.TestCase):
+    def test_doctest_failure_cannot_pass_rust_result_gate(self):
+        import os
+        import subprocess
+        import textwrap
+
+        root = Path(__file__).resolve().parents[3]
+        result = (
+            (root / ".github/workflows/rust-ci-test.yml")
+            .read_text()
+            .split("  result:\n", 1)[1]
+        )
+        needs = result.split("needs: [", 1)[1].split("]", 1)[0].split(",")
+        self.assertIn("doctests", [name.strip() for name in needs])
+        script = textwrap.dedent(result.split("        run: |\n", 1)[1])
+        names = ("CHECKS_RESULT", "TESTS_RESULT", "DOCTESTS_RESULT")
+        cases = [("success", "success", "success")]
+        for index in range(3):
+            for failure in ("failure", "skipped", "cancelled"):
+                values = ["success"] * 3
+                values[index] = failure
+                cases.append(tuple(values))
+        for values in cases:
+            with self.subTest(results=values):
+                process = subprocess.run(
+                    ["bash", "-e", "-o", "pipefail", "-c", script],
+                    env=dict(os.environ, **dict(zip(names, values, strict=True))),
+                    capture_output=True,
+                )
+                self.assertEqual(
+                    process.returncode == 0, all(v == "success" for v in values)
+                )

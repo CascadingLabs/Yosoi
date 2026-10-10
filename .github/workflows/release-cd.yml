@@ -28,6 +28,7 @@ env:
   CARGO_BUILD_JOBS: '1'
   RAYON_NUM_THREADS: '1'
   CARGO_INCREMENTAL: '0'
+  SCCACHE_GHA_RW_MODE: ${{ (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && 'READ_WRITE' || 'READ_ONLY' }}
   RUSTFLAGS: ''
   CARGO_ENCODED_RUSTFLAGS: ''
   MACOSX_DEPLOYMENT_TARGET: '11.0'
@@ -225,6 +226,7 @@ jobs:
         with:
           key: release-wheels-${{ matrix.target }}-${{ needs.identity.outputs.toolchain }}
           workspaces: sdist-source -> target
+          save-if: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') }}
           cache-workspace-crates: 'true'
           cache-on-failure: 'true'
       - name: Build Linux abi3 wheel at the manylinux 2.28 baseline
@@ -238,7 +240,7 @@ jobs:
           manylinux: '2_28'
           working-directory: sdist-source
           before-script-linux: dnf install -y clang clang-devel cmake ninja-build perl-core pkgconf-pkg-config openssl-devel
-          docker-options: -e CARGO_BUILD_JOBS=${{ matrix.build_jobs }} -e RAYON_NUM_THREADS=1 -e CARGO_INCREMENTAL=0 -e RUSTFLAGS= -e CARGO_ENCODED_RUSTFLAGS=
+          docker-options: -e SCCACHE_GHA_RW_MODE -e CARGO_BUILD_JOBS=${{ matrix.build_jobs }} -e RAYON_NUM_THREADS=1 -e CARGO_INCREMENTAL=0 -e RUSTFLAGS= -e CARGO_ENCODED_RUSTFLAGS=
           args: --release --locked --out ../dist --features ${{ matrix.abi3_features }} --interpreter ${{ matrix.abi3_linux_python }}
       - name: Build native macOS or Windows abi3 wheel
         env:
@@ -268,7 +270,7 @@ jobs:
           manylinux: '2_28'
           working-directory: sdist-source
           before-script-linux: dnf install -y clang clang-devel cmake ninja-build perl-core pkgconf-pkg-config openssl-devel
-          docker-options: -e CARGO_BUILD_JOBS=${{ matrix.build_jobs }} -e RAYON_NUM_THREADS=1 -e CARGO_INCREMENTAL=0 -e RUSTFLAGS= -e CARGO_ENCODED_RUSTFLAGS=
+          docker-options: -e SCCACHE_GHA_RW_MODE -e CARGO_BUILD_JOBS=${{ matrix.build_jobs }} -e RAYON_NUM_THREADS=1 -e CARGO_INCREMENTAL=0 -e RUSTFLAGS= -e CARGO_ENCODED_RUSTFLAGS=
           args: --release --locked --out ../dist --features ${{ matrix.cp314t_features }} --interpreter ${{ matrix.cp314t_linux_python }}
       - name: Build native macOS or Windows cp314t wheel
         env:
@@ -299,7 +301,7 @@ jobs:
           manylinux: '2_28'
           working-directory: sdist-source
           before-script-linux: dnf install -y clang clang-devel cmake ninja-build perl-core pkgconf-pkg-config openssl-devel
-          docker-options: -e CARGO_BUILD_JOBS=${{ matrix.build_jobs }} -e RAYON_NUM_THREADS=1 -e CARGO_INCREMENTAL=0 -e RUSTFLAGS= -e CARGO_ENCODED_RUSTFLAGS=
+          docker-options: -e SCCACHE_GHA_RW_MODE -e CARGO_BUILD_JOBS=${{ matrix.build_jobs }} -e RAYON_NUM_THREADS=1 -e CARGO_INCREMENTAL=0 -e RUSTFLAGS= -e CARGO_ENCODED_RUSTFLAGS=
           args: --release --locked --out ../dist --features ${{ matrix.abi3t_features }} --interpreter ${{ matrix.abi3t_linux_python }}
       - name: Build native macOS or Windows abi3t wheel
         env:
@@ -417,8 +419,17 @@ jobs:
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
         with:
           key: release-rust-${{ matrix.target }}-${{ needs.identity.outputs.toolchain }}
+          save-if: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') }}
           cache-workspace-crates: 'true'
           cache-on-failure: 'true'
+      - name: Install pinned compiler-result cache
+        uses: mozilla-actions/sccache-action@fd02668681acd5f960e1372061bee5e3e987195c # v0.0.11
+        with:
+          version: 'v0.18.0'
+      - name: Reuse content-keyed compilation results
+        run: |
+          echo 'SCCACHE_GHA_ENABLED=true' >> "$GITHUB_ENV"
+          echo 'RUSTC_WRAPPER=sccache' >> "$GITHUB_ENV"
       - name: Build and test native Rust artifacts
         env:
           TARGET: ${{ matrix.target }}
