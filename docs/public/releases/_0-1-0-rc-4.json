@@ -1,0 +1,8 @@
+{
+  "generated_source": "## What's Changed\n* Reuse compiled Rust tests only for verified unchanged sources by @AndrewPBerg in https://github.com/CascadingLabs/Yosoi/pull/130\n* Diagnose stalled Windows free-threaded installed-wheel checks by @AndrewPBerg in https://github.com/CascadingLabs/Yosoi/pull/131\n* Install managed interpreters for Windows FT diagnostics by @AndrewPBerg in https://github.com/CascadingLabs/Yosoi/pull/132\n* Trace the stalled Windows cancellation test await by @AndrewPBerg in https://github.com/CascadingLabs/Yosoi/pull/133\n* Probe explicit client shutdown in Windows FT diagnostics by @AndrewPBerg in https://github.com/CascadingLabs/Yosoi/pull/134\n* Finish HTTP fixture cleanup on free-threaded Windows by @AndrewPBerg in https://github.com/CascadingLabs/Yosoi/pull/135\n\n\n**Full Changelog**: https://github.com/CascadingLabs/Yosoi/compare/v0.1.0-rc.3...v0.1.0-rc.4",
+  "generated_source_sha256": "8f09e433fecec6fec6bf7d7cdd26bf581e29a377b546f0fe3aaa351a42dcce5e",
+  "github_notes_file": "yosoi-rc4-github-notes.md",
+  "previous": "0.1.0-rc.3",
+  "schema": 1,
+  "version": "0.1.0-rc.4"
+}
