@@ -1,8 +1,9 @@
 import asyncio
 import gc
 import threading
-from collections.abc import Iterator
+from collections.abc import Coroutine, Iterator
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from typing import Any
 
 import pytest
 
@@ -188,6 +189,7 @@ def test_cancelling_one_task_keeps_its_shared_token_sibling_running() -> None:
         ready = asyncio.Event()
         release = asyncio.Event()
         connections = 0
+        clients: set[asyncio.StreamWriter] = set()
 
         async def handle(
             reader: asyncio.StreamReader, writer: asyncio.StreamWriter
@@ -204,12 +206,19 @@ def test_cancelling_one_task_keeps_its_shared_token_sibling_running() -> None:
                     b"Content-Length: 11\r\nConnection: close\r\n\r\n<h1>OK</h1>"
                 )
                 await writer.drain()
-            except (BrokenPipeError, ConnectionResetError):
+            except (BrokenPipeError, ConnectionResetError, asyncio.IncompleteReadError):
                 pass
             finally:
                 writer.close()
 
-        server = await asyncio.start_server(handle, "127.0.0.1", 0)
+        def connected(
+            reader: asyncio.StreamReader, writer: asyncio.StreamWriter
+        ) -> Coroutine[Any, Any, None]:
+            # Register synchronously, including peers that never send headers.
+            clients.add(writer)
+            return handle(reader, writer)
+
+        server = await asyncio.start_server(connected, "127.0.0.1", 0)
         port = server.sockets[0].getsockname()[1]
         parent = ys.CancellationToken()
         first = asyncio.create_task(
@@ -235,11 +244,10 @@ def test_cancelling_one_task_keeps_its_shared_token_sibling_running() -> None:
             second.cancel()
             await asyncio.gather(first, second, return_exceptions=True)
             server.close()
-            # Python 3.13+ waits for active client transports as well as the listener.
-            # End the fixture-owned connections after all SDK assertions complete.
-            abort_clients = getattr(server, "abort_clients", None)
-            if abort_clients is not None:
-                abort_clients()
+            # Abort every accepted transport using the public API available on
+            # Python 3.12+, after all SDK outcome/cancellation assertions finish.
+            for writer in clients:
+                writer.transport.abort()
             await asyncio.wait_for(server.wait_closed(), 10)
             await asyncio.wait_for(_native.wait_for_idle(), 10)
 
