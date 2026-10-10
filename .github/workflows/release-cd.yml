@@ -59,7 +59,13 @@ jobs:
           version: '0.13.0'
       - name: Resolve immutable release identity and matrix
         id: plan
-        run: uv run --locked --project scripts/releases python scripts/cd/release.py plan --tag "$RELEASE_TAG" --output release-plan.json
+        env:
+          WORKFLOW_SOURCE: ${{ github.workflow_sha }}
+          PUBLISH_RELEASE: ${{ github.event_name == 'push' || inputs.publish }}
+        run: |
+          args=()
+          if [ "$PUBLISH_RELEASE" = true ]; then args+=(--publish); fi
+          uv run --locked --project scripts/releases python scripts/cd/release.py plan --tag "$RELEASE_TAG" --workflow-source "$WORKFLOW_SOURCE" --output release-plan.json "${args[@]}"
       - name: Check finalized release notes and all workspace versions
         env:
           VERSION: ${{ steps.plan.outputs.version }}

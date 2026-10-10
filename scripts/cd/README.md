@@ -14,6 +14,8 @@ it runs formatting, lint, and synthetic artifact tests without compiling Rust.
 2. Tag that commit on `main` as `v0.MINOR.PATCH`. A tag push runs release CD;
    a manual dispatch defaults to validation only (`publish: false`). Dispatch
    from the release tag so GitHub's workflow identity also matches the release.
+   Publication checks `github.workflow_sha` against the tag's source commit;
+   validation-only dispatches may use a different workflow revision.
 3. CD checks the tag/version/main ancestry, exports one source distribution,
    builds its wheels, tests installed wheels outside the source tree, builds
    and tests native Rust artifacts, and generates matching public docs and
@@ -82,8 +84,10 @@ the locally built SHA-256 before skipping it. Different bytes fail and require
 a new release version; there is no `skip-existing` bypass. Rebuilt artifacts
 may differ, in which case the safe outcome is failure rather than replacement.
 GitHub uploads never use `--clobber`, verify existing asset bytes, and refuse to
-add files to a release that is already published. Publication across registries
-is sequential rather than atomic; a failed run may leave preceding uploads.
+add files to a release that is already published. Existing drafts with files
+outside the expected artifact set are refused; remove those unexpected files
+explicitly before retrying. Publication across registries is sequential rather
+than atomic; a failed run may leave preceding uploads.
 Rerun after resolving the failure, retaining the exact tag/source identity.
 
 Focused local verification does not build native wheels or contact registries:

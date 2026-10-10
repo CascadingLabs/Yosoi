@@ -71,6 +71,15 @@ def release_version(tag: str) -> str:
     return tag[1:]
 
 
+def verify_workflow_source(
+    source: str, workflow_source: str | None, publish: bool
+) -> None:
+    if publish and workflow_source != source:
+        raise ValueError(
+            "Publishing workflow revision must match the release tag commit"
+        )
+
+
 def python_abis(requirement: str) -> list[dict]:
     match = re.fullmatch(r">=3\.([0-9]+),<3\.([0-9]+)", requirement.replace(" ", ""))
     if not match:
@@ -287,6 +296,8 @@ def main() -> None:
     parser.add_argument("--tag", required=True)
     parser.add_argument("--directory", type=Path, default=Path("dist"))
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--workflow-source")
+    parser.add_argument("--publish", action="store_true")
     args = parser.parse_args()
     root = Path.cwd()
     release = plan(root, args.tag)
@@ -294,6 +305,7 @@ def main() -> None:
         source = git("rev-parse", "HEAD")
         if git("rev-parse", "--verify", f"refs/tags/{args.tag}^{{commit}}") != source:
             raise ValueError("Checkout does not match release tag")
+        verify_workflow_source(source, args.workflow_source, args.publish)
         subprocess.run(
             ["git", "merge-base", "--is-ancestor", source, "origin/main"], check=True
         )

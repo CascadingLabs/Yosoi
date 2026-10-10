@@ -1,9 +1,12 @@
 """Verify release gates using synthetic packages; no builds or registry writes."""
 
 import io
+import os
+import subprocess
 import sys
 import tarfile
 import tempfile
+import textwrap
 import unittest
 import zipfile
 from pathlib import Path
@@ -17,6 +20,49 @@ from archive import cli_archive  # noqa: E402
 
 
 class IdentityTests(unittest.TestCase):
+    def test_production_docs_dispatch_guard_and_reusable_release_call(self):
+        workflow = DIRECTORY.parents[1] / ".github/workflows/docs-publish.yml"
+        section = (
+            workflow.read_text()
+            .split(
+                "      - name: Restrict standalone manual docs publication to main\n", 1
+            )[1]
+            .split("\n      - ", 1)[0]
+        )
+        script = textwrap.dedent(section.split("        run: |\n", 1)[1])
+        for event, ref, source, expected in (
+            ("workflow_dispatch", "refs/heads/main", "", 0),
+            ("workflow_dispatch", "refs/heads/feature", "", 1),
+            ("workflow_dispatch", "refs/tags/v0.1.0", "a" * 40, 0),
+            ("push", "refs/heads/main", "", 0),
+        ):
+            with self.subTest(event=event, ref=ref, source=source):
+                result = subprocess.run(
+                    ["bash", "-ec", script],
+                    env=dict(
+                        os.environ,
+                        EVENT_NAME=event,
+                        SELECTED_REF=ref,
+                        REQUESTED_SOURCE=source,
+                    ),
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+                self.assertEqual(result.returncode, expected, result.stderr)
+
+    def test_publishing_requires_the_tagged_workflow_revision(self):
+        release.verify_workflow_source("a" * 40, "a" * 40, True)
+        for workflow in (None, "b" * 40):
+            with (
+                self.subTest(workflow=workflow),
+                self.assertRaisesRegex(ValueError, "workflow revision"),
+            ):
+                release.verify_workflow_source("a" * 40, workflow, True)
+
+    def test_validation_only_can_use_a_different_workflow_revision(self):
+        release.verify_workflow_source("a" * 40, "b" * 40, False)
+
     def test_beta_version_boundaries(self):
         for valid in ("v0.1.0", "v0.100000.10000"):
             self.assertEqual(release.release_version(valid), valid[1:])
@@ -213,6 +259,70 @@ class ArtifactTests(unittest.TestCase):
 
 
 class GithubRetryTests(unittest.TestCase):
+    def test_partial_draft_retry_uploads_only_missing_assets_then_finalizes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "existing.tar.gz").write_bytes(b"existing")
+            (root / "missing.tar.gz").write_bytes(b"missing")
+
+            def download(*args):
+                if args[:3] == ("gh", "release", "download"):
+                    (Path(args[-1]) / "existing.tar.gz").write_bytes(b"existing")
+
+            with (
+                patch.dict(
+                    "os.environ",
+                    GITHUB_REPOSITORY="owner/repo",
+                    GH_TOKEN="fixture-token",
+                ),
+                patch.object(publish, "plan", return_value={"version": "0.1.0"}),
+                patch.object(
+                    publish,
+                    "json_url",
+                    return_value={
+                        "draft": True,
+                        "assets": [{"name": "existing.tar.gz"}],
+                    },
+                ),
+                patch.object(publish, "run", side_effect=download) as run,
+            ):
+                publish.publish_github("v0.1.0", root, True)
+            commands = [call.args for call in run.call_args_list]
+            self.assertEqual(
+                [command[2] for command in commands], ["download", "upload", "edit"]
+            )
+            self.assertEqual(commands[1][-1], str(root / "missing.tar.gz"))
+
+    def test_unexpected_draft_assets_fail_before_upload_or_finalization(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "expected.tar.gz").write_bytes(b"expected")
+
+            def download(*args):
+                if args[:3] == ("gh", "release", "download"):
+                    (Path(args[-1]) / "stale.tar.gz").write_bytes(b"stale")
+
+            with (
+                patch.dict(
+                    "os.environ",
+                    GITHUB_REPOSITORY="owner/repo",
+                    GH_TOKEN="fixture-token",
+                ),
+                patch.object(publish, "plan", return_value={"version": "0.1.0"}),
+                patch.object(
+                    publish,
+                    "json_url",
+                    return_value={"draft": True, "assets": [{"name": "stale.tar.gz"}]},
+                ),
+                patch.object(publish, "run", side_effect=download) as run,
+                self.assertRaisesRegex(
+                    ValueError, "Unexpected existing release assets"
+                ),
+            ):
+                publish.publish_github("v0.1.0", root, True)
+            self.assertEqual(len(run.call_args_list), 1)
+            self.assertEqual(run.call_args.args[:3], ("gh", "release", "download"))
+
     def test_release_lookup_sends_the_token_to_github(self):
         with patch.object(release.urllib.request, "urlopen") as open_url:
             open_url.return_value.__enter__.return_value.read.return_value = (

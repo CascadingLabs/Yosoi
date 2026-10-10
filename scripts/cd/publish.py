@@ -75,7 +75,15 @@ def publish_github(tag: str, directory: Path, finalize: bool) -> None:
         if previous and previous.get("assets"):
             run("gh", "release", "download", tag, "--dir", temporary)
         existing = Path(temporary)
-        for file in sorted(directory.iterdir()):
+        files = sorted(directory.iterdir())
+        unexpected = sorted(
+            {file.name for file in existing.iterdir()} - {file.name for file in files}
+        )
+        if unexpected:
+            raise ValueError(
+                f"Unexpected existing release assets: {', '.join(unexpected)}"
+            )
+        for file in files:
             if not file.is_file():
                 raise ValueError(f"Unexpected release directory: {file}")
             remote = existing / file.name

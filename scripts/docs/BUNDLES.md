@@ -5,6 +5,10 @@ successful SDK release. Every snapshot records its full Yosoi source commit and
 the SDK version it documents. Docs corrections keep the SDK version and acquire
 a new source identity. The version is not used as a mutable directory name.
 
+Standalone manual publication requires `refs/heads/main`. Reusable calls from
+release CD may publish their validated tag commit; the release workflow verifies
+that its own revision matches that tag before allowing registry publication.
+
 `bundle.mjs create` exports public Markdown, assets, source-owned navigation and
 validation contracts, plus the matching compiler reference. It verifies API
 identity and excludes draft/private documents. `bundle.json` hashes every file.
