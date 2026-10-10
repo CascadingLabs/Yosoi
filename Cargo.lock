@@ -3500,7 +3500,7 @@ dependencies = [
 
 [[package]]
 name = "xtask"
-version = "0.1.0-rc.8"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -3537,7 +3537,7 @@ dependencies = [
 
 [[package]]
 name = "yosoi"
-version = "0.1.0-rc.8"
+version = "0.1.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -3551,7 +3551,7 @@ dependencies = [
 
 [[package]]
 name = "yosoi-archive"
-version = "0.1.0-rc.8"
+version = "0.1.0"
 dependencies = [
  "libc",
  "rustix",
@@ -3571,7 +3571,7 @@ dependencies = [
 
 [[package]]
 name = "yosoi-benchmarks"
-version = "0.1.0-rc.8"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -3597,7 +3597,7 @@ dependencies = [
 
 [[package]]
 name = "yosoi-browser-core"
-version = "0.1.0-rc.8"
+version = "0.1.0"
 dependencies = [
  "base64 0.22.1",
  "flate2",
@@ -3656,7 +3656,7 @@ dependencies = [
 
 [[package]]
 name = "yosoi-cli"
-version = "0.1.0-rc.8"
+version = "0.1.0"
 dependencies = [
  "anstream",
  "anyhow",
@@ -3675,7 +3675,7 @@ dependencies = [
 
 [[package]]
 name = "yosoi-contract-validation"
-version = "0.1.0-rc.8"
+version = "0.1.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -3688,7 +3688,7 @@ dependencies = [
 
 [[package]]
 name = "yosoi-contracts"
-version = "0.1.0-rc.8"
+version = "0.1.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -3700,7 +3700,7 @@ dependencies = [
 
 [[package]]
 name = "yosoi-contracts-derive"
-version = "0.1.0-rc.8"
+version = "0.1.0"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -3710,14 +3710,14 @@ dependencies = [
 
 [[package]]
 name = "yosoi-contracts-renamed-dependency-fixture"
-version = "0.1.0-rc.8"
+version = "0.1.0"
 dependencies = [
  "yosoi",
 ]
 
 [[package]]
 name = "yosoi-document-locator-benchmarks"
-version = "0.1.0-rc.8"
+version = "0.1.0"
 dependencies = [
  "criterion",
  "divan",
@@ -3727,7 +3727,7 @@ dependencies = [
 
 [[package]]
 name = "yosoi-documents"
-version = "0.1.0-rc.8"
+version = "0.1.0"
 dependencies = [
  "html5ever",
  "memchr",
@@ -3743,7 +3743,7 @@ dependencies = [
 
 [[package]]
 name = "yosoi-engine"
-version = "0.1.0-rc.8"
+version = "0.1.0"
 dependencies = [
  "base64 0.22.1",
  "chrono",
@@ -3773,7 +3773,7 @@ dependencies = [
 
 [[package]]
 name = "yosoi-extractor"
-version = "0.1.0-rc.8"
+version = "0.1.0"
 dependencies = [
  "serde",
  "thiserror",
@@ -3784,7 +3784,7 @@ dependencies = [
 
 [[package]]
 name = "yosoi-map"
-version = "0.1.0-rc.8"
+version = "0.1.0"
 dependencies = [
  "flate2",
  "publicsuffix",
@@ -3798,7 +3798,7 @@ dependencies = [
 
 [[package]]
 name = "yosoi-policy"
-version = "0.1.0-rc.8"
+version = "0.1.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -3809,7 +3809,7 @@ dependencies = [
 
 [[package]]
 name = "yosoi-python"
-version = "0.1.0-rc.8"
+version = "0.1.0"
 dependencies = [
  "pyo3",
  "pyo3-async-runtimes",
@@ -3821,7 +3821,7 @@ dependencies = [
 
 [[package]]
 name = "yosoi-types"
-version = "0.1.0-rc.8"
+version = "0.1.0"
 dependencies = [
  "chrono",
  "proptest",
@@ -3834,7 +3834,7 @@ dependencies = [
 
 [[package]]
 name = "yosoi-web-capture"
-version = "0.1.0-rc.8"
+version = "0.1.0"
 dependencies = [
  "chrono",
  "encoding_rs",
@@ -3854,7 +3854,7 @@ dependencies = [
 
 [[package]]
 name = "yosoi-web-capture-direct-http"
-version = "0.1.0-rc.8"
+version = "0.1.0"
 dependencies = [
  "async-compression",
  "bytes",

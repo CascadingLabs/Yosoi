@@ -972,6 +972,41 @@ class ArtifactTests(unittest.TestCase):
 
 
 class GithubRetryTests(unittest.TestCase):
+    def test_candidate_and_final_release_flags(self):
+        for version, prerelease, latest in (
+            ("0.1.0-rc.7", "true", "false"),
+            ("0.1.0", "false", "true"),
+        ):
+            with (
+                self.subTest(version=version),
+                tempfile.TemporaryDirectory() as directory,
+            ):
+                with (
+                    patch.dict(
+                        "os.environ",
+                        GITHUB_REPOSITORY="owner/repo",
+                        GH_TOKEN="fixture-token",
+                    ),
+                    patch.object(publish, "plan", return_value={"version": version}),
+                    patch.object(
+                        publish, "json_url", return_value={"draft": True, "assets": []}
+                    ),
+                    patch.object(publish, "run") as run,
+                ):
+                    publish.publish_github(f"v{version}", Path(directory), True)
+                self.assertEqual(
+                    run.call_args.args,
+                    (
+                        "gh",
+                        "release",
+                        "edit",
+                        f"v{version}",
+                        "--draft=false",
+                        f"--prerelease={prerelease}",
+                        f"--latest={latest}",
+                    ),
+                )
+
     def test_partial_draft_retry_uploads_only_missing_assets_then_finalizes(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
