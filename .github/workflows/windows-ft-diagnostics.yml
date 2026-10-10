@@ -65,6 +65,33 @@ jobs:
       - name: Install the built wheel and test dependencies
         run: |
           uv pip install --python .venv --only-binary=:all: dist/*.whl 'pytest==9.1.1'
+      - name: Trace cancellation test phases without changing assertions
+        run: |
+          uv run --no-project --python .venv python - <<'PYTRACE'
+          import ast
+          from pathlib import Path
+          target = Path('python/tests/test_async_sdk.py')
+          source = target.read_text()
+          marker = 'def test_cancelling_one_task_keeps_its_shared_token_sibling_running()'
+          assert source.count(marker) == 1
+          prefix, body = source.split(marker, 1)
+          traced = []
+          for line in body.splitlines(keepends=True):
+              statement = line.strip()
+              selected = statement.startswith('await ') or '= await ' in statement or statement in (
+                  'first.cancel()', 'second.cancel()', 'release.set()', 'ready.set()',
+                  'assert not parent.cancelled',
+              )
+              indent = line[:len(line)-len(line.lstrip())]
+              if selected:
+                  traced.append(indent + 'print(' + repr('BEFORE: ' + statement) + ', flush=True)\n')
+              traced.append(line)
+              if selected:
+                  traced.append(indent + 'print(' + repr('AFTER: ' + statement) + ', flush=True)\n')
+          result = prefix + marker + ''.join(traced)
+          ast.parse(result)
+          target.write_text(result)
+          PYTRACE
       - name: Run the complete installed-wheel suite with verbose diagnostics
         run: |
           cd "$RUNNER_TEMP"
