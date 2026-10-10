@@ -114,14 +114,15 @@ def publish_github(tag: str, directory: Path, finalize: bool) -> None:
             else:
                 run("gh", "release", "upload", tag, str(file))
         if finalize:
+            candidate = "-rc." in release["version"]
             run(
                 "gh",
                 "release",
                 "edit",
                 tag,
                 "--draft=false",
-                "--prerelease",
-                "--latest=false",
+                f"--prerelease={'true' if candidate else 'false'}",
+                f"--latest={'false' if candidate else 'true'}",
             )
     print(f"Verified immutable assets for {release['version']}")
 
