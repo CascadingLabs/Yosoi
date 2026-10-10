@@ -187,7 +187,6 @@ Cargo fixture checks that unchanged code reuses its binary and edited code
 really compiles and changes the executable output; the full Rust suites remain
 mandatory in CI.
 
-
 Default and all-feature Nextest suites each run in two exhaustive hash
 partitions on separate hosted runners. Each runner still executes one test at a
 time; isolated Xvfb displays and processes avoid sharing browser focus or memory
@@ -195,3 +194,15 @@ budgets. Both partitions compile the same suite and only partition 1 updates
 its target cache. The final Rust gate requires all four test jobs, doctests,
 checks, and a combined LCOV/HTML report built from both coverage partitions.
 No test selector or ignore rule is narrowed.
+
+Native release jobs use the same snapshot for their SDK test and CLI build
+targets on Linux, macOS, and Windows. They load the action from the workflow
+revision, so validation of older tags does not require that action in the tagged
+source. The snapshot remains paired with each platform's own compiled archive;
+the first release run with this cache format is cold. Wheel builds retain their
+separate source-distribution caches.
+
+Native SDK checks run in the release profile before building the CLI, allowing
+both commands to reuse release dependencies. The same four public SDK checks
+still run on every native platform; ordinary CI retains the full debug-profile
+default and all-feature suites.

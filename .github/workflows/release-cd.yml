@@ -419,9 +419,20 @@ jobs:
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
         with:
           key: release-rust-${{ matrix.target }}-${{ needs.identity.outputs.toolchain }}
+          cache-directories: .generated/ci-source-inputs
           save-if: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') }}
           cache-workspace-crates: 'true'
           cache-on-failure: 'true'
+      - name: Load source-cache tooling from the workflow revision
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: .release-tooling
+          sparse-checkout: .github/actions/rust-source-cache
+          persist-credentials: false
+      # Register after rust-cache: its post step pairs verified source timestamps
+      # with the compiled archive before rust-cache performs cleanup and saving.
+      - uses: ./.release-tooling/.github/actions/rust-source-cache
       - name: Install pinned compiler-result cache
         uses: mozilla-actions/sccache-action@fd02668681acd5f960e1372061bee5e3e987195c # v0.0.11
         with:
@@ -436,7 +447,7 @@ jobs:
           PLATFORM: ${{ matrix.platform }}
           CARGO_BUILD_JOBS: ${{ matrix.build_jobs }}
         run: |
-          cargo test --locked --target "$TARGET" -p yosoi --test public_sdk -- --test-threads=1
+          cargo test --release --locked --target "$TARGET" -p yosoi --test public_sdk -- --test-threads=1
           cargo build --release --locked --target "$TARGET" -p yosoi-cli
           mkdir -p dist
           executable="target/$TARGET/release/yosoi"
