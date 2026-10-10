@@ -296,17 +296,20 @@ jobs:
         with:
           name: release-reference
           path: reference
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: 1.4.2
+      - name: Install pinned docs tooling
+        run: cd scripts/docs && bun install --frozen-lockfile
       - name: Export versioned public content and compiler reference
         env:
           SOURCE_COMMIT: ${{ needs.identity.outputs.source_commit }}
           VERSION: ${{ needs.identity.outputs.version }}
         run: |
-          mkdir -p docs-content/reference dist
-          git archive "$SOURCE_COMMIT" docs/public | tar -x -C docs-content
-          node scripts/docs/generate.mjs generate --source "$SOURCE_COMMIT" --repository "$GITHUB_REPOSITORY" --version "$VERSION" --out docs-content
-          tar -xf reference/reference.tar -C docs-content/reference
-          node scripts/docs/reference/generate.mjs verify --dir docs-content/reference
-          tar --sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner -cf - -C docs-content . | gzip -n > "dist/yosoi-docs-v$VERSION.tar.gz"
+          mkdir -p .generated/release-reference dist
+          tar -xf reference/reference.tar -C .generated/release-reference
+          node scripts/docs/bundle.mjs create --source "$SOURCE_COMMIT" --version "$VERSION" --reference .generated/release-reference --out docs-content
+          tar --sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner --mode=u+rwX,go+rX,go-w -cf - -C docs-content . | gzip -n > "dist/yosoi-docs-v$VERSION.tar.gz"
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: release-docs
@@ -477,3 +480,15 @@ jobs:
           cp release-plan.json dist/
           uv run --locked --project scripts/releases python scripts/cd/release.py checksums --tag "$RELEASE_TAG" > dist/SHA256SUMS
           uv run --locked --project scripts/releases python scripts/cd/publish.py github --tag "$RELEASE_TAG" --finalize
+
+  publish-docs:
+    needs: [identity, github]
+    permissions:
+      contents: write
+    uses: ./.github/workflows/docs-publish.yml
+    with:
+      source_commit: ${{ needs.identity.outputs.source_commit }}
+      version: ${{ needs.identity.outputs.version }}
+      bundle_artifact: release-docs
+    secrets:
+      DOCS_DEPLOY_TOKEN: ${{ secrets.DOCS_DEPLOY_TOKEN }}
