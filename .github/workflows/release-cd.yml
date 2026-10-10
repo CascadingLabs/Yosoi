@@ -613,7 +613,11 @@ jobs:
           uv run --locked --project scripts/releases python scripts/cd/publish.py crates --tag "$RELEASE_TAG"
 
   pypi:
-    needs: [identity, crates]
+    needs: [identity, verify, publication-ready]
+    if: >-
+      always() && !cancelled() && needs.identity.result == 'success' && needs.verify.result == 'success' &&
+      (github.event_name == 'push' || inputs.publish) &&
+      (needs.identity.outputs.candidate == 'true' || needs.publication-ready.result == 'success')
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     environment: pypi
@@ -670,18 +674,31 @@ jobs:
       - name: Test a clean binary-only installation from PyPI
         env:
           VERSION: ${{ needs.identity.outputs.python_version }}
+          EXPECTED_PYTHON: ${{ matrix.python }}
         run: |
           uv venv --python "$RELEASE_PYTHON" .venv
           uv pip install --python .venv --index-url https://pypi.org/simple --no-cache --only-binary=:all: "yosoi==$VERSION" 'pytest==9.1.1'
           cd "$RUNNER_TEMP"
           uv run --no-project --python "$GITHUB_WORKSPACE/.venv" python -m pytest --import-mode=importlib "$GITHUB_WORKSPACE/python/tests" -q
+          uv run --no-project --python "$GITHUB_WORKSPACE/.venv" python - <<'PY'
+          import importlib.metadata, os, sys, sysconfig
+          import yosoi._native
+          if importlib.metadata.version('yosoi') != os.environ['VERSION']:
+              raise RuntimeError('Installed PyPI version differs from the release')
+          expected_free = os.environ['EXPECTED_PYTHON'].endswith('t')
+          if bool(sysconfig.get_config_var('Py_GIL_DISABLED')) != expected_free:
+              raise RuntimeError('Installed interpreter differs from the threading matrix')
+          if expected_free and sys._is_gil_enabled():
+              raise RuntimeError('Importing the published wheel enabled the GIL')
+          PY
 
   container_publish:
-    needs: [identity, verify, installed]
+    needs: [identity, verify, installed, crates]
     if: >-
-      always() && needs.identity.result == 'success' && needs.verify.result == 'success' &&
+      always() && !cancelled() && needs.identity.result == 'success' && needs.verify.result == 'success' &&
       (github.event_name == 'push' || inputs.publish) &&
-      (needs.identity.outputs.candidate == 'true' || needs.installed.result == 'success')
+      needs.installed.result == 'success' &&
+      (needs.identity.outputs.candidate == 'true' || needs.crates.result == 'success')
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
@@ -715,10 +732,10 @@ jobs:
   github:
     needs: [identity, verify, installed, container_publish]
     if: >-
-      always() && needs.identity.result == 'success' && needs.verify.result == 'success' &&
+      always() && !cancelled() && needs.identity.result == 'success' && needs.verify.result == 'success' &&
       needs.container_publish.result == 'success' &&
       (github.event_name == 'push' || inputs.publish) &&
-      (needs.identity.outputs.candidate == 'true' || needs.installed.result == 'success')
+      needs.installed.result == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:

@@ -12,10 +12,10 @@ Numbered release candidates use Cargo version `0.MINOR.PATCH-rc.N`, tag
 `v0.MINOR.PATCH-rc.N`, and Python package version `0.MINOR.PATCHrcN` (PEP 440).
 Use `cargo xtask bump-version VERSION --date-released YYYY-MM-DD -y` for the
 RC, prepare and finalize its canonical preview notes, merge onto main, and
-tag that exact commit. Candidates publish verified GitHub artifacts and the
-matching docs bundle after the complete build and installed-artifact matrix
-passes. Registry uploads and registry-installed tests run only for final beta
-tags. A later final release uses a separate `0.MINOR.PATCH` version and tag;
+tag that exact commit. Candidates publish the verified Python distributions to
+PyPI and run all 30 clean registry-install jobs before publishing GitHub assets,
+Chromium images, and the matching docs bundle. Rust registry uploads run only
+for final beta tags. A later final release uses a separate `0.MINOR.PATCH` version and tag;
 registry prerequisites and clean published installs remain mandatory for it.
 A passing RC build alone does not clear the browser registry blocker.
 Standalone main/manual docs runs defer RC publication; only Release CD's verified
@@ -42,10 +42,15 @@ The archive retains its source payload and uses canonical ownership/timestamps.
    It also requires successful main Rust and Python CI for the exact tagged
    source commit, awaiting existing runs when needed. Tags do not launch a
    second identical CI suite; a newer failed run cannot reuse an older success.
-4. A separate prerequisite gate runs before any registry upload. Crates publish
-   in dependency order, then verified Python distributions publish through PyPI
-   Trusted Publishing. Clean binary-only installations from PyPI are tested on
-   every platform/interpreter before finalizing a GitHub beta prerelease.
+4. Final releases check registry prerequisites before any upload. Crates publish
+   in dependency order while verified Python distributions publish independently
+   through PyPI Trusted Publishing. Candidates publish only to PyPI. Clean
+   binary-only installations from PyPI are tested on every platform/interpreter.
+   Final GitHub/container/docs publication also requires successful Rust
+   publication; candidates require all Python registry-install jobs. Failed or
+   cancelled required jobs cannot finalize a release. Registry publication is
+   not atomic: one registry may finish before the other fails; retries verify
+   existing bytes before proceeding.
 5. GitHub assets include the Python distributions, native CLI archives, versioned
    docs/reference bundle, release plan with source commit, and SHA256SUMS.
 
