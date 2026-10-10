@@ -5,6 +5,8 @@ on:
     paths:
       - '.github/workflows/release-*.yml'
       - '.github/workflows/docs-publish.yml'
+      - '.github/workflows/chromium-images.yml'
+      - 'docker/chromium/**'
       - 'scripts/cd/**'
       - 'scripts/releases/release.py'
       - 'scripts/releases/tests/**'
@@ -15,6 +17,8 @@ on:
     paths:
       - '.github/workflows/release-*.yml'
       - '.github/workflows/docs-publish.yml'
+      - '.github/workflows/chromium-images.yml'
+      - 'docker/chromium/**'
       - 'scripts/cd/**'
       - 'scripts/releases/release.py'
       - 'scripts/releases/tests/**'

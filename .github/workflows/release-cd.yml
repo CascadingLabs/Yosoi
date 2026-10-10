@@ -507,8 +507,14 @@ jobs:
           path: dist/*.tar.gz
           if-no-files-found: error
 
+  containers:
+    needs: identity
+    uses: ./.github/workflows/chromium-images.yml
+    with:
+      source_commit: ${{ needs.identity.outputs.source_commit }}
+
   verify:
-    needs: [identity, source-ci, sdist, wheels, wheel-tests, rust, docs]
+    needs: [identity, source-ci, sdist, wheels, wheel-tests, rust, docs, containers]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -648,10 +654,47 @@ jobs:
           cd "$RUNNER_TEMP"
           uv run --no-project --python "$GITHUB_WORKSPACE/.venv" python -m pytest --import-mode=importlib "$GITHUB_WORKSPACE/python/tests" -q
 
-  github:
+  container_publish:
     needs: [identity, verify, installed]
     if: >-
       always() && needs.identity.result == 'success' && needs.verify.result == 'success' &&
+      (github.event_name == 'push' || inputs.publish) &&
+      (needs.identity.outputs.candidate == 'true' || needs.installed.result == 'success')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ needs.identity.outputs.source_commit }}
+          persist-credentials: false
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          pattern: release-container-*
+          path: containers
+          merge-multiple: true
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: '0.13.0'
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Publish smoke-tested images without rebuilding
+        env:
+          VERSION: ${{ needs.identity.outputs.version }}
+        run: |
+          uv run --locked --project scripts/releases python scripts/cd/containers.py publish --directory containers --version "$VERSION" --repository ghcr.io/cascadinglabs/chromium-cdp
+
+  github:
+    needs: [identity, verify, installed, container_publish]
+    if: >-
+      always() && needs.identity.result == 'success' && needs.verify.result == 'success' &&
+      needs.container_publish.result == 'success' &&
       (github.event_name == 'push' || inputs.publish) &&
       (needs.identity.outputs.candidate == 'true' || needs.installed.result == 'success')
     runs-on: ubuntu-24.04

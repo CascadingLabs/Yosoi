@@ -93,7 +93,9 @@ fn supported_version_at(identity: &str, now: u64) -> Result<&str> {
         .trim();
     if !matches!(
         suffix,
-        "" | "Arch Linux" | "built on Debian GNU/Linux 12 (bookworm)"
+        "" | "Arch Linux"
+            | "built on Debian GNU/Linux 12 (bookworm)"
+            | "built on Debian GNU/Linux 13 (trixie)"
     ) {
         return Err(VoidCrawlError::LaunchFailed(
             "non-Stable browser distribution".into(),
@@ -125,6 +127,7 @@ mod tests {
             "Chromium 155.0.8059.39 Arch Linux",
             "Google Chrome 154.0.8037.97",
             "Chromium 154.0.8037.97 Arch Linux",
+            "Chromium 154.0.8037.92 built on Debian GNU/Linux 13 (trixie)",
         ] {
             assert!(supported_version_at(identity, REVIEWED_AT).is_ok());
         }
