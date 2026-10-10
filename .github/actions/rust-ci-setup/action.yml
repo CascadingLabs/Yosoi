@@ -42,6 +42,7 @@ runs:
       with:
         key: ${{ inputs.cache-key }}-${{ inputs.cache-job-id || github.job }}
         add-job-id-key: 'false'
+        cache-directories: .generated/ci-source-inputs
         workspaces: |
           . -> target
           . -> target/llvm-cov-target
@@ -51,6 +52,9 @@ runs:
         # PRs restore main's caches without filling the repository quota with
         # duplicate archives that main cannot restore. Cargo checks fingerprints.
         save-if: ${{ inputs.cache-save == 'true' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) }}
+    # Register after rust-cache so this post step verifies source integrity
+    # before rust-cache cleans and saves the paired artifacts and snapshot.
+    - uses: ./.github/actions/rust-source-cache
     - name: Install pinned compiler-result cache
       uses: mozilla-actions/sccache-action@fd02668681acd5f960e1372061bee5e3e987195c # v0.0.11
       with:
