@@ -1,0 +1,159 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::policy::BrowserMode",
+  "publicPath": "yosoi::policy::BrowserMode",
+  "kind": "enum",
+  "title": "yosoi::policy::BrowserMode",
+  "signature": "pub enum BrowserMode",
+  "docs": "Browser windowing mode that can influence rendering behavior.",
+  "source": {
+    "file": "crates/yosoi-types/src/browser.rs",
+    "lineStart": 43,
+    "lineEnd": 46,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-types/src/browser.rs#L43-L46"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/policy.rs",
+    "lineStart": 11,
+    "lineEnd": 11,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/policy.rs#L11-L11"
+  },
+  "aliases": [
+    "yosoi::prelude::policy::BrowserMode"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::policy::BrowserMode::Headful",
+      "publicPath": "yosoi::policy::BrowserMode::Headful",
+      "title": "yosoi::policy::BrowserMode::Headful",
+      "kind": "variant",
+      "signature": "Headful",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-types/src/browser.rs",
+        "lineStart": 45,
+        "lineEnd": 45,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-types/src/browser.rs#L45-L45"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::policy::BrowserMode::Headless",
+      "publicPath": "yosoi::policy::BrowserMode::Headless",
+      "title": "yosoi::policy::BrowserMode::Headless",
+      "kind": "variant",
+      "signature": "Headless",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-types/src/browser.rs",
+        "lineStart": 44,
+        "lineEnd": 44,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-types/src/browser.rs#L44-L44"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::BrowserMode::clone",
+      "publicPath": "yosoi::policy::BrowserMode::clone",
+      "title": "yosoi::policy::BrowserMode::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> BrowserMode",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-types/src/browser.rs",
+        "lineStart": 41,
+        "lineEnd": 41,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-types/src/browser.rs#L41-L41"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::policy::BrowserMode::deserialize",
+      "publicPath": "yosoi::policy::BrowserMode::deserialize",
+      "title": "yosoi::policy::BrowserMode::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-types/src/browser.rs",
+        "lineStart": 41,
+        "lineEnd": 41,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-types/src/browser.rs#L41-L41"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::policy::BrowserMode::eq",
+      "publicPath": "yosoi::policy::BrowserMode::eq",
+      "title": "yosoi::policy::BrowserMode::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &BrowserMode) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-types/src/browser.rs",
+        "lineStart": 41,
+        "lineEnd": 41,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-types/src/browser.rs#L41-L41"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::policy::BrowserMode::fmt",
+      "publicPath": "yosoi::policy::BrowserMode::fmt",
+      "title": "yosoi::policy::BrowserMode::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-types/src/browser.rs",
+        "lineStart": 41,
+        "lineEnd": 41,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-types/src/browser.rs#L41-L41"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::policy::BrowserMode::hash",
+      "publicPath": "yosoi::policy::BrowserMode::hash",
+      "title": "yosoi::policy::BrowserMode::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-types/src/browser.rs",
+        "lineStart": 41,
+        "lineEnd": 41,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-types/src/browser.rs#L41-L41"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::policy::BrowserMode::serialize",
+      "publicPath": "yosoi::policy::BrowserMode::serialize",
+      "title": "yosoi::policy::BrowserMode::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-types/src/browser.rs",
+        "lineStart": 41,
+        "lineEnd": 41,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-types/src/browser.rs#L41-L41"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "d054691a4c0081224e24b8c1217344de15353932d7430c6ba71a434d9e13c451",
+  "slug": "yosoi/policy/enum/browsermode",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "d054691a4c0081224e24b8c1217344de15353932d7430c6ba71a434d9e13c451"
+}

@@ -1,0 +1,310 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::contracts::ValidationFailure",
+  "publicPath": "yosoi::contracts::ValidationFailure",
+  "kind": "enum",
+  "title": "yosoi::contracts::ValidationFailure",
+  "signature": "pub enum ValidationFailure",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi-contract-validation/src/issue.rs",
+    "lineStart": 127,
+    "lineEnd": 150,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contract-validation/src/issue.rs#L127-L150"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/contracts.rs",
+    "lineStart": 10,
+    "lineEnd": 10,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/contracts.rs#L10-L10"
+  },
+  "aliases": [
+    "yosoi::prelude::contracts::ValidationFailure"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::contracts::ValidationFailure::ConversionCountOverflow",
+      "publicPath": "yosoi::contracts::ValidationFailure::ConversionCountOverflow",
+      "title": "yosoi::contracts::ValidationFailure::ConversionCountOverflow",
+      "kind": "variant",
+      "signature": "ConversionCountOverflow",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/issue.rs",
+        "lineStart": 139,
+        "lineEnd": 139,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contract-validation/src/issue.rs#L139-L139"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::ValidationFailure::ConversionLimitExceeded",
+      "publicPath": "yosoi::contracts::ValidationFailure::ConversionLimitExceeded",
+      "title": "yosoi::contracts::ValidationFailure::ConversionLimitExceeded",
+      "kind": "variant",
+      "signature": "ConversionLimitExceeded { maximum: u64, observed: u64 }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/issue.rs",
+        "lineStart": 141,
+        "lineEnd": 141,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contract-validation/src/issue.rs#L141-L141"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::ValidationFailure::FieldCountOverflow",
+      "publicPath": "yosoi::contracts::ValidationFailure::FieldCountOverflow",
+      "title": "yosoi::contracts::ValidationFailure::FieldCountOverflow",
+      "kind": "variant",
+      "signature": "FieldCountOverflow",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/issue.rs",
+        "lineStart": 131,
+        "lineEnd": 131,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contract-validation/src/issue.rs#L131-L131"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::ValidationFailure::FieldLimitExceeded",
+      "publicPath": "yosoi::contracts::ValidationFailure::FieldLimitExceeded",
+      "title": "yosoi::contracts::ValidationFailure::FieldLimitExceeded",
+      "kind": "variant",
+      "signature": "FieldLimitExceeded { maximum: u64, observed: u64 }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/issue.rs",
+        "lineStart": 133,
+        "lineEnd": 133,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contract-validation/src/issue.rs#L133-L133"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::ValidationFailure::InvalidContractSchema",
+      "publicPath": "yosoi::contracts::ValidationFailure::InvalidContractSchema",
+      "title": "yosoi::contracts::ValidationFailure::InvalidContractSchema",
+      "kind": "variant",
+      "signature": "InvalidContractSchema(yosoi_contracts::ContractSchemaError)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/issue.rs",
+        "lineStart": 129,
+        "lineEnd": 129,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contract-validation/src/issue.rs#L129-L129"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::ValidationFailure::IssueCountOverflow",
+      "publicPath": "yosoi::contracts::ValidationFailure::IssueCountOverflow",
+      "title": "yosoi::contracts::ValidationFailure::IssueCountOverflow",
+      "kind": "variant",
+      "signature": "IssueCountOverflow",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/issue.rs",
+        "lineStart": 143,
+        "lineEnd": 143,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contract-validation/src/issue.rs#L143-L143"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::ValidationFailure::IssueLimitExceeded",
+      "publicPath": "yosoi::contracts::ValidationFailure::IssueLimitExceeded",
+      "title": "yosoi::contracts::ValidationFailure::IssueLimitExceeded",
+      "kind": "variant",
+      "signature": "IssueLimitExceeded { maximum: u64, observed: u64 }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/issue.rs",
+        "lineStart": 145,
+        "lineEnd": 145,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contract-validation/src/issue.rs#L145-L145"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::ValidationFailure::ProvenanceCountOverflow",
+      "publicPath": "yosoi::contracts::ValidationFailure::ProvenanceCountOverflow",
+      "title": "yosoi::contracts::ValidationFailure::ProvenanceCountOverflow",
+      "kind": "variant",
+      "signature": "ProvenanceCountOverflow",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/issue.rs",
+        "lineStart": 147,
+        "lineEnd": 147,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contract-validation/src/issue.rs#L147-L147"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::ValidationFailure::ProvenanceLimitExceeded",
+      "publicPath": "yosoi::contracts::ValidationFailure::ProvenanceLimitExceeded",
+      "title": "yosoi::contracts::ValidationFailure::ProvenanceLimitExceeded",
+      "kind": "variant",
+      "signature": "ProvenanceLimitExceeded { maximum: u64, observed: u64 }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/issue.rs",
+        "lineStart": 149,
+        "lineEnd": 149,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contract-validation/src/issue.rs#L149-L149"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::ValidationFailure::RecordCountOverflow",
+      "publicPath": "yosoi::contracts::ValidationFailure::RecordCountOverflow",
+      "title": "yosoi::contracts::ValidationFailure::RecordCountOverflow",
+      "kind": "variant",
+      "signature": "RecordCountOverflow",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/issue.rs",
+        "lineStart": 135,
+        "lineEnd": 135,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contract-validation/src/issue.rs#L135-L135"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::contracts::ValidationFailure::RecordLimitExceeded",
+      "publicPath": "yosoi::contracts::ValidationFailure::RecordLimitExceeded",
+      "title": "yosoi::contracts::ValidationFailure::RecordLimitExceeded",
+      "kind": "variant",
+      "signature": "RecordLimitExceeded { maximum: u64, observed: u64 }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/issue.rs",
+        "lineStart": 137,
+        "lineEnd": 137,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contract-validation/src/issue.rs#L137-L137"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::ValidationFailure::clone",
+      "publicPath": "yosoi::contracts::ValidationFailure::clone",
+      "title": "yosoi::contracts::ValidationFailure::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> ValidationFailure",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/issue.rs",
+        "lineStart": 126,
+        "lineEnd": 126,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contract-validation/src/issue.rs#L126-L126"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::contracts::ValidationFailure::eq",
+      "publicPath": "yosoi::contracts::ValidationFailure::eq",
+      "title": "yosoi::contracts::ValidationFailure::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &ValidationFailure) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/issue.rs",
+        "lineStart": 126,
+        "lineEnd": 126,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contract-validation/src/issue.rs#L126-L126"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::contracts::ValidationFailure::fmt",
+      "publicPath": "yosoi::contracts::ValidationFailure::fmt",
+      "title": "yosoi::contracts::ValidationFailure::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/issue.rs",
+        "lineStart": 126,
+        "lineEnd": 126,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contract-validation/src/issue.rs#L126-L126"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::contracts::ValidationFailure::fmt",
+      "publicPath": "yosoi::contracts::ValidationFailure::fmt",
+      "title": "yosoi::contracts::ValidationFailure::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, __formatter: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/issue.rs",
+        "lineStart": 126,
+        "lineEnd": 126,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contract-validation/src/issue.rs#L126-L126"
+      },
+      "examples": [],
+      "trait": "Display"
+    },
+    {
+      "id": "function:yosoi::contracts::ValidationFailure::from",
+      "publicPath": "yosoi::contracts::ValidationFailure::from",
+      "title": "yosoi::contracts::ValidationFailure::from",
+      "kind": "function",
+      "signature": "fn from(source: ContractSchemaError) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/issue.rs",
+        "lineStart": 126,
+        "lineEnd": 126,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contract-validation/src/issue.rs#L126-L126"
+      },
+      "examples": [],
+      "trait": "From"
+    },
+    {
+      "id": "function:yosoi::contracts::ValidationFailure::serialize",
+      "publicPath": "yosoi::contracts::ValidationFailure::serialize",
+      "title": "yosoi::contracts::ValidationFailure::serialize",
+      "kind": "function",
+      "signature": "fn serialize<S>(&self, serializer: S) -> Result<<S as >::Ok, <S as >::Error> where S: serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/issue.rs",
+        "lineStart": 153,
+        "lineEnd": 200,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contract-validation/src/issue.rs#L153-L200"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::contracts::ValidationFailure::source",
+      "publicPath": "yosoi::contracts::ValidationFailure::source",
+      "title": "yosoi::contracts::ValidationFailure::source",
+      "kind": "function",
+      "signature": "fn source(&self) -> ::core::option::Option<&dyn ::thiserror::__private21::Error + 'static>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/issue.rs",
+        "lineStart": 126,
+        "lineEnd": 126,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contract-validation/src/issue.rs#L126-L126"
+      },
+      "examples": [],
+      "trait": "Error"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/contracts/enum/validationfailure",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

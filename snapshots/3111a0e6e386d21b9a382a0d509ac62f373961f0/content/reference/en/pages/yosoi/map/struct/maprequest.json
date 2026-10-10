@@ -1,0 +1,121 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::map::MapRequest",
+  "publicPath": "yosoi::map::MapRequest",
+  "kind": "struct",
+  "title": "yosoi::map::MapRequest",
+  "signature": "pub struct MapRequest",
+  "docs": "A user-authored site discovery request.",
+  "source": {
+    "file": "crates/yosoi/src/map.rs",
+    "lineStart": 27,
+    "lineEnd": 29,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/map.rs#L27-L29"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::MapRequest",
+    "yosoi::prelude::map::MapRequest"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::map::MapRequest::bind",
+      "publicPath": "yosoi::map::MapRequest::bind",
+      "title": "yosoi::map::MapRequest::bind",
+      "kind": "function",
+      "signature": "pub fn bind(self, policy: &Policy) -> Self",
+      "docs": "Uses a complete SDK policy for discovery.",
+      "source": {
+        "file": "crates/yosoi/src/map.rs",
+        "lineStart": 37,
+        "lineEnd": 41,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/map.rs#L37-L41"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::MapRequest::clone",
+      "publicPath": "yosoi::map::MapRequest::clone",
+      "title": "yosoi::map::MapRequest::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> MapRequest",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/map.rs",
+        "lineStart": 26,
+        "lineEnd": 26,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/map.rs#L26-L26"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::map::MapRequest::fmt",
+      "publicPath": "yosoi::map::MapRequest::fmt",
+      "title": "yosoi::map::MapRequest::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/map.rs",
+        "lineStart": 26,
+        "lineEnd": 26,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/map.rs#L26-L26"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::map::MapRequest::send",
+      "publicPath": "yosoi::map::MapRequest::send",
+      "title": "yosoi::map::MapRequest::send",
+      "kind": "function",
+      "signature": "pub async fn send(self) -> Result<MapOutcome, MapError>",
+      "docs": "Executes discovery using standard SDK adapters.",
+      "source": {
+        "file": "crates/yosoi/src/map.rs",
+        "lineStart": 43,
+        "lineEnd": 49,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/map.rs#L43-L49"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::MapRequest::send_cancellable",
+      "publicPath": "yosoi::map::MapRequest::send_cancellable",
+      "title": "yosoi::map::MapRequest::send_cancellable",
+      "kind": "function",
+      "signature": "pub async fn send_cancellable(self, cancellation: &CancellationToken) -> Result<MapOutcome, MapError>",
+      "docs": "Executes discovery with caller-controlled cancellation.",
+      "source": {
+        "file": "crates/yosoi/src/map.rs",
+        "lineStart": 51,
+        "lineEnd": 60,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/map.rs#L51-L60"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::MapRequest::validate",
+      "publicPath": "yosoi::map::MapRequest::validate",
+      "title": "yosoi::map::MapRequest::validate",
+      "kind": "function",
+      "signature": "pub fn validate(&self) -> Result<(), MapError>",
+      "docs": "Validates the seed and policy without contacting a source.",
+      "source": {
+        "file": "crates/yosoi/src/map.rs",
+        "lineStart": 32,
+        "lineEnd": 34,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/map.rs#L32-L34"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "ae480e6e1a967ea0c17aed1a2bd6ebf0d22f4df7597bc398e047f08e11bb7bde",
+  "slug": "yosoi/map/struct/maprequest",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "ae480e6e1a967ea0c17aed1a2bd6ebf0d22f4df7597bc398e047f08e11bb7bde"
+}

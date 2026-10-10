@@ -1,0 +1,172 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::map::Exploration",
+  "publicPath": "yosoi::map::Exploration",
+  "kind": "enum",
+  "title": "yosoi::map::Exploration",
+  "signature": "pub enum Exploration",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi-map/src/lib.rs",
+    "lineStart": 64,
+    "lineEnd": 70,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/lib.rs#L64-L70"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/map.rs",
+    "lineStart": 4,
+    "lineEnd": 4,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/map.rs#L4-L4"
+  },
+  "aliases": [
+    "yosoi::prelude::map::Exploration"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::map::Exploration::Failed",
+      "publicPath": "yosoi::map::Exploration::Failed",
+      "title": "yosoi::map::Exploration::Failed",
+      "kind": "variant",
+      "signature": "Failed(SourceFailure)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 69,
+        "lineEnd": 69,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/lib.rs#L69-L69"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::Exploration::Inspected",
+      "publicPath": "yosoi::map::Exploration::Inspected",
+      "title": "yosoi::map::Exploration::Inspected",
+      "kind": "variant",
+      "signature": "Inspected",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 67,
+        "lineEnd": 67,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/lib.rs#L67-L67"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::Exploration::Inventoried",
+      "publicPath": "yosoi::map::Exploration::Inventoried",
+      "title": "yosoi::map::Exploration::Inventoried",
+      "kind": "variant",
+      "signature": "Inventoried",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 65,
+        "lineEnd": 65,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/lib.rs#L65-L65"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::Exploration::Pending",
+      "publicPath": "yosoi::map::Exploration::Pending",
+      "title": "yosoi::map::Exploration::Pending",
+      "kind": "variant",
+      "signature": "Pending",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 66,
+        "lineEnd": 66,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/lib.rs#L66-L66"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::Exploration::Skipped",
+      "publicPath": "yosoi::map::Exploration::Skipped",
+      "title": "yosoi::map::Exploration::Skipped",
+      "kind": "variant",
+      "signature": "Skipped(SkipReason)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 68,
+        "lineEnd": 68,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/lib.rs#L68-L68"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::Exploration::clone",
+      "publicPath": "yosoi::map::Exploration::clone",
+      "title": "yosoi::map::Exploration::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> Exploration",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 62,
+        "lineEnd": 62,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/lib.rs#L62-L62"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::map::Exploration::eq",
+      "publicPath": "yosoi::map::Exploration::eq",
+      "title": "yosoi::map::Exploration::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &Exploration) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 62,
+        "lineEnd": 62,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/lib.rs#L62-L62"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::map::Exploration::fmt",
+      "publicPath": "yosoi::map::Exploration::fmt",
+      "title": "yosoi::map::Exploration::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 62,
+        "lineEnd": 62,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/lib.rs#L62-L62"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::map::Exploration::serialize",
+      "publicPath": "yosoi::map::Exploration::serialize",
+      "title": "yosoi::map::Exploration::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 62,
+        "lineEnd": 62,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/lib.rs#L62-L62"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/map/enum/exploration",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

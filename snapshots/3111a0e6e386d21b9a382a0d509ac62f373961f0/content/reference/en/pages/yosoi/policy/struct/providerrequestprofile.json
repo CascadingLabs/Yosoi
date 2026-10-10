@@ -1,0 +1,220 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::policy::ProviderRequestProfile",
+  "publicPath": "yosoi::policy::ProviderRequestProfile",
+  "kind": "struct",
+  "title": "yosoi::policy::ProviderRequestProfile",
+  "signature": "pub struct ProviderRequestProfile",
+  "docs": "A complete existing Requests policy profile for one provider.",
+  "source": {
+    "file": "crates/yosoi-policy/src/policy/search/provider.rs",
+    "lineStart": 100,
+    "lineEnd": 107,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/search/provider.rs#L100-L107"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/policy.rs",
+    "lineStart": 4,
+    "lineEnd": 4,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/policy.rs#L4-L4"
+  },
+  "aliases": [
+    "yosoi::policy::search::ProviderRequestProfile",
+    "yosoi::prelude::policy::ProviderRequestProfile",
+    "yosoi::prelude::policy::search::ProviderRequestProfile"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::policy::ProviderRequestProfile::clone",
+      "publicPath": "yosoi::policy::ProviderRequestProfile::clone",
+      "title": "yosoi::policy::ProviderRequestProfile::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> ProviderRequestProfile",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/search/provider.rs",
+        "lineStart": 98,
+        "lineEnd": 98,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/search/provider.rs#L98-L98"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::policy::ProviderRequestProfile::deserialize",
+      "publicPath": "yosoi::policy::ProviderRequestProfile::deserialize",
+      "title": "yosoi::policy::ProviderRequestProfile::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/search/provider.rs",
+        "lineStart": 98,
+        "lineEnd": 98,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/search/provider.rs#L98-L98"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "struct_field:yosoi::policy::ProviderRequestProfile::documents",
+      "publicPath": "yosoi::policy::ProviderRequestProfile::documents",
+      "title": "yosoi::policy::ProviderRequestProfile::documents",
+      "kind": "struct_field",
+      "signature": "pub documents: crate::policy::Documents",
+      "docs": "Document parsing limits.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/search/provider.rs",
+        "lineStart": 106,
+        "lineEnd": 106,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/search/provider.rs#L106-L106"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::ProviderRequestProfile::documents",
+      "publicPath": "yosoi::policy::ProviderRequestProfile::documents",
+      "title": "yosoi::policy::ProviderRequestProfile::documents",
+      "kind": "function",
+      "signature": "pub const fn documents(&self) -> &Documents",
+      "docs": "Returns document parsing limits.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/search/provider.rs",
+        "lineStart": 132,
+        "lineEnd": 134,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/search/provider.rs#L132-L134"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::ProviderRequestProfile::eq",
+      "publicPath": "yosoi::policy::ProviderRequestProfile::eq",
+      "title": "yosoi::policy::ProviderRequestProfile::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &ProviderRequestProfile) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/search/provider.rs",
+        "lineStart": 98,
+        "lineEnd": 98,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/search/provider.rs#L98-L98"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::policy::ProviderRequestProfile::fmt",
+      "publicPath": "yosoi::policy::ProviderRequestProfile::fmt",
+      "title": "yosoi::policy::ProviderRequestProfile::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/search/provider.rs",
+        "lineStart": 98,
+        "lineEnd": 98,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/search/provider.rs#L98-L98"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::policy::ProviderRequestProfile::new",
+      "publicPath": "yosoi::policy::ProviderRequestProfile::new",
+      "title": "yosoi::policy::ProviderRequestProfile::new",
+      "kind": "function",
+      "signature": "pub fn new(page: Page, request: Request, documents: Documents) -> Result<Self, PolicyError>",
+      "docs": "Creates a complete Requests profile and validates its nested policy.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/search/provider.rs",
+        "lineStart": 111,
+        "lineEnd": 119,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/search/provider.rs#L111-L119"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::policy::ProviderRequestProfile::page",
+      "publicPath": "yosoi::policy::ProviderRequestProfile::page",
+      "title": "yosoi::policy::ProviderRequestProfile::page",
+      "kind": "struct_field",
+      "signature": "pub page: crate::policy::Page",
+      "docs": "Acquisition and requested-document choices.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/search/provider.rs",
+        "lineStart": 102,
+        "lineEnd": 102,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/search/provider.rs#L102-L102"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::ProviderRequestProfile::page",
+      "publicPath": "yosoi::policy::ProviderRequestProfile::page",
+      "title": "yosoi::policy::ProviderRequestProfile::page",
+      "kind": "function",
+      "signature": "pub const fn page(&self) -> &Page",
+      "docs": "Returns the acquisition and requested-document choices.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/search/provider.rs",
+        "lineStart": 122,
+        "lineEnd": 124,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/search/provider.rs#L122-L124"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::policy::ProviderRequestProfile::request",
+      "publicPath": "yosoi::policy::ProviderRequestProfile::request",
+      "title": "yosoi::policy::ProviderRequestProfile::request",
+      "kind": "struct_field",
+      "signature": "pub request: crate::policy::Request",
+      "docs": "Request deadline, transport limits, and redirect behavior.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/search/provider.rs",
+        "lineStart": 104,
+        "lineEnd": 104,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/search/provider.rs#L104-L104"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::ProviderRequestProfile::request",
+      "publicPath": "yosoi::policy::ProviderRequestProfile::request",
+      "title": "yosoi::policy::ProviderRequestProfile::request",
+      "kind": "function",
+      "signature": "pub const fn request(&self) -> &Request",
+      "docs": "Returns request deadlines, transport limits, and redirect behavior.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/search/provider.rs",
+        "lineStart": 127,
+        "lineEnd": 129,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/search/provider.rs#L127-L129"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::ProviderRequestProfile::serialize",
+      "publicPath": "yosoi::policy::ProviderRequestProfile::serialize",
+      "title": "yosoi::policy::ProviderRequestProfile::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/search/provider.rs",
+        "lineStart": 98,
+        "lineEnd": 98,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/search/provider.rs#L98-L98"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "1f636337e86835561f0030edbc4a035df5b793520d2c97a88a79d869ab4600d9",
+  "slug": "yosoi/policy/struct/providerrequestprofile",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "1f636337e86835561f0030edbc4a035df5b793520d2c97a88a79d869ab4600d9"
+}

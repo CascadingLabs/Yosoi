@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::contracts::RecordIssue",
+  "publicPath": "yosoi::contracts::RecordIssue",
+  "kind": "struct",
+  "title": "yosoi::contracts::RecordIssue",
+  "signature": "pub struct RecordIssue<T: Contract>",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi-contract-validation/src/outcome.rs",
+    "lineStart": 21,
+    "lineEnd": 24,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contract-validation/src/outcome.rs#L21-L24"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/contracts.rs",
+    "lineStart": 9,
+    "lineEnd": 9,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/contracts.rs#L9-L9"
+  },
+  "aliases": [
+    "yosoi::prelude::contracts::RecordIssue"
+  ],
+  "members": [
+    {
+      "id": "struct_field:yosoi::contracts::RecordIssue::candidate",
+      "publicPath": "yosoi::contracts::RecordIssue::candidate",
+      "title": "yosoi::contracts::RecordIssue::candidate",
+      "kind": "struct_field",
+      "signature": "pub candidate: <T as >::Candidate",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/outcome.rs",
+        "lineStart": 22,
+        "lineEnd": 22,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contract-validation/src/outcome.rs#L22-L22"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::RecordIssue::clone",
+      "publicPath": "yosoi::contracts::RecordIssue::clone",
+      "title": "yosoi::contracts::RecordIssue::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> RecordIssue<T>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/outcome.rs",
+        "lineStart": 20,
+        "lineEnd": 20,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contract-validation/src/outcome.rs#L20-L20"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "struct_field:yosoi::contracts::RecordIssue::fields",
+      "publicPath": "yosoi::contracts::RecordIssue::fields",
+      "title": "yosoi::contracts::RecordIssue::fields",
+      "kind": "struct_field",
+      "signature": "pub fields: Vec<crate::FieldIssue>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/outcome.rs",
+        "lineStart": 23,
+        "lineEnd": 23,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contract-validation/src/outcome.rs#L23-L23"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::RecordIssue::fmt",
+      "publicPath": "yosoi::contracts::RecordIssue::fmt",
+      "title": "yosoi::contracts::RecordIssue::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/outcome.rs",
+        "lineStart": 27,
+        "lineEnd": 32,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-contract-validation/src/outcome.rs#L27-L32"
+      },
+      "examples": [],
+      "trait": "Debug"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/contracts/struct/recordissue",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

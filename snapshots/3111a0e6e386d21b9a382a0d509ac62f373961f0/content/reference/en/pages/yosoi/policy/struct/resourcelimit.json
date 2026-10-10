@@ -1,0 +1,223 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::policy::ResourceLimit",
+  "publicPath": "yosoi::policy::ResourceLimit",
+  "kind": "struct",
+  "title": "yosoi::policy::ResourceLimit",
+  "signature": "pub struct ResourceLimit",
+  "docs": "Positive maximum number of browser resources admitted to one capture.",
+  "source": {
+    "file": "crates/yosoi-policy/src/policy/limits.rs",
+    "lineStart": 142,
+    "lineEnd": 142,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/limits.rs#L142-L142"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/policy.rs",
+    "lineStart": 14,
+    "lineEnd": 14,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/policy.rs#L14-L14"
+  },
+  "aliases": [
+    "yosoi::prelude::policy::ResourceLimit"
+  ],
+  "members": [
+    {
+      "id": "assoc_type:yosoi::policy::ResourceLimit::Error",
+      "publicPath": "yosoi::policy::ResourceLimit::Error",
+      "title": "yosoi::policy::ResourceLimit::Error",
+      "kind": "assoc_type",
+      "signature": "type Error = PolicyError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 161,
+        "lineEnd": 161,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/limits.rs#L161-L161"
+      },
+      "examples": [],
+      "trait": "TryFrom"
+    },
+    {
+      "id": "function:yosoi::policy::ResourceLimit::clone",
+      "publicPath": "yosoi::policy::ResourceLimit::clone",
+      "title": "yosoi::policy::ResourceLimit::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> ResourceLimit",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 141,
+        "lineEnd": 141,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/limits.rs#L141-L141"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::policy::ResourceLimit::cmp",
+      "publicPath": "yosoi::policy::ResourceLimit::cmp",
+      "title": "yosoi::policy::ResourceLimit::cmp",
+      "kind": "function",
+      "signature": "fn cmp(&self, other: &ResourceLimit) -> $crate::cmp::Ordering",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 141,
+        "lineEnd": 141,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/limits.rs#L141-L141"
+      },
+      "examples": [],
+      "trait": "Ord"
+    },
+    {
+      "id": "function:yosoi::policy::ResourceLimit::deserialize",
+      "publicPath": "yosoi::policy::ResourceLimit::deserialize",
+      "title": "yosoi::policy::ResourceLimit::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<D>(deserializer: D) -> Result<Self, <D as >::Error> where D: Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 182,
+        "lineEnd": 188,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/limits.rs#L182-L188"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::policy::ResourceLimit::eq",
+      "publicPath": "yosoi::policy::ResourceLimit::eq",
+      "title": "yosoi::policy::ResourceLimit::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &ResourceLimit) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 141,
+        "lineEnd": 141,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/limits.rs#L141-L141"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::policy::ResourceLimit::fmt",
+      "publicPath": "yosoi::policy::ResourceLimit::fmt",
+      "title": "yosoi::policy::ResourceLimit::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 141,
+        "lineEnd": 141,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/limits.rs#L141-L141"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::policy::ResourceLimit::get",
+      "publicPath": "yosoi::policy::ResourceLimit::get",
+      "title": "yosoi::policy::ResourceLimit::get",
+      "kind": "function",
+      "signature": "pub const fn get(self) -> u32",
+      "docs": "Returns the exact resource limit.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 146,
+        "lineEnd": 148,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/limits.rs#L146-L148"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::ResourceLimit::hash",
+      "publicPath": "yosoi::policy::ResourceLimit::hash",
+      "title": "yosoi::policy::ResourceLimit::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 141,
+        "lineEnd": 141,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/limits.rs#L141-L141"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::policy::ResourceLimit::partial_cmp",
+      "publicPath": "yosoi::policy::ResourceLimit::partial_cmp",
+      "title": "yosoi::policy::ResourceLimit::partial_cmp",
+      "kind": "function",
+      "signature": "fn partial_cmp(&self, other: &ResourceLimit) -> $crate::option::Option<$crate::cmp::Ordering>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 141,
+        "lineEnd": 141,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/limits.rs#L141-L141"
+      },
+      "examples": [],
+      "trait": "PartialOrd"
+    },
+    {
+      "id": "function:yosoi::policy::ResourceLimit::serialize",
+      "publicPath": "yosoi::policy::ResourceLimit::serialize",
+      "title": "yosoi::policy::ResourceLimit::serialize",
+      "kind": "function",
+      "signature": "fn serialize<S>(&self, serializer: S) -> Result<<S as >::Ok, <S as >::Error> where S: Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 173,
+        "lineEnd": 178,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/limits.rs#L173-L178"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::policy::ResourceLimit::to_nonzero",
+      "publicPath": "yosoi::policy::ResourceLimit::to_nonzero",
+      "title": "yosoi::policy::ResourceLimit::to_nonzero",
+      "kind": "function",
+      "signature": "pub fn to_nonzero(self) -> Result<NonZeroU32, PolicyError>",
+      "docs": "Converts to the provider's nonzero resource bound.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 151,
+        "lineEnd": 153,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/limits.rs#L151-L153"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::ResourceLimit::try_from",
+      "publicPath": "yosoi::policy::ResourceLimit::try_from",
+      "title": "yosoi::policy::ResourceLimit::try_from",
+      "kind": "function",
+      "signature": "fn try_from(value: u32) -> Result<Self, <Self as >::Error>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 163,
+        "lineEnd": 169,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/limits.rs#L163-L169"
+      },
+      "examples": [],
+      "trait": "TryFrom"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "78054903f447a4ce0985cdb7840e3ed5e0f0b0734bd0a1fe277df3e7a53c2748",
+  "slug": "yosoi/policy/struct/resourcelimit",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "78054903f447a4ce0985cdb7840e3ed5e0f0b0734bd0a1fe277df3e7a53c2748"
+}

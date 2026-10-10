@@ -1,0 +1,192 @@
+{
+  "schemaVersion": 1,
+  "kind": "python-rust-sdk-parity-summary",
+  "generatedAt": "2026-10-05T16:59:44.543256Z",
+  "parityStatus": "complete",
+  "source": {
+    "revision": "0fd4ec5ac6b14ec180ba48c404a1c3166535f87a",
+    "sdk": {
+      "crate": "yosoi",
+      "package": "yosoi",
+      "version": "0.1.0"
+    },
+    "reference": {
+      "version": "0.1.0-sdk-final",
+      "generatorDigest": "62013ffa8a97f4ab68b394c341e9ca78711aa8b9fc66a3424f21d89b74f9d923",
+      "locale": "en"
+    },
+    "inventorySignature": "0dbd86d0adef002340660504272cd68ea62eda7c04df5f1f10ff490ce1afe687",
+    "featureProfile": {
+      "requestedFeatures": [
+        "browser"
+      ],
+      "defaultFeaturesEnabled": true,
+      "target": "x86_64-unknown-linux-gnu",
+      "referenceGeneratorDigest": "62013ffa8a97f4ab68b394c341e9ca78711aa8b9fc66a3424f21d89b74f9d923",
+      "compiler": {
+        "toolchain": "nightly-2026-09-06",
+        "rustdocVersion": "rustdoc 1.100.0-nightly (f248f4038 2026-09-05)",
+        "compilerCommit": "f248f4038796913873f11ca65b1b901e311c8dae",
+        "rustdocFormatVersion": 61
+      }
+    },
+    "featureProfileDigest": "8dcabb1246538fafe5b1146b04572729cd0377ced9e71277d7a1621cdb129524"
+  },
+  "python": {
+    "package": "yosoi",
+    "runtime": {
+      "implementation": "cpython",
+      "version": "3.14.8",
+      "abi": "",
+      "dependencies": {
+        "pydantic": "2.13.5",
+        "pydantic-core": "2.46.5"
+      }
+    },
+    "surfaceDigest": "79673a13b58cb1ca68d0e23e92acbb7a3dc2c5ab7ea33ee06bf85b439b819aff",
+    "implementationDigest": "39fffaece715b426d9b111908d3957519ca3d176f4ea59a2a0bd0c85a1f9797a"
+  },
+  "pinsMatch": true,
+  "coverage": {
+    "denominator": 2372,
+    "counts": {
+      "language-specific": 198,
+      "mapped": 1085,
+      "missing": 728,
+      "stale": 0,
+      "verified": 361
+    },
+    "covered": 559,
+    "mappedButUnverified": 1085,
+    "staleOrMissing": 728
+  },
+  "reportSha256": "91c29aeabd2d44c80c4a6ffdff95a62284d51f732002246af32fbb28820158db",
+  "provenance": "unsigned-local-validation",
+  "gate": "sdk",
+  "inventoryParityStatus": "incomplete",
+  "sdkParity": {
+    "schemaVersion": 1,
+    "kind": "yosoi-scoped-sdk-semantic-parity",
+    "parityStatus": "complete",
+    "counts": {
+      "sdkDeclarations": 1288,
+      "mapped": 1286,
+      "reviewedSemanticMappings": 2,
+      "proposedSemanticMappings": 0,
+      "missingMappings": 0,
+      "mappedButUnverified": 974,
+      "individuallyVerified": 314,
+      "rustMechanics": 1084,
+      "traitMechanics": 1082,
+      "preludeMechanics": 1,
+      "procMacroMechanics": 1
+    },
+    "mechanicCounts": {
+      "sdk": 1288,
+      "trait-mechanic": 1082,
+      "trait:TryFrom": 22,
+      "trait:Clone": 201,
+      "trait:Ord": 27,
+      "trait:Deserialize": 104,
+      "trait:PartialEq": 180,
+      "trait:Debug": 216,
+      "trait:Hash": 50,
+      "trait:PartialOrd": 27,
+      "trait:Serialize": 167,
+      "trait:Display": 30,
+      "trait:Default": 27,
+      "trait:From": 18,
+      "trait:Error": 8,
+      "proc-macro-mechanic": 1,
+      "prelude-mechanic": 1,
+      "trait:FromStr": 4,
+      "trait:AsRef": 1
+    },
+    "mappingStatus": {
+      "complete": true,
+      "mapped": 1286,
+      "reviewedSemanticMappings": 2,
+      "proposedSemanticMappings": 0,
+      "missing": 0
+    },
+    "behaviorStatus": {
+      "passed": true,
+      "requiredSuites": [
+        "run_conformance.py",
+        "run_diagnostics_conformance.py",
+        "run_schema_errors_conformance.py",
+        "run_value_equality_conformance.py",
+        "run_errors_conformance.py",
+        "run_map_ordering_conformance.py",
+        "run_serde_conformance.py",
+        "run_document_errors_conformance.py",
+        "run_webtarget_conformance.py"
+      ],
+      "suites": [
+        {
+          "name": "run_conformance.py",
+          "status": "passed",
+          "comparisons": 242,
+          "runs": 1
+        },
+        {
+          "name": "run_diagnostics_conformance.py",
+          "status": "passed",
+          "comparisons": 262,
+          "runs": 1
+        },
+        {
+          "name": "run_schema_errors_conformance.py",
+          "status": "passed",
+          "comparisons": 60,
+          "runs": 1
+        },
+        {
+          "name": "run_value_equality_conformance.py",
+          "status": "passed",
+          "comparisons": 22,
+          "runs": 1
+        },
+        {
+          "name": "run_errors_conformance.py",
+          "status": "passed",
+          "comparisons": 24,
+          "runs": 1
+        },
+        {
+          "name": "run_map_ordering_conformance.py",
+          "status": "passed",
+          "comparisons": 194,
+          "runs": 1
+        },
+        {
+          "name": "run_serde_conformance.py",
+          "status": "passed",
+          "comparisons": 120,
+          "runs": 1
+        },
+        {
+          "name": "run_document_errors_conformance.py",
+          "status": "passed",
+          "comparisons": 6,
+          "runs": 1
+        },
+        {
+          "name": "run_webtarget_conformance.py",
+          "status": "passed",
+          "comparisons": 96,
+          "runs": 1
+        }
+      ]
+    },
+    "individualItemEvidence": {
+      "verified": 314,
+      "mappedButUnverified": 974,
+      "statusCounts": {
+        "mapped": 972,
+        "verified": 314,
+        "language-specific": 2
+      }
+    }
+  }
+}

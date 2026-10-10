@@ -1,0 +1,310 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::map::Rejection",
+  "publicPath": "yosoi::map::Rejection",
+  "kind": "enum",
+  "title": "yosoi::map::Rejection",
+  "signature": "pub enum Rejection",
+  "docs": "Why a URL or hostname did not pass map admission.",
+  "source": {
+    "file": "crates/yosoi-map/src/admission.rs",
+    "lineStart": 13,
+    "lineEnd": 47,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/admission.rs#L13-L47"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/map.rs",
+    "lineStart": 6,
+    "lineEnd": 6,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/map.rs#L6-L6"
+  },
+  "aliases": [
+    "yosoi::prelude::map::Rejection"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::map::Rejection::Credentials",
+      "publicPath": "yosoi::map::Rejection::Credentials",
+      "title": "yosoi::map::Rejection::Credentials",
+      "kind": "variant",
+      "signature": "Credentials",
+      "docs": "URLs containing user information are not admitted.",
+      "source": {
+        "file": "crates/yosoi-map/src/admission.rs",
+        "lineStart": 22,
+        "lineEnd": 22,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/admission.rs#L22-L22"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::Rejection::Filtered",
+      "publicPath": "yosoi::map::Rejection::Filtered",
+      "title": "yosoi::map::Rejection::Filtered",
+      "kind": "variant",
+      "signature": "Filtered",
+      "docs": "A URL matched a declared exclusion filter.",
+      "source": {
+        "file": "crates/yosoi-map/src/admission.rs",
+        "lineStart": 34,
+        "lineEnd": 34,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/admission.rs#L34-L34"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::Rejection::HostScope",
+      "publicPath": "yosoi::map::Rejection::HostScope",
+      "title": "yosoi::map::Rejection::HostScope",
+      "kind": "variant",
+      "signature": "HostScope",
+      "docs": "The hostname is outside the declared host scope.",
+      "source": {
+        "file": "crates/yosoi-map/src/admission.rs",
+        "lineStart": 25,
+        "lineEnd": 25,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/admission.rs#L25-L25"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::Rejection::HostnameLength",
+      "publicPath": "yosoi::map::Rejection::HostnameLength",
+      "title": "yosoi::map::Rejection::HostnameLength",
+      "kind": "variant",
+      "signature": "HostnameLength",
+      "docs": "A hostname exceeds the configured hostname byte limit.",
+      "source": {
+        "file": "crates/yosoi-map/src/admission.rs",
+        "lineStart": 46,
+        "lineEnd": 46,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/admission.rs#L46-L46"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::Rejection::InvalidHost",
+      "publicPath": "yosoi::map::Rejection::InvalidHost",
+      "title": "yosoi::map::Rejection::InvalidHost",
+      "kind": "variant",
+      "signature": "InvalidHost",
+      "docs": "The hostname could not be parsed or canonicalized.",
+      "source": {
+        "file": "crates/yosoi-map/src/admission.rs",
+        "lineStart": 40,
+        "lineEnd": 40,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/admission.rs#L40-L40"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::Rejection::InvalidUrl",
+      "publicPath": "yosoi::map::Rejection::InvalidUrl",
+      "title": "yosoi::map::Rejection::InvalidUrl",
+      "kind": "variant",
+      "signature": "InvalidUrl",
+      "docs": "The input could not be parsed as a URL.",
+      "source": {
+        "file": "crates/yosoi-map/src/admission.rs",
+        "lineStart": 16,
+        "lineEnd": 16,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/admission.rs#L16-L16"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::Rejection::OriginScope",
+      "publicPath": "yosoi::map::Rejection::OriginScope",
+      "title": "yosoi::map::Rejection::OriginScope",
+      "kind": "variant",
+      "signature": "OriginScope",
+      "docs": "The URL's scheme or port differs from the seed origin.",
+      "source": {
+        "file": "crates/yosoi-map/src/admission.rs",
+        "lineStart": 28,
+        "lineEnd": 28,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/admission.rs#L28-L28"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::Rejection::PathScope",
+      "publicPath": "yosoi::map::Rejection::PathScope",
+      "title": "yosoi::map::Rejection::PathScope",
+      "kind": "variant",
+      "signature": "PathScope",
+      "docs": "The path is outside the declared path scope.",
+      "source": {
+        "file": "crates/yosoi-map/src/admission.rs",
+        "lineStart": 31,
+        "lineEnd": 31,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/admission.rs#L31-L31"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::Rejection::UnsupportedDomainScope",
+      "publicPath": "yosoi::map::Rejection::UnsupportedDomainScope",
+      "title": "yosoi::map::Rejection::UnsupportedDomainScope",
+      "kind": "variant",
+      "signature": "UnsupportedDomainScope",
+      "docs": "Registrable-domain scope is unavailable for the seed hostname.",
+      "source": {
+        "file": "crates/yosoi-map/src/admission.rs",
+        "lineStart": 43,
+        "lineEnd": 43,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/admission.rs#L43-L43"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::Rejection::UnsupportedScheme",
+      "publicPath": "yosoi::map::Rejection::UnsupportedScheme",
+      "title": "yosoi::map::Rejection::UnsupportedScheme",
+      "kind": "variant",
+      "signature": "UnsupportedScheme",
+      "docs": "Only HTTP and HTTPS URLs are supported.",
+      "source": {
+        "file": "crates/yosoi-map/src/admission.rs",
+        "lineStart": 19,
+        "lineEnd": 19,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/admission.rs#L19-L19"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::Rejection::UrlLength",
+      "publicPath": "yosoi::map::Rejection::UrlLength",
+      "title": "yosoi::map::Rejection::UrlLength",
+      "kind": "variant",
+      "signature": "UrlLength",
+      "docs": "A URL exceeds the configured URL byte limit.",
+      "source": {
+        "file": "crates/yosoi-map/src/admission.rs",
+        "lineStart": 37,
+        "lineEnd": 37,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/admission.rs#L37-L37"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::Rejection::clone",
+      "publicPath": "yosoi::map::Rejection::clone",
+      "title": "yosoi::map::Rejection::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> Rejection",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/admission.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/admission.rs#L11-L11"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::map::Rejection::cmp",
+      "publicPath": "yosoi::map::Rejection::cmp",
+      "title": "yosoi::map::Rejection::cmp",
+      "kind": "function",
+      "signature": "fn cmp(&self, other: &Rejection) -> $crate::cmp::Ordering",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/admission.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/admission.rs#L11-L11"
+      },
+      "examples": [],
+      "trait": "Ord"
+    },
+    {
+      "id": "function:yosoi::map::Rejection::eq",
+      "publicPath": "yosoi::map::Rejection::eq",
+      "title": "yosoi::map::Rejection::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &Rejection) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/admission.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/admission.rs#L11-L11"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::map::Rejection::fmt",
+      "publicPath": "yosoi::map::Rejection::fmt",
+      "title": "yosoi::map::Rejection::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/admission.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/admission.rs#L11-L11"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::map::Rejection::fmt",
+      "publicPath": "yosoi::map::Rejection::fmt",
+      "title": "yosoi::map::Rejection::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, __formatter: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/admission.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/admission.rs#L11-L11"
+      },
+      "examples": [],
+      "trait": "Display"
+    },
+    {
+      "id": "function:yosoi::map::Rejection::partial_cmp",
+      "publicPath": "yosoi::map::Rejection::partial_cmp",
+      "title": "yosoi::map::Rejection::partial_cmp",
+      "kind": "function",
+      "signature": "fn partial_cmp(&self, other: &Rejection) -> $crate::option::Option<$crate::cmp::Ordering>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/admission.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/admission.rs#L11-L11"
+      },
+      "examples": [],
+      "trait": "PartialOrd"
+    },
+    {
+      "id": "function:yosoi::map::Rejection::serialize",
+      "publicPath": "yosoi::map::Rejection::serialize",
+      "title": "yosoi::map::Rejection::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/admission.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-map/src/admission.rs#L11-L11"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "dccf02c1aed8009a031ca7ee595223e4d66a78ca5f5f8e1d69f1c58dd3c392c5",
+  "slug": "yosoi/map/enum/rejection",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "dccf02c1aed8009a031ca7ee595223e4d66a78ca5f5f8e1d69f1c58dd3c392c5"
+}

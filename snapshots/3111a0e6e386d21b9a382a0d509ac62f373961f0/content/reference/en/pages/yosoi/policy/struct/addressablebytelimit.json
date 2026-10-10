@@ -1,0 +1,238 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::policy::AddressableByteLimit",
+  "publicPath": "yosoi::policy::AddressableByteLimit",
+  "kind": "struct",
+  "title": "yosoi::policy::AddressableByteLimit",
+  "signature": "pub struct AddressableByteLimit",
+  "docs": "Positive byte limit that is addressable by an in-memory platform buffer.",
+  "source": {
+    "file": "crates/yosoi-policy/src/policy/limits.rs",
+    "lineStart": 9,
+    "lineEnd": 9,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/limits.rs#L9-L9"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/policy.rs",
+    "lineStart": 10,
+    "lineEnd": 10,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/policy.rs#L10-L10"
+  },
+  "aliases": [
+    "yosoi::prelude::policy::AddressableByteLimit"
+  ],
+  "members": [
+    {
+      "id": "assoc_type:yosoi::policy::AddressableByteLimit::Error",
+      "publicPath": "yosoi::policy::AddressableByteLimit::Error",
+      "title": "yosoi::policy::AddressableByteLimit::Error",
+      "kind": "assoc_type",
+      "signature": "type Error = PolicyError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 57,
+        "lineEnd": 57,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/limits.rs#L57-L57"
+      },
+      "examples": [],
+      "trait": "TryFrom"
+    },
+    {
+      "id": "function:yosoi::policy::AddressableByteLimit::as_usize",
+      "publicPath": "yosoi::policy::AddressableByteLimit::as_usize",
+      "title": "yosoi::policy::AddressableByteLimit::as_usize",
+      "kind": "function",
+      "signature": "pub fn as_usize(self) -> Result<usize, PolicyError>",
+      "docs": "Returns the exact byte limit as a platform-sized value.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 13,
+        "lineEnd": 15,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/limits.rs#L13-L15"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::AddressableByteLimit::clone",
+      "publicPath": "yosoi::policy::AddressableByteLimit::clone",
+      "title": "yosoi::policy::AddressableByteLimit::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> AddressableByteLimit",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 8,
+        "lineEnd": 8,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/limits.rs#L8-L8"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::policy::AddressableByteLimit::cmp",
+      "publicPath": "yosoi::policy::AddressableByteLimit::cmp",
+      "title": "yosoi::policy::AddressableByteLimit::cmp",
+      "kind": "function",
+      "signature": "fn cmp(&self, other: &AddressableByteLimit) -> $crate::cmp::Ordering",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 8,
+        "lineEnd": 8,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/limits.rs#L8-L8"
+      },
+      "examples": [],
+      "trait": "Ord"
+    },
+    {
+      "id": "function:yosoi::policy::AddressableByteLimit::deserialize",
+      "publicPath": "yosoi::policy::AddressableByteLimit::deserialize",
+      "title": "yosoi::policy::AddressableByteLimit::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<D>(deserializer: D) -> Result<Self, <D as >::Error> where D: Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 78,
+        "lineEnd": 84,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/limits.rs#L78-L84"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::policy::AddressableByteLimit::eq",
+      "publicPath": "yosoi::policy::AddressableByteLimit::eq",
+      "title": "yosoi::policy::AddressableByteLimit::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &AddressableByteLimit) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 8,
+        "lineEnd": 8,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/limits.rs#L8-L8"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::policy::AddressableByteLimit::fmt",
+      "publicPath": "yosoi::policy::AddressableByteLimit::fmt",
+      "title": "yosoi::policy::AddressableByteLimit::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 8,
+        "lineEnd": 8,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/limits.rs#L8-L8"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::policy::AddressableByteLimit::get",
+      "publicPath": "yosoi::policy::AddressableByteLimit::get",
+      "title": "yosoi::policy::AddressableByteLimit::get",
+      "kind": "function",
+      "signature": "pub const fn get(self) -> u64",
+      "docs": "Returns the exact canonical byte limit.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 23,
+        "lineEnd": 25,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/limits.rs#L23-L25"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::AddressableByteLimit::hash",
+      "publicPath": "yosoi::policy::AddressableByteLimit::hash",
+      "title": "yosoi::policy::AddressableByteLimit::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 8,
+        "lineEnd": 8,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/limits.rs#L8-L8"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::policy::AddressableByteLimit::partial_cmp",
+      "publicPath": "yosoi::policy::AddressableByteLimit::partial_cmp",
+      "title": "yosoi::policy::AddressableByteLimit::partial_cmp",
+      "kind": "function",
+      "signature": "fn partial_cmp(&self, other: &AddressableByteLimit) -> $crate::option::Option<$crate::cmp::Ordering>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 8,
+        "lineEnd": 8,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/limits.rs#L8-L8"
+      },
+      "examples": [],
+      "trait": "PartialOrd"
+    },
+    {
+      "id": "function:yosoi::policy::AddressableByteLimit::serialize",
+      "publicPath": "yosoi::policy::AddressableByteLimit::serialize",
+      "title": "yosoi::policy::AddressableByteLimit::serialize",
+      "kind": "function",
+      "signature": "fn serialize<S>(&self, serializer: S) -> Result<<S as >::Ok, <S as >::Error> where S: Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 69,
+        "lineEnd": 74,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/limits.rs#L69-L74"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::policy::AddressableByteLimit::to_byte_limit",
+      "publicPath": "yosoi::policy::AddressableByteLimit::to_byte_limit",
+      "title": "yosoi::policy::AddressableByteLimit::to_byte_limit",
+      "kind": "function",
+      "signature": "pub fn to_byte_limit(self) -> Result<ByteLimit, ByteLimitError>",
+      "docs": "Converts to the shared positive byte-limit primitive.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 18,
+        "lineEnd": 20,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/limits.rs#L18-L20"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::AddressableByteLimit::try_from",
+      "publicPath": "yosoi::policy::AddressableByteLimit::try_from",
+      "title": "yosoi::policy::AddressableByteLimit::try_from",
+      "kind": "function",
+      "signature": "fn try_from(value: u64) -> Result<Self, <Self as >::Error>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/limits.rs",
+        "lineStart": 59,
+        "lineEnd": 65,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/limits.rs#L59-L65"
+      },
+      "examples": [],
+      "trait": "TryFrom"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e8e2e99501c19cc7cf1df4ec96ad4535fd714b8e8349b10a4b5001d8fd51bfba",
+  "slug": "yosoi/policy/struct/addressablebytelimit",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e8e2e99501c19cc7cf1df4ec96ad4535fd714b8e8349b10a4b5001d8fd51bfba"
+}

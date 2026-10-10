@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 80" role="img" aria-labelledby="title desc">
+  <title id="title">Demo fixture</title>
+  <desc id="desc">A simple blue rounded rectangle with a small white circle.</desc>
+  <rect x="4" y="4" width="152" height="72" rx="12" fill="#3156a3"/>
+  <circle cx="80" cy="40" r="16" fill="#fff"/>
+</svg>

@@ -1,0 +1,294 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::request::WebArtifactFamily",
+  "publicPath": "yosoi::request::WebArtifactFamily",
+  "kind": "enum",
+  "title": "yosoi::request::WebArtifactFamily",
+  "signature": "pub enum WebArtifactFamily",
+  "docs": "Stable semantic identity of a first-version web artifact family.",
+  "source": {
+    "file": "crates/yosoi-web-capture/src/artifact/family.rs",
+    "lineStart": 139,
+    "lineEnd": 162,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-web-capture/src/artifact/family.rs#L139-L162"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/request.rs",
+    "lineStart": 14,
+    "lineEnd": 14,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/request.rs#L14-L14"
+  },
+  "aliases": [
+    "yosoi::prelude::request::WebArtifactFamily"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::request::WebArtifactFamily::AccessibilityTree",
+      "publicPath": "yosoi::request::WebArtifactFamily::AccessibilityTree",
+      "title": "yosoi::request::WebArtifactFamily::AccessibilityTree",
+      "kind": "variant",
+      "signature": "AccessibilityTree",
+      "docs": "Browser accessibility tree.",
+      "source": {
+        "file": "crates/yosoi-web-capture/src/artifact/family.rs",
+        "lineStart": 149,
+        "lineEnd": 149,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-web-capture/src/artifact/family.rs#L149-L149"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::WebArtifactFamily::Cookies",
+      "publicPath": "yosoi::request::WebArtifactFamily::Cookies",
+      "title": "yosoi::request::WebArtifactFamily::Cookies",
+      "kind": "variant",
+      "signature": "Cookies",
+      "docs": "Cookie state.",
+      "source": {
+        "file": "crates/yosoi-web-capture/src/artifact/family.rs",
+        "lineStart": 153,
+        "lineEnd": 153,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-web-capture/src/artifact/family.rs#L153-L153"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::WebArtifactFamily::DecodedSource",
+      "publicPath": "yosoi::request::WebArtifactFamily::DecodedSource",
+      "title": "yosoi::request::WebArtifactFamily::DecodedSource",
+      "kind": "variant",
+      "signature": "DecodedSource",
+      "docs": "Bounded UTF-8 decoding derived from source content.",
+      "source": {
+        "file": "crates/yosoi-web-capture/src/artifact/family.rs",
+        "lineStart": 145,
+        "lineEnd": 145,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-web-capture/src/artifact/family.rs#L145-L145"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::WebArtifactFamily::Layout",
+      "publicPath": "yosoi::request::WebArtifactFamily::Layout",
+      "title": "yosoi::request::WebArtifactFamily::Layout",
+      "kind": "variant",
+      "signature": "Layout",
+      "docs": "Layout and geometry evidence.",
+      "source": {
+        "file": "crates/yosoi-web-capture/src/artifact/family.rs",
+        "lineStart": 157,
+        "lineEnd": 157,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-web-capture/src/artifact/family.rs#L157-L157"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::WebArtifactFamily::Network",
+      "publicPath": "yosoi::request::WebArtifactFamily::Network",
+      "title": "yosoi::request::WebArtifactFamily::Network",
+      "kind": "variant",
+      "signature": "Network",
+      "docs": "Bounded network evidence.",
+      "source": {
+        "file": "crates/yosoi-web-capture/src/artifact/family.rs",
+        "lineStart": 151,
+        "lineEnd": 151,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-web-capture/src/artifact/family.rs#L151-L151"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::WebArtifactFamily::RenderedDom",
+      "publicPath": "yosoi::request::WebArtifactFamily::RenderedDom",
+      "title": "yosoi::request::WebArtifactFamily::RenderedDom",
+      "kind": "variant",
+      "signature": "RenderedDom",
+      "docs": "Rendered document serialization.",
+      "source": {
+        "file": "crates/yosoi-web-capture/src/artifact/family.rs",
+        "lineStart": 147,
+        "lineEnd": 147,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-web-capture/src/artifact/family.rs#L147-L147"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::WebArtifactFamily::RuntimeDiagnostics",
+      "publicPath": "yosoi::request::WebArtifactFamily::RuntimeDiagnostics",
+      "title": "yosoi::request::WebArtifactFamily::RuntimeDiagnostics",
+      "kind": "variant",
+      "signature": "RuntimeDiagnostics",
+      "docs": "Console messages and JavaScript runtime failures.",
+      "source": {
+        "file": "crates/yosoi-web-capture/src/artifact/family.rs",
+        "lineStart": 161,
+        "lineEnd": 161,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-web-capture/src/artifact/family.rs#L161-L161"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::WebArtifactFamily::Source",
+      "publicPath": "yosoi::request::WebArtifactFamily::Source",
+      "title": "yosoi::request::WebArtifactFamily::Source",
+      "kind": "variant",
+      "signature": "Source",
+      "docs": "Original source content.",
+      "source": {
+        "file": "crates/yosoi-web-capture/src/artifact/family.rs",
+        "lineStart": 141,
+        "lineEnd": 141,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-web-capture/src/artifact/family.rs#L141-L141"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::WebArtifactFamily::SourceRepresentation",
+      "publicPath": "yosoi::request::WebArtifactFamily::SourceRepresentation",
+      "title": "yosoi::request::WebArtifactFamily::SourceRepresentation",
+      "kind": "variant",
+      "signature": "SourceRepresentation",
+      "docs": "Canonical facts derived from source content.",
+      "source": {
+        "file": "crates/yosoi-web-capture/src/artifact/family.rs",
+        "lineStart": 143,
+        "lineEnd": 143,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-web-capture/src/artifact/family.rs#L143-L143"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::WebArtifactFamily::Storage",
+      "publicPath": "yosoi::request::WebArtifactFamily::Storage",
+      "title": "yosoi::request::WebArtifactFamily::Storage",
+      "kind": "variant",
+      "signature": "Storage",
+      "docs": "Web-storage state.",
+      "source": {
+        "file": "crates/yosoi-web-capture/src/artifact/family.rs",
+        "lineStart": 155,
+        "lineEnd": 155,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-web-capture/src/artifact/family.rs#L155-L155"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::WebArtifactFamily::Visual",
+      "publicPath": "yosoi::request::WebArtifactFamily::Visual",
+      "title": "yosoi::request::WebArtifactFamily::Visual",
+      "kind": "variant",
+      "signature": "Visual",
+      "docs": "Visual evidence.",
+      "source": {
+        "file": "crates/yosoi-web-capture/src/artifact/family.rs",
+        "lineStart": 159,
+        "lineEnd": 159,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-web-capture/src/artifact/family.rs#L159-L159"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::request::WebArtifactFamily::clone",
+      "publicPath": "yosoi::request::WebArtifactFamily::clone",
+      "title": "yosoi::request::WebArtifactFamily::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> WebArtifactFamily",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-web-capture/src/artifact/family.rs",
+        "lineStart": 137,
+        "lineEnd": 137,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-web-capture/src/artifact/family.rs#L137-L137"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::request::WebArtifactFamily::deserialize",
+      "publicPath": "yosoi::request::WebArtifactFamily::deserialize",
+      "title": "yosoi::request::WebArtifactFamily::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-web-capture/src/artifact/family.rs",
+        "lineStart": 137,
+        "lineEnd": 137,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-web-capture/src/artifact/family.rs#L137-L137"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::request::WebArtifactFamily::eq",
+      "publicPath": "yosoi::request::WebArtifactFamily::eq",
+      "title": "yosoi::request::WebArtifactFamily::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &WebArtifactFamily) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-web-capture/src/artifact/family.rs",
+        "lineStart": 137,
+        "lineEnd": 137,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-web-capture/src/artifact/family.rs#L137-L137"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::request::WebArtifactFamily::fmt",
+      "publicPath": "yosoi::request::WebArtifactFamily::fmt",
+      "title": "yosoi::request::WebArtifactFamily::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-web-capture/src/artifact/family.rs",
+        "lineStart": 137,
+        "lineEnd": 137,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-web-capture/src/artifact/family.rs#L137-L137"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::request::WebArtifactFamily::hash",
+      "publicPath": "yosoi::request::WebArtifactFamily::hash",
+      "title": "yosoi::request::WebArtifactFamily::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-web-capture/src/artifact/family.rs",
+        "lineStart": 137,
+        "lineEnd": 137,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-web-capture/src/artifact/family.rs#L137-L137"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::request::WebArtifactFamily::serialize",
+      "publicPath": "yosoi::request::WebArtifactFamily::serialize",
+      "title": "yosoi::request::WebArtifactFamily::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-web-capture/src/artifact/family.rs",
+        "lineStart": 137,
+        "lineEnd": 137,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-web-capture/src/artifact/family.rs#L137-L137"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "4daafd7e850c4cf063700de8987a39d921937f62bc4dee1154164b7e1652a629",
+  "slug": "yosoi/request/enum/webartifactfamily",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "4daafd7e850c4cf063700de8987a39d921937f62bc4dee1154164b7e1652a629"
+}

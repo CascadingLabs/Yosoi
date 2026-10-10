@@ -1,0 +1,186 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::search::RequestAttemptSummary",
+  "publicPath": "yosoi::search::RequestAttemptSummary",
+  "kind": "struct",
+  "title": "yosoi::search::RequestAttemptSummary",
+  "signature": "pub struct RequestAttemptSummary",
+  "docs": "A bounded summary of one underlying Requests attempt.",
+  "source": {
+    "file": "crates/yosoi-engine/src/search/outcome.rs",
+    "lineStart": 57,
+    "lineEnd": 67,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/search/outcome.rs#L57-L67"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/search.rs",
+    "lineStart": 9,
+    "lineEnd": 9,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/search.rs#L9-L9"
+  },
+  "aliases": [
+    "yosoi::prelude::search::RequestAttemptSummary"
+  ],
+  "members": [
+    {
+      "id": "struct_field:yosoi::search::RequestAttemptSummary::acquisition",
+      "publicPath": "yosoi::search::RequestAttemptSummary::acquisition",
+      "title": "yosoi::search::RequestAttemptSummary::acquisition",
+      "kind": "struct_field",
+      "signature": "pub acquisition: yosoi_policy::policy::AcquisitionKind",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/outcome.rs",
+        "lineStart": 61,
+        "lineEnd": 61,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/search/outcome.rs#L61-L61"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::search::RequestAttemptSummary::capture_id",
+      "publicPath": "yosoi::search::RequestAttemptSummary::capture_id",
+      "title": "yosoi::search::RequestAttemptSummary::capture_id",
+      "kind": "struct_field",
+      "signature": "pub capture_id: yosoi_types::CaptureId",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/outcome.rs",
+        "lineStart": 60,
+        "lineEnd": 60,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/search/outcome.rs#L60-L60"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::search::RequestAttemptSummary::clone",
+      "publicPath": "yosoi::search::RequestAttemptSummary::clone",
+      "title": "yosoi::search::RequestAttemptSummary::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> RequestAttemptSummary",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/outcome.rs",
+        "lineStart": 56,
+        "lineEnd": 56,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/search/outcome.rs#L56-L56"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "struct_field:yosoi::search::RequestAttemptSummary::diagnostic",
+      "publicPath": "yosoi::search::RequestAttemptSummary::diagnostic",
+      "title": "yosoi::search::RequestAttemptSummary::diagnostic",
+      "kind": "struct_field",
+      "signature": "pub diagnostic: Option<SearchAttemptDiagnostic>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/outcome.rs",
+        "lineStart": 65,
+        "lineEnd": 65,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/search/outcome.rs#L65-L65"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::search::RequestAttemptSummary::eq",
+      "publicPath": "yosoi::search::RequestAttemptSummary::eq",
+      "title": "yosoi::search::RequestAttemptSummary::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &RequestAttemptSummary) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/outcome.rs",
+        "lineStart": 56,
+        "lineEnd": 56,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/search/outcome.rs#L56-L56"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::search::RequestAttemptSummary::fmt",
+      "publicPath": "yosoi::search::RequestAttemptSummary::fmt",
+      "title": "yosoi::search::RequestAttemptSummary::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/outcome.rs",
+        "lineStart": 56,
+        "lineEnd": 56,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/search/outcome.rs#L56-L56"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::search::RequestAttemptSummary::http_status",
+      "publicPath": "yosoi::search::RequestAttemptSummary::http_status",
+      "title": "yosoi::search::RequestAttemptSummary::http_status",
+      "kind": "struct_field",
+      "signature": "pub http_status: Option<u16>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/outcome.rs",
+        "lineStart": 62,
+        "lineEnd": 62,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/search/outcome.rs#L62-L62"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::search::RequestAttemptSummary::request_id",
+      "publicPath": "yosoi::search::RequestAttemptSummary::request_id",
+      "title": "yosoi::search::RequestAttemptSummary::request_id",
+      "kind": "struct_field",
+      "signature": "pub request_id: crate::request::RequestId",
+      "docs": "Parent Request for this acquisition, including a recovery Request.",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/outcome.rs",
+        "lineStart": 59,
+        "lineEnd": 59,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/search/outcome.rs#L59-L59"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::search::RequestAttemptSummary::source_bytes",
+      "publicPath": "yosoi::search::RequestAttemptSummary::source_bytes",
+      "title": "yosoi::search::RequestAttemptSummary::source_bytes",
+      "kind": "struct_field",
+      "signature": "pub source_bytes: Option<u64>",
+      "docs": "Exact retained source artifact bytes when a completed Request recorded them.",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/outcome.rs",
+        "lineStart": 64,
+        "lineEnd": 64,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/search/outcome.rs#L64-L64"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::search::RequestAttemptSummary::terminal",
+      "publicPath": "yosoi::search::RequestAttemptSummary::terminal",
+      "title": "yosoi::search::RequestAttemptSummary::terminal",
+      "kind": "struct_field",
+      "signature": "pub terminal: RequestAttemptTerminal",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/outcome.rs",
+        "lineStart": 66,
+        "lineEnd": 66,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-engine/src/search/outcome.rs#L66-L66"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "63d73f50e579ec4654e09f24ef9031d72868d2a646e3be7cd9c8092e14dfae58",
+  "slug": "yosoi/search/struct/requestattemptsummary",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "63d73f50e579ec4654e09f24ef9031d72868d2a646e3be7cd9c8092e14dfae58"
+}

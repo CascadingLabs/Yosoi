@@ -1,0 +1,175 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::LocateOutcome",
+  "publicPath": "yosoi::LocateOutcome",
+  "kind": "enum",
+  "title": "yosoi::LocateOutcome",
+  "signature": "pub enum LocateOutcome",
+  "docs": "Complete no-match, indeterminate absence, matches, and failures are never\ncollapsed into one empty collection.",
+  "source": {
+    "file": "crates/yosoi-documents/src/outcome.rs",
+    "lineStart": 340,
+    "lineEnd": 355,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/outcome.rs#L340-L355"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/lib.rs",
+    "lineStart": 17,
+    "lineEnd": 17,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/lib.rs#L17-L17"
+  },
+  "aliases": [
+    "yosoi::locators::LocateOutcome",
+    "yosoi::prelude::LocateOutcome",
+    "yosoi::prelude::locators::LocateOutcome"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::LocateOutcome::Failed",
+      "publicPath": "yosoi::LocateOutcome::Failed",
+      "title": "yosoi::LocateOutcome::Failed",
+      "kind": "variant",
+      "signature": "Failed { failure: LocateFailure }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 352,
+        "lineEnd": 354,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/outcome.rs#L352-L354"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::LocateOutcome::Indeterminate",
+      "publicPath": "yosoi::LocateOutcome::Indeterminate",
+      "title": "yosoi::LocateOutcome::Indeterminate",
+      "kind": "variant",
+      "signature": "Indeterminate { document_id: crate::DocumentId, completeness: IncompleteEvidence, reason_code: String }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 347,
+        "lineEnd": 351,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/outcome.rs#L347-L351"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::LocateOutcome::Matched",
+      "publicPath": "yosoi::LocateOutcome::Matched",
+      "title": "yosoi::LocateOutcome::Matched",
+      "kind": "variant",
+      "signature": "Matched { result: LocateResult }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 341,
+        "lineEnd": 343,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/outcome.rs#L341-L343"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::LocateOutcome::NoMatch",
+      "publicPath": "yosoi::LocateOutcome::NoMatch",
+      "title": "yosoi::LocateOutcome::NoMatch",
+      "kind": "variant",
+      "signature": "NoMatch { document_id: crate::DocumentId }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 344,
+        "lineEnd": 346,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/outcome.rs#L344-L346"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::LocateOutcome::clone",
+      "publicPath": "yosoi::LocateOutcome::clone",
+      "title": "yosoi::LocateOutcome::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> LocateOutcome",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 338,
+        "lineEnd": 338,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/outcome.rs#L338-L338"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::LocateOutcome::deserialize",
+      "publicPath": "yosoi::LocateOutcome::deserialize",
+      "title": "yosoi::LocateOutcome::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 338,
+        "lineEnd": 338,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/outcome.rs#L338-L338"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::LocateOutcome::eq",
+      "publicPath": "yosoi::LocateOutcome::eq",
+      "title": "yosoi::LocateOutcome::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &LocateOutcome) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 338,
+        "lineEnd": 338,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/outcome.rs#L338-L338"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::LocateOutcome::fmt",
+      "publicPath": "yosoi::LocateOutcome::fmt",
+      "title": "yosoi::LocateOutcome::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 338,
+        "lineEnd": 338,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/outcome.rs#L338-L338"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::LocateOutcome::serialize",
+      "publicPath": "yosoi::LocateOutcome::serialize",
+      "title": "yosoi::LocateOutcome::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 338,
+        "lineEnd": 338,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-documents/src/outcome.rs#L338-L338"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "b96488ad1ba85b419facda9b9069460246fc54a9f8728a72747eab9f823437a9",
+  "slug": "yosoi/enum/locateoutcome",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "b96488ad1ba85b419facda9b9069460246fc54a9f8728a72747eab9f823437a9"
+}

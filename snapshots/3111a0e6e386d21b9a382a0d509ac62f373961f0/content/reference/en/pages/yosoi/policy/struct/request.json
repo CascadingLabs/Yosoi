@@ -1,0 +1,204 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::policy::Request",
+  "publicPath": "yosoi::policy::Request",
+  "kind": "struct",
+  "title": "yosoi::policy::Request",
+  "signature": "pub struct Request",
+  "docs": "Shared attempt limits and Direct HTTP redirect behavior.",
+  "source": {
+    "file": "crates/yosoi-policy/src/policy/request.rs",
+    "lineStart": 63,
+    "lineEnd": 72,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/request.rs#L63-L72"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/policy.rs",
+    "lineStart": 14,
+    "lineEnd": 14,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/policy.rs#L14-L14"
+  },
+  "aliases": [
+    "yosoi::prelude::policy::Request"
+  ],
+  "members": [
+    {
+      "id": "struct_field:yosoi::policy::Request::browser",
+      "publicPath": "yosoi::policy::Request::browser",
+      "title": "yosoi::policy::Request::browser",
+      "kind": "struct_field",
+      "signature": "pub browser: BrowserLimits",
+      "docs": "Browser byte and count limits.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/request.rs",
+        "lineStart": 69,
+        "lineEnd": 69,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/request.rs#L69-L69"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::Request::clone",
+      "publicPath": "yosoi::policy::Request::clone",
+      "title": "yosoi::policy::Request::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> Request",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/request.rs",
+        "lineStart": 61,
+        "lineEnd": 61,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/request.rs#L61-L61"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::policy::Request::default",
+      "publicPath": "yosoi::policy::Request::default",
+      "title": "yosoi::policy::Request::default",
+      "kind": "function",
+      "signature": "fn default() -> Request",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/request.rs",
+        "lineStart": 61,
+        "lineEnd": 61,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/request.rs#L61-L61"
+      },
+      "examples": [],
+      "trait": "Default"
+    },
+    {
+      "id": "function:yosoi::policy::Request::deserialize",
+      "publicPath": "yosoi::policy::Request::deserialize",
+      "title": "yosoi::policy::Request::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/request.rs",
+        "lineStart": 61,
+        "lineEnd": 61,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/request.rs#L61-L61"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "struct_field:yosoi::policy::Request::direct_http_redirects",
+      "publicPath": "yosoi::policy::Request::direct_http_redirects",
+      "title": "yosoi::policy::Request::direct_http_redirects",
+      "kind": "struct_field",
+      "signature": "pub direct_http_redirects: super::DirectHttpRedirects",
+      "docs": "Automatic native HTTP redirects; browser navigation owns its redirect semantics.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/request.rs",
+        "lineStart": 71,
+        "lineEnd": 71,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/request.rs#L71-L71"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::Request::eq",
+      "publicPath": "yosoi::policy::Request::eq",
+      "title": "yosoi::policy::Request::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &Request) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/request.rs",
+        "lineStart": 61,
+        "lineEnd": 61,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/request.rs#L61-L61"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::policy::Request::fmt",
+      "publicPath": "yosoi::policy::Request::fmt",
+      "title": "yosoi::policy::Request::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/request.rs",
+        "lineStart": 61,
+        "lineEnd": 61,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/request.rs#L61-L61"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::policy::Request::maximum_elapsed",
+      "publicPath": "yosoi::policy::Request::maximum_elapsed",
+      "title": "yosoi::policy::Request::maximum_elapsed",
+      "kind": "struct_field",
+      "signature": "pub maximum_elapsed: super::MaximumElapsed",
+      "docs": "Shared monotonic attempt deadline, in microseconds.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/request.rs",
+        "lineStart": 65,
+        "lineEnd": 65,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/request.rs#L65-L65"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::Request::new",
+      "publicPath": "yosoi::policy::Request::new",
+      "title": "yosoi::policy::Request::new",
+      "kind": "function",
+      "signature": "pub fn new(maximum_elapsed: MaximumElapsed, source: SourceLimits, browser: BrowserLimits, direct_http_redirects: DirectHttpRedirects) -> Result<Self, PolicyError>",
+      "docs": "Creates a complete request policy and verifies platform addressability.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/request.rs",
+        "lineStart": 76,
+        "lineEnd": 90,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/request.rs#L76-L90"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::Request::serialize",
+      "publicPath": "yosoi::policy::Request::serialize",
+      "title": "yosoi::policy::Request::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/request.rs",
+        "lineStart": 61,
+        "lineEnd": 61,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/request.rs#L61-L61"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "struct_field:yosoi::policy::Request::source",
+      "publicPath": "yosoi::policy::Request::source",
+      "title": "yosoi::policy::Request::source",
+      "kind": "struct_field",
+      "signature": "pub source: SourceLimits",
+      "docs": "Source-response byte-domain limits.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/request.rs",
+        "lineStart": 67,
+        "lineEnd": 67,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/policy/request.rs#L67-L67"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "f6c1c9057644ec8f4deab9e24d2e9af7db2c582a449b831a020c32ab223a74ce",
+  "slug": "yosoi/policy/struct/request",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "f6c1c9057644ec8f4deab9e24d2e9af7db2c582a449b831a020c32ab223a74ce"
+}

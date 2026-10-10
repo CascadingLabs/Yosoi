@@ -1,0 +1,654 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::PolicyError",
+  "publicPath": "yosoi::PolicyError",
+  "kind": "enum",
+  "title": "yosoi::PolicyError",
+  "signature": "pub enum PolicyError",
+  "docs": "Errors found while constructing or validating policy values.",
+  "source": {
+    "file": "crates/yosoi-policy/src/error.rs",
+    "lineStart": 6,
+    "lineEnd": 120,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/error.rs#L6-L120"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/lib.rs",
+    "lineStart": 18,
+    "lineEnd": 18,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi/src/lib.rs#L18-L18"
+  },
+  "aliases": [
+    "yosoi::policy::PolicyError",
+    "yosoi::prelude::PolicyError",
+    "yosoi::prelude::policy::PolicyError"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::PolicyError::AccessibilityNodeLimitNotAddressable",
+      "publicPath": "yosoi::PolicyError::AccessibilityNodeLimitNotAddressable",
+      "title": "yosoi::PolicyError::AccessibilityNodeLimitNotAddressable",
+      "kind": "variant",
+      "signature": "AccessibilityNodeLimitNotAddressable",
+      "docs": "An accessibility-node limit is not addressable by this platform.",
+      "source": {
+        "file": "crates/yosoi-policy/src/error.rs",
+        "lineStart": 36,
+        "lineEnd": 36,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/error.rs#L36-L36"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::PolicyError::ArchivedIdentityMismatch",
+      "publicPath": "yosoi::PolicyError::ArchivedIdentityMismatch",
+      "title": "yosoi::PolicyError::ArchivedIdentityMismatch",
+      "kind": "variant",
+      "signature": "ArchivedIdentityMismatch",
+      "docs": "A stored effective snapshot does not match its recorded identity.",
+      "source": {
+        "file": "crates/yosoi-policy/src/error.rs",
+        "lineStart": 112,
+        "lineEnd": 112,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/error.rs#L112-L112"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::PolicyError::ArchivedSnapshotMismatch",
+      "publicPath": "yosoi::PolicyError::ArchivedSnapshotMismatch",
+      "title": "yosoi::PolicyError::ArchivedSnapshotMismatch",
+      "kind": "variant",
+      "signature": "ArchivedSnapshotMismatch",
+      "docs": "An archived effective snapshot does not match its authored Policy choices.",
+      "source": {
+        "file": "crates/yosoi-policy/src/error.rs",
+        "lineStart": 115,
+        "lineEnd": 115,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/error.rs#L115-L115"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::PolicyError::ByteLimitNotAddressable",
+      "publicPath": "yosoi::PolicyError::ByteLimitNotAddressable",
+      "title": "yosoi::PolicyError::ByteLimitNotAddressable",
+      "kind": "variant",
+      "signature": "ByteLimitNotAddressable",
+      "docs": "A byte bound cannot be represented by this platform's address space.",
+      "source": {
+        "file": "crates/yosoi-policy/src/error.rs",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/error.rs#L18-L18"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::PolicyError::DuplicateAcquisition",
+      "publicPath": "yosoi::PolicyError::DuplicateAcquisition",
+      "title": "yosoi::PolicyError::DuplicateAcquisition",
+      "kind": "variant",
+      "signature": "DuplicateAcquisition(crate::policy::AcquisitionKind)",
+      "docs": "An acquisition kind was declared more than once.",
+      "source": {
+        "file": "crates/yosoi-policy/src/error.rs",
+        "lineStart": 70,
+        "lineEnd": 70,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/error.rs#L70-L70"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::PolicyError::DuplicateDocument",
+      "publicPath": "yosoi::PolicyError::DuplicateDocument",
+      "title": "yosoi::PolicyError::DuplicateDocument",
+      "kind": "variant",
+      "signature": "DuplicateDocument(crate::policy::DocumentRequest)",
+      "docs": "A document request was repeated within one exact acquisition.",
+      "source": {
+        "file": "crates/yosoi-policy/src/error.rs",
+        "lineStart": 76,
+        "lineEnd": 76,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/error.rs#L76-L76"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::PolicyError::DuplicateSearchProvider",
+      "publicPath": "yosoi::PolicyError::DuplicateSearchProvider",
+      "title": "yosoi::PolicyError::DuplicateSearchProvider",
+      "kind": "variant",
+      "signature": "DuplicateSearchProvider(crate::policy::Provider)",
+      "docs": "A provider was selected more than once in Search policy order.",
+      "source": {
+        "file": "crates/yosoi-policy/src/error.rs",
+        "lineStart": 85,
+        "lineEnd": 85,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/error.rs#L85-L85"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::PolicyError::EmptyMapPathPrefix",
+      "publicPath": "yosoi::PolicyError::EmptyMapPathPrefix",
+      "title": "yosoi::PolicyError::EmptyMapPathPrefix",
+      "kind": "variant",
+      "signature": "EmptyMapPathPrefix",
+      "docs": "An empty path prefix would exclude every URL.",
+      "source": {
+        "file": "crates/yosoi-policy/src/error.rs",
+        "lineStart": 63,
+        "lineEnd": 63,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/error.rs#L63-L63"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::PolicyError::EventLimitNotAddressable",
+      "publicPath": "yosoi::PolicyError::EventLimitNotAddressable",
+      "title": "yosoi::PolicyError::EventLimitNotAddressable",
+      "kind": "variant",
+      "signature": "EventLimitNotAddressable",
+      "docs": "An event bound cannot be represented by this platform's address space.",
+      "source": {
+        "file": "crates/yosoi-policy/src/error.rs",
+        "lineStart": 24,
+        "lineEnd": 24,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/error.rs#L24-L24"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::PolicyError::InvalidEffectiveSearchRoute",
+      "publicPath": "yosoi::PolicyError::InvalidEffectiveSearchRoute",
+      "title": "yosoi::PolicyError::InvalidEffectiveSearchRoute",
+      "kind": "variant",
+      "signature": "InvalidEffectiveSearchRoute",
+      "docs": "An archived effective Search route has an inconsistent resolution state.",
+      "source": {
+        "file": "crates/yosoi-policy/src/error.rs",
+        "lineStart": 109,
+        "lineEnd": 109,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/error.rs#L109-L109"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::PolicyError::InvalidMapDuration",
+      "publicPath": "yosoi::PolicyError::InvalidMapDuration",
+      "title": "yosoi::PolicyError::InvalidMapDuration",
+      "kind": "variant",
+      "signature": "InvalidMapDuration",
+      "docs": "A serialized Map duration had an invalid nanosecond component.",
+      "source": {
+        "file": "crates/yosoi-policy/src/error.rs",
+        "lineStart": 51,
+        "lineEnd": 51,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/error.rs#L51-L51"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::PolicyError::LegacyIdentityCannotIncludeMap",
+      "publicPath": "yosoi::PolicyError::LegacyIdentityCannotIncludeMap",
+      "title": "yosoi::PolicyError::LegacyIdentityCannotIncludeMap",
+      "kind": "variant",
+      "signature": "LegacyIdentityCannotIncludeMap",
+      "docs": "A historical identity cannot describe active Map behavior.",
+      "source": {
+        "file": "crates/yosoi-policy/src/error.rs",
+        "lineStart": 103,
+        "lineEnd": 103,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/error.rs#L103-L103"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::PolicyError::LegacyIdentityCannotIncludeRobots",
+      "publicPath": "yosoi::PolicyError::LegacyIdentityCannotIncludeRobots",
+      "title": "yosoi::PolicyError::LegacyIdentityCannotIncludeRobots",
+      "kind": "variant",
+      "signature": "LegacyIdentityCannotIncludeRobots",
+      "docs": "Pre-robots Map identity cannot represent active robots enforcement.",
+      "source": {
+        "file": "crates/yosoi-policy/src/error.rs",
+        "lineStart": 106,
+        "lineEnd": 106,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/error.rs#L106-L106"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::PolicyError::LegacyIdentityCannotIncludeSearch",
+      "publicPath": "yosoi::PolicyError::LegacyIdentityCannotIncludeSearch",
+      "title": "yosoi::PolicyError::LegacyIdentityCannotIncludeSearch",
+      "kind": "variant",
+      "signature": "LegacyIdentityCannotIncludeSearch",
+      "docs": "A historical identity cannot describe active Search behavior.",
+      "source": {
+        "file": "crates/yosoi-policy/src/error.rs",
+        "lineStart": 100,
+        "lineEnd": 100,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/error.rs#L100-L100"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::PolicyError::MapFilterStringTooLong",
+      "publicPath": "yosoi::PolicyError::MapFilterStringTooLong",
+      "title": "yosoi::PolicyError::MapFilterStringTooLong",
+      "kind": "variant",
+      "signature": "MapFilterStringTooLong",
+      "docs": "A Map filter string exceeded its supported UTF-8 length.",
+      "source": {
+        "file": "crates/yosoi-policy/src/error.rs",
+        "lineStart": 60,
+        "lineEnd": 60,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/error.rs#L60-L60"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::PolicyError::NonCanonicalDocumentOrder",
+      "publicPath": "yosoi::PolicyError::NonCanonicalDocumentOrder",
+      "title": "yosoi::PolicyError::NonCanonicalDocumentOrder",
+      "kind": "variant",
+      "signature": "NonCanonicalDocumentOrder",
+      "docs": "An exact document set bypassed the canonical public constructor order.",
+      "source": {
+        "file": "crates/yosoi-policy/src/error.rs",
+        "lineStart": 79,
+        "lineEnd": 79,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/error.rs#L79-L79"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::PolicyError::PassiveSubdomainsRequireRegistrableDomain",
+      "publicPath": "yosoi::PolicyError::PassiveSubdomainsRequireRegistrableDomain",
+      "title": "yosoi::PolicyError::PassiveSubdomainsRequireRegistrableDomain",
+      "kind": "variant",
+      "signature": "PassiveSubdomainsRequireRegistrableDomain",
+      "docs": "Passive subdomain discovery requires registrable-domain scope.",
+      "source": {
+        "file": "crates/yosoi-policy/src/error.rs",
+        "lineStart": 54,
+        "lineEnd": 54,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/error.rs#L54-L54"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::PolicyError::ResourceLimitNotAddressable",
+      "publicPath": "yosoi::PolicyError::ResourceLimitNotAddressable",
+      "title": "yosoi::PolicyError::ResourceLimitNotAddressable",
+      "kind": "variant",
+      "signature": "ResourceLimitNotAddressable",
+      "docs": "A browser resource limit is not addressable by this platform.",
+      "source": {
+        "file": "crates/yosoi-policy/src/error.rs",
+        "lineStart": 30,
+        "lineEnd": 30,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/error.rs#L30-L30"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::PolicyError::SearchPlanArithmeticOverflow",
+      "publicPath": "yosoi::PolicyError::SearchPlanArithmeticOverflow",
+      "title": "yosoi::PolicyError::SearchPlanArithmeticOverflow",
+      "kind": "variant",
+      "signature": "SearchPlanArithmeticOverflow",
+      "docs": "Search hit-budget multiplication exceeded the supported integer range.",
+      "source": {
+        "file": "crates/yosoi-policy/src/error.rs",
+        "lineStart": 88,
+        "lineEnd": 88,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/error.rs#L88-L88"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::PolicyError::SearchPlanExceedsTotalResults",
+      "publicPath": "yosoi::PolicyError::SearchPlanExceedsTotalResults",
+      "title": "yosoi::PolicyError::SearchPlanExceedsTotalResults",
+      "kind": "variant",
+      "signature": "SearchPlanExceedsTotalResults { required: u32, limit: u32 }",
+      "docs": "The total-hit bound cannot hold every provider's configured maximum.",
+      "source": {
+        "file": "crates/yosoi-policy/src/error.rs",
+        "lineStart": 91,
+        "lineEnd": 91,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/error.rs#L91-L91"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::PolicyError::Serialization",
+      "publicPath": "yosoi::PolicyError::Serialization",
+      "title": "yosoi::PolicyError::Serialization",
+      "kind": "variant",
+      "signature": "Serialization(String)",
+      "docs": "Canonical JSON serialization failed.",
+      "source": {
+        "file": "crates/yosoi-policy/src/error.rs",
+        "lineStart": 119,
+        "lineEnd": 119,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/error.rs#L119-L119"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::PolicyError::TooManyAcquisitions",
+      "publicPath": "yosoi::PolicyError::TooManyAcquisitions",
+      "title": "yosoi::PolicyError::TooManyAcquisitions",
+      "kind": "variant",
+      "signature": "TooManyAcquisitions",
+      "docs": "More acquisition declarations were supplied than there are supported\nacquisition kinds.",
+      "source": {
+        "file": "crates/yosoi-policy/src/error.rs",
+        "lineStart": 67,
+        "lineEnd": 67,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/error.rs#L67-L67"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::PolicyError::TooManyDocuments",
+      "publicPath": "yosoi::PolicyError::TooManyDocuments",
+      "title": "yosoi::PolicyError::TooManyDocuments",
+      "kind": "variant",
+      "signature": "TooManyDocuments",
+      "docs": "More document requests were supplied than the supported document set.",
+      "source": {
+        "file": "crates/yosoi-policy/src/error.rs",
+        "lineStart": 73,
+        "lineEnd": 73,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/error.rs#L73-L73"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::PolicyError::TooManyMapFilters",
+      "publicPath": "yosoi::PolicyError::TooManyMapFilters",
+      "title": "yosoi::PolicyError::TooManyMapFilters",
+      "kind": "variant",
+      "signature": "TooManyMapFilters",
+      "docs": "One Map filter collection contained more than the supported number of values.",
+      "source": {
+        "file": "crates/yosoi-policy/src/error.rs",
+        "lineStart": 57,
+        "lineEnd": 57,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/error.rs#L57-L57"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::PolicyError::UnsupportedDirectHttpDocument",
+      "publicPath": "yosoi::PolicyError::UnsupportedDirectHttpDocument",
+      "title": "yosoi::PolicyError::UnsupportedDirectHttpDocument",
+      "kind": "variant",
+      "signature": "UnsupportedDirectHttpDocument",
+      "docs": "Direct HTTP can request only a response document.",
+      "source": {
+        "file": "crates/yosoi-policy/src/error.rs",
+        "lineStart": 82,
+        "lineEnd": 82,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/error.rs#L82-L82"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::PolicyError::ZeroAccessibilityNodeLimit",
+      "publicPath": "yosoi::PolicyError::ZeroAccessibilityNodeLimit",
+      "title": "yosoi::PolicyError::ZeroAccessibilityNodeLimit",
+      "kind": "variant",
+      "signature": "ZeroAccessibilityNodeLimit",
+      "docs": "An accessibility-node limit was given zero.",
+      "source": {
+        "file": "crates/yosoi-policy/src/error.rs",
+        "lineStart": 33,
+        "lineEnd": 33,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/error.rs#L33-L33"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::PolicyError::ZeroByteLimit",
+      "publicPath": "yosoi::PolicyError::ZeroByteLimit",
+      "title": "yosoi::PolicyError::ZeroByteLimit",
+      "kind": "variant",
+      "signature": "ZeroByteLimit",
+      "docs": "A positive byte bound was given zero.",
+      "source": {
+        "file": "crates/yosoi-policy/src/error.rs",
+        "lineStart": 15,
+        "lineEnd": 15,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/error.rs#L15-L15"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::PolicyError::ZeroCountLimit",
+      "publicPath": "yosoi::PolicyError::ZeroCountLimit",
+      "title": "yosoi::PolicyError::ZeroCountLimit",
+      "kind": "variant",
+      "signature": "ZeroCountLimit",
+      "docs": "A positive document or locator count was given zero.",
+      "source": {
+        "file": "crates/yosoi-policy/src/error.rs",
+        "lineStart": 9,
+        "lineEnd": 9,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/error.rs#L9-L9"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::PolicyError::ZeroEventLimit",
+      "publicPath": "yosoi::PolicyError::ZeroEventLimit",
+      "title": "yosoi::PolicyError::ZeroEventLimit",
+      "kind": "variant",
+      "signature": "ZeroEventLimit",
+      "docs": "A positive event bound was given zero.",
+      "source": {
+        "file": "crates/yosoi-policy/src/error.rs",
+        "lineStart": 21,
+        "lineEnd": 21,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/error.rs#L21-L21"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::PolicyError::ZeroMapBudget",
+      "publicPath": "yosoi::PolicyError::ZeroMapBudget",
+      "title": "yosoi::PolicyError::ZeroMapBudget",
+      "kind": "variant",
+      "signature": "ZeroMapBudget",
+      "docs": "A Map budget was given zero.",
+      "source": {
+        "file": "crates/yosoi-policy/src/error.rs",
+        "lineStart": 45,
+        "lineEnd": 45,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/error.rs#L45-L45"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::PolicyError::ZeroMapMaximumElapsed",
+      "publicPath": "yosoi::PolicyError::ZeroMapMaximumElapsed",
+      "title": "yosoi::PolicyError::ZeroMapMaximumElapsed",
+      "kind": "variant",
+      "signature": "ZeroMapMaximumElapsed",
+      "docs": "The Map duration was given zero.",
+      "source": {
+        "file": "crates/yosoi-policy/src/error.rs",
+        "lineStart": 48,
+        "lineEnd": 48,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/error.rs#L48-L48"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::PolicyError::ZeroMaximumElapsed",
+      "publicPath": "yosoi::PolicyError::ZeroMaximumElapsed",
+      "title": "yosoi::PolicyError::ZeroMaximumElapsed",
+      "kind": "variant",
+      "signature": "ZeroMaximumElapsed",
+      "docs": "A shared attempt deadline was given zero microseconds.",
+      "source": {
+        "file": "crates/yosoi-policy/src/error.rs",
+        "lineStart": 39,
+        "lineEnd": 39,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/error.rs#L39-L39"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::PolicyError::ZeroProviderDefaultsVersion",
+      "publicPath": "yosoi::PolicyError::ZeroProviderDefaultsVersion",
+      "title": "yosoi::PolicyError::ZeroProviderDefaultsVersion",
+      "kind": "variant",
+      "signature": "ZeroProviderDefaultsVersion",
+      "docs": "A provider-default version was set to zero.",
+      "source": {
+        "file": "crates/yosoi-policy/src/error.rs",
+        "lineStart": 97,
+        "lineEnd": 97,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/error.rs#L97-L97"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::PolicyError::ZeroRedirectHopLimit",
+      "publicPath": "yosoi::PolicyError::ZeroRedirectHopLimit",
+      "title": "yosoi::PolicyError::ZeroRedirectHopLimit",
+      "kind": "variant",
+      "signature": "ZeroRedirectHopLimit",
+      "docs": "A redirect bound was given zero transitions.",
+      "source": {
+        "file": "crates/yosoi-policy/src/error.rs",
+        "lineStart": 42,
+        "lineEnd": 42,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/error.rs#L42-L42"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::PolicyError::ZeroResourceLimit",
+      "publicPath": "yosoi::PolicyError::ZeroResourceLimit",
+      "title": "yosoi::PolicyError::ZeroResourceLimit",
+      "kind": "variant",
+      "signature": "ZeroResourceLimit",
+      "docs": "A browser resource limit was given zero.",
+      "source": {
+        "file": "crates/yosoi-policy/src/error.rs",
+        "lineStart": 27,
+        "lineEnd": 27,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/error.rs#L27-L27"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::PolicyError::ZeroSearchPerProviderLimit",
+      "publicPath": "yosoi::PolicyError::ZeroSearchPerProviderLimit",
+      "title": "yosoi::PolicyError::ZeroSearchPerProviderLimit",
+      "kind": "variant",
+      "signature": "ZeroSearchPerProviderLimit",
+      "docs": "A Search per-provider hit limit was set to zero.",
+      "source": {
+        "file": "crates/yosoi-policy/src/error.rs",
+        "lineStart": 94,
+        "lineEnd": 94,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/error.rs#L94-L94"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::PolicyError::ZeroStepLimit",
+      "publicPath": "yosoi::PolicyError::ZeroStepLimit",
+      "title": "yosoi::PolicyError::ZeroStepLimit",
+      "kind": "variant",
+      "signature": "ZeroStepLimit",
+      "docs": "A positive step, depth, or region count was given zero.",
+      "source": {
+        "file": "crates/yosoi-policy/src/error.rs",
+        "lineStart": 12,
+        "lineEnd": 12,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/error.rs#L12-L12"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::PolicyError::clone",
+      "publicPath": "yosoi::PolicyError::clone",
+      "title": "yosoi::PolicyError::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> PolicyError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/error.rs",
+        "lineStart": 5,
+        "lineEnd": 5,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/error.rs#L5-L5"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::PolicyError::eq",
+      "publicPath": "yosoi::PolicyError::eq",
+      "title": "yosoi::PolicyError::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &PolicyError) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/error.rs",
+        "lineStart": 5,
+        "lineEnd": 5,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/error.rs#L5-L5"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::PolicyError::fmt",
+      "publicPath": "yosoi::PolicyError::fmt",
+      "title": "yosoi::PolicyError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/error.rs",
+        "lineStart": 5,
+        "lineEnd": 5,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/error.rs#L5-L5"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::PolicyError::fmt",
+      "publicPath": "yosoi::PolicyError::fmt",
+      "title": "yosoi::PolicyError::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, __formatter: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/error.rs",
+        "lineStart": 5,
+        "lineEnd": 5,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/3111a0e6e386d21b9a382a0d509ac62f373961f0/crates/yosoi-policy/src/error.rs#L5-L5"
+      },
+      "examples": [],
+      "trait": "Display"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e9458e5ab3fd26a8a694bdbd49c2dda0191c0311f2b8037926aca04e9b692e2b",
+  "slug": "yosoi/enum/policyerror",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e9458e5ab3fd26a8a694bdbd49c2dda0191c0311f2b8037926aca04e9b692e2b"
+}
