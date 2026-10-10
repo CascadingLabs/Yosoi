@@ -78,6 +78,61 @@ fi
                             "RELEASE_PYTHON=/managed Python/3.15t/bin/python\n",
                         )
 
+    def test_batch_interpreters_preserve_paths_and_fail_on_resolution_errors(self):
+        workflow = (
+            DIRECTORY.parents[1] / ".github/workflows/release-cd.yml"
+        ).read_text()
+        section = workflow.split(
+            "      - name: Resolve managed interpreters for the wheel batch\n", 1
+        )[1]
+        script = textwrap.dedent(
+            section.split("\n      - ", 1)[0].split("        run: |\n", 1)[1]
+        )
+        for fail in ("", "3.12", "3.14t", "3.15.0t"):
+            with self.subTest(fail=fail), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                executable = root / "uv"
+                executable.write_text("""#!/usr/bin/env bash
+set -e
+if [ "$2" = install ]; then
+  touch "$MARKER-$3"
+elif [ "$2" = find ]; then
+  test -f "$MARKER-$4"
+  test "$FAIL_VERSION" != "$4"
+  echo "/managed Python/$4/bin/python"
+else
+  exit 2
+fi
+""")
+                executable.chmod(0o755)
+                output = root / "environment"
+                result = subprocess.run(
+                    ["bash", "-ec", script],
+                    capture_output=True,
+                    text=True,
+                    env=dict(
+                        os.environ,
+                        PATH=f"{root}:/usr/bin:/bin",
+                        BUILD_ABI3="3.12",
+                        BUILD_CP314T="3.14t",
+                        BUILD_ABI3T="3.15.0t",
+                        FAIL_VERSION=fail,
+                        MARKER=str(root / "installed"),
+                        GITHUB_ENV=str(output),
+                    ),
+                )
+                self.assertEqual(result.returncode, 1 if fail else 0, result.stderr)
+                if not fail:
+                    self.assertEqual(
+                        output.read_text().splitlines(),
+                        [
+                            "RELEASE_PYTHON_ABI3=/managed Python/3.12/bin/python",
+                            "RELEASE_PYTHON=/managed Python/3.12/bin/python",
+                            "RELEASE_PYTHON_CP314T=/managed Python/3.14t/bin/python",
+                            "RELEASE_PYTHON_ABI3T=/managed Python/3.15.0t/bin/python",
+                        ],
+                    )
+
     def test_actual_publication_conditions_keep_final_registry_gates(self):
         workflow = (
             DIRECTORY.parents[1] / ".github/workflows/release-cd.yml"
@@ -320,9 +375,7 @@ fi
     def test_python_315_follows_compatibility_range(self):
         old = release.python_abis(">=3.12,<3.15")
         new = release.python_abis(">=3.12,<3.16")
-        self.assertEqual(
-            [a["python"] for a in old], ["3.12", "3.13", "3.14.8", "3.14.8t"]
-        )
+        self.assertEqual([a["python"] for a in old], ["3.12", "3.13", "3.14", "3.14t"])
         self.assertEqual([a["python"] for a in new[-2:]], ["3.15.0", "3.15.0t"])
         self.assertEqual(new[-1]["linux_python"], "/opt/python/cp315-cp315t/bin/python")
 
@@ -335,6 +388,79 @@ fi
         self.assertEqual(len(release.PLATFORMS), 5)
         self.assertEqual(len({p[1] for p in release.PLATFORMS}), 5)
         self.assertNotIn("aarch64-pc-windows-msvc", {p[1] for p in release.PLATFORMS})
+
+    def test_stable_builds_cover_every_interpreter_without_recompilation(self):
+        abis = release.python_abis(">=3.12,<3.16")
+        builds = release.wheel_builds(abis)
+        self.assertEqual(
+            [(row["python_tag"], row["abi"]) for row in builds],
+            [("cp312", "abi3"), ("cp314", "cp314t"), ("cp315", "abi3.abi3t")],
+        )
+        self.assertEqual(builds[0]["features"], "browser,pyo3/abi3-py312")
+        self.assertEqual(builds[-1]["features"], "browser,pyo3/abi3t-py315")
+        for row in abis:
+            self.assertEqual(
+                len([build for build in builds if build["abi"] == row["wheel_abi"]]),
+                1,
+            )
+        self.assertEqual(abis[3]["wheel_abi"], "cp314t")
+        self.assertEqual(abis[-1]["wheel_abi"], "abi3.abi3t")
+
+    def test_real_release_matrix_halves_builds_and_keeps_all_tests(self):
+        root = DIRECTORY.parents[1]
+        version = release.read_toml(root / "Cargo.toml")["workspace"]["package"][
+            "version"
+        ]
+        planned = release.plan(root, f"v{version}")
+        self.assertEqual(len(planned["wheels"]["include"]), 15)
+        self.assertEqual(len(planned["wheel_tests"]["include"]), 30)
+        self.assertEqual(len(planned["wheel_platforms"]["include"]), 5)
+        for batch in planned["wheel_platforms"]["include"]:
+            self.assertEqual(batch["abi3_features"], "browser,pyo3/abi3-py312")
+            self.assertEqual(batch["cp314t_features"], "browser")
+            self.assertEqual(batch["abi3t_features"], "browser,pyo3/abi3t-py315")
+            self.assertEqual(batch["cp314t_python"], "3.14t")
+        for row in planned["wheel_tests"]["include"]:
+            matching = [
+                build
+                for build in planned["wheels"]["include"]
+                if build["platform"] == row["platform"]
+                and build["abi"] == row["wheel_abi"]
+            ]
+            self.assertEqual(len(matching), 1)
+
+    def test_python_ci_uses_shared_matrix_without_losing_interpreters(self):
+        import json
+
+        root = DIRECTORY.parents[1]
+        workflow = (root / ".github/workflows/python-ci.yml").read_text()
+        script = textwrap.dedent(
+            workflow.split("python - <<'PY_MATRIX'\n", 1)[1].split(
+                "          PY_MATRIX", 1
+            )[0]
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "output"
+            subprocess.run(
+                [sys.executable, "-c", script],
+                cwd=root,
+                env=dict(os.environ, GITHUB_OUTPUT=str(output)),
+                check=True,
+            )
+            matrices = dict(
+                line.split("=", 1) for line in output.read_text().splitlines()
+            )
+            builds = json.loads(matrices["builds"])["include"]
+            tests = json.loads(matrices["tests"])["include"]
+        self.assertEqual(len(builds), 3)
+        self.assertEqual(
+            [row["python"] for row in tests],
+            ["3.12", "3.13", "3.14", "3.14t", "3.15.0", "3.15.0t"],
+        )
+        for row in tests:
+            self.assertEqual(
+                len([build for build in builds if build["abi"] == row["wheel_abi"]]), 1
+            )
 
 
 class PublicationPlanTests(unittest.TestCase):
@@ -392,8 +518,15 @@ substrate = { version = "=0.1.0", path = "crates/substrate" }
 
 
 class ArtifactTests(unittest.TestCase):
-    def fixture(self, directory, version="0.1.0", abi="cp314t", platform="win_amd64"):
-        wheel = directory / f"yosoi-{version}-cp314-{abi}-{platform}.whl"
+    def fixture(
+        self,
+        directory,
+        version="0.1.0",
+        abi="cp314t",
+        platform="win_amd64",
+        python_tag="cp314",
+    ):
+        wheel = directory / f"yosoi-{version}-{python_tag}-{abi}-{platform}.whl"
         with zipfile.ZipFile(wheel, "w") as archive:
             archive.writestr(
                 f"yosoi-{version}.dist-info/METADATA",
@@ -401,7 +534,10 @@ class ArtifactTests(unittest.TestCase):
             )
             archive.writestr(
                 f"yosoi-{version}.dist-info/WHEEL",
-                f"Wheel-Version: 1.0\nTag: cp314-{abi}-{platform}\n",
+                "Wheel-Version: 1.0\n"
+                + "".join(
+                    f"Tag: {python_tag}-{tag}-{platform}\n" for tag in abi.split(".")
+                ),
             )
         with tarfile.open(directory / f"yosoi-{version}.tar.gz", "w:gz") as archive:
             metadata = f"Name: yosoi\nVersion: {version}\n".encode()
@@ -429,6 +565,25 @@ class ArtifactTests(unittest.TestCase):
             root = Path(directory)
             self.fixture(root)
             release.verify_wheels(root, self.release())
+
+    def test_stable_wheel_tags_are_verified_exactly(self):
+        for python_tag, abi in (("cp312", "abi3"), ("cp315", "abi3.abi3t")):
+            with self.subTest(abi=abi), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                self.fixture(root, python_tag=python_tag, abi=abi)
+                planned = self.release()
+                planned["wheels"]["include"][0].update(python_tag=python_tag, abi=abi)
+                release.verify_wheels(root, planned)
+                planned["wheels"]["include"][0]["abi"] = "cp315t"
+                with self.assertRaisesRegex(ValueError, "Unexpected"):
+                    release.verify_wheels(root, planned)
+
+    def test_unrelated_multiple_abis_are_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            wheel = self.fixture(root, abi="cp314t.abi3")
+            with self.assertRaisesRegex(ValueError, "Unexpected wheel ABI"):
+                release.wheel_identity(wheel, "0.1.0")
 
     def test_rc_matrix_accepts_pep440_and_rejects_final_artifacts(self):
         candidate = self.release() | {"version": "0.1.0-rc.1"}

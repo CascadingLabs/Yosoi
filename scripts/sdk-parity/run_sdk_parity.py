@@ -208,6 +208,9 @@ def _toolchain() -> dict[str, Any]:
 
 
 def _build_examples(*, channel: str, offline: bool, command: Command) -> None:
+    workers = os.environ.get("CARGO_BUILD_JOBS", "1")
+    if workers not in {"1", "2"}:
+        raise RunnerError("SDK parity compiler budget must be one or two workers")
     args = [
         "cargo",
         f"+{channel}",
@@ -218,7 +221,7 @@ def _build_examples(*, channel: str, offline: bool, command: Command) -> None:
         "--features",
         "browser",
         "--jobs",
-        "1",
+        workers,
     ]
     if offline:
         args.append("--offline")
@@ -226,7 +229,7 @@ def _build_examples(*, channel: str, offline: bool, command: Command) -> None:
         args.extend(("--example", example))
     env = os.environ.copy()
     env.update(
-        CARGO_BUILD_JOBS="1",
+        CARGO_BUILD_JOBS=workers,
         RAYON_NUM_THREADS="1",
         CARGO_INCREMENTAL="0",
     )

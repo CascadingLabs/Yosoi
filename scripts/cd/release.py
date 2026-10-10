@@ -104,7 +104,7 @@ def python_abis(requirement: str) -> list[dict]:
         for suffix in ("", "t") if minor >= 14 else ("",):
             # Match the versions already exercised by Python CI; setup-python's
             # hosted manifest may lag UV's managed 3.15 interpreters.
-            selected = {14: "3.14.8", 15: "3.15.0"}.get(minor, f"3.{minor}")
+            selected = {15: "3.15.0"}.get(minor, f"3.{minor}")
             interpreter = selected + suffix
             cp = f"cp3{minor}"
             result.append(
@@ -113,6 +113,37 @@ def python_abis(requirement: str) -> list[dict]:
                     "abi": cp + suffix,
                     "python_tag": cp,
                     "linux_python": f"/opt/python/{cp}-{cp}{suffix}/bin/python",
+                    "wheel_abi": (
+                        "abi3.abi3t"
+                        if suffix and minor >= 15
+                        else cp + suffix
+                        if suffix
+                        else "abi3"
+                    ),
+                }
+            )
+    return result
+
+
+def wheel_builds(abis: list[dict]) -> list[dict]:
+    """Build stable ABIs once, retaining version-specific pre-3.15 threading."""
+    minimum = next(row for row in abis if not row["abi"].endswith("t"))
+    result = [
+        minimum
+        | {
+            "abi": "abi3",
+            "features": f"browser,pyo3/abi3-py{minimum['python_tag'][2:]}",
+        }
+    ]
+    for row in abis:
+        if row["abi"].endswith("t"):
+            result.append(
+                row
+                | {
+                    "abi": row["wheel_abi"],
+                    "features": "browser,pyo3/abi3t-py315"
+                    if row["wheel_abi"] == "abi3.abi3t"
+                    else "browser",
                 }
             )
     return result
@@ -187,9 +218,22 @@ def plan(root: Path, tag: str) -> dict:
         raise ValueError("Tag does not match workspace version")
     abis = python_abis(read_toml(root / "pyproject.toml")["project"]["requires-python"])
     platforms = [
-        dict(platform=p, target=t, runner=r, arch=a, wheel_platform=w)
+        dict(
+            platform=p,
+            target=t,
+            runner=r,
+            arch=a,
+            wheel_platform=w,
+            build_jobs=1 if p == "macos-aarch64" else 2,
+        )
         for p, t, r, a, w in PLATFORMS
     ]
+    builds = wheel_builds(abis)
+    batch = {"python": builds[0]["python"]}
+    for kind, abi in (("abi3", "abi3"), ("cp314t", "cp314t"), ("abi3t", "abi3.abi3t")):
+        row = next((row for row in builds if row["abi"] == abi), {})
+        for field in ("python", "linux_python", "features"):
+            batch[f"{kind}_{field}"] = row.get(field, "")
     return {
         "version": version,
         "python_version": python_version(version),
@@ -197,6 +241,10 @@ def plan(root: Path, tag: str) -> dict:
         "toolchain": read_toml(root / "rust-toolchain.toml")["toolchain"]["channel"],
         "platforms": {"include": platforms},
         "wheels": {
+            "include": [platform | abi for platform in platforms for abi in builds]
+        },
+        "wheel_platforms": {"include": [platform | batch for platform in platforms]},
+        "wheel_tests": {
             "include": [platform | abi for platform in platforms for abi in abis]
         },
         "publication": publication_plan(root),
@@ -221,9 +269,15 @@ def wheel_identity(file: Path, version: str) -> tuple[str, str, set[str]]:
         split = [tag.split("-") for tag in tags]
         python_tags = {p for p, _, _ in split}
         abi_tags = {a for _, a, _ in split}
-        if len(python_tags) != 1 or len(abi_tags) != 1:
-            raise ValueError(f"Expected an interpreter-specific wheel: {file.name}")
-        return next(iter(python_tags)), next(iter(abi_tags)), {p for _, _, p in split}
+        if len(python_tags) != 1 or (
+            len(abi_tags) != 1 and abi_tags != {"abi3", "abi3t"}
+        ):
+            raise ValueError(f"Unexpected wheel ABI tags: {file.name}")
+        return (
+            next(iter(python_tags)),
+            ".".join(sorted(abi_tags)),
+            {p for _, _, p in split},
+        )
 
 
 def verify_wheels(directory: Path, release: dict) -> None:
@@ -342,6 +396,8 @@ def main() -> None:
                     "source_commit",
                     "platforms",
                     "wheels",
+                    "wheel_platforms",
+                    "wheel_tests",
                 ):
                     value = release[key]
                     encoded_value = (

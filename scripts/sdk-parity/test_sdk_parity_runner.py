@@ -293,6 +293,23 @@ class SdkParityRunnerTests(unittest.TestCase):
         self.assertIn("--offline", call)
         self.assertTrue(output.is_relative_to(self.output / "references"))
 
+    def test_build_honors_bounded_hosted_worker_budget(self) -> None:
+        command = mock.Mock()
+        with mock.patch.dict(runner.os.environ, {"CARGO_BUILD_JOBS": "2"}):
+            runner._build_examples(
+                channel="nightly-pinned", offline=False, command=command
+            )
+        args = command.call_args.args[0]
+        self.assertEqual(args[args.index("--jobs") + 1], "2")
+        self.assertEqual(command.call_args.kwargs["env"]["CARGO_BUILD_JOBS"], "2")
+        for value in ("0", "3", "unbounded"):
+            with mock.patch.dict(runner.os.environ, {"CARGO_BUILD_JOBS": value}):
+                with self.assertRaises(runner.RunnerError):
+                    runner._build_examples(
+                        channel="nightly-pinned", offline=False, command=command
+                    )
+        self.assertEqual(command.call_count, 1)
+
     def test_build_uses_one_serial_cargo_invocation_for_all_examples(self) -> None:
         captured: list[list[str]] = []
 
@@ -308,7 +325,10 @@ class SdkParityRunnerTests(unittest.TestCase):
             captured.append(list(args))
             return subprocess.CompletedProcess(list(args), 0, stdout="", stderr="")
 
-        runner._build_examples(channel="nightly-pinned", offline=True, command=command)
+        with mock.patch.dict(runner.os.environ, {"CARGO_BUILD_JOBS": "1"}):
+            runner._build_examples(
+                channel="nightly-pinned", offline=True, command=command
+            )
 
         self.assertEqual(len(captured), 1)
         command_args = captured[0]

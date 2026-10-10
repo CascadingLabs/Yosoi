@@ -19,7 +19,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: release-cd-${{ inputs.tag || github.ref_name }}
+  # Serialize writes per tag; read-only validation need not wait for publishing.
+  group: ${{ (github.event_name == 'push' || inputs.publish) && format('release-cd-{0}', inputs.tag || github.ref_name) || format('release-cd-validation-{0}', github.run_id) }}
   cancel-in-progress: false
 
 env:
@@ -47,27 +48,40 @@ jobs:
       toolchain: ${{ steps.plan.outputs.toolchain }}
       platforms: ${{ steps.plan.outputs.platforms }}
       wheels: ${{ steps.plan.outputs.wheels }}
+      wheel_tests: ${{ steps.plan.outputs.wheel_tests }}
+      wheel_platforms: ${{ steps.plan.outputs.wheel_platforms }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           ref: ${{ env.RELEASE_TAG }}
           fetch-depth: 0
           persist-credentials: false
+      - name: Resolve checked-out source commit
+        id: source
+        run: echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       - uses: ./.github/actions/rust-ci-setup
         with:
           cache-key: release-identity
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           version: '0.13.0'
+      - name: Load workflow tooling for validation against an older tag
+        if: github.workflow_sha != steps.source.outputs.commit
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: .release-tooling
+          persist-credentials: false
       - name: Resolve immutable release identity and matrix
         id: plan
         env:
           WORKFLOW_SOURCE: ${{ github.workflow_sha }}
           PUBLISH_RELEASE: ${{ github.event_name == 'push' || inputs.publish }}
+          TOOLING: ${{ github.workflow_sha != steps.source.outputs.commit && '.release-tooling' || '.' }}
         run: |
           args=()
           if [ "$PUBLISH_RELEASE" = true ]; then args+=(--publish); fi
-          uv run --locked --project scripts/releases python scripts/cd/release.py plan --tag "$RELEASE_TAG" --workflow-source "$WORKFLOW_SOURCE" --output release-plan.json "${args[@]}"
+          uv run --locked --project "$TOOLING/scripts/releases" python "$TOOLING/scripts/cd/release.py" plan --tag "$RELEASE_TAG" --workflow-source "$WORKFLOW_SOURCE" --output release-plan.json "${args[@]}"
       - name: Check finalized release notes and all workspace versions
         env:
           VERSION: ${{ steps.plan.outputs.version }}
@@ -81,6 +95,28 @@ jobs:
             release-plan.json
             release-notes.md
           if-no-files-found: error
+
+  source-ci:
+    needs: identity
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: '0.13.0'
+      - name: Require successful main CI for the exact source commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_COMMIT: ${{ needs.identity.outputs.source_commit }}
+        run: |
+          uv run --locked --project scripts/releases python scripts/cd/ci.py --repository "$GITHUB_REPOSITORY" --source "$SOURCE_COMMIT"
 
   sdist:
     needs: identity
@@ -122,13 +158,14 @@ jobs:
 
   wheels:
     needs: [identity, sdist]
-    name: Wheel (${{ matrix.platform }}, ${{ matrix.python }})
+    name: Build wheels (${{ matrix.platform }})
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 90
     strategy:
       fail-fast: false
-      max-parallel: 1
-      matrix: ${{ fromJSON(needs.identity.outputs.wheels) }}
+      # Independent hosted runners; each build retains one compiler worker.
+      max-parallel: 5
+      matrix: ${{ fromJSON(needs.identity.outputs.wheel_platforms) }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -145,13 +182,23 @@ jobs:
         with:
           version: '0.13.0'
           python-version: ${{ matrix.python }}
-      - name: Resolve the managed interpreter path
+      - name: Resolve managed interpreters for the wheel batch
         env:
-          SELECTED_PYTHON: ${{ matrix.python }}
+          BUILD_ABI3: ${{ matrix.abi3_python }}
+          BUILD_CP314T: ${{ matrix.cp314t_python }}
+          BUILD_ABI3T: ${{ matrix.abi3t_python }}
         run: |
-          uv python install "$SELECTED_PYTHON"
-          release_interpreter=$(uv python find --managed-python "$SELECTED_PYTHON")
-          echo "RELEASE_PYTHON=$release_interpreter" >> "$GITHUB_ENV"
+          for kind in ABI3 CP314T ABI3T; do
+            selection="BUILD_$kind"
+            selected="${!selection}"
+            if [ -z "$selected" ]; then continue; fi
+            uv python install "$selected"
+            release_interpreter=$(uv python find --managed-python "$selected")
+            echo "RELEASE_PYTHON_$kind=$release_interpreter" >> "$GITHUB_ENV"
+            if [ "$kind" = ABI3 ]; then
+              echo "RELEASE_PYTHON=$release_interpreter" >> "$GITHUB_ENV"
+            fi
+          done
       - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
         with:
           name: release-sdist
@@ -170,32 +217,138 @@ jobs:
               raise RuntimeError('Source distribution needs one root directory')
           roots[0].rename('sdist-source')
           PY
+      - name: Give the wheel batch a fresh cache save key
+        run: |
+          mkdir -p sdist-source/.generated/ci-cache-key/.cargo
+          printf '# Source: %s\n# Run: %s\n# Attempt: %s\n' "$GITHUB_SHA" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" > sdist-source/.generated/ci-cache-key/.cargo/config.toml
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
         with:
-          key: release-wheel-${{ matrix.target }}-${{ matrix.abi }}-${{ needs.identity.outputs.toolchain }}
+          key: release-wheels-${{ matrix.target }}-${{ needs.identity.outputs.toolchain }}
           workspaces: sdist-source -> target
+          cache-workspace-crates: 'true'
           cache-on-failure: 'true'
-      - name: Build Linux wheel at the manylinux 2.28 baseline
+      - name: Build Linux abi3 wheel at the manylinux 2.28 baseline
         if: runner.os == 'Linux'
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1
         with:
           maturin-version: '1.15.0'
+          sccache: 'true'
           rust-toolchain: ${{ needs.identity.outputs.toolchain }}
           target: ${{ matrix.target }}
           manylinux: '2_28'
           working-directory: sdist-source
           before-script-linux: dnf install -y clang clang-devel cmake ninja-build perl-core pkgconf-pkg-config openssl-devel
-          docker-options: -e CARGO_BUILD_JOBS=1 -e RAYON_NUM_THREADS=1 -e CARGO_INCREMENTAL=0 -e RUSTFLAGS= -e CARGO_ENCODED_RUSTFLAGS=
-          args: --release --locked --out ../dist --interpreter ${{ matrix.linux_python }}
-      - name: Build native macOS or Windows wheel
+          docker-options: -e CARGO_BUILD_JOBS=${{ matrix.build_jobs }} -e RAYON_NUM_THREADS=1 -e CARGO_INCREMENTAL=0 -e RUSTFLAGS= -e CARGO_ENCODED_RUSTFLAGS=
+          args: --release --locked --out ../dist --features ${{ matrix.abi3_features }} --interpreter ${{ matrix.abi3_linux_python }}
+      - name: Build native macOS or Windows abi3 wheel
+        env:
+          CARGO_BUILD_JOBS: ${{ matrix.build_jobs }}
         if: runner.os != 'Linux'
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1
         with:
           maturin-version: '1.15.0'
+          sccache: 'true'
           rust-toolchain: ${{ needs.identity.outputs.toolchain }}
           target: ${{ matrix.target }}
           working-directory: sdist-source
-          args: --release --locked --out ../dist --interpreter "${{ env.RELEASE_PYTHON }}"
+          args: --release --locked --out ../dist --features ${{ matrix.abi3_features }} --interpreter "${{ env.RELEASE_PYTHON_ABI3 }}"
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: release-wheel-${{ matrix.platform }}-abi3
+          path: dist/*-abi3-*.whl
+          if-no-files-found: error
+      - name: Build Linux cp314t wheel at the manylinux 2.28 baseline
+        if: runner.os == 'Linux' && matrix.cp314t_python != ''
+        uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1
+        with:
+          maturin-version: '1.15.0'
+          sccache: 'true'
+          rust-toolchain: ${{ needs.identity.outputs.toolchain }}
+          target: ${{ matrix.target }}
+          manylinux: '2_28'
+          working-directory: sdist-source
+          before-script-linux: dnf install -y clang clang-devel cmake ninja-build perl-core pkgconf-pkg-config openssl-devel
+          docker-options: -e CARGO_BUILD_JOBS=${{ matrix.build_jobs }} -e RAYON_NUM_THREADS=1 -e CARGO_INCREMENTAL=0 -e RUSTFLAGS= -e CARGO_ENCODED_RUSTFLAGS=
+          args: --release --locked --out ../dist --features ${{ matrix.cp314t_features }} --interpreter ${{ matrix.cp314t_linux_python }}
+      - name: Build native macOS or Windows cp314t wheel
+        env:
+          CARGO_BUILD_JOBS: ${{ matrix.build_jobs }}
+        if: runner.os != 'Linux' && matrix.cp314t_python != ''
+        uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1
+        with:
+          maturin-version: '1.15.0'
+          sccache: 'true'
+          rust-toolchain: ${{ needs.identity.outputs.toolchain }}
+          target: ${{ matrix.target }}
+          working-directory: sdist-source
+          args: --release --locked --out ../dist --features ${{ matrix.cp314t_features }} --interpreter "${{ env.RELEASE_PYTHON_CP314T }}"
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        if: matrix.cp314t_python != ''
+        with:
+          name: release-wheel-${{ matrix.platform }}-cp314t
+          path: dist/*-cp314t-*.whl
+          if-no-files-found: error
+      - name: Build Linux abi3t wheel at the manylinux 2.28 baseline
+        if: runner.os == 'Linux' && matrix.abi3t_python != ''
+        uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1
+        with:
+          maturin-version: '1.15.0'
+          sccache: 'true'
+          rust-toolchain: ${{ needs.identity.outputs.toolchain }}
+          target: ${{ matrix.target }}
+          manylinux: '2_28'
+          working-directory: sdist-source
+          before-script-linux: dnf install -y clang clang-devel cmake ninja-build perl-core pkgconf-pkg-config openssl-devel
+          docker-options: -e CARGO_BUILD_JOBS=${{ matrix.build_jobs }} -e RAYON_NUM_THREADS=1 -e CARGO_INCREMENTAL=0 -e RUSTFLAGS= -e CARGO_ENCODED_RUSTFLAGS=
+          args: --release --locked --out ../dist --features ${{ matrix.abi3t_features }} --interpreter ${{ matrix.abi3t_linux_python }}
+      - name: Build native macOS or Windows abi3t wheel
+        env:
+          CARGO_BUILD_JOBS: ${{ matrix.build_jobs }}
+        if: runner.os != 'Linux' && matrix.abi3t_python != ''
+        uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1
+        with:
+          maturin-version: '1.15.0'
+          sccache: 'true'
+          rust-toolchain: ${{ needs.identity.outputs.toolchain }}
+          target: ${{ matrix.target }}
+          working-directory: sdist-source
+          args: --release --locked --out ../dist --features ${{ matrix.abi3t_features }} --interpreter "${{ env.RELEASE_PYTHON_ABI3T }}"
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        if: matrix.abi3t_python != ''
+        with:
+          name: release-wheel-${{ matrix.platform }}-abi3.abi3t
+          path: dist/*-abi3.abi3t-*.whl
+          if-no-files-found: error
+
+  wheel-tests:
+    needs: [identity, wheels]
+    name: Installed wheel (${{ matrix.platform }}, ${{ matrix.python }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix: ${{ fromJSON(needs.identity.outputs.wheel_tests) }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ needs.identity.outputs.source_commit }}
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: '0.13.0'
+          python-version: ${{ matrix.python }}
+      - name: Resolve the managed interpreter path
+        env:
+          SELECTED_PYTHON: ${{ matrix.python }}
+        run: |
+          uv python install "$SELECTED_PYTHON"
+          release_interpreter=$(uv python find --managed-python "$SELECTED_PYTHON")
+          echo "RELEASE_PYTHON=$release_interpreter" >> "$GITHUB_ENV"
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          name: release-wheel-${{ matrix.platform }}-${{ matrix.wheel_abi }}
+          path: dist
       - name: Test the installed wheel outside the source tree
         run: |
           uv venv --python "$RELEASE_PYTHON" .venv
@@ -205,11 +358,16 @@ jobs:
       - name: Record wheel build evidence
         env:
           EXPECTED_ABI: ${{ matrix.abi }}
+          EXPECTED_PYTHON: ${{ matrix.python }}
           SOURCE_COMMIT: ${{ needs.identity.outputs.source_commit }}
         run: |
           uv run --no-project --python .venv python - <<'PY'
           import json, os, platform, sys, sysconfig
           from pathlib import Path
+          selected = os.environ['EXPECTED_PYTHON']
+          parts = tuple(int(part) for part in selected.removesuffix('t').split('.'))
+          if sys.version_info[:len(parts)] != parts:
+              raise RuntimeError('Wrong interpreter version')
           free = bool(sysconfig.get_config_var('Py_GIL_DISABLED'))
           if free != os.environ['EXPECTED_ABI'].endswith('t'):
               raise RuntimeError('Wrong interpreter ABI')
@@ -217,11 +375,6 @@ jobs:
               raise RuntimeError('Free-threaded interpreter enabled the GIL')
           Path('wheel-evidence.json').write_text(json.dumps(dict(source=os.environ['SOURCE_COMMIT'], python=sys.version, platform=platform.platform(), free_threaded=free), indent=2))
           PY
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
-        with:
-          name: release-wheel-${{ matrix.platform }}-${{ matrix.abi }}
-          path: dist/*.whl
-          if-no-files-found: error
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: evidence-${{ matrix.platform }}-${{ matrix.abi }}
@@ -235,7 +388,7 @@ jobs:
     timeout-minutes: 90
     strategy:
       fail-fast: false
-      max-parallel: 1
+      max-parallel: 5
       matrix: ${{ fromJSON(needs.identity.outputs.platforms) }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -254,17 +407,23 @@ jobs:
             echo 'LIBCLANG_PATH=C:\Program Files\LLVM\bin' >> "$GITHUB_ENV"
           fi
           rustup toolchain install "$TOOLCHAIN" --profile minimal --target "$TARGET"
+      - name: Give native builds a fresh cache save key
+        run: |
+          mkdir -p .generated/ci-cache-key/.cargo
+          printf '# Source: %s\n# Run: %s\n# Attempt: %s\n' "$GITHUB_SHA" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" > .generated/ci-cache-key/.cargo/config.toml
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           version: '0.13.0'
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
         with:
           key: release-rust-${{ matrix.target }}-${{ needs.identity.outputs.toolchain }}
+          cache-workspace-crates: 'true'
           cache-on-failure: 'true'
       - name: Build and test native Rust artifacts
         env:
           TARGET: ${{ matrix.target }}
           PLATFORM: ${{ matrix.platform }}
+          CARGO_BUILD_JOBS: ${{ matrix.build_jobs }}
         run: |
           cargo test --locked --target "$TARGET" -p yosoi --test public_sdk -- --test-threads=1
           cargo build --release --locked --target "$TARGET" -p yosoi-cli
@@ -349,13 +508,20 @@ jobs:
           if-no-files-found: error
 
   verify:
-    needs: [identity, sdist, wheels, rust, docs]
+    needs: [identity, source-ci, sdist, wheels, wheel-tests, rust, docs]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           ref: ${{ needs.identity.outputs.source_commit }}
+          persist-credentials: false
+      - name: Load workflow tooling for validation against an older tag
+        if: github.workflow_sha != needs.identity.outputs.source_commit
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: .release-tooling
           persist-credentials: false
       - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
         with:
@@ -370,8 +536,10 @@ jobs:
         with:
           version: '0.13.0'
       - name: Check matrix completeness
+        env:
+          TOOLING: ${{ github.workflow_sha != needs.identity.outputs.source_commit && '.release-tooling' || '.' }}
         run: |
-          uv run --locked --project scripts/releases python scripts/cd/release.py verify --tag "$RELEASE_TAG"
+          uv run --locked --project "$TOOLING/scripts/releases" python "$TOOLING/scripts/cd/release.py" verify --tag "$RELEASE_TAG"
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: verified-python-distributions
@@ -453,8 +621,8 @@ jobs:
     timeout-minutes: 20
     strategy:
       fail-fast: false
-      max-parallel: 1
-      matrix: ${{ fromJSON(needs.identity.outputs.wheels) }}
+      max-parallel: 10
+      matrix: ${{ fromJSON(needs.identity.outputs.wheel_tests) }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:

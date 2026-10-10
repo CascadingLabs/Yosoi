@@ -39,6 +39,9 @@ The archive retains its source payload and uses canonical ownership/timestamps.
    builds its wheels, tests installed wheels outside the source tree, builds
    and tests native Rust artifacts, and generates matching public docs and
    compiler-backed API reference. Matrix completeness is a hard gate.
+   It also requires successful main Rust and Python CI for the exact tagged
+   source commit, awaiting existing runs when needed. Tags do not launch a
+   second identical CI suite; a newer failed run cannot reuse an older success.
 4. A separate prerequisite gate runs before any registry upload. Crates publish
    in dependency order, then verified Python distributions publish through PyPI
    Trusted Publishing. Clean binary-only installations from PyPI are tested on
@@ -46,10 +49,17 @@ The archive retains its source payload and uses canonical ownership/timestamps.
 5. GitHub assets include the Python distributions, native CLI archives, versioned
    docs/reference bundle, release plan with source commit, and SHA256SUMS.
 
-Builds use one Cargo worker and one Rayon worker. Each matrix runs one job at a
-time. Cargo caches separate CLI, wheel ABI/target, release identity, reference,
-and crate packaging. Release builds clear inherited Rust flags and do not use
-`target-cpu=native`. Linux wheels are audited against **manylinux 2.28**; Linux
+Hosted Linux/Windows and Intel macOS builds use two Cargo workers; Apple Silicon
+uses one. Rayon and local workstation checks remain at one worker. Independent hosted runners
+build wheel batches on five platforms and five native artifacts concurrently;
+clean published
+installation checks run up to ten at a time. Cargo caches include workspace
+crates and separate CLI, wheel target, release identity, reference,
+and crate packaging. `sccache` also caches compiler outputs through Maturin's hosted cache integration,
+allowing common dependencies to be reused across wheel ABIs without sharing
+incompatible interpreter bindings. Cache statistics are emitted by the action.
+Release builds clear inherited Rust flags and do not use `target-cpu=native`.
+Linux wheels are audited against **manylinux 2.28**; Linux
 CLI archives use the Ubuntu 24.04 native runner baseline, not manylinux.
 
 | Platform | Rust target | Hosted runner |
@@ -60,10 +70,33 @@ CLI archives use the Ubuntu 24.04 native runner baseline, not manylinux.
 | macOS Apple Silicon | aarch64-apple-darwin | macos-15 |
 | macOS Intel | x86_64-apple-darwin | macos-15-intel |
 
-Interpreter ABIs follow the bounded `requires-python` range. CPython 3.12–3.15,
-3.14t, and 3.15t are included at this stack base. Each ABI/platform gets
-a separate wheel. macOS has separate Intel/Apple Silicon wheels with a macOS
+Interpreter tests follow the bounded `requires-python` range: CPython 3.12–3.15,
+3.14t, and 3.15t. Each platform builds three wheel types: `cp312-abi3` for ordinary
+Python, version-specific `cp314-cp314t`, and `cp315-abi3.abi3t` for Python 3.15's
+stable threading ABI. Build features are explicit; the development defaults
+remain unchanged. The 15 wheels are built in five platform jobs, sharing a target
+directory across three ABI-specific Maturin invocations. Separate feature
+selections preserve the correct stable-ABI tags. These batches feed 30
+installed-wheel test jobs, so every
+supported interpreter still runs the entire Python suite. Free-threaded jobs
+verify that importing the extension leaves the GIL disabled. macOS has separate
+Intel/Apple Silicon wheels with a macOS
 11.0 minimum. Windows ARM64, universal macOS wheels, and musllinux are deferred.
+
+## Performance targets
+
+Warm-cache targets are under 10 minutes for PR CI and under 30 minutes for release
+CD. Measure the complete workflow, including queue/setup/cache time, rather than
+compiler time alone. Cold first builds are reported separately.
+
+Python CI builds three development-profile wheels from their source distributions
+and tests those artifacts on all six interpreters; optimized wheels remain a CD
+gate. CI sets a persistent target directory so temporary sdist extraction does
+not discard compilation results. Main/tag compiled caches use fresh immutable
+save keys with the existing compiler/configuration restore prefix. PRs consume
+main's caches without creating duplicate archives that main cannot restore.
+The per-run key marker is a comment-only nested config file outside crate
+ancestor paths, hashed by rust-cache and never loaded by Cargo.
 
 ## Required external setup and current blockers
 
