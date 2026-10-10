@@ -186,3 +186,12 @@ format. Timing targets must be measured on a subsequent warm run. The small
 Cargo fixture checks that unchanged code reuses its binary and edited code
 really compiles and changes the executable output; the full Rust suites remain
 mandatory in CI.
+
+
+Default and all-feature Nextest suites each run in two exhaustive hash
+partitions on separate hosted runners. Each runner still executes one test at a
+time; isolated Xvfb displays and processes avoid sharing browser focus or memory
+budgets. Both partitions compile the same suite and only partition 1 updates
+its target cache. The final Rust gate requires all four test jobs, doctests,
+checks, and a combined LCOV/HTML report built from both coverage partitions.
+No test selector or ignore rule is narrowed.
