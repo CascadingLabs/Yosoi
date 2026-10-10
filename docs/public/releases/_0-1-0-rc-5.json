@@ -1,0 +1,8 @@
+{
+  "generated_source": "## What's Changed\n* Partition full Rust test suites and merge complete coverage by @AndrewPBerg in https://github.com/CascadingLabs/Yosoi/pull/137\n* Share native release compilation and verified source timestamps by @AndrewPBerg in https://github.com/CascadingLabs/Yosoi/pull/138\n* Publish RC docs and replay verified released bundles by @AndrewPBerg in https://github.com/CascadingLabs/Yosoi/pull/139\n* Install locked docs publisher dependencies for reused bundles by @AndrewPBerg in https://github.com/CascadingLabs/Yosoi/pull/141\n* Retain line backtraces with smaller CI debug artifacts by @AndrewPBerg in https://github.com/CascadingLabs/Yosoi/pull/140\n* Publish Python RCs independently with full registry-install verification by @AndrewPBerg in https://github.com/CascadingLabs/Yosoi/pull/142\n\n\n**Full Changelog**: https://github.com/CascadingLabs/Yosoi/compare/v0.1.0-rc.4...v0.1.0-rc.5\n",
+  "generated_source_sha256": "511c77558797d7e105e5b4bdd2d5a1262f54c82d7ea70a81f7c286aa8bf7bb05",
+  "github_notes_file": "yosoi-rc5-github-notes.md",
+  "previous": "0.1.0-rc.4",
+  "schema": 1,
+  "version": "0.1.0-rc.5"
+}
