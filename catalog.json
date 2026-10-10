@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "latest": "4c5ad34b247c86577189ec8ff41857945bcf95df",
+  "snapshots": {
+    "4c5ad34b247c86577189ec8ff41857945bcf95df": {
+      "sourceCommit": "4c5ad34b247c86577189ec8ff41857945bcf95df",
+      "version": "0.1.0",
+      "repository": "CascadingLabs/Yosoi",
+      "artifactCommit": "85f78c409ec3d0a52c5f9158152d4810b74717b1",
+      "bundlePath": "snapshots/4c5ad34b247c86577189ec8ff41857945bcf95df/bundle.tar.gz",
+      "sha256": "fd14afc9fbc86f715362391789e3b2a4da209ee2cb9f25a552e1f2f48c8fcba1",
+      "manifestPath": "snapshots/4c5ad34b247c86577189ec8ff41857945bcf95df/content/archive-manifest.json",
+      "manifestSha256": "c5c0ae64279568b54d29636ea5355ead4ea1b5ab569306ad76ae0a10bb941b4f"
+    }
+  }
+}
