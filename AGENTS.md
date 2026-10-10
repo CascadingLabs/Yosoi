@@ -8,7 +8,8 @@
 
 # Resource safety
 
-- Run one expensive command at a time, with one worker by default. Prefer focused checks; do not repeat passing checks without a change.
+- On the local workstation, run one expensive command at a time, with one worker by default. Prefer focused checks; do not repeat passing checks without a change.
+- Hosted CI/CD may run independent jobs concurrently on separate runners. Use up to two Cargo workers on the standard Linux/Windows and Intel macOS runners, and one on the smaller Apple Silicon runner; keep Rayon at one worker. Preserve every required test and publication gate. Target warm PR CI under 10 minutes and release CD under 30 minutes, including queue/setup/cache time.
 - If slowdown, swap pressure, instability, or unexpected fan-out occurs, stop expensive work, inspect memory/processes, and reduce concurrency. Report skipped/stopped checks.
 
 # Browser stack

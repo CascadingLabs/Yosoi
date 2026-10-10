@@ -1,4 +1,4 @@
-# Everyday Rust correctness CI: PRs, main, release tags, and manual runs execute
+# Everyday Rust correctness CI: PRs, main, and manual runs execute
 # the full non-ignored suite rather than guessing which tests a diff affects.
 # Ordinary default-feature builds and all-feature LLVM coverage have separate
 # caches. Cargo caches include downloaded dependencies and compiled artifacts,
@@ -21,7 +21,6 @@ on:
   pull_request:
   push:
     branches: [main]
-    tags: ['v*']
   workflow_dispatch:
 
 permissions:
@@ -73,7 +72,7 @@ jobs:
     timeout-minutes: 90
     strategy:
       fail-fast: false
-      max-parallel: 1
+      max-parallel: 2
       matrix:
         configuration: [default, coverage-all-features]
     steps:
@@ -117,7 +116,8 @@ jobs:
         run: xvfb-run -a cargo test --locked --workspace --doc -- --test-threads=1
       - name: Clear cached coverage profiles
         if: matrix.configuration == 'coverage-all-features'
-        run: cargo llvm-cov clean --workspace
+        # Clear previous measurements while retaining fingerprinted binaries.
+        run: cargo llvm-cov clean --profraw-only
       - name: Run all-feature tests with LLVM coverage
         if: matrix.configuration == 'coverage-all-features'
         run: xvfb-run -a cargo llvm-cov nextest --locked --workspace --all-features --test-threads 1 --no-fail-fast --no-report

@@ -23,6 +23,15 @@ runs:
         rustup toolchain install "$channel" --profile minimal --component rustfmt --component clippy --component llvm-tools-preview
         echo "SDK_CHECK_TOOLCHAIN=$channel" >> "$GITHUB_ENV"
         rustc --version --verbose
+    - name: Give compiled caches a fresh save key with the existing restore prefix
+      shell: bash
+      run: |
+        # rust-cache hashes nested Cargo config files into the save-key suffix.
+        # This comment-only file is outside every crate's ancestor directories:
+        # Cargo does not read it as configuration. Failed partial caches can be
+        # restored and improved rather than remaining immutable forever.
+        mkdir -p .generated/ci-cache-key/.cargo
+        printf '# Source: %s\n# Run: %s\n# Attempt: %s\n' "$GITHUB_SHA" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" > .generated/ci-cache-key/.cargo/config.toml
     - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
       with:
         key: ${{ inputs.cache-key }}
@@ -32,7 +41,12 @@ runs:
           . -> .generated/rust-reference/target
         cache-workspace-crates: 'true'
         cache-on-failure: 'true'
-        # Pull-request caches stay scoped to their merge ref; main cannot restore
-        # them. Keep compiled artifacts even when a later check fails; Cargo
-        # still validates fingerprints on reuse. Tag caches support CD retries.
-        save-if: ${{ github.ref == 'refs/heads/main' || github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/v') }}
+        # PRs restore main's caches without filling the repository quota with
+        # duplicate archives that main cannot restore. Cargo checks fingerprints.
+        save-if: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') }}
+    - name: Use two compiler workers on the hosted Linux runner
+      shell: bash
+      run: |
+        # Scheduling does not change compiled code. Set the budget after cache
+        # restore so existing single-worker caches keep their restore namespace.
+        echo 'CARGO_BUILD_JOBS=2' >> "$GITHUB_ENV"

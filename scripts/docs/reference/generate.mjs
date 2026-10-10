@@ -11,8 +11,10 @@ const scriptRoot = path.dirname(fileURLToPath(import.meta.url));
 export const toolchain = JSON.parse(fs.readFileSync(path.join(scriptRoot, 'toolchain.json'), 'utf8'));
 const compare = (a, b) => a < b ? -1 : a > b ? 1 : 0;
 const run = (program, args, cwd, env = {}) => {
+	const workers = process.env.CARGO_BUILD_JOBS || '1';
+	if (!['1', '2'].includes(workers)) throw new Error('Reference compiler budget must be one or two workers');
 	try {
-		return execFileSync(program, args, { cwd, env: { ...process.env, CARGO_BUILD_JOBS: '1', RAYON_NUM_THREADS: '1', ...env }, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+		return execFileSync(program, args, { cwd, env: { ...process.env, CARGO_BUILD_JOBS: workers, RAYON_NUM_THREADS: '1', ...env }, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
 	} catch (error) {
 		const stderr = error.stderr?.toString?.() || '';
 		const tail = stderr.trim().split('\n').slice(-24).join('\n');

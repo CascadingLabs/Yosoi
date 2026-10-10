@@ -4,7 +4,6 @@ on:
   pull_request:
   push:
     branches: [main]
-    tags: ['v*']
   workflow_dispatch:
 
 permissions:
@@ -18,27 +17,94 @@ env:
   CARGO_BUILD_JOBS: '1'
   RAYON_NUM_THREADS: '1'
   CARGO_INCREMENTAL: '0'
+  CARGO_TARGET_DIR: ${{ github.workspace }}/target
 
 jobs:
-  package:
-    name: Python package checks (${{ matrix.python }})
+  matrix:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    outputs:
+      builds: ${{ steps.plan.outputs.builds }}
+      tests: ${{ steps.plan.outputs.tests }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: '0.13.0'
+          python-version: '3.14'
+      - name: Plan shared builds and every supported interpreter test
+        id: plan
+        run: |
+          uv run --locked --project scripts/releases python - <<'PY_MATRIX'
+          import json, os, sys, tomllib
+          sys.path.insert(0, 'scripts/cd')
+          import release
+          with open('pyproject.toml', 'rb') as project:
+              abis = release.python_abis(tomllib.load(project)['project']['requires-python'])
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              for key, rows in (('builds', release.wheel_builds(abis)), ('tests', abis)):
+                  output.write(f'{key}={json.dumps(dict(include=rows))}\n')
+          PY_MATRIX
+
+  builds:
+    needs: matrix
+    name: Python wheel build (${{ matrix.abi }})
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     strategy:
       fail-fast: false
-      max-parallel: 1
-      matrix:
-        python: ['3.12', '3.13', '3.14.8', '3.14.8t', '3.15.0', '3.15.0t']
+      max-parallel: 3
+      matrix: ${{ fromJSON(needs.matrix.outputs.builds) }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
       - uses: ./.github/actions/rust-ci-setup
         with:
-          cache-key: python-package-${{ matrix.python }}
+          cache-key: python-wheel-${{ matrix.abi }}
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: '0.13.0'
+          python-version: ${{ matrix.python }}
+      - name: Install pinned build tooling
+        run: uv sync --locked --no-install-project --python '${{ matrix.python }}'
+      - name: Build wheel from source distribution
+        env:
+          BUILD_FEATURES: ${{ matrix.features }}
+        run: |
+          interpreter=$(uv run --no-sync python -c 'import os, sys; print(os.path.realpath(sys.executable))')
+          uv build --no-build-isolation --config-setting="build-args=--profile=dev --interpreter=$interpreter --features=$BUILD_FEATURES"
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: python-wheel-${{ matrix.abi }}
+          path: dist/*.whl
+          if-no-files-found: error
+
+  package:
+    needs: [matrix, builds]
+    name: Python package checks (${{ matrix.python }})
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix: ${{ fromJSON(needs.matrix.outputs.tests) }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/rust-ci-setup
+        if: matrix.python == '3.14'
+        with:
+          cache-key: python-sdk-parity
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: '0.13.0'
+          python-version: ${{ matrix.python }}
       - name: Install Python tooling
         run: |
-          python3 -m pip install 'uv==0.13.0'
           uv sync --locked --no-install-project --python '${{ matrix.python }}'
       - name: Verify selected interpreter and ABI
         env:
@@ -61,10 +127,10 @@ jobs:
           uv run --no-sync ruff check python
           uv run --no-sync ruff format --check python
           uv run --no-sync ty check python
-      - name: Build wheel from source distribution
-        run: |
-          interpreter=$(uv run --no-sync python -c 'import os, sys; print(os.path.realpath(sys.executable))')
-          uv build --no-build-isolation --config-setting="build-args=--interpreter=$interpreter"
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          name: python-wheel-${{ matrix.wheel_abi }}
+          path: dist
       - name: Verify installed wheel
         run: |
           uv pip install --python .venv/bin/python --reinstall dist/*.whl
@@ -79,25 +145,25 @@ jobs:
           uv run --no-sync python python/examples/review.py errors
           uv run --no-sync python python/examples/review.py local
       - name: Set up Node for SDK reference generation
-        if: matrix.python == '3.14.8'
+        if: matrix.python == '3.14'
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version: '22'
       - name: Install pinned SDK reference compiler
-        if: matrix.python == '3.14.8'
+        if: matrix.python == '3.14'
         run: |
           channel=$(node -p "require('./scripts/docs/reference/toolchain.json').channel")
           test -n "$channel"
           rustup toolchain install "$channel" --profile minimal
           rustc "+$channel" --version --verbose
       - name: Run semantic Rust/Python SDK parity gate
-        if: matrix.python == '3.14.8'
+        if: matrix.python == '3.14'
         run: |
           uv run --no-sync python scripts/sdk-parity/run_sdk_parity.py \
             --source "$GITHUB_SHA" \
             --output-dir .generated/python-parity
       - name: Upload semantic SDK parity evidence
-        if: always() && matrix.python == '3.14.8'
+        if: always() && matrix.python == '3.14'
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: python-sdk-parity-${{ github.run_id }}-${{ github.run_attempt }}
