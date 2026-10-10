@@ -9,6 +9,7 @@ description = "Python SDK for Yosoi, backed by the public Rust SDK."
 readme = "python/README.md"
 requires-python = ">=3.12,<3.16"
 license = "Apache-2.0"
+license-files = ["LICENSE"]
 dependencies = ["pydantic>=2.14,<3"]
 
 [dependency-groups]
@@ -26,7 +27,10 @@ python-source = "python"
 module-name = "yosoi._native"
 bindings = "pyo3"
 features = ["browser"]
-include = [{ path = "rust-toolchain.toml", format = "sdist" }]
+include = [
+    { path = "rust-toolchain.toml", format = "sdist" },
+    { path = "LICENSE", format = "sdist" },
+]
 
 [tool.pytest.ini_options]
 testpaths = ["python/tests"]

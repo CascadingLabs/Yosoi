@@ -19,7 +19,7 @@ import tomllib
 import urllib.error
 import urllib.request
 import zipfile
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 PLATFORMS = (
     (
@@ -348,6 +348,27 @@ def verify_wheels(directory: Path, release: dict) -> None:
             release["version"]
         ):
             raise ValueError("Source distribution version mismatch")
+        licenses = metadata.get_all("License-File", [])
+        if not licenses:
+            raise ValueError("Source distribution is missing License-File metadata")
+        root = entries[0].name.split("/")[0]
+        for license_file in licenses:
+            path = PurePosixPath(license_file)
+            if path.is_absolute() or ".." in path.parts:
+                raise ValueError(
+                    f"Invalid source distribution license path: {license_file}"
+                )
+            try:
+                member = archive.getmember(f"{root}/{license_file}")
+            except KeyError as error:
+                raise ValueError(
+                    f"Source distribution is missing license file: {license_file}"
+                ) from error
+            if not member.isfile() or member.size == 0:
+                raise ValueError(
+                    "Source distribution license is not a nonempty regular file: "
+                    f"{license_file}"
+                )
 
 
 def sha256(path: Path) -> str:
