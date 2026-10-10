@@ -107,12 +107,13 @@ class WorkflowGateTests(unittest.TestCase):
         )
         needs = result.split("needs: [", 1)[1].split("]", 1)[0].split(",")
         self.assertIn("doctests", [name.strip() for name in needs])
+        self.assertIn("coverage", [name.strip() for name in needs])
         script = textwrap.dedent(result.split("        run: |\n", 1)[1])
-        names = ("CHECKS_RESULT", "TESTS_RESULT", "DOCTESTS_RESULT")
-        cases = [("success", "success", "success")]
-        for index in range(3):
+        names = ("CHECKS_RESULT", "TESTS_RESULT", "DOCTESTS_RESULT", "COVERAGE_RESULT")
+        cases = [("success",) * len(names)]
+        for index in range(len(names)):
             for failure in ("failure", "skipped", "cancelled"):
-                values = ["success"] * 3
+                values = ["success"] * len(names)
                 values[index] = failure
                 cases.append(tuple(values))
         for values in cases:

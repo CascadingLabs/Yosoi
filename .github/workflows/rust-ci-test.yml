@@ -68,14 +68,15 @@ jobs:
         run: cargo run --locked --package xtask -- sdk-boundary
 
   tests:
-    name: Tests (${{ matrix.configuration }})
+    name: Tests (${{ matrix.configuration }}, partition ${{ matrix.partition }}/2)
     runs-on: ubuntu-22.04
     timeout-minutes: 90
     strategy:
       fail-fast: false
-      max-parallel: 2
+      max-parallel: 4
       matrix:
         configuration: [default, coverage-all-features]
+        partition: [1, 2]
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -83,6 +84,8 @@ jobs:
       - uses: ./.github/actions/rust-ci-setup
         with:
           cache-key: ${{ matrix.configuration }}
+          # Both partitions compile the same complete suite. One target-cache writer.
+          cache-save: ${{ matrix.partition == 1 && 'true' || 'false' }}
       - name: Install pinned test and coverage tools
         uses: taiki-e/install-action@e407f7bafb71fd004bc5c2da3032e5470cbb6ef0 # v2
         with:
@@ -111,9 +114,9 @@ jobs:
           } | tee ci-evidence/browser-identity.txt
       - name: Run default-feature unit and integration tests
         if: matrix.configuration == 'default'
-        run: xvfb-run -a cargo nextest run --locked --workspace --test-threads 1 --no-fail-fast
+        run: xvfb-run -a cargo nextest run --locked --workspace --partition hash:${{ matrix.partition }}/2 --test-threads 1 --no-fail-fast
       - name: Run default-feature doctests
-        if: matrix.configuration == 'default'
+        if: matrix.configuration == 'default' && matrix.partition == 1
         run: xvfb-run -a cargo test --locked --workspace --doc -- --test-threads=1
       - name: Clear cached coverage profiles
         if: matrix.configuration == 'coverage-all-features'
@@ -121,7 +124,7 @@ jobs:
         run: cargo llvm-cov clean --profraw-only
       - name: Run all-feature tests with LLVM coverage
         if: matrix.configuration == 'coverage-all-features'
-        run: xvfb-run -a cargo llvm-cov nextest --locked --workspace --all-features --test-threads 1 --no-fail-fast --no-report
+        run: xvfb-run -a cargo llvm-cov nextest --locked --workspace --all-features --partition hash:${{ matrix.partition }}/2 --test-threads 1 --no-fail-fast --no-report
       - name: Generate coverage reports
         if: matrix.configuration == 'coverage-all-features'
         run: |
@@ -129,19 +132,12 @@ jobs:
           exclusions='(^|/)(vendor|benchmarks|xtask)/'
           cargo llvm-cov report --ignore-filename-regex "$exclusions" --summary-only > coverage/summary.txt
           cargo llvm-cov report --ignore-filename-regex "$exclusions" --lcov --output-path coverage/lcov.info
-          cargo llvm-cov report --ignore-filename-regex "$exclusions" --html --output-dir coverage/html
-          {
-            echo '### Rust unit/integration test coverage (all features)'
-            echo '```text'
-            cat coverage/summary.txt
-            echo '```'
-            echo 'Doctests run separately. Ignored opt-in tests are excluded from this run.'
-          } >> "$GITHUB_STEP_SUMMARY"
+          # HTML and the aggregate summary are generated after merging both parts.
       - name: Upload coverage and browser evidence
         if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
-          name: rust-ci-${{ matrix.configuration }}
+          name: rust-ci-${{ matrix.configuration }}-${{ matrix.partition }}
           path: |
             coverage/
             ci-evidence/
@@ -177,10 +173,53 @@ jobs:
         # Correctness checked without claiming doctest coverage instrumentation.
         run: xvfb-run -a cargo test --locked --workspace --all-features --doc -- --test-threads=1
 
+  coverage:
+    name: Merge complete Rust coverage
+    needs: tests
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Install LCOV report tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends lcov
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          pattern: rust-ci-coverage-all-features-*
+          path: parts
+      - name: Require both parts and merge coverage counters
+        run: |
+          first=parts/rust-ci-coverage-all-features-1/coverage/lcov.info
+          second=parts/rust-ci-coverage-all-features-2/coverage/lcov.info
+          test -s "$first"
+          test -s "$second"
+          mkdir -p coverage
+          cp parts/rust-ci-coverage-all-features-1/coverage/summary.txt coverage/llvm-part-1-summary.txt
+          cp parts/rust-ci-coverage-all-features-2/coverage/summary.txt coverage/llvm-part-2-summary.txt
+          lcov --rc lcov_branch_coverage=1 --add-tracefile "$first" --add-tracefile "$second" --output-file coverage/lcov.info
+          lcov --rc lcov_branch_coverage=1 --summary coverage/lcov.info > coverage/summary.txt 2>&1
+          genhtml --branch-coverage --output-directory coverage/html coverage/lcov.info
+          {
+            echo '### Rust unit/integration test coverage (both all-feature partitions)'
+            echo '```text'
+            cat coverage/summary.txt
+            echo '```'
+            echo 'Doctests run separately. Ignored opt-in tests remain excluded.'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: rust-ci-coverage-all-features
+          path: coverage/
+          retention-days: 7
+          if-no-files-found: error
+
   result:
     name: Rust CI result
     if: always()
-    needs: [checks, tests, doctests]
+    needs: [checks, tests, doctests, coverage]
     runs-on: ubuntu-22.04
     timeout-minutes: 5
     steps:
@@ -189,7 +228,9 @@ jobs:
           CHECKS_RESULT: ${{ needs.checks.result }}
           TESTS_RESULT: ${{ needs.tests.result }}
           DOCTESTS_RESULT: ${{ needs.doctests.result }}
+          COVERAGE_RESULT: ${{ needs.coverage.result }}
         run: |
           test "$CHECKS_RESULT" = success
           test "$TESTS_RESULT" = success
           test "$DOCTESTS_RESULT" = success
+          test "$COVERAGE_RESULT" = success
