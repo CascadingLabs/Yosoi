@@ -10,6 +10,11 @@ MDX fixtures use only the documented `Callout` form with a `title` attribute and
 
 ## Navigation metadata
 
+Numbered release candidates additionally accept version `0.MINOR.PATCH-rc.N`
+with positive, unpadded N. Their filenames replace dots with hyphens, for example
+`releases/0-1-0-rc-1.md`. Candidates sort before the corresponding final version
+and use the `preview` channel.
+
 `_navigation.json` is tracked source configuration, excluded from published pages and assets. Its version-1 `sections` array defines sidebar labels and order. A section selects explicit `pages`, an automatically discovered `directory`, or `generated: "rust-api"`. Page entries can be filenames or `{ "file": "index.md", "label": "Overview" }`. Directory sections may provide an `order` array of relative Markdown filenames; newly discovered pages follow those entries. Overview pages remain first. The section list is authoritative: omitted sections or explicit pages stay out of the sidebar; their URLs remain published. Directory order arrays prioritize rather than hide pages. JSON comments and trailing commas are supported.
 
 Yosoi CI and frontend preparation share the validation contract for this metadata and records its SHA-256 plus the resolved navigation in the ignored snapshot. Missing/draft/private page references and duplicate assignments are errors. Do not put CSS, components, or generated API signatures in the navigation file.

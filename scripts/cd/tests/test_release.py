@@ -20,6 +20,17 @@ from archive import cli_archive  # noqa: E402
 
 
 class IdentityTests(unittest.TestCase):
+    def test_rc_versions_use_registry_specific_spelling(self):
+        for tag in ("v0.1.0-rc.1", "v0.1.0-rc.2"):
+            version = release.release_version(tag)
+            self.assertEqual(version, tag[1:])
+            self.assertEqual(
+                release.python_version(version), version.replace("-rc.", "rc")
+            )
+        for tag in ("v0.1.0-rc.0", "v0.1.0-rc.01", "v0.1.0-rc", "v0.1.0rc1"):
+            with self.subTest(tag=tag), self.assertRaises(ValueError):
+                release.release_version(tag)
+
     def test_production_docs_dispatch_guard_and_reusable_release_call(self):
         workflow = DIRECTORY.parents[1] / ".github/workflows/docs-publish.yml"
         section = (
@@ -188,6 +199,18 @@ class ArtifactTests(unittest.TestCase):
             root = Path(directory)
             self.fixture(root)
             release.verify_wheels(root, self.release())
+
+    def test_rc_matrix_accepts_pep440_and_rejects_final_artifacts(self):
+        candidate = self.release() | {"version": "0.1.0-rc.1"}
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.fixture(root, version="0.1.0rc1")
+            release.verify_wheels(root, candidate)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.fixture(root, version="0.1.0")
+            with self.assertRaisesRegex(ValueError, "identity"):
+                release.verify_wheels(root, candidate)
 
     def test_missing_or_wrong_platform_fails(self):
         with tempfile.TemporaryDirectory() as directory:

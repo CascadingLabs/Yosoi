@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Existing v0.MINOR.PATCH tag on main
+        description: Existing v0.MINOR.PATCH or v0.MINOR.PATCH-rc.N tag on main
         type: string
         required: true
       publish:
@@ -41,6 +41,7 @@ jobs:
     timeout-minutes: 20
     outputs:
       version: ${{ steps.plan.outputs.version }}
+      python_version: ${{ steps.plan.outputs.python_version }}
       source_commit: ${{ steps.plan.outputs.source_commit }}
       toolchain: ${{ steps.plan.outputs.toolchain }}
       platforms: ${{ steps.plan.outputs.platforms }}
@@ -442,7 +443,7 @@ jobs:
           version: '0.13.0'
       - name: Test a clean binary-only installation from PyPI
         env:
-          VERSION: ${{ needs.identity.outputs.version }}
+          VERSION: ${{ needs.identity.outputs.python_version }}
         run: |
           uv venv --python python .venv
           uv pip install --python .venv --index-url https://pypi.org/simple --no-cache --only-binary=:all: "yosoi==$VERSION" 'pytest==9.1.1'

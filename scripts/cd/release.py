@@ -63,12 +63,21 @@ def git(*args: str) -> str:
 
 
 def release_version(tag: str) -> str:
-    match = re.fullmatch(r"v0\.([1-9][0-9]*)\.(0|[1-9][0-9]*)", tag)
+    match = re.fullmatch(
+        r"v0\.([1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-rc\.([1-9][0-9]*))?", tag
+    )
     if not match or int(match[1]) > 100000 or int(match[2]) > 10000:
         raise ValueError(
-            "Expected beta tag v0.MINOR.PATCH (MINOR 1..100000, PATCH 0..10000)"
+            "Expected v0.MINOR.PATCH or v0.MINOR.PATCH-rc.N "
+            "(MINOR 1..100000, PATCH 0..10000, N >= 1)"
         )
     return tag[1:]
+
+
+def python_version(version: str) -> str:
+    # Cargo SemVer and PEP 440 spell numbered release candidates differently.
+    release_version("v" + version)
+    return version.replace("-rc.", "rc")
 
 
 def verify_workflow_source(
@@ -180,6 +189,7 @@ def plan(root: Path, tag: str) -> dict:
     ]
     return {
         "version": version,
+        "python_version": python_version(version),
         "toolchain": read_toml(root / "rust-toolchain.toml")["toolchain"]["channel"],
         "platforms": {"include": platforms},
         "wheels": {
@@ -219,7 +229,9 @@ def verify_wheels(directory: Path, release: dict) -> None:
     }
     seen = set()
     for file in sorted(directory.glob("*.whl")):
-        python, abi, platforms = wheel_identity(file, release["version"])
+        python, abi, platforms = wheel_identity(
+            file, python_version(release["version"])
+        )
         matching = {(python, abi, platform) for platform in platforms} & expected
         if len(matching) != 1 or seen & matching:
             raise ValueError(f"Unexpected or duplicate wheel: {file.name}")
@@ -241,7 +253,9 @@ def verify_wheels(directory: Path, release: dict) -> None:
         if stream is None:
             raise ValueError("Source distribution metadata is not a regular file")
         metadata = email.message_from_bytes(stream.read())
-        if metadata["Name"] != "yosoi" or metadata["Version"] != release["version"]:
+        if metadata["Name"] != "yosoi" or metadata["Version"] != python_version(
+            release["version"]
+        ):
             raise ValueError("Source distribution version mismatch")
 
 
@@ -318,6 +332,7 @@ def main() -> None:
             with open(output, "a") as stream:
                 for key in (
                     "version",
+                    "python_version",
                     "toolchain",
                     "source_commit",
                     "platforms",
@@ -340,7 +355,7 @@ def main() -> None:
         if args.output is None:
             parser.error("pypi-pending requires --output")
         verify_wheels(args.directory, release)
-        pypi_pending(args.directory, release["version"], args.output)
+        pypi_pending(args.directory, release["python_version"], args.output)
     elif args.command == "checksums":
         for file in sorted(args.directory.iterdir()):
             if file.is_file() and file.name != "SHA256SUMS":

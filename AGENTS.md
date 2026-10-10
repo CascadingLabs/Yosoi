@@ -24,6 +24,7 @@ Read and follow [the Chromium/CDP baseline](docs/chromium-cdp-baseline.md) befor
 # Release procedure
 
 - Beta releases stay below `1.0.0` and use `0.MINOR.PATCH`, without a `-beta` suffix. Beta iterations increment MINOR (1–100000) and reset PATCH to zero: `0.1.0`, `0.2.0`, …, `0.100000.0`.
+- Numbered release candidates use `0.MINOR.PATCH-rc.N` with positive, unpadded N. Python distributions normalize this to `0.MINOR.PATCHrcN`; final beta releases retain `0.MINOR.PATCH`. Candidates use the same release checks and publication prerequisites as final beta releases.
 - Bug fixes and hotfixes increment only PATCH (1–10000) within the current beta iteration: `0.2.0` → `0.2.1` → `0.2.2`. The next beta iteration becomes `0.3.0`. Reserve `1.0.0` for the first stable release.
 - Preview with `cargo xtask bump-version 0.2.0 --dry-run`, then run `cargo xtask bump-version 0.2.0` to update in place. Use the actual chosen version in both commands.
 - A real run validates the metadata and stages complete replacements beside the originals before asking `Apply these changes? [y/N]`. This checks file preparation, not compilation, dependency resolution, or release test results. Answer `y` or `yes` to apply; `n`, `no`, an empty answer, or end-of-input cancels. Use `-y` or `--yes` for scripting (for example `cargo xtask bump-version 0.2.0 --date-released 2026-10-04 -y`); staging and validation still run. `--dry-run` and `--check` never prompt or stage files and cannot be combined with `-y`.

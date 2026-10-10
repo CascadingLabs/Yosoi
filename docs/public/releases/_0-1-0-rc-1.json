@@ -1,0 +1,8 @@
+{
+  "generated_source": "## What's Changed\n* fix: decode non-UTF-8 pages correctly (CAS-228) and make ys.crawl(limit=N) a real page cap (CAS-232) by @AndrewPBerg in https://github.com/CascadingLabs/Yosoi/pull/120\n* Oxidation by @AndrewPBerg in https://github.com/CascadingLabs/Yosoi/pull/121\n* Complete Python SDK bindings, parity gate, and Python 3.15 support by @AndrewPBerg in https://github.com/CascadingLabs/Yosoi/pull/122\n* Add release CD and production docs publication by @AndrewPBerg in https://github.com/CascadingLabs/Yosoi/pull/123\n\n\n**Full Changelog**: https://github.com/CascadingLabs/Yosoi/compare/v0.0.3a27...v0.1.0-rc.1",
+  "generated_source_sha256": "41e28e3d0d1dac69d4856be7ce240d4ed8088a0ab91a3535b7e79b93df477128",
+  "github_notes_file": "yosoi-010-rc1-github-notes.md",
+  "previous": null,
+  "schema": 1,
+  "version": "0.1.0-rc.1"
+}

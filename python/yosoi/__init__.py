@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from importlib.metadata import version as _distribution_version
+
+from . import _native as _native
 from . import contracts as contracts
 from . import documents as documents
 from . import locators as locators
@@ -9,7 +12,6 @@ from . import map as map
 from . import policy as policy
 from . import request as request
 from . import search as search
-from ._native import __version__ as __version__
 from .cancellation import CancellationToken as CancellationToken
 from .contracts import Contract as Contract
 from .contracts import Field as Field
@@ -56,6 +58,8 @@ from .locators import (
     xpath as xpath,
 )
 from .policy import Policy as Policy
+
+__version__ = _distribution_version("yosoi")
 
 __all__ = [
     "__version__",
