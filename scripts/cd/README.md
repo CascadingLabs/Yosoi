@@ -168,3 +168,21 @@ uv run --locked --project scripts/releases python scripts/cd/release.py publicat
 The second command currently fails with the named browser dependency blocker.
 The complete hosted build/install/test matrix runs during release CD, never as
 an additional full matrix on every PR.
+
+
+## Reusing compiled test binaries
+
+Compiler-result caches cannot reuse linked test executables. The common Rust
+setup pairs a content-hash/timestamp snapshot with its compiled target cache.
+After restore, only unchanged tracked regular files with matching modes get
+those recorded timestamps; changed, new, environment, and symlinked files do
+not. Cargo still checks manifests, compiler/feature flags, dependency changes,
+and generated inputs normally. A post step verifies that tracked inputs stayed
+unchanged during the job before saving a new paired snapshot. Source mutation
+invalidates the snapshot and falls back to ordinary Cargo freshness checks.
+
+This adds a directory to the cache archive, so its first run seeds a new cache
+format. Timing targets must be measured on a subsequent warm run. The small
+Cargo fixture checks that unchanged code reuses its binary and edited code
+really compiles and changes the executable output; the full Rust suites remain
+mandatory in CI.

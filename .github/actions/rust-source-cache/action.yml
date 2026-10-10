@@ -1,0 +1,7 @@
+name: Rust source cache
+description: Restore unchanged source timestamps from the matching compiled cache
+runs:
+  using: node24
+  main: index.mjs
+  post: index.mjs
+  post-if: always()
