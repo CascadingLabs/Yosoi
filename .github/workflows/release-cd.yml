@@ -1,0 +1,479 @@
+name: Release CD
+
+# CI retains its own PR/main workflows. CD only accepts an existing release tag.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing v0.MINOR.PATCH tag on main
+        type: string
+        required: true
+      publish:
+        description: Publish after all release checks pass
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-cd-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+  CARGO_BUILD_JOBS: '1'
+  RAYON_NUM_THREADS: '1'
+  CARGO_INCREMENTAL: '0'
+  RUSTFLAGS: ''
+  CARGO_ENCODED_RUSTFLAGS: ''
+  MACOSX_DEPLOYMENT_TARGET: '11.0'
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  identity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    outputs:
+      version: ${{ steps.plan.outputs.version }}
+      source_commit: ${{ steps.plan.outputs.source_commit }}
+      toolchain: ${{ steps.plan.outputs.toolchain }}
+      platforms: ${{ steps.plan.outputs.platforms }}
+      wheels: ${{ steps.plan.outputs.wheels }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/rust-ci-setup
+        with:
+          cache-key: release-identity
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: '0.13.0'
+      - name: Resolve immutable release identity and matrix
+        id: plan
+        run: uv run --locked --project scripts/releases python scripts/cd/release.py plan --tag "$RELEASE_TAG" --output release-plan.json
+      - name: Check finalized release notes and all workspace versions
+        env:
+          VERSION: ${{ steps.plan.outputs.version }}
+        run: |
+          cargo xtask release check "$VERSION"
+          uv run --locked --project scripts/releases python scripts/releases/release.py --root . body "$VERSION" > release-notes.md
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: release-identity
+          path: |
+            release-plan.json
+            release-notes.md
+          if-no-files-found: error
+
+  sdist:
+    needs: identity
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ needs.identity.outputs.source_commit }}
+          persist-credentials: false
+      - uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1
+        with:
+          command: sdist
+          maturin-version: '1.15.0'
+          rust-toolchain: ${{ needs.identity.outputs.toolchain }}
+          args: --out dist
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: release-sdist
+          path: dist/*.tar.gz
+          if-no-files-found: error
+
+  wheels:
+    needs: [identity, sdist]
+    name: Wheel (${{ matrix.platform }}, ${{ matrix.python }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix: ${{ fromJSON(needs.identity.outputs.wheels) }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ needs.identity.outputs.source_commit }}
+          persist-credentials: false
+      - uses: actions/setup-python@06da6279cdbca41027908073e81a4544dc79c06b # v6
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install native prerequisites
+        run: |
+          if [ "$RUNNER_OS" = Windows ]; then
+            echo 'LIBCLANG_PATH=C:\Program Files\LLVM\bin' >> "$GITHUB_ENV"
+          elif [ "$RUNNER_OS" = macOS ]; then
+            echo "LIBCLANG_PATH=$(xcrun --find clang | xargs dirname)/../lib" >> "$GITHUB_ENV"
+          fi
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: '0.13.0'
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          name: release-sdist
+          path: source-distribution
+      - name: Extract the exact source distribution
+        run: |
+          uv run --no-project --python python python - <<'PY'
+          import pathlib, tarfile
+          archives = list(pathlib.Path('source-distribution').glob('*.tar.gz'))
+          if len(archives) != 1:
+              raise RuntimeError('Exactly one source distribution is required')
+          with tarfile.open(archives[0]) as archive:
+              archive.extractall('wheel-source', filter='data')
+          roots = list(pathlib.Path('wheel-source').iterdir())
+          if len(roots) != 1 or not roots[0].is_dir():
+              raise RuntimeError('Source distribution needs one root directory')
+          roots[0].rename('sdist-source')
+          PY
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+        with:
+          key: release-wheel-${{ matrix.target }}-${{ matrix.abi }}-${{ needs.identity.outputs.toolchain }}
+          workspaces: sdist-source -> target
+      - name: Build Linux wheel at the manylinux 2.28 baseline
+        if: runner.os == 'Linux'
+        uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1
+        with:
+          maturin-version: '1.15.0'
+          rust-toolchain: ${{ needs.identity.outputs.toolchain }}
+          target: ${{ matrix.target }}
+          manylinux: '2_28'
+          working-directory: sdist-source
+          before-script-linux: dnf install -y clang clang-devel cmake ninja-build perl-core pkgconf-pkg-config openssl-devel
+          docker-options: -e CARGO_BUILD_JOBS=1 -e RAYON_NUM_THREADS=1 -e CARGO_INCREMENTAL=0 -e RUSTFLAGS= -e CARGO_ENCODED_RUSTFLAGS=
+          args: --release --locked --out ../dist --interpreter ${{ matrix.linux_python }}
+      - name: Build native macOS or Windows wheel
+        if: runner.os != 'Linux'
+        uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1
+        with:
+          maturin-version: '1.15.0'
+          rust-toolchain: ${{ needs.identity.outputs.toolchain }}
+          target: ${{ matrix.target }}
+          working-directory: sdist-source
+          args: --release --locked --out ../dist --interpreter python
+      - name: Test the installed wheel outside the source tree
+        run: |
+          uv venv --python python .venv
+          uv pip install --python .venv --only-binary=:all: dist/*.whl 'pytest==9.1.1'
+          cd "$RUNNER_TEMP"
+          uv run --no-project --python "$GITHUB_WORKSPACE/.venv" python -m pytest --import-mode=importlib "$GITHUB_WORKSPACE/python/tests" -q
+      - name: Record wheel build evidence
+        env:
+          EXPECTED_ABI: ${{ matrix.abi }}
+          SOURCE_COMMIT: ${{ needs.identity.outputs.source_commit }}
+        run: |
+          uv run --no-project --python .venv python - <<'PY'
+          import json, os, platform, sys, sysconfig
+          from pathlib import Path
+          free = bool(sysconfig.get_config_var('Py_GIL_DISABLED'))
+          if free != os.environ['EXPECTED_ABI'].endswith('t'):
+              raise RuntimeError('Wrong interpreter ABI')
+          if free and sys._is_gil_enabled():
+              raise RuntimeError('Free-threaded interpreter enabled the GIL')
+          Path('wheel-evidence.json').write_text(json.dumps(dict(source=os.environ['SOURCE_COMMIT'], python=sys.version, platform=platform.platform(), free_threaded=free), indent=2))
+          PY
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: release-wheel-${{ matrix.platform }}-${{ matrix.abi }}
+          path: dist/*.whl
+          if-no-files-found: error
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: evidence-${{ matrix.platform }}-${{ matrix.abi }}
+          path: wheel-evidence.json
+          if-no-files-found: error
+
+  rust:
+    needs: identity
+    name: Rust artifacts (${{ matrix.platform }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix: ${{ fromJSON(needs.identity.outputs.platforms) }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ needs.identity.outputs.source_commit }}
+          persist-credentials: false
+      - name: Install native prerequisites and toolchain
+        env:
+          TOOLCHAIN: ${{ needs.identity.outputs.toolchain }}
+          TARGET: ${{ matrix.target }}
+        run: |
+          if [ "$RUNNER_OS" = Linux ]; then
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends cmake clang libclang-dev ninja-build pkg-config libssl-dev
+          elif [ "$RUNNER_OS" = Windows ]; then
+            echo 'LIBCLANG_PATH=C:\Program Files\LLVM\bin' >> "$GITHUB_ENV"
+          fi
+          rustup toolchain install "$TOOLCHAIN" --profile minimal --target "$TARGET"
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: '0.13.0'
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+        with:
+          key: release-rust-${{ matrix.target }}-${{ needs.identity.outputs.toolchain }}
+      - name: Build and test native Rust artifacts
+        env:
+          TARGET: ${{ matrix.target }}
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          cargo test --locked --target "$TARGET" -p yosoi --test public_sdk -- --test-threads=1
+          cargo build --release --locked --target "$TARGET" -p yosoi-cli
+          mkdir -p dist
+          executable="target/$TARGET/release/yosoi"
+          if [ "$RUNNER_OS" = Windows ]; then executable="$executable.exe"; fi
+          "$executable" --version
+          archive="yosoi-$RELEASE_TAG-$PLATFORM.tar.gz"
+          uv run --locked --project scripts/releases python scripts/cd/archive.py --executable "$executable" --output "dist/$archive"
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: release-cli-${{ matrix.platform }}
+          path: dist/*.tar.gz
+          if-no-files-found: error
+
+  reference:
+    needs: identity
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ needs.identity.outputs.source_commit }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/rust-ci-setup
+        with:
+          cache-key: release-api-reference
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: '24.21.0'
+      - name: Generate and verify the release API reference
+        env:
+          SOURCE_COMMIT: ${{ needs.identity.outputs.source_commit }}
+          VERSION: ${{ needs.identity.outputs.version }}
+        run: |
+          channel=$(node -p 'require("./scripts/docs/reference/toolchain.json").channel')
+          rustup toolchain install "$channel" --profile minimal
+          node scripts/docs/reference/generate.mjs generate --source "$SOURCE_COMMIT" --repository "$GITHUB_REPOSITORY" --sdk yosoi --version "$VERSION" --locales en --out .generated/reference-release
+          node scripts/docs/reference/generate.mjs verify --dir .generated/reference-release
+          node scripts/docs/reference/generate.mjs pack --dir .generated/reference-release --out .generated/reference.tar
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: release-reference
+          path: .generated/reference.tar
+          if-no-files-found: error
+
+  docs:
+    needs: [identity, reference]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ needs.identity.outputs.source_commit }}
+          persist-credentials: false
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: '24.21.0'
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          name: release-reference
+          path: reference
+      - name: Export versioned public content and compiler reference
+        env:
+          SOURCE_COMMIT: ${{ needs.identity.outputs.source_commit }}
+          VERSION: ${{ needs.identity.outputs.version }}
+        run: |
+          mkdir -p docs-content/reference dist
+          git archive "$SOURCE_COMMIT" docs/public | tar -x -C docs-content
+          node scripts/docs/generate.mjs generate --source "$SOURCE_COMMIT" --repository "$GITHUB_REPOSITORY" --version "$VERSION" --out docs-content
+          tar -xf reference/reference.tar -C docs-content/reference
+          node scripts/docs/reference/generate.mjs verify --dir docs-content/reference
+          tar --sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner -cf - -C docs-content . | gzip -n > "dist/yosoi-docs-v$VERSION.tar.gz"
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: release-docs
+          path: dist/*.tar.gz
+          if-no-files-found: error
+
+  verify:
+    needs: [identity, sdist, wheels, rust, docs]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ needs.identity.outputs.source_commit }}
+          persist-credentials: false
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          pattern: release-wheel-*
+          path: dist
+          merge-multiple: true
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          name: release-sdist
+          path: dist
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: '0.13.0'
+      - name: Check matrix completeness
+        run: |
+          uv run --locked --project scripts/releases python scripts/cd/release.py verify --tag "$RELEASE_TAG"
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: verified-python-distributions
+          path: dist/*
+          if-no-files-found: error
+
+  publication-ready:
+    needs: [identity, verify]
+    if: github.event_name == 'push' || inputs.publish
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ needs.identity.outputs.source_commit }}
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: '0.13.0'
+      - name: Check registry publication prerequisites before any upload
+        run: |
+          uv run --locked --project scripts/releases python scripts/cd/release.py publication-ready --tag "$RELEASE_TAG"
+
+  crates:
+    needs: [identity, publication-ready]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ needs.identity.outputs.source_commit }}
+          persist-credentials: false
+      - uses: ./.github/actions/rust-ci-setup
+        with:
+          cache-key: release-crate-packaging
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: '0.13.0'
+      - name: Publish crates in dependency order
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          uv run --locked --project scripts/releases python scripts/cd/publish.py crates --tag "$RELEASE_TAG"
+
+  pypi:
+    needs: [identity, crates]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: pypi
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ needs.identity.outputs.source_commit }}
+          persist-credentials: false
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          name: verified-python-distributions
+          path: dist
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: '0.13.0'
+      - name: Verify any existing PyPI files before retrying
+        id: pending
+        run: |
+          uv run --locked --project scripts/releases python scripts/cd/release.py pypi-pending --tag "$RELEASE_TAG" --output pending
+          if [ -n "$(find pending -type f -print -quit)" ]; then echo 'upload=true' >> "$GITHUB_OUTPUT"; fi
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1
+        if: steps.pending.outputs.upload == 'true'
+        with:
+          packages-dir: pending
+
+  installed:
+    needs: [identity, pypi]
+    name: Published install (${{ matrix.platform }}, ${{ matrix.python }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix: ${{ fromJSON(needs.identity.outputs.wheels) }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ needs.identity.outputs.source_commit }}
+          persist-credentials: false
+      - uses: actions/setup-python@06da6279cdbca41027908073e81a4544dc79c06b # v6
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: '0.13.0'
+      - name: Test a clean binary-only installation from PyPI
+        env:
+          VERSION: ${{ needs.identity.outputs.version }}
+        run: |
+          uv venv --python python .venv
+          uv pip install --python .venv --index-url https://pypi.org/simple --no-cache --only-binary=:all: "yosoi==$VERSION" 'pytest==9.1.1'
+          cd "$RUNNER_TEMP"
+          uv run --no-project --python "$GITHUB_WORKSPACE/.venv" python -m pytest --import-mode=importlib "$GITHUB_WORKSPACE/python/tests" -q
+
+  github:
+    needs: [identity, installed]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ needs.identity.outputs.source_commit }}
+          persist-credentials: false
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          name: verified-python-distributions
+          path: dist
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          pattern: release-cli-*
+          path: dist
+          merge-multiple: true
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          name: release-docs
+          path: dist
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          name: release-identity
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: '0.13.0'
+      - name: Publish checksummed artifacts and finalized notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp release-plan.json dist/
+          uv run --locked --project scripts/releases python scripts/cd/release.py checksums --tag "$RELEASE_TAG" > dist/SHA256SUMS
+          uv run --locked --project scripts/releases python scripts/cd/publish.py github --tag "$RELEASE_TAG" --finalize

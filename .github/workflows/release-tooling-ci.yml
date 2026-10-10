@@ -1,0 +1,41 @@
+name: Release tooling CI
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/release-*.yml'
+      - 'scripts/cd/**'
+      - 'scripts/releases/pyproject.toml'
+      - 'scripts/releases/uv.lock'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/release-*.yml'
+      - 'scripts/cd/**'
+      - 'scripts/releases/pyproject.toml'
+      - 'scripts/releases/uv.lock'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-tooling-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  helpers:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: '0.13.0'
+          python-version: '3.14'
+      - name: Check release helpers without compiling Rust or publishing
+        run: |
+          uv run --locked --project scripts/releases --with ruff==0.17.0 ruff check scripts/cd
+          uv run --locked --project scripts/releases --with ruff==0.17.0 ruff format --check scripts/cd
+          uv run --locked --project scripts/releases python -m unittest discover -s scripts/cd/tests
