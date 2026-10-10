@@ -152,12 +152,13 @@ fi
             github_expected,
             registry_expected,
         ) in (
-            (True, "success", "skipped", "push", False, True, False),
+            (True, "success", "skipped", "push", False, False, False),
+            (True, "success", "success", "push", False, True, False),
             (True, "failure", "skipped", "push", False, False, False),
             (False, "success", "failure", "push", False, False, True),
             (False, "success", "success", "push", False, True, True),
             (True, "success", "skipped", "workflow_dispatch", False, False, False),
-            (True, "success", "skipped", "workflow_dispatch", True, True, False),
+            (True, "success", "success", "workflow_dispatch", True, True, False),
         ):
             with self.subTest(
                 candidate=candidate,
@@ -185,6 +186,7 @@ fi
                 ):
                     expression = (
                         condition.replace("always()", "True")
+                        .replace("!cancelled()", "True")
                         .replace("&&", " and ")
                         .replace("||", " or ")
                     )
@@ -197,6 +199,91 @@ fi
                             eval(expression, {"__builtins__": {}}, context)
                         )
                         context["needs"].container_publish.result = "success"
+
+    def test_python_rc_publication_is_independent_and_final_publication_keeps_rust_gate(
+        self,
+    ):
+        workflow = (
+            DIRECTORY.parents[1] / ".github/workflows/release-cd.yml"
+        ).read_text()
+        conditions = {}
+        for job in ("pypi", "container_publish"):
+            section = workflow.split(f"\n  {job}:\n", 1)[1].split("    runs-on:", 1)[0]
+            conditions[job] = " ".join(section.split("    if: >-\n", 1)[1].split())
+        for candidate in (False, True):
+            for requested in (False, True):
+                for canceled in (False, True):
+                    for gate in (
+                        "identity",
+                        "verify",
+                        "installed",
+                        "publication_ready",
+                        "crates",
+                    ):
+                        for result in ("success", "failure", "skipped", "cancelled"):
+                            with self.subTest(
+                                candidate=candidate,
+                                requested=requested,
+                                canceled=canceled,
+                                gate=gate,
+                                result=result,
+                            ):
+                                states = {
+                                    name: "success"
+                                    for name in (
+                                        "identity",
+                                        "verify",
+                                        "installed",
+                                        "publication_ready",
+                                        "crates",
+                                    )
+                                }
+                                states[gate] = result
+                                context = dict(
+                                    needs=SimpleNamespace(
+                                        **{
+                                            name: SimpleNamespace(result=value)
+                                            for name, value in states.items()
+                                        }
+                                    ),
+                                    github=SimpleNamespace(
+                                        event_name="workflow_dispatch"
+                                    ),
+                                    inputs=SimpleNamespace(publish=requested),
+                                )
+                                context["needs"].identity.outputs = SimpleNamespace(
+                                    candidate=str(candidate).lower()
+                                )
+                                common = (
+                                    requested
+                                    and not canceled
+                                    and states["identity"] == "success"
+                                    and states["verify"] == "success"
+                                )
+                                expected = {
+                                    "pypi": common
+                                    and (
+                                        candidate
+                                        or states["publication_ready"] == "success"
+                                    ),
+                                    "container_publish": common
+                                    and states["installed"] == "success"
+                                    and (candidate or states["crates"] == "success"),
+                                }
+                                for job, condition in conditions.items():
+                                    expression = (
+                                        condition.replace("always()", "True")
+                                        .replace("!cancelled()", str(not canceled))
+                                        .replace(
+                                            "publication-ready", "publication_ready"
+                                        )
+                                        .replace("&&", " and ")
+                                        .replace("||", " or ")
+                                    )
+                                    self.assertEqual(
+                                        eval(expression, {"__builtins__": {}}, context),
+                                        expected[job],
+                                    )
 
     def test_docs_version_guard_accepts_rc_and_rejects_invalid_versions(self):
         workflow = DIRECTORY.parents[1] / ".github/workflows/docs-publish.yml"
