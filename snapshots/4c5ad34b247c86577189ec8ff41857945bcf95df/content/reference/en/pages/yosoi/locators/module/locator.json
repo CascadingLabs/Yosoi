@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "module:yosoi::locators::locator",
+  "publicPath": "yosoi::locators::locator",
+  "kind": "module",
+  "title": "yosoi::locators::locator",
+  "signature": "pub mod locator",
+  "docs": "Constructors for static locators attached to Contract fields and roots.",
+  "source": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 15,
+    "lineEnd": 15,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi/src/locators.rs#L15-L15"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::locator",
+    "yosoi::prelude::locators::locator"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "f053aff3bf9155b8ca8ea259aa9b354ddb9fa89b3c982397a9ce753ae0cb98d2",
+  "slug": "yosoi/locators/module/locator",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "f053aff3bf9155b8ca8ea259aa9b354ddb9fa89b3c982397a9ce753ae0cb98d2"
+}

@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "function:yosoi::locators::locator::css",
+  "publicPath": "yosoi::locators::locator::css",
+  "kind": "function",
+  "title": "yosoi::locators::locator::css",
+  "signature": "pub const fn css(expression: &'static str) -> super::PinnedLocator",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi-documents/src/locator_declaration.rs",
+    "lineStart": 81,
+    "lineEnd": 83,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-documents/src/locator_declaration.rs#L81-L83"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 16,
+    "lineEnd": 16,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi/src/locators.rs#L16-L16"
+  },
+  "aliases": [
+    "yosoi::prelude::locator::css",
+    "yosoi::prelude::locators::locator::css"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/locators/locator/function/css",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

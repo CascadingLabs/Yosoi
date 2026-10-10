@@ -1,0 +1,159 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::policy::DiscoveryDocuments",
+  "publicPath": "yosoi::policy::DiscoveryDocuments",
+  "kind": "enum",
+  "title": "yosoi::policy::DiscoveryDocuments",
+  "signature": "pub enum DiscoveryDocuments",
+  "docs": "Whether discovery response documents are retained after inspection.",
+  "source": {
+    "file": "crates/yosoi-policy/src/policy/map.rs",
+    "lineStart": 147,
+    "lineEnd": 153,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/map.rs#L147-L153"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/policy.rs",
+    "lineStart": 12,
+    "lineEnd": 12,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi/src/policy.rs#L12-L12"
+  },
+  "aliases": [
+    "yosoi::prelude::policy::DiscoveryDocuments"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::policy::DiscoveryDocuments::DiscardAfterInspection",
+      "publicPath": "yosoi::policy::DiscoveryDocuments::DiscardAfterInspection",
+      "title": "yosoi::policy::DiscoveryDocuments::DiscardAfterInspection",
+      "kind": "variant",
+      "signature": "DiscardAfterInspection",
+      "docs": "Discard response documents after inspecting them.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 150,
+        "lineEnd": 150,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/map.rs#L150-L150"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::policy::DiscoveryDocuments::RetainWithinBudget",
+      "publicPath": "yosoi::policy::DiscoveryDocuments::RetainWithinBudget",
+      "title": "yosoi::policy::DiscoveryDocuments::RetainWithinBudget",
+      "kind": "variant",
+      "signature": "RetainWithinBudget",
+      "docs": "Retain response documents within the declared byte budget.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 152,
+        "lineEnd": 152,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/map.rs#L152-L152"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::DiscoveryDocuments::clone",
+      "publicPath": "yosoi::policy::DiscoveryDocuments::clone",
+      "title": "yosoi::policy::DiscoveryDocuments::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> DiscoveryDocuments",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 145,
+        "lineEnd": 145,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/map.rs#L145-L145"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::policy::DiscoveryDocuments::default",
+      "publicPath": "yosoi::policy::DiscoveryDocuments::default",
+      "title": "yosoi::policy::DiscoveryDocuments::default",
+      "kind": "function",
+      "signature": "fn default() -> DiscoveryDocuments",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 145,
+        "lineEnd": 145,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/map.rs#L145-L145"
+      },
+      "examples": [],
+      "trait": "Default"
+    },
+    {
+      "id": "function:yosoi::policy::DiscoveryDocuments::deserialize",
+      "publicPath": "yosoi::policy::DiscoveryDocuments::deserialize",
+      "title": "yosoi::policy::DiscoveryDocuments::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 145,
+        "lineEnd": 145,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/map.rs#L145-L145"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::policy::DiscoveryDocuments::eq",
+      "publicPath": "yosoi::policy::DiscoveryDocuments::eq",
+      "title": "yosoi::policy::DiscoveryDocuments::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &DiscoveryDocuments) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 145,
+        "lineEnd": 145,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/map.rs#L145-L145"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::policy::DiscoveryDocuments::fmt",
+      "publicPath": "yosoi::policy::DiscoveryDocuments::fmt",
+      "title": "yosoi::policy::DiscoveryDocuments::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 145,
+        "lineEnd": 145,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/map.rs#L145-L145"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::policy::DiscoveryDocuments::serialize",
+      "publicPath": "yosoi::policy::DiscoveryDocuments::serialize",
+      "title": "yosoi::policy::DiscoveryDocuments::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 145,
+        "lineEnd": 145,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/map.rs#L145-L145"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "315c3f018b3fb6f9c0e78ee278e01ac811649672cec05bfa48cb65bb57c597dd",
+  "slug": "yosoi/policy/enum/discoverydocuments",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "315c3f018b3fb6f9c0e78ee278e01ac811649672cec05bfa48cb65bb57c597dd"
+}

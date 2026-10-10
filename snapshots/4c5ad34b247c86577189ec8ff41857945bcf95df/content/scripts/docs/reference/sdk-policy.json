@@ -1,0 +1,5 @@
+{
+  "schemaVersion": 1,
+  "packageNamePattern": "^(?:yosoi|.*-sdk)$",
+  "legacySdkPackages": []
+}

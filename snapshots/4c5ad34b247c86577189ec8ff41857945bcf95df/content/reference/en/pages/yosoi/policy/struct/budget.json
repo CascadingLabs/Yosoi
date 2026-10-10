@@ -1,0 +1,191 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::policy::Budget",
+  "publicPath": "yosoi::policy::Budget",
+  "kind": "struct",
+  "title": "yosoi::policy::Budget",
+  "signature": "pub struct Budget",
+  "docs": "Positive Map budget. Zero never means unlimited.",
+  "source": {
+    "file": "crates/yosoi-policy/src/policy/map/limits.rs",
+    "lineStart": 9,
+    "lineEnd": 9,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/map/limits.rs#L9-L9"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/policy.rs",
+    "lineStart": 11,
+    "lineEnd": 11,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi/src/policy.rs#L11-L11"
+  },
+  "aliases": [
+    "yosoi::prelude::policy::Budget"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::policy::Budget::clone",
+      "publicPath": "yosoi::policy::Budget::clone",
+      "title": "yosoi::policy::Budget::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> Budget",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/limits.rs",
+        "lineStart": 8,
+        "lineEnd": 8,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/map/limits.rs#L8-L8"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::policy::Budget::cmp",
+      "publicPath": "yosoi::policy::Budget::cmp",
+      "title": "yosoi::policy::Budget::cmp",
+      "kind": "function",
+      "signature": "fn cmp(&self, other: &Budget) -> $crate::cmp::Ordering",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/limits.rs",
+        "lineStart": 8,
+        "lineEnd": 8,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/map/limits.rs#L8-L8"
+      },
+      "examples": [],
+      "trait": "Ord"
+    },
+    {
+      "id": "function:yosoi::policy::Budget::deserialize",
+      "publicPath": "yosoi::policy::Budget::deserialize",
+      "title": "yosoi::policy::Budget::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<D>(deserializer: D) -> Result<Self, <D as >::Error> where D: Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/limits.rs",
+        "lineStart": 27,
+        "lineEnd": 33,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/map/limits.rs#L27-L33"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::policy::Budget::eq",
+      "publicPath": "yosoi::policy::Budget::eq",
+      "title": "yosoi::policy::Budget::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &Budget) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/limits.rs",
+        "lineStart": 8,
+        "lineEnd": 8,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/map/limits.rs#L8-L8"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::policy::Budget::fmt",
+      "publicPath": "yosoi::policy::Budget::fmt",
+      "title": "yosoi::policy::Budget::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/limits.rs",
+        "lineStart": 8,
+        "lineEnd": 8,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/map/limits.rs#L8-L8"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::policy::Budget::get",
+      "publicPath": "yosoi::policy::Budget::get",
+      "title": "yosoi::policy::Budget::get",
+      "kind": "function",
+      "signature": "pub const fn get(self) -> u32",
+      "docs": "Returns the exact positive budget.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/limits.rs",
+        "lineStart": 21,
+        "lineEnd": 23,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/map/limits.rs#L21-L23"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::Budget::hash",
+      "publicPath": "yosoi::policy::Budget::hash",
+      "title": "yosoi::policy::Budget::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/limits.rs",
+        "lineStart": 8,
+        "lineEnd": 8,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/map/limits.rs#L8-L8"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::policy::Budget::new",
+      "publicPath": "yosoi::policy::Budget::new",
+      "title": "yosoi::policy::Budget::new",
+      "kind": "function",
+      "signature": "pub const fn new(value: u32) -> Result<Self, PolicyError>",
+      "docs": "Constructs a positive budget.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/limits.rs",
+        "lineStart": 13,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/map/limits.rs#L13-L18"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::Budget::partial_cmp",
+      "publicPath": "yosoi::policy::Budget::partial_cmp",
+      "title": "yosoi::policy::Budget::partial_cmp",
+      "kind": "function",
+      "signature": "fn partial_cmp(&self, other: &Budget) -> $crate::option::Option<$crate::cmp::Ordering>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/limits.rs",
+        "lineStart": 8,
+        "lineEnd": 8,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/map/limits.rs#L8-L8"
+      },
+      "examples": [],
+      "trait": "PartialOrd"
+    },
+    {
+      "id": "function:yosoi::policy::Budget::serialize",
+      "publicPath": "yosoi::policy::Budget::serialize",
+      "title": "yosoi::policy::Budget::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map/limits.rs",
+        "lineStart": 8,
+        "lineEnd": 8,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/map/limits.rs#L8-L8"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "62081017c086d14cde4fee8055fc760246f85cdd277925ebaa4de6e98acc9a9d",
+  "slug": "yosoi/policy/struct/budget",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "62081017c086d14cde4fee8055fc760246f85cdd277925ebaa4de6e98acc9a9d"
+}

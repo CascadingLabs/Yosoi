@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::map::Omission",
+  "publicPath": "yosoi::map::Omission",
+  "kind": "struct",
+  "title": "yosoi::map::Omission",
+  "signature": "pub struct Omission",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi-map/src/lib.rs",
+    "lineStart": 220,
+    "lineEnd": 223,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-map/src/lib.rs#L220-L223"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/map.rs",
+    "lineStart": 5,
+    "lineEnd": 5,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi/src/map.rs#L5-L5"
+  },
+  "aliases": [
+    "yosoi::prelude::map::Omission"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::map::Omission::clone",
+      "publicPath": "yosoi::map::Omission::clone",
+      "title": "yosoi::map::Omission::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> Omission",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 219,
+        "lineEnd": 219,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-map/src/lib.rs#L219-L219"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "struct_field:yosoi::map::Omission::count",
+      "publicPath": "yosoi::map::Omission::count",
+      "title": "yosoi::map::Omission::count",
+      "kind": "struct_field",
+      "signature": "pub count: u64",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 222,
+        "lineEnd": 222,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-map/src/lib.rs#L222-L222"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::Omission::eq",
+      "publicPath": "yosoi::map::Omission::eq",
+      "title": "yosoi::map::Omission::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &Omission) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 219,
+        "lineEnd": 219,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-map/src/lib.rs#L219-L219"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::map::Omission::fmt",
+      "publicPath": "yosoi::map::Omission::fmt",
+      "title": "yosoi::map::Omission::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 219,
+        "lineEnd": 219,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-map/src/lib.rs#L219-L219"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::map::Omission::reason",
+      "publicPath": "yosoi::map::Omission::reason",
+      "title": "yosoi::map::Omission::reason",
+      "kind": "struct_field",
+      "signature": "pub reason: OmissionReason",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 221,
+        "lineEnd": 221,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-map/src/lib.rs#L221-L221"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::Omission::serialize",
+      "publicPath": "yosoi::map::Omission::serialize",
+      "title": "yosoi::map::Omission::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 219,
+        "lineEnd": 219,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-map/src/lib.rs#L219-L219"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/map/struct/omission",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

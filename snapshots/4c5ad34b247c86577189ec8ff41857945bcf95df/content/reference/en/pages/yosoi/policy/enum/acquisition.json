@@ -1,0 +1,218 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::policy::Acquisition",
+  "publicPath": "yosoi::policy::Acquisition",
+  "kind": "enum",
+  "title": "yosoi::policy::Acquisition",
+  "signature": "pub enum Acquisition",
+  "docs": "One ordered page acquisition declaration.\n\nThe bare `DirectHttp` and `Browser(mode)` variants use the current document\nset. Calling [`Acquisition::documents`] creates an exact replacement set,\nincluding when the iterator is empty.",
+  "source": {
+    "file": "crates/yosoi-policy/src/policy/page.rs",
+    "lineStart": 51,
+    "lineEnd": 63,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/page.rs#L51-L63"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/policy.rs",
+    "lineStart": 10,
+    "lineEnd": 10,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi/src/policy.rs#L10-L10"
+  },
+  "aliases": [
+    "yosoi::prelude::policy::Acquisition"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::policy::Acquisition::Browser",
+      "publicPath": "yosoi::policy::Acquisition::Browser",
+      "title": "yosoi::policy::Acquisition::Browser",
+      "kind": "variant",
+      "signature": "Browser(super::BrowserMode)",
+      "docs": "Use a browser and the current document set.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/page.rs",
+        "lineStart": 55,
+        "lineEnd": 55,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/page.rs#L55-L55"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::policy::Acquisition::DirectHttp",
+      "publicPath": "yosoi::policy::Acquisition::DirectHttp",
+      "title": "yosoi::policy::Acquisition::DirectHttp",
+      "kind": "variant",
+      "signature": "DirectHttp",
+      "docs": "Use Direct HTTP and the current document set.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/page.rs",
+        "lineStart": 53,
+        "lineEnd": 53,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/page.rs#L53-L53"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::policy::Acquisition::Exact",
+      "publicPath": "yosoi::policy::Acquisition::Exact",
+      "title": "yosoi::policy::Acquisition::Exact",
+      "kind": "variant",
+      "signature": "Exact { acquisition: AcquisitionKind, documents: Vec<DocumentRequest> }",
+      "docs": "Use an exact replacement document set for the selected acquisition.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/page.rs",
+        "lineStart": 57,
+        "lineEnd": 62,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/page.rs#L57-L62"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::Acquisition::clone",
+      "publicPath": "yosoi::policy::Acquisition::clone",
+      "title": "yosoi::policy::Acquisition::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> Acquisition",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/page.rs",
+        "lineStart": 50,
+        "lineEnd": 50,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/page.rs#L50-L50"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::policy::Acquisition::deserialize",
+      "publicPath": "yosoi::policy::Acquisition::deserialize",
+      "title": "yosoi::policy::Acquisition::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<D>(deserializer: D) -> Result<Self, <D as >::Error> where D: Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/page/wire.rs",
+        "lineStart": 50,
+        "lineEnd": 73,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/page/wire.rs#L50-L73"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::policy::Acquisition::documents",
+      "publicPath": "yosoi::policy::Acquisition::documents",
+      "title": "yosoi::policy::Acquisition::documents",
+      "kind": "function",
+      "signature": "pub fn documents(self, documents: impl IntoIterator<Item = DocumentRequest>) -> Self",
+      "docs": "Replaces this acquisition's document selection with an exact set.\n\nRepeated calls replace the prior set. The policy is validated when it\nis snapshotted or serialized.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/page.rs",
+        "lineStart": 70,
+        "lineEnd": 84,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/page.rs#L70-L84"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::Acquisition::eq",
+      "publicPath": "yosoi::policy::Acquisition::eq",
+      "title": "yosoi::policy::Acquisition::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &Acquisition) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/page.rs",
+        "lineStart": 50,
+        "lineEnd": 50,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/page.rs#L50-L50"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::policy::Acquisition::exact_documents",
+      "publicPath": "yosoi::policy::Acquisition::exact_documents",
+      "title": "yosoi::policy::Acquisition::exact_documents",
+      "kind": "function",
+      "signature": "pub fn exact_documents(&self) -> Option<&[DocumentRequest]>",
+      "docs": "Returns the exact document list when this declaration replaces the\ncurrent default.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/page.rs",
+        "lineStart": 106,
+        "lineEnd": 111,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/page.rs#L106-L111"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::Acquisition::fmt",
+      "publicPath": "yosoi::policy::Acquisition::fmt",
+      "title": "yosoi::policy::Acquisition::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/page.rs",
+        "lineStart": 50,
+        "lineEnd": 50,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/page.rs#L50-L50"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::policy::Acquisition::kind",
+      "publicPath": "yosoi::policy::Acquisition::kind",
+      "title": "yosoi::policy::Acquisition::kind",
+      "kind": "function",
+      "signature": "pub const fn kind(&self) -> AcquisitionKind",
+      "docs": "Returns the acquisition mechanism represented by this declaration.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/page.rs",
+        "lineStart": 87,
+        "lineEnd": 93,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/page.rs#L87-L93"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::Acquisition::selection_kind",
+      "publicPath": "yosoi::policy::Acquisition::selection_kind",
+      "title": "yosoi::policy::Acquisition::selection_kind",
+      "kind": "function",
+      "signature": "pub const fn selection_kind(&self) -> DocumentSelectionKind",
+      "docs": "Returns whether this declaration uses Current or Exact document\nselection.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/page.rs",
+        "lineStart": 97,
+        "lineEnd": 102,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/page.rs#L97-L102"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::Acquisition::serialize",
+      "publicPath": "yosoi::policy::Acquisition::serialize",
+      "title": "yosoi::policy::Acquisition::serialize",
+      "kind": "function",
+      "signature": "fn serialize<S>(&self, serializer: S) -> Result<<S as >::Ok, <S as >::Error> where S: Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/page/wire.rs",
+        "lineStart": 14,
+        "lineEnd": 46,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/page/wire.rs#L14-L46"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "9301cbe628ec63ea84126dbfb5bdc1ed3572c6c25d5f7bd115f6c1982e1ecc8e",
+  "slug": "yosoi/policy/enum/acquisition",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "9301cbe628ec63ea84126dbfb5bdc1ed3572c6c25d5f7bd115f6c1982e1ecc8e"
+}

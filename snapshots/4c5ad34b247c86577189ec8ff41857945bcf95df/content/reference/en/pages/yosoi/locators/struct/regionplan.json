@@ -1,0 +1,158 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::locators::RegionPlan",
+  "publicPath": "yosoi::locators::RegionPlan",
+  "kind": "struct",
+  "title": "yosoi::locators::RegionPlan",
+  "signature": "pub struct RegionPlan",
+  "docs": "One non-nested repeated region used by one or more outputs.",
+  "source": {
+    "file": "crates/yosoi-documents/src/plan_authoring.rs",
+    "lineStart": 86,
+    "lineEnd": 89,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-documents/src/plan_authoring.rs#L86-L89"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 9,
+    "lineEnd": 9,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi/src/locators.rs#L9-L9"
+  },
+  "aliases": [
+    "yosoi::prelude::locators::RegionPlan"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::locators::RegionPlan::clone",
+      "publicPath": "yosoi::locators::RegionPlan::clone",
+      "title": "yosoi::locators::RegionPlan::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> RegionPlan",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/plan_authoring.rs",
+        "lineStart": 84,
+        "lineEnd": 84,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-documents/src/plan_authoring.rs#L84-L84"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::locators::RegionPlan::deserialize",
+      "publicPath": "yosoi::locators::RegionPlan::deserialize",
+      "title": "yosoi::locators::RegionPlan::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/plan_authoring.rs",
+        "lineStart": 84,
+        "lineEnd": 84,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-documents/src/plan_authoring.rs#L84-L84"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::locators::RegionPlan::eq",
+      "publicPath": "yosoi::locators::RegionPlan::eq",
+      "title": "yosoi::locators::RegionPlan::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &RegionPlan) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/plan_authoring.rs",
+        "lineStart": 84,
+        "lineEnd": 84,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-documents/src/plan_authoring.rs#L84-L84"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::locators::RegionPlan::find",
+      "publicPath": "yosoi::locators::RegionPlan::find",
+      "title": "yosoi::locators::RegionPlan::find",
+      "kind": "function",
+      "signature": "pub fn find(&self, query: QuerySpec) -> OutputSelection",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/plan_authoring.rs",
+        "lineStart": 107,
+        "lineEnd": 112,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-documents/src/plan_authoring.rs#L107-L112"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::RegionPlan::fmt",
+      "publicPath": "yosoi::locators::RegionPlan::fmt",
+      "title": "yosoi::locators::RegionPlan::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/plan_authoring.rs",
+        "lineStart": 84,
+        "lineEnd": 84,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-documents/src/plan_authoring.rs#L84-L84"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::locators::RegionPlan::id",
+      "publicPath": "yosoi::locators::RegionPlan::id",
+      "title": "yosoi::locators::RegionPlan::id",
+      "kind": "function",
+      "signature": "pub const fn id(&self) -> &RegionId",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/plan_authoring.rs",
+        "lineStart": 99,
+        "lineEnd": 101,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-documents/src/plan_authoring.rs#L99-L101"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::RegionPlan::query",
+      "publicPath": "yosoi::locators::RegionPlan::query",
+      "title": "yosoi::locators::RegionPlan::query",
+      "kind": "function",
+      "signature": "pub const fn query(&self) -> &QuerySpec",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/plan_authoring.rs",
+        "lineStart": 103,
+        "lineEnd": 105,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-documents/src/plan_authoring.rs#L103-L105"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::RegionPlan::serialize",
+      "publicPath": "yosoi::locators::RegionPlan::serialize",
+      "title": "yosoi::locators::RegionPlan::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/plan_authoring.rs",
+        "lineStart": 84,
+        "lineEnd": 84,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-documents/src/plan_authoring.rs#L84-L84"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "76b5fff9594d8ef228e9e887ac49e5a2dc76ff2336ed9c4c1ac668e4230a97df",
+  "slug": "yosoi/locators/struct/regionplan",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "76b5fff9594d8ef228e9e887ac49e5a2dc76ff2336ed9c4c1ac668e4230a97df"
+}

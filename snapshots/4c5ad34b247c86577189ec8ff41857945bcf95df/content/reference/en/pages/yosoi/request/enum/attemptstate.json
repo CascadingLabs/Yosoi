@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::request::AttemptState",
+  "publicPath": "yosoi::request::AttemptState",
+  "kind": "enum",
+  "title": "yosoi::request::AttemptState",
+  "signature": "pub enum AttemptState",
+  "docs": "The user-visible state of one acquisition.",
+  "source": {
+    "file": "crates/yosoi/src/request/outcomes.rs",
+    "lineStart": 12,
+    "lineEnd": 16,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi/src/request/outcomes.rs#L12-L16"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/request.rs",
+    "lineStart": 10,
+    "lineEnd": 10,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi/src/request.rs#L10-L10"
+  },
+  "aliases": [
+    "yosoi::prelude::request::AttemptState"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::request::AttemptState::Completed",
+      "publicPath": "yosoi::request::AttemptState::Completed",
+      "title": "yosoi::request::AttemptState::Completed",
+      "kind": "variant",
+      "signature": "Completed",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/request/outcomes.rs",
+        "lineStart": 13,
+        "lineEnd": 13,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi/src/request/outcomes.rs#L13-L13"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::AttemptState::Failed",
+      "publicPath": "yosoi::request::AttemptState::Failed",
+      "title": "yosoi::request::AttemptState::Failed",
+      "kind": "variant",
+      "signature": "Failed(super::AttemptFailureKind)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/request/outcomes.rs",
+        "lineStart": 14,
+        "lineEnd": 14,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi/src/request/outcomes.rs#L14-L14"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::AttemptState::NotStarted",
+      "publicPath": "yosoi::request::AttemptState::NotStarted",
+      "title": "yosoi::request::AttemptState::NotStarted",
+      "kind": "variant",
+      "signature": "NotStarted(super::NotStartedReason)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/request/outcomes.rs",
+        "lineStart": 15,
+        "lineEnd": 15,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi/src/request/outcomes.rs#L15-L15"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::request::AttemptState::clone",
+      "publicPath": "yosoi::request::AttemptState::clone",
+      "title": "yosoi::request::AttemptState::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> AttemptState",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/request/outcomes.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi/src/request/outcomes.rs#L11-L11"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::request::AttemptState::eq",
+      "publicPath": "yosoi::request::AttemptState::eq",
+      "title": "yosoi::request::AttemptState::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &AttemptState) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/request/outcomes.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi/src/request/outcomes.rs#L11-L11"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::request::AttemptState::fmt",
+      "publicPath": "yosoi::request::AttemptState::fmt",
+      "title": "yosoi::request::AttemptState::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/request/outcomes.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi/src/request/outcomes.rs#L11-L11"
+      },
+      "examples": [],
+      "trait": "Debug"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "92f0ec1eab4bdc3ed5085990d83cb380bc291babb82d0e3e76a4151bd6e226c8",
+  "slug": "yosoi/request/enum/attemptstate",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "92f0ec1eab4bdc3ed5085990d83cb380bc291babb82d0e3e76a4151bd6e226c8"
+}

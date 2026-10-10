@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::ResponseTermination",
+  "publicPath": "yosoi::ResponseTermination",
+  "kind": "enum",
+  "title": "yosoi::ResponseTermination",
+  "signature": "pub enum ResponseTermination",
+  "docs": "Whether the sequence ended without cancellation or observed caller cancellation.\n\n`Completed` does not imply every attempt succeeded; typed attempt failures\nremain in `Response::attempts`.",
+  "source": {
+    "file": "crates/yosoi-engine/src/request/execution/outcome/response.rs",
+    "lineStart": 72,
+    "lineEnd": 75,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-engine/src/request/execution/outcome/response.rs#L72-L75"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/lib.rs",
+    "lineStart": 19,
+    "lineEnd": 19,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi/src/lib.rs#L19-L19"
+  },
+  "aliases": [
+    "yosoi::request::ResponseTermination",
+    "yosoi::prelude::request::ResponseTermination"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::ResponseTermination::Cancelled",
+      "publicPath": "yosoi::ResponseTermination::Cancelled",
+      "title": "yosoi::ResponseTermination::Cancelled",
+      "kind": "variant",
+      "signature": "Cancelled",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/request/execution/outcome/response.rs",
+        "lineStart": 74,
+        "lineEnd": 74,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-engine/src/request/execution/outcome/response.rs#L74-L74"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::ResponseTermination::Completed",
+      "publicPath": "yosoi::ResponseTermination::Completed",
+      "title": "yosoi::ResponseTermination::Completed",
+      "kind": "variant",
+      "signature": "Completed",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/request/execution/outcome/response.rs",
+        "lineStart": 73,
+        "lineEnd": 73,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-engine/src/request/execution/outcome/response.rs#L73-L73"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::ResponseTermination::clone",
+      "publicPath": "yosoi::ResponseTermination::clone",
+      "title": "yosoi::ResponseTermination::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> ResponseTermination",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/request/execution/outcome/response.rs",
+        "lineStart": 70,
+        "lineEnd": 70,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-engine/src/request/execution/outcome/response.rs#L70-L70"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::ResponseTermination::eq",
+      "publicPath": "yosoi::ResponseTermination::eq",
+      "title": "yosoi::ResponseTermination::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &ResponseTermination) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/request/execution/outcome/response.rs",
+        "lineStart": 70,
+        "lineEnd": 70,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-engine/src/request/execution/outcome/response.rs#L70-L70"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::ResponseTermination::fmt",
+      "publicPath": "yosoi::ResponseTermination::fmt",
+      "title": "yosoi::ResponseTermination::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/request/execution/outcome/response.rs",
+        "lineStart": 70,
+        "lineEnd": 70,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-engine/src/request/execution/outcome/response.rs#L70-L70"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::ResponseTermination::serialize",
+      "publicPath": "yosoi::ResponseTermination::serialize",
+      "title": "yosoi::ResponseTermination::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/request/execution/outcome/response.rs",
+        "lineStart": 70,
+        "lineEnd": 70,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-engine/src/request/execution/outcome/response.rs#L70-L70"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "a571534c984936734e0b680dc73b702cef319f5d0079d74a64e2598c8092e7ce",
+  "slug": "yosoi/enum/responsetermination",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "a571534c984936734e0b680dc73b702cef319f5d0079d74a64e2598c8092e7ce"
+}

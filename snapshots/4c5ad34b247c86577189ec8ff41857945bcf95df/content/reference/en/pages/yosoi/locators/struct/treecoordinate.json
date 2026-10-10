@@ -1,0 +1,204 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::locators::TreeCoordinate",
+  "publicPath": "yosoi::locators::TreeCoordinate",
+  "kind": "struct",
+  "title": "yosoi::locators::TreeCoordinate",
+  "signature": "pub struct TreeCoordinate",
+  "docs": "Native coordinate for an HTML or XML tree node.\n\nXML coordinates may include expanded-name segments, which use namespace\nURIs rather than source prefix spelling.",
+  "source": {
+    "file": "crates/yosoi-documents/src/outcome_tree_coordinates.rs",
+    "lineStart": 74,
+    "lineEnd": 79,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-documents/src/outcome_tree_coordinates.rs#L74-L79"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 10,
+    "lineEnd": 10,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi/src/locators.rs#L10-L10"
+  },
+  "aliases": [
+    "yosoi::prelude::locators::TreeCoordinate"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::locators::TreeCoordinate::child_path",
+      "publicPath": "yosoi::locators::TreeCoordinate::child_path",
+      "title": "yosoi::locators::TreeCoordinate::child_path",
+      "kind": "function",
+      "signature": "pub fn child_path(&self) -> &[u32]",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome_tree_coordinates.rs",
+        "lineStart": 110,
+        "lineEnd": 112,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-documents/src/outcome_tree_coordinates.rs#L110-L112"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::TreeCoordinate::clone",
+      "publicPath": "yosoi::locators::TreeCoordinate::clone",
+      "title": "yosoi::locators::TreeCoordinate::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> TreeCoordinate",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome_tree_coordinates.rs",
+        "lineStart": 73,
+        "lineEnd": 73,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-documents/src/outcome_tree_coordinates.rs#L73-L73"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::locators::TreeCoordinate::deserialize",
+      "publicPath": "yosoi::locators::TreeCoordinate::deserialize",
+      "title": "yosoi::locators::TreeCoordinate::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<D>(deserializer: D) -> Result<Self, <D as >::Error> where D: Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome_tree_coordinates.rs",
+        "lineStart": 122,
+        "lineEnd": 145,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-documents/src/outcome_tree_coordinates.rs#L122-L145"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::locators::TreeCoordinate::eq",
+      "publicPath": "yosoi::locators::TreeCoordinate::eq",
+      "title": "yosoi::locators::TreeCoordinate::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &TreeCoordinate) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome_tree_coordinates.rs",
+        "lineStart": 73,
+        "lineEnd": 73,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-documents/src/outcome_tree_coordinates.rs#L73-L73"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::locators::TreeCoordinate::expanded_name_path",
+      "publicPath": "yosoi::locators::TreeCoordinate::expanded_name_path",
+      "title": "yosoi::locators::TreeCoordinate::expanded_name_path",
+      "kind": "function",
+      "signature": "pub fn expanded_name_path(&self) -> Option<&[ExpandedNamePathSegment]>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome_tree_coordinates.rs",
+        "lineStart": 116,
+        "lineEnd": 118,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-documents/src/outcome_tree_coordinates.rs#L116-L118"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::TreeCoordinate::fmt",
+      "publicPath": "yosoi::locators::TreeCoordinate::fmt",
+      "title": "yosoi::locators::TreeCoordinate::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome_tree_coordinates.rs",
+        "lineStart": 73,
+        "lineEnd": 73,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-documents/src/outcome_tree_coordinates.rs#L73-L73"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::locators::TreeCoordinate::hash",
+      "publicPath": "yosoi::locators::TreeCoordinate::hash",
+      "title": "yosoi::locators::TreeCoordinate::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome_tree_coordinates.rs",
+        "lineStart": 73,
+        "lineEnd": 73,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-documents/src/outcome_tree_coordinates.rs#L73-L73"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::locators::TreeCoordinate::serialize",
+      "publicPath": "yosoi::locators::TreeCoordinate::serialize",
+      "title": "yosoi::locators::TreeCoordinate::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome_tree_coordinates.rs",
+        "lineStart": 73,
+        "lineEnd": 73,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-documents/src/outcome_tree_coordinates.rs#L73-L73"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::locators::TreeCoordinate::source_bytes",
+      "publicPath": "yosoi::locators::TreeCoordinate::source_bytes",
+      "title": "yosoi::locators::TreeCoordinate::source_bytes",
+      "kind": "function",
+      "signature": "pub const fn source_bytes(&self) -> Option<ByteRange>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome_tree_coordinates.rs",
+        "lineStart": 113,
+        "lineEnd": 115,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-documents/src/outcome_tree_coordinates.rs#L113-L115"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::TreeCoordinate::try_new",
+      "publicPath": "yosoi::locators::TreeCoordinate::try_new",
+      "title": "yosoi::locators::TreeCoordinate::try_new",
+      "kind": "function",
+      "signature": "pub fn try_new(child_path: Vec<u32>, source_bytes: Option<ByteRange>) -> Result<Self, CoordinateError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome_tree_coordinates.rs",
+        "lineStart": 82,
+        "lineEnd": 92,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-documents/src/outcome_tree_coordinates.rs#L82-L92"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::TreeCoordinate::with_expanded_name_path",
+      "publicPath": "yosoi::locators::TreeCoordinate::with_expanded_name_path",
+      "title": "yosoi::locators::TreeCoordinate::with_expanded_name_path",
+      "kind": "function",
+      "signature": "pub fn with_expanded_name_path(child_path: Vec<u32>, source_bytes: Option<ByteRange>, expanded_name_path: Vec<ExpandedNamePathSegment>) -> Result<Self, CoordinateError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome_tree_coordinates.rs",
+        "lineStart": 94,
+        "lineEnd": 108,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-documents/src/outcome_tree_coordinates.rs#L94-L108"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "29649abc73973e47a5c929c1462250b2e7328ce80a5e899fed9abb315836f519",
+  "slug": "yosoi/locators/struct/treecoordinate",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "29649abc73973e47a5c929c1462250b2e7328ce80a5e899fed9abb315836f519"
+}

@@ -1,0 +1,224 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::policy::RedirectHopLimit",
+  "publicPath": "yosoi::policy::RedirectHopLimit",
+  "kind": "struct",
+  "title": "yosoi::policy::RedirectHopLimit",
+  "signature": "pub struct RedirectHopLimit",
+  "docs": "Positive maximum number of Direct HTTP redirect transitions.",
+  "source": {
+    "file": "crates/yosoi-policy/src/policy/redirect.rs",
+    "lineStart": 8,
+    "lineEnd": 8,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/redirect.rs#L8-L8"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/policy.rs",
+    "lineStart": 14,
+    "lineEnd": 14,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi/src/policy.rs#L14-L14"
+  },
+  "aliases": [
+    "yosoi::prelude::policy::RedirectHopLimit"
+  ],
+  "members": [
+    {
+      "id": "assoc_type:yosoi::policy::RedirectHopLimit::Error",
+      "publicPath": "yosoi::policy::RedirectHopLimit::Error",
+      "title": "yosoi::policy::RedirectHopLimit::Error",
+      "kind": "assoc_type",
+      "signature": "type Error = PolicyError",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/redirect.rs",
+        "lineStart": 28,
+        "lineEnd": 28,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/redirect.rs#L28-L28"
+      },
+      "examples": [],
+      "trait": "TryFrom"
+    },
+    {
+      "id": "function:yosoi::policy::RedirectHopLimit::clone",
+      "publicPath": "yosoi::policy::RedirectHopLimit::clone",
+      "title": "yosoi::policy::RedirectHopLimit::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> RedirectHopLimit",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/redirect.rs",
+        "lineStart": 7,
+        "lineEnd": 7,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/redirect.rs#L7-L7"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::policy::RedirectHopLimit::cmp",
+      "publicPath": "yosoi::policy::RedirectHopLimit::cmp",
+      "title": "yosoi::policy::RedirectHopLimit::cmp",
+      "kind": "function",
+      "signature": "fn cmp(&self, other: &RedirectHopLimit) -> $crate::cmp::Ordering",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/redirect.rs",
+        "lineStart": 7,
+        "lineEnd": 7,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/redirect.rs#L7-L7"
+      },
+      "examples": [],
+      "trait": "Ord"
+    },
+    {
+      "id": "function:yosoi::policy::RedirectHopLimit::default",
+      "publicPath": "yosoi::policy::RedirectHopLimit::default",
+      "title": "yosoi::policy::RedirectHopLimit::default",
+      "kind": "function",
+      "signature": "fn default() -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/redirect.rs",
+        "lineStart": 22,
+        "lineEnd": 24,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/redirect.rs#L22-L24"
+      },
+      "examples": [],
+      "trait": "Default"
+    },
+    {
+      "id": "function:yosoi::policy::RedirectHopLimit::deserialize",
+      "publicPath": "yosoi::policy::RedirectHopLimit::deserialize",
+      "title": "yosoi::policy::RedirectHopLimit::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<D>(deserializer: D) -> Result<Self, <D as >::Error> where D: Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/redirect.rs",
+        "lineStart": 47,
+        "lineEnd": 53,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/redirect.rs#L47-L53"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::policy::RedirectHopLimit::eq",
+      "publicPath": "yosoi::policy::RedirectHopLimit::eq",
+      "title": "yosoi::policy::RedirectHopLimit::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &RedirectHopLimit) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/redirect.rs",
+        "lineStart": 7,
+        "lineEnd": 7,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/redirect.rs#L7-L7"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::policy::RedirectHopLimit::fmt",
+      "publicPath": "yosoi::policy::RedirectHopLimit::fmt",
+      "title": "yosoi::policy::RedirectHopLimit::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/redirect.rs",
+        "lineStart": 7,
+        "lineEnd": 7,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/redirect.rs#L7-L7"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::policy::RedirectHopLimit::get",
+      "publicPath": "yosoi::policy::RedirectHopLimit::get",
+      "title": "yosoi::policy::RedirectHopLimit::get",
+      "kind": "function",
+      "signature": "pub const fn get(self) -> u32",
+      "docs": "Returns the exact positive hop bound.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/redirect.rs",
+        "lineStart": 12,
+        "lineEnd": 14,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/redirect.rs#L12-L14"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::RedirectHopLimit::hash",
+      "publicPath": "yosoi::policy::RedirectHopLimit::hash",
+      "title": "yosoi::policy::RedirectHopLimit::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/redirect.rs",
+        "lineStart": 7,
+        "lineEnd": 7,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/redirect.rs#L7-L7"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::policy::RedirectHopLimit::partial_cmp",
+      "publicPath": "yosoi::policy::RedirectHopLimit::partial_cmp",
+      "title": "yosoi::policy::RedirectHopLimit::partial_cmp",
+      "kind": "function",
+      "signature": "fn partial_cmp(&self, other: &RedirectHopLimit) -> $crate::option::Option<$crate::cmp::Ordering>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/redirect.rs",
+        "lineStart": 7,
+        "lineEnd": 7,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/redirect.rs#L7-L7"
+      },
+      "examples": [],
+      "trait": "PartialOrd"
+    },
+    {
+      "id": "function:yosoi::policy::RedirectHopLimit::serialize",
+      "publicPath": "yosoi::policy::RedirectHopLimit::serialize",
+      "title": "yosoi::policy::RedirectHopLimit::serialize",
+      "kind": "function",
+      "signature": "fn serialize<S>(&self, serializer: S) -> Result<<S as >::Ok, <S as >::Error> where S: Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/redirect.rs",
+        "lineStart": 38,
+        "lineEnd": 43,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/redirect.rs#L38-L43"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::policy::RedirectHopLimit::try_from",
+      "publicPath": "yosoi::policy::RedirectHopLimit::try_from",
+      "title": "yosoi::policy::RedirectHopLimit::try_from",
+      "kind": "function",
+      "signature": "fn try_from(value: u32) -> Result<Self, <Self as >::Error>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/redirect.rs",
+        "lineStart": 30,
+        "lineEnd": 34,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-policy/src/policy/redirect.rs#L30-L34"
+      },
+      "examples": [],
+      "trait": "TryFrom"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e1f0b621db6881607850ace8f3713154dec9f4b036a59704b2cad03564eab179",
+  "slug": "yosoi/policy/struct/redirecthoplimit",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e1f0b621db6881607850ace8f3713154dec9f4b036a59704b2cad03564eab179"
+}

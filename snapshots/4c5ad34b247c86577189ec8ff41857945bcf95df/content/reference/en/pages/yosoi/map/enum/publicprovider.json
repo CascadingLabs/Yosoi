@@ -1,0 +1,234 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::map::PublicProvider",
+  "publicPath": "yosoi::map::PublicProvider",
+  "kind": "enum",
+  "title": "yosoi::map::PublicProvider",
+  "signature": "pub enum PublicProvider",
+  "docs": "Anonymous, public indexes with a bounded and documented query shape.",
+  "source": {
+    "file": "crates/yosoi-map/src/providers.rs",
+    "lineStart": 20,
+    "lineEnd": 25,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-map/src/providers.rs#L20-L25"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/map.rs",
+    "lineStart": 6,
+    "lineEnd": 6,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi/src/map.rs#L6-L6"
+  },
+  "aliases": [
+    "yosoi::prelude::map::PublicProvider"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::map::PublicProvider::CrtSh",
+      "publicPath": "yosoi::map::PublicProvider::CrtSh",
+      "title": "yosoi::map::PublicProvider::CrtSh",
+      "kind": "variant",
+      "signature": "CrtSh",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/providers.rs",
+        "lineStart": 21,
+        "lineEnd": 21,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-map/src/providers.rs#L21-L21"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::PublicProvider::HackerTarget",
+      "publicPath": "yosoi::map::PublicProvider::HackerTarget",
+      "title": "yosoi::map::PublicProvider::HackerTarget",
+      "kind": "variant",
+      "signature": "HackerTarget",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/providers.rs",
+        "lineStart": 22,
+        "lineEnd": 22,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-map/src/providers.rs#L22-L22"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::PublicProvider::SubdomainCenter",
+      "publicPath": "yosoi::map::PublicProvider::SubdomainCenter",
+      "title": "yosoi::map::PublicProvider::SubdomainCenter",
+      "kind": "variant",
+      "signature": "SubdomainCenter",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/providers.rs",
+        "lineStart": 23,
+        "lineEnd": 23,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-map/src/providers.rs#L23-L23"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::PublicProvider::WaybackArchive",
+      "publicPath": "yosoi::map::PublicProvider::WaybackArchive",
+      "title": "yosoi::map::PublicProvider::WaybackArchive",
+      "kind": "variant",
+      "signature": "WaybackArchive",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/providers.rs",
+        "lineStart": 24,
+        "lineEnd": 24,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-map/src/providers.rs#L24-L24"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::PublicProvider::all",
+      "publicPath": "yosoi::map::PublicProvider::all",
+      "title": "yosoi::map::PublicProvider::all",
+      "kind": "function",
+      "signature": "pub const fn all() -> &'static [Self]",
+      "docs": "Returns the deterministic catalog of anonymous providers.",
+      "source": {
+        "file": "crates/yosoi-map/src/providers.rs",
+        "lineStart": 36,
+        "lineEnd": 38,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-map/src/providers.rs#L36-L38"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::PublicProvider::clone",
+      "publicPath": "yosoi::map::PublicProvider::clone",
+      "title": "yosoi::map::PublicProvider::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> PublicProvider",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/providers.rs",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-map/src/providers.rs#L18-L18"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::map::PublicProvider::cmp",
+      "publicPath": "yosoi::map::PublicProvider::cmp",
+      "title": "yosoi::map::PublicProvider::cmp",
+      "kind": "function",
+      "signature": "fn cmp(&self, other: &PublicProvider) -> $crate::cmp::Ordering",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/providers.rs",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-map/src/providers.rs#L18-L18"
+      },
+      "examples": [],
+      "trait": "Ord"
+    },
+    {
+      "id": "function:yosoi::map::PublicProvider::endpoint",
+      "publicPath": "yosoi::map::PublicProvider::endpoint",
+      "title": "yosoi::map::PublicProvider::endpoint",
+      "kind": "function",
+      "signature": "pub fn endpoint(self, domain: &str) -> Result<Url, ProviderError>",
+      "docs": "Builds a fixed HTTPS query to the provider's public historical index.\n\nThe domain is validated with the same DNS-host constraints as the\nexisting crt.sh query. All provider-specific values use URL query\nencoding; callers cannot supply a host, path, or endpoint override.",
+      "source": {
+        "file": "crates/yosoi-map/src/providers.rs",
+        "lineStart": 55,
+        "lineEnd": 88,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-map/src/providers.rs#L55-L88"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::PublicProvider::eq",
+      "publicPath": "yosoi::map::PublicProvider::eq",
+      "title": "yosoi::map::PublicProvider::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &PublicProvider) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/providers.rs",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-map/src/providers.rs#L18-L18"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::map::PublicProvider::fmt",
+      "publicPath": "yosoi::map::PublicProvider::fmt",
+      "title": "yosoi::map::PublicProvider::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/providers.rs",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-map/src/providers.rs#L18-L18"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::map::PublicProvider::name",
+      "publicPath": "yosoi::map::PublicProvider::name",
+      "title": "yosoi::map::PublicProvider::name",
+      "kind": "function",
+      "signature": "pub const fn name(self) -> &'static str",
+      "docs": "Returns the stable catalog key used for outcomes and provenance.",
+      "source": {
+        "file": "crates/yosoi-map/src/providers.rs",
+        "lineStart": 41,
+        "lineEnd": 48,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-map/src/providers.rs#L41-L48"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::PublicProvider::partial_cmp",
+      "publicPath": "yosoi::map::PublicProvider::partial_cmp",
+      "title": "yosoi::map::PublicProvider::partial_cmp",
+      "kind": "function",
+      "signature": "fn partial_cmp(&self, other: &PublicProvider) -> $crate::option::Option<$crate::cmp::Ordering>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/providers.rs",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-map/src/providers.rs#L18-L18"
+      },
+      "examples": [],
+      "trait": "PartialOrd"
+    },
+    {
+      "id": "function:yosoi::map::PublicProvider::serialize",
+      "publicPath": "yosoi::map::PublicProvider::serialize",
+      "title": "yosoi::map::PublicProvider::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/providers.rs",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/4c5ad34b247c86577189ec8ff41857945bcf95df/crates/yosoi-map/src/providers.rs#L18-L18"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "4abcf22eba78f26f102009bb17a52c5d8ee8775f1a93eb8408f15be1df14add9",
+  "slug": "yosoi/map/enum/publicprovider",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "4abcf22eba78f26f102009bb17a52c5d8ee8775f1a93eb8408f15be1df14add9"
+}
