@@ -1,0 +1,207 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::contracts::ContractId",
+  "publicPath": "yosoi::contracts::ContractId",
+  "kind": "struct",
+  "title": "yosoi::contracts::ContractId",
+  "signature": "pub struct ContractId",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi-contracts/src/ids.rs",
+    "lineStart": 46,
+    "lineEnd": 46,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-contracts/src/ids.rs#L46-L46"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/contracts.rs",
+    "lineStart": 6,
+    "lineEnd": 6,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi/src/contracts.rs#L6-L6"
+  },
+  "aliases": [
+    "yosoi::prelude::contracts::ContractId"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::contracts::ContractId::as_str",
+      "publicPath": "yosoi::contracts::ContractId::as_str",
+      "title": "yosoi::contracts::ContractId::as_str",
+      "kind": "function",
+      "signature": "pub fn as_str(&self) -> &str",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/ids.rs",
+        "lineStart": 46,
+        "lineEnd": 46,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-contracts/src/ids.rs#L46-L46"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::ContractId::clone",
+      "publicPath": "yosoi::contracts::ContractId::clone",
+      "title": "yosoi::contracts::ContractId::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> ContractId",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/ids.rs",
+        "lineStart": 46,
+        "lineEnd": 46,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-contracts/src/ids.rs#L46-L46"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::contracts::ContractId::cmp",
+      "publicPath": "yosoi::contracts::ContractId::cmp",
+      "title": "yosoi::contracts::ContractId::cmp",
+      "kind": "function",
+      "signature": "fn cmp(&self, other: &ContractId) -> $crate::cmp::Ordering",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/ids.rs",
+        "lineStart": 46,
+        "lineEnd": 46,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-contracts/src/ids.rs#L46-L46"
+      },
+      "examples": [],
+      "trait": "Ord"
+    },
+    {
+      "id": "function:yosoi::contracts::ContractId::deserialize",
+      "publicPath": "yosoi::contracts::ContractId::deserialize",
+      "title": "yosoi::contracts::ContractId::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<D>(deserializer: D) -> Result<Self, <D as >::Error> where D: Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/ids.rs",
+        "lineStart": 46,
+        "lineEnd": 46,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-contracts/src/ids.rs#L46-L46"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::contracts::ContractId::eq",
+      "publicPath": "yosoi::contracts::ContractId::eq",
+      "title": "yosoi::contracts::ContractId::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &ContractId) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/ids.rs",
+        "lineStart": 46,
+        "lineEnd": 46,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-contracts/src/ids.rs#L46-L46"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::contracts::ContractId::fmt",
+      "publicPath": "yosoi::contracts::ContractId::fmt",
+      "title": "yosoi::contracts::ContractId::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/ids.rs",
+        "lineStart": 46,
+        "lineEnd": 46,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-contracts/src/ids.rs#L46-L46"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::contracts::ContractId::fmt",
+      "publicPath": "yosoi::contracts::ContractId::fmt",
+      "title": "yosoi::contracts::ContractId::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/ids.rs",
+        "lineStart": 46,
+        "lineEnd": 46,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-contracts/src/ids.rs#L46-L46"
+      },
+      "examples": [],
+      "trait": "Display"
+    },
+    {
+      "id": "function:yosoi::contracts::ContractId::hash",
+      "publicPath": "yosoi::contracts::ContractId::hash",
+      "title": "yosoi::contracts::ContractId::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/ids.rs",
+        "lineStart": 46,
+        "lineEnd": 46,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-contracts/src/ids.rs#L46-L46"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::contracts::ContractId::partial_cmp",
+      "publicPath": "yosoi::contracts::ContractId::partial_cmp",
+      "title": "yosoi::contracts::ContractId::partial_cmp",
+      "kind": "function",
+      "signature": "fn partial_cmp(&self, other: &ContractId) -> $crate::option::Option<$crate::cmp::Ordering>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/ids.rs",
+        "lineStart": 46,
+        "lineEnd": 46,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-contracts/src/ids.rs#L46-L46"
+      },
+      "examples": [],
+      "trait": "PartialOrd"
+    },
+    {
+      "id": "function:yosoi::contracts::ContractId::serialize",
+      "publicPath": "yosoi::contracts::ContractId::serialize",
+      "title": "yosoi::contracts::ContractId::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/ids.rs",
+        "lineStart": 46,
+        "lineEnd": 46,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-contracts/src/ids.rs#L46-L46"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "function:yosoi::contracts::ContractId::try_new",
+      "publicPath": "yosoi::contracts::ContractId::try_new",
+      "title": "yosoi::contracts::ContractId::try_new",
+      "kind": "function",
+      "signature": "pub fn try_new(value: impl Into<String>) -> Result<Self, ContractSchemaError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contracts/src/ids.rs",
+        "lineStart": 46,
+        "lineEnd": 46,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-contracts/src/ids.rs#L46-L46"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/contracts/struct/contractid",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

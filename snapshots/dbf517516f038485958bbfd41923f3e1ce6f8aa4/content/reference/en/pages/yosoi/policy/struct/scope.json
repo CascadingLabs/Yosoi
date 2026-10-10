@@ -1,0 +1,159 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::policy::Scope",
+  "publicPath": "yosoi::policy::Scope",
+  "kind": "struct",
+  "title": "yosoi::policy::Scope",
+  "signature": "pub struct Scope",
+  "docs": "Host and path dimensions of Map's discovery scope.",
+  "source": {
+    "file": "crates/yosoi-policy/src/policy/map.rs",
+    "lineStart": 82,
+    "lineEnd": 87,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-policy/src/policy/map.rs#L82-L87"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/policy.rs",
+    "lineStart": 14,
+    "lineEnd": 14,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi/src/policy.rs#L14-L14"
+  },
+  "aliases": [
+    "yosoi::prelude::policy::Scope"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::policy::Scope::clone",
+      "publicPath": "yosoi::policy::Scope::clone",
+      "title": "yosoi::policy::Scope::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> Scope",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 80,
+        "lineEnd": 80,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-policy/src/policy/map.rs#L80-L80"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::policy::Scope::default",
+      "publicPath": "yosoi::policy::Scope::default",
+      "title": "yosoi::policy::Scope::default",
+      "kind": "function",
+      "signature": "fn default() -> Scope",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 80,
+        "lineEnd": 80,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-policy/src/policy/map.rs#L80-L80"
+      },
+      "examples": [],
+      "trait": "Default"
+    },
+    {
+      "id": "function:yosoi::policy::Scope::deserialize",
+      "publicPath": "yosoi::policy::Scope::deserialize",
+      "title": "yosoi::policy::Scope::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 80,
+        "lineEnd": 80,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-policy/src/policy/map.rs#L80-L80"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::policy::Scope::eq",
+      "publicPath": "yosoi::policy::Scope::eq",
+      "title": "yosoi::policy::Scope::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &Scope) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 80,
+        "lineEnd": 80,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-policy/src/policy/map.rs#L80-L80"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::policy::Scope::fmt",
+      "publicPath": "yosoi::policy::Scope::fmt",
+      "title": "yosoi::policy::Scope::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 80,
+        "lineEnd": 80,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-policy/src/policy/map.rs#L80-L80"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::policy::Scope::hosts",
+      "publicPath": "yosoi::policy::Scope::hosts",
+      "title": "yosoi::policy::Scope::hosts",
+      "kind": "struct_field",
+      "signature": "pub hosts: HostScope",
+      "docs": "Which hosts are in scope.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 84,
+        "lineEnd": 84,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-policy/src/policy/map.rs#L84-L84"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::policy::Scope::paths",
+      "publicPath": "yosoi::policy::Scope::paths",
+      "title": "yosoi::policy::Scope::paths",
+      "kind": "struct_field",
+      "signature": "pub paths: PathScope",
+      "docs": "Which paths on an in-scope host are in scope.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 86,
+        "lineEnd": 86,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-policy/src/policy/map.rs#L86-L86"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::Scope::serialize",
+      "publicPath": "yosoi::policy::Scope::serialize",
+      "title": "yosoi::policy::Scope::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/map.rs",
+        "lineStart": 80,
+        "lineEnd": 80,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-policy/src/policy/map.rs#L80-L80"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "47db750ab104ea879f44ea562f49e65703dc1638a55499898b54e17e405d55d9",
+  "slug": "yosoi/policy/struct/scope",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "47db750ab104ea879f44ea562f49e65703dc1638a55499898b54e17e405d55d9"
+}

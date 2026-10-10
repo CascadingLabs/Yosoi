@@ -1,0 +1,189 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::locators::RegionLineage",
+  "publicPath": "yosoi::locators::RegionLineage",
+  "kind": "struct",
+  "title": "yosoi::locators::RegionLineage",
+  "signature": "pub struct RegionLineage",
+  "docs": "Parent repeated-region identity and coordinate for one finding.",
+  "source": {
+    "file": "crates/yosoi-documents/src/outcome.rs",
+    "lineStart": 68,
+    "lineEnd": 72,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-documents/src/outcome.rs#L68-L72"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 9,
+    "lineEnd": 9,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi/src/locators.rs#L9-L9"
+  },
+  "aliases": [
+    "yosoi::prelude::locators::RegionLineage"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::locators::RegionLineage::clone",
+      "publicPath": "yosoi::locators::RegionLineage::clone",
+      "title": "yosoi::locators::RegionLineage::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> RegionLineage",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 66,
+        "lineEnd": 66,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-documents/src/outcome.rs#L66-L66"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::locators::RegionLineage::coordinate",
+      "publicPath": "yosoi::locators::RegionLineage::coordinate",
+      "title": "yosoi::locators::RegionLineage::coordinate",
+      "kind": "function",
+      "signature": "pub const fn coordinate(&self) -> &NativeCoordinate",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 93,
+        "lineEnd": 95,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-documents/src/outcome.rs#L93-L95"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::RegionLineage::deserialize",
+      "publicPath": "yosoi::locators::RegionLineage::deserialize",
+      "title": "yosoi::locators::RegionLineage::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 66,
+        "lineEnd": 66,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-documents/src/outcome.rs#L66-L66"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::locators::RegionLineage::eq",
+      "publicPath": "yosoi::locators::RegionLineage::eq",
+      "title": "yosoi::locators::RegionLineage::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &RegionLineage) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 66,
+        "lineEnd": 66,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-documents/src/outcome.rs#L66-L66"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::locators::RegionLineage::fmt",
+      "publicPath": "yosoi::locators::RegionLineage::fmt",
+      "title": "yosoi::locators::RegionLineage::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 66,
+        "lineEnd": 66,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-documents/src/outcome.rs#L66-L66"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::locators::RegionLineage::hash",
+      "publicPath": "yosoi::locators::RegionLineage::hash",
+      "title": "yosoi::locators::RegionLineage::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 66,
+        "lineEnd": 66,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-documents/src/outcome.rs#L66-L66"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::locators::RegionLineage::new",
+      "publicPath": "yosoi::locators::RegionLineage::new",
+      "title": "yosoi::locators::RegionLineage::new",
+      "kind": "function",
+      "signature": "pub const fn new(region_id: RegionId, region_ordinal: u64, coordinate: NativeCoordinate) -> Self",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 75,
+        "lineEnd": 85,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-documents/src/outcome.rs#L75-L85"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::RegionLineage::region_id",
+      "publicPath": "yosoi::locators::RegionLineage::region_id",
+      "title": "yosoi::locators::RegionLineage::region_id",
+      "kind": "function",
+      "signature": "pub const fn region_id(&self) -> &RegionId",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 87,
+        "lineEnd": 89,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-documents/src/outcome.rs#L87-L89"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::RegionLineage::region_ordinal",
+      "publicPath": "yosoi::locators::RegionLineage::region_ordinal",
+      "title": "yosoi::locators::RegionLineage::region_ordinal",
+      "kind": "function",
+      "signature": "pub const fn region_ordinal(&self) -> u64",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 90,
+        "lineEnd": 92,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-documents/src/outcome.rs#L90-L92"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::RegionLineage::serialize",
+      "publicPath": "yosoi::locators::RegionLineage::serialize",
+      "title": "yosoi::locators::RegionLineage::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/outcome.rs",
+        "lineStart": 66,
+        "lineEnd": 66,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-documents/src/outcome.rs#L66-L66"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "8647e5d2eaaa55640bef7aaf9442b26865315648a264ff249a215a59efb92492",
+  "slug": "yosoi/locators/struct/regionlineage",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "8647e5d2eaaa55640bef7aaf9442b26865315648a264ff249a215a59efb92492"
+}

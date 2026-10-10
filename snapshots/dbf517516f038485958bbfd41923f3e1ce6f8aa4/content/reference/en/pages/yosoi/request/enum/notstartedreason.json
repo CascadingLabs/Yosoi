@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::request::NotStartedReason",
+  "publicPath": "yosoi::request::NotStartedReason",
+  "kind": "enum",
+  "title": "yosoi::request::NotStartedReason",
+  "signature": "pub enum NotStartedReason",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi-engine/src/request/execution/outcome/failure.rs",
+    "lineStart": 180,
+    "lineEnd": 182,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-engine/src/request/execution/outcome/failure.rs#L180-L182"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/request.rs",
+    "lineStart": 20,
+    "lineEnd": 20,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi/src/request.rs#L20-L20"
+  },
+  "aliases": [
+    "yosoi::prelude::request::NotStartedReason"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::request::NotStartedReason::Cancelled",
+      "publicPath": "yosoi::request::NotStartedReason::Cancelled",
+      "title": "yosoi::request::NotStartedReason::Cancelled",
+      "kind": "variant",
+      "signature": "Cancelled",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/request/execution/outcome/failure.rs",
+        "lineStart": 181,
+        "lineEnd": 181,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-engine/src/request/execution/outcome/failure.rs#L181-L181"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::request::NotStartedReason::clone",
+      "publicPath": "yosoi::request::NotStartedReason::clone",
+      "title": "yosoi::request::NotStartedReason::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> NotStartedReason",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/request/execution/outcome/failure.rs",
+        "lineStart": 178,
+        "lineEnd": 178,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-engine/src/request/execution/outcome/failure.rs#L178-L178"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::request::NotStartedReason::eq",
+      "publicPath": "yosoi::request::NotStartedReason::eq",
+      "title": "yosoi::request::NotStartedReason::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &NotStartedReason) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/request/execution/outcome/failure.rs",
+        "lineStart": 178,
+        "lineEnd": 178,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-engine/src/request/execution/outcome/failure.rs#L178-L178"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::request::NotStartedReason::fmt",
+      "publicPath": "yosoi::request::NotStartedReason::fmt",
+      "title": "yosoi::request::NotStartedReason::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/request/execution/outcome/failure.rs",
+        "lineStart": 178,
+        "lineEnd": 178,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-engine/src/request/execution/outcome/failure.rs#L178-L178"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::request::NotStartedReason::serialize",
+      "publicPath": "yosoi::request::NotStartedReason::serialize",
+      "title": "yosoi::request::NotStartedReason::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/request/execution/outcome/failure.rs",
+        "lineStart": 178,
+        "lineEnd": 178,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-engine/src/request/execution/outcome/failure.rs#L178-L178"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/request/enum/notstartedreason",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

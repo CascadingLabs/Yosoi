@@ -1,0 +1,233 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::request::DecodingErrorCode",
+  "publicPath": "yosoi::request::DecodingErrorCode",
+  "kind": "enum",
+  "title": "yosoi::request::DecodingErrorCode",
+  "signature": "pub enum DecodingErrorCode",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi-web-capture/src/source/decode.rs",
+    "lineStart": 36,
+    "lineEnd": 45,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-web-capture/src/source/decode.rs#L36-L45"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/request.rs",
+    "lineStart": 13,
+    "lineEnd": 13,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi/src/request.rs#L13-L13"
+  },
+  "aliases": [
+    "yosoi::prelude::request::DecodingErrorCode"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::request::DecodingErrorCode::ArtifactMetadata",
+      "publicPath": "yosoi::request::DecodingErrorCode::ArtifactMetadata",
+      "title": "yosoi::request::DecodingErrorCode::ArtifactMetadata",
+      "kind": "variant",
+      "signature": "ArtifactMetadata",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-web-capture/src/source/decode.rs",
+        "lineStart": 44,
+        "lineEnd": 44,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-web-capture/src/source/decode.rs#L44-L44"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::DecodingErrorCode::ConflictingCharset",
+      "publicPath": "yosoi::request::DecodingErrorCode::ConflictingCharset",
+      "title": "yosoi::request::DecodingErrorCode::ConflictingCharset",
+      "kind": "variant",
+      "signature": "ConflictingCharset",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-web-capture/src/source/decode.rs",
+        "lineStart": 39,
+        "lineEnd": 39,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-web-capture/src/source/decode.rs#L39-L39"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::DecodingErrorCode::InvalidCharset",
+      "publicPath": "yosoi::request::DecodingErrorCode::InvalidCharset",
+      "title": "yosoi::request::DecodingErrorCode::InvalidCharset",
+      "kind": "variant",
+      "signature": "InvalidCharset",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-web-capture/src/source/decode.rs",
+        "lineStart": 38,
+        "lineEnd": 38,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-web-capture/src/source/decode.rs#L38-L38"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::DecodingErrorCode::InvalidSequence",
+      "publicPath": "yosoi::request::DecodingErrorCode::InvalidSequence",
+      "title": "yosoi::request::DecodingErrorCode::InvalidSequence",
+      "kind": "variant",
+      "signature": "InvalidSequence",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-web-capture/src/source/decode.rs",
+        "lineStart": 43,
+        "lineEnd": 43,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-web-capture/src/source/decode.rs#L43-L43"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::DecodingErrorCode::NotClassified",
+      "publicPath": "yosoi::request::DecodingErrorCode::NotClassified",
+      "title": "yosoi::request::DecodingErrorCode::NotClassified",
+      "kind": "variant",
+      "signature": "NotClassified",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-web-capture/src/source/decode.rs",
+        "lineStart": 37,
+        "lineEnd": 37,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-web-capture/src/source/decode.rs#L37-L37"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::DecodingErrorCode::UnsupportedCharset",
+      "publicPath": "yosoi::request::DecodingErrorCode::UnsupportedCharset",
+      "title": "yosoi::request::DecodingErrorCode::UnsupportedCharset",
+      "kind": "variant",
+      "signature": "UnsupportedCharset",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-web-capture/src/source/decode.rs",
+        "lineStart": 40,
+        "lineEnd": 40,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-web-capture/src/source/decode.rs#L40-L40"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::DecodingErrorCode::UnsupportedJsonUnicode",
+      "publicPath": "yosoi::request::DecodingErrorCode::UnsupportedJsonUnicode",
+      "title": "yosoi::request::DecodingErrorCode::UnsupportedJsonUnicode",
+      "kind": "variant",
+      "signature": "UnsupportedJsonUnicode",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-web-capture/src/source/decode.rs",
+        "lineStart": 42,
+        "lineEnd": 42,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-web-capture/src/source/decode.rs#L42-L42"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::DecodingErrorCode::UnsupportedUtf32",
+      "publicPath": "yosoi::request::DecodingErrorCode::UnsupportedUtf32",
+      "title": "yosoi::request::DecodingErrorCode::UnsupportedUtf32",
+      "kind": "variant",
+      "signature": "UnsupportedUtf32",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-web-capture/src/source/decode.rs",
+        "lineStart": 41,
+        "lineEnd": 41,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-web-capture/src/source/decode.rs#L41-L41"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::request::DecodingErrorCode::clone",
+      "publicPath": "yosoi::request::DecodingErrorCode::clone",
+      "title": "yosoi::request::DecodingErrorCode::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> DecodingErrorCode",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-web-capture/src/source/decode.rs",
+        "lineStart": 34,
+        "lineEnd": 34,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-web-capture/src/source/decode.rs#L34-L34"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::request::DecodingErrorCode::deserialize",
+      "publicPath": "yosoi::request::DecodingErrorCode::deserialize",
+      "title": "yosoi::request::DecodingErrorCode::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-web-capture/src/source/decode.rs",
+        "lineStart": 34,
+        "lineEnd": 34,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-web-capture/src/source/decode.rs#L34-L34"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::request::DecodingErrorCode::eq",
+      "publicPath": "yosoi::request::DecodingErrorCode::eq",
+      "title": "yosoi::request::DecodingErrorCode::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &DecodingErrorCode) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-web-capture/src/source/decode.rs",
+        "lineStart": 34,
+        "lineEnd": 34,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-web-capture/src/source/decode.rs#L34-L34"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::request::DecodingErrorCode::fmt",
+      "publicPath": "yosoi::request::DecodingErrorCode::fmt",
+      "title": "yosoi::request::DecodingErrorCode::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-web-capture/src/source/decode.rs",
+        "lineStart": 34,
+        "lineEnd": 34,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-web-capture/src/source/decode.rs#L34-L34"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::request::DecodingErrorCode::serialize",
+      "publicPath": "yosoi::request::DecodingErrorCode::serialize",
+      "title": "yosoi::request::DecodingErrorCode::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-web-capture/src/source/decode.rs",
+        "lineStart": 34,
+        "lineEnd": 34,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-web-capture/src/source/decode.rs#L34-L34"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/request/enum/decodingerrorcode",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

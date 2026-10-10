@@ -1,0 +1,189 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::policy::DocumentRequest",
+  "publicPath": "yosoi::policy::DocumentRequest",
+  "kind": "enum",
+  "title": "yosoi::policy::DocumentRequest",
+  "signature": "pub enum DocumentRequest",
+  "docs": "A public document view that an acquisition may request.",
+  "source": {
+    "file": "crates/yosoi-policy/src/policy/page.rs",
+    "lineStart": 13,
+    "lineEnd": 22,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-policy/src/policy/page.rs#L13-L22"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/policy.rs",
+    "lineStart": 12,
+    "lineEnd": 12,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi/src/policy.rs#L12-L12"
+  },
+  "aliases": [
+    "yosoi::prelude::policy::DocumentRequest"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::policy::DocumentRequest::AccessibilityTree",
+      "publicPath": "yosoi::policy::DocumentRequest::AccessibilityTree",
+      "title": "yosoi::policy::DocumentRequest::AccessibilityTree",
+      "kind": "variant",
+      "signature": "AccessibilityTree",
+      "docs": "The browser's accessibility tree.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/page.rs",
+        "lineStart": 19,
+        "lineEnd": 19,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-policy/src/policy/page.rs#L19-L19"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::policy::DocumentRequest::NetworkTree",
+      "publicPath": "yosoi::policy::DocumentRequest::NetworkTree",
+      "title": "yosoi::policy::DocumentRequest::NetworkTree",
+      "kind": "variant",
+      "signature": "NetworkTree",
+      "docs": "The network tree view.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/page.rs",
+        "lineStart": 21,
+        "lineEnd": 21,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-policy/src/policy/page.rs#L21-L21"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::policy::DocumentRequest::RenderedDom",
+      "publicPath": "yosoi::policy::DocumentRequest::RenderedDom",
+      "title": "yosoi::policy::DocumentRequest::RenderedDom",
+      "kind": "variant",
+      "signature": "RenderedDom",
+      "docs": "The browser's rendered DOM.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/page.rs",
+        "lineStart": 17,
+        "lineEnd": 17,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-policy/src/policy/page.rs#L17-L17"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::policy::DocumentRequest::ResponseDocument",
+      "publicPath": "yosoi::policy::DocumentRequest::ResponseDocument",
+      "title": "yosoi::policy::DocumentRequest::ResponseDocument",
+      "kind": "variant",
+      "signature": "ResponseDocument",
+      "docs": "The response document view.",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/page.rs",
+        "lineStart": 15,
+        "lineEnd": 15,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-policy/src/policy/page.rs#L15-L15"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::DocumentRequest::clone",
+      "publicPath": "yosoi::policy::DocumentRequest::clone",
+      "title": "yosoi::policy::DocumentRequest::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> DocumentRequest",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/page.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-policy/src/policy/page.rs#L11-L11"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::policy::DocumentRequest::deserialize",
+      "publicPath": "yosoi::policy::DocumentRequest::deserialize",
+      "title": "yosoi::policy::DocumentRequest::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/page.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-policy/src/policy/page.rs#L11-L11"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::policy::DocumentRequest::eq",
+      "publicPath": "yosoi::policy::DocumentRequest::eq",
+      "title": "yosoi::policy::DocumentRequest::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &DocumentRequest) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/page.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-policy/src/policy/page.rs#L11-L11"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::policy::DocumentRequest::fmt",
+      "publicPath": "yosoi::policy::DocumentRequest::fmt",
+      "title": "yosoi::policy::DocumentRequest::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/page.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-policy/src/policy/page.rs#L11-L11"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::policy::DocumentRequest::hash",
+      "publicPath": "yosoi::policy::DocumentRequest::hash",
+      "title": "yosoi::policy::DocumentRequest::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/page.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-policy/src/policy/page.rs#L11-L11"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::policy::DocumentRequest::serialize",
+      "publicPath": "yosoi::policy::DocumentRequest::serialize",
+      "title": "yosoi::policy::DocumentRequest::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-policy/src/policy/page.rs",
+        "lineStart": 11,
+        "lineEnd": 11,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-policy/src/policy/page.rs#L11-L11"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "8b3eef3c6d56787fdaa92928841ae20c1176f53302490858831b4cdede7fb5d8",
+  "slug": "yosoi/policy/enum/documentrequest",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "8b3eef3c6d56787fdaa92928841ae20c1176f53302490858831b4cdede7fb5d8"
+}

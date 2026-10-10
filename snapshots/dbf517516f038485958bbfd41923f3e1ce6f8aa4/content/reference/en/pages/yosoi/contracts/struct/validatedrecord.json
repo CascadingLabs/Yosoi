@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::contracts::ValidatedRecord",
+  "publicPath": "yosoi::contracts::ValidatedRecord",
+  "kind": "struct",
+  "title": "yosoi::contracts::ValidatedRecord",
+  "signature": "pub struct ValidatedRecord<T: Contract>",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi-contract-validation/src/outcome.rs",
+    "lineStart": 7,
+    "lineEnd": 10,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-contract-validation/src/outcome.rs#L7-L10"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/contracts.rs",
+    "lineStart": 10,
+    "lineEnd": 10,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi/src/contracts.rs#L10-L10"
+  },
+  "aliases": [
+    "yosoi::prelude::contracts::ValidatedRecord"
+  ],
+  "members": [
+    {
+      "id": "struct_field:yosoi::contracts::ValidatedRecord::candidate",
+      "publicPath": "yosoi::contracts::ValidatedRecord::candidate",
+      "title": "yosoi::contracts::ValidatedRecord::candidate",
+      "kind": "struct_field",
+      "signature": "pub candidate: <T as >::Candidate",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/outcome.rs",
+        "lineStart": 9,
+        "lineEnd": 9,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-contract-validation/src/outcome.rs#L9-L9"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::ValidatedRecord::fmt",
+      "publicPath": "yosoi::contracts::ValidatedRecord::fmt",
+      "title": "yosoi::contracts::ValidatedRecord::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/outcome.rs",
+        "lineStart": 13,
+        "lineEnd": 17,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-contract-validation/src/outcome.rs#L13-L17"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::contracts::ValidatedRecord::value",
+      "publicPath": "yosoi::contracts::ValidatedRecord::value",
+      "title": "yosoi::contracts::ValidatedRecord::value",
+      "kind": "struct_field",
+      "signature": "pub value: T",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-contract-validation/src/outcome.rs",
+        "lineStart": 8,
+        "lineEnd": 8,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-contract-validation/src/outcome.rs#L8-L8"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/contracts/struct/validatedrecord",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

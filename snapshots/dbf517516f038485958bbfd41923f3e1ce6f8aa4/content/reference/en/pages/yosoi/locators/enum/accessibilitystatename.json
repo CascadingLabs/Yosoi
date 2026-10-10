@@ -1,0 +1,206 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::locators::AccessibilityStateName",
+  "publicPath": "yosoi::locators::AccessibilityStateName",
+  "kind": "enum",
+  "title": "yosoi::locators::AccessibilityStateName",
+  "signature": "pub enum AccessibilityStateName",
+  "docs": "Scalar accessibility states supported by the static AX schema v1.",
+  "source": {
+    "file": "crates/yosoi-documents/src/query.rs",
+    "lineStart": 31,
+    "lineEnd": 34,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-documents/src/query.rs#L31-L34"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 4,
+    "lineEnd": 4,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi/src/locators.rs#L4-L4"
+  },
+  "aliases": [
+    "yosoi::prelude::locators::AccessibilityStateName"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::locators::AccessibilityStateName::Expanded",
+      "publicPath": "yosoi::locators::AccessibilityStateName::Expanded",
+      "title": "yosoi::locators::AccessibilityStateName::Expanded",
+      "kind": "variant",
+      "signature": "Expanded",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query.rs",
+        "lineStart": 32,
+        "lineEnd": 32,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-documents/src/query.rs#L32-L32"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::AccessibilityStateName::Focused",
+      "publicPath": "yosoi::locators::AccessibilityStateName::Focused",
+      "title": "yosoi::locators::AccessibilityStateName::Focused",
+      "kind": "variant",
+      "signature": "Focused",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query.rs",
+        "lineStart": 33,
+        "lineEnd": 33,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-documents/src/query.rs#L33-L33"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::AccessibilityStateName::as_str",
+      "publicPath": "yosoi::locators::AccessibilityStateName::as_str",
+      "title": "yosoi::locators::AccessibilityStateName::as_str",
+      "kind": "function",
+      "signature": "pub const fn as_str(self) -> &'static str",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query.rs",
+        "lineStart": 37,
+        "lineEnd": 42,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-documents/src/query.rs#L37-L42"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::AccessibilityStateName::clone",
+      "publicPath": "yosoi::locators::AccessibilityStateName::clone",
+      "title": "yosoi::locators::AccessibilityStateName::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> AccessibilityStateName",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query.rs",
+        "lineStart": 29,
+        "lineEnd": 29,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-documents/src/query.rs#L29-L29"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::locators::AccessibilityStateName::cmp",
+      "publicPath": "yosoi::locators::AccessibilityStateName::cmp",
+      "title": "yosoi::locators::AccessibilityStateName::cmp",
+      "kind": "function",
+      "signature": "fn cmp(&self, other: &AccessibilityStateName) -> $crate::cmp::Ordering",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query.rs",
+        "lineStart": 29,
+        "lineEnd": 29,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-documents/src/query.rs#L29-L29"
+      },
+      "examples": [],
+      "trait": "Ord"
+    },
+    {
+      "id": "function:yosoi::locators::AccessibilityStateName::deserialize",
+      "publicPath": "yosoi::locators::AccessibilityStateName::deserialize",
+      "title": "yosoi::locators::AccessibilityStateName::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query.rs",
+        "lineStart": 29,
+        "lineEnd": 29,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-documents/src/query.rs#L29-L29"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::locators::AccessibilityStateName::eq",
+      "publicPath": "yosoi::locators::AccessibilityStateName::eq",
+      "title": "yosoi::locators::AccessibilityStateName::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &AccessibilityStateName) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query.rs",
+        "lineStart": 29,
+        "lineEnd": 29,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-documents/src/query.rs#L29-L29"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::locators::AccessibilityStateName::fmt",
+      "publicPath": "yosoi::locators::AccessibilityStateName::fmt",
+      "title": "yosoi::locators::AccessibilityStateName::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query.rs",
+        "lineStart": 29,
+        "lineEnd": 29,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-documents/src/query.rs#L29-L29"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::locators::AccessibilityStateName::hash",
+      "publicPath": "yosoi::locators::AccessibilityStateName::hash",
+      "title": "yosoi::locators::AccessibilityStateName::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query.rs",
+        "lineStart": 29,
+        "lineEnd": 29,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-documents/src/query.rs#L29-L29"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::locators::AccessibilityStateName::partial_cmp",
+      "publicPath": "yosoi::locators::AccessibilityStateName::partial_cmp",
+      "title": "yosoi::locators::AccessibilityStateName::partial_cmp",
+      "kind": "function",
+      "signature": "fn partial_cmp(&self, other: &AccessibilityStateName) -> $crate::option::Option<$crate::cmp::Ordering>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query.rs",
+        "lineStart": 29,
+        "lineEnd": 29,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-documents/src/query.rs#L29-L29"
+      },
+      "examples": [],
+      "trait": "PartialOrd"
+    },
+    {
+      "id": "function:yosoi::locators::AccessibilityStateName::serialize",
+      "publicPath": "yosoi::locators::AccessibilityStateName::serialize",
+      "title": "yosoi::locators::AccessibilityStateName::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-documents/src/query.rs",
+        "lineStart": 29,
+        "lineEnd": 29,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-documents/src/query.rs#L29-L29"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "f916e14d3f1347ff01137fcebd45d595af75db8773ed501af18cfa95c3123de1",
+  "slug": "yosoi/locators/enum/accessibilitystatename",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "f916e14d3f1347ff01137fcebd45d595af75db8773ed501af18cfa95c3123de1"
+}

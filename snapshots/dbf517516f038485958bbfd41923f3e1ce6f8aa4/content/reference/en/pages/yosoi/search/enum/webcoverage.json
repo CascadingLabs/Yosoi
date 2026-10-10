@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::search::WebCoverage",
+  "publicPath": "yosoi::search::WebCoverage",
+  "kind": "enum",
+  "title": "yosoi::search::WebCoverage",
+  "signature": "pub enum WebCoverage",
+  "docs": "Completeness of organic web-result extraction.",
+  "source": {
+    "file": "crates/yosoi-engine/src/search/result/types.rs",
+    "lineStart": 156,
+    "lineEnd": 159,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-engine/src/search/result/types.rs#L156-L159"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/search.rs",
+    "lineStart": 13,
+    "lineEnd": 13,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi/src/search.rs#L13-L13"
+  },
+  "aliases": [
+    "yosoi::prelude::search::WebCoverage"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::search::WebCoverage::Complete",
+      "publicPath": "yosoi::search::WebCoverage::Complete",
+      "title": "yosoi::search::WebCoverage::Complete",
+      "kind": "variant",
+      "signature": "Complete",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/result/types.rs",
+        "lineStart": 157,
+        "lineEnd": 157,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-engine/src/search/result/types.rs#L157-L157"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::search::WebCoverage::Partial",
+      "publicPath": "yosoi::search::WebCoverage::Partial",
+      "title": "yosoi::search::WebCoverage::Partial",
+      "kind": "variant",
+      "signature": "Partial",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/result/types.rs",
+        "lineStart": 158,
+        "lineEnd": 158,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-engine/src/search/result/types.rs#L158-L158"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::search::WebCoverage::clone",
+      "publicPath": "yosoi::search::WebCoverage::clone",
+      "title": "yosoi::search::WebCoverage::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> WebCoverage",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/result/types.rs",
+        "lineStart": 154,
+        "lineEnd": 154,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-engine/src/search/result/types.rs#L154-L154"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::search::WebCoverage::eq",
+      "publicPath": "yosoi::search::WebCoverage::eq",
+      "title": "yosoi::search::WebCoverage::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &WebCoverage) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/result/types.rs",
+        "lineStart": 154,
+        "lineEnd": 154,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-engine/src/search/result/types.rs#L154-L154"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::search::WebCoverage::fmt",
+      "publicPath": "yosoi::search::WebCoverage::fmt",
+      "title": "yosoi::search::WebCoverage::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/result/types.rs",
+        "lineStart": 154,
+        "lineEnd": 154,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-engine/src/search/result/types.rs#L154-L154"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::search::WebCoverage::serialize",
+      "publicPath": "yosoi::search::WebCoverage::serialize",
+      "title": "yosoi::search::WebCoverage::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/result/types.rs",
+        "lineStart": 154,
+        "lineEnd": 154,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-engine/src/search/result/types.rs#L154-L154"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "80b7dc140b16bedfe4c384b254655c101dfa3888f7b539d44a7012c1781a0851",
+  "slug": "yosoi/search/enum/webcoverage",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "80b7dc140b16bedfe4c384b254655c101dfa3888f7b539d44a7012c1781a0851"
+}

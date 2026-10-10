@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::contracts::ExtractionDiagnostic",
+  "publicPath": "yosoi::contracts::ExtractionDiagnostic",
+  "kind": "enum",
+  "title": "yosoi::contracts::ExtractionDiagnostic",
+  "signature": "pub enum ExtractionDiagnostic",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi-extractor/src/lib.rs",
+    "lineStart": 116,
+    "lineEnd": 118,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-extractor/src/lib.rs#L116-L118"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/contracts.rs",
+    "lineStart": 8,
+    "lineEnd": 8,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi/src/contracts.rs#L8-L8"
+  },
+  "aliases": [
+    "yosoi::prelude::contracts::ExtractionDiagnostic"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::contracts::ExtractionDiagnostic::IncompatibleLineage",
+      "publicPath": "yosoi::contracts::ExtractionDiagnostic::IncompatibleLineage",
+      "title": "yosoi::contracts::ExtractionDiagnostic::IncompatibleLineage",
+      "kind": "variant",
+      "signature": "IncompatibleLineage { output: yosoi_documents::OutputId }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-extractor/src/lib.rs",
+        "lineStart": 117,
+        "lineEnd": 117,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-extractor/src/lib.rs#L117-L117"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::ExtractionDiagnostic::clone",
+      "publicPath": "yosoi::contracts::ExtractionDiagnostic::clone",
+      "title": "yosoi::contracts::ExtractionDiagnostic::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> ExtractionDiagnostic",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-extractor/src/lib.rs",
+        "lineStart": 114,
+        "lineEnd": 114,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-extractor/src/lib.rs#L114-L114"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::contracts::ExtractionDiagnostic::eq",
+      "publicPath": "yosoi::contracts::ExtractionDiagnostic::eq",
+      "title": "yosoi::contracts::ExtractionDiagnostic::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &ExtractionDiagnostic) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-extractor/src/lib.rs",
+        "lineStart": 114,
+        "lineEnd": 114,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-extractor/src/lib.rs#L114-L114"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::contracts::ExtractionDiagnostic::fmt",
+      "publicPath": "yosoi::contracts::ExtractionDiagnostic::fmt",
+      "title": "yosoi::contracts::ExtractionDiagnostic::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-extractor/src/lib.rs",
+        "lineStart": 114,
+        "lineEnd": 114,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-extractor/src/lib.rs#L114-L114"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::contracts::ExtractionDiagnostic::serialize",
+      "publicPath": "yosoi::contracts::ExtractionDiagnostic::serialize",
+      "title": "yosoi::contracts::ExtractionDiagnostic::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-extractor/src/lib.rs",
+        "lineStart": 114,
+        "lineEnd": 114,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-extractor/src/lib.rs#L114-L114"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/contracts/enum/extractiondiagnostic",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

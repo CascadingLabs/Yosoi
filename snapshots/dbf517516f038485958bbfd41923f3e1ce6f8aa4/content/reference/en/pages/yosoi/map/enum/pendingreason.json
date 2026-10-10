@@ -1,0 +1,157 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::map::PendingReason",
+  "publicPath": "yosoi::map::PendingReason",
+  "kind": "enum",
+  "title": "yosoi::map::PendingReason",
+  "signature": "pub enum PendingReason",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi-map/src/lib.rs",
+    "lineStart": 126,
+    "lineEnd": 131,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-map/src/lib.rs#L126-L131"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/map.rs",
+    "lineStart": 5,
+    "lineEnd": 5,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi/src/map.rs#L5-L5"
+  },
+  "aliases": [
+    "yosoi::prelude::map::PendingReason"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::map::PendingReason::AwaitingExploration",
+      "publicPath": "yosoi::map::PendingReason::AwaitingExploration",
+      "title": "yosoi::map::PendingReason::AwaitingExploration",
+      "kind": "variant",
+      "signature": "AwaitingExploration",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 127,
+        "lineEnd": 127,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-map/src/lib.rs#L127-L127"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::PendingReason::DepthBoundary",
+      "publicPath": "yosoi::map::PendingReason::DepthBoundary",
+      "title": "yosoi::map::PendingReason::DepthBoundary",
+      "kind": "variant",
+      "signature": "DepthBoundary",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 128,
+        "lineEnd": 128,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-map/src/lib.rs#L128-L128"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::PendingReason::OperationStopped",
+      "publicPath": "yosoi::map::PendingReason::OperationStopped",
+      "title": "yosoi::map::PendingReason::OperationStopped",
+      "kind": "variant",
+      "signature": "OperationStopped",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 129,
+        "lineEnd": 129,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-map/src/lib.rs#L129-L129"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::map::PendingReason::ProbeCandidate",
+      "publicPath": "yosoi::map::PendingReason::ProbeCandidate",
+      "title": "yosoi::map::PendingReason::ProbeCandidate",
+      "kind": "variant",
+      "signature": "ProbeCandidate",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 130,
+        "lineEnd": 130,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-map/src/lib.rs#L130-L130"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::map::PendingReason::clone",
+      "publicPath": "yosoi::map::PendingReason::clone",
+      "title": "yosoi::map::PendingReason::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> PendingReason",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 124,
+        "lineEnd": 124,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-map/src/lib.rs#L124-L124"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::map::PendingReason::eq",
+      "publicPath": "yosoi::map::PendingReason::eq",
+      "title": "yosoi::map::PendingReason::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &PendingReason) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 124,
+        "lineEnd": 124,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-map/src/lib.rs#L124-L124"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::map::PendingReason::fmt",
+      "publicPath": "yosoi::map::PendingReason::fmt",
+      "title": "yosoi::map::PendingReason::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 124,
+        "lineEnd": 124,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-map/src/lib.rs#L124-L124"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::map::PendingReason::serialize",
+      "publicPath": "yosoi::map::PendingReason::serialize",
+      "title": "yosoi::map::PendingReason::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-map/src/lib.rs",
+        "lineStart": 124,
+        "lineEnd": 124,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-map/src/lib.rs#L124-L124"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/map/enum/pendingreason",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

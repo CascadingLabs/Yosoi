@@ -1,0 +1,157 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::search::SearchFeature",
+  "publicPath": "yosoi::search::SearchFeature",
+  "kind": "enum",
+  "title": "yosoi::search::SearchFeature",
+  "signature": "pub enum SearchFeature",
+  "docs": "A typed rich placement. These never consume an organic web rank.",
+  "source": {
+    "file": "crates/yosoi-engine/src/search/result/types.rs",
+    "lineStart": 193,
+    "lineEnd": 213,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-engine/src/search/result/types.rs#L193-L213"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/search.rs",
+    "lineStart": 10,
+    "lineEnd": 10,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi/src/search.rs#L10-L10"
+  },
+  "aliases": [
+    "yosoi::prelude::search::SearchFeature"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::search::SearchFeature::Answer",
+      "publicPath": "yosoi::search::SearchFeature::Answer",
+      "title": "yosoi::search::SearchFeature::Answer",
+      "kind": "variant",
+      "signature": "Answer { placement_index: std::num::NonZeroU16, text: String, citations: Vec<SearchResultUrl> }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/result/types.rs",
+        "lineStart": 199,
+        "lineEnd": 203,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-engine/src/search/result/types.rs#L199-L203"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::search::SearchFeature::ImageGallery",
+      "publicPath": "yosoi::search::SearchFeature::ImageGallery",
+      "title": "yosoi::search::SearchFeature::ImageGallery",
+      "kind": "variant",
+      "signature": "ImageGallery { placement_index: std::num::NonZeroU16, images: Vec<ImageResult> }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/result/types.rs",
+        "lineStart": 204,
+        "lineEnd": 207,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-engine/src/search/result/types.rs#L204-L207"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::search::SearchFeature::LocalPack",
+      "publicPath": "yosoi::search::SearchFeature::LocalPack",
+      "title": "yosoi::search::SearchFeature::LocalPack",
+      "kind": "variant",
+      "signature": "LocalPack { placement_index: std::num::NonZeroU16, places: Vec<LocalPlace>, map_url: Option<SearchResultUrl> }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/result/types.rs",
+        "lineStart": 208,
+        "lineEnd": 212,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-engine/src/search/result/types.rs#L208-L212"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::search::SearchFeature::Sponsored",
+      "publicPath": "yosoi::search::SearchFeature::Sponsored",
+      "title": "yosoi::search::SearchFeature::Sponsored",
+      "kind": "variant",
+      "signature": "Sponsored { placement_index: std::num::NonZeroU16, destination: SearchResultUrl, label: Option<String> }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/result/types.rs",
+        "lineStart": 194,
+        "lineEnd": 198,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-engine/src/search/result/types.rs#L194-L198"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::search::SearchFeature::clone",
+      "publicPath": "yosoi::search::SearchFeature::clone",
+      "title": "yosoi::search::SearchFeature::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> SearchFeature",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/result/types.rs",
+        "lineStart": 191,
+        "lineEnd": 191,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-engine/src/search/result/types.rs#L191-L191"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::search::SearchFeature::eq",
+      "publicPath": "yosoi::search::SearchFeature::eq",
+      "title": "yosoi::search::SearchFeature::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &SearchFeature) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/result/types.rs",
+        "lineStart": 191,
+        "lineEnd": 191,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-engine/src/search/result/types.rs#L191-L191"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::search::SearchFeature::fmt",
+      "publicPath": "yosoi::search::SearchFeature::fmt",
+      "title": "yosoi::search::SearchFeature::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/result/types.rs",
+        "lineStart": 216,
+        "lineEnd": 251,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-engine/src/search/result/types.rs#L216-L251"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::search::SearchFeature::serialize",
+      "publicPath": "yosoi::search::SearchFeature::serialize",
+      "title": "yosoi::search::SearchFeature::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi-engine/src/search/result/types.rs",
+        "lineStart": 191,
+        "lineEnd": 191,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/dbf517516f038485958bbfd41923f3e1ce6f8aa4/crates/yosoi-engine/src/search/result/types.rs#L191-L191"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "01a1acc4bf40ad27feba919f6bd29c54e3f14e97443543d3dbd9f25a33d81153",
+  "slug": "yosoi/search/enum/searchfeature",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "01a1acc4bf40ad27feba919f6bd29c54e3f14e97443543d3dbd9f25a33d81153"
+}
