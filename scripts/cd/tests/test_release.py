@@ -772,6 +772,8 @@ class ArtifactTests(unittest.TestCase):
         abi="cp314t",
         platform="win_amd64",
         python_tag="cp314",
+        license_file="LICENSE",
+        include_license=True,
     ):
         wheel = directory / f"yosoi-{version}-{python_tag}-{abi}-{platform}.whl"
         with zipfile.ZipFile(wheel, "w") as archive:
@@ -787,10 +789,17 @@ class ArtifactTests(unittest.TestCase):
                 ),
             )
         with tarfile.open(directory / f"yosoi-{version}.tar.gz", "w:gz") as archive:
-            metadata = f"Name: yosoi\nVersion: {version}\n".encode()
+            metadata = (
+                f"Name: yosoi\nVersion: {version}\nLicense-File: {license_file}\n"
+            ).encode()
             info = tarfile.TarInfo(f"yosoi-{version}/PKG-INFO")
             info.size = len(metadata)
             archive.addfile(info, io.BytesIO(metadata))
+            if include_license:
+                content = b"Apache License, Version 2.0\n"
+                info = tarfile.TarInfo(f"yosoi-{version}/{license_file}")
+                info.size = len(content)
+                archive.addfile(info, io.BytesIO(content))
         return wheel
 
     def release(self):
@@ -812,6 +821,21 @@ class ArtifactTests(unittest.TestCase):
             root = Path(directory)
             self.fixture(root)
             release.verify_wheels(root, self.release())
+
+    def test_sdist_declared_license_must_exist(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.fixture(root, include_license=False)
+            with self.assertRaisesRegex(ValueError, "missing license file: LICENSE"):
+                release.verify_wheels(root, self.release())
+
+    def test_sdist_license_cannot_escape_archive_root(self):
+        for path in ("../LICENSE", "/LICENSE"):
+            with self.subTest(path=path), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                self.fixture(root, license_file=path, include_license=False)
+                with self.assertRaisesRegex(ValueError, "Invalid.*license path"):
+                    release.verify_wheels(root, self.release())
 
     def test_stable_wheel_tags_are_verified_exactly(self):
         for python_tag, abi in (("cp312", "abi3"), ("cp315", "abi3.abi3t")):
