@@ -2,7 +2,7 @@
 //!
 //! These tests require Chromium. Run serially:
 //!
-//!     cargo test -p void_crawl_core --test environment_snapshot --
+//!     cargo test -p yosoi-browser-core --test environment_snapshot --
 //! --test-threads=1
 #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
 
@@ -50,7 +50,7 @@ async fn normal_headless_snapshot_contains_effective_environment() {
         );
     }
 
-    assert_eq!(snapshot.controller.name, "void_crawl_core");
+    assert_eq!(snapshot.controller.name, "yosoi-browser-core");
     assert_ne!(snapshot.controller.version.as_str(), "");
     assert!(
         snapshot.renderer.product.contains("Chrome")

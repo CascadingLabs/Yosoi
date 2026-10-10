@@ -3,7 +3,7 @@
 //!
 //! Requires local Chromium. Run serially:
 //!
-//!     cargo test -p void_crawl_core --test context_isolation --
+//!     cargo test -p yosoi-browser-core --test context_isolation --
 //! --test-threads=1
 #![allow(
     clippy::absolute_paths,

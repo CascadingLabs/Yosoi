@@ -3,8 +3,8 @@
 //!
 //! Run it:
 //!
-//!     cargo run -p void_crawl_core --example download_and_scan
-//!     cargo run -p void_crawl_core --example download_and_scan -- https://arxiv.org/pdf/2005.14165
+//!     cargo run -p yosoi-browser-core --example download_and_scan
+//!     cargo run -p yosoi-browser-core --example download_and_scan -- https://arxiv.org/pdf/2005.14165
 //!
 //! The file is downloaded into a throwaway *quarantine* directory, scanned, and
 //! only copied next to you (`./downloads/`) if it comes back clean — exactly

@@ -1407,6 +1407,7 @@ version = "0.1.0-rc.6"
 dependencies = [
  "chrono",
  "encoding_rs",
+ "regex",
  "serde",
  "serde_json",
  "sha2",
@@ -1423,7 +1424,7 @@ dependencies = [
  "bytes",
  "chrono",
  "futures-util",
- "sha2",
+ "serde",
  "thiserror",
  "tokio",
  "tokio-util",

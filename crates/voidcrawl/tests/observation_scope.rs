@@ -2,7 +2,7 @@
 //!
 //! These tests use only a loopback HTTP fixture. Run serially:
 //!
-//!     cargo test -p void_crawl_core --test observation_scope --
+//!     cargo test -p yosoi-browser-core --test observation_scope --
 //! --test-threads=1
 #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
 

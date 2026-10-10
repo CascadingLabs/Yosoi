@@ -321,40 +321,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4e7648175b45a9a48536d676f68d918270699102aa8dab5496df06904c914600"
 
 [[package]]
-name = "chromiumoxide"
-version = "0.9.1"
-dependencies = [
- "async-tungstenite",
- "base64 0.22.1",
- "chromiumoxide_cdp",
- "chromiumoxide_types",
- "dunce",
- "fnv",
- "futures",
- "futures-timer",
- "pin-project-lite",
- "reqwest",
- "serde",
- "serde_json",
- "thiserror",
- "tokio",
- "tracing",
- "url",
- "which",
- "windows-registry",
-]
-
-[[package]]
-name = "chromiumoxide_cdp"
-version = "0.10.0-yosoi.m153.1"
-dependencies = [
- "chromiumoxide_pdl",
- "chromiumoxide_types",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "chromiumoxide_pdl"
 version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3073,31 +3039,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
-name = "void_crawl_core"
-version = "0.1.0-rc.6"
-dependencies = [
- "base64 0.22.1",
- "chromiumoxide",
- "flate2",
- "futures",
- "globset",
- "image",
- "infer",
- "memchr",
- "notify",
- "reqwest",
- "rustls",
- "schemars",
- "serde",
- "serde_json",
- "tempfile",
- "thiserror",
- "tokio",
- "uuid",
- "yosoi-types",
-]
-
-[[package]]
 name = "walkdir"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3646,12 +3587,71 @@ dependencies = [
  "tokio",
  "tokio-util",
  "url",
- "void_crawl_core",
  "wreq",
+ "yosoi-browser-core",
  "yosoi-documents",
  "yosoi-types",
  "yosoi-web-capture",
  "yosoi-web-capture-direct-http",
+]
+
+[[package]]
+name = "yosoi-browser-core"
+version = "0.1.0-rc.6"
+dependencies = [
+ "base64 0.22.1",
+ "flate2",
+ "futures",
+ "globset",
+ "image",
+ "infer",
+ "memchr",
+ "notify",
+ "reqwest",
+ "rustls",
+ "schemars",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+ "tokio",
+ "uuid",
+ "yosoi-chromiumoxide",
+ "yosoi-types",
+]
+
+[[package]]
+name = "yosoi-chromiumoxide"
+version = "0.9.1-yosoi.1"
+dependencies = [
+ "async-tungstenite",
+ "base64 0.22.1",
+ "chromiumoxide_types",
+ "dunce",
+ "fnv",
+ "futures",
+ "futures-timer",
+ "pin-project-lite",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "url",
+ "which",
+ "windows-registry",
+ "yosoi-chromiumoxide-cdp",
+]
+
+[[package]]
+name = "yosoi-chromiumoxide-cdp"
+version = "0.10.0-yosoi.m153.1"
+dependencies = [
+ "chromiumoxide_pdl",
+ "chromiumoxide_types",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -3848,7 +3848,7 @@ dependencies = [
  "tokio",
  "tokio-util",
  "url",
- "void_crawl_core",
+ "yosoi-browser-core",
  "yosoi-types",
 ]
 

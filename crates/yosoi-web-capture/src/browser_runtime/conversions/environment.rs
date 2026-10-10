@@ -4,6 +4,18 @@ use crate::VoidCrawlAdapterError;
 use void_crawl_core as provider;
 use yosoi_types::{Producer, ProducerId, ProducerVersion};
 
+fn controller_version(
+    value: &provider::ControllerVersion,
+) -> Result<Producer, VoidCrawlAdapterError> {
+    if value.name != provider::VOID_CRAWL_PACKAGE_NAME
+        || value.version != provider::VOID_CRAWL_VERSION
+    {
+        return Err(VoidCrawlAdapterError::InvalidEnvironment);
+    }
+    // Registry package renames must not alter persisted producer identities.
+    crate::void_crawl_adapter_producer().map_err(|_| VoidCrawlAdapterError::InvalidEnvironment)
+}
+
 pub(super) const fn environment_reason(
     value: provider::EnvironmentUnavailableReason,
 ) -> &'static str {
@@ -249,12 +261,7 @@ pub fn environment(
     if !instrumentation_agrees(value.instrumentation, expected) {
         return Err(VoidCrawlAdapterError::CapabilityMismatch);
     }
-    let controller = Producer::new(
-        ProducerId::new(format!("com.cascadinglabs.{}", value.controller.name))
-            .map_err(|_| VoidCrawlAdapterError::InvalidEnvironment)?,
-        ProducerVersion::new(value.controller.version)
-            .map_err(|_| VoidCrawlAdapterError::InvalidEnvironment)?,
-    );
+    let controller = controller_version(&value.controller)?;
     let renderer = Producer::new(
         ProducerId::new("org.chromium.browser")
             .map_err(|_| VoidCrawlAdapterError::InvalidEnvironment)?,
@@ -292,7 +299,36 @@ pub fn environment(
 
 #[cfg(test)]
 mod tests {
-    use super::device_scale_factor_matches;
+    use std::error::Error;
+
+    use super::{controller_version, device_scale_factor_matches, provider};
+
+    #[test]
+    #[allow(clippy::panic_in_result_fn)]
+    fn registry_package_identity_keeps_the_established_producer() -> Result<(), Box<dyn Error>> {
+        let controller = controller_version(&provider::ControllerVersion {
+            name: provider::VOID_CRAWL_PACKAGE_NAME.to_string(),
+            version: provider::VOID_CRAWL_VERSION.to_string(),
+        })?;
+        assert_eq!(
+            controller.id().as_str(),
+            "com.cascadinglabs.void_crawl_core"
+        );
+        assert_eq!(controller.version().as_str(), provider::VOID_CRAWL_VERSION);
+        for (name, version) in [
+            ("foreign-package", provider::VOID_CRAWL_VERSION),
+            (provider::VOID_CRAWL_PACKAGE_NAME, "0.0.0"),
+        ] {
+            assert!(
+                controller_version(&provider::ControllerVersion {
+                    name: name.to_string(),
+                    version: version.to_string(),
+                })
+                .is_err()
+            );
+        }
+        Ok(())
+    }
 
     #[test]
     fn device_scale_factor_allows_browser_float_round_trip_only() {

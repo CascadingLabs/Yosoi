@@ -4,6 +4,8 @@
 
 /// Package version recorded by Yosoi's certified VoidCrawl adapter identity.
 pub const VOID_CRAWL_VERSION: &str = env!("CARGO_PKG_VERSION");
+/// Registry package identity, independent of the stable Rust library import.
+pub const VOID_CRAWL_PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");
 
 pub mod active_navigation;
 pub mod ax;

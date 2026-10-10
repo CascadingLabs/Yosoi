@@ -12,8 +12,8 @@
 [package]
 edition = "2024"
 rust-version = "1.85"
-name = "chromiumoxide"
-version = "0.9.1"
+name = "yosoi-chromiumoxide"
+version = "0.9.1-yosoi.1"
 authors = ["Matthias Seitz <matthias.seitz@outlook.de>"]
 build = false
 autolib = false
@@ -36,7 +36,11 @@ categories = [
     "development-tools::testing",
 ]
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/mattsse/chromiumoxide"
+repository = "https://github.com/CascadingLabs/Yosoi"
+
+[package.metadata.yosoi]
+upstream-package = "chromiumoxide"
+upstream-version = "0.9.1"
 
 [features]
 bytes = ["dep:bytes"]
@@ -138,7 +142,8 @@ features = ["serde"]
 optional = true
 
 [dependencies.chromiumoxide_cdp]
-version = "0.10.0-yosoi.m153.1"
+package = "yosoi-chromiumoxide-cdp"
+version = "=0.10.0-yosoi.m153.1"
 path = "../chromiumoxide_cdp"
 
 [dependencies.chromiumoxide_fetcher]

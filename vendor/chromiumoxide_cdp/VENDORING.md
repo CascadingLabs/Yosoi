@@ -50,7 +50,7 @@ After refreshing every PDL input from the immutable sources above and updating
 the version/revision metadata, regenerate and refresh the manifests:
 
 ```bash
-CARGO_BUILD_JOBS=1 cargo run -p chromiumoxide_cdp --example generate --offline --locked
+CARGO_BUILD_JOBS=1 cargo run -p yosoi-chromiumoxide-cdp --example generate --offline --locked
 (
   cd vendor/chromiumoxide_cdp
   find pdl -type f -name '*.pdl' -print0 | sort -z | xargs -0 sha256sum > PDL.SHA256

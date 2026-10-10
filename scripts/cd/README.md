@@ -127,13 +127,19 @@ not the immutable source tag or any verification/publication gates. See
   `release-cd.yml`, environment `pypi`. The GitHub environment already exists;
   its existence does not prove the PyPI publisher is configured. No PyPI API
   token is required. OIDC is limited to the PyPI publication job.
-- The current Rust browser dependency chain is not registry-publishable:
-  `yosoi-web-capture` depends on `void_crawl_core`, marked `publish = false`.
-  Its vendored Chromiumoxide/CDP chain also needs an approved distribution
-  strategy before registry publication. Optional Cargo dependencies still
-  require registry availability. CD fails before **any** upload until these
-  prerequisites are resolved; it does not silently remove browser features or
-  publish patched upstream packages under upstream names.
+- Users add the `yosoi` crate; Cargo resolves its supporting packages. The
+  browser chain publishes as `yosoi-browser-core`, `yosoi-chromiumoxide`, and
+  `yosoi-chromiumoxide-cdp`. Existing Rust import names remain available through
+  explicit library names and dependency aliases. Controller snapshot metadata
+  identifies the browser core's new package name. Browser launch behavior and
+  the checked-in CDP schema are unchanged; packaging does not certify a new
+  browser/controller tuple.
+- The two vendored browser forks are explicitly allowlisted by path and package
+  name. Other vendored dependencies still block publication. Forks retain
+  independent versions, licenses, and upstream attribution; the publisher uses
+  each manifest's version and a shared target directory, publishing dependencies
+  before their consumers. Chromiumoxide stays outside the SDK workspace, so
+  this packaging change does not add upstream browser tests to ordinary CI.
 - The Python stack's hosted checks must pass before release; its local fixes
   do not establish a passing hosted wheel matrix.
 - After the GitHub SDK release succeeds, `docs-publish.yml` publishes the exact

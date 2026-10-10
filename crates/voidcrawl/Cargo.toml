@@ -1,13 +1,15 @@
 [package]
-name = "void_crawl_core"
+name = "yosoi-browser-core"
 version = "0.1.0-rc.6"
-publish = false
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 description = "VoidCrawl, Yosoi's Rust-native Chromium browser engine"
-repository = "https://github.com/CascadingLabs/YosoiOxide"
+repository = "https://github.com/CascadingLabs/Yosoi"
 readme = "../../README.md"
+
+[lib]
+name = "void_crawl_core"
 
 [lints]
 workspace = true
