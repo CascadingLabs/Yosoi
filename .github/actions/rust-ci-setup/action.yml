@@ -31,4 +31,6 @@ runs:
           . -> target/llvm-cov-target
           . -> .generated/rust-reference/target
         cache-workspace-crates: 'true'
-        save-if: ${{ github.ref == 'refs/heads/main' }}
+        # Pull-request caches stay scoped to their merge ref; main cannot restore
+        # them. Save successful PR builds so reruns can reuse compiled artifacts.
+        save-if: ${{ github.ref == 'refs/heads/main' || github.event_name == 'pull_request' }}
