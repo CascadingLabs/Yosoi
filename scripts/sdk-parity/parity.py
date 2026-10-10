@@ -9,12 +9,14 @@ of trying to parse Rust source declarations itself.
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import enum
 import hashlib
 import importlib
 import inspect
 import json
 import pkgutil
+import re
 import sys
 import types
 import typing
@@ -23,7 +25,6 @@ from datetime import UTC, datetime
 from importlib import metadata
 from pathlib import Path, PurePosixPath
 from typing import Any
-
 
 SCHEMA_VERSION = 1
 TOOL_VERSION = "0.1.0"
@@ -411,10 +412,57 @@ def _insert_unique(
     inventory.append(item)
 
 
+def _annotation_metadata(value: Any) -> str:
+    """Describe validator metadata without process-local object addresses."""
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return repr(value)
+    if inspect.isclass(value):
+        return f"{value.__module__}.{value.__qualname__}"
+    if inspect.isfunction(value):
+        captured = []
+        for cell in value.__closure__ or ():
+            try:
+                captured.append(_annotation_metadata(cell.cell_contents))
+            except ValueError:
+                captured.append("<empty cell>")
+        suffix = f"[{', '.join(captured)}]" if captured else ""
+        return f"{value.__module__}.{value.__qualname__}{suffix}"
+    if isinstance(value, (tuple, list)):
+        return "[" + ", ".join(_annotation_metadata(item) for item in value) + "]"
+    if dataclasses.is_dataclass(value):
+        fields = ", ".join(
+            f"{field.name}={_annotation_metadata(getattr(value, field.name))}"
+            for field in dataclasses.fields(value)
+        )
+        return f"{type(value).__module__}.{type(value).__qualname__}({fields})"
+    # Unknown metadata stays explicit rather than relying on an unstable repr.
+    return f"<{type(value).__module__}.{type(value).__qualname__}>"
+
+
 def _annotation_text(value: Any) -> str | None:
     if value is inspect.Signature.empty:
         return None
+    origin = typing.get_origin(value)
+    if origin is not None:
+        arguments = typing.get_args(value)
+        name = getattr(origin, "__qualname__", None) or str(origin)
+        if origin is typing.Annotated:
+            parts = [_annotation_text(arguments[0]) or "None"]
+            parts.extend(_annotation_metadata(item) for item in arguments[1:])
+        elif origin is typing.Literal:
+            parts = [_annotation_metadata(item) for item in arguments]
+        else:
+            parts = [_annotation_text(item) or "None" for item in arguments]
+        return name + "[" + ", ".join(parts) + "]"
     return getattr(value, "__qualname__", None) or str(value)
+
+
+class _SignatureAnnotation:
+    def __init__(self, value: Any) -> None:
+        self.text = _annotation_text(value) or "None"
+
+    def __repr__(self) -> str:
+        return self.text
 
 
 def _safe_default(value: Any) -> Any:
@@ -461,7 +509,21 @@ def _describe_signature(
             }
         )
     return {
-        "display": str(signature.replace(parameters=parameters_to_describe)),
+        "display": str(
+            signature.replace(
+                parameters=[
+                    parameter.replace(
+                        annotation=_SignatureAnnotation(parameter.annotation)
+                    )
+                    if typing.get_origin(parameter.annotation) is not None
+                    else parameter
+                    for parameter in parameters_to_describe
+                ],
+                return_annotation=_SignatureAnnotation(signature.return_annotation)
+                if typing.get_origin(signature.return_annotation) is not None
+                else signature.return_annotation,
+            )
+        ),
         "parameters": parameters,
         "returnAnnotation": _annotation_text(signature.return_annotation),
     }
@@ -491,7 +553,10 @@ def _field_default(field: Any) -> dict[str, Any]:
         factory = field.default_factory
         return {
             "kind": "factory",
-            "callable": f"{getattr(factory, '__module__', '')}.{getattr(factory, '__qualname__', type(factory).__name__)}",
+            "callable": (
+                f"{getattr(factory, '__module__', '')}."
+                f"{getattr(factory, '__qualname__', type(factory).__name__)}"
+            ),
         }
     return {"kind": "value", "value": _safe_default(field.default)}
 
@@ -505,28 +570,75 @@ def _literal_choices(annotation: Any) -> list[Any]:
             return []
     if typing.get_origin(annotation) is typing.Literal:
         return [_safe_default(item) for item in typing.get_args(annotation)]
+    origin = typing.get_origin(annotation)
+    if origin in {typing.Union, types.UnionType}:
+        return [
+            value
+            for item in typing.get_args(annotation)
+            for value in _literal_choices(item)
+        ]
     return []
 
 
-def _model_fields(value: type[Any]) -> list[dict[str, Any]]:
+def _annotation_model_types(annotation: Any) -> list[type[Any]]:
+    alias_type = getattr(typing, "TypeAliasType", None)
+    if alias_type is not None and isinstance(annotation, alias_type):
+        try:
+            annotation = annotation.__value__
+        except Exception:
+            return []
+    origin = typing.get_origin(annotation)
+    if origin is typing.Annotated:
+        arguments = typing.get_args(annotation)
+        return _annotation_model_types(arguments[0]) if arguments else []
+    if origin in {typing.Union, types.UnionType}:
+        values = [
+            model
+            for argument in typing.get_args(annotation)
+            for model in _annotation_model_types(argument)
+        ]
+        return list(dict.fromkeys(values))
+    if inspect.isclass(annotation) and isinstance(
+        getattr(annotation, "model_fields", None), dict
+    ):
+        return [annotation]
+    return []
+
+
+def _model_fields(
+    value: type[Any], *, _include_nested: bool = True
+) -> list[dict[str, Any]]:
     fields = getattr(value, "model_fields", None)
     if not isinstance(fields, dict):
         return []
     result = []
     for name, field in sorted(fields.items()):
-        result.append(
-            {
-                "name": name,
-                "alias": getattr(field, "alias", None),
-                "validationAlias": str(getattr(field, "validation_alias", None))
-                if getattr(field, "validation_alias", None) is not None
-                else None,
-                "serializationAlias": getattr(field, "serialization_alias", None),
-                "annotation": _annotation_text(getattr(field, "annotation", None)),
-                "literalChoices": _literal_choices(getattr(field, "annotation", None)),
-                "default": _field_default(field),
-            }
-        )
+        annotation = getattr(field, "annotation", None)
+        description = {
+            "name": name,
+            "alias": getattr(field, "alias", None),
+            "validationAlias": str(getattr(field, "validation_alias", None))
+            if getattr(field, "validation_alias", None) is not None
+            else None,
+            "serializationAlias": getattr(field, "serialization_alias", None),
+            "annotation": _annotation_text(annotation),
+            "literalChoices": _literal_choices(annotation),
+            "default": _field_default(field),
+        }
+        nested_models = _annotation_model_types(annotation) if _include_nested else []
+        if len(nested_models) == 1:
+            description["modelFields"] = _model_fields(
+                nested_models[0], _include_nested=False
+            )
+        elif nested_models:
+            description["modelVariants"] = [
+                {
+                    "target": f"{model.__module__}.{model.__qualname__}",
+                    "fields": _model_fields(model, _include_nested=False),
+                }
+                for model in nested_models
+            ]
+        result.append(description)
     return result
 
 
@@ -538,6 +650,15 @@ def _type_alias_shape(value: Any, package_name: str) -> dict[str, Any]:
         annotation = value.__value__ if is_pep695_alias else value
     except Exception:
         annotation = value
+    seen_aliases = {id(value)}
+    while alias_type is not None and isinstance(annotation, alias_type):
+        if id(annotation) in seen_aliases:
+            break
+        seen_aliases.add(id(annotation))
+        try:
+            annotation = annotation.__value__
+        except Exception:
+            break
 
     metadata: tuple[Any, ...] = ()
     if typing.get_origin(annotation) is typing.Annotated:
@@ -568,10 +689,32 @@ def _type_alias_shape(value: Any, package_name: str) -> dict[str, Any]:
     union_members = []
     if origin in {typing.Union, types.UnionType}:
         for member in args:
+            member_origin = typing.get_origin(member)
+            member_arguments = typing.get_args(member)
+            literal_values = (
+                [_safe_default(value) for value in member_arguments]
+                if member_origin is typing.Literal
+                else []
+            )
             name = getattr(member, "__qualname__", None) or str(member)
             module = getattr(member, "__module__", None)
-            target = f"{module}.{name}" if isinstance(module, str) else None
+            target = (
+                f"{module}.{name}"
+                if isinstance(module, str) and member_origin is not typing.Literal
+                else None
+            )
             discriminator_value: Any = None
+            discriminator_values: list[Any] = []
+            member_fields = _model_fields(member) if inspect.isclass(member) else []
+            for description in member_fields:
+                model_field = getattr(member, "model_fields", {}).get(
+                    description["name"]
+                )
+                nested = getattr(model_field, "annotation", None)
+                if inspect.isclass(nested) and isinstance(
+                    getattr(nested, "model_fields", None), dict
+                ):
+                    description["modelFields"] = _model_fields(nested)
             if discriminator and inspect.isclass(member):
                 fields = getattr(member, "model_fields", {})
                 field = fields.get(discriminator) if isinstance(fields, dict) else None
@@ -582,6 +725,7 @@ def _type_alias_shape(value: Any, package_name: str) -> dict[str, Any]:
                     )
                 if typing.get_origin(member_annotation) is typing.Literal:
                     values = typing.get_args(member_annotation)
+                    discriminator_values = [_safe_default(value) for value in values]
                     if len(values) == 1:
                         discriminator_value = _safe_default(values[0])
             union_members.append(
@@ -593,16 +737,15 @@ def _type_alias_shape(value: Any, package_name: str) -> dict[str, Any]:
                     and target.startswith(f"{package_name}.")
                     and not name.startswith("_")
                     else None,
+                    "literalValues": literal_values,
                     "discriminatorValue": discriminator_value,
+                    "discriminatorValues": discriminator_values,
+                    "fields": member_fields,
                 }
             )
     return {
         "kind": alias_kind,
-        "annotation": (
-            str(annotation)
-            if typing.get_origin(annotation) is not None
-            else _annotation_text(annotation) or str(annotation)
-        ),
+        "annotation": (_annotation_text(annotation) or str(annotation)),
         "choices": choices,
         "discriminator": discriminator,
         "unionMembers": union_members,
@@ -615,10 +758,25 @@ def _class_member_descriptions(
     members: list[dict[str, Any]] = []
     fields = {item["name"]: item for item in _model_fields(value)}
     declared_members: dict[str, Any] = {}
+    annotations: dict[str, Any] = {}
+    dataclass_fields: dict[str, dataclasses.Field[Any]] = {}
+    package_root = value.__module__.split(".", 1)[0]
     for base in reversed(value.__mro__):
-        if base.__module__ == value.__module__:
+        if base.__module__ == package_root or base.__module__.startswith(
+            package_root + "."
+        ):
             declared_members.update(vars(base))
+            annotations.update(vars(base).get("__annotations__", {}))
+            if dataclasses.is_dataclass(base):
+                dataclass_fields.update(
+                    {
+                        field.name: field
+                        for field in dataclasses.fields(base)
+                        if not field.name.startswith("_")
+                    }
+                )
     for alias in aliases:
+        described_fields: set[str] = set()
         for name, field in fields.items():
             members.append(
                 {
@@ -628,6 +786,27 @@ def _class_member_descriptions(
                     "field": field,
                 }
             )
+            described_fields.add(name)
+        frozen_dataclass = bool(
+            getattr(getattr(value, "__dataclass_params__", None), "frozen", False)
+        )
+        for name, field in dataclass_fields.items():
+            if name in described_fields:
+                continue
+            annotation = _annotation_text(field.type)
+            members.append(
+                {
+                    "target": f"{alias}.{name}",
+                    "kind": "field",
+                    "annotation": annotation,
+                    "field": {
+                        "name": name,
+                        "annotation": annotation,
+                        "readonly": frozen_dataclass,
+                    },
+                }
+            )
+            described_fields.add(name)
         for name, raw_member in declared_members.items():
             if name.startswith("_") and name not in PUBLIC_DUNDER_MEMBERS:
                 continue
@@ -645,7 +824,32 @@ def _class_member_descriptions(
                     }
                 )
                 continue
+            if isinstance(raw_member, types.MemberDescriptorType):
+                if name not in described_fields:
+                    members.append(
+                        {
+                            "target": target,
+                            "kind": "field",
+                            "annotation": _annotation_text(annotations.get(name)),
+                            "field": {
+                                "name": name,
+                                "annotation": _annotation_text(annotations.get(name)),
+                                "readonly": False,
+                            },
+                        }
+                    )
+                    described_fields.add(name)
+                continue
             callable_member = raw_member
+            if name.isupper() and isinstance(raw_member, (str, int, float, bool)):
+                members.append(
+                    {
+                        "target": target,
+                        "kind": "class-constant",
+                        "value": _safe_default(raw_member),
+                    }
+                )
+                continue
             if isinstance(raw_member, (classmethod, staticmethod)):
                 callable_member = raw_member.__func__
             if inspect.isfunction(callable_member) or inspect.isbuiltin(
@@ -661,6 +865,41 @@ def _class_member_descriptions(
                     }
                 )
     return members
+
+
+def _add_union_properties(targets: dict[str, Any]) -> None:
+    """Record properties available on every runtime member of a public union.
+
+    The alias itself is not a class. These targets describe instance access on
+    a value annotated with the union, and retain the concrete member witnesses.
+    """
+    additions = {}
+    for alias_target, description in list(targets.items()):
+        union = (description.get("alias") or {}).get("unionMembers", [])
+        if not union or any(not member.get("target") for member in union):
+            continue
+        member_targets = [member["target"] for member in union]
+        available = []
+        for member_target in member_targets:
+            prefix = member_target + "."
+            available.append(
+                {
+                    target[len(prefix) :]: target
+                    for target, info in targets.items()
+                    if target.startswith(prefix)
+                    and "." not in target[len(prefix) :]
+                    and info.get("kind") in {"field", "property"}
+                }
+            )
+        for name in set.intersection(*(set(member) for member in available)):
+            target = alias_target + "." + name
+            additions[target] = {
+                "target": target,
+                "kind": "union-property",
+                "members": [member[name] for member in available],
+                "signature": {"display": "shared union property", "parameters": []},
+            }
+    targets.update(additions)
 
 
 def _python_implementation_digest(package_name: str, package: Any) -> str:
@@ -693,7 +932,7 @@ def _distribution_version(name: str) -> str | None:
 
 
 def introspect_python_package(
-    package_name: str = "yosoi-engine", python_root: Path | None = None
+    package_name: str = "yosoi", python_root: Path | None = None
 ) -> dict[str, Any]:
     """Import public package modules and describe targets and Pydantic fields."""
     python_root_entry: str | None = None
@@ -846,6 +1085,7 @@ def introspect_python_package(
                     "value": enum_value["value"],
                 }
 
+    _add_union_properties(targets)
     objects.sort(key=lambda item: item["target"])
     surface_material = {
         "objects": [
@@ -909,6 +1149,108 @@ def load_ledger(path: Path) -> dict[str, Any]:
             raise ParityError(f"unsupported ledger decision for {entry['rustPath']}")
         if decision == "mapped" and not isinstance(entry.get("pythonTarget"), str):
             raise ParityError(f"mapped entry has no pythonTarget: {entry['rustPath']}")
+        receiver = entry.get("receiverMapping")
+        fixed = entry.get("fixedArguments")
+        if fixed is not None and (
+            not isinstance(fixed, dict)
+            or not all(isinstance(key, str) and key for key in fixed)
+        ):
+            raise ParityError(f"invalid fixed arguments: {entry['rustPath']}")
+        if receiver is not None and (
+            not isinstance(receiver, dict)
+            or not all(
+                isinstance(receiver.get(key), str) and receiver[key]
+                for key in ("rustArgument", "pythonArgument", "conversion")
+            )
+        ):
+            raise ParityError(f"invalid receiver mapping: {entry['rustPath']}")
+        binding = entry.get("variantBinding")
+        if binding is not None and (
+            not isinstance(binding, dict)
+            or not {"discriminator", "tag", "input"}.issubset(binding)
+            or set(binding) - {"discriminator", "tag", "input", "derivedFields"}
+            or ("derivedFields" in binding and binding["derivedFields"] != ["message"])
+            or any(
+                not isinstance(binding.get(key), str) or not binding[key]
+                for key in ("discriminator", "tag")
+            )
+            or binding.get("input") != "TypeAdapter.validate_python"
+        ):
+            raise ParityError(f"invalid variant payload binding: {entry['rustPath']}")
+        direction = entry.get("mappingDirection")
+        if direction not in {None, "input", "output"}:
+            raise ParityError(f"invalid mapping direction: {entry['rustPath']}")
+        output_binding = entry.get("outputBinding")
+        if direction == "output" and output_binding is None:
+            raise ParityError(
+                f"output mapping needs outputBinding: {entry['rustPath']}"
+            )
+        if output_binding is not None:
+            required_output = {"kind", "discriminator", "tag", "pythonFields"}
+            allowed_output = required_output | {"schemaTarget", "rustType"}
+            if (
+                not isinstance(output_binding, dict)
+                or direction != "output"
+                or not required_output.issubset(output_binding)
+                or set(output_binding) - allowed_output
+                or output_binding.get("kind") not in {"error-details", "outcome-view"}
+                or any(
+                    not isinstance(output_binding.get(name), str)
+                    or not output_binding[name].strip()
+                    for name in ("discriminator", "tag")
+                )
+                or not isinstance(output_binding.get("pythonFields"), list)
+            ):
+                raise ParityError(f"invalid output binding: {entry['rustPath']}")
+            for name in ("schemaTarget", "rustType"):
+                if name in output_binding and (
+                    not isinstance(output_binding[name], str)
+                    or not output_binding[name].strip()
+                ):
+                    raise ParityError(
+                        f"invalid output binding {name}: {entry['rustPath']}"
+                    )
+            if output_binding["kind"] == "error-details" and not all(
+                isinstance(output_binding.get(name), str)
+                and output_binding[name].strip()
+                for name in ("schemaTarget", "rustType")
+            ):
+                raise ParityError(
+                    "error-details output binding needs schemaTarget and rustType: "
+                    f"{entry['rustPath']}"
+                )
+            if (
+                entry.get("fixedArguments")
+                or entry.get("receiverMapping")
+                or entry.get("argumentMappings")
+            ):
+                raise ParityError(
+                    "output payloads cannot use constructor argument mappings: "
+                    f"{entry['rustPath']}"
+                )
+            if binding is not None or entry.get("argumentMappings"):
+                raise ParityError(
+                    "output payloads cannot use input variant or argument mappings: "
+                    f"{entry['rustPath']}"
+                )
+            for output_field in output_binding["pythonFields"]:
+                if (
+                    not isinstance(output_field, dict)
+                    or set(output_field)
+                    != {"rustArgument", "pythonFieldPath", "conversion"}
+                    or any(
+                        not isinstance(output_field.get(name), str)
+                        or not output_field[name].strip()
+                        for name in (
+                            "rustArgument",
+                            "pythonFieldPath",
+                            "conversion",
+                        )
+                    )
+                ):
+                    raise ParityError(
+                        f"invalid output payload field: {entry['rustPath']}"
+                    )
         for field_name in (
             "argumentMappings",
             "defaults",
@@ -930,7 +1272,8 @@ def load_ledger(path: Path) -> dict[str, Any]:
                 for field in ("rustArgument", "pythonArgument", "conversion")
             ):
                 raise ParityError(
-                    f"argument mappings need rustArgument, pythonArgument, and conversion: {entry['rustPath']}"
+                    "argument mappings need rustArgument, pythonArgument, and "
+                    f"conversion: {entry['rustPath']}"
                 )
         for field_name in ("defaults", "units", "cardinality"):
             if any(
@@ -944,14 +1287,16 @@ def load_ledger(path: Path) -> dict[str, Any]:
             review = entry.get("review") or {}
             if review.get("status") not in {"proposed", "reviewed"}:
                 raise ParityError(
-                    f"language-specific entry needs review metadata: {entry['rustPath']}"
+                    "language-specific entry needs review metadata: "
+                    f"{entry['rustPath']}"
                 )
             if (
                 not isinstance(review.get("pythonEquivalent"), str)
                 or not review["pythonEquivalent"].strip()
             ):
                 raise ParityError(
-                    f"language-specific entry needs an explicit Python semantic equivalent: {entry['rustPath']}"
+                    "language-specific entry needs an explicit Python semantic "
+                    f"equivalent: {entry['rustPath']}"
                 )
         if entry.get("semanticEquivalent") is not None and not isinstance(
             entry["semanticEquivalent"], str
@@ -1062,7 +1407,8 @@ def _load_evidence(
             evidence.get(field_name)
         ):
             raise ParityError(
-                f"conformance result artifact disagrees on {field_name}: {artifact_bytes_path}"
+                f"conformance result artifact disagrees on {field_name}: "
+                f"{artifact_bytes_path}"
             )
 
     source = evidence.get("source") or {}
@@ -1091,6 +1437,7 @@ def _load_evidence(
         "snapshotMatchesAll": all(snapshot_matches.values()),
         "resultArtifactSha256": artifact_digest,
         "cases": cases,
+        "runnerCommand": runner["command"],
     }
 
 
@@ -1135,6 +1482,9 @@ def _case_passes(case: Any, rust_item: dict[str, Any], entry: dict[str, Any]) ->
     expected_checks = [
         ("argument", item["rustArgument"]) for item in entry.get("argumentMappings", [])
     ]
+    if entry.get("receiverMapping"):
+        expected_checks.append(("receiver", entry["receiverMapping"]["rustArgument"]))
+    expected_checks.extend(("fixed", key) for key in entry.get("fixedArguments", {}))
     expected_checks.extend(
         (kind, item["id"])
         for kind, field in (
@@ -1183,9 +1533,408 @@ def _case_targets_item(
     ) == entry.get("pythonTarget")
 
 
-def _mapping_configuration_problem(
-    rust_item: dict[str, Any], entry: dict[str, Any], target: dict[str, Any]
+def variant_payload_fields(
+    member: dict[str, Any], discriminator: str
+) -> list[dict[str, Any]]:
+    """Describe value fields, including a typed error's details envelope."""
+    fields = []
+    for field in member.get("fields", []):
+        if field["name"] == discriminator:
+            continue
+        if (
+            discriminator == "variant"
+            and field["name"] == "details"
+            and "modelFields" in field
+        ):
+            fields.extend(
+                {
+                    **nested,
+                    "name": "details." + nested["name"],
+                    "rustName": nested["name"],
+                }
+                for nested in field["modelFields"]
+            )
+        else:
+            fields.append({**field, "rustName": field["name"]})
+    return fields
+
+
+_PUBLIC_OUTPUT_MEMBER_KINDS = {"field", "property", "union-property"}
+
+
+def _output_schema_target(
+    binding: dict[str, Any],
+    python_target: str,
+    target: dict[str, Any],
+    python_targets: dict[str, Any],
+) -> tuple[str, dict[str, Any]]:
+    schema_target = binding.get("schemaTarget") or python_target
+    description = python_targets.get(schema_target)
+    if description is None and schema_target == python_target:
+        description = target
+    return schema_target, description if isinstance(description, dict) else {}
+
+
+def _public_field(
+    schema_target: str, path: str, python_targets: dict[str, Any]
+) -> dict[str, Any] | None:
+    """Resolve only public fields/properties; never read a value or handle."""
+    direct = python_targets.get(f"{schema_target}.{path}")
+    if isinstance(direct, dict) and direct.get("kind") in _PUBLIC_OUTPUT_MEMBER_KINDS:
+        return direct
+    return None
+
+
+def _path_in_union_member(
+    description: dict[str, Any], path: str, tag: str | None
+) -> bool:
+    alias = description.get("alias") or {}
+    segments = path.split(".")
+    for member in alias.get("unionMembers", []):
+        literal_values = member.get("literalValues", [])
+        discriminator_values = member.get("discriminatorValues", [])
+        fields = member.get("fields", [])
+        field_names = {field.get("name") for field in fields}
+        if (
+            tag is not None
+            and tag not in literal_values
+            and tag not in discriminator_values
+        ):
+            # An external one-key union uses the public key itself as the tag.
+            if tag not in field_names:
+                continue
+        available = field_names
+        first = segments[0]
+        if first in available:
+            if len(segments) == 1:
+                return True
+            nested = next((field for field in fields if field.get("name") == first), {})
+            nested_fields = {
+                field.get("name") for field in nested.get("modelFields", [])
+            }
+            if all(segment in nested_fields for segment in segments[1:]):
+                return True
+        if len(segments) == 1 and path in literal_values:
+            return True
+    return False
+
+
+def _output_field_exists(
+    binding: dict[str, Any],
+    schema_target: str,
+    schema_description: dict[str, Any],
+    field_path: str,
+    python_targets: dict[str, Any],
+) -> bool:
+    if field_path == "$":
+        return (
+            binding.get("kind") == "error-details"
+            and schema_target == "yosoi.errors.RustErrorDetails"
+            and all(
+                _public_field(schema_target, name, python_targets) is not None
+                for name in ("rust_type", "variant", "details", "source_chain")
+            )
+        )
+    path = field_path
+    prefix = schema_target + "."
+    if path.startswith(prefix):
+        path = path[len(prefix) :]
+    path = path.replace("[*]", ".[*]")
+    if not path or any(not segment for segment in path.split(".")):
+        return False
+    if _model_field_at_path(schema_description.get("fields", []), path) is not None:
+        return True
+    first, *remaining = path.split(".")
+    descriptor = _public_field(schema_target, first, python_targets)
+    if descriptor is not None:
+        if not remaining:
+            return True
+        if binding.get("kind") == "error-details" and first == "details":
+            # RustErrorDetails.details is a public Mapping[str, Any]. Its keys
+            # are variant-specific JSON fields, so their names come from the
+            # reviewed binding while this descriptor proves the public mapping.
+            annotation = str(descriptor.get("annotation") or "")
+            field = descriptor.get("field") or {}
+            annotation = annotation or str(field.get("annotation") or "")
+            return "Mapping" in annotation and all(
+                segment.isidentifier() and not segment.startswith("_")
+                for segment in remaining
+            )
+        if binding.get("kind") == "error-details" and first == "source_chain":
+            annotation = str(descriptor.get("annotation") or "")
+            field = descriptor.get("field") or {}
+            annotation = annotation or str(field.get("annotation") or "")
+            return (
+                len(remaining) == 1
+                and remaining[0] == "[*]"
+                and ("tuple" in annotation or "list" in annotation)
+            )
+        field = descriptor.get("field") or {}
+        nested_fields = {item.get("name") for item in field.get("modelFields", [])}
+        variants = field.get("modelVariants", [])
+        if variants:
+            variant_sets = [
+                {item.get("name") for item in variant.get("fields", [])}
+                for variant in variants
+                if isinstance(variant, dict)
+            ]
+            if variant_sets:
+                nested_fields.update(set.intersection(*variant_sets))
+        return all(segment in nested_fields for segment in remaining)
+    if schema_description.get("kind") == "type-alias":
+        return _path_in_union_member(schema_description, path, binding.get("tag"))
+    return False
+
+
+def _output_tag_problem(
+    rust_item: dict[str, Any],
+    binding: dict[str, Any],
+    schema_target: str,
+    schema_description: dict[str, Any],
+    python_targets: dict[str, Any],
 ) -> str | None:
+    discriminator = binding["discriminator"]
+    tag = binding["tag"]
+    if binding["kind"] == "error-details":
+        if schema_target != "yosoi.errors.RustErrorDetails":
+            return "error-details output schema must be yosoi.errors.RustErrorDetails"
+        required = {"rust_type", "variant", "details", "source_chain"}
+        visible = {
+            name
+            for name in required
+            if _public_field(schema_target, name, python_targets) is not None
+        }
+        if visible != required:
+            return "RustErrorDetails public metadata fields are incomplete"
+        rust_type = binding.get("rustType")
+        parent_name = rust_item.get("parentRustPath", "").rsplit("::", 1)[-1]
+        if discriminator == "variant":
+            if tag != rust_item.get("rustPath", "").rsplit("::", 1)[-1]:
+                return "RustErrorDetails variant tag does not match the Rust variant"
+            if (
+                not isinstance(rust_type, str)
+                or rust_type.rsplit("::", 1)[-1] != parent_name
+            ):
+                return (
+                    "RustErrorDetails rustType does not identify the Rust parent enum"
+                )
+        elif discriminator == "rust_type":
+            expected_types = {
+                argument.get("type", "").rsplit("::", 1)[-1]
+                for argument in rust_item.get("rustArguments", [])
+            }
+            expected_types.add(parent_name)
+            if (
+                not isinstance(rust_type, str)
+                or tag != rust_type
+                or rust_type.rsplit("::", 1)[-1] not in expected_types
+            ):
+                return (
+                    "RustErrorDetails rust_type tag is not an expected Rust error type"
+                )
+        else:
+            return "RustErrorDetails discriminator must be variant or rust_type"
+        return None
+
+    if discriminator == "external":
+        if schema_description.get("kind") != "type-alias":
+            return "external output tag requires a live public union alias"
+        if not _path_in_union_member(schema_description, tag, tag):
+            return "external output tag is absent from the live union literals"
+        return None
+
+    alias = schema_description.get("alias") or {}
+    if (
+        schema_description.get("kind") == "type-alias"
+        and alias.get("kind") == "discriminated-union"
+    ):
+        if alias.get("discriminator") != discriminator:
+            return "output discriminator differs from the live union discriminator"
+        matches = [
+            member
+            for member in alias.get("unionMembers", [])
+            if tag in member.get("discriminatorValues", [])
+        ]
+        if len(matches) != 1:
+            return "output tag does not select exactly one live union member"
+        return None
+
+    if not _output_field_exists(
+        binding,
+        schema_target,
+        schema_description,
+        discriminator,
+        python_targets,
+    ):
+        return "output discriminator is absent from the live public schema"
+    descriptor = _public_field(schema_target, discriminator, python_targets)
+    if descriptor is None:
+        descriptor = _model_field_at_path(
+            schema_description.get("fields", []), discriminator
+        )
+    field = (descriptor or {}).get("field") or {}
+    choices = (
+        field.get("literalChoices") or (descriptor or {}).get("literalChoices") or []
+    )
+    if choices:
+        if tag not in choices:
+            return "output tag is absent from live Python literal choices"
+        return None
+    variant_name = rust_item.get("rustPath", "").rsplit("::", 1)[-1]
+    snake_case = re.sub(r"(?<!^)(?=[A-Z])", "_", variant_name).lower()
+    if tag != snake_case:
+        return "output tag does not match the Rust variant or live literal choices"
+    return None
+
+
+def _output_mapping_configuration_problem(
+    rust_item: dict[str, Any],
+    entry: dict[str, Any],
+    target: dict[str, Any],
+    python_targets: dict[str, Any] | None,
+) -> str | None:
+    binding = entry.get("outputBinding")
+    if entry.get("mappingDirection") != "output" or not isinstance(binding, dict):
+        return "output mapping requires mappingDirection=output and outputBinding"
+    if rust_item.get("kind") != "variant":
+        return "outputBinding is supported only for Rust enum variants"
+    if entry.get("variantBinding") is not None:
+        return "outputBinding cannot also declare an input variantBinding"
+    if (
+        entry.get("argumentMappings")
+        or entry.get("fixedArguments")
+        or entry.get("receiverMapping")
+    ):
+        return "output payloads cannot be declared as constructor arguments"
+    if binding.get("kind") not in {"error-details", "outcome-view"}:
+        return "unsupported outputBinding kind"
+    if (
+        not isinstance(binding.get("discriminator"), str)
+        or not binding["discriminator"]
+    ):
+        return "outputBinding needs a public discriminator"
+    if not isinstance(binding.get("tag"), str) or not binding["tag"]:
+        return "outputBinding needs a literal or status tag"
+    python_fields = binding.get("pythonFields")
+    if not isinstance(python_fields, list):
+        return "outputBinding pythonFields must be an array"
+    rust_arguments = rust_item.get("rustArguments")
+    if not isinstance(rust_arguments, list):
+        return "Rust variant arguments could not be read from the compiler signature"
+    expected = {
+        argument["name"] for argument in rust_arguments if not argument.get("receiver")
+    }
+    mapped = [
+        field.get("rustArgument") for field in python_fields if isinstance(field, dict)
+    ]
+    if any(not isinstance(argument, str) or not argument for argument in mapped):
+        return "output Python fields must refer to public Rust payload arguments"
+    if set(mapped) != expected:
+        return "output Python fields must cover the exact Rust payload argument set"
+    paths = [field.get("pythonFieldPath") for field in python_fields]
+    if any(not isinstance(path, str) or not path for path in paths):
+        return "output Python fields need public field paths"
+    if len(paths) != len(set(paths)):
+        return "output Python field paths must be unique"
+    if any(
+        not isinstance(field.get("conversion"), str) or not field["conversion"].strip()
+        for field in python_fields
+    ):
+        return "output Python fields need an explicit conversion"
+
+    all_targets = python_targets or {}
+    schema_target, schema_description = _output_schema_target(
+        binding,
+        entry.get("pythonTarget", ""),
+        target,
+        all_targets,
+    )
+    if binding.get("schemaTarget") is not None and schema_target not in all_targets:
+        return "outputBinding schemaTarget is absent from live Python introspection"
+    if not schema_description:
+        return "outputBinding has no live public schema description"
+    tag_problem = _output_tag_problem(
+        rust_item, binding, schema_target, schema_description, all_targets
+    )
+    if tag_problem is not None:
+        return tag_problem
+    for field in python_fields:
+        if not _output_field_exists(
+            binding,
+            schema_target,
+            schema_description,
+            field["pythonFieldPath"],
+            all_targets,
+        ):
+            return (
+                "output Python field path is absent from the live public schema: "
+                f"{field['pythonFieldPath']}"
+            )
+    return None
+
+
+def _field_literal_choices(field: dict[str, Any]) -> list[Any]:
+    return list(
+        field.get("literalChoices")
+        or (field.get("field") or {}).get("literalChoices")
+        or []
+    )
+
+
+def _model_field_at_path(
+    fields: list[dict[str, Any]], path: str
+) -> dict[str, Any] | None:
+    current_fields = fields
+    current = None
+    for segment in path.split("."):
+        current = next(
+            (field for field in current_fields if field.get("name") == segment),
+            None,
+        )
+        if current is None:
+            return None
+        current_fields = list(current.get("modelFields", []))
+    return current
+
+
+def _model_public_paths(fields: list[dict[str, Any]], prefix: str = "") -> set[str]:
+    paths: set[str] = set()
+    for field in fields:
+        name = field.get("name")
+        if not isinstance(name, str) or name.startswith("_"):
+            continue
+        path = f"{prefix}.{name}" if prefix else name
+        paths.add(path)
+        nested = field.get("modelFields")
+        if isinstance(nested, list):
+            paths.update(_model_public_paths(nested, path))
+        variants = field.get("modelVariants")
+        if isinstance(variants, list) and variants:
+            variant_paths = [
+                _model_public_paths(variant.get("fields", []), path)
+                for variant in variants
+                if isinstance(variant, dict)
+            ]
+            if len(variant_paths) == len(variants):
+                paths.update(set.intersection(*variant_paths))
+    return paths
+
+
+def _mapping_configuration_problem(
+    rust_item: dict[str, Any],
+    entry: dict[str, Any],
+    target: dict[str, Any],
+    python_targets: dict[str, Any] | None = None,
+) -> str | None:
+    if (
+        entry.get("mappingDirection") == "output"
+        or entry.get("outputBinding") is not None
+    ):
+        return _output_mapping_configuration_problem(
+            rust_item, entry, target, python_targets
+        )
+    if entry.get("mappingDirection") not in {None, "input"}:
+        return "unsupported mapping direction"
     if (
         rust_item["kind"] in {"trait", "macro", "proc_macro"}
         and not str(entry.get("semanticEquivalent", "")).strip()
@@ -1215,13 +1964,109 @@ def _mapping_configuration_problem(
         for parameter in ((target.get("signature") or {}).get("parameters") or [])
         if isinstance(parameter, dict) and isinstance(parameter.get("name"), str)
     }
+    binding = entry.get("variantBinding")
+    if binding is not None:
+        alias = target.get("alias") or {}
+        if target.get("kind") == "class" and alias.get("kind") != "discriminated-union":
+            discriminator_field = _model_field_at_path(
+                target.get("fields", []), binding["discriminator"]
+            )
+            if discriminator_field is None:
+                return "tagged model discriminator is absent from public fields"
+            choices = _field_literal_choices(discriminator_field)
+            if binding["tag"] not in choices:
+                return "tagged model variant tag is absent from live literal choices"
+            python_parameters.update(_model_public_paths(target.get("fields", [])))
+    receiver = entry.get("receiverMapping")
+    if any(key not in python_parameters for key in entry.get("fixedArguments", {})):
+        return "fixed argument is absent from the live Python signature"
+    for name, value in entry.get("fixedArguments", {}).items():
+        field = next(
+            (field for field in target.get("fields", []) if field["name"] == name),
+            None,
+        )
+        if (
+            field
+            and field.get("literalChoices")
+            and value not in field["literalChoices"]
+        ):
+            return "fixed argument value is absent from the live Python literal choices"
+    if receiver and (
+        not any(
+            argument.get("receiver") and argument["name"] == receiver["rustArgument"]
+            for argument in rust_arguments
+        )
+        or receiver["pythonArgument"] not in python_parameters
+    ):
+        return (
+            "explicit receiver mapping does not match Rust self "
+            "and a live Python argument"
+        )
+    if binding is not None:
+        plain_tagged_model = (
+            target.get("kind") == "class" and alias.get("kind") != "discriminated-union"
+        )
+        if not plain_tagged_model:
+            if (
+                rust_item["kind"] != "variant"
+                or alias.get("kind") != "discriminated-union"
+                or binding.get("discriminator") != alias.get("discriminator")
+                or binding.get("input") != "TypeAdapter.validate_python"
+            ):
+                return (
+                    "variant payload binding does not describe a live "
+                    "discriminated union"
+                )
+            members = [
+                member
+                for member in alias.get("unionMembers", [])
+                if binding.get("tag") in member.get("discriminatorValues", [])
+            ]
+            if len(members) != 1:
+                return (
+                    "variant discriminator does not select exactly one "
+                    "Python payload schema"
+                )
+            derived = binding.get("derivedFields", [])
+            if derived and (
+                rust_item.get("rustPath")
+                not in {
+                    "yosoi::contracts::ExtractionFailure::InvalidContractSchema",
+                    "yosoi::contracts::ValidationFailure::InvalidContractSchema",
+                }
+                or not any(
+                    field["name"] == "message" and field.get("annotation") == "str"
+                    for field in members[0].get("fields", [])
+                )
+            ):
+                return (
+                    "derived variant message is not the reviewed "
+                    "Rust schema-error display field"
+                )
+            python_parameters = {
+                field["name"]
+                for field in variant_payload_fields(
+                    members[0], binding["discriminator"]
+                )
+                if field["name"] not in derived
+            }
+            if {
+                argument["pythonArgument"] for argument in mappings
+            } != python_parameters:
+                return (
+                    "variant payload mapping does not cover the selected Python fields"
+                )
     for argument in mappings:
         if argument["pythonArgument"] not in python_parameters:
             return (
                 f"Python argument {argument['pythonArgument']} for Rust argument "
                 f"{argument['rustArgument']} is absent from the introspected signature"
             )
-    if rust_item["kind"] == "function" and target.get("kind") == "class":
+    if (
+        rust_item["kind"] == "function"
+        and target.get("kind") == "class"
+        and not str(entry.get("semanticEquivalent", "")).strip()
+    ):
         mapped_python = {argument["pythonArgument"] for argument in mappings}
         required_python = {
             parameter["name"]
@@ -1275,7 +2120,8 @@ def build_report(
             continue
         if len(candidates) > 1:
             raise ParityError(
-                f"ambiguous Rust public path {entry['rustPath']}; ledger must identify symbolKey or trait"
+                f"ambiguous Rust public path {entry['rustPath']}; "
+                "ledger must identify symbolKey or trait"
             )
         item = candidates[0]
         if entry["rustPath"] not in {item["rustPath"], *item["aliases"]}:
@@ -1387,22 +2233,31 @@ def build_report(
                     )
                 elif (
                     mapping_problem := _mapping_configuration_problem(
-                        item, entry, target_info
+                        item, entry, target_info, python["targets"]
                     )
                 ) is not None:
                     status = "missing"
                     reason = f"incomplete argument mapping: {mapping_problem}"
                 elif stale_evidence.get(item["symbolKey"]):
                     status = "stale"
-                    reason = "available conformance evidence is bound to an older surface snapshot"
+                    reason = (
+                        "available conformance evidence is bound to an older "
+                        "surface snapshot"
+                    )
                 else:
                     item_evidence = evidence_by_item.get(item["symbolKey"], [])
                     if item_evidence:
                         status = "verified"
-                        reason = "matching executed conformance evidence is bound to this snapshot"
+                        reason = (
+                            "matching executed conformance evidence is bound "
+                            "to this snapshot"
+                        )
                     else:
                         status = "mapped"
-                        reason = "target and mapping are declared; no matching executed conformance evidence"
+                        reason = (
+                            "target and mapping are declared; no matching "
+                            "executed conformance evidence"
+                        )
 
         report_items.append(
             {
@@ -1426,8 +2281,13 @@ def build_report(
                 "mapping": (
                     {
                         "decision": entry.get("decision"),
+                        "mappingDirection": entry.get("mappingDirection"),
                         "pythonTarget": entry.get("pythonTarget"),
                         "semanticEquivalent": entry.get("semanticEquivalent"),
+                        "variantBinding": entry.get("variantBinding"),
+                        "outputBinding": entry.get("outputBinding"),
+                        "receiverMapping": entry.get("receiverMapping"),
+                        "fixedArguments": entry.get("fixedArguments"),
                         "argumentMappings": entry.get("argumentMappings", []),
                         "defaults": entry.get("defaults", []),
                         "units": entry.get("units", []),
@@ -1532,6 +2392,65 @@ def write_report(path: Path, report: dict[str, Any]) -> None:
     temporary.replace(path)
 
 
+def summary_from_report(report: dict[str, Any], report_sha256: str) -> dict[str, Any]:
+    """A small frontend artifact derived from the full evidence-backed report."""
+    summary = {
+        "schemaVersion": 1,
+        "kind": "python-rust-sdk-parity-summary",
+        "generatedAt": report["generatedAt"],
+        "parityStatus": report["parityStatus"],
+        "source": report["source"],
+        "python": {
+            key: report["python"][key]
+            for key in ("package", "runtime", "surfaceDigest", "implementationDigest")
+        },
+        "pinsMatch": report["ledger"]["pinState"]["matchesAll"],
+        "coverage": {
+            key: report["coverage"][key]
+            for key in (
+                "denominator",
+                "counts",
+                "covered",
+                "mappedButUnverified",
+                "staleOrMissing",
+            )
+        },
+        "reportSha256": report_sha256,
+        "provenance": "unsigned-local-validation",
+    }
+    if "sdkParity" in report:
+        summary["gate"] = "sdk"
+        summary["inventoryParityStatus"] = report["inventoryParityStatus"]
+        sdk = report["sdkParity"]
+        summary["sdkParity"] = {
+            key: sdk[key]
+            for key in (
+                "schemaVersion",
+                "kind",
+                "parityStatus",
+                "counts",
+                "mechanicCounts",
+            )
+            if key in sdk
+        }
+        summary["sdkParity"]["mappingStatus"] = {
+            key: value
+            for key, value in sdk.get("mappingStatus", {}).items()
+            if not key.endswith("Ids")
+        }
+        summary["sdkParity"]["behaviorStatus"] = {
+            key: value
+            for key, value in sdk.get("behaviorStatus", {}).items()
+            if key in {"passed", "requiredSuites", "suites"}
+        }
+        summary["sdkParity"]["individualItemEvidence"] = {
+            key: value
+            for key, value in sdk.get("individualItemEvidence", {}).items()
+            if not key.endswith("Ids")
+        }
+    return summary
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--rust-reference", type=Path, required=True)
@@ -1539,12 +2458,17 @@ def main(argv: list[str] | None = None) -> int:
         "--ledger", type=Path, default=Path("python/parity/ledger.json")
     )
     parser.add_argument("--python-root", type=Path, default=Path("python"))
-    parser.add_argument("--package", default="yosoi-engine")
+    parser.add_argument("--package", default="yosoi")
     parser.add_argument("--locale", default="en")
     parser.add_argument("--evidence", type=Path, action="append", default=[])
+    parser.add_argument("--gate", choices=("inventory", "sdk"), default="inventory")
+    parser.add_argument(
+        "--contract", type=Path, default=Path("python/parity/sdk-contract.json")
+    )
     parser.add_argument(
         "--output", type=Path, default=Path("python/parity/report.json")
     )
+    parser.add_argument("--summary-output", type=Path)
     parser.add_argument(
         "--allow-incomplete",
         action="store_true",
@@ -1555,17 +2479,42 @@ def main(argv: list[str] | None = None) -> int:
         rust = load_rust_inventory(args.rust_reference, args.locale)
         python = introspect_python_package(args.package, args.python_root)
         ledger = load_ledger(args.ledger)
+        contract = None
+        drift = []
+        if args.gate == "sdk":
+            import sdk_contract
+
+            contract = sdk_contract.load_contract(args.contract)
+            ledger, drift = sdk_contract.prepare_ledger(contract, rust, python, ledger)
         evidence = [_load_evidence(path, rust, python) for path in args.evidence]
         report = build_report(rust, python, ledger, evidence)
+        if contract is not None:
+            sdk_report = sdk_contract.evaluate_contract(
+                contract, rust, python, report, evidence, drift
+            )
+            report["gate"] = "sdk"
+            report["inventoryParityStatus"] = report["parityStatus"]
+            report["sdkParity"] = sdk_report
+            report["parityStatus"] = sdk_report["parityStatus"]
         write_report(args.output, report)
-    except ParityError as error:
+        if args.summary_output is not None:
+            write_report(
+                args.summary_output,
+                summary_from_report(report, digest_bytes(args.output.read_bytes())),
+            )
+    except ValueError as error:
         parser.error(str(error))
-    failures = strict_failures(report)
+    failures = (
+        sdk_contract.sdk_failures(report["sdkParity"])
+        if contract is not None
+        else strict_failures(report)
+    )
     counts = report["coverage"]["counts"]
     print(
         f"{report['parityStatus']}: {report['coverage']['denominator']} Rust items; "
         f"{counts['verified']} verified, {counts['mapped']} mapped, "
-        f"{counts['language-specific']} language-specific, {counts['missing']} missing, "
+        f"{counts['language-specific']} language-specific, "
+        f"{counts['missing']} missing, "
         f"{counts['stale']} stale; report={args.output}"
     )
     if failures and not args.allow_incomplete:

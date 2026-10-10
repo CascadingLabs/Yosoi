@@ -173,7 +173,7 @@ pub fn read_required<T: RuntimeContractValue>(
     read_required_evidence(field.id(), field.evidence())
 }
 
-pub(crate) fn read_required_evidence<'a, T: RuntimeContractValue>(
+pub fn read_required_evidence<'a, T: RuntimeContractValue>(
     id: &FieldId,
     evidence: &'a [Finding],
 ) -> Result<T, FieldIssueDraft<'a>> {
@@ -202,7 +202,7 @@ pub fn read_optional<T: RuntimeContractValue>(
     read_optional_evidence(field.id(), field.evidence())
 }
 
-pub(crate) fn read_optional_evidence<'a, T: RuntimeContractValue>(
+pub fn read_optional_evidence<'a, T: RuntimeContractValue>(
     id: &FieldId,
     evidence: &'a [Finding],
 ) -> Result<Option<T>, FieldIssueDraft<'a>> {
@@ -227,7 +227,7 @@ pub fn read_many<T: RuntimeContractValue>(
     read_many_evidence(field.id(), field.evidence())
 }
 
-pub(crate) fn read_many_evidence<'a, T: RuntimeContractValue>(
+pub fn read_many_evidence<'a, T: RuntimeContractValue>(
     id: &FieldId,
     evidence: &'a [Finding],
 ) -> Result<Vec<T>, FieldIssueDraft<'a>> {

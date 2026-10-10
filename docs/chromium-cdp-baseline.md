@@ -3,6 +3,37 @@
 Status date: 2026-09-15. CAS-373 is the accepted milestone-5 compatibility
 baseline and is ready for Final Boss review.
 
+## Stable launch eligibility review, 2026-10-10 UTC
+
+Google's Linux Stable release history now serves Chrome 155.0.8059.39, released
+2026-10-06. The CI installer downloaded that regular Stable package, but the
+2026-10-04 launch-eligibility snapshot did not include it, so the runtime
+rejected it before launching. The snapshot now includes M155 and the preceding
+M154 releases, retaining the independent 30-day snapshot and superseded-release
+limits. M153 is now two milestones behind and is no longer eligible for launch.
+
+This updates distribution and age admission; it does not promote a new
+browser/controller/CDP certification tuple. The M153 certification below is
+historical evidence. The decision is to admit reviewed Stable releases for
+regression testing; certification promotion remains pending. M155 regressions run in CI against regular Stable with
+sandboxing and isolation preserved; native/headful/container and benchmark
+certification remain separate release work. No generated bindings, controller
+patches, browser flags, or invalid-message handling change in this refresh.
+
+Focused local evidence uses regular Google Chrome 155.0.8059.39 from Google's
+Stable Debian download: package SHA-256
+`c58aa0f2cd66179c9f050e062c882d27aa9b9f8c2b7c73fee3498560b5ed0b38`,
+executable SHA-256
+`9bfb381296dffe75f3419d07b6cc64525105ed117d1453a4ef3b291cb97d2b58`.
+The three distribution/age tests pass, as do all seven engine browser
+integration tests, including mixed Direct HTTP/headless/headful acquisition
+and cross-process archive reconstruction. The TCP reset fixture regression
+also passes. Strict Clippy passes for the affected library and test targets.
+These focused results do not replace full certification.
+
+Sources: [Google Linux Stable version history](https://versionhistory.googleapis.com/v1/chrome/platforms/linux/channels/stable/versions/all/releases)
+and [the 2026-10-06 Stable announcement](https://chromereleases.googleblog.com/2026/10/stable-channel-update-for-desktop_086471744.html).
+
 ## The four identities
 
 Yosoi's browser stack has four independently moving identities. Do not call all

@@ -1,5 +1,70 @@
 # Python SDK compatibility verification
 
+## Python 3.15 verification
+
+Verified locally on Linux x86-64 on 2026-10-09, extending the SDK-completion
+revision `4c45cc76412351d1c438d309b683bbc0a453a86c`. The declared interpreter
+range is now `>=3.12,<3.16`, with Pydantic `>=2.14,<3`.
+
+| Interpreter | Installed wheel ABI | SDK tests | Review commands |
+| --- | --- | --- | --- |
+| CPython 3.15.0 | `cp315` | 282 passed, one free-threading-only skip | 6 passed |
+| CPython 3.15.0 free-threaded | `cp315t` | 283 passed | 6 passed |
+
+Both development-profile wheels are built from the same source distribution
+with the Rust browser feature enabled and installed before testing. Tests run
+with isolated Python (`-I`). Pydantic 2.14.0 and pydantic-core 2.50.0 are used
+on both interpreters. The six review commands are `policy`, `locate`,
+`contracts`, `runtime-contracts`, `errors`, and `local`.
+
+The free-threading test starts a fresh interpreter without `PYTHON_GIL=0`,
+treats warnings as errors, and checks imports, concurrent parsing, shared
+parsed-document access, and Contract validation. The GIL remains disabled.
+Builds pass the resolved interpreter path to Maturin so a shared Cargo target
+cannot reuse the normal interpreter's extension for the free-threaded ABI.
+
+Build, test, review, and interpreter logs are retained in
+`.generated/python315/` in the Python 3.15 workspace. Wheels use native
+`linux_x86_64` platform tags and are local validation artifacts. Hosted CI,
+other platforms, browser execution, and release publication are not established
+by these checks. Earlier interpreter results below predate the Pydantic upgrade.
+
+## Current integrated SDK evidence
+
+The SDK continuation is based on the updated default workspace revision
+`c26eace7b2dc746fcde1072748ff6cc6c7fe2114`. On 2026-10-05 (local time),
+separate development-profile wheels built from the current workspace passed
+the installed-package checks on Linux x86-64:
+
+| Interpreter | Wheel ABI | Latest installed SDK tests |
+| --- | --- | --- |
+| CPython 3.12.14 (current workspace) | `cp312` | 282 passed, 1 free-threading-only skip |
+| CPython 3.13.1 (current workspace) | `cp313` | 282 passed, 1 free-threading-only skip |
+| CPython 3.14.8 (current workspace) | `cp314` | 282 passed, 1 free-threading-only skip |
+| CPython 3.14.8 free-threaded (current workspace) | `cp314t` | 283 passed |
+
+Tests ran with isolated Python (`-I`) against installed wheels. The
+free-threading test uses a fresh interpreter without forcing `PYTHON_GIL=0`;
+Yosoi/Pydantic imports, concurrent parsing, and Contract validation leave the
+GIL disabled. The wheels enable the Rust browser feature; browser execution
+was not certified by these checks.
+
+The current source distribution also passes that same four-interpreter matrix.
+Its SHA-256 is
+`54126186b9ae56c4116ff060db2f00723738dc1b8321c03a060d7e8e8ccd0d2d`.
+The Python payloads in every wheel match both the extracted archive and the
+workspace package. Offline Cargo normalization removes 53 unused packages and
+changes no retained package versions, checksums, or dependency records.
+
+Reproducible local evidence is stored in `.local/current-sdk-sdist/identity.json`,
+`packaging-proof.json`, `test-suite-manifest.json`, and `tests-INTERPRETER.log`.
+The supported platform evidence is Linux x86-64, with development-profile
+`manylinux_2_39_x86_64` wheels. Hosted CI and browser certification are separate
+from these local checks. The semantic SDK parity gate and supported-ABI matrix
+are configured in `.github/workflows/python-ci.yml`.
+
+## Historical scaffold evidence
+
 Verified locally on Linux x86-64 on 2026-10-04. The declared range is
 `>=3.12,<3.15`; the CI matrix selects normal 3.12, 3.13, 3.14 and exact 3.14.3t.
 

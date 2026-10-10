@@ -38,9 +38,10 @@ are intentionally bounded; see [Contracts](../python/contracts.md).
 
 ## Interpreter and native capabilities
 
-The package declares `>=3.12,<3.15`. Its configured interpreter targets are
-normal CPython 3.12, 3.13, 3.14.8, and free-threaded CPython 3.14.8t. The
-extension uses separate `cp312`, `cp313`, `cp314`, and `cp314t` ABI wheels;
+The package declares `>=3.12,<3.16` and requires Pydantic `>=2.14,<3`.
+Its configured interpreter targets are normal CPython 3.12–3.15, and
+free-threaded CPython 3.14.8t and 3.15.0t. The extension uses separate
+`cp312`, `cp313`, `cp314`, `cp314t`, `cp315`, and `cp315t` ABI wheels;
 artifact availability still depends on release and platform.
 
 The browser Rust feature is compiled into a wheel when enabled by its build

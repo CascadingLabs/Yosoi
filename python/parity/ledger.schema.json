@@ -36,8 +36,62 @@
           "symbolKey": {"type": "string", "minLength": 1},
           "trait": {"type": "string", "minLength": 1},
           "decision": {"enum": ["mapped", "language-specific"]},
+          "mappingDirection": {"enum": ["input", "output"]},
           "pythonTarget": {"type": "string", "minLength": 1},
           "semanticEquivalent": {"type": "string", "minLength": 1},
+          "fixedArguments": {"type": "object", "additionalProperties": true},
+          "receiverMapping": {
+            "type": "object",
+            "required": ["rustArgument", "pythonArgument", "conversion"],
+            "properties": {
+              "rustArgument": {"type": "string", "minLength": 1},
+              "pythonArgument": {"type": "string", "minLength": 1},
+              "conversion": {"type": "string", "minLength": 1}
+            },
+            "additionalProperties": false
+          },
+          "variantBinding": {
+            "type": "object",
+            "required": ["discriminator", "tag", "input"],
+            "properties": {
+              "discriminator": {"type": "string", "minLength": 1},
+              "tag": {"type": "string", "minLength": 1},
+              "derivedFields": {"const": ["message"]},
+              "input": {"const": "TypeAdapter.validate_python"}
+            },
+            "additionalProperties": false
+          },
+          "outputBinding": {
+            "type": "object",
+            "required": ["kind", "discriminator", "tag", "pythonFields"],
+            "properties": {
+              "kind": {"enum": ["error-details", "outcome-view"]},
+              "schemaTarget": {"type": "string", "minLength": 1},
+              "discriminator": {"type": "string", "minLength": 1},
+              "tag": {"type": "string", "minLength": 1},
+              "rustType": {"type": "string", "minLength": 1},
+              "pythonFields": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["rustArgument", "pythonFieldPath", "conversion"],
+                  "properties": {
+                    "rustArgument": {"type": "string", "minLength": 1},
+                    "pythonFieldPath": {"type": "string", "minLength": 1},
+                    "conversion": {"type": "string", "minLength": 1}
+                  },
+                  "additionalProperties": false
+                }
+              }
+            },
+            "allOf": [
+              {
+                "if": {"properties": {"kind": {"const": "error-details"}}},
+                "then": {"required": ["schemaTarget", "rustType"]}
+              }
+            ],
+            "additionalProperties": false
+          },
           "rustSignatureSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
           "argumentMappings": {
             "type": "array",
@@ -70,6 +124,14 @@
           }
         },
         "allOf": [
+          {
+            "if": {"properties": {"mappingDirection": {"const": "output"}}},
+            "then": {"required": ["outputBinding"]}
+          },
+          {
+            "if": {"required": ["outputBinding"]},
+            "then": {"properties": {"mappingDirection": {"const": "output"}}}
+          },
           {
             "if": {"properties": {"decision": {"const": "mapped"}}},
             "then": {"required": ["pythonTarget"]}

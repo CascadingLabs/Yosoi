@@ -23,7 +23,14 @@ from .contracts import (
 from .documents import BoundDocument, Document, ParsedDocument
 from .identities import ContractIdentity
 from .locators import Plan
-from .outcomes import Failure, Finding, IncompleteEvidence, LocateOutcome, RegionLineage
+from .outcomes import (
+    U64,
+    Failure,
+    Finding,
+    IncompleteEvidence,
+    LocateOutcome,
+    RegionLineage,
+)
 from .scalars import RUST_DOMAIN_VALIDATED, FieldId
 
 
@@ -32,7 +39,7 @@ class RuntimeCandidate(ImmutableModel):
 
     document_id: str
     region: RegionLineage | None = None
-    fields: Mapping[FieldId, tuple[Finding, ...]]
+    fields: Mapping[str, tuple[Finding, ...]]
 
     @model_validator(mode="after")
     def _freeze_fields(self) -> RuntimeCandidate:
@@ -41,7 +48,7 @@ class RuntimeCandidate(ImmutableModel):
             "fields",
             MappingProxyType(
                 {
-                    field_id: tuple(evidence)
+                    str(FieldId(field_id)): tuple(evidence)
                     for field_id, evidence in self.fields.items()
                 }
             ),
@@ -50,7 +57,7 @@ class RuntimeCandidate(ImmutableModel):
 
     @field_serializer("fields", when_used="always")
     def _serialize_fields(
-        self, value: Mapping[FieldId, tuple[Finding, ...]]
+        self, value: Mapping[str, tuple[Finding, ...]]
     ) -> dict[str, list[dict[str, Any]]]:
         return {
             str(field_id): [finding.model_dump(mode="json") for finding in evidence]
@@ -95,17 +102,26 @@ type RuntimeFieldValue = Annotated[
 
 
 class RuntimeValidatedRecord(ImmutableModel):
-    value: Mapping[FieldId, RuntimeFieldValue]
+    value: Mapping[str, RuntimeFieldValue]
     candidate: RuntimeCandidate
 
     @model_validator(mode="after")
     def _freeze_value(self) -> RuntimeValidatedRecord:
-        object.__setattr__(self, "value", MappingProxyType(dict(self.value)))
+        object.__setattr__(
+            self,
+            "value",
+            MappingProxyType(
+                {
+                    str(FieldId(field_id)): field_value
+                    for field_id, field_value in self.value.items()
+                }
+            ),
+        )
         return self
 
     @field_serializer("value", when_used="always")
     def _serialize_value(
-        self, value: Mapping[FieldId, RuntimeFieldValue]
+        self, value: Mapping[str, RuntimeFieldValue]
     ) -> dict[str, dict[str, Any]]:
         return {
             str(field_id): field_value.model_dump(mode="json")
@@ -116,6 +132,265 @@ class RuntimeValidatedRecord(ImmutableModel):
 class RuntimeRecordIssue(ImmutableModel):
     candidate: RuntimeCandidate
     fields: tuple[FieldIssue, ...]
+
+
+class ArchivedContractCandidateField(ImmutableModel):
+    id: FieldId
+    evidence: tuple[Finding, ...] = Field(repr=False)
+
+
+class ArchivedContractString(ImmutableModel):
+    type: Literal["string"]
+    value: str = Field(repr=False)
+
+
+class ArchivedContractMoneyUsd(ImmutableModel):
+    type: Literal["money_usd"]
+    minor_units: Annotated[
+        int, Field(strict=True, ge=-(2**63), le=2**63 - 1, repr=False)
+    ]
+
+
+type ArchivedContractValue = Annotated[
+    ArchivedContractString | ArchivedContractMoneyUsd, Field(discriminator="type")
+]
+
+
+class _ArchivedExactlyOne(ImmutableModel):
+    cardinality: Literal["exactly_one"]
+    value: ArchivedContractValue
+
+
+class _ArchivedZeroOrOne(ImmutableModel):
+    cardinality: Literal["zero_or_one"]
+    value: ArchivedContractValue | None
+
+
+class _ArchivedMany(ImmutableModel):
+    cardinality: Literal["many"]
+    values: tuple[ArchivedContractValue, ...]
+
+
+type ArchivedContractFieldValue = Annotated[
+    _ArchivedExactlyOne | _ArchivedZeroOrOne | _ArchivedMany,
+    Field(discriminator="cardinality"),
+]
+
+
+class ArchivedContractField(ImmutableModel):
+    id: FieldId
+    value: ArchivedContractFieldValue = Field(repr=False)
+
+
+class ArchivedValidatedContractRecord(ImmutableModel):
+    document_id: str
+    region: RegionLineage | None = None
+    fields: tuple[ArchivedContractField, ...] = Field(repr=False)
+    evidence: tuple[ArchivedContractCandidateField, ...] = Field(repr=False)
+
+
+class ArchivedContractRecordIssue(ImmutableModel):
+    document_id: str
+    region: RegionLineage | None = None
+    candidate_fields: tuple[ArchivedContractCandidateField, ...] = Field(repr=False)
+    fields: tuple[FieldIssue, ...] = Field(repr=False)
+
+
+ArchivedExtractionLimitName = Literal[
+    "scanned_regions",
+    "scanned_findings",
+    "matching_findings",
+    "candidates",
+    "values_per_field",
+    "retained_evidence",
+    "diagnostics",
+]
+
+
+class _ArchivedInvalidSchema(ImmutableModel):
+    kind: Literal["invalid_contract_schema"]
+
+
+class _ArchivedExtractionCountOverflow(ImmutableModel):
+    kind: Literal["count_overflow"]
+    limit: ArchivedExtractionLimitName
+
+
+class _ArchivedGroupingIndexInvariant(ImmutableModel):
+    kind: Literal["grouping_index_invariant"]
+
+
+class _ArchivedExtractionLimitExceeded(ImmutableModel):
+    kind: Literal["limit_exceeded"]
+    limit: ArchivedExtractionLimitName
+    maximum: U64
+    observed: U64
+
+
+type ArchivedExtractionFailure = Annotated[
+    _ArchivedInvalidSchema
+    | _ArchivedExtractionCountOverflow
+    | _ArchivedGroupingIndexInvariant
+    | _ArchivedExtractionLimitExceeded,
+    Field(discriminator="kind"),
+]
+
+
+class _ArchivedValidationOverflow(ImmutableModel):
+    kind: Literal[
+        "field_count_overflow",
+        "record_count_overflow",
+        "conversion_count_overflow",
+        "issue_count_overflow",
+        "provenance_count_overflow",
+    ]
+
+
+class _ArchivedValidationLimitExceeded(ImmutableModel):
+    kind: Literal[
+        "field_limit_exceeded",
+        "record_limit_exceeded",
+        "conversion_limit_exceeded",
+        "issue_limit_exceeded",
+        "provenance_limit_exceeded",
+    ]
+    maximum: U64
+    observed: U64
+
+
+type ArchivedValidationFailure = Annotated[
+    _ArchivedInvalidSchema
+    | _ArchivedValidationOverflow
+    | _ArchivedValidationLimitExceeded,
+    Field(discriminator="kind"),
+]
+
+
+class _ArchivedOutcomeBase(ImmutableModel):
+    pass
+
+
+class _ArchivedEvaluated(_ArchivedOutcomeBase):
+    status: Literal["evaluated"]
+    document_id: str
+    records: tuple[ArchivedValidatedContractRecord, ...]
+    issues: tuple[ArchivedContractRecordIssue, ...]
+    extraction_diagnostics: tuple[ExtractionDiagnostic, ...]
+
+
+class _ArchivedNoMatch(_ArchivedOutcomeBase):
+    status: Literal["no_match"]
+    document_id: str
+
+
+class _ArchivedIndeterminate(_ArchivedOutcomeBase):
+    status: Literal["indeterminate"]
+    document_id: str
+    completeness: IncompleteEvidence
+    reason_code: str
+
+
+class _ArchivedLocateFailed(_ArchivedOutcomeBase):
+    status: Literal["locate_failed"]
+    failure: Failure
+
+
+class _ArchivedExtractionRejected(_ArchivedOutcomeBase):
+    status: Literal["extraction_rejected"]
+    failure: ArchivedExtractionFailure
+
+
+class _ArchivedValidationRejected(_ArchivedOutcomeBase):
+    status: Literal["validation_rejected"]
+    failure: ArchivedValidationFailure
+
+
+type ArchivedContractOutcomeData = Annotated[
+    _ArchivedEvaluated
+    | _ArchivedNoMatch
+    | _ArchivedIndeterminate
+    | _ArchivedLocateFailed
+    | _ArchivedExtractionRejected
+    | _ArchivedValidationRejected,
+    Field(discriminator="status"),
+]
+_archived_outcome_adapter: TypeAdapter[ArchivedContractOutcomeData] = TypeAdapter(
+    ArchivedContractOutcomeData
+)
+
+
+class ArchivedContractOutcome:
+    """Immutable typed view of Rust's portable Contract archive outcome."""
+
+    __slots__ = ("view", "_json", "_sealed")
+
+    def __init__(self, value: str) -> None:
+        wire = json.loads(value)
+        self.view: ArchivedContractOutcomeData = (
+            _archived_outcome_adapter.validate_python(
+                wire, context=RUST_DOMAIN_VALIDATED
+            )
+        )
+        self._json = value
+        self._sealed = True
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        if getattr(self, "_sealed", False):
+            raise AttributeError("ArchivedContractOutcome is read-only")
+        object.__setattr__(self, name, value)
+
+    @property
+    def status(self) -> str:
+        return self.view.status
+
+    @property
+    def document_id(self) -> str | None:
+        return getattr(self.view, "document_id", None)
+
+    @property
+    def completeness(self) -> IncompleteEvidence | None:
+        return getattr(self.view, "completeness", None)
+
+    @property
+    def reason_code(self) -> str | None:
+        return getattr(self.view, "reason_code", None)
+
+    @property
+    def failure(
+        self,
+    ) -> Failure | ArchivedExtractionFailure | ArchivedValidationFailure | None:
+        return getattr(self.view, "failure", None)
+
+    @property
+    def records(self) -> tuple[ArchivedValidatedContractRecord, ...]:
+        return self.view.records if isinstance(self.view, _ArchivedEvaluated) else ()
+
+    @property
+    def issues(self) -> tuple[ArchivedContractRecordIssue, ...]:
+        return self.view.issues if isinstance(self.view, _ArchivedEvaluated) else ()
+
+    @property
+    def extraction_diagnostics(self) -> tuple[ExtractionDiagnostic, ...]:
+        return (
+            self.view.extraction_diagnostics
+            if isinstance(self.view, _ArchivedEvaluated)
+            else ()
+        )
+
+    def to_json(self) -> str:
+        return self._json
+
+    def model_dump(self) -> dict[str, Any]:
+        return json.loads(self._json)
+
+    def model_dump_json(self) -> str:
+        return self._json
+
+
+def _archived_outcome(
+    handle: _native.ContractOutcome, schema: ContractSchema
+) -> ArchivedContractOutcome:
+    return ArchivedContractOutcome(handle.to_archived(schema.model_dump_json()))
 
 
 ExtractionLimitName = Literal[
@@ -129,9 +404,55 @@ ExtractionLimitName = Literal[
 ]
 
 
+class _ContractSchemaErrorNoDetails(ImmutableModel):
+    pass
+
+
+class _ContractSchemaErrorFieldDetails(ImmutableModel):
+    field: FieldId
+
+
+class _ContractSchemaErrorVersionDetails(ImmutableModel):
+    observed: Annotated[int, Field(strict=True, ge=0, le=(1 << 32) - 1)]
+
+
+class _ContractSchemaErrorUnit(ImmutableModel):
+    variant: Literal[
+        "ZeroVersion",
+        "EmptyContractId",
+        "EmptyFieldId",
+        "EmptyContractDescription",
+        "NoFields",
+        "LengthOverflow",
+    ]
+    details: _ContractSchemaErrorNoDetails
+
+
+class _ContractSchemaErrorUnsupportedVersion(ImmutableModel):
+    variant: Literal["UnsupportedVersion"]
+    details: _ContractSchemaErrorVersionDetails
+
+
+class _ContractSchemaErrorField(ImmutableModel):
+    variant: Literal["EmptyFieldDescription", "EmptyValueType", "DuplicateField"]
+    details: _ContractSchemaErrorFieldDetails
+
+
+type ContractSchemaFailure = Annotated[
+    _ContractSchemaErrorUnit
+    | _ContractSchemaErrorUnsupportedVersion
+    | _ContractSchemaErrorField,
+    Field(discriminator="variant"),
+]
+
+
 class _InvalidSchemaFailure(ImmutableModel):
     kind: Literal["invalid_contract_schema"]
     message: str
+    # Keep Rust's Display text intact; structured data is carried separately.
+    schema_error: ContractSchemaFailure | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
 
 
 class _ExtractionCountOverflow(ImmutableModel):
@@ -146,8 +467,8 @@ class _GroupingIndexInvariant(ImmutableModel):
 class _ExtractionLimitExceeded(ImmutableModel):
     kind: Literal["limit_exceeded"]
     limit: ExtractionLimitName
-    maximum: int
-    observed: int
+    maximum: U64
+    observed: U64
 
 
 type RuntimeExtractionFailure = Annotated[
@@ -162,6 +483,9 @@ type RuntimeExtractionFailure = Annotated[
 class _InvalidValidationSchema(ImmutableModel):
     kind: Literal["invalid_contract_schema"]
     message: str
+    schema_error: ContractSchemaFailure | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
 
 
 class _ValidationOverflow(ImmutableModel):
@@ -182,8 +506,8 @@ class _ValidationLimitExceeded(ImmutableModel):
         "issue_limit_exceeded",
         "provenance_limit_exceeded",
     ]
-    maximum: int
-    observed: int
+    maximum: U64
+    observed: U64
 
 
 type RuntimeValidationFailure = Annotated[
@@ -463,6 +787,14 @@ class RuntimeContractOutcome:
             RuntimeValidatedRecord.model_validate(item, context=RUST_DOMAIN_VALIDATED)
             for item in records
         ]
+
+    def to_archived(
+        self, schema: ContractSchema | None = None
+    ) -> ArchivedContractOutcome:
+        """Return Rust's code-independent portable archive representation."""
+        return _archived_outcome(
+            self._handle, self.contract_schema if schema is None else schema
+        )
 
     def to_json(self) -> str:
         return self._handle.to_json()

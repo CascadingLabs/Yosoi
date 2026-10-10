@@ -10,6 +10,25 @@ from pydantic import Field, PrivateAttr
 from . import _native
 from ._models import ImmutableModel, NativeAuthoringModel
 from .cancellation import CancellationToken
+from .diagnostics import AttemptDiagnostic as AttemptDiagnostic
+from .diagnostics import (
+    AttemptFailureKind as AttemptFailureKind,
+)
+from .diagnostics import (
+    Diagnostic as Diagnostic,
+)
+from .diagnostics import (
+    NotStartedReason as NotStartedReason,
+)
+from .diagnostics import PartialReason as PartialReason
+from .diagnostics import (
+    ProjectionReason as ProjectionReason,
+)
+from .diagnostics import (
+    TransportDiagnostic as TransportDiagnostic,
+)
+from .diagnostics import UnavailableReason as UnavailableReason
+from .diagnostics import UnprojectableReason as UnprojectableReason
 from .documents import Document, DocumentProfile
 from .identities import (
     ActivityId as ActivityId,
@@ -21,27 +40,24 @@ from .identities import (
     RequestId as RequestId,
 )
 from .policy import AcquisitionKind, Policy, PolicySnapshot
+from .scalars import ValidatedString
 
 DocumentRequest = Literal[
     "response_document", "rendered_dom", "accessibility_tree", "network_tree"
 ]
 
 
-class ProjectionReason(ImmutableModel):
-    kind: str
-    family: str | None = None
-    reason: str | None = None
-    code: str | None = None
+class WebTarget(ValidatedString):
+    """Authored request target; Rust defers URL validation until preparation."""
 
+    _kind = "web_target"
 
-class Diagnostic(ImmutableModel):
-    kind: str
-    value: TransportDiagnostic | None = None
+    @classmethod
+    def new(cls, value: str) -> WebTarget:
+        return cls(value)
 
-
-class TransportDiagnostic(ImmutableModel):
-    kind: str
-    value: str | None = None
+    def __repr__(self) -> str:
+        return "WebTarget(<redacted>)"
 
 
 class DocumentMetadata(ImmutableModel):
@@ -98,19 +114,30 @@ class Attempt(ImmutableModel):
     requested_target: str
     http_status: int | None
     state: Literal["completed", "failed", "not_started"]
-    failure_kind: str | None
-    not_started_reason: Literal["cancelled"] | None
+    failure_kind: AttemptFailureKind | None
+    not_started_reason: NotStartedReason | None
     diagnostic: Diagnostic | None
     documents: tuple[AttemptDocument, ...]
 
 
 class Response(ImmutableModel):
     request_id: str
-    requested_target: str
+    requested_target: str = Field(repr=False)
     policy_snapshot: PolicySnapshot
     termination: Literal["completed", "cancelled"]
-    attempts: tuple[Attempt, ...]
+    attempts: tuple[Attempt, ...] = Field(repr=False)
     _handle: _native.Response = PrivateAttr()
+
+    def __repr__(self) -> str:
+        return (
+            "Response("
+            f"request_id={self.request_id!r}, "
+            "requested_target='<redacted>', "
+            f"attempt_count={len(self.attempts)}, "
+            f"termination={self.termination!r})"
+        )
+
+    __str__ = __repr__
 
     @classmethod
     def _from_native(cls, handle: _native.Response) -> Response:
@@ -137,7 +164,7 @@ class Response(ImmutableModel):
 
 
 class PageRequest(NativeAuthoringModel):
-    target: str = Field(repr=False)
+    target: WebTarget = Field(repr=False)
     _handle: _native.PageRequest = PrivateAttr()
 
     def model_post_init(self, context: object) -> None:
@@ -168,7 +195,7 @@ class BoundPageRequest:
         return self.request.id
 
     @property
-    def target(self) -> str:
+    def target(self) -> WebTarget:
         return self.request.target
 
     @property
@@ -185,12 +212,9 @@ class BoundPageRequest:
         return Response._from_native(handle)
 
 
-def new(target: str) -> PageRequest:
-    return PageRequest(target=target)
+def new(target: str | WebTarget) -> PageRequest:
+    return PageRequest(target=WebTarget.new(target))
 
 
 def _token(value: CancellationToken | None) -> _native.CancellationToken | None:
     return None if value is None else value._handle
-
-
-Diagnostic.model_rebuild()

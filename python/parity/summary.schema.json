@@ -1,0 +1,186 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://yosoi.dev/schemas/python-rust-sdk-parity-summary-v1.json",
+  "title": "Yosoi Python/Rust SDK parity frontend summary",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "kind",
+    "generatedAt",
+    "parityStatus",
+    "source",
+    "python",
+    "pinsMatch",
+    "coverage",
+    "reportSha256",
+    "provenance"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "kind": {
+      "const": "python-rust-sdk-parity-summary"
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "parityStatus": {
+      "enum": [
+        "complete",
+        "incomplete",
+        "stale"
+      ]
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "revision",
+        "sdk",
+        "reference",
+        "inventorySignature",
+        "featureProfile",
+        "featureProfileDigest"
+      ],
+      "properties": {
+        "revision": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "sdk": {
+          "type": "object"
+        },
+        "reference": {
+          "type": "object"
+        },
+        "inventorySignature": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "featureProfile": {
+          "type": "object"
+        },
+        "featureProfileDigest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "additionalProperties": true
+    },
+    "python": {
+      "type": "object",
+      "required": [
+        "package",
+        "runtime",
+        "surfaceDigest",
+        "implementationDigest"
+      ],
+      "properties": {
+        "package": {
+          "type": "string"
+        },
+        "runtime": {
+          "type": "object"
+        },
+        "surfaceDigest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "implementationDigest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "pinsMatch": {
+      "type": "boolean"
+    },
+    "coverage": {
+      "type": "object",
+      "required": [
+        "denominator",
+        "counts",
+        "covered",
+        "mappedButUnverified",
+        "staleOrMissing"
+      ],
+      "properties": {
+        "denominator": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "counts": {
+          "type": "object",
+          "required": [
+            "mapped",
+            "verified",
+            "stale",
+            "missing",
+            "language-specific"
+          ],
+          "properties": {
+            "mapped": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "verified": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "stale": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "missing": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "language-specific": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        },
+        "covered": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "mappedButUnverified": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "staleOrMissing": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "reportSha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "provenance": {
+      "const": "unsigned-local-validation"
+    },
+    "gate": {
+      "enum": [
+        "sdk"
+      ]
+    },
+    "inventoryParityStatus": {
+      "enum": [
+        "complete",
+        "incomplete",
+        "stale"
+      ]
+    },
+    "sdkParity": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": false
+}

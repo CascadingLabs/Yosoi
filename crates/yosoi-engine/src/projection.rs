@@ -10,3 +10,4 @@ pub use outcome::{
     UnavailableReason, UnprojectableReason,
 };
 pub use project::project_attempt;
+pub use yosoi_web_capture::{DecodingErrorCode, UnknownReason, WebArtifactFamily};

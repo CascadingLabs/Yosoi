@@ -10,9 +10,10 @@ pub use yosoi_engine::{
     RecordScope, ValidatedRecord, ValidationCode, ValidationFailure, ValidationLimits,
 };
 
+pub use yosoi_contract_validation::archived::ContractOutcome as ArchivedContractOutcome;
 pub use yosoi_contract_validation::{
-    RuntimeContractError, RuntimeContractOutcome, RuntimeExtracted, RuntimeFieldValue,
-    RuntimeRecordIssue, RuntimeValidatedRecord, RuntimeValue,
+    RuntimeContractArchiveError, RuntimeContractError, RuntimeContractOutcome, RuntimeExtracted,
+    RuntimeFieldValue, RuntimeRecordIssue, RuntimeValidatedRecord, RuntimeValue,
 };
 pub use yosoi_contracts::RuntimeCandidate;
 

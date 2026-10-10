@@ -29,15 +29,15 @@ use yosoi_engine::{
     BrowserResolutionInputs, BrowserUrlAdmission, CaptureId, CertifiedBrowserCapabilities,
     DocumentOutcome, NavigationCompletionPolicy, NavigationContext, OperationId,
     PolicyCaptureOutcome, PolicyDecision, PolicyResolutionContext, PolicyResolutionError,
-    PolicyResolver, Producer, ProducerId, ProducerVersion, ReasonCode, RequestExecutor,
-    ResponseTermination, Schema, SchemaId, SchemaVersion, SettlementPolicy,
-    WebArtifactCapabilitySet, WebProviderCapabilityProfile, prelude as ys, project_attempt,
+    PolicyResolver, Producer, ReasonCode, RequestExecutor, ResponseTermination, Schema, SchemaId,
+    SchemaVersion, SettlementPolicy, WebArtifactCapabilitySet, WebProviderCapabilityProfile,
+    prelude as ys, project_attempt,
 };
 use yosoi_types::ArtifactAvailability;
 use yosoi_web_capture::{
     AccessibilityTreeArtifact, ArtifactRequest, BrowserCaptureSpecError, BrowserMode,
     BrowserStructuredEvidence, CaptureBundle, CaptureCompleteness, CaptureEnvironment,
-    CleanupState, RenderedDomArtifact, SourceArtifact,
+    CleanupState, RenderedDomArtifact, SourceArtifact, void_crawl_adapter_producer,
 };
 
 const INLINE_PAGE: &[u8] = br##"<!doctype html>
@@ -89,7 +89,18 @@ impl InlinePageServer {
                         "browser fixture rejected a non-loopback peer",
                     ));
                 }
-                serve_inline_page(stream, &task_cancellation).await?;
+                if let Err(error) = serve_inline_page(stream, &task_cancellation).await {
+                    // Chrome can cancel speculative requests when a capture closes.
+                    // A disconnected client must not terminate the fixture server.
+                    if !matches!(
+                        error.kind(),
+                        io::ErrorKind::BrokenPipe
+                            | io::ErrorKind::ConnectionReset
+                            | io::ErrorKind::ConnectionAborted
+                    ) {
+                        return Err(error);
+                    }
+                }
             }
             Ok(())
         });
@@ -153,11 +164,32 @@ async fn serve_inline_page(
     stream.shutdown().await
 }
 
+#[tokio::test]
+async fn inline_page_server_survives_reset_connections() -> TestResult {
+    let server = InlinePageServer::start().await?;
+    let address = server
+        .url
+        .trim_start_matches("http://")
+        .trim_end_matches('/');
+    let mut aborted = TcpStream::connect(address).await?;
+    aborted.set_zero_linger()?;
+    aborted
+        .write_all(b"GET / HTTP/1.1\r\nHost: localhost\r\n\r\n")
+        .await?;
+    drop(aborted);
+
+    let mut next = TcpStream::connect(address).await?;
+    next.write_all(b"GET / HTTP/1.1\r\nHost: localhost\r\n\r\n")
+        .await?;
+    let mut response = Vec::new();
+    timeout(Duration::from_secs(5), next.read_to_end(&mut response)).await??;
+    assert!(response.starts_with(b"HTTP/1.1 200 OK\r\n"));
+    assert!(response.ends_with(INLINE_PAGE));
+    server.shutdown().await
+}
+
 fn test_producer() -> TestResult<Producer> {
-    Ok(Producer::new(
-        ProducerId::new("com.cascadinglabs.void_crawl_core")?,
-        ProducerVersion::new("0.5.0")?,
-    ))
+    Ok(void_crawl_adapter_producer()?)
 }
 
 fn test_operation() -> TestResult<OperationId> {

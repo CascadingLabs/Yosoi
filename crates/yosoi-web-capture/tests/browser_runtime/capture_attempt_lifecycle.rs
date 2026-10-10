@@ -30,10 +30,7 @@ use tokio::{
 };
 use tokio_util::sync::CancellationToken;
 use void_crawl_core::ProfileRegistry;
-use yosoi_types::{
-    CaptureId, OperationId, Producer, ProducerId, ProducerVersion, ReasonCode, Schema, SchemaId,
-    SchemaVersion,
-};
+use yosoi_types::{CaptureId, OperationId, Producer, ReasonCode, Schema, SchemaId, SchemaVersion};
 use yosoi_web_capture::*;
 use yosoi_web_capture::{
     BrowserExecutionManager, BrowserExecutionManagerConfig, VoidCrawlAdapterError, capture_attempt,
@@ -84,10 +81,7 @@ fn execution_limits_with_contexts(
 }
 
 fn producer() -> Producer {
-    Producer::new(
-        ProducerId::new("com.cascadinglabs.void_crawl_core").unwrap(),
-        ProducerVersion::new("0.5.0").unwrap(),
-    )
+    void_crawl_adapter_producer().expect("linked VoidCrawl producer identity must be valid")
 }
 
 fn capabilities(mode: BrowserMode) -> CertifiedBrowserCapabilities {

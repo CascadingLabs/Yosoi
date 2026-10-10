@@ -10,6 +10,7 @@ from pydantic_core import CoreSchema, core_schema
 from . import _native
 from ._models import ImmutableModel, NativeAuthoringModel
 from .cancellation import CancellationToken
+from .diagnostics import SearchAttemptDiagnostic as SearchAttemptDiagnostic
 from .policy import AcquisitionKind, Policy, PolicyIdentity, ProviderDefaultsStatus
 from .request import _token
 
@@ -32,6 +33,9 @@ class SearchResultUrl(str):
     def as_request_target(self) -> str:
         return str(self)
 
+    def __repr__(self) -> str:
+        return "SearchResultUrl(<redacted>)"
+
     @classmethod
     def __get_pydantic_core_schema__(
         cls, source: object, handler: GetCoreSchemaHandler
@@ -47,19 +51,42 @@ Rank = Annotated[int, Field(ge=1, le=65535, strict=True)]
 
 
 class SearchHitMetadata(ImmutableModel):
-    title: str | None
-    snippet: str | None
-    display_url: str | None
-    publisher: str | None
-    published_at: str | None
-    thumbnail_url: SearchResultUrl | None
+    title: str | None = Field(default=None, repr=False)
+    snippet: str | None = Field(default=None, repr=False)
+    display_url: str | None = Field(default=None, repr=False)
+    publisher: str | None = Field(default=None, repr=False)
+    published_at: str | None = Field(default=None, repr=False)
+    thumbnail_url: SearchResultUrl | None = Field(default=None, repr=False)
+
+    def __repr__(self) -> str:
+        return (
+            "SearchHitMetadata("
+            f"title_present={self.title is not None}, "
+            f"snippet_present={self.snippet is not None}, "
+            f"display_url_present={self.display_url is not None}, "
+            f"publisher_present={self.publisher is not None}, "
+            f"published_at_present={self.published_at is not None}, "
+            f"thumbnail_present={self.thumbnail_url is not None})"
+        )
+
+    __str__ = __repr__
 
 
 class SearchHit(ImmutableModel):
-    url: SearchResultUrl
+    url: SearchResultUrl = Field(repr=False)
     organic_rank: Rank
     placement_index: Rank
-    metadata: SearchHitMetadata
+    metadata: SearchHitMetadata = Field(repr=False)
+
+    def __repr__(self) -> str:
+        return (
+            "SearchHit("
+            f"organic_rank={self.organic_rank!r}, "
+            f"placement_index={self.placement_index!r}, "
+            "url='<redacted>', ...)"
+        )
+
+    __str__ = __repr__
 
     @property
     def title(self) -> str | None:
@@ -92,40 +119,79 @@ class SearchCoverage(ImmutableModel):
 
 
 class ImageResult(ImmutableModel):
-    image_url: SearchResultUrl
-    source_page_url: SearchResultUrl
+    image_url: SearchResultUrl = Field(repr=False)
+    source_page_url: SearchResultUrl = Field(repr=False)
+
+    def __repr__(self) -> str:
+        return "ImageResult(<redacted>)"
+
+    __str__ = __repr__
 
 
 class LocalPlace(ImmutableModel):
-    name: str
-    place_url: SearchResultUrl
+    name: str = Field(repr=False)
+    place_url: SearchResultUrl = Field(repr=False)
+
+    def __repr__(self) -> str:
+        return "LocalPlace(<redacted>)"
+
+    __str__ = __repr__
 
 
 class Sponsored(ImmutableModel):
     kind: Literal["sponsored"]
     placement_index: Rank
-    destination: SearchResultUrl
-    label: str | None
+    destination: SearchResultUrl = Field(repr=False)
+    label: str | None = Field(repr=False)
+
+    def __repr__(self) -> str:
+        return f"Sponsored(placement_index={self.placement_index!r}, ...)"
+
+    __str__ = __repr__
 
 
 class Answer(ImmutableModel):
     kind: Literal["answer"]
     placement_index: Rank
-    text: str
-    citations: tuple[SearchResultUrl, ...]
+    text: str = Field(repr=False)
+    citations: tuple[SearchResultUrl, ...] = Field(repr=False)
+
+    def __repr__(self) -> str:
+        return (
+            f"Answer(placement_index={self.placement_index!r}, "
+            f"citation_count={len(self.citations)}, ...)"
+        )
+
+    __str__ = __repr__
 
 
 class ImageGallery(ImmutableModel):
     kind: Literal["image_gallery"]
     placement_index: Rank
-    images: tuple[ImageResult, ...]
+    images: tuple[ImageResult, ...] = Field(repr=False)
+
+    def __repr__(self) -> str:
+        return (
+            f"ImageGallery(placement_index={self.placement_index!r}, "
+            f"image_count={len(self.images)})"
+        )
+
+    __str__ = __repr__
 
 
 class LocalPack(ImmutableModel):
     kind: Literal["local_pack"]
     placement_index: Rank
-    places: tuple[LocalPlace, ...]
-    map_url: SearchResultUrl | None
+    places: tuple[LocalPlace, ...] = Field(repr=False)
+    map_url: SearchResultUrl | None = Field(repr=False)
+
+    def __repr__(self) -> str:
+        return (
+            f"LocalPack(placement_index={self.placement_index!r}, "
+            f"place_count={len(self.places)}, ...)"
+        )
+
+    __str__ = __repr__
 
 
 SearchFeature = Annotated[
@@ -146,10 +212,21 @@ class SearchIssue(ImmutableModel):
 
 
 class SearchPage(ImmutableModel):
-    hits: tuple[SearchHit, ...]
-    features: tuple[SearchFeature, ...]
+    hits: tuple[SearchHit, ...] = Field(repr=False)
+    features: tuple[SearchFeature, ...] = Field(repr=False)
     coverage: SearchCoverage
-    issues: tuple[SearchIssue, ...]
+    issues: tuple[SearchIssue, ...] = Field(repr=False)
+
+    def __repr__(self) -> str:
+        return (
+            "SearchPage("
+            f"hit_count={len(self.hits)}, "
+            f"feature_count={len(self.features)}, "
+            f"issue_count={len(self.issues)}, "
+            f"coverage={self.coverage!r})"
+        )
+
+    __str__ = __repr__
 
 
 class Results(ImmutableModel):
@@ -215,7 +292,7 @@ class RequestAttemptSummary(ImmutableModel):
     acquisition: AcquisitionKind
     http_status: int | None
     source_bytes: int | None
-    diagnostic: str | None
+    diagnostic: SearchAttemptDiagnostic | None
     terminal: Literal["completed", "failed", "not_started"]
 
 
@@ -234,10 +311,24 @@ class ProviderResult(ImmutableModel):
     identity: ProviderIdentity
     profile: SearchProfileFacts
     request_id: str | None
-    recovery_query: str | None
-    attempts: tuple[RequestAttemptSummary, ...]
+    recovery_query: str | None = Field(repr=False)
+    attempts: tuple[RequestAttemptSummary, ...] = Field(repr=False)
     outcome: ProviderOutcome
     charge: ProviderCharge
+
+    def __repr__(self) -> str:
+        return (
+            "ProviderResult("
+            f"identity={self.identity!r}, "
+            f"profile={self.profile!r}, "
+            f"request_id={self.request_id!r}, "
+            f"recovery_attempted={self.recovery_query is not None}, "
+            f"attempt_count={len(self.attempts)}, "
+            f"outcome={self.outcome!r}, "
+            f"charge={self.charge!r})"
+        )
+
+    __str__ = __repr__
 
     @property
     def hits(self) -> tuple[SearchHit, ...]:
@@ -248,7 +339,18 @@ class SearchResponse(ImmutableModel):
     request_id: str
     policy_identity: PolicyIdentity
     termination: Literal["completed", "cancelled", "deadline_reached"]
-    providers: tuple[ProviderResult, ...]
+    providers: tuple[ProviderResult, ...] = Field(repr=False)
+
+    def __repr__(self) -> str:
+        return (
+            "SearchResponse("
+            f"request_id={self.request_id!r}, "
+            f"policy_identity={self.policy_identity!r}, "
+            f"provider_count={len(self.providers)}, "
+            f"termination={self.termination!r})"
+        )
+
+    __str__ = __repr__
 
 
 class SearchRequest(NativeAuthoringModel):

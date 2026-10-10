@@ -1,0 +1,677 @@
+{
+  "schemaVersion": 1,
+  "kind": "yosoi-python-json-type-mappings",
+  "classification": {
+    "formatBoundary": "Maps SDK concepts to Python JSON codecs; arbitrary Serde serializer formats are outside the Python SDK contract."
+  },
+  "typeMappings": [
+    {
+      "rustPath": "yosoi::CountLimit",
+      "pythonTarget": "yosoi.scalars.CountLimit"
+    },
+    {
+      "rustPath": "yosoi::DocumentId",
+      "pythonTarget": "yosoi.scalars.DocumentId"
+    },
+    {
+      "rustPath": "yosoi::DocumentProfile",
+      "pythonTarget": "yosoi.documents.DocumentProfile"
+    },
+    {
+      "rustPath": "yosoi::LocateOutcome",
+      "pythonTarget": "yosoi.outcomes.LocateOutcome"
+    },
+    {
+      "rustPath": "yosoi::Policy",
+      "pythonTarget": "yosoi.Policy"
+    },
+    {
+      "rustPath": "yosoi::ResponseTermination",
+      "pythonTarget": "yosoi.request.Response.termination"
+    },
+    {
+      "rustPath": "yosoi::StepLimit",
+      "pythonTarget": "yosoi.scalars.StepLimit"
+    },
+    {
+      "rustPath": "yosoi::contracts::Cardinality",
+      "pythonTarget": "yosoi.contracts.Cardinality"
+    },
+    {
+      "rustPath": "yosoi::contracts::ContractId",
+      "pythonTarget": "yosoi.scalars.ContractId"
+    },
+    {
+      "rustPath": "yosoi::contracts::ContractSchema",
+      "pythonTarget": "yosoi.contracts.ContractSchema"
+    },
+    {
+      "rustPath": "yosoi::contracts::Currency",
+      "pythonTarget": "yosoi.contracts.Money.currency"
+    },
+    {
+      "rustPath": "yosoi::contracts::ExtractionDiagnostic",
+      "pythonTarget": "yosoi.contracts.ExtractionDiagnostic"
+    },
+    {
+      "rustPath": "yosoi::contracts::ExtractionFailure",
+      "pythonTarget": "yosoi.contracts.RuntimeExtractionFailure"
+    },
+    {
+      "rustPath": "yosoi::contracts::ExtractionLimit",
+      "pythonTarget": "yosoi.runtime_contracts.ExtractionLimitName"
+    },
+    {
+      "rustPath": "yosoi::contracts::FieldId",
+      "pythonTarget": "yosoi.scalars.FieldId"
+    },
+    {
+      "rustPath": "yosoi::contracts::FieldIssue",
+      "pythonTarget": "yosoi.contracts.FieldIssue"
+    },
+    {
+      "rustPath": "yosoi::contracts::FieldIssueKind",
+      "pythonTarget": "yosoi.contracts.FieldIssueKind"
+    },
+    {
+      "rustPath": "yosoi::contracts::FieldSchema",
+      "pythonTarget": "yosoi.contracts.FieldSchema"
+    },
+    {
+      "rustPath": "yosoi::contracts::Money",
+      "pythonTarget": "yosoi.contracts.Money"
+    },
+    {
+      "rustPath": "yosoi::contracts::RecordScope",
+      "pythonTarget": "yosoi.contracts.ContractSchema.scope"
+    },
+    {
+      "rustPath": "yosoi::contracts::RuntimeContract",
+      "pythonTarget": "yosoi.contracts.RuntimeContract"
+    },
+    {
+      "rustPath": "yosoi::contracts::RuntimeContractError",
+      "pythonTarget": "yosoi.errors.ContractError"
+    },
+    {
+      "rustPath": "yosoi::contracts::RuntimeContractOutcome",
+      "pythonTarget": "yosoi.contracts.RuntimeContractOutcome"
+    },
+    {
+      "rustPath": "yosoi::contracts::RuntimeExtracted",
+      "pythonTarget": "yosoi.contracts.RuntimeExtracted"
+    },
+    {
+      "rustPath": "yosoi::contracts::RuntimeFieldValue",
+      "pythonTarget": "yosoi.contracts.RuntimeFieldValue"
+    },
+    {
+      "rustPath": "yosoi::contracts::RuntimeRecordIssue",
+      "pythonTarget": "yosoi.contracts.RuntimeRecordIssue"
+    },
+    {
+      "rustPath": "yosoi::contracts::RuntimeValidatedRecord",
+      "pythonTarget": "yosoi.contracts.RuntimeValidatedRecord"
+    },
+    {
+      "rustPath": "yosoi::contracts::RuntimeValue",
+      "pythonTarget": "yosoi.contracts.RuntimeValue"
+    },
+    {
+      "rustPath": "yosoi::contracts::ValidationCode",
+      "pythonTarget": "yosoi.contracts.FieldIssueKind.code"
+    },
+    {
+      "rustPath": "yosoi::contracts::ValidationFailure",
+      "pythonTarget": "yosoi.contracts.RuntimeValidationFailure"
+    },
+    {
+      "rustPath": "yosoi::documents::AccessibilityCompleteness",
+      "pythonTarget": "yosoi.outcomes.Completeness"
+    },
+    {
+      "rustPath": "yosoi::documents::DocumentClass",
+      "pythonTarget": "yosoi.documents.DocumentClass"
+    },
+    {
+      "rustPath": "yosoi::documents::DocumentEpoch",
+      "pythonTarget": "yosoi.scalars.DocumentEpoch"
+    },
+    {
+      "rustPath": "yosoi::documents::DocumentRepresentation",
+      "pythonTarget": "yosoi.documents.DocumentProfile.representation"
+    },
+    {
+      "rustPath": "yosoi::documents::DocumentSchemaProfile",
+      "pythonTarget": "yosoi.documents.DocumentProfile.schema_profile"
+    },
+    {
+      "rustPath": "yosoi::documents::SourceFormat",
+      "pythonTarget": "yosoi.documents.SourceFormat"
+    },
+    {
+      "rustPath": "yosoi::locators::AccessibilityCoordinate",
+      "pythonTarget": "yosoi.outcomes.AccessibilityCoordinate"
+    },
+    {
+      "rustPath": "yosoi::locators::AccessibilityStateName",
+      "pythonTarget": "yosoi.locators.AccessibilityStateName"
+    },
+    {
+      "rustPath": "yosoi::locators::ByteRange",
+      "pythonTarget": "yosoi.outcomes.ByteRange"
+    },
+    {
+      "rustPath": "yosoi::locators::Completeness",
+      "pythonTarget": "yosoi.outcomes.Completeness"
+    },
+    {
+      "rustPath": "yosoi::locators::DecodedTextCoordinate",
+      "pythonTarget": "yosoi.outcomes.DecodedTextCoordinate"
+    },
+    {
+      "rustPath": "yosoi::locators::DomCoordinate",
+      "pythonTarget": "yosoi.outcomes.DomCoordinate"
+    },
+    {
+      "rustPath": "yosoi::locators::DomNodeId",
+      "pythonTarget": "yosoi.scalars.DomNodeId"
+    },
+    {
+      "rustPath": "yosoi::locators::ExpandedNamePathSegment",
+      "pythonTarget": "yosoi.outcomes.ExpandedNamePathSegment"
+    },
+    {
+      "rustPath": "yosoi::locators::Finding",
+      "pythonTarget": "yosoi.outcomes.Finding"
+    },
+    {
+      "rustPath": "yosoi::locators::IncompleteEvidence",
+      "pythonTarget": "yosoi.outcomes.IncompleteEvidence"
+    },
+    {
+      "rustPath": "yosoi::locators::JsonCoordinate",
+      "pythonTarget": "yosoi.scalars.JsonCoordinate"
+    },
+    {
+      "rustPath": "yosoi::locators::LocateFailure",
+      "pythonTarget": "yosoi.outcomes.Failure"
+    },
+    {
+      "rustPath": "yosoi::locators::LocateResult",
+      "pythonTarget": "yosoi.outcomes.LocateResult"
+    },
+    {
+      "rustPath": "yosoi::locators::NamespaceBinding",
+      "pythonTarget": "yosoi.locators.NamespaceBinding"
+    },
+    {
+      "rustPath": "yosoi::locators::NativeCoordinate",
+      "pythonTarget": "yosoi.outcomes.NativeCoordinate"
+    },
+    {
+      "rustPath": "yosoi::locators::NodeReference",
+      "pythonTarget": "yosoi.outcomes.NodeReference"
+    },
+    {
+      "rustPath": "yosoi::locators::OutputId",
+      "pythonTarget": "yosoi.scalars.OutputId"
+    },
+    {
+      "rustPath": "yosoi::locators::OutputPlan",
+      "pythonTarget": "yosoi.locators.Locator"
+    },
+    {
+      "rustPath": "yosoi::locators::Plan",
+      "pythonTarget": "yosoi.locators.Plan"
+    },
+    {
+      "rustPath": "yosoi::locators::ProjectedValue",
+      "pythonTarget": "yosoi.outcomes.ProjectedValue"
+    },
+    {
+      "rustPath": "yosoi::locators::QueryAtom",
+      "pythonTarget": "yosoi.locators.QueryAtom"
+    },
+    {
+      "rustPath": "yosoi::locators::QueryResultShape",
+      "pythonTarget": "yosoi.locators.QueryResultShape"
+    },
+    {
+      "rustPath": "yosoi::locators::QuerySpec",
+      "pythonTarget": "yosoi.locators.QuerySpec"
+    },
+    {
+      "rustPath": "yosoi::locators::RegionId",
+      "pythonTarget": "yosoi.scalars.RegionId"
+    },
+    {
+      "rustPath": "yosoi::locators::RegionLineage",
+      "pythonTarget": "yosoi.outcomes.RegionLineage"
+    },
+    {
+      "rustPath": "yosoi::locators::RegionPlan",
+      "pythonTarget": "yosoi.locators.Region"
+    },
+    {
+      "rustPath": "yosoi::locators::ResourceLimit",
+      "pythonTarget": "yosoi.outcomes.ResourceLimit"
+    },
+    {
+      "rustPath": "yosoi::locators::TextRange",
+      "pythonTarget": "yosoi.outcomes.TextRange"
+    },
+    {
+      "rustPath": "yosoi::locators::TreeCoordinate",
+      "pythonTarget": "yosoi.outcomes.TreeCoordinate"
+    },
+    {
+      "rustPath": "yosoi::map::DiscoverySource",
+      "pythonTarget": "yosoi.map.DiscoverySource"
+    },
+    {
+      "rustPath": "yosoi::map::Exploration",
+      "pythonTarget": "yosoi.map.Exploration"
+    },
+    {
+      "rustPath": "yosoi::map::FrontierEntry",
+      "pythonTarget": "yosoi.map.FrontierEntry"
+    },
+    {
+      "rustPath": "yosoi::map::HostEntry",
+      "pythonTarget": "yosoi.map.HostEntry"
+    },
+    {
+      "rustPath": "yosoi::map::HostVerification",
+      "pythonTarget": "yosoi.map.HostEntry.verification"
+    },
+    {
+      "rustPath": "yosoi::map::LimitReached",
+      "pythonTarget": "yosoi.map.MapTermination.value"
+    },
+    {
+      "rustPath": "yosoi::map::MapTermination",
+      "pythonTarget": "yosoi.map.MapTermination"
+    },
+    {
+      "rustPath": "yosoi::map::Observation",
+      "pythonTarget": "yosoi.map.Observation"
+    },
+    {
+      "rustPath": "yosoi::map::Omission",
+      "pythonTarget": "yosoi.map.Omission"
+    },
+    {
+      "rustPath": "yosoi::map::OmissionReason",
+      "pythonTarget": "yosoi.map.OmissionReason"
+    },
+    {
+      "rustPath": "yosoi::map::PageEntry",
+      "pythonTarget": "yosoi.map.PageEntry"
+    },
+    {
+      "rustPath": "yosoi::map::PendingReason",
+      "pythonTarget": "yosoi.map.FrontierEntry.reason"
+    },
+    {
+      "rustPath": "yosoi::map::PublicProvider",
+      "pythonTarget": "yosoi.map.PublicProvider"
+    },
+    {
+      "rustPath": "yosoi::map::Rejection",
+      "pythonTarget": "yosoi.map.Rejection"
+    },
+    {
+      "rustPath": "yosoi::map::Relationship",
+      "pythonTarget": "yosoi.map.Relationship"
+    },
+    {
+      "rustPath": "yosoi::map::RelationshipKind",
+      "pythonTarget": "yosoi.map.Relationship.kind"
+    },
+    {
+      "rustPath": "yosoi::map::RequestTrace",
+      "pythonTarget": "yosoi.map.RequestTrace"
+    },
+    {
+      "rustPath": "yosoi::map::SkipReason",
+      "pythonTarget": "yosoi.map.SkipReason"
+    },
+    {
+      "rustPath": "yosoi::map::SourceFailure",
+      "pythonTarget": "yosoi.map.SourceFailure"
+    },
+    {
+      "rustPath": "yosoi::map::SourceOutcome",
+      "pythonTarget": "yosoi.map.SourceOutcome"
+    },
+    {
+      "rustPath": "yosoi::map::SourceSkipReason",
+      "pythonTarget": "yosoi.map.SourceSkipReason"
+    },
+    {
+      "rustPath": "yosoi::map::SourceStatus",
+      "pythonTarget": "yosoi.map.SourceStatus"
+    },
+    {
+      "rustPath": "yosoi::map::Summary",
+      "pythonTarget": "yosoi.map.Summary"
+    },
+    {
+      "rustPath": "yosoi::map::SupportDocument",
+      "pythonTarget": "yosoi.map.SupportDocument"
+    },
+    {
+      "rustPath": "yosoi::map::SupportDocumentKind",
+      "pythonTarget": "yosoi.map.SupportDocument.kind"
+    },
+    {
+      "rustPath": "yosoi::map::TreeEntry",
+      "pythonTarget": "yosoi.map.TreeEntry"
+    },
+    {
+      "rustPath": "yosoi::map::WildcardEntry",
+      "pythonTarget": "yosoi.map.WildcardEntry"
+    },
+    {
+      "rustPath": "yosoi::policy::AccessibilityNodeLimit",
+      "pythonTarget": "yosoi.scalars.AccessibilityNodeLimit"
+    },
+    {
+      "rustPath": "yosoi::policy::Acquisition",
+      "pythonTarget": "yosoi.policy.Acquisition"
+    },
+    {
+      "rustPath": "yosoi::policy::AcquisitionKind",
+      "pythonTarget": "yosoi.policy.AcquisitionKind"
+    },
+    {
+      "rustPath": "yosoi::policy::AddressableByteLimit",
+      "pythonTarget": "yosoi.scalars.AddressableByteLimit"
+    },
+    {
+      "rustPath": "yosoi::policy::BrowserLimits",
+      "pythonTarget": "yosoi.policy.BrowserLimits"
+    },
+    {
+      "rustPath": "yosoi::policy::BrowserMode",
+      "pythonTarget": "yosoi.policy.BrowserMode"
+    },
+    {
+      "rustPath": "yosoi::policy::Budget",
+      "pythonTarget": "yosoi.scalars.Budget"
+    },
+    {
+      "rustPath": "yosoi::policy::DirectHttpRedirectTargets",
+      "pythonTarget": "yosoi.policy.DirectHttpRedirectTargets"
+    },
+    {
+      "rustPath": "yosoi::policy::DirectHttpRedirects",
+      "pythonTarget": "yosoi.policy.Redirects"
+    },
+    {
+      "rustPath": "yosoi::policy::DiscoveryDocuments",
+      "pythonTarget": "yosoi.policy.DiscoveryDocuments"
+    },
+    {
+      "rustPath": "yosoi::policy::DocumentRequest",
+      "pythonTarget": "yosoi.policy.DocumentRequest"
+    },
+    {
+      "rustPath": "yosoi::policy::DocumentSelectionKind",
+      "pythonTarget": "yosoi.policy.DocumentSelectionKind"
+    },
+    {
+      "rustPath": "yosoi::policy::Documents",
+      "pythonTarget": "yosoi.policy.Documents"
+    },
+    {
+      "rustPath": "yosoi::policy::EventLimit",
+      "pythonTarget": "yosoi.scalars.EventLimit"
+    },
+    {
+      "rustPath": "yosoi::policy::Filters",
+      "pythonTarget": "yosoi.policy.Filters"
+    },
+    {
+      "rustPath": "yosoi::policy::HostScope",
+      "pythonTarget": "yosoi.policy.HostScope"
+    },
+    {
+      "rustPath": "yosoi::policy::Limits",
+      "pythonTarget": "yosoi.policy.MapLimits"
+    },
+    {
+      "rustPath": "yosoi::policy::Locators",
+      "pythonTarget": "yosoi.policy.Locators"
+    },
+    {
+      "rustPath": "yosoi::policy::Map",
+      "pythonTarget": "yosoi.policy.Map"
+    },
+    {
+      "rustPath": "yosoi::policy::MaximumElapsed",
+      "pythonTarget": "yosoi.scalars.MaximumElapsed"
+    },
+    {
+      "rustPath": "yosoi::policy::Page",
+      "pythonTarget": "yosoi.policy.Page"
+    },
+    {
+      "rustPath": "yosoi::policy::PageDiscovery",
+      "pythonTarget": "yosoi.policy.PageDiscovery"
+    },
+    {
+      "rustPath": "yosoi::policy::PathScope",
+      "pythonTarget": "yosoi.policy.PathScope"
+    },
+    {
+      "rustPath": "yosoi::policy::ProfileSelection",
+      "pythonTarget": "yosoi.policy.ProfileSelection"
+    },
+    {
+      "rustPath": "yosoi::policy::ProviderDefaultsStatus",
+      "pythonTarget": "yosoi.policy.ProviderDefaultsStatus"
+    },
+    {
+      "rustPath": "yosoi::policy::ProviderDefaultsVersion",
+      "pythonTarget": "yosoi.scalars.ProviderDefaultsVersion"
+    },
+    {
+      "rustPath": "yosoi::policy::ProviderRequestProfile",
+      "pythonTarget": "yosoi.policy.ProviderRequestProfile"
+    },
+    {
+      "rustPath": "yosoi::policy::ProviderSelection",
+      "pythonTarget": "yosoi.policy.ProviderSelection"
+    },
+    {
+      "rustPath": "yosoi::policy::RedirectHopLimit",
+      "pythonTarget": "yosoi.scalars.RedirectHopLimit"
+    },
+    {
+      "rustPath": "yosoi::policy::Request",
+      "pythonTarget": "yosoi.policy.Request"
+    },
+    {
+      "rustPath": "yosoi::policy::ResourceLimit",
+      "pythonTarget": "yosoi.scalars.ResourceLimit"
+    },
+    {
+      "rustPath": "yosoi::policy::Robots",
+      "pythonTarget": "yosoi.policy.Robots"
+    },
+    {
+      "rustPath": "yosoi::policy::Scope",
+      "pythonTarget": "yosoi.policy.Scope"
+    },
+    {
+      "rustPath": "yosoi::policy::SourceLimits",
+      "pythonTarget": "yosoi.policy.SourceLimits"
+    },
+    {
+      "rustPath": "yosoi::policy::Subdomains",
+      "pythonTarget": "yosoi.policy.Subdomains"
+    },
+    {
+      "rustPath": "yosoi::policy::Tuning",
+      "pythonTarget": "yosoi.policy.Tuning"
+    },
+    {
+      "rustPath": "yosoi::policy::TuningMode",
+      "pythonTarget": "yosoi.policy.TuningMode"
+    },
+    {
+      "rustPath": "yosoi::policy::search::EffectiveProviderRoute",
+      "pythonTarget": "yosoi.policy.EffectiveProviderRoute"
+    },
+    {
+      "rustPath": "yosoi::policy::search::EffectiveSearch",
+      "pythonTarget": "yosoi.policy.EffectiveSearch"
+    },
+    {
+      "rustPath": "yosoi::policy::search::ProfileSelectionKind",
+      "pythonTarget": "yosoi.policy.ProfileSelection.kind"
+    },
+    {
+      "rustPath": "yosoi::policy::search::Provider",
+      "pythonTarget": "yosoi.policy.Provider"
+    },
+    {
+      "rustPath": "yosoi::policy::search::Search",
+      "pythonTarget": "yosoi.policy.Search"
+    },
+    {
+      "rustPath": "yosoi::request::ActivityId",
+      "pythonTarget": "yosoi.request.ActivityId"
+    },
+    {
+      "rustPath": "yosoi::request::AttemptDiagnostic",
+      "pythonTarget": "yosoi.request.AttemptDiagnostic"
+    },
+    {
+      "rustPath": "yosoi::request::AttemptFailureKind",
+      "pythonTarget": "yosoi.diagnostics.AttemptFailureKind"
+    },
+    {
+      "rustPath": "yosoi::request::BrowserFailureReason",
+      "pythonTarget": "yosoi.diagnostics.BrowserFailureReason"
+    },
+    {
+      "rustPath": "yosoi::request::CaptureId",
+      "pythonTarget": "yosoi.request.CaptureId"
+    },
+    {
+      "rustPath": "yosoi::request::DecodingErrorCode",
+      "pythonTarget": "yosoi.diagnostics.DecodingErrorCode"
+    },
+    {
+      "rustPath": "yosoi::request::DirectHttpRedirectErrorKind",
+      "pythonTarget": "yosoi.diagnostics.DirectHttpRedirectErrorKind"
+    },
+    {
+      "rustPath": "yosoi::request::DirectHttpTransportErrorKind",
+      "pythonTarget": "yosoi.diagnostics.TransportDiagnostic"
+    },
+    {
+      "rustPath": "yosoi::request::NotStartedReason",
+      "pythonTarget": "yosoi.diagnostics.NotStartedReason"
+    },
+    {
+      "rustPath": "yosoi::request::PartialReason",
+      "pythonTarget": "yosoi.request.PartialReason"
+    },
+    {
+      "rustPath": "yosoi::request::UnavailableReason",
+      "pythonTarget": "yosoi.request.UnavailableReason"
+    },
+    {
+      "rustPath": "yosoi::request::UnknownReason",
+      "pythonTarget": "yosoi.diagnostics.UnknownReason"
+    },
+    {
+      "rustPath": "yosoi::request::UnprojectableReason",
+      "pythonTarget": "yosoi.request.UnprojectableReason"
+    },
+    {
+      "rustPath": "yosoi::request::WebArtifactFamily",
+      "pythonTarget": "yosoi.diagnostics.WebArtifactFamily"
+    },
+    {
+      "rustPath": "yosoi::search::FeatureCoverage",
+      "pythonTarget": "yosoi.search.SearchCoverage.rich_features"
+    },
+    {
+      "rustPath": "yosoi::search::ImageResult",
+      "pythonTarget": "yosoi.search.ImageResult"
+    },
+    {
+      "rustPath": "yosoi::search::LocalPlace",
+      "pythonTarget": "yosoi.search.LocalPlace"
+    },
+    {
+      "rustPath": "yosoi::search::ProviderCharge",
+      "pythonTarget": "yosoi.search.ProviderCharge"
+    },
+    {
+      "rustPath": "yosoi::search::ProviderOutcome",
+      "pythonTarget": "yosoi.search.ProviderOutcome"
+    },
+    {
+      "rustPath": "yosoi::search::RequestAttemptTerminal",
+      "pythonTarget": "yosoi.search.RequestAttemptSummary.terminal"
+    },
+    {
+      "rustPath": "yosoi::search::SearchAttemptDiagnostic",
+      "pythonTarget": "yosoi.search.SearchAttemptDiagnostic"
+    },
+    {
+      "rustPath": "yosoi::search::SearchCoverage",
+      "pythonTarget": "yosoi.search.SearchCoverage"
+    },
+    {
+      "rustPath": "yosoi::search::SearchFailure",
+      "pythonTarget": "yosoi.search.Failed.value"
+    },
+    {
+      "rustPath": "yosoi::search::SearchFeature",
+      "pythonTarget": "yosoi.search.SearchFeature"
+    },
+    {
+      "rustPath": "yosoi::search::SearchHit",
+      "pythonTarget": "yosoi.search.SearchHit"
+    },
+    {
+      "rustPath": "yosoi::search::SearchHitMetadata",
+      "pythonTarget": "yosoi.search.SearchHitMetadata"
+    },
+    {
+      "rustPath": "yosoi::search::SearchIssue",
+      "pythonTarget": "yosoi.search.SearchIssue"
+    },
+    {
+      "rustPath": "yosoi::search::SearchIssueKind",
+      "pythonTarget": "yosoi.search.SearchIssue.kind"
+    },
+    {
+      "rustPath": "yosoi::search::SearchPage",
+      "pythonTarget": "yosoi.search.SearchPage"
+    },
+    {
+      "rustPath": "yosoi::search::SearchResultUrl",
+      "pythonTarget": "yosoi.search.SearchResultUrl"
+    },
+    {
+      "rustPath": "yosoi::search::SearchTermination",
+      "pythonTarget": "yosoi.search.SearchResponse.termination"
+    },
+    {
+      "rustPath": "yosoi::search::SearchUnavailableReason",
+      "pythonTarget": "yosoi.search.NotStarted.value"
+    },
+    {
+      "rustPath": "yosoi::search::WebCoverage",
+      "pythonTarget": "yosoi.search.SearchCoverage.web"
+    }
+  ]
+}

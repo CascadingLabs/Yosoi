@@ -26,7 +26,75 @@ request, Map, and Search execution results also carry typed statuses; do not
 convert those statuses into exceptions or empty collections without deciding
 what that means for your application.
 
+## Structured error details
+
+Supported native authoring errors retain their Rust discriminant and payload:
+
+```python
+import yosoi as ys
+from yosoi.errors import LocatorError, rust_error_details
+
+try:
+    ys.css("")
+except LocatorError as error:
+    detail = rust_error_details(error)
+    if detail is not None:
+        print(detail.rust_type, detail.variant, detail.details)
+```
+
+`rust_error_details()` also searches Python exception causes and Pydantic
+validation contexts, preserving the original exception category. It returns
+`None` when the binding has no typed metadata. The returned detail is a frozen
+view; nested payloads are preserved and `source_chain` contains only sources
+the Rust error actually exposes. Malformed serialized inputs are reported as
+`serde_json::Error` categories rather than guessed domain variants.
+For an opaque public Rust error struct, `variant` is `None`: its private
+implementation is not part of the SDK contract.
+Request preparation/send and Map errors use this opaque boundary. Search
+query and operation errors expose their public Rust enum variants, and
+activity/capture identity parsing preserves invalid UUID, noncanonical, and
+non-v4 distinctions.
+
+Document authoring preserves public `DocumentError` and `DocumentProfileError`
+variants. Parse errors retain the public `ParseError` variant and nested
+`DocumentParseError` type and message. The nested parser error's private variant
+is not inferred from its message. A transparent Rust error can expose an empty
+source chain even when the typed payload contains a nested error.
+
+JSON projections reject NaN and positive or negative infinity, including
+non-finite numbers nested in arrays or objects. These values cannot be
+represented by the Rust SDK's JSON value type.
+
+Request and Search results expose typed diagnostic/reason unions, including
+browser failures, transport and redirect failures, artifact families, and
+decoding codes. These preserve the Rust tags and payloads. Use their fields or
+explicit serialization to inspect them; default displays redact sensitive
+request/search content. `ys.map.rejection_message(reason)` returns Rust's
+human-readable message while retaining the original rejection tag.
+The public `ys.locators.JsonQuerySyntaxError` alias describes the four exact
+syntax-error tags carried in nested JSON query errors.
+
+Diagnostic unions describe values rather than callable constructors. To
+validate an authored diagnostic or decoded payload, use Pydantic's TypeAdapter:
+
+```python
+from pydantic import TypeAdapter
+from yosoi.diagnostics import PartialReason
+
+reason = TypeAdapter(PartialReason).validate_python(
+    {"kind": "browser_artifact_truncated", "family": "rendered_dom"}
+)
+if reason.kind == "browser_artifact_truncated":
+    print(reason.family)
+```
+
 ## Contract outcomes
+
+`ys.contracts.ContractSchemaFailure` is a typed view of schema-error variants
+and their payloads. Invalid-schema failure views accept a nested
+`schema_error` while retaining `kind` and `message`. The current runtime
+Contract constructor validates schemas before extraction; its schema failures
+are raised during authoring rather than emitted as extraction outcomes.
 
 Contract extraction and validation return outcomes that preserve each stage:
 

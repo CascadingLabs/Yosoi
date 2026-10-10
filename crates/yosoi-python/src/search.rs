@@ -36,7 +36,11 @@ fn response_json(response: &search::SearchResponse) -> PyResult<String> {
         "policy_identity": responses::identity(response.policy_identity()),
         "termination": response.termination(), "providers": providers,
     }))
-    .map_err(|error| errors::SearchError::new_err(error.to_string()))
+    .map_err(|error| {
+        Python::attach(|py| {
+            errors::serde_encode_error(py, errors::SearchError::new_err(error.to_string()), &error)
+        })
+    })
 }
 
 #[pyclass(frozen, module = "yosoi._native", name = "SearchRequest")]
@@ -48,10 +52,10 @@ pub struct NativeSearch {
 #[pymethods]
 impl NativeSearch {
     #[new]
-    fn new(query: String) -> PyResult<Self> {
+    fn new(py: Python<'_>, query: String) -> PyResult<Self> {
         search::new(query)
             .map(|inner| Self { inner })
-            .map_err(|error| errors::SearchError::new_err(error.to_string()))
+            .map_err(|error| errors::search_query_error(py, &error))
     }
 
     #[getter]
@@ -60,13 +64,13 @@ impl NativeSearch {
     }
 
     #[pyo3(signature = (policy_json=None))]
-    fn validate(&self, policy_json: Option<&str>) -> PyResult<()> {
+    fn validate(&self, py: Python<'_>, policy_json: Option<&str>) -> PyResult<()> {
         let policy = policy::parse(policy_json)?;
         self.inner
             .clone()
             .bind(&policy)
             .validate()
-            .map_err(|error| errors::SearchError::new_err(error.to_string()))
+            .map_err(|error| errors::search_send_error(py, &error))
     }
 
     #[pyo3(signature = (policy_json=None, cancellation=None))]
@@ -83,7 +87,7 @@ impl NativeSearch {
                 .bind(&policy)
                 .send_cancellable(&token)
                 .await
-                .map_err(|error| errors::SearchError::new_err(error.to_string()))?;
+                .map_err(|error| Python::attach(|py| errors::search_send_error(py, &error)))?;
             response_json(&response)
         })
     }

@@ -36,7 +36,7 @@ async fn testing_only_browser_distribution_is_rejected_before_launch() {
 
 #[tokio::test]
 async fn regular_stable_browser_distribution_is_eligible_for_launch() {
-    let (_directory, executable) = version_fixture("Google Chrome 153.0.8010.36");
+    let (_directory, executable) = version_fixture("Google Chrome 155.0.8059.39");
     verify_supported_browser_distribution(&executable)
         .await
         .unwrap();

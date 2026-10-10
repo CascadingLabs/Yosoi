@@ -3,99 +3,311 @@
   "$id": "https://yosoi.dev/schemas/python-rust-sdk-parity-report-v1.json",
   "title": "Yosoi Python/Rust SDK parity report",
   "type": "object",
-  "required": ["schemaVersion", "kind", "toolVersion", "generatedAt", "source", "python", "ledger", "parityStatus", "coverage"],
+  "required": [
+    "schemaVersion",
+    "kind",
+    "toolVersion",
+    "generatedAt",
+    "source",
+    "python",
+    "ledger",
+    "parityStatus",
+    "coverage"
+  ],
   "properties": {
-    "schemaVersion": {"const": 1},
-    "kind": {"const": "python-rust-sdk-parity-report"},
-    "toolVersion": {"type": "string"},
-    "generatedAt": {"type": "string", "format": "date-time"},
+    "schemaVersion": {
+      "const": 1
+    },
+    "kind": {
+      "const": "python-rust-sdk-parity-report"
+    },
+    "toolVersion": {
+      "type": "string"
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
     "source": {
       "type": "object",
-      "required": ["revision", "sdk", "reference", "inventorySignature", "featureProfile", "featureProfileDigest"],
+      "required": [
+        "revision",
+        "sdk",
+        "reference",
+        "inventorySignature",
+        "featureProfile",
+        "featureProfileDigest"
+      ],
       "properties": {
-        "revision": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
-        "sdk": {"type": "object"},
-        "reference": {"type": "object"},
-        "inventorySignature": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
-        "featureProfile": {"type": "object"},
-        "featureProfileDigest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+        "revision": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "sdk": {
+          "type": "object"
+        },
+        "reference": {
+          "type": "object"
+        },
+        "inventorySignature": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "featureProfile": {
+          "type": "object"
+        },
+        "featureProfileDigest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
       },
       "additionalProperties": true
     },
     "python": {
       "type": "object",
-      "required": ["package", "runtime", "surfaceDigest", "implementationDigest", "objects", "targets"],
+      "required": [
+        "package",
+        "runtime",
+        "surfaceDigest",
+        "implementationDigest",
+        "objects",
+        "targets"
+      ],
       "properties": {
-        "package": {"type": "string"},
-        "runtime": {"type": "object"},
-        "surfaceDigest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
-        "implementationDigest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
-        "objects": {"type": "array", "items": {"type": "object"}},
-        "targets": {"type": "object", "additionalProperties": {"type": "object"}}
+        "package": {
+          "type": "string"
+        },
+        "runtime": {
+          "type": "object"
+        },
+        "surfaceDigest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "implementationDigest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "objects": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "targets": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object"
+          }
+        }
       },
       "additionalProperties": false
     },
-    "ledger": {"type": "object"},
-    "parityStatus": {"enum": ["complete", "incomplete", "stale"]},
+    "ledger": {
+      "type": "object"
+    },
+    "parityStatus": {
+      "enum": [
+        "complete",
+        "incomplete",
+        "stale"
+      ]
+    },
     "coverage": {
       "type": "object",
-      "required": ["denominator", "counts", "covered", "mappedButUnverified", "staleOrMissing", "items"],
+      "required": [
+        "denominator",
+        "counts",
+        "covered",
+        "mappedButUnverified",
+        "staleOrMissing",
+        "items"
+      ],
       "properties": {
-        "denominator": {"type": "integer", "minimum": 0},
+        "denominator": {
+          "type": "integer",
+          "minimum": 0
+        },
         "counts": {
           "type": "object",
-          "required": ["mapped", "verified", "stale", "missing", "language-specific"],
+          "required": [
+            "mapped",
+            "verified",
+            "stale",
+            "missing",
+            "language-specific"
+          ],
           "properties": {
-            "mapped": {"type": "integer", "minimum": 0},
-            "verified": {"type": "integer", "minimum": 0},
-            "stale": {"type": "integer", "minimum": 0},
-            "missing": {"type": "integer", "minimum": 0},
-            "language-specific": {"type": "integer", "minimum": 0}
+            "mapped": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "verified": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "stale": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "missing": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "language-specific": {
+              "type": "integer",
+              "minimum": 0
+            }
           },
           "additionalProperties": false
         },
-        "covered": {"type": "integer", "minimum": 0},
-        "mappedButUnverified": {"type": "integer", "minimum": 0},
-        "staleOrMissing": {"type": "integer", "minimum": 0},
+        "covered": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "mappedButUnverified": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "staleOrMissing": {
+          "type": "integer",
+          "minimum": 0
+        },
         "items": {
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["symbolKey", "id", "rustPath", "aliases", "kind", "signature", "rustArguments", "surface", "parentRustPath", "trait", "status", "statusReason", "python", "mapping", "evidence"],
+            "required": [
+              "symbolKey",
+              "id",
+              "rustPath",
+              "aliases",
+              "kind",
+              "signature",
+              "rustArguments",
+              "surface",
+              "parentRustPath",
+              "trait",
+              "status",
+              "statusReason",
+              "python",
+              "mapping",
+              "evidence"
+            ],
             "properties": {
-              "symbolKey": {"type": "string"},
-              "id": {"type": "string"},
-              "rustPath": {"type": "string"},
-              "aliases": {"type": "array", "items": {"type": "string"}},
-              "kind": {"type": "string"},
-              "signature": {"type": "string"},
+              "symbolKey": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "rustPath": {
+                "type": "string"
+              },
+              "aliases": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "kind": {
+                "type": "string"
+              },
+              "signature": {
+                "type": "string"
+              },
               "rustArguments": {
                 "type": "array",
                 "items": {
                   "type": "object",
-                  "required": ["name", "type", "receiver"],
+                  "required": [
+                    "name",
+                    "type",
+                    "receiver"
+                  ],
                   "properties": {
-                    "name": {"type": "string"},
-                    "type": {"type": "string"},
-                    "receiver": {"type": "boolean"}
+                    "name": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    },
+                    "receiver": {
+                      "type": "boolean"
+                    }
                   },
                   "additionalProperties": false
                 }
               },
-              "surface": {"enum": ["item", "member"]},
-              "parentRustPath": {"type": ["string", "null"]},
-              "trait": {"type": ["string", "null"]},
-              "status": {"enum": ["mapped", "verified", "stale", "missing", "language-specific"]},
-              "statusReason": {"type": "string"},
-              "python": {"type": ["object", "null"]},
-              "mapping": {"type": ["object", "null"]},
-              "evidence": {"type": "array", "items": {"type": "object"}}
+              "surface": {
+                "enum": [
+                  "item",
+                  "member"
+                ]
+              },
+              "parentRustPath": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "trait": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "status": {
+                "enum": [
+                  "mapped",
+                  "verified",
+                  "stale",
+                  "missing",
+                  "language-specific"
+                ]
+              },
+              "statusReason": {
+                "type": "string"
+              },
+              "python": {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              },
+              "mapping": {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              },
+              "evidence": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              }
             },
             "additionalProperties": false
           }
         }
       },
       "additionalProperties": false
+    },
+    "gate": {
+      "enum": [
+        "sdk"
+      ]
+    },
+    "inventoryParityStatus": {
+      "enum": [
+        "complete",
+        "incomplete",
+        "stale"
+      ]
+    },
+    "sdkParity": {
+      "type": "object"
     }
   },
   "additionalProperties": false

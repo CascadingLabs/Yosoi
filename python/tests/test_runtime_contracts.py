@@ -107,12 +107,57 @@ def test_runtime_contract_preserves_schema_ids_grouping_and_typed_values() -> No
     assert serialized_record["value"]["title_id"]["cardinality"] == "exactly_one"
 
 
+def test_runtime_outcome_to_archived_uses_portable_schema() -> None:
+    schema = runtime_schema("money.usd")
+    contract = ys.contracts.RuntimeContract.new(schema)
+    document = ys.Document.html(
+        "runtime-archive",
+        "<article><h2>$4.50</h2></article><article><h2>$0.00</h2></article>",
+    )
+    outcome = contract.extract(document.locate(repeated_plan())).validate()
+    archived = outcome.to_archived()
+    assert (
+        outcome.to_archived(outcome.contract_schema).model_dump()
+        == archived.model_dump()
+    )
+    assert archived.status == "evaluated"
+    assert len(archived.records) == 2
+    wire = archived.model_dump()
+    second = wire["records"][1]
+    assert second["fields"] == [
+        {
+            "id": "title_id",
+            "value": {
+                "cardinality": "exactly_one",
+                "value": {"type": "money_usd", "minor_units": 0},
+            },
+        },
+        {
+            "id": "optional_id",
+            "value": {"cardinality": "zero_or_one", "value": None},
+        },
+        {"id": "tags_id", "value": {"cardinality": "many", "values": []}},
+    ]
+    assert [item["id"] for item in second["evidence"]] == [
+        "title_id",
+        "optional_id",
+        "tags_id",
+    ]
+    assert len(second["evidence"][0]["evidence"]) == 1
+    assert second["evidence"][1]["evidence"] == []
+    assert second["evidence"][2]["evidence"] == []
+    assert "$0.00" not in repr(archived.view)
+    assert "$0.00" in archived.model_dump_json()
+
+
 def test_runtime_contract_keeps_no_match_and_limit_outcomes_typed() -> None:
     contract = ys.contracts.RuntimeContract.new(runtime_schema())
     document = ys.Document.html("none", "<p>none</p>")
     no_match = contract.extract(document.locate(repeated_plan()))
     assert no_match.status == "no_match"
-    assert no_match.validate().status == "no_match"
+    no_match_outcome = no_match.validate()
+    assert no_match_outcome.status == "no_match"
+    assert no_match_outcome.to_archived().status == "no_match"
     assert no_match.validate().require_all() == []
 
     located = ys.Document.html("limited", "<article><h2>A</h2></article>").locate(
@@ -123,11 +168,17 @@ def test_runtime_contract_keeps_no_match_and_limit_outcomes_typed() -> None:
     assert rejected.failure is not None
     assert rejected.failure.kind == "limit_exceeded"
     assert rejected.validate().status == "extraction_rejected"
+    archived_extraction_rejection = rejected.validate().to_archived()
+    assert archived_extraction_rejection.failure is not None
+    assert archived_extraction_rejection.failure.kind == "limit_exceeded"
 
     validation_rejected = contract.extract(located).validate(
         limits=ValidationLimits(max_records=0)
     )
     assert validation_rejected.status == "validation_rejected"
+    archived_validation_rejection = validation_rejected.to_archived()
+    assert archived_validation_rejection.failure is not None
+    assert archived_validation_rejection.failure.kind == "record_limit_exceeded"
     with pytest.raises(ys.contracts.ContractIssues):
         validation_rejected.require_all()
 

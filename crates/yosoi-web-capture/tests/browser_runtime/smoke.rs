@@ -12,19 +12,13 @@ use std::{
 use tokio::time::timeout;
 
 use super::fixture;
-use yosoi_types::{
-    CaptureId, OperationId, Producer, ProducerId, ProducerVersion, ReasonCode, Schema, SchemaId,
-    SchemaVersion,
-};
+use yosoi_types::{CaptureId, OperationId, Producer, ReasonCode, Schema, SchemaId, SchemaVersion};
 use yosoi_web_capture::*;
 fn reason() -> ReasonCode {
     ReasonCode::new("test.unavailable").unwrap()
 }
 fn producer() -> Producer {
-    Producer::new(
-        ProducerId::new("com.cascadinglabs.void_crawl_core").unwrap(),
-        ProducerVersion::new("0.5.0").unwrap(),
-    )
+    void_crawl_adapter_producer().expect("linked VoidCrawl producer identity must be valid")
 }
 fn schema(name: &str) -> Schema {
     Schema::new(

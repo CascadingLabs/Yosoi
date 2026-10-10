@@ -5,7 +5,7 @@ use std::{borrow::Cow, io::Write};
 use anyhow::{Context as _, Result};
 use clap::builder::styling::Style;
 use unicode_width::UnicodeWidthChar as _;
-use yosoi_engine::prelude::ProjectedValue;
+use yosoi::locators::ProjectedValue;
 
 use crate::presentation::Theme;
 

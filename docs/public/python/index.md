@@ -48,9 +48,9 @@ Pydantic validators or defaults to change a Rust-validated record.
 | Understand errors, absence, and resource limits        | [Errors and limits](errors-and-limits.md)                                |
 | Review interpreter, browser, and parity evidence       | [Compatibility and parity](compatibility.md), [parity report](parity.md) |
 
-The interpreter range is `>=3.12,<3.15`. Normal CPython 3.12, 3.13, and
-3.14 use separate ABI wheels; free-threaded CPython 3.14.8 uses the `cp314t`
-ABI. Wheel availability remains specific to the release, operating system, and
+The interpreter range is `>=3.12,<3.16`. Normal CPython 3.12–3.15 use
+separate ABI wheels; free-threaded CPython 3.14.8 and 3.15.0 use the `cp314t`
+and `cp315t` ABIs. Wheel availability remains specific to the release, operating system, and
 architecture. See [installation](installation.md) before selecting an
 artifact.
 

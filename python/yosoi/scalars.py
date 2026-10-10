@@ -114,6 +114,24 @@ class ValidatedInteger(int):
         )
 
 
+class _RustUnsignedResult(int):
+    """Typed wrapper for an unsigned value returned by a Rust conversion."""
+
+    def __new__(cls, value: int) -> Self:
+        del value
+        raise TypeError(f"{cls.__name__} values come from Rust SDK conversions")
+
+    @classmethod
+    def _from_rust(cls, value: int) -> Self:
+        return int.__new__(cls, value)
+
+    def get(self) -> int:
+        return int(self)
+
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}({int(self)})"
+
+
 class DocumentId(ValidatedString):
     _kind = "document_id"
 
@@ -163,9 +181,21 @@ class AddressableByteLimit(ValidatedInteger):
     def as_usize(self) -> int:
         return self.get()
 
+    def to_byte_limit(self) -> ByteLimit:
+        """Convert to a positive byte limit; the value is measured in bytes."""
+        value = _native.validate_domain_model(
+            "addressable_byte_limit_to_byte_limit",
+            json.dumps(self.get(), separators=(",", ":")),
+        )
+        return ByteLimit._from_rust(cast(int, json.loads(value)))
+
 
 class EventLimit(ValidatedInteger):
     _kind = "event_limit"
+
+    @classmethod
+    def default(cls) -> Self:
+        return cls(cast(int, _domain_value("event_limit_default", 0)))
 
     def as_usize(self) -> int:
         return self.get()
@@ -174,20 +204,52 @@ class EventLimit(ValidatedInteger):
 class ResourceLimit(ValidatedInteger):
     _kind = "resource_limit"
 
+    def to_nonzero(self) -> NonZeroU32:
+        """Return the corresponding positive 32-bit resource bound."""
+        value = _native.validate_domain_model(
+            "resource_limit_to_nonzero",
+            json.dumps(self.get(), separators=(",", ":")),
+        )
+        return NonZeroU32._from_rust(cast(int, json.loads(value)))
+
 
 class AccessibilityNodeLimit(ValidatedInteger):
     _kind = "accessibility_node_limit"
+
+    def to_nonzero(self) -> NonZeroU32:
+        """Return the corresponding positive 32-bit accessibility-node bound."""
+        value = _native.validate_domain_model(
+            "accessibility_node_limit_to_nonzero",
+            json.dumps(self.get(), separators=(",", ":")),
+        )
+        return NonZeroU32._from_rust(cast(int, json.loads(value)))
 
 
 class MaximumElapsed(ValidatedInteger):
     _kind = "maximum_elapsed"
 
+    @classmethod
+    def default(cls) -> Self:
+        return cls(cast(int, _domain_value("maximum_elapsed_default", 0)))
+
     def as_microseconds(self) -> int:
         return self.get()
+
+    def to_capture_deadline(self) -> CaptureDeadline:
+        """Convert the positive elapsed limit to a microsecond deadline."""
+        value = _native.validate_domain_model(
+            "maximum_elapsed_to_capture_deadline",
+            json.dumps(self.get(), separators=(",", ":")),
+        )
+        return CaptureDeadline._from_rust(cast(int, json.loads(value)))
 
 
 class RedirectHopLimit(ValidatedInteger):
     _kind = "redirect_hop_limit"
+
+    @classmethod
+    def default(cls) -> Self:
+        return cls(cast(int, _domain_value("redirect_hop_limit_default", 0)))
 
 
 class Budget(ValidatedInteger):
@@ -196,3 +258,36 @@ class Budget(ValidatedInteger):
 
 class ProviderDefaultsVersion(ValidatedInteger):
     _kind = "provider_defaults_version"
+
+
+class NonZeroU32(_RustUnsignedResult):
+    """Positive 32-bit value returned by Rust policy conversions."""
+
+
+class ByteLimit(_RustUnsignedResult):
+    """Positive byte limit returned by a policy conversion; units are bytes."""
+
+    def as_usize(self) -> int:
+        # This value comes from AddressableByteLimit, which checks platform size.
+        return self.get()
+
+
+class CaptureDeadline(_RustUnsignedResult):
+    """Positive capture deadline represented in microseconds."""
+
+    def as_microseconds(self) -> int:
+        return self.get()
+
+    def duration(self) -> CaptureDuration:
+        value = _native.validate_domain_model(
+            "maximum_elapsed_capture_duration",
+            json.dumps(self.get(), separators=(",", ":")),
+        )
+        return CaptureDuration._from_rust(cast(int, json.loads(value)))
+
+
+class CaptureDuration(_RustUnsignedResult):
+    """Elapsed duration represented in microseconds."""
+
+    def as_microseconds(self) -> int:
+        return self.get()

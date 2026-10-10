@@ -3,6 +3,7 @@
 use std::sync::Arc;
 
 use pyo3::prelude::*;
+use pyo3::types::PyBytes;
 use yosoi::documents::{Document, DocumentId, DocumentProfile, DocumentRef};
 
 use crate::{
@@ -10,21 +11,42 @@ use crate::{
 };
 
 #[pyfunction]
-pub fn validate_profile(profile_json: &str) -> PyResult<String> {
-    let profile: DocumentProfile = serde_json::from_str(profile_json)
-        .map_err(|error| errors::DocumentError::new_err(error.to_string()))?;
-    serde_json::to_string(&profile)
-        .map_err(|error| errors::DocumentError::new_err(error.to_string()))
+pub fn validate_profile(py: Python<'_>, profile_json: &str) -> PyResult<String> {
+    let profile: DocumentProfile = serde_json::from_str(profile_json).map_err(|error| {
+        errors::serde_decode_error(
+            py,
+            errors::DocumentError::new_err(error.to_string()),
+            &error,
+        )
+    })?;
+    serde_json::to_string(&profile).map_err(|error| {
+        errors::serde_encode_error(
+            py,
+            errors::DocumentError::new_err(error.to_string()),
+            &error,
+        )
+    })
 }
 
 #[pyfunction]
-pub fn profile_class(profile_json: &str) -> PyResult<String> {
-    let profile: DocumentProfile = serde_json::from_str(profile_json)
-        .map_err(|error| errors::DocumentError::new_err(error.to_string()))?;
+pub fn profile_class(py: Python<'_>, profile_json: &str) -> PyResult<String> {
+    let profile: DocumentProfile = serde_json::from_str(profile_json).map_err(|error| {
+        errors::serde_decode_error(
+            py,
+            errors::DocumentError::new_err(error.to_string()),
+            &error,
+        )
+    })?;
     let class = profile
         .class()
-        .map_err(|error| errors::DocumentError::new_err(error.to_string()))?;
-    serde_json::to_string(&class).map_err(|error| errors::DocumentError::new_err(error.to_string()))
+        .map_err(|error| errors::document_profile_error(py, error))?;
+    serde_json::to_string(&class).map_err(|error| {
+        errors::serde_encode_error(
+            py,
+            errors::DocumentError::new_err(error.to_string()),
+            &error,
+        )
+    })
 }
 
 #[derive(Clone, Debug)]
@@ -72,13 +94,17 @@ impl NativeDocument {
 #[pymethods]
 impl NativeDocument {
     #[new]
-    fn new(id: &str, content: Vec<u8>, profile_json: &str) -> PyResult<Self> {
-        let profile: DocumentProfile = serde_json::from_str(profile_json)
-            .map_err(|error| errors::DocumentError::new_err(error.to_string()))?;
-        let id = DocumentId::try_new(id)
-            .map_err(|error| errors::DocumentError::new_err(error.to_string()))?;
+    fn new(py: Python<'_>, id: &str, content: Vec<u8>, profile_json: &str) -> PyResult<Self> {
+        let profile: DocumentProfile = serde_json::from_str(profile_json).map_err(|error| {
+            errors::serde_decode_error(
+                py,
+                errors::DocumentError::new_err(error.to_string()),
+                &error,
+            )
+        })?;
+        let id = DocumentId::try_new(id).map_err(|error| errors::document_error(py, &error))?;
         let inner = Document::from_profile(id, profile, content)
-            .map_err(|error| errors::DocumentError::new_err(error.to_string()))?;
+            .map_err(|error| errors::document_error(py, &error))?;
         Ok(Self {
             source: DocumentSource::Owned(Arc::new(inner)),
         })
@@ -89,18 +115,28 @@ impl NativeDocument {
         Ok(self.borrowed()?.id().as_str())
     }
 
-    fn profile(&self) -> PyResult<String> {
-        serde_json::to_string(&self.borrowed()?.profile())
-            .map_err(|error| errors::DocumentError::new_err(error.to_string()))
+    fn profile(&self, py: Python<'_>) -> PyResult<String> {
+        serde_json::to_string(&self.borrowed()?.profile()).map_err(|error| {
+            errors::serde_encode_error(
+                py,
+                errors::DocumentError::new_err(error.to_string()),
+                &error,
+            )
+        })
     }
 
-    fn document_class(&self) -> PyResult<String> {
-        serde_json::to_string(&self.borrowed()?.class())
-            .map_err(|error| errors::DocumentError::new_err(error.to_string()))
+    fn document_class(&self, py: Python<'_>) -> PyResult<String> {
+        serde_json::to_string(&self.borrowed()?.class()).map_err(|error| {
+            errors::serde_encode_error(
+                py,
+                errors::DocumentError::new_err(error.to_string()),
+                &error,
+            )
+        })
     }
 
-    fn bytes<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, pyo3::types::PyBytes>> {
-        Ok(pyo3::types::PyBytes::new(py, self.borrowed()?.bytes()))
+    fn bytes<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyBytes>> {
+        Ok(PyBytes::new(py, self.borrowed()?.bytes()))
     }
 
     #[getter]
@@ -130,9 +166,20 @@ impl NativeDocument {
         py.detach(|| NativeParsedDocument::start(document, policy))
     }
 
-    fn validate_input(&self, id: &str, content: &[u8], profile_json: &str) -> PyResult<()> {
-        let profile: DocumentProfile = serde_json::from_str(profile_json)
-            .map_err(|error| errors::DocumentError::new_err(error.to_string()))?;
+    fn validate_input(
+        &self,
+        py: Python<'_>,
+        id: &str,
+        content: &[u8],
+        profile_json: &str,
+    ) -> PyResult<()> {
+        let profile: DocumentProfile = serde_json::from_str(profile_json).map_err(|error| {
+            errors::serde_decode_error(
+                py,
+                errors::DocumentError::new_err(error.to_string()),
+                &error,
+            )
+        })?;
         let document = self.borrowed()?;
         if document.id().as_str() != id
             || document.profile() != profile

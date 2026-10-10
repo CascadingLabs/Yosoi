@@ -9,7 +9,9 @@ pub use yosoi_web_capture::{
     BrowserDocumentScope, CaptureCompleteness, CaptureObservation, CaptureTermination,
     CleanupState, Observation, RedirectHop, ResolvedWebUrl, WebArtifactFamily,
 };
-pub use yosoi_web_capture_direct_http::DirectHttpTransportErrorKind;
+pub use yosoi_web_capture_direct_http::{
+    DirectHttpRedirectErrorKind, DirectHttpTransportErrorKind,
+};
 
 pub use crate::resolution::{BrowserResolutionInputs, DirectHttpResolutionInputs};
 

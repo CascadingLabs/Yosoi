@@ -37,14 +37,14 @@ impl NativeRequest {
     }
 
     #[pyo3(signature = (policy_json=None))]
-    fn validate(&self, policy_json: Option<&str>) -> PyResult<()> {
+    fn validate(&self, py: Python<'_>, policy_json: Option<&str>) -> PyResult<()> {
         let policy = policy::parse(policy_json)?;
         self.inner
             .as_ref()
             .clone()
             .bind(&policy)
             .validate()
-            .map_err(|error| errors::RequestError::new_err(error.to_string()))
+            .map_err(|error| errors::request_preparation_error(py, &error))
     }
 
     #[pyo3(signature = (policy_json=None, cancellation=None))]
@@ -61,7 +61,7 @@ impl NativeRequest {
                 .bind(&policy)
                 .send_cancellable(&token)
                 .await
-                .map_err(|error| errors::RequestError::new_err(error.to_string()))?;
+                .map_err(|error| Python::attach(|py| errors::request_send_error(py, &error)))?;
             Ok(NativeResponse {
                 source: ResponseSource::Request(Arc::new(response)),
             })

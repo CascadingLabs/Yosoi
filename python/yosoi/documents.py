@@ -13,7 +13,7 @@ from ._models import ImmutableModel
 from .locators import Plan
 from .outcomes import LocateOutcome, _read
 from .policy import Policy
-from .scalars import DocumentEpoch, DocumentId, RUST_DOMAIN_VALIDATED
+from .scalars import RUST_DOMAIN_VALIDATED, DocumentEpoch, DocumentId
 
 SourceFormat = Literal["html", "xml", "json", "text"]
 DocumentClass = Literal[

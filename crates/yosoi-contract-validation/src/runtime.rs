@@ -7,7 +7,10 @@ use crate::{
     ValidationBudget, ValidationFailure, ValidationLimits,
 };
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::{
+    collections::BTreeMap,
+    fmt::{self, Debug, Formatter},
+};
 use thiserror::Error;
 use yosoi_contracts::{
     CandidateInput, Cardinality, ContractSchema, ContractValue, FieldId, FieldSchema,
@@ -67,8 +70,8 @@ pub struct RuntimeExtracted {
     extracted: SchemaExtracted,
 }
 
-impl std::fmt::Debug for RuntimeExtracted {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl Debug for RuntimeExtracted {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
         formatter
             .debug_struct("RuntimeExtracted")
             .field("extracted", &self.extracted)
@@ -282,7 +285,7 @@ fn validate_runtime_field<'a>(
     }
 }
 
-fn validate_typed_field<'a, T: RuntimeContractValue>(
+fn validate_typed_field<'a, T>(
     id: &FieldId,
     cardinality: Cardinality,
     evidence: &'a [yosoi_documents::Finding],

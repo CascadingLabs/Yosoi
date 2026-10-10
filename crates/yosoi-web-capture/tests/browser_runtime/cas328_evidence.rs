@@ -14,8 +14,7 @@ use std::{
 };
 use tokio_util::sync::CancellationToken;
 use yosoi_types::{
-    CaptureId, OperationId, Producer, ProducerId, ProducerVersion, ReasonCode, Schema, SchemaId,
-    SchemaVersion, Sha256Digest,
+    CaptureId, OperationId, Producer, ReasonCode, Schema, SchemaId, SchemaVersion, Sha256Digest,
 };
 use yosoi_web_capture::*;
 
@@ -26,10 +25,7 @@ fn reason() -> ReasonCode {
 }
 
 fn producer() -> Producer {
-    Producer::new(
-        ProducerId::new("com.cascadinglabs.void_crawl_core").unwrap(),
-        ProducerVersion::new("0.5.0").unwrap(),
-    )
+    void_crawl_adapter_producer().expect("linked VoidCrawl producer identity must be valid")
 }
 
 fn schema(name: &str) -> Schema {

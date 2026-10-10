@@ -6,7 +6,7 @@ import json
 from collections.abc import Mapping
 from typing import Any, Literal, Self
 
-from pydantic import PrivateAttr, field_serializer, model_validator
+from pydantic import Field, PrivateAttr, field_serializer, model_validator
 
 from . import _native
 from ._models import ImmutableModel
@@ -51,6 +51,12 @@ QueryKind = Literal[
     "regex",
 ]
 ProjectionKind = Literal["text", "attribute", "value", "node", "name", "captures"]
+JsonQuerySyntaxError = Literal[
+    "InvalidPointerSyntax",
+    "InvalidPointerEscape",
+    "InvalidPathSyntax",
+    "UnsupportedPathFeature",
+]
 
 
 class NamespaceBinding(ImmutableModel):
@@ -99,7 +105,9 @@ class QuerySpec(ImmutableModel):
 
     atom: QueryAtom
     result_shape: QueryResultShape
-    namespace_bindings: tuple[NamespaceBinding, ...] = ()
+    namespace_bindings: tuple[NamespaceBinding, ...] = Field(
+        default=(), exclude_if=lambda value: not value
+    )
 
     @model_validator(mode="after")
     def _rust_validate(self) -> Self:
@@ -135,6 +143,7 @@ class Query(ImmutableModel):
     expression: str
     namespaces: tuple[NamespaceBinding, ...] = ()
     state: bool | None = None
+    shape: QueryResultShape | None = None
     within: Region | None = None
 
     @field_serializer("namespaces", when_used="json")
@@ -145,7 +154,18 @@ class Query(ImmutableModel):
     def _rust_validate(self) -> Self:
         if len({item.prefix for item in self.namespaces}) != len(self.namespaces):
             raise _native.LocatorError("duplicate namespace prefix")
-        _native.validate_query(self.model_dump_json(exclude_none=True))
+        compiled = json.loads(
+            _native.authored_query_info(self.model_dump_json(exclude_none=True))
+        )["query"]
+        object.__setattr__(self, "shape", compiled["result_shape"])
+        object.__setattr__(
+            self,
+            "namespaces",
+            tuple(
+                NamespaceBinding.model_validate(binding)
+                for binding in compiled.get("namespace_bindings", [])
+            ),
+        )
         return self
 
     def model_copy(
@@ -198,6 +218,7 @@ class Query(ImmutableModel):
                 "expression": spec.atom.expression,
                 "namespaces": spec.namespace_bindings,
                 "state": state,
+                "shape": spec.result_shape,
             }
         )
 

@@ -3595,33 +3595,17 @@ dependencies = [
 ]
 
 [[package]]
-name = "yosoi-engine"
+name = "yosoi"
 version = "0.1.0"
 dependencies = [
- "base64 0.22.1",
- "chrono",
- "html5ever",
- "markup5ever_rcdom",
  "serde",
  "serde_json",
- "sha2",
- "tempfile",
- "thiserror",
  "tokio",
- "tokio-rustls",
- "tokio-util",
- "url",
- "yosoi-archive",
  "yosoi-contract-validation",
  "yosoi-contracts",
- "yosoi-contracts-derive",
  "yosoi-documents",
- "yosoi-extractor",
- "yosoi-map",
+ "yosoi-engine",
  "yosoi-policy",
- "yosoi-types",
- "yosoi-web-capture",
- "yosoi-web-capture-direct-http",
 ]
 
 [[package]]
@@ -3687,7 +3671,6 @@ dependencies = [
  "toml",
  "unicode-width",
  "yosoi",
- "yosoi-engine",
 ]
 
 [[package]]
@@ -3759,6 +3742,36 @@ dependencies = [
 ]
 
 [[package]]
+name = "yosoi-engine"
+version = "0.1.0"
+dependencies = [
+ "base64 0.22.1",
+ "chrono",
+ "html5ever",
+ "markup5ever_rcdom",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "thiserror",
+ "tokio",
+ "tokio-rustls",
+ "tokio-util",
+ "url",
+ "yosoi-archive",
+ "yosoi-contract-validation",
+ "yosoi-contracts",
+ "yosoi-contracts-derive",
+ "yosoi-documents",
+ "yosoi-extractor",
+ "yosoi-map",
+ "yosoi-policy",
+ "yosoi-types",
+ "yosoi-web-capture",
+ "yosoi-web-capture-direct-http",
+]
+
+[[package]]
 name = "yosoi-extractor"
 version = "0.1.0"
 dependencies = [
@@ -3804,20 +3817,6 @@ dependencies = [
  "serde_json",
  "tokio",
  "yosoi",
-]
-
-[[package]]
-name = "yosoi"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
- "tokio",
- "yosoi-engine",
- "yosoi-contract-validation",
- "yosoi-contracts",
- "yosoi-documents",
- "yosoi-policy",
 ]
 
 [[package]]

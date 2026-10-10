@@ -8,7 +8,10 @@ mod conversion;
 mod error;
 mod evidence;
 
-pub use conversion::{ArchivedContract, PortableContractFieldShape, PortableContractScalar};
+pub use conversion::{
+    ArchivedContract, PortableContractFieldShape, PortableContractScalar,
+    RuntimeContractArchiveError,
+};
 pub use error::PortableContractDecodeError;
 pub use evidence::PortableCandidateField;
 

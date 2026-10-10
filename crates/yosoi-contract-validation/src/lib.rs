@@ -13,6 +13,7 @@ pub use issue::FieldIssueDraft;
 pub use issue::{ContractIssues, FieldIssue, FieldIssueKind, ValidationCode, ValidationFailure};
 pub use outcome::{ContractOutcome, RecordIssue, ValidatedRecord};
 pub use portable::ArchivedContract;
+pub use portable::RuntimeContractArchiveError;
 pub use runtime::{
     RuntimeContract, RuntimeContractError, RuntimeContractOutcome, RuntimeExtracted,
     RuntimeFieldValue, RuntimeRecordIssue, RuntimeValidatedRecord, RuntimeValue,

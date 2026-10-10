@@ -1,3 +1,4 @@
+use serde_json::json;
 use std::error::Error;
 use std::future::Future;
 use yosoi::prelude as ys;
@@ -7,6 +8,23 @@ use yosoi::prelude as ys;
 struct Title {
     #[ys(description = "Heading", locator = ys::locator::css("h1").text())]
     heading: String,
+}
+
+#[derive(ys::Contract)]
+#[ys(
+    id = "catalog_product",
+    description = "A catalog product",
+    root = ys::locator::css("article")
+)]
+struct CatalogProduct {
+    #[ys(id = "byline", description = "Product name", locator = ys::locator::css(".name").text())]
+    name: String,
+    #[ys(id = "amount", description = "USD price", locator = ys::locator::css(".price").text())]
+    price: ys::Money,
+    #[ys(id = "subtitle", description = "Optional subtitle", locator = ys::locator::css(".subtitle").text())]
+    subtitle: Option<String>,
+    #[ys(id = "keywords", description = "Keywords", locator = ys::locator::css(".tag").text())]
+    tags: Vec<String>,
 }
 
 #[test]
@@ -24,6 +42,54 @@ fn prelude_can_author_and_locate_without_an_internal_crate_import() -> Result<()
     let contract = Title::locate(&document)?;
     let _ = contract;
     let _ = Title::plan()?;
+    Ok(())
+}
+
+#[test]
+#[expect(
+    clippy::panic_in_result_fn,
+    reason = "Assertions compare public Contract archival representations."
+)]
+fn runtime_archive_matches_derived_archive_for_values_evidence_and_empty_roots()
+-> Result<(), Box<dyn Error>> {
+    let document = ys::Document::html(
+        "catalog.html",
+        b"<article><b class='name'>Tea</b><b class='price'>$4.50</b></article><article></article>"
+            .to_vec(),
+    )?;
+    let located = CatalogProduct::locate(&document)?;
+    let schema = <CatalogProduct as ys::contracts::Contract>::schema()?.clone();
+    let derived_outcome = CatalogProduct::extract(&located).validate();
+    let runtime_outcome = ys::contracts::RuntimeContract::new(schema.clone())?
+        .extract(&located)
+        .validate();
+
+    let derived_archive = serde_json::to_value(derived_outcome.to_archived())?;
+    let runtime_archive = serde_json::to_value(runtime_outcome.to_archived(&schema)?)?;
+    assert_eq!(runtime_archive, derived_archive);
+    assert_eq!(runtime_archive["status"], "evaluated");
+    assert_eq!(runtime_archive["records"][0]["fields"][0]["id"], "byline");
+    assert_eq!(
+        runtime_archive["records"][0]["fields"][2]["value"]["value"],
+        serde_json::Value::Null
+    );
+    assert_eq!(
+        runtime_archive["records"][0]["fields"][3]["value"]["values"],
+        json!([])
+    );
+    assert_eq!(
+        runtime_archive["records"][0]["region"]["region_id"],
+        "catalog_product"
+    );
+    assert_eq!(runtime_archive["issues"].as_array().map(Vec::len), Some(1));
+    assert_eq!(
+        runtime_archive["issues"][0]["region"]["region_id"],
+        "catalog_product"
+    );
+    assert_eq!(
+        runtime_archive["issues"][0]["candidate_fields"][3]["evidence"],
+        json!([])
+    );
     Ok(())
 }
 

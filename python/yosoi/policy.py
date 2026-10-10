@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
+from enum import StrEnum
 from typing import Annotated, Any, Literal, Self
 
-from pydantic import Field, model_serializer, model_validator
+from pydantic import AfterValidator, Field, model_serializer, model_validator
 
 from . import _native
 from ._models import ImmutableModel, Model
@@ -29,6 +31,64 @@ PositiveU32 = Annotated[int, Field(strict=True, gt=0, le=(1 << 32) - 1)]
 PositiveU64 = Annotated[int, Field(strict=True, gt=0, le=(1 << 64) - 1)]
 PositiveInt = Annotated[int, Field(strict=True, gt=0)]
 
+DocumentRequest = Literal[
+    "response_document", "rendered_dom", "accessibility_tree", "network_tree"
+]
+DocumentSelectionKind = Literal["current", "exact"]
+BrowserMode = Literal["headless", "headful"]
+DirectHttpRedirectTargets = Literal["allow_http_and_https", "same_origin"]
+DiscoveryDocuments = Literal["discard_after_inspection", "retain_within_budget"]
+HostScope = Literal["seed_host", "registrable_domain"]
+PathScope = Literal["seed_subtree", "entire_origin"]
+PageDiscovery = Literal["disabled", "explore"]
+Robots = Literal["ignore", "respect"]
+Subdomains = Literal["disabled", "passive"]
+TuningMode = Literal["default"]
+ProfileSelectionKind = Literal["current", "exact"]
+
+
+def _scalar_validator[IntegerScalar: int](
+    scalar: type[IntegerScalar],
+) -> Callable[[int], IntegerScalar]:
+    def validate(value: int) -> IntegerScalar:
+        try:
+            return scalar(value)
+        except _native.PolicyError as error:
+            raise ValueError(str(error)) from error
+
+    return validate
+
+
+CountLimitValue = Annotated[
+    int, Field(strict=True), AfterValidator(_scalar_validator(CountLimit))
+]
+StepLimitValue = Annotated[
+    int, Field(strict=True), AfterValidator(_scalar_validator(StepLimit))
+]
+AddressableByteLimitValue = Annotated[
+    int, Field(strict=True), AfterValidator(_scalar_validator(AddressableByteLimit))
+]
+EventLimitValue = Annotated[
+    int, Field(strict=True), AfterValidator(_scalar_validator(EventLimit))
+]
+ResourceLimitValue = Annotated[
+    int, Field(strict=True), AfterValidator(_scalar_validator(ResourceLimit))
+]
+AccessibilityNodeLimitValue = Annotated[
+    int,
+    Field(strict=True),
+    AfterValidator(_scalar_validator(AccessibilityNodeLimit)),
+]
+MaximumElapsedValue = Annotated[
+    int, Field(strict=True), AfterValidator(_scalar_validator(MaximumElapsed))
+]
+RedirectHopLimitValue = Annotated[
+    int, Field(strict=True), AfterValidator(_scalar_validator(RedirectHopLimit))
+]
+BudgetValue = Annotated[
+    int, Field(strict=True), AfterValidator(_scalar_validator(Budget))
+]
+
 
 def _field(*path: str) -> Any:
     def default() -> Any:
@@ -40,23 +100,32 @@ def _field(*path: str) -> Any:
     return Field(default_factory=default)
 
 
+def _rust_component(
+    kind: str,
+    component_json: str | None,
+    operation: str,
+    arguments: Any | None = None,
+) -> Any:
+    arguments_json = (
+        None if arguments is None else json.dumps(arguments, separators=(",", ":"))
+    )
+    return json.loads(
+        _native.policy_component(kind, component_json, operation, arguments_json)
+    )
+
+
 class DocumentSelection(Model):
-    kind: Literal["current", "exact"] = "current"
+    kind: DocumentSelectionKind = "current"
     documents: (
         Annotated[
             tuple[
-                Literal[
-                    "response_document",
-                    "rendered_dom",
-                    "accessibility_tree",
-                    "network_tree",
-                ],
+                DocumentRequest,
                 ...,
             ],
             Field(max_length=4),
         ]
         | None
-    ) = None
+    ) = Field(default=None, exclude_if=lambda value: value is None)
 
     @model_validator(mode="after")
     def _validate_variant(self) -> Self:
@@ -67,7 +136,9 @@ class DocumentSelection(Model):
 
 class Acquisition(Model):
     kind: Literal["direct_http", "browser"] = "direct_http"
-    mode: Literal["headless", "headful"] | None = None
+    mode: BrowserMode | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
     documents: DocumentSelection = Field(default_factory=DocumentSelection)
 
     @model_validator(mode="after")
@@ -92,6 +163,32 @@ class Acquisition(Model):
     def browser(cls, mode: Literal["headless", "headful"] = "headless") -> Self:
         return cls(kind="browser", mode=mode)
 
+    def with_documents(self, documents: list[str] | tuple[str, ...]) -> Self:
+        value = _rust_component(
+            "acquisition",
+            self.model_dump_json(exclude_none=True),
+            "with_documents",
+            documents,
+        )
+        return type(self).model_validate(value)
+
+    @property
+    def exact_documents(self) -> tuple[str, ...] | None:
+        value = _rust_component(
+            "acquisition",
+            self.model_dump_json(exclude_none=True),
+            "exact_documents",
+        )
+        return None if value is None else tuple(value)
+
+    @property
+    def selection_kind(self) -> Literal["current", "exact"]:
+        return _rust_component(
+            "acquisition",
+            self.model_dump_json(exclude_none=True),
+            "selection_kind",
+        )
+
 
 class Page(Model):
     acquisitions: Annotated[list[Acquisition], Field(max_length=3)] = _field(
@@ -100,35 +197,41 @@ class Page(Model):
 
 
 class SourceLimits(Model):
-    content_coded_bytes: AddressableByteLimit = _field(
+    content_coded_bytes: AddressableByteLimitValue = _field(
         "request", "source", "content_coded_bytes"
     )
-    representation_bytes: AddressableByteLimit = _field(
+    representation_bytes: AddressableByteLimitValue = _field(
         "request", "source", "representation_bytes"
     )
-    unicode_utf8_bytes: AddressableByteLimit = _field(
+    unicode_utf8_bytes: AddressableByteLimitValue = _field(
         "request", "source", "unicode_utf8_bytes"
     )
 
 
 class BrowserLimits(Model):
-    dom_utf8_bytes: AddressableByteLimit = _field(
+    dom_utf8_bytes: AddressableByteLimitValue = _field(
         "request", "browser", "dom_utf8_bytes"
     )
-    ax_json_utf8_bytes: AddressableByteLimit = _field(
+    ax_json_utf8_bytes: AddressableByteLimitValue = _field(
         "request", "browser", "ax_json_utf8_bytes"
     )
-    max_events: EventLimit = _field("request", "browser", "max_events")
-    max_resources: ResourceLimit = _field("request", "browser", "max_resources")
-    max_accessibility_nodes: AccessibilityNodeLimit = _field(
+    max_events: EventLimitValue = _field("request", "browser", "max_events")
+    max_resources: ResourceLimitValue = _field("request", "browser", "max_resources")
+    max_accessibility_nodes: AccessibilityNodeLimitValue = _field(
         "request", "browser", "max_accessibility_nodes"
     )
 
 
 class Redirects(Model):
     kind: Literal["disabled", "follow"]
-    max_hops: RedirectHopLimit | None = None
-    targets: Literal["allow_http_and_https", "same_origin"] | None = None
+    max_hops: RedirectHopLimitValue | None = None
+    targets: DirectHttpRedirectTargets | None = None
+
+    @classmethod
+    def default(cls) -> Self:
+        return cls.model_validate_json(
+            _native.validate_domain_model("direct_http_redirects_default", "null")
+        )
 
     @model_validator(mode="after")
     def _validate_variant(self) -> Self:
@@ -142,26 +245,26 @@ class Redirects(Model):
 
 
 class Request(Model):
-    maximum_elapsed: MaximumElapsed = _field("request", "maximum_elapsed")
+    maximum_elapsed: MaximumElapsedValue = _field("request", "maximum_elapsed")
     source: SourceLimits = _field("request", "source")
     browser: BrowserLimits = _field("request", "browser")
     direct_http_redirects: Redirects = _field("request", "direct_http_redirects")
 
 
 class Documents(Model):
-    max_input_bytes: AddressableByteLimit = _field("documents", "max_input_bytes")
-    max_nodes: CountLimit = _field("documents", "max_nodes")
-    max_depth: StepLimit = _field("documents", "max_depth")
+    max_input_bytes: AddressableByteLimitValue = _field("documents", "max_input_bytes")
+    max_nodes: CountLimitValue = _field("documents", "max_nodes")
+    max_depth: StepLimitValue = _field("documents", "max_depth")
 
 
 class Locators(Model):
-    max_selector_visits: CountLimit = _field("locators", "max_selector_visits")
-    max_query_bytes: AddressableByteLimit = _field("locators", "max_query_bytes")
-    max_query_steps: StepLimit = _field("locators", "max_query_steps")
-    max_regions: StepLimit = _field("locators", "max_regions")
-    max_matches: CountLimit = _field("locators", "max_matches")
-    max_captures: CountLimit = _field("locators", "max_captures")
-    max_output_bytes: AddressableByteLimit = _field("locators", "max_output_bytes")
+    max_selector_visits: CountLimitValue = _field("locators", "max_selector_visits")
+    max_query_bytes: AddressableByteLimitValue = _field("locators", "max_query_bytes")
+    max_query_steps: StepLimitValue = _field("locators", "max_query_steps")
+    max_regions: StepLimitValue = _field("locators", "max_regions")
+    max_matches: CountLimitValue = _field("locators", "max_matches")
+    max_captures: CountLimitValue = _field("locators", "max_captures")
+    max_output_bytes: AddressableByteLimitValue = _field("locators", "max_output_bytes")
 
 
 class Duration(Model):
@@ -170,33 +273,33 @@ class Duration(Model):
 
 
 class Scope(Model):
-    hosts: Literal["seed_host", "registrable_domain"] = _field("map", "scope", "hosts")
-    paths: Literal["seed_subtree", "entire_origin"] = _field("map", "scope", "paths")
+    hosts: HostScope = _field("map", "scope", "hosts")
+    paths: PathScope = _field("map", "scope", "paths")
 
 
 class MapLimits(Model):
     max_link_depth: U16 = _field("map", "limits", "max_link_depth")
-    max_hosts: Budget = _field("map", "limits", "max_hosts")
-    max_urls: Budget = _field("map", "limits", "max_urls")
-    max_relationships: Budget = _field("map", "limits", "max_relationships")
-    max_observations: Budget = _field("map", "limits", "max_observations")
-    max_pending: Budget = _field("map", "limits", "max_pending")
-    max_requests: Budget = _field("map", "limits", "max_requests")
-    max_sitemaps: Budget = _field("map", "limits", "max_sitemaps")
+    max_hosts: BudgetValue = _field("map", "limits", "max_hosts")
+    max_urls: BudgetValue = _field("map", "limits", "max_urls")
+    max_relationships: BudgetValue = _field("map", "limits", "max_relationships")
+    max_observations: BudgetValue = _field("map", "limits", "max_observations")
+    max_pending: BudgetValue = _field("map", "limits", "max_pending")
+    max_requests: BudgetValue = _field("map", "limits", "max_requests")
+    max_sitemaps: BudgetValue = _field("map", "limits", "max_sitemaps")
     max_sitemap_depth: U16 = _field("map", "limits", "max_sitemap_depth")
-    max_response_bytes: Budget = _field("map", "limits", "max_response_bytes")
-    max_total_response_bytes: Budget = _field(
+    max_response_bytes: BudgetValue = _field("map", "limits", "max_response_bytes")
+    max_total_response_bytes: BudgetValue = _field(
         "map", "limits", "max_total_response_bytes"
     )
-    max_retained_document_bytes: Budget = _field(
+    max_retained_document_bytes: BudgetValue = _field(
         "map", "limits", "max_retained_document_bytes"
     )
-    max_concurrency: Budget = _field("map", "limits", "max_concurrency")
+    max_concurrency: BudgetValue = _field("map", "limits", "max_concurrency")
     maximum_elapsed: Duration = _field("map", "limits", "maximum_elapsed")
-    max_url_bytes: Budget = _field("map", "limits", "max_url_bytes")
-    max_inventory_bytes: Budget = _field("map", "limits", "max_inventory_bytes")
-    max_parser_entries: Budget = _field("map", "limits", "max_parser_entries")
-    max_hostname_bytes: Budget = _field("map", "limits", "max_hostname_bytes")
+    max_url_bytes: BudgetValue = _field("map", "limits", "max_url_bytes")
+    max_inventory_bytes: BudgetValue = _field("map", "limits", "max_inventory_bytes")
+    max_parser_entries: BudgetValue = _field("map", "limits", "max_parser_entries")
+    max_hostname_bytes: BudgetValue = _field("map", "limits", "max_hostname_bytes")
 
 
 class Filters(Model):
@@ -205,17 +308,21 @@ class Filters(Model):
         "map", "filters", "excluded_path_prefixes"
     )
 
+    def check(self) -> None:
+        _rust_component("filters", self.model_dump_json(exclude_none=True), "validate")
+
 
 class Map(Model):
     scope: Scope = _field("map", "scope")
-    pages: Literal["disabled", "explore"] = _field("map", "pages")
-    robots: Literal["ignore", "respect"] = _field("map", "robots")
-    subdomains: Literal["disabled", "passive"] = _field("map", "subdomains")
+    pages: PageDiscovery = _field("map", "pages")
+    robots: Robots = _field("map", "robots")
+    subdomains: Subdomains = _field("map", "subdomains")
     limits: MapLimits = _field("map", "limits")
-    documents: Literal["discard_after_inspection", "retain_within_budget"] = _field(
-        "map", "documents"
-    )
+    documents: DiscoveryDocuments = _field("map", "documents")
     filters: Filters = _field("map", "filters")
+
+    def check(self) -> None:
+        _rust_component("map", self.model_dump_json(exclude_none=True), "validate")
 
 
 class ProviderRequestProfile(Model):
@@ -225,8 +332,10 @@ class ProviderRequestProfile(Model):
 
 
 class ProfileSelection(Model):
-    kind: Literal["current", "exact"] = "current"
-    profile: ProviderRequestProfile | None = None
+    kind: ProfileSelectionKind = "current"
+    profile: ProviderRequestProfile | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
 
     @model_validator(mode="after")
     def _validate_variant(self) -> Self:
@@ -235,9 +344,42 @@ class ProfileSelection(Model):
         return self
 
 
+class Provider(StrEnum):
+    brave = "brave"
+    bing = "bing"
+    duck_duck_go = "duck_duck_go"
+
+    def defaults_status(self) -> ProviderDefaultsStatus:
+        value = _rust_component("provider", json.dumps(self.value), "defaults_status")
+        return ProviderDefaultsStatus.model_validate(value)
+
+
 class ProviderSelection(Model):
-    provider: Literal["brave", "bing", "duck_duck_go"]
+    provider: Provider
     profile: ProfileSelection = Field(default_factory=ProfileSelection)
+
+    @classmethod
+    def current(cls, provider: Provider | str) -> Self:
+        value = _rust_component(
+            "provider_selection",
+            None,
+            "current",
+            {"provider": str(provider)},
+        )
+        return cls.model_validate(value)
+
+    @classmethod
+    def exact(cls, provider: Provider | str, profile: ProviderRequestProfile) -> Self:
+        value = _rust_component(
+            "provider_selection",
+            None,
+            "exact",
+            {
+                "provider": str(provider),
+                "profile": profile.model_dump(mode="json", exclude_none=True),
+            },
+        )
+        return cls.model_validate(value)
 
 
 class Search(Model):
@@ -248,14 +390,96 @@ class Search(Model):
     max_browser_in_flight: PositiveInt = _field("search", "max_browser_in_flight")
     max_results_per_provider: PositiveU16 = _field("search", "max_results_per_provider")
     max_total_results: PositiveU32 = _field("search", "max_total_results")
-    max_retained_content_bytes: AddressableByteLimit = _field(
+    max_retained_content_bytes: AddressableByteLimitValue = _field(
         "search", "max_retained_content_bytes"
     )
-    maximum_elapsed: MaximumElapsed = _field("search", "maximum_elapsed")
+    maximum_elapsed: MaximumElapsedValue = _field("search", "maximum_elapsed")
+
+    @classmethod
+    def disabled(cls) -> Self:
+        return cls.model_validate(_rust_component("search", None, "disabled"))
+
+    def is_enabled(self) -> bool:
+        return _rust_component(
+            "search", self.model_dump_json(exclude_none=True), "is_enabled"
+        )
+
+    def with_max_in_flight(self, value: int) -> Self:
+        return type(self).model_validate(
+            _rust_component(
+                "search",
+                self.model_dump_json(exclude_none=True),
+                "with_max_in_flight",
+                value,
+            )
+        )
+
+    def with_max_browser_in_flight(self, value: int) -> Self:
+        return type(self).model_validate(
+            _rust_component(
+                "search",
+                self.model_dump_json(exclude_none=True),
+                "with_max_browser_in_flight",
+                value,
+            )
+        )
+
+    def per_provider_limit(self, value: int) -> Self:
+        return type(self).model_validate(
+            _rust_component(
+                "search",
+                self.model_dump_json(exclude_none=True),
+                "per_provider_limit",
+                value,
+            )
+        )
+
+    def with_result_limits(self, per_provider: int, total: int) -> Self:
+        return type(self).model_validate(
+            _rust_component(
+                "search",
+                self.model_dump_json(exclude_none=True),
+                "with_result_limits",
+                {"per_provider": per_provider, "total": total},
+            )
+        )
+
+    def with_max_total_results(self, value: int) -> Self:
+        return type(self).model_validate(
+            _rust_component(
+                "search",
+                self.model_dump_json(exclude_none=True),
+                "with_max_total_results",
+                value,
+            )
+        )
+
+    def with_max_retained_content_bytes(self, value: int) -> Self:
+        return type(self).model_validate(
+            _rust_component(
+                "search",
+                self.model_dump_json(exclude_none=True),
+                "with_max_retained_content_bytes",
+                value,
+            )
+        )
+
+    def with_maximum_elapsed(self, value: int) -> Self:
+        return type(self).model_validate(
+            _rust_component(
+                "search",
+                self.model_dump_json(exclude_none=True),
+                "with_maximum_elapsed",
+                value,
+            )
+        )
 
 
 class Tuning(Model):
-    mode: Literal["default"] = "default"
+    mode: TuningMode = "default"
+
+    def is_default(self) -> bool:
+        return _rust_component("tuning", self.model_dump_json(), "is_default")
 
 
 class PolicyIdentity(ImmutableModel):
@@ -308,10 +532,46 @@ class ProviderDefaultsStatus(ImmutableModel):
 
 
 class EffectiveProviderRoute(ImmutableModel):
-    provider: Literal["brave", "bing", "duck_duck_go"]
+    provider: Provider
     profile: ProviderRequestProfile | None
     profile_selection_kind: Literal["current", "exact"]
     defaults_status: ProviderDefaultsStatus
+
+    @property
+    def page(self) -> Page | None:
+        value = _rust_component(
+            "effective_provider_route",
+            self.model_dump_json(exclude_none=True),
+            "page",
+        )
+        return None if value is None else Page.model_validate(value)
+
+    @property
+    def request(self) -> Request | None:
+        value = _rust_component(
+            "effective_provider_route",
+            self.model_dump_json(exclude_none=True),
+            "request",
+        )
+        return None if value is None else Request.model_validate(value)
+
+    @property
+    def documents(self) -> Documents | None:
+        value = _rust_component(
+            "effective_provider_route",
+            self.model_dump_json(exclude_none=True),
+            "documents",
+        )
+        return None if value is None else Documents.model_validate(value)
+
+    @property
+    def defaults_version(self) -> ProviderDefaultsVersion | None:
+        value = _rust_component(
+            "effective_provider_route",
+            self.model_dump_json(exclude_none=True),
+            "defaults_version",
+        )
+        return None if value is None else ProviderDefaultsVersion(value)
 
 
 class EffectiveSearch(ImmutableModel):

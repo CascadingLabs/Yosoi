@@ -28,7 +28,7 @@ jobs:
       fail-fast: false
       max-parallel: 1
       matrix:
-        python: ['3.12', '3.13', '3.14.8', '3.14.8t']
+        python: ['3.12', '3.13', '3.14.8', '3.14.8t', '3.15.0', '3.15.0t']
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -38,7 +38,7 @@ jobs:
           cache-key: python-package-${{ matrix.python }}
       - name: Install Python tooling
         run: |
-          python3 -m pip install 'uv==0.12.23'
+          python3 -m pip install 'uv==0.13.0'
           uv sync --locked --no-install-project --python '${{ matrix.python }}'
       - name: Verify selected interpreter and ABI
         env:
@@ -62,10 +62,13 @@ jobs:
           uv run --no-sync ruff format --check python
           uv run --no-sync ty check python
       - name: Build wheel from source distribution
-        run: uv run --no-sync python -m build --no-isolation
+        run: |
+          interpreter=$(uv run --no-sync python -c 'import os, sys; print(os.path.realpath(sys.executable))')
+          uv build --no-build-isolation --config-setting="build-args=--interpreter=$interpreter"
       - name: Verify installed wheel
         run: |
           uv pip install --python .venv/bin/python --reinstall dist/*.whl
+          uv run --no-sync python -m unittest discover -s scripts/sdk-parity -p 'test_*.py' -q
           uv run --no-sync pytest
       - name: Run public SDK review examples
         run: |
@@ -73,4 +76,34 @@ jobs:
           uv run --no-sync python python/examples/review.py locate
           uv run --no-sync python python/examples/review.py contracts
           uv run --no-sync python python/examples/review.py runtime-contracts
+          uv run --no-sync python python/examples/review.py errors
           uv run --no-sync python python/examples/review.py local
+      - name: Set up Node for SDK reference generation
+        if: matrix.python == '3.14.8'
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: '22'
+      - name: Install pinned SDK reference compiler
+        if: matrix.python == '3.14.8'
+        run: |
+          channel=$(node -p "require('./scripts/docs/reference/toolchain.json').channel")
+          test -n "$channel"
+          rustup toolchain install "$channel" --profile minimal
+          rustc "+$channel" --version --verbose
+      - name: Run semantic Rust/Python SDK parity gate
+        if: matrix.python == '3.14.8'
+        run: |
+          uv run --no-sync python scripts/sdk-parity/run_sdk_parity.py \
+            --source "$GITHUB_SHA" \
+            --output-dir .generated/python-parity
+      - name: Upload semantic SDK parity evidence
+        if: always() && matrix.python == '3.14.8'
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: python-sdk-parity-${{ github.run_id }}-${{ github.run_attempt }}
+          include-hidden-files: true
+          path: |
+            .generated/python-parity/*.json
+            .generated/python-parity/evidence/**
+            .generated/python-parity/references/**
+          if-no-files-found: warn

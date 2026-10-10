@@ -5,18 +5,25 @@ from __future__ import annotations
 import json
 from typing import Annotated, Literal, Self
 
-from pydantic import Field, JsonValue, TypeAdapter, ValidationInfo, model_validator
+from pydantic import (
+    Field,
+    JsonValue,
+    TypeAdapter,
+    ValidationInfo,
+    field_validator,
+    model_validator,
+)
 
 from . import _native
 from ._models import ImmutableModel
 from .scalars import (
-    DomNodeId,
+    RUST_DOMAIN_VALIDATED,
     DocumentEpoch,
     DocumentId,
+    DomNodeId,
     JsonCoordinate,
     OutputId,
     RegionId,
-    RUST_DOMAIN_VALIDATED,
 )
 
 U32 = Annotated[int, Field(strict=True, ge=0, le=(1 << 32) - 1)]
@@ -113,7 +120,9 @@ class ExpandedNamePathSegment(ImmutableModel):
 class TreeCoordinate(ImmutableModel):
     child_path: tuple[PositiveU32, ...]
     source_bytes: ByteRange | None = None
-    expanded_name_path: tuple[ExpandedNamePathSegment, ...] | None = None
+    expanded_name_path: tuple[ExpandedNamePathSegment, ...] | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
 
     @model_validator(mode="after")
     def _rust_validate(self, info: ValidationInfo) -> Self:
@@ -327,6 +336,21 @@ class JsonValueProjection(ImmutableModel):
     kind: Literal["json"]
     value: JsonValue
 
+    @field_validator("value")
+    @classmethod
+    def _require_json_numbers(cls, value: JsonValue, info: ValidationInfo) -> JsonValue:
+        if info.context is RUST_DOMAIN_VALIDATED:
+            return value
+        # JSON cannot encode non-finite numbers. Reject them before Pydantic's
+        # default JSON serializer could silently replace them with null.
+        json.dumps(value, allow_nan=False)
+        return value
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, JsonValueProjection):
+            return NotImplemented
+        return projected_values_equal(self, other)
+
 
 class NodeValue(ImmutableModel):
     kind: Literal["node"]
@@ -337,6 +361,18 @@ ProjectedValue = Annotated[
     TextValue | TextWithCaptures | AttributeValue | JsonValueProjection | NodeValue,
     Field(discriminator="kind"),
 ]
+
+
+def projected_values_equal(left: ProjectedValue, right: ProjectedValue) -> bool:
+    """Compare complete projection values with the Rust SDK's equality rules."""
+    return _native.projected_value_equal(
+        left.model_dump_json(), right.model_dump_json()
+    )
+
+
+def projected_values_not_equal(left: ProjectedValue, right: ProjectedValue) -> bool:
+    """Return the complementary Rust projection comparison."""
+    return not projected_values_equal(left, right)
 
 
 class RegionLineage(ImmutableModel):
@@ -400,16 +436,12 @@ class Finding(ImmutableModel):
             "coordinate": TypeAdapter(NativeCoordinate).dump_python(
                 coordinate, mode="json"
             ),
-            "value": TypeAdapter(ProjectedValue).dump_python(
-                projected, mode="json"
-            ),
+            "value": TypeAdapter(ProjectedValue).dump_python(projected, mode="json"),
             "completeness": TypeAdapter(Completeness).dump_python(
                 completeness, mode="json"
             ),
             "parent_region": (
-                None
-                if parent_region is None
-                else parent_region.model_dump(mode="json")
+                None if parent_region is None else parent_region.model_dump(mode="json")
             ),
         }
         value = _native.validate_domain_model("finding", json.dumps(wire))
@@ -443,9 +475,7 @@ class LocateResult(ImmutableModel):
             "document_id": str(document_id),
             "findings": [item.model_dump(mode="json") for item in findings],
         }
-        value = _native.validate_domain_model(
-            "locate_result_explicit", json.dumps(wire)
-        )
+        value = _native.validate_domain_model("locate_result", json.dumps(wire))
         return cls.model_validate_json(value, context=RUST_DOMAIN_VALIDATED)
 
     @classmethod
@@ -460,7 +490,9 @@ class LocateResult(ImmutableModel):
             "regions": [item.model_dump(mode="json") for item in regions],
             "findings": [item.model_dump(mode="json") for item in findings],
         }
-        value = _native.validate_domain_model("locate_result", json.dumps(wire))
+        value = _native.validate_domain_model(
+            "locate_result_explicit", json.dumps(wire)
+        )
         return cls.model_validate_json(value, context=RUST_DOMAIN_VALIDATED)
 
 
@@ -472,11 +504,15 @@ class Failure(ImmutableModel):
         "limit_exhausted",
         "invalid_resource_policy",
     ]
-    code: str | None = None
-    document: DocumentClassName | None = None
-    limit: ResourceLimit | None = None
-    maximum: U64 | None = None
-    observed: U64 | None = None
+    code: str | None = Field(default=None, exclude_if=lambda value: value is None)
+    document: DocumentClassName | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+    limit: ResourceLimit | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+    maximum: U64 | None = Field(default=None, exclude_if=lambda value: value is None)
+    observed: U64 | None = Field(default=None, exclude_if=lambda value: value is None)
 
 
 LocateFailure = Failure

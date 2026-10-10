@@ -1,16 +1,58 @@
 //! Own runtime Contracts and preserve extraction/validation outcome semantics.
 
 use pyo3::prelude::*;
+use serde::Deserialize;
 use yosoi::contracts::{
-    ContractSchema, ExtractionLimits, FieldSchema, Money, RuntimeContract, RuntimeContractOutcome,
-    RuntimeExtracted, ValidationLimits,
+    Cardinality, ContractId, ContractSchema, ExtractionLimits, FieldId, FieldSchema, Money,
+    RecordScope, RuntimeContract, RuntimeContractOutcome, RuntimeExtracted, ValidationLimits,
 };
 use yosoi::locators::LocateOutcome;
 
-use crate::errors::ContractError;
+use crate::errors::{self, ContractError};
 
 fn encode(value: &impl serde::Serialize) -> PyResult<String> {
     serde_json::to_string(value).map_err(|error| ContractError::new_err(error.to_string()))
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct FieldSchemaInput {
+    id: String,
+    description: String,
+    cardinality: Cardinality,
+    value_type: String,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ContractSchemaInput {
+    version: u32,
+    id: String,
+    description: String,
+    scope: RecordScope,
+    fields: Vec<FieldSchemaInput>,
+}
+
+fn decode_field_schema(py: Python<'_>, input: FieldSchemaInput) -> PyResult<FieldSchema> {
+    let id =
+        FieldId::try_new(input.id).map_err(|error| errors::contract_schema_error(py, &error))?;
+    FieldSchema::try_new(id, input.description, input.cardinality, input.value_type)
+        .map_err(|error| errors::contract_schema_error(py, &error))
+}
+
+fn decode_contract_schema(py: Python<'_>, value: &str) -> PyResult<ContractSchema> {
+    let input: ContractSchemaInput = serde_json::from_str(value).map_err(|error| {
+        errors::serde_decode_error(py, ContractError::new_err(error.to_string()), &error)
+    })?;
+    let id =
+        ContractId::try_new(input.id).map_err(|error| errors::contract_schema_error(py, &error))?;
+    let fields = input
+        .fields
+        .into_iter()
+        .map(|field| decode_field_schema(py, field))
+        .collect::<PyResult<Vec<_>>>()?;
+    ContractSchema::try_new(input.version, id, input.description, input.scope, fields)
+        .map_err(|error| errors::contract_schema_error(py, &error))
 }
 
 #[pyclass(frozen, module = "yosoi._native", name = "Contract")]
@@ -22,20 +64,19 @@ pub struct NativeContract {
 #[pymethods]
 impl NativeContract {
     #[new]
-    fn new(schema_json: &str) -> PyResult<Self> {
-        let schema: ContractSchema = serde_json::from_str(schema_json)
-            .map_err(|error| ContractError::new_err(error.to_string()))?;
+    fn new(py: Python<'_>, schema_json: &str) -> PyResult<Self> {
+        let schema = decode_contract_schema(py, schema_json)?;
         let inner = RuntimeContract::new(schema)
-            .map_err(|error| ContractError::new_err(error.to_string()))?;
+            .map_err(|error| errors::runtime_contract_error(py, &error))?;
         Ok(Self { inner })
     }
 
-    fn identity(&self) -> PyResult<String> {
+    fn identity(&self, py: Python<'_>) -> PyResult<String> {
         self.inner
             .schema()
             .identity()
             .map(|identity| identity.to_string())
-            .map_err(|error| ContractError::new_err(error.to_string()))
+            .map_err(|error| errors::contract_schema_error(py, &error))
     }
 
     #[pyo3(signature = (located_json, limits_json=None))]
@@ -45,20 +86,27 @@ impl NativeContract {
         located_json: &str,
         limits_json: Option<&str>,
     ) -> PyResult<NativeExtracted> {
-        let located: LocateOutcome = serde_json::from_str(located_json)
-            .map_err(|error| ContractError::new_err(error.to_string()))?;
+        let located: LocateOutcome = serde_json::from_str(located_json).map_err(|error| {
+            errors::serde_decode_error(py, ContractError::new_err(error.to_string()), &error)
+        })?;
         let limits = limits_json
             .map(|json| {
                 serde_json::from_str::<ExtractionLimitsWire>(json)
                     .map(ExtractionLimitsWire::into_limits)
-                    .map_err(|error| ContractError::new_err(error.to_string()))
+                    .map_err(|error| {
+                        errors::serde_decode_error(
+                            py,
+                            ContractError::new_err(error.to_string()),
+                            &error,
+                        )
+                    })
             })
             .transpose()?;
         Ok(py.detach(|| NativeExtracted {
-            inner: match limits {
-                Some(limits) => self.inner.extract_with_limits(&located, limits),
-                None => self.inner.extract(&located),
-            },
+            inner: limits.map_or_else(
+                || self.inner.extract(&located),
+                |limits| self.inner.extract_with_limits(&located, limits),
+            ),
         }))
     }
 }
@@ -85,14 +133,20 @@ impl NativeExtracted {
             .map(|json| {
                 serde_json::from_str::<ValidationLimitsWire>(json)
                     .map(ValidationLimitsWire::into_limits)
-                    .map_err(|error| ContractError::new_err(error.to_string()))
+                    .map_err(|error| {
+                        errors::serde_decode_error(
+                            py,
+                            ContractError::new_err(error.to_string()),
+                            &error,
+                        )
+                    })
             })
             .transpose()?;
         Ok(py.detach(|| NativeContractOutcome {
-            inner: match limits {
-                Some(limits) => self.inner.clone().validate_with_limits(limits),
-                None => self.inner.clone().validate(),
-            },
+            inner: limits.map_or_else(
+                || self.inner.clone().validate(),
+                |limits| self.inner.clone().validate_with_limits(limits),
+            ),
         }))
     }
 }
@@ -107,6 +161,14 @@ pub struct NativeContractOutcome {
 impl NativeContractOutcome {
     fn to_json(&self) -> PyResult<String> {
         encode(&self.inner)
+    }
+
+    fn to_archived(&self, py: Python<'_>, schema_json: &str) -> PyResult<String> {
+        let schema = decode_contract_schema(py, schema_json)?;
+        self.inner
+            .to_archived(&schema)
+            .map_err(|error| errors::runtime_archive_error(py, &error))
+            .and_then(|outcome| encode(&outcome))
     }
 
     fn require_all(&self, py: Python<'_>) -> PyResult<String> {
@@ -126,6 +188,8 @@ pub fn validate_money(value: &str) -> PyResult<String> {
 
 #[derive(serde::Deserialize)]
 #[serde(deny_unknown_fields)]
+// The `max_` names are part of the public SDK JSON wire contract.
+#[allow(clippy::struct_field_names)]
 struct ExtractionLimitsWire {
     max_scanned_regions: u64,
     max_scanned_findings: u64,
@@ -136,7 +200,7 @@ struct ExtractionLimitsWire {
     max_diagnostics: u64,
 }
 impl ExtractionLimitsWire {
-    fn into_limits(self) -> ExtractionLimits {
+    const fn into_limits(self) -> ExtractionLimits {
         ExtractionLimits {
             max_scanned_regions: self.max_scanned_regions,
             max_scanned_findings: self.max_scanned_findings,
@@ -150,6 +214,8 @@ impl ExtractionLimitsWire {
 }
 #[derive(serde::Deserialize)]
 #[serde(deny_unknown_fields)]
+// These names mirror public limit fields and must remain stable on the wire.
+#[allow(clippy::struct_field_names)]
 struct ValidationLimitsWire {
     max_fields: u64,
     max_records: u64,
@@ -158,7 +224,7 @@ struct ValidationLimitsWire {
     max_retained_provenance: u64,
 }
 impl ValidationLimitsWire {
-    fn into_limits(self) -> ValidationLimits {
+    const fn into_limits(self) -> ValidationLimits {
         ValidationLimits {
             max_fields: self.max_fields,
             max_records: self.max_records,
@@ -178,18 +244,18 @@ pub fn validation_limits_defaults() -> PyResult<String> {
     )
 }
 #[pyfunction]
-pub fn contract_schema_identity(value: &str) -> PyResult<String> {
-    let schema: ContractSchema =
-        serde_json::from_str(value).map_err(|error| ContractError::new_err(error.to_string()))?;
+pub fn contract_schema_identity(py: Python<'_>, value: &str) -> PyResult<String> {
+    let schema = decode_contract_schema(py, value)?;
     schema
         .identity()
         .map(|identity| identity.to_string())
-        .map_err(|error| ContractError::new_err(error.to_string()))
+        .map_err(|error| errors::contract_schema_error(py, &error))
 }
 
 #[pyfunction]
-pub fn field_schema_validate(value: &str) -> PyResult<()> {
-    serde_json::from_str::<FieldSchema>(value)
-        .map(|_| ())
-        .map_err(|error| ContractError::new_err(error.to_string()))
+pub fn field_schema_validate(py: Python<'_>, value: &str) -> PyResult<()> {
+    let input: FieldSchemaInput = serde_json::from_str(value).map_err(|error| {
+        errors::serde_decode_error(py, ContractError::new_err(error.to_string()), &error)
+    })?;
+    decode_field_schema(py, input).map(|_| ())
 }

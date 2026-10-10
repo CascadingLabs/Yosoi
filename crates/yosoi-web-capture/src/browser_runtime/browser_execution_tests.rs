@@ -872,7 +872,9 @@ async fn aborted_acquire_after_context_keeps_context_owned_through_cleanup()
 async fn runtime_shutdown_leaves_creation_owned_for_next_bounded_manager_cleanup()
 -> Result<(), Box<dyn Error>> {
     let manager = BrowserExecutionManager::new(
-        limits_with_cleanup(1, 1, 1, 1, 5_000, 100, 50)?,
+        // Creation remains paused after runtime loss, so it reaches any bounded
+        // deadline. Give real Chrome cleanup the normal budget on slower runners.
+        limits_with_cleanup(1, 1, 1, 1, 5_000, 100, 10_000)?,
         BrowserExecutionManagerConfig::default(),
     );
     let started = Arc::new(Notify::new());

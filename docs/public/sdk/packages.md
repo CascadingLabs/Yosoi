@@ -14,7 +14,7 @@ the package does not claim complete verified parity.
 
 | Package            | Use it for                                                                               |
 | ------------------ | ---------------------------------------------------------------------------------------- |
-| `yosoi`        | Integrating Yosoi into a Rust application                                                |
+| `yosoi`            | Integrating Yosoi into a Rust application                                                |
 | `yosoi` for Python | Integrating documents, locators, Contracts, Policy, Requests, Map, or Search from Python |
 | `yosoi-cli`        | Running Yosoi from a terminal or shell pipeline                                          |
 
@@ -39,10 +39,10 @@ automation package.
 
 ## Python versions
 
-The package declares CPython `>=3.12,<3.15`. Its configured interpreter
-targets are normal CPython 3.12, 3.13, and 3.14.8, plus free-threaded CPython
-3.14.8t. The native extension uses separate `cp312`, `cp313`, `cp314`, and
-`cp314t` ABI wheels. Python 3.15 is outside the declared range.
+The package declares CPython `>=3.12,<3.16` and requires Pydantic `>=2.14,<3`.
+Its configured interpreter targets are normal CPython 3.12–3.15, plus
+free-threaded CPython 3.14.8t and 3.15.0t. The native extension uses separate
+`cp312`, `cp313`, `cp314`, `cp314t`, `cp315`, and `cp315t` ABI wheels.
 
 Pydantic 2 is the only declared Python runtime dependency. The native extension
 ships in the package. Build, lint, type-check, and test tools are development

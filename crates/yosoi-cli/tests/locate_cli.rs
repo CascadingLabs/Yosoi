@@ -2,6 +2,7 @@
 
 use std::{
     error::Error,
+    fmt::Write as _,
     fs,
     io::{self, Read, Write},
     net::{SocketAddr, TcpListener, TcpStream},
@@ -420,7 +421,7 @@ fn locate_stats_preserve_json_and_report_match_and_no_match() -> Result<(), Box<
     ];
     let baseline = home.run_with_input(&args, source)?;
     assert_eq!(baseline.status.code(), Some(0), "{}", stderr(&baseline));
-    assert!(baseline.stderr.is_empty());
+    assert_eq!(baseline.stderr.len(), 0);
     for flag in ["--stats", "-s", "--STATS"] {
         let mut with_stats = args.to_vec();
         with_stats.push(flag);
@@ -499,9 +500,10 @@ fn human_previews_are_bounded_and_full_and_json_keep_complete_values() -> Result
 #[test]
 fn many_findings_have_an_explicit_preview_limit() -> Result<(), Box<dyn Error>> {
     let home = CliHome::new()?;
-    let source = (0..12)
-        .map(|number| format!("<h1>item-{number}</h1>"))
-        .collect::<String>();
+    let mut source = String::new();
+    for number in 0..12 {
+        write!(source, "<h1>item-{number}</h1>")?;
+    }
     let args = ["locate", "--stdin", "--format", "html", "--css", "h1"];
     let preview = home.run_with_input(&args, source.as_bytes())?;
     assert_eq!(preview.status.code(), Some(0), "{}", stderr(&preview));
