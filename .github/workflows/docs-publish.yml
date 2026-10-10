@@ -91,6 +91,9 @@ jobs:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version: 1.4.2
+      - name: Install locked docs publisher dependencies
+        working-directory: scripts/docs
+        run: bun install --frozen-lockfile
       - name: Prepare docs publication directory
         run: |
           mkdir -p .generated/docs-publication
@@ -113,7 +116,6 @@ jobs:
         if: (inputs.bundle_artifact == '' || inputs.bundle_artifact == null) && (inputs.release_tag == '' || inputs.release_tag == null)
         run: |
           cd scripts/docs
-          bun install --frozen-lockfile
           bun run check
           cd ../..
           channel=$(node -p 'require("./scripts/docs/reference/toolchain.json").channel')
