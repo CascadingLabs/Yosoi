@@ -89,6 +89,8 @@ jobs:
               if selected:
                   traced.append(indent + 'print(' + repr('AFTER: ' + statement) + ', flush=True)\n')
           result = prefix + marker + ''.join(traced)
+          result = result.replace("            server.close()\n", "            server.close()\n            server.abort_clients()\n")
+          result = result.replace("await server.wait_closed()", "await asyncio.wait_for(server.wait_closed(), 10)")
           ast.parse(result)
           target.write_text(result)
           PYTRACE
