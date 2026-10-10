@@ -55,6 +55,18 @@ def validate(value):
 
 with ThreadPoolExecutor(max_workers=2) as pool:
     assert list(pool.map(validate, range(32))) == list(range(32))
+
+shared_document = yosoi.Document.html("shared", "<h1>shared</h1>")
+shared_plan = yosoi.Plan(outputs=[yosoi.output("value", yosoi.css("h1").text())])
+shared_barrier = Barrier(2, timeout=5)
+with shared_document.parse() as shared_parse:
+    def locate_shared(_):
+        shared_barrier.wait()
+        return shared_parse.locate(shared_plan).values()
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        assert list(pool.map(locate_shared, range(32))) == [["shared"]] * 32
+assert shared_parse.closed
 assert not sys._is_gil_enabled(), "model validation enabled the GIL"
 """,
         ],

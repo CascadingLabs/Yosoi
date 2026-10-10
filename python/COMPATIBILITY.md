@@ -1,5 +1,34 @@
 # Python SDK compatibility verification
 
+## Python 3.15 verification
+
+Verified locally on Linux x86-64 on 2026-10-09, extending the SDK-completion
+revision `4c45cc76412351d1c438d309b683bbc0a453a86c`. The declared interpreter
+range is now `>=3.12,<3.16`, with Pydantic `>=2.14,<3`.
+
+| Interpreter | Installed wheel ABI | SDK tests | Review commands |
+| --- | --- | --- | --- |
+| CPython 3.15.0 | `cp315` | 282 passed, one free-threading-only skip | 6 passed |
+| CPython 3.15.0 free-threaded | `cp315t` | 283 passed | 6 passed |
+
+Both development-profile wheels are built from the same source distribution
+with the Rust browser feature enabled and installed before testing. Tests run
+with isolated Python (`-I`). Pydantic 2.14.0 and pydantic-core 2.50.0 are used
+on both interpreters. The six review commands are `policy`, `locate`,
+`contracts`, `runtime-contracts`, `errors`, and `local`.
+
+The free-threading test starts a fresh interpreter without `PYTHON_GIL=0`,
+treats warnings as errors, and checks imports, concurrent parsing, shared
+parsed-document access, and Contract validation. The GIL remains disabled.
+Builds pass the resolved interpreter path to Maturin so a shared Cargo target
+cannot reuse the normal interpreter's extension for the free-threaded ABI.
+
+Build, test, review, and interpreter logs are retained in
+`.generated/python315/` in the Python 3.15 workspace. Wheels use native
+`linux_x86_64` platform tags and are local validation artifacts. Hosted CI,
+other platforms, browser execution, and release publication are not established
+by these checks. Earlier interpreter results below predate the Pydantic upgrade.
+
 ## Current integrated SDK evidence
 
 The SDK continuation is based on the updated default workspace revision

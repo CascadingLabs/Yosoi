@@ -564,11 +564,22 @@ class Extracted[T: "Contract"](_ReadOnlyView):
         wire = json.loads(handle.to_json())
         self.status: str = wire["status"]
         self.document_id: str | None = wire.get("document_id")
-        self.failure = (
-            TypeAdapter(_runtime_contracts.RuntimeExtractedData)
-            .validate_python(wire, context=RUST_DOMAIN_VALIDATED)
-            .failure
+        failure_data = (
+            TypeAdapter(_runtime_contracts.RuntimeExtractedData).validate_python(
+                wire, context=RUST_DOMAIN_VALIDATED
+            )
             if "failure" in wire
+            else None
+        )
+        self.failure = (
+            failure_data.failure
+            if isinstance(
+                failure_data,
+                (
+                    _runtime_contracts._RuntimeLocateFailed,
+                    _runtime_contracts._RuntimeRejected,
+                ),
+            )
             else None
         )
         self.completeness: Completeness | None = (
@@ -622,11 +633,23 @@ class ContractOutcome[T: "Contract"](_ReadOnlyView):
         wire = json.loads(handle.to_json())
         self.status: str = wire["status"]
         self.document_id: str | None = wire.get("document_id")
-        self.failure = (
-            TypeAdapter(_runtime_contracts.RuntimeContractOutcomeData)
-            .validate_python(wire, context=RUST_DOMAIN_VALIDATED)
-            .failure
+        failure_data = (
+            TypeAdapter(_runtime_contracts.RuntimeContractOutcomeData).validate_python(
+                wire, context=RUST_DOMAIN_VALIDATED
+            )
             if "failure" in wire
+            else None
+        )
+        self.failure = (
+            failure_data.failure
+            if isinstance(
+                failure_data,
+                (
+                    _runtime_contracts._RuntimeOutcomeLocateFailed,
+                    _runtime_contracts._RuntimeExtractionRejected,
+                    _runtime_contracts._RuntimeValidationRejected,
+                ),
+            )
             else None
         )
         self.completeness: Completeness | None = (

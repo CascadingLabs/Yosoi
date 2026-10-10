@@ -6,7 +6,7 @@ order: 1
 
 # Install the Python SDK
 
-The package requires Python `>=3.12,<3.15` and Pydantic `>=2.12,<3`. Choose
+The package requires Python `>=3.12,<3.16` and Pydantic `>=2.14,<3`. Choose
 the wheel that matches both your Python ABI and platform:
 
 | Interpreter                  | Native wheel ABI |
@@ -15,6 +15,8 @@ the wheel that matches both your Python ABI and platform:
 | CPython 3.13                 | `cp313`          |
 | CPython 3.14                 | `cp314`          |
 | Free-threaded CPython 3.14.8 | `cp314t`         |
+| CPython 3.15                 | `cp315`          |
+| Free-threaded CPython 3.15   | `cp315t`         |
 
 The free-threaded ABI has its own extension wheel. The version range alone does
 not promise an artifact for every operating system, architecture, or Linux
@@ -30,10 +32,10 @@ python -m pip install yosoi
 
 For development from this repository, install the locked environment from the
 repository root. The example selects normal CPython 3.12; use `3.13`, `3.14`,
-or the exact free-threaded `3.14.8t` selector for another target.
+`3.15.0`, or the exact free-threaded `3.14.8t` or `3.15.0t` selector for another target.
 
 ```sh
-uv python install 3.12 3.13 3.14 3.14.8t
+uv python install 3.12 3.13 3.14 3.14.8t 3.15.0 3.15.0t
 uv sync --locked --python 3.12
 ```
 
