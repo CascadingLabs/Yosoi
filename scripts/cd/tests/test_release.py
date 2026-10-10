@@ -658,6 +658,111 @@ substrate = { version = "=0.1.0", path = "crates/substrate" }
             with self.assertRaisesRegex(ValueError, "Cyclic"):
                 release.publication_plan(root)
 
+    def test_reviewed_browser_forks_publish_in_order_with_independent_versions(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.fixture(root)
+            application = root / "crates/application/Cargo.toml"
+            application.write_text(
+                application.read_text()
+                + 'controller = { package = "yosoi-chromiumoxide", '
+                'version = "=0.9.1-yosoi.1", '
+                'path = "../../vendor/chromiumoxide" }\n'
+            )
+            for path, name, version in (
+                ("vendor/chromiumoxide", "yosoi-chromiumoxide", "0.9.1-yosoi.1"),
+                (
+                    "vendor/chromiumoxide_cdp",
+                    "yosoi-chromiumoxide-cdp",
+                    "0.10.0-yosoi.m153.1",
+                ),
+            ):
+                folder = root / path
+                folder.mkdir(parents=True)
+                text = f'[package]\nname = "{name}"\nversion = "{version}"\n'
+                if name == "yosoi-chromiumoxide":
+                    text += (
+                        "[dependencies]\nschema = { "
+                        'package = "yosoi-chromiumoxide-cdp", '
+                        'version = "=0.10.0-yosoi.m153.1", '
+                        'path = "../chromiumoxide_cdp" }\n'
+                    )
+                (folder / "Cargo.toml").write_text(text)
+            publication = release.publication_plan(root)
+            self.assertEqual(publication["blockers"], [])
+            order = publication["crates"]
+            self.assertLess(
+                order.index("yosoi-chromiumoxide-cdp"),
+                order.index("yosoi-chromiumoxide"),
+            )
+            self.assertLess(
+                order.index("yosoi-chromiumoxide"), order.index("application")
+            )
+            manifest, document = release.registry_manifests(root)["yosoi-chromiumoxide"]
+            self.assertEqual(release.package_version(root, document), "0.9.1-yosoi.1")
+            document["package"]["name"] = "chromiumoxide"
+            manifest.write_text(
+                '[package]\nname = "chromiumoxide"\nversion = "0.9.1"\n'
+            )
+            self.assertIn(
+                "application depends on vendored chromiumoxide; "
+                "approve its registry distribution first",
+                release.publication_plan(root)["blockers"],
+            )
+
+    def test_crate_publisher_uses_fork_version_and_manifest_in_shared_target(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.fixture(root)
+            folder = root / "vendor/chromiumoxide"
+            folder.mkdir(parents=True)
+            (folder / "Cargo.toml").write_text(
+                '[package]\nname = "yosoi-chromiumoxide"\nversion = "0.9.1-yosoi.1"\n'
+            )
+            archive = root / "target/package/yosoi-chromiumoxide-0.9.1-yosoi.1.crate"
+            calls = []
+            uploaded = False
+
+            def command(*args):
+                nonlocal uploaded
+                calls.append(args)
+                if args[1] == "package":
+                    archive.parent.mkdir(parents=True)
+                    archive.write_bytes(b"verified fork archive")
+                elif args[1] == "publish":
+                    uploaded = True
+
+            def registry(url):
+                self.assertTrue(url.endswith("/yosoi-chromiumoxide/0.9.1-yosoi.1"))
+                return (
+                    {"version": {"checksum": release.sha256(archive)}}
+                    if uploaded
+                    else None
+                )
+
+            with (
+                patch.object(publish.Path, "cwd", return_value=root),
+                patch.object(
+                    publish,
+                    "plan",
+                    return_value={
+                        "version": "0.1.0",
+                        "publication": {
+                            "crates": ["yosoi-chromiumoxide"],
+                            "blockers": [],
+                        },
+                    },
+                ),
+                patch.object(publish, "run", side_effect=command),
+                patch.object(publish, "json_url", side_effect=registry),
+                patch.dict(os.environ, {"CARGO_REGISTRY_TOKEN": "fixture"}),
+            ):
+                publish.publish_crates("v0.1.0")
+            self.assertEqual([call[1] for call in calls], ["package", "publish"])
+            for call in calls:
+                self.assertIn(str(folder / "Cargo.toml"), call)
+                self.assertIn(str(root / "target"), call)
+
 
 class ArtifactTests(unittest.TestCase):
     def fixture(

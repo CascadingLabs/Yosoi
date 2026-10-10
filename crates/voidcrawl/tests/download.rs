@@ -4,7 +4,7 @@
 //! Requires a real Chromium/Chrome binary and network access, so it is
 //! `#[ignore]`d by default. Run it explicitly:
 //!
-//!     cargo test -p void_crawl_core --test download -- --ignored
+//!     cargo test -p yosoi-browser-core --test download -- --ignored
 //! --test-threads=1
 #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
 

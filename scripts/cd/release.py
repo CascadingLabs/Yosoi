@@ -149,7 +149,14 @@ def wheel_builds(abis: list[dict]) -> list[dict]:
     return result
 
 
-def publication_plan(root: Path) -> dict:
+# Only these reviewed browser forks may publish from vendor paths.
+REGISTRY_FORKS = {
+    "vendor/chromiumoxide": "yosoi-chromiumoxide",
+    "vendor/chromiumoxide_cdp": "yosoi-chromiumoxide-cdp",
+}
+
+
+def registry_manifests(root: Path) -> dict:
     workspace = read_toml(root / "Cargo.toml")["workspace"]
     manifests = {}
     for member in workspace["members"]:
@@ -157,10 +164,36 @@ def publication_plan(root: Path) -> dict:
         document = read_toml(path)
         if "package" in document:
             manifests[document["package"]["name"]] = (path, document)
+    for directory, name in REGISTRY_FORKS.items():
+        path = root / directory / "Cargo.toml"
+        if path.is_file():
+            document = read_toml(path)
+            if document["package"]["name"] == name:
+                manifests[name] = (path, document)
+    return manifests
+
+
+def package_version(root: Path, document: dict) -> str:
+    version = document["package"]["version"]
+    if isinstance(version, dict) and version.get("workspace") is True:
+        version = read_toml(root / "Cargo.toml")["workspace"]["package"]["version"]
+    if not isinstance(version, str) or not version:
+        raise ValueError(
+            "Package version must be explicit or inherited from the workspace"
+        )
+    return version
+
+
+def publication_plan(root: Path) -> dict:
+    workspace = read_toml(root / "Cargo.toml")["workspace"]
+    manifests = registry_manifests(root)
     roots = sorted(
         name
         for name, (path, doc) in manifests.items()
-        if path.parent.parent == root / "crates"
+        if (
+            path.parent.parent == root / "crates"
+            or REGISTRY_FORKS.get(path.parent.relative_to(root).as_posix()) == name
+        )
         and doc["package"].get("publish") is not False
     )
     ordered, visiting, visited, blockers = [], set(), set(), set()

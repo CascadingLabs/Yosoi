@@ -2,7 +2,7 @@
 //!
 //! Require a real Chromium/Chrome binary. Run serially:
 //!
-//!     cargo test -p void_crawl_core --test ax_tree -- --test-threads=1
+//!     cargo test -p yosoi-browser-core --test ax_tree -- --test-threads=1
 #![allow(clippy::expect_used, clippy::unwrap_used)]
 
 use serde_json::Value;

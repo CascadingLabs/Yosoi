@@ -9,7 +9,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-from release import json_url, plan, sha256
+from release import json_url, package_version, plan, registry_manifests, sha256
 
 
 def run(*args: str) -> None:
@@ -17,20 +17,31 @@ def run(*args: str) -> None:
 
 
 def publish_crates(tag: str) -> None:
-    release = plan(Path.cwd(), tag)
+    root = Path.cwd()
+    release = plan(root, tag)
     publication = release["publication"]
     if publication["blockers"]:
         raise ValueError("Publication prerequisites are unresolved")
     if not os.environ.get("CARGO_REGISTRY_TOKEN"):
         raise ValueError("CARGO_REGISTRY_TOKEN is required")
+    manifests = registry_manifests(root)
+    target = root / "target"
     for name in publication["crates"]:
+        manifest, document = manifests[name]
+        version = package_version(root, document)
         # Registry packages are built in dependency order, after preceding uploads
         # have become available to Cargo. Cargo publish waits for index visibility.
-        run("cargo", "package", "--locked", "--package", name)
-        file = Path("target/package") / f"{name}-{release['version']}.crate"
-        previous = json_url(
-            f"https://crates.io/api/v1/crates/{name}/{release['version']}"
+        run(
+            "cargo",
+            "package",
+            "--locked",
+            "--manifest-path",
+            str(manifest),
+            "--target-dir",
+            str(target),
         )
+        file = target / "package" / f"{name}-{version}.crate"
+        previous = json_url(f"https://crates.io/api/v1/crates/{name}/{version}")
         if previous:
             if previous["version"]["checksum"] != sha256(file):
                 raise ValueError(
@@ -40,10 +51,16 @@ def publish_crates(tag: str) -> None:
                 raise ValueError(f"{name} release is yanked")
             print(f"Verified existing {file.name}")
         else:
-            run("cargo", "publish", "--locked", "--package", name)
-            published = json_url(
-                f"https://crates.io/api/v1/crates/{name}/{release['version']}"
+            run(
+                "cargo",
+                "publish",
+                "--locked",
+                "--manifest-path",
+                str(manifest),
+                "--target-dir",
+                str(target),
             )
+            published = json_url(f"https://crates.io/api/v1/crates/{name}/{version}")
             if not published or published["version"]["checksum"] != sha256(file):
                 raise ValueError(f"Registry did not confirm {file.name}")
 

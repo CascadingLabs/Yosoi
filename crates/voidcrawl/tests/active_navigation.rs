@@ -3,7 +3,7 @@
 //! The loopback fixture is explicitly event-gated: it never uses `sleep` or
 //! polling as readiness detection. Run serially with a local Chromium:
 //!
-//!     CARGO_BUILD_JOBS=1 cargo test -p void_crawl_core --test active_navigation -- --test-threads=1
+//!     CARGO_BUILD_JOBS=1 cargo test -p yosoi-browser-core --test active_navigation -- --test-threads=1
 //!
 //! ## Public contract exercised here
 //!

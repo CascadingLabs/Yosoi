@@ -319,7 +319,7 @@ fn fmt() -> Result<()> {
             "--package",
             "yosoi-web-capture-direct-http",
             "--package",
-            "void_crawl_core",
+            "yosoi-browser-core",
             "--package",
             "yosoi-benchmarks",
             "--package",

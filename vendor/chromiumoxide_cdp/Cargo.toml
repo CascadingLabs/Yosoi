@@ -1,9 +1,8 @@
 [package]
 edition = "2024"
 rust-version = "1.85"
-name = "chromiumoxide_cdp"
+name = "yosoi-chromiumoxide-cdp"
 version = "0.10.0-yosoi.m153.1"
-publish = false
 authors = ["Matthias Seitz <matthias.seitz@outlook.de>"]
 build = false
 include = [
@@ -25,9 +24,10 @@ description = "Contains all the generated types for chromiumoxide"
 homepage = "https://github.com/mattsse/chromiumoxide"
 readme = "README.md"
 license = "(MIT OR Apache-2.0) AND BSD-3-Clause"
-repository = "https://github.com/mattsse/chromiumoxide"
+repository = "https://github.com/CascadingLabs/Yosoi"
 
 [package.metadata.yosoi]
+upstream-package = "chromiumoxide_cdp"
 chrome-version = "153.0.8010.36"
 chromium-revision = 1681091
 v8-revision = "f343157cebb388bfa416baccb5d35507e6fe8cc7"

@@ -60,7 +60,7 @@ tokio-rustls = { version = "=0.26.4", default-features = false, features = ["rin
 url = { version = "2.5.8", default-features = false, features = ["std"] }
 wreq = { version = "=0.16.1", default-features = false, features = ["stream", "tokio-rt", "webpki-roots"] }
 uuid = { version = "1", features = ["v4"] }
-void_crawl_core = { version = "=0.1.0-rc.6", path = "crates/voidcrawl", default-features = false }
+void_crawl_core = { package = "yosoi-browser-core", version = "=0.1.0-rc.6", path = "crates/voidcrawl", default-features = false }
 yosoi = { version = "=0.1.0-rc.6", path = "crates/yosoi" }
 yosoi-engine = { version = "=0.1.0-rc.6", path = "crates/yosoi-engine" }
 yosoi-contracts = { version = "=0.1.0-rc.6", path = "crates/yosoi-contracts" }
@@ -76,7 +76,7 @@ yosoi-web-capture = { version = "=0.1.0-rc.6", path = "crates/yosoi-web-capture"
 yosoi-web-capture-direct-http = { version = "=0.1.0-rc.6", path = "crates/yosoi-web-capture-direct-http", default-features = false }
 
 base64 = "0.22"
-chromiumoxide = { version = "0.9", path = "vendor/chromiumoxide", default-features = false }
+chromiumoxide = { package = "yosoi-chromiumoxide", version = "=0.9.1-yosoi.1", path = "vendor/chromiumoxide", default-features = false }
 clap_complete = "4.6.11"
 criterion = { version = "=0.7.0", default-features = false }
 divan = "=0.1.21"

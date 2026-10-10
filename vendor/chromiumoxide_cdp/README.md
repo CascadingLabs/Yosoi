@@ -1,3 +1,7 @@
+This support package is published as `yosoi-chromiumoxide-cdp`; its Rust library
+import remains `chromiumoxide_cdp`. The independent schema version and upstream
+license/attribution records are preserved. Applications use the `yosoi` SDK.
+
 # Vendored Chromiumoxide CDP bindings
 
 This is Yosoi's checked-in generated protocol crate for the exact Chrome
@@ -84,7 +88,7 @@ Rust types. Generation for this fork is explicit and never runs from
 `build.rs`:
 
 ```bash
-CARGO_BUILD_JOBS=1 cargo run -p chromiumoxide_cdp --example generate --offline --locked
+CARGO_BUILD_JOBS=1 cargo run -p yosoi-chromiumoxide-cdp --example generate --offline --locked
 vendor/chromiumoxide_cdp/scripts/verify-generated.sh
 ```
 

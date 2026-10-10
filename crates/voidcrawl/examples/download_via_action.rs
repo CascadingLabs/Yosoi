@@ -9,7 +9,7 @@
 //!
 //! Run it:
 //!
-//!     cargo run -p void_crawl_core --example download_via_action
+//!     cargo run -p yosoi-browser-core --example download_via_action
 #![allow(
     clippy::expect_used,
     clippy::unwrap_used,

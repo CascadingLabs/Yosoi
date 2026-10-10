@@ -1,3 +1,12 @@
+# Yosoi Chromiumoxide registry fork
+
+This support package is published as `yosoi-chromiumoxide`; applications use
+`yosoi` as their SDK entry point. Its Rust library import remains `chromiumoxide`.
+It packages upstream Chromiumoxide 0.9.1 with Yosoi's reviewed patches and pinned
+CDP fork. Yosoi selects installed regular Chrome/Chromium Stable; the optional
+upstream fetcher is not the SDK's supported browser selection path. Upstream
+license files, authorship, and the original usage notes below are retained.
+
 # chromiumoxide
 
 ![Build](https://github.com/mattsse/chromiumoxide/workflows/Continuous%20integration/badge.svg)

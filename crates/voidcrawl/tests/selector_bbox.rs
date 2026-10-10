@@ -7,7 +7,7 @@
 //!
 //! Requires a real Chromium/Chrome binary. Run serially:
 //!
-//!     cargo test -p void_crawl_core --test selector_bbox -- --test-threads=1
+//!     cargo test -p yosoi-browser-core --test selector_bbox -- --test-threads=1
 #![allow(clippy::expect_used, clippy::unwrap_used, clippy::panic)]
 
 use void_crawl_core::{
