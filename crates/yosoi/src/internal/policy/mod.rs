@@ -14,6 +14,7 @@ mod snapshot;
 
 pub use error::PolicyError;
 pub use identity::{EFFECTIVE_POLICY_IDENTITY_VERSION, EffectivePolicyIdentity};
+pub use policy::{Continuation, FlowPolicy, StopScope};
 pub use policy::{CountLimit, Documents, Locators, Search, StepLimit, Tuning, TuningMode};
 pub use policy_identity::EffectivePolicy;
 pub use policy_value::Policy;

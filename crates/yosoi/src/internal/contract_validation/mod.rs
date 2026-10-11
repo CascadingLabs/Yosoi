@@ -1,7 +1,7 @@
 //! Explicit runtime validation from model-shaped candidates into Rust values.
 
-use crate::internal::contracts as yosoi_contracts;
-
+use crate::internal::contracts as internal_contracts;
+use crate::internal::documents as internal_documents;
 mod issue;
 mod outcome;
 #[doc(hidden)]
@@ -44,7 +44,13 @@ pub mod archived {
 }
 
 /// Model-shaped candidates awaiting explicit runtime validation.
-pub type Extracted<T> = <T as yosoi_contracts::Contract>::Extracted;
+pub type Extracted<T> = <T as internal_contracts::Contract>::Extracted;
 
 #[cfg(test)]
 mod integration_tests;
+
+/// Generic access to a Contract's existing extraction and validation path.
+/// Deriving `Contract` supplies this adapter; no new field conversion is implied.
+pub trait ValidateContract: internal_contracts::Contract {
+    fn validate_contract(located: &internal_documents::LocateOutcome) -> ContractOutcome<Self>;
+}

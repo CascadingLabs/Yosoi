@@ -204,6 +204,54 @@ async fn search_v4_policy_v3_request_run_keeps_its_pre_robots_identity()
     Ok(())
 }
 
+#[tokio::test]
+async fn schema3_policy_records_preserve_v5_and_v6_timeout_identities() -> Result<(), Box<dyn Error>>
+{
+    let temporary = tempdir()?;
+    let archive = Archive::open(temporary.path().join(".yosoi")).await?;
+
+    let legacy_policy = Policy::default();
+    let mut legacy_policy_value = serde_json::to_value(&legacy_policy)?;
+    legacy_policy_value
+        .as_object_mut()
+        .ok_or("legacy Policy JSON is not an object")?
+        .remove("default_action_timeout_ms");
+    let mut legacy_effective_value = serde_json::to_value(legacy_policy.effective_policy()?)?;
+    legacy_effective_value
+        .as_object_mut()
+        .ok_or("legacy EffectivePolicy JSON is not an object")?
+        .remove("default_action_timeout_ms");
+    let legacy_identity =
+        EffectivePolicyIdentityRecord::from_identity(legacy_policy.archived_v5_identity()?);
+    let legacy_record = serde_json::json!({
+        "policy": legacy_policy_value,
+        "effective_policy": legacy_effective_value,
+        "effective_identity": legacy_identity,
+    });
+    let legacy_reference = PolicyArchiveRef::new_current();
+    archive
+        .write_record(
+            RecordKind::Policy,
+            POLICY_SCHEMA_V3,
+            legacy_reference.key(),
+            &legacy_record,
+        )
+        .await?;
+    let reopened_legacy = read_policy_record(&archive, &legacy_reference).await?;
+    assert_eq!(reopened_legacy.effective_identity, legacy_identity);
+    assert_eq!(reopened_legacy.policy.default_action_timeout_ms, 10_000);
+
+    let current_policy = Policy {
+        default_action_timeout_ms: 20_000,
+        ..Policy::default()
+    };
+    let current_reference = archive.write(&current_policy).await?;
+    let reopened_current = read_policy_record(&archive, &current_reference).await?;
+    assert_eq!(reopened_current.effective_identity.version(), 7);
+    assert_eq!(reopened_current.policy.default_action_timeout_ms, 20_000);
+    Ok(())
+}
+
 #[derive(serde::Deserialize, Eq, PartialEq, Serialize)]
 struct TestPolicyArchiveRecord {
     policy: Policy,

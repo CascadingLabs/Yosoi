@@ -1,3 +1,5 @@
+use crate::internal::documents as internal_documents;
+use crate::internal::engine::browser_document::dom as internal_engine_browser_document_dom;
 use std::fmt;
 
 use crate::internal::documents::{
@@ -17,6 +19,15 @@ pub enum ParseError {
     InvalidResourcePolicy { limit: ResourceLimit },
     #[error(transparent)]
     Document(#[from] EngineDocumentParseError),
+}
+
+/// Failure normalizing a complete, identity-bound browser HTML observation.
+#[derive(Debug, Error)]
+pub enum ObservedDomError {
+    #[error(transparent)]
+    Policy(#[from] internal_documents::ResourceBudgetError),
+    #[error(transparent)]
+    Normalize(#[from] internal_engine_browser_document_dom::RenderedDomNormalizationError),
 }
 
 /// An immutable document with an explicit representation.
@@ -41,6 +52,22 @@ impl fmt::Debug for Document {
 }
 
 impl Document {
+    /// Uses the same canonical normalization as browser Request capture.
+    pub fn observed_dom(
+        id: impl Into<String>,
+        epoch: u64,
+        html: Vec<u8>,
+        policy: &Policy,
+    ) -> Result<Self, ObservedDomError> {
+        Ok(
+            internal_engine_browser_document_dom::normalize_rendered_dom(
+                id,
+                epoch,
+                html,
+                resource_budget_for_policy(policy)?,
+            )?,
+        )
+    }
     /// Creates an immutable source HTML document.
     pub fn html(id: impl Into<String>, bytes: impl Into<Vec<u8>>) -> Result<Self, DocumentError> {
         EngineDocument::html(id, bytes).map(Self::from_inner)

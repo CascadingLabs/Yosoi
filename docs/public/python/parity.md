@@ -29,13 +29,13 @@ Run the gate from a checkout with an installed Python wheel and the pinned
 Rust reference compiler available:
 
 ```sh
-python scripts/sdk-parity/run_sdk_parity.py --output-dir .generated/python-parity
+uv run --no-sync python scripts/sdk-parity/run_sdk_parity.py --output-dir .generated/python-parity
 ```
 
 The command generates the compiler inventory, prepares an output-only runtime
 ledger, builds the nine Rust fixture executables serially, runs their Python
 comparisons, and enforces the SDK report. It never rewrites the reviewed ledger
-or SDK contract. The Python CI workflow runs this gate on normal Python 3.14.8
+or SDK contract. The Python CI workflow runs this gate on normal Python 3.14
 and uploads the report, runtime pins, compiler reference, and raw evidence even
 when the gate fails. The separate package matrix checks all supported ABIs.
 
@@ -48,6 +48,21 @@ The gate requires a clean checkout at the selected source commit and rebuilds
 its fixtures. It rejects `--skip-build`, dirty worktrees, and a source revision
 that differs from the build checkout. `--rust-reference` can reuse a verified
 compiler inventory only when that inventory matches the same selected commit.
+
+## Browser behavior evidence
+
+Installed-wheel browser journeys produce a separate report through
+`scripts/sdk-parity/browser_evidence.py`. It records passing required stories,
+the selected wheel and installed native hashes, the source revision, and regular
+Chrome identity. Pass it to the SDK gate with `--browser-evidence`; the gate
+rejects stale source or extension identities. Python CI runs these journeys
+for normal and free-threaded Python 3.14 before consuming the report.
+
+The beta contract explicitly defers the Rust Archive/View facade while retaining
+those declarations in the audit. New browser namespaces and the Rust-only
+Contract trait adapter have narrow recorded dispositions; they do not exempt
+functional APIs from mapping or behavior checks. Mapping completeness, required
+suite results, and per-declaration evidence remain distinct claims.
 
 ## What the report consumes
 
@@ -153,7 +168,7 @@ The evidence checks both operands and the fixed type discriminator used by
 the Rust-backed Python comparator. Rust declaration order is preserved for
 enums whose ordinary string ordering differs.
 
-The [current generated summary](../assets/python-sdk-parity.json) is available
+The [committed inventory summary](../assets/python-sdk-parity.json) is available
 as a public docs asset for frontend consumers. Its schema is
 `python/parity/summary.schema.json`. It contains source and runtime pins,
 coverage counts, the complete report's SHA-256, and an explicit local-validation
@@ -164,7 +179,7 @@ Generate both artifacts with the parity command's `--output` and
 `--summary-output` options after running matching conformance evidence. The
 summary is derived from the report, rather than maintained as a separate count.
 
-The current local wheel report in `python/COMPATIBILITY.md` records normal
+The historical local wheel report in `python/COMPATIBILITY.md` records normal
 3.14.8 and free-threaded 3.14.8t results, alongside clearly marked historical
 scaffold evidence. See the separate
 [current compatibility status](compatibility.md) for the present build and

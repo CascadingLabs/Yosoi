@@ -1,21 +1,37 @@
 use serde::{Deserialize, Serialize};
+use std::time::{Duration, Instant};
 
 use crate::internal::policy::{
     EffectivePolicyIdentity, PolicyError,
     policy::{
         AcquisitionKind, DiscoveryDocuments, DocumentRequest, Documents, EffectivePage,
-        EffectiveSearch, Filters, Limits, Locators, Map, PageDiscovery, Request, Robots, Scope,
-        Subdomains, Tuning,
+        EffectiveSearch, Filters, FlowPolicy, Limits, Locators, Map, PageDiscovery, Request,
+        Robots, Scope, Subdomains, Tuning,
     },
     policy_value::Policy,
 };
 
-const POLICY_SCHEMA_VERSION: u16 = 5;
+const POLICY_SCHEMA_VERSION: u16 = 7;
+const LEGACY_POLICY_SCHEMA_VERSION_V6: u16 = 6;
+const LEGACY_POLICY_SCHEMA_VERSION_V5: u16 = 5;
 const LEGACY_POLICY_SCHEMA_VERSION_V4_SEARCH: u16 = 4;
 const LEGACY_POLICY_SCHEMA_VERSION_V2: u16 = 2;
 const LEGACY_POLICY_SCHEMA_VERSION_V3_MAP: u16 = 3;
 
 impl Policy {
+    /// Computes the v6 identity used by archived policies without Flow behavior.
+    #[doc(hidden)]
+    pub fn archived_v6_identity(&self) -> Result<EffectivePolicyIdentity, PolicyError> {
+        self.effective_policy()?.archived_v6_identity()
+    }
+
+    /// Computes the v5 identity used by archived policies that predate the
+    /// default action timeout field.
+    #[doc(hidden)]
+    pub fn archived_v5_identity(&self) -> Result<EffectivePolicyIdentity, PolicyError> {
+        self.effective_policy()?.archived_v5_identity()
+    }
+
     /// Computes the pre-Search v2 identity used to verify historical archives.
     ///
     /// Archive readers call this only for Policy records written with the
@@ -23,6 +39,8 @@ impl Policy {
     #[doc(hidden)]
     pub fn archived_v2_identity(&self) -> Result<EffectivePolicyIdentity, PolicyError> {
         self.validate()?;
+        ensure_legacy_flow(self.flow)?;
+        ensure_legacy_action_timeout(self.default_action_timeout_ms)?;
         if self.search.is_enabled() {
             return Err(PolicyError::LegacyIdentityCannotIncludeSearch);
         }
@@ -57,6 +75,8 @@ impl Policy {
     #[doc(hidden)]
     pub fn archived_v3_map_identity(&self) -> Result<EffectivePolicyIdentity, PolicyError> {
         self.validate()?;
+        ensure_legacy_flow(self.flow)?;
+        ensure_legacy_action_timeout(self.default_action_timeout_ms)?;
         if self.search.is_enabled() {
             return Err(PolicyError::LegacyIdentityCannotIncludeSearch);
         }
@@ -90,6 +110,8 @@ impl Policy {
         &self,
     ) -> Result<EffectivePolicyIdentity, PolicyError> {
         self.validate()?;
+        ensure_legacy_flow(self.flow)?;
+        ensure_legacy_action_timeout(self.default_action_timeout_ms)?;
         if self.search.is_enabled() {
             return Err(PolicyError::LegacyIdentityCannotIncludeSearch);
         }
@@ -141,6 +163,9 @@ pub struct EffectivePolicy {
     pub page: EffectivePage,
     /// Shared deadline, domain-specific bounds, and Direct HTTP redirects.
     pub request: Request,
+    /// Fallback execution budget for an action without a nearer Flow or action timeout.
+    #[serde(default = "default_action_timeout_ms")]
+    pub default_action_timeout_ms: u64,
     /// Immutable document parser limits.
     pub documents: Documents,
     /// Locator plan and evaluation limits.
@@ -151,6 +176,9 @@ pub struct EffectivePolicy {
     pub map: Map,
     /// Resolved Search provider routes and resource bounds.
     pub search: EffectiveSearch,
+    /// Default continuation behavior for Flow failures and local cancellations.
+    #[serde(default)]
+    pub flow: FlowPolicy,
 }
 
 impl EffectivePolicy {
@@ -158,6 +186,7 @@ impl EffectivePolicy {
     pub fn effective_identity(&self) -> Result<EffectivePolicyIdentity, PolicyError> {
         self.page.validate()?;
         self.request.validate()?;
+        validate_default_action_timeout(self.default_action_timeout_ms)?;
         self.map.validate()?;
         self.search.validate()?;
         let acquisitions = self
@@ -174,6 +203,43 @@ impl EffectivePolicy {
             policy: EffectivePolicyIdentityBodyRef {
                 page: EffectivePageIdentityRef { acquisitions },
                 request: &self.request,
+                default_action_timeout_ms: self.default_action_timeout_ms,
+                documents: &self.documents,
+                locators: &self.locators,
+                tuning: self.tuning,
+                map: &self.map,
+                search: &self.search,
+                flow: self.flow,
+            },
+        })
+        .map_err(|error| PolicyError::Serialization(error.to_string()))?;
+        Ok(EffectivePolicyIdentity::from_canonical_json(&json))
+    }
+
+    /// Recomputes the v6 identity for snapshots archived before Flow behavior.
+    #[doc(hidden)]
+    pub fn archived_v6_identity(&self) -> Result<EffectivePolicyIdentity, PolicyError> {
+        self.page.validate()?;
+        self.request.validate()?;
+        validate_default_action_timeout(self.default_action_timeout_ms)?;
+        self.map.validate()?;
+        self.search.validate()?;
+        ensure_legacy_flow(self.flow)?;
+        let acquisitions = self
+            .page
+            .acquisitions
+            .iter()
+            .map(|acquisition| EffectiveAcquisitionIdentityRef {
+                acquisition: acquisition.acquisition,
+                documents: &acquisition.documents,
+            })
+            .collect();
+        let json = serde_json::to_string(&LegacyEffectivePolicyIdentityEnvelopeV6Ref {
+            schema_version: LEGACY_POLICY_SCHEMA_VERSION_V6,
+            policy: LegacyEffectivePolicyIdentityBodyV6Ref {
+                page: EffectivePageIdentityRef { acquisitions },
+                request: &self.request,
+                default_action_timeout_ms: self.default_action_timeout_ms,
                 documents: &self.documents,
                 locators: &self.locators,
                 tuning: self.tuning,
@@ -182,7 +248,43 @@ impl EffectivePolicy {
             },
         })
         .map_err(|error| PolicyError::Serialization(error.to_string()))?;
-        Ok(EffectivePolicyIdentity::from_canonical_json(&json))
+        Ok(EffectivePolicyIdentity::from_legacy_v6_json(&json))
+    }
+
+    /// Recomputes the v5 identity for an archived snapshot written before
+    /// default action timeouts became part of Policy.
+    #[doc(hidden)]
+    pub fn archived_v5_identity(&self) -> Result<EffectivePolicyIdentity, PolicyError> {
+        self.page.validate()?;
+        self.request.validate()?;
+        validate_default_action_timeout(self.default_action_timeout_ms)?;
+        self.map.validate()?;
+        self.search.validate()?;
+        ensure_legacy_action_timeout(self.default_action_timeout_ms)?;
+        ensure_legacy_flow(self.flow)?;
+        let acquisitions = self
+            .page
+            .acquisitions
+            .iter()
+            .map(|acquisition| EffectiveAcquisitionIdentityRef {
+                acquisition: acquisition.acquisition,
+                documents: &acquisition.documents,
+            })
+            .collect();
+        let json = serde_json::to_string(&LegacyEffectivePolicyIdentityEnvelopeV5Ref {
+            schema_version: LEGACY_POLICY_SCHEMA_VERSION_V5,
+            policy: LegacyEffectivePolicyIdentityBodyV5Ref {
+                page: EffectivePageIdentityRef { acquisitions },
+                request: &self.request,
+                documents: &self.documents,
+                locators: &self.locators,
+                tuning: self.tuning,
+                map: &self.map,
+                search: &self.search,
+            },
+        })
+        .map_err(|error| PolicyError::Serialization(error.to_string()))?;
+        Ok(EffectivePolicyIdentity::from_legacy_v5_json(&json))
     }
 
     /// Computes the Search-era v4 identity before `Map.robots` existed.
@@ -192,8 +294,10 @@ impl EffectivePolicy {
     ) -> Result<EffectivePolicyIdentity, PolicyError> {
         self.page.validate()?;
         self.request.validate()?;
+        ensure_legacy_action_timeout(self.default_action_timeout_ms)?;
         self.map.validate()?;
         self.search.validate()?;
+        ensure_legacy_flow(self.flow)?;
         if self.map.robots != Robots::Ignore {
             return Err(PolicyError::LegacyIdentityCannotIncludeRobots);
         }
@@ -237,6 +341,37 @@ impl EffectivePolicy {
     }
 }
 
+const fn default_action_timeout_ms() -> u64 {
+    10_000
+}
+
+const fn ensure_legacy_flow(flow: FlowPolicy) -> Result<(), PolicyError> {
+    if flow.is_default() {
+        Ok(())
+    } else {
+        Err(PolicyError::ArchivedIdentityMismatch)
+    }
+}
+
+fn validate_default_action_timeout(value: u64) -> Result<(), PolicyError> {
+    if value == 0
+        || Instant::now()
+            .checked_add(Duration::from_millis(value))
+            .is_none()
+    {
+        return Err(PolicyError::InvalidDefaultActionTimeout);
+    }
+    Ok(())
+}
+
+const fn ensure_legacy_action_timeout(value: u64) -> Result<(), PolicyError> {
+    if value == default_action_timeout_ms() {
+        Ok(())
+    } else {
+        Err(PolicyError::ArchivedIdentityMismatch)
+    }
+}
+
 #[derive(Serialize)]
 struct EffectivePolicyIdentityEnvelopeRef<'a> {
     schema_version: u16,
@@ -245,6 +380,45 @@ struct EffectivePolicyIdentityEnvelopeRef<'a> {
 
 #[derive(Serialize)]
 struct EffectivePolicyIdentityBodyRef<'a> {
+    page: EffectivePageIdentityRef<'a>,
+    request: &'a Request,
+    default_action_timeout_ms: u64,
+    documents: &'a Documents,
+    locators: &'a Locators,
+    #[serde(skip_serializing_if = "Tuning::is_default")]
+    tuning: Tuning,
+    map: &'a Map,
+    search: &'a EffectiveSearch,
+    flow: FlowPolicy,
+}
+
+#[derive(Serialize)]
+struct LegacyEffectivePolicyIdentityEnvelopeV6Ref<'a> {
+    schema_version: u16,
+    policy: LegacyEffectivePolicyIdentityBodyV6Ref<'a>,
+}
+
+#[derive(Serialize)]
+struct LegacyEffectivePolicyIdentityBodyV6Ref<'a> {
+    page: EffectivePageIdentityRef<'a>,
+    request: &'a Request,
+    default_action_timeout_ms: u64,
+    documents: &'a Documents,
+    locators: &'a Locators,
+    #[serde(skip_serializing_if = "Tuning::is_default")]
+    tuning: Tuning,
+    map: &'a Map,
+    search: &'a EffectiveSearch,
+}
+
+#[derive(Serialize)]
+struct LegacyEffectivePolicyIdentityEnvelopeV5Ref<'a> {
+    schema_version: u16,
+    policy: LegacyEffectivePolicyIdentityBodyV5Ref<'a>,
+}
+
+#[derive(Serialize)]
+struct LegacyEffectivePolicyIdentityBodyV5Ref<'a> {
     page: EffectivePageIdentityRef<'a>,
     request: &'a Request,
     documents: &'a Documents,

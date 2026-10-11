@@ -42,6 +42,9 @@ pub struct CommandMessage<T = Result<Response>> {
     pub params: serde_json::Value,
     #[serde(skip_serializing)]
     pub sender: OneshotSender<T>,
+    /// Local controller deadline; never serialized into the CDP wire request.
+    #[serde(skip_serializing)]
+    pub response_deadline: Option<Instant>,
 }
 
 impl<T> CommandMessage<T> {
@@ -51,6 +54,7 @@ impl<T> CommandMessage<T> {
             session_id: None,
             params: serde_json::to_value(cmd)?,
             sender,
+            response_deadline: None,
         })
     }
 
@@ -69,6 +73,7 @@ impl<T> CommandMessage<T> {
             session_id,
             params: serde_json::to_value(cmd)?,
             sender,
+            response_deadline: None,
         })
     }
 

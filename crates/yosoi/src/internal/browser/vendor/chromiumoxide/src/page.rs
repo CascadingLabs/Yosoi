@@ -243,6 +243,16 @@ impl Page {
         self.command_future(cmd)?.await
     }
 
+    /// Await an installed observer's promise within an explicit controller deadline.
+    /// Long event waits must not be clipped by the ordinary command-response default.
+    pub async fn await_promise_before(
+        &self,
+        params: crate::internal::browser::vendor::chromiumoxide_cdp::cdp::js_protocol::runtime::AwaitPromiseParams,
+        deadline: std::time::Instant,
+    ) -> Result<CommandResponse<crate::internal::browser::vendor::chromiumoxide_cdp::cdp::js_protocol::runtime::AwaitPromiseReturns>>{
+        self.command_future(params)?.before(deadline).await
+    }
+
     /// Execute a command in the flat session currently responsible for a frame.
     /// Frame-scoped commands such as `Runtime.evaluate`, `DOM.getBoxModel`, and
     /// `Accessibility.getFullAXTree` must use this path for OOPIF frames.
@@ -1364,6 +1374,16 @@ impl Page {
     ) -> Result<Option<(ExecutionContextId, SessionId)>> {
         self.inner
             .frame_execution_context_with_session(frame_id, DOMWorldKind::Main)
+            .await
+    }
+
+    /// Returns the globally unique main-world context ID and its owning session.
+    pub async fn frame_execution_context_unique_with_session(
+        &self,
+        frame_id: FrameId,
+    ) -> Result<Option<(String, SessionId)>> {
+        self.inner
+            .frame_execution_context_unique_with_session(frame_id)
             .await
     }
 

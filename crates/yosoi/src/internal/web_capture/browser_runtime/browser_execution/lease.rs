@@ -5,6 +5,7 @@ use super::{
     poison_slot, provider, release_wait_deadline, restart_release_on_current, start_release,
     wait_for_release_before, yosoi,
 };
+use tokio::sync as tokio_sync;
 
 pub struct RuntimeBrowserLease {
     pub(super) resource: Arc<LeaseResource>,
@@ -43,7 +44,9 @@ impl LeaseResource {
             .managed_profile
             .as_ref()
             .ok_or(BrowserExecutionManagerError::InternalInvariant)?;
-        profile.authorize_admission(generation)
+        let result = profile.authorize_admission(generation);
+        drop(manager);
+        result
     }
 
     pub(super) fn authorize_profile_cleanup(&self) -> Result<(), BrowserExecutionManagerError> {
@@ -58,7 +61,9 @@ impl LeaseResource {
             .managed_profile
             .as_ref()
             .ok_or(BrowserExecutionManagerError::InternalInvariant)?;
-        profile.authorize_cleanup(generation)
+        let result = profile.authorize_cleanup(generation);
+        drop(manager);
+        result
     }
 }
 
@@ -106,6 +111,8 @@ pub(super) struct ReleaseCompletion {
 }
 
 pub(super) struct TabEntry {
+    pub(super) control_waiters: Arc<tokio_sync::Semaphore>,
+    pub(super) control: Option<Weak<super::control::ControlAuthority>>,
     pub(super) page: Option<Arc<provider::Page>>,
     pub(super) open: bool,
     pub(super) closing: bool,
@@ -371,6 +378,10 @@ impl RuntimeBrowserLease {
 }
 
 impl Drop for RuntimeBrowserLease {
+    #[expect(
+        clippy::significant_drop_tightening,
+        reason = "Ownership is moved into a task or consumed by async release; the nursery follows Drop fields after that move."
+    )]
     fn drop(&mut self) {
         let resource = Arc::clone(&self.resource);
         let manager = resource.manager.upgrade();
@@ -381,8 +392,10 @@ impl Drop for RuntimeBrowserLease {
         let Some(handle) = handle else {
             return;
         };
-        let deadline =
-            manager.map_or_else(Instant::now, |manager| cleanup_deadline(manager.limits));
+        let deadline = manager
+            .as_ref()
+            .map_or_else(Instant::now, |manager| cleanup_deadline(manager.limits));
+        drop(manager);
         handle.spawn(async move {
             start_release(resource, deadline, ReleaseExecutor::Stable).await;
         });

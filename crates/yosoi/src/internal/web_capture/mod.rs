@@ -98,15 +98,18 @@ pub use browser_finalization::{
 pub use browser_runtime::capture as browser_capture;
 #[cfg(feature = "browser")]
 pub use browser_runtime::{
-    BrowserExecutionManager, BrowserExecutionManagerConfig, BrowserExecutionManagerError,
-    BrowserExecutionManagerSnapshot, BrowserNavigationCommand, BrowserNavigationHandle,
-    BrowserNavigationScheduler, BrowserNavigationSchedulerError,
-    BrowserNavigationSchedulerSnapshot, BrowserProfileChildLeaseContract,
-    BrowserProfileForkServiceError, BrowserTabInstrumentationState, ManagedProfileForkOutcome,
+    AccessibilityChangeKind, BrowserControlError, BrowserExecutionManager,
+    BrowserExecutionManagerConfig, BrowserExecutionManagerError, BrowserExecutionManagerSnapshot,
+    BrowserNavigationCommand, BrowserNavigationHandle, BrowserNavigationScheduler,
+    BrowserNavigationSchedulerError, BrowserNavigationSchedulerSnapshot,
+    BrowserProfileChildLeaseContract, BrowserProfileForkServiceError,
+    BrowserTabInstrumentationState, CompletedResponseCandidate, ManagedProfileForkOutcome,
     ManagedProfileForkService, ManagedProfileForkSourceLease, ManagedProfileWarmService,
-    ProfileWarmServiceError, RuntimeBrowserLease, RuntimeBrowserTabLease, VoidCrawlAdapterError,
-    VoidCrawlAdapterErrorCategory, VoidCrawlAdapterProducerError, capture_attempt,
-    capture_attempt_managed, void_crawl_adapter_producer,
+    ObservationChange, ObservationResponseBody, ObservationResponseFilter, ObservationWatch,
+    ObservationWatchOptions, ProfileWarmServiceError, RuntimeBrowserControl, RuntimeBrowserLease,
+    RuntimeBrowserTabLease, VoidCrawlAdapterError, VoidCrawlAdapterErrorCategory,
+    VoidCrawlAdapterProducerError, capture_attempt, capture_attempt_managed,
+    capture_attempt_on_control, capture_attempt_on_control_started, void_crawl_adapter_producer,
 };
 mod browser_spec;
 mod bundle;

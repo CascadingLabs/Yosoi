@@ -584,7 +584,46 @@ class EffectiveSearch(ImmutableModel):
     maximum_elapsed: MaximumElapsed
 
 
+class Continue(ImmutableModel):
+    """Retain a failed or cancelled result and attempt the next safe step."""
+
+    kind: Literal["continue"] = "continue"
+
+
+StopScope = Literal["current_flow", "invocation"]
+
+
+class Stop(ImmutableModel):
+    """Stop the current Flow or the entire current invocation."""
+
+    kind: Literal["stop"] = "stop"
+    scope: StopScope
+
+
+Continuation = Annotated[Continue | Stop, Field(discriminator="kind")]
+
+
+class FlowPolicy(Model):
+    """Independent fallback behavior for failed and cancelled Flow steps."""
+
+    on_failure: Continuation = Field(default_factory=Continue)
+    on_cancellation: Continuation = Field(default_factory=Continue)
+
+    def is_default(self) -> bool:
+        """Return whether both fallbacks match Rust's default Continue behavior."""
+        return isinstance(self.on_failure, Continue) and isinstance(
+            self.on_cancellation, Continue
+        )
+
+
+class _SnapshotFlowPolicy(ImmutableModel):
+    on_failure: Continuation = Field(default_factory=Continue)
+    on_cancellation: Continuation = Field(default_factory=Continue)
+
+
 class EffectivePolicy(ImmutableModel):
+    default_action_timeout_ms: PositiveU64 = 10_000
+    flow: _SnapshotFlowPolicy = Field(default_factory=_SnapshotFlowPolicy)
     page: EffectivePage
     request: Request
     documents: Documents
@@ -595,6 +634,8 @@ class EffectivePolicy(ImmutableModel):
 
 
 class Policy(Model):
+    default_action_timeout_ms: PositiveU64 = 10_000
+    flow: FlowPolicy = Field(default_factory=FlowPolicy)
     page: Page = _field("page")
     request: Request = _field("request")
     documents: Documents = _field("documents")
@@ -781,6 +822,8 @@ class _SnapshotSearch(ImmutableModel):
 
 
 class _SnapshotPolicy(ImmutableModel):
+    default_action_timeout_ms: PositiveU64 = 10_000
+    flow: _SnapshotFlowPolicy = Field(default_factory=_SnapshotFlowPolicy)
     page: _SnapshotPage
     request: _SnapshotRequest
     documents: _SnapshotDocuments
@@ -830,6 +873,8 @@ class _SnapshotEffectiveSearch(ImmutableModel):
 
 
 class _SnapshotEffectivePolicy(ImmutableModel):
+    default_action_timeout_ms: PositiveU64 = 10_000
+    flow: _SnapshotFlowPolicy = Field(default_factory=_SnapshotFlowPolicy)
     page: _SnapshotEffectivePage
     request: _SnapshotRequest
     documents: _SnapshotDocuments

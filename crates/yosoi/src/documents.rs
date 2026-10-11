@@ -1,7 +1,6 @@
 //! Create immutable documents, then parse or locate using a policy.
 
-use crate::internal::engine as yosoi_engine;
-
+use crate::internal::engine as internal_engine;
 use crate::{
     locators::{LocateOutcome, Plan},
     policy::Policy,
@@ -16,25 +15,34 @@ pub use crate::internal::engine::ParseError;
 /// An immutable SDK document. Storage and engine handles remain private.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Document {
-    inner: yosoi_engine::Document,
+    inner: internal_engine::Document,
 }
 
 impl Document {
+    #[cfg(feature = "browser")]
+    pub(crate) fn observed_dom(
+        id: impl Into<String>,
+        epoch: u64,
+        html: Vec<u8>,
+        policy: &Policy,
+    ) -> Result<Self, internal_engine::ObservedDomError> {
+        internal_engine::Document::observed_dom(id, epoch, html, policy).map(|inner| Self { inner })
+    }
     /// Creates a source HTML document with an explicit identity.
     pub fn html(id: impl Into<String>, bytes: impl Into<Vec<u8>>) -> Result<Self, DocumentError> {
-        yosoi_engine::Document::html(id, bytes).map(|inner| Self { inner })
+        internal_engine::Document::html(id, bytes).map(|inner| Self { inner })
     }
     /// Creates an XML document.
     pub fn xml(id: impl Into<String>, bytes: impl Into<Vec<u8>>) -> Result<Self, DocumentError> {
-        yosoi_engine::Document::xml(id, bytes).map(|inner| Self { inner })
+        internal_engine::Document::xml(id, bytes).map(|inner| Self { inner })
     }
     /// Creates a JSON document.
     pub fn json(id: impl Into<String>, bytes: impl Into<Vec<u8>>) -> Result<Self, DocumentError> {
-        yosoi_engine::Document::json(id, bytes).map(|inner| Self { inner })
+        internal_engine::Document::json(id, bytes).map(|inner| Self { inner })
     }
     /// Creates a decoded text document.
     pub fn text(id: impl Into<String>, bytes: impl Into<Vec<u8>>) -> Result<Self, DocumentError> {
-        yosoi_engine::Document::text(id, bytes).map(|inner| Self { inner })
+        internal_engine::Document::text(id, bytes).map(|inner| Self { inner })
     }
     /// Creates a rendered DOM document bound to its browser document epoch.
     pub fn rendered_dom(
@@ -42,7 +50,7 @@ impl Document {
         epoch: DocumentEpoch,
         bytes: impl Into<Vec<u8>>,
     ) -> Result<Self, DocumentError> {
-        yosoi_engine::Document::rendered_dom(id, epoch, bytes).map(|inner| Self { inner })
+        internal_engine::Document::rendered_dom(id, epoch, bytes).map(|inner| Self { inner })
     }
     /// Creates an accessibility-tree document bound to its browser document epoch.
     pub fn accessibility_tree(
@@ -50,7 +58,7 @@ impl Document {
         epoch: DocumentEpoch,
         bytes: impl Into<Vec<u8>>,
     ) -> Result<Self, DocumentError> {
-        yosoi_engine::Document::accessibility_tree(id, epoch, bytes).map(|inner| Self { inner })
+        internal_engine::Document::accessibility_tree(id, epoch, bytes).map(|inner| Self { inner })
     }
     /// Creates a document with an explicitly chosen representation profile.
     pub fn from_profile(
@@ -58,7 +66,7 @@ impl Document {
         profile: DocumentProfile,
         bytes: impl Into<Vec<u8>>,
     ) -> Result<Self, DocumentError> {
-        yosoi_engine::Document::from_profile(id, profile, bytes).map(|inner| Self { inner })
+        internal_engine::Document::from_profile(id, profile, bytes).map(|inner| Self { inner })
     }
     /// Returns the document identity.
     pub const fn id(&self) -> &DocumentId {
@@ -107,7 +115,7 @@ impl Document {
 /// A reusable parsed representation with its original policy budget.
 #[derive(Debug)]
 pub struct ParsedDocument<'document> {
-    inner: yosoi_engine::ParsedDocument<'document>,
+    inner: internal_engine::ParsedDocument<'document>,
 }
 impl ParsedDocument<'_> {
     /// Evaluates a locator plan on the retained representation.
@@ -119,7 +127,7 @@ impl ParsedDocument<'_> {
 /// A borrowed document and policy for bounded SDK operations.
 #[derive(Debug)]
 pub struct BoundDocument<'document, 'policy> {
-    inner: yosoi_engine::BoundDocument<'document, 'policy>,
+    inner: internal_engine::BoundDocument<'document, 'policy>,
 }
 impl<'document> BoundDocument<'document, '_> {
     /// Parses using the bound policy.
@@ -135,10 +143,10 @@ impl<'document> BoundDocument<'document, '_> {
 /// A borrowed document returned by an SDK request, without an engine handle.
 #[derive(Clone, Copy, Debug)]
 pub struct DocumentRef<'document> {
-    inner: &'document yosoi_engine::Document,
+    inner: &'document internal_engine::Document,
 }
 impl<'document> DocumentRef<'document> {
-    pub(crate) const fn from_internal(inner: &'document yosoi_engine::Document) -> Self {
+    pub(crate) const fn from_internal(inner: &'document internal_engine::Document) -> Self {
         Self { inner }
     }
     /// Returns the document identity.

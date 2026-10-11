@@ -3,6 +3,28 @@
   "collapsed": true,
   "sections": [
     {
+      "title": "0.2.0 concept review",
+      "directory": "browser-automation-review",
+      "order": [
+        "index.md",
+        "refinement.md",
+        "workspace-plan.md",
+        "timeout-scopes.md",
+        "continuation.md",
+        "first-flow.md",
+        "until.md",
+        "leases.md",
+        "lease-model.md",
+        "scheduling.md",
+        "javascript.md",
+        "watchers.md",
+        "archive.md",
+        "python.md",
+        "outcomes.md",
+        "release.md",
+      ],
+    },
+    {
       "title": "Getting started",
       "pages": [{ "file": "index.md", "label": "Overview" }, "quickstart.md"],
     },
@@ -64,6 +86,7 @@
         "extract-structured-data.md",
         "discover-and-fetch.md",
         "save-and-reuse.md",
+        "qscrape-checkout.md",
       ],
     },
     {

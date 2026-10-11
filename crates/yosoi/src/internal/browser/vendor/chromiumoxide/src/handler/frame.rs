@@ -370,6 +370,28 @@ impl FrameManager {
         Some((context_id, session_id))
     }
 
+    pub fn frame_execution_context_unique_for_session(
+        &self,
+        frame_id: &FrameId,
+    ) -> Option<(String, SessionId)> {
+        let frame = self.frames.get(frame_id)?;
+        if frame.migration_from_session.is_some() {
+            return None;
+        }
+        let unique_context_id = frame.main_world.execution_context_unique_id()?.to_owned();
+        let session_id = frame
+            .session_id
+            .clone()
+            .or_else(|| self.main_session_id.clone())?;
+        let owner = self
+            .context_ids
+            .get(&(session_id.clone(), unique_context_id.clone()))?;
+        if owner != frame_id {
+            return None;
+        }
+        Some((unique_context_id, session_id))
+    }
+
     fn set_frame_owner(&mut self, frame_id: &FrameId, session_id: SessionId, force: bool) {
         let Some(frame) = self.frames.get_mut(frame_id) else {
             return;

@@ -31,7 +31,16 @@ fn facade_policy_json_is_direct_and_rejects_legacy_or_unknown_fields() -> TestRe
         .collect::<BTreeSet<_>>();
     assert_eq!(
         fields,
-        BTreeSet::from(["documents", "locators", "map", "page", "request", "search"])
+        BTreeSet::from([
+            "default_action_timeout_ms",
+            "documents",
+            "flow",
+            "locators",
+            "map",
+            "page",
+            "request",
+            "search"
+        ])
     );
 
     let legacy_envelope = serde_json::json!({

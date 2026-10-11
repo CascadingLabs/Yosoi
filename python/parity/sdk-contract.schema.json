@@ -13,91 +13,206 @@
     "declarations"
   ],
   "properties": {
-    "schemaVersion": {"const": 1},
-    "kind": {"const": "yosoi-scoped-python-sdk-contract"},
+    "schemaVersion": {
+      "const": 1
+    },
+    "kind": {
+      "const": "yosoi-scoped-python-sdk-contract"
+    },
     "sourceSnapshot": {
       "type": "object",
-      "required": ["revision", "inventorySignature"],
+      "required": [
+        "revision",
+        "inventorySignature"
+      ],
       "properties": {
-        "revision": {"type": ["string", "null"]},
-        "inventorySignature": {"type": ["string", "null"]}
+        "revision": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "inventorySignature": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
       },
       "additionalProperties": false
     },
     "scope": {
       "type": "object",
-      "required": ["crate", "root", "namespaces"],
+      "required": [
+        "crate",
+        "root",
+        "namespaces"
+      ],
       "properties": {
-        "crate": {"const": "yosoi"},
-        "root": {"const": true},
+        "crate": {
+          "const": "yosoi"
+        },
+        "root": {
+          "const": true
+        },
         "namespaces": {
-          "const": ["contracts", "documents", "locators", "map", "policy", "request", "search"]
+          "const": [
+            "contracts",
+            "documents",
+            "locators",
+            "map",
+            "policy",
+            "request",
+            "search"
+          ]
         }
       },
       "additionalProperties": false
     },
     "wireEvidence": {
       "type": "object",
-      "required": ["format", "runner", "rationale"],
+      "required": [
+        "format",
+        "runner",
+        "rationale"
+      ],
       "properties": {
-        "format": {"const": "JSON"},
-        "runner": {"const": "run_serde_conformance.py"},
-        "rationale": {"type": "string", "minLength": 1}
+        "format": {
+          "const": "JSON"
+        },
+        "runner": {
+          "const": "run_serde_conformance.py"
+        },
+        "rationale": {
+          "type": "string",
+          "minLength": 1
+        }
       },
       "additionalProperties": false
     },
     "standardTraitMechanics": {
       "type": "object",
       "minProperties": 1,
-      "additionalProperties": {"$ref": "#/$defs/mechanic"}
+      "additionalProperties": {
+        "$ref": "#/$defs/mechanic"
+      }
     },
     "declarations": {
       "type": "array",
-      "items": {"$ref": "#/$defs/declaration"}
+      "items": {
+        "$ref": "#/$defs/declaration"
+      }
     }
   },
   "$defs": {
     "mechanic": {
       "type": "object",
-      "required": ["rationale", "equivalentCapability"],
+      "required": [
+        "rationale",
+        "equivalentCapability"
+      ],
       "properties": {
-        "rationale": {"type": "string", "minLength": 1},
-        "equivalentCapability": {"type": "string", "minLength": 1}
+        "rationale": {
+          "type": "string",
+          "minLength": 1
+        },
+        "equivalentCapability": {
+          "type": "string",
+          "minLength": 1
+        }
       },
       "additionalProperties": false
     },
     "mapping": {
       "type": "object",
-      "required": ["decision", "pythonTarget", "pythonTargetSha256", "ledgerMappingSha256", "semanticEquivalent", "rationale", "review"],
+      "required": [
+        "decision",
+        "pythonTarget",
+        "pythonTargetSha256",
+        "ledgerMappingSha256",
+        "semanticEquivalent",
+        "rationale",
+        "review"
+      ],
       "properties": {
-        "decision": {"enum": ["mapped", "language-specific", "missing"]},
-        "pythonTarget": {"type": ["string", "null"]},
+        "decision": {
+          "enum": [
+            "mapped",
+            "language-specific",
+            "missing"
+          ]
+        },
+        "pythonTarget": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "pythonTargetSha256": {
           "oneOf": [
-            {"type": "null"},
-            {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
           ]
         },
         "ledgerMappingSha256": {
           "oneOf": [
-            {"type": "null"},
-            {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
           ]
         },
-        "semanticEquivalent": {"type": ["string", "null"]},
-        "rationale": {"type": ["string", "null"]},
+        "semanticEquivalent": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "rationale": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "review": {
           "oneOf": [
-            {"type": "null"},
+            {
+              "type": "null"
+            },
             {
               "type": "object",
-              "required": ["status", "rationale", "pythonEquivalent"],
+              "required": [
+                "status",
+                "rationale",
+                "pythonEquivalent"
+              ],
               "properties": {
-                "status": {"enum": ["proposed", "reviewed"]},
-                "rationale": {"type": "string"},
-                "pythonEquivalent": {"type": "string"},
-                "reviewer": {"type": "string"},
-                "reviewedAt": {"type": "string"}
+                "status": {
+                  "enum": [
+                    "proposed",
+                    "reviewed"
+                  ]
+                },
+                "rationale": {
+                  "type": "string"
+                },
+                "pythonEquivalent": {
+                  "type": "string"
+                },
+                "reviewer": {
+                  "type": "string"
+                },
+                "reviewedAt": {
+                  "type": "string"
+                }
               },
               "additionalProperties": false
             }
@@ -122,23 +237,130 @@
         "mapping"
       ],
       "properties": {
-        "id": {"type": "string", "minLength": 1},
-        "rustPath": {"type": "string", "minLength": 1},
-        "kind": {"type": "string", "minLength": 1},
-        "trait": {"type": ["string", "null"]},
-        "surface": {"enum": ["item", "member"]},
-        "parentRustPath": {"type": ["string", "null"]},
-        "signatureSha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
-        "baselineStatus": {"enum": ["mapped", "verified", "stale", "missing", "language-specific"]},
-        "symbolKey": {"type": ["string", "null"]},
-        "classification": {"enum": ["sdk", "trait-mechanic", "prelude-mechanic", "proc-macro-mechanic"]},
-        "mapping": {"$ref": "#/$defs/mapping"},
-        "mechanic": {"$ref": "#/$defs/mechanic"}
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rustPath": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "trait": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "surface": {
+          "enum": [
+            "item",
+            "member"
+          ]
+        },
+        "parentRustPath": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "signatureSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "baselineStatus": {
+          "enum": [
+            "mapped",
+            "verified",
+            "stale",
+            "missing",
+            "language-specific"
+          ]
+        },
+        "symbolKey": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "classification": {
+          "enum": [
+            "sdk",
+            "trait-mechanic",
+            "prelude-mechanic",
+            "proc-macro-mechanic",
+            "namespace-mechanic",
+            "contract-mechanic",
+            "deferred-beta-surface"
+          ]
+        },
+        "mapping": {
+          "$ref": "#/$defs/mapping"
+        },
+        "mechanic": {
+          "$ref": "#/$defs/mechanic"
+        },
+        "deferredSurface": {
+          "type": "object",
+          "required": [
+            "root",
+            "issue",
+            "rationale"
+          ],
+          "properties": {
+            "root": {
+              "type": "string",
+              "minLength": 1
+            },
+            "issue": {
+              "type": "string",
+              "minLength": 1
+            },
+            "rationale": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": false
+        }
       },
       "allOf": [
         {
-          "if": {"properties": {"classification": {"enum": ["trait-mechanic", "prelude-mechanic", "proc-macro-mechanic"]}}},
-          "then": {"required": ["mechanic"]}
+          "if": {
+            "properties": {
+              "classification": {
+                "enum": [
+                  "trait-mechanic",
+                  "prelude-mechanic",
+                  "proc-macro-mechanic",
+                  "namespace-mechanic",
+                  "contract-mechanic"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "mechanic"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "classification": {
+                "const": "deferred-beta-surface"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "deferredSurface"
+            ]
+          }
         }
       ],
       "additionalProperties": false

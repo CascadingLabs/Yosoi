@@ -280,6 +280,22 @@ def run_sdk_parity(
             "SDK parity requires the selected source to match the clean build "
             "checkout HEAD; commit changes and run from that checkout."
         )
+    browser_evidence_path = getattr(args, "browser_evidence", None)
+    browser_behavior = None
+    if browser_evidence_path is not None:
+        browser_tools = _load_module(
+            "sdk_browser_evidence", SCRIPT_DIR / "browser_evidence.py"
+        )
+        try:
+            import yosoi._native as native
+
+            browser_behavior = browser_tools.verify_browser_evidence(
+                browser_evidence_path, source, native.__file__
+            )
+        except browser_tools.BrowserEvidenceError as error:
+            raise RunnerError(
+                f"installed browser SDK evidence failed: {error}"
+            ) from error
     if args.skip_build:
         raise RunnerError(
             "SDK parity cannot verify reused fixture provenance; --skip-build "
@@ -388,6 +404,14 @@ def run_sdk_parity(
         },
         "evidence": [str(path) for path in evidence_paths],
     }
+    if browser_behavior is not None:
+        execution["browserBehavior"] = {
+            "kind": browser_behavior["kind"],
+            "path": str(browser_evidence_path.resolve()),
+            "sha256": _sha256_file(browser_evidence_path),
+            "sourceRevision": browser_behavior["sourceRevision"],
+            "mode": browser_behavior["mode"],
+        }
     _write_json(run_dir, execution)
 
     report_path = output_dir / "report.json"
@@ -437,6 +461,11 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=Path(".generated/python-parity"),
         help="directory for the ephemeral ledger, evidence, and report",
+    )
+    parser.add_argument(
+        "--browser-evidence",
+        type=Path,
+        help="verify installed-wheel browser behavior evidence for this exact source",
     )
     parser.add_argument(
         "--offline", action="store_true", help="forward offline mode to Rust tooling"

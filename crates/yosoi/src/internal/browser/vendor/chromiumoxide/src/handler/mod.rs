@@ -59,8 +59,7 @@ pub mod viewport;
 #[derive(Debug)]
 pub struct Handler {
     /// Commands that are being processed and awaiting a response from the
-    /// chromium instance together with the timestamp when the request
-    /// started.
+    /// chromium instance together with their selected response deadline.
     pending_commands: FnvHashMap<CallId, (PendingRequest, MethodId, Instant)>,
     /// Connection to the browser instance
     from_browser: Fuse<Receiver<HandlerMessage>>,
@@ -292,6 +291,9 @@ impl Handler {
         msg: CommandMessage,
         now: Instant,
     ) -> Result<()> {
+        let deadline = msg
+            .response_deadline
+            .unwrap_or_else(|| self.response_deadline(now));
         let method = msg.method;
         let session_id = msg.session_id.clone();
         let call_id = match self
@@ -309,7 +311,7 @@ impl Handler {
             (
                 PendingRequest::ExternalCommand(msg.sender, session_id),
                 method,
-                now,
+                deadline,
             ),
         );
         Ok(())
@@ -330,7 +332,7 @@ impl Handler {
             (
                 PendingRequest::InternalCommand(target_id, session_id),
                 req.method,
-                now,
+                self.response_deadline(now),
             ),
         );
         Ok(())
@@ -344,8 +346,14 @@ impl Handler {
             .submit_command(method.clone(), None, serde_json::to_value(msg).unwrap())
             .unwrap();
 
-        self.pending_commands
-            .insert(call_id, (PendingRequest::GetTargets(tx), method, now));
+        self.pending_commands.insert(
+            call_id,
+            (
+                PendingRequest::GetTargets(tx),
+                method,
+                self.response_deadline(now),
+            ),
+        );
     }
 
     /// Send the Request over to the server and store its identifier to handle
@@ -359,7 +367,11 @@ impl Handler {
 
         self.pending_commands.insert(
             call_id,
-            (PendingRequest::Navigate(id, session_id), req.method, now),
+            (
+                PendingRequest::Navigate(id, session_id),
+                req.method,
+                self.response_deadline(now),
+            ),
         );
     }
 
@@ -376,8 +388,14 @@ impl Handler {
             )
             .unwrap();
 
-        self.pending_commands
-            .insert(call_id, (PendingRequest::CloseBrowser(tx), method, now));
+        self.pending_commands.insert(
+            call_id,
+            (
+                PendingRequest::CloseBrowser(tx),
+                method,
+                self.response_deadline(now),
+            ),
+        );
     }
 
     /// Process a message received by the target's page via channel
@@ -438,7 +456,7 @@ impl Handler {
                                         browser_context_id,
                                     },
                                     method,
-                                    Instant::now(),
+                                    self.response_deadline(Instant::now()),
                                 ),
                             );
                         }
@@ -621,13 +639,16 @@ impl Handler {
 
     /// House keeping of commands
     ///
-    /// Remove all commands where `now` > `timestamp of command starting point +
-    /// request timeout` and notify the senders that their request timed out.
+    /// Evict commands beyond their selected response deadline.
+    fn response_deadline(&self, now: Instant) -> Instant {
+        now.checked_add(self.config.request_timeout).unwrap_or(now)
+    }
+
     fn evict_timed_out_commands(&mut self, now: Instant) {
         let timed_out = self
             .pending_commands
             .iter()
-            .filter(|(_, (_, _, timestamp))| now > (*timestamp + self.config.request_timeout))
+            .filter(|(_, (_, _, deadline))| now > *deadline)
             .map(|(k, _)| *k)
             .collect::<Vec<_>>();
         for call in timed_out {

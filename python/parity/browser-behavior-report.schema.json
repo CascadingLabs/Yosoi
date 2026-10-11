@@ -1,0 +1,182 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://yosoi.dev/schemas/python-browser-behavior-evidence-v1.json",
+  "title": "Yosoi Python browser behavior evidence",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "kind",
+    "generatedAt",
+    "sourceRevision",
+    "mode",
+    "modeCoverage",
+    "contractSha256",
+    "testModule",
+    "junitSha256",
+    "wheel",
+    "installedPackage",
+    "python",
+    "browser",
+    "testCases",
+    "stories"
+  ],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "kind": {"const": "yosoi-python-browser-behavior-evidence"},
+    "generatedAt": {"type": "string", "format": "date-time"},
+    "sourceRevision": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "mode": {"enum": ["headless", "headful"]},
+    "modeCoverage": {
+      "type": "object",
+      "required": ["managedSession", "borrowedSession", "browserFree"],
+      "properties": {
+        "managedSession": {"const": "headless"},
+        "borrowedSession": {"enum": ["headless", "headful"]},
+        "browserFree": {"const": "mode-independent"}
+      },
+      "additionalProperties": false
+    },
+    "contractSha256": {"$ref": "#/$defs/sha256"},
+    "testModule": {"const": "python/tests/test_browser_beta.py"},
+    "junitSha256": {"$ref": "#/$defs/sha256"},
+    "wheel": {
+      "type": "object",
+      "required": [
+        "path",
+        "sha256",
+        "version",
+        "nativeWheelMember",
+        "recordSha256",
+        "pythonInitSha256",
+        "nativeExtensionSha256"
+      ],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "version": {"const": "0.2.0"},
+        "nativeWheelMember": {
+          "type": "string",
+          "pattern": "^yosoi/_native\\..+\\.(so|pyd)$"
+        },
+        "recordSha256": {"$ref": "#/$defs/sha256"},
+        "pythonInitSha256": {"$ref": "#/$defs/sha256"},
+        "nativeExtensionSha256": {"$ref": "#/$defs/sha256"}
+      },
+      "additionalProperties": false
+    },
+    "installedPackage": {
+      "type": "object",
+      "required": ["version", "nativeVersion", "pythonInit", "nativeExtension"],
+      "properties": {
+        "version": {"const": "0.2.0"},
+        "nativeVersion": {"const": "0.2.0"},
+        "pythonInit": {"$ref": "#/$defs/installedMember"},
+        "nativeExtension": {"$ref": "#/$defs/installedMember"}
+      },
+      "additionalProperties": false
+    },
+    "python": {
+      "type": "object",
+      "required": [
+        "implementation",
+        "version",
+        "abi",
+        "freeThreaded",
+        "gilEnabled",
+        "executable"
+      ],
+      "properties": {
+        "implementation": {"const": "cpython"},
+        "version": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$"},
+        "abi": {"type": "string"},
+        "freeThreaded": {"type": "boolean"},
+        "gilEnabled": {"type": ["boolean", "null"]},
+        "executable": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "browser": {
+      "type": "object",
+      "required": [
+        "channel",
+        "distribution",
+        "version",
+        "executable",
+        "executableSha256"
+      ],
+      "properties": {
+        "channel": {"const": "stable"},
+        "distribution": {"const": "Google Chrome Stable"},
+        "version": {"type": "string", "pattern": "^155\\.\\d+\\.\\d+\\.\\d+$"},
+        "executable": {"type": "string", "minLength": 1},
+        "executableSha256": {"$ref": "#/$defs/sha256"}
+      },
+      "additionalProperties": false
+    },
+    "testCases": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/testCase"}
+    },
+    "stories": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/story"}
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "installedMember": {
+      "type": "object",
+      "required": ["path", "sha256", "wheelMember"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "wheelMember": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "testCase": {
+      "type": "object",
+      "required": ["name", "status"],
+      "properties": {
+        "name": {"type": "string", "pattern": "^test_[A-Za-z0-9_]+$"},
+        "status": {"enum": ["passed", "skipped", "failed", "error", "missing"]}
+      },
+      "additionalProperties": false
+    },
+    "story": {
+      "type": "object",
+      "required": ["id", "status", "testCases"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "status": {"const": "passed"},
+        "testCases": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "pattern": "^test_[A-Za-z0-9_]+$"}
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"mode": {"const": "headless"}}},
+      "then": {
+        "properties": {
+          "modeCoverage": {"properties": {"borrowedSession": {"const": "headless"}}}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"mode": {"const": "headful"}}},
+      "then": {
+        "properties": {
+          "modeCoverage": {"properties": {"borrowedSession": {"const": "headful"}}}
+        }
+      }
+    }
+  ]
+}

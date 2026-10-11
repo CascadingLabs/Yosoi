@@ -141,6 +141,9 @@ ERROR_TARGETS = {
 }
 
 VALUE_TARGETS = {
+    "yosoi::Continuation": "yosoi.policy.Continuation",
+    "yosoi::FlowPolicy": "yosoi.policy.FlowPolicy",
+    "yosoi::StopScope": "yosoi.policy.StopScope",
     "yosoi::CountLimit": "yosoi.scalars.CountLimit",
     "yosoi::DocumentId": "yosoi.scalars.DocumentId",
     "yosoi::DocumentProfile": "yosoi.documents.DocumentProfile",
@@ -370,6 +373,10 @@ MEMBER_TARGETS = {
 }
 
 VARIANT_PARENT_TARGETS = {
+    "yosoi::Continuation": {
+        "Continue": "yosoi.policy.Continue",
+        "Stop": "yosoi.policy.Stop",
+    },
     "yosoi::LocateOutcome": {
         "Failed": "yosoi.outcomes.LocateFailed",
     },

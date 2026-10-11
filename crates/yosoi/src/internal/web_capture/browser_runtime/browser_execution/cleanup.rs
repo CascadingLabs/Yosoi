@@ -3,6 +3,7 @@ use super::{
     Instant, LeaseResource, ProcessStatus, ReleaseCompletion, ReleaseProgress,
     close_process_slot_outcome, find_slot_mut, sleep_until, timeout_at, yosoi,
 };
+use std::sync as std_sync;
 
 pub(super) fn cleanup_deadline(limits: yosoi::BrowserExecutionLimits) -> Instant {
     Instant::now()
@@ -50,6 +51,9 @@ pub(super) async fn start_release(
     state.releasing = true;
     for tab in state.tabs.values() {
         tab.navigation_closing.cancel();
+        if let Some(control) = tab.control.as_ref().and_then(std_sync::Weak::upgrade) {
+            control.revoke();
+        }
     }
     if state
         .release_worker

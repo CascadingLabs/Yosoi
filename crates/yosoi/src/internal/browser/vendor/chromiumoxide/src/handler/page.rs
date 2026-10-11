@@ -38,7 +38,7 @@ use crate::internal::browser::vendor::chromiumoxide::handler::commandfuture::Com
 use crate::internal::browser::vendor::chromiumoxide::handler::domworld::DOMWorldKind;
 use crate::internal::browser::vendor::chromiumoxide::handler::httpfuture::HttpFuture;
 use crate::internal::browser::vendor::chromiumoxide::handler::target::{
-    GetExecutionContext, TargetMessage,
+    GetExecutionContext, GetExecutionContextUnique, TargetMessage,
 };
 use crate::internal::browser::vendor::chromiumoxide::handler::target_message_future::TargetMessageFuture;
 use crate::internal::browser::vendor::chromiumoxide::js::EvaluationResult;
@@ -506,6 +506,20 @@ impl PageInner {
                 frame_id: Some(frame_id),
                 tx,
             }))
+            .await?;
+        Ok(rx.await?)
+    }
+
+    pub async fn frame_execution_context_unique_with_session(
+        &self,
+        frame_id: FrameId,
+    ) -> Result<Option<(String, SessionId)>> {
+        let (tx, rx) = oneshot_channel();
+        self.sender
+            .clone()
+            .send(TargetMessage::GetExecutionContextUnique(
+                GetExecutionContextUnique { frame_id, tx },
+            ))
             .await?;
         Ok(rx.await?)
     }

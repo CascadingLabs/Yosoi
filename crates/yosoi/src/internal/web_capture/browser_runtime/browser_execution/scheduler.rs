@@ -235,6 +235,10 @@ impl BrowserNavigationScheduler {
             .map_err(map_manager_error)
     }
 
+    #[expect(
+        clippy::significant_drop_tightening,
+        reason = "Ownership is moved into a task or consumed by async release; the nursery follows Drop fields after that move."
+    )]
     pub async fn schedule(
         &self,
         tab: &RuntimeBrowserTabLease,
@@ -249,6 +253,7 @@ impl BrowserNavigationScheduler {
         if self.inner.closing.is_cancelled() {
             return Err(BrowserNavigationSchedulerError::SchedulerClosing);
         }
+
         let runtime_tab = tab.clone();
         let tab = tab.navigation_parts().await.map_err(map_manager_error)?;
         let request = yosoi::BrowserNavigationRequest::new(
@@ -296,6 +301,7 @@ impl BrowserNavigationScheduler {
             ticket
         };
         self.inner.state_changed.notify_waiters();
+
         let job = NavigationJob {
             request,
             command,
@@ -362,13 +368,13 @@ const fn map_manager_error(error: BrowserExecutionManagerError) -> BrowserNaviga
 pub(super) async fn drain_navigation_scheduler(
     manager: &Arc<super::ManagerInner>,
 ) -> Result<(), BrowserExecutionManagerError> {
-    let scheduler = manager
+    let Some(scheduler) = manager
         .navigation_scheduler
         .lock()
         .map_err(|_| BrowserExecutionManagerError::InternalInvariant)?
         .as_ref()
-        .and_then(Weak::upgrade);
-    let Some(scheduler) = scheduler else {
+        .and_then(Weak::upgrade)
+    else {
         return Ok(());
     };
     scheduler.closing.cancel();

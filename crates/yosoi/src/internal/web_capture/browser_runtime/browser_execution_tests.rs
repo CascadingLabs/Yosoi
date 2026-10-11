@@ -212,6 +212,10 @@ fn process_maintenance_terminals_have_closed_pre_admission_outcomes() {
 }
 
 #[tokio::test]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn managed_profile_admission_cleanup_and_final_release_are_fenced()
 -> Result<(), Box<dyn Error>> {
     let directory = tempfile::tempdir()?;
@@ -332,6 +336,10 @@ async fn managed_profile_admission_cleanup_and_final_release_are_fenced()
 }
 
 #[test]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 fn manager_restart_quarantines_an_abandoned_lease_and_rejects_it() -> Result<(), Box<dyn Error>> {
     let directory = tempfile::tempdir()?;
     let registry = provider::ProfileRegistry::new(directory.path());
@@ -369,6 +377,10 @@ fn manager_restart_quarantines_an_abandoned_lease_and_rejects_it() -> Result<(),
 }
 
 #[tokio::test]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn second_manager_does_not_quarantine_a_live_provider_lease() -> Result<(), Box<dyn Error>> {
     let directory = tempfile::tempdir()?;
     let registry = provider::ProfileRegistry::new(directory.path());
@@ -421,6 +433,10 @@ async fn second_manager_does_not_quarantine_a_live_provider_lease() -> Result<()
 }
 
 #[tokio::test]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn expired_close_quarantines_and_releases_only_after_persisting() -> Result<(), Box<dyn Error>>
 {
     let directory = tempfile::tempdir()?;
@@ -465,6 +481,10 @@ async fn expired_close_quarantines_and_releases_only_after_persisting() -> Resul
 }
 
 #[tokio::test]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn uncertain_cleanup_persists_quarantine_and_blocks_release() -> Result<(), Box<dyn Error>> {
     let directory = tempfile::tempdir()?;
     let registry = provider::ProfileRegistry::new(directory.path());
@@ -506,6 +526,10 @@ async fn uncertain_cleanup_persists_quarantine_and_blocks_release() -> Result<()
 }
 
 #[tokio::test]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn real_tabs_share_only_session_context_and_cannot_escape_release()
 -> Result<(), Box<dyn Error>> {
     let fixture = Fixture::start().await?;
@@ -589,6 +613,10 @@ async fn real_tabs_share_only_session_context_and_cannot_escape_release()
 }
 
 #[tokio::test]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn aborted_new_tab_after_reservation_returns_exact_capacity() -> Result<(), Box<dyn Error>> {
     let manager = BrowserExecutionManager::new(
         limits(1, 2, 2, 1, 5_000, 100)?,
@@ -632,6 +660,10 @@ async fn aborted_new_tab_after_reservation_returns_exact_capacity() -> Result<()
 }
 
 #[tokio::test]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn caller_runtime_teardown_after_provider_tab_creation_returns_exact_capacity()
 -> Result<(), Box<dyn Error>> {
     let manager = BrowserExecutionManager::new(
@@ -690,6 +722,10 @@ async fn caller_runtime_teardown_after_provider_tab_creation_returns_exact_capac
 }
 
 #[tokio::test]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn fifo_queue_overflow_cancellation_deadline_release_and_shutdown_are_bounded()
 -> Result<(), Box<dyn Error>> {
     let manager = BrowserExecutionManager::new(
@@ -806,6 +842,10 @@ async fn fifo_queue_overflow_cancellation_deadline_release_and_shutdown_are_boun
 }
 
 #[tokio::test]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn aborted_acquire_after_launch_keeps_manager_ownership_through_cleanup()
 -> Result<(), Box<dyn Error>> {
     let manager = BrowserExecutionManager::new(
@@ -839,6 +879,10 @@ async fn aborted_acquire_after_launch_keeps_manager_ownership_through_cleanup()
 }
 
 #[tokio::test]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn aborted_acquire_after_context_keeps_context_owned_through_cleanup()
 -> Result<(), Box<dyn Error>> {
     let manager = BrowserExecutionManager::new(
@@ -871,6 +915,10 @@ async fn aborted_acquire_after_context_keeps_context_owned_through_cleanup()
 }
 
 #[tokio::test]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn runtime_shutdown_leaves_creation_owned_for_next_bounded_manager_cleanup()
 -> Result<(), Box<dyn Error>> {
     let manager = BrowserExecutionManager::new(
@@ -1037,6 +1085,10 @@ async fn shutdown_resumes_release_after_executor_loss_and_retries_retained_proce
 }
 
 #[tokio::test]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn manager_maintenance_failure_is_fifo_and_consumed_exactly_once()
 -> Result<(), Box<dyn Error>> {
     let manager = BrowserExecutionManager::new(
@@ -1083,6 +1135,10 @@ async fn manager_maintenance_failure_is_fifo_and_consumed_exactly_once()
 }
 
 #[tokio::test]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn terminal_accounting_preserves_concurrent_completions_past_recycle_threshold()
 -> Result<(), Box<dyn Error>> {
     let manager = BrowserExecutionManager::new(
@@ -1114,6 +1170,10 @@ async fn terminal_accounting_preserves_concurrent_completions_past_recycle_thres
 }
 
 #[tokio::test]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn terminal_accounting_survives_immediate_process_generation_replacement()
 -> Result<(), Box<dyn Error>> {
     let manager = BrowserExecutionManager::new(
@@ -1148,6 +1208,10 @@ async fn terminal_accounting_survives_immediate_process_generation_replacement()
 }
 
 #[tokio::test]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn cleanup_facts_preserve_context_process_deadline_failure_and_round_trip()
 -> Result<(), Box<dyn Error>> {
     let cases = [
@@ -1218,6 +1282,10 @@ async fn cleanup_facts_preserve_context_process_deadline_failure_and_round_trip(
 }
 
 #[tokio::test]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn failed_process_close_retains_ownership_and_retries_without_losing_capacity()
 -> Result<(), Box<dyn Error>> {
     let manager = BrowserExecutionManager::new(
@@ -1264,6 +1332,10 @@ async fn failed_process_close_retains_ownership_and_retries_without_losing_capac
 }
 
 #[tokio::test]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn in_flight_creation_timeout_still_tears_down_retained_process_before_retry()
 -> Result<(), Box<dyn Error>> {
     let manager = BrowserExecutionManager::new(
@@ -1311,6 +1383,10 @@ async fn in_flight_creation_timeout_still_tears_down_retained_process_before_ret
 }
 
 #[tokio::test]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn failed_shutdown_close_is_not_cached_and_last_owner_drop_contains_live_lease()
 -> Result<(), Box<dyn Error>> {
     let manager = BrowserExecutionManager::new(
@@ -1363,6 +1439,10 @@ async fn failed_shutdown_close_is_not_cached_and_last_owner_drop_contains_live_l
 }
 
 #[tokio::test]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn provider_disconnect_is_detected_drained_and_replaced_without_capacity_loss()
 -> Result<(), Box<dyn Error>> {
     let manager = BrowserExecutionManager::new(
@@ -1405,6 +1485,10 @@ async fn provider_disconnect_is_detected_drained_and_replaced_without_capacity_l
 }
 
 #[tokio::test]
+#[expect(
+    clippy::significant_drop_tightening,
+    reason = "Regression assertions intentionally fail on violated invariants; fixture owners and receipts remain live through explicit cleanup."
+)]
 async fn poisoned_and_recycled_process_slots_are_replaced_by_generation()
 -> Result<(), Box<dyn Error>> {
     let manager = BrowserExecutionManager::new(

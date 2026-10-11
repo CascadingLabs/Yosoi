@@ -2,9 +2,11 @@ use crate::internal::types::Sha256Digest;
 use sha2::{Digest as _, Sha256};
 
 /// Version of the deterministic effective-policy identity projection.
-pub const EFFECTIVE_POLICY_IDENTITY_VERSION: u16 = 5;
+pub const EFFECTIVE_POLICY_IDENTITY_VERSION: u16 = 7;
 
-const IDENTITY_DOMAIN: &[u8] = b"yosoi-effective-policy\0v5\0";
+const IDENTITY_DOMAIN: &[u8] = b"yosoi-effective-policy\0v7\0";
+const LEGACY_IDENTITY_DOMAIN_V6: &[u8] = b"yosoi-effective-policy\0v6\0";
+const LEGACY_IDENTITY_DOMAIN_V5: &[u8] = b"yosoi-effective-policy\0v5\0";
 const LEGACY_IDENTITY_DOMAIN_V4: &[u8] = b"yosoi-effective-policy\0v4\0";
 const LEGACY_IDENTITY_DOMAIN_V2: &[u8] = b"yosoi-effective-policy\0v2\0";
 const LEGACY_IDENTITY_DOMAIN_V3_MAP: &[u8] = b"yosoi-effective-policy\0v3\0";
@@ -23,6 +25,14 @@ impl EffectivePolicyIdentity {
 
     pub(in crate::internal::policy) fn from_legacy_v4_json(json: &str) -> Self {
         Self::from_json_version(4, LEGACY_IDENTITY_DOMAIN_V4, json)
+    }
+
+    pub(in crate::internal::policy) fn from_legacy_v5_json(json: &str) -> Self {
+        Self::from_json_version(5, LEGACY_IDENTITY_DOMAIN_V5, json)
+    }
+
+    pub(in crate::internal::policy) fn from_legacy_v6_json(json: &str) -> Self {
+        Self::from_json_version(6, LEGACY_IDENTITY_DOMAIN_V6, json)
     }
 
     pub(in crate::internal::policy) fn from_legacy_v2_json(json: &str) -> Self {

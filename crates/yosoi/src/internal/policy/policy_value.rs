@@ -1,8 +1,10 @@
+use std::time::{Duration, Instant};
+
 use crate::internal::policy::{
     EffectivePolicy, EffectivePolicyIdentity, PolicyError,
     policy::{
-        Acquisition, Documents, Locators, Map, Page, ProfileSelection, ProviderDefaultsStatus,
-        Request, Search, Tuning,
+        Acquisition, Documents, FlowPolicy, Locators, Map, Page, ProfileSelection,
+        ProviderDefaultsStatus, Request, Search, Tuning,
     },
 };
 
@@ -10,8 +12,11 @@ use crate::internal::policy::{
 ///
 /// The fields remain public so applications can author ordinary struct values.
 /// Validation runs before serialization and identity calculation.
-#[derive(Clone, Debug, Default, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Policy {
+    /// Fallback execution budget for an action without a nearer Flow or action
+    /// timeout, measured in milliseconds.
+    pub default_action_timeout_ms: u64,
     /// Ordered acquisition and document-selection choices.
     pub page: Page,
     /// Shared deadline, domain-specific bounds, and Direct HTTP redirects.
@@ -26,6 +31,24 @@ pub struct Policy {
     pub map: Map,
     /// Ordered provider choices and hard Search resource bounds.
     pub search: Search,
+    /// Default continuation behavior for Flow failures and local cancellations.
+    pub flow: FlowPolicy,
+}
+
+impl Default for Policy {
+    fn default() -> Self {
+        Self {
+            default_action_timeout_ms: 10_000,
+            page: Page::default(),
+            request: Request::default(),
+            documents: Documents::default(),
+            locators: Locators::default(),
+            tuning: Tuning::default(),
+            map: Map::default(),
+            search: Search::default(),
+            flow: FlowPolicy::default(),
+        }
+    }
 }
 
 impl Policy {
@@ -33,6 +56,13 @@ impl Policy {
     pub fn validate(&self) -> Result<(), PolicyError> {
         self.page.validate()?;
         self.request.validate()?;
+        if self.default_action_timeout_ms == 0
+            || Instant::now()
+                .checked_add(Duration::from_millis(self.default_action_timeout_ms))
+                .is_none()
+        {
+            return Err(PolicyError::InvalidDefaultActionTimeout);
+        }
         self.map.validate()?;
         self.search.validate()
     }
@@ -48,11 +78,13 @@ impl Policy {
         Ok(EffectivePolicy {
             page: self.page.effective(),
             request: self.request,
+            default_action_timeout_ms: self.default_action_timeout_ms,
             documents: self.documents,
             locators: self.locators,
             tuning: self.tuning,
             map: self.map.clone(),
             search: self.search.effective(),
+            flow: self.flow,
         })
     }
 
@@ -73,10 +105,12 @@ impl Policy {
         self.validate()?;
         effective.search.validate()?;
         if effective.request != self.request
+            || effective.default_action_timeout_ms != self.default_action_timeout_ms
             || effective.documents != self.documents
             || effective.locators != self.locators
             || effective.tuning != self.tuning
             || effective.map != self.map
+            || effective.flow != self.flow
         {
             return Err(PolicyError::ArchivedSnapshotMismatch);
         }

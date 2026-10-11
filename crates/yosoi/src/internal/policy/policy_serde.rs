@@ -3,7 +3,7 @@ use serde::{
 };
 
 use crate::internal::policy::{
-    policy::{Documents, Locators, Map, Page, Request, Search, Tuning},
+    policy::{Documents, FlowPolicy, Locators, Map, Page, Request, Search, Tuning},
     policy_value::Policy,
 };
 
@@ -14,6 +14,8 @@ impl Serialize for Policy {
     {
         self.validate().map_err(SerError::custom)?;
         PolicyRef {
+            default_action_timeout_ms: self.default_action_timeout_ms,
+            flow: self.flow,
             page: &self.page,
             request: &self.request,
             documents: &self.documents,
@@ -33,6 +35,7 @@ impl<'de> Deserialize<'de> for Policy {
     {
         let values = PolicyValues::deserialize(deserializer)?;
         let policy = Self {
+            default_action_timeout_ms: values.default_action_timeout_ms,
             page: values.page,
             request: values.request,
             documents: values.documents,
@@ -40,6 +43,7 @@ impl<'de> Deserialize<'de> for Policy {
             tuning: values.tuning,
             map: values.map,
             search: values.search,
+            flow: values.flow,
         };
         policy.validate().map_err(D::Error::custom)?;
         Ok(policy)
@@ -48,6 +52,8 @@ impl<'de> Deserialize<'de> for Policy {
 
 #[derive(Serialize)]
 struct PolicyRef<'a> {
+    default_action_timeout_ms: u64,
+    flow: FlowPolicy,
     page: &'a Page,
     request: &'a Request,
     documents: &'a Documents,
@@ -61,6 +67,8 @@ struct PolicyRef<'a> {
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct PolicyValues {
+    #[serde(default = "default_action_timeout_ms")]
+    default_action_timeout_ms: u64,
     page: Page,
     request: Request,
     documents: Documents,
@@ -71,4 +79,10 @@ struct PolicyValues {
     map: Map,
     #[serde(default = "Search::disabled")]
     search: Search,
+    #[serde(default)]
+    flow: FlowPolicy,
+}
+
+const fn default_action_timeout_ms() -> u64 {
+    10_000
 }

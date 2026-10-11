@@ -32,3 +32,5 @@ mod sdk_contract;
 mod search_sdk_contract;
 mod tuning;
 mod validation;
+
+mod execution_pool;

@@ -22,6 +22,7 @@ use tokio_util::sync::CancellationToken;
 
 mod admission;
 mod cleanup;
+mod control;
 mod lease;
 mod manager;
 mod process;
@@ -35,6 +36,7 @@ use cleanup::{
     ReleaseExecutor, cleanup_deadline, release_wait_deadline, restart_release_on_current,
     start_release, wait_for_release, wait_for_release_before,
 };
+pub use control::{BrowserControlError, RuntimeBrowserControl};
 pub use lease::RuntimeBrowserLease;
 use lease::{
     ExecutionPageContext, LeaseResource, LeaseState, ReleaseCompletion, ReleaseProgress, TabEntry,

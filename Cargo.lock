@@ -2437,6 +2437,7 @@ version = "1.0.151"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c841b55ecdae098c80dcae9cf767f6f8a0c2cdb3416bbef72181df4d0fe73f14"
 dependencies = [
+ "indexmap",
  "itoa",
  "memchr",
  "serde",
@@ -2552,6 +2553,12 @@ name = "stable_deref_trait"
 version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6ce2be8dc25455e1f91df71bfa12ad37d7af1092ae736f3a6cd0e37bc7810596"
+
+[[package]]
+name = "streaming-iterator"
+version = "0.1.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2b2231b7c3057d5e4ad0156fb3dc807d900806020c5ffa3ee6ff2c8c76fb8520"
 
 [[package]]
 name = "string_cache"
@@ -2930,6 +2937,36 @@ checksum = "db97caf9d906fbde555dd62fa95ddba9eecfd14cb388e4f491a66d74cd5fb79a"
 dependencies = [
  "once_cell",
 ]
+
+[[package]]
+name = "tree-sitter"
+version = "0.26.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "83c567a8e18ae93f20982c90370b16fd24023aeaf52f6052b96957ab253a0fec"
+dependencies = [
+ "cc",
+ "regex",
+ "regex-syntax",
+ "serde_json",
+ "streaming-iterator",
+ "tree-sitter-language",
+]
+
+[[package]]
+name = "tree-sitter-javascript"
+version = "0.25.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "68204f2abc0627a90bdf06e605f5c470aa26fdcb2081ea553a04bdad756693f5"
+dependencies = [
+ "cc",
+ "tree-sitter-language",
+]
+
+[[package]]
+name = "tree-sitter-language"
+version = "0.1.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d0af592be68c579aa78a16846bd19422978c3c52e438523d45ff5d1bff1f9d4a"
 
 [[package]]
 name = "try-lock"
@@ -3500,7 +3537,7 @@ dependencies = [
 
 [[package]]
 name = "xtask"
-version = "0.1.2"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -3537,7 +3574,7 @@ dependencies = [
 
 [[package]]
 name = "yosoi"
-version = "0.1.2"
+version = "0.2.0"
 dependencies = [
  "anstream",
  "anyhow",
@@ -3586,6 +3623,8 @@ dependencies = [
  "tokio-util",
  "toml",
  "tracing",
+ "tree-sitter",
+ "tree-sitter-javascript",
  "unicode-width",
  "url",
  "uuid",
@@ -3597,7 +3636,7 @@ dependencies = [
 
 [[package]]
 name = "yosoi-benchmarks"
-version = "0.1.2"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -3629,14 +3668,14 @@ dependencies = [
 
 [[package]]
 name = "yosoi-contracts-renamed-dependency-fixture"
-version = "0.1.2"
+version = "0.2.0"
 dependencies = [
  "yosoi",
 ]
 
 [[package]]
 name = "yosoi-dev-support"
-version = "0.1.2"
+version = "0.2.0"
 dependencies = [
  "anstream",
  "anyhow",
@@ -3693,7 +3732,7 @@ dependencies = [
 
 [[package]]
 name = "yosoi-document-locator-benchmarks"
-version = "0.1.2"
+version = "0.2.0"
 dependencies = [
  "criterion",
  "divan",
@@ -3703,7 +3742,7 @@ dependencies = [
 
 [[package]]
 name = "yosoi-python"
-version = "0.1.2"
+version = "0.2.0"
 dependencies = [
  "pyo3",
  "pyo3-async-runtimes",

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from typing import Annotated, Literal
+from typing import TYPE_CHECKING, Annotated, Literal
 
 from pydantic import Field, PrivateAttr
 
@@ -41,6 +41,9 @@ from .identities import (
 )
 from .policy import AcquisitionKind, Policy, PolicySnapshot
 from .scalars import ValidatedString
+
+if TYPE_CHECKING:
+    from .browser import Session, Work
 
 DocumentRequest = Literal[
     "response_document", "rendered_dom", "accessibility_tree", "network_tree"
@@ -180,6 +183,14 @@ class PageRequest(NativeAuthoringModel):
     def bind(self, policy: Policy) -> BoundPageRequest:
         return BoundPageRequest(self, policy)
 
+    def in_session(self, session: Session) -> BoundSessionRequest:
+        """Bind this request to the caller-owned browser Session."""
+        return BoundSessionRequest(self, session=session)
+
+    def with_work(self, work: Work) -> BoundSessionRequest:
+        """Bind this request to the caller-owned Work lease."""
+        return BoundSessionRequest(self, work=work)
+
     async def send(self, *, cancellation: CancellationToken | None = None) -> Response:
         handle = await self._handle.send(cancellation=_token(cancellation))
         return Response._from_native(handle)
@@ -205,11 +216,68 @@ class BoundPageRequest:
     def check(self) -> None:
         self.request._handle.validate(self._policy_json)
 
+    def in_session(self, session: Session) -> BoundSessionRequest:
+        """Use this bound Policy while borrowing the caller-owned Session."""
+        return BoundSessionRequest(self, session=session)
+
+    def with_work(self, work: Work) -> BoundSessionRequest:
+        """Use this bound Policy while borrowing the caller-owned Work lease."""
+        return BoundSessionRequest(self, work=work)
+
     async def send(self, *, cancellation: CancellationToken | None = None) -> Response:
         handle = await self.request._handle.send(
             self._policy_json, _token(cancellation)
         )
         return Response._from_native(handle)
+
+
+class BoundSessionRequest:
+    """A PageRequest borrowing a caller-owned browser Session or Work lease."""
+
+    request: PageRequest | BoundPageRequest
+    _session: Session | None
+    _work: Work | None
+
+    def __init__(
+        self,
+        request: PageRequest | BoundPageRequest,
+        *,
+        session: Session | None = None,
+        work: Work | None = None,
+    ) -> None:
+        if (session is None) == (work is None):
+            raise TypeError("provide exactly one browser Session or Work owner")
+        from .browser import Session as BrowserSession
+        from .browser import Work as BrowserWork
+
+        if session is not None and not isinstance(session, BrowserSession):
+            raise TypeError("session must be a Yosoi browser Session")
+        if work is not None and not isinstance(work, BrowserWork):
+            raise TypeError("work must be a Yosoi browser Work lease")
+        self.request = request
+        self._session = session
+        self._work = work
+
+    @property
+    def id(self) -> RequestId:
+        return self.request.id
+
+    @property
+    def target(self) -> WebTarget:
+        return self.request.target
+
+    @property
+    def policy(self) -> Policy | None:
+        if isinstance(self.request, BoundPageRequest):
+            return self.request.policy
+        return None
+
+    async def send(self, *, cancellation: CancellationToken | None = None) -> Response:
+        if self._session is not None:
+            return await self._session.send(self.request, cancellation=cancellation)
+        if self._work is not None:
+            return await self._work.send(self.request, cancellation=cancellation)
+        raise RuntimeError("browser request has no owner")
 
 
 def new(target: str | WebTarget) -> PageRequest:

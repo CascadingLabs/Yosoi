@@ -20,7 +20,7 @@ pub(super) async fn execute_warm_plan(
     let mut steps = empty_steps(plan);
     let mut reason = ProfileWarmTerminalReason::Completed;
     let linked_cancellation = cancellation.child_token();
-    let session = tokio::select! {
+    let Some(session) = (tokio::select! {
         biased;
         () = cancellation.cancelled() => {
             reason = ProfileWarmTerminalReason::CallerCancelled;
@@ -43,8 +43,7 @@ pub(super) async fn execute_warm_plan(
                 None
             }
         }
-    };
-    let Some(session) = session else {
+    }) else {
         return Ok((steps, reason));
     };
 
@@ -135,6 +134,7 @@ pub(super) async fn execute_warm_plan(
         }
     }
     let _ = session.release().await;
+    drop(tab);
     Ok((steps, reason))
 }
 

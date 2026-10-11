@@ -27,6 +27,7 @@ pin_project! {
         delay: futures_timer::Delay,
 
         message: Option<TargetMessage>,
+        response_deadline: Option<std::time::Instant>,
 
         method: MethodId,
 
@@ -35,6 +36,24 @@ pin_project! {
 }
 
 impl<T: Command> CommandFuture<T> {
+    // Applied only at construction, before the command is polled/dispatched.
+    pub(crate) fn before(mut self, deadline: std::time::Instant) -> Self {
+        self.response_deadline = Some(deadline);
+        if let Some(TargetMessage::Command(message) | TargetMessage::RawCommand(message)) =
+            self.message.as_mut()
+        {
+            message.response_deadline = Some(deadline);
+        }
+        let remaining = deadline.saturating_duration_since(std::time::Instant::now());
+        let remaining = if std::time::Instant::now().checked_add(remaining).is_some() {
+            remaining
+        } else {
+            std::time::Duration::ZERO
+        };
+        self.delay.reset(remaining);
+        self
+    }
+
     pub fn new(
         cmd: T,
         target_sender: mpsc::Sender<TargetMessage>,
@@ -55,6 +74,7 @@ impl<T: Command> CommandFuture<T> {
             target_sender,
             rx_command,
             message,
+            response_deadline: None,
             delay,
             method,
             _marker: PhantomData,
@@ -81,6 +101,7 @@ impl<T: Command> CommandFuture<T> {
             target_sender,
             rx_command,
             message,
+            response_deadline: None,
             delay,
             method,
             _marker: PhantomData,
@@ -97,6 +118,22 @@ where
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let mut this = self.project();
 
+        if this
+            .response_deadline
+            .as_ref()
+            .is_some_and(|deadline| std::time::Instant::now() >= *deadline)
+        {
+            return Poll::Ready(Err(
+                crate::internal::browser::vendor::chromiumoxide::error::CdpError::Timeout,
+            ));
+        }
+
+        if this.delay.as_mut().poll(cx).is_ready() {
+            return Poll::Ready(Err(
+                crate::internal::browser::vendor::chromiumoxide::error::CdpError::Timeout,
+            ));
+        }
+
         if this.message.is_some() {
             match this.target_sender.poll_ready(cx) {
                 Poll::Ready(Err(e)) => Poll::Ready(Err(e.into())),
@@ -111,10 +148,6 @@ where
                 }
                 Poll::Pending => Poll::Pending,
             }
-        } else if this.delay.poll(cx).is_ready() {
-            Poll::Ready(Err(
-                crate::internal::browser::vendor::chromiumoxide::error::CdpError::Timeout,
-            ))
         } else {
             match this.rx_command.as_mut().poll(cx) {
                 Poll::Ready(Ok(Ok(response))) => {
@@ -136,8 +169,45 @@ mod tests {
     use futures::StreamExt;
 
     use crate::internal::browser::vendor::chromiumoxide_cdp::cdp::browser_protocol::page::NavigateParams;
+    use crate::internal::browser::vendor::chromiumoxide_cdp::cdp::js_protocol::runtime::AwaitPromiseParams;
 
     use super::*;
+
+    #[tokio::test]
+    async fn expired_observation_deadline_prevents_dispatch() {
+        let (sender, mut receiver) = mpsc::channel(1);
+        let expired = std::time::Instant::now()
+            .checked_sub(std::time::Duration::from_secs(1))
+            .expect("fixture instant");
+        let mut future =
+            CommandFuture::new(AwaitPromiseParams::new("promise".to_owned()), sender, None)
+                .expect("fixture command")
+                .before(expired);
+        let result = futures::future::poll_fn(|cx| Pin::new(&mut future).poll(cx)).await;
+        assert!(matches!(
+            result,
+            Err(crate::internal::browser::vendor::chromiumoxide::error::CdpError::Timeout)
+        ));
+        assert!(
+            receiver.try_recv().is_err(),
+            "expired command must not reach the target"
+        );
+    }
+
+    #[test]
+    fn response_deadline_is_local_metadata_and_not_cdp_wire_data() {
+        let (sender, _) = oneshot_channel::<Result<Response>>();
+        let mut message =
+            CommandMessage::new(AwaitPromiseParams::new("promise".to_owned()), sender)
+                .expect("fixture command");
+        message.response_deadline = Some(std::time::Instant::now());
+        let wire = serde_json::to_value(message).expect("fixture serialization");
+        assert_eq!(
+            wire.get("method").and_then(|value| value.as_str()),
+            Some("Runtime.awaitPromise")
+        );
+        assert!(wire.get("response_deadline").is_none());
+    }
 
     #[tokio::test]
     async fn raw_navigation_command_bypasses_navigation_classification() {

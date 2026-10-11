@@ -185,4 +185,42 @@ impl Page {
             .map_err(|error| VoidCrawlError::JsEvalError(error.to_string()))?;
         selector_wait_status(result.value(), selector, timeout_ms)
     }
+
+    /// Wait for a controller-authored condition using DOM events, not host polling.
+    /// Callers must treat the expression as privileged code; SDK conditions build
+    /// this expression internally from typed, JSON-escaped inputs.
+    pub async fn wait_for_expression(&self, expression: &str, timeout: Duration) -> Result<bool> {
+        let timeout_ms =
+            u64::try_from(timeout.as_millis()).map_err(|_| VoidCrawlError::InvalidInput {
+                operation: "wait_for_expression",
+                reason: "timeout exceeds supported range",
+            })?;
+        let source = format!(
+            r#"new Promise((resolve, reject) => {{
+            let observer; let timer;
+            const done = value => {{ if (observer) observer.disconnect(); clearTimeout(timer); resolve(value); }};
+            const check = () => {{ try {{ if ({expression}) {{ done(true); return true; }} }} catch (e) {{ if (observer) observer.disconnect(); clearTimeout(timer); reject(e); return true; }} return false; }};
+            if (check()) return;
+            observer = new MutationObserver(check);
+            observer.observe(document, {{ childList: true, attributes: true, characterData: true, subtree: true }});
+            timer = setTimeout(() => done(false), {timeout_ms});
+            check();
+        }})"#
+        );
+        let params = EvaluateParams::builder()
+            .expression(source)
+            .return_by_value(true)
+            .await_promise(true)
+            .build()
+            .map_err(VoidCrawlError::JsEvalError)?;
+        let result = self
+            .inner
+            .evaluate_expression(params)
+            .await
+            .map_err(|error| VoidCrawlError::JsEvalError(error.to_string()))?;
+        result
+            .value()
+            .and_then(serde_json::Value::as_bool)
+            .ok_or_else(|| VoidCrawlError::JsEvalError("condition returned no boolean".into()))
+    }
 }

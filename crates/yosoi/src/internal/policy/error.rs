@@ -37,6 +37,9 @@ pub enum PolicyError {
     /// A shared attempt deadline was given zero microseconds.
     #[error("maximum elapsed duration must be greater than zero")]
     ZeroMaximumElapsed,
+    /// The default per-action execution budget is zero or cannot form a monotonic deadline.
+    #[error("default action timeout must be positive and fit a monotonic deadline")]
+    InvalidDefaultActionTimeout,
     /// A redirect bound was given zero transitions.
     #[error("Direct HTTP redirect hop limit must be greater than zero")]
     ZeroRedirectHopLimit,

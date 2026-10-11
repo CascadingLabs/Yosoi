@@ -1,9 +1,8 @@
 //! Serial execution of the acquisitions authored by one page request.
 
-use crate::internal::direct_http as yosoi_web_capture_direct_http;
-use crate::internal::engine as yosoi_engine;
-use crate::internal::web_capture as yosoi_web_capture;
-
+use crate::internal::direct_http as internal_direct_http;
+use crate::internal::engine as internal_engine;
+use crate::internal::web_capture as internal_web_capture;
 use std::fmt;
 
 pub use crate::internal::direct_http::{DirectHttpRedirectErrorKind, DirectHttpTransportErrorKind};
@@ -43,7 +42,7 @@ pub use outcome::{
 pub use standard::StandardExecutionSetupError;
 
 pub(in crate::internal::engine) fn direct_http_executor_with_user_agent(
-    user_agent: yosoi_web_capture::UserAgent,
+    user_agent: internal_web_capture::UserAgent,
 ) -> Result<RequestExecutor, StandardExecutionSetupError> {
     let mut inputs = standard::direct_http_inputs()?;
     inputs.acquisition = inputs.acquisition.with_user_agent(user_agent);
@@ -94,6 +93,32 @@ impl RequestExecutor {
         prepared: PreparedPageRequest,
         cancellation: &CancellationToken,
     ) -> Response {
+        self.execute_prepared_using(
+            prepared,
+            cancellation,
+            #[cfg(feature = "browser")]
+            None,
+        )
+        .await
+    }
+
+    #[cfg(feature = "browser")]
+    async fn execute_prepared_on_control(
+        &self,
+        prepared: PreparedPageRequest,
+        cancellation: &CancellationToken,
+        control: &internal_web_capture::RuntimeBrowserControl,
+    ) -> Response {
+        self.execute_prepared_using(prepared, cancellation, Some(control))
+            .await
+    }
+
+    async fn execute_prepared_using(
+        &self,
+        prepared: PreparedPageRequest,
+        cancellation: &CancellationToken,
+        #[cfg(feature = "browser")] control: Option<&internal_web_capture::RuntimeBrowserControl>,
+    ) -> Response {
         let mut attempts = Vec::with_capacity(prepared.attempts().len());
         let mut termination = if cancellation.is_cancelled() {
             ResponseTermination::Cancelled
@@ -114,7 +139,15 @@ impl RequestExecutor {
                 continue;
             }
 
-            let outcome = self.execute_attempt(&prepared, attempt, cancellation).await;
+            let outcome = self
+                .execute_attempt(
+                    &prepared,
+                    attempt,
+                    cancellation,
+                    #[cfg(feature = "browser")]
+                    control,
+                )
+                .await;
             let observed_cancellation = outcome.observed_cancellation();
             attempts.push(outcome);
             if observed_cancellation {
@@ -131,6 +164,7 @@ impl RequestExecutor {
         prepared: &PreparedPageRequest,
         attempt: &PreparedAttempt,
         cancellation: &CancellationToken,
+        #[cfg(feature = "browser")] control: Option<&internal_web_capture::RuntimeBrowserControl>,
     ) -> AttemptOutcome {
         let Some(context) = self.context_for(attempt) else {
             return AttemptOutcome::failed(
@@ -163,7 +197,18 @@ impl RequestExecutor {
             }
         };
 
-        let capture = match resolved.execute(cancellation).await {
+        #[cfg(feature = "browser")]
+        let executed = match control {
+            Some(control) => {
+                resolved
+                    .execute_on_browser_control(control, cancellation)
+                    .await
+            }
+            None => resolved.execute(cancellation).await,
+        };
+        #[cfg(not(feature = "browser"))]
+        let executed = resolved.execute(cancellation).await;
+        let capture = match executed {
             Ok(capture) => capture,
             Err(error) => {
                 let (diagnostic, facts) = execution_failure_facts(&error);
@@ -269,6 +314,19 @@ impl PageRequest {
 }
 
 impl BoundPageRequest<'_> {
+    #[cfg(feature = "browser")]
+    pub async fn send_on_browser_control(
+        &self,
+        control: &internal_web_capture::RuntimeBrowserControl,
+        cancellation: &CancellationToken,
+    ) -> Result<Response, RequestSendError> {
+        let prepared = self.prepare()?;
+        let executor = standard::for_prepared(&prepared)?;
+        Ok(executor
+            .execute_prepared_on_control(prepared, cancellation, control)
+            .await)
+    }
+
     /// Executes each authored acquisition using the standard package adapters.
     pub async fn send(&self) -> Result<Response, RequestSendError> {
         let cancellation = CancellationToken::new();
@@ -297,11 +355,11 @@ impl BoundPageRequest<'_> {
 }
 
 fn execution_failure_facts(
-    error: &yosoi_engine::PolicyCaptureError,
+    error: &internal_engine::PolicyCaptureError,
 ) -> (AttemptDiagnostic, Option<AttemptCaptureFailureFacts>) {
     match error.execution_error() {
         PolicyCaptureExecutionError::DirectHttp(source) => match source.as_ref() {
-            yosoi_web_capture_direct_http::DirectHttpCaptureError::Transport(failure) => (
+            internal_direct_http::DirectHttpCaptureError::Transport(failure) => (
                 AttemptDiagnostic::DirectHttpTransport(failure.error().kind()),
                 Some(AttemptCaptureFailureFacts::direct_http(
                     failure.resolution().cloned(),
@@ -310,7 +368,7 @@ fn execution_failure_facts(
                     Some(failure.error().kind()),
                 )),
             ),
-            yosoi_web_capture_direct_http::DirectHttpCaptureError::Body(failure) => (
+            internal_direct_http::DirectHttpCaptureError::Body(failure) => (
                 AttemptDiagnostic::DirectHttpBodyFailed,
                 Some(AttemptCaptureFailureFacts::direct_http(
                     Some(failure.resolution().clone()),
@@ -319,17 +377,14 @@ fn execution_failure_facts(
                     None,
                 )),
             ),
-            yosoi_web_capture_direct_http::DirectHttpCaptureError::Finalization {
-                evidence,
-                ..
-            } => (
+            internal_direct_http::DirectHttpCaptureError::Finalization { evidence, .. } => (
                 AttemptDiagnostic::DirectHttpFinalizationFailed,
                 Some(AttemptCaptureFailureFacts::direct_http(
                     evidence.resolution().cloned(),
                     None,
                     evidence
                         .response()
-                        .map(yosoi_web_capture_direct_http::DirectHttpResponseFacts::status),
+                        .map(internal_direct_http::DirectHttpResponseFacts::status),
                     None,
                 )),
             ),

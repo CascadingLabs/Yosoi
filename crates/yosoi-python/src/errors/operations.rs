@@ -40,6 +40,7 @@ fn policy_error_details(error: &SdkPolicyError) -> (&'static str, Value) {
             ("AccessibilityNodeLimitNotAddressable", json!({}))
         }
         E::ZeroMaximumElapsed => ("ZeroMaximumElapsed", json!({})),
+        E::InvalidDefaultActionTimeout => ("InvalidDefaultActionTimeout", json!({})),
         E::ZeroRedirectHopLimit => ("ZeroRedirectHopLimit", json!({})),
         E::ZeroMapBudget => ("ZeroMapBudget", json!({})),
         E::ZeroMapMaximumElapsed => ("ZeroMapMaximumElapsed", json!({})),

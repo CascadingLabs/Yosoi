@@ -3,11 +3,12 @@
 
 use super::common;
 use crate::internal::policy as internal_policy;
+use crate::internal::policy::policy as internal_policy_policy;
 
 use std::io;
 
 use crate::internal::policy::{
-    Policy, Tuning, TuningMode,
+    Policy, PolicyError, Tuning, TuningMode,
     policy::{Acquisition, DirectHttpRedirectTargets, DirectHttpRedirects, RedirectHopLimit},
 };
 use crate::internal::types::BrowserMode;
@@ -16,6 +17,10 @@ use serde_json::Value;
 
 const DEFAULT_POLICY_IDENTITY_SHA256: &str =
     "a340f9711e02d7c1c8218814a7d810e7dc1a1584fb659a03cc45cc202a99e924";
+const DEFAULT_POLICY_IDENTITY_V6_SHA256: &str =
+    "f8dbcff85ab6d57d219b92826c90a32f9b162cb1d7b202d6235046eb2d817521";
+const DEFAULT_POLICY_IDENTITY_V7_SHA256: &str =
+    "65f808531d392ce5ea96509219dfd62a3e0440c0c2c0a8e657bc420a89a6d7d2";
 
 #[test]
 fn default_policy_has_stable_canonical_json_and_identity() -> TestResult {
@@ -25,10 +30,16 @@ fn default_policy_has_stable_canonical_json_and_identity() -> TestResult {
     assert_eq!(canonical_json, DEFAULT_POLICY_JSON.trim());
 
     let identity = policy.effective_identity()?;
-    assert_eq!(identity.version(), 5);
+    assert_eq!(identity.version(), 7);
     assert_eq!(
         identity.digest().to_string(),
-        DEFAULT_POLICY_IDENTITY_SHA256
+        DEFAULT_POLICY_IDENTITY_V7_SHA256
+    );
+    let archived_v6 = policy.archived_v6_identity()?;
+    assert_eq!(archived_v6.version(), 6);
+    assert_eq!(
+        archived_v6.digest().to_string(),
+        DEFAULT_POLICY_IDENTITY_V6_SHA256
     );
     assert_eq!(identity.digest().to_string().len(), 64);
     assert!(
@@ -38,9 +49,16 @@ fn default_policy_has_stable_canonical_json_and_identity() -> TestResult {
             .bytes()
             .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
     );
+    let archived_v5 = policy.archived_v5_identity()?;
+    assert_eq!(archived_v5.version(), 5);
+    assert_eq!(
+        archived_v5.digest().to_string(),
+        DEFAULT_POLICY_IDENTITY_SHA256
+    );
 
     let document: Value = serde_json::from_str(&canonical_json)?;
     assert!(document.get("schema_version").is_none());
+    assert_eq!(document["default_action_timeout_ms"], 10_000);
     assert!(document.get("policy").is_none());
     assert!(document.get("page").is_some());
     Ok(())
@@ -130,6 +148,15 @@ fn semantic_policy_changes_change_effective_identity() -> TestResult {
         redirects_disabled.effective_identity()?.digest()
     );
 
+    let longer_action_default = Policy {
+        default_action_timeout_ms: 20_000,
+        ..Policy::default()
+    };
+    assert_ne!(
+        default_policy.effective_identity()?.digest(),
+        longer_action_default.effective_identity()?.digest()
+    );
+
     let mut browser_acquisition = Policy::default();
     browser_acquisition
         .page
@@ -171,6 +198,72 @@ fn semantic_policy_changes_change_effective_identity() -> TestResult {
     assert_ne!(
         default_policy.effective_identity()?.digest(),
         smaller_locator_budget.effective_identity()?.digest()
+    );
+    Ok(())
+}
+
+#[test]
+fn default_action_timeout_is_serde_defaulted_and_validated() -> TestResult {
+    let policy = Policy::default();
+    assert_eq!(policy.default_action_timeout_ms, 10_000);
+
+    let mut legacy: Value = serde_json::from_str(DEFAULT_POLICY_JSON)?;
+    legacy
+        .as_object_mut()
+        .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "policy is not an object"))?
+        .remove("default_action_timeout_ms");
+    let decoded: Policy = serde_json::from_value(legacy)?;
+    assert_eq!(decoded.default_action_timeout_ms, 10_000);
+    assert_eq!(decoded.archived_v5_identity()?.version(), 5);
+    assert_eq!(
+        decoded
+            .effective_policy()?
+            .archived_v5_identity()?
+            .version(),
+        5
+    );
+
+    let zero = Policy {
+        default_action_timeout_ms: 0,
+        ..Policy::default()
+    };
+    assert_eq!(
+        zero.validate(),
+        Err(internal_policy::PolicyError::InvalidDefaultActionTimeout)
+    );
+
+    Ok(())
+}
+
+#[test]
+fn legacy_identity_projections_reject_unrepresented_action_timeouts() -> TestResult {
+    let policy = Policy {
+        default_action_timeout_ms: 20_000,
+        search: internal_policy_policy::Search::disabled(),
+        ..Policy::default()
+    };
+
+    assert_eq!(
+        policy.archived_v2_identity(),
+        Err(PolicyError::ArchivedIdentityMismatch)
+    );
+    assert_eq!(
+        policy.archived_v3_map_identity(),
+        Err(PolicyError::ArchivedIdentityMismatch)
+    );
+    assert_eq!(
+        policy.archived_v3_map_pre_robots_identity(),
+        Err(PolicyError::ArchivedIdentityMismatch)
+    );
+    assert_eq!(
+        policy.archived_v5_identity(),
+        Err(PolicyError::ArchivedIdentityMismatch)
+    );
+
+    let effective = policy.effective_policy()?;
+    assert_eq!(
+        effective.archived_v4_search_pre_robots_identity(),
+        Err(PolicyError::ArchivedIdentityMismatch)
     );
     Ok(())
 }

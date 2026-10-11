@@ -1,6 +1,6 @@
 [package]
 name = "yosoi"
-version = "0.1.2"
+version = "0.2.0"
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
@@ -88,6 +88,8 @@ sha2 = { workspace = true }
 simdutf8 = { workspace = true }
 tempfile = { workspace = true, optional = true }
 thiserror = { workspace = true }
+tree-sitter = "=0.26.12"
+tree-sitter-javascript = "=0.25.0"
 tokio = { workspace = true, features = ["fs", "io-util", "macros", "rt", "rt-multi-thread", "sync", "time"] }
 tokio-util = { workspace = true, features = ["rt"] }
 tracing = { workspace = true, optional = true }
@@ -145,3 +147,19 @@ required-features = ["cli"]
 [[test]]
 name = "request_cli"
 required-features = ["cli"]
+
+[[example]]
+name = "qscrape_checkout"
+required-features = ["browser"]
+
+[[example]]
+name = "tab_yielding"
+required-features = ["browser"]
+
+[[example]]
+name = "live_tab_flows"
+required-features = ["browser"]
+
+[[example]]
+name = "until_live"
+required-features = ["browser"]
