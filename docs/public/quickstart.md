@@ -13,7 +13,7 @@ Use the CLI for terminal workflows or the Rust SDK to build Yosoi into an applic
 With Rust installed, run this from the Yosoi repository root:
 
 ```sh
-CARGO_BUILD_JOBS=1 cargo install --path crates/yosoi-cli --locked
+CARGO_BUILD_JOBS=1 cargo install --path crates/yosoi --features cli --bin yosoi --locked
 yosoi --help
 ```
 

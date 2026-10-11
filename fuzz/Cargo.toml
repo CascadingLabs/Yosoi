@@ -1,6 +1,6 @@
 [package]
 name = "yosoi-web-capture-fuzz"
-version = "0.1.0"
+version = "0.1.1"
 publish = false
 edition = "2024"
 
@@ -8,11 +8,9 @@ edition = "2024"
 cargo-fuzz = true
 
 [dependencies]
+yosoi-dev-support = { version = "=0.1.1", path = "../benchmarks/support" }
 chrono = { version = "0.4.45", default-features = false, features = ["std"] }
 libfuzzer-sys = "=0.4.13"
-yosoi-types = { version = "=0.1.0", path = "../crates/yosoi-types" }
-yosoi-web-capture = { version = "=0.1.0", path = "../crates/yosoi-web-capture" }
-yosoi-web-capture-direct-http = { version = "=0.1.0", path = "../crates/yosoi-web-capture-direct-http" }
 
 [[bin]]
 name = "wire-and-evidence"

@@ -8,19 +8,21 @@
 use std::sync::Arc;
 
 use proptest::prelude::*;
-use void_crawl_core::{BrowserByteAccounting as ProviderByteAccounting, MeasuredBrowserBytes};
 use yosoi_benchmarks::finalization_support::{FinalizationCase, plan, plan_generated_at};
-use yosoi_types::ActivityOutcome;
-use yosoi_types::Sha256Digest;
-use yosoi_web_capture::{
-    AcquiredPayloadOutcome, AcquiredPayloadState, AcquisitionActivityResult,
-    AcquisitionFinalizationError, ArtifactStagingOutcome, BoundedAcquisitionLifecycle,
-    BrowserArtifactMapping, BrowserByteLayer, BrowserStagingFamily, BrowserStagingParts,
-    ByteAccounting, ByteCount, ByteLimit, LifecycleEvent, LossExtent, MeasuredCount,
-    ObservationLimits, ObservationPolicy, RetainedSource, RetainedSourceExtent, SettlementPolicy,
-    StagingState, WebArtifactFamily, finalize_acquisition,
+use yosoi_dev_support::internal::browser::{
+    BrowserByteAccounting as ProviderByteAccounting, MeasuredBrowserBytes,
 };
-use yosoi_web_capture_direct_http::BodyTerminal;
+use yosoi_dev_support::internal::direct_http::BodyTerminal;
+use yosoi_dev_support::internal::types::ActivityOutcome;
+use yosoi_dev_support::internal::types::Sha256Digest;
+use yosoi_dev_support::internal::web_capture::{
+    AcquiredPayloadOutcome, AcquiredPayloadState, AcquisitionActivityResult,
+    AcquisitionFinalizationError, AcquisitionObservationError, ArtifactStagingOutcome,
+    BoundedAcquisitionLifecycle, BrowserArtifactMapping, BrowserByteLayer, BrowserStagingFamily,
+    BrowserStagingParts, ByteAccounting, ByteCount, ByteLimit, LifecycleEvent, LossExtent,
+    MeasuredCount, ObservationLimits, ObservationPolicy, RetainedSource, RetainedSourceExtent,
+    SettlementPolicy, StagingState, WebArtifactFamily, finalize_acquisition,
+};
 
 fn source_mapping() -> BrowserArtifactMapping {
     BrowserArtifactMapping::new(
@@ -252,7 +254,7 @@ fn shared_finalizer_rejects_accounting_that_contradicts_a_stopped_lifecycle() {
     assert!(matches!(
         error,
         AcquisitionFinalizationError::Lifecycle(
-            yosoi_web_capture::AcquisitionObservationError::StoppedAccountingMismatch
+            AcquisitionObservationError::StoppedAccountingMismatch
         )
     ));
 }

@@ -15,10 +15,12 @@ use std::{
     time::{Instant, SystemTime},
 };
 use url::Url;
-use void_crawl_core::{BrowserDebugPortPolicy, BrowserSession, CdpMode, Page, VoidCrawlError};
 use yosoi_benchmarks::stealth_support::{
     Fixture, LIVE_READY_JS, LIVE_SUMMARY_JS, LiveSummaryParts, WEBDRIVER_DISGUISE,
     live_summary_parts, snapshot, validate_snapshot,
+};
+use yosoi_dev_support::internal::browser::{
+    BrowserDebugPortPolicy, BrowserSession, CdpMode, Page, VoidCrawlError,
 };
 
 #[derive(Clone, Copy, Debug, Serialize)]

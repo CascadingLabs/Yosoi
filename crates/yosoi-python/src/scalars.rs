@@ -1,157 +1,30 @@
 //! Rust-owned constructors and validation for public SDK scalar values.
 
+use crate::errors::{self, ContractError, DocumentError, LocatorError, PolicyError, RequestError};
 use pyo3::{exceptions::PyValueError, prelude::*};
-use serde::{Serialize, de::DeserializeOwned};
 use yosoi::{
     contracts::{ContractId, FieldId},
     documents::{DocumentEpoch, DocumentId},
     locators::{
-        AccessibilityCoordinate, ByteRange, CoordinateError, DecodedTextCoordinate, DomCoordinate,
-        DomNodeId, ExpandedNamePathSegment, Finding, JsonCoordinate, LocateResult,
-        NativeCoordinate, NodeReference, OutputId, RegionId, RegionLineage, TextRange,
-        TreeCoordinate,
+        AccessibilityCoordinate, DecodedTextCoordinate, DomCoordinate, DomNodeId,
+        ExpandedNamePathSegment, Finding, JsonCoordinate, LocateResult, NativeCoordinate,
+        NodeReference, OutputId, RegionId, RegionLineage, TreeCoordinate,
     },
     policy::{
         AccessibilityNodeLimit, AddressableByteLimit, Budget, CountLimit, DirectHttpRedirects,
-        EventLimit, MaximumElapsed, PolicyError as RustPolicyError, ProviderDefaultsVersion,
-        RedirectHopLimit, ResourceLimit, StepLimit,
+        EventLimit, MaximumElapsed, ProviderDefaultsVersion, RedirectHopLimit, ResourceLimit,
+        StepLimit,
     },
     request::WebTarget,
 };
 
-use crate::errors::{self, ContractError, DocumentError, LocatorError, PolicyError, RequestError};
-
-fn normalize<T>(value_json: &str, invalid: impl Fn(String) -> PyErr) -> PyResult<String>
-where
-    T: DeserializeOwned + Serialize,
-{
-    let value = serde_json::from_str::<T>(value_json).map_err(|error| {
-        Python::attach(|py| errors::serde_decode_error(py, invalid(error.to_string()), &error))
-    })?;
-    serde_json::to_string(&value).map_err(|error| {
-        Python::attach(|py| errors::serde_encode_error(py, invalid(error.to_string()), &error))
-    })
-}
-
-fn policy_value<T, U>(value_json: &str) -> PyResult<T>
-where
-    T: TryFrom<U, Error = RustPolicyError>,
-    U: DeserializeOwned,
-{
-    let value = serde_json::from_str::<U>(value_json).map_err(|error| {
-        Python::attach(|py| {
-            errors::serde_decode_error(py, PolicyError::new_err(error.to_string()), &error)
-        })
-    })?;
-    T::try_from(value).map_err(|error| Python::attach(|py| errors::policy_error(py, &error)))
-}
-
-fn policy_scalar<T, U>(value_json: &str) -> PyResult<String>
-where
-    T: TryFrom<U, Error = RustPolicyError> + Serialize,
-    U: DeserializeOwned,
-{
-    let value = policy_value::<T, U>(value_json)?;
-    converted_json(&value, PolicyError::new_err)
-}
-
-fn construct_locate_result_with_regions(
-    value_json: &str,
-    invalid: impl Fn(String) -> PyErr,
-) -> PyResult<String> {
-    #[derive(serde::Deserialize)]
-    #[serde(deny_unknown_fields)]
-    struct Input {
-        document_id: DocumentId,
-        regions: Vec<RegionLineage>,
-        findings: Vec<Finding>,
-    }
-
-    let input = serde_json::from_str::<Input>(value_json).map_err(|error| {
-        Python::attach(|py| errors::serde_decode_error(py, invalid(error.to_string()), &error))
-    })?;
-    let result =
-        LocateResult::try_new_with_regions(input.document_id, input.regions, input.findings)
-            .map_err(|error| invalid(error.to_string()))?;
-    serde_json::to_string(&result).map_err(|error| {
-        Python::attach(|py| errors::serde_encode_error(py, invalid(error.to_string()), &error))
-    })
-}
-
-fn converted_json<T>(value: &T, invalid: impl Fn(String) -> PyErr) -> PyResult<String>
-where
-    T: Serialize,
-{
-    serde_json::to_string(value).map_err(|error| {
-        Python::attach(|py| errors::serde_encode_error(py, invalid(error.to_string()), &error))
-    })
-}
-
-#[derive(Clone, Copy, serde::Deserialize)]
-#[serde(deny_unknown_fields)]
-struct RangeInput {
-    start: u64,
-    end: u64,
-}
-
-#[derive(serde::Deserialize)]
-#[serde(deny_unknown_fields)]
-struct ExpandedNamePathSegmentInput {
-    namespace_uri: Option<String>,
-    local_name: String,
-    same_name_sibling_index: u32,
-}
-
-#[derive(serde::Deserialize)]
-#[serde(deny_unknown_fields)]
-struct TreeCoordinateInput {
-    child_path: Vec<u32>,
-    source_bytes: Option<RangeInput>,
-    #[serde(default)]
-    expanded_name_path: Option<Vec<ExpandedNamePathSegmentInput>>,
-}
-
-#[derive(serde::Deserialize)]
-#[serde(deny_unknown_fields)]
-struct DecodedTextCoordinateInput {
-    byte_range: RangeInput,
-    scalar_range: RangeInput,
-}
-
-#[derive(serde::Deserialize)]
-#[serde(deny_unknown_fields)]
-struct DomCoordinateInput {
-    document_epoch: DocumentEpoch,
-    node_id: u64,
-}
-
-#[derive(serde::Deserialize)]
-#[serde(deny_unknown_fields)]
-struct AccessibilityCoordinateInput {
-    document_epoch: DocumentEpoch,
-    node_id: String,
-}
-
-fn decode_input<T: DeserializeOwned>(
-    value_json: &str,
-    invalid: impl Fn(String) -> PyErr,
-) -> PyResult<T> {
-    serde_json::from_str(value_json).map_err(|error| {
-        Python::attach(|py| errors::serde_decode_error(py, invalid(error.to_string()), &error))
-    })
-}
-
-const fn byte_range(input: RangeInput) -> Result<ByteRange, CoordinateError> {
-    ByteRange::try_new(input.start, input.end)
-}
-
-const fn text_range(input: RangeInput) -> Result<TextRange, CoordinateError> {
-    TextRange::try_new(input.start, input.end)
-}
-
-fn coordinate_pyerr(error: CoordinateError) -> PyErr {
-    Python::attach(|py| errors::coordinate_error(py, error))
-}
+mod input;
+use input::{
+    AccessibilityCoordinateInput, DecodedTextCoordinateInput, DomCoordinateInput,
+    ExpandedNamePathSegmentInput, RangeInput, TreeCoordinateInput, byte_range,
+    construct_locate_result_with_regions, converted_json, coordinate_pyerr, decode_input,
+    normalize, policy_scalar, policy_value, text_range,
+};
 
 #[pyfunction]
 pub fn validate_domain_model(kind: &str, value_json: &str) -> PyResult<String> {

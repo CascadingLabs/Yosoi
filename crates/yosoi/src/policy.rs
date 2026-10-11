@@ -1,12 +1,8 @@
 //! Configure the limits and acquisition choices used by SDK operations.
 
-pub use search::{
-    ProfileSelection, ProviderDefaultsStatus, ProviderDefaultsVersion, ProviderRequestProfile,
-    ProviderSelection,
-};
-pub use yosoi_engine::{Policy, PolicyError, PolicySnapshot};
-pub use yosoi_policy::EffectivePolicyIdentity;
-pub use yosoi_policy::policy::{
+pub use crate::internal::engine::{Policy, PolicyError, PolicySnapshot};
+pub use crate::internal::policy::EffectivePolicyIdentity;
+pub use crate::internal::policy::policy::{
     AccessibilityNodeLimit, Acquisition, AcquisitionKind, AddressableByteLimit, BrowserLimits,
     BrowserMode, Budget, CountLimit, DirectHttpRedirectTargets, DirectHttpRedirects,
     DiscoveryDocuments, DocumentRequest, DocumentSelectionKind, Documents, EventLimit, Filters,
@@ -14,10 +10,14 @@ pub use yosoi_policy::policy::{
     RedirectHopLimit, Request, ResourceLimit, Robots, Scope, SourceLimits, StepLimit, Subdomains,
     Tuning, TuningMode,
 };
+pub use search::{
+    ProfileSelection, ProviderDefaultsStatus, ProviderDefaultsVersion, ProviderRequestProfile,
+    ProviderSelection,
+};
 
 /// Provider selection and bounded Search configuration.
 pub mod search {
-    pub use yosoi_policy::policy::search::{
+    pub use crate::internal::policy::policy::search::{
         EffectiveProviderRoute, EffectiveSearch, ProfileSelection, ProfileSelectionKind, Provider,
         ProviderDefaultsStatus, ProviderDefaultsVersion, ProviderRequestProfile, ProviderSelection,
         Search,

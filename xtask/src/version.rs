@@ -189,9 +189,28 @@ fn plan(root: &Path, version: &str, date: Option<&str>) -> Result<Vec<Change>> {
         }
         documents.push((path, before, document));
     }
+    let root_manifest = documents
+        .iter()
+        .find(|(path, _, _)| path == &root.join("Cargo.toml"))
+        .map(|(_, _, document)| document)
+        .context("workspace root manifest is missing")?;
+    let independent_versions = independent_package_versions(root_manifest, &documents)?;
+    for (_, _, document) in &documents {
+        validate_independent_requirements(document.as_item(), &independent_versions)?;
+    }
+    let synchronized_names = names
+        .iter()
+        .filter(|name| !independent_versions.contains_key(*name))
+        .cloned()
+        .collect::<BTreeSet<_>>();
+
     let mut changes = Vec::new();
     for (path, before, mut document) in documents {
         if let Some(package) = document.get_mut("package").and_then(Item::as_table_mut)
+            && !package
+                .get("name")
+                .and_then(Item::as_str)
+                .is_some_and(|name| independent_versions.contains_key(name))
             && package
                 .get("version")
                 .and_then(Item::as_table_like)
@@ -207,7 +226,7 @@ fn plan(root: &Path, version: &str, date: Option<&str>) -> Result<Vec<Change>> {
                 .context("root manifest requires [workspace.package]")?;
             set_version(package.entry("version").or_insert(Item::None), version);
         }
-        update_dependencies(document.as_item_mut(), &names, version);
+        update_dependencies(document.as_item_mut(), &synchronized_names, version);
         add_change(&mut changes, path, before, document.to_string());
     }
     for lock in ["Cargo.lock", "fuzz/Cargo.lock"] {
@@ -227,7 +246,7 @@ fn plan(root: &Path, version: &str, date: Option<&str>) -> Result<Vec<Change>> {
             .filter_map(|package| {
                 let name = package.get("name")?.as_str()?;
                 let old_version = package.get("version")?.as_str()?;
-                names
+                synchronized_names
                     .contains(name)
                     .then(|| (name.to_owned(), old_version.to_owned()))
             })
@@ -237,7 +256,7 @@ fn plan(root: &Path, version: &str, date: Option<&str>) -> Result<Vec<Change>> {
                 && package
                     .get("name")
                     .and_then(Item::as_str)
-                    .is_some_and(|name| names.contains(name))
+                    .is_some_and(|name| synchronized_names.contains(name))
             {
                 set_version(
                     package
@@ -311,6 +330,107 @@ fn plan(root: &Path, version: &str, date: Option<&str>) -> Result<Vec<Change>> {
     }
     add_change(&mut changes, path, before, after);
     Ok(changes)
+}
+
+fn independent_package_versions(
+    root_manifest: &DocumentMut,
+    documents: &[(PathBuf, String, DocumentMut)],
+) -> Result<BTreeMap<String, String>> {
+    let Some(packages) = root_manifest
+        .get("workspace")
+        .and_then(|workspace| workspace.get("metadata"))
+        .and_then(|metadata| metadata.get("yosoi-release"))
+        .and_then(|release| release.get("independent-version-packages"))
+    else {
+        return Ok(BTreeMap::new());
+    };
+    let packages = packages.as_array().context(
+        "workspace.metadata.yosoi-release.independent-version-packages must be an array",
+    )?;
+    let mut independent = BTreeMap::new();
+    for value in packages {
+        let name = value
+            .as_str()
+            .context("independent version package names must be strings")?;
+        if independent.contains_key(name) {
+            bail!("duplicate independent version package: {name}");
+        }
+        let mut found = None;
+        for (_, _, document) in documents {
+            let Some(package) = document.get("package") else {
+                continue;
+            };
+            if package.get("name").and_then(Item::as_str) != Some(name) {
+                continue;
+            }
+            let version = package
+                .get("version")
+                .and_then(Item::as_str)
+                .with_context(|| {
+                    format!("independent package {name} must declare an explicit version")
+                })?;
+            semver::Version::parse(version)
+                .with_context(|| format!("independent package {name} has invalid version"))?;
+            if found.replace(version.to_owned()).is_some() {
+                bail!("independent package name appears in multiple manifests: {name}");
+            }
+        }
+        let version = found.with_context(|| {
+            format!("independent version package is missing from synchronized manifests: {name}")
+        })?;
+        independent.insert(name.to_owned(), version);
+    }
+    Ok(independent)
+}
+
+fn validate_independent_requirements(
+    item: &Item,
+    independent_versions: &BTreeMap<String, String>,
+) -> Result<()> {
+    let Some(table) = item.as_table_like() else {
+        return Ok(());
+    };
+    for (key, child) in table.iter() {
+        if matches!(
+            key,
+            "dependencies" | "dev-dependencies" | "build-dependencies"
+        ) {
+            let Some(dependencies) = child.as_table_like() else {
+                continue;
+            };
+            for (alias, dependency) in dependencies.iter() {
+                let Some(specification) = dependency.as_table_like() else {
+                    let name = alias;
+                    if let Some(version) = independent_versions.get(name) {
+                        let expected = format!("={version}");
+                        if dependency.as_str() != Some(expected.as_str()) {
+                            bail!(
+                                "dependency {name} must use the exact independent version {expected}"
+                            );
+                        }
+                    }
+                    continue;
+                };
+                if specification.get("workspace").and_then(Item::as_bool) == Some(true) {
+                    continue;
+                }
+                let name = specification
+                    .get("package")
+                    .and_then(Item::as_str)
+                    .unwrap_or(alias);
+                let Some(version) = independent_versions.get(name) else {
+                    continue;
+                };
+                let expected = format!("={version}");
+                if specification.get("version").and_then(Item::as_str) != Some(expected.as_str()) {
+                    bail!("dependency {name} must use the exact independent version {expected}");
+                }
+            }
+        } else {
+            validate_independent_requirements(child, independent_versions)?;
+        }
+    }
+    Ok(())
 }
 
 fn set_version(item: &mut Item, version: &str) {

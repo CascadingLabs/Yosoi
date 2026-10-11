@@ -2,10 +2,10 @@
 
 The CLI reads JSON-authored Policy profiles. It provides three read-only
 commands: `yosoi policy path`, `yosoi policy list`, and
-`yosoi policy validate [NAME]`. The file is keyed by the exact CLI crate
-version shown by `yosoi --version`. The CLI never creates or edits this file.
+`yosoi policy validate [NAME]`. The file is keyed by the exact CLI version
+shown by `yosoi --version`. The CLI never creates or edits this file.
 
-## Complete example for the current 0.1.0 binary
+## Complete example for the current 0.1.1 binary
 
 In a terminal, choose an isolated config directory and write the file:
 
@@ -16,7 +16,7 @@ cat > "$XDG_CONFIG_HOME/yosoi/policies.json" <<'JSON'
 {
   "format_version": 1,
   "cli_versions": {
-    "0.1.0": {
+    "0.1.1": {
       "active_profile": "next-run",
       "profiles": {
         "next-run": {
@@ -48,15 +48,15 @@ checks a named profile even when it is not active.
 The current SDK also exposes a `map` Policy group. Omit it to inherit the
 binary default; if authored in a profile, provide one complete validated Map
 object. The current default shape is recorded in
-[`default-policy.json`](../crates/yosoi-policy/tests/fixtures/default-policy.json).
+[`default-policy.json`](../crates/yosoi/src/internal/policy/integration_tests/fixtures/default-policy.json).
 
 From this repository, run:
 
 ```sh
-cargo run -p yosoi-cli -- policy path
-cargo run -p yosoi-cli -- policy list
-cargo run -p yosoi-cli -- policy validate
-cargo run -p yosoi-cli -- policy validate next-run
+cargo run -p yosoi --features cli -- policy path
+cargo run -p yosoi --features cli -- policy list
+cargo run -p yosoi --features cli -- policy validate
+cargo run -p yosoi --features cli -- policy validate next-run
 ```
 
 The Requests CLI is a later milestone, so validation is the operation that

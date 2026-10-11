@@ -1,3 +1,5 @@
+use crate::internal::engine as yosoi_engine;
+
 use super::{
     AttemptDiagnostic, AttemptFailureKind, CaptureId, NotStartedReason, PartialReason,
     UnavailableReason, UnprojectableReason,

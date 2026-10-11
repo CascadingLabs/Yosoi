@@ -16,14 +16,25 @@ Locators namespace integration or combined certification.
 | Existing HTTP orchestration | Four formats and exact retained payloads passed through the standard public path |
 | Targeted lint | SDK all targets with browser enabled and changed HTTP library passed `-D warnings` with `--no-deps` |
 
+## Package layout after runtime consolidation
+
+Since SDK 0.1.1, runtime modules are compiled under the private
+`crates/yosoi/src/internal` tree. The controller integration lives in
+`internal/browser`; its `yosoi-browser-core` component identity and 0.1.0
+component version remain distinct from the enclosing SDK version. Browser
+support is enabled through the public `yosoi` crate's `browser` feature.
+
 The browser tests used regular Google Chrome Stable 153.0.8010.36 copied from
 existing image `sha256:90ef59e3973300ec7c0ef8d3d8d0ca7f791ca6cc485a34ce2f13041c001137fd`.
 Executable SHA-256: `ac7f9884974b551d29c89f24d0c697f373ce595a920ddafced441dd2554142db`.
 The local test executable is `/tmp/cas399-regular-stable.ORA3A0/chrome/chrome`.
-VoidCrawl remains `void_crawl_core` 0.5.0, the vendored controller remains
-Chromiumoxide 0.9.1 (upstream base `a7e2bb835b9643410f9e3dc044f0d947e96cbfa4`),
-and generated CDP remains `0.10.0-yosoi.m153.1` / `r1681091`. No controller,
-generated protocol, sandbox, launch-security or stealth setting changed.
+At the time of this receipt, VoidCrawl was the separate `void_crawl_core` 0.5.0
+package. The current private module preserves its controller component
+identity/version separately from the SDK package. The vendored controller
+remains Chromiumoxide 0.9.1 (upstream base
+`a7e2bb835b9643410f9e3dc044f0d947e96cbfa4`), and generated CDP remains
+`0.10.0-yosoi.m153.1` / `r1681091`. No controller, generated protocol,
+sandbox, launch-security or stealth setting changed.
 These are adapter regression results, not a new full browser certification.
 
 Run checks serially with `CARGO_BUILD_JOBS=1`, `--jobs 1` and
@@ -93,8 +104,8 @@ bundle-finalization pipeline. Existing standard Direct HTTP entry points
 delegate with the engine's standard Allow HTTP(S) target rule.
 
 Browser execution is available through the facade's `browser` feature, which
-forwards to the canonical `yosoi-web-capture/browser` feature. The default
-facade build retains Direct HTTP without enabling browser dependencies. With
+enables the SDK's private browser provider modules. The default facade build
+retains Direct HTTP without enabling browser dependencies. With
 browser support enabled, execution calls `capture_attempt(spec, cancellation)`,
 samples the real wall-clock finish time after the adapter returns, and calls
 `finalize_browser_capture`. Resource and initiator origins are marked

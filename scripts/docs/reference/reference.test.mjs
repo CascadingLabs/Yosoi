@@ -21,12 +21,12 @@ function fixture() {
 	} };
 }
 
-test('SDK discovery reserves names and excludes internal yosoi-engine', () => {
+test('SDK discovery reserves names and excludes development support', () => {
 	const pkg = (name, sdk) => ({ id: name, name, metadata: { yosoi: { sdk } }, version: '0.1.0', manifest_path: '/repo/Cargo.toml', targets: [{ name: name.replaceAll('-', '_'), kind: ['lib'] }] });
-	const metadata = { workspace_members: ['yosoi-engine', 'yosoi'], packages: [pkg('yosoi-engine', false), pkg('yosoi', true)] };
+	const metadata = { workspace_members: ['yosoi-dev-support', 'yosoi'], packages: [pkg('yosoi-dev-support', false), pkg('yosoi', true)] };
 	assert.deepEqual(discoverSdks(metadata).map((s) => s.name), ['yosoi']);
 	assert.throws(() => discoverSdks({ ...metadata, packages: [pkg('yosoi', false)] }), /reserved SDK/);
-	assert.throws(() => discoverSdks({ workspace_members: ['yosoi-engine'], packages: [pkg('yosoi-engine', true)] }), /naming policy/);
+	assert.throws(() => discoverSdks({ workspace_members: ['yosoi-dev-support'], packages: [pkg('yosoi-dev-support', true)] }), /naming policy/);
 });
 
 test('compiler model publishes SDK reachability, public members, and exact definition spans', () => {
@@ -42,6 +42,52 @@ test('source paths cannot escape the snapshot or use moving tags', () => {
 	assert.equal(sourceLink({ ...span, filename: '../private.rs' }, { ...identity, checkout: '/repo' }), null);
 	assert.throws(() => sourceLink(span, { ...identity, commit: 'main', checkout: '/repo' }), /full commit hash/);
 	assert.equal(typeText({ impl_trait: [{ trait_bound: { trait: { path: 'Into', args: { angle_bracketed: { args: [{ type: { resolved_path: { path: 'String', args: null } } }], constraints: [] } } }, modifier: 'none' } }] }), 'impl Into<String>');
+});
+
+test('signatures follow compiler type identities across private module moves', () => {
+	const moved = fixture();
+	moved.index[5].inner.function.sig.output = { resolved_path: { id: 1, path: 'crate::internal::engine::Entry', args: null } };
+	const pages = buildReference([moved], { ...identity, checkout: '/repo', crate: 'demo_sdk' });
+	assert.equal(pages['demo-sdk/struct/entry'].members[0].signature, 'pub fn value(&self) -> demo_sdk::Entry');
+	// An unrelated type with the same name must retain its own identity.
+	moved.index[5].inner.function.sig.output.resolved_path.id = 2;
+	const changed = buildReference([moved], { ...identity, checkout: '/repo', crate: 'demo_sdk' });
+	assert.notEqual(changed['demo-sdk/struct/entry'].members[0].signature, pages['demo-sdk/struct/entry'].members[0].signature);
+});
+
+test('third-party reexports retain the compiler public import rather than a private definition path', () => {
+	const doc = fixture();
+	doc.index[0].inner.module.items.push(6);
+	doc.index[6] = item(6, 'External', { use: { name: 'External', id: 100, source: 'crate::internal::External', is_glob: false } });
+	doc.index[7] = item(7, 'External', { use: { name: 'External', id: 100, source: 'upstream::External', is_glob: false } });
+	doc.paths[100] = { path: ['upstream', 'private', 'External'], kind: 'struct' };
+	const pages = buildReference([doc], { ...identity, checkout: '/repo', crate: 'demo_sdk' });
+	assert.equal(pages['demo-sdk/reexport/external'].signature, 'pub use upstream::External;');
+});
+
+test('conversion methods belong to their receiver even when rustdoc lists them on the input', () => {
+	const doc = fixture();
+	doc.index[0].inner.module.items.push(6);
+	doc.index[6] = item(6, 'Converted', { struct: { kind: { plain: { fields: [] } }, generics: { params: [], where_predicates: [] }, impls: [] } });
+	doc.index[1].inner.struct.impls.push(7);
+	doc.index[7] = item(7, null, { impl: { trait: { path: 'From' }, for: { resolved_path: { id: 6, path: 'Converted', args: null } }, is_synthetic: false, blanket_impl: null, items: [8] } }, 'default');
+	doc.index[8] = item(8, 'from', { function: { sig: { inputs: [['source', { resolved_path: { id: 1, path: 'Entry', args: null } }]], output: { generic: 'Self' } }, header: {}, generics: { params: [], where_predicates: [] } } }, 'default');
+	const pages = buildReference([doc], { ...identity, checkout: '/repo', crate: 'demo_sdk' });
+	assert.equal(pages['demo-sdk/struct/entry'].members.some(member => member.trait === 'From'), false);
+	assert.equal(pages['demo-sdk/struct/converted'].members[0].signature, 'fn from(source: demo_sdk::Entry) -> Self');
+	assert.equal(pages['demo-sdk/struct/converted'].members[0].trait, 'From');
+	doc.index[8].inner.function.sig.inputs[0][1].resolved_path = { id: 2, path: 'Private', args: null };
+	const privateInput = buildReference([doc], { ...identity, checkout: '/repo', crate: 'demo_sdk' });
+	assert.equal(privateInput['demo-sdk/struct/converted'].members[0].signature, 'fn from(source: Private) -> Self');
+	assert.equal(Object.values(privateInput).some(page => /Private|Hidden/.test(page.publicPath)), false);
+	doc.index[0].inner.module.items.push(9);
+	doc.index[9] = item(9, 'internal', { module: { items: [10] } }, 'crate');
+	doc.index[10] = item(10, 'PrivateTrait', { trait: { generics: { params: [], where_predicates: [] }, items: [] } });
+	doc.index[11] = item(11, null, { impl: { trait: { id: 10, path: 'PrivateTrait' }, for: { resolved_path: { id: 6, path: 'Converted', args: null } }, is_synthetic: false, blanket_impl: null, items: [12] } }, 'default');
+	doc.index[12] = { ...doc.index[8], id: 12, name: 'private_operation' };
+	const privateTrait = buildReference([doc], { ...identity, checkout: '/repo', crate: 'demo_sdk' });
+	assert.equal(privateTrait['demo-sdk/struct/converted'].members.some(member => member.trait === 'PrivateTrait'), false);
+	assert.equal(Object.values(privateTrait).some(page => /::internal|PrivateTrait/.test(page.publicPath)), false);
 });
 
 test('locale overlays bind to original prose and do not alter signatures or examples', () => {

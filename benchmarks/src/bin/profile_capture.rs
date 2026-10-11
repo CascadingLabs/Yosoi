@@ -6,7 +6,7 @@ use anyhow::{Context, Result, bail};
 use tokio::runtime::Builder;
 use tokio_util::sync::CancellationToken;
 use yosoi_benchmarks::support::{self, LoopbackServer, Route};
-use yosoi_web_capture_direct_http::{
+use yosoi_dev_support::internal::direct_http::{
     DirectHttpRedirectPolicy, RedirectHopLimit, capture_direct_http_at,
 };
 

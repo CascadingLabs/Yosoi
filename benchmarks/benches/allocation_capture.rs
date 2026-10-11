@@ -16,11 +16,11 @@
 )]
 
 use divan::{AllocProfiler, Bencher, black_box};
-use yosoi_types::Sha256Digest;
-use yosoi_web_capture_direct_http::{
+use yosoi_dev_support::internal::direct_http::{
     BoundedAcquisitionLifecycle, LifecycleFinalizationInput, ResolvedDirectHttpCaptureSpec,
     WebCaptureWire, finalize_direct_http_attempt,
 };
+use yosoi_dev_support::internal::types::Sha256Digest;
 
 #[global_allocator]
 static ALLOCATOR: AllocProfiler = AllocProfiler::system();

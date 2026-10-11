@@ -239,6 +239,6 @@ accept URLs, credentials, profile paths, runtime handles, or other secrets, so
 none enter this identity. A future value that carries a secret or handle must
 not be added to the projection.
 
-The `yosoi-policy` crate defines passive values only. The separate `yosoi`
+The private `policy` module defines passive values only. The public `yosoi`
 facade resolves an attempt-specific capture specification and executes it;
 those operations do not add runtime ownership or mutation to the declaration.

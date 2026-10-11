@@ -6,7 +6,7 @@
 )]
 
 use divan::{AllocProfiler, Bencher, black_box};
-use yosoi_documents::{
+use yosoi_dev_support::internal::documents::{
     Document, DocumentEpoch, OutputPlan, Plan, ResourceBudget, css, json_path, json_pointer,
     output, regex, role, xpath,
 };

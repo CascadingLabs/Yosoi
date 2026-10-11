@@ -2,7 +2,7 @@ use crate::capture_stages_support::{bytes, fixture};
 use crate::finalization_setup::{Case, CaseKind, setup};
 use criterion::{BatchSize, BenchmarkId, Criterion, Throughput};
 use std::hint::black_box;
-use yosoi_web_capture_direct_http::finalize_direct_http_attempt;
+use yosoi_dev_support::internal::direct_http::finalize_direct_http_attempt;
 
 #[allow(
     clippy::needless_pass_by_value,

@@ -23,11 +23,11 @@ extern crate gungraun;
 use std::hint::black_box;
 
 use gungraun::prelude::*;
-use yosoi_types::Sha256Digest;
-use yosoi_web_capture_direct_http::{
+use yosoi_dev_support::internal::direct_http::{
     BoundedAcquisitionLifecycle, CaptureBundle, LifecycleFinalizationInput,
     ResolvedDirectHttpCaptureSpec, WebCapture, WebCaptureWire, finalize_direct_http_attempt,
 };
+use yosoi_dev_support::internal::types::Sha256Digest;
 
 use yosoi_benchmarks::support as capture_stages_support;
 #[path = "criterion_capture/finalization_setup.rs"]

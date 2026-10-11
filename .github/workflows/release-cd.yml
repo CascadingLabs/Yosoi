@@ -453,7 +453,7 @@ jobs:
           CARGO_BUILD_JOBS: ${{ matrix.build_jobs }}
         run: |
           cargo test --release --locked --target "$TARGET" -p yosoi --test public_sdk -- --test-threads=1
-          cargo build --release --locked --target "$TARGET" -p yosoi-cli
+          cargo build --release --locked --target "$TARGET" -p yosoi --features cli --bin yosoi
           mkdir -p dist
           executable="target/$TARGET/release/yosoi"
           if [ "$RUNNER_OS" = Windows ]; then executable="$executable.exe"; fi

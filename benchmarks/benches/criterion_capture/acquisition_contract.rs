@@ -1,8 +1,10 @@
 use criterion::{BatchSize, BenchmarkId, Criterion, Throughput};
 use std::{hint::black_box, sync::Arc};
-use void_crawl_core::{BrowserByteAccounting as ProviderByteAccounting, MeasuredBrowserBytes};
 use yosoi_benchmarks::finalization_support::{FinalizationCase, plan};
-use yosoi_web_capture::{
+use yosoi_dev_support::internal::browser::{
+    BrowserByteAccounting as ProviderByteAccounting, MeasuredBrowserBytes,
+};
+use yosoi_dev_support::internal::web_capture::{
     AcquiredPayloadOutcome, ArtifactStagingOutcome, BrowserArtifactMapping, BrowserByteLayer,
     BrowserStagingFamily, ByteAccounting, ByteCount, MeasuredCount, RetainedSource,
     WebArtifactFamily,
@@ -79,7 +81,7 @@ pub fn shared_acquisition_contracts(c: &mut Criterion) {
                 || plan(case),
                 |plan| {
                     black_box(
-                        yosoi_web_capture::finalize_acquisition(plan)
+                        yosoi_dev_support::internal::web_capture::finalize_acquisition(plan)
                             .unwrap_or_else(|error| panic!("finalization: {error}")),
                     )
                 },

@@ -91,9 +91,9 @@ fn main() -> Result<(),Box<dyn std::error::Error>> {
         outcome: Outcome::Compiles,
     },
     Case {
-        name: "internal crate is not a direct consumer dependency",
-        source: "use yosoi_engine::Document; fn main() {}",
-        outcome: Outcome::Rejected("yosoi_engine"),
+        name: "implementation module is private to the SDK",
+        source: "use sdk::internal::engine::Document; fn main() {}",
+        outcome: Outcome::Rejected("private"),
     },
     Case {
         name: "no archive namespace",

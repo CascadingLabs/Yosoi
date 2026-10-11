@@ -1,0 +1,78 @@
+[package]
+name = "yosoi-dev-support"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish = false
+
+[lib]
+test = false
+doctest = true
+bench = false
+
+[features]
+default = []
+browser = ["dep:chromiumoxide", "dep:futures", "dep:schemars", "dep:globset", "dep:image", "dep:notify", "dep:reqwest", "dep:rustls", "dep:tempfile", "tokio/full"]
+cli = ["browser", "dep:anyhow", "dep:anstream", "dep:unicode-width", "dep:clap", "dep:clap_complete", "tokio/signal"]
+scanner = ["browser", "dep:infer"]
+encode-gif = ["browser", "image/gif"]
+encode-ffmpeg = ["browser"]
+
+[[example]]
+name = "download_and_scan"
+required-features = ["scanner"]
+
+[[example]]
+name = "download_via_action"
+required-features = ["scanner"]
+
+[dependencies]
+anstream = { workspace = true, optional = true }
+anyhow = { workspace = true, optional = true }
+async-compression = { workspace = true }
+base64 = { workspace = true }
+bytes = { workspace = true }
+chromiumoxide = { workspace = true, optional = true }
+chrono = { workspace = true }
+clap = { workspace = true, optional = true }
+clap_complete = { workspace = true, optional = true }
+encoding_rs = { workspace = true }
+flate2 = { workspace = true }
+futures = { workspace = true, optional = true }
+futures-util = { workspace = true }
+globset = { workspace = true, optional = true }
+html5ever = { workspace = true }
+image = { workspace = true, features = ["jpeg", "png"], optional = true }
+infer = { workspace = true, optional = true }
+libc = { workspace = true }
+markup5ever_rcdom = { workspace = true }
+memchr = { workspace = true }
+notify = { workspace = true, optional = true }
+publicsuffix = { workspace = true }
+rayon = { workspace = true }
+regex = { workspace = true }
+reqwest = { workspace = true, features = ["json", "rustls-no-provider"], optional = true }
+roxmltree = { workspace = true, features = ["positions"] }
+rustix = { workspace = true }
+rustls = { workspace = true, features = ["ring", "std", "tls12"], optional = true }
+schemars = { workspace = true, optional = true }
+serde = { workspace = true }
+serde_json = { workspace = true, features = ["raw_value"] }
+sha2 = { workspace = true }
+simdutf8 = { workspace = true }
+tempfile = { workspace = true, optional = true }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["fs", "io-util", "macros", "rt", "rt-multi-thread", "sync", "time"] }
+tokio-util = { workspace = true, features = ["rt"] }
+unicode-width = { workspace = true, optional = true }
+url = { workspace = true, features = ["serde"] }
+uuid = { workspace = true }
+wreq = { workspace = true }
+yosoi-contracts-derive = { workspace = true }
+
+[dev-dependencies]
+yosoi.workspace = true
+
+[lints]
+workspace = true

@@ -1,7 +1,9 @@
+use crate::internal::engine as yosoi_engine;
+
 use super::{CancellationToken, RequestId, Response, WebTarget};
+use crate::internal::engine::request as implementation;
 use crate::policy::Policy;
 use std::{error::Error, fmt};
-use yosoi_engine::request as implementation;
 
 /// Creates a request without performing I/O. URL validation occurs on send.
 pub fn new(target: impl Into<WebTarget>) -> PageRequest {

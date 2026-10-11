@@ -1,5 +1,7 @@
 """Verify release gates using synthetic packages; no builds or registry writes."""
 
+import contextlib
+import hashlib
 import io
 import os
 import subprocess
@@ -20,7 +22,56 @@ import release  # noqa: E402
 from archive import cli_archive  # noqa: E402
 
 
+def crate_archive(vcs_commit: str, *, source: bytes = b"stable source") -> bytes:
+    root = "yosoi-chromiumoxide-0.9.1-yosoi.1"
+    files = {
+        "Cargo.toml": b'[package]\nname = "yosoi-chromiumoxide"\n',
+        "Cargo.toml.orig": b'[package]\nname = "yosoi-chromiumoxide"\n',
+        "Cargo.lock": b"version = 4\n",
+        ".cargo_vcs_info.json": (
+            f'{{"git":{{"sha1":"{vcs_commit}"}},"path_in_vcs":"vendor/chromiumoxide"}}'
+        ).encode(),
+        "src/lib.rs": source,
+    }
+    output = io.BytesIO()
+    with tarfile.open(fileobj=output, mode="w:gz") as archive:
+        directory = tarfile.TarInfo(f"{root}/")
+        directory.type = tarfile.DIRTYPE
+        archive.addfile(directory)
+        for path, contents in files.items():
+            member = tarfile.TarInfo(f"{root}/{path}")
+            member.size = len(contents)
+            archive.addfile(member, io.BytesIO(contents))
+    return output.getvalue()
+
+
+def archive_checksum(contents: bytes) -> str:
+    return hashlib.sha256(contents).hexdigest()
+
+
 class IdentityTests(unittest.TestCase):
+    def test_native_release_build_uses_the_consolidated_cli_binary(self):
+        workflow = (
+            DIRECTORY.parents[1] / ".github/workflows/release-cd.yml"
+        ).read_text()
+        build_command = (
+            'cargo build --release --locked --target "$TARGET" '
+            "-p yosoi --features cli --bin yosoi"
+        )
+        self.assertIn(build_command, workflow)
+        self.assertNotIn("-p yosoi-cli", workflow)
+
+    def test_browser_stack_evidence_separates_sdk_component_and_forks(self):
+        workflow = (
+            DIRECTORY.parents[1] / ".github/workflows/rust-ci-test.yml"
+        ).read_text()
+        self.assertIn("crates/yosoi/Cargo.toml", workflow)
+        self.assertIn("VOID_CRAWL_PACKAGE_NAME", workflow)
+        self.assertIn("VOID_CRAWL_VERSION", workflow)
+        self.assertIn("vendor/chromiumoxide/Cargo.toml", workflow)
+        self.assertIn("vendor/chromiumoxide_cdp/Cargo.toml", workflow)
+        self.assertNotIn("crates/voidcrawl/Cargo.toml", workflow)
+
     def test_interpreter_resolution_installs_first_and_propagates_failures(self):
         workflow = (
             DIRECTORY.parents[1] / ".github/workflows/release-cd.yml"
@@ -605,6 +656,24 @@ fi
             ]
             self.assertEqual(len(matching), 1)
 
+    def test_consolidated_release_plan_excludes_private_runtime_crates(self):
+        root = DIRECTORY.parents[1]
+        version = release.read_toml(root / "Cargo.toml")["workspace"]["package"][
+            "version"
+        ]
+        planned = release.plan(root, f"v{version}")
+        crates = set(planned["publication"]["crates"])
+        self.assertEqual(
+            crates,
+            {
+                "yosoi",
+                "yosoi-contracts-derive",
+                "yosoi-chromiumoxide",
+                "yosoi-chromiumoxide-cdp",
+            },
+        )
+        self.assertEqual(planned["publication"]["blockers"], [])
+
     def test_python_ci_uses_shared_matrix_without_losing_interpreters(self):
         import json
 
@@ -796,6 +865,164 @@ substrate = { version = "=0.1.0", path = "crates/substrate" }
             for call in calls:
                 self.assertIn(str(folder / "Cargo.toml"), call)
                 self.assertIn(str(root / "target"), call)
+
+    def test_crate_publisher_skips_an_exact_existing_version_only_after_checksum_match(
+        self,
+    ):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.fixture(root)
+            folder = root / "vendor/chromiumoxide"
+            folder.mkdir(parents=True)
+            (folder / "Cargo.toml").write_text(
+                '[package]\nname = "yosoi-chromiumoxide"\nversion = "0.9.1-yosoi.1"\n'
+            )
+            archive = root / "target/package/yosoi-chromiumoxide-0.9.1-yosoi.1.crate"
+            local_archive = crate_archive("runtime-head")
+            registry_archive = crate_archive("published-head")
+            calls = []
+
+            def command(*args):
+                calls.append(args)
+                if args[1] == "package":
+                    archive.parent.mkdir(parents=True)
+                    archive.write_bytes(local_archive)
+
+            def registry(url):
+                self.assertTrue(url.endswith("/yosoi-chromiumoxide/0.9.1-yosoi.1"))
+                return {"version": {"checksum": archive_checksum(registry_archive)}}
+
+            with (
+                patch.object(publish.Path, "cwd", return_value=root),
+                patch.object(
+                    publish,
+                    "plan",
+                    return_value={
+                        "version": "0.1.1",
+                        "publication": {
+                            "crates": ["yosoi-chromiumoxide"],
+                            "blockers": [],
+                        },
+                    },
+                ),
+                patch.object(publish, "run", side_effect=command),
+                patch.object(publish, "json_url", side_effect=registry),
+                patch.object(
+                    publish, "download_registry_crate", return_value=registry_archive
+                ),
+                patch.dict(os.environ, {"CARGO_REGISTRY_TOKEN": "fixture"}),
+                contextlib.redirect_stdout(io.StringIO()) as output,
+            ):
+                publish.publish_crates("v0.1.1")
+
+            self.assertNotEqual(
+                release.sha256(archive), archive_checksum(registry_archive)
+            )
+            self.assertIn(
+                f"sha256={archive_checksum(registry_archive)}",
+                output.getvalue(),
+            )
+            self.assertEqual([call[1] for call in calls], ["package"])
+
+    def test_crate_publisher_rejects_source_changes_for_an_existing_version(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.fixture(root)
+            folder = root / "vendor/chromiumoxide"
+            folder.mkdir(parents=True)
+            (folder / "Cargo.toml").write_text(
+                '[package]\nname = "yosoi-chromiumoxide"\nversion = "0.9.1-yosoi.1"\n'
+            )
+            archive = root / "target/package/yosoi-chromiumoxide-0.9.1-yosoi.1.crate"
+            local_archive = crate_archive("runtime-head", source=b"changed source")
+            registry_archive = crate_archive("published-head")
+            calls = []
+
+            def command(*args):
+                calls.append(args)
+                if args[1] == "package":
+                    archive.parent.mkdir(parents=True)
+                    archive.write_bytes(local_archive)
+
+            with (
+                patch.object(publish.Path, "cwd", return_value=root),
+                patch.object(
+                    publish,
+                    "plan",
+                    return_value={
+                        "version": "0.1.1",
+                        "publication": {
+                            "crates": ["yosoi-chromiumoxide"],
+                            "blockers": [],
+                        },
+                    },
+                ),
+                patch.object(publish, "run", side_effect=command),
+                patch.object(
+                    publish,
+                    "json_url",
+                    return_value={
+                        "version": {"checksum": archive_checksum(registry_archive)}
+                    },
+                ),
+                patch.object(
+                    publish, "download_registry_crate", return_value=registry_archive
+                ),
+                patch.dict(os.environ, {"CARGO_REGISTRY_TOKEN": "fixture"}),
+                self.assertRaisesRegex(ValueError, "source contents differ"),
+            ):
+                publish.publish_crates("v0.1.1")
+
+            self.assertEqual([call[1] for call in calls], ["package"])
+
+    def test_crate_publisher_rejects_a_registry_archive_checksum_mismatch(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.fixture(root)
+            folder = root / "vendor/chromiumoxide"
+            folder.mkdir(parents=True)
+            (folder / "Cargo.toml").write_text(
+                '[package]\nname = "yosoi-chromiumoxide"\nversion = "0.9.1-yosoi.1"\n'
+            )
+            archive = root / "target/package/yosoi-chromiumoxide-0.9.1-yosoi.1.crate"
+            local_archive = crate_archive("runtime-head")
+            registry_archive = crate_archive("published-head")
+            calls = []
+
+            def command(*args):
+                calls.append(args)
+                if args[1] == "package":
+                    archive.parent.mkdir(parents=True)
+                    archive.write_bytes(local_archive)
+
+            with (
+                patch.object(publish.Path, "cwd", return_value=root),
+                patch.object(
+                    publish,
+                    "plan",
+                    return_value={
+                        "version": "0.1.1",
+                        "publication": {
+                            "crates": ["yosoi-chromiumoxide"],
+                            "blockers": [],
+                        },
+                    },
+                ),
+                patch.object(publish, "run", side_effect=command),
+                patch.object(
+                    publish,
+                    "json_url",
+                    return_value={"version": {"checksum": "0" * 64}},
+                ),
+                patch.object(
+                    publish, "download_registry_crate", return_value=registry_archive
+                ),
+                patch.dict(os.environ, {"CARGO_REGISTRY_TOKEN": "fixture"}),
+                self.assertRaisesRegex(ValueError, "archive checksum mismatch"),
+            ):
+                publish.publish_crates("v0.1.1")
+
+            self.assertEqual([call[1] for call in calls], ["package"])
 
 
 class ArtifactTests(unittest.TestCase):

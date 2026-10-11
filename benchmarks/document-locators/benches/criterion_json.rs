@@ -8,7 +8,9 @@
 
 use criterion::{Criterion, Throughput, criterion_group, criterion_main};
 use std::{fs, hint::black_box, path::PathBuf};
-use yosoi_documents::{Document, Plan, ResourceBudget, json_path, json_pointer, output};
+use yosoi_dev_support::internal::documents::{
+    Document, Plan, ResourceBudget, json_path, json_pointer, output,
+};
 
 fn json_document_locator_phases(c: &mut Criterion) {
     let fixture_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))

@@ -1,0 +1,8 @@
+{
+  "generated_source": "## What's Changed\n* Complete 0.1.0 with checked Rust package metadata by @AndrewPBerg in https://github.com/CascadingLabs/Yosoi/pull/151\n\n\n**Full Changelog**: https://github.com/CascadingLabs/Yosoi/compare/v0.1.0...v0.1.1\n",
+  "generated_source_sha256": "004a323c725fb230b34048f36a0fcf893a7d26f696796378bef64fb25a1ff370",
+  "github_notes_file": "yosoi-011-github-notes.md",
+  "previous": "0.1.0",
+  "schema": 1,
+  "version": "0.1.1"
+}

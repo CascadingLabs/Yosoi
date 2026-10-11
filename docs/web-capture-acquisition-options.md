@@ -21,10 +21,10 @@ Decision: callers select one concrete closed semantic acquisition variant per at
 
 A compiling Option A candidate now lives in:
 
-- `crates/yosoi-web-capture/src/target.rs`
-- `crates/yosoi-web-capture/src/acquisition.rs`
-- `crates/yosoi-web-capture/src/capture.rs`
-- `crates/yosoi-web-capture/tests/capture_model.rs`
+- `crates/yosoi/src/internal/web_capture/target.rs`
+- `crates/yosoi/src/internal/web_capture/acquisition.rs`
+- `crates/yosoi/src/internal/web_capture/capture.rs`
+- `crates/yosoi/src/internal/web_capture/integration_tests/capture_model.rs`
 
 Its central shape is:
 

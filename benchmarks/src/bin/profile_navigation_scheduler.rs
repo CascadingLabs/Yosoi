@@ -13,7 +13,7 @@ use futures_util::future::join_all;
 use serde::Serialize;
 use tokio_util::sync::CancellationToken;
 use yosoi_benchmarks::browser_support::{ArtifactSet, LoopbackFixture};
-use yosoi_web_capture::{
+use yosoi_dev_support::internal::web_capture::{
     BrowserActiveNavigationLimit, BrowserCleanupDeadline, BrowserContextTotalLimit,
     BrowserContextsPerProcessLimit, BrowserEngineProgressCapacity, BrowserExecutionLimits,
     BrowserExecutionManager, BrowserExecutionManagerConfig, BrowserNavigationCommand,

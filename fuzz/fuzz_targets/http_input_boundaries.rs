@@ -1,7 +1,7 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use yosoi_web_capture_direct_http::{
+use yosoi_dev_support::internal::direct_http::{
     CharsetDeclaration, CharsetIssue, ContentEncodingError, HttpContentCoding, MediaDeclaration,
     MediaDeclarationIssue, ObservedHeaderValue, RequestedWebTarget, SourceMediaType,
     parse_content_encoding, parse_media_declaration,

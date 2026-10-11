@@ -9,7 +9,7 @@ use tokio::{
     task::{JoinHandle, JoinSet},
 };
 use tokio_util::sync::CancellationToken;
-use void_crawl_core::Page;
+use yosoi_dev_support::internal::browser::Page;
 
 mod validation;
 pub use validation::{LiveSummaryParts, live_summary_parts, validate_snapshot};

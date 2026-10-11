@@ -21,12 +21,12 @@ pub fn derive_contract(input: TokenStream) -> TokenStream {
 #[allow(clippy::cognitive_complexity)] // Generated validation control flow lives inside quote!.
 fn expand_contract(input: DeriveInput) -> syn::Result<proc_macro2::TokenStream> {
     reject_generics(&input)?;
-    let yosoi = yosoi_path()?;
+    let attributes = contract_attributes(&input.attrs, input.ident.span())?;
+    let yosoi = yosoi_path(attributes.crate_path.as_ref())?;
     let type_name = input.ident;
     let visibility = input.vis;
     let candidate_name = format_ident!("{type_name}Candidate");
     let extracted_name = format_ident!("{type_name}Extracted");
-    let attributes = contract_attributes(&input.attrs, type_name.span())?;
     let contract_id = attributes.id;
     let description = attributes.description;
     let root = attributes.root;

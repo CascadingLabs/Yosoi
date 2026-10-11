@@ -1,6 +1,8 @@
 //! Discover pages within an explicitly bounded site scope.
 
-pub use yosoi_engine::map::{
+use crate::internal::engine as yosoi_engine;
+
+pub use crate::internal::engine::map::{
     DiscoverySource, Exploration, FrontierEntry, HostEntry, HostVerification, LimitReached,
     MapTermination, Observation, Omission, OmissionReason, PageEntry, PendingReason,
     PublicProvider, Rejection, Relationship, RelationshipKind, RequestTrace, SkipReason,
@@ -8,12 +10,12 @@ pub use yosoi_engine::map::{
     SupportDocumentKind, TreeEntry, WildcardEntry,
 };
 
+use crate::internal::engine::map as implementation;
 use crate::{
     policy::{Policy, PolicySnapshot},
     request::{CancellationToken, ResponseRef},
 };
 use std::{error::Error, fmt};
-use yosoi_engine::map as implementation;
 
 /// Creates a bounded discovery request without performing I/O.
 pub fn new(seed: impl Into<String>) -> MapRequest {

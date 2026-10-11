@@ -1,15 +1,17 @@
 //! Create immutable documents, then parse or locate using a policy.
 
+use crate::internal::engine as yosoi_engine;
+
 use crate::{
     locators::{LocateOutcome, Plan},
     policy::Policy,
 };
 
-pub use yosoi_documents::{
+pub use crate::internal::documents::{
     AccessibilityCompleteness, DocumentClass, DocumentEpoch, DocumentError, DocumentId,
     DocumentProfile, DocumentRepresentation, DocumentSchemaProfile, SourceFormat,
 };
-pub use yosoi_engine::ParseError;
+pub use crate::internal::engine::ParseError;
 
 /// An immutable SDK document. Storage and engine handles remain private.
 #[derive(Clone, Debug, Eq, PartialEq)]
