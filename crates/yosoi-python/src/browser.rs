@@ -393,11 +393,16 @@ fn acquire_browser_session<'py>(
     cancellation: Option<&NativeCancellation>,
 ) -> PyResult<Bound<'py, PyAny>> {
     let policy = policy::parse(policy_json)?;
-    let settings = parse_session_policy(session_policy_json)?;
+    let settings = session_policy_json
+        .map(|value| parse_session_policy(Some(value)))
+        .transpose()?;
     async_runtime::bridge(py, cancellation, move |token| async move {
-        let session = session::new()
-            .bind(&policy)
-            .configure(settings)
+        let builder = session::new().bind(&policy);
+        let builder = match settings {
+            Some(settings) => builder.configure(settings),
+            None => builder,
+        };
+        let session = builder
             .acquire_cancellable(&token)
             .await
             .map_err(|error| BrowserError::new_err(error.to_string()))?;

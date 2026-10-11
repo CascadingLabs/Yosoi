@@ -280,13 +280,6 @@ impl Work {
         trigger: &PreparedTrigger,
         watch: &ObservationWatch,
     ) -> Result<OperationReceipt, SessionError> {
-        let target_result = if let PreparedTrigger::Click(selector)
-        | PreparedTrigger::EnterText { selector, .. } = trigger
-        {
-            self.unique_target(selector).await
-        } else {
-            Ok(())
-        };
         let deadline = timing::deadline().ok_or(SessionError::InvalidInput)?;
         let _permit = self.execution_permit(deadline).await?;
         if !self
@@ -296,7 +289,6 @@ impl Work {
             self.control.fence();
             return Err(SessionError::Unknown);
         }
-        target_result?;
         let started_at_unix_us = observed_at_micros()?;
         let (kind, result) = match trigger {
             PreparedTrigger::Click(selector) => (

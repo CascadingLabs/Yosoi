@@ -8,6 +8,7 @@ use crate::internal::browser::error::VoidCrawlError;
 use crate::internal::browser::input::HumanizeOptions;
 use crate::internal::browser::input::Rng;
 use crate::internal::browser::input::humanized_path;
+use crate::internal::browser::vendor::chromiumoxide::Element;
 use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::input::DispatchKeyEventParams;
 use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::input::DispatchKeyEventType;
 use crate::internal::browser::vendor::chromiumoxide::cdp::browser_protocol::input::DispatchMouseEventParams;
@@ -104,19 +105,53 @@ impl Page {
         Ok(())
     }
 
+    /// Resolve once and retain that element through native input dispatch.
+    async fn input_element(&self, selector: &str, unique: bool) -> Result<Element> {
+        if !unique {
+            return self
+                .inner
+                .find_element(selector)
+                .await
+                .map_err(|error| VoidCrawlError::ElementNotFound(error.to_string()));
+        }
+        let mut elements = self
+            .inner
+            .find_elements(selector)
+            .await
+            .map_err(|error| VoidCrawlError::ElementNotFound(error.to_string()))?;
+        if elements.len() != 1 {
+            return Err(VoidCrawlError::InvalidInput {
+                operation: "resolve_input",
+                reason: "target_is_not_unique",
+            });
+        }
+        elements.pop().ok_or(VoidCrawlError::InvalidInput {
+            operation: "resolve_input",
+            reason: "target_is_not_unique",
+        })
+    }
+
+    pub async fn click_unique_element(&self, selector: &str) -> Result<()> {
+        self.click_element_with_scope(selector, None, true).await
+    }
+
+    pub async fn type_into_unique_element(&self, selector: &str, text: &str) -> Result<()> {
+        self.type_into_with_scope(selector, text, None, true).await
+    }
+
     async fn click_element_with_scope(
         &self,
         selector: &str,
         expected: Option<&ObservationWatch>,
+        unique: bool,
     ) -> Result<()> {
         self.ensure_active().await?;
         // Native input and screenshots share the browser's foreground surface.
         let _input_guard = self.capture_lock.lock().await;
         self.ensure_expected_scope(expected).await?;
-        let element_result = self.inner.find_element(selector).await;
+        let element_result = self.input_element(selector, unique).await;
         self.ensure_expected_scope(expected).await?;
-        let element =
-            element_result.map_err(|error| VoidCrawlError::ElementNotFound(error.to_string()))?;
+        let element = element_result?;
         let surface_result = self.prepare_native_input_surface().await;
         self.ensure_expected_scope(expected).await?;
         surface_result?;
@@ -132,14 +167,14 @@ impl Page {
         selector: &str,
         text: &str,
         expected: Option<&ObservationWatch>,
+        unique: bool,
     ) -> Result<()> {
         self.ensure_active().await?;
         let _input_guard = self.capture_lock.lock().await;
         self.ensure_expected_scope(expected).await?;
-        let element_result = self.inner.find_element(selector).await;
+        let element_result = self.input_element(selector, unique).await;
         self.ensure_expected_scope(expected).await?;
-        let element =
-            element_result.map_err(|error| VoidCrawlError::ElementNotFound(error.to_string()))?;
+        let element = element_result?;
         let surface_result = self.prepare_native_input_surface().await;
         self.ensure_expected_scope(expected).await?;
         surface_result?;
@@ -354,7 +389,7 @@ impl Page {
 
     /// Click on the first element matching `selector`.
     pub async fn click_element(&self, selector: &str) -> Result<()> {
-        self.click_element_with_scope(selector, None).await
+        self.click_element_with_scope(selector, None, false).await
     }
 
     /// Click an element only while the supplied page watch remains active and
@@ -364,14 +399,15 @@ impl Page {
         selector: &str,
         watch: &ObservationWatch,
     ) -> Result<()> {
-        self.click_element_with_scope(selector, Some(watch)).await
+        self.click_element_with_scope(selector, Some(watch), true)
+            .await
     }
 
     /// Type text into the first element matching `selector`.
     ///
     /// Focuses the element first so that key events are directed to it.
     pub async fn type_into(&self, selector: &str, text: &str) -> Result<()> {
-        self.type_into_with_scope(selector, text, None).await
+        self.type_into_with_scope(selector, text, None, false).await
     }
 
     /// Type into an element only while the supplied page watch remains active
@@ -382,7 +418,8 @@ impl Page {
         text: &str,
         watch: &ObservationWatch,
     ) -> Result<()> {
-        self.type_into_with_scope(selector, text, Some(watch)).await
+        self.type_into_with_scope(selector, text, Some(watch), true)
+            .await
     }
 
     // ── CDP Input ───────────────────────────────────────────────────────
@@ -468,6 +505,65 @@ impl Page {
             .execute(params)
             .await
             .map_err(|e| VoidCrawlError::PageError(e.to_string()))?;
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod unique_input_tests {
+    use crate::internal::browser::{BrowserSession, VoidCrawlError};
+    use std::env as std_env;
+    use std::error::Error;
+
+    #[tokio::test]
+    async fn unique_input_retains_original_node_and_rejects_ambiguous_matches()
+    -> Result<(), Box<dyn Error + Send + Sync>> {
+        if std_env::var("YOSOI_BROWSER_TESTS").as_deref() != Ok("1") {
+            eprintln!("SKIPPED: set YOSOI_BROWSER_TESTS=1 for unique native input regression");
+            return Ok(());
+        }
+        let browser = BrowserSession::builder().headless().launch().await?;
+        let page = browser.new_page("about:blank").await?;
+        page.evaluate_js("document.body.innerHTML = '<button class=target onclick=window.originalClicked=true>original</button>'; window.originalClicked = false; window.replacementClicked = false").await?;
+        let original = page.input_element(".target", true).await?;
+        // Insert a new first match after resolution. Dispatch must use the
+        // retained original node rather than query the selector a second time.
+        page.evaluate_js("document.body.insertAdjacentHTML('afterbegin', '<button class=target onclick=window.replacementClicked=true>replacement</button>')").await?;
+        original.click().await?;
+        let state = page
+            .evaluate_js("[window.originalClicked, window.replacementClicked]")
+            .await?;
+        if state != serde_json::json!([true, false]) {
+            return Err("native click changed target after resolution".into());
+        }
+        if !matches!(
+            page.click_unique_element(".target").await,
+            Err(VoidCrawlError::InvalidInput {
+                reason: "target_is_not_unique",
+                ..
+            })
+        ) {
+            return Err("ambiguous click target was accepted".into());
+        }
+        if !matches!(
+            page.type_into_unique_element(".target", "must-not-type")
+                .await,
+            Err(VoidCrawlError::InvalidInput {
+                reason: "target_is_not_unique",
+                ..
+            })
+        ) {
+            return Err("ambiguous typing target was accepted".into());
+        }
+        page.evaluate_js(
+            "document.querySelectorAll('.target').forEach(element => element.remove())",
+        )
+        .await?;
+        if original.click().await.is_ok() {
+            return Err("detached original target was accepted".into());
+        }
+        page.close().await?;
+        browser.close().await?;
         Ok(())
     }
 }

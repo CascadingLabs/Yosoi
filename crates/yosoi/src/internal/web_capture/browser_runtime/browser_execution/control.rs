@@ -74,6 +74,16 @@ impl BrowserControlError {
     }
 }
 
+fn input_provider_error(error: provider::VoidCrawlError) -> BrowserControlError {
+    match error {
+        provider::VoidCrawlError::InvalidInput {
+            operation: "resolve_input",
+            ..
+        } => BrowserControlError::InvalidInput,
+        error => error.into(),
+    }
+}
+
 /// Classify only fixed provider messages; arbitrary diagnostics may contain URLs or secrets.
 fn navigation_failure_kind(reason: &str) -> &'static str {
     match reason {
@@ -400,7 +410,10 @@ impl RuntimeBrowserControl {
 
     pub async fn click(&self, selector: &str) -> Result<(), BrowserControlError> {
         self.check_authority()?;
-        self.page.click_element(selector).await?;
+        self.page
+            .click_unique_element(selector)
+            .await
+            .map_err(input_provider_error)?;
         Ok(())
     }
 
@@ -412,13 +425,17 @@ impl RuntimeBrowserControl {
         self.check_authority()?;
         let result = self.page.click_element_in_scope(selector, watch).await;
         self.check_authority()?;
-        result?;
+        result.map_err(input_provider_error)?;
         Ok(())
     }
 
     pub async fn enter_text(&self, selector: &str, text: &str) -> Result<(), BrowserControlError> {
         self.check_authority()?;
-        match self.page.type_into(selector, text).await {
+        match self.page.type_into_unique_element(selector, text).await {
+            Err(provider::VoidCrawlError::InvalidInput {
+                operation: "resolve_input",
+                ..
+            }) => Err(BrowserControlError::InvalidInput),
             Err(provider::VoidCrawlError::InvalidInput {
                 operation: "type_into",
                 reason: "target_lost_before_typing",
@@ -440,6 +457,10 @@ impl RuntimeBrowserControl {
         let result = self.page.type_into_in_scope(selector, text, watch).await;
         self.check_authority()?;
         match result {
+            Err(provider::VoidCrawlError::InvalidInput {
+                operation: "resolve_input",
+                ..
+            }) => Err(BrowserControlError::InvalidInput),
             Err(provider::VoidCrawlError::InvalidInput {
                 operation: "type_into",
                 reason: "target_lost_before_typing",

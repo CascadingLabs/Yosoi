@@ -1470,6 +1470,8 @@ class Session:
 
     This Python bridge exposes one Work lease at a time. Rust watcher streams
     and explicit tab creation are not exposed through this first pass.
+    Omitted settings inherit the bound policy's browser mode; explicit settings
+    retain their configured mode and must agree with that policy.
     """
 
     def __init__(
@@ -1486,7 +1488,7 @@ class Session:
         if cancellation is not None and not isinstance(cancellation, CancellationToken):
             raise TypeError("cancellation must be a Yosoi CancellationToken")
         self.policy = Policy() if policy is None else policy
-        self.settings = SessionPolicy() if settings is None else settings
+        self.settings = settings
         self._cancellation = cancellation
         self._handle: Any | None = None
         self._close_lock = asyncio.Lock()
@@ -1497,7 +1499,7 @@ class Session:
             raise BrowserError("browser Session is already acquired")
         self._handle = await _native.acquire_browser_session(
             self.policy.to_json(),
-            self.settings.to_json(),
+            None if self.settings is None else self.settings.to_json(),
             _token(self._cancellation),
         )
         return self

@@ -1090,6 +1090,7 @@ impl Work {
                     dispatch.unresolved = result.as_ref().err().is_some_and(internal_web_capture::BrowserControlError::requires_fence);
                     result.map_err(|error| match error {
                         internal_web_capture::BrowserControlError::InputTargetLost => SessionError::InputTargetLost,
+                        internal_web_capture::BrowserControlError::InvalidInput => SessionError::InvalidInput,
                         error => SessionError::Execution(error.execution_message()),
                     })
                 }),
@@ -1192,26 +1193,11 @@ impl Work {
             Err(SessionError::BrowserFeatureDisabled)
         }
     }
-    #[cfg(feature = "browser")]
-    async fn unique_target(&self, selector: &str) -> Result<(), SessionError> {
-        let selector = serde_json::to_string(selector).map_err(|_| SessionError::InvalidInput)?;
-        let value = self
-            .call(
-                self.control
-                    .evaluate_json(&format!("document.querySelectorAll({selector}).length")),
-            )
-            .await?;
-        if value.as_u64() != Some(1) {
-            return Err(SessionError::InvalidInput);
-        }
-        Ok(())
-    }
     pub async fn click(&self, selector: &str) -> Result<OperationReceipt, SessionError> {
         let _operation = self.operation()?;
         self.authorize(ActionKind::Click, selector)?;
         #[cfg(feature = "browser")]
         {
-            self.unique_target(selector).await?;
             let result = self
                 .call(self.control.click(selector))
                 .await
@@ -1344,7 +1330,6 @@ impl Work {
         self.authorize(ActionKind::EnterText, text)?;
         #[cfg(feature = "browser")]
         {
-            self.unique_target(selector).await?;
             let result = self
                 .call(self.control.enter_text(selector, text))
                 .await
@@ -1648,5 +1633,25 @@ mod observation_capture_tests {
             observation_capture_error(SessionError::InvalidInput),
             SessionError::EvidenceUnavailable
         ));
+    }
+}
+
+#[cfg(test)]
+mod default_browser_mode_tests {
+    use super::{SessionPolicy, new};
+    use crate::policy::{Acquisition, BrowserMode, Page, Policy};
+
+    #[test]
+    fn omitted_settings_inherit_bound_browser_mode() {
+        let policy = Policy {
+            page: Page {
+                acquisitions: vec![Acquisition::Browser(BrowserMode::Headful)],
+            },
+            ..Policy::default()
+        };
+        let builder = new().bind(&policy);
+        assert_eq!(builder.settings.mode, BrowserMode::Headful);
+        let explicit = new().bind(&policy).configure(SessionPolicy::default());
+        assert_eq!(explicit.settings.mode, BrowserMode::Headless);
     }
 }

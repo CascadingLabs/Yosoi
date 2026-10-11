@@ -495,9 +495,9 @@
       "trait": "Default",
       "surface": "member",
       "parentRustPath": "yosoi::Continuation",
-      "signatureSha256": "9261d8cc55a9df874d618e373e430365152d0308a119a7bf11b6d5bfe7cd80f4",
+      "signatureSha256": "c8ccc1815ec9411d57a67f1b11449bb0bcb5c4ab117ed7b5664363a5e257a6d2",
       "baselineStatus": "missing",
-      "symbolKey": "member:function:yosoi::Continuation::default@signature:9261d8cc55a9df874d618e373e430365152d0308a119a7bf11b6d5bfe7cd80f4@trait:Default@source:508f7f9d48efb3d5cd299655827850f7b6a75952fa50b23c77a073aef7f052b9",
+      "symbolKey": "member:function:yosoi::Continuation::default@signature:c8ccc1815ec9411d57a67f1b11449bb0bcb5c4ab117ed7b5664363a5e257a6d2@trait:Default@source:508f7f9d48efb3d5cd299655827850f7b6a75952fa50b23c77a073aef7f052b9",
       "classification": "trait-mechanic",
       "mapping": {
         "decision": "missing",

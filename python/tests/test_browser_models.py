@@ -178,3 +178,29 @@ def test_failure_capture_policy_and_receipt_preserve_primary_terminal() -> None:
     assert outcome.terminal == "failed"
     assert outcome.failure_capture is not None
     assert outcome.failure_capture.status == "unknown"
+
+
+@pytest.mark.parametrize("explicit", [False, True])
+def test_session_preserves_omitted_settings_for_headful_policy(
+    monkeypatch: pytest.MonkeyPatch, explicit: bool
+) -> None:
+    import asyncio
+
+    policy = ys.Policy(
+        page=ys.policy.Page(acquisitions=[ys.policy.Acquisition.browser("headful")])
+    )
+    settings = SessionPolicy(mode="headful") if explicit else None
+    calls: list[tuple[str, str | None]] = []
+
+    async def acquire(
+        policy_json: str, settings_json: str | None, token: Any
+    ) -> object:
+        calls.append((policy_json, settings_json))
+        return object()
+
+    monkeypatch.setattr(_native, "acquire_browser_session", acquire)
+    session = ys.session(policy=policy, settings=settings)
+    asyncio.run(session.__aenter__())
+    assert calls == [
+        (policy.to_json(), None if settings is None else settings.to_json())
+    ]
