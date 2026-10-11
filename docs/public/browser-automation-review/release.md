@@ -10,11 +10,12 @@ order: 9
 
 The default workspace contains the integrated Rust browser SDK, Python browser
 SDK, private browser runtime, release tooling and docs publication pipeline.
-CAS-574 is complete. The integrated SDK source is
-`5453ee65c417776bd7a72e3334c8017c199ff664`, including main `46f9625a`.
-The later live-test source `05995a173b988c152dc10758ab85c6c6de4ecdf1` also
-includes a navigation-diagnostic classifier and opt-in stress coverage. Default
-parent `517abee1` records those results; preparation edits here affect docs only.
+CAS-574 is complete. PR #155 merged at
+`46f8e561ee2d48a95485d84a2be32b6f7cee2bfb` on October 11. All 19 hosted
+checks passed on its reviewed head `75ba3744`, including docs, installed Python
+and semantic parity, Rust strict lint/build, tests and coverage. Main's exact
+merge-commit checks are tracked separately; later packaging edits also require
+their own final-source checks.
 
 Local release metadata is synchronized at `0.2.0`, with citation date
 `2026-10-11`. This is preparation metadata, not a published version. GitHub's
@@ -61,8 +62,11 @@ must be verified for the chosen release source.
 
 Rust publication uses the existing package dependency order. The private browser
 components are included in SDK sources and require no separate fork crate
-publication. Independently versioned `yosoi-contracts-derive` 0.1.1 still needs
-the ordinary registry preflight.
+publication. Independently versioned `yosoi-contracts-derive` moves to 0.1.2. Its source
+changed during the CI repair, so reusing the already published 0.1.1 archive
+would fail the immutable-source comparison. Release CD publishes the new helper
+before the SDK through its existing dependency order; no registry upload has
+occurred during preparation.
 
 ## Evidence already recorded
 
@@ -98,11 +102,12 @@ lint gate and 78 focused model, assertion, Archive and View regressions. The
 no-browser configuration compiles separately. No test declarations were
 removed; the JSON Pointer regression is new.
 
-[PR #155](https://github.com/CascadingLabs/Yosoi/pull/155) carries the repair.
-Hosted Rust format/lint/build, both default and coverage partitions, doctests
-and coverage aggregation passed on `835aadf5`. That head's docs formatting and
-Python setup failed; their corrections require a fresh final-head run. Local
-success and an earlier green Python matrix do not transfer to that final head.
+[PR #155](https://github.com/CascadingLabs/Yosoi/pull/155) is merged. Its final
+head passed all 19 hosted checks. Both Codex findings are resolved: native input
+uses a retained unique element, and omitted Python Session settings inherit the
+bound policy's browser mode. A focused sandboxed Chrome 155 regression verified
+retained-target dispatch, ambiguous-target rejection and detached-target failure.
+Earlier failing repair heads remain historical evidence.
 
 - [x] Integrate the accepted browser and Python SDKs with the private runtime in default.
 - [x] Record installed Python consumer/browser proof on the integrated SDK source.
@@ -111,7 +116,7 @@ success and an earlier green Python matrix do not transfer to that final head.
       are included; stronger durability/replay guarantees and Python facades remain deferred.
 - [ ] Pass strict source CI for the exact chosen source: Rust format/lint/build,
       tests and doctests; Python installed-wheel and semantic gates; public docs.
-      Green `v0.1.2` main CI does not verify the local 0.2.0 source.
+      PR checks passed; merge-commit and packaging-source checks remain distinct.
 - [ ] Complete applicable current Stable Chrome/CDP certification and controlled
       negative cases on the final source. Keep live-site results distinct.
 - [ ] Build release-profile native and Python artifacts and pass the existing
