@@ -1,0 +1,189 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::locators::LocateFailure",
+  "publicPath": "yosoi::locators::LocateFailure",
+  "kind": "enum",
+  "title": "yosoi::locators::LocateFailure",
+  "signature": "pub enum LocateFailure",
+  "docs": "Typed terminal failures. Error codes are bounded structural identifiers,\nnever excerpts from hostile document payloads.",
+  "source": {
+    "file": "crates/yosoi/src/internal/documents/outcome.rs",
+    "lineStart": 316,
+    "lineEnd": 334,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/outcome.rs#L316-L334"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 6,
+    "lineEnd": 6,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/locators.rs#L6-L6"
+  },
+  "aliases": [
+    "yosoi::prelude::LocateFailure",
+    "yosoi::prelude::locators::LocateFailure"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::locators::LocateFailure::InvalidPlan",
+      "publicPath": "yosoi::locators::LocateFailure::InvalidPlan",
+      "title": "yosoi::locators::LocateFailure::InvalidPlan",
+      "kind": "variant",
+      "signature": "InvalidPlan { code: String }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 317,
+        "lineEnd": 319,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/outcome.rs#L317-L319"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::LocateFailure::InvalidResourcePolicy",
+      "publicPath": "yosoi::locators::LocateFailure::InvalidResourcePolicy",
+      "title": "yosoi::locators::LocateFailure::InvalidResourcePolicy",
+      "kind": "variant",
+      "signature": "InvalidResourcePolicy { limit: yosoi::locators::ResourceLimit }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 331,
+        "lineEnd": 333,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/outcome.rs#L331-L333"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::LocateFailure::LimitExhausted",
+      "publicPath": "yosoi::locators::LocateFailure::LimitExhausted",
+      "title": "yosoi::locators::LocateFailure::LimitExhausted",
+      "kind": "variant",
+      "signature": "LimitExhausted { limit: yosoi::locators::ResourceLimit, maximum: u64, observed: u64 }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 326,
+        "lineEnd": 330,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/outcome.rs#L326-L330"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::LocateFailure::ParseFailed",
+      "publicPath": "yosoi::locators::LocateFailure::ParseFailed",
+      "title": "yosoi::locators::LocateFailure::ParseFailed",
+      "kind": "variant",
+      "signature": "ParseFailed { code: String }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 320,
+        "lineEnd": 322,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/outcome.rs#L320-L322"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::locators::LocateFailure::UnsupportedCombination",
+      "publicPath": "yosoi::locators::LocateFailure::UnsupportedCombination",
+      "title": "yosoi::locators::LocateFailure::UnsupportedCombination",
+      "kind": "variant",
+      "signature": "UnsupportedCombination { document: yosoi::documents::DocumentClass }",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 323,
+        "lineEnd": 325,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/outcome.rs#L323-L325"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::LocateFailure::clone",
+      "publicPath": "yosoi::locators::LocateFailure::clone",
+      "title": "yosoi::locators::LocateFailure::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::locators::LocateFailure",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 314,
+        "lineEnd": 314,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/outcome.rs#L314-L314"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::locators::LocateFailure::deserialize",
+      "publicPath": "yosoi::locators::LocateFailure::deserialize",
+      "title": "yosoi::locators::LocateFailure::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 314,
+        "lineEnd": 314,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/outcome.rs#L314-L314"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::locators::LocateFailure::eq",
+      "publicPath": "yosoi::locators::LocateFailure::eq",
+      "title": "yosoi::locators::LocateFailure::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::locators::LocateFailure) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 314,
+        "lineEnd": 314,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/outcome.rs#L314-L314"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::locators::LocateFailure::fmt",
+      "publicPath": "yosoi::locators::LocateFailure::fmt",
+      "title": "yosoi::locators::LocateFailure::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 314,
+        "lineEnd": 314,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/outcome.rs#L314-L314"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::locators::LocateFailure::serialize",
+      "publicPath": "yosoi::locators::LocateFailure::serialize",
+      "title": "yosoi::locators::LocateFailure::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/outcome.rs",
+        "lineStart": 314,
+        "lineEnd": 314,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/outcome.rs#L314-L314"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "a41cfaf0ddaf8dabb4356b43b3575014c45c44ee76025549b6fb1ecac3e3fda8",
+  "slug": "yosoi/locators/enum/locatefailure",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "a41cfaf0ddaf8dabb4356b43b3575014c45c44ee76025549b6fb1ecac3e3fda8"
+}

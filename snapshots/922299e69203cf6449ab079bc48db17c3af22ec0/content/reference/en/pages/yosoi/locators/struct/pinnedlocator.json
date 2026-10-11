@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::locators::PinnedLocator",
+  "publicPath": "yosoi::locators::PinnedLocator",
+  "kind": "struct",
+  "title": "yosoi::locators::PinnedLocator",
+  "signature": "pub struct PinnedLocator",
+  "docs": "Static locator data suitable for inline Contract attributes or constants.",
+  "source": {
+    "file": "crates/yosoi/src/internal/documents/locator_declaration.rs",
+    "lineStart": 13,
+    "lineEnd": 16,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/locator_declaration.rs#L13-L16"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 8,
+    "lineEnd": 8,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/locators.rs#L8-L8"
+  },
+  "aliases": [
+    "yosoi::prelude::PinnedLocator",
+    "yosoi::prelude::locators::PinnedLocator"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::locators::PinnedLocator::attribute",
+      "publicPath": "yosoi::locators::PinnedLocator::attribute",
+      "title": "yosoi::locators::PinnedLocator::attribute",
+      "kind": "function",
+      "signature": "pub const fn attribute(self, name: &'static str) -> yosoi::locators::PinnedOutputLocator",
+      "docs": "Projects one attribute from a located element for a Contract field.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/locator_declaration.rs",
+        "lineStart": 32,
+        "lineEnd": 37,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/locator_declaration.rs#L32-L37"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::locators::PinnedLocator::clone",
+      "publicPath": "yosoi::locators::PinnedLocator::clone",
+      "title": "yosoi::locators::PinnedLocator::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::locators::PinnedLocator",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/locator_declaration.rs",
+        "lineStart": 12,
+        "lineEnd": 12,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/locator_declaration.rs#L12-L12"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::locators::PinnedLocator::eq",
+      "publicPath": "yosoi::locators::PinnedLocator::eq",
+      "title": "yosoi::locators::PinnedLocator::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::locators::PinnedLocator) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/locator_declaration.rs",
+        "lineStart": 12,
+        "lineEnd": 12,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/locator_declaration.rs#L12-L12"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::locators::PinnedLocator::fmt",
+      "publicPath": "yosoi::locators::PinnedLocator::fmt",
+      "title": "yosoi::locators::PinnedLocator::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/locator_declaration.rs",
+        "lineStart": 12,
+        "lineEnd": 12,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/locator_declaration.rs#L12-L12"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::locators::PinnedLocator::text",
+      "publicPath": "yosoi::locators::PinnedLocator::text",
+      "title": "yosoi::locators::PinnedLocator::text",
+      "kind": "function",
+      "signature": "pub const fn text(self) -> yosoi::locators::PinnedOutputLocator",
+      "docs": "Projects the located node or range as text for one Contract field.",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/locator_declaration.rs",
+        "lineStart": 24,
+        "lineEnd": 29,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/locator_declaration.rs#L24-L29"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "08fa1e83ee4bfa4df9aa3d06b1973433793303ca8ad29137cabb6ea2d05a56a4",
+  "slug": "yosoi/locators/struct/pinnedlocator",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "08fa1e83ee4bfa4df9aa3d06b1973433793303ca8ad29137cabb6ea2d05a56a4"
+}

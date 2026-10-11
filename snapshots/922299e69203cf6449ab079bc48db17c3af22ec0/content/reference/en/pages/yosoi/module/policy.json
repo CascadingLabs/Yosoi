@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "module:yosoi::policy",
+  "publicPath": "yosoi::policy",
+  "kind": "module",
+  "title": "yosoi::policy",
+  "signature": "pub mod policy",
+  "docs": "Configure the limits and acquisition choices used by SDK operations.",
+  "source": {
+    "file": "crates/yosoi/src/policy.rs",
+    "lineStart": 1,
+    "lineEnd": 25,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/policy.rs#L1-L25"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::policy"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "313041daeb78faf1d9e0d5431b13225ebb353665a7c81bcd2361046add6f3b67",
+  "slug": "yosoi/module/policy",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "313041daeb78faf1d9e0d5431b13225ebb353665a7c81bcd2361046add6f3b67"
+}

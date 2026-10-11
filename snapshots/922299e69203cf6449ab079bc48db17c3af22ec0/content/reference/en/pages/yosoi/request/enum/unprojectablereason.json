@@ -1,0 +1,307 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::request::UnprojectableReason",
+  "publicPath": "yosoi::request::UnprojectableReason",
+  "kind": "enum",
+  "title": "yosoi::request::UnprojectableReason",
+  "signature": "pub enum UnprojectableReason",
+  "docs": "Bounded reasons the captured representation cannot be made into a Document.",
+  "source": {
+    "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+    "lineStart": 74,
+    "lineEnd": 119,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L74-L119"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/request.rs",
+    "lineStart": 8,
+    "lineEnd": 8,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/request.rs#L8-L8"
+  },
+  "aliases": [
+    "yosoi::prelude::request::UnprojectableReason"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::request::UnprojectableReason::AmbiguousSourceFormat",
+      "publicPath": "yosoi::request::UnprojectableReason::AmbiguousSourceFormat",
+      "title": "yosoi::request::UnprojectableReason::AmbiguousSourceFormat",
+      "kind": "variant",
+      "signature": "AmbiguousSourceFormat",
+      "docs": "The source classifier returned multiple possible formats.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 85,
+        "lineEnd": 85,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L85-L85"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::UnprojectableReason::BrowserDocumentEpochUnavailable",
+      "publicPath": "yosoi::request::UnprojectableReason::BrowserDocumentEpochUnavailable",
+      "title": "yosoi::request::UnprojectableReason::BrowserDocumentEpochUnavailable",
+      "kind": "variant",
+      "signature": "BrowserDocumentEpochUnavailable",
+      "docs": "Capture metadata did not provide a browser document epoch for the requested snapshot.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 108,
+        "lineEnd": 108,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L108-L108"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::UnprojectableReason::BrowserDocumentNormalizationFailed",
+      "publicPath": "yosoi::request::UnprojectableReason::BrowserDocumentNormalizationFailed",
+      "title": "yosoi::request::UnprojectableReason::BrowserDocumentNormalizationFailed",
+      "kind": "variant",
+      "signature": "BrowserDocumentNormalizationFailed",
+      "docs": "The retained browser artifact could not be normalized into its locator document schema.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 110,
+        "lineEnd": 110,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L110-L110"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::UnprojectableReason::CaptureArtifactNotRequested",
+      "publicPath": "yosoi::request::UnprojectableReason::CaptureArtifactNotRequested",
+      "title": "yosoi::request::UnprojectableReason::CaptureArtifactNotRequested",
+      "kind": "variant",
+      "signature": "CaptureArtifactNotRequested { family: yosoi::request::WebArtifactFamily }",
+      "docs": "The finalized capture omitted an artifact family that the prepared attempt requested.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 112,
+        "lineEnd": 114,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L112-L114"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::UnprojectableReason::CaptureArtifactUnsupported",
+      "publicPath": "yosoi::request::UnprojectableReason::CaptureArtifactUnsupported",
+      "title": "yosoi::request::UnprojectableReason::CaptureArtifactUnsupported",
+      "kind": "variant",
+      "signature": "CaptureArtifactUnsupported { family: yosoi::request::WebArtifactFamily }",
+      "docs": "The provider marked an artifact family unsupported.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 116,
+        "lineEnd": 118,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L116-L118"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::UnprojectableReason::DecodedSourceReferenceMismatch",
+      "publicPath": "yosoi::request::UnprojectableReason::DecodedSourceReferenceMismatch",
+      "title": "yosoi::request::UnprojectableReason::DecodedSourceReferenceMismatch",
+      "kind": "variant",
+      "signature": "DecodedSourceReferenceMismatch",
+      "docs": "The classifier and decoded view refer to different source artifacts.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 87,
+        "lineEnd": 87,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L87-L87"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::UnprojectableReason::DecodingNotApplicable",
+      "publicPath": "yosoi::request::UnprojectableReason::DecodingNotApplicable",
+      "title": "yosoi::request::UnprojectableReason::DecodingNotApplicable",
+      "kind": "variant",
+      "signature": "DecodingNotApplicable { code: yosoi::request::DecodingErrorCode }",
+      "docs": "No decoded view applies to this classification.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 99,
+        "lineEnd": 102,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L99-L102"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::UnprojectableReason::DocumentRejected",
+      "publicPath": "yosoi::request::UnprojectableReason::DocumentRejected",
+      "title": "yosoi::request::UnprojectableReason::DocumentRejected",
+      "kind": "variant",
+      "signature": "DocumentRejected",
+      "docs": "The validated document constructor rejected the derived document input.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 104,
+        "lineEnd": 104,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L104-L104"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::UnprojectableReason::NetworkTreeSchemaUnavailable",
+      "publicPath": "yosoi::request::UnprojectableReason::NetworkTreeSchemaUnavailable",
+      "title": "yosoi::request::UnprojectableReason::NetworkTreeSchemaUnavailable",
+      "kind": "variant",
+      "signature": "NetworkTreeSchemaUnavailable",
+      "docs": "No locator document schema is defined for the requested network tree.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 106,
+        "lineEnd": 106,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L106-L106"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::UnprojectableReason::SourceFactsUnavailable",
+      "publicPath": "yosoi::request::UnprojectableReason::SourceFactsUnavailable",
+      "title": "yosoi::request::UnprojectableReason::SourceFactsUnavailable",
+      "kind": "variant",
+      "signature": "SourceFactsUnavailable",
+      "docs": "Direct HTTP did not provide source representation facts.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 76,
+        "lineEnd": 76,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L76-L76"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::UnprojectableReason::Undecodable",
+      "publicPath": "yosoi::request::UnprojectableReason::Undecodable",
+      "title": "yosoi::request::UnprojectableReason::Undecodable",
+      "kind": "variant",
+      "signature": "Undecodable { code: yosoi::request::DecodingErrorCode }",
+      "docs": "The source format was classified, but decoding failed.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 94,
+        "lineEnd": 97,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L94-L97"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::UnprojectableReason::UnknownSourceFormat",
+      "publicPath": "yosoi::request::UnprojectableReason::UnknownSourceFormat",
+      "title": "yosoi::request::UnprojectableReason::UnknownSourceFormat",
+      "kind": "variant",
+      "signature": "UnknownSourceFormat { reason: yosoi::request::UnknownReason }",
+      "docs": "The source classifier returned an unknown format.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 78,
+        "lineEnd": 81,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L78-L81"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::UnprojectableReason::UnsupportedEncoding",
+      "publicPath": "yosoi::request::UnprojectableReason::UnsupportedEncoding",
+      "title": "yosoi::request::UnprojectableReason::UnsupportedEncoding",
+      "kind": "variant",
+      "signature": "UnsupportedEncoding { code: yosoi::request::DecodingErrorCode }",
+      "docs": "The source format was classified, but decoding was not supported.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 89,
+        "lineEnd": 92,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L89-L92"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::UnprojectableReason::UnsupportedSourceFormat",
+      "publicPath": "yosoi::request::UnprojectableReason::UnsupportedSourceFormat",
+      "title": "yosoi::request::UnprojectableReason::UnsupportedSourceFormat",
+      "kind": "variant",
+      "signature": "UnsupportedSourceFormat",
+      "docs": "The source classifier returned an unsupported format.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 83,
+        "lineEnd": 83,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L83-L83"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::request::UnprojectableReason::clone",
+      "publicPath": "yosoi::request::UnprojectableReason::clone",
+      "title": "yosoi::request::UnprojectableReason::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::request::UnprojectableReason",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 72,
+        "lineEnd": 72,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L72-L72"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::request::UnprojectableReason::eq",
+      "publicPath": "yosoi::request::UnprojectableReason::eq",
+      "title": "yosoi::request::UnprojectableReason::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::request::UnprojectableReason) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 72,
+        "lineEnd": 72,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L72-L72"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::request::UnprojectableReason::fmt",
+      "publicPath": "yosoi::request::UnprojectableReason::fmt",
+      "title": "yosoi::request::UnprojectableReason::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 72,
+        "lineEnd": 72,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L72-L72"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::request::UnprojectableReason::serialize",
+      "publicPath": "yosoi::request::UnprojectableReason::serialize",
+      "title": "yosoi::request::UnprojectableReason::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 72,
+        "lineEnd": 72,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L72-L72"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "1b52b5f218da32a2a3932c42d22434aae760ec170ecddbb674a4c1a8a0134515",
+  "slug": "yosoi/request/enum/unprojectablereason",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "1b52b5f218da32a2a3932c42d22434aae760ec170ecddbb674a4c1a8a0134515"
+}

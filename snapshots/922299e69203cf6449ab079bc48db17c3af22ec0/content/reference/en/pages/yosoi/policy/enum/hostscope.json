@@ -1,0 +1,159 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::policy::HostScope",
+  "publicPath": "yosoi::policy::HostScope",
+  "kind": "enum",
+  "title": "yosoi::policy::HostScope",
+  "signature": "pub enum HostScope",
+  "docs": "Hostnames Map may include.",
+  "source": {
+    "file": "crates/yosoi/src/internal/policy/policy/map.rs",
+    "lineStart": 92,
+    "lineEnd": 98,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/policy/policy/map.rs#L92-L98"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/policy.rs",
+    "lineStart": 9,
+    "lineEnd": 9,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/policy.rs#L9-L9"
+  },
+  "aliases": [
+    "yosoi::prelude::policy::HostScope"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::policy::HostScope::RegistrableDomain",
+      "publicPath": "yosoi::policy::HostScope::RegistrableDomain",
+      "title": "yosoi::policy::HostScope::RegistrableDomain",
+      "kind": "variant",
+      "signature": "RegistrableDomain",
+      "docs": "The seed's registrable domain and its subdomains.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/map.rs",
+        "lineStart": 97,
+        "lineEnd": 97,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/policy/policy/map.rs#L97-L97"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::policy::HostScope::SeedHost",
+      "publicPath": "yosoi::policy::HostScope::SeedHost",
+      "title": "yosoi::policy::HostScope::SeedHost",
+      "kind": "variant",
+      "signature": "SeedHost",
+      "docs": "Only the seed URL's host.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/map.rs",
+        "lineStart": 95,
+        "lineEnd": 95,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/policy/policy/map.rs#L95-L95"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::HostScope::clone",
+      "publicPath": "yosoi::policy::HostScope::clone",
+      "title": "yosoi::policy::HostScope::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::policy::HostScope",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/map.rs",
+        "lineStart": 90,
+        "lineEnd": 90,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/policy/policy/map.rs#L90-L90"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::policy::HostScope::default",
+      "publicPath": "yosoi::policy::HostScope::default",
+      "title": "yosoi::policy::HostScope::default",
+      "kind": "function",
+      "signature": "fn default() -> yosoi::policy::HostScope",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/map.rs",
+        "lineStart": 90,
+        "lineEnd": 90,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/policy/policy/map.rs#L90-L90"
+      },
+      "examples": [],
+      "trait": "Default"
+    },
+    {
+      "id": "function:yosoi::policy::HostScope::deserialize",
+      "publicPath": "yosoi::policy::HostScope::deserialize",
+      "title": "yosoi::policy::HostScope::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<__D>(__deserializer: __D) -> _serde::__private229::Result<Self, <__D as >::Error> where __D: _serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/map.rs",
+        "lineStart": 90,
+        "lineEnd": 90,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/policy/policy/map.rs#L90-L90"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::policy::HostScope::eq",
+      "publicPath": "yosoi::policy::HostScope::eq",
+      "title": "yosoi::policy::HostScope::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::policy::HostScope) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/map.rs",
+        "lineStart": 90,
+        "lineEnd": 90,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/policy/policy/map.rs#L90-L90"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::policy::HostScope::fmt",
+      "publicPath": "yosoi::policy::HostScope::fmt",
+      "title": "yosoi::policy::HostScope::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/map.rs",
+        "lineStart": 90,
+        "lineEnd": 90,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/policy/policy/map.rs#L90-L90"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::policy::HostScope::serialize",
+      "publicPath": "yosoi::policy::HostScope::serialize",
+      "title": "yosoi::policy::HostScope::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/map.rs",
+        "lineStart": 90,
+        "lineEnd": 90,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/policy/policy/map.rs#L90-L90"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "96bed4c3a79aa0c90d1d6043295b6939d0658e48ae994fb9404a22d01821dd1b",
+  "slug": "yosoi/policy/enum/hostscope",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "96bed4c3a79aa0c90d1d6043295b6939d0658e48ae994fb9404a22d01821dd1b"
+}

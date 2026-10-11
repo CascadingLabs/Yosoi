@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::locators::PinnedOutputLocator",
+  "publicPath": "yosoi::locators::PinnedOutputLocator",
+  "kind": "struct",
+  "title": "yosoi::locators::PinnedOutputLocator",
+  "signature": "pub struct PinnedOutputLocator",
+  "docs": "Static query plus projection for one generated Contract output.",
+  "source": {
+    "file": "crates/yosoi/src/internal/documents/locator_declaration.rs",
+    "lineStart": 55,
+    "lineEnd": 58,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/locator_declaration.rs#L55-L58"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/locators.rs",
+    "lineStart": 8,
+    "lineEnd": 8,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/locators.rs#L8-L8"
+  },
+  "aliases": [
+    "yosoi::prelude::PinnedOutputLocator",
+    "yosoi::prelude::locators::PinnedOutputLocator"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::locators::PinnedOutputLocator::clone",
+      "publicPath": "yosoi::locators::PinnedOutputLocator::clone",
+      "title": "yosoi::locators::PinnedOutputLocator::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::locators::PinnedOutputLocator",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/locator_declaration.rs",
+        "lineStart": 54,
+        "lineEnd": 54,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/locator_declaration.rs#L54-L54"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::locators::PinnedOutputLocator::eq",
+      "publicPath": "yosoi::locators::PinnedOutputLocator::eq",
+      "title": "yosoi::locators::PinnedOutputLocator::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::locators::PinnedOutputLocator) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/locator_declaration.rs",
+        "lineStart": 54,
+        "lineEnd": 54,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/locator_declaration.rs#L54-L54"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::locators::PinnedOutputLocator::fmt",
+      "publicPath": "yosoi::locators::PinnedOutputLocator::fmt",
+      "title": "yosoi::locators::PinnedOutputLocator::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/documents/locator_declaration.rs",
+        "lineStart": 54,
+        "lineEnd": 54,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/documents/locator_declaration.rs#L54-L54"
+      },
+      "examples": [],
+      "trait": "Debug"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "599aeb474ae83bd3eeb568ea2d709472162f210c1bc78a3165d3ccbd179a47f4",
+  "slug": "yosoi/locators/struct/pinnedoutputlocator",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "599aeb474ae83bd3eeb568ea2d709472162f210c1bc78a3165d3ccbd179a47f4"
+}

@@ -1,0 +1,249 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::policy::Map",
+  "publicPath": "yosoi::policy::Map",
+  "kind": "struct",
+  "title": "yosoi::policy::Map",
+  "signature": "pub struct Map",
+  "docs": "Map-specific policy shared by discovery operations.",
+  "source": {
+    "file": "crates/yosoi/src/internal/policy/policy/map.rs",
+    "lineStart": 14,
+    "lineEnd": 29,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/policy/policy/map.rs#L14-L29"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/policy.rs",
+    "lineStart": 9,
+    "lineEnd": 9,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/policy.rs#L9-L9"
+  },
+  "aliases": [
+    "yosoi::prelude::policy::Map"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::policy::Map::clone",
+      "publicPath": "yosoi::policy::Map::clone",
+      "title": "yosoi::policy::Map::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::policy::Map",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/map.rs",
+        "lineStart": 12,
+        "lineEnd": 12,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/policy/policy/map.rs#L12-L12"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::policy::Map::default",
+      "publicPath": "yosoi::policy::Map::default",
+      "title": "yosoi::policy::Map::default",
+      "kind": "function",
+      "signature": "fn default() -> yosoi::policy::Map",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/map.rs",
+        "lineStart": 12,
+        "lineEnd": 12,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/policy/policy/map.rs#L12-L12"
+      },
+      "examples": [],
+      "trait": "Default"
+    },
+    {
+      "id": "function:yosoi::policy::Map::deserialize",
+      "publicPath": "yosoi::policy::Map::deserialize",
+      "title": "yosoi::policy::Map::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<D>(deserializer: D) -> Result<Self, <D as >::Error> where D: Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/map.rs",
+        "lineStart": 46,
+        "lineEnd": 76,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/policy/policy/map.rs#L46-L76"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "struct_field:yosoi::policy::Map::documents",
+      "publicPath": "yosoi::policy::Map::documents",
+      "title": "yosoi::policy::Map::documents",
+      "kind": "struct_field",
+      "signature": "pub documents: yosoi::policy::DiscoveryDocuments",
+      "docs": "Discovery response document retention behavior.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/map.rs",
+        "lineStart": 26,
+        "lineEnd": 26,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/policy/policy/map.rs#L26-L26"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::Map::eq",
+      "publicPath": "yosoi::policy::Map::eq",
+      "title": "yosoi::policy::Map::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::policy::Map) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/map.rs",
+        "lineStart": 12,
+        "lineEnd": 12,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/policy/policy/map.rs#L12-L12"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "struct_field:yosoi::policy::Map::filters",
+      "publicPath": "yosoi::policy::Map::filters",
+      "title": "yosoi::policy::Map::filters",
+      "kind": "struct_field",
+      "signature": "pub filters: yosoi::policy::Filters",
+      "docs": "URL components used to exclude matching URLs from the inventory.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/map.rs",
+        "lineStart": 28,
+        "lineEnd": 28,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/policy/policy/map.rs#L28-L28"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::Map::fmt",
+      "publicPath": "yosoi::policy::Map::fmt",
+      "title": "yosoi::policy::Map::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/map.rs",
+        "lineStart": 12,
+        "lineEnd": 12,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/policy/policy/map.rs#L12-L12"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "struct_field:yosoi::policy::Map::limits",
+      "publicPath": "yosoi::policy::Map::limits",
+      "title": "yosoi::policy::Map::limits",
+      "kind": "struct_field",
+      "signature": "pub limits: yosoi::policy::Limits",
+      "docs": "Positive request, response, inventory, and time budgets.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/map.rs",
+        "lineStart": 24,
+        "lineEnd": 24,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/policy/policy/map.rs#L24-L24"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::policy::Map::pages",
+      "publicPath": "yosoi::policy::Map::pages",
+      "title": "yosoi::policy::Map::pages",
+      "kind": "struct_field",
+      "signature": "pub pages: yosoi::policy::PageDiscovery",
+      "docs": "Whether Map follows links from inspected pages.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/map.rs",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/policy/policy/map.rs#L18-L18"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::policy::Map::robots",
+      "publicPath": "yosoi::policy::Map::robots",
+      "title": "yosoi::policy::Map::robots",
+      "kind": "struct_field",
+      "signature": "pub robots: yosoi::policy::Robots",
+      "docs": "Whether Map applies discovered robots rules when exploring pages.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/map.rs",
+        "lineStart": 20,
+        "lineEnd": 20,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/policy/policy/map.rs#L20-L20"
+      },
+      "examples": []
+    },
+    {
+      "id": "struct_field:yosoi::policy::Map::scope",
+      "publicPath": "yosoi::policy::Map::scope",
+      "title": "yosoi::policy::Map::scope",
+      "kind": "struct_field",
+      "signature": "pub scope: yosoi::policy::Scope",
+      "docs": "Host and path boundary for discovered entries.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/map.rs",
+        "lineStart": 16,
+        "lineEnd": 16,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/policy/policy/map.rs#L16-L16"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::Map::serialize",
+      "publicPath": "yosoi::policy::Map::serialize",
+      "title": "yosoi::policy::Map::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/map.rs",
+        "lineStart": 12,
+        "lineEnd": 12,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/policy/policy/map.rs#L12-L12"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    },
+    {
+      "id": "struct_field:yosoi::policy::Map::subdomains",
+      "publicPath": "yosoi::policy::Map::subdomains",
+      "title": "yosoi::policy::Map::subdomains",
+      "kind": "struct_field",
+      "signature": "pub subdomains: yosoi::policy::Subdomains",
+      "docs": "Whether Map performs passive subdomain discovery.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/map.rs",
+        "lineStart": 22,
+        "lineEnd": 22,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/policy/policy/map.rs#L22-L22"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::policy::Map::validate",
+      "publicPath": "yosoi::policy::Map::validate",
+      "title": "yosoi::policy::Map::validate",
+      "kind": "function",
+      "signature": "pub fn validate(&self) -> Result<(), yosoi::PolicyError>",
+      "docs": "Validates all Map-local limits, filters, and scope dependencies.",
+      "source": {
+        "file": "crates/yosoi/src/internal/policy/policy/map.rs",
+        "lineStart": 33,
+        "lineEnd": 42,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/policy/policy/map.rs#L33-L42"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "c2aaef89d9dd11a92e75f8c2285c07429a607da3d02fb31a0454a075bacf5b80",
+  "slug": "yosoi/policy/struct/map",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "c2aaef89d9dd11a92e75f8c2285c07429a607da3d02fb31a0454a075bacf5b80"
+}

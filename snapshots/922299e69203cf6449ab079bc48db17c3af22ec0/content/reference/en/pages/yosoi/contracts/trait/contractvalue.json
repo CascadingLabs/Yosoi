@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "id": "trait:yosoi::contracts::ContractValue",
+  "publicPath": "yosoi::contracts::ContractValue",
+  "kind": "trait",
+  "title": "yosoi::contracts::ContractValue",
+  "signature": "pub trait ContractValue",
+  "docs": "Stable semantic identity for a Contract field value type.",
+  "source": {
+    "file": "crates/yosoi/src/internal/contracts/schema.rs",
+    "lineStart": 26,
+    "lineEnd": 28,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/contracts/schema.rs#L26-L28"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/contracts.rs",
+    "lineStart": 12,
+    "lineEnd": 12,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/contracts.rs#L12-L12"
+  },
+  "aliases": [
+    "yosoi::prelude::contracts::ContractValue"
+  ],
+  "members": [
+    {
+      "id": "assoc_const:yosoi::contracts::ContractValue::TYPE_ID",
+      "publicPath": "yosoi::contracts::ContractValue::TYPE_ID",
+      "title": "yosoi::contracts::ContractValue::TYPE_ID",
+      "kind": "assoc_const",
+      "signature": "const TYPE_ID: &'static str",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/schema.rs",
+        "lineStart": 27,
+        "lineEnd": 27,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/contracts/schema.rs#L27-L27"
+      },
+      "examples": []
+    }
+  ],
+  "examples": [],
+  "docsDigest": "793bd5ee7ba0e94c1da780ab4bf519a0d0306fe5054ddd0f153ebdf57c6fe706",
+  "slug": "yosoi/contracts/trait/contractvalue",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "793bd5ee7ba0e94c1da780ab4bf519a0d0306fe5054ddd0f153ebdf57c6fe706"
+}

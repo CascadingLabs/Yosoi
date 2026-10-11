@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::contracts::ContractIdentity",
+  "publicPath": "yosoi::contracts::ContractIdentity",
+  "kind": "struct",
+  "title": "yosoi::contracts::ContractIdentity",
+  "signature": "pub struct ContractIdentity",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi/src/internal/contracts/schema.rs",
+    "lineStart": 259,
+    "lineEnd": 259,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/contracts/schema.rs#L259-L259"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/contracts.rs",
+    "lineStart": 11,
+    "lineEnd": 11,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/contracts.rs#L11-L11"
+  },
+  "aliases": [
+    "yosoi::prelude::contracts::ContractIdentity"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::contracts::ContractIdentity::as_bytes",
+      "publicPath": "yosoi::contracts::ContractIdentity::as_bytes",
+      "title": "yosoi::contracts::ContractIdentity::as_bytes",
+      "kind": "function",
+      "signature": "pub const fn as_bytes(&self) -> &[u8; 32]",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/schema.rs",
+        "lineStart": 262,
+        "lineEnd": 264,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/contracts/schema.rs#L262-L264"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::ContractIdentity::clone",
+      "publicPath": "yosoi::contracts::ContractIdentity::clone",
+      "title": "yosoi::contracts::ContractIdentity::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::contracts::ContractIdentity",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/schema.rs",
+        "lineStart": 258,
+        "lineEnd": 258,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/contracts/schema.rs#L258-L258"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::contracts::ContractIdentity::eq",
+      "publicPath": "yosoi::contracts::ContractIdentity::eq",
+      "title": "yosoi::contracts::ContractIdentity::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::contracts::ContractIdentity) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/schema.rs",
+        "lineStart": 258,
+        "lineEnd": 258,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/contracts/schema.rs#L258-L258"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::contracts::ContractIdentity::fmt",
+      "publicPath": "yosoi::contracts::ContractIdentity::fmt",
+      "title": "yosoi::contracts::ContractIdentity::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/schema.rs",
+        "lineStart": 258,
+        "lineEnd": 258,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/contracts/schema.rs#L258-L258"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::contracts::ContractIdentity::fmt",
+      "publicPath": "yosoi::contracts::ContractIdentity::fmt",
+      "title": "yosoi::contracts::ContractIdentity::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/schema.rs",
+        "lineStart": 268,
+        "lineEnd": 273,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/contracts/schema.rs#L268-L273"
+      },
+      "examples": [],
+      "trait": "Display"
+    },
+    {
+      "id": "function:yosoi::contracts::ContractIdentity::hash",
+      "publicPath": "yosoi::contracts::ContractIdentity::hash",
+      "title": "yosoi::contracts::ContractIdentity::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contracts/schema.rs",
+        "lineStart": 258,
+        "lineEnd": 258,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/contracts/schema.rs#L258-L258"
+      },
+      "examples": [],
+      "trait": "Hash"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/contracts/struct/contractidentity",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

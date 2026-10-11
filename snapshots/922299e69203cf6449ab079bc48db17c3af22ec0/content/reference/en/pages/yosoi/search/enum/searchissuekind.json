@@ -1,0 +1,187 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::search::SearchIssueKind",
+  "publicPath": "yosoi::search::SearchIssueKind",
+  "kind": "enum",
+  "title": "yosoi::search::SearchIssueKind",
+  "signature": "pub enum SearchIssueKind",
+  "docs": "",
+  "source": {
+    "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+    "lineStart": 283,
+    "lineEnd": 292,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/search/result/types.rs#L283-L292"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/search.rs",
+    "lineStart": 11,
+    "lineEnd": 11,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/search.rs#L11-L11"
+  },
+  "aliases": [
+    "yosoi::prelude::search::SearchIssueKind"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::search::SearchIssueKind::DuplicateDestination",
+      "publicPath": "yosoi::search::SearchIssueKind::DuplicateDestination",
+      "title": "yosoi::search::SearchIssueKind::DuplicateDestination",
+      "kind": "variant",
+      "signature": "DuplicateDestination",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 285,
+        "lineEnd": 285,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/search/result/types.rs#L285-L285"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::search::SearchIssueKind::InvalidDestination",
+      "publicPath": "yosoi::search::SearchIssueKind::InvalidDestination",
+      "title": "yosoi::search::SearchIssueKind::InvalidDestination",
+      "kind": "variant",
+      "signature": "InvalidDestination",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 284,
+        "lineEnd": 284,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/search/result/types.rs#L284-L284"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::search::SearchIssueKind::MissingRequiredField",
+      "publicPath": "yosoi::search::SearchIssueKind::MissingRequiredField",
+      "title": "yosoi::search::SearchIssueKind::MissingRequiredField",
+      "kind": "variant",
+      "signature": "MissingRequiredField",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 286,
+        "lineEnd": 286,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/search/result/types.rs#L286-L286"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::search::SearchIssueKind::OutputLimit",
+      "publicPath": "yosoi::search::SearchIssueKind::OutputLimit",
+      "title": "yosoi::search::SearchIssueKind::OutputLimit",
+      "kind": "variant",
+      "signature": "OutputLimit",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 288,
+        "lineEnd": 288,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/search/result/types.rs#L288-L288"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::search::SearchIssueKind::QueryRelaxed",
+      "publicPath": "yosoi::search::SearchIssueKind::QueryRelaxed",
+      "title": "yosoi::search::SearchIssueKind::QueryRelaxed",
+      "kind": "variant",
+      "signature": "QueryRelaxed",
+      "docs": "Bing supplied off-query rows for the original query; these hits came\nfrom one shorter, disclosed content-term query.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 291,
+        "lineEnd": 291,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/search/result/types.rs#L291-L291"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::search::SearchIssueKind::UnrecognizedResultRow",
+      "publicPath": "yosoi::search::SearchIssueKind::UnrecognizedResultRow",
+      "title": "yosoi::search::SearchIssueKind::UnrecognizedResultRow",
+      "kind": "variant",
+      "signature": "UnrecognizedResultRow",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 287,
+        "lineEnd": 287,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/search/result/types.rs#L287-L287"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::search::SearchIssueKind::clone",
+      "publicPath": "yosoi::search::SearchIssueKind::clone",
+      "title": "yosoi::search::SearchIssueKind::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::search::SearchIssueKind",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 281,
+        "lineEnd": 281,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/search/result/types.rs#L281-L281"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::search::SearchIssueKind::eq",
+      "publicPath": "yosoi::search::SearchIssueKind::eq",
+      "title": "yosoi::search::SearchIssueKind::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::search::SearchIssueKind) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 281,
+        "lineEnd": 281,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/search/result/types.rs#L281-L281"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::search::SearchIssueKind::fmt",
+      "publicPath": "yosoi::search::SearchIssueKind::fmt",
+      "title": "yosoi::search::SearchIssueKind::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 281,
+        "lineEnd": 281,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/search/result/types.rs#L281-L281"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::search::SearchIssueKind::serialize",
+      "publicPath": "yosoi::search::SearchIssueKind::serialize",
+      "title": "yosoi::search::SearchIssueKind::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 281,
+        "lineEnd": 281,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/search/result/types.rs#L281-L281"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "slug": "yosoi/search/enum/searchissuekind",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

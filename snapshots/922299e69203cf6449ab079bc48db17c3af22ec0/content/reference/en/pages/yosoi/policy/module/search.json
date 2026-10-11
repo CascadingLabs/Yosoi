@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "module:yosoi::policy::search",
+  "publicPath": "yosoi::policy::search",
+  "kind": "module",
+  "title": "yosoi::policy::search",
+  "signature": "pub mod search",
+  "docs": "Provider selection and bounded Search configuration.",
+  "source": {
+    "file": "crates/yosoi/src/policy.rs",
+    "lineStart": 19,
+    "lineEnd": 19,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/policy.rs#L19-L19"
+  },
+  "reexportSource": null,
+  "aliases": [
+    "yosoi::prelude::policy::search"
+  ],
+  "members": [],
+  "examples": [],
+  "docsDigest": "c48f4a181485c25da248e2d724d2802d8515870645d4d78bfddaa19725bd4e08",
+  "slug": "yosoi/policy/module/search",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "c48f4a181485c25da248e2d724d2802d8515870645d4d78bfddaa19725bd4e08"
+}

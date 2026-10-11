@@ -1,0 +1,174 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::search::SearchResultUrl",
+  "publicPath": "yosoi::search::SearchResultUrl",
+  "kind": "struct",
+  "title": "yosoi::search::SearchResultUrl",
+  "signature": "pub struct SearchResultUrl",
+  "docs": "A provider-reported destination that is safe to offer for a later Request.\nParsing accepts only absolute HTTP(S) URLs and rejects embedded credentials.",
+  "source": {
+    "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+    "lineStart": 9,
+    "lineEnd": 9,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/search/result/types.rs#L9-L9"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/search.rs",
+    "lineStart": 12,
+    "lineEnd": 12,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/search.rs#L12-L12"
+  },
+  "aliases": [
+    "yosoi::prelude::search::SearchResultUrl"
+  ],
+  "members": [
+    {
+      "id": "function:yosoi::search::SearchResultUrl::as_request_target",
+      "publicPath": "yosoi::search::SearchResultUrl::as_request_target",
+      "title": "yosoi::search::SearchResultUrl::as_request_target",
+      "kind": "function",
+      "signature": "pub fn as_request_target(&self) -> RequestedWebTarget",
+      "docs": "Creates an independent target for explicit caller handoff to Requests.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 21,
+        "lineEnd": 23,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/search/result/types.rs#L21-L23"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::search::SearchResultUrl::as_str",
+      "publicPath": "yosoi::search::SearchResultUrl::as_str",
+      "title": "yosoi::search::SearchResultUrl::as_str",
+      "kind": "function",
+      "signature": "pub fn as_str(&self) -> &str",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 16,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/search/result/types.rs#L16-L18"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::search::SearchResultUrl::clone",
+      "publicPath": "yosoi::search::SearchResultUrl::clone",
+      "title": "yosoi::search::SearchResultUrl::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::search::SearchResultUrl",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 7,
+        "lineEnd": 7,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/search/result/types.rs#L7-L7"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::search::SearchResultUrl::eq",
+      "publicPath": "yosoi::search::SearchResultUrl::eq",
+      "title": "yosoi::search::SearchResultUrl::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::search::SearchResultUrl) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 7,
+        "lineEnd": 7,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/search/result/types.rs#L7-L7"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::search::SearchResultUrl::fmt",
+      "publicPath": "yosoi::search::SearchResultUrl::fmt",
+      "title": "yosoi::search::SearchResultUrl::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 27,
+        "lineEnd": 29,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/search/result/types.rs#L27-L29"
+      },
+      "examples": [],
+      "trait": "Display"
+    },
+    {
+      "id": "function:yosoi::search::SearchResultUrl::fmt",
+      "publicPath": "yosoi::search::SearchResultUrl::fmt",
+      "title": "yosoi::search::SearchResultUrl::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 33,
+        "lineEnd": 35,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/search/result/types.rs#L33-L35"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::search::SearchResultUrl::hash",
+      "publicPath": "yosoi::search::SearchResultUrl::hash",
+      "title": "yosoi::search::SearchResultUrl::hash",
+      "kind": "function",
+      "signature": "fn hash<__H: $crate::hash::Hasher>(&self, state: &mut __H)",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 7,
+        "lineEnd": 7,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/search/result/types.rs#L7-L7"
+      },
+      "examples": [],
+      "trait": "Hash"
+    },
+    {
+      "id": "function:yosoi::search::SearchResultUrl::parse",
+      "publicPath": "yosoi::search::SearchResultUrl::parse",
+      "title": "yosoi::search::SearchResultUrl::parse",
+      "kind": "function",
+      "signature": "pub fn parse(value: &str) -> Result<Self, WebUrlParseError>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 12,
+        "lineEnd": 14,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/search/result/types.rs#L12-L14"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::search::SearchResultUrl::serialize",
+      "publicPath": "yosoi::search::SearchResultUrl::serialize",
+      "title": "yosoi::search::SearchResultUrl::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/search/result/types.rs",
+        "lineStart": 7,
+        "lineEnd": 7,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/search/result/types.rs#L7-L7"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "a01470149d196d149c6e2796641e1ca7b37a43edb3d718aa2698b038681cd21b",
+  "slug": "yosoi/search/struct/searchresulturl",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "a01470149d196d149c6e2796641e1ca7b37a43edb3d718aa2698b038681cd21b"
+}

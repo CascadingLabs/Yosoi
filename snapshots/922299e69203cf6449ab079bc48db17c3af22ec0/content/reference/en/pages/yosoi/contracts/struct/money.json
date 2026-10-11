@@ -1,0 +1,176 @@
+{
+  "schemaVersion": 1,
+  "id": "struct:yosoi::contracts::Money",
+  "publicPath": "yosoi::contracts::Money",
+  "kind": "struct",
+  "title": "yosoi::contracts::Money",
+  "signature": "pub struct Money",
+  "docs": "A validated USD amount.\n\nRuntime text conversion accepts only `$`, an optional `-`, one or more\nASCII whole digits, `.`, and exactly two ASCII fractional digits. Negative\namounts parse but fail the first-slice semantic validation rule.",
+  "source": {
+    "file": "crates/yosoi/src/internal/contract_validation/value.rs",
+    "lineStart": 43,
+    "lineEnd": 46,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/contract_validation/value.rs#L43-L46"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/contracts.rs",
+    "lineStart": 13,
+    "lineEnd": 13,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/contracts.rs#L13-L13"
+  },
+  "aliases": [
+    "yosoi::prelude::Money",
+    "yosoi::prelude::contracts::Money"
+  ],
+  "members": [
+    {
+      "id": "assoc_const:yosoi::contracts::Money::TYPE_ID",
+      "publicPath": "yosoi::contracts::Money::TYPE_ID",
+      "title": "yosoi::contracts::Money::TYPE_ID",
+      "kind": "assoc_const",
+      "signature": "const TYPE_ID: &'static str = \"money.usd\"",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/value.rs",
+        "lineStart": 110,
+        "lineEnd": 110,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/contract_validation/value.rs#L110-L110"
+      },
+      "examples": [],
+      "trait": "ContractValue"
+    },
+    {
+      "id": "function:yosoi::contracts::Money::clone",
+      "publicPath": "yosoi::contracts::Money::clone",
+      "title": "yosoi::contracts::Money::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::contracts::Money",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/value.rs",
+        "lineStart": 41,
+        "lineEnd": 41,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/contract_validation/value.rs#L41-L41"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::contracts::Money::currency",
+      "publicPath": "yosoi::contracts::Money::currency",
+      "title": "yosoi::contracts::Money::currency",
+      "kind": "function",
+      "signature": "pub const fn currency(&self) -> yosoi::contracts::Currency",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/value.rs",
+        "lineStart": 95,
+        "lineEnd": 97,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/contract_validation/value.rs#L95-L97"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::Money::deserialize",
+      "publicPath": "yosoi::contracts::Money::deserialize",
+      "title": "yosoi::contracts::Money::deserialize",
+      "kind": "function",
+      "signature": "fn deserialize<D>(deserializer: D) -> Result<Self, <D as >::Error> where D: serde::Deserializer<'de>",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/value.rs",
+        "lineStart": 58,
+        "lineEnd": 76,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/contract_validation/value.rs#L58-L76"
+      },
+      "examples": [],
+      "trait": "Deserialize"
+    },
+    {
+      "id": "function:yosoi::contracts::Money::eq",
+      "publicPath": "yosoi::contracts::Money::eq",
+      "title": "yosoi::contracts::Money::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::contracts::Money) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/value.rs",
+        "lineStart": 41,
+        "lineEnd": 41,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/contract_validation/value.rs#L41-L41"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::contracts::Money::fmt",
+      "publicPath": "yosoi::contracts::Money::fmt",
+      "title": "yosoi::contracts::Money::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/value.rs",
+        "lineStart": 49,
+        "lineEnd": 54,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/contract_validation/value.rs#L49-L54"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::contracts::Money::fmt",
+      "publicPath": "yosoi::contracts::Money::fmt",
+      "title": "yosoi::contracts::Money::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/value.rs",
+        "lineStart": 101,
+        "lineEnd": 106,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/contract_validation/value.rs#L101-L106"
+      },
+      "examples": [],
+      "trait": "Display"
+    },
+    {
+      "id": "function:yosoi::contracts::Money::minor_units",
+      "publicPath": "yosoi::contracts::Money::minor_units",
+      "title": "yosoi::contracts::Money::minor_units",
+      "kind": "function",
+      "signature": "pub const fn minor_units(&self) -> i64",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/value.rs",
+        "lineStart": 92,
+        "lineEnd": 94,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/contract_validation/value.rs#L92-L94"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::contracts::Money::serialize",
+      "publicPath": "yosoi::contracts::Money::serialize",
+      "title": "yosoi::contracts::Money::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/contract_validation/value.rs",
+        "lineStart": 41,
+        "lineEnd": 41,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/contract_validation/value.rs#L41-L41"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "05fb7f6e2472fcbd0b5d452cb7b6265a64ca300ba78e6b06c201607c95b67f34",
+  "slug": "yosoi/contracts/struct/money",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "05fb7f6e2472fcbd0b5d452cb7b6265a64ca300ba78e6b06c201607c95b67f34"
+}

@@ -1,0 +1,307 @@
+{
+  "schemaVersion": 1,
+  "id": "enum:yosoi::request::PartialReason",
+  "publicPath": "yosoi::request::PartialReason",
+  "kind": "enum",
+  "title": "yosoi::request::PartialReason",
+  "signature": "pub enum PartialReason",
+  "docs": "Bounded reasons a projected document is incomplete.",
+  "source": {
+    "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+    "lineStart": 8,
+    "lineEnd": 39,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L8-L39"
+  },
+  "reexportSource": {
+    "file": "crates/yosoi/src/request.rs",
+    "lineStart": 8,
+    "lineEnd": 8,
+    "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/request.rs#L8-L8"
+  },
+  "aliases": [
+    "yosoi::prelude::request::PartialReason"
+  ],
+  "members": [
+    {
+      "id": "variant:yosoi::request::PartialReason::AccessibilityByteLoss",
+      "publicPath": "yosoi::request::PartialReason::AccessibilityByteLoss",
+      "title": "yosoi::request::PartialReason::AccessibilityByteLoss",
+      "kind": "variant",
+      "signature": "AccessibilityByteLoss",
+      "docs": "Some observed accessibility bytes were not retained.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 32,
+        "lineEnd": 32,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L32-L32"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::PartialReason::AccessibilityByteLossUnknown",
+      "publicPath": "yosoi::request::PartialReason::AccessibilityByteLossUnknown",
+      "title": "yosoi::request::PartialReason::AccessibilityByteLossUnknown",
+      "kind": "variant",
+      "signature": "AccessibilityByteLossUnknown",
+      "docs": "The amount of lost accessibility bytes is unknown.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 34,
+        "lineEnd": 34,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L34-L34"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::PartialReason::AccessibilityDepthLimited",
+      "publicPath": "yosoi::request::PartialReason::AccessibilityDepthLimited",
+      "title": "yosoi::request::PartialReason::AccessibilityDepthLimited",
+      "kind": "variant",
+      "signature": "AccessibilityDepthLimited",
+      "docs": "The browser accessibility snapshot was intentionally depth-limited.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 26,
+        "lineEnd": 26,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L26-L26"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::PartialReason::AccessibilityNodeLoss",
+      "publicPath": "yosoi::request::PartialReason::AccessibilityNodeLoss",
+      "title": "yosoi::request::PartialReason::AccessibilityNodeLoss",
+      "kind": "variant",
+      "signature": "AccessibilityNodeLoss",
+      "docs": "Some observed accessibility nodes were not retained.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 28,
+        "lineEnd": 28,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L28-L28"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::PartialReason::AccessibilityNodeLossUnknown",
+      "publicPath": "yosoi::request::PartialReason::AccessibilityNodeLossUnknown",
+      "title": "yosoi::request::PartialReason::AccessibilityNodeLossUnknown",
+      "kind": "variant",
+      "signature": "AccessibilityNodeLossUnknown",
+      "docs": "The amount of lost accessibility nodes is unknown.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 30,
+        "lineEnd": 30,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L30-L30"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::PartialReason::AccessibilityTreeFamilyPartial",
+      "publicPath": "yosoi::request::PartialReason::AccessibilityTreeFamilyPartial",
+      "title": "yosoi::request::PartialReason::AccessibilityTreeFamilyPartial",
+      "kind": "variant",
+      "signature": "AccessibilityTreeFamilyPartial",
+      "docs": "The browser capture reports a partial accessibility-tree artifact family.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 24,
+        "lineEnd": 24,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L24-L24"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::PartialReason::BrowserArtifactTruncated",
+      "publicPath": "yosoi::request::PartialReason::BrowserArtifactTruncated",
+      "title": "yosoi::request::PartialReason::BrowserArtifactTruncated",
+      "kind": "variant",
+      "signature": "BrowserArtifactTruncated { family: yosoi::request::WebArtifactFamily }",
+      "docs": "The retained browser artifact itself is truncated and was not normalized.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 36,
+        "lineEnd": 38,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L36-L38"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::PartialReason::ClassificationFromRetainedPrefix",
+      "publicPath": "yosoi::request::PartialReason::ClassificationFromRetainedPrefix",
+      "title": "yosoi::request::PartialReason::ClassificationFromRetainedPrefix",
+      "kind": "variant",
+      "signature": "ClassificationFromRetainedPrefix",
+      "docs": "Classification used only a retained prefix of the source.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 14,
+        "lineEnd": 14,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L14-L14"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::PartialReason::DecodedOutputTruncated",
+      "publicPath": "yosoi::request::PartialReason::DecodedOutputTruncated",
+      "title": "yosoi::request::PartialReason::DecodedOutputTruncated",
+      "kind": "variant",
+      "signature": "DecodedOutputTruncated",
+      "docs": "The UTF-8 decoded-source output reached its configured limit.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 16,
+        "lineEnd": 16,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L16-L16"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::PartialReason::DecodedSourceFamilyPartial",
+      "publicPath": "yosoi::request::PartialReason::DecodedSourceFamilyPartial",
+      "title": "yosoi::request::PartialReason::DecodedSourceFamilyPartial",
+      "kind": "variant",
+      "signature": "DecodedSourceFamilyPartial",
+      "docs": "The decoded-source artifact family is recorded as partial.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 20,
+        "lineEnd": 20,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L20-L20"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::PartialReason::IncompleteTerminalSequence",
+      "publicPath": "yosoi::request::PartialReason::IncompleteTerminalSequence",
+      "title": "yosoi::request::PartialReason::IncompleteTerminalSequence",
+      "kind": "variant",
+      "signature": "IncompleteTerminalSequence",
+      "docs": "Decoding ended in an incomplete terminal sequence.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 18,
+        "lineEnd": 18,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L18-L18"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::PartialReason::RenderedDomFamilyPartial",
+      "publicPath": "yosoi::request::PartialReason::RenderedDomFamilyPartial",
+      "title": "yosoi::request::PartialReason::RenderedDomFamilyPartial",
+      "kind": "variant",
+      "signature": "RenderedDomFamilyPartial",
+      "docs": "The browser capture reports a partial rendered-DOM artifact family.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 22,
+        "lineEnd": 22,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L22-L22"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::PartialReason::SourceArtifactTruncated",
+      "publicPath": "yosoi::request::PartialReason::SourceArtifactTruncated",
+      "title": "yosoi::request::PartialReason::SourceArtifactTruncated",
+      "kind": "variant",
+      "signature": "SourceArtifactTruncated",
+      "docs": "The retained source artifact contains fewer than its complete bytes.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 12,
+        "lineEnd": 12,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L12-L12"
+      },
+      "examples": []
+    },
+    {
+      "id": "variant:yosoi::request::PartialReason::SourceFamilyPartial",
+      "publicPath": "yosoi::request::PartialReason::SourceFamilyPartial",
+      "title": "yosoi::request::PartialReason::SourceFamilyPartial",
+      "kind": "variant",
+      "signature": "SourceFamilyPartial",
+      "docs": "The capture reports a partial source artifact family.",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 10,
+        "lineEnd": 10,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L10-L10"
+      },
+      "examples": []
+    },
+    {
+      "id": "function:yosoi::request::PartialReason::clone",
+      "publicPath": "yosoi::request::PartialReason::clone",
+      "title": "yosoi::request::PartialReason::clone",
+      "kind": "function",
+      "signature": "fn clone(&self) -> yosoi::request::PartialReason",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 6,
+        "lineEnd": 6,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L6-L6"
+      },
+      "examples": [],
+      "trait": "Clone"
+    },
+    {
+      "id": "function:yosoi::request::PartialReason::eq",
+      "publicPath": "yosoi::request::PartialReason::eq",
+      "title": "yosoi::request::PartialReason::eq",
+      "kind": "function",
+      "signature": "fn eq(&self, other: &yosoi::request::PartialReason) -> bool",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 6,
+        "lineEnd": 6,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L6-L6"
+      },
+      "examples": [],
+      "trait": "PartialEq"
+    },
+    {
+      "id": "function:yosoi::request::PartialReason::fmt",
+      "publicPath": "yosoi::request::PartialReason::fmt",
+      "title": "yosoi::request::PartialReason::fmt",
+      "kind": "function",
+      "signature": "fn fmt(&self, f: &mut $crate::fmt::Formatter<'_>) -> $crate::fmt::Result",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 6,
+        "lineEnd": 6,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L6-L6"
+      },
+      "examples": [],
+      "trait": "Debug"
+    },
+    {
+      "id": "function:yosoi::request::PartialReason::serialize",
+      "publicPath": "yosoi::request::PartialReason::serialize",
+      "title": "yosoi::request::PartialReason::serialize",
+      "kind": "function",
+      "signature": "fn serialize<__S>(&self, __serializer: __S) -> _serde::__private229::Result<<__S as >::Ok, <__S as >::Error> where __S: _serde::Serializer",
+      "docs": "",
+      "source": {
+        "file": "crates/yosoi/src/internal/engine/projection/outcome/reasons.rs",
+        "lineStart": 6,
+        "lineEnd": 6,
+        "url": "https://github.com/CascadingLabs/Yosoi/blob/922299e69203cf6449ab079bc48db17c3af22ec0/crates/yosoi/src/internal/engine/projection/outcome/reasons.rs#L6-L6"
+      },
+      "examples": [],
+      "trait": "Serialize"
+    }
+  ],
+  "examples": [],
+  "docsDigest": "740ec15375095c70078732bef02e26eb75a64909102942fd94d5eb9ff9cb9f88",
+  "slug": "yosoi/request/enum/partialreason",
+  "locale": "en",
+  "requestedLocale": "en",
+  "fallbackLocale": null,
+  "originalDocsDigest": "740ec15375095c70078732bef02e26eb75a64909102942fd94d5eb9ff9cb9f88"
+}
