@@ -161,10 +161,16 @@ def test_live_framework_render_diagnostics(framework: str) -> None:
                 # This probe retains unsupported live rendering as a failed
                 # observation. It never converts it into a successful checkout.
                 if outcome.terminal != "completed":
-                    assert outcome.terminal in ("failed", "unknown")
-                    assert outcome.steps
-                    assert any(step.failure for step in outcome.steps)
-                    return
+                    if (
+                        outcome.terminal == "failed"
+                        and outcome.steps[-1].receipt.kind == "wait_until"
+                        and outcome.steps[-1].receipt.error
+                        == "condition was not satisfied"
+                    ):
+                        pytest.xfail(
+                            f"{framework}: live product grid did not render; recorded"
+                        )
+                    outcome.require_completed()
                 outcome.require_completed()
 
     asyncio.run(run())
